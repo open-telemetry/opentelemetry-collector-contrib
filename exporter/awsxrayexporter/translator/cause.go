@@ -128,27 +128,29 @@ func makeCause(span pdata.Span, attributes map[string]string, resource pdata.Res
 }
 
 func parseException(exceptionType string, message string, stacktrace string, language string) []awsxray.Exception {
-	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
-
-	// Skip first line containing top level exception / message
-	r.ReadLine()
 	exceptions := make([]awsxray.Exception, 0, 1)
 	exceptions = append(exceptions, awsxray.Exception{
 		ID:      aws.String(newSegmentID().HexString()),
 		Type:    aws.String(exceptionType),
 		Message: aws.String(message),
 	})
-	exception := &exceptions[0]
-
-	if language != "java" {
-		// Only support Java stack traces right now.
-		return exceptions
-	}
 
 	if stacktrace == "" {
 		return exceptions
 	}
 
+	if language == "java" {
+		exceptions = fillJavaStacktrace(stacktrace, exceptions)
+	}
+	return exceptions
+}
+
+func fillJavaStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxray.Exception {
+	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
+
+	// Skip first line containing top level exception / message
+	r.ReadLine()
+	exception := &exceptions[0]
 	var line string
 	line, err := r.ReadLine()
 	if err != nil {
@@ -234,5 +236,6 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 			break
 		}
 	}
+
 	return exceptions
 }

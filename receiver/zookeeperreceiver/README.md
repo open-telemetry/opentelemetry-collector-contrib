@@ -2,7 +2,8 @@
 
 # Zookeeper Receiver
 
-The Zookeeper receiver collects metrics from a Zookeeper instance, using the `mntr` command.
+The Zookeeper receiver collects metrics from a Zookeeper instance, using the `mntr` command. The `mntr` 4 letter word command needs
+to be enabled for the receiver to be able to collect metrics.
 
 ## Configuration
 

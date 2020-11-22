@@ -20,6 +20,7 @@ exporter/awsxrayexporter/                @open-telemetry/collector-contrib-appro
 exporter/azuremonitorexporter/           @open-telemetry/collector-contrib-approvers @pcwiese
 exporter/carbonexporter/                 @open-telemetry/collector-contrib-approvers @pjanotti
 exporter/datadogexporter/                @open-telemetry/collector-contrib-approvers @KSerrania @ericmustin @mx-psi
+exporter/dynatraceexporter/              @open-telemetry/collector-contrib-approvers @dyladan
 exporter/elasticexporter/                @open-telemetry/collector-contrib-approvers @axw @simitt @jalvz
 exporter/honeycombexporter/              @open-telemetry/collector-contrib-approvers @paulosman @lizthegrey @MikeGoldsmith
 exporter/jaegerthrifthttpexporter/       @open-telemetry/collector-contrib-approvers @jpkrohling @pavolloffay
@@ -33,6 +34,7 @@ exporter/signalfxexporter/               @open-telemetry/collector-contrib-appro
 exporter/signalfxcorrelationexporter/    @open-telemetry/collector-contrib-approvers @jrcamp @keitwb
 exporter/splunkhecexporter/              @open-telemetry/collector-contrib-approvers @atoulme
 exporter/stackdriverexporter/            @open-telemetry/collector-contrib-approvers @nilebox @james-bebbington
+exporter/sumologicexporter/              @open-telemetry/collector-contrib-approvers @pmm-sumo @sumo-drosiek
 
 extension/httpforwarder/                 @open-telemetry/collector-contrib-approvers @asuresh4
 extension/observer/                      @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp

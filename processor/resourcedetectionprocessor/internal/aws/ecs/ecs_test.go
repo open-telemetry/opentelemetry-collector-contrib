@@ -110,7 +110,6 @@ func Test_ecsDetectV4(t *testing.T) {
 	os.Setenv(tmde4EnvVar, "endpoint")
 
 	want := pdata.NewResource()
-	want.InitEmpty()
 	attr := want.Attributes()
 	attr.InsertString("cloud.provider", "aws")
 	attr.InsertString("cloud.infrastructure_service", "ECS")
@@ -145,7 +144,6 @@ func Test_ecsDetectV3(t *testing.T) {
 	os.Setenv(tmde3EnvVar, "endpoint")
 
 	want := pdata.NewResource()
-	want.InitEmpty()
 	attr := want.Attributes()
 	attr.InsertString("cloud.provider", "aws")
 	attr.InsertString("cloud.infrastructure_service", "ECS")

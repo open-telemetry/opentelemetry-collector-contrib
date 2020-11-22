@@ -12,41 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package memcachedreceiver
 
-import (
-	"testing"
+import "strconv"
 
-	"github.com/stretchr/testify/require"
-)
-
-func TestMergeStringMaps(t *testing.T) {
-	m1 := map[string]string{
-		"key-1": "val-1",
-	}
-
-	m2 := map[string]string{
-		"key-2": "val-2",
-	}
-
-	actual := MergeStringMaps(m1, m2)
-	expected := map[string]string{
-		"key-1": "val-1",
-		"key-2": "val-2",
-	}
-
-	require.Equal(t, expected, actual)
-}
-
-func TestCloneStringMap(t *testing.T) {
-	m := map[string]string{
-		"key-1": "val-1",
-	}
-
-	actual := CloneStringMap(m)
-	expected := map[string]string{
-		"key-1": "val-1",
-	}
-
-	require.Equal(t, expected, actual)
+// Returns 0 if s cannot be parsed as an integer, otherwise the parsed integer.
+func parseInt(s string) int64 {
+	i, _ := strconv.ParseInt(s, 10, 64)
+	return i
 }

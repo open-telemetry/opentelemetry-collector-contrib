@@ -120,7 +120,7 @@ func (s *sfxEventClient) encodeBody(events []*sfxpb.Event) (bodyReader io.Reader
 }
 
 func (s *sfxEventClient) retrieveAccessToken(rl pdata.ResourceLogs) string {
-	if rl.IsNil() || rl.Resource().IsNil() {
+	if rl.IsNil() {
 		return ""
 	}
 	attrs := rl.Resource().Attributes()

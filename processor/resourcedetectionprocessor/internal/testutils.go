@@ -18,7 +18,6 @@ import "go.opentelemetry.io/collector/consumer/pdata"
 
 func NewResource(mp map[string]interface{}) pdata.Resource {
 	res := pdata.NewResource()
-	res.InitEmpty()
 	NewAttributeMap(mp).CopyTo(res.Attributes())
 	return res
 }

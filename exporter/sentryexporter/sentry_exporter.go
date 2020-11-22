@@ -285,10 +285,6 @@ func generateSpanDescriptors(name string, attrs pdata.AttributeMap, spanKind pda
 }
 
 func generateTagsFromResource(resource pdata.Resource) map[string]string {
-	if resource.IsNil() {
-		return nil
-	}
-
 	return generateTagsFromAttributes(resource.Attributes())
 }
 

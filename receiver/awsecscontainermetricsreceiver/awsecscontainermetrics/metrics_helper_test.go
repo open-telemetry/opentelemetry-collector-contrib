@@ -23,7 +23,7 @@ import (
 
 func TestGetContainerAndTaskMetrics(t *testing.T) {
 	v := uint64(1)
-	f := float64(1.0)
+	f := 1.0
 	floatZero := float64(0)
 
 	memStats := make(map[string]uint64)

@@ -46,6 +46,8 @@ func addAWSToResource(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
 
 	if ecs := aws.ECS; ecs != nil {
 		addString(ecs.ContainerName, conventions.AttributeContainerName, attrs)
+		addString(ecs.AvailabilityZone, conventions.AttributeCloudZone, attrs)
+		addString(ecs.ContainerID, conventions.AttributeContainerID, attrs)
 	}
 
 	if bs := aws.Beanstalk; bs != nil {
@@ -54,6 +56,13 @@ func addAWSToResource(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
 			attrs.UpsertString(conventions.AttributeServiceInstance, strconv.FormatInt(*bs.DeploymentID, 10))
 		}
 		addString(bs.VersionLabel, conventions.AttributeServiceVersion, attrs)
+	}
+
+	if eks := aws.EKS; eks != nil {
+		addString(eks.ContainerID, conventions.AttributeContainerID, attrs)
+		addString(eks.ClusterName, conventions.AttributeK8sCluster, attrs)
+		addString(eks.Pod, conventions.AttributeK8sPod, attrs)
+
 	}
 }
 

@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 // createMetricsReceiver creates a metrics receiver based on provided config.
@@ -33,20 +33,21 @@ func createMetricsReceiver(
 	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
 	oCfg := cfg.(*Config)
-	scraper, err := newScraper(oCfg)
+	scraper, err := newScraper(oCfg, params.Logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return receiverhelper.NewScraperControllerReceiver(
+	return scraperhelper.NewScraperControllerReceiver(
 		&oCfg.ScraperControllerSettings,
+		params.Logger,
 		consumer,
-		receiverhelper.AddMetricsScraper(
-			receiverhelper.NewMetricsScraper(
+		scraperhelper.AddMetricsScraper(
+			scraperhelper.NewMetricsScraper(
 				cfg.Name(),
 				scraper.scrape,
-				receiverhelper.WithInitialize(scraper.initialize),
-				receiverhelper.WithClose(scraper.close),
+				scraperhelper.WithInitialize(scraper.initialize),
+				scraperhelper.WithClose(scraper.close),
 			),
 		),
 	)

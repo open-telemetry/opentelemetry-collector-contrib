@@ -87,7 +87,6 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 	}).CopyTo(span.Attributes())
 
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
 		"namespace": pdata.NewAttributeValueString("kube-system"),
 	}).CopyTo(resource.Attributes())

@@ -21,16 +21,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 const (
-	typeStr            = "jmx"
-	otlpExporter       = "otlp"
-	otlpEndpoint       = "localhost:55680"
-	prometheusExporter = "prometheus"
-	prometheusEndpoint = "localhost"
-	prometheusPort     = 9090
+	typeStr      = "jmx"
+	otlpExporter = "otlp"
+	otlpEndpoint = "0.0.0.0:0"
 )
 
 func NewFactory() component.ReceiverFactory {
@@ -46,13 +44,14 @@ func createDefaultConfig() configmodels.Receiver {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		JARPath:        "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
-		Interval:       10 * time.Second,
-		Exporter:       otlpExporter,
-		OTLPEndpoint:   otlpEndpoint,
-		OTLPTimeout:    5 * time.Second,
-		PrometheusHost: prometheusEndpoint,
-		PrometheusPort: prometheusPort,
+		JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+		CollectionInterval: 10 * time.Second,
+		OTLPExporterConfig: otlpExporterConfig{
+			Endpoint: otlpEndpoint,
+			TimeoutSettings: exporterhelper.TimeoutSettings{
+				Timeout: 5 * time.Second,
+			},
+		},
 	}
 }
 
@@ -66,5 +65,5 @@ func createReceiver(
 	if err := jmxConfig.validate(); err != nil {
 		return nil, err
 	}
-	return newJMXMetricReceiver(params.Logger, jmxConfig, consumer), nil
+	return newJMXMetricReceiver(params, jmxConfig, consumer), nil
 }

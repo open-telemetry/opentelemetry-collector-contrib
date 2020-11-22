@@ -25,7 +25,7 @@ type MockReporter struct {
 	wgMetricsProcessed sync.WaitGroup
 }
 
-var _ (Reporter) = (*MockReporter)(nil)
+var _ Reporter = (*MockReporter)(nil)
 
 // NewMockReporter returns a new instance of a MockReporter.
 func NewMockReporter(expectedOnMetricsProcessedCalls int) *MockReporter {
@@ -41,12 +41,7 @@ func (m *MockReporter) OnDataReceived(ctx context.Context) context.Context {
 func (m *MockReporter) OnTranslationError(ctx context.Context, err error) {
 }
 
-func (m *MockReporter) OnMetricsProcessed(
-	ctx context.Context,
-	numReceivedTimeseries int,
-	numInvalidTimeseries int,
-	err error,
-) {
+func (m *MockReporter) OnMetricsProcessed(ctx context.Context, numReceivedMetricPoints int, err error) {
 	m.wgMetricsProcessed.Done()
 }
 

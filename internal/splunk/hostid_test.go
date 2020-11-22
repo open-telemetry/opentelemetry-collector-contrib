@@ -25,7 +25,6 @@ import (
 var (
 	ec2Resource = func() pdata.Resource {
 		res := pdata.NewResource()
-		res.InitEmpty()
 		attr := res.Attributes()
 		attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 		attr.InsertString(conventions.AttributeCloudAccount, "1234")
@@ -35,7 +34,6 @@ var (
 	}()
 	ec2WithHost = func() pdata.Resource {
 		res := pdata.NewResource()
-		res.InitEmpty()
 		attr := res.Attributes()
 		attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 		attr.InsertString(conventions.AttributeCloudAccount, "1234")
@@ -46,7 +44,6 @@ var (
 	}()
 	ec2PartialResource = func() pdata.Resource {
 		res := pdata.NewResource()
-		res.InitEmpty()
 		attr := res.Attributes()
 		attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 		attr.InsertString(conventions.AttributeHostID, "i-abcd")
@@ -54,7 +51,6 @@ var (
 	}()
 	gcpResource = func() pdata.Resource {
 		res := pdata.NewResource()
-		res.InitEmpty()
 		attr := res.Attributes()
 		attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
 		attr.InsertString(conventions.AttributeCloudAccount, "1234")
@@ -63,7 +59,6 @@ var (
 	}()
 	gcpPartialResource = func() pdata.Resource {
 		res := pdata.NewResource()
-		res.InitEmpty()
 		attr := res.Attributes()
 		attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
 		attr.InsertString(conventions.AttributeCloudAccount, "1234")
@@ -71,14 +66,12 @@ var (
 	}()
 	hostResource = func() pdata.Resource {
 		res := pdata.NewResource()
-		res.InitEmpty()
 		attr := res.Attributes()
 		attr.InsertString(conventions.AttributeHostName, "localhost")
 		return res
 	}()
 	unknownResource = func() pdata.Resource {
 		res := pdata.NewResource()
-		res.InitEmpty()
 		attr := res.Attributes()
 		attr.InsertString(conventions.AttributeCloudProvider, "unknown")
 		attr.InsertString(conventions.AttributeCloudAccount, "1234")

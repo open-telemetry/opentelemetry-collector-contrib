@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
@@ -142,7 +143,7 @@ func getResourceForContainer(labels map[string]string) *resourcepb.Resource {
 func getAllContainerLabels(cs corev1.ContainerStatus,
 	dims map[string]string) map[string]string {
 
-	out := utils.CloneStringMap(dims)
+	out := util.CloneStringMap(dims)
 
 	out[conventions.AttributeContainerID] = utils.StripContainerID(cs.ContainerID)
 	out[conventions.AttributeK8sContainer] = cs.Name

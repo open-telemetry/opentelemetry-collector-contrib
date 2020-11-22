@@ -91,7 +91,7 @@ func (x *xrayReceiver) Start(ctx context.Context, host component.Host) error {
 	// TODO: Might want to pass `host` into read() below to report a fatal error
 	var err = componenterror.ErrAlreadyStarted
 	x.startOnce.Do(func() {
-		x.longLivedCtx = obsreport.ReceiverContext(ctx, x.instanceName, udppoller.Transport, "")
+		x.longLivedCtx = obsreport.ReceiverContext(ctx, x.instanceName, udppoller.Transport)
 		x.poller.Start(x.longLivedCtx)
 		go x.start()
 		go x.server.ListenAndServe()

@@ -163,7 +163,6 @@ func TestStackdriverTraceExport(t *testing.T) {
 			spanName := "foobar"
 
 			resource := pdata.NewResource()
-			resource.InitEmpty()
 			traces := pdata.NewTraces()
 			traces.ResourceSpans().Resize(1)
 			rspans := traces.ResourceSpans().At(0)

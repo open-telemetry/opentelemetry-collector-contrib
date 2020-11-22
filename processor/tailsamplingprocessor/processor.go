@@ -45,10 +45,6 @@ type Policy struct {
 	ctx context.Context
 }
 
-// traceKey is defined since sync.Map requires a comparable type, isolating it on its own
-// type to help track usage.
-type traceKey [16]byte
-
 // tailSamplingSpanProcessor handles the incoming trace data and uses the given sampling
 // policy to sample traces.
 type tailSamplingSpanProcessor struct {
@@ -61,7 +57,7 @@ type tailSamplingSpanProcessor struct {
 	idToTrace       sync.Map
 	policyTicker    tTicker
 	decisionBatcher idbatcher.Batcher
-	deleteChan      chan traceKey
+	deleteChan      chan pdata.TraceID
 	numTracesOnMap  uint64
 }
 
@@ -112,7 +108,7 @@ func newTraceProcessor(logger *zap.Logger, nextConsumer consumer.TracesConsumer,
 	}
 
 	tsp.policyTicker = &policyTicker{onTick: tsp.samplingPolicyOnTick}
-	tsp.deleteChan = make(chan traceKey, cfg.NumTraces)
+	tsp.deleteChan = make(chan pdata.TraceID, cfg.NumTraces)
 
 	return tsp, nil
 }
@@ -150,7 +146,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 	batchLen := len(batch)
 	tsp.logger.Debug("Sampling Policy Evaluation ticked")
 	for _, id := range batch {
-		d, ok := tsp.idToTrace.Load(traceKey(id.Bytes()))
+		d, ok := tsp.idToTrace.Load(id)
 		if !ok {
 			metrics.idNotFoundOnMapCount++
 			continue
@@ -260,8 +256,8 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(ctx context.Context, td pdat
 	return nil
 }
 
-func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans pdata.ResourceSpans) map[traceKey][]*pdata.Span {
-	idToSpans := make(map[traceKey][]*pdata.Span)
+func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans pdata.ResourceSpans) map[pdata.TraceID][]*pdata.Span {
+	idToSpans := make(map[pdata.TraceID][]*pdata.Span)
 	ilss := resourceSpans.InstrumentationLibrarySpans()
 	for j := 0; j < ilss.Len(); j++ {
 		ils := ilss.At(j)
@@ -271,11 +267,8 @@ func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans pdata.R
 		spansLen := ils.Spans().Len()
 		for k := 0; k < spansLen; k++ {
 			span := ils.Spans().At(k)
-			tk := traceKey(span.TraceID().Bytes())
-			if len(tk) != 16 {
-				tsp.logger.Warn("Span without valid TraceId")
-			}
-			idToSpans[tk] = append(idToSpans[tk], &span)
+			key := span.TraceID()
+			idToSpans[key] = append(idToSpans[key], &span)
 		}
 	}
 	return idToSpans
@@ -304,7 +297,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans pdata.Resource
 			atomic.AddInt64(&actualData.SpanCount, lenSpans)
 		} else {
 			newTraceIDs++
-			tsp.decisionBatcher.AddToCurrentBatch(pdata.NewTraceID(id))
+			tsp.decisionBatcher.AddToCurrentBatch(id)
 			atomic.AddUint64(&tsp.numTracesOnMap, 1)
 			postDeletion := false
 			currTime := time.Now()
@@ -380,7 +373,7 @@ func (tsp *tailSamplingSpanProcessor) Shutdown(context.Context) error {
 	return nil
 }
 
-func (tsp *tailSamplingSpanProcessor) dropTrace(traceID traceKey, deletionTime time.Time) {
+func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pdata.TraceID, deletionTime time.Time) {
 	var trace *sampling.TraceData
 	if d, ok := tsp.idToTrace.Load(traceID); ok {
 		trace = d.(*sampling.TraceData)
@@ -392,26 +385,14 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID traceKey, deletionTime t
 		tsp.logger.Error("Attempt to delete traceID not on table")
 		return
 	}
-	policiesLen := len(tsp.policies)
+
 	stats.Record(tsp.ctx, statTraceRemovalAgeSec.M(int64(deletionTime.Sub(trace.ArrivalTime)/time.Second)))
-	for j := 0; j < policiesLen; j++ {
-		if trace.Decisions[j] == sampling.Pending {
-			policy := tsp.policies[j]
-			if decision, err := policy.Evaluator.OnDroppedSpans(pdata.NewTraceID(traceID), trace); err != nil {
-				tsp.logger.Warn("OnDroppedSpans",
-					zap.String("policy", policy.Name),
-					zap.Int("decision", int(decision)),
-					zap.Error(err))
-			}
-		}
-	}
 }
 
 func prepareTraceBatch(rss pdata.ResourceSpans, spans []*pdata.Span) pdata.Traces {
 	traceTd := pdata.NewTraces()
 	traceTd.ResourceSpans().Resize(1)
 	rs := traceTd.ResourceSpans().At(0)
-	rs.Resource().InitEmpty()
 	rss.Resource().CopyTo(rs.Resource())
 	rs.InstrumentationLibrarySpans().Resize(1)
 	ils := rs.InstrumentationLibrarySpans().At(0)

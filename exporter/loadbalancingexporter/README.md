@@ -6,8 +6,6 @@ It requires a source of backend information to be provided: static, with a fixed
 
 Note that only the Trace ID is used for the decision on which backend to use: the actual backend load isn't taken into consideration. Even though this load-balancer won't do round-robin balancing of the batches, the load distribution should be very similar among backends with a standard deviation under 5% at the current configuration.
 
-IMPORTANT: this exporter assumes that all spans from the batch belong to the same trace. You *should* therefore use a processor that either splits the incoming batches into multiple batches, one per trace, or a processor that groups spans by trace, like the `groupbytrace`.
-
 This load balancer is especially useful for backends configured with tail-based samplers, which make a decision based on the view of the full trace.
 
 When a list of backends is updated, around 1/n of the space will be changed, so that the same trace ID might be directed to a different backend, where n is the number of backends. This should be stable enough for most cases, and the higher the number of backends, the less disruption it should cause. Still, if routing stability is important for your use case and your list of backends are constantly changing, consider using the `groupbytrace` processor. This way, traces are dispatched atomically to this exporter, and the same decision about the backend is made for the trace as a whole.

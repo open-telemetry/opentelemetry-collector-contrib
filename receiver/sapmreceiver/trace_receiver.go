@@ -74,7 +74,7 @@ func (sr *sapmReceiver) handleRequest(ctx context.Context, req *http.Request) er
 	if sr.config.TLSSetting != nil {
 		transport = "https"
 	}
-	ctx = obsreport.ReceiverContext(ctx, sr.config.Name(), transport, "")
+	ctx = obsreport.ReceiverContext(ctx, sr.config.Name(), transport)
 	ctx = obsreport.StartTraceDataReceiveOp(ctx, sr.config.Name(), transport)
 
 	td := jaegertranslator.ProtoBatchesToInternalTraces(sapm.Batches)
@@ -105,7 +105,7 @@ func (sr *sapmReceiver) handleRequest(ctx context.Context, req *http.Request) er
 // HTTPHandlerFunction returns an http.HandlerFunc that handles SAPM requests
 func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Request) {
 	// create context with the receiver name from the request context
-	ctx := obsreport.ReceiverContext(req.Context(), sr.config.Name(), "http", "")
+	ctx := obsreport.ReceiverContext(req.Context(), sr.config.Name(), "http")
 
 	// handle the request payload
 	err := sr.handleRequest(ctx, req)

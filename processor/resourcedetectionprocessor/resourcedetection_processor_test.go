@@ -277,7 +277,7 @@ func TestResourceProcessor(t *testing.T) {
 }
 
 func oCensusResource(res pdata.Resource) *resourcepb.Resource {
-	if res.IsNil() {
+	if res.Attributes().Len() == 0 {
 		return &resourcepb.Resource{}
 	}
 

@@ -94,6 +94,12 @@ func TestTranslation(t *testing.T) {
 				attrs[conventions.AttributeTelemetrySDKName] = pdata.NewAttributeValueString(
 					*seg.AWS.XRay.SDK)
 				attrs[conventions.AttributeTelemetrySDKLanguage] = pdata.NewAttributeValueString("Go")
+				attrs[conventions.AttributeK8sCluster] = pdata.NewAttributeValueString(
+					*seg.AWS.EKS.ClusterName)
+				attrs[conventions.AttributeK8sPod] = pdata.NewAttributeValueString(
+					*seg.AWS.EKS.Pod)
+				attrs[conventions.AttributeContainerID] = pdata.NewAttributeValueString(
+					*seg.AWS.EKS.ContainerID)
 				return attrs
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
@@ -597,6 +603,10 @@ func TestTranslation(t *testing.T) {
 					*seg.AWS.EC2.AmiID)
 				attrs[conventions.AttributeContainerName] = pdata.NewAttributeValueString(
 					*seg.AWS.ECS.ContainerName)
+				attrs[conventions.AttributeContainerID] = pdata.NewAttributeValueString(
+					*seg.AWS.ECS.ContainerID)
+				attrs[conventions.AttributeCloudZone] = pdata.NewAttributeValueString(
+					*seg.AWS.ECS.AvailabilityZone)
 				attrs[conventions.AttributeServiceNamespace] = pdata.NewAttributeValueString(
 					*seg.AWS.Beanstalk.Environment)
 				attrs[conventions.AttributeServiceInstance] = pdata.NewAttributeValueString(
@@ -932,7 +942,6 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 
 	rs := pdata.NewResourceSpans()
 	rs.InitEmpty()
-	rs.Resource().InitEmpty()
 
 	if len(resourceAttrs) > 0 {
 		rs.Resource().Attributes().InitFromMap(resourceAttrs)
@@ -1007,8 +1016,6 @@ func compare2ResourceSpans(t *testing.T, testCase string, exp, act *pdata.Resour
 		exp.Resource().Attributes().Sort(),
 		act.Resource().Attributes().Sort(),
 		testCase+": Resource.Attributes() differ")
-	exp.Resource().InitEmpty()
-	act.Resource().InitEmpty()
 
 	actSpans := act.InstrumentationLibrarySpans().At(0).Spans()
 	expSpans := exp.InstrumentationLibrarySpans().At(0).Spans()

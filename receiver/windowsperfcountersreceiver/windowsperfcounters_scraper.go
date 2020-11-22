@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/pdh"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/third_party/telegraf/win_perf_counters"
@@ -42,15 +43,16 @@ type PerfCounterScraper interface {
 // scraper is the type that scrapes various host metrics.
 type scraper struct {
 	cfg      *Config
+	logger   *zap.Logger
 	counters []PerfCounterScraper
 }
 
-func newScraper(cfg *Config) (*scraper, error) {
+func newScraper(cfg *Config, logger *zap.Logger) (*scraper, error) {
 	if err := cfg.validate(); err != nil {
 		return nil, err
 	}
 
-	s := &scraper{cfg: cfg}
+	s := &scraper{cfg: cfg, logger: logger}
 	return s, nil
 }
 
@@ -58,17 +60,34 @@ func (s *scraper) initialize(ctx context.Context) error {
 	var errors []error
 
 	for _, perfCounterCfg := range s.cfg.PerfCounters {
-		for _, counterName := range perfCounterCfg.Counters {
-			c, err := pdh.NewPerfCounter(fmt.Sprintf("\\%s\\%s", perfCounterCfg.Object, counterName), true)
-			if err != nil {
-				errors = append(errors, err)
-			} else {
-				s.counters = append(s.counters, c)
+		for _, instance := range perfCounterCfg.instances() {
+			for _, counterName := range perfCounterCfg.Counters {
+				counterPath := counterPath(perfCounterCfg.Object, instance, counterName)
+
+				c, err := pdh.NewPerfCounter(counterPath, true)
+				if err != nil {
+					errors = append(errors, fmt.Errorf("counter %v: %w", counterPath, err))
+				} else {
+					s.counters = append(s.counters, c)
+				}
 			}
 		}
 	}
 
-	return componenterror.CombineErrors(errors)
+	// log a warning if some counters cannot be loaded, but do not crash the app
+	if len(errors) > 0 {
+		s.logger.Warn("some performance counters could not be initialized", zap.Error(componenterror.CombineErrors(errors)))
+	}
+
+	return nil
+}
+
+func counterPath(object, instance, counterName string) string {
+	if instance != "" {
+		instance = fmt.Sprintf("(%s)", instance)
+	}
+
+	return fmt.Sprintf("\\%s%s\\%s", object, instance, counterName)
 }
 
 func (s *scraper) close(ctx context.Context) error {

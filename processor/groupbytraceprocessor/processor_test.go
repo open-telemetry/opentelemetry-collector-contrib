@@ -225,7 +225,7 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 
 	// test
 	// we trigger this manually, instead of waiting the whole duration
-	err = p.markAsReleased(pdata.TraceID(traceID))
+	err = p.markAsReleased(traceID)
 
 	// verify
 	assert.Error(t, err)
@@ -261,7 +261,7 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 
 	// test
 	// we trigger this manually, instead of waiting the whole duration
-	err = p.markAsReleased(pdata.TraceID(traceID))
+	err = p.markAsReleased(traceID)
 
 	// verify
 	assert.True(t, errors.Is(err, expectedError))

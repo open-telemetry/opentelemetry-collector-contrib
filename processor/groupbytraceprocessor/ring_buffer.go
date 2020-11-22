@@ -21,7 +21,7 @@ type ringBuffer struct {
 	index     int
 	size      int
 	ids       []pdata.TraceID
-	idToIndex map[string]int // key is traceID as string, value is the index on the 'ids' slice
+	idToIndex map[pdata.TraceID]int // key is traceID, value is the index on the 'ids' slice
 }
 
 func newRingBuffer(size int) *ringBuffer {
@@ -29,7 +29,7 @@ func newRingBuffer(size int) *ringBuffer {
 		index:     -1, // the first span to be received will be placed at position '0'
 		size:      size,
 		ids:       make([]pdata.TraceID, size),
-		idToIndex: make(map[string]int),
+		idToIndex: make(map[pdata.TraceID]int),
 	}
 }
 
@@ -47,24 +47,23 @@ func (r *ringBuffer) put(traceID pdata.TraceID) pdata.TraceID {
 
 	// place the traceID in memory
 	r.ids[r.index] = traceID
-	r.idToIndex[traceID.HexString()] = r.index
+	r.idToIndex[traceID] = r.index
 
 	return evicted
 }
 
 func (r *ringBuffer) contains(traceID pdata.TraceID) bool {
-	_, found := r.idToIndex[traceID.HexString()]
+	_, found := r.idToIndex[traceID]
 	return found
 }
 
 func (r *ringBuffer) delete(traceID pdata.TraceID) bool {
-	sTraceID := traceID.HexString()
-	index, found := r.idToIndex[sTraceID]
+	index, found := r.idToIndex[traceID]
 	if !found {
 		return false
 	}
 
-	delete(r.idToIndex, sTraceID)
+	delete(r.idToIndex, traceID)
 	r.ids[index] = pdata.InvalidTraceID()
 	return true
 }

@@ -311,7 +311,6 @@ func generateSampleMetricsData(attrs map[string]string) pdata.Metrics {
 	rm.Resize(1)
 	rm.At(0).InitEmpty()
 	res := rm.At(0).Resource()
-	res.InitEmpty()
 	for k, v := range attrs {
 		res.Attributes().InsertString(k, v)
 	}

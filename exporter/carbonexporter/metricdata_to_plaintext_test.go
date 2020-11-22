@@ -317,7 +317,7 @@ func expectedSummaryLines(
 ) []string {
 	lines := []string{
 		metricName + ".count" + tags + " " + formatInt64(count) + " " + timestampStr,
-		metricName + tags + " " + formatFloatForValue(float64(sum)) + " " + timestampStr,
+		metricName + tags + " " + formatFloatForValue(sum) + " " + timestampStr,
 	}
 
 	for _, p := range percentiles {

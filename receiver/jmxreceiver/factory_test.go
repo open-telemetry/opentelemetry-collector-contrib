@@ -39,7 +39,7 @@ func TestWithInvalidConfig(t *testing.T) {
 		cfg, consumertest.NewMetricsNop(),
 	)
 	require.Error(t, err)
-	assert.Equal(t, "jmx missing required fields: `service_url`, `target_system` or `groovy_script`", err.Error())
+	assert.Equal(t, "jmx missing required fields: `endpoint`, `target_system` or `groovy_script`", err.Error())
 	require.Nil(t, r)
 }
 
@@ -48,7 +48,7 @@ func TestWithValidConfig(t *testing.T) {
 	assert.Equal(t, configmodels.Type("jmx"), f.Type())
 
 	cfg := f.CreateDefaultConfig()
-	cfg.(*config).ServiceURL = "myserviceurl"
+	cfg.(*config).Endpoint = "myendpoint:12345"
 	cfg.(*config).GroovyScript = "mygroovyscriptpath"
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}

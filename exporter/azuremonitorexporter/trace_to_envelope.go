@@ -641,7 +641,7 @@ func setAttributeValueAsPropertyOrMeasurement(
 		measurements[key] = float64(attributeValue.IntVal())
 
 	case pdata.AttributeValueDOUBLE:
-		measurements[key] = float64(attributeValue.DoubleVal())
+		measurements[key] = attributeValue.DoubleVal()
 	}
 }
 

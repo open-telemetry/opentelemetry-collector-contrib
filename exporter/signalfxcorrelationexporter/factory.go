@@ -47,6 +47,9 @@ func createDefaultConfig() configmodels.Exporter {
 			NameVal: typeStr,
 		},
 		StaleServiceTimeout: 5 * time.Minute,
+		HostTranslations: map[string]string{
+			conventions.AttributeHostName: "host",
+		},
 		SyncAttributes: map[string]string{
 			conventions.AttributeK8sPodUID:   conventions.AttributeK8sPodUID,
 			conventions.AttributeContainerID: conventions.AttributeContainerID,

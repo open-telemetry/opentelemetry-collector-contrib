@@ -20,13 +20,11 @@ import (
 	"testing"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/gogo/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -2524,7 +2522,7 @@ func TestNegativeDeltas(t *testing.T) {
 func TestDeltaTranslatorNoMatchingMapping(t *testing.T) {
 	c := testConverter(t, map[string]string{"foo": "bar"})
 	md := intMD(1, 1)
-	pts, _ := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md}, nil)
+	pts, _ := c.MetricDataToSignalFxV2(md)
 	idx := indexPts(pts)
 	require.Equal(t, 1, len(idx))
 }
@@ -2532,30 +2530,31 @@ func TestDeltaTranslatorNoMatchingMapping(t *testing.T) {
 func TestDeltaTranslatorMismatchedValueTypes(t *testing.T) {
 	c := testConverter(t, map[string]string{"system.cpu.time": "system.cpu.delta"})
 	md1 := baseMD()
-	md1.Metrics[0].Timeseries = []*metricspb.TimeSeries{
-		intTS("cpu0", "user", 1, 1, 1),
-	}
-	_, _ = c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md1}, nil)
+	md1.SetDataType(pdata.MetricDataTypeIntSum)
+	md1.IntSum().InitEmpty()
+	md1.IntSum().DataPoints().Append(intTS("cpu0", "user", 1, 1, 1))
+
+	_, _ = c.MetricDataToSignalFxV2(wrapMetric(md1))
 	md2 := baseMD()
-	md2.Metrics[0].Timeseries = []*metricspb.TimeSeries{
-		dblTS("cpu0", "user", 1, 1, 1),
-	}
-	pts, _ := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md2}, nil)
+	md2.SetDataType(pdata.MetricDataTypeDoubleSum)
+	md2.DoubleSum().InitEmpty()
+	md2.DoubleSum().DataPoints().Append(dblTS("cpu0", "user", 1, 1, 1))
+	pts, _ := c.MetricDataToSignalFxV2(wrapMetric(md2))
 	idx := indexPts(pts)
 	require.Equal(t, 1, len(idx))
 }
 
-func requireDeltaMetricOk(t *testing.T, md1, md2, md3 consumerdata.MetricsData) (
+func requireDeltaMetricOk(t *testing.T, md1, md2, md3 pdata.ResourceMetrics) (
 	[]*sfxpb.DataPoint, []*sfxpb.DataPoint,
 ) {
 	c := testConverter(t, map[string]string{"system.cpu.time": "system.cpu.delta"})
 
-	dp1, dropped1 := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md1}, nil)
+	dp1, dropped1 := c.MetricDataToSignalFxV2(md1)
 	require.Equal(t, 0, dropped1)
 	m1 := indexPts(dp1)
 	require.Equal(t, 1, len(m1))
 
-	dp2, dropped2 := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md2}, nil)
+	dp2, dropped2 := c.MetricDataToSignalFxV2(md2)
 	require.Equal(t, 0, dropped2)
 	m2 := indexPts(dp2)
 	require.Equal(t, 2, len(m2))
@@ -2571,7 +2570,7 @@ func requireDeltaMetricOk(t *testing.T, md1, md2, md3 consumerdata.MetricsData) 
 		require.Equal(t, &counterType, pt.MetricType)
 	}
 
-	dp3, dropped3 := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md3}, nil)
+	dp3, dropped3 := c.MetricDataToSignalFxV2(md3)
 	require.Equal(t, 0, dropped3)
 	m3 := indexPts(dp3)
 	require.Equal(t, 2, len(m3))
@@ -2606,83 +2605,90 @@ func indexPts(pts []*sfxpb.DataPoint) map[string][]*sfxpb.DataPoint {
 	return m
 }
 
-func doubleMD(secondsDelta int64, valueDelta float64) consumerdata.MetricsData {
+func doubleMD(secondsDelta int64, valueDelta float64) pdata.ResourceMetrics {
 	md := baseMD()
-	md.Metrics[0].Timeseries = []*metricspb.TimeSeries{
-		dblTS("cpu0", "user", secondsDelta, 100, valueDelta),
-		dblTS("cpu0", "system", secondsDelta, 200, valueDelta),
-		dblTS("cpu0", "idle", secondsDelta, 300, valueDelta),
-		dblTS("cpu1", "user", secondsDelta, 111, valueDelta),
-		dblTS("cpu1", "system", secondsDelta, 222, valueDelta),
-		dblTS("cpu1", "idle", secondsDelta, 333, valueDelta),
-	}
-	return md
+	md.SetDataType(pdata.MetricDataTypeDoubleSum)
+
+	ms := md.DoubleSum()
+	ms.InitEmpty()
+	ms.DataPoints().Append(dblTS("cpu0", "user", secondsDelta, 100, valueDelta))
+	ms.DataPoints().Append(dblTS("cpu0", "system", secondsDelta, 200, valueDelta))
+	ms.DataPoints().Append(dblTS("cpu0", "idle", secondsDelta, 300, valueDelta))
+	ms.DataPoints().Append(dblTS("cpu1", "user", secondsDelta, 111, valueDelta))
+	ms.DataPoints().Append(dblTS("cpu1", "system", secondsDelta, 222, valueDelta))
+	ms.DataPoints().Append(dblTS("cpu1", "idle", secondsDelta, 333, valueDelta))
+
+	return wrapMetric(md)
 }
 
-func intMD(secondsDelta int64, valueDelta int64) consumerdata.MetricsData {
+func intMD(secondsDelta int64, valueDelta int64) pdata.ResourceMetrics {
 	md := baseMD()
-	md.Metrics[0].Timeseries = []*metricspb.TimeSeries{
-		intTS("cpu0", "user", secondsDelta, 100, valueDelta),
-		intTS("cpu0", "system", secondsDelta, 200, valueDelta),
-		intTS("cpu0", "idle", secondsDelta, 300, valueDelta),
-		intTS("cpu1", "user", secondsDelta, 111, valueDelta),
-		intTS("cpu1", "system", secondsDelta, 222, valueDelta),
-		intTS("cpu1", "idle", secondsDelta, 333, valueDelta),
-	}
-	return md
+	md.SetDataType(pdata.MetricDataTypeIntSum)
+	ms := md.IntSum()
+	ms.InitEmpty()
+	ms.DataPoints().Append(intTS("cpu0", "user", secondsDelta, 100, valueDelta))
+	ms.DataPoints().Append(intTS("cpu0", "system", secondsDelta, 200, valueDelta))
+	ms.DataPoints().Append(intTS("cpu0", "idle", secondsDelta, 300, valueDelta))
+	ms.DataPoints().Append(intTS("cpu1", "user", secondsDelta, 111, valueDelta))
+	ms.DataPoints().Append(intTS("cpu1", "system", secondsDelta, 222, valueDelta))
+	ms.DataPoints().Append(intTS("cpu1", "idle", secondsDelta, 333, valueDelta))
+
+	return wrapMetric(md)
 }
 
-func intMDAfterReset(secondsDelta int64, valueDelta int64) consumerdata.MetricsData {
+func intMDAfterReset(secondsDelta int64, valueDelta int64) pdata.ResourceMetrics {
 	md := baseMD()
-	md.Metrics[0].Timeseries = []*metricspb.TimeSeries{
-		intTS("cpu0", "user", secondsDelta, 0, valueDelta),
-		intTS("cpu0", "system", secondsDelta, 0, valueDelta),
-		intTS("cpu0", "idle", secondsDelta, 0, valueDelta),
-		intTS("cpu1", "user", secondsDelta, 0, valueDelta),
-		intTS("cpu1", "system", secondsDelta, 0, valueDelta),
-		intTS("cpu1", "idle", secondsDelta, 0, valueDelta),
-	}
-	return md
+	md.SetDataType(pdata.MetricDataTypeIntSum)
+	ms := md.IntSum()
+	ms.InitEmpty()
+	ms.DataPoints().Append(intTS("cpu0", "user", secondsDelta, 0, valueDelta))
+	ms.DataPoints().Append(intTS("cpu0", "system", secondsDelta, 0, valueDelta))
+	ms.DataPoints().Append(intTS("cpu0", "idle", secondsDelta, 0, valueDelta))
+	ms.DataPoints().Append(intTS("cpu1", "user", secondsDelta, 0, valueDelta))
+	ms.DataPoints().Append(intTS("cpu1", "system", secondsDelta, 0, valueDelta))
+	ms.DataPoints().Append(intTS("cpu1", "idle", secondsDelta, 0, valueDelta))
+
+	return wrapMetric(md)
 }
 
-func baseMD() consumerdata.MetricsData {
-	return consumerdata.MetricsData{
-		Metrics: []*metricspb.Metric{{
-			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name: "system.cpu.time",
-				Unit: "s",
-				Type: 5,
-				LabelKeys: []*metricspb.LabelKey{
-					{Key: "cpu"},
-					{Key: "state"},
-				},
-			},
-		}},
-	}
+func baseMD() pdata.Metric {
+	out := pdata.NewMetric()
+	out.InitEmpty()
+	out.SetName("system.cpu.time")
+	out.SetUnit("s")
+	return out
 }
 
-func dblTS(lbl0 string, lbl1 string, secondsDelta int64, v float64, valueDelta float64) *metricspb.TimeSeries {
-	ts := baseTS(lbl0, lbl1, secondsDelta)
-	ts.Points[0].Value = &metricspb.Point_DoubleValue{DoubleValue: v + valueDelta}
-	return ts
-}
-
-func intTS(lbl0 string, lbl1 string, secondsDelta int64, v int64, valueDelta int64) *metricspb.TimeSeries {
-	ts := baseTS(lbl0, lbl1, secondsDelta)
-	ts.Points[0].Value = &metricspb.Point_Int64Value{Int64Value: v + valueDelta}
-	return ts
-}
-
-func baseTS(lbl0 string, lbl1 string, secondsDelta int64) *metricspb.TimeSeries {
+func dblTS(lbl0 string, lbl1 string, secondsDelta int64, v float64, valueDelta float64) pdata.DoubleDataPoint {
+	out := pdata.NewDoubleDataPoint()
+	out.InitEmpty()
+	out.LabelsMap().InitFromMap(map[string]string{
+		"cpu":   lbl0,
+		"state": lbl1,
+	})
 	const startTime = 1600000000
-	return &metricspb.TimeSeries{
-		StartTimestamp: &timestamp.Timestamp{Seconds: startTime},
-		LabelValues: []*metricspb.LabelValue{
-			{Value: lbl0, HasValue: true},
-			{Value: lbl1, HasValue: true},
-		},
-		Points: []*metricspb.Point{{
-			Timestamp: &timestamp.Timestamp{Seconds: startTime + secondsDelta},
-		}},
-	}
+	out.SetTimestamp(pdata.TimestampUnixNano(time.Duration(startTime+secondsDelta) * time.Second))
+	out.SetValue(v + valueDelta)
+	return out
+}
+
+func intTS(lbl0 string, lbl1 string, secondsDelta int64, v int64, valueDelta int64) pdata.IntDataPoint {
+	out := pdata.NewIntDataPoint()
+	out.InitEmpty()
+	out.LabelsMap().InitFromMap(map[string]string{
+		"cpu":   lbl0,
+		"state": lbl1,
+	})
+	const startTime = 1600000000
+	out.SetTimestamp(pdata.TimestampUnixNano(time.Duration(startTime+secondsDelta) * time.Second))
+	out.SetValue(v + valueDelta)
+	return out
+}
+
+func wrapMetric(m pdata.Metric) pdata.ResourceMetrics {
+	out := pdata.NewResourceMetrics()
+	out.InitEmpty()
+	out.InstrumentationLibraryMetrics().Resize(1)
+	out.InstrumentationLibraryMetrics().At(0).Metrics().Append(m)
+	return out
 }

@@ -56,7 +56,7 @@ func TestHandleStartError(t *testing.T) {
 	mockConsumer := mockLogsConsumer{}
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.Pipeline = append(cfg.Pipeline, newUnstartableParams())
+	cfg.Operators = append(cfg.Operators, newUnstartableParams())
 
 	receiver, err := createLogsReceiver(context.Background(), params, cfg, &mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
@@ -105,9 +105,7 @@ func BenchmarkReadLine(b *testing.B) {
 	defer emitter.Stop()
 
 	buildContext := testutil.NewBuildContext(b)
-	buildContext.Logger = zap.NewNop().Sugar() // be quiet
-
-	pl, err := pipelineCfg.BuildPipeline(buildContext, nil, emitter)
+	pl, err := pipelineCfg.BuildPipeline(buildContext, emitter)
 	require.NoError(b, err)
 
 	// Populate the file that will be consumed
@@ -165,9 +163,7 @@ func BenchmarkParseAndMap(b *testing.B) {
 	defer emitter.Stop()
 
 	buildContext := testutil.NewBuildContext(b)
-	buildContext.Logger = zap.NewNop().Sugar() // be quiet
-
-	pl, err := pipelineCfg.BuildPipeline(buildContext, nil, emitter)
+	pl, err := pipelineCfg.BuildPipeline(buildContext, emitter)
 	require.NoError(b, err)
 
 	// Populate the file that will be consumed

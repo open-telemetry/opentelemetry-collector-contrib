@@ -77,64 +77,62 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 	)
 
 	filtered := make(map[string]string)
-	if !resource.IsNil() {
-		resource.Attributes().ForEach(func(key string, value pdata.AttributeValue) {
-			switch key {
-			case semconventions.AttributeCloudProvider:
-				cloud = value.StringVal()
-			case attributeInfrastructureService:
-				service = value.StringVal()
-			case semconventions.AttributeCloudAccount:
-				account = value.StringVal()
-			case semconventions.AttributeCloudZone:
-				zone = value.StringVal()
-			case semconventions.AttributeHostID:
-				hostID = value.StringVal()
-			case semconventions.AttributeHostType:
-				hostType = value.StringVal()
-			case semconventions.AttributeHostImageID:
-				amiID = value.StringVal()
-			case semconventions.AttributeContainerName:
-				if container == "" {
-					container = value.StringVal()
-				}
-			case semconventions.AttributeK8sPod:
-				podUID = value.StringVal()
-			case semconventions.AttributeServiceNamespace:
-				namespace = value.StringVal()
-			case semconventions.AttributeServiceInstance:
-				deployID = value.StringVal()
-			case semconventions.AttributeServiceVersion:
-				versionLabel = value.StringVal()
-			case semconventions.AttributeTelemetrySDKName:
-				sdkName = value.StringVal()
-			case semconventions.AttributeTelemetrySDKLanguage:
-				sdkLanguage = value.StringVal()
-			case semconventions.AttributeTelemetrySDKVersion:
-				sdkVersion = value.StringVal()
-			case semconventions.AttributeTelemetryAutoVersion:
-				autoVersion = value.StringVal()
-			case semconventions.AttributeContainerID:
-				containerID = value.StringVal()
-			case semconventions.AttributeK8sCluster:
-				clusterName = value.StringVal()
-			case awsEcsClusterArn:
-				clusterArn = value.StringVal()
-			case awsEcsContainerArn:
-				containerArn = value.StringVal()
-			case awsEcsTaskArn:
-				taskArn = value.StringVal()
-			case awsEcsTaskFamily:
-				taskFamily = value.StringVal()
-			case awsEcsLaunchType:
-				launchType = value.StringVal()
-			case awsLogGroupNames:
-				logGroups = value.ArrayVal()
-			case awsLogGroupArns:
-				logGroupArns = value.ArrayVal()
+	resource.Attributes().ForEach(func(key string, value pdata.AttributeValue) {
+		switch key {
+		case semconventions.AttributeCloudProvider:
+			cloud = value.StringVal()
+		case attributeInfrastructureService:
+			service = value.StringVal()
+		case semconventions.AttributeCloudAccount:
+			account = value.StringVal()
+		case semconventions.AttributeCloudZone:
+			zone = value.StringVal()
+		case semconventions.AttributeHostID:
+			hostID = value.StringVal()
+		case semconventions.AttributeHostType:
+			hostType = value.StringVal()
+		case semconventions.AttributeHostImageID:
+			amiID = value.StringVal()
+		case semconventions.AttributeContainerName:
+			if container == "" {
+				container = value.StringVal()
 			}
-		})
-	}
+		case semconventions.AttributeK8sPod:
+			podUID = value.StringVal()
+		case semconventions.AttributeServiceNamespace:
+			namespace = value.StringVal()
+		case semconventions.AttributeServiceInstance:
+			deployID = value.StringVal()
+		case semconventions.AttributeServiceVersion:
+			versionLabel = value.StringVal()
+		case semconventions.AttributeTelemetrySDKName:
+			sdkName = value.StringVal()
+		case semconventions.AttributeTelemetrySDKLanguage:
+			sdkLanguage = value.StringVal()
+		case semconventions.AttributeTelemetrySDKVersion:
+			sdkVersion = value.StringVal()
+		case semconventions.AttributeTelemetryAutoVersion:
+			autoVersion = value.StringVal()
+		case semconventions.AttributeContainerID:
+			containerID = value.StringVal()
+		case semconventions.AttributeK8sCluster:
+			clusterName = value.StringVal()
+		case awsEcsClusterArn:
+			clusterArn = value.StringVal()
+		case awsEcsContainerArn:
+			containerArn = value.StringVal()
+		case awsEcsTaskArn:
+			taskArn = value.StringVal()
+		case awsEcsTaskFamily:
+			taskFamily = value.StringVal()
+		case awsEcsLaunchType:
+			launchType = value.StringVal()
+		case awsLogGroupNames:
+			logGroups = value.ArrayVal()
+		case awsLogGroupArns:
+			logGroupArns = value.ArrayVal()
+		}
+	})
 
 	for key, value := range attributes {
 		switch key {

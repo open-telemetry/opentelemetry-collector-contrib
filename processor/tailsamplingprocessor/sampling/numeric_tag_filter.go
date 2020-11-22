@@ -82,10 +82,3 @@ func (naf *numericAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (
 	}
 	return NotSampled, nil
 }
-
-// OnDroppedSpans is called when the trace needs to be dropped, due to memory
-// pressure, before the decision_wait time has been reached.
-func (naf *numericAttributeFilter) OnDroppedSpans(pdata.TraceID, *TraceData) (Decision, error) {
-	naf.logger.Debug("Triggering action for dropped spans in numeric-attribute filter")
-	return NotSampled, nil
-}

@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -45,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 	err = r0.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx missing required fields: `service_url`, `target_system` or `groovy_script`", err.Error())
+	assert.Equal(t, "jmx missing required fields: `endpoint`, `target_system` or `groovy_script`", err.Error())
 
 	r1 := cfg.Receivers["jmx/all"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r1))
@@ -56,21 +57,22 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: "jmx",
 				NameVal: "jmx/all",
 			},
-			JARPath:        "myjarpath",
-			ServiceURL:     "myserviceurl",
-			GroovyScript:   "mygroovyscriptpath",
-			Interval:       15 * time.Second,
-			Username:       "myusername",
-			Password:       "mypassword",
-			Exporter:       "myexporter",
-			OTLPEndpoint:   "myotlpendpoint",
-			PrometheusHost: "myprometheushost",
-			PrometheusPort: 12345,
-			OTLPHeaders: map[string]string{
-				"x-header-1": "value1",
-				"x-header-2": "value2",
+			JARPath:            "myjarpath",
+			Endpoint:           "myendpoint:12345",
+			GroovyScript:       "mygroovyscriptpath",
+			CollectionInterval: 15 * time.Second,
+			Username:           "myusername",
+			Password:           "mypassword",
+			OTLPExporterConfig: otlpExporterConfig{
+				Endpoint: "myotlpendpoint",
+				Headers: map[string]string{
+					"x-header-1": "value1",
+					"x-header-2": "value2",
+				},
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 5 * time.Second,
+				},
 			},
-			OTLPTimeout:        5 * time.Second,
 			KeystorePath:       "mykeystorepath",
 			KeystorePassword:   "mykeystorepassword",
 			KeystoreType:       "mykeystoretype",
@@ -80,26 +82,27 @@ func TestLoadConfig(t *testing.T) {
 			Realm:              "myrealm",
 		}, r1)
 
-	r2 := cfg.Receivers["jmx/missingservice"].(*config)
+	r2 := cfg.Receivers["jmx/missingendpoint"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r2))
 	assert.Equal(t,
 		&config{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: "jmx",
-				NameVal: "jmx/missingservice",
+				NameVal: "jmx/missingendpoint",
 			},
-			JARPath:        "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
-			GroovyScript:   "mygroovyscriptpath",
-			Interval:       10 * time.Second,
-			Exporter:       "otlp",
-			OTLPEndpoint:   "localhost:55680",
-			OTLPTimeout:    5 * time.Second,
-			PrometheusHost: "localhost",
-			PrometheusPort: 9090,
+			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			GroovyScript:       "mygroovyscriptpath",
+			CollectionInterval: 10 * time.Second,
+			OTLPExporterConfig: otlpExporterConfig{
+				Endpoint: "0.0.0.0:0",
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 5 * time.Second,
+				},
+			},
 		}, r2)
 	err = r2.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx/missingservice missing required field: `service_url`", err.Error())
+	assert.Equal(t, "jmx/missingendpoint missing required field: `endpoint`", err.Error())
 
 	r3 := cfg.Receivers["jmx/missinggroovy"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r3))
@@ -109,14 +112,15 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: "jmx",
 				NameVal: "jmx/missinggroovy",
 			},
-			JARPath:        "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
-			ServiceURL:     "myserviceurl",
-			Interval:       10 * time.Second,
-			Exporter:       "otlp",
-			OTLPEndpoint:   "localhost:55680",
-			OTLPTimeout:    5 * time.Second,
-			PrometheusHost: "localhost",
-			PrometheusPort: 9090,
+			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			Endpoint:           "service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi",
+			CollectionInterval: 10 * time.Second,
+			OTLPExporterConfig: otlpExporterConfig{
+				Endpoint: "0.0.0.0:0",
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 5 * time.Second,
+				},
+			},
 		}, r3)
 	err = r3.validate()
 	require.Error(t, err)
@@ -130,15 +134,16 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: "jmx",
 				NameVal: "jmx/invalidinterval",
 			},
-			JARPath:        "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
-			ServiceURL:     "myserviceurl",
-			GroovyScript:   "mygroovyscriptpath",
-			Interval:       -100 * time.Millisecond,
-			Exporter:       "otlp",
-			OTLPEndpoint:   "localhost:55680",
-			OTLPTimeout:    5 * time.Second,
-			PrometheusHost: "localhost",
-			PrometheusPort: 9090,
+			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			Endpoint:           "myendpoint:23456",
+			GroovyScript:       "mygroovyscriptpath",
+			CollectionInterval: -100 * time.Millisecond,
+			OTLPExporterConfig: otlpExporterConfig{
+				Endpoint: "0.0.0.0:0",
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 5 * time.Second,
+				},
+			},
 		}, r4)
 	err = r4.validate()
 	require.Error(t, err)
@@ -152,17 +157,18 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: "jmx",
 				NameVal: "jmx/invalidotlptimeout",
 			},
-			JARPath:        "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
-			ServiceURL:     "myserviceurl",
-			GroovyScript:   "mygroovyscriptpath",
-			Interval:       10 * time.Second,
-			Exporter:       "otlp",
-			OTLPEndpoint:   "localhost:55680",
-			OTLPTimeout:    -100 * time.Millisecond,
-			PrometheusHost: "localhost",
-			PrometheusPort: 9090,
+			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			Endpoint:           "myendpoint:34567",
+			GroovyScript:       "mygroovyscriptpath",
+			CollectionInterval: 10 * time.Second,
+			OTLPExporterConfig: otlpExporterConfig{
+				Endpoint: "0.0.0.0:0",
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: -100 * time.Millisecond,
+				},
+			},
 		}, r5)
 	err = r5.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx/invalidotlptimeout `otlp_timeout` must be positive: -100ms", err.Error())
+	assert.Equal(t, "jmx/invalidotlptimeout `otlp.timeout` must be positive: -100ms", err.Error())
 }

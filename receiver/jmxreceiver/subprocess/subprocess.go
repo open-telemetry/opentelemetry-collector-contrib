@@ -132,7 +132,10 @@ func (subprocess *Subprocess) Start(ctx context.Context) error {
 
 // Shutdown is invoked during service shutdown.
 func (subprocess *Subprocess) Shutdown(ctx context.Context) error {
-	subprocess.cancel()
+	if subprocess.cancel == nil {
+		return fmt.Errorf("no subprocess.cancel().  Has it been started properly?")
+	}
+
 	timeout := defaultShutdownTimeout
 	if subprocess.config.ShutdownTimeout != nil {
 		timeout = *subprocess.config.ShutdownTimeout

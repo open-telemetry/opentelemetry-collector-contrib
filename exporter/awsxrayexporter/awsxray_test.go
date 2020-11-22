@@ -85,7 +85,6 @@ func constructSpanData() pdata.Traces {
 
 func constructResource() pdata.Resource {
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeServiceName, "signup_aggregator")
 	attrs.InsertString(semconventions.AttributeContainerName, "signup_aggregator")

@@ -223,7 +223,7 @@ func TestAttributesToMap(t *testing.T) {
 	m := map[string]interface{}{
 		"str":    "a",
 		"int":    int64(5),
-		"double": float64(5.0),
+		"double": 5.0,
 		"bool":   true,
 		"map": map[string]interface{}{
 			"inner": "val",

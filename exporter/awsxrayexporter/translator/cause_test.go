@@ -58,7 +58,6 @@ Caused by: java.lang.IllegalArgumentException: bad argument`)
 	filtered, _ := makeHTTP(span)
 
 	res := pdata.NewResource()
-	res.InitEmpty()
 	res.Attributes().InsertString(semconventions.AttributeTelemetrySDKLanguage, "java")
 	isError, isFault, filteredResult, cause := makeCause(span, filtered, res)
 
@@ -89,7 +88,6 @@ func TestCauseWithStatusMessage(t *testing.T) {
 	filtered, _ := makeHTTP(span)
 
 	res := pdata.NewResource()
-	res.InitEmpty()
 	isError, isFault, filtered, cause := makeCause(span, filtered, res)
 
 	assert.True(t, isError)
@@ -116,7 +114,6 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	filtered, _ := makeHTTP(span)
 
 	res := pdata.NewResource()
-	res.InitEmpty()
 	isError, isFault, filtered, cause := makeCause(span, filtered, res)
 
 	assert.True(t, isError)
@@ -147,7 +144,6 @@ func TestCauseWithZeroStatusMessage(t *testing.T) {
 	// marking a success status with an error http status code, and status wins.
 	// We do not expect to see such spans in practice.
 	res := pdata.NewResource()
-	res.InitEmpty()
 	isError, isFault, filtered, cause := makeCause(span, filtered, res)
 
 	assert.False(t, isError)
@@ -168,7 +164,6 @@ func TestCauseWithClientErrorMessage(t *testing.T) {
 	filtered, _ := makeHTTP(span)
 
 	res := pdata.NewResource()
-	res.InitEmpty()
 	isError, isFault, filtered, cause := makeCause(span, filtered, res)
 
 	assert.True(t, isError)

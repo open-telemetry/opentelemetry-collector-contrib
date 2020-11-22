@@ -93,7 +93,6 @@ func TestDetector_Detect(t *testing.T) {
 			args: args{ctx: context.Background()},
 			want: func() pdata.Resource {
 				res := pdata.NewResource()
-				res.InitEmpty()
 				attr := res.Attributes()
 				attr.InsertString("cloud.account.id", "account1234")
 				attr.InsertString("cloud.provider", "aws")
@@ -115,9 +114,7 @@ func TestDetector_Detect(t *testing.T) {
 			}},
 			args: args{ctx: context.Background()},
 			want: func() pdata.Resource {
-				res := pdata.NewResource()
-				res.InitEmpty()
-				return res
+				return pdata.NewResource()
 			}(),
 			wantErr: false},
 		{
@@ -129,9 +126,7 @@ func TestDetector_Detect(t *testing.T) {
 			}},
 			args: args{ctx: context.Background()},
 			want: func() pdata.Resource {
-				res := pdata.NewResource()
-				res.InitEmpty()
-				return res
+				return pdata.NewResource()
 			}(),
 			wantErr: true},
 		{
@@ -144,9 +139,7 @@ func TestDetector_Detect(t *testing.T) {
 			}},
 			args: args{ctx: context.Background()},
 			want: func() pdata.Resource {
-				res := pdata.NewResource()
-				res.InitEmpty()
-				return res
+				return pdata.NewResource()
 			}(),
 			wantErr: true},
 	}
@@ -162,7 +155,6 @@ func TestDetector_Detect(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, got)
-				require.False(t, got.IsNil())
 				assert.Equal(t, internal.AttributesToMap(tt.want.Attributes()), internal.AttributesToMap(got.Attributes()))
 			}
 		})

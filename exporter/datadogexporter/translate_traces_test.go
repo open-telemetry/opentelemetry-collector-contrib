@@ -88,7 +88,6 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	}).CopyTo(span.Attributes())
 
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 
 	if resourceEnvAndService {
 		pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
@@ -143,7 +142,6 @@ func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 
 func TestObfuscation(t *testing.T) {
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"service.name": pdata.NewAttributeValueString("sure"),
 	})
@@ -163,9 +161,7 @@ func TestObfuscation(t *testing.T) {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
 	rs := traces.ResourceSpans().At(0)
-	r := rs.Resource()
-	r.InitEmpty()
-	resource.CopyTo(r)
+	resource.CopyTo(rs.Resource())
 	rs.InstrumentationLibrarySpans().Resize(1)
 	ilss := rs.InstrumentationLibrarySpans().At(0)
 	instrumentationLibrary.CopyTo(ilss.InstrumentationLibrary())

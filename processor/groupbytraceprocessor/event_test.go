@@ -389,24 +389,30 @@ func TestForceShutdown(t *testing.T) {
 
 	// verify
 	assert.True(t, duration > 20*time.Millisecond)
+
+	// wait for shutdown goroutine to end
+	time.Sleep(100 * time.Millisecond)
 }
 
 func TestDoWithTimeout(t *testing.T) {
 	// prepare
 	start := time.Now()
 
+	done := make(chan struct{})
+
 	// test
-	doWithTimeout(10*time.Millisecond, func() error {
-		time.Sleep(20 * time.Second)
+	doWithTimeout(5*time.Millisecond, func() error {
+		<-done
 		return nil
 	})
+	close(done)
 
 	// verify
 	assert.WithinDuration(t, start, time.Now(), 20*time.Millisecond)
 }
 
 func assertGauge(t *testing.T, expected int, gauge *stats.Int64Measure) {
-	viewData, err := view.RetrieveData(gauge.Name())
+	viewData, err := view.RetrieveData("processor/groupbytrace/" + gauge.Name())
 	require.NoError(t, err)
 	require.Len(t, viewData, 1) // we expect exactly one data point, the last value
 
@@ -415,7 +421,7 @@ func assertGauge(t *testing.T, expected int, gauge *stats.Int64Measure) {
 }
 
 func assertGaugeNotCreated(t *testing.T, gauge *stats.Int64Measure) {
-	viewData, err := view.RetrieveData(gauge.Name())
+	viewData, err := view.RetrieveData("processor/groupbytrace/" + gauge.Name())
 	require.NoError(t, err)
 	assert.Len(t, viewData, 0, "gauge exists already but shouldn't")
 }

@@ -117,7 +117,7 @@ func (f *StanzaFileLogWriter) GenConfigYAMLStr() string {
 	// We are testing stanza receiver here.
 	return fmt.Sprintf(`
   stanza:
-    pipeline:
+    operators:
       - type: file_input
         include: [ %s ]
         start_at: beginning

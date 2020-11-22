@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -49,13 +48,12 @@ func NewDetector() (internal.Detector, error) {
 // TODO(willarmiros): Replace all attribute fields and enums with values defined in "conventions" once they exist
 func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()
-	res.InitEmpty()
 
 	tmde := getTmdeFromEnv()
 
 	// Fail fast if neither env var is present
 	if tmde == "" {
-		log.Println("No Task Metadata Endpoint environment variable detected, skipping ECS resource detection")
+		// TODO: Log a more specific error with zap
 		return res, nil
 	}
 

@@ -11,8 +11,8 @@ Status: alpha
 ### Details
 
 This receiver will launch a child JRE process running the JMX Metric Gatherer configured with your specified JMX
-connection information and target Groovy script.  It can report metrics to an existing otlp or prometheus metric
-receiver in your pipeline.  In order to use you will need to download the most [recent release](https://oss.jfrog.org/artifactory/oss-snapshot-local/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/)
+connection information and target Groovy script.  It then reports metrics to an implicitly created OTLP receiver.
+In order to use you will need to download the most [recent release](https://oss.jfrog.org/artifactory/oss-snapshot-local/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/)
 of the JMX Metric Gatherer JAR and configure the receiver with its path.  It is assumed that the JRE is
 available on your system.
 
@@ -26,11 +26,12 @@ Example configuration:
 receivers:
   jmx:
     jar_path: /opt/opentelemetry-java-contrib-jmx-metrics.jar
-    service_url: service:jmx:rmi:///jndi/rmi://<my-jmx-host>:<my-jmx-port>/jmxrmi
-    groovy_script: /opt/my/groovy.script
-    interval: 10s
-    exporter: otlp
-    otlp_endpoint: mycollectorotlpreceiver:55680
+    endpoint: my_jmx_host:12345
+    target_system: jvm
+    collection_interval: 10s
+    # optional: the same as specifying OTLP receiver endpoint.
+    otlp:
+      endpoint: mycollectorotlpreceiver:55680
     username: my_jmx_username
     # determined by the environment variable value
     password: $MY_JMX_PASSWORD
@@ -40,11 +41,13 @@ receivers:
 
 The path for the JMX Metric Gatherer uber JAR to run.
 
-### service_url
+### endpoint
+The [JMX Service URL](https://docs.oracle.com/javase/8/docs/api/javax/management/remote/JMXServiceURL.html) or host
+and port used to construct the Service URL the Metric Gatherer's JMX client should use. Value must be in the form of
+`service:jmx:<protocol>:<sap>` or `host:port`. Values in `host:port` form will be used to create a Service URL of
+`service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi`.
 
-The JMX Service URL the Metric Gatherer's JMX client should use.
-
-Corresponds to the `otel.jmx.service.url` property.
+When in or coerced to `service:jmx:<protocol>:<sap>` form, corresponds to the `otel.jmx.service.url` property.
 
 _Required._
 
@@ -64,7 +67,7 @@ Corresponds to the `otel.jmx.groovy.script` property.
 
 One of `groovy_script` or `target_system` is _required_.  Both cannot be specified at the same time.
 
-### interval (default: `10s`)
+### collection_interval (default: `10s`)
 
 The interval time for the Groovy script to be run and metrics to be exported by the JMX Metric Gatherer within the persistent JRE process.
 
@@ -82,41 +85,23 @@ The password to use for JMX authentication.
 
 Corresponds to the `otel.jmx.password` property.
 
-### exporter (default: `otlp`)
+### otlp.endpoint (default: `0.0.0.0:<random open port>`)
 
-The metric exporter to use, which matches a desired existing `otlp` or `prometheus` receiver type.
+The otlp exporter endpoint to which to listen and submit metrics.
 
-Corresponds to the `otel.exporter` property.
+Corresponds to the `otel.exporter.otlp.endpoint` property.
 
-### otlp_endpoint (default: `localhost:55680`)
-
-The otlp exporter endpoint to submit metrics.  Must coincide with an existing `otlp` receiver `endpoint`.
-
-Corresponds to the `otel.otlp.endpoint` property.
-
-### otlp_timeout (default: `5s`)
+### otlp.timeout (default: `5s`)
 
 The otlp exporter request timeout.
 
-Corresponds to the `otel.otlp.metric.timeout` property.
+Corresponds to the `otel.exporter.otlp.metric.timeout` property.
 
-### otlp_headers
+### otlp.headers
 
 The headers to include in otlp metric submission requests.
 
-Corresponds to the `otel.otlp.metadata` property.
-
-### prometheus_host (default: `localhost`)
-
-The JMX Metric Gatherer prometheus server host interface to listen to.
-
-Corresponds to the `otel.prometheus.host` property.
-
-### prometheus_port (default: `9090`)
-
-The JMX Metric Gatherer prometheus server port to listen to.
-
-Corresponds to the `otel.prometheus.port` property.
+Corresponds to the `otel.exporter.otlp.metadata` property.
 
 ### keystore_path
 

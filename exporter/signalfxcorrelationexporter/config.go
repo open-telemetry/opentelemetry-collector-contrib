@@ -38,6 +38,10 @@ type Config struct {
 
 	// AccessToken is the authentication token provided by SignalFx.
 	AccessToken string `mapstructure:"access_token"`
+
+	// HostTranslations is a map where the key is the host attribute name to rename to the value.
+	// TODO: Remove once translations are removed from signalfx exporter.
+	HostTranslations map[string]string `mapstructure:"host_translations"`
 }
 
 func (c *Config) validate() error {

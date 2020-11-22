@@ -24,23 +24,27 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/third_party/telegraf/win_perf_counters"
 )
 
 type mockPerfCounter struct {
+	path      string
 	scrapeErr error
 	closeErr  error
 }
 
-func newMockPerfCounter(scrapeErr, closeErr error) *mockPerfCounter {
-	return &mockPerfCounter{scrapeErr: scrapeErr, closeErr: closeErr}
+func newMockPerfCounter(path string, scrapeErr, closeErr error) *mockPerfCounter {
+	return &mockPerfCounter{path: path, scrapeErr: scrapeErr, closeErr: closeErr}
 }
 
 // Path
 func (mpc *mockPerfCounter) Path() string {
-	return ""
+	return mpc.path
 }
 
 // ScrapeData
@@ -54,29 +58,49 @@ func (mpc *mockPerfCounter) Close() error {
 }
 
 func Test_WindowsPerfCounterScraper(t *testing.T) {
+	type expectedMetric struct {
+		name                string
+		instanceLabelValues []string
+	}
+
 	type testCase struct {
 		name string
 		cfg  *Config
 
-		newErr        string
-		initializeErr string
-		scrapeErr     error
-		closeErr      error
+		newErr            string
+		mockCounterPath   string
+		initializeMessage string
+		initializeErr     string
+		scrapeErr         error
+		closeErr          error
 
-		expectedMetrics int
+		expectedMetrics []expectedMetric
 	}
 
 	defaultConfig := &Config{
 		PerfCounters: []PerfCounterConfig{
 			{Object: "Memory", Counters: []string{"Committed Bytes"}},
 		},
-		ScraperControllerSettings: receiverhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 	}
 
 	testCases := []testCase{
 		{
-			name:            "Standard",
-			expectedMetrics: 1,
+			name: "Standard",
+			cfg: &Config{
+				PerfCounters: []PerfCounterConfig{
+					{Object: "Memory", Counters: []string{"Committed Bytes"}},
+					{Object: "Processor", Instances: []string{"*"}, Counters: []string{"% Processor Time"}},
+					{Object: "Processor", Instances: []string{"1", "2"}, Counters: []string{"% Idle Time"}},
+				},
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
+			},
+			expectedMetrics: []expectedMetric{
+				{name: `\Memory\Committed Bytes`},
+				{name: `\Processor(*)\% Processor Time`, instanceLabelValues: []string{"*"}},
+				{name: `\Processor(1)\% Idle Time`, instanceLabelValues: []string{"1"}},
+				{name: `\Processor(2)\% Idle Time`, instanceLabelValues: []string{"2"}},
+			},
 		},
 		{
 			name: "InvalidCounter",
@@ -91,9 +115,10 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 						Counters: []string{"Invalid Counter"},
 					},
 				},
-				ScraperControllerSettings: receiverhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
-			initializeErr: "The specified object was not found on the computer.\r\n",
+			initializeMessage: "some performance counters could not be initialized",
+			initializeErr:     "counter \\Invalid Object\\Invalid Counter: The specified object was not found on the computer.\r\n",
 		},
 		{
 			name:      "ScrapeError",
@@ -101,7 +126,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		},
 		{
 			name:            "CloseError",
-			expectedMetrics: 1,
+			expectedMetrics: []expectedMetric{{name: ""}},
 			closeErr:        errors.New("err1"),
 		},
 	}
@@ -112,22 +137,31 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			if cfg == nil {
 				cfg = defaultConfig
 			}
-			scraper, err := newScraper(cfg)
+
+			core, obs := observer.New(zapcore.WarnLevel)
+			logger := zap.New(core)
+			scraper, err := newScraper(cfg, logger)
 			if test.newErr != "" {
-				assert.EqualError(t, err, test.newErr)
+				require.EqualError(t, err, test.newErr)
 				return
 			}
 
 			err = scraper.initialize(context.Background())
+			require.NoError(t, err)
 			if test.initializeErr != "" {
-				assert.EqualError(t, err, test.initializeErr)
+				require.Equal(t, 1, obs.Len())
+				log := obs.All()[0]
+				assert.Equal(t, log.Level, zapcore.WarnLevel)
+				assert.Equal(t, test.initializeMessage, log.Message)
+				assert.Equal(t, "error", log.Context[0].Key)
+				assert.EqualError(t, log.Context[0].Interface.(error), test.initializeErr)
 				return
 			}
 			require.NoError(t, err)
 
-			if test.scrapeErr != nil || test.closeErr != nil {
+			if test.mockCounterPath != "" || test.scrapeErr != nil || test.closeErr != nil {
 				for i := range scraper.counters {
-					scraper.counters[i] = newMockPerfCounter(test.scrapeErr, test.closeErr)
+					scraper.counters[i] = newMockPerfCounter(test.mockCounterPath, test.scrapeErr, test.closeErr)
 				}
 			}
 
@@ -138,7 +172,47 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			assert.Equal(t, test.expectedMetrics, metrics.Len())
+			require.Equal(t, len(test.expectedMetrics), metrics.Len())
+			for i, e := range test.expectedMetrics {
+				metric := metrics.At(i)
+				assert.Equal(t, e.name, metric.Name())
+
+				ddp := metric.DoubleGauge().DataPoints()
+
+				var allInstances bool
+				for _, v := range e.instanceLabelValues {
+					if v == "*" {
+						allInstances = true
+						break
+					}
+				}
+
+				if allInstances {
+					require.GreaterOrEqual(t, ddp.Len(), 1)
+				} else {
+					expectedDataPoints := 1
+					if len(e.instanceLabelValues) > 0 {
+						expectedDataPoints = len(e.instanceLabelValues)
+					}
+
+					require.Equal(t, expectedDataPoints, ddp.Len())
+				}
+
+				if len(e.instanceLabelValues) > 0 {
+					instanceLabelValues := make([]string, 0, ddp.Len())
+					for i := 0; i < ddp.Len(); i++ {
+						instanceLabelValue, ok := ddp.At(i).LabelsMap().Get(instanceLabelName)
+						require.Truef(t, ok, "data point was missing %q label", instanceLabelName)
+						instanceLabelValues = append(instanceLabelValues, instanceLabelValue)
+					}
+
+					if !allInstances {
+						for _, v := range e.instanceLabelValues {
+							assert.Contains(t, instanceLabelValues, v)
+						}
+					}
+				}
+			}
 
 			err = scraper.close(context.Background())
 			if test.closeErr != nil {

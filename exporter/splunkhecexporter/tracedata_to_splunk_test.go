@@ -42,10 +42,10 @@ func Test_traceDataToSplunk(t *testing.T) {
 				traces := pdata.NewTraces()
 				rs := pdata.NewResourceSpans()
 				rs.InitEmpty()
-				rs.Resource().InitEmpty()
 				rs.Resource().Attributes().InsertString("service.name", "myservice")
-				rs.Resource().Attributes().InsertString("host.hostname", "myhost")
+				rs.Resource().Attributes().InsertString("host.name", "myhost")
 				rs.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
+				rs.Resource().Attributes().InsertString("com.splunk.index", "myindex")
 
 				ils := pdata.NewInstrumentationLibrarySpans()
 				ils.InitEmpty()
@@ -76,9 +76,8 @@ func Test_traceDataToSplunk(t *testing.T) {
 				traces := pdata.NewTraces()
 				rs := pdata.NewResourceSpans()
 				rs.InitEmpty()
-				rs.Resource().InitEmpty()
 				rs.Resource().Attributes().InsertString("service.name", "myservice")
-				rs.Resource().Attributes().InsertString("host.hostname", "myhost")
+				rs.Resource().Attributes().InsertString("host.name", "myhost")
 				rs.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
 
 				ils := pdata.NewInstrumentationLibrarySpans()
@@ -95,9 +94,8 @@ func Test_traceDataToSplunk(t *testing.T) {
 				traces := pdata.NewTraces()
 				rs := pdata.NewResourceSpans()
 				rs.InitEmpty()
-				rs.Resource().InitEmpty()
 				rs.Resource().Attributes().InsertString("service.name", "myservice")
-				rs.Resource().Attributes().InsertString("host.hostname", "myhost")
+				rs.Resource().Attributes().InsertString("host.name", "myhost")
 				rs.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
 
 				ils := pdata.NewInstrumentationLibrarySpans()
@@ -137,7 +135,7 @@ func makeSpan(name string, ts *pdata.TimestampUnixNano) pdata.Span {
 	}
 	spanLink := pdata.NewSpanLink()
 	spanLink.InitEmpty()
-	spanLink.SetTraceState(pdata.TraceState("OK"))
+	spanLink.SetTraceState("OK")
 	bytes, _ := hex.DecodeString("12345678")
 	var traceID [16]byte
 	copy(traceID[:], bytes)
@@ -174,6 +172,7 @@ func commonSplunkEvent(
 		Host:       "myhost",
 		Source:     "myservice",
 		SourceType: "mysourcetype",
+		Index:      "myindex",
 		Event: HecSpan{Name: name, StartTime: ts,
 			TraceID:    "",
 			SpanID:     "",
@@ -201,7 +200,7 @@ func commonSplunkEvent(
 			},
 		},
 		Fields: map[string]interface{}{
-			"com.splunk.sourcetype": "mysourcetype", "host.hostname": "myhost", "service.name": "myservice",
+			"com.splunk.sourcetype": "mysourcetype", "com.splunk.index": "myindex", "host.name": "myhost", "service.name": "myservice",
 		},
 	}
 }

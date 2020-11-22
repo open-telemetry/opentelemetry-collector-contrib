@@ -42,11 +42,6 @@ func Accept(traces pdata.Traces, v TraceVisitor) {
 		resource := rs.Resource()
 		instrumentationLibrarySpansSlice := rs.InstrumentationLibrarySpans()
 
-		if resource.IsNil() {
-			// resource is required
-			continue
-		}
-
 		for i := 0; i < instrumentationLibrarySpansSlice.Len(); i++ {
 			instrumentationLibrarySpans := instrumentationLibrarySpansSlice.At(i)
 
