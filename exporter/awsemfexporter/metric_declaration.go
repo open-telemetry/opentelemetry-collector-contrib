@@ -132,25 +132,29 @@ func (m *MetricDeclaration) Init(logger *zap.Logger) (err error) {
 // Matches returns true if the given OTLP Metric's name matches any of the Metric
 // Declaration's metric name selectors and label matchers.
 func (m *MetricDeclaration) Matches(metric *pdata.Metric, labels map[string]string) bool {
-	// If there are label matchers defined, filter against those first
-	if len(m.LabelMatchers) > 0 {
-		hasLabelMatch := false
-		for _, lm := range m.LabelMatchers {
-			if lm.Matches(labels) {
-				hasLabelMatch = true
-				break
-			}
-		}
-		if !hasLabelMatch {
-			return false
-		}
-	}
-
+	// Check if metric matches at least one of the metric name selectors
+	hasMetricNameMatch := false
 	for _, regex := range m.metricRegexList {
 		if regex.MatchString(metric.Name()) {
+			hasMetricNameMatch = true
+			break
+		}
+	}
+	if !hasMetricNameMatch {
+		return false
+	}
+
+	if len(m.LabelMatchers) == 0 {
+		return true
+	}
+
+	// If there are label matchers defined, check if metric's labels matches at least one
+	for _, lm := range m.LabelMatchers {
+		if lm.Matches(labels) {
 			return true
 		}
 	}
+
 	return false
 }
 
