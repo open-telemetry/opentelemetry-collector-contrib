@@ -94,13 +94,13 @@ func TestExporterCapabilities(t *testing.T) {
 		Logger: zap.NewNop(),
 	}
 	p, err := newExporter(params, config)
+	require.NoError(t, err)
+	require.NotNil(t, p)
 
 	// test
 	caps := p.GetCapabilities()
 
 	// verify
-	assert.NoError(t, err)
-	assert.NotNil(t, p)
 	assert.Equal(t, false, caps.MutatesConsumedData)
 }
 
@@ -418,7 +418,11 @@ func TestBuildExporterConfig(t *testing.T) {
 
 func TestBatchWithTwoTraces(t *testing.T) {
 	// prepare
-	config := simpleConfig()
+	config := &Config{
+		Resolver: ResolverSettings{
+			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}},
+		},
+	}
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
@@ -429,11 +433,13 @@ func TestBatchWithTwoTraces(t *testing.T) {
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	sink := &componenttest.ExampleExporterConsumer{}
-	p.exporters["endpoint-1"] = sink
+	sink1 := &componenttest.ExampleExporterConsumer{}
+	p.exporters["endpoint-1"] = sink1
+	sink2 := &componenttest.ExampleExporterConsumer{}
+	p.exporters["endpoint-2"] = sink2
 
 	first := simpleTraces()
-	second := simpleTraceWithID(pdata.NewTraceID([16]byte{2, 3, 4, 5}))
+	second := simpleTraceWithID(pdata.NewTraceID([16]byte{3, 4, 5, 6}))
 	batch := pdata.NewTraces()
 	batch.ResourceSpans().Append(first.ResourceSpans().At(0))
 	batch.ResourceSpans().Append(second.ResourceSpans().At(0))
@@ -443,7 +449,8 @@ func TestBatchWithTwoTraces(t *testing.T) {
 
 	// verify
 	assert.NoError(t, err)
-	assert.Len(t, sink.Traces, 2)
+	assert.Len(t, sink1.Traces, 1)
+	assert.Len(t, sink2.Traces, 1)
 }
 
 func TestFailedExporterInRing(t *testing.T) {
