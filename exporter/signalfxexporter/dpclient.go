@@ -99,7 +99,7 @@ func (s *sfxDPClient) pushMetricsData(
 
 func (s *sfxDPClient) pushMetricsDataForToken(ctx context.Context,
 	metricsData pdata.ResourceMetrics, accessToken string) (int, error) {
-	sfxDataPoints, numDroppedTimeseries := s.converter.MetricDataToSignalFxV2(metricsData)
+	sfxDataPoints := s.converter.MetricDataToSignalFxV2(metricsData)
 
 	body, compressed, err := s.encodeBody(sfxDataPoints)
 	if err != nil {
@@ -147,8 +147,7 @@ func (s *sfxDPClient) pushMetricsDataForToken(ctx context.Context,
 		return len(sfxDataPoints), err
 	}
 
-	return numDroppedTimeseries, nil
-
+	return 0, nil
 }
 
 func buildHeaders(config *Config) map[string]string {

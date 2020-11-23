@@ -91,10 +91,9 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	labels.CopyTo(histDPNoBuckets.LabelsMap())
 
 	tests := []struct {
-		name                     string
-		metricsDataFn            func() pdata.ResourceMetrics
-		wantSfxDataPoints        []*sfxpb.DataPoint
-		wantNumDroppedTimeseries int
+		name              string
+		metricsDataFn     func() pdata.ResourceMetrics
+		wantSfxDataPoints []*sfxpb.DataPoint
 	}{
 		{
 			name: "nil_node_nil_resources_no_dims",
@@ -571,8 +570,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	c := NewMetricsConverter(logger, nil)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotSfxDataPoints, gotNumDroppedTimeSeries := c.MetricDataToSignalFxV2(tt.metricsDataFn())
-			assert.Equal(t, tt.wantNumDroppedTimeseries, gotNumDroppedTimeSeries)
+			gotSfxDataPoints := c.MetricDataToSignalFxV2(tt.metricsDataFn())
 			// Sort SFx dimensions since they are built from maps and the order
 			// of those is not deterministic.
 			sortDimensions(tt.wantSfxDataPoints)
@@ -622,10 +620,7 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 		},
 	}
 	c := NewMetricsConverter(zap.NewNop(), translator)
-	got, dropped := c.MetricDataToSignalFxV2(wrapMetric(md))
-
-	assert.EqualValues(t, 0, dropped)
-	assert.EqualValues(t, expected, got)
+	assert.EqualValues(t, expected, c.MetricDataToSignalFxV2(wrapMetric(md)))
 }
 
 func sortDimensions(points []*sfxpb.DataPoint) {
