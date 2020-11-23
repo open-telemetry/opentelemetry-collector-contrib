@@ -20,7 +20,7 @@ from sqlalchemy.orm import sessionmaker
 
 from opentelemetry import trace
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-from opentelemetry.instrumentation.sqlalchemy.engine import _DB, _ROWS, _STMT
+from opentelemetry.instrumentation.sqlalchemy.engine import _DB, _STMT
 from opentelemetry.test.test_base import TestBase
 
 Base = declarative_base()
@@ -109,9 +109,8 @@ class SQLAlchemyTestMixin(TestBase):
         SQLAlchemyInstrumentor().uninstrument()
         super().tearDown()
 
-    def _check_span(self, span):
-        self.assertEqual(span.name, "{}.query".format(self.VENDOR))
-        self.assertEqual(span.attributes.get("service"), self.SERVICE)
+    def _check_span(self, span, name):
+        self.assertEqual(span.name, name)
         self.assertEqual(span.attributes.get(_DB), self.SQL_DB)
         self.assertIs(span.status.status_code, trace.status.StatusCode.UNSET)
         self.assertGreater((span.end_time - span.start_time), 0)
@@ -125,9 +124,13 @@ class SQLAlchemyTestMixin(TestBase):
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 1)
         span = spans[0]
-        self._check_span(span)
+        stmt = "INSERT INTO players (id, name) VALUES "
+        if span.attributes.get("db.system") == "sqlite":
+            stmt += "(?, ?)"
+        else:
+            stmt += "(%(id)s, %(name)s)"
+        self._check_span(span, stmt)
         self.assertIn("INSERT INTO players", span.attributes.get(_STMT))
-        self.assertEqual(span.attributes.get(_ROWS), 1)
         self.check_meta(span)
 
     def test_session_query(self):
@@ -138,7 +141,12 @@ class SQLAlchemyTestMixin(TestBase):
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 1)
         span = spans[0]
-        self._check_span(span)
+        stmt = "SELECT players.id AS players_id, players.name AS players_name \nFROM players \nWHERE players.name = "
+        if span.attributes.get("db.system") == "sqlite":
+            stmt += "?"
+        else:
+            stmt += "%(name_1)s"
+        self._check_span(span, stmt)
         self.assertIn(
             "SELECT players.id AS players_id, players.name AS players_name \nFROM players \nWHERE players.name",
             span.attributes.get(_STMT),
@@ -147,24 +155,26 @@ class SQLAlchemyTestMixin(TestBase):
 
     def test_engine_connect_execute(self):
         # ensures that engine.connect() is properly traced
+        stmt = "SELECT * FROM players"
         with self.connection() as conn:
-            rows = conn.execute("SELECT * FROM players").fetchall()
+            rows = conn.execute(stmt).fetchall()
             self.assertEqual(len(rows), 0)
 
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 1)
         span = spans[0]
-        self._check_span(span)
+        self._check_span(span, stmt)
         self.assertEqual(span.attributes.get(_STMT), "SELECT * FROM players")
         self.check_meta(span)
 
     def test_parent(self):
         """Ensure that sqlalchemy works with opentelemetry."""
+        stmt = "SELECT * FROM players"
         tracer = self.tracer_provider.get_tracer("sqlalch_svc")
 
         with tracer.start_as_current_span("sqlalch_op"):
             with self.connection() as conn:
-                rows = conn.execute("SELECT * FROM players").fetchall()
+                rows = conn.execute(stmt).fetchall()
                 self.assertEqual(len(rows), 0)
 
         spans = self.memory_exporter.get_finished_spans()
@@ -178,5 +188,4 @@ class SQLAlchemyTestMixin(TestBase):
         self.assertEqual(parent_span.name, "sqlalch_op")
         self.assertEqual(parent_span.instrumentation_info.name, "sqlalch_svc")
 
-        self.assertEqual(child_span.name, "{}.query".format(self.VENDOR))
-        self.assertEqual(child_span.attributes.get("service"), self.SERVICE)
+        self.assertEqual(child_span.name, stmt)

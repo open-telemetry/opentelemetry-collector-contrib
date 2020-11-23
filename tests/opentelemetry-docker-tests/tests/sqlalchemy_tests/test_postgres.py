@@ -24,7 +24,6 @@ from opentelemetry.instrumentation.sqlalchemy.engine import (
     _DB,
     _HOST,
     _PORT,
-    _ROWS,
     _STMT,
 )
 
@@ -44,9 +43,8 @@ class PostgresTestCase(SQLAlchemyTestMixin):
 
     __test__ = True
 
-    VENDOR = "postgres"
+    VENDOR = "postgresql"
     SQL_DB = "opentelemetry-tests"
-    SERVICE = "postgres"
     ENGINE_ARGS = {
         "url": "postgresql://%(user)s:%(password)s@%(host)s:%(port)s/%(dbname)s"
         % POSTGRES_CONFIG
@@ -67,13 +65,11 @@ class PostgresTestCase(SQLAlchemyTestMixin):
         self.assertEqual(len(spans), 1)
         span = spans[0]
         # span fields
-        self.assertEqual(span.name, "{}.query".format(self.VENDOR))
-        self.assertEqual(span.attributes.get("service"), self.SERVICE)
+        self.assertEqual(span.name, "SELECT * FROM a_wrong_table")
         self.assertEqual(
             span.attributes.get(_STMT), "SELECT * FROM a_wrong_table"
         )
         self.assertEqual(span.attributes.get(_DB), self.SQL_DB)
-        self.assertIsNone(span.attributes.get(_ROWS))
         self.check_meta(span)
         self.assertTrue(span.end_time - span.start_time > 0)
         # check the error
@@ -88,9 +84,8 @@ class PostgresCreatorTestCase(PostgresTestCase):
     of `PostgresTestCase`, but it uses a specific `creator` function.
     """
 
-    VENDOR = "postgres"
+    VENDOR = "postgresql"
     SQL_DB = "opentelemetry-tests"
-    SERVICE = "postgres"
     ENGINE_ARGS = {
         "url": "postgresql://",
         "creator": lambda: psycopg2.connect(**POSTGRES_CONFIG),
