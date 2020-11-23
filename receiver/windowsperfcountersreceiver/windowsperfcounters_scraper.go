@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
@@ -56,7 +57,7 @@ func newScraper(cfg *Config, logger *zap.Logger) (*scraper, error) {
 	return s, nil
 }
 
-func (s *scraper) initialize(ctx context.Context) error {
+func (s *scraper) start(context.Context, component.Host) error {
 	var errors []error
 
 	for _, perfCounterCfg := range s.cfg.PerfCounters {
@@ -90,7 +91,7 @@ func counterPath(object, instance, counterName string) string {
 	return fmt.Sprintf("\\%s%s\\%s", object, instance, counterName)
 }
 
-func (s *scraper) close(ctx context.Context) error {
+func (s *scraper) shutdown(context.Context) error {
 	var errors []error
 
 	for _, counter := range s.counters {
@@ -102,7 +103,7 @@ func (s *scraper) close(ctx context.Context) error {
 	return componenterror.CombineErrors(errors)
 }
 
-func (s *scraper) scrape(ctx context.Context) (pdata.MetricSlice, error) {
+func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
 	now := pdata.TimestampUnixNano(uint64(time.Now().UnixNano()))

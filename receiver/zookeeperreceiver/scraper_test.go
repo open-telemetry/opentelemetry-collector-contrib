@@ -162,7 +162,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			mockedZKOutputSourceFilename: "mntr-3.4.14",
 			expectedLogs: []logMsg{
 				{
-					msg:   "failed to close connection",
+					msg:   "failed to shutdown connection",
 					level: zapcore.WarnLevel,
 				},
 			},
@@ -235,7 +235,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				require.Error(t, err)
 				require.Equal(t, pdata.NewResourceMetricsSlice(), got)
 
-				require.NoError(t, z.close(ctx))
+				require.NoError(t, z.shutdown(ctx))
 				return
 			}
 
@@ -258,7 +258,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				}
 			}
 
-			require.NoError(t, z.close(ctx))
+			require.NoError(t, z.shutdown(ctx))
 		})
 	}
 }
