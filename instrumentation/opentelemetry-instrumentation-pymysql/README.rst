@@ -16,5 +16,5 @@ Installation
 
 References
 ----------
-* `OpenTelemetry PyMySQL Instrumentation <https://opentelemetry-python.readthedocs.io/en/latest/instrumentation/pymysql/pymysql.html>`_
+* `OpenTelemetry PyMySQL Instrumentation <https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/pymysql/pymysql.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_

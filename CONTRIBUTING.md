@@ -46,7 +46,7 @@ You can run:
 - `tox -e lint` to run lint checks on all code
 
 See
-[`tox.ini`](https://github.com/open-telemetry/opentelemetry-python/blob/master/tox.ini)
+[`tox.ini`](https://github.com/open-telemetry/opentelemetry-python-contrib/blob/master/tox.ini)
 for more detail on available tox commands.
 
 ## Pull Requests

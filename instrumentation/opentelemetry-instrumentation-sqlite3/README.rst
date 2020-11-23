@@ -16,6 +16,6 @@ Installation
 
 References
 ----------
-* `OpenTelemetry SQLite3 Instrumentation <https://opentelemetry-python.readthedocs.io/en/latest/instrumentation/sqlite3/sqlite3.html>`_
+* `OpenTelemetry SQLite3 Instrumentation <https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/sqlite3/sqlite3.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_
 

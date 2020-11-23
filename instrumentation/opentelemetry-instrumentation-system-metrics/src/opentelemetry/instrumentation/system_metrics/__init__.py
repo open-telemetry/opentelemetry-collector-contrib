@@ -92,9 +92,9 @@ class SystemMetrics:
         config: typing.Optional[typing.Dict[str, typing.List[str]]] = None,
     ):
         self._labels = {} if labels is None else labels
-        self.meter = metrics.get_meter(__name__)
+        self.accumulator = metrics.get_meter(__name__)
         self.controller = PushController(
-            meter=self.meter, exporter=exporter, interval=interval
+            accumulator=self.accumulator, exporter=exporter, interval=interval
         )
         self._python_implementation = python_implementation().lower()
         if config is None:
@@ -155,7 +155,7 @@ class SystemMetrics:
         self._runtime_cpu_time_labels = self._labels.copy()
         self._runtime_gc_count_labels = self._labels.copy()
 
-        self.meter.register_sumobserver(
+        self.accumulator.register_sumobserver(
             callback=self._get_system_cpu_time,
             name="system.cpu.time",
             description="System CPU time",
@@ -163,7 +163,7 @@ class SystemMetrics:
             value_type=float,
         )
 
-        self.meter.register_valueobserver(
+        self.accumulator.register_valueobserver(
             callback=self._get_system_cpu_utilization,
             name="system.cpu.utilization",
             description="System CPU utilization",
@@ -171,7 +171,7 @@ class SystemMetrics:
             value_type=float,
         )
 
-        self.meter.register_valueobserver(
+        self.accumulator.register_valueobserver(
             callback=self._get_system_memory_usage,
             name="system.memory.usage",
             description="System memory usage",
@@ -179,7 +179,7 @@ class SystemMetrics:
             value_type=int,
         )
 
-        self.meter.register_valueobserver(
+        self.accumulator.register_valueobserver(
             callback=self._get_system_memory_utilization,
             name="system.memory.utilization",
             description="System memory utilization",
@@ -187,7 +187,7 @@ class SystemMetrics:
             value_type=float,
         )
 
-        self.meter.register_valueobserver(
+        self.accumulator.register_valueobserver(
             callback=self._get_system_swap_usage,
             name="system.swap.usage",
             description="System swap usage",
@@ -195,7 +195,7 @@ class SystemMetrics:
             value_type=int,
         )
 
-        self.meter.register_valueobserver(
+        self.accumulator.register_valueobserver(
             callback=self._get_system_swap_utilization,
             name="system.swap.utilization",
             description="System swap utilization",
@@ -203,7 +203,7 @@ class SystemMetrics:
             value_type=float,
         )
 
-        # self.meter.register_sumobserver(
+        # self.accumulator.register_sumobserver(
         #     callback=self._get_system_swap_page_faults,
         #     name="system.swap.page_faults",
         #     description="System swap page faults",
@@ -211,7 +211,7 @@ class SystemMetrics:
         #     value_type=int,
         # )
 
-        # self.meter.register_sumobserver(
+        # self.accumulator.register_sumobserver(
         #     callback=self._get_system_swap_page_operations,
         #     name="system.swap.page_operations",
         #     description="System swap page operations",
@@ -219,7 +219,7 @@ class SystemMetrics:
         #     value_type=int,
         # )
 
-        self.meter.register_sumobserver(
+        self.accumulator.register_sumobserver(
             callback=self._get_system_disk_io,
             name="system.disk.io",
             description="System disk IO",
@@ -227,7 +227,7 @@ class SystemMetrics:
             value_type=int,
         )
 
-        self.meter.register_sumobserver(
+        self.accumulator.register_sumobserver(
             callback=self._get_system_disk_operations,
             name="system.disk.operations",
             description="System disk operations",
@@ -235,7 +235,7 @@ class SystemMetrics:
             value_type=int,
         )
 
-        self.meter.register_sumobserver(
+        self.accumulator.register_sumobserver(
             callback=self._get_system_disk_time,
             name="system.disk.time",
             description="System disk time",
@@ -243,7 +243,7 @@ class SystemMetrics:
             value_type=float,
         )
 
-        self.meter.register_sumobserver(
+        self.accumulator.register_sumobserver(
             callback=self._get_system_disk_merged,
             name="system.disk.merged",
             description="System disk merged",
@@ -251,7 +251,7 @@ class SystemMetrics:
             value_type=int,
         )
 
-        # self.meter.register_valueobserver(
+        # self.accumulator.register_valueobserver(
         #     callback=self._get_system_filesystem_usage,
         #     name="system.filesystem.usage",
         #     description="System filesystem usage",
@@ -259,7 +259,7 @@ class SystemMetrics:
         #     value_type=int,
         # )
 
-        # self.meter.register_valueobserver(
+        # self.accumulator.register_valueobserver(
         #     callback=self._get_system_filesystem_utilization,
         #     name="system.filesystem.utilization",
         #     description="System filesystem utilization",
@@ -267,7 +267,7 @@ class SystemMetrics:
         #     value_type=float,
         # )
 
-        self.meter.register_sumobserver(
+        self.accumulator.register_sumobserver(
             callback=self._get_system_network_dropped_packets,
             name="system.network.dropped_packets",
             description="System network dropped_packets",
@@ -275,7 +275,7 @@ class SystemMetrics:
             value_type=int,
         )
 
-        self.meter.register_sumobserver(
+        self.accumulator.register_sumobserver(
             callback=self._get_system_network_packets,
             name="system.network.packets",
             description="System network packets",
@@ -283,7 +283,7 @@ class SystemMetrics:
             value_type=int,
         )
 
-        self.meter.register_sumobserver(
+        self.accumulator.register_sumobserver(
             callback=self._get_system_network_errors,
             name="system.network.errors",
             description="System network errors",
@@ -291,7 +291,7 @@ class SystemMetrics:
             value_type=int,
         )
 
-        self.meter.register_sumobserver(
+        self.accumulator.register_sumobserver(
             callback=self._get_system_network_io,
             name="system.network.io",
             description="System network io",
@@ -299,7 +299,7 @@ class SystemMetrics:
             value_type=int,
         )
 
-        self.meter.register_updownsumobserver(
+        self.accumulator.register_updownsumobserver(
             callback=self._get_system_network_connections,
             name="system.network.connections",
             description="System network connections",
@@ -307,7 +307,7 @@ class SystemMetrics:
             value_type=int,
         )
 
-        self.meter.register_sumobserver(
+        self.accumulator.register_sumobserver(
             callback=self._get_runtime_memory,
             name="runtime.{}.memory".format(self._python_implementation),
             description="Runtime {} memory".format(
@@ -317,7 +317,7 @@ class SystemMetrics:
             value_type=int,
         )
 
-        self.meter.register_sumobserver(
+        self.accumulator.register_sumobserver(
             callback=self._get_runtime_cpu_time,
             name="runtime.{}.cpu_time".format(self._python_implementation),
             description="Runtime {} CPU time".format(
@@ -327,7 +327,7 @@ class SystemMetrics:
             value_type=float,
         )
 
-        self.meter.register_sumobserver(
+        self.accumulator.register_sumobserver(
             callback=self._get_runtime_gc_count,
             name="runtime.{}.gc_count".format(self._python_implementation),
             description="Runtime {} GC count".format(
