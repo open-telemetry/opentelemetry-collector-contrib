@@ -16,6 +16,7 @@ var
 sdist
 develop-eggs
 .installed.cfg
+pyvenv.cfg
 lib
 lib64
 __pycache__
