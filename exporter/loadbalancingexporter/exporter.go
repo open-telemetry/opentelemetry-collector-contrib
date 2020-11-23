@@ -50,7 +50,7 @@ var (
 type exporterImp struct {
 	logger *zap.Logger
 	config Config
-	host component.Host
+	host   component.Host
 
 	res  resolver
 	ring *hashRing
