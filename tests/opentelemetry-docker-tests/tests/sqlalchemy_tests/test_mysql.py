@@ -23,8 +23,8 @@ from opentelemetry.instrumentation.sqlalchemy.engine import (
     _DB,
     _HOST,
     _PORT,
-    _ROWS,
     _STMT,
+    _USER,
 )
 
 from .mixins import SQLAlchemyTestMixin
@@ -45,7 +45,6 @@ class MysqlConnectorTestCase(SQLAlchemyTestMixin):
 
     VENDOR = "mysql"
     SQL_DB = "opentelemetry-tests"
-    SERVICE = "mysql"
     ENGINE_ARGS = {
         "url": "mysql+mysqlconnector://%(user)s:%(password)s@%(host)s:%(port)s/%(database)s"
         % MYSQL_CONFIG
@@ -55,6 +54,8 @@ class MysqlConnectorTestCase(SQLAlchemyTestMixin):
         # check database connection tags
         self.assertEqual(span.attributes.get(_HOST), MYSQL_CONFIG["host"])
         self.assertEqual(span.attributes.get(_PORT), MYSQL_CONFIG["port"])
+        self.assertEqual(span.attributes.get(_DB), MYSQL_CONFIG["database"])
+        self.assertEqual(span.attributes.get(_USER), MYSQL_CONFIG["user"])
 
     def test_engine_execute_errors(self):
         # ensures that SQL errors are reported
@@ -66,13 +67,11 @@ class MysqlConnectorTestCase(SQLAlchemyTestMixin):
         self.assertEqual(len(spans), 1)
         span = spans[0]
         # span fields
-        self.assertEqual(span.name, "{}.query".format(self.VENDOR))
-        self.assertEqual(span.attributes.get("service"), self.SERVICE)
+        self.assertEqual(span.name, "SELECT * FROM a_wrong_table")
         self.assertEqual(
             span.attributes.get(_STMT), "SELECT * FROM a_wrong_table"
         )
         self.assertEqual(span.attributes.get(_DB), self.SQL_DB)
-        self.assertIsNone(span.attributes.get(_ROWS))
         self.check_meta(span)
         self.assertTrue(span.end_time - span.start_time > 0)
         # check the error

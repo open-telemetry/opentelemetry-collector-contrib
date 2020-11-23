@@ -18,7 +18,7 @@ import pytest
 from sqlalchemy.exc import OperationalError
 
 from opentelemetry import trace
-from opentelemetry.instrumentation.sqlalchemy.engine import _DB, _ROWS, _STMT
+from opentelemetry.instrumentation.sqlalchemy.engine import _DB, _STMT
 
 from .mixins import SQLAlchemyTestMixin
 
@@ -30,26 +30,24 @@ class SQLiteTestCase(SQLAlchemyTestMixin):
 
     VENDOR = "sqlite"
     SQL_DB = ":memory:"
-    SERVICE = "sqlite"
     ENGINE_ARGS = {"url": "sqlite:///:memory:"}
 
     def test_engine_execute_errors(self):
         # ensures that SQL errors are reported
+        stmt = "SELECT * FROM a_wrong_table"
         with pytest.raises(OperationalError):
             with self.connection() as conn:
-                conn.execute("SELECT * FROM a_wrong_table").fetchall()
+                conn.execute(stmt).fetchall()
 
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 1)
         span = spans[0]
         # span fields
-        self.assertEqual(span.name, "{}.query".format(self.VENDOR))
-        self.assertEqual(span.attributes.get("service"), self.SERVICE)
+        self.assertEqual(span.name, stmt)
         self.assertEqual(
             span.attributes.get(_STMT), "SELECT * FROM a_wrong_table"
         )
         self.assertEqual(span.attributes.get(_DB), self.SQL_DB)
-        self.assertIsNone(span.attributes.get(_ROWS))
         self.assertTrue((span.end_time - span.start_time) > 0)
         # check the error
         self.assertIs(
