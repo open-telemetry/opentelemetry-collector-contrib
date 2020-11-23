@@ -48,8 +48,8 @@ func newFilter(fields []string) (filter, error) {
 	}, nil
 }
 
-// filter returns map of strings which matches at least one of the filter regexes
-func (f *filter) filter(attributes pdata.AttributeMap) map[string]string {
+// filterIn returns map of strings which matches at least one of the filter regexes
+func (f *filter) filterIn(attributes pdata.AttributeMap) map[string]string {
 	returnValue := make(map[string]string)
 
 	attributes.ForEach(func(k string, v pdata.AttributeValue) {
@@ -78,9 +78,9 @@ func (f *filter) filterOut(attributes pdata.AttributeMap) map[string]string {
 	return returnValue
 }
 
-// GetMetadata builds string which represents metadata in alphabetical order
-func (f *filter) GetMetadata(attributes pdata.AttributeMap) Fields {
-	attrs := f.filter(attributes)
+// getMetadata builds string which represents metadata in alphabetical order
+func (f *filter) getMetadata(attributes pdata.AttributeMap) Fields {
+	attrs := f.filterIn(attributes)
 	metadata := make([]string, 0, len(attrs))
 
 	for k, v := range attrs {

@@ -34,7 +34,7 @@ func TestGetMetadata(t *testing.T) {
 	f, err := newFilter(regexes)
 	require.NoError(t, err)
 
-	metadata := f.GetMetadata(attributes)
+	metadata := f.getMetadata(attributes)
 	const expected Fields = "key1=value1, key2=value2, key3=value3"
 	assert.Equal(t, expected, metadata)
 }
