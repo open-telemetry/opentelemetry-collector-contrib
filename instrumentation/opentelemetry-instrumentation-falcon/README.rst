@@ -49,5 +49,5 @@ Falcon Request object reference: https://falcon.readthedocs.io/en/stable/api/req
 References
 ----------
 
-* `OpenTelemetry Falcon Instrumentation <https://opentelemetry-python.readthedocs.io/en/latest/instrumentation/falcon/falcon.html>`_
+* `OpenTelemetry Falcon Instrumentation <https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/falcon/falcon.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_

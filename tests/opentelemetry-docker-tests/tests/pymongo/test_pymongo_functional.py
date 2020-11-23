@@ -20,9 +20,9 @@ from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.pymongo import PymongoInstrumentor
 from opentelemetry.test.test_base import TestBase
 
-MONGODB_HOST = os.getenv("MONGODB_HOST ", "localhost")
-MONGODB_PORT = int(os.getenv("MONGODB_PORT ", "27017"))
-MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME ", "opentelemetry-tests")
+MONGODB_HOST = os.getenv("MONGODB_HOST", "localhost")
+MONGODB_PORT = int(os.getenv("MONGODB_PORT", "27017"))
+MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME", "opentelemetry-tests")
 MONGODB_COLLECTION_NAME = "test"
 
 
@@ -53,9 +53,7 @@ class TestFunctionalPymongo(TestBase):
         self.assertIsNotNone(pymongo_span.parent)
         self.assertIs(pymongo_span.parent, root_span.get_span_context())
         self.assertIs(pymongo_span.kind, trace_api.SpanKind.CLIENT)
-        self.assertEqual(
-            pymongo_span.attributes["db.instance"], MONGODB_DB_NAME
-        )
+        self.assertEqual(pymongo_span.attributes["db.name"], MONGODB_DB_NAME)
         self.assertEqual(
             pymongo_span.attributes["net.peer.name"], MONGODB_HOST
         )

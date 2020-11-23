@@ -24,10 +24,9 @@ _HOST = "net.peer.name"
 _PORT = "net.peer.port"
 # Database semantic conventions here:
 # https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/database.md
-_ROWS = "sql.rows"  # number of rows returned by a query
 _STMT = "db.statement"
-_DB = "db.type"
-_URL = "db.url"
+_DB = "db.name"
+_USER = "db.user"
 
 
 def _normalize_vendor(vendor):
@@ -39,7 +38,7 @@ def _normalize_vendor(vendor):
         return "sqlite"
 
     if "postgres" in vendor or vendor == "psycopg2":
-        return "postgres"
+        return "postgresql"
 
     return vendor
 
@@ -58,17 +57,15 @@ def _wrap_create_engine(func, module, args, kwargs):
     object that will listen to SQLAlchemy events.
     """
     engine = func(*args, **kwargs)
-    EngineTracer(_get_tracer(engine), None, engine)
+    EngineTracer(_get_tracer(engine), engine)
     return engine
 
 
 class EngineTracer:
-    def __init__(self, tracer, service, engine):
+    def __init__(self, tracer, engine):
         self.tracer = tracer
         self.engine = engine
         self.vendor = _normalize_vendor(engine.name)
-        self.service = service or self.vendor
-        self.name = "%s.query" % self.vendor
         self.current_span = None
 
         listen(engine, "before_cursor_execute", self._before_cur_exec)
@@ -77,11 +74,11 @@ class EngineTracer:
 
     # pylint: disable=unused-argument
     def _before_cur_exec(self, conn, cursor, statement, *args):
-        self.current_span = self.tracer.start_span(self.name)
+        self.current_span = self.tracer.start_span(statement)
         with self.tracer.use_span(self.current_span, end_on_exit=False):
             if self.current_span.is_recording():
-                self.current_span.set_attribute("service", self.vendor)
                 self.current_span.set_attribute(_STMT, statement)
+                self.current_span.set_attribute("db.system", self.vendor)
 
                 if not _set_attributes_from_url(
                     self.current_span, conn.engine.url
@@ -94,16 +91,7 @@ class EngineTracer:
     def _after_cur_exec(self, conn, cursor, statement, *args):
         if self.current_span is None:
             return
-
-        try:
-            if (
-                cursor
-                and cursor.rowcount >= 0
-                and self.current_span.is_recording()
-            ):
-                self.current_span.set_attribute(_ROWS, cursor.rowcount)
-        finally:
-            self.current_span.end()
+        self.current_span.end()
 
     def _handle_error(self, context):
         if self.current_span is None:
@@ -127,6 +115,8 @@ def _set_attributes_from_url(span: trace.Span, url):
             span.set_attribute(_PORT, url.port)
         if url.database:
             span.set_attribute(_DB, url.database)
+        if url.username:
+            span.set_attribute(_USER, url.username)
 
     return bool(url.host)
 
@@ -135,7 +125,7 @@ def _set_attributes_from_cursor(span: trace.Span, vendor, cursor):
     """Attempt to set db connection attributes by introspecting the cursor."""
     if not span.is_recording():
         return
-    if vendor == "postgres":
+    if vendor == "postgresql":
         # pylint: disable=import-outside-toplevel
         from psycopg2.extensions import parse_dsn
 

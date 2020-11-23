@@ -17,5 +17,5 @@ Installation
 References
 ----------
 
-* `OpenTelemetry Database API Instrumentation <https://opentelemetry-python.readthedocs.io/en/latest/instrumentation/dbapi/dbapi.html>`_
+* `OpenTelemetry Database API Instrumentation <https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/dbapi/dbapi.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_

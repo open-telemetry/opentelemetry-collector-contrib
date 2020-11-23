@@ -51,11 +51,7 @@ from opentelemetry.instrumentation.metric import (
 from opentelemetry.instrumentation.requests.version import __version__
 from opentelemetry.instrumentation.utils import http_status_to_status_code
 from opentelemetry.trace import SpanKind, get_tracer
-from opentelemetry.trace.status import (
-    EXCEPTION_STATUS_FIELD,
-    Status,
-    StatusCode,
-)
+from opentelemetry.trace.status import Status, StatusCode
 
 # A key to a context variable to avoid creating duplicate spans when instrumenting
 # both, Session.request and Session.send, since Session.request calls into Session.send
@@ -158,9 +154,6 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
                     result = call_wrapped()  # *** PROCEED
                 except Exception as exc:  # pylint: disable=W0703
                     exception = exc
-                    setattr(
-                        exception, EXCEPTION_STATUS_FIELD, StatusCode.ERROR,
-                    )
                     result = getattr(exc, "response", None)
                 finally:
                     context.detach(token)

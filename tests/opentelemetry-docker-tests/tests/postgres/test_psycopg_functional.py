@@ -20,11 +20,11 @@ from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
 from opentelemetry.test.test_base import TestBase
 
-POSTGRES_HOST = os.getenv("POSTGRESQL_HOST ", "localhost")
-POSTGRES_PORT = int(os.getenv("POSTGRESQL_PORT ", "5432"))
-POSTGRES_DB_NAME = os.getenv("POSTGRESQL_DB_NAME ", "opentelemetry-tests")
-POSTGRES_PASSWORD = os.getenv("POSTGRESQL_HOST ", "testpassword")
-POSTGRES_USER = os.getenv("POSTGRESQL_HOST ", "testuser")
+POSTGRES_HOST = os.getenv("POSTGRESQL_HOST", "localhost")
+POSTGRES_PORT = int(os.getenv("POSTGRESQL_PORT", "5432"))
+POSTGRES_DB_NAME = os.getenv("POSTGRESQL_DB_NAME", "opentelemetry-tests")
+POSTGRES_PASSWORD = os.getenv("POSTGRESQL_PASSWORD", "testpassword")
+POSTGRES_USER = os.getenv("POSTGRESQL_USER", "testuser")
 
 
 class TestFunctionalPsycopg(TestBase):
@@ -53,7 +53,7 @@ class TestFunctionalPsycopg(TestBase):
             cls._connection.close()
         Psycopg2Instrumentor().uninstrument()
 
-    def validate_spans(self):
+    def validate_spans(self, span_name):
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 2)
         for span in spans:
@@ -66,47 +66,48 @@ class TestFunctionalPsycopg(TestBase):
         self.assertIsNotNone(root_span)
         self.assertIsNotNone(child_span)
         self.assertEqual(root_span.name, "rootSpan")
-        self.assertEqual(child_span.name, "postgresql.opentelemetry-tests")
+        self.assertEqual(child_span.name, span_name)
         self.assertIsNotNone(child_span.parent)
         self.assertIs(child_span.parent, root_span.get_span_context())
         self.assertIs(child_span.kind, trace_api.SpanKind.CLIENT)
-        self.assertEqual(
-            child_span.attributes["db.instance"], POSTGRES_DB_NAME
-        )
+        self.assertEqual(child_span.attributes["db.system"], "postgresql")
+        self.assertEqual(child_span.attributes["db.name"], POSTGRES_DB_NAME)
+        self.assertEqual(child_span.attributes["db.user"], POSTGRES_USER)
         self.assertEqual(child_span.attributes["net.peer.name"], POSTGRES_HOST)
         self.assertEqual(child_span.attributes["net.peer.port"], POSTGRES_PORT)
 
     def test_execute(self):
         """Should create a child span for execute method"""
+        stmt = "CREATE TABLE IF NOT EXISTS test (id integer)"
         with self._tracer.start_as_current_span("rootSpan"):
-            self._cursor.execute(
-                "CREATE TABLE IF NOT EXISTS test (id integer)"
-            )
-        self.validate_spans()
+            self._cursor.execute(stmt)
+        self.validate_spans(stmt)
 
     def test_execute_with_connection_context_manager(self):
         """Should create a child span for execute with connection context"""
+        stmt = "CREATE TABLE IF NOT EXISTS test (id INT)"
         with self._tracer.start_as_current_span("rootSpan"):
             with self._connection as conn:
                 cursor = conn.cursor()
-                cursor.execute("CREATE TABLE IF NOT EXISTS test (id INT)")
-        self.validate_spans()
+                cursor.execute(stmt)
+        self.validate_spans(stmt)
 
     def test_execute_with_cursor_context_manager(self):
         """Should create a child span for execute with cursor context"""
+        stmt = "CREATE TABLE IF NOT EXISTS test (id INT)"
         with self._tracer.start_as_current_span("rootSpan"):
             with self._connection.cursor() as cursor:
-                cursor.execute("CREATE TABLE IF NOT EXISTS test (id INT)")
-        self.validate_spans()
+                cursor.execute(stmt)
+        self.validate_spans(stmt)
         self.assertTrue(cursor.closed)
 
     def test_executemany(self):
         """Should create a child span for executemany"""
+        stmt = "INSERT INTO test (id) VALUES (%s)"
         with self._tracer.start_as_current_span("rootSpan"):
             data = (("1",), ("2",), ("3",))
-            stmt = "INSERT INTO test (id) VALUES (%s)"
             self._cursor.executemany(stmt, data)
-        self.validate_spans()
+        self.validate_spans(stmt)
 
     def test_callproc(self):
         """Should create a child span for callproc"""
@@ -114,4 +115,4 @@ class TestFunctionalPsycopg(TestBase):
             Exception
         ):
             self._cursor.callproc("test", ())
-            self.validate_spans()
+            self.validate_spans("test")

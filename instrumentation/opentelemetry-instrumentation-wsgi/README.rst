@@ -21,6 +21,6 @@ Installation
 References
 ----------
 
-* `OpenTelemetry WSGI Middleware <https://opentelemetry-python.readthedocs.io/en/latest/instrumentation/wsgi/wsgi.html>`_
+* `OpenTelemetry WSGI Middleware <https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/wsgi/wsgi.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_
 * `WSGI <https://www.python.org/dev/peps/pep-3333>`_

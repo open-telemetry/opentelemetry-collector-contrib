@@ -27,16 +27,14 @@ class TestSqlalchemyInstrumentation(TestBase):
     def test_trace_integration(self):
         engine = create_engine("sqlite:///:memory:")
         SQLAlchemyInstrumentor().instrument(
-            engine=engine,
-            tracer_provider=self.tracer_provider,
-            service="my-database",
+            engine=engine, tracer_provider=self.tracer_provider,
         )
         cnx = engine.connect()
         cnx.execute("SELECT	1 + 1;").fetchall()
         spans = self.memory_exporter.get_finished_spans()
 
         self.assertEqual(len(spans), 1)
-        self.assertEqual(spans[0].name, "sqlite.query")
+        self.assertEqual(spans[0].name, "SELECT	1 + 1;")
 
     def test_not_recording(self):
         mock_tracer = mock.Mock()
@@ -49,9 +47,7 @@ class TestSqlalchemyInstrumentation(TestBase):
             tracer.return_value = mock_tracer
             engine = create_engine("sqlite:///:memory:")
             SQLAlchemyInstrumentor().instrument(
-                engine=engine,
-                tracer_provider=self.tracer_provider,
-                service="my-database",
+                engine=engine, tracer_provider=self.tracer_provider,
             )
             cnx = engine.connect()
             cnx.execute("SELECT	1 + 1;").fetchall()
@@ -70,4 +66,4 @@ class TestSqlalchemyInstrumentation(TestBase):
         spans = self.memory_exporter.get_finished_spans()
 
         self.assertEqual(len(spans), 1)
-        self.assertEqual(spans[0].name, "sqlite.query")
+        self.assertEqual(spans[0].name, "SELECT	1 + 1;")

@@ -19,5 +19,5 @@ Installation
 References
 ----------
 
-* `OpenTelemetry sklearn Instrumentation <https://opentelemetry-python.readthedocs.io/en/latest/instrumentation/sklearn/sklearn.html>`_
+* `OpenTelemetry sklearn Instrumentation <https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/sklearn/sklearn.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_
