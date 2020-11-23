@@ -24,7 +24,210 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-func TestInit(t *testing.T) {
+func TestLabelMatcherInit(t *testing.T) {
+	lm := &LabelMatcher{
+		LabelNames: []string{"label1", "label2"},
+		Regex:      ".+",
+	}
+	err := lm.Init()
+	assert.Nil(t, err)
+	assert.Equal(t, ";", lm.Separator)
+	assert.Equal(t, ".+", lm.Regex)
+	assert.NotNil(t, lm.compiledRegex)
+
+	lm.Separator = ""
+	err = lm.Init()
+	assert.Nil(t, err)
+	assert.Equal(t, ";", lm.Separator)
+
+	lm.Separator = ","
+	err = lm.Init()
+	assert.Nil(t, err)
+	assert.Equal(t, ",", lm.Separator)
+
+	lm.Regex = "a*"
+	err = lm.Init()
+	assert.Nil(t, err)
+	assert.Equal(t, "a*", lm.Regex)
+	assert.NotNil(t, lm.compiledRegex)
+
+	// Test error
+	lm.Regex = ""
+	err = lm.Init()
+	assert.NotNil(t, err)
+	assert.EqualError(t, err, "regex not specified for label matcher")
+
+	lm.LabelNames = []string{}
+	lm.Regex = ".+"
+	err = lm.Init()
+	assert.NotNil(t, err)
+	assert.EqualError(t, err, "label matcher must have at least one label name specified")
+}
+
+func TestGetConcatenatedLabels(t *testing.T) {
+	labels := map[string]string{
+		"label1": "a",
+		"label2": "b",
+		"label3": "c",
+	}
+	testCases := []struct {
+		testName   string
+		labelNames []string
+		separator  string
+		expected   string
+	}{
+		{
+			"Single label w/ default separator",
+			[]string{"label1"},
+			"",
+			"a",
+		},
+		{
+			"Multiple labels w/ default separator",
+			[]string{"label1", "label3", "label2"},
+			"",
+			"a;c;b",
+		},
+		{
+			"Single label w/ custom separator",
+			[]string{"label1"},
+			",",
+			"a",
+		},
+		{
+			"Multiple labels w/ custom separator",
+			[]string{"label1", "label3", "label2"},
+			",",
+			"a,c,b",
+		},
+		{
+			"Multiple labels w/ missing label",
+			[]string{"label1", "label4", "label2"},
+			"",
+			"a;;b",
+		},
+	}
+
+	for _, tc := range testCases {
+		lm := &LabelMatcher{
+			LabelNames: tc.labelNames,
+			Separator:  tc.separator,
+			Regex:      ".+",
+		}
+		lm.Init()
+		t.Run(tc.testName, func(t *testing.T) {
+			concatenatedLabels := lm.getConcatenatedLabels(labels)
+			assert.Equal(t, tc.expected, concatenatedLabels)
+		})
+	}
+}
+
+func TestLabelMatcherMatches(t *testing.T) {
+	testCases := []struct {
+		testName     string
+		labels       map[string]string
+		labelMatcher *LabelMatcher
+		expected     bool
+	}{
+		{
+			"Single label",
+			map[string]string{
+				"label1": "foo",
+			},
+			&LabelMatcher{
+				LabelNames: []string{"label1"},
+				Regex:      "^fo+$",
+			},
+			true,
+		},
+		{
+			"Single label, no match",
+			map[string]string{
+				"label1": "foo",
+			},
+			&LabelMatcher{
+				LabelNames: []string{"label1"},
+				Regex:      "^f+$",
+			},
+			false,
+		},
+		{
+			"Single label w/ missing label name",
+			map[string]string{
+				"label1": "foo",
+			},
+			&LabelMatcher{
+				LabelNames: []string{"label2"},
+				Regex:      ".+",
+			},
+			false,
+		},
+		{
+			"Multiple labels",
+			map[string]string{
+				"label1": "foo",
+				"label2": "bar",
+				"label3": "car",
+			},
+			&LabelMatcher{
+				LabelNames: []string{"label1", "label3", "label2"},
+				Regex:      "fo+;car;b.*$",
+			},
+			true,
+		},
+		{
+			"Multiple labels w/ custom separator",
+			map[string]string{
+				"label1": "foo",
+				"label2": "bar",
+				"label3": "car",
+			},
+			&LabelMatcher{
+				LabelNames: []string{"label1", "label3", "label2"},
+				Separator:  ",",
+				Regex:      "fo+,car,b.*$",
+			},
+			true,
+		},
+		{
+			"Multiple labels, no match",
+			map[string]string{
+				"label1": "foo",
+				"label2": "bar",
+				"label3": "car",
+			},
+			&LabelMatcher{
+				LabelNames: []string{"label1", "label3", "label2"},
+				Separator:  ",",
+				Regex:      "fo+;car;b.*$",
+			},
+			false,
+		},
+		{
+			"Multiple labels w/ missing label name",
+			map[string]string{
+				"label1": "foo",
+				"label2": "bar",
+				"label3": "car",
+			},
+			&LabelMatcher{
+				LabelNames: []string{"label1", "label4", "label2"},
+				Regex:      "fo+;;b.*$",
+			},
+			true,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc.labelMatcher.Init()
+		t.Run(tc.testName, func(t *testing.T) {
+			matches := tc.labelMatcher.Matches(tc.labels)
+			assert.Equal(t, tc.expected, matches)
+		})
+	}
+}
+
+func TestMetricDeclarationInit(t *testing.T) {
 	logger := zap.NewNop()
 	t.Run("no dimensions", func(t *testing.T) {
 		m := &MetricDeclaration{
@@ -83,7 +286,7 @@ func TestInit(t *testing.T) {
 			},
 			MetricNameSelectors: []string{"a.*", "b$", "aa+"},
 		}
-		obs, logs := observer.New(zap.WarnLevel)
+		obs, logs := observer.New(zap.DebugLevel)
 		obsLogger := zap.New(obs)
 		err := m.Init(obsLogger)
 		assert.Nil(t, err)
@@ -92,11 +295,11 @@ func TestInit(t *testing.T) {
 		// Check logged warning message
 		expectedLogs := []observer.LoggedEntry{
 			{
-				Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "Removed duplicates from dimension set."},
+				Entry:   zapcore.Entry{Level: zap.DebugLevel, Message: "Removed duplicates from dimension set."},
 				Context: []zapcore.Field{zap.String("dimensions", "a,c,b,c")},
 			},
 			{
-				Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "Dropped dimension set: duplicated dimension set."},
+				Entry:   zapcore.Entry{Level: zap.DebugLevel, Message: "Dropped dimension set: duplicated dimension set."},
 				Context: []zapcore.Field{zap.String("dimensions", "c,b,a")},
 			},
 		}
@@ -111,9 +314,68 @@ func TestInit(t *testing.T) {
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "invalid metric declaration: no metric name selectors defined")
 	})
+
+	// Test initialization of label matchers
+	t.Run("initialization of label matchers", func(t *testing.T) {
+		m := &MetricDeclaration{
+			MetricNameSelectors: []string{"foo"},
+			LabelMatchers: []*LabelMatcher{
+				{
+					LabelNames: []string{"label1", "label2"},
+					Regex:      ".+",
+				},
+				{
+					LabelNames: []string{"label1", "label3"},
+					Separator:  ",",
+					Regex:      "a*",
+				},
+			},
+		}
+		err := m.Init(logger)
+		assert.Nil(t, err)
+		assert.Equal(t, 2, len(m.LabelMatchers))
+		assert.Equal(t, ";", m.LabelMatchers[0].Separator)
+		assert.Equal(t, ".+", m.LabelMatchers[0].Regex)
+		assert.NotNil(t, m.LabelMatchers[0].compiledRegex)
+		assert.Equal(t, ",", m.LabelMatchers[1].Separator)
+		assert.Equal(t, "a*", m.LabelMatchers[1].Regex)
+		assert.NotNil(t, m.LabelMatchers[1].compiledRegex)
+	})
+
+	// Test error from label matcher initialization
+	t.Run("label matcher init error", func(t *testing.T) {
+		m := &MetricDeclaration{
+			MetricNameSelectors: []string{"foo"},
+			LabelMatchers: []*LabelMatcher{
+				{
+					LabelNames: []string{"label1", "label2"},
+					Regex:      ".+",
+				},
+				{
+					LabelNames: []string{},
+					Regex:      ".+",
+				},
+			},
+		}
+		err := m.Init(logger)
+		assert.NotNil(t, err)
+		assert.EqualError(t, err, "label matcher must have at least one label name specified")
+
+		m = &MetricDeclaration{
+			MetricNameSelectors: []string{"foo"},
+			LabelMatchers: []*LabelMatcher{
+				{
+					LabelNames: []string{"label1", "label2"},
+				},
+			},
+		}
+		err = m.Init(logger)
+		assert.NotNil(t, err)
+		assert.EqualError(t, err, "regex not specified for label matcher")
+	})
 }
 
-func TestMatches(t *testing.T) {
+func TestMetricDeclarationMatches(t *testing.T) {
 	m := &MetricDeclaration{
 		MetricNameSelectors: []string{"^a+$", "^b.*$", "^ac+a$"},
 	}
@@ -124,31 +386,151 @@ func TestMatches(t *testing.T) {
 	metric := pdata.NewMetric()
 	metric.InitEmpty()
 	metric.SetName("a")
-	assert.True(t, m.Matches(&metric))
+	assert.True(t, m.Matches(&metric, nil))
 
 	metric.SetName("aa")
-	assert.True(t, m.Matches(&metric))
+	assert.True(t, m.Matches(&metric, nil))
 
 	metric.SetName("aaaa")
-	assert.True(t, m.Matches(&metric))
+	assert.True(t, m.Matches(&metric, nil))
 
 	metric.SetName("aaab")
-	assert.False(t, m.Matches(&metric))
+	assert.False(t, m.Matches(&metric, nil))
 
 	metric.SetName("b")
-	assert.True(t, m.Matches(&metric))
+	assert.True(t, m.Matches(&metric, nil))
 
 	metric.SetName("ba")
-	assert.True(t, m.Matches(&metric))
+	assert.True(t, m.Matches(&metric, nil))
 
 	metric.SetName("c")
-	assert.False(t, m.Matches(&metric))
+	assert.False(t, m.Matches(&metric, nil))
 
 	metric.SetName("aca")
-	assert.True(t, m.Matches(&metric))
+	assert.True(t, m.Matches(&metric, nil))
 
 	metric.SetName("accca")
-	assert.True(t, m.Matches(&metric))
+	assert.True(t, m.Matches(&metric, nil))
+}
+
+func TestMetricDeclarationMatchesWithLabelMatchers(t *testing.T) {
+	labels := map[string]string{
+		"label1": "foo",
+		"label2": "bar",
+		"label3": "car",
+	}
+	testCases := []struct {
+		testName      string
+		labelMatchers []*LabelMatcher
+		expected      bool
+	}{
+		{
+			"Single label",
+			[]*LabelMatcher{
+				{
+					LabelNames: []string{"label1"},
+					Regex:      "^fo+$",
+				},
+			},
+			true,
+		},
+		{
+			"Multiple matchers w/ single label",
+			[]*LabelMatcher{
+				{
+					LabelNames: []string{"label1"},
+					Regex:      "food",
+				},
+				{
+					LabelNames: []string{"label3"},
+					Regex:      "^c.*$",
+				},
+			},
+			true,
+		},
+		{
+			"Multiple matchers w/ single label, no match",
+			[]*LabelMatcher{
+				{
+					LabelNames: []string{"label1"},
+					Regex:      "food",
+				},
+				{
+					LabelNames: []string{"label3"},
+					Regex:      "cat",
+				},
+			},
+			false,
+		},
+		{
+			"Multiple labels",
+			[]*LabelMatcher{
+				{
+					LabelNames: []string{"label1", "label3", "label2"},
+					Regex:      "fo+;car;b.*$",
+				},
+			},
+			true,
+		},
+		{
+			"Multiple labels w/ custom separator",
+			[]*LabelMatcher{
+				{
+					LabelNames: []string{"label1", "label3", "label2"},
+					Separator:  ",",
+					Regex:      "fo+,car,b.*$",
+				},
+			},
+			true,
+		},
+		{
+			"Multiple matchers w/ multiple labels",
+			[]*LabelMatcher{
+				{
+					LabelNames: []string{"label1", "label3", "label2"},
+					Separator:  ",",
+					Regex:      "fo+,car,b.*$",
+				},
+				{
+					LabelNames: []string{"label3"},
+					Regex:      "fat",
+				},
+			},
+			true,
+		},
+		{
+			"Multiple matchers w/ multiple labels, no match",
+			[]*LabelMatcher{
+				{
+					LabelNames: []string{"label1", "label3", "label2"},
+					Separator:  ",",
+					Regex:      "fo+,cat,b.*$",
+				},
+				{
+					LabelNames: []string{"label3"},
+					Regex:      "fat",
+				},
+			},
+			false,
+		},
+	}
+	logger := zap.NewNop()
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("a")
+
+	for _, tc := range testCases {
+		m := MetricDeclaration{
+			MetricNameSelectors: []string{"^a+$"},
+			LabelMatchers:       tc.labelMatchers,
+		}
+		t.Run(tc.testName, func(t *testing.T) {
+			err := m.Init(logger)
+			assert.Nil(t, err)
+			matches := m.Matches(&metric, labels)
+			assert.Equal(t, tc.expected, matches)
+		})
+	}
 }
 
 func TestExtractDimensions(t *testing.T) {

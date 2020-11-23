@@ -15,6 +15,7 @@
 package awsemfexporter
 
 import (
+	"bytes"
 	"errors"
 	"regexp"
 	"sort"
@@ -34,9 +35,26 @@ type MetricDeclaration struct {
 	// MetricNameSelectors is a list of regex strings to be matched against metric names
 	// to determine which metrics should be included with this metric declaration rule.
 	MetricNameSelectors []string `mapstructure:"metric_name_selectors"`
+	// (Optional) List of label matchers that define matching rules to filter against
+	// the labels of incoming metrics.
+	LabelMatchers []*LabelMatcher `mapstructure:"label_matchers"`
 
 	// metricRegexList is a list of compiled regexes for metric name selectors.
 	metricRegexList []*regexp.Regexp
+}
+
+// Defines a label filtering rule against the labels of incoming metrics. Only metrics that
+// match the rules will be used by the surrounding MetricDeclaration.
+type LabelMatcher struct {
+	// List of label names to filter by. Their corresponding values are concatenated using
+	// the separator and matched against the specified regular expression.
+	LabelNames []string `mapstructure:"label_names"`
+	// (Optional) Separator placed between concatenated source label values. (Default: ';')
+	Separator string `mapstructure:"separator"`
+	// Regex string to be used to match against values of the concatenated labels.
+	Regex string `mapstructure:"regex"`
+
+	compiledRegex *regexp.Regexp
 }
 
 // Remove duplicated entries from dimension set.
@@ -80,7 +98,7 @@ func (m *MetricDeclaration) Init(logger *zap.Logger) (err error) {
 		// Dedup dimensions within dimension set
 		dedupedDims, hasDuplicate := dedupDimensionSet(dimSet)
 		if hasDuplicate {
-			logger.Warn("Removed duplicates from dimension set.", zap.String("dimensions", concatenatedDims))
+			logger.Debug("Removed duplicates from dimension set.", zap.String("dimensions", concatenatedDims))
 		}
 
 		// Sort dimensions
@@ -89,7 +107,7 @@ func (m *MetricDeclaration) Init(logger *zap.Logger) (err error) {
 		// Dedup dimension sets
 		key := strings.Join(dedupedDims, ",")
 		if _, ok := seen[key]; ok {
-			logger.Warn("Dropped dimension set: duplicated dimension set.", zap.String("dimensions", concatenatedDims))
+			logger.Debug("Dropped dimension set: duplicated dimension set.", zap.String("dimensions", concatenatedDims))
 			continue
 		}
 		seen[key] = true
@@ -101,17 +119,42 @@ func (m *MetricDeclaration) Init(logger *zap.Logger) (err error) {
 	for i, selector := range m.MetricNameSelectors {
 		m.metricRegexList[i] = regexp.MustCompile(selector)
 	}
+
+	// Initialize label matchers
+	for _, lm := range m.LabelMatchers {
+		if err := lm.Init(); err != nil {
+			return err
+		}
+	}
 	return
 }
 
 // Matches returns true if the given OTLP Metric's name matches any of the Metric
-// Declaration's metric name selectors.
-func (m *MetricDeclaration) Matches(metric *pdata.Metric) bool {
+// Declaration's metric name selectors and label matchers.
+func (m *MetricDeclaration) Matches(metric *pdata.Metric, labels map[string]string) bool {
+	// Check if metric matches at least one of the metric name selectors
+	hasMetricNameMatch := false
 	for _, regex := range m.metricRegexList {
 		if regex.MatchString(metric.Name()) {
+			hasMetricNameMatch = true
+			break
+		}
+	}
+	if !hasMetricNameMatch {
+		return false
+	}
+
+	if len(m.LabelMatchers) == 0 {
+		return true
+	}
+
+	// If there are label matchers defined, check if metric's labels matches at least one
+	for _, lm := range m.LabelMatchers {
+		if lm.Matches(labels) {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -136,6 +179,44 @@ func (m *MetricDeclaration) ExtractDimensions(labels map[string]string) (dimensi
 	return
 }
 
+// Initialize LabelMatcher with default values and compile regex string.
+func (lm *LabelMatcher) Init() (err error) {
+	// Throw error if no label names are specified
+	if len(lm.LabelNames) == 0 {
+		return errors.New("label matcher must have at least one label name specified")
+	}
+	if len(lm.Regex) == 0 {
+		return errors.New("regex not specified for label matcher")
+	}
+	if len(lm.Separator) == 0 {
+		lm.Separator = ";"
+	}
+	lm.compiledRegex = regexp.MustCompile(lm.Regex)
+	return
+}
+
+// Returns true if given set of labels matches the LabelMatcher's rules.
+func (lm *LabelMatcher) Matches(labels map[string]string) bool {
+	concatenatedLabels := lm.getConcatenatedLabels(labels)
+	return lm.compiledRegex.MatchString(concatenatedLabels)
+}
+
+// Concatenate label values of matched labels using separator defined by the LabelMatcher's rules.
+func (lm *LabelMatcher) getConcatenatedLabels(labels map[string]string) string {
+	buf := new(bytes.Buffer)
+	isFirstLabel := true
+	for _, labelName := range lm.LabelNames {
+		if isFirstLabel {
+			isFirstLabel = false
+		} else {
+			buf.WriteString(lm.Separator)
+		}
+
+		buf.WriteString(labels[labelName])
+	}
+	return buf.String()
+}
+
 // processMetricDeclarations processes a list of MetricDeclarations and creates a
 // list of dimension sets that matches the given `metric`. This list is then aggregated
 // together with the rolled-up dimensions. Returned dimension sets
@@ -155,7 +236,7 @@ func processMetricDeclarations(metricDeclarations []*MetricDeclaration, metric *
 	}
 	// Extract and append dimensions from metric declarations
 	for _, m := range metricDeclarations {
-		if m.Matches(metric) {
+		if m.Matches(metric, labels) {
 			extractedDims := m.ExtractDimensions(labels)
 			for _, dimSet := range extractedDims {
 				addDimSet(dimSet)

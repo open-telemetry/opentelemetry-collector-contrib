@@ -549,6 +549,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 	testCases := []struct {
 		testName              string
 		metricNameSelectors   []string
+		labelMatchers         []*LabelMatcher
 		dimensionRollupOption string
 		expectedDimensions    [][]string
 		numMeasurements       int
@@ -556,6 +557,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 		{
 			"has match w/ Zero + Single dim rollup",
 			[]string{"spanCounter"},
+			nil,
 			ZeroAndSingleDimensionRollup,
 			[][]string{
 				{"spanName", "isItAnError"},
@@ -568,6 +570,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 		{
 			"has match w/ no dim rollup",
 			[]string{"spanCounter"},
+			nil,
 			"",
 			[][]string{
 				{"spanName", "isItAnError"},
@@ -576,8 +579,38 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 			1,
 		},
 		{
+			"has label match w/ no dim rollup",
+			[]string{"spanCounter"},
+			[]*LabelMatcher{
+				{
+					LabelNames: []string{"isItAnError", "spanName"},
+					Regex:      "false;testSpan",
+				},
+			},
+			"",
+			[][]string{
+				{"spanName", "isItAnError"},
+				{"spanName", OTellibDimensionKey},
+			},
+			1,
+		},
+		{
+			"no label match w/ no dim rollup",
+			[]string{"spanCounter"},
+			[]*LabelMatcher{
+				{
+					LabelNames: []string{"isItAnError", "spanName"},
+					Regex:      "true;testSpan",
+				},
+			},
+			"",
+			nil,
+			0,
+		},
+		{
 			"No match w/ rollup",
 			[]string{"invalid"},
+			nil,
 			ZeroAndSingleDimensionRollup,
 			[][]string{
 				{OTellibDimensionKey, "spanName"},
@@ -589,6 +622,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 		{
 			"No match w/ no rollup",
 			[]string{"invalid"},
+			nil,
 			"",
 			nil,
 			0,
@@ -600,6 +634,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 		m := MetricDeclaration{
 			Dimensions:          [][]string{{"isItAnError", "spanName"}, {"spanName", OTellibDimensionKey}},
 			MetricNameSelectors: tc.metricNameSelectors,
+			LabelMatchers:       tc.labelMatchers,
 		}
 		config := &Config{
 			Namespace:             "",
@@ -690,7 +725,7 @@ func TestTranslateCWMetricToEMFNoMeasurements(t *testing.T) {
 		Fields:       fields,
 		Measurements: nil,
 	}
-	obs, logs := observer.New(zap.WarnLevel)
+	obs, logs := observer.New(zap.DebugLevel)
 	logger := zap.New(obs)
 	inputLogEvent := TranslateCWMetricToEMF([]*CWMetrics{met}, logger)
 	expected := "{\"OTelLib\":\"cloudwatch-otel\",\"spanCounter\":0,\"spanName\":\"test\"}"
@@ -700,7 +735,7 @@ func TestTranslateCWMetricToEMFNoMeasurements(t *testing.T) {
 	// Check logged warning message
 	fieldsStr, _ := json.Marshal(fields)
 	expectedLogs := []observer.LoggedEntry{{
-		Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "Dropped metric due to no matching metric declarations"},
+		Entry:   zapcore.Entry{Level: zap.DebugLevel, Message: "Dropped metric due to no matching metric declarations"},
 		Context: []zapcore.Field{zap.String("labels", string(fieldsStr))},
 	}}
 	assert.Equal(t, 1, logs.Len())
