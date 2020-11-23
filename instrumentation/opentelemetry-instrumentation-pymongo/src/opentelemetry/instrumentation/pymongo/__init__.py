@@ -46,7 +46,6 @@ from opentelemetry.trace import SpanKind, get_tracer
 from opentelemetry.trace.status import Status, StatusCode
 
 DATABASE_TYPE = "mongodb"
-COMMAND_ATTRIBUTES = ["filter", "sort", "skip", "limit", "pipeline"]
 
 
 class CommandTracer(monitoring.CommandListener):
@@ -60,7 +59,7 @@ class CommandTracer(monitoring.CommandListener):
         if not self.is_enabled:
             return
         command = event.command.get(event.command_name, "")
-        name = DATABASE_TYPE + "." + event.command_name
+        name = event.command_name
         statement = event.command_name
         if command:
             name += "." + str(command)
@@ -69,22 +68,12 @@ class CommandTracer(monitoring.CommandListener):
         try:
             span = self._tracer.start_span(name, kind=SpanKind.CLIENT)
             if span.is_recording():
-                span.set_attribute("component", DATABASE_TYPE)
-                span.set_attribute("db.type", DATABASE_TYPE)
-                span.set_attribute("db.instance", event.database_name)
+                span.set_attribute("db.system", DATABASE_TYPE)
+                span.set_attribute("db.name", event.database_name)
                 span.set_attribute("db.statement", statement)
                 if event.connection_id is not None:
                     span.set_attribute("net.peer.name", event.connection_id[0])
                     span.set_attribute("net.peer.port", event.connection_id[1])
-
-                # pymongo specific, not specified by spec
-                span.set_attribute("db.mongo.operation_id", event.operation_id)
-                span.set_attribute("db.mongo.request_id", event.request_id)
-
-                for attr in COMMAND_ATTRIBUTES:
-                    _attr = event.command.get(attr)
-                    if _attr is not None:
-                        span.set_attribute("db.mongo." + attr, str(_attr))
 
             # Add Span to dictionary
             self._span_dict[_get_span_dict_key(event)] = span
@@ -101,10 +90,6 @@ class CommandTracer(monitoring.CommandListener):
         span = self._pop_span(event)
         if span is None:
             return
-        if span.is_recording():
-            span.set_attribute(
-                "db.mongo.duration_micros", event.duration_micros
-            )
         span.end()
 
     def failed(self, event: monitoring.CommandFailedEvent):
@@ -115,9 +100,6 @@ class CommandTracer(monitoring.CommandListener):
         if span is None:
             return
         if span.is_recording():
-            span.set_attribute(
-                "db.mongo.duration_micros", event.duration_micros
-            )
             span.set_status(Status(StatusCode.ERROR, event.failure))
         span.end()
 
