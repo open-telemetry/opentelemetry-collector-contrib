@@ -46,8 +46,8 @@ func createMetricsReceiver(
 			scraperhelper.NewMetricsScraper(
 				cfg.Name(),
 				scraper.scrape,
-				scraperhelper.WithInitialize(scraper.initialize),
-				scraperhelper.WithClose(scraper.close),
+				scraperhelper.WithStart(scraper.start),
+				scraperhelper.WithShutdown(scraper.shutdown),
 			),
 		),
 	)
