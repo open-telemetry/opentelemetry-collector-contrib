@@ -5,6 +5,8 @@
   ([#181](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/181))
 - Make botocore instrumentation check if instrumentation has been suppressed
   ([#182](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/182))
+- Botocore SpanKind as CLIENT and modify existing traced attributes
+  ([#150])(https://github.com/open-telemetry/opentelemetry-python-contrib/pull/150)
 
 ## Version 0.13b0
 

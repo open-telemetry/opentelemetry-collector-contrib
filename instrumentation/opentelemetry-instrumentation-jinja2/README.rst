@@ -17,5 +17,5 @@ Installation
 References
 ----------
 
-* `OpenTelemetry jinja2 integration <https://opentelemetry-python.readthedocs.io/en/latest/instrumentation/jinja2/jinja2.html>`_
+* `OpenTelemetry jinja2 integration <https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/jinja2/jinja2.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_

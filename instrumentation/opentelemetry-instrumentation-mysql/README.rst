@@ -20,6 +20,6 @@ Installation
 
 References
 ----------
-* `OpenTelemetry MySQL Instrumentation <https://opentelemetry-python.readthedocs.io/en/latest/instrumentation/mysql/mysql.html>`_
+* `OpenTelemetry MySQL Instrumentation <https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/mysql/mysql.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_
 

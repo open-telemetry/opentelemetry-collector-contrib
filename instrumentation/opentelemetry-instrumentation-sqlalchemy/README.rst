@@ -20,5 +20,5 @@ References
 ----------
 
 * `SQLAlchemy Project <https://www.sqlalchemy.org/>`_
-* `OpenTelemetry SQLAlchemy Tracing <https://opentelemetry-python.readthedocs.io/en/latest/instrumentation/sqlalchemy/sqlalchemy.html>`_
+* `OpenTelemetry SQLAlchemy Tracing <https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/sqlalchemy/sqlalchemy.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_

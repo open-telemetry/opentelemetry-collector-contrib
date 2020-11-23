@@ -19,5 +19,5 @@ Installation
 References
 ----------
 
-* `OpenTelemetry Boto Tracing <https://opentelemetry-python.readthedocs.io/en/latest/instrumentation/boto/boto.html>`_
+* `OpenTelemetry Boto Tracing <https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/boto/boto.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_
