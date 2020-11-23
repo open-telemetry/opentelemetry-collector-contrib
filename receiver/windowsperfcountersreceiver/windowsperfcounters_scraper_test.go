@@ -24,6 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -33,13 +34,13 @@ import (
 )
 
 type mockPerfCounter struct {
-	path      string
-	scrapeErr error
-	closeErr  error
+	path        string
+	scrapeErr   error
+	shutdownErr error
 }
 
-func newMockPerfCounter(path string, scrapeErr, closeErr error) *mockPerfCounter {
-	return &mockPerfCounter{path: path, scrapeErr: scrapeErr, closeErr: closeErr}
+func newMockPerfCounter(path string, scrapeErr, shutdownErr error) *mockPerfCounter {
+	return &mockPerfCounter{path: path, scrapeErr: scrapeErr, shutdownErr: shutdownErr}
 }
 
 // Path
@@ -54,7 +55,7 @@ func (mpc *mockPerfCounter) ScrapeData() ([]win_perf_counters.CounterValue, erro
 
 // Close
 func (mpc *mockPerfCounter) Close() error {
-	return mpc.closeErr
+	return mpc.shutdownErr
 }
 
 func Test_WindowsPerfCounterScraper(t *testing.T) {
@@ -67,12 +68,12 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		name string
 		cfg  *Config
 
-		newErr            string
-		mockCounterPath   string
-		initializeMessage string
-		initializeErr     string
-		scrapeErr         error
-		closeErr          error
+		newErr          string
+		mockCounterPath string
+		startMessage    string
+		startErr        string
+		scrapeErr       error
+		shutdownErr     error
 
 		expectedMetrics []expectedMetric
 	}
@@ -117,8 +118,8 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
-			initializeMessage: "some performance counters could not be initialized",
-			initializeErr:     "counter \\Invalid Object\\Invalid Counter: The specified object was not found on the computer.\r\n",
+			startMessage: "some performance counters could not be initialized",
+			startErr:     "counter \\Invalid Object\\Invalid Counter: The specified object was not found on the computer.\r\n",
 		},
 		{
 			name:      "ScrapeError",
@@ -127,7 +128,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		{
 			name:            "CloseError",
 			expectedMetrics: []expectedMetric{{name: ""}},
-			closeErr:        errors.New("err1"),
+			shutdownErr:     errors.New("err1"),
 		},
 	}
 
@@ -146,22 +147,22 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				return
 			}
 
-			err = scraper.initialize(context.Background())
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
-			if test.initializeErr != "" {
+			if test.startErr != "" {
 				require.Equal(t, 1, obs.Len())
 				log := obs.All()[0]
 				assert.Equal(t, log.Level, zapcore.WarnLevel)
-				assert.Equal(t, test.initializeMessage, log.Message)
+				assert.Equal(t, test.startMessage, log.Message)
 				assert.Equal(t, "error", log.Context[0].Key)
-				assert.EqualError(t, log.Context[0].Interface.(error), test.initializeErr)
+				assert.EqualError(t, log.Context[0].Interface.(error), test.startErr)
 				return
 			}
 			require.NoError(t, err)
 
-			if test.mockCounterPath != "" || test.scrapeErr != nil || test.closeErr != nil {
+			if test.mockCounterPath != "" || test.scrapeErr != nil || test.shutdownErr != nil {
 				for i := range scraper.counters {
-					scraper.counters[i] = newMockPerfCounter(test.mockCounterPath, test.scrapeErr, test.closeErr)
+					scraper.counters[i] = newMockPerfCounter(test.mockCounterPath, test.scrapeErr, test.shutdownErr)
 				}
 			}
 
@@ -214,9 +215,9 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				}
 			}
 
-			err = scraper.close(context.Background())
-			if test.closeErr != nil {
-				assert.Equal(t, err, test.closeErr)
+			err = scraper.shutdown(context.Background())
+			if test.shutdownErr != nil {
+				assert.Equal(t, err, test.shutdownErr)
 			} else {
 				require.NoError(t, err)
 			}
