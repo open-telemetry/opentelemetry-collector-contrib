@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
 func TestCreateMetricsReceiver(t *testing.T) {
@@ -29,7 +29,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
 
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, exportertest.NewNopMetricsExporter())
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, consumertest.NewMetricsNop())
 
 	assert.NoError(t, err)
 	assert.NotNil(t, mReceiver)

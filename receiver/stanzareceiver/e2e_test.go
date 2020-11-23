@@ -28,8 +28,8 @@ import (
 	"github.com/observiq/stanza/entry"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap/zaptest"
 	"gopkg.in/yaml.v2"
 )
@@ -52,7 +52,7 @@ func unmarshalConfig(t *testing.T, pipelineYaml string) OperatorConfig {
 	return operatorCfg
 }
 
-func expectNLogs(sink *exportertest.SinkLogsExporter, expected int) func() bool {
+func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
 	return func() bool { return sink.LogRecordsCount() == expected }
 }
 
@@ -82,7 +82,7 @@ func TestReadStaticFile(t *testing.T) {
 	expectedLogs := []pdata.Logs{convert(e1), convert(e2), convert(e3)}
 
 	f := NewFactory()
-	sink := &exportertest.SinkLogsExporter{}
+	sink := new(consumertest.LogsSink)
 	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
 
 	cfg := f.CreateDefaultConfig().(*Config)
@@ -146,7 +146,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	t.Parallel()
 
 	f := NewFactory()
-	sink := &exportertest.SinkLogsExporter{}
+	sink := new(consumertest.LogsSink)
 	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
 
 	tempDir := newTempDir(t)
