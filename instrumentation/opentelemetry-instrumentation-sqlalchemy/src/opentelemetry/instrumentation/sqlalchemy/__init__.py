@@ -34,7 +34,6 @@ Usage
     engine = create_engine("sqlite:///:memory:")
     SQLAlchemyInstrumentor().instrument(
         engine=engine,
-        service="service-A",
     )
 
 API
@@ -66,7 +65,6 @@ class SQLAlchemyInstrumentor(BaseInstrumentor):
             **kwargs: Optional arguments
                 ``engine``: a SQLAlchemy engine instance
                 ``tracer_provider``: a TracerProvider, defaults to global
-                ``service``: the name of the service to trace.
 
         Returns:
             An instrumented engine if passed in as an argument, None otherwise.
