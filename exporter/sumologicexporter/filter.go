@@ -55,7 +55,7 @@ func (f *filter) filter(attributes pdata.AttributeMap) map[string]string {
 	attributes.ForEach(func(k string, v pdata.AttributeValue) {
 		for _, regex := range f.regexes {
 			if regex.MatchString(k) {
-				returnValue[k] = tracetranslator.AttributeValueToString(v, true)
+				returnValue[k] = tracetranslator.AttributeValueToString(v, false)
 				return
 			}
 		}
@@ -73,7 +73,7 @@ func (f *filter) filterOut(attributes pdata.AttributeMap) map[string]string {
 				return
 			}
 		}
-		returnValue[k] = tracetranslator.AttributeValueToString(v, true)
+		returnValue[k] = tracetranslator.AttributeValueToString(v, false)
 	})
 	return returnValue
 }
