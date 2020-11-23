@@ -189,13 +189,23 @@ func (e *exporterImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error 
 	e.updateLock.RLock()
 	defer e.updateLock.RUnlock()
 
+	var wg sync.WaitGroup
+	var errorsLock sync.Mutex
 	var errors []error
 	batches := batchpertrace.Split(td)
 	for _, batch := range batches {
-		if err := e.consumeTrace(ctx, batch); err != nil {
-			errors = append(errors, err)
-		}
+		batch := batch
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := e.consumeTrace(ctx, batch); err != nil {
+				errorsLock.Lock()
+				errors = append(errors, err)
+				errorsLock.Unlock()
+			}
+		}()
 	}
+	wg.Wait()
 
 	return componenterror.CombineErrors(errors)
 }
