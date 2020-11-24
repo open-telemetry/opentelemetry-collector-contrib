@@ -49,7 +49,11 @@ _APPLIED = "_opentelemetry_tracer"
 
 
 def _hydrate_span_from_args(connection, query, parameters) -> dict:
+    """Get network and database attributes from connection."""
     span_attributes = {"db.system": "postgresql"}
+
+    # connection contains _params attribute which is a namedtuple ConnectionParameters.
+    # https://github.com/MagicStack/asyncpg/blob/master/asyncpg/connection.py#L68
 
     params = getattr(connection, "_params", None)
     dbname = getattr(params, "database", None)
@@ -59,6 +63,8 @@ def _hydrate_span_from_args(connection, query, parameters) -> dict:
     if user:
         span_attributes["db.user"] = user
 
+    # connection contains _addr attribute which is either a host/port tuple, or unix socket string
+    # https://magicstack.github.io/asyncpg/current/_modules/asyncpg/connection.html
     addr = getattr(connection, "_addr", None)
     if isinstance(addr, tuple):
         span_attributes["net.peer.name"] = addr[0]
