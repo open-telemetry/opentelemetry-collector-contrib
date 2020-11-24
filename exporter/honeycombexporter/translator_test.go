@@ -18,47 +18,27 @@ import (
 	"testing"
 	"time"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"go.opentelemetry.io/collector/consumer/pdata"
+
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestSpanAttributesToMap(t *testing.T) {
 
-	newSpanAttr := func(key string, value *tracepb.AttributeValue, count int32) *tracepb.Span_Attributes {
-		return &tracepb.Span_Attributes{
-			AttributeMap: map[string]*tracepb.AttributeValue{
-				key: value,
-			},
-			DroppedAttributesCount: count,
-		}
-	}
-
-	spanAttrs := []*tracepb.Span_Attributes{
-		newSpanAttr("foo", &tracepb.AttributeValue{
-			Value: &tracepb.AttributeValue_StringValue{
-				StringValue: &tracepb.TruncatableString{Value: "bar"},
-			},
-		}, 0),
-		newSpanAttr("foo", &tracepb.AttributeValue{
-			Value: &tracepb.AttributeValue_IntValue{
-				IntValue: 1234,
-			},
-		}, 0),
-		newSpanAttr("foo", &tracepb.AttributeValue{
-			Value: &tracepb.AttributeValue_BoolValue{
-				BoolValue: true,
-			},
-		}, 0),
-		newSpanAttr("foo", &tracepb.AttributeValue{
-			Value: &tracepb.AttributeValue_DoubleValue{
-				DoubleValue: 0.3145,
-			},
-		}, 0),
-		nil,
-		{
-			AttributeMap:           nil,
-			DroppedAttributesCount: 0,
-		},
+	spanAttrs := []pdata.AttributeMap{
+		pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			"foo": pdata.NewAttributeValueString("bar"),
+		}),
+		pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			"foo": pdata.NewAttributeValueInt(1234),
+		}),
+		pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			"foo": pdata.NewAttributeValueBool(true),
+		}),
+		pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			"foo": pdata.NewAttributeValueDouble(0.3145),
+		}),
+		pdata.NewAttributeMap(),
 	}
 
 	wantResults := []map[string]interface{}{
@@ -84,17 +64,18 @@ func TestSpanAttributesToMap(t *testing.T) {
 
 func TestTimestampToTime(t *testing.T) {
 	var t1 time.Time
-	emptyTime := timestampToTime(nil)
+	emptyTime := timestampToTime(pdata.TimestampUnixNano(0))
 	if t1 != emptyTime {
 		t.Errorf("Expected %+v, Got: %+v\n", t1, emptyTime)
 	}
 
 	t2 := time.Now()
 	seconds := t2.UnixNano() / 1000000000
-	nowTime := timestampToTime(&timestamppb.Timestamp{
-		Seconds: seconds,
-		Nanos:   int32(t2.UnixNano() - (seconds * 1000000000)),
-	})
+	nowTime := timestampToTime(pdata.TimestampToUnixNano(
+		&timestamppb.Timestamp{
+			Seconds: seconds,
+			Nanos:   int32(t2.UnixNano() - (seconds * 1000000000)),
+		}))
 
 	if !t2.Equal(nowTime) {
 		t.Errorf("Expected %+v, Got %+v\n", t2, nowTime)

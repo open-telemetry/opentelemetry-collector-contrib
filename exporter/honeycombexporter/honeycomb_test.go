@@ -209,11 +209,9 @@ func TestExporter(t *testing.T) {
 		{
 			Data: map[string]interface{}{
 				"duration_ms":                            float64(0),
-				"has_remote_parent":                      false,
 				"name":                                   "client",
-				"service_name":                           "test_service",
+				"service.name":                           "test_service",
 				"span_kind":                              "client",
-				"source_format":                          "otlp_trace",
 				"status.code":                            float64(0),
 				"status.message":                         "OK",
 				"trace.parent_id":                        "0200000000000000",
@@ -228,11 +226,9 @@ func TestExporter(t *testing.T) {
 		{
 			Data: map[string]interface{}{
 				"duration_ms":                            float64(0),
-				"has_remote_parent":                      true,
 				"name":                                   "server",
-				"service_name":                           "test_service",
+				"service.name":                           "test_service",
 				"span_kind":                              "server",
-				"source_format":                          "otlp_trace",
 				"status.code":                            float64(0),
 				"status.message":                         "OK",
 				"trace.parent_id":                        "0300000000000000",
@@ -252,8 +248,7 @@ func TestExporter(t *testing.T) {
 				"meta.annotation_type":    "span_event",
 				"name":                    "Some Description",
 				"opencensus.resourcetype": "override",
-				"service_name":            "test_service",
-				"source_format":           "otlp_trace",
+				"service.name":            "test_service",
 				"trace.parent_id":         "0200000000000000",
 				"trace.parent_name":       "root",
 				"trace.trace_id":          "01000000000000000000000000000000",
@@ -262,10 +257,8 @@ func TestExporter(t *testing.T) {
 		{
 			Data: map[string]interface{}{
 				"duration_ms":                            float64(0),
-				"has_remote_parent":                      false,
 				"name":                                   "root",
-				"service_name":                           "test_service",
-				"source_format":                          "otlp_trace",
+				"service.name":                           "test_service",
 				"span_attr_name":                         "Span Attribute",
 				"span_kind":                              "server",
 				"status.code":                            float64(0),
@@ -354,10 +347,8 @@ func TestSampleRateAttribute(t *testing.T) {
 		{
 			Data: map[string]interface{}{
 				"duration_ms":                            float64(0),
-				"has_remote_parent":                      false,
 				"hc.sample.rate":                         float64(13),
 				"name":                                   "root",
-				"source_format":                          "otlp_trace",
 				"span_kind":                              "server",
 				"status.code":                            float64(0),
 				"status.message":                         "OK",
@@ -370,9 +361,7 @@ func TestSampleRateAttribute(t *testing.T) {
 		{
 			Data: map[string]interface{}{
 				"duration_ms":                            float64(0),
-				"has_remote_parent":                      false,
 				"name":                                   "root",
-				"source_format":                          "otlp_trace",
 				"span_kind":                              "server",
 				"status.code":                            float64(0),
 				"status.message":                         "OK",
@@ -385,10 +374,8 @@ func TestSampleRateAttribute(t *testing.T) {
 		{
 			Data: map[string]interface{}{
 				"duration_ms":                            float64(0),
-				"has_remote_parent":                      false,
 				"hc.sample.rate":                         "wrong_type",
 				"name":                                   "root",
-				"source_format":                          "otlp_trace",
 				"span_kind":                              "server",
 				"status.code":                            float64(0),
 				"status.message":                         "OK",
@@ -424,9 +411,7 @@ func TestEmptyNode(t *testing.T) {
 		{
 			Data: map[string]interface{}{
 				"duration_ms":                            float64(0),
-				"has_remote_parent":                      false,
 				"name":                                   "root",
-				"source_format":                          "otlp_trace",
 				"span_kind":                              "server",
 				"status.code":                            float64(0),
 				"status.message":                         "OK",
@@ -464,9 +449,7 @@ func TestNode(t *testing.T) {
 			expected: map[string]interface{}{
 				"B":                                      "C",
 				"duration_ms":                            float64(0),
-				"has_remote_parent":                      false,
 				"name":                                   "root",
-				"source_format":                          "otlp_trace",
 				"span_kind":                              "server",
 				"status.code":                            float64(0),
 				"status.message":                         "OK",
@@ -474,10 +457,10 @@ func TestNode(t *testing.T) {
 				"trace.trace_id":                         "01000000000000000000000000000000",
 				"opencensus.resourcetype":                "container",
 				"opencensus.same_process_as_parent_span": true,
-				"opencensus.start_timestamp":             "2020-09-08T20:15:12Z",
-				"process.hostname":                       "my-host",
-				"process.pid":                            float64(123),
-				"service_name":                           "test_service",
+				"opencensus.starttime":                   "2020-09-08T20:15:12Z",
+				"host.name":                              "my-host",
+				"opencensus.pid":                         float64(123),
+				"service.name":                           "test_service",
 			},
 		},
 		{
@@ -488,9 +471,7 @@ func TestNode(t *testing.T) {
 			expected: map[string]interface{}{
 				"B":                                      "C",
 				"duration_ms":                            float64(0),
-				"has_remote_parent":                      false,
 				"name":                                   "root",
-				"source_format":                          "otlp_trace",
 				"span_kind":                              "server",
 				"status.code":                            float64(0),
 				"status.message":                         "OK",
@@ -498,8 +479,8 @@ func TestNode(t *testing.T) {
 				"trace.trace_id":                         "01000000000000000000000000000000",
 				"opencensus.resourcetype":                "container",
 				"opencensus.same_process_as_parent_span": true,
-				"process.hostname":                       "my-host",
-				"service_name":                           "test_service",
+				"host.name":                              "my-host",
+				"service.name":                           "test_service",
 			},
 		},
 		{
@@ -508,9 +489,7 @@ func TestNode(t *testing.T) {
 			expected: map[string]interface{}{
 				"B":                                      "C",
 				"duration_ms":                            float64(0),
-				"has_remote_parent":                      false,
 				"name":                                   "root",
-				"source_format":                          "otlp_trace",
 				"span_kind":                              "server",
 				"status.code":                            float64(0),
 				"status.message":                         "OK",
@@ -518,7 +497,7 @@ func TestNode(t *testing.T) {
 				"trace.trace_id":                         "01000000000000000000000000000000",
 				"opencensus.resourcetype":                "container",
 				"opencensus.same_process_as_parent_span": true,
-				"service_name":                           "test_service",
+				"service.name":                           "test_service",
 			},
 		},
 	}
