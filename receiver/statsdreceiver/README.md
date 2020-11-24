@@ -15,7 +15,7 @@ The following settings are required:
 
 The Following settings are optional:
 
-- `aggregation_interval: 70s`(default value is 60s): The aggregation time that the receiver aggregates the metrics
+- `aggregation_interval: 70s`(default value is 60s): The aggregation time that the receiver aggregates the metrics (similar to the flush interval in StatsD server)
 
 Example:
 
@@ -32,7 +32,7 @@ with detailed sample configurations [here](./testdata/config.yaml).
 
 ## Aggregation
 
-In this new revision. Aggregation is done in statsD receiver. The default aggregation interval is 60s. The receiver only aggregates the metrics with the same metric name, metric type, label keys and label values. After each aggregation interval, the receiver will send all metrics(after aggregation) in this aggregation interval to the following workflow.
+Aggregation is done in statsD receiver. The default aggregation interval is 60s. The receiver only aggregates the metrics with the same metric name, metric type, label keys and label values. After each aggregation interval, the receiver will send all metrics (after aggregation) in this aggregation interval to the following workflow.
 
 It supports:
 
