@@ -24,8 +24,8 @@ import (
 
 func TestInitialResolution(t *testing.T) {
 	// prepare
-	expected := []string{"endpoint-1", "endpoint-2"}
-	res, err := newStaticResolver(expected)
+	provided := []string{"endpoint-2", "endpoint-1"}
+	res, err := newStaticResolver(provided)
 	require.NoError(t, err)
 
 	// test
@@ -37,6 +37,7 @@ func TestInitialResolution(t *testing.T) {
 	defer res.shutdown(context.Background())
 
 	// verify
+	expected := []string{"endpoint-1", "endpoint-2"}
 	assert.Equal(t, expected, resolved)
 }
 
