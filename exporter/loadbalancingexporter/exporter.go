@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -122,7 +121,6 @@ func (e *exporterImp) Start(ctx context.Context, host component.Host) error {
 }
 
 func (e *exporterImp) onBackendChanges(resolved []string) {
-	sort.Strings(resolved)
 	newRing := newHashRing(resolved)
 
 	if !newRing.equal(e.ring) {

@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"path"
-	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -254,12 +253,11 @@ func TestOnBackendChanges(t *testing.T) {
 	require.Len(t, p.ring.items, defaultWeight)
 
 	// this should resolve to two endpoints
-	endpoints := []string{"endpoint-2", "endpoint-1"}
+	endpoints := []string{"endpoint-1", "endpoint-2"}
 	p.onBackendChanges(endpoints)
 
 	// verify
 	assert.Len(t, p.ring.items, 2*defaultWeight)
-	assert.True(t, sort.IsSorted(sort.StringSlice(endpoints)))
 }
 
 func TestRemoveExtraExporters(t *testing.T) {
