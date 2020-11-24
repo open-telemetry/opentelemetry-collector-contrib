@@ -118,14 +118,8 @@ class AsyncPGInstrumentor(BaseInstrumentor):
         tracer = getattr(asyncpg, _APPLIED)
 
         exception = None
-        params = getattr(instance, "_params", None)
-        name = ""
-        if args[0]:
-            name = args[0]
-        elif params and params.get("database"):
-            name = params.get("database")
-        else:
-            name = "postgresql"  # Does it ever happen?
+        params = getattr(instance, "_params", {})
+        name = args[0] if args[0] else params.get("database", "postgresql")
 
         with tracer.start_as_current_span(name, kind=SpanKind.CLIENT) as span:
             if span.is_recording():
