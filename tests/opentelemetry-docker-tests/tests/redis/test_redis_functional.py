@@ -118,7 +118,6 @@ class TestRedisInstrument(TestBase):
 
 
 class TestRedisDBIndexInstrument(TestBase):
-
     def setUp(self):
         super().setUp()
         self.redis_client = redis.Redis(port=6379, db=10)
