@@ -21,8 +21,12 @@ def _extract_conn_attributes(conn_kwargs):
     """ Transform redis conn info into dict """
     attributes = {
         "db.system": "redis",
-        "db.name": conn_kwargs.get("db", 0),
     }
+    db = conn_kwargs.get("db", 0)
+    if db == 0:
+        attributes["db.name"] = db
+    else:
+        attributes["db.redis.database_index"] = db
     try:
         attributes["net.peer.name"] = conn_kwargs["host"]
         attributes["net.peer.ip"] = conn_kwargs["port"]
