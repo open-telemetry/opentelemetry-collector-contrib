@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -50,6 +49,7 @@ var (
 type exporterImp struct {
 	logger *zap.Logger
 	config Config
+	host   component.Host
 
 	res  resolver
 	ring *hashRing
@@ -112,6 +112,7 @@ func newExporter(params component.ExporterCreateParams, cfg configmodels.Exporte
 
 func (e *exporterImp) Start(ctx context.Context, host component.Host) error {
 	e.res.onChange(e.onBackendChanges)
+	e.host = host
 	if err := e.res.start(ctx); err != nil {
 		return err
 	}
@@ -120,7 +121,6 @@ func (e *exporterImp) Start(ctx context.Context, host component.Host) error {
 }
 
 func (e *exporterImp) onBackendChanges(resolved []string) {
-	resolved = sort.StringSlice(resolved)
 	newRing := newHashRing(resolved)
 
 	if !newRing.equal(e.ring) {
@@ -146,7 +146,11 @@ func (e *exporterImp) addMissingExporters(ctx context.Context, endpoints []strin
 			cfg := e.buildExporterConfig(endpoint)
 			exp, err := e.exporterFactory.CreateTracesExporter(ctx, e.templateCreateParams, &cfg)
 			if err != nil {
-				e.logger.Warn("failed to create new trace exporter for endpoint", zap.String("endpoint", endpoint))
+				e.logger.Error("failed to create new trace exporter for endpoint", zap.String("endpoint", endpoint), zap.Error(err))
+				continue
+			}
+			if err = exp.Start(ctx, e.host); err != nil {
+				e.logger.Error("failed to start new trace exporter for endpoint", zap.String("endpoint", endpoint), zap.Error(err))
 				continue
 			}
 			e.exporters[endpoint] = exp
