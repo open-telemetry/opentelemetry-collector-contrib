@@ -17,11 +17,9 @@ package datadogexporter
 import (
 	"encoding/hex"
 	"fmt"
-	"net/http"
 	"strconv"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
-	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -33,40 +31,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
 )
 
-// codeDetails specifies information about a trace status code.
-type codeDetails struct {
-	message string // status message
-	status  int    // corresponding HTTP status code
-}
-
 const (
 	keySamplingPriority string = "_sampling_priority_v1"
 	versionTag          string = "version"
 	oldILNameTag        string = "otel.instrumentation_library.name"
 	currentILNameTag    string = "otel.library.name"
 )
-
-// statusCodes maps (*trace.SpanData).Status.Code to their message and http status code. See:
-// https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto.
-var statusCodes = map[int32]codeDetails{
-	trace.StatusCodeOK:                 {message: "OK", status: http.StatusOK},
-	trace.StatusCodeCancelled:          {message: "CANCELLED", status: 499},
-	trace.StatusCodeUnknown:            {message: "UNKNOWN", status: http.StatusInternalServerError},
-	trace.StatusCodeInvalidArgument:    {message: "INVALID_ARGUMENT", status: http.StatusBadRequest},
-	trace.StatusCodeDeadlineExceeded:   {message: "DEADLINE_EXCEEDED", status: http.StatusGatewayTimeout},
-	trace.StatusCodeNotFound:           {message: "NOT_FOUND", status: http.StatusNotFound},
-	trace.StatusCodeAlreadyExists:      {message: "ALREADY_EXISTS", status: http.StatusConflict},
-	trace.StatusCodePermissionDenied:   {message: "PERMISSION_DENIED", status: http.StatusForbidden},
-	trace.StatusCodeResourceExhausted:  {message: "RESOURCE_EXHAUSTED", status: http.StatusTooManyRequests},
-	trace.StatusCodeFailedPrecondition: {message: "FAILED_PRECONDITION", status: http.StatusBadRequest},
-	trace.StatusCodeAborted:            {message: "ABORTED", status: http.StatusConflict},
-	trace.StatusCodeOutOfRange:         {message: "OUT_OF_RANGE", status: http.StatusBadRequest},
-	trace.StatusCodeUnimplemented:      {message: "UNIMPLEMENTED", status: http.StatusNotImplemented},
-	trace.StatusCodeInternal:           {message: "INTERNAL", status: http.StatusInternalServerError},
-	trace.StatusCodeUnavailable:        {message: "UNAVAILABLE", status: http.StatusServiceUnavailable},
-	trace.StatusCodeDataLoss:           {message: "DATA_LOSS", status: http.StatusNotImplemented},
-	trace.StatusCodeUnauthenticated:    {message: "UNAUTHENTICATED", status: http.StatusUnauthorized},
-}
 
 // converts Traces into an array of datadog trace payloads grouped by env
 func ConvertToDatadogTd(td pdata.Traces, cfg *config.Config) ([]*pb.TracePayload, error) {
@@ -287,7 +257,7 @@ func spanToDatadogSpan(s pdata.Span,
 
 		if isError > 0 {
 			tags[ext.ErrorType] = "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10)
-			
+
 			// try to add a message if possible
 			if status.Message() != "" {
 				tags[ext.ErrorMsg] = status.Message()
@@ -300,15 +270,15 @@ func spanToDatadogSpan(s pdata.Span,
 		if tags[conventions.AttributeHTTPStatusCode] != "" {
 			httpStatusCode, err := strconv.ParseInt(tags[conventions.AttributeHTTPStatusCode], 10, 64)
 			if err == nil {
-				 // for 500 type, always mark as errror
+				// for 500 type, always mark as errror
 				if httpStatusCode >= 500 {
 					span.Error = int32(1)
-				// for 400 type, mark as errror if it is an http client
+					// for 400 type, mark as errror if it is an http client
 				} else if s.Kind() == pdata.SpanKindCLIENT && httpStatusCode >= 400 {
 					span.Error = int32(1)
 				}
 			}
-		}	
+		}
 	}
 
 	// Set Attributes as Tags
