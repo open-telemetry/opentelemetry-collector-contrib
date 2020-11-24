@@ -80,12 +80,18 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	}).CopyTo(events.At(1).Attributes())
 	events.MoveAndAppendTo(span.Events())
 
-	pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+	attribs := map[string]pdata.AttributeValue{
 		"cache_hit":  pdata.NewAttributeValueBool(true),
 		"timeout_ns": pdata.NewAttributeValueInt(12e9),
 		"ping_count": pdata.NewAttributeValueInt(25),
 		"agent":      pdata.NewAttributeValueString("ocagent"),
-	}).CopyTo(span.Attributes())
+	}
+
+	if shouldErr {
+		attribs["http.status_code"] = pdata.NewAttributeValueString("501")
+	}
+
+	pdata.NewAttributeMap().InitFromMap(attribs).CopyTo(span.Attributes())
 
 	resource := pdata.NewResource()
 
@@ -282,6 +288,9 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	// ensure that span error is based on otlp span status
 	assert.Equal(t, int32(1), datadogPayload.Traces[0].Spans[0].Error)
 
+	// ensure that span status code is set
+	assert.Equal(t, "501", datadogPayload.Traces[0].Spans[0].Meta["http.status_code"])
+
 	// ensure that span service name gives resource service.name priority
 	assert.Equal(t, "test-resource-service-name", datadogPayload.Traces[0].Spans[0].Service)
 
@@ -291,7 +300,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	// ensure that version gives resource service.version priority
 	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
 
-	assert.Equal(t, 13, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 14, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
 
 // ensure that the datadog span uses the configured unified service tags
@@ -331,6 +340,9 @@ func TestTracesTranslationConfig(t *testing.T) {
 	// ensure that span error is based on otlp span status
 	assert.Equal(t, int32(1), datadogPayload.Traces[0].Spans[0].Error)
 
+	// ensure that span status code is set
+	assert.Equal(t, "501", datadogPayload.Traces[0].Spans[0].Meta["http.status_code"])
+
 	// ensure that span service name gives resource service.name priority
 	assert.Equal(t, "test-resource-service-name", datadogPayload.Traces[0].Spans[0].Service)
 
@@ -340,7 +352,7 @@ func TestTracesTranslationConfig(t *testing.T) {
 	// ensure that version gives resource service.version priority
 	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
 
-	assert.Equal(t, 13, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 14, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
 
 // ensure that the translation returns early if no resource instrumentation library spans
