@@ -134,7 +134,6 @@ class TestRedisDBIndexInstrument(TestBase):
         self.assertEqual(span.attributes["net.peer.name"], "localhost")
         self.assertEqual(span.attributes["net.peer.ip"], 6379)
         self.assertEqual(span.attributes["db.redis.database_index"], 10)
-        self.assertNotIn("db.name", span.attributes)
 
     def test_get(self):
         self.assertIsNone(self.redis_client.get("foo"))
