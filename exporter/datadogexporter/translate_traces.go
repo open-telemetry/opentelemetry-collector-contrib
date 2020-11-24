@@ -36,6 +36,8 @@ const (
 	versionTag          string = "version"
 	oldILNameTag        string = "otel.instrumentation_library.name"
 	currentILNameTag    string = "otel.library.name"
+	errorCode           int32  = 1
+	okCode              int32  = 0
 )
 
 // converts Traces into an array of datadog trace payloads grouped by env
@@ -243,19 +245,19 @@ func spanToDatadogSpan(s pdata.Span,
 
 	// Set Span Status and any response or error details
 	if status := s.Status(); !status.IsNil() {
-		isError := 0
+		isError := okCode
 		switch status.Code() {
 		case pdata.StatusCodeOk:
-			isError = 0
+			isError = okCode
 		case pdata.StatusCodeError:
-			isError = 1
+			isError = errorCode
 		default:
-			isError = 0
+			isError = okCode
 		}
 
-		span.Error = int32(isError)
+		span.Error = isError
 
-		if isError > 0 {
+		if isError == errorCode {
 			tags[ext.ErrorType] = "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10)
 
 			// try to add a message if possible
@@ -270,12 +272,12 @@ func spanToDatadogSpan(s pdata.Span,
 		if tags[conventions.AttributeHTTPStatusCode] != "" {
 			httpStatusCode, err := strconv.ParseInt(tags[conventions.AttributeHTTPStatusCode], 10, 64)
 			if err == nil {
-				// for 500 type, always mark as errror
+				// for 500 type, always mark as error
 				if httpStatusCode >= 500 {
-					span.Error = int32(1)
-					// for 400 type, mark as errror if it is an http client
+					span.Error = errorCode
+					// for 400 type, mark as error if it is an http client
 				} else if s.Kind() == pdata.SpanKindCLIENT && httpStatusCode >= 400 {
-					span.Error = int32(1)
+					span.Error = errorCode
 				}
 			}
 		}
