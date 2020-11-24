@@ -49,11 +49,30 @@ _APPLIED = "_opentelemetry_tracer"
 
 
 def _hydrate_span_from_args(connection, query, parameters) -> dict:
-    span_attributes = {"db.type": "sql"}
+    """Get network and database attributes from connection."""
+    span_attributes = {"db.system": "postgresql"}
+
+    # connection contains _params attribute which is a namedtuple ConnectionParameters.
+    # https://github.com/MagicStack/asyncpg/blob/master/asyncpg/connection.py#L68
 
     params = getattr(connection, "_params", None)
-    span_attributes["db.instance"] = getattr(params, "database", None)
-    span_attributes["db.user"] = getattr(params, "user", None)
+    dbname = getattr(params, "database", None)
+    if dbname:
+        span_attributes["db.name"] = dbname
+    user = getattr(params, "user", None)
+    if user:
+        span_attributes["db.user"] = user
+
+    # connection contains _addr attribute which is either a host/port tuple, or unix socket string
+    # https://magicstack.github.io/asyncpg/current/_modules/asyncpg/connection.html
+    addr = getattr(connection, "_addr", None)
+    if isinstance(addr, tuple):
+        span_attributes["net.peer.name"] = addr[0]
+        span_attributes["net.peer.ip"] = addr[1]
+        span_attributes["net.transport"] = "IP.TCP"
+    elif isinstance(addr, str):
+        span_attributes["net.peer.name"] = addr
+        span_attributes["net.transport"] = "Unix"
 
     if query is not None:
         span_attributes["db.statement"] = query
@@ -105,10 +124,10 @@ class AsyncPGInstrumentor(BaseInstrumentor):
         tracer = getattr(asyncpg, _APPLIED)
 
         exception = None
+        params = getattr(instance, "_params", {})
+        name = args[0] if args[0] else params.get("database", "postgresql")
 
-        with tracer.start_as_current_span(
-            "postgresql", kind=SpanKind.CLIENT
-        ) as span:
+        with tracer.start_as_current_span(name, kind=SpanKind.CLIENT) as span:
             if span.is_recording():
                 span_attributes = _hydrate_span_from_args(
                     instance,
