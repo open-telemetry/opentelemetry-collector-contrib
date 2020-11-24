@@ -115,3 +115,30 @@ class TestRedisInstrument(TestBase):
             child_span.attributes.get("service"), self.test_service
         )
         self.assertEqual(child_span.name, "GET")
+
+
+class TestRedisDBIndexInstrument(TestBase):
+    def setUp(self):
+        super().setUp()
+        self.redis_client = redis.Redis(port=6379, db=10)
+        self.redis_client.flushall()
+        RedisInstrumentor().instrument(tracer_provider=self.tracer_provider)
+
+    def tearDown(self):
+        super().tearDown()
+        RedisInstrumentor().uninstrument()
+
+    def _check_span(self, span, name):
+        self.assertEqual(span.name, name)
+        self.assertIs(span.status.status_code, trace.status.StatusCode.UNSET)
+        self.assertEqual(span.attributes["net.peer.name"], "localhost")
+        self.assertEqual(span.attributes["net.peer.ip"], 6379)
+        self.assertEqual(span.attributes["db.redis.database_index"], 10)
+
+    def test_get(self):
+        self.assertIsNone(self.redis_client.get("foo"))
+        spans = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(spans), 1)
+        span = spans[0]
+        self._check_span(span, "GET")
+        self.assertEqual(span.attributes.get("db.statement"), "GET foo")
