@@ -1502,7 +1502,6 @@ func TestBuildCWMetric(t *testing.T) {
 
 	t.Run("Int sum", func(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeIntSum)
-		metric.IntSum().InitEmpty()
 		metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		dp := pdata.NewIntDataPoint()
 		dp.InitEmpty()
@@ -1531,7 +1530,6 @@ func TestBuildCWMetric(t *testing.T) {
 
 	t.Run("Double sum", func(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-		metric.DoubleSum().InitEmpty()
 		metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		dp := pdata.NewDoubleDataPoint()
 		dp.InitEmpty()
@@ -2178,14 +2176,12 @@ func TestNeedsCalculateRate(t *testing.T) {
 	assert.False(t, needsCalculateRate(&metric))
 
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
-	metric.IntSum().InitEmpty()
 	metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	assert.True(t, needsCalculateRate(&metric))
 	metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 	assert.False(t, needsCalculateRate(&metric))
 
 	metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-	metric.DoubleSum().InitEmpty()
 	metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	assert.True(t, needsCalculateRate(&metric))
 	metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)

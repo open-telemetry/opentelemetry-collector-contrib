@@ -4,9 +4,9 @@ go 1.14
 
 require (
 	github.com/getsentry/sentry-go v0.6.2-0.20200707113342-e7c66ce62664
-	github.com/google/go-cmp v0.5.3
+	github.com/google/go-cmp v0.5.4
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.15.1-0.20201123190042-7874cd5faa41
+	go.opentelemetry.io/collector v0.15.1-0.20201125151900-b19b5ac392ec
 	go.uber.org/zap v1.16.0
 	google.golang.org/grpc/examples v0.0.0-20200728194956-1c32b02682df // indirect
 )

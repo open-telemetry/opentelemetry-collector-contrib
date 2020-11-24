@@ -70,7 +70,6 @@ func intGauge(metricName string, unit string, value int64, ts pdata.TimestampUni
 
 	metric.SetDataType(pdata.MetricDataTypeIntGauge)
 	intGauge := metric.IntGauge()
-	intGauge.InitEmpty()
 
 	updateIntDataPoint(intGauge.DataPoints(), value, ts)
 
@@ -84,7 +83,6 @@ func intSum(metricName string, unit string, value int64, ts pdata.TimestampUnixN
 
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	intSum := metric.IntSum()
-	intSum.InitEmpty()
 	intSum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 	updateIntDataPoint(intSum.DataPoints(), value, ts)
@@ -99,7 +97,6 @@ func doubleGauge(metricName string, unit string, value float64, ts pdata.Timesta
 
 	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
 	doubleGauge := metric.DoubleGauge()
-	doubleGauge.InitEmpty()
 	dataPoints := doubleGauge.DataPoints()
 	dataPoints.Resize(1)
 	dataPoint := dataPoints.At(0)

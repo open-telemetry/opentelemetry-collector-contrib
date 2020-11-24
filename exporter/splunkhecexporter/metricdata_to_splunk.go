@@ -91,9 +91,6 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 				metricFieldName := splunkMetricValue + ":" + tm.Name()
 				switch tm.DataType() {
 				case pdata.MetricDataTypeIntGauge:
-					if tm.IntGauge().IsNil() {
-						continue
-					}
 					pts := tm.IntGauge().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
@@ -108,9 +105,6 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						splunkMetrics = append(splunkMetrics, sm)
 					}
 				case pdata.MetricDataTypeDoubleGauge:
-					if tm.DoubleGauge().IsNil() {
-						continue
-					}
 					pts := tm.DoubleGauge().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
@@ -124,9 +118,6 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						splunkMetrics = append(splunkMetrics, sm)
 					}
 				case pdata.MetricDataTypeDoubleHistogram:
-					if tm.DoubleHistogram().IsNil() {
-						continue
-					}
 					pts := tm.DoubleHistogram().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
@@ -177,9 +168,6 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						}
 					}
 				case pdata.MetricDataTypeIntHistogram:
-					if tm.IntHistogram().IsNil() {
-						continue
-					}
 					pts := tm.IntHistogram().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
@@ -230,9 +218,6 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						}
 					}
 				case pdata.MetricDataTypeDoubleSum:
-					if tm.DoubleSum().IsNil() {
-						continue
-					}
 					pts := tm.DoubleSum().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
@@ -247,9 +232,6 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						splunkMetrics = append(splunkMetrics, sm)
 					}
 				case pdata.MetricDataTypeIntSum:
-					if tm.IntSum().IsNil() {
-						continue
-					}
 					pts := tm.IntSum().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)

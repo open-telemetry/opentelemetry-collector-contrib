@@ -132,8 +132,6 @@ func initializeDoubleGaugeMetric(metric pdata.Metric, now pdata.TimestampUnixNan
 	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
 
 	dg := metric.DoubleGauge()
-	dg.InitEmpty()
-
 	ddps := dg.DataPoints()
 	ddps.Resize(len(counterValues))
 	for i, counterValue := range counterValues {
