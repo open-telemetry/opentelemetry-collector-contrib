@@ -137,9 +137,9 @@ class TestRedisDBIndexInstrument(TestBase):
         self.assertNotIn("db.name", span.attributes)
 
     def test_get(self):
-        self.assertIsNone(self.redis_client.get("paneer"))
+        self.assertIsNone(self.redis_client.get("foo"))
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 1)
         span = spans[0]
         self._check_span(span, "GET")
-        self.assertEqual(span.attributes.get("db.statement"), "GET paneer")
+        self.assertEqual(span.attributes.get("db.statement"), "GET foo")
