@@ -121,6 +121,29 @@ func TestAllSuccess(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestResourceMerge(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
+		func(w http.ResponseWriter, req *http.Request) {
+			body := extractBody(t, req)
+			assert.Equal(t, `Example log`, body)
+			assert.Equal(t, "key1=original_value, key2=additional_value", req.Header.Get("X-Sumo-Fields"))
+		},
+	})
+	defer func() { test.srv.Close() }()
+
+	f, err := newFilter([]string{`key\d`})
+	require.NoError(t, err)
+	test.exp.filter = f
+
+	logs := LogRecordsToLogs(exampleLog())
+	logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().InsertString("key1", "original_value")
+	logs.ResourceLogs().At(0).Resource().Attributes().InsertString("key1", "overwrite_value")
+	logs.ResourceLogs().At(0).Resource().Attributes().InsertString("key2", "additional_value")
+
+	_, err = test.exp.pushLogsData(context.Background(), logs)
+	assert.NoError(t, err)
+}
+
 func TestAllFailed(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {

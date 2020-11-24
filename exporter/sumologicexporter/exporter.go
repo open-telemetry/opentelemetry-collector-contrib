@@ -140,7 +140,15 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) (i
 			logs := ill.Logs()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
-				
+
+				// copy resource attributes into logs attributes
+				// log attributes have precedence over resource attributes
+				rl.Resource().Attributes().ForEach(
+					func(k string, v pdata.AttributeValue) {
+						log.Attributes().Insert(k, v)
+					},
+				)
+
 				currentMetadata = sdr.filter.filterIn(log.Attributes())
 
 				// If metadata differs from currently buffered, flush the buffer
