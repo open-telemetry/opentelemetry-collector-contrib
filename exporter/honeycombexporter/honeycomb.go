@@ -119,21 +119,21 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) 
 
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
-		rs_span := rs.At(i)
-		if rs_span.IsNil() {
+		rsSpan := rs.At(i)
+		if rsSpan.IsNil() {
 			continue
 		}
 
 		// Extract Resource attributes, they will be added to every span.
-		resourceAttrs := spanAttributesToMap(rs_span.Resource().Attributes())
+		resourceAttrs := spanAttributesToMap(rsSpan.Resource().Attributes())
 
-		ils := rs_span.InstrumentationLibrarySpans()
+		ils := rsSpan.InstrumentationLibrarySpans()
 		for j := 0; j < ils.Len(); j++ {
-			ils_span := ils.At(j)
-			if ils_span.IsNil() {
+			ilsSpan := ils.At(j)
+			if ilsSpan.IsNil() {
 				continue
 			}
-			spans := ils_span.Spans()
+			spans := ilsSpan.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				if span.IsNil() {
@@ -197,11 +197,10 @@ func getSpanKind(kind pdata.SpanKind) string {
 		return "consumer"
 	case pdata.SpanKindINTERNAL:
 		return "internal"
-	default:
-		fallthrough
 	case pdata.SpanKindUNSPECIFIED:
+		fallthrough
+	default:
 		return "unspecified"
-
 	}
 }
 
