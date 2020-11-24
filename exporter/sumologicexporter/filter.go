@@ -28,14 +28,14 @@ type filter struct {
 	regexes []*regexp.Regexp
 }
 
-// Fields represents concatenated metadata
-type Fields string
+// fields represents concatenated metadata
+type fields string
 
-func newFilter(fields []string) (filter, error) {
-	metadataRegexes := make([]*regexp.Regexp, len(fields))
+func newFilter(flds []string) (filter, error) {
+	metadataRegexes := make([]*regexp.Regexp, len(flds))
 
-	for i, field := range fields {
-		regex, err := regexp.Compile(field)
+	for i, fld := range flds {
+		regex, err := regexp.Compile(fld)
 		if err != nil {
 			return filter{}, err
 		}
@@ -79,7 +79,7 @@ func (f *filter) filterOut(attributes pdata.AttributeMap) map[string]string {
 }
 
 // getMetadata builds string which represents metadata in alphabetical order
-func (f *filter) getMetadata(attributes pdata.AttributeMap) Fields {
+func (f *filter) getMetadata(attributes pdata.AttributeMap) fields {
 	attrs := f.filterIn(attributes)
 	metadata := make([]string, 0, len(attrs))
 
@@ -88,5 +88,5 @@ func (f *filter) getMetadata(attributes pdata.AttributeMap) Fields {
 	}
 	sort.Strings(metadata)
 
-	return Fields(strings.Join(metadata, ", "))
+	return fields(strings.Join(metadata, ", "))
 }
