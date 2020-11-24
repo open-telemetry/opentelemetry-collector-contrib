@@ -272,33 +272,43 @@ func spanToDatadogSpan(s pdata.Span,
 	}
 
 	// Set Span Status and any response or error details
-	status := s.Status()
-	if !status.IsNil() {
-		// map to known msg + status
-		code, ok := statusCodes[int32(status.Code())]
-		if !ok {
-			code = codeDetails{
-				message: "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10),
-				status:  http.StatusInternalServerError,
-			}
+	if status := s.Status(); !status.IsNil() {
+		isError := 0
+		switch status.Code() {
+		case pdata.StatusCodeOk:
+			isError = 0
+		case pdata.StatusCodeError:
+			isError = 1
+		default:
+			isError = 0
 		}
 
-		// check if 500 or 400 level, if so set error
-		if code.status/100 == 5 || code.status/100 == 4 {
-			span.Error = 1
-			// set error type
-			tags[ext.ErrorType] = code.message
-			// set error message
+		span.Error = int32(isError)
+
+		if isError > 0 {
+			tags[ext.ErrorType] = "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10)
+			
+			// try to add a message if possible
 			if status.Message() != "" {
 				tags[ext.ErrorMsg] = status.Message()
 			} else {
-				tags[ext.ErrorMsg] = code.message
+				tags[ext.ErrorMsg] = "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10)
 			}
-			// otherwise no error
 		}
 
-		// set tag as string for status code
-		tags[conventions.AttributeHTTPStatusCode] = status.Code().String()
+		// if status code exists check if error depending on type
+		if tags[conventions.AttributeHTTPStatusCode] != "" {
+			httpStatusCode, err := strconv.ParseInt(tags[conventions.AttributeHTTPStatusCode], 10, 64)
+			if err == nil {
+				 // for 500 type, always mark as errror
+				if httpStatusCode >= 500 {
+					span.Error = int32(1)
+				// for 400 type, mark as errror if it is an http client
+				} else if s.Kind() == pdata.SpanKindCLIENT && httpStatusCode >= 400 {
+					span.Error = int32(1)
+				}
+			}
+		}	
 	}
 
 	// Set Attributes as Tags

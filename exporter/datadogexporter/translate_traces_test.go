@@ -59,7 +59,7 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	status.InitEmpty()
 
 	if shouldErr {
-		status.SetCode(13)
+		status.SetCode(pdata.StatusCodeError)
 		status.SetMessage("This is not a drill!")
 	} else {
 		status.SetCode(0)
@@ -230,7 +230,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, "web", datadogPayload.Traces[0].Spans[0].Type)
 
 	// ensure that span.meta and span.metrics pick up attibutes, instrumentation ibrary and resource attribs
-	assert.Equal(t, 9, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 8, len(datadogPayload.Traces[0].Spans[0].Meta))
 	assert.Equal(t, 1, len(datadogPayload.Traces[0].Spans[0].Metrics))
 
 	// ensure that span error is based on otlp span status
@@ -291,7 +291,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	// ensure that version gives resource service.version priority
 	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
 
-	assert.Equal(t, 14, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 13, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
 
 // ensure that the datadog span uses the configured unified service tags
@@ -340,7 +340,7 @@ func TestTracesTranslationConfig(t *testing.T) {
 	// ensure that version gives resource service.version priority
 	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
 
-	assert.Equal(t, 14, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 13, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
 
 // ensure that the translation returns early if no resource instrumentation library spans
