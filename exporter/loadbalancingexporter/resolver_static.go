@@ -17,6 +17,7 @@ package loadbalancingexporter
 import (
 	"context"
 	"errors"
+	"sort"
 	"sync"
 
 	"go.opencensus.io/stats"
@@ -38,8 +39,15 @@ func newStaticResolver(endpoints []string) (*staticResolver, error) {
 		return nil, errNoEndpoints
 	}
 
+	// make sure we won't change the provided slice
+	endpointsCopy := make([]string, len(endpoints))
+	copy(endpointsCopy, endpoints)
+
+	// sort is a guarantee that the order of endpoints doesn't matter
+	sort.Strings(endpointsCopy)
+
 	return &staticResolver{
-		endpoints: endpoints,
+		endpoints: endpointsCopy,
 	}, nil
 }
 
