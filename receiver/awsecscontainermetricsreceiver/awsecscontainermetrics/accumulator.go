@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.uber.org/zap"
 )
 
 // metricDataAccumulator defines the accumulator
@@ -26,7 +27,7 @@ type metricDataAccumulator struct {
 }
 
 // getMetricsData generates OT Metrics data from task metadata and docker stats
-func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]ContainerStats, metadata TaskMetadata) {
+func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*ContainerStats, metadata TaskMetadata, logger *zap.Logger) {
 
 	taskMetrics := ECSMetrics{}
 	timestamp := pdata.TimeToUnixNano(time.Now())
@@ -34,7 +35,11 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 
 	for _, containerMetadata := range metadata.Containers {
 		stats := containerStatsMap[containerMetadata.DockerID]
-		containerMetrics := getContainerMetrics(stats)
+		if stats == nil {
+			continue
+		}
+
+		containerMetrics := getContainerMetrics(stats, logger)
 		containerMetrics.MemoryReserved = *containerMetadata.Limits.Memory
 		containerMetrics.CPUReserved = *containerMetadata.Limits.CPU
 
