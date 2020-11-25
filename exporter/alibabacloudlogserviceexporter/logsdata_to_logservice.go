@@ -125,9 +125,6 @@ func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
 }
 
 func instrumentationLibraryToLogContents(instrumentationLibrary pdata.InstrumentationLibrary) []*sls.LogContent {
-	if instrumentationLibrary.IsNil() {
-		return nil
-	}
 	logContents := make([]*sls.LogContent, 2)
 	logContents[0] = &sls.LogContent{
 		Key:   proto.String(slsLogInstrumentationName),

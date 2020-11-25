@@ -30,7 +30,6 @@ func TestSplitDifferentTracesIntoDifferentBatches(t *testing.T) {
 	// the first ILS has two spans
 	ils := rs.InstrumentationLibrarySpans().At(0)
 	library := ils.InstrumentationLibrary()
-	library.InitEmpty()
 	library.SetName("first-library")
 	ils.Spans().Resize(2)
 	firstSpan := ils.Spans().At(0)

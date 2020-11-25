@@ -93,7 +93,6 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 	resource.CopyTo(rs.Resource())
 
 	il := pdata.NewInstrumentationLibrary()
-	il.InitEmpty()
 	il.SetName("test_il_name")
 	il.SetVersion("test_il_version")
 

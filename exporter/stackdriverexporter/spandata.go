@@ -82,11 +82,9 @@ func pdataSpanToOTSpanData(
 		DroppedLinkCount:         int(span.DroppedLinksCount()),
 		Resource:                 r,
 	}
-	if !il.IsNil() {
-		sd.InstrumentationLibrary = instrumentation.Library{
-			Name:    il.Name(),
-			Version: il.Version(),
-		}
+	sd.InstrumentationLibrary = instrumentation.Library{
+		Name:    il.Name(),
+		Version: il.Version(),
 	}
 	if status := span.Status(); !status.IsNil() {
 		sd.StatusCode = pdataStatusCodeToOTCode(status.Code())

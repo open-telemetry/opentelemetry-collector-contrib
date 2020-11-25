@@ -46,7 +46,7 @@ func createSimpleLogData(numberOfLogs int) pdata.Logs {
 		logRecord.Body().SetStringVal("mylog")
 		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 		logRecord.Attributes().InsertString("my-label", "myapp-type")
-		logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
+		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)
 
