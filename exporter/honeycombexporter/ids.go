@@ -17,11 +17,12 @@ package honeycombexporter
 import (
 	"encoding/binary"
 	"fmt"
+
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 const (
 	traceIDShortLength = 8
-	traceIDLongLength  = 16
 )
 
 // getHoneycombID returns an ID suitable for use for spans and traces. Before
@@ -33,28 +34,27 @@ const (
 // one.
 //
 // [1]: https://github.com/jaegertracing/jaeger/blob/cd19b64413eca0f06b61d92fe29bebce1321d0b0/model/ids.go#L81
-func getHoneycombTraceID(traceID []byte) string {
+func getHoneycombTraceID(traceID pdata.TraceID) string {
 	// binary.BigEndian.Uint64() does a bounds check on traceID which will
 	// cause a panic if traceID is fewer than 8 bytes. In this case, we don't
 	// need to check for zero padding on the high part anyway, so just return a
 	// hex string.
-	if len(traceID) < traceIDShortLength {
-		return fmt.Sprintf("%x", traceID)
-	}
+
 	var low uint64
-	if len(traceID) == traceIDLongLength {
-		low = binary.BigEndian.Uint64(traceID[traceIDShortLength:])
-		if high := binary.BigEndian.Uint64(traceID[:traceIDShortLength]); high != 0 {
-			return fmt.Sprintf("%016x%016x", high, low)
-		}
-	} else {
-		low = binary.BigEndian.Uint64(traceID)
+	tID := traceID.Bytes()
+
+	low = binary.BigEndian.Uint64(tID[traceIDShortLength:])
+	if high := binary.BigEndian.Uint64(tID[:traceIDShortLength]); high != 0 {
+		return fmt.Sprintf("%016x%016x", high, low)
 	}
 
 	return fmt.Sprintf("%016x", low)
 }
 
 // getHoneycombSpanID just takes a byte array and hex encodes it.
-func getHoneycombSpanID(id []byte) string {
-	return fmt.Sprintf("%x", id)
+func getHoneycombSpanID(id pdata.SpanID) string {
+	if id.IsValid() {
+		return fmt.Sprintf("%x", id.Bytes())
+	}
+	return ""
 }

@@ -55,5 +55,14 @@ func createTraceExporter(
 	cfg configmodels.Exporter,
 ) (component.TracesExporter, error) {
 	eCfg := cfg.(*Config)
-	return newHoneycombTraceExporter(eCfg, params.Logger)
+	exporter, err := newHoneycombTraceExporter(eCfg, params.Logger)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewTraceExporter(
+		cfg,
+		params.Logger,
+		exporter.pushTraceData,
+		exporterhelper.WithShutdown(exporter.Shutdown))
 }

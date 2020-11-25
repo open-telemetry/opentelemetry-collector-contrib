@@ -15,51 +15,33 @@
 package honeycombexporter
 
 import (
-	"encoding/hex"
 	"reflect"
 	"testing"
+
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestGetHoneycombTraceID(t *testing.T) {
 	tests := []struct {
 		name    string
-		traceID string
+		traceID pdata.TraceID
 		want    string
 	}{
 		{
-			name:    "64-bit traceID",
-			traceID: "cbe4decd12429177",
-			want:    "cbe4decd12429177",
-		},
-		{
 			name:    "128-bit zero-padded traceID",
-			traceID: "0000000000000000cbe4decd12429177",
+			traceID: pdata.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 203, 228, 222, 205, 18, 66, 145, 119}),
 			want:    "cbe4decd12429177",
 		},
 		{
 			name:    "128-bit non-zero-padded traceID",
-			traceID: "f23b42eac289a0fdcde48fcbe3ab1a32",
+			traceID: pdata.NewTraceID([16]byte{242, 59, 66, 234, 194, 137, 160, 253, 205, 228, 143, 203, 227, 171, 26, 50}),
 			want:    "f23b42eac289a0fdcde48fcbe3ab1a32",
-		},
-		{
-			name:    "Non-hex traceID",
-			traceID: "foobar1",
-			want:    "666f6f62617231",
-		},
-		{
-			name:    "Longer non-hex traceID",
-			traceID: "foobarbaz",
-			want:    "666f6f6261726261",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			traceID, err := hex.DecodeString(tt.traceID)
-			if err != nil {
-				traceID = []byte(tt.traceID)
-			}
-			got := getHoneycombTraceID(traceID)
+			got := getHoneycombTraceID(tt.traceID)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getHoneycombTraceID:\n\tgot:  %#v\n\twant: %#v", got, tt.want)
 			}
