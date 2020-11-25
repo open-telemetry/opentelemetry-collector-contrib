@@ -17,10 +17,19 @@ package honeycombexporter
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/zapcore"
+
+	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/honeycombio/libhoney-go/transmission"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
@@ -212,8 +221,8 @@ func TestExporter(t *testing.T) {
 				"name":                                   "client",
 				"service.name":                           "test_service",
 				"span_kind":                              "client",
-				"status.code":                            float64(0),
-				"status.message":                         "OK",
+				"status.code":                            float64(1),
+				"status.message":                         "STATUS_CODE_OK",
 				"trace.parent_id":                        "0200000000000000",
 				"trace.span_id":                          "0300000000000000",
 				"trace.trace_id":                         "01000000000000000000000000000000",
@@ -229,8 +238,8 @@ func TestExporter(t *testing.T) {
 				"name":                                   "server",
 				"service.name":                           "test_service",
 				"span_kind":                              "server",
-				"status.code":                            float64(0),
-				"status.message":                         "OK",
+				"status.code":                            float64(1),
+				"status.message":                         "STATUS_CODE_OK",
 				"trace.parent_id":                        "0300000000000000",
 				"trace.span_id":                          "0400000000000000",
 				"trace.trace_id":                         "01000000000000000000000000000000",
@@ -261,8 +270,8 @@ func TestExporter(t *testing.T) {
 				"service.name":                           "test_service",
 				"span_attr_name":                         "Span Attribute",
 				"span_kind":                              "server",
-				"status.code":                            float64(0),
-				"status.message":                         "OK",
+				"status.code":                            float64(1),
+				"status.message":                         "STATUS_CODE_OK",
 				"trace.span_id":                          "0200000000000000",
 				"trace.trace_id":                         "01000000000000000000000000000000",
 				"A":                                      "B",
@@ -276,6 +285,89 @@ func TestExporter(t *testing.T) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("otel span: (-want +got):\n%s", diff)
 	}
+}
+
+func TestSpanKinds(t *testing.T) {
+	td := pdata.NewTraces()
+	td.ResourceSpans().Resize(1)
+	rs := td.ResourceSpans().At(0)
+	rs.Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		"service.name": pdata.NewAttributeValueString("test_service"),
+	})
+	rs.InstrumentationLibrarySpans().Resize(1)
+	instrLibrarySpans := rs.InstrumentationLibrarySpans().At(0)
+	lib := instrLibrarySpans.InstrumentationLibrary()
+	lib.InitEmpty()
+	lib.SetName("my.custom.library")
+	lib.SetVersion("1.0.0")
+
+	instrLibrarySpans.Spans().Append(createSpan())
+
+	spanKinds := []pdata.SpanKind{
+		pdata.SpanKindINTERNAL,
+		pdata.SpanKindCLIENT,
+		pdata.SpanKindSERVER,
+		pdata.SpanKindPRODUCER,
+		pdata.SpanKindCONSUMER,
+		pdata.SpanKindUNSPECIFIED,
+		pdata.SpanKind(1000),
+	}
+
+	expectedStrings := []string{
+		"internal",
+		"client",
+		"server",
+		"producer",
+		"consumer",
+		"unspecified",
+		"unspecified",
+	}
+
+	for idx, kind := range spanKinds {
+		stringKind := expectedStrings[idx]
+		t.Run(fmt.Sprintf("span kind %s", stringKind), func(t *testing.T) {
+			want := []honeycombData{
+				{
+					Data: map[string]interface{}{
+						"duration_ms":     float64(0),
+						"name":            "spanName",
+						"library.name":    "my.custom.library",
+						"library.version": "1.0.0",
+						"service.name":    "test_service",
+						"span_attr_name":  "Span Attribute",
+						"span_kind":       stringKind,
+						"status.code":     float64(1),
+						"status.message":  "STATUS_CODE_OK",
+						"trace.span_id":   "0300000000000000",
+						"trace.parent_id": "0200000000000000",
+						"trace.trace_id":  "01000000000000000000000000000000",
+					},
+				},
+			}
+
+			instrLibrarySpans.Spans().At(0).SetKind(kind)
+
+			got := testTraceExporter(td, t, baseConfig())
+
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("otel span: (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func createSpan() pdata.Span {
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetName("spanName")
+	span.SetTraceID(pdata.NewTraceID([16]byte{0x01}))
+	span.SetParentSpanID(pdata.NewSpanID([8]byte{0x02}))
+	span.SetSpanID(pdata.NewSpanID([8]byte{0x03}))
+
+	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		"span_attr_name": pdata.NewAttributeValueString("Span Attribute"),
+	})
+	return span
 }
 
 func TestSampleRateAttribute(t *testing.T) {
@@ -350,8 +442,8 @@ func TestSampleRateAttribute(t *testing.T) {
 				"hc.sample.rate":                         float64(13),
 				"name":                                   "root",
 				"span_kind":                              "server",
-				"status.code":                            float64(0),
-				"status.message":                         "OK",
+				"status.code":                            float64(1),
+				"status.message":                         "STATUS_CODE_OK",
 				"trace.span_id":                          "0200000000000000",
 				"trace.trace_id":                         "01000000000000000000000000000000",
 				"opencensus.same_process_as_parent_span": true,
@@ -363,8 +455,8 @@ func TestSampleRateAttribute(t *testing.T) {
 				"duration_ms":                            float64(0),
 				"name":                                   "root",
 				"span_kind":                              "server",
-				"status.code":                            float64(0),
-				"status.message":                         "OK",
+				"status.code":                            float64(1),
+				"status.message":                         "STATUS_CODE_OK",
 				"trace.span_id":                          "0200000000000000",
 				"trace.trace_id":                         "01000000000000000000000000000000",
 				"opencensus.same_process_as_parent_span": true,
@@ -377,8 +469,8 @@ func TestSampleRateAttribute(t *testing.T) {
 				"hc.sample.rate":                         "wrong_type",
 				"name":                                   "root",
 				"span_kind":                              "server",
-				"status.code":                            float64(0),
-				"status.message":                         "OK",
+				"status.code":                            float64(1),
+				"status.message":                         "STATUS_CODE_OK",
 				"trace.span_id":                          "0200000000000000",
 				"trace.trace_id":                         "01000000000000000000000000000000",
 				"opencensus.same_process_as_parent_span": true,
@@ -413,8 +505,8 @@ func TestEmptyNode(t *testing.T) {
 				"duration_ms":                            float64(0),
 				"name":                                   "root",
 				"span_kind":                              "server",
-				"status.code":                            float64(0),
-				"status.message":                         "OK",
+				"status.code":                            float64(1),
+				"status.message":                         "STATUS_CODE_OK",
 				"trace.span_id":                          "0200000000000000",
 				"trace.trace_id":                         "01000000000000000000000000000000",
 				"opencensus.same_process_as_parent_span": true,
@@ -451,8 +543,8 @@ func TestNode(t *testing.T) {
 				"duration_ms":                            float64(0),
 				"name":                                   "root",
 				"span_kind":                              "server",
-				"status.code":                            float64(0),
-				"status.message":                         "OK",
+				"status.code":                            float64(1),
+				"status.message":                         "STATUS_CODE_OK",
 				"trace.span_id":                          "0200000000000000",
 				"trace.trace_id":                         "01000000000000000000000000000000",
 				"opencensus.resourcetype":                "container",
@@ -473,8 +565,8 @@ func TestNode(t *testing.T) {
 				"duration_ms":                            float64(0),
 				"name":                                   "root",
 				"span_kind":                              "server",
-				"status.code":                            float64(0),
-				"status.message":                         "OK",
+				"status.code":                            float64(1),
+				"status.message":                         "STATUS_CODE_OK",
 				"trace.span_id":                          "0200000000000000",
 				"trace.trace_id":                         "01000000000000000000000000000000",
 				"opencensus.resourcetype":                "container",
@@ -491,8 +583,8 @@ func TestNode(t *testing.T) {
 				"duration_ms":                            float64(0),
 				"name":                                   "root",
 				"span_kind":                              "server",
-				"status.code":                            float64(0),
-				"status.message":                         "OK",
+				"status.code":                            float64(1),
+				"status.message":                         "STATUS_CODE_OK",
 				"trace.span_id":                          "0200000000000000",
 				"trace.trace_id":                         "01000000000000000000000000000000",
 				"opencensus.resourcetype":                "container",
@@ -540,4 +632,35 @@ func TestNode(t *testing.T) {
 		})
 	}
 
+}
+
+func TestRunErrorLogger_OnError(t *testing.T) {
+	obs, logs := observer.New(zap.WarnLevel)
+	logger := zap.New(obs)
+
+	cfg := createDefaultConfig().(*Config)
+	exporter, err := newHoneycombTraceExporter(cfg, logger)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	defer ctx.Done()
+
+	channel := make(chan transmission.Response)
+
+	go func() {
+		channel <- transmission.Response{
+			Err: errors.New("its a transmission error"),
+		}
+		close(channel)
+	}()
+
+	exporter.RunErrorLogger(ctx, channel)
+
+	expectedLogs := []observer.LoggedEntry{{
+		Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "its a transmission error"},
+		Context: []zapcore.Field{},
+	}}
+
+	assert.Equal(t, 1, logs.Len())
+	assert.Equal(t, expectedLogs, logs.AllUntimed())
 }

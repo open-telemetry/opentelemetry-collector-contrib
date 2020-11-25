@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -80,4 +81,29 @@ func TestTimestampToTime(t *testing.T) {
 	if !t2.Equal(nowTime) {
 		t.Errorf("Expected %+v, Got %+v\n", t2, nowTime)
 	}
+}
+
+func TestStatusCode(t *testing.T) {
+	status := pdata.NewSpanStatus()
+	assert.Equal(t, int32(pdata.StatusCodeOk), getStatusCode(status), "uninitialized")
+
+	status.InitEmpty()
+	assert.Equal(t, int32(pdata.StatusCodeUnset), getStatusCode(status), "empty")
+
+	status.SetCode(pdata.StatusCodeError)
+	assert.Equal(t, int32(pdata.StatusCodeError), getStatusCode(status), "error")
+
+	status.SetCode(pdata.StatusCodeOk)
+	assert.Equal(t, int32(pdata.StatusCodeOk), getStatusCode(status), "ok")
+}
+
+func TestStatusMessage(t *testing.T) {
+	status := pdata.NewSpanStatus()
+	assert.Equal(t, "STATUS_CODE_OK", getStatusMessage(status), "uninitialized")
+
+	status.InitEmpty()
+	assert.Equal(t, "STATUS_CODE_OK", getStatusMessage(status), "empty")
+
+	status.SetMessage("custom message")
+	assert.Equal(t, "custom message", getStatusMessage(status), "custom")
 }

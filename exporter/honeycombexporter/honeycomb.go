@@ -20,10 +20,8 @@ import (
 
 	"github.com/honeycombio/libhoney-go"
 	"github.com/honeycombio/libhoney-go/transmission"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
 
@@ -72,7 +70,7 @@ type link struct {
 
 // newHoneycombTraceExporter creates and returns a new honeycombExporter. It
 // wraps the exporter in the component.TraceExporterOld helper method.
-func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (component.TracesExporter, error) {
+func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (*honeycombExporter, error) {
 	libhoneyConfig := libhoney.Config{
 		WriteKey: cfg.APIKey,
 		Dataset:  cfg.Dataset,
@@ -98,11 +96,7 @@ func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (component.Trace
 		sampleRateAttribute: cfg.SampleRateAttribute,
 	}
 
-	return exporterhelper.NewTraceExporter(
-		cfg,
-		logger,
-		exporter.pushTraceData,
-		exporterhelper.WithShutdown(exporter.Shutdown))
+	return exporter, nil
 }
 
 // pushTraceData is the method called when trace data is available. It will be
@@ -144,6 +138,15 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) 
 
 				for k, v := range resourceAttrs {
 					ev.AddField(k, v)
+				}
+
+				if lib := ilsSpan.InstrumentationLibrary(); !lib.IsNil() {
+					if name := lib.Name(); name != "" {
+						ev.AddField("library.name", name)
+					}
+					if version := lib.Version(); version != "" {
+						ev.AddField("library.version", version)
+					}
 				}
 
 				if attrs := spanAttributesToMap(span.Attributes()); attrs != nil {

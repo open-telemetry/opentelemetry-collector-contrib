@@ -18,8 +18,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-
-	"google.golang.org/grpc/codes"
 )
 
 // spanAttributesToMap converts an opencensus proto Span_Attributes object into a map
@@ -56,7 +54,7 @@ func getStatusCode(status pdata.SpanStatus) int32 {
 	if !status.IsNil() {
 		return int32(status.Code())
 	}
-	return int32(codes.OK)
+	return int32(pdata.StatusCodeOk)
 }
 
 // getStatusMessage returns the status message as a string
@@ -67,5 +65,5 @@ func getStatusMessage(status pdata.SpanStatus) string {
 		}
 	}
 
-	return codes.OK.String()
+	return pdata.StatusCodeOk.String()
 }
