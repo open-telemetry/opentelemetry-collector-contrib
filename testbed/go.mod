@@ -11,7 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver v0.0.0-00010101000000-000000000000
-	go.opentelemetry.io/collector v0.15.1-0.20201123190042-7874cd5faa41
+	go.opentelemetry.io/collector v0.15.1-0.20201125151900-b19b5ac392ec
 	go.uber.org/zap v1.16.0
 )
 

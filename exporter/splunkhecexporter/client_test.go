@@ -55,7 +55,6 @@ func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 		metric.InitEmpty()
 		metric.SetName("gauge_double_with_dims")
 		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		metric.DoubleGauge().InitEmpty()
 		doublePt := pdata.NewDoubleDataPoint()
 		doublePt.InitEmpty()
 		doublePt.SetTimestamp(pdata.TimestampUnixNano(tsUnix.UnixNano()))
@@ -187,7 +186,7 @@ func runMetricsExport(disableCompression bool, numberOfDataPoints int, t *testin
 	case request := <-receivedRequest:
 		return request, nil
 	case <-time.After(1 * time.Second):
-		return "", errors.New("Timeout")
+		return "", errors.New("timeout")
 	}
 }
 
@@ -225,7 +224,7 @@ func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (
 	case request := <-receivedRequest:
 		return request, nil
 	case <-time.After(1 * time.Second):
-		return "", errors.New("Timeout")
+		return "", errors.New("timeout")
 	}
 }
 
@@ -263,7 +262,7 @@ func runLogExport(disableCompression bool, numberOfLogs int, t *testing.T) (stri
 	case request := <-receivedRequest:
 		return request, nil
 	case <-time.After(1 * time.Second):
-		return "", errors.New("Timeout")
+		return "", errors.New("timeout")
 	}
 }
 

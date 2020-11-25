@@ -96,8 +96,6 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Current number of bytes used by this server to store items")
 			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			data := metric.IntGauge()
-			data.InitEmpty()
 
 			return metric
 		},
@@ -111,8 +109,6 @@ var Metrics = &metricStruct{
 			metric.SetDescription("The current number of open connections")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			data := metric.IntGauge()
-			data.InitEmpty()
 
 			return metric
 		},
@@ -126,10 +122,8 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Number of keys that have been requested and found present")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
-			data := metric.IntSum()
-			data.InitEmpty()
-			data.SetIsMonotonic(true)
-			data.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 			return metric
 		},
@@ -143,10 +137,8 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Number of items that have been requested and not found")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
-			data := metric.IntSum()
-			data.InitEmpty()
-			data.SetIsMonotonic(true)
-			data.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 			return metric
 		},
@@ -160,10 +152,8 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Total number of connections opened since the server started running")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
-			data := metric.IntSum()
-			data.InitEmpty()
-			data.SetIsMonotonic(true)
-			data.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 			return metric
 		},

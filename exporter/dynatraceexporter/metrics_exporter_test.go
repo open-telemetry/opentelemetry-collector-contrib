@@ -78,7 +78,6 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intGaugeMetric.SetDataType(pdata.MetricDataTypeIntGauge)
 	intGaugeMetric.SetName("int_gauge")
 	intGauge := intGaugeMetric.IntGauge()
-	intGauge.InitEmpty()
 	intGaugeDataPoints := intGauge.DataPoints()
 
 	intGaugeDataPoint := pdata.NewIntDataPoint()
@@ -93,7 +92,6 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intSumMetric.SetDataType(pdata.MetricDataTypeIntSum)
 	intSumMetric.SetName("int_sum")
 	intSum := intSumMetric.IntSum()
-	intSum.InitEmpty()
 	intSumDataPoints := intSum.DataPoints()
 
 	intSumDataPoint := pdata.NewIntDataPoint()
@@ -108,7 +106,6 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intHistogramMetric.SetDataType(pdata.MetricDataTypeIntHistogram)
 	intHistogramMetric.SetName("double_histogram")
 	intHistogram := intHistogramMetric.IntHistogram()
-	intHistogram.InitEmpty()
 	intHistogramDataPoints := intHistogram.DataPoints()
 
 	intHistogramDataPoint := pdata.NewIntHistogramDataPoint()
@@ -124,7 +121,6 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleGaugeMetric.SetDataType(pdata.MetricDataTypeDoubleGauge)
 	doubleGaugeMetric.SetName("double_gauge")
 	doubleGauge := doubleGaugeMetric.DoubleGauge()
-	doubleGauge.InitEmpty()
 	doubleGaugeDataPoints := doubleGauge.DataPoints()
 
 	doubleGaugeDataPoint := pdata.NewDoubleDataPoint()
@@ -139,7 +135,6 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleSumMetric.SetDataType(pdata.MetricDataTypeDoubleSum)
 	doubleSumMetric.SetName("double_sum")
 	doubleSum := doubleSumMetric.DoubleSum()
-	doubleSum.InitEmpty()
 	doubleSumDataPoints := doubleSum.DataPoints()
 
 	doubleSumDataPoint := pdata.NewDoubleDataPoint()
@@ -154,7 +149,6 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleHistogramMetric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
 	doubleHistogramMetric.SetName("double_histogram")
 	doubleHistogram := doubleHistogramMetric.DoubleHistogram()
-	doubleHistogram.InitEmpty()
 	doubleHistogramDataPoints := doubleHistogram.DataPoints()
 
 	doubleHistogramDataPoint := pdata.NewDoubleHistogramDataPoint()
@@ -364,7 +358,6 @@ func Test_exporter_PushMetricsData_Unauthorized(t *testing.T) {
 	intGaugeMetric.SetDataType(pdata.MetricDataTypeIntGauge)
 	intGaugeMetric.SetName("int_gauge")
 	intGauge := intGaugeMetric.IntGauge()
-	intGauge.InitEmpty()
 	intGaugeDataPoints := intGauge.DataPoints()
 
 	intGaugeDataPoint := pdata.NewIntDataPoint()
@@ -458,7 +451,6 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 	intGaugeMetric.SetDataType(pdata.MetricDataTypeIntGauge)
 	intGaugeMetric.SetName("int_gauge")
 	intGauge := intGaugeMetric.IntGauge()
-	intGauge.InitEmpty()
 	intGaugeDataPoints := intGauge.DataPoints()
 
 	intGaugeDataPoint := pdata.NewIntDataPoint()
