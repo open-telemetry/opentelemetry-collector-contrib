@@ -29,7 +29,7 @@ import (
 
 func TestInitialDNSResolution(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
 	require.NoError(t, err)
 
 	res.resolver = &mockDNSResolver{
@@ -57,9 +57,39 @@ func TestInitialDNSResolution(t *testing.T) {
 	}
 }
 
+func TestInitialDNSResolutionWithPort(t *testing.T) {
+	// prepare
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "55690")
+	require.NoError(t, err)
+
+	res.resolver = &mockDNSResolver{
+		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
+			return []net.IPAddr{
+				{IP: net.IPv4(127, 0, 0, 1)},
+				{IP: net.IPv4(127, 0, 0, 2)},
+				{IP: net.IPv6loopback},
+			}, nil
+		},
+	}
+
+	// test
+	var resolved []string
+	res.onChange(func(endpoints []string) {
+		resolved = endpoints
+	})
+	res.start(context.Background())
+	defer res.shutdown(context.Background())
+
+	// verify
+	assert.Len(t, resolved, 3)
+	for i, value := range []string{"127.0.0.1:55690", "127.0.0.2:55690", "[::1]:55690"} {
+		assert.Equal(t, value, resolved[i])
+	}
+}
+
 func TestErrNoHostname(t *testing.T) {
 	// test
-	res, err := newDNSResolver(zap.NewNop(), "")
+	res, err := newDNSResolver(zap.NewNop(), "", "")
 
 	// verify
 	assert.Nil(t, res)
@@ -68,7 +98,7 @@ func TestErrNoHostname(t *testing.T) {
 
 func TestCantResolve(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
 	require.NoError(t, err)
 
 	expectedErr := errors.New("some expected error")
@@ -87,7 +117,7 @@ func TestCantResolve(t *testing.T) {
 
 func TestOnChange(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
 	require.NoError(t, err)
 
 	resolve := []net.IPAddr{
@@ -150,23 +180,35 @@ func TestEqualStringSlice(t *testing.T) {
 
 func TestPeriodicallyResolve(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
 	require.NoError(t, err)
 
 	counter := 0
 	resolve := [][]net.IPAddr{
-		{{IP: net.IPv4(127, 0, 0, 1)}}, {
+		{
+			{IP: net.IPv4(127, 0, 0, 1)},
+		}, {
 			{IP: net.IPv4(127, 0, 0, 1)},
 			{IP: net.IPv4(127, 0, 0, 2)},
+		}, {
+			{IP: net.IPv4(127, 0, 0, 1)},
+			{IP: net.IPv4(127, 0, 0, 2)},
+			{IP: net.IPv4(127, 0, 0, 3)},
 		},
 	}
 	res.resolver = &mockDNSResolver{
 		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
-			counter++
-
-			// for subsequent calls, return the second result
-			if counter >= 2 {
+			defer func() {
+				counter++
+			}()
+			// for second call, return the second result
+			if counter == 2 {
 				return resolve[1], nil
+			}
+			// for subsequent calls, return the last result, because we need more two periodic results
+			// to confirm that it works as expected.
+			if counter >= 3 {
+				return resolve[2], nil
 			}
 
 			// for the first call, return the first result
@@ -181,21 +223,21 @@ func TestPeriodicallyResolve(t *testing.T) {
 	})
 
 	// test
-	wg.Add(2)
+	wg.Add(3)
 	res.start(context.Background())
 	defer res.shutdown(context.Background())
 
-	// wait for two resolutions: from the start, and one periodic
+	// wait for three resolutions: from the start, and two periodic resolutions
 	wg.Wait()
 
 	// verify
-	assert.GreaterOrEqual(t, 2, counter)
-	assert.Len(t, res.endpoints, 2)
+	assert.GreaterOrEqual(t, counter, 3)
+	assert.Len(t, res.endpoints, 3)
 }
 
 func TestPeriodicallyResolveFailure(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
 	require.NoError(t, err)
 
 	expectedErr := errors.New("some expected error")
@@ -237,7 +279,7 @@ func TestPeriodicallyResolveFailure(t *testing.T) {
 
 func TestShutdownClearsCallbacks(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver(zap.NewNop(), "service-1")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
 	require.NoError(t, err)
 
 	res.resolver = &mockDNSResolver{}

@@ -851,6 +851,373 @@ var (
 					build(),
 			},
 		},
+		// COMBINE
+		{
+			name: "combine",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^([mM]etric)(?P<namedsubmatch>[12])$")},
+					Action:              Combine,
+					NewName:             "new",
+					SubmatchCase:        "lower",
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("Metric1").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, nil).addInt64Point(0, 1, 1).
+					build(),
+				metricBuilder().setName("metric2").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(2, nil).addInt64Point(0, 2, 1).
+					build(),
+				metricBuilder().setName("metric3").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(3, nil).addInt64Point(0, 3, 1).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric3").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(3, nil).addInt64Point(0, 3, 1).
+					build(),
+				metricBuilder().setName("new").
+					setLabels([]string{"$1", "namedsubmatch"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"metric", "1"}).addInt64Point(0, 1, 1).
+					addTimeseries(2, []string{"metric", "2"}).addInt64Point(1, 2, 1).
+					build(),
+			},
+		},
+		{
+			name: "combine_no_matches",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^X(metric)(?P<namedsubmatch>[12])$")},
+					Action:              Combine,
+					NewName:             "new",
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, nil).addInt64Point(0, 1, 1).
+					build(),
+				metricBuilder().setName("metric2").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(2, nil).addInt64Point(0, 2, 1).
+					build(),
+				metricBuilder().setName("metric3").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(3, nil).addInt64Point(0, 3, 1).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, nil).addInt64Point(0, 1, 1).
+					build(),
+				metricBuilder().setName("metric2").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(2, nil).addInt64Point(0, 2, 1).
+					build(),
+				metricBuilder().setName("metric3").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(3, nil).addInt64Point(0, 3, 1).
+					build(),
+			},
+		},
+		{
+			name: "combine_single_match",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^([mM]etric)(?P<namedsubmatch>[1])$")},
+					Action:              Combine,
+					NewName:             "new",
+					SubmatchCase:        "upper",
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("Metric1").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, nil).addInt64Point(0, 1, 1).
+					build(),
+				metricBuilder().setName("metric2").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(2, nil).addInt64Point(0, 2, 1).
+					build(),
+				metricBuilder().setName("metric3").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(3, nil).addInt64Point(0, 3, 1).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric2").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(2, nil).addInt64Point(0, 2, 1).
+					build(),
+				metricBuilder().setName("metric3").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(3, nil).addInt64Point(0, 3, 1).
+					build(),
+				metricBuilder().setName("new").
+					setLabels([]string{"$1", "namedsubmatch"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"METRIC", "1"}).addInt64Point(0, 1, 1).
+					build(),
+			},
+		},
+		{
+			name: "combine_aggregate",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^metric[12]$")},
+					Action:              Combine,
+					NewName:             "new",
+					AggregationType:     Sum,
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, nil).addInt64Point(0, 1, 1).
+					build(),
+				metricBuilder().setName("metric2").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, nil).addInt64Point(0, 2, 1).
+					build(),
+				metricBuilder().setName("metric3").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(3, nil).addInt64Point(0, 3, 1).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric3").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(3, nil).addInt64Point(0, 3, 1).
+					build(),
+				metricBuilder().setName("new").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, nil).addInt64Point(0, 3, 1).
+					build(),
+			},
+		},
+		{
+			name: "combine_with_operations",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^(metric)(?P<namedsubmatch>[12])$")},
+					Action:              Combine,
+					NewName:             "new",
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action:   AddLabel,
+								NewLabel: "new_label",
+								NewValue: "new_label_value",
+							},
+						},
+						{
+							configOperation: Operation{
+								Action:          AggregateLabels,
+								AggregationType: Sum,
+								LabelSet:        []string{"$1", "new_label"},
+							},
+							labelSetMap: map[string]bool{"$1": true, "new_label": true},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, nil).addInt64Point(0, 1, 1).
+					build(),
+				metricBuilder().setName("metric2").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, nil).addInt64Point(0, 2, 1).
+					build(),
+				metricBuilder().setName("metric3").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(3, nil).addInt64Point(0, 3, 1).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric3").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(3, nil).addInt64Point(0, 3, 1).
+					build(),
+				metricBuilder().setName("new").
+					setLabels([]string{"$1", "new_label"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"metric", "new_label_value"}).addInt64Point(0, 3, 1).
+					build(),
+			},
+		},
+		{
+			name: "combine_error_type",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^metric[12]$")},
+					Action:              Combine,
+					NewName:             "new",
+					AggregationType:     Sum,
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, nil).addInt64Point(0, 1, 1).
+					build(),
+				metricBuilder().setName("metric2").
+					setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+					addTimeseries(1, nil).addDoublePoint(0, 2, 1).
+					build(),
+				metricBuilder().setName("metric3").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(3, nil).addInt64Point(0, 3, 1).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, nil).addInt64Point(0, 1, 1).
+					build(),
+				metricBuilder().setName("metric2").
+					setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+					addTimeseries(1, nil).addDoublePoint(0, 2, 1).
+					build(),
+				metricBuilder().setName("metric3").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(3, nil).addInt64Point(0, 3, 1).
+					build(),
+			},
+		},
+		{
+			name: "combine_error_units",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^metric[12]$")},
+					Action:              Combine,
+					NewName:             "new",
+					AggregationType:     Sum,
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).setUnit("ms").
+					addTimeseries(1, nil).addInt64Point(0, 1, 1).
+					build(),
+				metricBuilder().setName("metric2").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).setUnit("s").
+					addTimeseries(1, nil).addInt64Point(0, 2, 1).
+					build(),
+				metricBuilder().setName("metric3").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(3, nil).addInt64Point(0, 3, 1).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).setUnit("ms").
+					addTimeseries(1, nil).addInt64Point(0, 1, 1).
+					build(),
+				metricBuilder().setName("metric2").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).setUnit("s").
+					addTimeseries(1, nil).addInt64Point(0, 2, 1).
+					build(),
+				metricBuilder().setName("metric3").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(3, nil).addInt64Point(0, 3, 1).
+					build(),
+			},
+		},
+		{
+			name: "combine_error_labels1",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^metric[12]$")},
+					Action:              Combine,
+					NewName:             "new",
+					AggregationType:     Sum,
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setLabels([]string{"a", "b"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"1", "2"}).addInt64Point(0, 1, 1).
+					build(),
+				metricBuilder().setName("metric2").
+					setLabels([]string{"a", "b", "c"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"1", "2", "3"}).addInt64Point(0, 2, 1).
+					build(),
+				metricBuilder().setName("metric3").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(3, nil).addInt64Point(0, 3, 1).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setLabels([]string{"a", "b"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"1", "2"}).addInt64Point(0, 1, 1).
+					build(),
+				metricBuilder().setName("metric2").
+					setLabels([]string{"a", "b", "c"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"1", "2", "3"}).addInt64Point(0, 2, 1).
+					build(),
+				metricBuilder().setName("metric3").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(3, nil).addInt64Point(0, 3, 1).
+					build(),
+			},
+		},
+		{
+			name: "combine_error_labels2",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^metric[12]$")},
+					Action:              Combine,
+					NewName:             "new",
+					AggregationType:     Sum,
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setLabels([]string{"a", "b"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"1", "2"}).addInt64Point(0, 1, 1).
+					build(),
+				metricBuilder().setName("metric2").
+					setLabels([]string{"a", "c"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"1", "3"}).addInt64Point(0, 2, 1).
+					build(),
+				metricBuilder().setName("metric3").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(3, nil).addInt64Point(0, 3, 1).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setLabels([]string{"a", "b"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"1", "2"}).addInt64Point(0, 1, 1).
+					build(),
+				metricBuilder().setName("metric2").
+					setLabels([]string{"a", "c"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"1", "3"}).addInt64Point(0, 2, 1).
+					build(),
+				metricBuilder().setName("metric3").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(3, nil).addInt64Point(0, 3, 1).
+					build(),
+			},
+		},
 		// Toggle Data Type
 		{
 			name: "metric_toggle_scalar_data_type_int64_to_double",

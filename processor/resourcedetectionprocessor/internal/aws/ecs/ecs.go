@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -54,7 +53,7 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 
 	// Fail fast if neither env var is present
 	if tmde == "" {
-		log.Println("No Task Metadata Endpoint environment variable detected, skipping ECS resource detection")
+		// TODO: Log a more specific error with zap
 		return res, nil
 	}
 

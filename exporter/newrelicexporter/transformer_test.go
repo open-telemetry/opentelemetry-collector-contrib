@@ -16,6 +16,7 @@ package newrelicexporter
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
@@ -26,234 +27,340 @@ import (
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func TestTransformEmptySpan(t *testing.T) {
-	transform := new(transformer)
-	_, err := transform.Span(nil)
-	assert.Error(t, err)
+func TestNewTraceTransformerInstrumentation(t *testing.T) {
+	ilm := pdata.NewInstrumentationLibrary()
+	ilm.InitEmpty()
+	ilm.SetName("test name")
+	ilm.SetVersion("test version")
+
+	transform := newTraceTransformer(pdata.NewResource(), ilm)
+	require.Contains(t, transform.ResourceAttributes, instrumentationNameKey)
+	require.Contains(t, transform.ResourceAttributes, instrumentationVersionKey)
+	assert.Equal(t, transform.ResourceAttributes[instrumentationNameKey], "test name")
+	assert.Equal(t, transform.ResourceAttributes[instrumentationVersionKey], "test version")
+}
+
+func defaultAttrFunc(res map[string]interface{}) func(map[string]interface{}) map[string]interface{} {
+	return func(add map[string]interface{}) map[string]interface{} {
+		full := make(map[string]interface{}, 2+len(res)+len(add))
+		full[collectorNameKey] = name
+		full[collectorVersionKey] = version
+		for k, v := range res {
+			full[k] = v
+		}
+		for k, v := range add {
+			full[k] = v
+		}
+		return full
+	}
 }
 
 func TestTransformSpan(t *testing.T) {
 	now := time.Unix(100, 0)
+	rattr := map[string]interface{}{
+		serviceNameKey: "test-service",
+		"resource":     "R1",
+	}
+	transform := &traceTransformer{ResourceAttributes: rattr}
+	withDefaults := defaultAttrFunc(rattr)
+
 	tests := []struct {
-		in   *tracepb.Span
-		want telemetry.Span
+		name     string
+		err      error
+		spanFunc func() pdata.Span
+		want     telemetry.Span
 	}{
 		{
-			in: &tracepb.Span{
-				// No status means no error.
+			name:     "nil span",
+			spanFunc: pdata.NewSpan,
+			err:      errEmptySpan,
+			want:     emptySpan,
+		},
+		{
+			name: "invalid TraceID",
+			spanFunc: func() pdata.Span {
+				s := pdata.NewSpan()
+				s.InitEmpty()
+				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+				s.SetName("invalid TraceID")
+				return s
 			},
+			err: errInvalidTraceID,
 			want: telemetry.Span{
-				ID:          "0000000000000000",
-				TraceID:     "00000000000000000000000000000000",
-				ServiceName: "test-service",
-				Attributes: map[string]interface{}{
-					"collector.name":    name,
-					"collector.version": version,
-					"resource":          "R1",
-				},
+				ID:         "0000000000000001",
+				Name:       "invalid TraceID",
+				Attributes: withDefaults(nil),
 			},
 		},
 		{
-			in: &tracepb.Span{
-				Status: &tracepb.Status{},
+			name: "invalid SpanID",
+			spanFunc: func() pdata.Span {
+				s := pdata.NewSpan()
+				s.InitEmpty()
+				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetName("invalid SpanID")
+				return s
 			},
+			err: errInvalidSpanID,
 			want: telemetry.Span{
-				ID:          "0000000000000000",
-				TraceID:     "00000000000000000000000000000000",
-				ServiceName: "test-service",
-				Attributes: map[string]interface{}{
-					"collector.name":    name,
-					"collector.version": version,
-					"resource":          "R1",
-				},
+				TraceID:    "01010101010101010101010101010101",
+				Name:       "invalid SpanID",
+				Attributes: withDefaults(nil),
 			},
 		},
 		{
-			in: &tracepb.Span{
-				TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-				SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 1},
-				Name:    &tracepb.TruncatableString{Value: "root"},
-				Status:  &tracepb.Status{},
+			name: "root",
+			spanFunc: func() pdata.Span {
+				s := pdata.NewSpan()
+				s.InitEmpty()
+				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+				s.SetName("root")
+				return s
 			},
 			want: telemetry.Span{
-				ID:          "0000000000000001",
-				TraceID:     "01010101010101010101010101010101",
-				Name:        "root",
-				ServiceName: "test-service",
-				Attributes: map[string]interface{}{
-					"collector.name":    name,
-					"collector.version": version,
-					"resource":          "R1",
-				},
+				ID:         "0000000000000001",
+				TraceID:    "01010101010101010101010101010101",
+				Name:       "root",
+				Attributes: withDefaults(nil),
+				Events:     nil,
 			},
 		},
 		{
-			in: &tracepb.Span{
-				TraceId:      []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-				SpanId:       []byte{0, 0, 0, 0, 0, 0, 0, 2},
-				ParentSpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
-				Name:         &tracepb.TruncatableString{Value: "client"},
-				Status:       &tracepb.Status{},
+			name: "client",
+			spanFunc: func() pdata.Span {
+				s := pdata.NewSpan()
+				s.InitEmpty()
+				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 2}))
+				s.SetParentSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+				s.SetName("client")
+				return s
 			},
 			want: telemetry.Span{
-				ID:          "0000000000000002",
-				TraceID:     "01010101010101010101010101010101",
-				Name:        "client",
-				ParentID:    "0000000000000001",
-				ServiceName: "test-service",
-				Attributes: map[string]interface{}{
-					"collector.name":    name,
-					"collector.version": version,
-					"resource":          "R1",
-				},
+				ID:         "0000000000000002",
+				TraceID:    "01010101010101010101010101010101",
+				Name:       "client",
+				ParentID:   "0000000000000001",
+				Attributes: withDefaults(nil),
+				Events:     nil,
 			},
 		},
 		{
-			in: &tracepb.Span{
-				TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-				SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 3},
-				Name:    &tracepb.TruncatableString{Value: "error"},
-				Status:  &tracepb.Status{Code: 1},
-			},
-			want: telemetry.Span{
-				ID:          "0000000000000003",
-				TraceID:     "01010101010101010101010101010101",
-				Name:        "error",
-				ServiceName: "test-service",
-				Attributes: map[string]interface{}{
-					"collector.name":    name,
-					"collector.version": version,
-					"error":             true,
-					"resource":          "R1",
-				},
-			},
-		},
-		{
-			in: &tracepb.Span{
-				TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-				SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 4},
-				Name:    &tracepb.TruncatableString{Value: "attrs"},
-				Status:  &tracepb.Status{},
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"empty": nil,
-						"prod": {
-							Value: &tracepb.AttributeValue_BoolValue{
-								BoolValue: true,
-							},
-						},
-						"weight": {
-							Value: &tracepb.AttributeValue_IntValue{
-								IntValue: 10,
-							},
-						},
-						"score": {
-							Value: &tracepb.AttributeValue_DoubleValue{
-								DoubleValue: 99.8,
-							},
-						},
-						"user": {
-							Value: &tracepb.AttributeValue_StringValue{
-								StringValue: &tracepb.TruncatableString{Value: "alice"},
+			name: "error code",
+			spanFunc: func() pdata.Span {
+				// There is no setter method for a Status so convert instead.
+				return internaldata.OCToTraceData(
+					consumerdata.TraceData{
+						Spans: []*tracepb.Span{
+							{
+								TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+								SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 3},
+								Name:    &tracepb.TruncatableString{Value: "error code"},
+								Status:  &tracepb.Status{Code: 1},
 							},
 						},
 					},
-				},
+				).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 			},
 			want: telemetry.Span{
-				ID:          "0000000000000004",
-				TraceID:     "01010101010101010101010101010101",
-				Name:        "attrs",
-				ServiceName: "test-service",
-				Attributes: map[string]interface{}{
-					"collector.name":    name,
-					"collector.version": version,
-					"resource":          "R1",
-					"prod":              true,
-					"weight":            int64(10),
-					"score":             99.8,
-					"user":              "alice",
-				},
+				ID:      "0000000000000003",
+				TraceID: "01010101010101010101010101010101",
+				Name:    "error code",
+				Attributes: withDefaults(map[string]interface{}{
+					statusCodeKey: "ERROR",
+				}),
+				Events: nil,
 			},
 		},
 		{
-			in: &tracepb.Span{
-				TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-				SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 5},
-				Name:    &tracepb.TruncatableString{Value: "with time"},
-				Status:  &tracepb.Status{},
-				StartTime: &timestamppb.Timestamp{
-					Seconds: now.Unix(),
-				},
-				EndTime: &timestamppb.Timestamp{
-					Seconds: now.Add(time.Second * 5).Unix(),
-				},
+			name: "error message",
+			spanFunc: func() pdata.Span {
+				// There is no setter method for a Status so convert instead.
+				return internaldata.OCToTraceData(
+					consumerdata.TraceData{
+						Spans: []*tracepb.Span{
+							{
+								TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+								SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 3},
+								Name:    &tracepb.TruncatableString{Value: "error message"},
+								Status:  &tracepb.Status{Code: 1, Message: "error message"},
+							},
+						},
+					},
+				).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 			},
 			want: telemetry.Span{
-				ID:          "0000000000000005",
-				TraceID:     "01010101010101010101010101010101",
-				Name:        "with time",
-				Timestamp:   now,
-				Duration:    time.Second * 5,
-				ServiceName: "test-service",
-				Attributes: map[string]interface{}{
-					"collector.name":    name,
-					"collector.version": version,
-					"resource":          "R1",
-				},
+				ID:      "0000000000000003",
+				TraceID: "01010101010101010101010101010101",
+				Name:    "error message",
+				Attributes: withDefaults(map[string]interface{}{
+					statusCodeKey:        "ERROR",
+					statusDescriptionKey: "error message",
+				}),
+				Events: nil,
 			},
 		},
 		{
-			in: &tracepb.Span{
-				TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-				SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 5},
-				Name:    &tracepb.TruncatableString{Value: "with time"},
-				Status:  &tracepb.Status{},
-				StartTime: &timestamppb.Timestamp{
-					Seconds: now.Unix(),
-				},
-				EndTime: &timestamppb.Timestamp{
-					Seconds: now.Add(time.Second * 5).Unix(),
-				},
-				Kind: tracepb.Span_SERVER,
+			name: "attributes",
+			spanFunc: func() pdata.Span {
+				// There is no setter method for Attributes so convert instead.
+				return internaldata.OCToTraceData(
+					consumerdata.TraceData{
+						Spans: []*tracepb.Span{
+							{
+								TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+								SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 4},
+								Name:    &tracepb.TruncatableString{Value: "attrs"},
+								Status:  &tracepb.Status{},
+								Attributes: &tracepb.Span_Attributes{
+									AttributeMap: map[string]*tracepb.AttributeValue{
+										"prod": {
+											Value: &tracepb.AttributeValue_BoolValue{
+												BoolValue: true,
+											},
+										},
+										"weight": {
+											Value: &tracepb.AttributeValue_IntValue{
+												IntValue: 10,
+											},
+										},
+										"score": {
+											Value: &tracepb.AttributeValue_DoubleValue{
+												DoubleValue: 99.8,
+											},
+										},
+										"user": {
+											Value: &tracepb.AttributeValue_StringValue{
+												StringValue: &tracepb.TruncatableString{Value: "alice"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 			},
 			want: telemetry.Span{
-				ID:          "0000000000000005",
-				TraceID:     "01010101010101010101010101010101",
-				Name:        "with time",
-				Timestamp:   now,
-				Duration:    time.Second * 5,
-				ServiceName: "test-service",
-				Attributes: map[string]interface{}{
-					"collector.name":    name,
-					"collector.version": version,
-					"resource":          "R1",
-					"span.kind":         "server",
+				ID:      "0000000000000004",
+				TraceID: "01010101010101010101010101010101",
+				Name:    "attrs",
+				Attributes: withDefaults(map[string]interface{}{
+					"prod":   true,
+					"weight": int64(10),
+					"score":  99.8,
+					"user":   "alice",
+				}),
+				Events: nil,
+			},
+		},
+		{
+			name: "with timestamps",
+			spanFunc: func() pdata.Span {
+				s := pdata.NewSpan()
+				s.InitEmpty()
+				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 5}))
+				s.SetName("with time")
+				s.SetStartTime(pdata.TimeToUnixNano(now))
+				s.SetEndTime(pdata.TimeToUnixNano(now.Add(time.Second * 5)))
+				return s
+			},
+			want: telemetry.Span{
+				ID:         "0000000000000005",
+				TraceID:    "01010101010101010101010101010101",
+				Name:       "with time",
+				Timestamp:  now.UTC(),
+				Duration:   time.Second * 5,
+				Attributes: withDefaults(nil),
+				Events:     nil,
+			},
+		},
+		{
+			name: "span kind server",
+			spanFunc: func() pdata.Span {
+				s := pdata.NewSpan()
+				s.InitEmpty()
+				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 6}))
+				s.SetName("span kind server")
+				s.SetKind(pdata.SpanKindSERVER)
+				return s
+			},
+			want: telemetry.Span{
+				ID:      "0000000000000006",
+				TraceID: "01010101010101010101010101010101",
+				Name:    "span kind server",
+				Attributes: withDefaults(map[string]interface{}{
+					spanKindKey: "server",
+				}),
+				Events: nil,
+			},
+		},
+		{
+			name: "with events",
+			spanFunc: func() pdata.Span {
+				s := pdata.NewSpan()
+				s.InitEmpty()
+				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 7}))
+				s.SetName("with events")
+
+				ev := pdata.NewSpanEventSlice()
+				ev.Resize(1)
+				event := ev.At(0)
+				event.SetName("this is the event name")
+				event.SetTimestamp(pdata.TimeToUnixNano(now))
+				s.Events().Append(event)
+				return s
+			},
+			want: telemetry.Span{
+				ID:         "0000000000000007",
+				TraceID:    "01010101010101010101010101010101",
+				Name:       "with events",
+				Attributes: withDefaults(nil),
+				Events: []telemetry.Event{
+					{
+						EventType:  "this is the event name",
+						Timestamp:  now.UTC(),
+						Attributes: map[string]interface{}{},
+					},
 				},
 			},
 		},
 	}
 
-	transform := &transformer{
-		ServiceName: "test-service",
-		Resource: &resourcepb.Resource{
-			Labels: map[string]string{
-				"resource": "R1",
-			},
-		},
-	}
 	for _, test := range tests {
-		got, err := transform.Span(test.in)
-		require.NoError(t, err)
-		assert.Equal(t, test.want, got)
+		t.Run(test.name, func(t *testing.T) {
+			got, err := transform.Span(test.spanFunc())
+			if test.err != nil {
+				assert.True(t, errors.Is(err, test.err))
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, test.want, got)
+		})
 	}
 }
 
+func TestMergeAttributesIncompatibleLenghts(t *testing.T) {
+	transform := &metricTransformer{}
+	lk := make([]*metricspb.LabelKey, 2)
+	lv := make([]*metricspb.LabelValue, 3)
+	_, err := transform.MergeAttributes(nil, lk, lv)
+	require.Error(t, err)
+	assert.True(t, errors.Is(err, errIncompatibleLabels))
+}
+
 func TestTransformEmptyMetric(t *testing.T) {
-	transform := &transformer{}
+	transform := &metricTransformer{}
 	_, err := transform.Metric(nil)
 	assert.Error(t, err, "nil metric should return an error")
 	_, err = transform.Metric(&metricspb.Metric{})
@@ -261,7 +368,7 @@ func TestTransformEmptyMetric(t *testing.T) {
 }
 
 func testTransformMetric(t *testing.T, metric *metricspb.Metric, want []telemetry.Metric) {
-	transform := &transformer{
+	transform := &metricTransformer{
 		DeltaCalculator: cumulative.NewDeltaCalculator(),
 		ServiceName:     "test-service",
 		Resource: &resourcepb.Resource{
@@ -283,8 +390,8 @@ func TestTransformGuage(t *testing.T) {
 			Value:     42.0,
 			Timestamp: time.Unix(1, 0),
 			Attributes: map[string]interface{}{
-				"collector.name":    name,
-				"collector.version": version,
+				collectorNameKey:    name,
+				collectorVersionKey: version,
 				"resource":          "R1",
 				"service.name":      "test-service",
 			},
@@ -343,8 +450,8 @@ func TestTransformDeltaSummary(t *testing.T) {
 			Timestamp: time.Unix(1, 0),
 			Interval:  time.Second,
 			Attributes: map[string]interface{}{
-				"collector.name":    name,
-				"collector.version": version,
+				collectorNameKey:    name,
+				collectorVersionKey: version,
 				"resource":          "R1",
 				"service.name":      "test-service",
 			},
@@ -415,8 +522,8 @@ func TestTransformCumulativeCount(t *testing.T) {
 	ts1 := &timestamppb.Timestamp{Seconds: 2}
 	ts2 := &timestamppb.Timestamp{Seconds: 3}
 	attrs := map[string]interface{}{
-		"collector.name":    name,
-		"collector.version": version,
+		collectorNameKey:    name,
+		collectorVersionKey: version,
 		"resource":          "R1",
 		"service.name":      "test-service",
 	}
@@ -499,8 +606,8 @@ func TestTransformCumulativeSummary(t *testing.T) {
 	ts1 := &timestamppb.Timestamp{Seconds: 2}
 	ts2 := &timestamppb.Timestamp{Seconds: 3}
 	attrs := map[string]interface{}{
-		"collector.name":    name,
-		"collector.version": version,
+		collectorNameKey:    name,
+		collectorVersionKey: version,
 		"resource":          "R1",
 		"service.name":      "test-service",
 	}

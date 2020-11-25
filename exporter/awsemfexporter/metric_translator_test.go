@@ -317,7 +317,7 @@ func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, config)
 	assert.Equal(t, 0, totalDroppedMetrics)
 	assert.NotNil(t, cwm)
-	assert.Equal(t, 5, len(cwm))
+	assert.Equal(t, 6, len(cwm))
 	assert.Equal(t, 1, len(cwm[0].Measurements))
 
 	met := cwm[0]
@@ -353,7 +353,7 @@ func TestTranslateOtToCWMetricWithoutInstrLibrary(t *testing.T) {
 	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, config)
 	assert.Equal(t, 0, totalDroppedMetrics)
 	assert.NotNil(t, cwm)
-	assert.Equal(t, 5, len(cwm))
+	assert.Equal(t, 6, len(cwm))
 	assert.Equal(t, 1, len(cwm[0].Measurements))
 
 	met := cwm[0]
@@ -549,6 +549,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 	testCases := []struct {
 		testName              string
 		metricNameSelectors   []string
+		labelMatchers         []*LabelMatcher
 		dimensionRollupOption string
 		expectedDimensions    [][]string
 		numMeasurements       int
@@ -556,6 +557,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 		{
 			"has match w/ Zero + Single dim rollup",
 			[]string{"spanCounter"},
+			nil,
 			ZeroAndSingleDimensionRollup,
 			[][]string{
 				{"spanName", "isItAnError"},
@@ -568,6 +570,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 		{
 			"has match w/ no dim rollup",
 			[]string{"spanCounter"},
+			nil,
 			"",
 			[][]string{
 				{"spanName", "isItAnError"},
@@ -576,8 +579,38 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 			1,
 		},
 		{
+			"has label match w/ no dim rollup",
+			[]string{"spanCounter"},
+			[]*LabelMatcher{
+				{
+					LabelNames: []string{"isItAnError", "spanName"},
+					Regex:      "false;testSpan",
+				},
+			},
+			"",
+			[][]string{
+				{"spanName", "isItAnError"},
+				{"spanName", OTellibDimensionKey},
+			},
+			1,
+		},
+		{
+			"no label match w/ no dim rollup",
+			[]string{"spanCounter"},
+			[]*LabelMatcher{
+				{
+					LabelNames: []string{"isItAnError", "spanName"},
+					Regex:      "true;testSpan",
+				},
+			},
+			"",
+			nil,
+			0,
+		},
+		{
 			"No match w/ rollup",
 			[]string{"invalid"},
+			nil,
 			ZeroAndSingleDimensionRollup,
 			[][]string{
 				{OTellibDimensionKey, "spanName"},
@@ -589,6 +622,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 		{
 			"No match w/ no rollup",
 			[]string{"invalid"},
+			nil,
 			"",
 			nil,
 			0,
@@ -600,6 +634,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 		m := MetricDeclaration{
 			Dimensions:          [][]string{{"isItAnError", "spanName"}, {"spanName", OTellibDimensionKey}},
 			MetricNameSelectors: tc.metricNameSelectors,
+			LabelMatchers:       tc.labelMatchers,
 		}
 		config := &Config{
 			Namespace:             "",
@@ -690,7 +725,7 @@ func TestTranslateCWMetricToEMFNoMeasurements(t *testing.T) {
 		Fields:       fields,
 		Measurements: nil,
 	}
-	obs, logs := observer.New(zap.WarnLevel)
+	obs, logs := observer.New(zap.DebugLevel)
 	logger := zap.New(obs)
 	inputLogEvent := TranslateCWMetricToEMF([]*CWMetrics{met}, logger)
 	expected := "{\"OTelLib\":\"cloudwatch-otel\",\"spanCounter\":0,\"spanName\":\"test\"}"
@@ -700,7 +735,7 @@ func TestTranslateCWMetricToEMFNoMeasurements(t *testing.T) {
 	// Check logged warning message
 	fieldsStr, _ := json.Marshal(fields)
 	expectedLogs := []observer.LoggedEntry{{
-		Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "Dropped metric due to no matching metric declarations"},
+		Entry:   zapcore.Entry{Level: zap.DebugLevel, Message: "Dropped metric due to no matching metric declarations"},
 		Context: []zapcore.Field{zap.String("labels", string(fieldsStr))},
 	}}
 	assert.Equal(t, 1, logs.Len())
@@ -1144,8 +1179,145 @@ func TestGetCWMetrics(t *testing.T) {
 					Fields: map[string]interface{}{
 						OTelLib: instrumentationLibName,
 						"foo": &CWMetricStats{
-							Min:   0,
-							Max:   10,
+							Sum:   15.0,
+							Count: 5,
+						},
+						"label1": "value1",
+						"label2": "value2",
+					},
+				},
+				{
+					Measurements: []CwMeasurement{
+						{
+							Namespace: namespace,
+							Dimensions: [][]string{
+								{"label2", OTelLib},
+							},
+							Metrics: []map[string]string{
+								{"Name": "foo", "Unit": "Seconds"},
+							},
+						},
+					},
+					Fields: map[string]interface{}{
+						OTelLib: instrumentationLibName,
+						"foo": &CWMetricStats{
+							Sum:   35.0,
+							Count: 18,
+						},
+						"label2": "value2",
+					},
+				},
+			},
+		},
+		{
+			"Double summary",
+			&metricspb.Metric{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name: "foo",
+					Type: metricspb.MetricDescriptor_SUMMARY,
+					Unit: "Seconds",
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "label1"},
+						{Key: "label2"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "value1", HasValue: true},
+							{Value: "value2", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Value: &metricspb.Point_SummaryValue{
+									SummaryValue: &metricspb.SummaryValue{
+										Sum: &wrappers.DoubleValue{
+											Value: 15.0,
+										},
+										Count: &wrappers.Int64Value{
+											Value: 5,
+										},
+										Snapshot: &metricspb.SummaryValue_Snapshot{
+											Count: &wrappers.Int64Value{
+												Value: 5,
+											},
+											Sum: &wrappers.DoubleValue{
+												Value: 15.0,
+											},
+											PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
+												{
+													Percentile: 0.0,
+													Value:      1,
+												},
+												{
+													Percentile: 100.0,
+													Value:      5,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{HasValue: false},
+							{Value: "value2", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Value: &metricspb.Point_SummaryValue{
+									SummaryValue: &metricspb.SummaryValue{
+										Sum: &wrappers.DoubleValue{
+											Value: 35.0,
+										},
+										Count: &wrappers.Int64Value{
+											Value: 18,
+										},
+										Snapshot: &metricspb.SummaryValue_Snapshot{
+											Count: &wrappers.Int64Value{
+												Value: 18,
+											},
+											Sum: &wrappers.DoubleValue{
+												Value: 35.0,
+											},
+											PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
+												{
+													Percentile: 0.0,
+													Value:      0,
+												},
+												{
+													Percentile: 100.0,
+													Value:      5,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			[]*CWMetrics{
+				{
+					Measurements: []CwMeasurement{
+						{
+							Namespace: namespace,
+							Dimensions: [][]string{
+								{"label1", "label2", OTelLib},
+							},
+							Metrics: []map[string]string{
+								{"Name": "foo", "Unit": "Seconds"},
+							},
+						},
+					},
+					Fields: map[string]interface{}{
+						OTelLib: instrumentationLibName,
+						"foo": &CWMetricStats{
+							Min:   1,
+							Max:   5,
 							Sum:   15.0,
 							Count: 5,
 						},
@@ -1169,7 +1341,7 @@ func TestGetCWMetrics(t *testing.T) {
 						OTelLib: instrumentationLibName,
 						"foo": &CWMetricStats{
 							Min:   0,
-							Max:   10,
+							Max:   5,
 							Sum:   35.0,
 							Count: 18,
 						},
@@ -1330,7 +1502,6 @@ func TestBuildCWMetric(t *testing.T) {
 
 	t.Run("Int sum", func(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeIntSum)
-		metric.IntSum().InitEmpty()
 		metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		dp := pdata.NewIntDataPoint()
 		dp.InitEmpty()
@@ -1359,7 +1530,6 @@ func TestBuildCWMetric(t *testing.T) {
 
 	t.Run("Double sum", func(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-		metric.DoubleSum().InitEmpty()
 		metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		dp := pdata.NewDoubleDataPoint()
 		dp.InitEmpty()
@@ -1411,8 +1581,6 @@ func TestBuildCWMetric(t *testing.T) {
 		expectedFields := map[string]interface{}{
 			OTelLib: instrLibName,
 			"foo": &CWMetricStats{
-				Min:   1,
-				Max:   3,
 				Sum:   17.13,
 				Count: 17,
 			},
@@ -2008,14 +2176,12 @@ func TestNeedsCalculateRate(t *testing.T) {
 	assert.False(t, needsCalculateRate(&metric))
 
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
-	metric.IntSum().InitEmpty()
 	metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	assert.True(t, needsCalculateRate(&metric))
 	metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 	assert.False(t, needsCalculateRate(&metric))
 
 	metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-	metric.DoubleSum().InitEmpty()
 	metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 	assert.True(t, needsCalculateRate(&metric))
 	metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)

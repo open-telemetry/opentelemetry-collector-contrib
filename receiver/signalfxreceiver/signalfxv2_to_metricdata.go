@@ -113,10 +113,8 @@ func fillInType(
 		case sfxDatum.DoubleValue != nil:
 			// Numerical: Periodic, instantaneous measurement of some state.
 			m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-			m.DoubleGauge().InitEmpty()
 		case sfxDatum.IntValue != nil:
 			m.SetDataType(pdata.MetricDataTypeIntGauge)
-			m.IntGauge().InitEmpty()
 		default:
 			err = fmt.Errorf("non-numeric datapoint encountered")
 		}
@@ -125,12 +123,10 @@ func fillInType(
 		switch {
 		case sfxDatum.DoubleValue != nil:
 			m.SetDataType(pdata.MetricDataTypeDoubleSum)
-			m.DoubleSum().InitEmpty()
 			m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 			m.DoubleSum().SetIsMonotonic(true)
 		case sfxDatum.IntValue != nil:
 			m.SetDataType(pdata.MetricDataTypeIntSum)
-			m.IntSum().InitEmpty()
 			m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 			m.IntSum().SetIsMonotonic(true)
 		default:
@@ -141,12 +137,10 @@ func fillInType(
 		switch {
 		case sfxDatum.DoubleValue != nil:
 			m.SetDataType(pdata.MetricDataTypeDoubleSum)
-			m.DoubleSum().InitEmpty()
 			m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			m.DoubleSum().SetIsMonotonic(true)
 		case sfxDatum.IntValue != nil:
 			m.SetDataType(pdata.MetricDataTypeIntSum)
-			m.IntSum().InitEmpty()
 			m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			m.IntSum().SetIsMonotonic(true)
 		default:

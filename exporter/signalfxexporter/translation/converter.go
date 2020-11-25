@@ -61,9 +61,7 @@ func NewMetricsConverter(logger *zap.Logger, t *MetricTranslator) *MetricsConver
 // MetricDataToSignalFxV2 converts the passed in MetricsData to SFx datapoints,
 // returning those datapoints and the number of time series that had to be
 // dropped because of errors or warnings.
-func (c *MetricsConverter) MetricDataToSignalFxV2(rm pdata.ResourceMetrics) ([]*sfxpb.DataPoint, int) {
-	var numDroppedTimeSeries int
-
+func (c *MetricsConverter) MetricDataToSignalFxV2(rm pdata.ResourceMetrics) []*sfxpb.DataPoint {
 	var sfxDatapoints []*sfxpb.DataPoint
 
 	res := rm.Resource()
@@ -83,17 +81,16 @@ func (c *MetricsConverter) MetricDataToSignalFxV2(rm pdata.ResourceMetrics) ([]*
 				continue
 			}
 
-			dps, droppedDPCount := c.metricToSfxDataPoints(m, extraDimensions)
-			numDroppedTimeSeries += droppedDPCount
+			dps := c.metricToSfxDataPoints(m, extraDimensions)
 
 			sfxDatapoints = append(sfxDatapoints, dps...)
 		}
 	}
 	sanitizeDataPointDimensions(sfxDatapoints)
-	return sfxDatapoints, numDroppedTimeSeries
+	return sfxDatapoints
 }
 
-func (c *MetricsConverter) metricToSfxDataPoints(metric pdata.Metric, extraDimensions []*sfxpb.Dimension) ([]*sfxpb.DataPoint, int) {
+func (c *MetricsConverter) metricToSfxDataPoints(metric pdata.Metric, extraDimensions []*sfxpb.Dimension) []*sfxpb.DataPoint {
 	// TODO: Figure out some efficient way to know how many datapoints there
 	// will be in the given metric.
 	var dps []*sfxpb.DataPoint
@@ -102,7 +99,7 @@ func (c *MetricsConverter) metricToSfxDataPoints(metric pdata.Metric, extraDimen
 
 	switch metric.DataType() {
 	case pdata.MetricDataTypeNone:
-		return nil, 0
+		return nil
 	case pdata.MetricDataTypeIntGauge:
 		dps = convertIntDatapoints(metric.IntGauge().DataPoints(), basePoint, extraDimensions)
 	case pdata.MetricDataTypeIntSum:
@@ -121,7 +118,7 @@ func (c *MetricsConverter) metricToSfxDataPoints(metric pdata.Metric, extraDimen
 		dps = c.metricTranslator.TranslateDataPoints(c.logger, dps)
 	}
 
-	return dps, 0
+	return dps
 }
 
 func labelsToDimensions(labels pdata.StringMap, extraDims []*sfxpb.Dimension) []*sfxpb.Dimension {

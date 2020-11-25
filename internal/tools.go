@@ -29,5 +29,7 @@ import (
 	_ "github.com/jstemmer/go-junit-report"
 	_ "github.com/pavius/impi/cmd/impi"
 	_ "github.com/tcnksm/ghr"
+	_ "go.opentelemetry.io/collector/cmd/issuegenerator"
+	_ "go.opentelemetry.io/collector/cmd/mdatagen"
 	_ "honnef.co/go/tools/cmd/staticcheck"
 )

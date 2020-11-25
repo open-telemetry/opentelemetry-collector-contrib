@@ -144,8 +144,6 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Size of data in bytes that a ZooKeeper server has in its data tree.")
 			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			data := metric.IntGauge()
-			data.InitEmpty()
 
 			return metric
 		},
@@ -159,8 +157,6 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Number of active clients connected to a ZooKeeper server.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			data := metric.IntGauge()
-			data.InitEmpty()
 
 			return metric
 		},
@@ -174,8 +170,6 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Number of ephemeral nodes that a ZooKeeper server has in its data tree.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			data := metric.IntGauge()
-			data.InitEmpty()
 
 			return metric
 		},
@@ -189,8 +183,6 @@ var Metrics = &metricStruct{
 			metric.SetDescription("The number of followers in sync with the leader. Only exposed by the leader.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			data := metric.IntGauge()
-			data.InitEmpty()
 
 			return metric
 		},
@@ -204,10 +196,8 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Number of times fsync duration has exceeded warning threshold.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
-			data := metric.IntSum()
-			data.InitEmpty()
-			data.SetIsMonotonic(true)
-			data.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 			return metric
 		},
@@ -221,8 +211,6 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Average time in milliseconds for requests to be processed.")
 			metric.SetUnit("ms")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			data := metric.IntGauge()
-			data.InitEmpty()
 
 			return metric
 		},
@@ -236,8 +224,6 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Maximum time in milliseconds for requests to be processed.")
 			metric.SetUnit("ms")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			data := metric.IntGauge()
-			data.InitEmpty()
 
 			return metric
 		},
@@ -251,8 +237,6 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Minimum time in milliseconds for requests to be processed.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			data := metric.IntGauge()
-			data.InitEmpty()
 
 			return metric
 		},
@@ -266,8 +250,6 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Maximum number of file descriptors that a ZooKeeper server can open.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			data := metric.IntGauge()
-			data.InitEmpty()
 
 			return metric
 		},
@@ -281,8 +263,6 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Number of file descriptors that a ZooKeeper server has open.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			data := metric.IntGauge()
-			data.InitEmpty()
 
 			return metric
 		},
@@ -296,8 +276,6 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Number of currently executing requests.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			data := metric.IntGauge()
-			data.InitEmpty()
 
 			return metric
 		},
@@ -311,10 +289,8 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Number of ZooKeeper packets received by a server.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
-			data := metric.IntSum()
-			data.InitEmpty()
-			data.SetIsMonotonic(true)
-			data.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 			return metric
 		},
@@ -328,10 +304,8 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Number of ZooKeeper packets sent by a server.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
-			data := metric.IntSum()
-			data.InitEmpty()
-			data.SetIsMonotonic(true)
-			data.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 			return metric
 		},
@@ -345,8 +319,6 @@ var Metrics = &metricStruct{
 			metric.SetDescription("The number of pending syncs from the followers. Only exposed by the leader.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			data := metric.IntGauge()
-			data.InitEmpty()
 
 			return metric
 		},
@@ -360,8 +332,6 @@ var Metrics = &metricStruct{
 			metric.SetDescription("The number of followers in sync with the leader. Only exposed by the leader.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			data := metric.IntGauge()
-			data.InitEmpty()
 
 			return metric
 		},
@@ -375,8 +345,6 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Number of watches placed on Z-Nodes on a ZooKeeper server.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			data := metric.IntGauge()
-			data.InitEmpty()
 
 			return metric
 		},
@@ -390,8 +358,6 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Number of z-nodes that a ZooKeeper server has in its data tree.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			data := metric.IntGauge()
-			data.InitEmpty()
 
 			return metric
 		},

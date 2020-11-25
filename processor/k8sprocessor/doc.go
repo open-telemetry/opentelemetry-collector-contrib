@@ -18,7 +18,7 @@
 // extracted metadata to the relevant spans, metrics and logs. The processor use the kubernetes API to discover all pods
 // running in a cluster, keeps a record of their IP addresses and interesting metadata. Upon receiving telemetry data,
 // the processor looks for presence of well-known resource attributes which might contain IP address ("ip",
-// "k8s.pod.ip" for logs, metrics or traces and "host.hostname" for metrics). If this field is not available, or it
+// "k8s.pod.ip" for logs, metrics or traces and "host.name" for metrics). If this field is not available, or it
 // does not contain a valid IP address, the processor tries to identify the source IP address of the service
 // that sent the telemetry data.
 // If a match is found, the cached metadata is added to the data as resource attributes.

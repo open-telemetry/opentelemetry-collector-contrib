@@ -79,34 +79,43 @@ func newExporter(l *zap.Logger, c configmodels.Exporter) (*exporter, error) {
 }
 
 func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, error) {
-	var errs []error
-	goodSpans := 0
+	var (
+		errs      []error
+		goodSpans int
+	)
 
-	octds := internaldata.TraceDataToOC(td)
-	for _, octd := range octds {
-
-		var srv string
-		if octd.Node != nil && octd.Node.ServiceInfo != nil {
-			srv = octd.Node.ServiceInfo.Name
+	for i := 0; i < td.ResourceSpans().Len(); i++ {
+		rspans := td.ResourceSpans().At(i)
+		if rspans.IsNil() {
+			continue
 		}
 
-		transform := &transformer{
-			ServiceName: srv,
-			Resource:    octd.Resource,
-		}
+		resource := rspans.Resource()
+		for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
+			ispans := rspans.InstrumentationLibrarySpans().At(j)
+			if ispans.IsNil() {
+				continue
+			}
 
-		for _, span := range octd.Spans {
-			nrSpan, err := transform.Span(span)
-			if err != nil {
-				errs = append(errs, err)
-				continue
+			transform := newTraceTransformer(resource, ispans.InstrumentationLibrary())
+			for k := 0; k < ispans.Spans().Len(); k++ {
+				span := ispans.Spans().At(k)
+				if span.IsNil() {
+					continue
+				}
+
+				nrSpan, err := transform.Span(span)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+
+				if err := e.harvester.RecordSpan(nrSpan); err != nil {
+					errs = append(errs, err)
+					continue
+				}
+				goodSpans++
 			}
-			err = e.harvester.RecordSpan(nrSpan)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
-			goodSpans++
 		}
 	}
 
@@ -126,7 +135,7 @@ func (e exporter) pushMetricData(ctx context.Context, md pdata.Metrics) (int, er
 			srv = ocmd.Node.ServiceInfo.Name
 		}
 
-		transform := &transformer{
+		transform := &metricTransformer{
 			DeltaCalculator: e.deltaCalculator,
 			ServiceName:     srv,
 			Resource:        ocmd.Resource,

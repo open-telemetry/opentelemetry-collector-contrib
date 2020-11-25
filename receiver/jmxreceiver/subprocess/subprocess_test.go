@@ -63,7 +63,7 @@ func TestShutdownTimeout(t *testing.T) {
 
 	elapsed := int64(time.Since(t0))
 	require.GreaterOrEqual(t, elapsed, int64(10*time.Millisecond))
-	require.GreaterOrEqual(t, int64(20*time.Millisecond), elapsed)
+	require.GreaterOrEqual(t, int64(1*time.Second), elapsed)
 }
 
 func TestPidAccessors(t *testing.T) {

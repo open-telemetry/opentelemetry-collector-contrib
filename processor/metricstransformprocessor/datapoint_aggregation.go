@@ -49,6 +49,14 @@ func (mtp *metricsTransformProcessor) mergeTimeseries(groupedTimeseries map[stri
 	return newTimeSeriesList
 }
 
+// sortTimeseries performs an in place sort of a list of timeseries by start timestamp
+// Returns the sorted timeseries
+func (mtp *metricsTransformProcessor) sortTimeseries(timeseries []*metricspb.TimeSeries) {
+	sort.Slice(timeseries, func(i, j int) bool {
+		return mtp.compareTimestamps(timeseries[i].StartTimestamp, timeseries[j].StartTimestamp)
+	})
+}
+
 // groupPointsByTimestamp groups points by timestamp
 // Returns a map of grouped points and the minimum start timestamp
 func (mtp *metricsTransformProcessor) groupPointsByTimestamp(timeseries []*metricspb.TimeSeries) (map[int64][]*metricspb.Point, *timestamppb.Timestamp) {

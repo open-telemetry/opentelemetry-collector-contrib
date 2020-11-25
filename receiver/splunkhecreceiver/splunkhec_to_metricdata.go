@@ -43,7 +43,7 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 		metrics.InitEmpty()
 		attrs := resourceMetrics.Resource().Attributes()
 		if event.Host != "" {
-			attrs.InsertString(conventions.AttributeHostHostname, event.Host)
+			attrs.InsertString(conventions.AttributeHostName, event.Host)
 		}
 		if event.Source != "" {
 			attrs.InsertString(conventions.AttributeServiceName, event.Source)
@@ -130,7 +130,6 @@ func addIntGauge(ts pdata.TimestampUnixNano, value int64, metric pdata.Metric, p
 	intPt.SetValue(value)
 	populateLabels(intPt.LabelsMap())
 	metric.SetDataType(pdata.MetricDataTypeIntGauge)
-	metric.IntGauge().InitEmpty()
 	metric.IntGauge().DataPoints().Append(intPt)
 }
 
@@ -141,7 +140,6 @@ func addDoubleGauge(ts pdata.TimestampUnixNano, value float64, metric pdata.Metr
 	doublePt.SetValue(value)
 	populateLabels(doublePt.LabelsMap())
 	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	metric.DoubleGauge().InitEmpty()
 	metric.DoubleGauge().DataPoints().Append(doublePt)
 }
 
