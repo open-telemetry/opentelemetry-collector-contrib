@@ -24,7 +24,7 @@ import (
 	"github.com/aws/aws-sdk-go/awstesting/mock"
 )
 
-func Test_ec2MetadataImpl_get(t *testing.T) {
+func TestMetadataProvider_get(t *testing.T) {
 	type args struct {
 		ctx  context.Context
 		sess *session.Session
@@ -47,8 +47,8 @@ func Test_ec2MetadataImpl_get(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ec := ec2MetadataImpl{sess: tt.args.sess}
-			gotDoc, err := ec.get(tt.args.ctx)
+			c := newMetadataClient(tt.args.sess)
+			gotDoc, err := c.get(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("get() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -60,7 +60,7 @@ func Test_ec2MetadataImpl_get(t *testing.T) {
 	}
 }
 
-func Test_ec2MetadataImpl_available(t *testing.T) {
+func TestMetadataProvider_available(t *testing.T) {
 	type fields struct {
 	}
 	type args struct {
@@ -82,8 +82,8 @@ func Test_ec2MetadataImpl_available(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			md := ec2MetadataImpl{sess: tt.args.sess}
-			if got := md.available(tt.args.ctx); got != tt.want {
+			c := newMetadataClient(tt.args.sess)
+			if got := c.available(tt.args.ctx); got != tt.want {
 				t.Errorf("available() = %v, want %v", got, tt.want)
 			}
 		})
