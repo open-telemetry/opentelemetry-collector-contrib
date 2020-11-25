@@ -6,6 +6,11 @@ This exporter sends metric data to [Dynatrace](https://dynatrace.com).
 
 A Dynatrace API Token and metrics ingest endpoint are required.
 
+Creating an API token for your Dynatrace environment is described in the [Dynatrace API documentation](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/).
+The only access scope required for exporting metrics is the **Ingest metrics** (`metrics.ingest`) scope listed in the **API v2** section.
+
+Given an environment ID `abc12345` on Dynatrace SaaS, the [metrics ingest endpoint](https://www.dynatrace.com/support/help/dynatrace-api/environment-api/metric-v2/post-ingest-metrics/) would be `https://abc12345.live.dynatrace.com/api/v2/metrics/ingest`.
+
  ```yaml
 dynatrace:
   api_token: "my_api_token"
