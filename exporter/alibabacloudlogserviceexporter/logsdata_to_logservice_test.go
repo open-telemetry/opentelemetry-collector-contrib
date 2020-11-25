@@ -59,7 +59,6 @@ func createLogData(numberOfLogs int) pdata.Logs {
 	logs.ResourceLogs().Append(rl2)
 	ill := pdata.NewInstrumentationLibraryLogs()
 	ill.InitEmpty()
-	ill.InstrumentationLibrary().InitEmpty()
 	ill.InstrumentationLibrary().SetName("collector")
 	ill.InstrumentationLibrary().SetVersion("v0.1.0")
 	rl.InstrumentationLibraryLogs().Append(ill)
@@ -93,7 +92,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 		}
 		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 		logRecord.Attributes().InsertString("my-label", "myapp-type")
-		logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
+		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.Attributes().InsertNull("null-value")
 

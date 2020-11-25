@@ -113,14 +113,12 @@ func spanToEnvelope(
 	resourceAttributes.ForEach(func(k string, v pdata.AttributeValue) { dataProperties[k] = v.StringVal() })
 
 	// Copy the instrumentation properties
-	if !instrumentationLibrary.IsNil() {
-		if instrumentationLibrary.Name() != "" {
-			dataProperties[instrumentationLibraryName] = instrumentationLibrary.Name()
-		}
+	if instrumentationLibrary.Name() != "" {
+		dataProperties[instrumentationLibraryName] = instrumentationLibrary.Name()
+	}
 
-		if instrumentationLibrary.Version() != "" {
-			dataProperties[instrumentationLibraryVersion] = instrumentationLibrary.Version()
-		}
+	if instrumentationLibrary.Version() != "" {
+		dataProperties[instrumentationLibraryVersion] = instrumentationLibrary.Version()
 	}
 
 	// Extract key service.* labels from the Resource labels and construct CloudRole and CloudRoleInstance envelope tags

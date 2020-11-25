@@ -112,7 +112,6 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	resource.CopyTo(rs.Resource())
 
 	il := pdata.NewInstrumentationLibrary()
-	il.InitEmpty()
 	il.SetName("test_il_name")
 	il.SetVersion("test_il_version")
 
@@ -153,7 +152,6 @@ func TestObfuscation(t *testing.T) {
 	})
 
 	instrumentationLibrary := pdata.NewInstrumentationLibrary()
-	instrumentationLibrary.InitEmpty()
 	instrumentationLibrary.SetName("flash")
 	instrumentationLibrary.SetVersion("v1")
 
@@ -510,7 +508,6 @@ func TestSpanTypeTranslation(t *testing.T) {
 // ensure that the IL Tags extraction handles nil case
 func TestILTagsExctraction(t *testing.T) {
 	il := pdata.NewInstrumentationLibrary()
-	il.InitEmpty()
 
 	tags := map[string]string{}
 

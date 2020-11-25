@@ -194,10 +194,8 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 		tags["span_kind"] = spanKind.String()
 	}
 
-	if !library.IsNil() {
-		tags["library_name"] = library.Name()
-		tags["library_version"] = library.Version()
-	}
+	tags["library_name"] = library.Name()
+	tags["library_version"] = library.Version()
 
 	sentrySpan = &sentry.Span{
 		TraceID:        span.TraceID().HexString(),

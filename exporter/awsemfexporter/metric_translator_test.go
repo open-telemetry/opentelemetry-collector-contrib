@@ -312,7 +312,6 @@ func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
 	ilms := rm.InstrumentationLibraryMetrics()
 	ilm := ilms.At(0)
-	ilm.InstrumentationLibrary().InitEmpty()
 	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
 	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, config)
 	assert.Equal(t, 0, totalDroppedMetrics)
@@ -543,7 +542,6 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 
 	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
 	ilm := rm.InstrumentationLibraryMetrics().At(0)
-	ilm.InstrumentationLibrary().InitEmpty()
 	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
 
 	testCases := []struct {
@@ -2193,7 +2191,6 @@ func BenchmarkTranslateOtToCWMetricWithInstrLibrary(b *testing.B) {
 	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
 	ilms := rm.InstrumentationLibraryMetrics()
 	ilm := ilms.At(0)
-	ilm.InstrumentationLibrary().InitEmpty()
 	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
 	config := &Config{
 		Namespace:             "",
@@ -2225,7 +2222,6 @@ func BenchmarkTranslateOtToCWMetricWithFiltering(b *testing.B) {
 	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
 	ilms := rm.InstrumentationLibraryMetrics()
 	ilm := ilms.At(0)
-	ilm.InstrumentationLibrary().InitEmpty()
 	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
 	m := MetricDeclaration{
 		Dimensions:          [][]string{{"spanName"}},

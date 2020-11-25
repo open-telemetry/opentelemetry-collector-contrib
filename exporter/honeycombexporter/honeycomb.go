@@ -140,13 +140,12 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) 
 					ev.AddField(k, v)
 				}
 
-				if lib := ilsSpan.InstrumentationLibrary(); !lib.IsNil() {
-					if name := lib.Name(); name != "" {
-						ev.AddField("library.name", name)
-					}
-					if version := lib.Version(); version != "" {
-						ev.AddField("library.version", version)
-					}
+				lib := ilsSpan.InstrumentationLibrary()
+				if name := lib.Name(); name != "" {
+					ev.AddField("library.name", name)
+				}
+				if version := lib.Version(); version != "" {
+					ev.AddField("library.version", version)
 				}
 
 				if attrs := spanAttributesToMap(span.Attributes()); attrs != nil {

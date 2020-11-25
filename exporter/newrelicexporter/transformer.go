@@ -62,12 +62,10 @@ func newTraceTransformer(resource pdata.Resource, lib pdata.InstrumentationLibra
 		),
 	}
 
-	if !lib.IsNil() {
-		if n := lib.Name(); n != "" {
-			t.ResourceAttributes[instrumentationNameKey] = n
-			if v := lib.Version(); v != "" {
-				t.ResourceAttributes[instrumentationVersionKey] = v
-			}
+	if n := lib.Name(); n != "" {
+		t.ResourceAttributes[instrumentationNameKey] = n
+		if v := lib.Version(); v != "" {
+			t.ResourceAttributes[instrumentationVersionKey] = v
 		}
 	}
 	return t
