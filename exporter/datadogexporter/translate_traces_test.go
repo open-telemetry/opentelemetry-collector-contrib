@@ -29,7 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 )
 
-func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSpanID [8]byte, shouldErr bool, resourceEnvAndService bool) pdata.ResourceSpans {
+func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSpanID [8]byte, statusCode pdata.StatusCode, resourceEnvAndService bool) pdata.ResourceSpans {
 	// The goal of this test is to ensure that each span in
 	// pdata.ResourceSpans is transformed to its *trace.SpanData correctly!
 
@@ -58,11 +58,11 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	status := pdata.NewSpanStatus()
 	status.InitEmpty()
 
-	if shouldErr {
-		status.SetCode(13)
+	if statusCode == pdata.StatusCodeError {
+		status.SetCode(pdata.StatusCodeError)
 		status.SetMessage("This is not a drill!")
 	} else {
-		status.SetCode(0)
+		status.SetCode(statusCode)
 	}
 
 	status.CopyTo(span.Status())
@@ -80,12 +80,18 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	}).CopyTo(events.At(1).Attributes())
 	events.MoveAndAppendTo(span.Events())
 
-	pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+	attribs := map[string]pdata.AttributeValue{
 		"cache_hit":  pdata.NewAttributeValueBool(true),
 		"timeout_ns": pdata.NewAttributeValueInt(12e9),
 		"ping_count": pdata.NewAttributeValueInt(25),
 		"agent":      pdata.NewAttributeValueString("ocagent"),
-	}).CopyTo(span.Attributes())
+	}
+
+	if statusCode == pdata.StatusCodeError {
+		attribs["http.status_code"] = pdata.NewAttributeValueString("501")
+	}
+
+	pdata.NewAttributeMap().InitFromMap(attribs).CopyTo(span.Attributes())
 
 	resource := pdata.NewResource()
 
@@ -191,7 +197,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 
 	// create mock resource span data
 	// set shouldError and resourceServiceandEnv to false to test defaut behavior
-	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, false, false)
+	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeUnset, false)
 
 	// translate mocks to datadog traces
 	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &config.Config{})
@@ -230,7 +236,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, "web", datadogPayload.Traces[0].Spans[0].Type)
 
 	// ensure that span.meta and span.metrics pick up attibutes, instrumentation ibrary and resource attribs
-	assert.Equal(t, 9, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 8, len(datadogPayload.Traces[0].Spans[0].Meta))
 	assert.Equal(t, 1, len(datadogPayload.Traces[0].Spans[0].Metrics))
 
 	// ensure that span error is based on otlp span status
@@ -257,7 +263,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 
 	// create mock resource span data
 	// toggle on errors and custom service naming to test edge case code paths
-	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, true, true)
+	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeError, true)
 
 	// translate mocks to datadog traces
 	cfg := config.Config{
@@ -281,6 +287,59 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 
 	// ensure that span error is based on otlp span status
 	assert.Equal(t, int32(1), datadogPayload.Traces[0].Spans[0].Error)
+
+	// ensure that span status code is set
+	assert.Equal(t, "501", datadogPayload.Traces[0].Spans[0].Meta["http.status_code"])
+
+	// ensure that span service name gives resource service.name priority
+	assert.Equal(t, "test-resource-service-name", datadogPayload.Traces[0].Spans[0].Service)
+
+	// ensure that env gives resource deployment.environment priority
+	assert.Equal(t, "test-env", datadogPayload.Env)
+
+	// ensure that version gives resource service.version priority
+	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
+
+	assert.Equal(t, 14, len(datadogPayload.Traces[0].Spans[0].Meta))
+}
+
+func TestTracesTranslationOkStatus(t *testing.T) {
+	hostname := "testhostname"
+
+	// generate mock trace, span and parent span ids
+	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
+	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
+	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
+
+	// create mock resource span data
+	// toggle on errors and custom service naming to test edge case code paths
+	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeError, true)
+
+	// translate mocks to datadog traces
+	cfg := config.Config{
+		TagsConfig: config.TagsConfig{
+			Version: "v1",
+		},
+	}
+
+	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &cfg)
+
+	if err != nil {
+		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
+	}
+
+	// ensure we return the correct type
+	assert.IsType(t, pb.TracePayload{}, datadogPayload)
+
+	// ensure hostname arg is respected
+	assert.Equal(t, hostname, datadogPayload.HostName)
+	assert.Equal(t, 1, len(datadogPayload.Traces))
+
+	// ensure that span error is based on otlp span status
+	assert.Equal(t, int32(1), datadogPayload.Traces[0].Spans[0].Error)
+
+	// ensure that span status code is set
+	assert.Equal(t, "501", datadogPayload.Traces[0].Spans[0].Meta["http.status_code"])
 
 	// ensure that span service name gives resource service.name priority
 	assert.Equal(t, "test-resource-service-name", datadogPayload.Traces[0].Spans[0].Service)
@@ -305,7 +364,7 @@ func TestTracesTranslationConfig(t *testing.T) {
 
 	// create mock resource span data
 	// toggle on errors and custom service naming to test edge case code paths
-	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, true, true)
+	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeUnset, true)
 
 	cfg := config.Config{
 		TagsConfig: config.TagsConfig{
@@ -328,8 +387,8 @@ func TestTracesTranslationConfig(t *testing.T) {
 	assert.Equal(t, hostname, datadogPayload.HostName)
 	assert.Equal(t, 1, len(datadogPayload.Traces))
 
-	// ensure that span error is based on otlp span status
-	assert.Equal(t, int32(1), datadogPayload.Traces[0].Spans[0].Error)
+	// ensure that span error is based on otlp span status, unset should not error
+	assert.Equal(t, int32(0), datadogPayload.Traces[0].Spans[0].Error)
 
 	// ensure that span service name gives resource service.name priority
 	assert.Equal(t, "test-resource-service-name", datadogPayload.Traces[0].Spans[0].Service)
@@ -340,7 +399,7 @@ func TestTracesTranslationConfig(t *testing.T) {
 	// ensure that version gives resource service.version priority
 	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
 
-	assert.Equal(t, 14, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 11, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
 
 // ensure that the translation returns early if no resource instrumentation library spans
