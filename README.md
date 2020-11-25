@@ -26,7 +26,7 @@ this repo and do an [editable
 install](https://pip.pypa.io/en/stable/reference/pip_install/#editable-installs):
 
 ```sh
-pip install -e ./ext/opentelemetry-ext-{integration}
+pip install -e ./instrumentation/opentelemetry-instrumentation-{integration}
 ```
 
 ## Contributing
