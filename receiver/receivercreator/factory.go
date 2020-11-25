@@ -17,12 +17,16 @@ package receivercreator
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
 // This file implements factory for receiver_creator. A receiver_creator can create other receivers at runtime.
@@ -70,10 +74,17 @@ func customUnmarshaler(sourceViperSection *viper.Viper, intoCfg interface{}) err
 		return err
 	}
 
-	receiversCfg := viperSub(sourceViperSection, receiversConfigKey)
+	receiversCfg, err := config.ViperSubExact(sourceViperSection, receiversConfigKey)
+	if err != nil {
+		return fmt.Errorf("failed to create sub viper for key %q", receiversConfigKey)
+	}
 
 	for subreceiverKey := range receiversCfg.AllSettings() {
-		cfgSection := viperSub(receiversCfg, subreceiverKey).GetStringMap(configKey)
+		subViperCfg, err := config.ViperSubExact(receiversCfg, subreceiverKey)
+		cfgSection := subViperCfg.GetStringMap(configKey)
+		if err != nil {
+			return fmt.Errorf("failed to create sub viper for key %q.%q", receiversConfigKey, configKey)
+		}
 		subreceiver, err := newReceiverTemplate(subreceiverKey, cfgSection)
 		if err != nil {
 			return err
@@ -82,6 +93,10 @@ func customUnmarshaler(sourceViperSection *viper.Viper, intoCfg interface{}) err
 		// Unmarshals receiver_creator configuration like rule.
 		if err = receiversCfg.UnmarshalKey(subreceiverKey, &subreceiver); err != nil {
 			return fmt.Errorf("failed to deserialize sub-receiver %q: %s", subreceiverKey, err)
+		}
+
+		if !observer.EndpointTypes[subreceiver.Type] {
+			return fmt.Errorf("subreceiver type must be one of: %v", reflect.ValueOf(observer.EndpointTypes).MapKeys())
 		}
 
 		subreceiver.rule, err = newRule(subreceiver.Rule)

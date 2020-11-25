@@ -33,14 +33,14 @@ func TestEndpointsAdded(t *testing.T) {
 		{
 			ID:     "test-1/pod-2-UID",
 			Target: "1.2.3.4",
-			Details: observer.Pod{
+			Details: &observer.Pod{
 				Name:   "pod-2",
 				Labels: map[string]string{"env": "prod"},
 			},
 		}, {
 			ID:     "test-1/pod-2-UID/https(443)",
 			Target: "1.2.3.4:443",
-			Details: observer.Port{
+			Details: &observer.Port{
 				Name: "https",
 				Pod: observer.Pod{
 					Name:   "pod-2",
@@ -65,14 +65,14 @@ func TestEndpointsRemoved(t *testing.T) {
 		{
 			ID:     "test-1/pod-2-UID",
 			Target: "1.2.3.4",
-			Details: observer.Pod{
+			Details: &observer.Pod{
 				Name:   "pod-2",
 				Labels: map[string]string{"env": "prod"},
 			},
 		}, {
 			ID:     "test-1/pod-2-UID/https(443)",
 			Target: "1.2.3.4:443",
-			Details: observer.Port{
+			Details: &observer.Port{
 				Name: "https",
 				Pod: observer.Pod{
 					Name:   "pod-2",
@@ -120,13 +120,13 @@ func TestEndpointsChanged(t *testing.T) {
 		{
 			ID:     "test-1/pod-2-UID",
 			Target: "1.2.3.4",
-			Details: observer.Pod{
+			Details: &observer.Pod{
 				Name:   "pod-2",
 				Labels: map[string]string{"env": "prod", "updated-label": "true"}}},
 		{
 			ID:     "test-1/pod-2-UID/https(443)",
 			Target: "1.2.3.4:443",
-			Details: observer.Port{
+			Details: &observer.Port{
 				Name: "https", Pod: observer.Pod{
 					Name:   "pod-2",
 					Labels: map[string]string{"env": "prod", "updated-label": "true"}},

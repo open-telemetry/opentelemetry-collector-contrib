@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
 type mockHostFactories struct {
@@ -81,7 +83,8 @@ func TestLoadConfig(t *testing.T) {
 	assert.NotNil(t, r1)
 	assert.Len(t, r1.receiverTemplates, 1)
 	assert.Contains(t, r1.receiverTemplates, "examplereceiver/1")
-	assert.Equal(t, `type.port`, r1.receiverTemplates["examplereceiver/1"].Rule)
+	assert.Equal(t, observer.PortType, r1.receiverTemplates["examplereceiver/1"].Type)
+	assert.Equal(t, `port == 1234`, r1.receiverTemplates["examplereceiver/1"].Rule)
 	assert.Equal(t, userConfigMap{
 		endpointConfigKey: "localhost:12345",
 	}, r1.receiverTemplates["examplereceiver/1"].config)

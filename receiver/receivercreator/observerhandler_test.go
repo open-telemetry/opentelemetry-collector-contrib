@@ -31,6 +31,12 @@ type mockRunner struct {
 	mock.Mock
 }
 
+var (
+	basicRcvrCfg        = receiverConfig{typeStr: configmodels.Type("name"), config: userConfigMap{"foo": "bar"}, fullName: "name/1"}
+	portTemplate        = receiverTemplate{receiverConfig: basicRcvrCfg, Type: "port", rule: newRuleOrPanic("true")}
+	_            runner = (*mockRunner)(nil)
+)
+
 func (run *mockRunner) start(receiver receiverConfig, discoveredConfig userConfigMap) (component.Receiver, error) {
 	args := run.Called(receiver, discoveredConfig)
 	return args.Get(0).(component.Receiver), args.Error(1)
@@ -41,21 +47,23 @@ func (run *mockRunner) shutdown(rcvr component.Receiver) error {
 	return args.Error(0)
 }
 
-var _ runner = (*mockRunner)(nil)
-
 func TestOnAdd(t *testing.T) {
 	runner := &mockRunner{}
-	rcvrCfg := receiverConfig{typeStr: configmodels.Type("name"), config: userConfigMap{"foo": "bar"}, fullName: "name/1"}
+
 	handler := &observerHandler{
 		logger: zap.NewNop(),
 		receiverTemplates: map[string]receiverTemplate{
-			"name/1": {rcvrCfg, "", newRuleOrPanic(`type.port`)},
+			"name/1": portTemplate,
 		},
 		receiversByEndpointID: receiverMap{},
 		runner:                runner,
 	}
 
-	runner.On("start", rcvrCfg, userConfigMap{endpointConfigKey: "localhost:1234"}).Return(&componenttest.ExampleReceiverProducer{}, nil)
+	runner.On(
+		"start",
+		basicRcvrCfg,
+		userConfigMap{endpointConfigKey: "localhost:1234"},
+	).Return(&componenttest.ExampleReceiverProducer{}, nil)
 
 	handler.OnAdd([]observer.Endpoint{
 		portEndpoint,
@@ -93,7 +101,7 @@ func TestOnChange(t *testing.T) {
 	handler := &observerHandler{
 		logger: zap.NewNop(),
 		receiverTemplates: map[string]receiverTemplate{
-			"name/1": {rcvrCfg, "", newRuleOrPanic(`type.port`)},
+			"name/1": {rcvrCfg, "true", "port", newRuleOrPanic("true")},
 		},
 		receiversByEndpointID: receiverMap{},
 		runner:                runner,
@@ -120,8 +128,9 @@ func TestDynamicConfig(t *testing.T) {
 		receiverTemplates: map[string]receiverTemplate{
 			"name/1": {
 				receiverConfig: receiverConfig{typeStr: configmodels.Type("name"), config: userConfigMap{"endpoint": "`endpoint`:6379"}, fullName: "name/1"},
-				Rule:           "type.pod",
-				rule:           newRuleOrPanic("type.pod"),
+				Rule:           "true",
+				Type:           observer.PodType,
+				rule:           newRuleOrPanic("true"),
 			},
 		},
 	}
@@ -135,4 +144,72 @@ func TestDynamicConfig(t *testing.T) {
 	})
 
 	runner.AssertExpectations(t)
+}
+
+func TestEndpointMatches(t *testing.T) {
+	type args struct {
+		template receiverTemplate
+		e        observer.Endpoint
+		env      observer.EndpointEnv
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "endpoint type does not match",
+			args: args{
+				template: portTemplate,
+				e:        podEndpoint,
+				env:      nil,
+			},
+			want: false,
+		},
+		{
+			name: "endpoint matches",
+			args: args{
+				template: portTemplate,
+				e:        portEndpoint,
+				env:      nil,
+			},
+			want: true,
+		},
+		{
+			name: "type matches but not rule",
+			args: args{
+				template: func() receiverTemplate {
+					t := portTemplate
+					t.Rule = "false"
+					t.rule = newRuleOrPanic("false")
+					return t
+				}(),
+				e:   portEndpoint,
+				env: nil,
+			},
+			want: false,
+		},
+		{
+			name: "rule invalid",
+			args: args{
+				template: func() receiverTemplate {
+					t := portTemplate
+					t.Rule = "invalid"
+					t.rule = newRuleOrPanic("invalid")
+					return t
+				}(),
+				e:   portEndpoint,
+				env: nil,
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			obs := &observerHandler{logger: zap.NewNop()}
+			if got := obs.endpointMatches(tt.args.template, tt.args.e, tt.args.env); got != tt.want {
+				t.Errorf("endpointMatches() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

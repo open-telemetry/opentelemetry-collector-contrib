@@ -32,13 +32,13 @@ var pod = observer.Pod{
 var podEndpoint = observer.Endpoint{
 	ID:      "pod-1",
 	Target:  "localhost",
-	Details: pod,
+	Details: &pod,
 }
 
 var portEndpoint = observer.Endpoint{
 	ID:     "port-1",
 	Target: "localhost:1234",
-	Details: observer.Port{
+	Details: &observer.Port{
 		Name:      "http",
 		Pod:       pod,
 		Port:      1234,
@@ -49,5 +49,5 @@ var portEndpoint = observer.Endpoint{
 var unsupportedEndpoint = observer.Endpoint{
 	ID:      "endpoint-1",
 	Target:  "localhost:1234",
-	Details: map[string]interface{}{},
+	Details: nil,
 }

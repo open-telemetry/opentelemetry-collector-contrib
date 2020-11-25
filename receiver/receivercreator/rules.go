@@ -16,7 +16,6 @@ package receivercreator
 
 import (
 	"errors"
-	"regexp"
 
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
@@ -29,21 +28,12 @@ type rule struct {
 	program *vm.Program
 }
 
-// ruleRe is used to verify the rule starts type check.
-var ruleRe = regexp.MustCompile(`^type\.(pod|port)`)
-
 // newRule creates a new rule instance.
 func newRule(ruleStr string) (rule, error) {
 	if ruleStr == "" {
 		return rule{}, errors.New("rule cannot be empty")
 	}
-	if !ruleRe.MatchString(ruleStr) {
-		// TODO: Try validating against bytecode instead.
-		return rule{}, errors.New("rule must specify type")
-	}
 
-	// TODO: Maybe use https://godoc.org/github.com/antonmedv/expr#Env in type checking
-	// depending on type == specified.
 	v, err := expr.Compile(ruleStr)
 	if err != nil {
 		return rule{}, err

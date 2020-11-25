@@ -15,12 +15,10 @@
 package receivercreator
 
 import (
-	"reflect"
-
-	"github.com/spf13/cast"
-	"github.com/spf13/viper"
 	otelconfig "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
 const (
@@ -53,6 +51,8 @@ type receiverTemplate struct {
 	// Rule is the discovery rule that when matched will create a receiver instance
 	// based on receiverTemplate.
 	Rule string `mapstructure:"rule"`
+	// Type is the endpoint type to match the rule against (e.g. pod or port).
+	Type observer.EndpointType `mapstructure:"type"`
 	rule rule
 }
 
@@ -79,20 +79,4 @@ type Config struct {
 	receiverTemplates             map[string]receiverTemplate
 	// WatchObservers are the extensions to listen to endpoints from.
 	WatchObservers []configmodels.Type `mapstructure:"watch_observers"`
-}
-
-// Copied from the Viper but changed to use the same delimiter.
-// See https://github.com/spf13/viper/issues/871
-func viperSub(v *viper.Viper, key string) *viper.Viper {
-	subv := otelconfig.NewViper()
-	data := v.Get(key)
-	if data == nil {
-		return subv
-	}
-
-	if reflect.TypeOf(data).Kind() == reflect.Map {
-		subv.MergeConfigMap(cast.ToStringMap(data))
-		return subv
-	}
-	return subv
 }

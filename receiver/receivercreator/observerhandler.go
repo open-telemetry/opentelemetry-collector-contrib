@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"sync"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.uber.org/zap"
 
@@ -66,60 +67,74 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 	defer obs.Unlock()
 
 	for _, e := range added {
-		env, err := observer.EndpointToEnv(e)
+		env, err := e.Env()
 		if err != nil {
 			obs.logger.Error("unable to convert endpoint to environment map", zap.String("endpoint", string(e.ID)), zap.Error(err))
 			continue
 		}
 
 		for _, template := range obs.receiverTemplates {
-			if matches, err := template.rule.eval(env); err != nil {
-				obs.logger.Error("failed matching rule", zap.String("rule", template.Rule), zap.Error(err))
-				continue
-			} else if !matches {
+			if !obs.endpointMatches(template, e, env) {
 				continue
 			}
 
-			obs.logger.Info("starting receiver",
-				zap.String("name", template.fullName),
-				zap.String("type", string(template.typeStr)),
-				zap.String("endpoint", e.Target),
-				zap.String("endpoint_id", string(e.ID)))
-
-			resolvedConfig, err := expandMap(template.config, env)
-			if err != nil {
-				obs.logger.Error("unable to resolve template config", zap.String("receiver", template.fullName), zap.Error(err))
-				continue
+			if rcvr, ok := obs.startReceiver(template, e, env); ok {
+				obs.receiversByEndpointID.Put(e.ID, rcvr)
 			}
-
-			discoveredConfig := userConfigMap{}
-
-			// If user didn't set endpoint set to default value.
-			if _, ok := resolvedConfig[endpointConfigKey]; !ok {
-				discoveredConfig[endpointConfigKey] = e.Target
-			}
-
-			resolvedDiscoveredConfig, err := expandMap(discoveredConfig, env)
-
-			if err != nil {
-				obs.logger.Error("unable to resolve discovered config", zap.String("receiver", template.fullName), zap.Error(err))
-				continue
-			}
-
-			rcvr, err := obs.runner.start(receiverConfig{
-				fullName: template.fullName,
-				typeStr:  template.typeStr,
-				config:   resolvedConfig,
-			}, resolvedDiscoveredConfig)
-
-			if err != nil {
-				obs.logger.Error("failed to start receiver", zap.String("receiver", template.fullName))
-				continue
-			}
-
-			obs.receiversByEndpointID.Put(e.ID, rcvr)
 		}
 	}
+}
+
+func (obs *observerHandler) startReceiver(template receiverTemplate, e observer.Endpoint, env observer.EndpointEnv) (component.Receiver, bool) {
+	obs.logger.Info("starting receiver",
+		zap.String("name", template.fullName),
+		zap.String("type", string(template.typeStr)),
+		zap.String("endpoint", e.Target),
+		zap.String("endpoint_id", string(e.ID)))
+
+	resolvedConfig, err := expandMap(template.config, env)
+	if err != nil {
+		obs.logger.Error("unable to resolve template config", zap.String("receiver", template.fullName), zap.Error(err))
+		return nil, false
+	}
+
+	discoveredConfig := userConfigMap{}
+
+	// If user didn't set endpoint set to default value.
+	if _, ok := resolvedConfig[endpointConfigKey]; !ok {
+		discoveredConfig[endpointConfigKey] = e.Target
+	}
+
+	resolvedDiscoveredConfig, err := expandMap(discoveredConfig, env)
+
+	if err != nil {
+		obs.logger.Error("unable to resolve discovered config", zap.String("receiver", template.fullName), zap.Error(err))
+		return nil, false
+	}
+
+	rcvr, err := obs.runner.start(receiverConfig{
+		fullName: template.fullName,
+		typeStr:  template.typeStr,
+		config:   resolvedConfig,
+	}, resolvedDiscoveredConfig)
+
+	if err != nil {
+		obs.logger.Error("failed to start receiver", zap.String("receiver", template.fullName))
+		return nil, false
+	}
+	return rcvr, true
+}
+
+func (obs *observerHandler) endpointMatches(template receiverTemplate, e observer.Endpoint, env observer.EndpointEnv) bool {
+	if template.Type != e.Details.Type() {
+		return false
+	} else if matches, err := template.rule.eval(env); err != nil {
+		obs.logger.Error("failed matching rule", zap.String("rule", template.Rule), zap.Error(err))
+		return false
+	} else if !matches {
+		return false
+	}
+	return true
 }
 
 // OnRemove responds to endpoint removal notifications.

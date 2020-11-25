@@ -1,10 +1,13 @@
 receivers:
   receiver_creator:
+    type: pod
+    rule: true
   receiver_creator/1:
     watch_observers: [mock_observer]
     receivers:
       examplereceiver/1:
-        rule: type.port
+        type: port
+        rule: port == 1234
         config:
           endpoint: localhost:12345
 
