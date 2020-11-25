@@ -130,7 +130,6 @@ func addIntGauge(ts pdata.TimestampUnixNano, value int64, metric pdata.Metric, p
 	intPt.SetValue(value)
 	populateLabels(intPt.LabelsMap())
 	metric.SetDataType(pdata.MetricDataTypeIntGauge)
-	metric.IntGauge().InitEmpty()
 	metric.IntGauge().DataPoints().Append(intPt)
 }
 
@@ -141,7 +140,6 @@ func addDoubleGauge(ts pdata.TimestampUnixNano, value float64, metric pdata.Metr
 	doublePt.SetValue(value)
 	populateLabels(doublePt.LabelsMap())
 	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	metric.DoubleGauge().InitEmpty()
 	metric.DoubleGauge().DataPoints().Append(doublePt)
 }
 

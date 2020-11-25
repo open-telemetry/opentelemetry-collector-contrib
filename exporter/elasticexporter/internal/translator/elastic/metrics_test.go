@@ -54,15 +54,8 @@ func TestEncodeMetrics(t *testing.T) {
 	metrics.Append(pdata.NewMetric())
 	expectDropped++
 
-	for dataType := pdata.MetricDataTypeNone; dataType.String() != ""; dataType++ {
-		// Non-nil metrics with nil data-type specific values should be dropped.
-		appendMetric("nil_"+dataType.String(), dataType)
-		expectDropped++
-	}
-
 	metric := appendMetric("int_gauge_metric", pdata.MetricDataTypeIntGauge)
 	intGauge := metric.IntGauge()
-	intGauge.InitEmpty()
 	intGauge.DataPoints().Resize(4)
 	intGauge.DataPoints().At(0).SetTimestamp(pdata.TimestampUnixNano(timestamp0.UnixNano()))
 	intGauge.DataPoints().At(0).SetValue(1)
@@ -80,7 +73,6 @@ func TestEncodeMetrics(t *testing.T) {
 
 	metric = appendMetric("double_gauge_metric", pdata.MetricDataTypeDoubleGauge)
 	doubleGauge := metric.DoubleGauge()
-	doubleGauge.InitEmpty()
 	doubleGauge.DataPoints().Resize(4)
 	doubleGauge.DataPoints().At(0).SetTimestamp(pdata.TimestampUnixNano(timestamp0.UnixNano()))
 	doubleGauge.DataPoints().At(0).SetValue(5)
@@ -98,7 +90,6 @@ func TestEncodeMetrics(t *testing.T) {
 
 	metric = appendMetric("int_sum_metric", pdata.MetricDataTypeIntSum)
 	intSum := metric.IntSum()
-	intSum.InitEmpty()
 	intSum.DataPoints().Resize(3)
 	intSum.DataPoints().At(0).SetTimestamp(pdata.TimestampUnixNano(timestamp0.UnixNano()))
 	intSum.DataPoints().At(0).SetValue(9)
@@ -114,7 +105,6 @@ func TestEncodeMetrics(t *testing.T) {
 
 	metric = appendMetric("double_sum_metric", pdata.MetricDataTypeDoubleSum)
 	doubleSum := metric.DoubleSum()
-	doubleSum.InitEmpty()
 	doubleSum.DataPoints().Resize(3)
 	doubleSum.DataPoints().At(0).SetTimestamp(pdata.TimestampUnixNano(timestamp0.UnixNano()))
 	doubleSum.DataPoints().At(0).SetValue(12)
@@ -130,11 +120,9 @@ func TestEncodeMetrics(t *testing.T) {
 
 	// Histograms are currently not supported, and will be ignored.
 	metric = appendMetric("double_histogram_metric", pdata.MetricDataTypeDoubleHistogram)
-	metric.DoubleHistogram().InitEmpty()
 	metric.DoubleHistogram().DataPoints().Resize(1)
 	expectDropped++
 	metric = appendMetric("int_histogram_metric", pdata.MetricDataTypeIntHistogram)
-	metric.IntHistogram().InitEmpty()
 	metric.IntHistogram().DataPoints().Resize(1)
 	expectDropped++
 

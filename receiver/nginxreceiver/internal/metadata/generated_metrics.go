@@ -104,10 +104,8 @@ var Metrics = &metricStruct{
 			metric.SetDescription("The total number of accepted client connections")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
-			data := metric.IntSum()
-			data.InitEmpty()
-			data.SetIsMonotonic(true)
-			data.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 			return metric
 		},
@@ -121,8 +119,6 @@ var Metrics = &metricStruct{
 			metric.SetDescription("The current number of open connections")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			data := metric.IntGauge()
-			data.InitEmpty()
 
 			return metric
 		},
@@ -136,10 +132,8 @@ var Metrics = &metricStruct{
 			metric.SetDescription("The total number of handled connections. Generally, the parameter value is the same as nginx.connections_accepted unless some resource limits have been reached (for example, the worker_connections limit).")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
-			data := metric.IntSum()
-			data.InitEmpty()
-			data.SetIsMonotonic(true)
-			data.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 			return metric
 		},
@@ -153,8 +147,6 @@ var Metrics = &metricStruct{
 			metric.SetDescription("The current number of connections where nginx is reading the request headerhe current number of open connections")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			data := metric.IntGauge()
-			data.InitEmpty()
 
 			return metric
 		},
@@ -168,8 +160,6 @@ var Metrics = &metricStruct{
 			metric.SetDescription("The current number of idle client connections waiting for a request.")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			data := metric.IntGauge()
-			data.InitEmpty()
 
 			return metric
 		},
@@ -183,8 +173,6 @@ var Metrics = &metricStruct{
 			metric.SetDescription("The current number of connections where nginx is writing the response back to the client.")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-			data := metric.IntGauge()
-			data.InitEmpty()
 
 			return metric
 		},
@@ -198,10 +186,8 @@ var Metrics = &metricStruct{
 			metric.SetDescription("Total number of requests made to the server since it started")
 			metric.SetUnit("requests")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
-			data := metric.IntSum()
-			data.InitEmpty()
-			data.SetIsMonotonic(true)
-			data.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			metric.IntSum().SetIsMonotonic(true)
+			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 			return metric
 		},
