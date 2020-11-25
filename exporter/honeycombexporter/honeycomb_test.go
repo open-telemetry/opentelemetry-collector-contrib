@@ -661,3 +661,10 @@ func TestRunErrorLogger_OnError(t *testing.T) {
 	assert.Equal(t, 1, logs.Len())
 	assert.Equal(t, expectedLogs, logs.AllUntimed())
 }
+
+func TestDebugUsesDebugLogger(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Debug = true
+	_, err := newHoneycombTraceExporter(cfg, zap.NewNop())
+	require.NoError(t, err)
+}
