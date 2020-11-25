@@ -24,24 +24,21 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap/zapcore"
-
-	"go.uber.org/zap/zaptest/observer"
-
-	"github.com/honeycombio/libhoney-go/transmission"
-
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/google/go-cmp/cmp"
+	"github.com/honeycombio/libhoney-go/transmission"
 	"github.com/klauspost/compress/zstd"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )

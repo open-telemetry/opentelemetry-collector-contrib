@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
-
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
