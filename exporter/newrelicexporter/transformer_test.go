@@ -35,7 +35,6 @@ import (
 
 func TestNewTraceTransformerInstrumentation(t *testing.T) {
 	ilm := pdata.NewInstrumentationLibrary()
-	ilm.InitEmpty()
 	ilm.SetName("test name")
 	ilm.SetVersion("test version")
 

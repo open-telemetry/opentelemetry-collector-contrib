@@ -321,9 +321,6 @@ func extractDatadogServiceName(datadogTags map[string]string) string {
 }
 
 func extractInstrumentationLibraryTags(il pdata.InstrumentationLibrary, datadogTags map[string]string) {
-	if il.IsNil() {
-		return
-	}
 	if ilName := il.Name(); ilName != "" {
 		datadogTags[tracetranslator.TagInstrumentationName] = ilName
 	}

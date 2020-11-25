@@ -8,7 +8,7 @@ require (
 	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
-	go.opentelemetry.io/collector v0.15.1-0.20201125151900-b19b5ac392ec
+	go.opentelemetry.io/collector v0.15.1-0.20201125171618-60498105d42f
 	go.uber.org/zap v1.16.0
 	golang.org/x/net v0.0.0-20201021035429-f5854403a974
 	google.golang.org/grpc v1.33.2

@@ -179,9 +179,7 @@ func setTransactionProperties(
 		}
 	})
 
-	if !otlpLibrary.IsNil() {
-		context.setFramework(otlpLibrary.Name(), otlpLibrary.Version())
-	}
+	context.setFramework(otlpLibrary.Name(), otlpLibrary.Version())
 
 	if status := otlpSpan.Status(); !status.IsNil() {
 		tx.Outcome = spanStatusOutcome(status)

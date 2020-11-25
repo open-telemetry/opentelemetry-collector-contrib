@@ -199,7 +199,6 @@ func TestSpanToSentrySpan(t *testing.T) {
 		testSpan.Status().SetCode(pdata.StatusCodeOk)
 
 		library := pdata.NewInstrumentationLibrary()
-		library.InitEmpty()
 		library.SetName("otel-python")
 		library.SetVersion("1.4.3")
 

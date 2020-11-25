@@ -541,7 +541,6 @@ func TestSplitSameTraceIntoDifferentBatches(t *testing.T) {
 	// the first ILS has two spans
 	firstILS := input.InstrumentationLibrarySpans().At(0)
 	firstLibrary := firstILS.InstrumentationLibrary()
-	firstLibrary.InitEmpty()
 	firstLibrary.SetName("first-library")
 	firstILS.Spans().Resize(2)
 	firstSpan := firstILS.Spans().At(0)
@@ -554,7 +553,6 @@ func TestSplitSameTraceIntoDifferentBatches(t *testing.T) {
 	// the second ILS has one span
 	secondILS := input.InstrumentationLibrarySpans().At(1)
 	secondLibrary := secondILS.InstrumentationLibrary()
-	secondLibrary.InitEmpty()
 	secondLibrary.SetName("second-library")
 	secondILS.Spans().Resize(1)
 	thirdSpan := secondILS.Spans().At(0)
@@ -590,7 +588,6 @@ func TestSplitDifferentTracesIntoDifferentBatches(t *testing.T) {
 	// the first ILS has two spans
 	ils := input.InstrumentationLibrarySpans().At(0)
 	library := ils.InstrumentationLibrary()
-	library.InitEmpty()
 	library.SetName("first-library")
 	ils.Spans().Resize(2)
 	firstSpan := ils.Spans().At(0)
