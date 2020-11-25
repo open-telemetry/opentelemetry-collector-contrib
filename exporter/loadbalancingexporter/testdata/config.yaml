@@ -14,7 +14,7 @@ exporters:
     resolver:
       static:
         hostnames:
-        - endpoint-1 # assumes 55678 as the default port
+        - endpoint-1 # assumes 55680 as the default port
         - endpoint-2:55678
   loadbalancing/2:
     protocol:
@@ -23,7 +23,16 @@ exporters:
     # how to get the list of backends: DNS
     resolver:
       dns:
+        hostname: service-1 # assumes 55680 as the default port for the resolved IP addresses
+  loadbalancing/3:
+    protocol:
+      otlp:
+
+    # how to get the list of backends: DNS
+    resolver:
+      dns:
         hostname: service-1
+        port: 55690
 
 service:
   pipelines:
