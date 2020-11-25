@@ -71,7 +71,7 @@ func newZookeeperMetricsScraper(logger *zap.Logger, config *Config) (*zookeeperM
 	}, nil
 }
 
-func (z *zookeeperMetricsScraper) close(_ context.Context) error {
+func (z *zookeeperMetricsScraper) shutdown(_ context.Context) error {
 	z.cancel()
 	return nil
 }
@@ -90,7 +90,7 @@ func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.ResourceMet
 	}
 	defer func() {
 		if closeErr := z.closeConnection(conn); closeErr != nil {
-			z.logger.Warn("failed to close connection", zap.Error(closeErr))
+			z.logger.Warn("failed to shutdown connection", zap.Error(closeErr))
 		}
 	}()
 

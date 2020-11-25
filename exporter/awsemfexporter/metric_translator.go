@@ -190,7 +190,7 @@ func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics, logger *zap.Logger) []*L
 			fieldMap["_aws"] = cwmMap
 		} else {
 			str, _ := json.Marshal(fieldMap)
-			logger.Warn("Dropped metric due to no matching metric declarations", zap.String("labels", string(str)))
+			logger.Debug("Dropped metric due to no matching metric declarations", zap.String("labels", string(str)))
 		}
 
 		pleMsg, err := json.Marshal(fieldMap)

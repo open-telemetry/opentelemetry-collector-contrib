@@ -78,7 +78,7 @@ func createMetricsReceiver(
 			scraperhelper.NewResourceMetricsScraper(
 				typeStr,
 				zms.scrape,
-				scraperhelper.WithClose(zms.close),
+				scraperhelper.WithShutdown(zms.shutdown),
 			),
 		),
 	)

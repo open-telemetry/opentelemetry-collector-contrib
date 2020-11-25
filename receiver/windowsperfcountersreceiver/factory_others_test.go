@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
 func TestCreateMetricsReceiver(t *testing.T) {
@@ -29,7 +29,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
 
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, exportertest.NewNopMetricsExporter())
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, consumertest.NewMetricsNop())
 
 	assert.EqualError(t, err, "the windows perf counters receiver is only supported on Windows")
 	assert.Nil(t, mReceiver)
