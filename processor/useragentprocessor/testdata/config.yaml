@@ -1,0 +1,21 @@
+receivers:
+  examplereceiver:
+exporters:
+  exampleexporter:
+
+processors:
+  useragentprocessor:
+    #key to look for in span/trace attributes that contain the raw trace agent.
+    #defaults to `userAgent` if nothing is set.
+    useragent_tag: "userAgent"
+    #user agent regex master file to parse raw useragent data. Default file is picked from resources directory. Source: https://github.com/ua-parser/uap-core/blob/master/regexes.yaml
+    #Provision to override.
+    useragent_filepath: "processor/useragentprocessor/resources/regexes.yaml"
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [useragentprocessor]
+      exporters: [exampleexporter]
+
