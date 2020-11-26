@@ -27,7 +27,7 @@ func createDefaultConfig() configmodels.Processor {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		UserAgentTag:      "userAgent", //default to userAgent
+		// default value
 		UserAgentFilePath: "processor/useragentprocessor/resources/regexes.yaml",
 	}
 }

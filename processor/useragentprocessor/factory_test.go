@@ -25,7 +25,6 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 			NameVal: typeStr,
 			TypeVal: typeStr,
 		},
-		UserAgentTag:      "userAgent",
 		UserAgentFilePath: "processor/useragentprocessor/resources/regexes.yaml",
 	})
 	assert.NoError(t, configcheck.ValidateConfig(cfg))

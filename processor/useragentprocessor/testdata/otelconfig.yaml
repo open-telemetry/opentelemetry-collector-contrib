@@ -1,0 +1,22 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: "0.0.0.0:8080"
+
+exporters:
+  logging:
+    logLevel: debug
+
+processors:
+  useragentprocessor:
+    #user agent regex master file to parse raw useragent data. Default file is picked from resources directory. Source: https://github.com/ua-parser/uap-core/blob/master/regexes.yaml
+    #Provision to override.
+    useragent_filepath: "/useragent-regexes.yaml"
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [useragentprocessor]
+      exporters: [logging]
+

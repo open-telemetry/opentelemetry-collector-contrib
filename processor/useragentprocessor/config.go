@@ -21,11 +21,9 @@ import (
 // Config defines configuration for Resource processor.
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
-	//userAgent key in span/metrics attributes
-	UserAgentTag string `mapstructure:"useragent_tag"`
 	/*
-		user agent regex master file to parse raw useragent data. Default file is picked from resources directory. Source: https://github.com/ua-parser/uap-core/blob/master/regexes.yaml
-		Provision to override.
+		user agent regex master file to parse raw useragent data. Sample file is available in resources directory.
+		See: https://github.com/ua-parser/uap-core/blob/master/regexes.yaml
 	*/
 	UserAgentFilePath string `mapstructure:"useragent_filepath"`
 }

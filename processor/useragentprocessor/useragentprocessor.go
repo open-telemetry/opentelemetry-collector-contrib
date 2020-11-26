@@ -22,7 +22,7 @@ func (u *userAgentProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces)
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
-		if rs.IsNil() || rs.Resource().IsNil() {
+		if rs.IsNil() {
 			continue
 		}
 		if attr, ok := rs.Resource().Attributes().Get(conventions.AttributeHTTPUserAgent); ok {

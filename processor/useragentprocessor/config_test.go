@@ -25,7 +25,6 @@ func TestLoadingConfig(t *testing.T) {
 			TypeVal: typeStr,
 			NameVal: "useragentprocessor",
 		},
-		UserAgentTag:      "userAgent",
 		UserAgentFilePath: "/app/config/customUserAgentRegexes.yaml",
 	})
 
