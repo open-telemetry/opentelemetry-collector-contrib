@@ -360,3 +360,14 @@ func TestBuffer(t *testing.T) {
 	assert.Equal(t, 0, test.s.count())
 	assert.Equal(t, []pdata.LogRecord{}, test.s.buffer)
 }
+
+func TestInvalidEndpoint(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
+	defer func() { test.srv.Close() }()
+
+	test.s.config.HTTPClientSettings.Endpoint = ""
+	test.s.buffer = exampleLog()
+
+	_, err := test.s.sendLogs("test_metadata")
+	assert.Error(t, err)
+}
