@@ -27,6 +27,14 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
+type appendResponse struct {
+	// sent gives information if the data was sent or not
+	sent bool
+	// appended keeps state of appending new log line to the body
+	appended bool
+	err      error
+}
+
 type sender struct {
 	buffer []pdata.LogRecord
 	config *Config
@@ -39,6 +47,12 @@ const (
 	// maxBufferSize defines size of the buffer (maximum number of pdata.LogRecord entries)
 	maxBufferSize int = 1024 * 1024
 )
+
+func newAppendResponse() appendResponse {
+	return appendResponse{
+		appended: true,
+	}
+}
 
 func newSender(cfg *Config, cl *http.Client, f filter) *sender {
 	return &sender{
@@ -140,25 +154,25 @@ func (s *sender) sendLogs(flds fields) ([]pdata.LogRecord, error) {
 			continue
 		}
 
-		sent, appended, err := s.appendAndSend(formattedLine, LogsPipeline, &body, flds)
-		if err != nil {
-			errs = append(errs, err)
-			if sent {
+		ar := s.appendAndSend(formattedLine, LogsPipeline, &body, flds)
+		if ar.err != nil {
+			errs = append(errs, ar.err)
+			if ar.sent {
 				droppedRecords = append(droppedRecords, currentRecords...)
 			}
 
-			if !appended {
+			if !ar.appended {
 				droppedRecords = append(droppedRecords, record)
 			}
 		}
 
 		// If data was sent, cleanup the currentTimeSeries counter
-		if sent {
+		if ar.sent {
 			currentRecords = currentRecords[:0]
 		}
 
 		// If log has been appended to body, increment the currentTimeSeries
-		if appended {
+		if ar.appended {
 			currentRecords = append(currentRecords, record)
 		}
 	}
@@ -176,22 +190,18 @@ func (s *sender) sendLogs(flds fields) ([]pdata.LogRecord, error) {
 
 // appendAndSend appends line to the request body that will be sent and sends
 // the accumulated data if the internal buffer has been filled (with maxBufferSize elements).
-// It returns 2 booleans saying whether the data was sent and whether the provided data
-// was appended and an error if anything failed.
+// It returns appendResponse
 func (s *sender) appendAndSend(
 	line string,
 	pipeline PipelineType,
 	body *strings.Builder,
 	flds fields,
-) (sent bool, appended bool, _ error) {
+) appendResponse {
 	var errors []error
-	// sent gives information if the data was sent or not
-	sent = false
-	// appended keeps state of appending new log line to the body
-	appended = true
+	ar := newAppendResponse()
 
 	if body.Len() > 0 && body.Len()+len(line) >= s.config.MaxRequestBodySize {
-		sent = true
+		ar.sent = true
 		if err := s.send(pipeline, strings.NewReader(body.String()), flds); err != nil {
 			errors = append(errors, err)
 		}
@@ -202,22 +212,22 @@ func (s *sender) appendAndSend(
 		// Do not add newline if the body is empty
 		if _, err := body.WriteString("\n"); err != nil {
 			errors = append(errors, err)
-			appended = false
+			ar.appended = false
 		}
 	}
 
-	if appended {
+	if ar.appended {
 		// Do not append new line if separator was not appended
 		if _, err := body.WriteString(line); err != nil {
 			errors = append(errors, err)
-			appended = false
+			ar.appended = false
 		}
 	}
 
 	if len(errors) > 0 {
-		return sent, appended, componenterror.CombineErrors(errors)
+		ar.err = componenterror.CombineErrors(errors)
 	}
-	return sent, appended, nil
+	return ar
 }
 
 // cleanBuffer zeroes buffer
