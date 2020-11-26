@@ -399,3 +399,19 @@ func TestBufferOverflow(t *testing.T) {
 	assert.EqualError(t, err, `parse ":": missing protocol scheme`)
 	assert.Equal(t, 0, test.s.count())
 }
+
+func TestMetricsPipeline(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
+	defer func() { test.srv.Close() }()
+
+	err := test.s.send(MetricsPipeline, strings.NewReader(""), "")
+	assert.EqualError(t, err, `current sender version doesn't support metrics`)
+}
+
+func TestInvalidPipeline(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
+	defer func() { test.srv.Close() }()
+
+	err := test.s.send("invalidPipeline", strings.NewReader(""), "")
+	assert.EqualError(t, err, `unexpected pipeline`)
+}
