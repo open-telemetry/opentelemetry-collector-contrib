@@ -91,22 +91,28 @@ func (s *sender) send(pipeline PipelineType, body io.Reader, flds fields) error 
 	return nil
 }
 
-// sendLogs sends logs in right format basing on the s.config.LogFormat
-func (s *sender) sendLogs(flds fields) ([]pdata.LogRecord, error) {
-	switch s.config.LogFormat {
-	case TextFormat:
-		return s.sendLogsTextFormat(flds)
-	case JSONFormat:
-		return s.sendLogsJSONFormat(flds)
-	default:
-		return nil, errors.New("unexpected log format")
-	}
+// logToText converts LogRecord to a plain text line, returns it and error eventually
+func (s *sender) logToText(record pdata.LogRecord) (string, error) {
+	return record.Body().StringVal(), nil
 }
 
-// sendLogsTextFormat sends log records from the buffer as text data
-// and as the result of execution returns array of records which has not been
-// sent correctly and error
-func (s *sender) sendLogsTextFormat(flds fields) ([]pdata.LogRecord, error) {
+// logToText converts LogRecord to a json line, returns it and error eventually
+func (s *sender) logToJSON(record pdata.LogRecord) (string, error) {
+	data := s.filter.filterOut(record.Attributes())
+	data[logKey] = record.Body().StringVal()
+
+	nextLine, err := json.Marshal(data)
+	if err != nil {
+		return "", err
+	}
+
+	return bytes.NewBuffer(nextLine).String(), nil
+}
+
+// sendLogs sends log records from the buffer formatted according
+// to configured LogFormat and as the result of execution
+// returns array of records which has not been sent correctly and error
+func (s *sender) sendLogs(flds fields) ([]pdata.LogRecord, error) {
 	var (
 		body strings.Builder
 		errs []error
@@ -114,10 +120,29 @@ func (s *sender) sendLogsTextFormat(flds fields) ([]pdata.LogRecord, error) {
 		droppedRecords []pdata.LogRecord
 		// currentRecords tracks records which are being actually processed
 		currentRecords []pdata.LogRecord
+		formattedLine  string
+		err            error
 	)
 
 	for _, record := range s.buffer {
-		sent, appended, err := s.appendAndSend(record.Body().StringVal(), LogsPipeline, &body, flds)
+		switch s.config.LogFormat {
+		case TextFormat:
+			formattedLine, err = s.logToText(record)
+		case JSONFormat:
+			formattedLine, err = s.logToJSON(record)
+		default:
+			droppedRecords = append(droppedRecords, record)
+			errs = append(errs, errors.New("unexpected log format"))
+			continue
+		}
+
+		if err != nil {
+			droppedRecords = append(droppedRecords, record)
+			errs = append(errs, err)
+			continue
+		}
+
+		sent, appended, err := s.appendAndSend(formattedLine, LogsPipeline, &body, flds)
 		if err != nil {
 			errs = append(errs, err)
 			if sent {
@@ -135,64 +160,6 @@ func (s *sender) sendLogsTextFormat(flds fields) ([]pdata.LogRecord, error) {
 		}
 
 		// If log has been appended to body, increment the currentTimeSeries
-		if appended {
-			currentRecords = append(currentRecords, record)
-		}
-	}
-
-	if err := s.send(LogsPipeline, strings.NewReader(body.String()), flds); err != nil {
-		errs = append(errs, err)
-		droppedRecords = append(droppedRecords, currentRecords...)
-	}
-
-	if len(errs) > 0 {
-		return droppedRecords, componenterror.CombineErrors(errs)
-	}
-	return droppedRecords, nil
-}
-
-// sendLogsJSONFormat sends log records from the buffer as json data
-// and as the result of execution returns array of records which has not been
-// sent correctly and error
-func (s *sender) sendLogsJSONFormat(flds fields) ([]pdata.LogRecord, error) {
-	var (
-		body strings.Builder
-		errs []error
-		// droppedRecords tracks all dropped records
-		droppedRecords []pdata.LogRecord
-		// currentRecords tracks records which are being actually processed
-		currentRecords []pdata.LogRecord
-	)
-
-	for _, record := range s.buffer {
-		data := s.filter.filterOut(record.Attributes())
-		data[logKey] = record.Body().StringVal()
-
-		nextLine, err := json.Marshal(data)
-		if err != nil {
-			droppedRecords = append(droppedRecords, record)
-			errs = append(errs, err)
-			continue
-		}
-
-		sent, appended, err := s.appendAndSend(bytes.NewBuffer(nextLine).String(), LogsPipeline, &body, flds)
-		if err != nil {
-			errs = append(errs, err)
-			if sent {
-				droppedRecords = append(droppedRecords, currentRecords...)
-			}
-
-			if !appended {
-				droppedRecords = append(droppedRecords, record)
-			}
-		}
-
-		// If data was sent, cleanup the currentRecords
-		if sent {
-			currentRecords = currentRecords[:0]
-		}
-
-		// If log has been appended to body, add it to the currentRecords
 		if appended {
 			currentRecords = append(currentRecords, record)
 		}

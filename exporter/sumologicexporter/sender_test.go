@@ -150,9 +150,10 @@ func TestSendSplitFailedOne(t *testing.T) {
 	})
 	defer func() { test.srv.Close() }()
 	test.s.config.MaxRequestBodySize = 10
+	test.s.config.LogFormat = TextFormat
 	test.s.buffer = exampleTwoLogs()
 
-	dropped, err := test.s.sendLogsTextFormat("test_metadata")
+	dropped, err := test.s.sendLogs("test_metadata")
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 	assert.Equal(t, test.s.buffer[0:1], dropped)
 }
@@ -174,9 +175,10 @@ func TestSendSplitFailedAll(t *testing.T) {
 	})
 	defer func() { test.srv.Close() }()
 	test.s.config.MaxRequestBodySize = 10
+	test.s.config.LogFormat = TextFormat
 	test.s.buffer = exampleTwoLogs()
 
-	dropped, err := test.s.sendLogsTextFormat("test_metadata")
+	dropped, err := test.s.sendLogs("test_metadata")
 	assert.EqualError(
 		t,
 		err,
@@ -243,7 +245,7 @@ func TestSendJsonSplitFailedOne(t *testing.T) {
 	test.s.config.MaxRequestBodySize = 10
 	test.s.buffer = exampleTwoLogs()
 
-	dropped, err := test.s.sendLogsJSONFormat("test_metadata")
+	dropped, err := test.s.sendLogs("test_metadata")
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 	assert.Equal(t, test.s.buffer[0:1], dropped)
 }
@@ -268,7 +270,7 @@ func TestSendJsonSplitFailedAll(t *testing.T) {
 	test.s.config.MaxRequestBodySize = 10
 	test.s.buffer = exampleTwoLogs()
 
-	dropped, err := test.s.sendLogsJSONFormat("test_metadata")
+	dropped, err := test.s.sendLogs("test_metadata")
 	assert.EqualError(
 		t,
 		err,
