@@ -21,6 +21,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/config/configdefs"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/obfuscate"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/stats"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
@@ -93,10 +94,11 @@ func (exp *traceExporter) pushTraceData(
 	td pdata.Traces,
 ) (int, error) {
 
+	calculator := stats.NewSublayerCalculator()
 	// convert traces to datadog traces and group trace payloads by env
 	// we largely apply the same logic as the serverless implementation, simplified a bit
 	// https://github.com/DataDog/datadog-serverless-functions/blob/f5c3aedfec5ba223b11b76a4239fcbf35ec7d045/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L61-L83
-	ddTraces, err := ConvertToDatadogTd(td, exp.cfg)
+	ddTraces, err := ConvertToDatadogTd(td, calculator, exp.cfg)
 
 	if err != nil {
 		exp.logger.Info("failed to convert traces", zap.Error(err))
