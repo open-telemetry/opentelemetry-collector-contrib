@@ -365,6 +365,17 @@ func TestInvalidEndpoint(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
+	test.s.config.HTTPClientSettings.Endpoint = ":"
+	test.s.buffer = exampleLog()
+
+	_, err := test.s.sendLogs("test_metadata")
+	assert.EqualError(t, err, `parse ":": missing protocol scheme`)
+}
+
+func TestInvalidPostRequest(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
+	defer func() { test.srv.Close() }()
+
 	test.s.config.HTTPClientSettings.Endpoint = ""
 	test.s.buffer = exampleLog()
 
@@ -376,7 +387,7 @@ func TestBufferOverflow(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	test.s.config.HTTPClientSettings.Endpoint = ""
+	test.s.config.HTTPClientSettings.Endpoint = ":"
 	log := exampleLog()
 
 	for test.s.count() < maxBufferSize-1 {
@@ -385,6 +396,6 @@ func TestBufferOverflow(t *testing.T) {
 	}
 
 	_, err := test.s.batch(log[0], "test_metadata")
-	assert.EqualError(t, err, `Post "": unsupported protocol scheme ""`)
+	assert.EqualError(t, err, `parse ":": missing protocol scheme`)
 	assert.Equal(t, 0, test.s.count())
 }
