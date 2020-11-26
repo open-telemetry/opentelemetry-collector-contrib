@@ -20,6 +20,7 @@ import (
 	"strconv"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/stats"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -38,10 +39,13 @@ const (
 	currentILNameTag    string = "otel.library.name"
 	errorCode           int32  = 1
 	okCode              int32  = 0
+	httpKind            string = "http"
+	webKind             string = "web"
+	customKind          string = "custom"
 )
 
 // converts Traces into an array of datadog trace payloads grouped by env
-func ConvertToDatadogTd(td pdata.Traces, cfg *config.Config) ([]*pb.TracePayload, error) {
+func ConvertToDatadogTd(td pdata.Traces, calculator *stats.SublayerCalculator, cfg *config.Config) ([]*pb.TracePayload, error) {
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
 	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
@@ -63,7 +67,7 @@ func ConvertToDatadogTd(td pdata.Traces, cfg *config.Config) ([]*pb.TracePayload
 			hostname = resHostname
 		}
 
-		payload, err := resourceSpansToDatadogSpans(rs, hostname, cfg)
+		payload, err := resourceSpansToDatadogSpans(rs, calculator, hostname, cfg)
 		if err != nil {
 			return traces, err
 		}
@@ -102,7 +106,7 @@ func AggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePa
 }
 
 // converts a Trace's resource spans into a trace payload
-func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *config.Config) (pb.TracePayload, error) {
+func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *stats.SublayerCalculator, hostname string, cfg *config.Config) (pb.TracePayload, error) {
 	// get env tag
 	env := cfg.Env
 
@@ -172,7 +176,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *c
 		// calculates span metrics for representing direction and timing among it's different services for display in
 		// service overview graphs
 		// see: https://github.com/DataDog/datadog-agent/blob/f69a7d35330c563e9cad4c5b8865a357a87cd0dc/pkg/trace/stats/sublayers.go#L204
-		ComputeSublayerMetrics(apiTrace.Spans)
+		ComputeSublayerMetrics(calculator, apiTrace.Spans)
 		payload.Transactions = append(payload.Transactions, top...)
 		payload.Traces = append(payload.Traces, apiTrace)
 	}
@@ -330,23 +334,16 @@ func extractInstrumentationLibraryTags(il pdata.InstrumentationLibrary, datadogT
 }
 
 func aggregateSpanTags(span pdata.Span, datadogTags map[string]string) map[string]string {
-	tags := make(map[string]string)
+	spanTags := make(map[string]string)
 	for key, val := range datadogTags {
-		tags[key] = val
+		spanTags[key] = val
 	}
-	spanTags := attributeMapToStringMap(span.Attributes())
-	for key, val := range spanTags {
-		tags[key] = val
-	}
-	return tags
-}
 
-func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
-	rawMap := make(map[string]string)
-	attrMap.ForEach(func(k string, v pdata.AttributeValue) {
-		rawMap[k] = tracetranslator.AttributeValueToString(v, false)
+	span.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		spanTags[k] = tracetranslator.AttributeValueToString(v, false)
 	})
-	return rawMap
+
+	return spanTags
 }
 
 // TODO: this seems to resolve to SPAN_KIND_UNSPECIFIED in e2e using jaeger receiver
@@ -354,11 +351,11 @@ func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
 func spanKindToDatadogType(kind pdata.SpanKind) string {
 	switch kind {
 	case pdata.SpanKindCLIENT:
-		return "http"
+		return httpKind
 	case pdata.SpanKindSERVER:
-		return "web"
+		return webKind
 	default:
-		return "custom"
+		return customKind
 	}
 }
 
