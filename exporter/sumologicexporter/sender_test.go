@@ -355,4 +355,8 @@ func TestBuffer(t *testing.T) {
 	assert.Nil(t, droppedLogs)
 	assert.Equal(t, 2, test.s.count())
 	assert.Equal(t, logs, test.s.buffer)
+
+	test.s.cleanBuffer()
+	assert.Equal(t, 0, test.s.count())
+	assert.Equal(t, []pdata.LogRecord{}, test.s.buffer)
 }
