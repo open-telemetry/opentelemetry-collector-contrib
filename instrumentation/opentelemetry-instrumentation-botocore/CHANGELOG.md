@@ -1,6 +1,10 @@
 # Changelog
 
 ## Unreleased
+
+## Version 0.16b0
+
+Released 2020-11-25
 - Add propagator injection for botocore calls
   ([#181](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/181))
 - Make botocore instrumentation check if instrumentation has been suppressed

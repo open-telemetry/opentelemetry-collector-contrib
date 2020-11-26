@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## Version 0.16b0
+
+Released 2020-11-25
+
 - Update redis instrumentation to follow semantic conventions
   ([#184](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/184))
 

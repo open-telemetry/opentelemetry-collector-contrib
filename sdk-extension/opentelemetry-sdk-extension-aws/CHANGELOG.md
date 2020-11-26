@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## Version 0.16b0
+
+Released 2020-11-25
+
 - Add AWS X-Ray Ids Generator Entry Point
   ([#201](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/201))
 - Fix typo for installing OTel SDK in docs

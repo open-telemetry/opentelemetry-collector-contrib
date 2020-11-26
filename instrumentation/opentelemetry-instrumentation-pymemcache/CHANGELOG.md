@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## Version 0.16b0
+
+Released 2020-11-25
+
 - Update pymemcache instrumentation to follow semantic conventions
   ([#183](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/183))
 

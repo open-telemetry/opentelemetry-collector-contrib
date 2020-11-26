@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## Version 0.16b0
+
+Released 2020-11-25
+
 - Update dbapi and its dependant instrumentations to follow semantic conventions
   ([#195](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/195))
 
