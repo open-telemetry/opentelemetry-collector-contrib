@@ -20,6 +20,7 @@ import (
 	"strconv"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/stats"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -41,7 +42,7 @@ const (
 )
 
 // converts Traces into an array of datadog trace payloads grouped by env
-func ConvertToDatadogTd(td pdata.Traces, cfg *config.Config) ([]*pb.TracePayload, error) {
+func ConvertToDatadogTd(td pdata.Traces, calculator *stats.SublayerCalculator, cfg *config.Config) ([]*pb.TracePayload, error) {
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
 	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
@@ -63,7 +64,7 @@ func ConvertToDatadogTd(td pdata.Traces, cfg *config.Config) ([]*pb.TracePayload
 			hostname = resHostname
 		}
 
-		payload, err := resourceSpansToDatadogSpans(rs, hostname, cfg)
+		payload, err := resourceSpansToDatadogSpans(rs, calculator, hostname, cfg)
 		if err != nil {
 			return traces, err
 		}
@@ -102,7 +103,7 @@ func AggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePa
 }
 
 // converts a Trace's resource spans into a trace payload
-func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *config.Config) (pb.TracePayload, error) {
+func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *stats.SublayerCalculator, hostname string, cfg *config.Config) (pb.TracePayload, error) {
 	// get env tag
 	env := cfg.Env
 
@@ -172,7 +173,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *c
 		// calculates span metrics for representing direction and timing among it's different services for display in
 		// service overview graphs
 		// see: https://github.com/DataDog/datadog-agent/blob/f69a7d35330c563e9cad4c5b8865a357a87cd0dc/pkg/trace/stats/sublayers.go#L204
-		ComputeSublayerMetrics(apiTrace.Spans)
+		ComputeSublayerMetrics(calculator, apiTrace.Spans)
 		payload.Transactions = append(payload.Transactions, top...)
 		payload.Traces = append(payload.Traces, apiTrace)
 	}

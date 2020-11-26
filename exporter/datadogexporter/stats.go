@@ -31,10 +31,9 @@ func ComputeAPMStats(tracePayload *pb.TracePayload, pushTime int64) *stats.Paylo
 	statsRawBuckets := make(map[int64]*stats.RawBucket)
 
 	bucketTS := pushTime - statsBucketDuration
-
+	calculator := stats.NewSublayerCalculator()
 	for _, trace := range tracePayload.Traces {
 		spans := GetAnalyzedSpans(trace.Spans)
-		calculator := stats.NewSublayerCalculator()
 		sublayers := calculator.ComputeSublayers(trace.Spans)
 		for _, span := range spans {
 
