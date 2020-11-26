@@ -39,6 +39,9 @@ const (
 	currentILNameTag    string = "otel.library.name"
 	errorCode           int32  = 1
 	okCode              int32  = 0
+	httpKind            string = "http"
+	webKind             string = "web"
+	customKind          string = "custom"
 )
 
 // converts Traces into an array of datadog trace payloads grouped by env
@@ -331,23 +334,16 @@ func extractInstrumentationLibraryTags(il pdata.InstrumentationLibrary, datadogT
 }
 
 func aggregateSpanTags(span pdata.Span, datadogTags map[string]string) map[string]string {
-	tags := make(map[string]string)
+	spanTags := make(map[string]string)
 	for key, val := range datadogTags {
-		tags[key] = val
+		spanTags[key] = val
 	}
-	spanTags := attributeMapToStringMap(span.Attributes())
-	for key, val := range spanTags {
-		tags[key] = val
-	}
-	return tags
-}
 
-func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
-	rawMap := make(map[string]string)
-	attrMap.ForEach(func(k string, v pdata.AttributeValue) {
-		rawMap[k] = tracetranslator.AttributeValueToString(v, false)
+	span.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		spanTags[k] = tracetranslator.AttributeValueToString(v, false)
 	})
-	return rawMap
+
+	return spanTags
 }
 
 // TODO: this seems to resolve to SPAN_KIND_UNSPECIFIED in e2e using jaeger receiver
@@ -355,11 +351,11 @@ func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
 func spanKindToDatadogType(kind pdata.SpanKind) string {
 	switch kind {
 	case pdata.SpanKindCLIENT:
-		return "http"
+		return httpKind
 	case pdata.SpanKindSERVER:
-		return "web"
+		return webKind
 	default:
-		return "custom"
+		return customKind
 	}
 }
 
