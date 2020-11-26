@@ -206,9 +206,12 @@ func (s *sender) appendAndSend(
 		}
 	}
 
-	if _, err := body.WriteString(line); err != nil && appended {
-		errors = append(errors, err)
-		appended = false
+	if appended {
+		// Do not append new line if separator was not appended
+		if _, err := body.WriteString(line); err != nil {
+			errors = append(errors, err)
+			appended = false
+		}
 	}
 
 	if len(errors) > 0 {
