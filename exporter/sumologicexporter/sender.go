@@ -114,11 +114,9 @@ func (s *sender) logToJSON(record pdata.LogRecord) (string, error) {
 // returns array of records which has not been sent correctly and error
 func (s *sender) sendLogs(flds fields) ([]pdata.LogRecord, error) {
 	var (
-		body strings.Builder
-		errs []error
-		// droppedRecords tracks all dropped records
+		body           strings.Builder
+		errs           []error
 		droppedRecords []pdata.LogRecord
-		// currentRecords tracks records which are being actually processed
 		currentRecords []pdata.LogRecord
 		formattedLine  string
 		err            error
