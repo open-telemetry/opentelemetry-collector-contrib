@@ -2,6 +2,7 @@ package useragentprocessor
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/translator/conventions"
 
 	"github.com/ua-parser/uap-go/uaparser"
 	"go.opentelemetry.io/collector/component"
@@ -21,26 +22,11 @@ func (u *userAgentProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces)
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
-		if rs.IsNil() {
+		if rs.IsNil() || rs.Resource().IsNil() {
 			continue
 		}
-		ilss := rss.At(i).InstrumentationLibrarySpans()
-		for j := 0; j < ilss.Len(); j++ {
-			ils := ilss.At(j)
-			if ils.IsNil() {
-				continue
-			}
-			spans := ils.Spans()
-			for k := 0; k < spans.Len(); k++ {
-				span := spans.At(k)
-				if span.IsNil() {
-					// Do not create empty spans just to add attributes
-					continue
-				}
-				if attr, ok := span.Attributes().Get(u.config.UserAgentTag); ok {
-					u.enrichSpanWithUserAgent(attr.StringVal(), span)
-				}
-			}
+		if attr, ok := rs.Resource().Attributes().Get(conventions.AttributeHTTPUserAgent); ok {
+			u.enrichResourceWithUserAgent(attr.StringVal(), rs.Resource())
 		}
 	}
 	return u.nextConsumer.ConsumeTraces(ctx, td)
@@ -58,15 +44,15 @@ func (u *userAgentProcessor) GetCapabilities() component.ProcessorCapabilities {
 	return component.ProcessorCapabilities{MutatesConsumedData: true}
 }
 
-func (u *userAgentProcessor) enrichSpanWithUserAgent(userAgent string, span pdata.Span) {
+func (u *userAgentProcessor) enrichResourceWithUserAgent(userAgent string, resource pdata.Resource) {
 	c := u.uaParser.Parse(userAgent)
-	span.Attributes().Insert("browserFamily", pdata.NewAttributeValueString(c.UserAgent.Family))
-	span.Attributes().Insert("browserVersion", pdata.NewAttributeValueString(c.UserAgent.ToVersionString()))
-	span.Attributes().Insert("deviceFamily", pdata.NewAttributeValueString(c.Device.Family))
-	span.Attributes().Insert("deviceBrand", pdata.NewAttributeValueString(c.Device.Brand))
-	span.Attributes().Insert("deviceModel", pdata.NewAttributeValueString(c.Device.Model))
-	span.Attributes().Insert("osFamily", pdata.NewAttributeValueString(c.Os.Family))
-	span.Attributes().Insert("osVersion", pdata.NewAttributeValueString(c.Os.ToVersionString()))
+	resource.Attributes().Insert("browserFamily", pdata.NewAttributeValueString(c.UserAgent.Family))
+	resource.Attributes().Insert("browserVersion", pdata.NewAttributeValueString(c.UserAgent.ToVersionString()))
+	resource.Attributes().Insert("deviceFamily", pdata.NewAttributeValueString(c.Device.Family))
+	resource.Attributes().Insert("deviceBrand", pdata.NewAttributeValueString(c.Device.Brand))
+	resource.Attributes().Insert("deviceModel", pdata.NewAttributeValueString(c.Device.Model))
+	resource.Attributes().Insert("osFamily", pdata.NewAttributeValueString(c.Os.Family))
+	resource.Attributes().Insert("osVersion", pdata.NewAttributeValueString(c.Os.ToVersionString()))
 }
 
 func newProcessor(logger *zap.Logger, sender consumer.TracesConsumer, cfg *Config) (component.TracesProcessor, error) {

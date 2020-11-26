@@ -21,12 +21,13 @@ type testCase struct {
 	expectedAttributes map[string]pdata.AttributeValue
 }
 
-func generateTraceData(serviceName, spanName string, attrs map[string]pdata.AttributeValue) pdata.Traces {
+func generateTraceData(serviceName, spanName string, attrMap map[string]pdata.AttributeValue) pdata.Traces {
 	td := pdata.NewTraces()
 	td.ResourceSpans().Resize(1)
 	rs := td.ResourceSpans().At(0)
 	if serviceName != "" {
 		rs.Resource().InitEmpty()
+		rs.Resource().Attributes().InitFromMap(attrMap)
 		rs.Resource().Attributes().InsertString(conventions.AttributeServiceName, serviceName)
 	}
 	rs.InstrumentationLibrarySpans().Resize(1)
@@ -37,19 +38,17 @@ func generateTraceData(serviceName, spanName string, attrs map[string]pdata.Attr
 	s := spans.At(0)
 	s.InitEmpty()
 	s.SetName(spanName)
-	s.Attributes().InitFromMap(attrs).Sort()
 	return td
 }
 
-func TestSpanProcessor(t *testing.T) {
+func TestResourceAttributesProcessor(t *testing.T) {
 	attrWithoutUserAgent := make(map[string]pdata.AttributeValue)
-	attrWithoutUserAgent["foo"] = pdata.NewAttributeValueString("bar")
 
 	attrWithUserAgent := make(map[string]pdata.AttributeValue)
-	attrWithUserAgent["userAgent"] = pdata.NewAttributeValueString("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36")
+	attrWithUserAgent[conventions.AttributeHTTPUserAgent] = pdata.NewAttributeValueString("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36")
 
 	attrWithUserAgentOutput := make(map[string]pdata.AttributeValue)
-	attrWithUserAgentOutput["userAgent"] = pdata.NewAttributeValueString("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36")
+	attrWithUserAgentOutput[conventions.AttributeHTTPUserAgent] = pdata.NewAttributeValueString("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36")
 	attrWithUserAgentOutput["browserFamily"] = pdata.NewAttributeValueString("Chrome")
 	attrWithUserAgentOutput["browserVersion"] = pdata.NewAttributeValueString("86.0.4240")
 	attrWithUserAgentOutput["deviceFamily"] = pdata.NewAttributeValueString("Mac")
@@ -86,8 +85,10 @@ func TestSpanProcessor(t *testing.T) {
 			err = tp.ConsumeTraces(context.Background(), td)
 			assert.NoError(t, err)
 
-			am := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Attributes()
+			am := td.ResourceSpans().At(0).Resource().Attributes()
 			outputAttr := make(map[string]pdata.AttributeValue)
+			// this gets added in the generateTraceData method
+			tt.expectedAttributes[conventions.AttributeServiceName] = pdata.NewAttributeValueString(tt.serviceName)
 
 			am.ForEach(func(k string, v pdata.AttributeValue) {
 				outputAttr[k] = v
