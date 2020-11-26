@@ -20,20 +20,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
-type mockMetaDataProvider struct {
+type mockMetadataProvider struct {
 	isV4 bool
 }
 
-var _ ecsMetadataProvider = (*mockMetaDataProvider)(nil)
+var _ metadataProvider = (*mockMetadataProvider)(nil)
 
-func (md *mockMetaDataProvider) fetchTaskMetaData(tmde string) (*TaskMetaData, error) {
+func (md *mockMetadataProvider) fetchTask(tmde string) (*TaskMetaData, error) {
 	c := createTestContainer(md.isV4)
 	c.DockerID = "05281997" // Simulate one "application" and one "collector" container
 	cs := []Container{createTestContainer(md.isV4), c}
@@ -52,13 +50,13 @@ func (md *mockMetaDataProvider) fetchTaskMetaData(tmde string) (*TaskMetaData, e
 	return tmd, nil
 }
 
-func (md *mockMetaDataProvider) fetchContainerMetaData(string) (*Container, error) {
+func (md *mockMetadataProvider) fetchContainer(tmde string) (*Container, error) {
 	c := createTestContainer(md.isV4)
 	return &c, nil
 }
 
 func Test_ecsNewDetector(t *testing.T) {
-	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()})
+	d, err := NewDetector()
 
 	assert.NotNil(t, d)
 	assert.Nil(t, err)
@@ -66,7 +64,7 @@ func Test_ecsNewDetector(t *testing.T) {
 
 func Test_detectorReturnsIfNoEnvVars(t *testing.T) {
 	os.Clearenv()
-	d, _ := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()})
+	d, _ := NewDetector()
 	res, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
@@ -133,7 +131,7 @@ func Test_ecsDetectV4(t *testing.T) {
 		attr.Insert(field, ava)
 	}
 
-	d := Detector{provider: &mockMetaDataProvider{isV4: true}}
+	d := Detector{provider: &mockMetadataProvider{isV4: true}}
 	got, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
@@ -156,7 +154,7 @@ func Test_ecsDetectV3(t *testing.T) {
 	attr.InsertString("cloud.zone", "us-west-2a")
 	attr.InsertString("cloud.account.id", "123456789123")
 
-	d := Detector{provider: &mockMetaDataProvider{isV4: false}}
+	d := Detector{provider: &mockMetadataProvider{isV4: false}}
 	got, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)

@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
 const (
@@ -48,26 +47,33 @@ const (
 	}`
 )
 
-type mockClient struct {
-	response string
-	retErr   bool
+type mockTransport struct {
+	err        error
+	statusCode int
+	body       string
 }
 
-func (mc *mockClient) Do(*http.Request) (*http.Response, error) {
-	if mc.retErr {
-		return nil, errors.New("fake error")
+func (t *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if t.err != nil {
+		return nil, t.err
 	}
-
-	r := ioutil.NopCloser(bytes.NewReader([]byte(mc.response)))
 	return &http.Response{
 		StatusCode: 200,
-		Body:       r,
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte(t.body))),
 	}, nil
 }
 
 func Test_ecsMetadata_fetchTask(t *testing.T) {
-	md := ecsMetadataProviderImpl{logger: zap.NewNop(), client: &mockClient{response: taskMeta, retErr: false}}
-	fetchResp, err := md.fetchTaskMetaData("url")
+	client := &http.Client{
+		Transport: &mockTransport{
+			err:        nil,
+			statusCode: 200,
+			body:       taskMeta,
+		},
+	}
+
+	c := metadataClient{client: client}
+	fetchResp, err := c.fetchTask("url")
 
 	assert.Nil(t, err)
 	assert.Equal(t, "myCluster", fetchResp.Cluster)
@@ -79,8 +85,16 @@ func Test_ecsMetadata_fetchTask(t *testing.T) {
 }
 
 func Test_ecsMetadata_fetchContainer(t *testing.T) {
-	md := ecsMetadataProviderImpl{logger: zap.NewNop(), client: &mockClient{response: containerMeta, retErr: false}}
-	fetchResp, err := md.fetchContainerMetaData("url")
+	client := &http.Client{
+		Transport: &mockTransport{
+			err:        nil,
+			statusCode: 200,
+			body:       containerMeta,
+		},
+	}
+
+	c := metadataClient{client: client}
+	fetchResp, err := c.fetchContainer("url")
 
 	assert.Nil(t, err)
 	assert.NotNil(t, fetchResp)
@@ -94,8 +108,15 @@ func Test_ecsMetadata_fetchContainer(t *testing.T) {
 }
 
 func Test_ecsMetadata_returnsError(t *testing.T) {
-	md := ecsMetadataProviderImpl{logger: zap.NewNop(), client: &mockClient{response: "{}", retErr: true}}
-	fetchResp, err := md.fetchContainerMetaData("url")
+	client := &http.Client{
+		Transport: &mockTransport{
+			err:        errors.New("failed"),
+			statusCode: 500,
+		},
+	}
+
+	c := metadataClient{client: client}
+	fetchResp, err := c.fetchContainer("url")
 
 	assert.Nil(t, fetchResp)
 	assert.NotNil(t, err)

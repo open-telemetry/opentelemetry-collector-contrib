@@ -22,7 +22,6 @@ import (
 	"os"
 	"strings"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
@@ -30,7 +29,8 @@ import (
 )
 
 const (
-	TypeStr     = "ecs"
+	TypeStr = "ecs"
+
 	tmde3EnvVar = "ECS_CONTAINER_METADATA_URI"
 	tmde4EnvVar = "ECS_CONTAINER_METADATA_URI_V4"
 )
@@ -38,14 +38,14 @@ const (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
-	provider ecsMetadataProvider
+	provider metadataProvider
 }
 
-func NewDetector(params component.ProcessorCreateParams) (internal.Detector, error) {
-	return &Detector{provider: &ecsMetadataProviderImpl{logger: params.Logger, client: &http.Client{}}}, nil
+func NewDetector() (*Detector, error) {
+	return &Detector{provider: &metadataClient{client: &http.Client{}}}, nil
 }
 
-// Records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes
+// Detect records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes
 // TODO(willarmiros): Replace all attribute fields and enums with values defined in "conventions" once they exist
 func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()
@@ -58,8 +58,7 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 		return res, nil
 	}
 
-	tmdeResp, err := d.provider.fetchTaskMetaData(tmde)
-
+	tmdeResp, err := d.provider.fetchTask(tmde)
 	if err != nil || tmdeResp == nil {
 		return res, err
 	}
@@ -96,8 +95,7 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 		attr.InsertString("aws.ecs.launchtype", "fargate")
 	}
 
-	selfMetaData, err := d.provider.fetchContainerMetaData(tmde)
-
+	selfMetaData, err := d.provider.fetchContainer(tmde)
 	if err != nil || selfMetaData == nil {
 		return res, err
 	}
