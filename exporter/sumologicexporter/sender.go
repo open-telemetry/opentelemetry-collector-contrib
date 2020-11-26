@@ -240,7 +240,7 @@ func (s *sender) cleanBuffer() {
 func (s *sender) batch(log pdata.LogRecord, metadata fields) ([]pdata.LogRecord, error) {
 	s.buffer = append(s.buffer, log)
 
-	if s.count() == maxBufferSize {
+	if s.count() >= maxBufferSize {
 		dropped, err := s.sendLogs(metadata)
 		s.cleanBuffer()
 		return dropped, err

@@ -369,5 +369,22 @@ func TestInvalidEndpoint(t *testing.T) {
 	test.s.buffer = exampleLog()
 
 	_, err := test.s.sendLogs("test_metadata")
-	assert.Error(t, err)
+	assert.EqualError(t, err, `Post "": unsupported protocol scheme ""`)
+}
+
+func TestBufferOverflow(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
+	defer func() { test.srv.Close() }()
+
+	test.s.config.HTTPClientSettings.Endpoint = ""
+	log := exampleLog()
+
+	for test.s.count() < maxBufferSize-1 {
+		_, err := test.s.batch(log[0], "test_metadata")
+		require.NoError(t, err)
+	}
+
+	_, err := test.s.batch(log[0], "test_metadata")
+	assert.EqualError(t, err, `Post "": unsupported protocol scheme ""`)
+	assert.Equal(t, 0, test.s.count())
 }
