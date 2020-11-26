@@ -225,7 +225,7 @@ func (s *sender) appendAndSend(
 	// appended keeps state of appending new log line to the body
 	appended = true
 
-	if body.Len() > 0 && body.Len()+len(line) > s.config.MaxRequestBodySize {
+	if body.Len() > 0 && body.Len()+len(line) >= s.config.MaxRequestBodySize {
 		sent = true
 		if err := s.send(pipeline, strings.NewReader(body.String()), flds); err != nil {
 			errors = append(errors, err)
