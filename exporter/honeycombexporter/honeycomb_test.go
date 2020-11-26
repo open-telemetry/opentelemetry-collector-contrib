@@ -17,6 +17,8 @@ package honeycombexporter
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -26,20 +28,23 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/google/go-cmp/cmp"
+	"github.com/honeycombio/libhoney-go/transmission"
 	"github.com/klauspost/compress/zstd"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 type honeycombData struct {
-	Data       map[string]interface{} `json:"data"`
-	SampleRate int                    `json:"samplerate"`
+	Data map[string]interface{} `json:"data"`
 }
 
 func testingServer(callback func(data []honeycombData)) *httptest.Server {
@@ -93,7 +98,6 @@ func baseConfig() *Config {
 		APIKey:              "test",
 		Dataset:             "test",
 		Debug:               false,
-		SampleRate:          1,
 		SampleRateAttribute: "",
 	}
 }
@@ -211,13 +215,11 @@ func TestExporter(t *testing.T) {
 		{
 			Data: map[string]interface{}{
 				"duration_ms":                            float64(0),
-				"has_remote_parent":                      false,
 				"name":                                   "client",
-				"service_name":                           "test_service",
+				"service.name":                           "test_service",
 				"span_kind":                              "client",
-				"source_format":                          "otlp_trace",
-				"status.code":                            float64(0),
-				"status.message":                         "OK",
+				"status.code":                            float64(1),
+				"status.message":                         "STATUS_CODE_OK",
 				"trace.parent_id":                        "0200000000000000",
 				"trace.span_id":                          "0300000000000000",
 				"trace.trace_id":                         "01000000000000000000000000000000",
@@ -230,13 +232,11 @@ func TestExporter(t *testing.T) {
 		{
 			Data: map[string]interface{}{
 				"duration_ms":                            float64(0),
-				"has_remote_parent":                      true,
 				"name":                                   "server",
-				"service_name":                           "test_service",
+				"service.name":                           "test_service",
 				"span_kind":                              "server",
-				"source_format":                          "otlp_trace",
-				"status.code":                            float64(0),
-				"status.message":                         "OK",
+				"status.code":                            float64(1),
+				"status.message":                         "STATUS_CODE_OK",
 				"trace.parent_id":                        "0300000000000000",
 				"trace.span_id":                          "0400000000000000",
 				"trace.trace_id":                         "01000000000000000000000000000000",
@@ -254,8 +254,7 @@ func TestExporter(t *testing.T) {
 				"meta.annotation_type":    "span_event",
 				"name":                    "Some Description",
 				"opencensus.resourcetype": "override",
-				"service_name":            "test_service",
-				"source_format":           "otlp_trace",
+				"service.name":            "test_service",
 				"trace.parent_id":         "0200000000000000",
 				"trace.parent_name":       "root",
 				"trace.trace_id":          "01000000000000000000000000000000",
@@ -264,14 +263,12 @@ func TestExporter(t *testing.T) {
 		{
 			Data: map[string]interface{}{
 				"duration_ms":                            float64(0),
-				"has_remote_parent":                      false,
 				"name":                                   "root",
-				"service_name":                           "test_service",
-				"source_format":                          "otlp_trace",
+				"service.name":                           "test_service",
 				"span_attr_name":                         "Span Attribute",
 				"span_kind":                              "server",
-				"status.code":                            float64(0),
-				"status.message":                         "OK",
+				"status.code":                            float64(1),
+				"status.message":                         "STATUS_CODE_OK",
 				"trace.span_id":                          "0200000000000000",
 				"trace.trace_id":                         "01000000000000000000000000000000",
 				"A":                                      "B",
@@ -285,6 +282,89 @@ func TestExporter(t *testing.T) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("otel span: (-want +got):\n%s", diff)
 	}
+}
+
+func TestSpanKinds(t *testing.T) {
+	td := pdata.NewTraces()
+	td.ResourceSpans().Resize(1)
+	rs := td.ResourceSpans().At(0)
+	rs.Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		"service.name": pdata.NewAttributeValueString("test_service"),
+	})
+	rs.InstrumentationLibrarySpans().Resize(1)
+	instrLibrarySpans := rs.InstrumentationLibrarySpans().At(0)
+	lib := instrLibrarySpans.InstrumentationLibrary()
+	lib.InitEmpty()
+	lib.SetName("my.custom.library")
+	lib.SetVersion("1.0.0")
+
+	instrLibrarySpans.Spans().Append(createSpan())
+
+	spanKinds := []pdata.SpanKind{
+		pdata.SpanKindINTERNAL,
+		pdata.SpanKindCLIENT,
+		pdata.SpanKindSERVER,
+		pdata.SpanKindPRODUCER,
+		pdata.SpanKindCONSUMER,
+		pdata.SpanKindUNSPECIFIED,
+		pdata.SpanKind(1000),
+	}
+
+	expectedStrings := []string{
+		"internal",
+		"client",
+		"server",
+		"producer",
+		"consumer",
+		"unspecified",
+		"unspecified",
+	}
+
+	for idx, kind := range spanKinds {
+		stringKind := expectedStrings[idx]
+		t.Run(fmt.Sprintf("span kind %s", stringKind), func(t *testing.T) {
+			want := []honeycombData{
+				{
+					Data: map[string]interface{}{
+						"duration_ms":     float64(0),
+						"name":            "spanName",
+						"library.name":    "my.custom.library",
+						"library.version": "1.0.0",
+						"service.name":    "test_service",
+						"span_attr_name":  "Span Attribute",
+						"span_kind":       stringKind,
+						"status.code":     float64(1),
+						"status.message":  "STATUS_CODE_OK",
+						"trace.span_id":   "0300000000000000",
+						"trace.parent_id": "0200000000000000",
+						"trace.trace_id":  "01000000000000000000000000000000",
+					},
+				},
+			}
+
+			instrLibrarySpans.Spans().At(0).SetKind(kind)
+
+			got := testTraceExporter(td, t, baseConfig())
+
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("otel span: (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func createSpan() pdata.Span {
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetName("spanName")
+	span.SetTraceID(pdata.NewTraceID([16]byte{0x01}))
+	span.SetParentSpanID(pdata.NewSpanID([8]byte{0x02}))
+	span.SetSpanID(pdata.NewSpanID([8]byte{0x03}))
+
+	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		"span_attr_name": pdata.NewAttributeValueString("Span Attribute"),
+	})
+	return span
 }
 
 func TestSampleRateAttribute(t *testing.T) {
@@ -348,23 +428,19 @@ func TestSampleRateAttribute(t *testing.T) {
 	}
 
 	cfg := baseConfig()
-	cfg.SampleRate = 2 // default sample rate
 	cfg.SampleRateAttribute = "hc.sample.rate"
 
 	got := testTraceExporter(internaldata.OCToTraceData(td), t, cfg)
 
 	want := []honeycombData{
 		{
-			SampleRate: 13,
 			Data: map[string]interface{}{
 				"duration_ms":                            float64(0),
-				"has_remote_parent":                      false,
 				"hc.sample.rate":                         float64(13),
 				"name":                                   "root",
-				"source_format":                          "otlp_trace",
 				"span_kind":                              "server",
-				"status.code":                            float64(0),
-				"status.message":                         "OK",
+				"status.code":                            float64(1),
+				"status.message":                         "STATUS_CODE_OK",
 				"trace.span_id":                          "0200000000000000",
 				"trace.trace_id":                         "01000000000000000000000000000000",
 				"opencensus.same_process_as_parent_span": true,
@@ -372,15 +448,12 @@ func TestSampleRateAttribute(t *testing.T) {
 			},
 		},
 		{
-			SampleRate: 2,
 			Data: map[string]interface{}{
 				"duration_ms":                            float64(0),
-				"has_remote_parent":                      false,
 				"name":                                   "root",
-				"source_format":                          "otlp_trace",
 				"span_kind":                              "server",
-				"status.code":                            float64(0),
-				"status.message":                         "OK",
+				"status.code":                            float64(1),
+				"status.message":                         "STATUS_CODE_OK",
 				"trace.span_id":                          "0200000000000000",
 				"trace.trace_id":                         "01000000000000000000000000000000",
 				"opencensus.same_process_as_parent_span": true,
@@ -388,16 +461,13 @@ func TestSampleRateAttribute(t *testing.T) {
 			},
 		},
 		{
-			SampleRate: 2,
 			Data: map[string]interface{}{
 				"duration_ms":                            float64(0),
-				"has_remote_parent":                      false,
 				"hc.sample.rate":                         "wrong_type",
 				"name":                                   "root",
-				"source_format":                          "otlp_trace",
 				"span_kind":                              "server",
-				"status.code":                            float64(0),
-				"status.message":                         "OK",
+				"status.code":                            float64(1),
+				"status.message":                         "STATUS_CODE_OK",
 				"trace.span_id":                          "0200000000000000",
 				"trace.trace_id":                         "01000000000000000000000000000000",
 				"opencensus.same_process_as_parent_span": true,
@@ -430,12 +500,10 @@ func TestEmptyNode(t *testing.T) {
 		{
 			Data: map[string]interface{}{
 				"duration_ms":                            float64(0),
-				"has_remote_parent":                      false,
 				"name":                                   "root",
-				"source_format":                          "otlp_trace",
 				"span_kind":                              "server",
-				"status.code":                            float64(0),
-				"status.message":                         "OK",
+				"status.code":                            float64(1),
+				"status.message":                         "STATUS_CODE_OK",
 				"trace.span_id":                          "0200000000000000",
 				"trace.trace_id":                         "01000000000000000000000000000000",
 				"opencensus.same_process_as_parent_span": true,
@@ -470,20 +538,18 @@ func TestNode(t *testing.T) {
 			expected: map[string]interface{}{
 				"B":                                      "C",
 				"duration_ms":                            float64(0),
-				"has_remote_parent":                      false,
 				"name":                                   "root",
-				"source_format":                          "otlp_trace",
 				"span_kind":                              "server",
-				"status.code":                            float64(0),
-				"status.message":                         "OK",
+				"status.code":                            float64(1),
+				"status.message":                         "STATUS_CODE_OK",
 				"trace.span_id":                          "0200000000000000",
 				"trace.trace_id":                         "01000000000000000000000000000000",
 				"opencensus.resourcetype":                "container",
 				"opencensus.same_process_as_parent_span": true,
-				"opencensus.start_timestamp":             "2020-09-08T20:15:12Z",
-				"process.hostname":                       "my-host",
-				"process.pid":                            float64(123),
-				"service_name":                           "test_service",
+				"opencensus.starttime":                   "2020-09-08T20:15:12Z",
+				"host.name":                              "my-host",
+				"opencensus.pid":                         float64(123),
+				"service.name":                           "test_service",
 			},
 		},
 		{
@@ -494,18 +560,16 @@ func TestNode(t *testing.T) {
 			expected: map[string]interface{}{
 				"B":                                      "C",
 				"duration_ms":                            float64(0),
-				"has_remote_parent":                      false,
 				"name":                                   "root",
-				"source_format":                          "otlp_trace",
 				"span_kind":                              "server",
-				"status.code":                            float64(0),
-				"status.message":                         "OK",
+				"status.code":                            float64(1),
+				"status.message":                         "STATUS_CODE_OK",
 				"trace.span_id":                          "0200000000000000",
 				"trace.trace_id":                         "01000000000000000000000000000000",
 				"opencensus.resourcetype":                "container",
 				"opencensus.same_process_as_parent_span": true,
-				"process.hostname":                       "my-host",
-				"service_name":                           "test_service",
+				"host.name":                              "my-host",
+				"service.name":                           "test_service",
 			},
 		},
 		{
@@ -514,17 +578,15 @@ func TestNode(t *testing.T) {
 			expected: map[string]interface{}{
 				"B":                                      "C",
 				"duration_ms":                            float64(0),
-				"has_remote_parent":                      false,
 				"name":                                   "root",
-				"source_format":                          "otlp_trace",
 				"span_kind":                              "server",
-				"status.code":                            float64(0),
-				"status.message":                         "OK",
+				"status.code":                            float64(1),
+				"status.message":                         "STATUS_CODE_OK",
 				"trace.span_id":                          "0200000000000000",
 				"trace.trace_id":                         "01000000000000000000000000000000",
 				"opencensus.resourcetype":                "container",
 				"opencensus.same_process_as_parent_span": true,
-				"service_name":                           "test_service",
+				"service.name":                           "test_service",
 			},
 		},
 	}
@@ -567,4 +629,42 @@ func TestNode(t *testing.T) {
 		})
 	}
 
+}
+
+func TestRunErrorLogger_OnError(t *testing.T) {
+	obs, logs := observer.New(zap.WarnLevel)
+	logger := zap.New(obs)
+
+	cfg := createDefaultConfig().(*Config)
+	exporter, err := newHoneycombTraceExporter(cfg, logger)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	defer ctx.Done()
+
+	channel := make(chan transmission.Response)
+
+	go func() {
+		channel <- transmission.Response{
+			Err: errors.New("its a transmission error"),
+		}
+		close(channel)
+	}()
+
+	exporter.RunErrorLogger(ctx, channel)
+
+	expectedLogs := []observer.LoggedEntry{{
+		Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "its a transmission error"},
+		Context: []zapcore.Field{},
+	}}
+
+	assert.Equal(t, 1, logs.Len())
+	assert.Equal(t, expectedLogs, logs.AllUntimed())
+}
+
+func TestDebugUsesDebugLogger(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Debug = true
+	_, err := newHoneycombTraceExporter(cfg, zap.NewNop())
+	require.NoError(t, err)
 }

@@ -31,7 +31,7 @@ to read resource information from the [GCE metadata server](https://cloud.google
 * AWS EC2: Uses [AWS SDK for Go](https://docs.aws.amazon.com/sdk-for-go/api/aws/ec2metadata/) to read resource information from the [EC2 instance metadata API](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html) to retrieve the following resource attributes:
 
     * cloud.provider (aws)
-    * cloud.infrastructure_service
+    * cloud.infrastructure_service (EC2)
     * cloud.account.id
     * cloud.region
     * cloud.zone
@@ -46,7 +46,7 @@ to read resource information from the [GCE metadata server](https://cloud.google
     * cloud.account.id
     * cloud.region
     * cloud.zone
-    * cloud.infrastructure_service
+    * cloud.infrastructure_service (ECS)
     * aws.ecs.cluster.arn
     * aws.ecs.task.arn
     * aws.ecs.task.family
@@ -55,11 +55,19 @@ to read resource information from the [GCE metadata server](https://cloud.google
     * aws.log.group.arns (V4 only)
     * aws.log.stream.names (V4 only)
     * aws.log.stream.arns (V4 only)
+    
+* Amazon Elastic Beanstalk: Reads the AWS X-Ray configuration file available on all Beanstalk instances with [X-Ray Enabled](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/environment-configuration-debugging.html).
 
+    * cloud.provider (aws)
+    * cloud.infrastructure_service (ElasticBeanstalk)
+    * deployment.environment
+    * service.instance.id
+    * service.version
+    
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system",  "gce", "ec2", "ecs"
+# a list of resource detectors to run, valid options are: "env", "system",  "gce", "ec2", "ecs", "elastic_beanstalk"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>

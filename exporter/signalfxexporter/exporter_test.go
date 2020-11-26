@@ -111,7 +111,6 @@ func TestConsumeMetrics(t *testing.T) {
 
 	m.SetName("test_gauge")
 	m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	m.DoubleGauge().InitEmpty()
 
 	dp := pdata.NewDoubleDataPoint()
 	dp.InitEmpty()
@@ -220,7 +219,6 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 
 		m.SetName("test_gauge")
 		m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		m.DoubleGauge().InitEmpty()
 
 		dp := pdata.NewDoubleDataPoint()
 		dp.InitEmpty()
@@ -305,7 +303,6 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 
 				m.SetName("test_gauge")
 				m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-				m.DoubleGauge().InitEmpty()
 
 				dp := pdata.NewDoubleDataPoint()
 				dp.InitEmpty()
@@ -751,7 +748,6 @@ func generateLargeDPBatch(t *testing.T) pdata.Metrics {
 
 		m.SetName("test_" + strconv.Itoa(i))
 		m.SetDataType(pdata.MetricDataTypeIntGauge)
-		m.IntGauge().InitEmpty()
 
 		dp := pdata.NewIntDataPoint()
 		dp.InitEmpty()

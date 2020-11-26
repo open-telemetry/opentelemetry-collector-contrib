@@ -60,17 +60,13 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 
 		switch typ {
 		case pdata.MetricDataTypeIntGauge:
-			m.IntGauge().InitEmpty()
 			dps = m.IntGauge().DataPoints()
 		case pdata.MetricDataTypeIntSum:
-			m.IntSum().InitEmpty()
 			m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			dps = m.IntSum().DataPoints()
 		case pdata.MetricDataTypeDoubleGauge:
-			m.DoubleGauge().InitEmpty()
 			dps = m.DoubleGauge().DataPoints()
 		case pdata.MetricDataTypeDoubleSum:
-			m.DoubleSum().InitEmpty()
 			m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 			dps = m.DoubleSum().DataPoints()
 		}

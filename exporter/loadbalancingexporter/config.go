@@ -45,4 +45,5 @@ type StaticResolver struct {
 // DNSResolver defines the configuration for the DNS resolver
 type DNSResolver struct {
 	Hostname string `mapstructure:"hostname"`
+	Port     string `mapstructure:"port"`
 }

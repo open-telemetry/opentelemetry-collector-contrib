@@ -79,6 +79,12 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) (e
 	if err != nil {
 		return err
 	}
+	go func() {
+		for range jmx.subprocess.Stdout {
+			// ensure stdout/stderr buffer is read from.
+			// these messages are already debug logged when captured.
+		}
+	}()
 
 	return jmx.subprocess.Start(context.Background())
 }

@@ -29,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/elasticbeanstalk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/gce"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
@@ -53,11 +54,12 @@ type factory struct {
 // NewFactory creates a new factory for ResourceDetection processor.
 func NewFactory() component.ProcessorFactory {
 	resourceProviderFactory := internal.NewProviderFactory(map[internal.DetectorType]internal.DetectorFactory{
-		env.TypeStr:    env.NewDetector,
-		system.TypeStr: system.NewDetector,
-		gce.TypeStr:    gce.NewDetector,
-		ec2.TypeStr:    ec2.NewDetector,
-		ecs.TypeStr:    ecs.NewDetector,
+		env.TypeStr:              env.NewDetector,
+		system.TypeStr:           system.NewDetector,
+		gce.TypeStr:              gce.NewDetector,
+		ec2.TypeStr:              ec2.NewDetector,
+		ecs.TypeStr:              ecs.NewDetector,
+		elasticbeanstalk.TypeStr: elasticbeanstalk.NewDetector,
 	})
 
 	f := &factory{

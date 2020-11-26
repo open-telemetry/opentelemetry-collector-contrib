@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -49,11 +49,11 @@ func TestLoadConfig(t *testing.T) {
 
 	r1 := cfg.Receivers["windowsperfcounters/customname"].(*Config)
 	expectedConfig := &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: "windowsperfcounters/customname",
-		},
-		ScraperControllerSettings: receiverhelper.ScraperControllerSettings{
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: typeStr,
+				NameVal: "windowsperfcounters/customname",
+			},
 			CollectionInterval: 30 * time.Second,
 		},
 		PerfCounters: []PerfCounterConfig{

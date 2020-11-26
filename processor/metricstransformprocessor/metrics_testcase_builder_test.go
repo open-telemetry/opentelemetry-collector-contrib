@@ -81,6 +81,12 @@ func (b builder) setDataType(dataType metricspb.MetricDescriptor_Type) builder {
 	return b
 }
 
+// setUnit sets the unit of this metric
+func (b builder) setUnit(unit string) builder {
+	b.metric.MetricDescriptor.Unit = unit
+	return b
+}
+
 // addInt64Point adds a int64 point to the tidx-th timseries
 func (b builder) addInt64Point(tidx int, val int64, timestampVal int64) builder {
 	point := &metricspb.Point{

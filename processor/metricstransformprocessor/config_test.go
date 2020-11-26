@@ -25,40 +25,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
-var (
-	testDataOperations = []Operation{
-		{
-			Action:   UpdateLabel,
-			Label:    "label",
-			NewLabel: "new_label",
-			ValueActions: []ValueAction{
-				{
-					Value:    "current_label_value",
-					NewValue: "new_label_value",
-				},
-			},
-		},
-		{
-			Action: AggregateLabels,
-			LabelSet: []string{
-				"label1",
-				"label2",
-			},
-			AggregationType: Sum,
-		},
-		{
-			Action: AggregateLabelValues,
-			Label:  "label",
-			AggregatedValues: []string{
-				"value1",
-				"value2",
-			},
-			NewValue:        "new_value",
-			AggregationType: Sum,
-		},
-	}
-
-	tests = []struct {
+func TestLoadingFullConfig(t *testing.T) {
+	tests := []struct {
 		configFile string
 		filterName string
 		expCfg     *Config
@@ -68,43 +36,96 @@ var (
 			filterName: "metricstransform",
 			expCfg: &Config{
 				ProcessorSettings: configmodels.ProcessorSettings{
+					TypeVal: "metricstransform",
 					NameVal: "metricstransform",
-					TypeVal: typeStr,
 				},
 				Transforms: []Transform{
 					{
 						MetricIncludeFilter: FilterConfig{
-							Include: "old_name",
+							Include:   "name",
+							MatchType: "",
 						},
-						Action:     Update,
-						NewName:    "new_name",
-						Operations: testDataOperations,
+						Action:  "update",
+						NewName: "new_name",
 					},
 				},
 			},
 		},
 		{
 			configFile: "config_full.yaml",
-			filterName: "metricstransform/addlabel",
+			filterName: "metricstransform/multiple",
 			expCfg: &Config{
 				ProcessorSettings: configmodels.ProcessorSettings{
-					NameVal: "metricstransform/addlabel",
-					TypeVal: typeStr,
+					TypeVal: "metricstransform",
+					NameVal: "metricstransform/multiple",
 				},
 				Transforms: []Transform{
 					{
 						MetricIncludeFilter: FilterConfig{
-							Include:   "some_name",
-							MatchType: "regexp",
+							Include:   "name1",
+							MatchType: "strict",
 						},
-						Action: Update,
+						Action:  "insert",
+						NewName: "new_name",
 						Operations: []Operation{
 							{
-								Action:   AddLabel,
-								NewLabel: "mylabel",
-								NewValue: "myvalue",
+								Action:   "add_label",
+								NewLabel: "my_label",
+								NewValue: "my_value",
 							},
 						},
+					},
+					{
+						MetricIncludeFilter: FilterConfig{
+							Include:   "name2",
+							MatchType: "",
+						},
+						Action: "update",
+						Operations: []Operation{
+							{
+								Action:   "update_label",
+								Label:    "label",
+								NewLabel: "new_label_key",
+								ValueActions: []ValueAction{
+									{Value: "label1", NewValue: "new_label1"},
+								},
+							},
+							{
+								Action:          "aggregate_labels",
+								LabelSet:        []string{"new_label1", "label2"},
+								AggregationType: "sum",
+							},
+							{
+								Action:           "aggregate_label_values",
+								Label:            "new_label1",
+								AggregationType:  "sum",
+								AggregatedValues: []string{"value1", "value2"},
+								NewValue:         "new_value",
+							},
+						},
+					},
+					{
+						MetricIncludeFilter: FilterConfig{
+							Include:   "name3",
+							MatchType: "strict",
+						},
+						Action: "update",
+						Operations: []Operation{
+							{
+								Action:     "delete_label_value",
+								Label:      "my_label",
+								LabelValue: "delete_me",
+							},
+						},
+					},
+					{
+						MetricIncludeFilter: FilterConfig{
+							Include:   "^regexp (?P<my_label>.*)$",
+							MatchType: "regexp",
+						},
+						Action:       "combine",
+						NewName:      "combined_metric_name",
+						SubmatchCase: "lower",
 					},
 				},
 			},
@@ -127,10 +148,7 @@ var (
 			},
 		},
 	}
-)
 
-// TestLoadingFullConfig tests loading testdata/config_full.yaml.
-func TestLoadingFullConfig(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.filterName, func(t *testing.T) {
 

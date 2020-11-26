@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+## v0.15.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.15.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.15.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+
+- `zookeeper` receiver: Collects metrics from a Zookeeper instance using the `mntr` command
+- `loadbalacing` exporter: Consistently exports spans belonging to the same trace to the same backend
+- `windowsperfcounters` receiver: Captures the configured system, application, or custom performance counter data from the Windows registry using the PDH interface
+- `awsprometheusremotewrite` exporter:  Sends metrics data in Prometheus TimeSeries format to a Prometheus Remote Write Backend and signs each outgoing HTTP request following the AWS Signature Version 4 signing process
+
+## 💡 Enhancements 💡
+
+- `awsemf` exporter:
+  - Add `metric_declarations` config option for metric filtering and dimensions (#1503)
+  - Add SummaryDataType and remove Min/Max from Histogram (#1584)
+- `signalfxcorrelation` exporter: Add ability to translate host dimension (#1561)
+- `newrelic` exporter: Use pdata instead of the OpenCensus for traces (#1587)
+- `metricstransform` processor:
+  - Add `combine` action for matched metrics (#1506)
+  - Add `submatch_case` config option to specify case of matched label values (#1640)
+- `awsecscontainermetrics` receiver: Extract cluster name from ARN (#1626)
+- `elastic` exporter: Improve handling of span status if the status code is unset (#1591)
+
+## 🧰 Bug fixes 🧰
+
+- `awsemf` exporter: Add check for unhandled metric data types (#1493)
+- `groupbytrace` processor: Make buffered channel to avoid goroutines leak (#1505)
+- `stackdriver` exporter: Set `options.UserAgent` so that the OpenCensus exporter does not override the UA ($1620)
+
 ## v0.14.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.14.0 (Beta) 🎉

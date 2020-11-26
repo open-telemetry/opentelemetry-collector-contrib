@@ -82,18 +82,8 @@ func validateConfiguration(config *Config) error {
 			return fmt.Errorf("cannot supply both %q and %q, use %q with %q match type", IncludeFieldName, MetricNameFieldName, IncludeFieldName, StrictMatchType)
 		}
 
-		if transform.MetricIncludeFilter.MatchType != "" {
-			var validMatchType bool
-			for _, matchType := range MatchTypes {
-				if transform.MetricIncludeFilter.MatchType == matchType {
-					validMatchType = true
-					break
-				}
-			}
-
-			if !validMatchType {
-				return fmt.Errorf("%q must be in %q", MatchTypeFieldName, MatchTypes)
-			}
+		if transform.MetricIncludeFilter.MatchType != "" && !transform.MetricIncludeFilter.MatchType.isValid() {
+			return fmt.Errorf("%q must be in %q", MatchTypeFieldName, MatchTypes)
 		}
 
 		if transform.MetricIncludeFilter.MatchType == RegexpMatchType {
@@ -103,23 +93,39 @@ func validateConfiguration(config *Config) error {
 			}
 		}
 
-		if transform.Action != Update && transform.Action != Insert {
-			return fmt.Errorf("unsupported %q: %v, the supported actions are %q and %q", ActionFieldName, transform.Action, Insert, Update)
+		if !transform.Action.isValid() {
+			return fmt.Errorf("%q must be in %q", ActionFieldName, Actions)
 		}
 
 		if transform.Action == Insert && transform.NewName == "" {
 			return fmt.Errorf("missing required field %q while %q is %v", NewNameFieldName, ActionFieldName, Insert)
 		}
 
+		if transform.AggregationType != "" && !transform.AggregationType.isValid() {
+			return fmt.Errorf("%q must be in %q", AggregationTypeFieldName, AggregationTypes)
+		}
+
+		if transform.SubmatchCase != "" && !transform.SubmatchCase.isValid() {
+			return fmt.Errorf("%q must be in %q", SubmatchCaseFieldName, SubmatchCases)
+		}
+
 		for i, op := range transform.Operations {
+			if !op.Action.isValid() {
+				return fmt.Errorf("operation %v: %q must be in %q", i+1, ActionFieldName, OperationActions)
+			}
+
 			if op.Action == UpdateLabel && op.Label == "" {
-				return fmt.Errorf("missing required field %q while %q is %v in the %vth operation", LabelFieldName, ActionFieldName, UpdateLabel, i)
+				return fmt.Errorf("operation %v: missing required field %q while %q is %v", i+1, LabelFieldName, ActionFieldName, UpdateLabel)
 			}
 			if op.Action == AddLabel && op.NewLabel == "" {
-				return fmt.Errorf("missing required field %q while %q is %v in the %vth operation", NewLabelFieldName, ActionFieldName, AddLabel, i)
+				return fmt.Errorf("operation %v: missing required field %q while %q is %v", i+1, NewLabelFieldName, ActionFieldName, AddLabel)
 			}
 			if op.Action == AddLabel && op.NewValue == "" {
-				return fmt.Errorf("missing required field %q while %q is %v in the %vth operation", NewValueFieldName, ActionFieldName, AddLabel, i)
+				return fmt.Errorf("operation %v: missing required field %q while %q is %v", i+1, NewValueFieldName, ActionFieldName, AddLabel)
+			}
+
+			if op.AggregationType != "" && !op.AggregationType.isValid() {
+				return fmt.Errorf("operation %v: %q must be in %q", i+1, AggregationTypeFieldName, AggregationTypes)
 			}
 		}
 	}
@@ -144,6 +150,7 @@ func buildHelperConfig(config *Config, version string) []internalTransform {
 			MetricIncludeFilter: createFilter(t.MetricIncludeFilter),
 			Action:              t.Action,
 			NewName:             t.NewName,
+			AggregationType:     t.AggregationType,
 			Operations:          make([]internalOperation, len(t.Operations)),
 		}
 

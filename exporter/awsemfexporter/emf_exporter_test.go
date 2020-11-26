@@ -135,14 +135,263 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
-	mdata := consumerdata.MetricsData{}
+	mdata := consumerdata.MetricsData{
+		Node: &commonpb.Node{
+			ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
+			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
+		},
+		Resource: &resourcepb.Resource{
+			Labels: map[string]string{
+				"resource": "R1",
+			},
+		},
+		Metrics: []*metricspb.Metric{
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+						{Key: "isItAnError"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan"},
+							{Value: "false"},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_Int64Value{
+									Int64Value: 1,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 	md := internaldata.OCToMetrics(mdata)
 	require.NoError(t, exp.Start(ctx, nil))
-	require.NoError(t, exp.ConsumeMetrics(ctx, md))
+	require.Error(t, exp.ConsumeMetrics(ctx, md))
 	require.NoError(t, exp.Shutdown(ctx))
 	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"]
 	assert.True(t, ok)
 	pusher, ok := streamToPusherMap["test-logStreamName"]
+	assert.True(t, ok)
+	assert.NotNil(t, pusher)
+}
+
+func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	factory := NewFactory()
+	expCfg := factory.CreateDefaultConfig().(*Config)
+	expCfg.Region = "us-west-2"
+	expCfg.MaxRetries = defaultRetryCount
+	expCfg.LogGroupName = "/aws/ecs/containerinsights/{ClusterName}/performance"
+	expCfg.LogStreamName = "{TaskId}"
+	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	assert.Nil(t, err)
+	assert.NotNil(t, exp)
+
+	mdata := consumerdata.MetricsData{
+		Node: &commonpb.Node{
+			ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
+			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
+		},
+		Resource: &resourcepb.Resource{
+			Labels: map[string]string{
+				"aws.ecs.cluster.name": "test-cluster-name",
+				"aws.ecs.task.id":      "test-task-id",
+			},
+		},
+		Metrics: []*metricspb.Metric{
+
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+						{Key: "isItAnError"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan"},
+							{Value: "false"},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_Int64Value{
+									Int64Value: 1,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	md := internaldata.OCToMetrics(mdata)
+	require.NoError(t, exp.Start(ctx, nil))
+	require.Error(t, exp.ConsumeMetrics(ctx, md))
+	require.NoError(t, exp.Shutdown(ctx))
+	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["/aws/ecs/containerinsights/test-cluster-name/performance"]
+	assert.True(t, ok)
+	pusher, ok := streamToPusherMap["test-task-id"]
+	assert.True(t, ok)
+	assert.NotNil(t, pusher)
+}
+
+func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	factory := NewFactory()
+	expCfg := factory.CreateDefaultConfig().(*Config)
+	expCfg.Region = "us-west-2"
+	expCfg.MaxRetries = defaultRetryCount
+	expCfg.LogGroupName = "test-logGroupName"
+	expCfg.LogStreamName = "{TaskId}"
+	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	assert.Nil(t, err)
+	assert.NotNil(t, exp)
+
+	mdata := consumerdata.MetricsData{
+		Node: &commonpb.Node{
+			ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
+			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
+		},
+		Resource: &resourcepb.Resource{
+			Labels: map[string]string{
+				"aws.ecs.cluster.name": "test-cluster-name",
+				"aws.ecs.task.id":      "test-task-id",
+			},
+		},
+		Metrics: []*metricspb.Metric{
+
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+						{Key: "isItAnError"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan"},
+							{Value: "false"},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_Int64Value{
+									Int64Value: 1,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	md := internaldata.OCToMetrics(mdata)
+	require.NoError(t, exp.Start(ctx, nil))
+	require.Error(t, exp.ConsumeMetrics(ctx, md))
+	require.NoError(t, exp.Shutdown(ctx))
+	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"]
+	assert.True(t, ok)
+	pusher, ok := streamToPusherMap["test-task-id"]
+	assert.True(t, ok)
+	assert.NotNil(t, pusher)
+}
+
+func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	factory := NewFactory()
+	expCfg := factory.CreateDefaultConfig().(*Config)
+	expCfg.Region = "us-west-2"
+	expCfg.MaxRetries = defaultRetryCount
+	expCfg.LogGroupName = "test-logGroupName"
+	expCfg.LogStreamName = "{WrongKey}"
+	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	assert.Nil(t, err)
+	assert.NotNil(t, exp)
+
+	mdata := consumerdata.MetricsData{
+		Node: &commonpb.Node{
+			ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
+			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
+		},
+		Resource: &resourcepb.Resource{
+			Labels: map[string]string{
+				"aws.ecs.cluster.name": "test-cluster-name",
+				"aws.ecs.task.id":      "test-task-id",
+			},
+		},
+		Metrics: []*metricspb.Metric{
+
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+						{Key: "isItAnError"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan"},
+							{Value: "false"},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_Int64Value{
+									Int64Value: 1,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	md := internaldata.OCToMetrics(mdata)
+	require.NoError(t, exp.Start(ctx, nil))
+	require.Error(t, exp.ConsumeMetrics(ctx, md))
+	require.NoError(t, exp.Shutdown(ctx))
+	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"]
+	assert.True(t, ok)
+	pusher, ok := streamToPusherMap["{WrongKey}"]
 	assert.True(t, ok)
 	assert.NotNil(t, pusher)
 }

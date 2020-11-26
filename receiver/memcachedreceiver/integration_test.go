@@ -25,8 +25,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/container"
@@ -38,10 +38,10 @@ func TestIntegration(t *testing.T) {
 	c := cs.StartImage("memcached:1.6-alpine", container.WithPortReady(11211))
 
 	f := NewFactory()
-	cfg := f.CreateDefaultConfig().(*config)
+	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = c.AddrForPort(11211)
 
-	consumer := &exportertest.SinkMetricsExporter{}
+	consumer := new(consumertest.MetricsSink)
 	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
 
 	rcvr, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumer)

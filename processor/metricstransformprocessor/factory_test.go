@@ -67,7 +67,7 @@ func TestCreateProcessors(t *testing.T) {
 		{
 			configName:   "config_invalid_action.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("unsupported %q: %v, the supported actions are %q and %q", ActionFieldName, "invalid", Insert, Update),
+			errorMessage: fmt.Sprintf("%q must be in %q", ActionFieldName, Actions),
 		},
 		{
 			configName:   "config_invalid_include.yaml",
@@ -87,12 +87,32 @@ func TestCreateProcessors(t *testing.T) {
 		{
 			configName:   "config_invalid_label.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q while %q is %v in the %vth operation", LabelFieldName, ActionFieldName, UpdateLabel, 0),
+			errorMessage: fmt.Sprintf("operation %v: missing required field %q while %q is %v", 1, LabelFieldName, ActionFieldName, UpdateLabel),
 		},
 		{
 			configName:   "config_invalid_regexp.yaml",
 			succeed:      false,
 			errorMessage: fmt.Sprintf("%q, error parsing regexp: missing closing ]: `[\\da`", IncludeFieldName),
+		},
+		{
+			configName:   "config_invalid_aggregationtype.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("%q must be in %q", AggregationTypeFieldName, AggregationTypes),
+		},
+		{
+			configName:   "config_invalid_operation_action.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("operation %v: %q must be in %q", 1, ActionFieldName, OperationActions),
+		},
+		{
+			configName:   "config_invalid_operation_aggregationtype.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("operation %v: %q must be in %q", 1, AggregationTypeFieldName, AggregationTypes),
+		},
+		{
+			configName:   "config_invalid_submatchcase.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("%q must be in %q", SubmatchCaseFieldName, SubmatchCases),
 		},
 	}
 
@@ -148,7 +168,7 @@ func TestFactory_validateConfiguration(t *testing.T) {
 		},
 	}
 	err := validateConfiguration(&v1)
-	assert.Equal(t, "missing required field \"new_label\" while \"action\" is add_label in the 0th operation", err.Error())
+	assert.Equal(t, "operation 1: missing required field \"new_label\" while \"action\" is add_label", err.Error())
 
 	v2 := Config{
 		Transforms: []Transform{
@@ -166,7 +186,7 @@ func TestFactory_validateConfiguration(t *testing.T) {
 	}
 
 	err = validateConfiguration(&v2)
-	assert.Equal(t, "missing required field \"new_value\" while \"action\" is add_label in the 0th operation", err.Error())
+	assert.Equal(t, "operation 1: missing required field \"new_value\" while \"action\" is add_label", err.Error())
 }
 
 func TestCreateProcessorsFilledData(t *testing.T) {

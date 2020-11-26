@@ -34,6 +34,9 @@ const (
 	// NewNameFieldName is the mapstructure field name for NewName field
 	NewNameFieldName = "new_name"
 
+	// AggregationTypeFieldName is the mapstructure field name for AggregationType field
+	AggregationTypeFieldName = "aggregation_type"
+
 	// LabelFieldName is the mapstructure field name for Label field
 	LabelFieldName = "label"
 
@@ -42,17 +45,10 @@ const (
 
 	// NewValueFieldName is the mapstructure field name for NewValue field
 	NewValueFieldName = "new_value"
+
+	// SubmatchCaseFieldName is the mapstructure field name for SubmatchCase field
+	SubmatchCaseFieldName = "submatch_case"
 )
-
-const (
-	// StrictMatchType is the FilterType for filtering by exact string matches.
-	StrictMatchType = "strict"
-
-	// RegexpMatchType is the FilterType for filtering by regexp string matches.
-	RegexpMatchType = "regexp"
-)
-
-var MatchTypes = []string{StrictMatchType, RegexpMatchType}
 
 // Config defines configuration for Resource processor.
 type Config struct {
@@ -80,6 +76,13 @@ type Transform struct {
 	// REQUIRED only if Action is INSERT.
 	NewName string `mapstructure:"new_name"`
 
+	// AggregationType specifies how to aggregate.
+	// REQUIRED only if Action is COMBINE.
+	AggregationType AggregationType `mapstructure:"aggregation_type"`
+
+	// SubmatchCase specifies what case to use for label values created from regexp submatches.
+	SubmatchCase SubmatchCase `mapstructure:"submatch_case"`
+
 	// Operations contains a list of operations that will be performed on the selected metric.
 	Operations []Operation `mapstructure:"operations"`
 }
@@ -89,7 +92,7 @@ type FilterConfig struct {
 	Include string `mapstructure:"include"`
 
 	// MatchType determines how the Include string is matched: <strict|regexp>.
-	MatchType string `mapstructure:"match_type"`
+	MatchType MatchType `mapstructure:"match_type"`
 }
 
 // Operation defines the specific operation performed on the selected metrics.
@@ -132,14 +135,8 @@ type ValueAction struct {
 	NewValue string `mapstructure:"new_value"`
 }
 
-// ConfigAction is the enum to capture the two types of actions to perform on a metric.
+// ConfigAction is the enum to capture the type of action to perform on a metric.
 type ConfigAction string
-
-// OperationAction is the enum to capture the thress types of actions to perform for an operation.
-type OperationAction string
-
-// AggregationType os the enum to capture the three types of aggregation for the aggregation operation.
-type AggregationType string
 
 const (
 	// Insert adds a new metric to the batch with a new name.
@@ -148,9 +145,26 @@ const (
 	// Update updates an existing metric.
 	Update ConfigAction = "update"
 
-	// ToggleScalarDataType changes the data type from int64 to double, or vice-versa
-	ToggleScalarDataType OperationAction = "toggle_scalar_data_type"
+	// Combine combines multiple metrics into a single metric.
+	Combine ConfigAction = "combine"
+)
 
+var Actions = []ConfigAction{Insert, Update, Combine}
+
+func (ca ConfigAction) isValid() bool {
+	for _, configAction := range Actions {
+		if ca == configAction {
+			return true
+		}
+	}
+
+	return false
+}
+
+// OperationAction is the enum to capture the thress types of actions to perform for an operation.
+type OperationAction string
+
+const (
 	// AddLabel adds a new label to an existing metric.
 	AddLabel OperationAction = "add_label"
 
@@ -160,6 +174,9 @@ const (
 	// DeleteLabelValue deletes a label value by also removing all the points associated with this label value
 	DeleteLabelValue OperationAction = "delete_label_value"
 
+	// ToggleScalarDataType changes the data type from int64 to double, or vice-versa
+	ToggleScalarDataType OperationAction = "toggle_scalar_data_type"
+
 	// AggregateLabels aggregates away all labels other than the ones in Operation.LabelSet
 	// by the method indicated by Operation.AggregationType.
 	AggregateLabels OperationAction = "aggregate_labels"
@@ -167,16 +184,91 @@ const (
 	// AggregateLabelValues aggregates away the values in Operation.AggregatedValues
 	// by the method indicated by Operation.AggregationType.
 	AggregateLabelValues OperationAction = "aggregate_label_values"
+)
+
+var OperationActions = []OperationAction{AddLabel, UpdateLabel, DeleteLabelValue, ToggleScalarDataType, AggregateLabels, AggregateLabelValues}
+
+func (oa OperationAction) isValid() bool {
+	for _, operationAction := range OperationActions {
+		if oa == operationAction {
+			return true
+		}
+	}
+
+	return false
+}
+
+// AggregationType is the enum to capture the three types of aggregation for the aggregation operation.
+type AggregationType string
+
+const (
+	// Sum indicates taking the sum of the aggregated data.
+	Sum AggregationType = "sum"
 
 	// Mean indicates taking the mean of the aggregated data.
 	Mean AggregationType = "mean"
 
-	// Max indicates taking the max of the aggregated data.
-	Max AggregationType = "max"
-
-	// Sum indicates taking the sum of the aggregated data.
-	Sum AggregationType = "sum"
-
 	// Min indicates taking the minimum of the aggregated data.
 	Min AggregationType = "min"
+
+	// Max indicates taking the max of the aggregated data.
+	Max AggregationType = "max"
 )
+
+var AggregationTypes = []AggregationType{Sum, Mean, Min, Max}
+
+func (at AggregationType) isValid() bool {
+	for _, aggregationType := range AggregationTypes {
+		if at == aggregationType {
+			return true
+		}
+	}
+
+	return false
+}
+
+// MatchType is the enum to capture the two types of matching metric(s) that should have operations applied to them.
+type MatchType string
+
+const (
+	// StrictMatchType is the FilterType for filtering by exact string matches.
+	StrictMatchType MatchType = "strict"
+
+	// RegexpMatchType is the FilterType for filtering by regexp string matches.
+	RegexpMatchType MatchType = "regexp"
+)
+
+var MatchTypes = []MatchType{StrictMatchType, RegexpMatchType}
+
+func (mt MatchType) isValid() bool {
+	for _, matchType := range MatchTypes {
+		if mt == matchType {
+			return true
+		}
+	}
+
+	return false
+}
+
+// SubmatchCase is the enum to capture the two types of case changes to apply to submatches.
+type SubmatchCase string
+
+const (
+	// Lower is the SubmatchCase for lower casing the submatch.
+	Lower SubmatchCase = "lower"
+
+	// Upper is the SubmatchCase for upper casing the submatch.
+	Upper SubmatchCase = "upper"
+)
+
+var SubmatchCases = []SubmatchCase{Lower, Upper}
+
+func (sc SubmatchCase) isValid() bool {
+	for _, submatchCase := range SubmatchCases {
+		if sc == submatchCase {
+			return true
+		}
+	}
+
+	return false
+}

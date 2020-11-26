@@ -14,21 +14,23 @@ a batch of metrics**. It does not do any aggregation across batches, so it is
 not suitable for aggregating metrics from multiple sources (e.g. multiple nodes
 or clients).
 
-| Operation                                                         | Example (based on metric `system.cpu.usage`)                                                    |
-|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| Rename metrics                                                    | Rename to `system.cpu.usage_time`                                                               |
-| Add labels                                                        | Add new label `identifier` with value `1` to all points                                         |
-| Rename label keys                                                 | Rename label `state` to `cpu_state`                                                             |
-| Rename label values                                               | For label `state`, rename value `idle` to `-`                                                   |
-| Delete data points based on label values                          | Delete all points where label `state` has value `idle`                                          |
-| Toggle the data type of scalar metrics between `int` and `double` | Change from `int` data points to `double` data points                                           |
-| Aggregate across label sets by sum, mean, min, or max             | Retain only the label `state`, sum all points with the same value for this label                |
-| Aggregate across label values by sum, mean, min, or max           | For label `state`, sum points where the value is `user` or `system` into `used = user + system` |
+| Operation                     | Example (based on metric `system.cpu.usage`)                                                    |
+|-------------------------------|-------------------------------------------------------------------------------------------------|
+| Rename metrics                | Rename to `system.cpu.usage_time`                                                               |
+| Add labels                    | Add new label `identifier` with value `1` to all points                                         |
+| Rename label keys             | Rename label `state` to `cpu_state`                                                             |
+| Rename label values           | For label `state`, rename value `idle` to `-`                                                   |
+| Delete data points            | Delete all points where label `state` has value `idle`                                          |
+| Toggle data type              | Change from `int` data points to `double` data points                                           |
+| Aggregate across label sets   | Retain only the label `state`, average all points with the same value for this label            |
+| Aggregate across label values | For label `state`, sum points where the value is `user` or `system` into `used = user + system` |
 
 In addition to the above:
 
 - Operations can be applied to one or more metrics using a `strict` or `regexp`
   filter
+- Metrics can be updated in place or on an inserted copy
+- A set of matching metrics can be combined into a single metric
 - When renaming metrics, capturing groups from the `regexp` filter will be
   expanded
 - When adding or updating a label value, `{{version}}` will be replaced with
@@ -48,10 +50,14 @@ transforms:
   - include: <metric_name>
     # match_type specifies whether the include name should be used as a strict match or regexp match, default = strict
     match_type: {strict, regexp}
-    # action specifies if the operations are performed on the metric in place, or on an inserted clone
-    action: {update, insert}
+    # action specifies if the operations are performed on a metric in place, on an inserted clone, or if the matched metrics should be combined
+    action: {update, insert, combine}
     # new_name specifies the updated name of the metric; if action is insert, new_name is required
     new_name: <new_metric_name_inserted>
+    # aggregation_type defines how combined data points will be aggregated; if action is combine, aggregation_type is required
+    aggregation_type: {sum, mean, min, max}
+    # submatch_case specifies the case that should be used when adding label values based on regexp submatches when performing a combine action; leave blank to use the submatch value as is
+    submatch_case: {lower, upper}
     # operations contain a list of operations that will be performed on the selected metrics
     operations:
         # action defines the type of operation that will be performed, see examples below for more details
@@ -68,7 +74,7 @@ transforms:
         label_value: <label_value>
         # label_set contains a list of labels that will remain after aggregation; if action is aggregate_labels, label_set is required
         label_set: [labels...]
-        # aggregation_type defines how excluded labels will be aggregated; if action is aggregate_labels or aggregate_label_values, aggregation_type is required
+        # aggregation_type defines how data points will be aggregated; if action is aggregate_labels or aggregate_label_values, aggregation_type is required
         aggregation_type: {sum, mean, min, max}
         # value_actions contain a list of operations that will be performed on the selected label
         value_actions:
@@ -209,4 +215,20 @@ operations:
     aggregated_values: [ slab_reclaimable, slab_unreclaimable ]
     new_value: slab 
     aggregation_type: sum
+```
+
+### Combine metrics
+```yaml
+# convert a set of metrics for each http_method into a single metric with an http_method label, i.e.
+#
+# Web Service (*)/Total Delete Requests     iis.requests{http_method=delete}
+# Web Service (*)/Total Get Requests     >  iis.requests{http_method=get}
+# Web Service (*)/Total Post Requests       iis.requests{http_method=post}
+metric_names: ^Web Service \(\*\)/Total (?P<http_method>.*) Requests$
+match_type: regexp
+action: combine
+new_name: iis.requests
+submatch_case: lower
+operations:
+  ...
 ```

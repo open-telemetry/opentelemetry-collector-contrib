@@ -22,124 +22,135 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/cumulative"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
-	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
-	unitAttrKey         = "unit"
-	descriptionAttrKey  = "description"
-	collectorNameKey    = "collector.name"
-	collectorVersionKey = "collector.version"
-	serviceNameKey      = "service.name"
+	unitAttrKey               = "unit"
+	descriptionAttrKey        = "description"
+	collectorNameKey          = "collector.name"
+	collectorVersionKey       = "collector.version"
+	instrumentationNameKey    = "instrumentation.name"
+	instrumentationVersionKey = "instrumentation.version"
+	statusCodeKey             = "otel.status_code"
+	statusDescriptionKey      = "otel.status_description"
+	spanKindKey               = "span.kind"
+	serviceNameKey            = "service.name"
 )
 
-type transformer struct {
+// TODO (MrAlias): unify this with the traceTransformer when the metric data
+// export moves to using pdata and away from the OC proto.
+type metricTransformer struct {
 	DeltaCalculator *cumulative.DeltaCalculator
 	ServiceName     string
 	Resource        *resourcepb.Resource
 }
 
+type traceTransformer struct {
+	ResourceAttributes map[string]interface{}
+}
+
+func newTraceTransformer(resource pdata.Resource, lib pdata.InstrumentationLibrary) *traceTransformer {
+	t := &traceTransformer{
+		ResourceAttributes: tracetranslator.AttributeMapToMap(
+			resource.Attributes(),
+		),
+	}
+
+	if !lib.IsNil() {
+		if n := lib.Name(); n != "" {
+			t.ResourceAttributes[instrumentationNameKey] = n
+			if v := lib.Version(); v != "" {
+				t.ResourceAttributes[instrumentationVersionKey] = v
+			}
+		}
+	}
+	return t
+}
+
 var (
-	emptySpan   telemetry.Span
-	emptySpanID trace.SpanID
+	emptySpan         telemetry.Span
+	errEmptySpan      = errors.New("empty span")
+	errInvalidSpanID  = errors.New("SpanID is invalid")
+	errInvalidTraceID = errors.New("TraceID is invalid")
 )
 
-func (t *transformer) Span(span *tracepb.Span) (telemetry.Span, error) {
-	if span == nil {
-		return emptySpan, errors.New("empty span")
+func (t *traceTransformer) Span(span pdata.Span) (telemetry.Span, error) {
+	if span.IsNil() {
+		return emptySpan, errEmptySpan
 	}
 
-	startTime := t.Timestamp(span.StartTime)
-
-	var (
-		traceID          trace.TraceID
-		spanID, parentID trace.SpanID
-	)
-
-	copy(traceID[:], span.GetTraceId())
-	copy(spanID[:], span.GetSpanId())
-	copy(parentID[:], span.GetParentSpanId())
+	startTime := pdata.UnixNanoToTime(span.StartTime())
 	sp := telemetry.Span{
-		ID:          spanID.String(),
-		TraceID:     traceID.String(),
-		Name:        t.TruncatableString(span.GetName()),
-		Timestamp:   startTime,
-		Duration:    t.Timestamp(span.EndTime).Sub(startTime),
-		ServiceName: t.ServiceName,
-		Attributes:  t.SpanAttributes(span),
+		// HexString validates the IDs, it will be an empty string if invalid.
+		ID:         span.SpanID().HexString(),
+		TraceID:    span.TraceID().HexString(),
+		ParentID:   span.ParentSpanID().HexString(),
+		Name:       span.Name(),
+		Timestamp:  startTime,
+		Duration:   pdata.UnixNanoToTime(span.EndTime()).Sub(startTime),
+		Attributes: t.SpanAttributes(span),
+		Events:     t.SpanEvents(span),
 	}
 
-	if parentID != emptySpanID {
-		sp.ParentID = parentID.String()
+	if sp.ID == "" {
+		return sp, errInvalidSpanID
+	}
+	if sp.TraceID == "" {
+		return sp, errInvalidTraceID
 	}
 
 	return sp, nil
 }
 
-func (t *transformer) TruncatableString(ts *tracepb.TruncatableString) string {
-	if ts == nil {
-		return ""
+func (t *traceTransformer) SpanAttributes(span pdata.Span) map[string]interface{} {
+
+	length := 2 + len(t.ResourceAttributes) + span.Attributes().Len()
+
+	var hasStatusCode, hasStatusDesc bool
+	if s := span.Status(); !s.IsNil() {
+		if s.Code() != pdata.StatusCodeUnset {
+			hasStatusCode = true
+			length++
+			if s.Message() != "" {
+				hasStatusDesc = true
+				length++
+			}
+		}
 	}
-	return ts.Value
-}
 
-func (t *transformer) SpanAttributes(span *tracepb.Span) map[string]interface{} {
-
-	length := 2
-
-	isErr := span.Status != nil && span.Status.Code != 0
-	if isErr {
+	validSpanKind := span.Kind() != pdata.SpanKindUNSPECIFIED
+	if validSpanKind {
 		length++
-	}
-
-	if t.Resource != nil {
-		length += len(t.Resource.Labels)
-	}
-
-	if span.Attributes != nil {
-		length += len(span.Attributes.AttributeMap)
 	}
 
 	attrs := make(map[string]interface{}, length)
 
-	// Any existing error attribute will override this.
-	if isErr {
-		attrs["error"] = true
+	if hasStatusCode {
+		code := strings.TrimPrefix(span.Status().Code().String(), "STATUS_CODE_")
+		attrs[statusCodeKey] = code
+	}
+	if hasStatusDesc {
+		attrs[statusDescriptionKey] = span.Status().Message()
 	}
 
 	// Add span kind if it is set
-	if span.Kind != tracepb.Span_SPAN_KIND_UNSPECIFIED {
-		attrs["span.kind"] = strings.ToLower(span.Kind.String())
+	if validSpanKind {
+		kind := strings.TrimPrefix(span.Kind().String(), "SPAN_KIND_")
+		attrs[spanKindKey] = strings.ToLower(kind)
 	}
 
-	if t.Resource != nil {
-		for k, v := range t.Resource.Labels {
-			attrs[k] = v
-		}
+	for k, v := range t.ResourceAttributes {
+		attrs[k] = v
 	}
 
-	if span.Attributes != nil {
-		for key, attr := range span.Attributes.AttributeMap {
-			if attr == nil || attr.Value == nil {
-				continue
-			}
-			// Default to skipping if unknown type.
-			switch v := attr.Value.(type) {
-			case *tracepb.AttributeValue_BoolValue:
-				attrs[key] = v.BoolValue
-			case *tracepb.AttributeValue_IntValue:
-				attrs[key] = v.IntValue
-			case *tracepb.AttributeValue_DoubleValue:
-				attrs[key] = v.DoubleValue
-			case *tracepb.AttributeValue_StringValue:
-				attrs[key] = t.TruncatableString(v.StringValue)
-			}
-		}
+	for k, v := range tracetranslator.AttributeMapToMap(span.Attributes()) {
+		attrs[k] = v
 	}
 
 	// Default attributes to tell New Relic about this collector.
@@ -150,14 +161,34 @@ func (t *transformer) SpanAttributes(span *tracepb.Span) map[string]interface{} 
 	return attrs
 }
 
-func (t *transformer) Timestamp(ts *timestamppb.Timestamp) time.Time {
+// SpanEvents transforms the recorded events of span into New Relic tracing events.
+func (t *traceTransformer) SpanEvents(span pdata.Span) []telemetry.Event {
+	length := span.Events().Len()
+	if length == 0 {
+		return nil
+	}
+
+	events := make([]telemetry.Event, length)
+
+	for i := 0; i < length; i++ {
+		event := span.Events().At(i)
+		events[i] = telemetry.Event{
+			EventType:  event.Name(),
+			Timestamp:  pdata.UnixNanoToTime(event.Timestamp()),
+			Attributes: tracetranslator.AttributeMapToMap(event.Attributes()),
+		}
+	}
+	return events
+}
+
+func (t *metricTransformer) Timestamp(ts *timestamppb.Timestamp) time.Time {
 	if ts == nil {
 		return time.Time{}
 	}
 	return time.Unix(ts.Seconds, int64(ts.Nanos))
 }
 
-func (t *transformer) Metric(metric *metricspb.Metric) ([]telemetry.Metric, error) {
+func (t *metricTransformer) Metric(metric *metricspb.Metric) ([]telemetry.Metric, error) {
 	if metric == nil || metric.MetricDescriptor == nil {
 		return nil, errors.New("empty metric")
 	}
@@ -201,7 +232,7 @@ func (t *transformer) Metric(metric *metricspb.Metric) ([]telemetry.Metric, erro
 	return metrics, componenterror.CombineErrors(errs)
 }
 
-func (t *transformer) MetricAttributes(metric *metricspb.Metric) map[string]interface{} {
+func (t *metricTransformer) MetricAttributes(metric *metricspb.Metric) map[string]interface{} {
 	length := 3
 
 	if t.Resource != nil {
@@ -241,9 +272,11 @@ func (t *transformer) MetricAttributes(metric *metricspb.Metric) map[string]inte
 	return attrs
 }
 
-func (t *transformer) MergeAttributes(base map[string]interface{}, lk []*metricspb.LabelKey, lv []*metricspb.LabelValue) (map[string]interface{}, error) {
+var errIncompatibleLabels = errors.New("label keys and values do not match")
+
+func (t *metricTransformer) MergeAttributes(base map[string]interface{}, lk []*metricspb.LabelKey, lv []*metricspb.LabelValue) (map[string]interface{}, error) {
 	if len(lk) != len(lv) {
-		return nil, fmt.Errorf("number of label keys (%d) different than label values (%d)", len(lk), len(lv))
+		return nil, fmt.Errorf("%w: number of label keys (%d) different than label values (%d)", errIncompatibleLabels, len(lk), len(lv))
 	}
 
 	attrs := make(map[string]interface{}, len(base)+len(lk))
@@ -260,7 +293,7 @@ func (t *transformer) MergeAttributes(base map[string]interface{}, lk []*metrics
 	return attrs, nil
 }
 
-func (t *transformer) Gauge(name string, attrs map[string]interface{}, point *metricspb.Point) telemetry.Metric {
+func (t *metricTransformer) Gauge(name string, attrs map[string]interface{}, point *metricspb.Point) telemetry.Metric {
 	now := time.Now()
 	if point.Timestamp != nil {
 		now = t.Timestamp(point.Timestamp)
@@ -282,7 +315,7 @@ func (t *transformer) Gauge(name string, attrs map[string]interface{}, point *me
 	return m
 }
 
-func (t *transformer) DeltaSummary(name string, attrs map[string]interface{}, start time.Time, point *metricspb.Point) telemetry.Metric {
+func (t *metricTransformer) DeltaSummary(name string, attrs map[string]interface{}, start time.Time, point *metricspb.Point) telemetry.Metric {
 	now := time.Now()
 	if point.Timestamp != nil {
 		now = t.Timestamp(point.Timestamp)
@@ -307,7 +340,7 @@ func (t *transformer) DeltaSummary(name string, attrs map[string]interface{}, st
 	return m
 }
 
-func (t *transformer) CumulativeCount(name string, attrs map[string]interface{}, start time.Time, point *metricspb.Point) telemetry.Metric {
+func (t *metricTransformer) CumulativeCount(name string, attrs map[string]interface{}, start time.Time, point *metricspb.Point) telemetry.Metric {
 	var value float64
 	switch t := point.Value.(type) {
 	case *metricspb.Point_Int64Value:
@@ -337,7 +370,7 @@ func (t *transformer) CumulativeCount(name string, attrs map[string]interface{},
 	return count
 }
 
-func (t *transformer) CumulativeSummary(name string, attrs map[string]interface{}, start time.Time, point *metricspb.Point) telemetry.Metric {
+func (t *metricTransformer) CumulativeSummary(name string, attrs map[string]interface{}, start time.Time, point *metricspb.Point) telemetry.Metric {
 	var sum, count float64
 	switch t := point.Value.(type) {
 	case *metricspb.Point_DistributionValue:
