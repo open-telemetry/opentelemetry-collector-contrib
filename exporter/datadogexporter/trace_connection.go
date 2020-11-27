@@ -39,6 +39,7 @@ type traceEdgeConnection struct {
 	traceURL           string
 	statsURL           string
 	apiKey             string
+	client             *http.Client
 	startInfo          component.ApplicationStartInfo
 	InsecureSkipVerify bool
 }
@@ -56,6 +57,7 @@ func CreateTraceEdgeConnection(rootURL, apiKey string, startInfo component.Appli
 		statsURL:  rootURL + "/api/v0.2/stats",
 		startInfo: startInfo,
 		apiKey:    apiKey,
+		client:    utils.NewHTTPClient(traceEdgeTimeout),
 	}
 }
 
@@ -155,8 +157,7 @@ func (con *traceEdgeConnection) sendPayloadToTraceEdge(ctx context.Context, apiK
 	utils.SetDDHeaders(req.Header, con.startInfo, apiKey)
 	utils.SetExtraHeaders(req.Header, payload.Headers)
 
-	client := utils.NewHTTPClient(traceEdgeTimeout)
-	resp, err := client.Do(req)
+	resp, err := con.client.Do(req)
 
 	if err != nil {
 		// in this case, the payload and client are malformed in some way, so we should not retry
