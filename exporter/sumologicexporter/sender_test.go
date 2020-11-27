@@ -15,6 +15,7 @@
 package sumologicexporter
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -58,6 +59,7 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 	return &senderTest{
 		srv: testServer,
 		s: newSender(
+			context.Background(),
 			cfg,
 			&http.Client{
 				Timeout: cfg.HTTPClientSettings.Timeout,

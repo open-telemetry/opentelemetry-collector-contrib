@@ -16,6 +16,7 @@ package sumologicexporter
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -40,6 +41,7 @@ type sender struct {
 	config *Config
 	client *http.Client
 	filter filter
+	ctx    context.Context
 }
 
 const (
@@ -54,18 +56,19 @@ func newAppendResponse() appendResponse {
 	}
 }
 
-func newSender(cfg *Config, cl *http.Client, f filter) *sender {
+func newSender(ctx context.Context, cfg *Config, cl *http.Client, f filter) *sender {
 	return &sender{
 		config: cfg,
 		client: cl,
 		filter: f,
+		ctx:    ctx,
 	}
 }
 
 // send sends data to sumologic
 func (s *sender) send(pipeline PipelineType, body io.Reader, flds fields) error {
 	// Add headers
-	req, err := http.NewRequest(http.MethodPost, s.config.HTTPClientSettings.Endpoint, body)
+	req, err := http.NewRequestWithContext(s.ctx, http.MethodPost, s.config.HTTPClientSettings.Endpoint, body)
 	if err != nil {
 		return err
 	}
