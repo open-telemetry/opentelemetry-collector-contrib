@@ -294,7 +294,6 @@ func TestSpanKinds(t *testing.T) {
 	rs.InstrumentationLibrarySpans().Resize(1)
 	instrLibrarySpans := rs.InstrumentationLibrarySpans().At(0)
 	lib := instrLibrarySpans.InstrumentationLibrary()
-	lib.InitEmpty()
 	lib.SetName("my.custom.library")
 	lib.SetVersion("1.0.0")
 

@@ -22,6 +22,7 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/obfuscate"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/stats"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -112,7 +113,6 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	resource.CopyTo(rs.Resource())
 
 	il := pdata.NewInstrumentationLibrary()
-	il.InitEmpty()
 	il.SetName("test_il_name")
 	il.SetVersion("test_il_version")
 
@@ -130,8 +130,9 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 func TestConvertToDatadogTd(t *testing.T) {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
+	calculator := stats.NewSublayerCalculator()
 
-	outputTraces, err := ConvertToDatadogTd(traces, &config.Config{})
+	outputTraces, err := ConvertToDatadogTd(traces, calculator, &config.Config{})
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(outputTraces))
@@ -139,21 +140,22 @@ func TestConvertToDatadogTd(t *testing.T) {
 
 func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 	traces := pdata.NewTraces()
+	calculator := stats.NewSublayerCalculator()
 
-	outputTraces, err := ConvertToDatadogTd(traces, &config.Config{})
+	outputTraces, err := ConvertToDatadogTd(traces, calculator, &config.Config{})
 
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(outputTraces))
 }
 
 func TestObfuscation(t *testing.T) {
+	calculator := stats.NewSublayerCalculator()
 	resource := pdata.NewResource()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"service.name": pdata.NewAttributeValueString("sure"),
 	})
 
 	instrumentationLibrary := pdata.NewInstrumentationLibrary()
-	instrumentationLibrary.InitEmpty()
 	instrumentationLibrary.SetName("flash")
 	instrumentationLibrary.SetVersion("v1")
 
@@ -174,7 +176,7 @@ func TestObfuscation(t *testing.T) {
 	ilss.Spans().Resize(1)
 	span.CopyTo(ilss.Spans().At(0))
 
-	outputTraces, err := ConvertToDatadogTd(traces, &config.Config{})
+	outputTraces, err := ConvertToDatadogTd(traces, calculator, &config.Config{})
 
 	assert.NoError(t, err)
 
@@ -189,6 +191,7 @@ func TestObfuscation(t *testing.T) {
 
 func TestBasicTracesTranslation(t *testing.T) {
 	hostname := "testhostname"
+	calculator := stats.NewSublayerCalculator()
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -200,7 +203,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeUnset, false)
 
 	// translate mocks to datadog traces
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &config.Config{})
+	datadogPayload, err := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{})
 
 	if err != nil {
 		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
@@ -255,6 +258,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 
 func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	hostname := "testhostname"
+	calculator := stats.NewSublayerCalculator()
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -272,7 +276,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 		},
 	}
 
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &cfg)
+	datadogPayload, err := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
 
 	if err != nil {
 		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
@@ -305,6 +309,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 
 func TestTracesTranslationOkStatus(t *testing.T) {
 	hostname := "testhostname"
+	calculator := stats.NewSublayerCalculator()
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -322,7 +327,7 @@ func TestTracesTranslationOkStatus(t *testing.T) {
 		},
 	}
 
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &cfg)
+	datadogPayload, err := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
 
 	if err != nil {
 		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
@@ -356,6 +361,7 @@ func TestTracesTranslationOkStatus(t *testing.T) {
 // ensure that the datadog span uses the configured unified service tags
 func TestTracesTranslationConfig(t *testing.T) {
 	hostname := "testhostname"
+	calculator := stats.NewSublayerCalculator()
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -374,7 +380,7 @@ func TestTracesTranslationConfig(t *testing.T) {
 	}
 
 	// translate mocks to datadog traces
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &cfg)
+	datadogPayload, err := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
 
 	if err != nil {
 		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
@@ -405,6 +411,7 @@ func TestTracesTranslationConfig(t *testing.T) {
 // ensure that the translation returns early if no resource instrumentation library spans
 func TestTracesTranslationNoIls(t *testing.T) {
 	hostname := "testhostname"
+	calculator := stats.NewSublayerCalculator()
 
 	rs := pdata.NewResourceSpans()
 	rs.InitEmpty()
@@ -417,7 +424,7 @@ func TestTracesTranslationNoIls(t *testing.T) {
 	}
 
 	// translate mocks to datadog traces
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &cfg)
+	datadogPayload, err := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
 
 	if err != nil {
 		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
@@ -510,7 +517,6 @@ func TestSpanTypeTranslation(t *testing.T) {
 // ensure that the IL Tags extraction handles nil case
 func TestILTagsExctraction(t *testing.T) {
 	il := pdata.NewInstrumentationLibrary()
-	il.InitEmpty()
 
 	tags := map[string]string{}
 

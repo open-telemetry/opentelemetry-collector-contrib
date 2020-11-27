@@ -117,7 +117,8 @@ github.com/HdrHistogram/hdrhistogram-go v0.9.0/go.mod h1:nxrse8/Tzg2tg3DZcZjm6qE
 github.com/Joker/hpp v1.0.0/go.mod h1:8x5n+M1Hp5hC0g8okX3sR3vFQwynaX/UgSOM9MeBKzY=
 github.com/Joker/jade v1.0.1-0.20190614124447-d475f43051e7/go.mod h1:6E6s8o2AE4KhCrqr6GRJjdC/gNfTdxkIXvuGZZda2VM=
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
-github.com/Masterminds/semver v1.5.0 h1:H65muMkzWKEuNDnfl9d70GUjFniHKHRbFPGBuZ3QEww=
+github.com/
+minds/semver v1.5.0 h1:H65muMkzWKEuNDnfl9d70GUjFniHKHRbFPGBuZ3QEww=
 github.com/Masterminds/semver v1.5.0/go.mod h1:MB6lktGJrhw8PrUyiEoblNEGEQ+RzHPF078ddwwvV3Y=
 github.com/Microsoft/go-winio v0.4.11/go.mod h1:VhR8bwka0BXejwEJY73c50VrPtXAaKcyvVC4A4RozmA=
 github.com/Microsoft/go-winio v0.4.14 h1:+hMXMk01us9KgxGb7ftKQt2Xpf5hH/yky+TDA+qxleU=
@@ -1505,9 +1506,8 @@ go.opencensus.io v0.22.3/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
 go.opencensus.io v0.22.4/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
 go.opencensus.io v0.22.5 h1:dntmOdLpSpHlVqbW5Eay97DelsZHe+55D+xC6i0dDS0=
 go.opencensus.io v0.22.5/go.mod h1:5pWMHQbX5EPX2/62yrJeAkowc+lfs/XD7Uxpq3pI6kk=
-go.opentelemetry.io/collector v0.14.0/go.mod h1:itblxiZ5r454TNNQVvcAp7vj7LbwCdeNRtodo2t+lGM=
-go.opentelemetry.io/collector v0.15.1-0.20201125151900-b19b5ac392ec h1:tCe+0mw7Kz7FoWZDFid+Vdffpo79oJTf9/AVGkUxUaw=
-go.opentelemetry.io/collector v0.15.1-0.20201125151900-b19b5ac392ec/go.mod h1:OU+7IlgIKEQAcZVx/5Wmk3O1HNyDuGpRt+qaU6qOHR8=
+go.opentelemetry.io/collector v0.15.1-0.20201125171618-60498105d42f h1:OOvlsyf5LHQvhNBcs3rp/lV2LP249ykDmYeGGSAdMbE=
+go.opentelemetry.io/collector v0.15.1-0.20201125171618-60498105d42f/go.mod h1:OU+7IlgIKEQAcZVx/5Wmk3O1HNyDuGpRt+qaU6qOHR8=
 go.opentelemetry.io/collector/cmd/issuegenerator v0.0.0-20201125151900-b19b5ac392ec h1:S+rC+IAXqBa2D5YdXhIdYyoIoV3va6QolDUqhgUkQgQ=
 go.opentelemetry.io/collector/cmd/issuegenerator v0.0.0-20201125151900-b19b5ac392ec/go.mod h1:XHD/HQbAwVt/9xOUVnT8ZffHO9Rj5a8Z2WVwwTNRlQ8=
 go.opentelemetry.io/collector/cmd/mdatagen v0.0.0-20201125151900-b19b5ac392ec h1:rkxXHBJqsJOBtJiqrwKKR8g3ki7qGSClEiZOlLcrKeg=

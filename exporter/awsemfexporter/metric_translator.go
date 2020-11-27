@@ -155,7 +155,7 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, config *Config) ([]*CWMetr
 		if ilm.IsNil() {
 			continue
 		}
-		if ilm.InstrumentationLibrary().IsNil() {
+		if ilm.InstrumentationLibrary().Name() == "" {
 			instrumentationLibName = noInstrumentationLibraryName
 		} else {
 			instrumentationLibName = ilm.InstrumentationLibrary().Name()

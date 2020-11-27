@@ -505,7 +505,6 @@ func TestInstrumentationLibrary(t *testing.T) {
 	span.SetName("root_span")
 
 	library := pdata.NewInstrumentationLibrary()
-	library.InitEmpty()
 	library.SetName("library-name")
 	library.SetVersion("1.2.3")
 
