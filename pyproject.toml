@@ -3,7 +3,8 @@ line-length = 79
 exclude = '''
 (
   /(
-    reference # original files from DataDog
+    reference| # original files from DataDog
+    exporter/opentelemetry-exporter-prometheus-remote-write/src/opentelemetry/exporter/prometheus_remote_write/gen
   )/
 )
 '''
