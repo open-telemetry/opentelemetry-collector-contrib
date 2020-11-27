@@ -37,6 +37,7 @@ type traceExporter struct {
 	cfg            *config.Config
 	edgeConnection TraceEdgeConnection
 	obfuscator     *obfuscate.Obfuscator
+	calculator     *stats.SublayerCalculator
 	client         *datadog.Client
 }
 
@@ -72,6 +73,7 @@ func newTraceExporter(params component.ExporterCreateParams, cfg *config.Config)
 		cfg:            cfg,
 		edgeConnection: CreateTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key, params.ApplicationStartInfo),
 		obfuscator:     obfuscator,
+		calculator:     stats.NewSublayerCalculator(),
 		client:         client,
 	}
 
@@ -94,11 +96,10 @@ func (exp *traceExporter) pushTraceData(
 	td pdata.Traces,
 ) (int, error) {
 
-	calculator := stats.NewSublayerCalculator()
 	// convert traces to datadog traces and group trace payloads by env
 	// we largely apply the same logic as the serverless implementation, simplified a bit
 	// https://github.com/DataDog/datadog-serverless-functions/blob/f5c3aedfec5ba223b11b76a4239fcbf35ec7d045/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L61-L83
-	ddTraces, err := ConvertToDatadogTd(td, calculator, exp.cfg)
+	ddTraces, err := ConvertToDatadogTd(td, exp.calculator, exp.cfg)
 
 	if err != nil {
 		exp.logger.Info("failed to convert traces", zap.Error(err))
@@ -138,7 +139,7 @@ func (exp *traceExporter) pushWithRetry(ctx context.Context, ddTracePayload *pb.
 	}
 
 	// this is for generating metrics like hits, errors, and latency, it uses a separate endpoint than Traces
-	stats := ComputeAPMStats(ddTracePayload, pushTime)
+	stats := ComputeAPMStats(ddTracePayload, exp.calculator, pushTime)
 	errStats := exp.edgeConnection.SendStats(context.Background(), stats, maxRetries)
 
 	if errStats != nil {
