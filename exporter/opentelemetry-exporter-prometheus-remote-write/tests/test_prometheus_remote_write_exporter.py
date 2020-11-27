@@ -14,35 +14,102 @@
 
 import unittest
 
+from opentelemetry.exporter.prometheus_remote_write import (
+    PrometheusRemoteWriteMetricsExporter,
+)
+
 
 class TestValidation(unittest.TestCase):
     # Test cases to ensure exporter parameter validation works as intended
     def test_valid_standard_param(self):
-        pass
+        exporter = PrometheusRemoteWriteMetricsExporter(
+            endpoint="/prom/test_endpoint",
+        )
+        self.assertEqual(exporter.endpoint, "/prom/test_endpoint")
 
     def test_valid_basic_auth_param(self):
-        pass
-
-    def test_valid_bearer_token_param(self):
-        pass
+        exporter = PrometheusRemoteWriteMetricsExporter(
+            endpoint="/prom/test_endpoint",
+            basic_auth={
+                "username": "test_username",
+                "password": "test_password",
+            },
+        )
+        self.assertEqual(exporter.basic_auth["username"], "test_username")
+        self.assertEqual(exporter.basic_auth["password"], "test_password")
 
     def test_invalid_no_endpoint_param(self):
-        pass
+        with self.assertRaises(ValueError):
+            PrometheusRemoteWriteMetricsExporter("")
 
     def test_invalid_no_username_param(self):
-        pass
+        with self.assertRaises(ValueError):
+            PrometheusRemoteWriteMetricsExporter(
+                endpoint="/prom/test_endpoint",
+                basic_auth={"password": "test_password"},
+            )
 
     def test_invalid_no_password_param(self):
-        pass
+        with self.assertRaises(ValueError):
+            PrometheusRemoteWriteMetricsExporter(
+                endpoint="/prom/test_endpoint",
+                basic_auth={"username": "test_username"},
+            )
 
     def test_invalid_conflicting_passwords_param(self):
-        pass
+        with self.assertRaises(ValueError):
+            PrometheusRemoteWriteMetricsExporter(
+                endpoint="/prom/test_endpoint",
+                basic_auth={
+                    "username": "test_username",
+                    "password": "test_password",
+                    "password_file": "test_file",
+                },
+            )
 
-    def test_invalid_conflicting_bearer_tokens_param(self):
-        pass
+    def test_invalid_timeout_param(self):
+        with self.assertRaises(ValueError):
+            PrometheusRemoteWriteMetricsExporter(
+                endpoint="/prom/test_endpoint", timeout=0
+            )
 
-    def test_invalid_conflicting_auth_param(self):
-        pass
+    def test_valid_tls_config_param(self):
+        tls_config = {
+            "ca_file": "test_ca_file",
+            "cert_file": "test_cert_file",
+            "key_file": "test_key_file",
+            "insecure_skip_verify": True,
+        }
+        exporter = PrometheusRemoteWriteMetricsExporter(
+            endpoint="/prom/test_endpoint", tls_config=tls_config
+        )
+        self.assertEqual(exporter.tls_config["ca_file"], tls_config["ca_file"])
+        self.assertEqual(
+            exporter.tls_config["cert_file"], tls_config["cert_file"]
+        )
+        self.assertEqual(
+            exporter.tls_config["key_file"], tls_config["key_file"]
+        )
+        self.assertEqual(
+            exporter.tls_config["insecure_skip_verify"],
+            tls_config["insecure_skip_verify"],
+        )
+
+    # if cert_file is provided, then key_file must also be provided
+    def test_invalid_tls_config_cert_only_param(self):
+        tls_config = {"cert_file": "value"}
+        with self.assertRaises(ValueError):
+            PrometheusRemoteWriteMetricsExporter(
+                endpoint="/prom/test_endpoint", tls_config=tls_config
+            )
+
+    # if cert_file is provided, then key_file must also be provided
+    def test_invalid_tls_config_key_only_param(self):
+        tls_config = {"cert_file": "value"}
+        with self.assertRaises(ValueError):
+            PrometheusRemoteWriteMetricsExporter(
+                endpoint="/prom/test_endpoint", tls_config=tls_config
+            )
 
 
 class TestConversion(unittest.TestCase):

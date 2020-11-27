@@ -33,20 +33,106 @@ class PrometheusRemoteWriteMetricsExporter(MetricsExporter):
     Args:
         endpoint: url where data will be sent (Required)
         basic_auth: username and password for authentication (Optional)
-        bearer_token: token used for authentication (Optional)
-        bearer_token_file: filepath to file containing authentication token (Optional)
-        headers: additional headers for remote write request (Optional
+        headers: additional headers for remote write request (Optional)
+        timeout: timeout for requests to the remote write endpoint in seconds (Optional)
+        proxies: dict mapping request proxy protocols to proxy urls (Optional)
+        tls_config: configuration for remote write TLS settings (Optional)
     """
 
     def __init__(
         self,
         endpoint: str,
         basic_auth: Dict = None,
-        bearer_token: str = None,
-        bearer_token_file: str = None,
         headers: Dict = None,
+        timeout: int = 30,
+        tls_config: Dict = None,
+        proxies: Dict = None,
     ):
-        raise NotImplementedError()
+        self.endpoint = endpoint
+        self.basic_auth = basic_auth
+        self.headers = headers
+        self.timeout = timeout
+        self.tls_config = tls_config
+        self.proxies = proxies
+
+    @property
+    def endpoint(self):
+        return self._endpoint
+
+    @endpoint.setter
+    def endpoint(self, endpoint: str):
+        if endpoint == "":
+            raise ValueError("endpoint required")
+        self._endpoint = endpoint
+
+    @property
+    def basic_auth(self):
+        return self._basic_auth
+
+    @basic_auth.setter
+    def basic_auth(self, basic_auth: Dict):
+        if basic_auth:
+            if "username" not in basic_auth:
+                raise ValueError("username required in basic_auth")
+            if (
+                "password" not in basic_auth
+                and "password_file" not in basic_auth
+            ):
+                raise ValueError("password required in basic_auth")
+            if "password" in basic_auth and "password_file" in basic_auth:
+                raise ValueError(
+                    "basic_auth cannot contain password and password_file"
+                )
+        self._basic_auth = basic_auth
+
+    @property
+    def timeout(self):
+        return self._timeout
+
+    @timeout.setter
+    def timeout(self, timeout: int):
+        if timeout <= 0:
+            raise ValueError("timeout must be greater than 0")
+        self._timeout = timeout
+
+    @property
+    def tls_config(self):
+        return self._tls_config
+
+    @tls_config.setter
+    def tls_config(self, tls_config: Dict):
+        if tls_config:
+            new_config = {}
+            if "ca_file" in tls_config:
+                new_config["ca_file"] = tls_config["ca_file"]
+            if "cert_file" in tls_config and "key_file" in tls_config:
+                new_config["cert_file"] = tls_config["cert_file"]
+                new_config["key_file"] = tls_config["key_file"]
+            elif "cert_file" in tls_config or "key_file" in tls_config:
+                raise ValueError(
+                    "tls_config requires both cert_file and key_file"
+                )
+            if "insecure_skip_verify" in tls_config:
+                new_config["insecure_skip_verify"] = tls_config[
+                    "insecure_skip_verify"
+                ]
+        self._tls_config = tls_config
+
+    @property
+    def proxies(self):
+        return self._proxies
+
+    @proxies.setter
+    def proxies(self, proxies: Dict):
+        self._proxies = proxies
+
+    @property
+    def headers(self):
+        return self._headers
+
+    @headers.setter
+    def headers(self, headers: Dict):
+        self._headers = headers
 
     def export(
         self, export_records: Sequence[ExportRecord]
