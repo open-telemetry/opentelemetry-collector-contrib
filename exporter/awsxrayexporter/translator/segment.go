@@ -80,10 +80,11 @@ func MakeSegmentDocumentString(span pdata.Span, resource pdata.Resource, indexed
 
 // MakeSegment converts an OpenTelemetry Span to an X-Ray Segment
 func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string, indexAllAttrs bool) (*awsxray.Segment, error) {
-	var segmentType string
+	var segmentType string = "segment"
 
 	storeResource := true
-	if span.Kind() != pdata.SpanKindSERVER {
+	if span.Kind() != pdata.SpanKindSERVER &&
+		span.ParentSpanID().IsValid() {
 		segmentType = "subsegment"
 		// We only store the resource information for segments, the local root.
 		storeResource = false
