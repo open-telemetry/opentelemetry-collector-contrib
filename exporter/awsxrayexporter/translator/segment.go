@@ -80,7 +80,7 @@ func MakeSegmentDocumentString(span pdata.Span, resource pdata.Resource, indexed
 
 // MakeSegment converts an OpenTelemetry Span to an X-Ray Segment
 func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string, indexAllAttrs bool) (*awsxray.Segment, error) {
-	var segmentType string = "segment"
+	var segmentType string
 
 	storeResource := true
 	if span.Kind() != pdata.SpanKindSERVER &&
