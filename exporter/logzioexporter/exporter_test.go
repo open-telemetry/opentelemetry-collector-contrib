@@ -72,6 +72,13 @@ func TestNullTraceExporterConfig(tester *testing.T) {
 	assert.Error(tester, err, "Null exporter config should produce error")
 }
 
+func testMetricsExporter(md pdata.Metrics, t *testing.T, cfg *Config) {
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	_, err := createMetricsExporter(context.Background(), params, cfg)
+	require.NoError(t, err)
+}
+
+
 func TestNullExporterConfig(tester *testing.T) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	_, err := newLogzioExporter(nil, params)
@@ -177,3 +184,16 @@ func TestPushTraceData(tester *testing.T) {
 	assert.Equal(tester, testService, logzioService.ServiceName)
 
 }
+
+func TestPushMetricsData(tester *testing.T) {
+	cfg := Config{
+		MetricsToken:    "test",
+		Region:         "eu",
+		CustomEndpoint: "url",
+	}
+	md := pdata.Metrics{}
+
+	testMetricsExporter(md, tester, &cfg)
+}
+
+
