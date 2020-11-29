@@ -144,6 +144,23 @@ func TestServerSpanNoParentId(t *testing.T) {
 	assert.Empty(t, segment.ParentID)
 }
 
+func TestSpanNoParentId(t *testing.T) {
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetName("my-topic send")
+	span.SetTraceID(newTraceID())
+	span.SetSpanID(newSegmentID())
+	span.SetParentSpanID(pdata.InvalidSpanID())
+	span.SetKind(pdata.SpanKindPRODUCER)
+	span.SetStartTime(pdata.TimestampUnixNano(time.Now().UnixNano()))
+	span.SetEndTime(pdata.TimestampUnixNano(time.Now().Add(10).UnixNano()))
+	resource := pdata.NewResource()
+	segment, _ := MakeSegment(span, resource, nil, false)
+
+	assert.Empty(t, segment.ParentID)
+	assert.Nil(t, segment.Type)
+}
+
 func TestSpanWithNoStatus(t *testing.T) {
 	span := pdata.NewSpan()
 	span.InitEmpty()
