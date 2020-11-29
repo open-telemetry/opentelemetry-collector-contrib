@@ -48,7 +48,6 @@ func createTraceExporter(_ context.Context, params component.ExporterCreateParam
 	return newLogzioTraceExporter(config, params)
 }
 
-
 func createMetricsExporter(_ context.Context, params component.ExporterCreateParams, cfg configmodels.Exporter) (component.MetricsExporter, error) {
 	config := cfg.(*Config)
 	return newLogzioMetricsExporter(config, params)

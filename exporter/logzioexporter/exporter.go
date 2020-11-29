@@ -35,7 +35,7 @@ const (
 // logzioExporter implements an OpenTelemetry trace exporter that exports all spans to Logz.io
 type logzioExporter struct {
 	accountToken                 string
-	metricsToken				 string
+	metricsToken                 string
 	writer                       *store.LogzioSpanWriter
 	logger                       hclog.Logger
 	WriteSpanFunc                func(ctx context.Context, span *model.Span) error
@@ -114,7 +114,7 @@ func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces pdata.
 	return droppedSpans, nil
 }
 
-func (exporter *logzioExporter) pushMetricsData(ctx context.Context, md pdata.Metrics)  (int, error) {
+func (exporter *logzioExporter) pushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
 	return 0, nil
 }
 

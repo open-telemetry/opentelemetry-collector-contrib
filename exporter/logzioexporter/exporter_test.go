@@ -78,7 +78,6 @@ func testMetricsExporter(md pdata.Metrics, t *testing.T, cfg *Config) {
 	require.NoError(t, err)
 }
 
-
 func TestNullExporterConfig(tester *testing.T) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	_, err := newLogzioExporter(nil, params)
@@ -187,7 +186,7 @@ func TestPushTraceData(tester *testing.T) {
 
 func TestPushMetricsData(tester *testing.T) {
 	cfg := Config{
-		MetricsToken:    "test",
+		MetricsToken:   "test",
 		Region:         "eu",
 		CustomEndpoint: "url",
 	}
@@ -195,5 +194,3 @@ func TestPushMetricsData(tester *testing.T) {
 
 	testMetricsExporter(md, tester, &cfg)
 }
-
-
