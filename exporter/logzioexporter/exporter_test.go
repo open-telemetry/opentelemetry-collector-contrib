@@ -89,8 +89,8 @@ func TestNullTokenConfig(tester *testing.T) {
 
 func TestEmptyNode(tester *testing.T) {
 	cfg := Config{
-		Token:  "test",
-		Region: "eu",
+		TracesToken: "test",
+		Region:      "eu",
 	}
 	td := consumerdata.TraceData{
 		Node:  nil,
@@ -101,8 +101,8 @@ func TestEmptyNode(tester *testing.T) {
 
 func TestWriteSpanError(tester *testing.T) {
 	cfg := Config{
-		Token:  "test",
-		Region: "eu",
+		TracesToken: "test",
+		Region:      "eu",
 	}
 	td := consumerdata.TraceData{
 		Node:  nil,
@@ -121,8 +121,8 @@ func TestWriteSpanError(tester *testing.T) {
 
 func TestConversionTraceError(tester *testing.T) {
 	cfg := Config{
-		Token:  "test",
-		Region: "eu",
+		TracesToken: "test",
+		Region:      "eu",
 	}
 	td := consumerdata.TraceData{
 		Node:  nil,
@@ -146,7 +146,7 @@ func TestPushTraceData(tester *testing.T) {
 		rw.WriteHeader(http.StatusOK)
 	}))
 	cfg := Config{
-		Token:          "test",
+		TracesToken:    "test",
 		Region:         "eu",
 		CustomEndpoint: server.URL,
 	}
