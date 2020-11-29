@@ -35,7 +35,6 @@ const (
 // logzioExporter implements an OpenTelemetry trace exporter that exports all spans to Logz.io
 type logzioExporter struct {
 	accountToken                 string
-	metricsToken                 string
 	writer                       *store.LogzioSpanWriter
 	logger                       hclog.Logger
 	WriteSpanFunc                func(ctx context.Context, span *model.Span) error
