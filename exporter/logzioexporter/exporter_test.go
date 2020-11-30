@@ -74,8 +74,10 @@ func TestNullTraceExporterConfig(tester *testing.T) {
 
 func testMetricsExporter(md pdata.Metrics, t *testing.T, cfg *Config) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := createMetricsExporter(context.Background(), params, cfg)
+	exporter, err := createMetricsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
+	err = exporter.ConsumeMetrics(context.Background(), md)
+	assert.NoError(t, err)
 }
 
 func TestNullExporterConfig(tester *testing.T) {
@@ -190,7 +192,7 @@ func TestPushMetricsData(tester *testing.T) {
 		Region:         "eu",
 		CustomEndpoint: "url",
 	}
-	md := pdata.Metrics{}
+	md := pdata.NewMetrics()
 
 	testMetricsExporter(md, tester, &cfg)
 }
