@@ -7,6 +7,7 @@ require (
 	github.com/gogo/protobuf v1.3.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.0.0-00010101000000-000000000000
 	github.com/shirou/gopsutil v3.20.10+incompatible
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.2
@@ -22,5 +23,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/commo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ../../internal/splunk
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../internal/k8sconfig
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr => ../../pkg/batchperresourceattr
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => ../../receiver/k8sclusterreceiver
