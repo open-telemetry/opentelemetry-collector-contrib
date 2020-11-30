@@ -14,7 +14,7 @@
 
 * @open-telemetry/collector-contrib-approvers
 
-exporter/alibabacloudlogserviceexporter/ @open-telemetry/collector-contrib-approvers @shabicheng
+exporter/alibabacloudlogserviceexporter/ @open-telemetry/collector-contrib-approvers @shabicheng @kongluoxing
 exporter/awsemfexporter/                 @open-telemetry/collector-contrib-approvers @anuraaga @shaochengwang @mxiamxia
 exporter/awsxrayexporter/                @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga
 exporter/azuremonitorexporter/           @open-telemetry/collector-contrib-approvers @pcwiese
