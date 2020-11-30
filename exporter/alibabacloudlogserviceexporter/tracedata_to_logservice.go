@@ -145,10 +145,10 @@ func spanToLogServiceData(span pdata.Span, resourceContents, instrumentationLibr
 		Value: proto.String(strconv.FormatUint(uint64((span.EndTime()-span.StartTime())/1000), 10)),
 	})
 	attributeMap := tracetranslator.AttributeMapToMap(span.Attributes())
-	attributeJsonBytes, _ := json.Marshal(attributeMap)
+	attributeJSONBytes, _ := json.Marshal(attributeMap)
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
-		Key: proto.String(attributeField),
-		Value: proto.String(string(attributeJsonBytes)),
+		Key:   proto.String(attributeField),
+		Value: proto.String(string(attributeJSONBytes)),
 	})
 	if span.Status().IsNil() {
 		contentsBuffer = append(contentsBuffer, sls.LogContent{
