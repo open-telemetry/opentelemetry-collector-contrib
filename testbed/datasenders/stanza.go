@@ -83,7 +83,7 @@ func (f *StanzaFileLogWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
 	sb.WriteString(lr.SeverityText())
 	sb.WriteString(" ")
 
-	if !lr.Body().IsNil() {
+	if lr.Body().Type() == pdata.AttributeValueSTRING {
 		sb.WriteString(lr.Body().StringVal())
 	}
 

@@ -157,8 +157,7 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 				for i := 0; i < resourceMetrics.Len(); i++ {
 					resourceMetric := resourceMetrics.At(i)
 					resource := resourceMetric.Resource()
-					nameAttr, ok := resource.Attributes().Get(conventions.AttributeContainerImage)
-					if ok && !nameAttr.IsNil() {
+					if nameAttr, ok := resource.Attributes().Get(conventions.AttributeContainerImage); ok {
 						if strings.Contains(nameAttr.StringVal(), "redis") {
 							return true
 						}
