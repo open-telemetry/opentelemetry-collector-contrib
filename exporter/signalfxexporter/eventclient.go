@@ -128,8 +128,6 @@ func (s *sfxEventClient) retrieveAccessToken(rl pdata.ResourceLogs) string {
 	}
 	attrs := rl.Resource().Attributes()
 	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok && accessToken.Type() == pdata.AttributeValueSTRING {
-		// Drop internally passed access token in all cases
-		attrs.Delete(splunk.SFxAccessTokenLabel)
 		return accessToken.StringVal()
 	}
 	return ""
