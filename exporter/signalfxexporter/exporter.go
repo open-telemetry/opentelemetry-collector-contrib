@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -34,6 +35,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )
+
+// TODO: Find a place for this to be shared.
+type baseMetricsExporter struct {
+	component.Component
+	consumer.MetricsConsumer
+}
+
+// TODO: Find a place for this to be shared.
+type baseLogsExporter struct {
+	component.Component
+	consumer.LogsConsumer
+}
 
 type signalfMetadataExporter struct {
 	component.MetricsExporter

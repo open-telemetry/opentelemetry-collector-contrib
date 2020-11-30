@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sort"
 	"strconv"
 	"sync"
 	"testing"
@@ -31,6 +32,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -233,45 +235,39 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 	}
 
 	tests := []struct {
-		name                     string
-		accessTokenPassthrough   bool
-		metrics                  pdata.Metrics
-		additionalHeaders        map[string]string
-		failHTTP                 bool
-		droppedTimeseriesCount   int
-		numPushDataCallsPerToken map[string]int
+		name                   string
+		accessTokenPassthrough bool
+		metrics                pdata.Metrics
+		additionalHeaders      map[string]string
+		pushedTokens           []string
 	}{
 		{
 			name:                   "passthrough access token and included in md",
 			accessTokenPassthrough: true,
 			metrics:                validMetricsWithToken(true, fromLabels[0]),
-			numPushDataCallsPerToken: map[string]int{
-				fromLabels[0]: 1,
-			},
+			pushedTokens:           []string{fromLabels[0]},
 		},
 		{
 			name:                   "passthrough access token and not included in md",
 			accessTokenPassthrough: true,
 			metrics:                validMetricsWithToken(false, fromLabels[0]),
-			numPushDataCallsPerToken: map[string]int{
-				fromHeaders: 1,
-			},
+			pushedTokens:           []string{fromHeaders},
 		},
 		{
 			name:                   "don't passthrough access token and included in md",
 			accessTokenPassthrough: false,
-			metrics:                validMetricsWithToken(true, fromLabels[0]),
-			numPushDataCallsPerToken: map[string]int{
-				fromHeaders: 1,
-			},
+			metrics: func() pdata.Metrics {
+				forFirstToken := validMetricsWithToken(true, fromLabels[0])
+				forFirstToken.ResourceMetrics().Append(validMetricsWithToken(true, fromLabels[1]).ResourceMetrics().At(0))
+				return forFirstToken
+			}(),
+			pushedTokens: []string{fromHeaders},
 		},
 		{
 			name:                   "don't passthrough access token and not included in md",
 			accessTokenPassthrough: false,
 			metrics:                validMetricsWithToken(false, fromLabels[0]),
-			numPushDataCallsPerToken: map[string]int{
-				fromHeaders: 1,
-			},
+			pushedTokens:           []string{fromHeaders},
 		},
 		{
 			name:                   "override user-specified token-like header",
@@ -280,9 +276,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			additionalHeaders: map[string]string{
 				"x-sf-token": "user-specified",
 			},
-			numPushDataCallsPerToken: map[string]int{
-				fromLabels[0]: 1,
-			},
+			pushedTokens: []string{fromLabels[0]},
 		},
 		{
 			name:                   "use token from header when resource is nil",
@@ -316,9 +310,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 
 				return out
 			}(),
-			numPushDataCallsPerToken: map[string]int{
-				fromHeaders: 1,
-			},
+			pushedTokens: []string{fromHeaders},
 		},
 		{
 			name:                   "multiple tokens passed through",
@@ -331,17 +323,14 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 
 				return forSecondToken
 			}(),
-			numPushDataCallsPerToken: map[string]int{
-				fromLabels[0]: 1,
-				fromLabels[1]: 1,
-			},
+			pushedTokens: []string{fromLabels[0], fromLabels[1]},
 		},
 		{
 			name:                   "multiple tokens passed through - multiple md with same token",
 			accessTokenPassthrough: true,
 			metrics: func() pdata.Metrics {
-				forFirstToken := validMetricsWithToken(true, fromLabels[0])
-				forSecondToken := validMetricsWithToken(true, fromLabels[1])
+				forFirstToken := validMetricsWithToken(true, fromLabels[1])
+				forSecondToken := validMetricsWithToken(true, fromLabels[0])
 				moreForSecondToken := validMetricsWithToken(true, fromLabels[1])
 
 				forSecondToken.ResourceMetrics().Resize(3)
@@ -350,10 +339,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 
 				return forSecondToken
 			}(),
-			numPushDataCallsPerToken: map[string]int{
-				fromLabels[0]: 1,
-				fromLabels[1]: 2,
-			},
+			pushedTokens: []string{fromLabels[0], fromLabels[1]},
 		},
 		{
 			name:                   "multiple tokens passed through - multiple md with same token grouped together",
@@ -369,12 +355,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 
 				return forSecondToken
 			}(),
-			numPushDataCallsPerToken: map[string]int{
-				fromLabels[0]: 1,
-				// We don't do grouping anymore with pdata.Metrics since they
-				// are so hard to manipulate.
-				fromLabels[1]: 2,
-			},
+			pushedTokens: []string{fromLabels[0], fromLabels[1]},
 		},
 		{
 			name:                   "multiple tokens passed through - one corrupted",
@@ -386,92 +367,53 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
 				return forSecondToken
 			}(),
-			numPushDataCallsPerToken: map[string]int{
-				fromLabels[0]: 1,
-				fromHeaders:   1,
-			},
-		},
-		{
-			name:                   "multiple tokens passed through - HTTP error cases",
-			accessTokenPassthrough: true,
-			metrics: func() pdata.Metrics {
-				forFirstToken := validMetricsWithToken(true, fromLabels[0])
-				forSecondToken := validMetricsWithToken(true, fromLabels[1])
-				forSecondToken.ResourceMetrics().Resize(2)
-				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
-				return forSecondToken
-			}(),
-			failHTTP:               true,
-			droppedTimeseriesCount: 2,
+			pushedTokens: []string{fromLabels[0], fromHeaders},
 		},
 	}
 	for _, tt := range tests {
 		receivedTokens := struct {
 			sync.Mutex
-			tokens     []string
-			totalCalls map[string]int
+			tokens []string
 		}{}
 		receivedTokens.tokens = []string{}
-		receivedTokens.totalCalls = map[string]int{}
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if tt.failHTTP {
-					w.WriteHeader(http.StatusInternalServerError)
-					return
-				}
-				assert.Equal(t, "test", r.Header.Get("test_header_"))
+				assert.Equal(t, tt.name, r.Header.Get("test_header_"))
 				receivedTokens.Lock()
 
 				token := r.Header.Get("x-sf-token")
 				receivedTokens.tokens = append(receivedTokens.tokens, token)
-				receivedTokens.totalCalls[token]++
 
 				receivedTokens.Unlock()
 				w.WriteHeader(http.StatusAccepted)
 			}))
 			defer server.Close()
 
-			serverURL, err := url.Parse(server.URL)
-			assert.NoError(t, err)
-
-			dpClient := &sfxDPClient{
-				sfxClientBase: sfxClientBase{
-					ingestURL: serverURL,
-					headers: map[string]string{
-						"test_header_": "test",
-						"X-Sf-Token":   fromHeaders,
-					},
-					client: &http.Client{
-						Timeout: 1 * time.Second,
-					},
-					zippers: sync.Pool{New: func() interface{} {
-						return gzip.NewWriter(nil)
-					}},
-				},
-				logger:                 zap.NewNop(),
-				accessTokenPassthrough: tt.accessTokenPassthrough,
-				converter:              translation.NewMetricsConverter(zap.NewNop(), nil),
-			}
-
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			cfg.IngestURL = server.URL
+			cfg.APIURL = server.URL
+			cfg.Headers = make(map[string]string)
 			for k, v := range tt.additionalHeaders {
-				dpClient.headers[k] = v
+				cfg.Headers[k] = v
 			}
+			cfg.Headers["test_header_"] = tt.name
+			cfg.AccessToken = fromHeaders
+			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
+			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+			require.NoError(t, err)
+			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
+			defer sfxExp.Shutdown(context.Background())
 
-			numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), tt.metrics)
+			err = sfxExp.ConsumeMetrics(context.Background(), tt.metrics)
 
-			if tt.failHTTP {
-				assert.Equal(t, tt.droppedTimeseriesCount, numDroppedTimeSeries)
-				assert.Error(t, err)
-				return
-			}
-
-			assert.Equal(t, 0, numDroppedTimeSeries)
 			assert.NoError(t, err)
-			require.Equal(t, tt.numPushDataCallsPerToken, receivedTokens.totalCalls)
-			for _, rt := range receivedTokens.tokens {
-				_, ok := tt.numPushDataCallsPerToken[rt]
-				require.True(t, ok)
-			}
+			require.Eventually(t, func() bool {
+				return len(tt.pushedTokens) == len(receivedTokens.tokens)
+			}, 1*time.Second, 10*time.Millisecond)
+			sort.Strings(tt.pushedTokens)
+			sort.Strings(receivedTokens.tokens)
+			assert.Equal(t, tt.pushedTokens, receivedTokens.tokens)
 		})
 	}
 }

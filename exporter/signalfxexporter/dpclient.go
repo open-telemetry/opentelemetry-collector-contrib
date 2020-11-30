@@ -28,7 +28,6 @@ import (
 	"sync"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
@@ -75,32 +74,28 @@ func (s *sfxDPClient) pushMetricsData(
 	ctx context.Context,
 	md pdata.Metrics,
 ) (droppedDataPoints int, err error) {
-	var numDroppedDataPoints int
-	var errs []error
-
 	rms := md.ResourceMetrics()
+	if rms.Len() == 0 {
+		return 0, nil
+	}
+
+	// All metrics in the pdata.Metrics will have the same access token because of the BatchPerResourceMetrics.
+	metricToken := s.retrieveAccessToken(rms.At(0))
+
+	var sfxDataPoints []*sfxpb.DataPoint
+
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 		if rm.IsNil() {
 			continue
 		}
-		// We don't do grouping anymore with pdata.Metrics since they
-		// are so hard to manipulate.
-		metricToken := s.retrieveAccessToken(rm)
-		droppedCount, err := s.pushMetricsDataForToken(ctx, rms.At(i), metricToken)
-		numDroppedDataPoints += droppedCount
-		if err != nil {
-			errs = append(errs, err)
-		}
+		sfxDataPoints = append(sfxDataPoints, s.converter.MetricDataToSignalFxV2(rm)...)
 	}
 
-	return numDroppedDataPoints, componenterror.CombineErrors(errs)
+	return s.pushMetricsDataForToken(ctx, sfxDataPoints, metricToken)
 }
 
-func (s *sfxDPClient) pushMetricsDataForToken(ctx context.Context,
-	metricsData pdata.ResourceMetrics, accessToken string) (int, error) {
-	sfxDataPoints := s.converter.MetricDataToSignalFxV2(metricsData)
-
+func (s *sfxDPClient) pushMetricsDataForToken(ctx context.Context, sfxDataPoints []*sfxpb.DataPoint, accessToken string) (int, error) {
 	body, compressed, err := s.encodeBody(sfxDataPoints)
 	if err != nil {
 		return len(sfxDataPoints), consumererror.Permanent(err)
@@ -189,10 +184,7 @@ func (s *sfxDPClient) retrieveAccessToken(md pdata.ResourceMetrics) string {
 	}
 
 	attrs := md.Resource().Attributes()
-	accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel)
-	if ok {
-		// Drop internally passed access token in all cases
-		attrs.Delete(splunk.SFxAccessTokenLabel)
+	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok {
 		return accessToken.StringVal()
 	}
 	return ""
