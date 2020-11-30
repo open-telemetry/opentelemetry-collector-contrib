@@ -267,7 +267,7 @@ func Test_logDataToSplunk(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotEvents, _ := logDataToSplunk(logger, tt.logDataFn(), tt.configDataFn())
+			gotEvents := logDataToSplunk(logger, tt.logDataFn(), tt.configDataFn())
 			require.Equal(t, len(tt.wantSplunkEvents), len(gotEvents))
 			for i, want := range tt.wantSplunkEvents {
 				assert.EqualValues(t, want, gotEvents[i])
@@ -308,8 +308,7 @@ func commonLogSplunkEvent(
 }
 
 func Test_nilLogs(t *testing.T) {
-	events, dropped := logDataToSplunk(zap.NewNop(), pdata.NewLogs(), &Config{})
-	assert.Equal(t, 0, dropped)
+	events := logDataToSplunk(zap.NewNop(), pdata.NewLogs(), &Config{})
 	assert.Equal(t, 0, len(events))
 }
 
@@ -317,8 +316,7 @@ func Test_nilResourceLogs(t *testing.T) {
 	logs := pdata.NewLogs()
 	resourceLog := pdata.NewResourceLogs()
 	logs.ResourceLogs().Append(resourceLog)
-	events, dropped := logDataToSplunk(zap.NewNop(), logs, &Config{})
-	assert.Equal(t, 0, dropped)
+	events := logDataToSplunk(zap.NewNop(), logs, &Config{})
 	assert.Equal(t, 0, len(events))
 }
 
@@ -329,8 +327,7 @@ func Test_nilInstrumentationLogs(t *testing.T) {
 	logs.ResourceLogs().Append(resourceLog)
 	ils := pdata.NewInstrumentationLibraryLogs()
 	resourceLog.InstrumentationLibraryLogs().Append(ils)
-	events, dropped := logDataToSplunk(zap.NewNop(), logs, &Config{})
-	assert.Equal(t, 0, dropped)
+	events := logDataToSplunk(zap.NewNop(), logs, &Config{})
 	assert.Equal(t, 0, len(events))
 }
 
