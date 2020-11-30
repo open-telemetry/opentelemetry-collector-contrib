@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -133,15 +132,10 @@ func (s *sfxDPClient) pushMetricsDataForToken(ctx context.Context, sfxDataPoints
 	io.Copy(ioutil.Discard, resp.Body)
 	resp.Body.Close()
 
-	// SignalFx accepts all 2XX codes.
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		err = fmt.Errorf(
-			"HTTP %d %q",
-			resp.StatusCode,
-			http.StatusText(resp.StatusCode))
+	err = splunk.HandleHTTPCode(resp)
+	if err != nil {
 		return len(sfxDataPoints), err
 	}
-
 	return 0, nil
 }
 
