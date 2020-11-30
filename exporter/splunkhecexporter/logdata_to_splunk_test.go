@@ -31,11 +31,10 @@ func Test_logDataToSplunk(t *testing.T) {
 	ts := pdata.TimestampUnixNano(123)
 
 	tests := []struct {
-		name               string
-		logDataFn          func() pdata.Logs
-		configDataFn       func() *Config
-		wantSplunkEvents   []*splunk.Event
-		wantNumDroppedLogs int
+		name             string
+		logDataFn        func() pdata.Logs
+		configDataFn     func() *Config
+		wantSplunkEvents []*splunk.Event
 	}{
 		{
 			name: "valid",
@@ -59,7 +58,6 @@ func Test_logDataToSplunk(t *testing.T) {
 			wantSplunkEvents: []*splunk.Event{
 				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
 			},
-			wantNumDroppedLogs: 0,
 		},
 		{
 			name: "non-string attribute",
@@ -83,7 +81,6 @@ func Test_logDataToSplunk(t *testing.T) {
 			wantSplunkEvents: []*splunk.Event{
 				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"foo": float64(123)}, "myhost", "myapp", "myapp-type"),
 			},
-			wantNumDroppedLogs: 0,
 		},
 		{
 			name: "with_config",
@@ -104,10 +101,9 @@ func Test_logDataToSplunk(t *testing.T) {
 			wantSplunkEvents: []*splunk.Event{
 				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom"}, "unknown", "source", "sourcetype"),
 			},
-			wantNumDroppedLogs: 0,
 		},
 		{
-			name: "log_is_nil",
+			name: "log_is_empty",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
 				logRecord.InitEmpty()
@@ -119,8 +115,9 @@ func Test_logDataToSplunk(t *testing.T) {
 					SourceType: "sourcetype",
 				}
 			},
-			wantSplunkEvents:   []*splunk.Event{},
-			wantNumDroppedLogs: 1,
+			wantSplunkEvents: []*splunk.Event{
+				commonLogSplunkEvent(nil, 0, map[string]interface{}{}, "unknown", "source", "sourcetype"),
+			},
 		},
 		{
 			name: "with double body",
@@ -144,7 +141,6 @@ func Test_logDataToSplunk(t *testing.T) {
 			wantSplunkEvents: []*splunk.Event{
 				commonLogSplunkEvent(float64(42), ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
 			},
-			wantNumDroppedLogs: 0,
 		},
 		{
 			name: "with int body",
@@ -168,7 +164,6 @@ func Test_logDataToSplunk(t *testing.T) {
 			wantSplunkEvents: []*splunk.Event{
 				commonLogSplunkEvent(int64(42), ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
 			},
-			wantNumDroppedLogs: 0,
 		},
 		{
 			name: "with bool body",
@@ -192,7 +187,6 @@ func Test_logDataToSplunk(t *testing.T) {
 			wantSplunkEvents: []*splunk.Event{
 				commonLogSplunkEvent(true, ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
 			},
-			wantNumDroppedLogs: 0,
 		},
 		{
 			name: "with map body",
@@ -220,7 +214,6 @@ func Test_logDataToSplunk(t *testing.T) {
 			wantSplunkEvents: []*splunk.Event{
 				commonLogSplunkEvent(map[string]interface{}{"23": float64(45), "foo": "bar"}, ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
 			},
-			wantNumDroppedLogs: 0,
 		},
 		{
 			name: "with nil body",
@@ -244,7 +237,6 @@ func Test_logDataToSplunk(t *testing.T) {
 			wantSplunkEvents: []*splunk.Event{
 				commonLogSplunkEvent(nil, ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
 			},
-			wantNumDroppedLogs: 0,
 		},
 		{
 			name: "with array body",
@@ -271,13 +263,11 @@ func Test_logDataToSplunk(t *testing.T) {
 			wantSplunkEvents: []*splunk.Event{
 				commonLogSplunkEvent([]interface{}{"foo"}, ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
 			},
-			wantNumDroppedLogs: 0,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotEvents, gotNumDroppedLogs := logDataToSplunk(logger, tt.logDataFn(), tt.configDataFn())
-			assert.Equal(t, tt.wantNumDroppedLogs, gotNumDroppedLogs)
+			gotEvents, _ := logDataToSplunk(logger, tt.logDataFn(), tt.configDataFn())
 			require.Equal(t, len(tt.wantSplunkEvents), len(gotEvents))
 			for i, want := range tt.wantSplunkEvents {
 				assert.EqualValues(t, want, gotEvents[i])

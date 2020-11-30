@@ -49,8 +49,8 @@ func replacePatternWithResource(s, patternKey string, attrMap pdata.AttributeMap
 }
 
 func replace(s, pattern string, value pdata.AttributeValue, logger *zap.Logger) string {
-	if value.IsNil() || value.StringVal() == "" {
-		logger.Debug("Nil resource attribute value found for pattern " + pattern)
+	if value.StringVal() == "" {
+		logger.Debug("Empty resource attribute value found for pattern " + pattern)
 		return strings.Replace(s, pattern, "undefined", -1)
 	}
 	return strings.Replace(s, pattern, value.StringVal(), -1)

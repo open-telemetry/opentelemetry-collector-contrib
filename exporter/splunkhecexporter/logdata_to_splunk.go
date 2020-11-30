@@ -25,8 +25,7 @@ import (
 )
 
 func logDataToSplunk(logger *zap.Logger, ld pdata.Logs, config *Config) ([]*splunk.Event, int) {
-	numDroppedLogs := 0
-	splunkEvents := make([]*splunk.Event, 0)
+	var splunkEvents []*splunk.Event
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
@@ -47,23 +46,15 @@ func logDataToSplunk(logger *zap.Logger, ld pdata.Logs, config *Config) ([]*splu
 				if lr.IsNil() {
 					continue
 				}
-				ev := mapLogRecordToSplunkEvent(lr, config, logger)
-				if ev == nil {
-					numDroppedLogs++
-				} else {
-					splunkEvents = append(splunkEvents, ev)
-				}
+				splunkEvents = append(splunkEvents, mapLogRecordToSplunkEvent(lr, config, logger))
 			}
 		}
 	}
 
-	return splunkEvents, numDroppedLogs
+	return splunkEvents, 0
 }
 
 func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
-	if lr.Body().IsNil() {
-		return nil
-	}
 	host := unknownHostName
 	source := config.Source
 	sourcetype := config.SourceType
