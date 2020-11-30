@@ -26,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 // Some fields on SignalFx protobuf are pointers, in order to reduce
@@ -425,6 +427,11 @@ func resourceAttributesToDimensions(resourceAttr pdata.AttributeMap) []*sfxpb.Di
 	}
 
 	resourceAttr.ForEach(func(k string, val pdata.AttributeValue) {
+		// Never send the SignalFX token
+		if k == splunk.SFxAccessTokenLabel {
+			return
+		}
+
 		if !filter(k) {
 			return
 		}
