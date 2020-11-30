@@ -26,6 +26,7 @@ import (
 
 var (
 	errUnsetAPIKey = errors.New("api.key is not set")
+	errNoMetadata  = errors.New("only_metadata can't be enabled when send_metadata is disabled")
 )
 
 const (
@@ -121,7 +122,18 @@ type Config struct {
 	Traces TracesConfig `mapstructure:"traces"`
 
 	// SendMetadata defines whether to send host metadata
+	// This is undocumented and only used for unit testing.
+	//
+	// This can't be disabled if `only_metadata` is true.
 	SendMetadata bool `mapstructure:"send_metadata"`
+
+	// OnlyMetadata defines whether to only send metadata
+	// This is useful for agent-collector setups, so that
+	// metadata about a host is sent to the backend even
+	// when telemetry data is reported via a different host
+	//
+	// This flag is incompatible with disabling `send_metadata`
+	OnlyMetadata bool `mapstructure:"only_metadata"`
 
 	// onceMetadata ensures only one exporter (metrics/traces) sends host metadata
 	onceMetadata sync.Once
@@ -135,6 +147,10 @@ func (c *Config) OnceMetadata() *sync.Once {
 func (c *Config) Sanitize() error {
 	if c.TagsConfig.Env == "" {
 		c.TagsConfig.Env = "none"
+	}
+
+	if c.OnlyMetadata && !c.SendMetadata {
+		return errNoMetadata
 	}
 
 	if c.API.Key == "" {

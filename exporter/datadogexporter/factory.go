@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
@@ -85,8 +86,17 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	exp, err := newMetricsExporter(params, cfg)
-	if err != nil {
+	var pushMetricsFn exporterhelper.PushMetrics
+
+	if cfg.OnlyMetadata {
+		pushMetricsFn = func(context.Context, pdata.Metrics) (int, error) {
+			// if only sending metadata ignore all metrics
+			return 0, nil
+		}
+	} else if exp, err := newMetricsExporter(params, cfg); err == nil {
+		pushMetricsFn = exp.PushMetricsData
+	} else {
+		// error creating the exporter
 		return nil, err
 	}
 
@@ -101,7 +111,7 @@ func createMetricsExporter(
 	return exporterhelper.NewMetricsExporter(
 		cfg,
 		params.Logger,
-		exp.PushMetricsData,
+		pushMetricsFn,
 		exporterhelper.WithQueue(exporterhelper.CreateDefaultQueueSettings()),
 		exporterhelper.WithRetry(exporterhelper.CreateDefaultRetrySettings()),
 		exporterhelper.WithShutdown(func(context.Context) error {
@@ -125,8 +135,17 @@ func createTraceExporter(
 		return nil, err
 	}
 
-	exp, err := newTraceExporter(params, cfg)
-	if err != nil {
+	var pushTracesFn exporterhelper.PushTraces
+
+	if cfg.OnlyMetadata {
+		pushTracesFn = func(context.Context, pdata.Traces) (int, error) {
+			// if only sending metadata, ignore all traces
+			return 0, nil
+		}
+	} else if exp, err := newTraceExporter(params, cfg); err == nil {
+		pushTracesFn = exp.pushTraceData
+	} else {
+		// error creating the exporter
 		return nil, err
 	}
 
@@ -141,7 +160,7 @@ func createTraceExporter(
 	return exporterhelper.NewTraceExporter(
 		cfg,
 		params.Logger,
-		exp.pushTraceData,
+		pushTracesFn,
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
 			return nil

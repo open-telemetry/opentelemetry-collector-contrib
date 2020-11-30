@@ -68,6 +68,16 @@ func TestAPIKeyUnset(t *testing.T) {
 	assert.Equal(t, err, errUnsetAPIKey)
 }
 
+func TestNoMetadata(t *testing.T) {
+	cfg := Config{
+		OnlyMetadata: true,
+		SendMetadata: false,
+	}
+
+	err := cfg.Sanitize()
+	assert.Equal(t, err, errNoMetadata)
+}
+
 func TestCensorAPIKey(t *testing.T) {
 	cfg := APIConfig{
 		Key: "ddog_32_characters_long_api_key1",
