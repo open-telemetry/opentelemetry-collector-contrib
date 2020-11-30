@@ -84,7 +84,7 @@ func logDataToLogService(logger *zap.Logger, ld pdata.Logs) ([]*sls.Log, int) {
 func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
 	logContents := make([]*sls.LogContent, 3)
 	attrs := resource.Attributes()
-	if hostName, ok := attrs.Get(conventions.AttributeHostName); ok && !hostName.IsNil() {
+	if hostName, ok := attrs.Get(conventions.AttributeHostName); ok {
 		logContents[0] = &sls.LogContent{
 			Key:   proto.String(slsLogHost),
 			Value: proto.String(tracetranslator.AttributeValueToString(hostName, false)),
@@ -96,7 +96,7 @@ func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
 		}
 	}
 
-	if serviceName, ok := attrs.Get(conventions.AttributeServiceName); ok && !serviceName.IsNil() {
+	if serviceName, ok := attrs.Get(conventions.AttributeServiceName); ok {
 		logContents[1] = &sls.LogContent{
 			Key:   proto.String(slsLogService),
 			Value: proto.String(tracetranslator.AttributeValueToString(serviceName, false)),
@@ -140,7 +140,7 @@ func instrumentationLibraryToLogContents(instrumentationLibrary pdata.Instrument
 func mapLogRecordToLogService(lr pdata.LogRecord,
 	resourceContents,
 	instrumentationLibraryContents []*sls.LogContent) *sls.Log {
-	if lr.Body().IsNil() {
+	if lr.Body().Type() == pdata.AttributeValueNULL {
 		return nil
 	}
 	var slsLog sls.Log

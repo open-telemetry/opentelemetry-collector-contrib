@@ -69,7 +69,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 		logRecord.InitEmpty()
 		switch i {
 		case 0:
-			// do nothing, left body nil
+			// do nothing, left body null
 		case 1:
 			logRecord.Body().SetBoolVal(true)
 		case 2:
