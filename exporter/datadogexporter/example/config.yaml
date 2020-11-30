@@ -32,6 +32,11 @@ exporters:
     #
     # tags: []
 
+    ## @param only_metadata - boolean - optional - default: false
+    ## Whether to send only metadata. This is useful for agent-collector
+    ## setups, so that metadata about a host is sent to the backend even
+    ## when telemetry data is reported via a different host.
+
     ## @param api - custom object - required.
     ## Specific API configuration.
     #
