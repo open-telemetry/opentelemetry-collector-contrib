@@ -148,7 +148,7 @@ func TestConsumeMetrics(t *testing.T) {
 		},
 		{
 			name:             "large_batch",
-			md:               generateLargeDPBatch(t),
+			md:               generateLargeDPBatch(),
 			reqTestFunc:      nil,
 			httpResponseCode: http.StatusAccepted,
 		},
@@ -409,6 +409,8 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 
 			assert.NoError(t, err)
 			require.Eventually(t, func() bool {
+				receivedTokens.Lock()
+				defer receivedTokens.Unlock()
 				return len(tt.pushedTokens) == len(receivedTokens.tokens)
 			}, 1*time.Second, 10*time.Millisecond)
 			sort.Strings(tt.pushedTokens)
@@ -446,14 +448,12 @@ func TestNewEventExporter(t *testing.T) {
 	require.NotNil(t, got)
 
 	// This is expected to fail.
-	rls := makeSampleResourceLogs()
-	ld := pdata.NewLogs()
-	ld.ResourceLogs().Append(rls)
+	ld := makeSampleResourceLogs()
 	_, err = got.pushLogs(context.Background(), ld)
 	assert.Error(t, err)
 }
 
-func makeSampleResourceLogs() pdata.ResourceLogs {
+func makeSampleResourceLogs() pdata.Logs {
 	logSlice := pdata.NewLogSlice()
 
 	logSlice.Resize(1)
@@ -483,11 +483,11 @@ func makeSampleResourceLogs() pdata.ResourceLogs {
 
 	l.Attributes().Sort()
 
-	out := pdata.NewResourceLogs()
-	out.InitEmpty()
-	out.InstrumentationLibraryLogs().Resize(1)
-	out.InstrumentationLibraryLogs().At(0).InitEmpty()
-	logSlice.MoveAndAppendTo(out.InstrumentationLibraryLogs().At(0).Logs())
+	out := pdata.NewLogs()
+	out.ResourceLogs().Resize(1)
+	out.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
+	out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).InitEmpty()
+	logSlice.MoveAndAppendTo(out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs())
 
 	return out
 }
@@ -495,7 +495,7 @@ func makeSampleResourceLogs() pdata.ResourceLogs {
 func TestConsumeEventData(t *testing.T) {
 	tests := []struct {
 		name                 string
-		resourceLogs         pdata.ResourceLogs
+		resourceLogs         pdata.Logs
 		reqTestFunc          func(t *testing.T, r *http.Request)
 		httpResponseCode     int
 		numDroppedLogRecords int
@@ -509,9 +509,9 @@ func TestConsumeEventData(t *testing.T) {
 		},
 		{
 			name: "no_event_attribute",
-			resourceLogs: func() pdata.ResourceLogs {
+			resourceLogs: func() pdata.Logs {
 				out := makeSampleResourceLogs()
-				out.InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().Delete("com.splunk.signalfx.event_category")
+				out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().Delete("com.splunk.signalfx.event_category")
 				return out
 			}(),
 			reqTestFunc:          nil,
@@ -520,10 +520,10 @@ func TestConsumeEventData(t *testing.T) {
 		},
 		{
 			name: "nonconvertible_log_attrs",
-			resourceLogs: func() pdata.ResourceLogs {
+			resourceLogs: func() pdata.Logs {
 				out := makeSampleResourceLogs()
 
-				attrs := out.InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes()
+				attrs := out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes()
 				mapAttr := pdata.NewAttributeValueMap()
 				attrs.Insert("map", mapAttr)
 
@@ -547,7 +547,7 @@ func TestConsumeEventData(t *testing.T) {
 		},
 		{
 			name:             "large_batch",
-			resourceLogs:     generateLargeEventBatch(t),
+			resourceLogs:     generateLargeEventBatch(),
 			reqTestFunc:      nil,
 			httpResponseCode: http.StatusAccepted,
 		},
@@ -578,7 +578,7 @@ func TestConsumeEventData(t *testing.T) {
 				logger: zap.NewNop(),
 			}
 
-			numDroppedLogRecords, err := eventClient.pushResourceLogs(context.Background(), tt.resourceLogs)
+			numDroppedLogRecords, err := eventClient.pushLogsData(context.Background(), tt.resourceLogs)
 			assert.Equal(t, tt.numDroppedLogRecords, numDroppedLogRecords)
 
 			if tt.wantErr {
@@ -595,12 +595,13 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 	fromHeaders := "AccessTokenFromClientHeaders"
 	fromLabels := "AccessTokenFromLabel"
 
-	newLogData := func(includeToken bool) pdata.ResourceLogs {
+	newLogData := func(includeToken bool) pdata.Logs {
 		out := makeSampleResourceLogs()
+		out.ResourceLogs().Append(makeSampleResourceLogs().ResourceLogs().At(0))
 
 		if includeToken {
-			res := out.Resource()
-			res.Attributes().InsertString("com.splunk.signalfx.access_token", fromLabels)
+			out.ResourceLogs().At(0).Resource().Attributes().InsertString("com.splunk.signalfx.access_token", fromLabels)
+			out.ResourceLogs().At(1).Resource().Attributes().InsertString("com.splunk.signalfx.access_token", fromLabels)
 		}
 		return out
 	}
@@ -638,40 +639,45 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			receivedTokens := struct {
+				sync.Mutex
+				tokens []string
+			}{}
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assert.Equal(t, "test", r.Header.Get("test_header_"))
-				assert.Equal(t, tt.expectedToken, r.Header.Get("x-sf-token"))
+				assert.Equal(t, tt.name, r.Header.Get("test_header_"))
+				receivedTokens.Lock()
+				receivedTokens.tokens = append(receivedTokens.tokens, r.Header.Get("x-sf-token"))
+				receivedTokens.Unlock()
 				w.WriteHeader(http.StatusAccepted)
 			}))
 			defer server.Close()
 
-			serverURL, err := url.Parse(server.URL)
-			assert.NoError(t, err)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			cfg.IngestURL = server.URL
+			cfg.APIURL = server.URL
+			cfg.Headers = make(map[string]string)
+			cfg.Headers["test_header_"] = tt.name
+			cfg.AccessToken = fromHeaders
+			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
+			sfxExp, err := NewFactory().CreateLogsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+			require.NoError(t, err)
+			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
+			defer sfxExp.Shutdown(context.Background())
 
-			eventClient := &sfxEventClient{
-				sfxClientBase: sfxClientBase{
-					ingestURL: serverURL,
-					headers: map[string]string{
-						"test_header_": "test",
-						"X-Sf-Token":   fromHeaders,
-					},
-					client: &http.Client{
-						Timeout: 1 * time.Second,
-					},
-					zippers: newGzipPool(),
-				},
-				logger:                 zap.NewNop(),
-				accessTokenPassthrough: tt.accessTokenPassthrough,
-			}
+			assert.NoError(t, sfxExp.ConsumeLogs(context.Background(), newLogData(tt.includedInLogData)))
 
-			numDroppedLogRecords, err := eventClient.pushResourceLogs(context.Background(), newLogData(tt.includedInLogData))
-			assert.Equal(t, 0, numDroppedLogRecords)
-			assert.NoError(t, err)
+			require.Eventually(t, func() bool {
+				receivedTokens.Lock()
+				defer receivedTokens.Unlock()
+				return len(receivedTokens.tokens) == 1
+			}, 1*time.Second, 10*time.Millisecond)
+			assert.Equal(t, receivedTokens.tokens[0], tt.expectedToken)
 		})
 	}
 }
 
-func generateLargeDPBatch(t *testing.T) pdata.Metrics {
+func generateLargeDPBatch() pdata.Metrics {
 	md := pdata.NewMetrics()
 	md.ResourceMetrics().Resize(6500)
 
@@ -706,11 +712,11 @@ func generateLargeDPBatch(t *testing.T) pdata.Metrics {
 	return md
 }
 
-func generateLargeEventBatch(t *testing.T) pdata.ResourceLogs {
-	out := pdata.NewResourceLogs()
-	out.InitEmpty()
-	out.InstrumentationLibraryLogs().Resize(1)
-	logs := out.InstrumentationLibraryLogs().At(0).Logs()
+func generateLargeEventBatch() pdata.Logs {
+	out := pdata.NewLogs()
+	out.ResourceLogs().Resize(1)
+	out.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
+	logs := out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
 
 	batchSize := 65000
 	logs.Resize(batchSize)
