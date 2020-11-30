@@ -49,6 +49,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 			SampleRate: 1,
 		},
 		SendMetadata: true,
+		OnlyMetadata: false,
 	}, cfg, "failed to create default config")
 
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
@@ -102,6 +103,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		SendMetadata: true,
+		OnlyMetadata: false,
 	}, apiConfig)
 
 	invalidConfig2 := cfg.Exporters["datadog/invalid"].(*config.Config)
@@ -173,4 +175,42 @@ func TestCreateAPITracesExporter(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
+}
+
+func TestOnlyMetadata(t *testing.T) {
+	logger := zap.NewNop()
+
+	factories, err := componenttest.ExampleComponents()
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[configmodels.Type(typeStr)] = factory
+
+	ctx := context.Background()
+	cfg := &config.Config{
+		API: config.APIConfig{
+			Key:  "notnull",
+			Site: "example.com",
+		},
+		SendMetadata: true,
+		OnlyMetadata: true,
+	}
+
+	expTraces, err := factory.CreateTracesExporter(
+		ctx,
+		component.ExporterCreateParams{Logger: logger},
+		cfg,
+	)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, expTraces)
+
+	expMetrics, err := factory.CreateMetricsExporter(
+		ctx,
+		component.ExporterCreateParams{Logger: logger},
+		cfg,
+	)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, expMetrics)
 }
