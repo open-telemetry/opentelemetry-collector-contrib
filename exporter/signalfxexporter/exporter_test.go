@@ -33,17 +33,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-<<<<<<< HEAD
 	"go.opentelemetry.io/collector/component/componenttest"
-=======
 	"go.opentelemetry.io/collector/consumer/consumererror"
->>>>>>> 0006cef5 ([SignalFx]: Disable retry on 400 and 401, retry with backoff on 429 and 503)
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )
 
@@ -185,7 +183,7 @@ func TestConsumeMetrics(t *testing.T) {
 				assert.Equal(t, "test", r.Header.Get("test_header_"))
 				if (tt.httpResponseCode == http.StatusTooManyRequests ||
 					tt.httpResponseCode == http.StatusServiceUnavailable) && tt.retryAfter != 0 {
-					w.Header().Add(headerRetryAfter, strconv.Itoa(tt.retryAfter))
+					w.Header().Add(splunk.HeaderRetryAfter, strconv.Itoa(tt.retryAfter))
 				}
 				w.WriteHeader(tt.httpResponseCode)
 			}))

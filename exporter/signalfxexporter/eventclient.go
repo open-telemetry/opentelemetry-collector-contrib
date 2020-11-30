@@ -16,7 +16,6 @@ package signalfxexporter
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -96,15 +95,8 @@ func (s *sfxEventClient) pushLogsData(ctx context.Context, ld pdata.Logs) (int, 
 		resp.Body.Close()
 	}()
 
-	// SignalFx accepts all 2XX codes.
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		body, _ := ioutil.ReadAll(resp.Body)
-		err = fmt.Errorf(
-			"HTTP %d %q for %q: %s",
-			resp.StatusCode,
-			http.StatusText(resp.StatusCode),
-			req.URL,
-			body)
+	err = splunk.HandleHTTPCode(resp)
+	if err != nil {
 		return ld.LogRecordCount(), err
 	}
 
