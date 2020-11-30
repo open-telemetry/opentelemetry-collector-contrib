@@ -106,6 +106,7 @@ func spanToLogServiceData(span pdata.Span, resourceContents, instrumentationLibr
 		Key:   proto.String(spanIDField),
 		Value: proto.String(span.SpanID().HexString()),
 	})
+	// if ParentSpanID is not valid, the return "", it is compatible for log service
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(parentSpanIDField),
 		Value: proto.String(span.ParentSpanID().HexString()),

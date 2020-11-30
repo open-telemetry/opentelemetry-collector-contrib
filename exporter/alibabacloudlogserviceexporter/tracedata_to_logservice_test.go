@@ -23,10 +23,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
-
-	"github.com/stretchr/testify/assert"
 )
 
 type logKeyValuePair struct {
