@@ -220,7 +220,6 @@ func Test_logDataToSplunk(t *testing.T) {
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
 				logRecord.InitEmpty()
-				logRecord.Body().InitEmpty()
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
 				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")

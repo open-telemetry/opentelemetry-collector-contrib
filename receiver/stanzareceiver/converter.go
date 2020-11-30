@@ -58,7 +58,6 @@ func convert(obsLog *entry.Entry) pdata.Logs {
 		}
 	}
 
-	lr.Body().InitEmpty()
 	insertToAttributeVal(obsLog.Record, lr.Body())
 
 	ills.Logs().Append(lr)

@@ -199,18 +199,6 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 	}, nil
 }
 
-// newTraceID generates a new valid X-Ray TraceID
-func newTraceID() pdata.TraceID {
-	var r [16]byte
-	epoch := time.Now().Unix()
-	binary.BigEndian.PutUint32(r[0:4], uint32(epoch))
-	_, err := rand.Read(r[4:])
-	if err != nil {
-		panic(err)
-	}
-	return pdata.NewTraceID(r)
-}
-
 // newSegmentID generates a new valid X-Ray SegmentID
 func newSegmentID() pdata.SpanID {
 	var r [8]byte
