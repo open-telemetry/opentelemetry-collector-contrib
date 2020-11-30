@@ -45,7 +45,6 @@ func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 
 		// The SourceType field is the most logical "name" of the event.
 		logRecord.SetName(event.SourceType)
-		logRecord.Body().InitEmpty()
 		attrValue, err := convertInterfaceToAttributeValue(logger, event.Event)
 		if err != nil {
 			logger.Debug("Unsupported value conversion", zap.Any("value", event.Event))
