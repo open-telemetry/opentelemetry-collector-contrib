@@ -17,6 +17,7 @@ package translator
 import (
 	"encoding/binary"
 	"fmt"
+	"math/rand"
 	"strings"
 	"testing"
 	"time"
@@ -740,10 +741,8 @@ func constructDefaultResource() pdata.Resource {
 	resourceArrayVal := pdata.NewAttributeValueArray()
 	resourceArray := resourceArrayVal.ArrayVal()
 	val1 := pdata.NewAttributeValueNull()
-	val1.InitEmpty()
 	val1.SetStringVal("foo")
 	val2 := pdata.NewAttributeValueNull()
-	val2.InitEmpty()
 	val2.SetStringVal("bar")
 	resourceArray.Append(val1)
 	resourceArray.Append(val2)
@@ -787,4 +786,16 @@ func constructTimedEventsWithSentMessageEvent(tm pdata.TimestampUnixNano) pdata.
 	events.Resize(1)
 	event.CopyTo(events.At(0))
 	return events
+}
+
+// newTraceID generates a new valid X-Ray TraceID
+func newTraceID() pdata.TraceID {
+	var r [16]byte
+	epoch := time.Now().Unix()
+	binary.BigEndian.PutUint32(r[0:4], uint32(epoch))
+	_, err := rand.Read(r[4:])
+	if err != nil {
+		panic(err)
+	}
+	return pdata.NewTraceID(r)
 }
