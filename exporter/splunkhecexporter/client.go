@@ -160,9 +160,9 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (numDroppedLogs
 	c.wg.Add(1)
 	defer c.wg.Done()
 
-	splunkEvents, numDroppedLogs := logDataToSplunk(c.logger, ld, c.config)
+	splunkEvents := logDataToSplunk(c.logger, ld, c.config)
 	if len(splunkEvents) == 0 {
-		return numDroppedLogs, nil
+		return 0, nil
 	}
 
 	err = c.sendSplunkEvents(ctx, splunkEvents)
@@ -170,7 +170,7 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (numDroppedLogs
 		return ld.LogRecordCount(), err
 	}
 
-	return numDroppedLogs, nil
+	return 0, nil
 }
 
 func encodeBodyEvents(zippers *sync.Pool, evs []*splunk.Event, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {

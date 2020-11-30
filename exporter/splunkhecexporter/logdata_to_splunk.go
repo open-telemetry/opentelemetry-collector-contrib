@@ -24,7 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-func logDataToSplunk(logger *zap.Logger, ld pdata.Logs, config *Config) ([]*splunk.Event, int) {
+func logDataToSplunk(logger *zap.Logger, ld pdata.Logs, config *Config) []*splunk.Event {
 	var splunkEvents []*splunk.Event
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
@@ -51,7 +51,7 @@ func logDataToSplunk(logger *zap.Logger, ld pdata.Logs, config *Config) ([]*splu
 		}
 	}
 
-	return splunkEvents, 0
+	return splunkEvents
 }
 
 func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
