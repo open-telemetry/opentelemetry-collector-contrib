@@ -88,27 +88,6 @@ func Test_traceDataToSplunk(t *testing.T) {
 			wantSplunkEvents:    []*splunk.Event{},
 			wantNumDroppedSpans: 0,
 		},
-		{
-			name: "nil_span",
-			traceDataFn: func() pdata.Traces {
-				traces := pdata.NewTraces()
-				rs := pdata.NewResourceSpans()
-				rs.InitEmpty()
-				rs.Resource().Attributes().InsertString("service.name", "myservice")
-				rs.Resource().Attributes().InsertString("host.name", "myhost")
-				rs.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
-
-				ils := pdata.NewInstrumentationLibrarySpans()
-				ils.InitEmpty()
-				nilSpan := pdata.NewSpan()
-				ils.Spans().Append(nilSpan)
-				rs.InstrumentationLibrarySpans().Append(ils)
-				traces.ResourceSpans().Append(rs)
-				return traces
-			},
-			wantSplunkEvents:    []*splunk.Event{},
-			wantNumDroppedSpans: 0,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

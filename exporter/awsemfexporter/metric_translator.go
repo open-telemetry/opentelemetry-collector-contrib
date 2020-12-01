@@ -95,7 +95,6 @@ type DataPoints interface {
 //  - pdata.DoubleHistogramDataPoint
 //  - pdata.DoubleSummaryDataPointSlice
 type DataPoint interface {
-	IsNil() bool
 	LabelsMap() pdata.StringMap
 }
 
@@ -152,9 +151,6 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, config *Config) ([]*CWMetr
 	ilms := rm.InstrumentationLibraryMetrics()
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
-		if ilm.IsNil() {
-			continue
-		}
 		if ilm.InstrumentationLibrary().Name() == "" {
 			instrumentationLibName = noInstrumentationLibraryName
 		} else {
@@ -164,10 +160,6 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, config *Config) ([]*CWMetr
 		metrics := ilm.Metrics()
 		for k := 0; k < metrics.Len(); k++ {
 			metric := metrics.At(k)
-			if metric.IsNil() {
-				totalDroppedMetrics++
-				continue
-			}
 			cwMetrics := getCWMetrics(&metric, namespace, instrumentationLibName, config)
 			cwMetricList = append(cwMetricList, cwMetrics...)
 		}
@@ -252,9 +244,6 @@ func getCWMetrics(metric *pdata.Metric, namespace string, instrumentationLibName
 	}
 	for m := 0; m < dps.Len(); m++ {
 		dp := dps.At(m)
-		if dp.IsNil() {
-			continue
-		}
 		cwMetric := buildCWMetric(dp, metric, namespace, metricSlice, instrumentationLibName, config)
 		if cwMetric != nil {
 			cwMetrics = append(cwMetrics, cwMetric)

@@ -85,9 +85,6 @@ func (s *sfxDPClient) pushMetricsData(
 
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
-		if rm.IsNil() {
-			continue
-		}
 		sfxDataPoints = append(sfxDataPoints, s.converter.MetricDataToSignalFxV2(rm)...)
 	}
 

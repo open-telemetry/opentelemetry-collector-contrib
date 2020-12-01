@@ -73,10 +73,6 @@ func (kp *kubernetesprocessor) ProcessTraces(ctx context.Context, td pdata.Trace
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
-		if rs.IsNil() {
-			continue
-		}
-
 		kp.processResource(ctx, rs.Resource(), k8sIPFromAttributes())
 	}
 
@@ -88,10 +84,6 @@ func (kp *kubernetesprocessor) ProcessMetrics(ctx context.Context, md pdata.Metr
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
 		ms := rm.At(i)
-		if ms.IsNil() {
-			continue
-		}
-
 		kp.processResource(ctx, ms.Resource(), k8sIPFromAttributes(), k8sIPFromHostnameAttributes())
 	}
 
@@ -103,10 +95,6 @@ func (kp *kubernetesprocessor) ProcessLogs(ctx context.Context, ld pdata.Logs) (
 	rl := ld.ResourceLogs()
 	for i := 0; i < rl.Len(); i++ {
 		ls := rl.At(i)
-		if ls.IsNil() {
-			continue
-		}
-
 		kp.processResource(ctx, ls.Resource(), k8sIPFromAttributes())
 	}
 

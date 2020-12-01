@@ -63,9 +63,6 @@ func TestMapIntMetrics(t *testing.T) {
 	point.SetTimestamp(pdata.TimestampUnixNano(ts))
 	slice.Append(point)
 
-	nilPoint := pdata.NewIntDataPoint()
-	slice.Append(nilPoint)
-
 	assert.ElementsMatch(t,
 		mapIntMetrics("int64.test", slice),
 		[]datadog.Metric{metrics.NewGauge("int64.test", uint64(ts), 17, []string{})},
@@ -81,9 +78,6 @@ func TestMapDoubleMetrics(t *testing.T) {
 	point.SetValue(math.Pi)
 	point.SetTimestamp(pdata.TimestampUnixNano(ts))
 	slice.Append(point)
-
-	nilPoint := pdata.NewDoubleDataPoint()
-	slice.Append(nilPoint)
 
 	assert.ElementsMatch(t,
 		mapDoubleMetrics("float64.test", slice),
@@ -102,9 +96,6 @@ func TestMapIntHistogramMetrics(t *testing.T) {
 	point.SetBucketCounts([]uint64{2, 18})
 	point.SetTimestamp(pdata.TimestampUnixNano(ts))
 	slice.Append(point)
-
-	nilPoint := pdata.NewIntHistogramDataPoint()
-	slice.Append(nilPoint)
 
 	noBuckets := []datadog.Metric{
 		metrics.NewGauge("intHist.test.count", uint64(ts), 20, []string{}),
@@ -138,9 +129,6 @@ func TestMapDoubleHistogramMetrics(t *testing.T) {
 	point.SetBucketCounts([]uint64{2, 18})
 	point.SetTimestamp(pdata.TimestampUnixNano(ts))
 	slice.Append(point)
-
-	nilPoint := pdata.NewDoubleHistogramDataPoint()
-	slice.Append(nilPoint)
 
 	noBuckets := []datadog.Metric{
 		metrics.NewGauge("doubleHist.test.count", uint64(ts), 20, []string{}),

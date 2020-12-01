@@ -63,10 +63,6 @@ func (saf *stringAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (D
 
 		for i := 0; i < rspans.Len(); i++ {
 			rs := rspans.At(i)
-			if rs.IsNil() {
-				continue
-			}
-
 			resource := rs.Resource()
 			if v, ok := resource.Attributes().Get(saf.key); ok {
 				if _, ok := saf.values[v.StringVal()]; ok {
@@ -77,14 +73,8 @@ func (saf *stringAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (D
 			ilss := rs.InstrumentationLibrarySpans()
 			for j := 0; j < ilss.Len(); j++ {
 				ils := ilss.At(j)
-				if ils.IsNil() {
-					continue
-				}
 				for k := 0; k < ils.Spans().Len(); k++ {
 					span := ils.Spans().At(k)
-					if span.IsNil() {
-						continue
-					}
 					if v, ok := span.Attributes().Get(saf.key); ok {
 						truncableStr := v.StringVal()
 						if len(truncableStr) > 0 {

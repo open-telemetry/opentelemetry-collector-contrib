@@ -201,7 +201,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 			md:  md,
 		},
 		wantErr:               false,
-		wantDroppedTimeSeries: 1,
+		wantDroppedTimeSeries: 2,
 	}
 
 	t.Run(test.name, func(t *testing.T) {

@@ -245,9 +245,6 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(ctx context.Context, td pdat
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
 		resourceSpan := resourceSpans.At(i)
-		if resourceSpan.IsNil() {
-			continue
-		}
 		tsp.processTraces(resourceSpan)
 	}
 	return nil
@@ -258,9 +255,6 @@ func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans pdata.R
 	ilss := resourceSpans.InstrumentationLibrarySpans()
 	for j := 0; j < ilss.Len(); j++ {
 		ils := ilss.At(j)
-		if ils.IsNil() {
-			continue
-		}
 		spansLen := ils.Spans().Len()
 		for k := 0; k < spansLen; k++ {
 			span := ils.Spans().At(k)

@@ -126,10 +126,6 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (dr
 	for i := 0; i < rms.Len(); i++ {
 		droppedMetrics = 0
 		rm := rms.At(i)
-		if rm.IsNil() {
-			continue
-		}
-
 		cwm, droppedMetrics = TranslateOtToCWMetric(&rm, expConfig)
 		totalDroppedMetrics = totalDroppedMetrics + droppedMetrics
 

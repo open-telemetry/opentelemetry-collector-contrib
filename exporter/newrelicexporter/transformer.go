@@ -79,10 +79,6 @@ var (
 )
 
 func (t *traceTransformer) Span(span pdata.Span) (telemetry.Span, error) {
-	if span.IsNil() {
-		return emptySpan, errEmptySpan
-	}
-
 	startTime := pdata.UnixNanoToTime(span.StartTime())
 	sp := telemetry.Span{
 		// HexString validates the IDs, it will be an empty string if invalid.

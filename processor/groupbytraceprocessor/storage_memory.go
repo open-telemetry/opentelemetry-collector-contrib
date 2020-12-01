@@ -44,10 +44,6 @@ func newMemoryStorage() *memoryStorage {
 }
 
 func (st *memoryStorage) createOrAppend(traceID pdata.TraceID, rs pdata.ResourceSpans) error {
-	if rs.IsNil() {
-		return errStorageNilResourceSpans
-	}
-
 	sTraceID := traceID.HexString()
 
 	st.Lock()

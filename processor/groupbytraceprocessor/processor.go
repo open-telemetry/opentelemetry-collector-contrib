@@ -122,11 +122,6 @@ func (sp *groupByTraceProcessor) onBatchReceived(batch pdata.Traces) error {
 }
 
 func (sp *groupByTraceProcessor) processResourceSpans(rs pdata.ResourceSpans) error {
-	if rs.IsNil() {
-		// should not happen with the current code
-		return errNilResourceSpans
-	}
-
 	for _, batch := range splitByTrace(rs) {
 		if err := sp.processBatch(batch); err != nil {
 			sp.logger.Warn("failed to process batch", zap.Error(err),

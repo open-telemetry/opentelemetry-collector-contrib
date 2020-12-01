@@ -153,13 +153,6 @@ func generateOrphanSpansFromSpans(spans ...*sentry.Span) []*sentry.Span {
 }
 
 func TestSpanToSentrySpan(t *testing.T) {
-	t.Run("with nil span", func(t *testing.T) {
-		testSpan := pdata.NewSpan()
-
-		sentrySpan := convertToSentrySpan(testSpan, pdata.NewInstrumentationLibrary(), map[string]string{})
-		assert.Nil(t, sentrySpan)
-	})
-
 	t.Run("with root span and invalid parent span_id", func(t *testing.T) {
 		testSpan := pdata.NewSpan()
 		testSpan.InitEmpty()

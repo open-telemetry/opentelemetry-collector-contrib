@@ -166,15 +166,3 @@ func TestMemoryTraceIsBeingCloned(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "should-not-be-changed", retrieved[0].InstrumentationLibrarySpans().At(0).Spans().At(0).Name())
 }
-
-func TestCreateWithNilParameter(t *testing.T) {
-	// prepare
-	st := newMemoryStorage()
-	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
-
-	// test
-	err := st.createOrAppend(traceID, pdata.NewResourceSpans())
-
-	// verify
-	require.Equal(t, errStorageNilResourceSpans, err)
-}

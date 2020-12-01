@@ -37,10 +37,6 @@ func SerializeIntDataPoints(name string, data pdata.IntDataPointSlice, tags []st
 	output := ""
 	for i := 0; i < data.Len(); i++ {
 		p := data.At(i)
-		if p.IsNil() {
-			continue
-		}
-
 		tagline := serializeTags(p.LabelsMap(), tags)
 		valueLine := strconv.FormatInt(p.Value(), 10)
 
@@ -56,10 +52,6 @@ func SerializeDoubleDataPoints(name string, data pdata.DoubleDataPointSlice, tag
 	output := ""
 	for i := 0; i < data.Len(); i++ {
 		p := data.At(i)
-		if p.IsNil() {
-			continue
-		}
-
 		output += serializeLine(name, serializeTags(p.LabelsMap(), tags), serializeFloat64(p.Value()), p.Timestamp())
 	}
 
@@ -74,10 +66,6 @@ func SerializeDoubleHistogramMetrics(name string, data pdata.DoubleHistogramData
 	output := ""
 	for i := 0; i < data.Len(); i++ {
 		p := data.At(i)
-		if p.IsNil() {
-			continue
-		}
-
 		tagline := serializeTags(p.LabelsMap(), tags)
 		if p.Count() == 0 {
 			return ""
@@ -100,10 +88,6 @@ func SerializeIntHistogramMetrics(name string, data pdata.IntHistogramDataPointS
 	output := ""
 	for i := 0; i < data.Len(); i++ {
 		p := data.At(i)
-		if p.IsNil() {
-			continue
-		}
-
 		tagline := serializeTags(p.LabelsMap(), tags)
 		count := p.Count()
 

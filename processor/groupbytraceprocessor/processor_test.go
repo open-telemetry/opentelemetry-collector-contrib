@@ -159,43 +159,6 @@ func TestProcessorCapabilities(t *testing.T) {
 	assert.Equal(t, true, caps.MutatesConsumedData)
 }
 
-func TestProcessBatchDoesntFail(t *testing.T) {
-	// prepare
-	config := Config{
-		WaitDuration: time.Nanosecond,
-		NumTraces:    10,
-	}
-	st := newMemoryStorage()
-	next := &mockProcessor{}
-
-	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
-
-	batch := pdata.NewTraces()
-	batch.ResourceSpans().Resize(1)
-	trace := batch.ResourceSpans().At(0)
-	trace.InstrumentationLibrarySpans().Resize(1)
-	ils := trace.InstrumentationLibrarySpans().At(0)
-	ils.Spans().Resize(1)
-	span := ils.Spans().At(0)
-	span.SetTraceID(traceID)
-	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
-	batch.ResourceSpans().Append(pdata.NewResourceSpans())
-
-	p, err := newGroupByTraceProcessor(logger, st, next, config)
-	require.NoError(t, err)
-
-	// sanity check
-	err = p.processResourceSpans(batch.ResourceSpans().At(1))
-	require.Error(t, err)
-
-	// test
-	err = p.onBatchReceived(batch)
-
-	// verify
-	assert.NoError(t, err)
-	assert.NotNil(t, p)
-}
-
 func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 	// prepare
 	config := Config{
@@ -303,26 +266,6 @@ func TestTraceErrorFromStorageWhileProcessingTrace(t *testing.T) {
 
 	// verify
 	assert.True(t, errors.Is(err, expectedError))
-}
-
-func TestBadTraceDataWhileProcessingTrace(t *testing.T) {
-	// prepare
-	config := Config{
-		WaitDuration: time.Second, // we are not waiting for this whole time
-		NumTraces:    5,
-	}
-	st := &mockStorage{}
-	next := &mockProcessor{}
-
-	p, err := newGroupByTraceProcessor(logger, st, next, config)
-	require.NoError(t, err)
-	require.NotNil(t, p)
-
-	// test
-	err = p.processResourceSpans(pdata.NewResourceSpans())
-
-	// verify
-	assert.True(t, errors.Is(err, errNilResourceSpans))
 }
 
 func TestAddSpansToExistingTrace(t *testing.T) {

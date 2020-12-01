@@ -76,12 +76,6 @@ func TestTransformSpan(t *testing.T) {
 		want     telemetry.Span
 	}{
 		{
-			name:     "nil span",
-			spanFunc: pdata.NewSpan,
-			err:      errEmptySpan,
-			want:     emptySpan,
-		},
-		{
 			name: "invalid TraceID",
 			spanFunc: func() pdata.Span {
 				s := pdata.NewSpan()

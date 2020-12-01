@@ -42,11 +42,11 @@
     },
     {
       "Key": "links",
-      "Value": "[{\"attribute\":{\"link\":\"true\"},\"spanID\":\"\",\"traceID\":\"\"}]"
+      "Value": "[{\"attribute\":{\"link\":\"true\"},\"spanID\":\"\",\"traceID\":\"\"},{\"attribute\":{},\"spanID\":\"\",\"traceID\":\"\"}]"
     },
     {
       "Key": "logs",
-      "Value": "[{\"attribute\":{\"key\":\"value\"},\"name\":\"event\",\"time\":1024}]"
+      "Value": "[{\"attribute\":{\"key\":\"value\"},\"name\":\"event\",\"time\":1024},{\"attribute\":{},\"name\":\"\",\"time\":0}]"
     },
     {
       "Key": "traceState",
@@ -153,6 +153,84 @@
     {
       "Key": "statusMessage",
       "Value": "something error"
+    }
+  ],
+  [
+    {
+      "Key": "host",
+      "Value": "xxx.et15"
+    },
+    {
+      "Key": "service",
+      "Value": "signup_aggregator"
+    },
+    {
+      "Key": "resource",
+      "Value": "{\"cloud.account.id\":\"999999998\",\"cloud.provider\":\"aws\",\"cloud.region\":\"us-west-2\",\"cloud.zone\":\"us-west-1b\",\"container.image.name\":\"otel/signupaggregator\",\"container.image.tag\":\"v1\",\"container.name\":\"signup_aggregator\"}"
+    },
+    {
+      "Key": "otlp.name",
+      "Value": "golang-sls-exporter"
+    },
+    {
+      "Key": "otlp.version",
+      "Value": "v0.1.0"
+    },
+    {
+      "Key": "traceID",
+      "Value": ""
+    },
+    {
+      "Key": "spanID",
+      "Value": ""
+    },
+    {
+      "Key": "parentSpanID",
+      "Value": ""
+    },
+    {
+      "Key": "kind",
+      "Value": ""
+    },
+    {
+      "Key": "name",
+      "Value": ""
+    },
+    {
+      "Key": "links",
+      "Value": "[]"
+    },
+    {
+      "Key": "logs",
+      "Value": "[]"
+    },
+    {
+      "Key": "traceState",
+      "Value": ""
+    },
+    {
+      "Key": "start",
+      "Value": "0"
+    },
+    {
+      "Key": "end",
+      "Value": "0"
+    },
+    {
+      "Key": "duration",
+      "Value": "0"
+    },
+    {
+      "Key": "attribute",
+      "Value": "{}"
+    },
+    {
+      "Key": "statusCode",
+      "Value": "UNSET"
+    },
+    {
+      "Key": "statusMessage",
+      "Value": "status is nil"
     }
   ],
   [

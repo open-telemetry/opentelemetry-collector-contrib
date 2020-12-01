@@ -95,7 +95,7 @@ func TestTraceDataIterationNoSpans(t *testing.T) {
 	visitor.AssertNumberOfCalls(t, "visit", 0)
 }
 
-// Tests the iteration logic over a pdata.Traces type when the Span is nil
+// Tests the iteration logic over a pdata.Traces type when the Span is empty
 func TestTraceDataIterationSpanIsNil(t *testing.T) {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
@@ -109,7 +109,7 @@ func TestTraceDataIterationSpanIsNil(t *testing.T) {
 
 	Accept(traces, visitor)
 
-	visitor.AssertNumberOfCalls(t, "visit", 0)
+	visitor.AssertNumberOfCalls(t, "visit", 1)
 }
 
 // Tests the iteration logic if the visitor returns true

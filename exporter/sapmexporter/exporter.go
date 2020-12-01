@@ -85,11 +85,6 @@ func (se *sapmExporter) tracesByAccessToken(td pdata.Traces) map[string]pdata.Tr
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
 		resourceSpan := resourceSpans.At(i)
-		if resourceSpan.IsNil() {
-			// Invalid trace so nothing to export
-			continue
-		}
-
 		accessToken := ""
 		attrs := resourceSpan.Resource().Attributes()
 		if se.config.AccessTokenPassthrough {

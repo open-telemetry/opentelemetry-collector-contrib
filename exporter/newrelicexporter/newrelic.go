@@ -86,24 +86,12 @@ func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, erro
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
-		if rspans.IsNil() {
-			continue
-		}
-
 		resource := rspans.Resource()
 		for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
 			ispans := rspans.InstrumentationLibrarySpans().At(j)
-			if ispans.IsNil() {
-				continue
-			}
-
 			transform := newTraceTransformer(resource, ispans.InstrumentationLibrary())
 			for k := 0; k < ispans.Spans().Len(); k++ {
 				span := ispans.Spans().At(k)
-				if span.IsNil() {
-					continue
-				}
-
 				nrSpan, err := transform.Span(span)
 				if err != nil {
 					errs = append(errs, err)
