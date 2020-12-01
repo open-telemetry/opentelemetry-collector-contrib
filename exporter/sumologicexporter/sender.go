@@ -33,7 +33,6 @@ type appendResponse struct {
 	sent bool
 	// appended keeps state of appending new log line to the body
 	appended bool
-	err      error
 }
 
 type sender struct {
@@ -155,9 +154,9 @@ func (s *sender) sendLogs(flds fields) ([]pdata.LogRecord, error) {
 			continue
 		}
 
-		ar := s.appendAndSend(formattedLine, LogsPipeline, &body, flds)
-		if ar.err != nil {
-			errs = append(errs, ar.err)
+		ar, err := s.appendAndSend(formattedLine, LogsPipeline, &body, flds)
+		if err != nil {
+			errs = append(errs, err)
 			if ar.sent {
 				droppedRecords = append(droppedRecords, currentRecords...)
 			}
@@ -197,7 +196,7 @@ func (s *sender) appendAndSend(
 	pipeline PipelineType,
 	body *strings.Builder,
 	flds fields,
-) appendResponse {
+) (appendResponse, error) {
 	var errors []error
 	ar := newAppendResponse()
 
@@ -226,9 +225,9 @@ func (s *sender) appendAndSend(
 	}
 
 	if len(errors) > 0 {
-		ar.err = componenterror.CombineErrors(errors)
+		return ar, componenterror.CombineErrors(errors)
 	}
-	return ar
+	return ar, nil
 }
 
 // cleanBuffer zeroes buffer
