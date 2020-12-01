@@ -45,7 +45,7 @@ type EbMetaData struct {
 	VersionLabel    string `json:"version_label"`
 }
 
-func NewDetector() (*Detector, error) {
+func NewDetector() (internal.Detector, error) {
 	return &Detector{fs: &ebFileSystem{}}, nil
 }
 
