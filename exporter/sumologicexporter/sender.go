@@ -134,11 +134,14 @@ func (s *sender) sendLogs(flds fields) ([]pdata.LogRecord, error) {
 		errs           []error
 		droppedRecords []pdata.LogRecord
 		currentRecords []pdata.LogRecord
-		formattedLine  string
-		err            error
 	)
 
 	for _, record := range s.buffer {
+		var (
+			formattedLine string
+			err           error
+		)
+
 		switch s.config.LogFormat {
 		case TextFormat:
 			formattedLine, err = s.logToText(record)
