@@ -41,7 +41,7 @@ type Detector struct {
 	provider metadataProvider
 }
 
-func NewDetector() (*Detector, error) {
+func NewDetector() (internal.Detector, error) {
 	return &Detector{provider: &metadataClient{client: &http.Client{}}}, nil
 }
 
