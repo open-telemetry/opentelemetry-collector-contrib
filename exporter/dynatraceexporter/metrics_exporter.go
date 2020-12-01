@@ -30,7 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/serialization"
 )
 
-// NewExporter exports to a Dynatrace MINT API
+// NewExporter exports to a Dynatrace Metrics v2 API
 func newMetricsExporter(params component.ExporterCreateParams, cfg *config.Config) (*exporter, error) {
 	client, err := cfg.HTTPClientSettings.ToClient()
 	if err != nil {
@@ -50,7 +50,7 @@ const (
 	maxMetricKeyLen = 250
 )
 
-// Export given CheckpointSet
+// PushMetricsData exports the given metrics data
 func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error) {
 	output := ""
 	dropped := 0
@@ -105,18 +105,18 @@ func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (dropp
 	}
 
 	if output != "" {
-		err = e.send(output)
+		err = e.send(ctx, output)
 		if err != nil {
-			return 0, fmt.Errorf("error processing data:, %s", err.Error())
+			return 0, fmt.Errorf("error processing data: %s", err.Error())
 		}
 	}
 
 	return dropped, nil
 }
 
-func (e *exporter) send(message string) error {
+func (e *exporter) send(ctx context.Context, message string) error {
 	e.logger.Debug("Sending lines to Dynatrace\n" + message)
-	req, err := http.NewRequest("POST", e.cfg.Endpoint, bytes.NewBufferString(message))
+	req, err := http.NewRequestWithContext(ctx, "POST", e.cfg.Endpoint, bytes.NewBufferString(message))
 	if err != nil {
 		return fmt.Errorf("dynatrace error while creating HTTP request: %s", err.Error())
 	}
@@ -152,7 +152,7 @@ func (e *exporter) send(message string) error {
 	}
 
 	if !(resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusAccepted) {
-		return fmt.Errorf("request failed with response code:, %d", resp.StatusCode)
+		return fmt.Errorf("request failed with response code: %d", resp.StatusCode)
 	}
 
 	return nil
@@ -162,8 +162,12 @@ func (e *exporter) send(message string) error {
 // normalizeMetricName formats the custom namespace and view name to
 // Metric naming Conventions
 func normalizeMetricName(prefix, name string) (string, error) {
-	name, err := serialization.NormalizeString(name, maxMetricKeyLen)
+	normalizedLen := maxMetricKeyLen
+	if l := len(prefix); l != 0 {
+		normalizedLen -= l + 1
+	}
 
+	name, err := serialization.NormalizeString(name, normalizedLen)
 	if err != nil {
 		return "", err
 	}

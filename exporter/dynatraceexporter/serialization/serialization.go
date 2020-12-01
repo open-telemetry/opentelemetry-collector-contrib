@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	reNameAllowedCharList = regexp.MustCompile("[^A-Za-z0-9.-]+")
+	reNameDisallowedCharList = regexp.MustCompile("[^A-Za-z0-9.-]+")
 )
 
 const (
@@ -79,11 +79,10 @@ func SerializeDoubleHistogramMetrics(name string, data pdata.DoubleHistogramData
 		}
 
 		tagline := serializeTags(p.LabelsMap(), tags)
-		count := float64(p.Count())
-		if count == 0 {
+		if p.Count() == 0 {
 			return ""
 		}
-		avg := p.Sum() / count
+		avg := p.Sum() / float64(p.Count())
 
 		valueLine := fmt.Sprintf("gauge,min=%[1]s,max=%[1]s,sum=%s,count=%d", serializeFloat64(avg), serializeFloat64(p.Sum()), p.Count())
 
@@ -130,7 +129,7 @@ func serializeLine(name, tagline, valueline string, timestamp pdata.TimestampUni
 		output += "," + tagline
 	}
 
-	tsMilli := timestamp / 1000
+	tsMilli := timestamp / 1_000_000
 
 	output += " " + valueline + " " + strconv.FormatUint(uint64(tsMilli), 10) + "\n"
 
@@ -167,11 +166,11 @@ func escapeDimension(dim string) string {
 }
 
 // NormalizeString replaces all non-alphanumerical characters to underscore
-func NormalizeString(str string, max int) (string, error) {
-	str = reNameAllowedCharList.ReplaceAllString(str, "_")
+func NormalizeString(str string, max int) (normalizedString string, err error) {
+	normalizedString = reNameDisallowedCharList.ReplaceAllString(str, "_")
 
 	// Strip Digits and underscores if they are at the beginning of the string
-	normalizedString := strings.TrimLeft(str, "._0123456789")
+	normalizedString = strings.TrimLeft(normalizedString, "._0123456789")
 
 	if len(normalizedString) > max {
 		normalizedString = normalizedString[:max]
@@ -182,9 +181,9 @@ func NormalizeString(str string, max int) (string, error) {
 	}
 
 	if len(normalizedString) == 0 {
-		return "", fmt.Errorf("error normalizing the string: %s", str)
+		err = fmt.Errorf("error normalizing the string: %s", str)
 	}
-	return normalizedString, nil
+	return
 }
 
 func serializeFloat64(n float64) string {
