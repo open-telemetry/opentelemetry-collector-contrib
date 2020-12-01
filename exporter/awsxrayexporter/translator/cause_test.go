@@ -420,3 +420,216 @@ Caused by: java.lang.IllegalArgumentException: bad argument
 	assert.Equal(t, "NodeTestTask.java", *exceptions[1].Stack[1].Path)
 	assert.Equal(t, 0, *exceptions[1].Stack[1].Line)
 }
+
+func TestParseExceptionWithPythonStacktraceNoCause(t *testing.T) {
+	exceptionType := "TypeError"
+	message := "must be str, not int"
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `Traceback (most recent call last):
+  File "main.py", line 14, in <module>
+    greet_many(['Chad', 'Dan', 1])
+  File "greetings.py", line 12, in greet_many
+    print('hi, ' + person)
+TypeError: must be str, not int`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "python")
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "TypeError", *exceptions[0].Type)
+	assert.Equal(t, "must be str, not int", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 2)
+	assert.Equal(t, "greet_many", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "greetings.py", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 12, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "<module>", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "main.py", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 14, *exceptions[0].Stack[1].Line)
+}
+
+func TestParseExceptionWithPythonStacktraceAndCause(t *testing.T) {
+	exceptionType := "TypeError"
+	message := "must be str, not int"
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `Traceback (most recent call last):
+  File "bar.py", line 10, in greet_many
+    greet(person)
+  File "foo.py", line 5, in greet
+    print(greeting + ', ' + who_to_greet(someone))
+ValueError: bad value
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "main.py", line 14, in <module>
+    greet_many(['Chad', 'Dan', 1])
+  File "greetings.py", line 12, in greet_many
+    print('hi, ' + person)
+TypeError: must be str, not int`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "python")
+	assert.Len(t, exceptions, 2)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "TypeError", *exceptions[0].Type)
+	assert.Equal(t, "must be str, not int", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 2)
+	assert.Equal(t, "greet_many", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "greetings.py", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 12, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "<module>", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "main.py", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 14, *exceptions[0].Stack[1].Line)
+
+	assert.NotEmpty(t, exceptions[1].ID)
+	assert.Equal(t, "ValueError", *exceptions[1].Type)
+	assert.Equal(t, "bad value", *exceptions[1].Message)
+	assert.Len(t, exceptions[1].Stack, 2)
+	assert.Equal(t, "greet", *exceptions[1].Stack[0].Label)
+	assert.Equal(t, "foo.py", *exceptions[1].Stack[0].Path)
+	assert.Equal(t, 5, *exceptions[1].Stack[0].Line)
+	assert.Equal(t, "greet_many", *exceptions[1].Stack[1].Label)
+	assert.Equal(t, "bar.py", *exceptions[1].Stack[1].Path)
+	assert.Equal(t, 10, *exceptions[1].Stack[1].Line)
+}
+
+func TestParseExceptionWithPythonStacktraceAndMultiLineCause(t *testing.T) {
+	exceptionType := "TypeError"
+	message := "must be str, not int"
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `Traceback (most recent call last):
+  File "bar.py", line 10, in greet_many
+    greet(person)
+  File "foo.py", line 5, in greet
+    print(greeting + ', ' + who_to_greet(someone))
+ValueError: bad value
+with more on
+new lines
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "main.py", line 14, in <module>
+    greet_many(['Chad', 'Dan', 1])
+  File "greetings.py", line 12, in greet_many
+    print('hi, ' + person)
+TypeError: must be str, not int`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "python")
+	assert.Len(t, exceptions, 2)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "TypeError", *exceptions[0].Type)
+	assert.Equal(t, "must be str, not int", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 2)
+	assert.Equal(t, "greet_many", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "greetings.py", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 12, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "<module>", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "main.py", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 14, *exceptions[0].Stack[1].Line)
+
+	assert.NotEmpty(t, exceptions[1].ID)
+	assert.Equal(t, "ValueError", *exceptions[1].Type)
+	assert.Equal(t, "bad value\nwith more on\nnew lines", *exceptions[1].Message)
+	assert.Len(t, exceptions[1].Stack, 2)
+	assert.Equal(t, "greet", *exceptions[1].Stack[0].Label)
+	assert.Equal(t, "foo.py", *exceptions[1].Stack[0].Path)
+	assert.Equal(t, 5, *exceptions[1].Stack[0].Line)
+	assert.Equal(t, "greet_many", *exceptions[1].Stack[1].Label)
+	assert.Equal(t, "bar.py", *exceptions[1].Stack[1].Path)
+	assert.Equal(t, 10, *exceptions[1].Stack[1].Line)
+}
+
+func TestParseExceptionWithPythonStacktraceMalformedLines(t *testing.T) {
+	exceptionType := "TypeError"
+	message := "must be str, not int"
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `Traceback (most recent call last):
+  File "main.py", line 14 in <module>
+    greet_many(['Chad', 'Dan', 1])
+  File "main.py", lin 14, in <module>
+    greet_many(['Chad', 'Dan', 1])
+  File "main.py", line 14, fin <module>
+    greet_many(['Chad', 'Dan', 1])
+  File "greetings.py", line 12, in greet_many
+    print('hi, ' + person)
+TypeError: must be str, not int`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "python")
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "TypeError", *exceptions[0].Type)
+	assert.Equal(t, "must be str, not int", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 3)
+	assert.Equal(t, "greet_many", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "greetings.py", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 12, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "main.py", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 14, *exceptions[0].Stack[1].Line)
+	assert.Equal(t, "<module>", *exceptions[0].Stack[2].Label)
+	assert.Equal(t, "main.py", *exceptions[0].Stack[2].Path)
+	assert.Equal(t, 0, *exceptions[0].Stack[2].Line)
+}
+
+func TestParseExceptionWithPythonStacktraceAndMalformedCause(t *testing.T) {
+	exceptionType := "TypeError"
+	message := "must be str, not int"
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `Traceback (most recent call last):
+ValueError: bad value
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "main.py", line 14, in <module>
+    greet_many(['Chad', 'Dan', 1])
+  File "greetings.py", line 12, in greet_many
+    print('hi, ' + person)
+TypeError: must be str, not int`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "python")
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "TypeError", *exceptions[0].Type)
+	assert.Equal(t, "must be str, not int", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 2)
+	assert.Equal(t, "greet_many", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "greetings.py", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 12, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "<module>", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "main.py", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 14, *exceptions[0].Stack[1].Line)
+}
+
+func TestParseExceptionWithPythonStacktraceAndMalformedCauseMessage(t *testing.T) {
+	exceptionType := "TypeError"
+	message := "must be str, not int"
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `Traceback (most recent call last):
+  File "bar.py", line 10, in greet_many
+    greet(person)
+  File "foo.py", line 5, in greet
+    print(greeting + ', ' + who_to_greet(someone))
+ValueError bad value
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "main.py", line 14, in <module>
+    greet_many(['Chad', 'Dan', 1])
+  File "greetings.py", line 12, in greet_many
+    print('hi, ' + person)
+TypeError: must be str, not int`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "python")
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "TypeError", *exceptions[0].Type)
+	assert.Equal(t, "must be str, not int", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 2)
+	assert.Equal(t, "greet_many", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "greetings.py", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 12, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "<module>", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "main.py", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 14, *exceptions[0].Stack[1].Line)
+}

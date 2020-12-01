@@ -139,9 +139,13 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 		return exceptions
 	}
 
-	if language == "java" {
+	switch language {
+	case "java":
 		exceptions = fillJavaStacktrace(stacktrace, exceptions)
+	case "python":
+		exceptions = fillPythonStacktrace(stacktrace, exceptions)
 	}
+
 	return exceptions
 }
 
@@ -235,6 +239,102 @@ func fillJavaStacktrace(stacktrace string, exceptions []awsxray.Exception) []aws
 		if err != nil {
 			break
 		}
+	}
+
+	return exceptions
+}
+
+func fillPythonStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxray.Exception {
+	// Need to read in reverse order so can't use a reader. Python formatted tracebacks always use '\n'
+	// for newlines so we can just split on it without worrying about Windows newlines.
+
+	lines := strings.Split(stacktrace, "\n")
+
+	// Skip last line containing top level exception / message
+	lineIdx := len(lines) - 2
+	if lineIdx < 0 {
+		return exceptions
+	}
+	line := lines[lineIdx]
+	exception := &exceptions[0]
+
+	exception.Stack = make([]awsxray.StackFrame, 0)
+	for {
+		if strings.HasPrefix(line, "  File ") {
+			parts := strings.Split(line, ",")
+			if len(parts) == 3 {
+				filePart := parts[0]
+				file := filePart[8 : len(filePart)-1]
+				lineNumber := 0
+				if strings.HasPrefix(parts[1], " line ") {
+					lineNumber, _ = strconv.Atoi(parts[1][6:])
+				}
+
+				label := ""
+				if strings.HasPrefix(parts[2], " in ") {
+					label = parts[2][4:]
+				}
+
+				stack := awsxray.StackFrame{
+					Path:  aws.String(file),
+					Label: aws.String(label),
+					Line:  aws.Int(lineNumber),
+				}
+
+				exception.Stack = append(exception.Stack, stack)
+			}
+		} else if strings.HasPrefix(line, "During handling of the above exception, another exception occurred:") {
+			nextFileLineIdx := lineIdx - 1
+			for {
+				if nextFileLineIdx < 0 {
+					// Couldn't find a "  File ..." line before end of input, malformed stack trace.
+					return exceptions
+				}
+				if strings.HasPrefix(lines[nextFileLineIdx], "  File ") {
+					break
+				}
+				nextFileLineIdx--
+			}
+
+			// Join message which potentially has newlines. Message starts two lines from the next "File " line and ends
+			// two lines before the "During handling " line.
+			message := strings.Join(lines[nextFileLineIdx+2:lineIdx-1], "\n")
+
+			lineIdx = nextFileLineIdx
+
+			colonIdx := strings.IndexByte(message, ':')
+			if colonIdx < 0 {
+				// Error not followed by a colon, malformed stack trace.
+				return exceptions
+			}
+
+			causeType := message[0:colonIdx]
+			causeMessage := message[colonIdx+2:]
+			exceptions = append(exceptions, awsxray.Exception{
+				ID:      aws.String(newSegmentID().HexString()),
+				Type:    aws.String(causeType),
+				Message: aws.String(causeMessage),
+				Stack:   make([]awsxray.StackFrame, 0),
+			})
+			// when append causes `exceptions` to outgrow its existing
+			// capacity, re-allocation will happen so the place
+			// `exception` points to is no longer `exceptions[len(exceptions)-2]`,
+			// consequently, we can not write `exception.Cause = newException.ID`
+			// below.
+			newException := &exceptions[len(exceptions)-1]
+			exceptions[len(exceptions)-2].Cause = newException.ID
+
+			exception.Cause = newException.ID
+			exception = newException
+			// lineIdx is set to the next File line so ready to process it.
+			line = lines[lineIdx]
+			continue
+		}
+		lineIdx--
+		if lineIdx < 0 {
+			break
+		}
+		line = lines[lineIdx]
 	}
 
 	return exceptions
