@@ -104,13 +104,8 @@ func TestConsumeMetrics(t *testing.T) {
 	smallBatch := pdata.NewMetrics()
 	smallBatch.ResourceMetrics().Resize(1)
 	rm := smallBatch.ResourceMetrics().At(0)
-	rm.InitEmpty()
-
 	rm.InstrumentationLibraryMetrics().Resize(1)
 	ilm := rm.InstrumentationLibraryMetrics().At(0)
-	ilm.InitEmpty()
-	ilm.Metrics()
-
 	ilm.Metrics().Resize(1)
 	m := ilm.Metrics().At(0)
 
@@ -118,7 +113,6 @@ func TestConsumeMetrics(t *testing.T) {
 	m.SetDataType(pdata.MetricDataTypeDoubleGauge)
 
 	dp := pdata.NewDoubleDataPoint()
-	dp.InitEmpty()
 	dp.LabelsMap().InitFromMap(map[string]string{
 		"k0": "v0",
 		"k1": "v1",
@@ -241,7 +235,6 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		out := pdata.NewMetrics()
 		out.ResourceMetrics().Resize(1)
 		rm := out.ResourceMetrics().At(0)
-		rm.InitEmpty()
 
 		if includeToken {
 			rm.Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{
@@ -251,9 +244,6 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 
 		rm.InstrumentationLibraryMetrics().Resize(1)
 		ilm := rm.InstrumentationLibraryMetrics().At(0)
-		ilm.InitEmpty()
-		ilm.Metrics()
-
 		ilm.Metrics().Resize(1)
 		m := ilm.Metrics().At(0)
 
@@ -261,7 +251,6 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		m.SetDataType(pdata.MetricDataTypeDoubleGauge)
 
 		dp := pdata.NewDoubleDataPoint()
-		dp.InitEmpty()
 		dp.LabelsMap().InitFromMap(map[string]string{
 			"k0": "v0",
 			"k1": "v1",
@@ -323,13 +312,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				out := pdata.NewMetrics()
 				out.ResourceMetrics().Resize(1)
 				rm := out.ResourceMetrics().At(0)
-				rm.InitEmpty()
 
 				rm.InstrumentationLibraryMetrics().Resize(1)
 				ilm := rm.InstrumentationLibraryMetrics().At(0)
-				ilm.InitEmpty()
-				ilm.Metrics()
-
 				ilm.Metrics().Resize(1)
 				m := ilm.Metrics().At(0)
 
@@ -337,7 +322,6 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				m.SetDataType(pdata.MetricDataTypeDoubleGauge)
 
 				dp := pdata.NewDoubleDataPoint()
-				dp.InitEmpty()
 				dp.LabelsMap().InitFromMap(map[string]string{
 					"k0": "v0",
 					"k1": "v1",
@@ -524,7 +508,6 @@ func makeSampleResourceLogs() pdata.Logs {
 	out := pdata.NewLogs()
 	out.ResourceLogs().Resize(1)
 	out.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
-	out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).InitEmpty()
 	logSlice.MoveAndAppendTo(out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs())
 
 	return out
@@ -722,13 +705,9 @@ func generateLargeDPBatch() pdata.Metrics {
 	ts := time.Now()
 	for i := 0; i < 6500; i++ {
 		rm := md.ResourceMetrics().At(i)
-		rm.InitEmpty()
 
 		rm.InstrumentationLibraryMetrics().Resize(1)
 		ilm := rm.InstrumentationLibraryMetrics().At(0)
-		ilm.InitEmpty()
-		ilm.Metrics()
-
 		ilm.Metrics().Resize(1)
 		m := ilm.Metrics().At(0)
 
@@ -736,7 +715,6 @@ func generateLargeDPBatch() pdata.Metrics {
 		m.SetDataType(pdata.MetricDataTypeIntGauge)
 
 		dp := pdata.NewIntDataPoint()
-		dp.InitEmpty()
 		dp.SetTimestamp(pdata.TimestampUnixNano(ts.UnixNano()))
 		dp.LabelsMap().InitFromMap(map[string]string{
 			"k0": "v0",

@@ -170,11 +170,9 @@ func TestStackdriverTraceExport(t *testing.T) {
 			rspans.InstrumentationLibrarySpans().Resize(1)
 			ispans := rspans.InstrumentationLibrarySpans().At(0)
 			ispans.Spans().Resize(1)
-			span := pdata.NewSpan()
-			span.InitEmpty()
+			span := ispans.Spans().At(0)
 			span.SetName(spanName)
 			span.SetStartTime(pdata.TimestampUnixNano(testTime.UnixNano()))
-			span.CopyTo(ispans.Spans().At(0))
 			err = sde.ConsumeTraces(context.Background(), traces)
 			assert.NoError(t, err)
 

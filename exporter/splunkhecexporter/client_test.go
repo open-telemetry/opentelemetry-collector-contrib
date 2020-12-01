@@ -41,7 +41,6 @@ func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 	doubleVal := 1234.5678
 	metrics := pdata.NewMetrics()
 	rm := pdata.NewResourceMetrics()
-	rm.InitEmpty()
 	rm.Resource().Attributes().InsertString("k0", "v0")
 	rm.Resource().Attributes().InsertString("k1", "v1")
 	metrics.ResourceMetrics().Append(rm)
@@ -50,13 +49,10 @@ func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 		tsUnix := time.Unix(int64(i), int64(i)*time.Millisecond.Nanoseconds())
 
 		ilm := pdata.NewInstrumentationLibraryMetrics()
-		ilm.InitEmpty()
 		metric := pdata.NewMetric()
-		metric.InitEmpty()
 		metric.SetName("gauge_double_with_dims")
 		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
 		doublePt := pdata.NewDoubleDataPoint()
-		doublePt.InitEmpty()
 		doublePt.SetTimestamp(pdata.TimestampUnixNano(tsUnix.UnixNano()))
 		doublePt.SetValue(doubleVal)
 		doublePt.LabelsMap().Insert("k/n0", "vn0")
@@ -74,15 +70,12 @@ func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 func createTraceData(numberOfTraces int) pdata.Traces {
 	traces := pdata.NewTraces()
 	rs := pdata.NewResourceSpans()
-	rs.InitEmpty()
 	traces.ResourceSpans().Append(rs)
 	ils := pdata.NewInstrumentationLibrarySpans()
-	ils.InitEmpty()
 	rs.InstrumentationLibrarySpans().Append(ils)
 	rs.Resource().Attributes().InsertString("resource", "R1")
 	for i := 0; i < numberOfTraces; i++ {
 		span := pdata.NewSpan()
-		span.InitEmpty()
 		span.SetName("root")
 		span.SetStartTime(pdata.TimestampUnixNano((i + 1) * 1e9))
 		span.SetEndTime(pdata.TimestampUnixNano((i + 2) * 1e9))
@@ -105,16 +98,13 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 func createLogData(numberOfLogs int) pdata.Logs {
 	logs := pdata.NewLogs()
 	rl := pdata.NewResourceLogs()
-	rl.InitEmpty()
 	logs.ResourceLogs().Append(rl)
 	ill := pdata.NewInstrumentationLibraryLogs()
-	ill.InitEmpty()
 	rl.InstrumentationLibraryLogs().Append(ill)
 
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pdata.TimestampUnixNano(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := pdata.NewLogRecord()
-		logRecord.InitEmpty()
 		logRecord.Body().SetStringVal("mylog")
 		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")

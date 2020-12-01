@@ -6,6 +6,6 @@ require (
 	github.com/containerd/containerd v1.3.6 // indirect
 	github.com/nginxinc/nginx-prometheus-exporter v0.8.1-0.20201110005315-f5a5f8086c19
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.15.1-0.20201201131443-14047fd86f05
+	go.opentelemetry.io/collector v0.15.1-0.20201201185019-f4f68db25d1f
 	go.uber.org/zap v1.16.0
 )

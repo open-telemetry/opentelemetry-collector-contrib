@@ -52,25 +52,11 @@ func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connA
 			documents := make([]*string, 0, td.SpanCount())
 			for i := 0; i < td.ResourceSpans().Len(); i++ {
 				rspans := td.ResourceSpans().At(i)
-				if rspans.IsNil() {
-					continue
-				}
-
 				resource := rspans.Resource()
 				for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
-					ispans := rspans.InstrumentationLibrarySpans().At(j)
-					if ispans.IsNil() {
-						continue
-					}
-
-					spans := ispans.Spans()
+					spans := rspans.InstrumentationLibrarySpans().At(j).Spans()
 					for k := 0; k < spans.Len(); k++ {
-						span := spans.At(k)
-						if span.IsNil() {
-							continue
-						}
-
-						document, localErr := translator.MakeSegmentDocumentString(span, resource,
+						document, localErr := translator.MakeSegmentDocumentString(spans.At(k), resource,
 							config.(*Config).IndexedAttributes, config.(*Config).IndexAllAttributes)
 						if localErr != nil {
 							totalDroppedSpans++

@@ -34,7 +34,6 @@ func signalFxV2EventsToLogRecords(
 
 	for i, event := range events {
 		lr := lrs.At(i)
-		lr.InitEmpty()
 
 		// The EventType field is the most logical "name" of the event.
 		lr.SetName(event.EventType)

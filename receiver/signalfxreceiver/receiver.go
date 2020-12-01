@@ -259,10 +259,6 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
 			for i := 0; i < md.ResourceMetrics().Len(); i++ {
 				rm := md.ResourceMetrics().At(i)
-				if rm.IsNil() {
-					continue
-				}
-
 				res := rm.Resource()
 				res.Attributes().Insert(splunk.SFxAccessTokenLabel, pdata.NewAttributeValueString(accessToken))
 			}

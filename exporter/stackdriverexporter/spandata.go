@@ -16,7 +16,6 @@
 package stackdriverexporter
 
 import (
-	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -27,8 +26,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 )
-
-var errNilSpan = errors.New("expected a non-nil span")
 
 func pdataResourceSpansToOTSpanData(rs pdata.ResourceSpans) ([]*export.SpanData, error) {
 	resource := rs.Resource()
@@ -54,9 +51,6 @@ func pdataSpanToOTSpanData(
 	resource pdata.Resource,
 	il pdata.InstrumentationLibrary,
 ) (*export.SpanData, error) {
-	if span.IsNil() {
-		return nil, errNilSpan
-	}
 	sc := apitrace.SpanContext{}
 	sc.TraceID = span.TraceID().Bytes()
 	sc.SpanID = span.SpanID().Bytes()
@@ -153,9 +147,6 @@ func pdataLinksToOTLinks(links pdata.SpanLinkSlice) []apitrace.Link {
 	otLinks := make([]apitrace.Link, 0, size)
 	for i := 0; i < size; i++ {
 		link := links.At(i)
-		if link.IsNil() {
-			continue
-		}
 		sc := apitrace.SpanContext{}
 		sc.TraceID = link.TraceID().Bytes()
 		sc.SpanID = link.SpanID().Bytes()
@@ -172,9 +163,6 @@ func pdataEventsToOTMessageEvents(events pdata.SpanEventSlice) []export.Event {
 	otEvents := make([]export.Event, 0, size)
 	for i := 0; i < size; i++ {
 		event := events.At(i)
-		if event.IsNil() {
-			continue
-		}
 		otEvents = append(otEvents, export.Event{
 			Name:       event.Name(),
 			Attributes: pdataAttributesToOTAttributes(event.Attributes(), pdata.NewResource()),

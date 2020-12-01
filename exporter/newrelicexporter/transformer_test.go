@@ -76,16 +76,9 @@ func TestTransformSpan(t *testing.T) {
 		want     telemetry.Span
 	}{
 		{
-			name:     "nil span",
-			spanFunc: pdata.NewSpan,
-			err:      errEmptySpan,
-			want:     emptySpan,
-		},
-		{
 			name: "invalid TraceID",
 			spanFunc: func() pdata.Span {
 				s := pdata.NewSpan()
-				s.InitEmpty()
 				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 				s.SetName("invalid TraceID")
 				return s
@@ -101,7 +94,6 @@ func TestTransformSpan(t *testing.T) {
 			name: "invalid SpanID",
 			spanFunc: func() pdata.Span {
 				s := pdata.NewSpan()
-				s.InitEmpty()
 				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 				s.SetName("invalid SpanID")
 				return s
@@ -117,7 +109,6 @@ func TestTransformSpan(t *testing.T) {
 			name: "root",
 			spanFunc: func() pdata.Span {
 				s := pdata.NewSpan()
-				s.InitEmpty()
 				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 				s.SetName("root")
@@ -135,7 +126,6 @@ func TestTransformSpan(t *testing.T) {
 			name: "client",
 			spanFunc: func() pdata.Span {
 				s := pdata.NewSpan()
-				s.InitEmpty()
 				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 2}))
 				s.SetParentSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
@@ -264,7 +254,6 @@ func TestTransformSpan(t *testing.T) {
 			name: "with timestamps",
 			spanFunc: func() pdata.Span {
 				s := pdata.NewSpan()
-				s.InitEmpty()
 				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 5}))
 				s.SetName("with time")
@@ -286,7 +275,6 @@ func TestTransformSpan(t *testing.T) {
 			name: "span kind server",
 			spanFunc: func() pdata.Span {
 				s := pdata.NewSpan()
-				s.InitEmpty()
 				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 6}))
 				s.SetName("span kind server")
@@ -307,7 +295,6 @@ func TestTransformSpan(t *testing.T) {
 			name: "with events",
 			spanFunc: func() pdata.Span {
 				s := pdata.NewSpan()
-				s.InitEmpty()
 				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 7}))
 				s.SetName("with events")

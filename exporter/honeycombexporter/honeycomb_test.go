@@ -354,7 +354,6 @@ func TestSpanKinds(t *testing.T) {
 
 func createSpan() pdata.Span {
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetName("spanName")
 	span.SetTraceID(pdata.NewTraceID([16]byte{0x01}))
 	span.SetParentSpanID(pdata.NewSpanID([8]byte{0x02}))

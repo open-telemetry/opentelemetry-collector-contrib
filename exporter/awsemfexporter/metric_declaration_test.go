@@ -384,7 +384,6 @@ func TestMetricDeclarationMatches(t *testing.T) {
 	assert.Nil(t, err)
 
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("a")
 	assert.True(t, m.Matches(&metric, nil))
 
@@ -516,7 +515,6 @@ func TestMetricDeclarationMatchesWithLabelMatchers(t *testing.T) {
 	}
 	logger := zap.NewNop()
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("a")
 
 	for _, tc := range testCases {
@@ -760,7 +758,6 @@ func TestProcessMetricDeclarations(t *testing.T) {
 
 	for _, tc := range testCases {
 		metric := pdata.NewMetric()
-		metric.InitEmpty()
 		metric.SetName(tc.metricName)
 		t.Run(tc.testName, func(t *testing.T) {
 			dimensions := processMetricDeclarations(metricDeclarations, &metric, tc.labels, tc.rollUpDims)

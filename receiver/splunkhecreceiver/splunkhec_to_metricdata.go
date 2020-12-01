@@ -37,10 +37,8 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 
 	for _, event := range events {
 		resourceMetrics := pdata.NewResourceMetrics()
-		resourceMetrics.InitEmpty()
 
 		metrics := pdata.NewInstrumentationLibraryMetrics()
-		metrics.InitEmpty()
 		attrs := resourceMetrics.Resource().Attributes()
 		if event.Host != "" {
 			attrs.InsertString(conventions.AttributeHostName, event.Host)
@@ -74,7 +72,6 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 		for _, metricName := range metricNames {
 			pointTimestamp := convertTimestamp(event.Time)
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetDataType(pdata.MetricDataTypeNone)
 			metric.SetName(metricName)
 
@@ -125,7 +122,6 @@ func convertString(logger *zap.Logger, metricName string, s string, numDroppedTi
 
 func addIntGauge(ts pdata.TimestampUnixNano, value int64, metric pdata.Metric, populateLabels func(pdata.StringMap)) {
 	intPt := pdata.NewIntDataPoint()
-	intPt.InitEmpty()
 	intPt.SetTimestamp(ts)
 	intPt.SetValue(value)
 	populateLabels(intPt.LabelsMap())
@@ -135,7 +131,6 @@ func addIntGauge(ts pdata.TimestampUnixNano, value int64, metric pdata.Metric, p
 
 func addDoubleGauge(ts pdata.TimestampUnixNano, value float64, metric pdata.Metric, populateLabels func(pdata.StringMap)) {
 	doublePt := pdata.NewDoubleDataPoint()
-	doublePt.InitEmpty()
 	doublePt.SetTimestamp(ts)
 	doublePt.SetValue(value)
 	populateLabels(doublePt.LabelsMap())

@@ -941,7 +941,6 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 	}
 
 	rs := pdata.NewResourceSpans()
-	rs.InitEmpty()
 
 	if len(resourceAttrs) > 0 {
 		rs.Resource().Attributes().InitFromMap(resourceAttrs)
@@ -955,7 +954,6 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 
 	rs.InstrumentationLibrarySpans().Resize(1)
 	ls := rs.InstrumentationLibrarySpans().At(0)
-	ls.InitEmpty()
 	ls.Spans().Resize(len(propsPerSpan))
 
 	for i, props := range propsPerSpan {

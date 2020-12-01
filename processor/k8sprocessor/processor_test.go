@@ -233,7 +233,6 @@ func generateTraces(resourceFunc ...generateResourceFunc) pdata.Traces {
 	t := pdata.NewTraces()
 	rs := t.ResourceSpans()
 	rs.Resize(1)
-	rs.At(0).InitEmpty()
 	rs.At(0).InstrumentationLibrarySpans().Resize(1)
 	rs.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
 	for _, resFun := range resourceFunc {
@@ -249,7 +248,6 @@ func generateMetrics(resourceFunc ...generateResourceFunc) pdata.Metrics {
 	m := pdata.NewMetrics()
 	ms := m.ResourceMetrics()
 	ms.Resize(1)
-	ms.At(0).InitEmpty()
 	ms.At(0).InstrumentationLibraryMetrics().Resize(1)
 	ms.At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(1)
 	for _, resFun := range resourceFunc {
@@ -265,7 +263,6 @@ func generateLogs(resourceFunc ...generateResourceFunc) pdata.Logs {
 	l := pdata.NewLogs()
 	ls := l.ResourceLogs()
 	ls.Resize(1)
-	ls.At(0).InitEmpty()
 	ls.At(0).InstrumentationLibraryLogs().Resize(1)
 	ls.At(0).InstrumentationLibraryLogs().At(0).Logs().Resize(1)
 	for _, resFun := range resourceFunc {

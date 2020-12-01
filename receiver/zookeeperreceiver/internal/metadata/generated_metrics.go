@@ -139,7 +139,6 @@ var Metrics = &metricStruct{
 		"zookeeper.approximate_date_size",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("zookeeper.approximate_date_size")
 			metric.SetDescription("Size of data in bytes that a ZooKeeper server has in its data tree.")
 			metric.SetUnit("By")
@@ -152,7 +151,6 @@ var Metrics = &metricStruct{
 		"zookeeper.connections_alive",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("zookeeper.connections_alive")
 			metric.SetDescription("Number of active clients connected to a ZooKeeper server.")
 			metric.SetUnit("1")
@@ -165,7 +163,6 @@ var Metrics = &metricStruct{
 		"zookeeper.ephemeral_nodes",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("zookeeper.ephemeral_nodes")
 			metric.SetDescription("Number of ephemeral nodes that a ZooKeeper server has in its data tree.")
 			metric.SetUnit("1")
@@ -178,7 +175,6 @@ var Metrics = &metricStruct{
 		"zookeeper.followers",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("zookeeper.followers")
 			metric.SetDescription("The number of followers in sync with the leader. Only exposed by the leader.")
 			metric.SetUnit("1")
@@ -191,7 +187,6 @@ var Metrics = &metricStruct{
 		"zookeeper.fsync_threshold_exceeds",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("zookeeper.fsync_threshold_exceeds")
 			metric.SetDescription("Number of times fsync duration has exceeded warning threshold.")
 			metric.SetUnit("1")
@@ -206,7 +201,6 @@ var Metrics = &metricStruct{
 		"zookeeper.latency.avg",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("zookeeper.latency.avg")
 			metric.SetDescription("Average time in milliseconds for requests to be processed.")
 			metric.SetUnit("ms")
@@ -219,7 +213,6 @@ var Metrics = &metricStruct{
 		"zookeeper.latency.max",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("zookeeper.latency.max")
 			metric.SetDescription("Maximum time in milliseconds for requests to be processed.")
 			metric.SetUnit("ms")
@@ -232,7 +225,6 @@ var Metrics = &metricStruct{
 		"zookeeper.latency.min",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("zookeeper.latency.min")
 			metric.SetDescription("Minimum time in milliseconds for requests to be processed.")
 			metric.SetUnit("1")
@@ -245,7 +237,6 @@ var Metrics = &metricStruct{
 		"zookeeper.max_file_descriptors",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("zookeeper.max_file_descriptors")
 			metric.SetDescription("Maximum number of file descriptors that a ZooKeeper server can open.")
 			metric.SetUnit("1")
@@ -258,7 +249,6 @@ var Metrics = &metricStruct{
 		"zookeeper.open_file_descriptors",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("zookeeper.open_file_descriptors")
 			metric.SetDescription("Number of file descriptors that a ZooKeeper server has open.")
 			metric.SetUnit("1")
@@ -271,7 +261,6 @@ var Metrics = &metricStruct{
 		"zookeeper.outstanding_requests",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("zookeeper.outstanding_requests")
 			metric.SetDescription("Number of currently executing requests.")
 			metric.SetUnit("1")
@@ -284,7 +273,6 @@ var Metrics = &metricStruct{
 		"zookeeper.packets.received",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("zookeeper.packets.received")
 			metric.SetDescription("Number of ZooKeeper packets received by a server.")
 			metric.SetUnit("1")
@@ -299,7 +287,6 @@ var Metrics = &metricStruct{
 		"zookeeper.packets.sent",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("zookeeper.packets.sent")
 			metric.SetDescription("Number of ZooKeeper packets sent by a server.")
 			metric.SetUnit("1")
@@ -314,7 +301,6 @@ var Metrics = &metricStruct{
 		"zookeeper.pending_syncs",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("zookeeper.pending_syncs")
 			metric.SetDescription("The number of pending syncs from the followers. Only exposed by the leader.")
 			metric.SetUnit("1")
@@ -327,7 +313,6 @@ var Metrics = &metricStruct{
 		"zookeeper.synced_followers",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("zookeeper.synced_followers")
 			metric.SetDescription("The number of followers in sync with the leader. Only exposed by the leader.")
 			metric.SetUnit("1")
@@ -340,7 +325,6 @@ var Metrics = &metricStruct{
 		"zookeeper.watches",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("zookeeper.watches")
 			metric.SetDescription("Number of watches placed on Z-Nodes on a ZooKeeper server.")
 			metric.SetUnit("1")
@@ -353,7 +337,6 @@ var Metrics = &metricStruct{
 		"zookeeper.znodes",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("zookeeper.znodes")
 			metric.SetDescription("Number of z-nodes that a ZooKeeper server has in its data tree.")
 			metric.SetUnit("1")

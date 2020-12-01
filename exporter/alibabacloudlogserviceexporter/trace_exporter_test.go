@@ -36,11 +36,8 @@ func TestNewTraceExporter(t *testing.T) {
 
 	traceData := pdata.NewTraces()
 	spanData := pdata.NewResourceSpans()
-	spanData.InitEmpty()
 	spans := pdata.NewInstrumentationLibrarySpans()
-	spans.InitEmpty()
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	spans.Spans().Append(span)
 	spanData.InstrumentationLibrarySpans().Append(spans)
 	traceData.ResourceSpans().Append(spanData)

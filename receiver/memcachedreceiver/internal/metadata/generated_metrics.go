@@ -91,7 +91,6 @@ var Metrics = &metricStruct{
 		"memcached.bytes",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("memcached.bytes")
 			metric.SetDescription("Current number of bytes used by this server to store items")
 			metric.SetUnit("By")
@@ -104,7 +103,6 @@ var Metrics = &metricStruct{
 		"memcached.current_connections",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("memcached.current_connections")
 			metric.SetDescription("The current number of open connections")
 			metric.SetUnit("connections")
@@ -117,7 +115,6 @@ var Metrics = &metricStruct{
 		"memcached.get_hits",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("memcached.get_hits")
 			metric.SetDescription("Number of keys that have been requested and found present")
 			metric.SetUnit("connections")
@@ -132,7 +129,6 @@ var Metrics = &metricStruct{
 		"memcached.get_misses",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("memcached.get_misses")
 			metric.SetDescription("Number of items that have been requested and not found")
 			metric.SetUnit("connections")
@@ -147,7 +143,6 @@ var Metrics = &metricStruct{
 		"memcached.total_connections",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("memcached.total_connections")
 			metric.SetDescription("Total number of connections opened since the server started running")
 			metric.SetUnit("connections")

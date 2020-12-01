@@ -166,10 +166,6 @@ func (z *zookeeperMetricsScraper) getMetricsAndAttributes(scanner *bufio.Scanner
 		default:
 			// Skip metric if there is no descriptor associated with it.
 			metricDescriptor := getOTLPMetricDescriptor(metricKey)
-			if metricDescriptor.IsNil() {
-				continue
-			}
-
 			int64Val, err := strconv.ParseInt(metricValue, 10, 64)
 			if err != nil {
 				z.logger.Debug(

@@ -46,10 +46,6 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 	rms := data.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
-		if rm.IsNil() {
-			continue
-		}
-
 		host := unknownHostName
 		source := config.Source
 		sourceType := config.SourceType
@@ -79,24 +75,15 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 		ilms := rm.InstrumentationLibraryMetrics()
 		for ilmi := 0; ilmi < ilms.Len(); ilmi++ {
 			ilm := ilms.At(ilmi)
-			if ilm.IsNil() {
-				continue
-			}
 			metrics := ilm.Metrics()
 			for tmi := 0; tmi < metrics.Len(); tmi++ {
 				tm := metrics.At(tmi)
-				if tm.IsNil() {
-					continue
-				}
 				metricFieldName := splunkMetricValue + ":" + tm.Name()
 				switch tm.DataType() {
 				case pdata.MetricDataTypeIntGauge:
 					pts := tm.IntGauge().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
-						if dataPt.IsNil() {
-							continue
-						}
 						fields := cloneMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
 						fields[metricFieldName] = dataPt.Value()
@@ -108,9 +95,6 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 					pts := tm.DoubleGauge().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
-						if dataPt.IsNil() {
-							continue
-						}
 						fields := cloneMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
 						fields[metricFieldName] = dataPt.Value()
@@ -121,16 +105,8 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 					pts := tm.DoubleHistogram().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
-						if dataPt.IsNil() {
-							continue
-						}
 						bounds := dataPt.ExplicitBounds()
 						counts := dataPt.BucketCounts()
-						// Spec says counts is optional but if present it must have one more
-						// element than the bounds array.
-						if len(counts) > 0 && len(counts) != len(bounds)+1 {
-							continue
-						}
 						// first, add one event for sum, and one for count
 						{
 							fields := cloneMap(commonFields)
@@ -145,6 +121,11 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 							fields[metricFieldName+countSuffix] = dataPt.Count()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)
+						}
+						// Spec says counts is optional but if present it must have one more
+						// element than the bounds array.
+						if len(counts) == 0 || len(counts) != len(bounds)+1 {
+							continue
 						}
 						value := uint64(0)
 						// now create buckets for each bound.
@@ -171,16 +152,8 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 					pts := tm.IntHistogram().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
-						if dataPt.IsNil() {
-							continue
-						}
 						bounds := dataPt.ExplicitBounds()
 						counts := dataPt.BucketCounts()
-						// Spec says counts is optional but if present it must have one more
-						// element than the bounds array.
-						if len(counts) > 0 && len(counts) != len(bounds)+1 {
-							continue
-						}
 						// first, add one event for sum, and one for count
 						{
 							fields := cloneMap(commonFields)
@@ -195,6 +168,11 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 							fields[metricFieldName+countSuffix] = dataPt.Count()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)
+						}
+						// Spec says counts is optional but if present it must have one more
+						// element than the bounds array.
+						if len(counts) == 0 || len(counts) != len(bounds)+1 {
+							continue
 						}
 						value := uint64(0)
 						// now create buckets for each bound.
@@ -221,9 +199,6 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 					pts := tm.DoubleSum().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
-						if dataPt.IsNil() {
-							continue
-						}
 						fields := cloneMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
 						fields[metricFieldName] = dataPt.Value()
@@ -235,9 +210,6 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 					pts := tm.IntSum().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
-						if dataPt.IsNil() {
-							continue
-						}
 						fields := cloneMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
 						fields[metricFieldName] = dataPt.Value()

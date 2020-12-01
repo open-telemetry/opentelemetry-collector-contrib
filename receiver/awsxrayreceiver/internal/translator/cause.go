@@ -61,7 +61,6 @@ func addCause(seg *awsxray.Segment, span *pdata.Span) {
 
 		for i, excp := range seg.Cause.Exceptions {
 			evt := evts.At(exceptionEventStartIndex + i)
-			evt.InitEmpty()
 			evt.SetName(conventions.AttributeExceptionEventName)
 			attrs := evt.Attributes()
 			attrs.InitEmptyWithCapacity(8)

@@ -95,23 +95,6 @@ func TestTraceDataIterationNoSpans(t *testing.T) {
 	visitor.AssertNumberOfCalls(t, "visit", 0)
 }
 
-// Tests the iteration logic over a pdata.Traces type when the Span is nil
-func TestTraceDataIterationSpanIsNil(t *testing.T) {
-	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ilss := rs.InstrumentationLibrarySpans().At(0)
-	span := pdata.NewSpan()
-	ilss.Spans().Append(span)
-
-	visitor := getMockVisitor(true)
-
-	Accept(traces, visitor)
-
-	visitor.AssertNumberOfCalls(t, "visit", 0)
-}
-
 // Tests the iteration logic if the visitor returns true
 func TestTraceDataIterationNoShortCircuit(t *testing.T) {
 	traces := pdata.NewTraces()

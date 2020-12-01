@@ -49,16 +49,13 @@ func getComplexAttributeValueMap() pdata.AttributeValue {
 func createLogData(numberOfLogs int) pdata.Logs {
 	logs := pdata.NewLogs()
 	rl := pdata.NewResourceLogs()
-	rl.InitEmpty()
 	rl.Resource().Attributes().InsertString("resouceKey", "resourceValue")
 	rl.Resource().Attributes().InsertString(conventions.AttributeServiceName, "test-log-service-exporter")
 	rl.Resource().Attributes().InsertString(conventions.AttributeHostName, "test-host")
 	logs.ResourceLogs().Append(rl)
 	rl2 := pdata.NewResourceLogs()
-	rl2.InitEmpty()
 	logs.ResourceLogs().Append(rl2)
 	ill := pdata.NewInstrumentationLibraryLogs()
-	ill.InitEmpty()
 	ill.InstrumentationLibrary().SetName("collector")
 	ill.InstrumentationLibrary().SetVersion("v0.1.0")
 	rl.InstrumentationLibraryLogs().Append(ill)
@@ -66,7 +63,6 @@ func createLogData(numberOfLogs int) pdata.Logs {
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pdata.TimestampUnixNano(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := pdata.NewLogRecord()
-		logRecord.InitEmpty()
 		switch i {
 		case 0:
 			// do nothing, left body null

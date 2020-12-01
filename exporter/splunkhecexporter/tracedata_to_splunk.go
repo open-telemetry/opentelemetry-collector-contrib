@@ -65,9 +65,6 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 	rss := data.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
-		if rs.IsNil() {
-			continue
-		}
 		host := unknownHostName
 		source := config.Source
 		sourceType := config.SourceType
@@ -103,16 +100,9 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 		ilss := rs.InstrumentationLibrarySpans()
 		for sils := 0; sils < ilss.Len(); sils++ {
 			ils := ilss.At(sils)
-			if ils.IsNil() {
-				continue
-			}
 			spans := ils.Spans()
 			for si := 0; si < spans.Len(); si++ {
 				span := spans.At(si)
-				if span.IsNil() {
-					continue
-				}
-
 				se := &splunk.Event{
 					Time:       timestampToSecondsWithMillisecondPrecision(span.StartTime()),
 					Host:       host,

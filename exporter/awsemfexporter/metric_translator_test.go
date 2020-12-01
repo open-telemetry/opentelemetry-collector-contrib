@@ -1389,7 +1389,6 @@ func TestGetCWMetrics(t *testing.T) {
 
 	t.Run("Unhandled metric type", func(t *testing.T) {
 		metric := pdata.NewMetric()
-		metric.InitEmpty()
 		metric.SetName("foo")
 		metric.SetUnit("Count")
 		metric.SetDataType(pdata.MetricDataTypeIntHistogram)
@@ -1441,13 +1440,11 @@ func TestBuildCWMetric(t *testing.T) {
 
 	// Test data types
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName("foo")
 
 	t.Run("Int gauge", func(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		dp := pdata.NewIntDataPoint()
-		dp.InitEmpty()
 		dp.LabelsMap().InitFromMap(map[string]string{
 			"label1": "value1",
 		})
@@ -1474,7 +1471,6 @@ func TestBuildCWMetric(t *testing.T) {
 	t.Run("Double gauge", func(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
 		dp := pdata.NewDoubleDataPoint()
-		dp.InitEmpty()
 		dp.LabelsMap().InitFromMap(map[string]string{
 			"label1": "value1",
 		})
@@ -1502,7 +1498,6 @@ func TestBuildCWMetric(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeIntSum)
 		metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		dp := pdata.NewIntDataPoint()
-		dp.InitEmpty()
 		dp.LabelsMap().InitFromMap(map[string]string{
 			"label1": "value1",
 		})
@@ -1530,7 +1525,6 @@ func TestBuildCWMetric(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeDoubleSum)
 		metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		dp := pdata.NewDoubleDataPoint()
-		dp.InitEmpty()
 		dp.LabelsMap().InitFromMap(map[string]string{
 			"label1": "value1",
 		})
@@ -1557,7 +1551,6 @@ func TestBuildCWMetric(t *testing.T) {
 	t.Run("Double histogram", func(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
 		dp := pdata.NewDoubleHistogramDataPoint()
-		dp.InitEmpty()
 		dp.LabelsMap().InitFromMap(map[string]string{
 			"label1": "value1",
 		})
@@ -1590,7 +1583,6 @@ func TestBuildCWMetric(t *testing.T) {
 	t.Run("Invalid datapoint type", func(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		dp := pdata.NewIntHistogramDataPoint()
-		dp.InitEmpty()
 
 		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, config)
 		assert.Nil(t, cwMetric)
@@ -1661,7 +1653,6 @@ func TestBuildCWMetric(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			dp := pdata.NewIntDataPoint()
-			dp.InitEmpty()
 			dp.LabelsMap().InitFromMap(tc.labels)
 			dp.SetValue(int64(-17))
 			config = &Config{
@@ -1701,7 +1692,6 @@ func TestBuildCWMetricWithMetricDeclarations(t *testing.T) {
 	metricName := "metric1"
 	metricValue := int64(-17)
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetName(metricName)
 	metricSlice := []map[string]string{{"Name": metricName}}
 	testCases := []struct {
@@ -1986,7 +1976,6 @@ func TestBuildCWMetricWithMetricDeclarations(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			dp := pdata.NewIntDataPoint()
-			dp.InitEmpty()
 			dp.LabelsMap().InitFromMap(tc.labels)
 			dp.SetValue(metricValue)
 			config := &Config{
@@ -2162,7 +2151,6 @@ func TestDimensionRollup(t *testing.T) {
 
 func TestNeedsCalculateRate(t *testing.T) {
 	metric := pdata.NewMetric()
-	metric.InitEmpty()
 	metric.SetDataType(pdata.MetricDataTypeIntGauge)
 	assert.False(t, needsCalculateRate(&metric))
 	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)

@@ -147,7 +147,6 @@ func TestServerSpanNoParentId(t *testing.T) {
 
 func TestSpanNoParentId(t *testing.T) {
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetName("my-topic send")
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
@@ -164,7 +163,6 @@ func TestSpanNoParentId(t *testing.T) {
 
 func TestSpanWithNoStatus(t *testing.T) {
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
@@ -648,7 +646,6 @@ func constructClientSpan(parentSpanID pdata.SpanID, name string, code int32, mes
 	)
 
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(spanID)
 	span.SetParentSpanID(parentSpanID)
@@ -677,7 +674,6 @@ func constructServerSpan(parentSpanID pdata.SpanID, name string, code int32, mes
 	)
 
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(spanID)
 	span.SetParentSpanID(parentSpanID)
@@ -759,7 +755,6 @@ func constructTimedEventsWithReceivedMessageEvent(tm pdata.TimestampUnixNano) pd
 	eventAttr.InsertInt(semconventions.AttributeMessageUncompressedSize, 12452)
 
 	event := pdata.NewSpanEvent()
-	event.InitEmpty()
 	event.SetTimestamp(tm)
 	eventAttr.CopyTo(event.Attributes())
 	event.SetDroppedAttributesCount(0)
@@ -777,7 +772,6 @@ func constructTimedEventsWithSentMessageEvent(tm pdata.TimestampUnixNano) pdata.
 	eventAttr.InsertInt(semconventions.AttributeMessageUncompressedSize, 7480)
 
 	event := pdata.NewSpanEvent()
-	event.InitEmpty()
 	event.SetTimestamp(tm)
 	eventAttr.CopyTo(event.Attributes())
 	event.SetDroppedAttributesCount(0)

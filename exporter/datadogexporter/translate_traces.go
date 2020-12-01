@@ -52,14 +52,10 @@ func ConvertToDatadogTd(td pdata.Traces, calculator *stats.SublayerCalculator, c
 
 	resourceSpans := td.ResourceSpans()
 
-	traces := []*pb.TracePayload{}
+	var traces []*pb.TracePayload
 
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
-		if rs.IsNil() {
-			continue
-		}
-
 		// TODO pass logger here once traces code stabilizes
 		hostname := *metadata.GetHost(zap.NewNop(), cfg)
 		resHostname, ok := metadata.HostnameFromAttributes(rs.Resource().Attributes())
@@ -136,9 +132,6 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *stats.Subla
 
 	for i := 0; i < ilss.Len(); i++ {
 		ils := ilss.At(i)
-		if ils.IsNil() {
-			continue
-		}
 		extractInstrumentationLibraryTags(ils.InstrumentationLibrary(), datadogTags)
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
