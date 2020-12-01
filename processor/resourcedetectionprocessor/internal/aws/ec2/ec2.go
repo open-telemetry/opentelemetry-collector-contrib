@@ -32,7 +32,7 @@ const (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
-	provider ec2MetadataProvider
+	metadataProvider metadataProvider
 }
 
 func NewDetector() (internal.Detector, error) {
@@ -40,21 +40,21 @@ func NewDetector() (internal.Detector, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Detector{provider: &ec2MetadataImpl{sess: sess}}, nil
+	return &Detector{metadataProvider: newMetadataClient(sess)}, nil
 }
 
 func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()
-	if !d.provider.available(ctx) {
+	if !d.metadataProvider.available(ctx) {
 		return res, nil
 	}
 
-	meta, err := d.provider.get(ctx)
+	meta, err := d.metadataProvider.get(ctx)
 	if err != nil {
 		return res, fmt.Errorf("failed getting identity document: %w", err)
 	}
 
-	hostname, err := d.provider.hostname(ctx)
+	hostname, err := d.metadataProvider.hostname(ctx)
 	if err != nil {
 		return res, fmt.Errorf("failed getting hostname: %w", err)
 	}
