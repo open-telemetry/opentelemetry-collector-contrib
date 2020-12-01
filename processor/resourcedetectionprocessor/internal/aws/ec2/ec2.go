@@ -35,7 +35,7 @@ type Detector struct {
 	metadataProvider metadataProvider
 }
 
-func NewDetector() (*Detector, error) {
+func NewDetector() (internal.Detector, error) {
 	sess, err := session.NewSession()
 	if err != nil {
 		return nil, err
