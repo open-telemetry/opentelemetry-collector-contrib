@@ -18,10 +18,35 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/session"
 )
 
-type ec2MetadataProvider interface {
+type metadataProvider interface {
 	get(ctx context.Context) (ec2metadata.EC2InstanceIdentityDocument, error)
 	hostname(ctx context.Context) (string, error)
 	available(ctx context.Context) bool
+}
+
+type metadataClient struct {
+	metadata *ec2metadata.EC2Metadata
+}
+
+var _ metadataProvider = (*metadataClient)(nil)
+
+func newMetadataClient(sess *session.Session) *metadataClient {
+	return &metadataClient{
+		metadata: ec2metadata.New(sess),
+	}
+}
+
+func (c *metadataClient) available(ctx context.Context) bool {
+	return c.metadata.AvailableWithContext(ctx)
+}
+
+func (c *metadataClient) hostname(ctx context.Context) (string, error) {
+	return c.metadata.GetMetadataWithContext(ctx, "hostname")
+}
+
+func (c *metadataClient) get(ctx context.Context) (ec2metadata.EC2InstanceIdentityDocument, error) {
+	return c.metadata.GetInstanceIdentityDocumentWithContext(ctx)
 }
