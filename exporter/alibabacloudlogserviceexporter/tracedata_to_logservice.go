@@ -15,393 +15,226 @@
 package alibabacloudlogserviceexporter
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"strconv"
 	"time"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/gogo/protobuf/proto"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
 	traceIDField       = "traceID"
 	spanIDField        = "spanID"
 	parentSpanIDField  = "parentSpanID"
-	operationNameField = "operationName"
-	referenceField     = "reference"
-	startTimeField     = "startTime"
+	nameField          = "name"
+	kindField          = "kind"
+	linksField         = "links"
+	timeField          = "time"
+	startTimeField     = "start"
+	endTimeField       = "end"
+	traceStateField    = "traceState"
 	durationField      = "duration"
-	tagsPrefix         = "tags."
+	attributeField     = "attribute"
+	statusCodeField    = "statusCode"
+	statusMessageField = "statusMessage"
 	logsField          = "logs"
-	serviceNameField   = "process.serviceName"
-	processTagsPrefix  = "process.tags."
-)
-
-const (
-	// Tags
-	opencensusLanguage        = "language"
-	opencensusExporterVersion = "exporter_version"
-	opencensusCoreLibVersion  = "core_lib_version"
-	opencensusResourceType    = "resource_type"
 )
 
 // traceDataToLogService translates trace data into the LogService format.
-func traceDataToLogServiceData(td consumerdata.TraceData) []*sls.Log {
-	logs := spansToLogServiceData(td.Spans)
-	tagContents := nodeAndResourceToLogContent(td.Node, td.Resource)
-
-	for _, log := range logs {
-		log.Contents = append(log.Contents, tagContents...)
+func traceDataToLogServiceData(td pdata.Traces) ([]*sls.Log, int) {
+	var slsLogs []*sls.Log
+	resourceSpansSlice := td.ResourceSpans()
+	for i := 0; i < resourceSpansSlice.Len(); i++ {
+		resourceSpans := resourceSpansSlice.At(i)
+		if resourceSpans.IsNil() {
+			continue
+		}
+		logs := resourceSpansToLogServiceData(resourceSpans)
+		slsLogs = append(slsLogs, logs...)
 	}
-	return logs
+	return slsLogs, 0
 }
 
-func nodeAndResourceToLogContent(node *commonpb.Node, resource *resourcepb.Resource) []*sls.LogContent {
-	if node == nil {
-		return []*sls.LogContent{}
-	}
-
-	var contents []*sls.LogContent
-
-	for key, val := range node.Attributes {
-		contents = append(contents, &sls.LogContent{
-			Key:   proto.String(processTagsPrefix + key),
-			Value: proto.String(val),
-		})
-	}
-	if node.Identifier != nil {
-		if node.Identifier.HostName != "" {
-			contents = append(contents, &sls.LogContent{
-				Key:   proto.String(processTagsPrefix + "hostname"),
-				Value: proto.String(node.Identifier.HostName),
-			})
+func resourceSpansToLogServiceData(resourceSpans pdata.ResourceSpans) []*sls.Log {
+	resourceContents := resourceToLogContents(resourceSpans.Resource())
+	insLibSpansSlice := resourceSpans.InstrumentationLibrarySpans()
+	var slsLogs []*sls.Log
+	for i := 0; i < insLibSpansSlice.Len(); i++ {
+		insLibSpans := insLibSpansSlice.At(i)
+		if insLibSpans.IsNil() {
+			continue
 		}
-		if node.Identifier.Pid != 0 {
-			contents = append(contents, &sls.LogContent{
-				Key:   proto.String(processTagsPrefix + "pid"),
-				Value: proto.String(strconv.Itoa(int(node.Identifier.Pid))),
-			})
-		}
-		if node.Identifier.StartTimestamp != nil && node.Identifier.StartTimestamp.Seconds != 0 {
-			startTimeStr := node.Identifier.StartTimestamp.AsTime().Format(time.RFC3339Nano)
-			contents = append(contents, &sls.LogContent{
-				Key:   proto.String(processTagsPrefix + "start.time"),
-				Value: proto.String(startTimeStr),
-			})
+		instrumentationLibraryContents := instrumentationLibraryToLogContents(insLibSpans.InstrumentationLibrary())
+		spans := insLibSpans.Spans()
+		for j := 0; j < spans.Len(); j++ {
+			span := spans.At(j)
+			if span.IsNil() {
+				continue
+			}
+			if slsLog := spanToLogServiceData(span, resourceContents, instrumentationLibraryContents); slsLog != nil {
+				slsLogs = append(slsLogs, slsLog)
+			}
 		}
 	}
+	return slsLogs
+}
 
-	// Add OpenCensus library information as tags if available
-	ocLib := node.LibraryInfo
-	if ocLib != nil {
-		// Only add language if specified
-		if ocLib.Language != commonpb.LibraryInfo_LANGUAGE_UNSPECIFIED {
-			languageStr := ocLib.Language.String()
-			contents = append(contents, &sls.LogContent{
-				Key:   proto.String(processTagsPrefix + opencensusLanguage),
-				Value: proto.String(languageStr),
-			})
-		}
-		if ocLib.ExporterVersion != "" {
-			contents = append(contents, &sls.LogContent{
-				Key:   proto.String(processTagsPrefix + opencensusExporterVersion),
-				Value: proto.String(ocLib.ExporterVersion),
-			})
-		}
-		if ocLib.CoreLibraryVersion != "" {
-			contents = append(contents, &sls.LogContent{
-				Key:   proto.String(processTagsPrefix + opencensusCoreLibVersion),
-				Value: proto.String(ocLib.CoreLibraryVersion),
-			})
-		}
+func spanToLogServiceData(span pdata.Span, resourceContents, instrumentationLibraryContents []*sls.LogContent) *sls.Log {
+	timeNano := int64(span.EndTime())
+	if timeNano == 0 {
+		timeNano = time.Now().UnixNano()
 	}
-
-	var serviceName string
-	if node.ServiceInfo != nil && node.ServiceInfo.Name != "" {
-		serviceName = node.ServiceInfo.Name
+	slsLog := sls.Log{
+		Time: proto.Uint32(uint32(timeNano / 1000 / 1000 / 1000)),
 	}
+	// pre alloc, refine if logContent's len > 16
+	preAllocCount := 16
+	slsLog.Contents = make([]*sls.LogContent, 0, preAllocCount+len(resourceContents)+len(instrumentationLibraryContents))
+	contentsBuffer := make([]sls.LogContent, 0, preAllocCount)
 
-	if resource != nil {
-		resourceType := resource.GetType()
-		if resourceType != "" {
-			contents = append(contents, &sls.LogContent{
-				Key:   proto.String(processTagsPrefix + opencensusResourceType),
-				Value: proto.String(resourceType),
-			})
-		}
-		for k, v := range resource.GetLabels() {
-			contents = append(contents, &sls.LogContent{
-				Key:   proto.String(processTagsPrefix + k),
-				Value: proto.String(v),
-			})
-		}
-	}
+	slsLog.Contents = append(slsLog.Contents, resourceContents...)
+	slsLog.Contents = append(slsLog.Contents, instrumentationLibraryContents...)
 
-	if serviceName == "" && len(contents) == 0 {
-		// No info to put in the process...
-		return nil
-	}
-
-	contents = append(contents, &sls.LogContent{
-		Key:   proto.String(serviceNameField),
-		Value: proto.String(serviceName),
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
+		Key:   proto.String(traceIDField),
+		Value: proto.String(span.TraceID().HexString()),
 	})
-	return contents
-}
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
+		Key:   proto.String(spanIDField),
+		Value: proto.String(span.SpanID().HexString()),
+	})
+	// if ParentSpanID is not valid, the return "", it is compatible for log service
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
+		Key:   proto.String(parentSpanIDField),
+		Value: proto.String(span.ParentSpanID().HexString()),
+	})
 
-func spansToLogServiceData(spans []*tracepb.Span) []*sls.Log {
-	if spans == nil {
-		return nil
-	}
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
+		Key:   proto.String(kindField),
+		Value: proto.String(spanKindToShortString(span.Kind())),
+	})
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
+		Key:   proto.String(nameField),
+		Value: proto.String(span.Name()),
+	})
 
-	// Pre-allocate assuming that few, if any spans, are nil.
-	logs := make([]*sls.Log, 0, len(spans))
-	for _, span := range spans {
-		contents := make([]*sls.LogContent, 0)
-		traceID := hex.EncodeToString(span.TraceId[:])
-		spanID := hex.EncodeToString(span.SpanId[:])
-		contents = append(contents,
-			&sls.LogContent{
-				Key:   proto.String(traceIDField),
-				Value: proto.String(traceID),
-			})
-		contents = append(contents,
-			&sls.LogContent{
-				Key:   proto.String(spanIDField),
-				Value: proto.String(spanID),
-			})
-		linksContent := linksToLogContents(span.Links)
-		if linksContent != nil {
-			contents = append(contents, linksContent)
-		}
-		if len(span.ParentSpanId) != 0 {
-			parentSpanID := hex.EncodeToString(span.ParentSpanId[:])
-			contents = append(contents,
-				&sls.LogContent{
-					Key:   proto.String(parentSpanIDField),
-					Value: proto.String(parentSpanID),
-				})
-		} else {
-			// set "0" if no ParentSpanId
-			contents = append(contents,
-				&sls.LogContent{
-					Key:   proto.String(parentSpanIDField),
-					Value: proto.String("0"),
-				})
-		}
-		startTime := timestampToEpochMicroseconds(span.StartTime)
-		contents = append(contents,
-			&sls.LogContent{
-				Key:   proto.String(startTimeField),
-				Value: proto.String(strconv.FormatInt(startTime, 10)),
-			})
-
-		contents = append(contents,
-			&sls.LogContent{
-				Key:   proto.String(operationNameField),
-				Value: proto.String(truncableStringToStr(span.Name)),
-			})
-
-		contents = append(contents,
-			&sls.LogContent{
-				Key:   proto.String(durationField),
-				Value: proto.String(strconv.FormatInt(timestampToEpochMicroseconds(span.EndTime)-startTime, 10)),
-			})
-
-		for k, v := range span.GetAttributes().GetAttributeMap() {
-			contents = append(contents, &sls.LogContent{
-				Key:   proto.String(tagsPrefix + k),
-				Value: proto.String(attributeValueToString(v)),
-			})
-		}
-
-		if logContent := timeEventToLogContent(span.TimeEvents); logContent != nil {
-			contents = append(contents, logContent)
-		}
-
-		// Only add the "span.kind" tag if not set in the OC span attributes.
-		if !tracetranslator.OCAttributeKeyExist(span.Attributes, tracetranslator.TagSpanKind) {
-			contents = append(contents,
-				&sls.LogContent{
-					Key:   proto.String(tagsPrefix + tracetranslator.TagSpanKind),
-					Value: proto.String(spanKindToStr(span.Kind)),
-				})
-		}
-		// Only add status tags if neither status.code and status.message are set in the OC span attributes.
-		if !tracetranslator.OCAttributeKeyExist(span.Attributes, tracetranslator.TagStatusCode) &&
-			!tracetranslator.OCAttributeKeyExist(span.Attributes, tracetranslator.TagStatusMsg) {
-			contents = append(contents,
-				&sls.LogContent{
-					Key:   proto.String(tagsPrefix + tracetranslator.TagStatusCode),
-					Value: proto.String(strconv.Itoa(int(span.GetStatus().GetCode()))),
-				})
-			contents = append(contents,
-				&sls.LogContent{
-					Key:   proto.String(tagsPrefix + tracetranslator.TagStatusMsg),
-					Value: proto.String(span.GetStatus().GetMessage()),
-				})
-		}
-
-		logs = append(logs, &sls.Log{
-			Time:     proto.Uint32(uint32(span.GetEndTime().GetSeconds())),
-			Contents: contents,
-		})
-	}
-
-	return logs
-}
-
-func linksToLogContents(ocSpanLinks *tracepb.Span_Links) *sls.LogContent {
-	if ocSpanLinks == nil || ocSpanLinks.Link == nil {
-		return nil
-	}
-
-	ocLinks := ocSpanLinks.Link
-
-	type linkSpanRef struct {
-		TraceID string
-		SpanID  string
-		RefType string
-	}
-	spanRefs := make([]linkSpanRef, 0, len(ocLinks))
-
-	for _, ocLink := range ocLinks {
-		spanRefs = append(spanRefs, linkSpanRef{
-			TraceID: hex.EncodeToString(ocLink.TraceId[:]),
-			SpanID:  hex.EncodeToString(ocLink.SpanId[:]),
-			RefType: ocLink.GetType().String(),
-		})
-	}
-
-	spanRefsStr, _ := json.Marshal(spanRefs)
-	return &sls.LogContent{
-		Key:   proto.String(referenceField),
-		Value: proto.String(string(spanRefsStr)),
-	}
-}
-
-func attributeValueToString(v *tracepb.AttributeValue) string {
-	switch attribValue := v.Value.(type) {
-	case *tracepb.AttributeValue_StringValue:
-		return truncableStringToStr(attribValue.StringValue)
-	case *tracepb.AttributeValue_IntValue:
-		return strconv.FormatInt(attribValue.IntValue, 10)
-	case *tracepb.AttributeValue_BoolValue:
-		if attribValue.BoolValue {
-			return "true"
-		}
-		return "false"
-	case *tracepb.AttributeValue_DoubleValue:
-		return strconv.FormatFloat(attribValue.DoubleValue, 'g', -1, 64)
-	default:
-	}
-	return "<Unknown OpenCensus Attribute>"
-}
-
-func spanKindToStr(spanKind tracepb.Span_SpanKind) string {
-
-	switch spanKind {
-	case tracepb.Span_CLIENT:
-		return string(tracetranslator.OpenTracingSpanKindClient)
-	case tracepb.Span_SERVER:
-		return string(tracetranslator.OpenTracingSpanKindServer)
-	}
-	return ""
-}
-
-func timeEventToLogContent(ocSpanTimeEvents *tracepb.Span_TimeEvents) *sls.LogContent {
-	if ocSpanTimeEvents == nil || ocSpanTimeEvents.TimeEvent == nil {
-		return nil
-	}
-
-	ocTimeEvents := ocSpanTimeEvents.TimeEvent
-
-	type timeEvent struct {
-		TimeUs int64
-		Fields map[string]string
-	}
-
-	// Assume that in general no time events are going to produce nil Jaeger logs.
-	timeEvents := make([]timeEvent, 0, len(ocTimeEvents))
-	for _, ocTimeEvent := range ocTimeEvents {
-		e := timeEvent{
-			TimeUs: timestampToEpochMicroseconds(ocTimeEvent.Time),
-		}
-		switch teValue := ocTimeEvent.Value.(type) {
-		case *tracepb.Span_TimeEvent_Annotation_:
-			e.Fields = ocAnnotationToMap(teValue.Annotation)
-		case *tracepb.Span_TimeEvent_MessageEvent_:
-			e.Fields = ocMessageEventToMap(teValue.MessageEvent)
-		default:
-			msg := "An unknown OpenCensus TimeEvent type was detected when translating"
-			e.Fields = make(map[string]string)
-			e.Fields["error"] = msg
-		}
-		timeEvents = append(timeEvents, e)
-	}
-
-	// ignore marshal error
-	timeEventsStr, _ := json.Marshal(timeEvents)
-	return &sls.LogContent{
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
+		Key:   proto.String(linksField),
+		Value: proto.String(spanLinksToString(span.Links())),
+	})
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(logsField),
-		Value: proto.String(string(timeEventsStr)),
+		Value: proto.String(eventsToString(span.Events())),
+	})
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
+		Key:   proto.String(traceStateField),
+		Value: proto.String(string(span.TraceState())),
+	})
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
+		Key:   proto.String(startTimeField),
+		Value: proto.String(strconv.FormatUint(uint64(span.StartTime()/1000), 10)),
+	})
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
+		Key:   proto.String(endTimeField),
+		Value: proto.String(strconv.FormatUint(uint64(span.EndTime()/1000), 10)),
+	})
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
+		Key:   proto.String(durationField),
+		Value: proto.String(strconv.FormatUint(uint64((span.EndTime()-span.StartTime())/1000), 10)),
+	})
+	attributeMap := tracetranslator.AttributeMapToMap(span.Attributes())
+	attributeJSONBytes, _ := json.Marshal(attributeMap)
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
+		Key:   proto.String(attributeField),
+		Value: proto.String(string(attributeJSONBytes)),
+	})
+	if span.Status().IsNil() {
+		contentsBuffer = append(contentsBuffer, sls.LogContent{
+			Key:   proto.String(statusCodeField),
+			Value: proto.String("UNSET"),
+		})
+		contentsBuffer = append(contentsBuffer, sls.LogContent{
+			Key:   proto.String(statusMessageField),
+			Value: proto.String("status is nil"),
+		})
+	} else {
+		contentsBuffer = append(contentsBuffer, sls.LogContent{
+			Key:   proto.String(statusCodeField),
+			Value: proto.String(statusCodeToShortString(span.Status().Code())),
+		})
+		contentsBuffer = append(contentsBuffer, sls.LogContent{
+			Key:   proto.String(statusMessageField),
+			Value: proto.String(span.Status().Message()),
+		})
+	}
+	for i := range contentsBuffer {
+		slsLog.Contents = append(slsLog.Contents, &contentsBuffer[i])
+	}
+	return &slsLog
+}
+
+func spanKindToShortString(kind pdata.SpanKind) string {
+	switch kind {
+	case pdata.SpanKindINTERNAL:
+		return string(tracetranslator.OpenTracingSpanKindInternal)
+	case pdata.SpanKindCLIENT:
+		return string(tracetranslator.OpenTracingSpanKindClient)
+	case pdata.SpanKindSERVER:
+		return string(tracetranslator.OpenTracingSpanKindServer)
+	case pdata.SpanKindPRODUCER:
+		return string(tracetranslator.OpenTracingSpanKindProducer)
+	case pdata.SpanKindCONSUMER:
+		return string(tracetranslator.OpenTracingSpanKindConsumer)
+	default:
+		return string(tracetranslator.OpenTracingSpanKindUnspecified)
 	}
 }
 
-func ocAnnotationToMap(annotation *tracepb.Span_TimeEvent_Annotation) map[string]string {
-	if annotation == nil {
-		return nil
+func statusCodeToShortString(code pdata.StatusCode) string {
+	switch code {
+	case pdata.StatusCodeError:
+		return "ERROR"
+	case pdata.StatusCodeOk:
+		return "OK"
+	default:
+		return "UNSET"
 	}
-
-	keyVals := make(map[string]string)
-	for k, v := range annotation.GetAttributes().GetAttributeMap() {
-		keyVals[k] = attributeValueToString(v)
-	}
-
-	desc := truncableStringToStr(annotation.Description)
-	if desc != "" {
-		keyVals[tracetranslator.AnnotationDescriptionKey] = desc
-	}
-	return keyVals
 }
 
-func ocMessageEventToMap(msgEvent *tracepb.Span_TimeEvent_MessageEvent) map[string]string {
-	if msgEvent == nil {
-		return nil
+func eventsToString(events pdata.SpanEventSlice) string {
+	eventArray := make([]map[string]interface{}, 0, events.Len())
+	for i := 0; i < events.Len(); i++ {
+		spanEvent := events.At(i)
+		if spanEvent.IsNil() {
+			continue
+		}
+		event := map[string]interface{}{}
+		event[nameField] = spanEvent.Name()
+		event[timeField] = spanEvent.Timestamp()
+		event[attributeField] = tracetranslator.AttributeMapToMap(spanEvent.Attributes())
+		eventArray = append(eventArray, event)
 	}
+	eventArrayBytes, _ := json.Marshal(&eventArray)
+	return string(eventArrayBytes)
 
-	keyVals := make(map[string]string)
-	keyVals[tracetranslator.MessageEventIDKey] = strconv.FormatUint(msgEvent.Id, 10)
-	keyVals[tracetranslator.MessageEventTypeKey] = msgEvent.Type.String()
-
-	// Some implementations always have these two fields as zeros.
-	if msgEvent.CompressedSize == 0 && msgEvent.UncompressedSize == 0 {
-		return keyVals
-	}
-
-	keyVals[tracetranslator.MessageEventCompressedSizeKey] = strconv.FormatUint(msgEvent.CompressedSize, 10)
-	keyVals[tracetranslator.MessageEventUncompressedSizeKey] = strconv.FormatUint(msgEvent.UncompressedSize, 10)
-
-	return keyVals
 }
 
-func truncableStringToStr(ts *tracepb.TruncatableString) string {
-	if ts == nil {
-		return ""
+func spanLinksToString(spanLinkSlice pdata.SpanLinkSlice) string {
+	linkArray := make([]map[string]interface{}, 0, spanLinkSlice.Len())
+	for i := 0; i < spanLinkSlice.Len(); i++ {
+		spanLink := spanLinkSlice.At(i)
+		if spanLink.IsNil() {
+			continue
+		}
+		link := map[string]interface{}{}
+		link[spanIDField] = spanLink.SpanID().HexString()
+		link[traceIDField] = spanLink.TraceID().HexString()
+		link[attributeField] = tracetranslator.AttributeMapToMap(spanLink.Attributes())
+		linkArray = append(linkArray, link)
 	}
-	return ts.Value
-}
-
-func timestampToEpochMicroseconds(ts *timestamppb.Timestamp) int64 {
-	if ts == nil {
-		return 0
-	}
-	return ts.GetSeconds()*1e6 + int64(ts.GetNanos()/1e3)
+	linkArrayBytes, _ := json.Marshal(&linkArray)
+	return string(linkArrayBytes)
 }
