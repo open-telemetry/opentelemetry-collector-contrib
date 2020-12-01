@@ -31,7 +31,7 @@ func TestSerializeIntDataPoints(t *testing.T) {
 	intPoint := pdata.NewIntDataPoint()
 	intPoint.InitEmpty()
 	intPoint.SetValue(13)
-	intPoint.SetTimestamp(pdata.TimestampUnixNano(100000))
+	intPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
 	intSlice.Append(intPoint)
 	intSlice.Append(pdata.NewIntDataPoint())
 
@@ -39,7 +39,7 @@ func TestSerializeIntDataPoints(t *testing.T) {
 	labelIntPoint := pdata.NewIntDataPoint()
 	labelIntPoint.InitEmpty()
 	labelIntPoint.SetValue(13)
-	labelIntPoint.SetTimestamp(pdata.TimestampUnixNano(100000))
+	labelIntPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
 	labelIntPoint.LabelsMap().Insert("labelKey", "labelValue")
 	labelIntSlice.Append(labelIntPoint)
 	labelIntSlice.Append(pdata.NewIntDataPoint())
@@ -91,7 +91,7 @@ func TestSerializeDoubleDataPoints(t *testing.T) {
 	doublePoint := pdata.NewDoubleDataPoint()
 	doublePoint.InitEmpty()
 	doublePoint.SetValue(13.1)
-	doublePoint.SetTimestamp(pdata.TimestampUnixNano(100000))
+	doublePoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
 	doubleSlice.Append(doublePoint)
 	doubleSlice.Append(pdata.NewDoubleDataPoint())
 
@@ -99,7 +99,7 @@ func TestSerializeDoubleDataPoints(t *testing.T) {
 	labelDoublePoint := pdata.NewDoubleDataPoint()
 	labelDoublePoint.InitEmpty()
 	labelDoublePoint.SetValue(13.1)
-	labelDoublePoint.SetTimestamp(pdata.TimestampUnixNano(100000))
+	labelDoublePoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
 	labelDoublePoint.LabelsMap().Insert("labelKey", "labelValue")
 	labelDoubleSlice.Append(labelDoublePoint)
 	labelDoubleSlice.Append(pdata.NewDoubleDataPoint())
@@ -157,7 +157,7 @@ func TestSerializeDoubleHistogramMetrics(t *testing.T) {
 	doubleHistPoint.InitEmpty()
 	doubleHistPoint.SetCount(10)
 	doubleHistPoint.SetSum(101.0)
-	doubleHistPoint.SetTimestamp(pdata.TimestampUnixNano(100000))
+	doubleHistPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
 	doubleHistSlice.Append(doubleHistPoint)
 	doubleHistSlice.Append(pdata.NewDoubleHistogramDataPoint())
 
@@ -166,7 +166,7 @@ func TestSerializeDoubleHistogramMetrics(t *testing.T) {
 	labelDoubleHistPoint.InitEmpty()
 	labelDoubleHistPoint.SetCount(10)
 	labelDoubleHistPoint.SetSum(101.0)
-	labelDoubleHistPoint.SetTimestamp(pdata.TimestampUnixNano(100000))
+	labelDoubleHistPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
 	labelDoubleHistPoint.LabelsMap().Insert("labelKey", "labelValue")
 	labelDoubleHistSlice.Append(labelDoubleHistPoint)
 	labelDoubleHistSlice.Append(pdata.NewDoubleHistogramDataPoint())
@@ -176,7 +176,7 @@ func TestSerializeDoubleHistogramMetrics(t *testing.T) {
 	zeroDoubleHistogramDataPoint.InitEmpty()
 	zeroDoubleHistogramDataPoint.SetCount(0)
 	zeroDoubleHistogramDataPoint.SetSum(0)
-	zeroDoubleHistogramDataPoint.SetTimestamp(pdata.TimestampUnixNano(100000))
+	zeroDoubleHistogramDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
 	zeroDoubleHistogramSlice.Append(zeroDoubleHistogramDataPoint)
 
 	type args struct {
@@ -241,7 +241,7 @@ func TestSerializeIntHistogramMetrics(t *testing.T) {
 	intHistPoint.InitEmpty()
 	intHistPoint.SetCount(10)
 	intHistPoint.SetSum(110)
-	intHistPoint.SetTimestamp(pdata.TimestampUnixNano(100000))
+	intHistPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
 	intHistSlice.Append(intHistPoint)
 	intHistSlice.Append(pdata.NewIntHistogramDataPoint())
 
@@ -250,7 +250,7 @@ func TestSerializeIntHistogramMetrics(t *testing.T) {
 	labelIntHistPoint.InitEmpty()
 	labelIntHistPoint.SetCount(10)
 	labelIntHistPoint.SetSum(110)
-	labelIntHistPoint.SetTimestamp(pdata.TimestampUnixNano(100000))
+	labelIntHistPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
 	labelIntHistPoint.LabelsMap().Insert("labelKey", "labelValue")
 	labelIntHistSlice.Append(labelIntHistPoint)
 	labelIntHistSlice.Append(pdata.NewIntHistogramDataPoint())
@@ -260,7 +260,7 @@ func TestSerializeIntHistogramMetrics(t *testing.T) {
 	zeroIntHistogramDataPoint.InitEmpty()
 	zeroIntHistogramDataPoint.SetCount(0)
 	zeroIntHistogramDataPoint.SetSum(0)
-	zeroIntHistogramDataPoint.SetTimestamp(pdata.TimestampUnixNano(100000))
+	zeroIntHistogramDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
 	zeroIntHistogramSlice.Append(zeroIntHistogramDataPoint)
 
 	type args struct {
@@ -333,8 +333,8 @@ func Test_serializeLine(t *testing.T) {
 	}{
 		{
 			name: "Constructs a Dynatrace metrics ingest string",
-			args: args{name: "metric_name", tagline: "tag=value", valueline: "gauge,60", timestamp: pdata.TimestampUnixNano(uint64(1e9))},
-			want: "metric_name,tag=value gauge,60 1000000\n",
+			args: args{name: "metric_name", tagline: "tag=value", valueline: "gauge,60", timestamp: pdata.TimestampUnixNano(uint64(100_000_000))},
+			want: "metric_name,tag=value gauge,60 100\n",
 		},
 	}
 	for _, tt := range tests {
