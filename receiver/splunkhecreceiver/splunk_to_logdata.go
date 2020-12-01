@@ -35,13 +35,10 @@ func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 	rls := ld.ResourceLogs()
 	rls.Resize(1)
 	rl := rls.At(0)
-	rl.InitEmpty()
 	ill := pdata.NewInstrumentationLibraryLogs()
-	ill.InitEmpty()
 	rl.InstrumentationLibraryLogs().Append(ill)
 	for _, event := range events {
 		logRecord := pdata.NewLogRecord()
-		logRecord.InitEmpty()
 
 		// The SourceType field is the most logical "name" of the event.
 		logRecord.SetName(event.SourceType)

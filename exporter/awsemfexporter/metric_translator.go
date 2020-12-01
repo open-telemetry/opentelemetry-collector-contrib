@@ -95,7 +95,6 @@ type DataPoints interface {
 //  - pdata.DoubleHistogramDataPoint
 //  - pdata.DoubleSummaryDataPointSlice
 type DataPoint interface {
-	IsNil() bool
 	LabelsMap() pdata.StringMap
 }
 
@@ -129,7 +128,6 @@ func (dps DoubleSummaryDataPointSlice) At(i int) DataPoint {
 // TranslateOtToCWMetric converts OT metrics to CloudWatch Metric format
 func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, config *Config) ([]*CWMetrics, int) {
 	var cwMetricList []*CWMetrics
-	totalDroppedMetrics := 0
 	namespace := config.Namespace
 	var instrumentationLibName string
 
@@ -152,9 +150,6 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, config *Config) ([]*CWMetr
 	ilms := rm.InstrumentationLibraryMetrics()
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
-		if ilm.IsNil() {
-			continue
-		}
 		if ilm.InstrumentationLibrary().Name() == "" {
 			instrumentationLibName = noInstrumentationLibraryName
 		} else {
@@ -164,15 +159,11 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, config *Config) ([]*CWMetr
 		metrics := ilm.Metrics()
 		for k := 0; k < metrics.Len(); k++ {
 			metric := metrics.At(k)
-			if metric.IsNil() {
-				totalDroppedMetrics++
-				continue
-			}
 			cwMetrics := getCWMetrics(&metric, namespace, instrumentationLibName, config)
 			cwMetricList = append(cwMetricList, cwMetrics...)
 		}
 	}
-	return cwMetricList, totalDroppedMetrics
+	return cwMetricList, 0
 }
 
 // TranslateCWMetricToEMF converts CloudWatch Metric format to EMF.
@@ -252,9 +243,6 @@ func getCWMetrics(metric *pdata.Metric, namespace string, instrumentationLibName
 	}
 	for m := 0; m < dps.Len(); m++ {
 		dp := dps.At(m)
-		if dp.IsNil() {
-			continue
-		}
 		cwMetric := buildCWMetric(dp, metric, namespace, metricSlice, instrumentationLibName, config)
 		if cwMetric != nil {
 			cwMetrics = append(cwMetrics, cwMetric)
@@ -440,7 +428,7 @@ func calculateRate(fields map[string]interface{}, val interface{}, timestamp int
 // dimensionRollup creates rolled-up dimensions from the metric's label set.
 func dimensionRollup(dimensionRollupOption string, originalDimensionSlice []string, instrumentationLibName string) [][]string {
 	var rollupDimensionArray [][]string
-	dimensionZero := []string{}
+	var dimensionZero []string
 	if instrumentationLibName != noInstrumentationLibraryName {
 		dimensionZero = append(dimensionZero, OTellibDimensionKey)
 	}

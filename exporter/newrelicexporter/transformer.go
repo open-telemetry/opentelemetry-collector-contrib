@@ -72,17 +72,11 @@ func newTraceTransformer(resource pdata.Resource, lib pdata.InstrumentationLibra
 }
 
 var (
-	emptySpan         telemetry.Span
-	errEmptySpan      = errors.New("empty span")
 	errInvalidSpanID  = errors.New("SpanID is invalid")
 	errInvalidTraceID = errors.New("TraceID is invalid")
 )
 
 func (t *traceTransformer) Span(span pdata.Span) (telemetry.Span, error) {
-	if span.IsNil() {
-		return emptySpan, errEmptySpan
-	}
-
 	startTime := pdata.UnixNanoToTime(span.StartTime())
 	sp := telemetry.Span{
 		// HexString validates the IDs, it will be an empty string if invalid.

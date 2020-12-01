@@ -35,20 +35,11 @@ func Accept(traces pdata.Traces, v TraceVisitor) {
 	// Walk each ResourceSpans instance
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
-		if rs.IsNil() {
-			continue
-		}
-
 		resource := rs.Resource()
 		instrumentationLibrarySpansSlice := rs.InstrumentationLibrarySpans()
 
-		for i := 0; i < instrumentationLibrarySpansSlice.Len(); i++ {
-			instrumentationLibrarySpans := instrumentationLibrarySpansSlice.At(i)
-
-			if instrumentationLibrarySpans.IsNil() {
-				continue
-			}
-
+		for j := 0; j < instrumentationLibrarySpansSlice.Len(); j++ {
+			instrumentationLibrarySpans := instrumentationLibrarySpansSlice.At(j)
 			// instrumentation library is optional
 			instrumentationLibrary := instrumentationLibrarySpans.InstrumentationLibrary()
 			spansSlice := instrumentationLibrarySpans.Spans()
@@ -56,13 +47,8 @@ func Accept(traces pdata.Traces, v TraceVisitor) {
 				continue
 			}
 
-			for i := 0; i < spansSlice.Len(); i++ {
-				span := spansSlice.At(i)
-				if span.IsNil() {
-					continue
-				}
-
-				if ok := v.visit(resource, instrumentationLibrary, span); !ok {
+			for k := 0; k < spansSlice.Len(); k++ {
+				if ok := v.visit(resource, instrumentationLibrary, spansSlice.At(k)); !ok {
 					return
 				}
 			}

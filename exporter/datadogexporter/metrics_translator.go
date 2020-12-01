@@ -45,9 +45,6 @@ func mapIntMetrics(name string, slice pdata.IntDataPointSlice) []datadog.Metric 
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
-		if p.IsNil() {
-			continue
-		}
 		ms = append(ms, metrics.NewGauge(name, uint64(p.Timestamp()), float64(p.Value()), getTags(p.LabelsMap())))
 	}
 	return ms
@@ -59,9 +56,6 @@ func mapDoubleMetrics(name string, slice pdata.DoubleDataPointSlice) []datadog.M
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
-		if p.IsNil() {
-			continue
-		}
 		ms = append(ms,
 			metrics.NewGauge(name, uint64(p.Timestamp()), p.Value(), getTags(p.LabelsMap())),
 		)
@@ -87,9 +81,6 @@ func mapIntHistogramMetrics(name string, slice pdata.IntHistogramDataPointSlice,
 	ms := make([]datadog.Metric, 0, 2*slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
-		if p.IsNil() {
-			continue
-		}
 		ts := uint64(p.Timestamp())
 		tags := getTags(p.LabelsMap())
 
@@ -121,9 +112,6 @@ func mapDoubleHistogramMetrics(name string, slice pdata.DoubleHistogramDataPoint
 	ms := make([]datadog.Metric, 0, 2*slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
-		if p.IsNil() {
-			continue
-		}
 		ts := uint64(p.Timestamp())
 		tags := getTags(p.LabelsMap())
 
@@ -152,21 +140,12 @@ func MapMetrics(logger *zap.Logger, cfg config.MetricsConfig, md pdata.Metrics) 
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
-		if rm.IsNil() {
-			continue
-		}
 		ilms := rm.InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
-			if ilm.IsNil() {
-				continue
-			}
 			metrics := ilm.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
 				md := metrics.At(k)
-				if md.IsNil() {
-					continue
-				}
 				var datapoints []datadog.Metric
 				switch md.DataType() {
 				case pdata.MetricDataTypeNone:

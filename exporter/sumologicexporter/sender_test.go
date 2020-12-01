@@ -79,7 +79,6 @@ func extractBody(t *testing.T, req *http.Request) string {
 func exampleLog() []pdata.LogRecord {
 	buffer := make([]pdata.LogRecord, 1)
 	buffer[0] = pdata.NewLogRecord()
-	buffer[0].InitEmpty()
 	buffer[0].Body().SetStringVal("Example log")
 
 	return buffer
@@ -88,12 +87,10 @@ func exampleLog() []pdata.LogRecord {
 func exampleTwoLogs() []pdata.LogRecord {
 	buffer := make([]pdata.LogRecord, 2)
 	buffer[0] = pdata.NewLogRecord()
-	buffer[0].InitEmpty()
 	buffer[0].Body().SetStringVal("Example log")
 	buffer[0].Attributes().InsertString("key1", "value1")
 	buffer[0].Attributes().InsertString("key2", "value2")
 	buffer[1] = pdata.NewLogRecord()
-	buffer[1].InitEmpty()
 	buffer[1].Body().SetStringVal("Another example log")
 	buffer[1].Attributes().InsertString("key1", "value1")
 	buffer[1].Attributes().InsertString("key2", "value2")

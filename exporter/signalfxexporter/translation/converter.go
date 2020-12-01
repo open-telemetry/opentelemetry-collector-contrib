@@ -74,17 +74,8 @@ func (c *MetricsConverter) MetricDataToSignalFxV2(rm pdata.ResourceMetrics) []*s
 
 	for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
 		ilm := rm.InstrumentationLibraryMetrics().At(j)
-		if ilm.IsNil() {
-			continue
-		}
 		for k := 0; k < ilm.Metrics().Len(); k++ {
-			m := ilm.Metrics().At(k)
-			if m.IsNil() {
-				continue
-			}
-
-			dps := c.metricToSfxDataPoints(m, extraDimensions)
-
+			dps := c.metricToSfxDataPoints(ilm.Metrics().At(k), extraDimensions)
 			sfxDatapoints = append(sfxDatapoints, dps...)
 		}
 	}
@@ -145,9 +136,6 @@ func convertIntDatapoints(in pdata.IntDataPointSlice, basePoint *sfxpb.DataPoint
 
 	for i := 0; i < in.Len(); i++ {
 		inDp := in.At(i)
-		if inDp.IsNil() {
-			continue
-		}
 
 		dp := *basePoint
 		dp.Timestamp = timestampToSignalFx(inDp.Timestamp())
@@ -166,9 +154,6 @@ func convertDoubleDatapoints(in pdata.DoubleDataPointSlice, basePoint *sfxpb.Dat
 
 	for i := 0; i < in.Len(); i++ {
 		inDp := in.At(i)
-		if inDp.IsNil() {
-			continue
-		}
 
 		dp := *basePoint
 		dp.Timestamp = timestampToSignalFx(inDp.Timestamp())
@@ -237,10 +222,6 @@ func convertIntHistogram(histDPs pdata.IntHistogramDataPointSlice, basePoint *sf
 
 	for i := 0; i < histDPs.Len(); i++ {
 		histDP := histDPs.At(i)
-		if histDP.IsNil() {
-			continue
-		}
-
 		ts := timestampToSignalFx(histDP.Timestamp())
 
 		countDP := *basePoint
@@ -296,10 +277,6 @@ func convertDoubleHistogram(histDPs pdata.DoubleHistogramDataPointSlice, basePoi
 
 	for i := 0; i < histDPs.Len(); i++ {
 		histDP := histDPs.At(i)
-		if histDP.IsNil() {
-			continue
-		}
-
 		ts := timestampToSignalFx(histDP.Timestamp())
 
 		countDP := *basePoint

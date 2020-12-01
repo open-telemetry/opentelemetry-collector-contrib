@@ -70,7 +70,6 @@ func buildTestTraces(setTokenLabel, accessTokenPassthrough bool) (traces pdata.T
 
 	for i := 0; i < 50; i++ {
 		span := rss.At(i)
-		span.InitEmpty()
 		resource := span.Resource()
 		token := ""
 		if setTokenLabel && i%2 == 1 {
@@ -177,7 +176,6 @@ func buildTestTrace(setIds bool) pdata.Traces {
 	trace.ResourceSpans().Resize(2)
 	for i := 0; i < 2; i++ {
 		span := trace.ResourceSpans().At(i)
-		span.InitEmpty()
 		resource := span.Resource()
 		resource.Attributes().InsertString("com.splunk.signalfx.access_token", fmt.Sprintf("TraceAccessToken%v", i))
 		span.InstrumentationLibrarySpans().Resize(1)

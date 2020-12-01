@@ -40,7 +40,6 @@ func Test_logDataToSplunk(t *testing.T) {
 			name: "valid",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
-				logRecord.InitEmpty()
 				logRecord.Body().SetStringVal("mylog")
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
@@ -63,7 +62,6 @@ func Test_logDataToSplunk(t *testing.T) {
 			name: "non-string attribute",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
-				logRecord.InitEmpty()
 				logRecord.Body().SetStringVal("mylog")
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
@@ -86,7 +84,6 @@ func Test_logDataToSplunk(t *testing.T) {
 			name: "with_config",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
-				logRecord.InitEmpty()
 				logRecord.Body().SetStringVal("mylog")
 				logRecord.Attributes().InsertString("custom", "custom")
 				logRecord.SetTimestamp(ts)
@@ -106,7 +103,6 @@ func Test_logDataToSplunk(t *testing.T) {
 			name: "log_is_empty",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
-				logRecord.InitEmpty()
 				return makeLog(logRecord)
 			},
 			configDataFn: func() *Config {
@@ -123,7 +119,6 @@ func Test_logDataToSplunk(t *testing.T) {
 			name: "with double body",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
-				logRecord.InitEmpty()
 				logRecord.Body().SetDoubleVal(42)
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
@@ -146,7 +141,6 @@ func Test_logDataToSplunk(t *testing.T) {
 			name: "with int body",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
-				logRecord.InitEmpty()
 				logRecord.Body().SetIntVal(42)
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
@@ -169,7 +163,6 @@ func Test_logDataToSplunk(t *testing.T) {
 			name: "with bool body",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
-				logRecord.InitEmpty()
 				logRecord.Body().SetBoolVal(true)
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
@@ -192,7 +185,6 @@ func Test_logDataToSplunk(t *testing.T) {
 			name: "with map body",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
-				logRecord.InitEmpty()
 				attVal := pdata.NewAttributeValueMap()
 				attMap := attVal.MapVal()
 				attMap.InsertDouble("23", 45)
@@ -219,7 +211,6 @@ func Test_logDataToSplunk(t *testing.T) {
 			name: "with nil body",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
-				logRecord.InitEmpty()
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
 				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
@@ -241,7 +232,6 @@ func Test_logDataToSplunk(t *testing.T) {
 			name: "with array body",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
-				logRecord.InitEmpty()
 				attVal := pdata.NewAttributeValueArray()
 				attArray := attVal.ArrayVal()
 				attArray.Append(pdata.NewAttributeValueString("foo"))
@@ -279,10 +269,8 @@ func Test_logDataToSplunk(t *testing.T) {
 func makeLog(record pdata.LogRecord) pdata.Logs {
 	logs := pdata.NewLogs()
 	rl := pdata.NewResourceLogs()
-	rl.InitEmpty()
 	logs.ResourceLogs().Append(rl)
 	ill := pdata.NewInstrumentationLibraryLogs()
-	ill.InitEmpty()
 	rl.InstrumentationLibraryLogs().Append(ill)
 	ill.Logs().Append(record)
 	return logs
@@ -322,7 +310,6 @@ func Test_nilResourceLogs(t *testing.T) {
 func Test_nilInstrumentationLogs(t *testing.T) {
 	logs := pdata.NewLogs()
 	resourceLog := pdata.NewResourceLogs()
-	resourceLog.InitEmpty()
 	logs.ResourceLogs().Append(resourceLog)
 	ils := pdata.NewInstrumentationLibraryLogs()
 	resourceLog.InstrumentationLibraryLogs().Append(ils)

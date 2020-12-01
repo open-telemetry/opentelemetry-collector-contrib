@@ -84,10 +84,8 @@ func (sr *sapmReceiver) handleRequest(ctx context.Context, req *http.Request) er
 			rSpans := td.ResourceSpans()
 			for i := 0; i < rSpans.Len(); i++ {
 				rSpan := rSpans.At(i)
-				if !rSpan.IsNil() {
-					attrs := rSpan.Resource().Attributes()
-					attrs.UpsertString(splunk.SFxAccessTokenLabel, accessToken)
-				}
+				attrs := rSpan.Resource().Attributes()
+				attrs.UpsertString(splunk.SFxAccessTokenLabel, accessToken)
 			}
 		}
 	}

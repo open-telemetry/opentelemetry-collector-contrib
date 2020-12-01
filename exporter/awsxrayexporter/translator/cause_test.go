@@ -32,7 +32,6 @@ func TestCauseWithExceptions(t *testing.T) {
 	attributeMap[semconventions.AttributeHTTPStatusCode] = 500
 
 	event1 := pdata.NewSpanEvent()
-	event1.InitEmpty()
 	event1.SetName(semconventions.AttributeExceptionEventName)
 	attributes := pdata.NewAttributeMap()
 	attributes.InsertString(semconventions.AttributeExceptionType, "java.lang.IllegalStateException")
@@ -45,7 +44,6 @@ Caused by: java.lang.IllegalArgumentException: bad argument`)
 	attributes.CopyTo(event1.Attributes())
 
 	event2 := pdata.NewSpanEvent()
-	event2.InitEmpty()
 	event2.SetName(semconventions.AttributeExceptionEventName)
 	attributes = pdata.NewAttributeMap()
 	attributes.InsertString(semconventions.AttributeExceptionType, "EmptyError")
@@ -178,7 +176,6 @@ func constructExceptionServerSpan(attributes map[string]interface{}, statuscode 
 	spanAttributes := constructSpanAttributes(attributes)
 
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())

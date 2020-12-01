@@ -16,7 +16,6 @@ package groupbytraceprocessor
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -25,10 +24,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
-)
-
-var (
-	errNilResourceSpans = errors.New("invalid resource spans (nil)")
 )
 
 // groupByTraceProcessor is a processor that keeps traces in memory for a given duration, with the expectation
@@ -122,11 +117,6 @@ func (sp *groupByTraceProcessor) onBatchReceived(batch pdata.Traces) error {
 }
 
 func (sp *groupByTraceProcessor) processResourceSpans(rs pdata.ResourceSpans) error {
-	if rs.IsNil() {
-		// should not happen with the current code
-		return errNilResourceSpans
-	}
-
 	for _, batch := range splitByTrace(rs) {
 		if err := sp.processBatch(batch); err != nil {
 			sp.logger.Warn("failed to process batch", zap.Error(err),
@@ -293,13 +283,11 @@ func splitByTrace(rs pdata.ResourceSpans) []*singleTraceBatch {
 			// and add the singleTraceBatch to the result list
 			if _, ok := batches[sTraceID]; !ok {
 				newRS := pdata.NewResourceSpans()
-				newRS.InitEmpty()
 				// currently, the ResourceSpans implementation has only a Resource and an ILS. We'll copy the Resource
 				// and set our own ILS
 				rs.Resource().CopyTo(newRS.Resource())
 
 				newILS := pdata.NewInstrumentationLibrarySpans()
-				newILS.InitEmpty()
 				// currently, the ILS implementation has only an InstrumentationLibrary and spans. We'll copy the library
 				// and set our own spans
 				ils.InstrumentationLibrary().CopyTo(newILS.InstrumentationLibrary())

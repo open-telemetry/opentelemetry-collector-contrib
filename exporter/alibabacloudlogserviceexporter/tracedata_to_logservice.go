@@ -48,11 +48,7 @@ func traceDataToLogServiceData(td pdata.Traces) ([]*sls.Log, int) {
 	var slsLogs []*sls.Log
 	resourceSpansSlice := td.ResourceSpans()
 	for i := 0; i < resourceSpansSlice.Len(); i++ {
-		resourceSpans := resourceSpansSlice.At(i)
-		if resourceSpans.IsNil() {
-			continue
-		}
-		logs := resourceSpansToLogServiceData(resourceSpans)
+		logs := resourceSpansToLogServiceData(resourceSpansSlice.At(i))
 		slsLogs = append(slsLogs, logs...)
 	}
 	return slsLogs, 0
@@ -64,17 +60,10 @@ func resourceSpansToLogServiceData(resourceSpans pdata.ResourceSpans) []*sls.Log
 	var slsLogs []*sls.Log
 	for i := 0; i < insLibSpansSlice.Len(); i++ {
 		insLibSpans := insLibSpansSlice.At(i)
-		if insLibSpans.IsNil() {
-			continue
-		}
 		instrumentationLibraryContents := instrumentationLibraryToLogContents(insLibSpans.InstrumentationLibrary())
 		spans := insLibSpans.Spans()
 		for j := 0; j < spans.Len(); j++ {
-			span := spans.At(j)
-			if span.IsNil() {
-				continue
-			}
-			if slsLog := spanToLogServiceData(span, resourceContents, instrumentationLibraryContents); slsLog != nil {
+			if slsLog := spanToLogServiceData(spans.At(j), resourceContents, instrumentationLibraryContents); slsLog != nil {
 				slsLogs = append(slsLogs, slsLog)
 			}
 		}
@@ -208,9 +197,6 @@ func eventsToString(events pdata.SpanEventSlice) string {
 	eventArray := make([]map[string]interface{}, 0, events.Len())
 	for i := 0; i < events.Len(); i++ {
 		spanEvent := events.At(i)
-		if spanEvent.IsNil() {
-			continue
-		}
 		event := map[string]interface{}{}
 		event[nameField] = spanEvent.Name()
 		event[timeField] = spanEvent.Timestamp()
@@ -226,9 +212,6 @@ func spanLinksToString(spanLinkSlice pdata.SpanLinkSlice) string {
 	linkArray := make([]map[string]interface{}, 0, spanLinkSlice.Len())
 	for i := 0; i < spanLinkSlice.Len(); i++ {
 		spanLink := spanLinkSlice.At(i)
-		if spanLink.IsNil() {
-			continue
-		}
 		link := map[string]interface{}{}
 		link[spanIDField] = spanLink.SpanID().HexString()
 		link[traceIDField] = spanLink.TraceID().HexString()

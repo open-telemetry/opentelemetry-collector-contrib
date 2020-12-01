@@ -43,7 +43,6 @@ func TestEncodeSpan(t *testing.T) {
 	endTime := startTime.Add(time.Millisecond * 5)
 
 	rootSpan := pdata.NewSpan()
-	rootSpan.InitEmpty()
 	rootSpan.SetSpanID(pdata.NewSpanID(rootTransactionID))
 	rootSpan.SetName("root_span")
 	rootSpan.Attributes().InitFromMap(map[string]pdata.AttributeValue{
@@ -54,7 +53,6 @@ func TestEncodeSpan(t *testing.T) {
 	})
 
 	clientSpan := pdata.NewSpan()
-	clientSpan.InitEmpty()
 	clientSpan.SetSpanID(pdata.NewSpanID(clientSpanID))
 	clientSpan.SetParentSpanID(pdata.NewSpanID(rootTransactionID))
 	clientSpan.SetKind(pdata.SpanKindCLIENT)
@@ -69,7 +67,6 @@ func TestEncodeSpan(t *testing.T) {
 	})
 
 	serverSpan := pdata.NewSpan()
-	serverSpan.InitEmpty()
 	serverSpan.SetSpanID(pdata.NewSpanID(serverTransactionID))
 	serverSpan.SetParentSpanID(pdata.NewSpanID(clientSpanID))
 	serverSpan.SetKind(pdata.SpanKindSERVER)
@@ -162,7 +159,6 @@ func TestEncodeSpanStatus(t *testing.T) {
 		elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
 
 		span := pdata.NewSpan()
-		span.InitEmpty()
 		span.SetTraceID(pdata.NewTraceID([16]byte{1}))
 		span.SetSpanID(pdata.NewSpanID([8]byte{1}))
 		span.SetName("span")
@@ -189,7 +185,6 @@ func TestEncodeSpanStatus(t *testing.T) {
 
 func TestEncodeSpanTruncation(t *testing.T) {
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetName(strings.Repeat("x", 1300))
 
 	var w fastjson.Writer
@@ -501,7 +496,6 @@ func TestInstrumentationLibrary(t *testing.T) {
 	var recorder transporttest.RecorderTransport
 
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetName("root_span")
 
 	library := pdata.NewInstrumentationLibrary()
@@ -530,7 +524,6 @@ func transactionWithAttributes(t *testing.T, attrs map[string]pdata.AttributeVal
 	var recorder transporttest.RecorderTransport
 
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.Attributes().InitFromMap(attrs)
 
 	elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
@@ -548,7 +541,6 @@ func spanWithAttributes(t *testing.T, attrs map[string]pdata.AttributeValue) mod
 	var recorder transporttest.RecorderTransport
 
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetParentSpanID(pdata.NewSpanID([8]byte{1}))
 	span.Attributes().InitFromMap(attrs)
 

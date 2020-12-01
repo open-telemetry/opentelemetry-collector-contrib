@@ -16,15 +16,12 @@ package groupbytraceprocessor
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"time"
 
 	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
-
-var errStorageNilResourceSpans = errors.New("the provided trace is invalid (nil)")
 
 type memoryStorage struct {
 	sync.RWMutex
@@ -44,10 +41,6 @@ func newMemoryStorage() *memoryStorage {
 }
 
 func (st *memoryStorage) createOrAppend(traceID pdata.TraceID, rs pdata.ResourceSpans) error {
-	if rs.IsNil() {
-		return errStorageNilResourceSpans
-	}
-
 	sTraceID := traceID.HexString()
 
 	st.Lock()
@@ -74,7 +67,7 @@ func (st *memoryStorage) get(traceID pdata.TraceID) ([]pdata.ResourceSpans, erro
 		return nil, nil
 	}
 
-	result := []pdata.ResourceSpans{}
+	var result []pdata.ResourceSpans
 	for _, rs := range rss {
 		newRS := pdata.NewResourceSpans()
 		rs.CopyTo(newRS)
@@ -93,7 +86,7 @@ func (st *memoryStorage) delete(traceID pdata.TraceID) ([]pdata.ResourceSpans, e
 	defer st.Unlock()
 
 	rss := st.content[sTraceID]
-	result := []pdata.ResourceSpans{}
+	var result []pdata.ResourceSpans
 	for _, rs := range rss {
 		newRS := pdata.NewResourceSpans()
 		rs.CopyTo(newRS)

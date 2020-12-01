@@ -59,22 +59,12 @@ func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (dropp
 
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		resourceMetric := resourceMetrics.At(i)
-		if resourceMetric.IsNil() {
-			continue
-		}
 		libraryMetrics := resourceMetric.InstrumentationLibraryMetrics()
 		for j := 0; j < libraryMetrics.Len(); j++ {
 			libraryMetric := libraryMetrics.At(j)
-			if libraryMetric.IsNil() {
-				continue
-			}
 			metrics := libraryMetric.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
 				metric := metrics.At(k)
-				if metric.IsNil() {
-					continue
-				}
-
 				name, normalizationError := normalizeMetricName(e.cfg.Prefix, metric.Name())
 				if normalizationError != nil {
 					dropped++

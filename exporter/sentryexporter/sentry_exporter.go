@@ -66,29 +66,16 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) (drop
 
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
-		if rs.IsNil() {
-			continue
-		}
-
 		resourceTags := generateTagsFromResource(rs.Resource())
 
 		ilss := rs.InstrumentationLibrarySpans()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
-			if ils.IsNil() {
-				continue
-			}
-
 			library := ils.InstrumentationLibrary()
 
 			spans := ils.Spans()
 			for k := 0; k < spans.Len(); k++ {
-				otelSpan := spans.At(k)
-				if otelSpan.IsNil() {
-					continue
-				}
-
-				sentrySpan := convertToSentrySpan(otelSpan, library, resourceTags)
+				sentrySpan := convertToSentrySpan(spans.At(k), library, resourceTags)
 
 				// If a span is a root span, we consider it the start of a Sentry transaction.
 				// We should then create a new transaction for that root span, and keep track of it.
@@ -164,10 +151,6 @@ func classifyAsOrphanSpans(orphanSpans []*sentry.Span, prevLength int, idMap map
 }
 
 func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, resourceTags map[string]string) (sentrySpan *sentry.Span) {
-	if span.IsNil() {
-		return nil
-	}
-
 	parentSpanID := ""
 	if psID := span.ParentSpanID(); psID.IsValid() {
 		parentSpanID = psID.HexString()

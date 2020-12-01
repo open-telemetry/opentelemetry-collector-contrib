@@ -2644,7 +2644,6 @@ func intMDAfterReset(secondsDelta int64, valueDelta int64) pdata.ResourceMetrics
 
 func baseMD() pdata.Metric {
 	out := pdata.NewMetric()
-	out.InitEmpty()
 	out.SetName("system.cpu.time")
 	out.SetUnit("s")
 	return out
@@ -2652,7 +2651,6 @@ func baseMD() pdata.Metric {
 
 func dblTS(lbl0 string, lbl1 string, secondsDelta int64, v float64, valueDelta float64) pdata.DoubleDataPoint {
 	out := pdata.NewDoubleDataPoint()
-	out.InitEmpty()
 	out.LabelsMap().InitFromMap(map[string]string{
 		"cpu":   lbl0,
 		"state": lbl1,
@@ -2665,7 +2663,6 @@ func dblTS(lbl0 string, lbl1 string, secondsDelta int64, v float64, valueDelta f
 
 func intTS(lbl0 string, lbl1 string, secondsDelta int64, v int64, valueDelta int64) pdata.IntDataPoint {
 	out := pdata.NewIntDataPoint()
-	out.InitEmpty()
 	out.LabelsMap().InitFromMap(map[string]string{
 		"cpu":   lbl0,
 		"state": lbl1,
@@ -2678,7 +2675,6 @@ func intTS(lbl0 string, lbl1 string, secondsDelta int64, v int64, valueDelta int
 
 func wrapMetric(m pdata.Metric) pdata.ResourceMetrics {
 	out := pdata.NewResourceMetrics()
-	out.InitEmpty()
 	out.InstrumentationLibraryMetrics().Resize(1)
 	out.InstrumentationLibraryMetrics().At(0).Metrics().Append(m)
 	return out
