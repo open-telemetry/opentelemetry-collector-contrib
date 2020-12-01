@@ -34,7 +34,7 @@ func TestType(t *testing.T) {
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	qs := exporterhelper.CreateDefaultQueueSettings()
+	qs := exporterhelper.DefaultQueueSettings()
 	qs.Enabled = false
 
 	assert.Equal(t, cfg, &Config{
@@ -54,7 +54,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Timeout: 5 * time.Second,
 		},
-		RetrySettings: exporterhelper.CreateDefaultRetrySettings(),
+		RetrySettings: exporterhelper.DefaultRetrySettings(),
 		QueueSettings: qs,
 	})
 	assert.NoError(t, configcheck.ValidateConfig(cfg))

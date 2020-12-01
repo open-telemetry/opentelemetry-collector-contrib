@@ -38,7 +38,7 @@ func NewFactory() component.ExporterFactory {
 }
 
 func createDefaultConfig() configmodels.Exporter {
-	qs := exporterhelper.CreateDefaultQueueSettings()
+	qs := exporterhelper.DefaultQueueSettings()
 	qs.Enabled = false
 
 	return &Config{
@@ -57,7 +57,7 @@ func createDefaultConfig() configmodels.Exporter {
 		Client:             DefaultClient,
 
 		HTTPClientSettings: CreateDefaultHTTPClientSettings(),
-		RetrySettings:      exporterhelper.CreateDefaultRetrySettings(),
+		RetrySettings:      exporterhelper.DefaultRetrySettings(),
 		QueueSettings:      qs,
 	}
 }
