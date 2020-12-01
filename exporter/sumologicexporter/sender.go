@@ -146,9 +146,7 @@ func (s *sender) sendLogs(flds fields) ([]pdata.LogRecord, error) {
 		case JSONFormat:
 			formattedLine, err = s.logToJSON(record)
 		default:
-			droppedRecords = append(droppedRecords, record)
-			errs = append(errs, errors.New("unexpected log format"))
-			continue
+			err = errors.New("unexpected log format")
 		}
 
 		if err != nil {
