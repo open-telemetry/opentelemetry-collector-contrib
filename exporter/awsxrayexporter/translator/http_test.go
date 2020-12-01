@@ -264,6 +264,31 @@ func TestHttpStatusFromSpanStatus(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, "200"))
 }
 
+func TestSpanWithNotEnoughHTTPRequestURLAttributes(t *testing.T) {
+	attributes := make(map[string]interface{})
+	attributes[semconventions.AttributeHTTPMethod] = "GET"
+	attributes[semconventions.AttributeHTTPScheme] = "http"
+	attributes[semconventions.AttributeHTTPClientIP] = "192.168.15.32"
+	attributes[semconventions.AttributeHTTPUserAgent] = "PostmanRuntime/7.21.0"
+	attributes[semconventions.AttributeHTTPTarget] = "/users/junit"
+	attributes[semconventions.AttributeHTTPHostPort] = 443
+	attributes[semconventions.AttributeNetPeerPort] = 8080
+	attributes[semconventions.AttributeHTTPStatusCode] = 200
+	span := constructHTTPServerSpan(attributes)
+	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTime())
+	timeEvents.CopyTo(span.Events())
+
+	filtered, httpData := makeHTTP(span)
+
+	assert.Nil(t, httpData.Request.URL)
+	assert.Equal(t, "192.168.15.32", *httpData.Request.ClientIP)
+	assert.Equal(t, "GET", *httpData.Request.Method)
+	assert.Equal(t, "PostmanRuntime/7.21.0", *httpData.Request.UserAgent)
+	assert.Equal(t, int64(12452), *httpData.Response.ContentLength)
+	assert.Equal(t, int64(200), *httpData.Response.Status)
+	assert.NotNil(t, filtered)
+}
+
 func constructHTTPClientSpan(attributes map[string]interface{}) pdata.Span {
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
