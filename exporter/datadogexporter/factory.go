@@ -112,8 +112,8 @@ func createMetricsExporter(
 		cfg,
 		params.Logger,
 		pushMetricsFn,
-		exporterhelper.WithQueue(exporterhelper.CreateDefaultQueueSettings()),
-		exporterhelper.WithRetry(exporterhelper.CreateDefaultRetrySettings()),
+		exporterhelper.WithQueue(exporterhelper.DefaultQueueSettings()),
+		exporterhelper.WithRetry(exporterhelper.DefaultRetrySettings()),
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
 			return nil

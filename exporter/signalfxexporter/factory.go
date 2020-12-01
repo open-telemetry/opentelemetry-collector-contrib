@@ -53,8 +53,8 @@ func createDefaultConfig() configmodels.Exporter {
 			NameVal: typeStr,
 		},
 		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultHTTPTimeout},
-		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
-		QueueSettings:   exporterhelper.CreateDefaultQueueSettings(),
+		RetrySettings:   exporterhelper.DefaultRetrySettings(),
+		QueueSettings:   exporterhelper.DefaultQueueSettings(),
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
 		},
