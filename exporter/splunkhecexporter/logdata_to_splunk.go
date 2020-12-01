@@ -28,25 +28,11 @@ func logDataToSplunk(logger *zap.Logger, ld pdata.Logs, config *Config) []*splun
 	var splunkEvents []*splunk.Event
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
-		rl := rls.At(i)
-		if rl.IsNil() {
-			continue
-		}
-
-		ills := rl.InstrumentationLibraryLogs()
+		ills := rls.At(i).InstrumentationLibraryLogs()
 		for j := 0; j < ills.Len(); j++ {
-			ils := ills.At(j)
-			if ils.IsNil() {
-				continue
-			}
-
-			logs := ils.Logs()
-			for j := 0; j < logs.Len(); j++ {
-				lr := logs.At(j)
-				if lr.IsNil() {
-					continue
-				}
-				splunkEvents = append(splunkEvents, mapLogRecordToSplunkEvent(lr, config, logger))
+			logs := ills.At(j).Logs()
+			for k := 0; k < logs.Len(); k++ {
+				splunkEvents = append(splunkEvents, mapLogRecordToSplunkEvent(logs.At(k), config, logger))
 			}
 		}
 	}

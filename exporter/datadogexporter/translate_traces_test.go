@@ -40,10 +40,8 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	pdataStartTime := pdata.TimestampUnixNano(startTime.UnixNano())
 
 	rs := pdata.NewResourceSpans()
-	rs.InitEmpty()
 
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	traceID := pdata.NewTraceID(mockTraceID)
 	spanID := pdata.NewSpanID(mockSpanID)
 	parentSpanID := pdata.NewSpanID(mockParentSpanID)
@@ -160,7 +158,6 @@ func TestObfuscation(t *testing.T) {
 	instrumentationLibrary.SetVersion("v1")
 
 	span := pdata.NewSpan()
-	span.InitEmpty()
 
 	// Make this a FaaS span, which will trigger an error, because conversion
 	// of them is currently not supported.
@@ -414,7 +411,6 @@ func TestTracesTranslationNoIls(t *testing.T) {
 	calculator := stats.NewSublayerCalculator()
 
 	rs := pdata.NewResourceSpans()
-	rs.InitEmpty()
 
 	cfg := config.Config{
 		TagsConfig: config.TagsConfig{
@@ -441,7 +437,6 @@ func TestTracesTranslationNoIls(t *testing.T) {
 // ensure that datadog span resource naming uses http method+route when available
 func TestSpanResourceTranslation(t *testing.T) {
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetKind(pdata.SpanKindSERVER)
 	span.SetName("Default Name")
 
@@ -465,7 +460,6 @@ func TestSpanResourceTranslation(t *testing.T) {
 // ensure that the datadog span name uses IL name +kind whenn available and falls back to opetelemetry + kind
 func TestSpanNameTranslation(t *testing.T) {
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetName("Default Name")
 	span.SetKind(pdata.SpanKindSERVER)
 
@@ -528,7 +522,6 @@ func TestILTagsExctraction(t *testing.T) {
 
 func TestHttpResourceTag(t *testing.T) {
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetName("Default Name")
 	span.SetKind(pdata.SpanKindSERVER)
 
@@ -560,7 +553,7 @@ func TestTracePayloadAggr(t *testing.T) {
 		Transactions: []*pb.Span{},
 	}
 
-	originalPayload := []*pb.TracePayload{}
+	var originalPayload []*pb.TracePayload
 	originalPayload = append(originalPayload, &payloadOne)
 	originalPayload = append(originalPayload, &payloadTwo)
 
@@ -586,7 +579,7 @@ func TestTracePayloadAggr(t *testing.T) {
 		Transactions: []*pb.Span{},
 	}
 
-	originalPayloadDifferentEnv := []*pb.TracePayload{}
+	var originalPayloadDifferentEnv []*pb.TracePayload
 	originalPayloadDifferentEnv = append(originalPayloadDifferentEnv, &payloadThree)
 	originalPayloadDifferentEnv = append(originalPayloadDifferentEnv, &payloadFour)
 

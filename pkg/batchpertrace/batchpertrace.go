@@ -38,13 +38,11 @@ func Split(batch pdata.Traces) []pdata.Traces {
 				// and add the singleTraceBatch to the result list
 				if _, ok := batches[key]; !ok {
 					newRS := pdata.NewResourceSpans()
-					newRS.InitEmpty()
 					// currently, the ResourceSpans implementation has only a Resource and an ILS. We'll copy the Resource
 					// and set our own ILS
 					rs.Resource().CopyTo(newRS.Resource())
 
 					newILS := pdata.NewInstrumentationLibrarySpans()
-					newILS.InitEmpty()
 					// currently, the ILS implementation has only an InstrumentationLibrary and spans. We'll copy the library
 					// and set our own spans
 					ils.InstrumentationLibrary().CopyTo(newILS.InstrumentationLibrary())

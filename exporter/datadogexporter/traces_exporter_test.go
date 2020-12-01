@@ -206,7 +206,6 @@ func TestPushTraceData(t *testing.T) {
 		traces := pdata.NewTraces()
 		resourceSpans := traces.ResourceSpans()
 		resourceSpans.Resize(1)
-		resourceSpans.At(0).InitEmpty()
 		resourceSpans.At(0).InstrumentationLibrarySpans().Resize(1)
 		resourceSpans.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
 		return traces
@@ -233,20 +232,13 @@ func simpleTraces() pdata.Traces {
 }
 
 func simpleTracesWithID(traceID pdata.TraceID) pdata.Traces {
-	span := pdata.NewSpan()
-	span.InitEmpty()
-	span.SetTraceID(traceID)
-
-	ils := pdata.NewInstrumentationLibrarySpans()
-	ils.InitEmpty()
-	ils.Spans().Append(span)
-
-	rs := pdata.NewResourceSpans()
-	rs.InitEmpty()
-	rs.InstrumentationLibrarySpans().Append(ils)
-
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Append(rs)
+	traces.ResourceSpans().Resize(1)
+	rs := traces.ResourceSpans().At(0)
+	rs.InstrumentationLibrarySpans().Resize(1)
+	ils := rs.InstrumentationLibrarySpans().At(0)
+	ils.Spans().Resize(1)
+	ils.Spans().At(0).SetTraceID(traceID)
 
 	return traces
 }

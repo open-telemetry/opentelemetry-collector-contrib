@@ -44,14 +44,12 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 		out := pdata.NewMetrics()
 		out.ResourceMetrics().Resize(1)
 		rm := out.ResourceMetrics().At(0)
-		rm.InitEmpty()
 		rm.InstrumentationLibraryMetrics().Resize(1)
 		ilm := rm.InstrumentationLibraryMetrics().At(0)
 		ms := ilm.Metrics()
 
 		ms.Resize(1)
 		m := ms.At(0)
-		m.InitEmpty()
 
 		m.SetDataType(typ)
 		m.SetName("single")

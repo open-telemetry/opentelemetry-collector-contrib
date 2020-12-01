@@ -114,9 +114,6 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) 
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
 		rsSpan := rs.At(i)
-		if rsSpan.IsNil() {
-			continue
-		}
 
 		// Extract Resource attributes, they will be added to every span.
 		resourceAttrs := spanAttributesToMap(rsSpan.Resource().Attributes())
@@ -124,16 +121,9 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) 
 		ils := rsSpan.InstrumentationLibrarySpans()
 		for j := 0; j < ils.Len(); j++ {
 			ilsSpan := ils.At(j)
-			if ilsSpan.IsNil() {
-				continue
-			}
 			spans := ilsSpan.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				if span.IsNil() {
-					continue
-				}
-
 				ev := e.builder.NewEvent()
 
 				for k, v := range resourceAttrs {

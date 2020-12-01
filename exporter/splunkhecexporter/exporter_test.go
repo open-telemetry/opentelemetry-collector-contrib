@@ -196,16 +196,13 @@ func generateLargeBatch(t *testing.T) consumerdata.MetricsData {
 func generateLargeLogsBatch(t *testing.T) pdata.Logs {
 	logs := pdata.NewLogs()
 	rl := pdata.NewResourceLogs()
-	rl.InitEmpty()
 	logs.ResourceLogs().Append(rl)
 	ill := pdata.NewInstrumentationLibraryLogs()
-	ill.InitEmpty()
 	rl.InstrumentationLibraryLogs().Append(ill)
 
 	ts := pdata.TimestampUnixNano(123)
 	for i := 0; i < 65000; i++ {
 		logRecord := pdata.NewLogRecord()
-		logRecord.InitEmpty()
 		logRecord.Body().SetStringVal("mylog")
 		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
@@ -220,7 +217,6 @@ func generateLargeLogsBatch(t *testing.T) pdata.Logs {
 
 func TestConsumeLogsData(t *testing.T) {
 	logRecord := pdata.NewLogRecord()
-	logRecord.InitEmpty()
 	logRecord.Body().SetStringVal("mylog")
 	logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 	logRecord.Attributes().InsertString("custom", "custom")

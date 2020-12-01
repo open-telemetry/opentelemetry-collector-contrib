@@ -153,17 +153,8 @@ func generateOrphanSpansFromSpans(spans ...*sentry.Span) []*sentry.Span {
 }
 
 func TestSpanToSentrySpan(t *testing.T) {
-	t.Run("with nil span", func(t *testing.T) {
-		testSpan := pdata.NewSpan()
-
-		sentrySpan := convertToSentrySpan(testSpan, pdata.NewInstrumentationLibrary(), map[string]string{})
-		assert.Nil(t, sentrySpan)
-	})
-
 	t.Run("with root span and invalid parent span_id", func(t *testing.T) {
 		testSpan := pdata.NewSpan()
-		testSpan.InitEmpty()
-
 		testSpan.SetParentSpanID(pdata.InvalidSpanID())
 
 		sentrySpan := convertToSentrySpan(testSpan, pdata.NewInstrumentationLibrary(), map[string]string{})
@@ -173,7 +164,6 @@ func TestSpanToSentrySpan(t *testing.T) {
 
 	t.Run("with full span", func(t *testing.T) {
 		testSpan := pdata.NewSpan()
-		testSpan.InitEmpty()
 
 		traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 		spanID := pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
@@ -545,7 +535,6 @@ func TestPushTraceData(t *testing.T) {
 				traces := pdata.NewTraces()
 				resourceSpans := traces.ResourceSpans()
 				resourceSpans.Resize(1)
-				resourceSpans.At(0).InitEmpty()
 				resourceSpans.At(0).InstrumentationLibrarySpans().Resize(1)
 				resourceSpans.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
 				return traces

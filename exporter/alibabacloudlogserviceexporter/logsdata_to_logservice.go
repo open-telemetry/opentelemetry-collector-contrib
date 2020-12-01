@@ -49,26 +49,15 @@ func logDataToLogService(logger *zap.Logger, ld pdata.Logs) ([]*sls.Log, int) {
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
-		if rl.IsNil() {
-			continue
-		}
-
 		ills := rl.InstrumentationLibraryLogs()
 		resource := rl.Resource()
 		resourceContents := resourceToLogContents(resource)
 		for j := 0; j < ills.Len(); j++ {
 			ils := ills.At(j)
-			if ils.IsNil() {
-				continue
-			}
 			instrumentationLibraryContents := instrumentationLibraryToLogContents(ils.InstrumentationLibrary())
 			logs := ils.Logs()
 			for j := 0; j < logs.Len(); j++ {
-				lr := logs.At(j)
-				if lr.IsNil() {
-					continue
-				}
-				slsLog := mapLogRecordToLogService(lr, resourceContents, instrumentationLibraryContents)
+				slsLog := mapLogRecordToLogService(logs.At(j), resourceContents, instrumentationLibraryContents)
 				if slsLog == nil {
 					numDroppedLogs++
 				} else {

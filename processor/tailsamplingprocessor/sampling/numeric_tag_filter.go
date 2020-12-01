@@ -56,20 +56,11 @@ func (naf *numericAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (
 		rspans := batch.ResourceSpans()
 		for i := 0; i < rspans.Len(); i++ {
 			rs := rspans.At(i)
-			if rs.IsNil() {
-				continue
-			}
 			ilss := rs.InstrumentationLibrarySpans()
 			for j := 0; j < ilss.Len(); j++ {
 				ils := ilss.At(j)
-				if ils.IsNil() {
-					continue
-				}
 				for k := 0; k < ils.Spans().Len(); k++ {
 					span := ils.Spans().At(k)
-					if span.IsNil() {
-						continue
-					}
 					if v, ok := span.Attributes().Get(naf.key); ok {
 						value := v.IntVal()
 						if value >= naf.minValue && value <= naf.maxValue {

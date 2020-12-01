@@ -41,7 +41,7 @@ func (kv logKeyValuePairs) Less(i, j int) bool { return kv[i].Key < kv[j].Key }
 
 func TestTraceDataToLogService(t *testing.T) {
 	gotLogs, dropped := traceDataToLogServiceData(constructSpanData())
-	assert.Equal(t, len(gotLogs), 4)
+	assert.Equal(t, len(gotLogs), 2)
 	assert.Equal(t, dropped, 0)
 
 	gotLogPairs := make([][]logKeyValuePair, 0, len(gotLogs))
@@ -69,7 +69,6 @@ func TestTraceDataToLogService(t *testing.T) {
 		return
 	}
 	for j := 0; j < len(gotLogs); j++ {
-
 		sort.Sort(logKeyValuePairs(gotLogPairs[j]))
 		sort.Sort(logKeyValuePairs(wantLogs[j]))
 		if !reflect.DeepEqual(gotLogPairs[j], wantLogs[j]) {
@@ -88,29 +87,22 @@ func loadFromJSON(file string, obj interface{}) error {
 }
 
 func constructSpanData() pdata.Traces {
-	resource := constructResource()
-
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(2)
 	rspans := traces.ResourceSpans().At(0)
-	traces.ResourceSpans().Append(pdata.NewResourceSpans())
-	resource.CopyTo(rspans.Resource())
+	fillResource(rspans.Resource())
 	rspans.InstrumentationLibrarySpans().Resize(2)
 	ispans := rspans.InstrumentationLibrarySpans().At(0)
-	rspans.InstrumentationLibrarySpans().Append(pdata.NewInstrumentationLibrarySpans())
-	ispans.Spans().Resize(4)
-	constructHTTPClientSpan().CopyTo(ispans.Spans().At(0))
-	constructHTTPServerSpan().CopyTo(ispans.Spans().At(1))
-	ispans.Spans().At(2).InitEmpty()
 	ispans.InstrumentationLibrary().SetName("golang-sls-exporter")
 	ispans.InstrumentationLibrary().SetVersion("v0.1.0")
-	ispans.Spans().Append(pdata.NewSpan())
+	ispans.Spans().Resize(2)
+	fillHTTPClientSpan(ispans.Spans().At(0))
+	fillHTTPServerSpan(ispans.Spans().At(1))
 	return traces
 }
 
-func constructResource() pdata.Resource {
-	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
+func fillResource(resource pdata.Resource) {
+	attrs := resource.Attributes()
 	attrs.InsertString(semconventions.AttributeServiceName, "signup_aggregator")
 	attrs.InsertString(semconventions.AttributeHostName, "xxx.et15")
 	attrs.InsertString(semconventions.AttributeContainerName, "signup_aggregator")
@@ -120,11 +112,9 @@ func constructResource() pdata.Resource {
 	attrs.InsertString(semconventions.AttributeCloudAccount, "999999998")
 	attrs.InsertString(semconventions.AttributeCloudRegion, "us-west-2")
 	attrs.InsertString(semconventions.AttributeCloudZone, "us-west-1b")
-	attrs.CopyTo(resource.Attributes())
-	return resource
 }
 
-func constructHTTPClientSpan() pdata.Span {
+func fillHTTPClientSpan(span pdata.Span) {
 	attributes := make(map[string]interface{})
 	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
@@ -132,10 +122,8 @@ func constructHTTPClientSpan() pdata.Span {
 	attributes[semconventions.AttributeHTTPStatusCode] = 200
 	endTime := time.Unix(12300, 123456789)
 	startTime := endTime.Add(-90 * time.Second)
-	spanAttributes := constructSpanAttributes(attributes)
+	constructSpanAttributes(attributes).CopyTo(span.Attributes())
 
-	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
@@ -145,34 +133,24 @@ func constructHTTPClientSpan() pdata.Span {
 	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
 	span.SetTraceState("x:y")
 
-	event := pdata.NewSpanEvent()
-	event.InitEmpty()
+	span.Events().Resize(1)
+	event := span.Events().At(0)
 	event.SetName("event")
 	event.SetTimestamp(1024)
 	event.Attributes().InsertString("key", "value")
-	span.Events().Resize(1)
-	event.CopyTo(span.Events().At(0))
-	span.Events().Append(pdata.NewSpanEvent())
 
-	link := pdata.NewSpanLink()
-	link.InitEmpty()
+	span.Links().Resize(1)
+	link := span.Links().At(0)
 	link.SetTraceState("link:state")
 	link.Attributes().InsertString("link", "true")
-	span.Links().Resize(1)
-	link.CopyTo(span.Links().At(0))
-	span.Links().Append(pdata.NewSpanLink())
 
-	status := pdata.NewSpanStatus()
+	status := span.Status()
 	status.InitEmpty()
 	status.SetCode(1)
 	status.SetMessage("OK")
-	status.CopyTo(span.Status())
-
-	spanAttributes.CopyTo(span.Attributes())
-	return span
 }
 
-func constructHTTPServerSpan() pdata.Span {
+func fillHTTPServerSpan(span pdata.Span) {
 	attributes := make(map[string]interface{})
 	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
@@ -181,10 +159,8 @@ func constructHTTPServerSpan() pdata.Span {
 	attributes[semconventions.AttributeHTTPStatusCode] = 200
 	endTime := time.Unix(12300, 123456789)
 	startTime := endTime.Add(-90 * time.Second)
-	spanAttributes := constructSpanAttributes(attributes)
+	constructSpanAttributes(attributes).CopyTo(span.Attributes())
 
-	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
@@ -193,14 +169,10 @@ func constructHTTPServerSpan() pdata.Span {
 	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
 	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
 
-	status := pdata.NewSpanStatus()
+	status := span.Status()
 	status.InitEmpty()
 	status.SetCode(2)
 	status.SetMessage("something error")
-	status.CopyTo(span.Status())
-
-	spanAttributes.CopyTo(span.Attributes())
-	return span
 }
 
 func constructSpanAttributes(attributes map[string]interface{}) pdata.AttributeMap {

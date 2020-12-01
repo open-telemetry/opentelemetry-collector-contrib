@@ -99,7 +99,6 @@ var Metrics = &metricStruct{
 		"nginx.connections_accepted",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("nginx.connections_accepted")
 			metric.SetDescription("The total number of accepted client connections")
 			metric.SetUnit("connections")
@@ -114,7 +113,6 @@ var Metrics = &metricStruct{
 		"nginx.connections_active",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("nginx.connections_active")
 			metric.SetDescription("The current number of open connections")
 			metric.SetUnit("connections")
@@ -127,7 +125,6 @@ var Metrics = &metricStruct{
 		"nginx.connections_handled",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("nginx.connections_handled")
 			metric.SetDescription("The total number of handled connections. Generally, the parameter value is the same as nginx.connections_accepted unless some resource limits have been reached (for example, the worker_connections limit).")
 			metric.SetUnit("connections")
@@ -142,7 +139,6 @@ var Metrics = &metricStruct{
 		"nginx.connections_reading",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("nginx.connections_reading")
 			metric.SetDescription("The current number of connections where nginx is reading the request headerhe current number of open connections")
 			metric.SetUnit("connections")
@@ -155,7 +151,6 @@ var Metrics = &metricStruct{
 		"nginx.connections_waiting",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("nginx.connections_waiting")
 			metric.SetDescription("The current number of idle client connections waiting for a request.")
 			metric.SetUnit("connections")
@@ -168,7 +163,6 @@ var Metrics = &metricStruct{
 		"nginx.connections_writing",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("nginx.connections_writing")
 			metric.SetDescription("The current number of connections where nginx is writing the response back to the client.")
 			metric.SetUnit("connections")
@@ -181,7 +175,6 @@ var Metrics = &metricStruct{
 		"nginx.requests",
 		func() pdata.Metric {
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetName("nginx.requests")
 			metric.SetDescription("Total number of requests made to the server since it started")
 			metric.SetUnit("requests")

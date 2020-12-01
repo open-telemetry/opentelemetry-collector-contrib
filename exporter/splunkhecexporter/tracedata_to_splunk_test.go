@@ -40,18 +40,15 @@ func Test_traceDataToSplunk(t *testing.T) {
 			name: "valid",
 			traceDataFn: func() pdata.Traces {
 				traces := pdata.NewTraces()
-				rs := pdata.NewResourceSpans()
-				rs.InitEmpty()
+				traces.ResourceSpans().Resize(1)
+				rs := traces.ResourceSpans().At(0)
 				rs.Resource().Attributes().InsertString("service.name", "myservice")
 				rs.Resource().Attributes().InsertString("host.name", "myhost")
 				rs.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
 				rs.Resource().Attributes().InsertString("com.splunk.index", "myindex")
-
-				ils := pdata.NewInstrumentationLibrarySpans()
-				ils.InitEmpty()
+				rs.InstrumentationLibrarySpans().Resize(1)
+				ils := rs.InstrumentationLibrarySpans().At(0)
 				ils.Spans().Append(makeSpan("myspan", &ts))
-				rs.InstrumentationLibrarySpans().Append(ils)
-				traces.ResourceSpans().Append(rs)
 				return traces
 			},
 			wantSplunkEvents: []*splunk.Event{
@@ -60,50 +57,25 @@ func Test_traceDataToSplunk(t *testing.T) {
 			wantNumDroppedSpans: 0,
 		},
 		{
-			name: "nil_rs",
+			name: "empty_rs",
 			traceDataFn: func() pdata.Traces {
 				traces := pdata.NewTraces()
-				rs := pdata.NewResourceSpans()
-				traces.ResourceSpans().Append(rs)
+				traces.ResourceSpans().Resize(1)
 				return traces
 			},
 			wantSplunkEvents:    []*splunk.Event{},
 			wantNumDroppedSpans: 0,
 		},
 		{
-			name: "nil_ils",
+			name: "empty_ils",
 			traceDataFn: func() pdata.Traces {
 				traces := pdata.NewTraces()
-				rs := pdata.NewResourceSpans()
-				rs.InitEmpty()
+				traces.ResourceSpans().Resize(1)
+				rs := traces.ResourceSpans().At(0)
 				rs.Resource().Attributes().InsertString("service.name", "myservice")
 				rs.Resource().Attributes().InsertString("host.name", "myhost")
 				rs.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
-
-				ils := pdata.NewInstrumentationLibrarySpans()
-				rs.InstrumentationLibrarySpans().Append(ils)
-				traces.ResourceSpans().Append(rs)
-				return traces
-			},
-			wantSplunkEvents:    []*splunk.Event{},
-			wantNumDroppedSpans: 0,
-		},
-		{
-			name: "nil_span",
-			traceDataFn: func() pdata.Traces {
-				traces := pdata.NewTraces()
-				rs := pdata.NewResourceSpans()
-				rs.InitEmpty()
-				rs.Resource().Attributes().InsertString("service.name", "myservice")
-				rs.Resource().Attributes().InsertString("host.name", "myhost")
-				rs.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
-
-				ils := pdata.NewInstrumentationLibrarySpans()
-				ils.InitEmpty()
-				nilSpan := pdata.NewSpan()
-				ils.Spans().Append(nilSpan)
-				rs.InstrumentationLibrarySpans().Append(ils)
-				traces.ResourceSpans().Append(rs)
+				rs.InstrumentationLibrarySpans().Resize(1)
 				return traces
 			},
 			wantSplunkEvents:    []*splunk.Event{},
@@ -127,14 +99,13 @@ func Test_traceDataToSplunk(t *testing.T) {
 
 func makeSpan(name string, ts *pdata.TimestampUnixNano) pdata.Span {
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.Attributes().InsertString("foo", "bar")
 	span.SetName(name)
 	if ts != nil {
 		span.SetStartTime(*ts)
 	}
-	spanLink := pdata.NewSpanLink()
-	spanLink.InitEmpty()
+	span.Links().Resize(1)
+	spanLink := span.Links().At(0)
 	spanLink.SetTraceState("OK")
 	bytes, _ := hex.DecodeString("12345678")
 	var traceID [16]byte
@@ -150,16 +121,14 @@ func makeSpan(name string, ts *pdata.TimestampUnixNano) pdata.Span {
 	foobarContents.ArrayVal().Append(pdata.NewAttributeValueString("a"))
 	foobarContents.ArrayVal().Append(pdata.NewAttributeValueString("b"))
 	spanLink.Attributes().Insert("foobar", foobarContents)
-	span.Links().Append(spanLink)
 
-	spanEvent := pdata.NewSpanEvent()
-	spanEvent.InitEmpty()
+	span.Events().Resize(1)
+	spanEvent := span.Events().At(0)
 	spanEvent.Attributes().InsertString("foo", "bar")
 	spanEvent.SetName("myEvent")
 	if ts != nil {
 		spanEvent.SetTimestamp(*ts + 3)
 	}
-	span.Events().Append(spanEvent)
 	return span
 }
 

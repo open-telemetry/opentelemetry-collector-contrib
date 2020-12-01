@@ -416,18 +416,15 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	msecInt64 := now.UnixNano() / 1e6
 	sec := float64(msecInt64) / 1e3
 	lr := pdata.NewLogRecord()
-	lr.InitEmpty()
 	lr.SetTimestamp(pdata.TimestampUnixNano(int64(sec * 1e9)))
 	lr.SetName("custom:sourcetype")
 
 	lr.Body().SetStringVal("foo")
 	logs := pdata.NewLogs()
 	rl := pdata.NewResourceLogs()
-	rl.InitEmpty()
 	lr.Attributes().InsertString("com.splunk.sourcetype", "custom:sourcetype")
 	lr.Attributes().InsertString("com.splunk.index", "myindex")
 	ill := pdata.NewInstrumentationLibraryLogs()
-	ill.InitEmpty()
 	ill.Logs().Append(lr)
 	rl.InstrumentationLibraryLogs().Append(ill)
 	logs.ResourceLogs().Append(rl)

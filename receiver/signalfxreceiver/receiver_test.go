@@ -118,14 +118,12 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 
 	doubleVal := 1234.5678
 	doublePt := pdata.NewDoubleDataPoint()
-	doublePt.InitEmpty()
 	doublePt.SetTimestamp(ts)
 	doublePt.SetValue(doubleVal)
 	doublePt.LabelsMap().InitEmptyWithCapacity(0)
 
 	int64Val := int64(123)
 	int64Pt := pdata.NewIntDataPoint()
-	int64Pt.InitEmpty()
 	int64Pt.SetTimestamp(ts)
 	int64Pt.SetValue(int64Val)
 	int64Pt.LabelsMap().InitEmptyWithCapacity(0)
@@ -134,14 +132,12 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	rms := want.ResourceMetrics()
 	rms.Resize(1)
 	rm := rms.At(0)
-	rm.InitEmpty()
 
 	rm.InstrumentationLibraryMetrics().Resize(1)
 	ilm := rm.InstrumentationLibraryMetrics().At(0)
 
 	{
 		m := pdata.NewMetric()
-		m.InitEmpty()
 		m.SetName("gauge_double_with_dims")
 		m.SetDataType(pdata.MetricDataTypeDoubleGauge)
 		m.DoubleGauge().DataPoints().Append(doublePt)
@@ -149,7 +145,6 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	}
 	{
 		m := pdata.NewMetric()
-		m.InitEmpty()
 		m.SetName("gauge_int_with_dims")
 		m.SetDataType(pdata.MetricDataTypeIntGauge)
 		m.IntGauge().DataPoints().Append(int64Pt)
@@ -157,7 +152,6 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	}
 	{
 		m := pdata.NewMetric()
-		m.InitEmpty()
 		m.SetName("cumulative_double_with_dims")
 		m.SetDataType(pdata.MetricDataTypeDoubleSum)
 		m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
@@ -167,7 +161,6 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	}
 	{
 		m := pdata.NewMetric()
-		m.InitEmpty()
 		m.SetName("cumulative_int_with_dims")
 		m.SetDataType(pdata.MetricDataTypeIntSum)
 		m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
@@ -582,14 +575,12 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	want := pdata.NewMetrics()
 	want.ResourceMetrics().Resize(1)
 	rm := want.ResourceMetrics().At(0)
-	rm.InitEmpty()
 	rm.InstrumentationLibraryMetrics().Resize(1)
 	ilm := rm.InstrumentationLibraryMetrics().At(0)
 	ms := ilm.Metrics()
 
 	ms.Resize(1)
 	m := ms.At(0)
-	m.InitEmpty()
 
 	m.SetDataType(pdata.MetricDataTypeIntGauge)
 	m.SetName("single")

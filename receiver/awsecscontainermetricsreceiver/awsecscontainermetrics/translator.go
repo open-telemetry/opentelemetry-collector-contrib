@@ -24,7 +24,6 @@ func convertToOTLPMetrics(prefix string, m ECSMetrics, r pdata.Resource, timesta
 	rms.Resize(1)
 
 	rm := rms.At(0)
-	rm.InitEmpty()
 	r.CopyTo(rm.Resource())
 
 	ilms := rm.InstrumentationLibraryMetrics()
@@ -101,7 +100,6 @@ func doubleGauge(metricName string, unit string, value float64, ts pdata.Timesta
 	dataPoints.Resize(1)
 	dataPoint := dataPoints.At(0)
 
-	dataPoint.InitEmpty()
 	dataPoint.SetValue(value)
 	dataPoint.SetTimestamp(ts)
 
@@ -111,19 +109,13 @@ func doubleGauge(metricName string, unit string, value float64, ts pdata.Timesta
 func updateIntDataPoint(dataPoints pdata.IntDataPointSlice, value int64, ts pdata.TimestampUnixNano) {
 	dataPoints.Resize(1)
 	dataPoint := dataPoints.At(0)
-
-	dataPoint.InitEmpty()
 	dataPoint.SetValue(value)
 	dataPoint.SetTimestamp(ts)
 }
 
 func initMetric(ilm pdata.InstrumentationLibraryMetrics, name, unit string) pdata.Metric {
-	ilm.InitEmpty()
-
 	ilm.Metrics().Resize(1)
 	metric := ilm.Metrics().At(0)
-
-	metric.InitEmpty()
 	metric.SetName(name)
 	metric.SetUnit(unit)
 

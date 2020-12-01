@@ -161,10 +161,10 @@ func createLogsSlice(body string, nanoseconds int) pdata.ResourceLogsSlice {
 	lrs := pdata.NewResourceLogsSlice()
 	lrs.Resize(1)
 	lr := lrs.At(0)
-	lr.InitEmpty()
-	logRecord := pdata.NewLogRecord()
-	logRecord.InitEmpty()
-
+	lr.InstrumentationLibraryLogs().Resize(1)
+	ill := lr.InstrumentationLibraryLogs().At(0)
+	ill.Logs().Resize(1)
+	logRecord := ill.Logs().At(0)
 	logRecord.SetName("mysourcetype")
 	logRecord.Body().SetStringVal(body)
 	logRecord.SetTimestamp(pdata.TimestampUnixNano(nanoseconds))
@@ -173,10 +173,6 @@ func createLogsSlice(body string, nanoseconds int) pdata.ResourceLogsSlice {
 	logRecord.Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
 	logRecord.Attributes().InsertString("com.splunk.index", "myindex")
 	logRecord.Attributes().InsertString("foo", "bar")
-	ill := pdata.NewInstrumentationLibraryLogs()
-	ill.InitEmpty()
-	ill.Logs().Append(logRecord)
-	lr.InstrumentationLibraryLogs().Append(ill)
 
 	return lrs
 }

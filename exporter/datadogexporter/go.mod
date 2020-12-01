@@ -9,7 +9,7 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.6.1
 	github.com/zorkian/go-datadog-api v2.29.0+incompatible // indirect
-	go.opentelemetry.io/collector v0.15.1-0.20201201131443-14047fd86f05
+	go.opentelemetry.io/collector v0.15.1-0.20201201185019-f4f68db25d1f
 	go.uber.org/zap v1.16.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.27.1
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0

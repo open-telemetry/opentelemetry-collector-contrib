@@ -32,7 +32,6 @@ func TestMemoryCreateAndGetTrace(t *testing.T) {
 	}
 
 	baseTrace := pdata.NewResourceSpans()
-	baseTrace.InitEmpty()
 	baseTrace.InstrumentationLibrarySpans().Resize(1)
 	ils := baseTrace.InstrumentationLibrarySpans().At(0)
 	ils.Spans().Resize(1)
@@ -65,7 +64,6 @@ func TestMemoryDeleteTrace(t *testing.T) {
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
 	trace := pdata.NewResourceSpans()
-	trace.InitEmpty()
 	trace.InstrumentationLibrarySpans().Resize(1)
 	ils := trace.InstrumentationLibrarySpans().At(0)
 	ils.Spans().Resize(1)
@@ -93,7 +91,6 @@ func TestMemoryAppendSpans(t *testing.T) {
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
 	batch := pdata.NewResourceSpans()
-	batch.InitEmpty()
 	batch.InstrumentationLibrarySpans().Resize(1)
 	ils := batch.InstrumentationLibrarySpans().At(0)
 	ils.Spans().Resize(1)
@@ -104,7 +101,6 @@ func TestMemoryAppendSpans(t *testing.T) {
 	st.createOrAppend(traceID, batch)
 
 	secondBatch := pdata.NewResourceSpans()
-	secondBatch.InitEmpty()
 	secondBatch.InstrumentationLibrarySpans().Resize(1)
 	secondIls := secondBatch.InstrumentationLibrarySpans().At(0)
 	secondIls.Spans().Resize(1)
@@ -117,10 +113,7 @@ func TestMemoryAppendSpans(t *testing.T) {
 		pdata.NewResourceSpans(),
 		pdata.NewResourceSpans(),
 	}
-	expected[0].InitEmpty()
 	expected[0].InstrumentationLibrarySpans().Append(ils)
-
-	expected[1].InitEmpty()
 	expected[1].InstrumentationLibrarySpans().Append(secondIls)
 
 	// test
@@ -147,7 +140,6 @@ func TestMemoryTraceIsBeingCloned(t *testing.T) {
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
 	batch := pdata.NewResourceSpans()
-	batch.InitEmpty()
 	batch.InstrumentationLibrarySpans().Resize(1)
 	ils := batch.InstrumentationLibrarySpans().At(0)
 	ils.Spans().Resize(1)
@@ -165,16 +157,4 @@ func TestMemoryTraceIsBeingCloned(t *testing.T) {
 	retrieved, err := st.get(traceID)
 	require.NoError(t, err)
 	assert.Equal(t, "should-not-be-changed", retrieved[0].InstrumentationLibrarySpans().At(0).Spans().At(0).Name())
-}
-
-func TestCreateWithNilParameter(t *testing.T) {
-	// prepare
-	st := newMemoryStorage()
-	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
-
-	// test
-	err := st.createOrAppend(traceID, pdata.NewResourceSpans())
-
-	// verify
-	require.Equal(t, errStorageNilResourceSpans, err)
 }

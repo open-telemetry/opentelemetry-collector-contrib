@@ -107,7 +107,6 @@ func testAuth(t *testing.T, apiKey, secretToken, expectedAuthorization string) {
 	traces := pdata.NewTraces()
 	resourceSpans := traces.ResourceSpans()
 	resourceSpans.Resize(1)
-	resourceSpans.At(0).InitEmpty()
 	resourceSpans.At(0).InstrumentationLibrarySpans().Resize(1)
 	resourceSpans.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
 	span := resourceSpans.At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
