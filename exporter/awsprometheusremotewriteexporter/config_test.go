@@ -59,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "awsprometheusremotewrite/2",
 				TypeVal: "awsprometheusremotewrite",
 			},
-			TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
+			TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),
 			QueueSettings: exporterhelper.QueueSettings{
 				Enabled:      true,
 				NumConsumers: 2,

@@ -77,7 +77,7 @@ func createMetricsExporter(
 		cfg,
 		params.Logger,
 		exp.PushMetricsData,
-		exporterhelper.WithQueue(exporterhelper.CreateDefaultQueueSettings()),
-		exporterhelper.WithRetry(exporterhelper.CreateDefaultRetrySettings()),
+		exporterhelper.WithQueue(exporterhelper.DefaultQueueSettings()),
+		exporterhelper.WithRetry(exporterhelper.DefaultRetrySettings()),
 	)
 }
