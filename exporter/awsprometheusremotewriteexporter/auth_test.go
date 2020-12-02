@@ -41,7 +41,10 @@ func TestRequestSignature(t *testing.T) {
 		w.WriteHeader(200)
 	}))
 	defer server.Close()
-	serverURL, _ := url.Parse(server.URL)
+
+	serverURL, err := url.Parse(server.URL)
+	assert.NoError(t, err)
+
 	setting := confighttp.HTTPClientSettings{
 		Endpoint:        serverURL.String(),
 		TLSSetting:      configtls.TLSClientSetting{},
@@ -56,8 +59,8 @@ func TestRequestSignature(t *testing.T) {
 	client, _ := setting.ToClient()
 	req, err := http.NewRequest("POST", setting.Endpoint, strings.NewReader("a=1&b=2"))
 	assert.NoError(t, err)
-	client.Do(req)
-
+	_, err = client.Do(req)
+	assert.NoError(t, err)
 }
 
 type ErrorRoundTripper struct{}
@@ -118,7 +121,6 @@ func TestRoundTrip(t *testing.T) {
 }
 
 func TestNewSigningRoundTripper(t *testing.T) {
-
 	defaultRoundTripper := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
 
 	// Some form of AWS credentials must be set up for tests to succeed
