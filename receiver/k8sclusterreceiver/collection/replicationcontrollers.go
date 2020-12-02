@@ -18,6 +18,8 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
 )
 
 func getMetricsForReplicationController(rc *corev1.ReplicationController) []*resourceMetrics {
@@ -50,8 +52,8 @@ func getResourceForReplicationController(rc *corev1.ReplicationController) *reso
 	}
 }
 
-func getMetadataForReplicationController(rc *corev1.ReplicationController) map[ResourceID]*KubernetesMetadata {
-	return map[ResourceID]*KubernetesMetadata{
-		ResourceID(rc.UID): getGenericMetadata(&rc.ObjectMeta, k8sKindReplicationController),
+func getMetadataForReplicationController(rc *corev1.ReplicationController) map[metrics.ResourceID]*KubernetesMetadata {
+	return map[metrics.ResourceID]*KubernetesMetadata{
+		metrics.ResourceID(rc.UID): getGenericMetadata(&rc.ObjectMeta, k8sKindReplicationController),
 	}
 }

@@ -22,12 +22,12 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
 )
 
 // MetadataUpdateClient is an interface for pushing metadata updates
 type MetadataUpdateClient interface {
-	PushMetadata([]*collection.MetadataUpdate) error
+	PushMetadata([]*metrics.MetadataUpdate) error
 }
 
 var propNameSanitizer = strings.NewReplacer(
@@ -35,7 +35,7 @@ var propNameSanitizer = strings.NewReplacer(
 	"/", "_")
 
 func getDimensionUpdateFromMetadata(
-	metadata collection.MetadataUpdate,
+	metadata metrics.MetadataUpdate,
 	metricTranslator *translation.MetricTranslator,
 ) *DimensionUpdate {
 
@@ -58,7 +58,7 @@ func getDimensionUpdateFromMetadata(
 }
 
 func getPropertiesAndTags(
-	kmu collection.MetadataUpdate,
+	kmu metrics.MetadataUpdate,
 	translate func(string) string,
 ) (map[string]*string, map[string]bool) {
 	properties := map[string]*string{}
@@ -110,7 +110,7 @@ func getPropertiesAndTags(
 	return properties, tags
 }
 
-func (dc *DimensionClient) PushMetadata(metadata []*collection.MetadataUpdate) error {
+func (dc *DimensionClient) PushMetadata(metadata []*metrics.MetadataUpdate) error {
 	var errs []error
 	for _, m := range metadata {
 		dimensionUpdate := getDimensionUpdateFromMetadata(*m, dc.metricTranslator)

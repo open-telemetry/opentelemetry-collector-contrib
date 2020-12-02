@@ -18,6 +18,8 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
 	appsv1 "k8s.io/api/apps/v1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
 )
 
 func getMetricsForReplicaSet(rs *appsv1.ReplicaSet) []*resourceMetrics {
@@ -50,8 +52,8 @@ func getResourceForReplicaSet(rs *appsv1.ReplicaSet) *resourcepb.Resource {
 	}
 }
 
-func getMetadataForReplicaSet(rs *appsv1.ReplicaSet) map[ResourceID]*KubernetesMetadata {
-	return map[ResourceID]*KubernetesMetadata{
-		ResourceID(rs.UID): getGenericMetadata(&rs.ObjectMeta, k8sKindReplicaSet),
+func getMetadataForReplicaSet(rs *appsv1.ReplicaSet) map[metrics.ResourceID]*KubernetesMetadata {
+	return map[metrics.ResourceID]*KubernetesMetadata{
+		metrics.ResourceID(rs.UID): getGenericMetadata(&rs.ObjectMeta, k8sKindReplicaSet),
 	}
 }

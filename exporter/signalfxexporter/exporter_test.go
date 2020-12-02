@@ -41,8 +41,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )
 
 func TestNew(t *testing.T) {
@@ -743,7 +743,7 @@ func generateLargeEventBatch() pdata.Logs {
 
 func TestConsumeMetadata(t *testing.T) {
 	type args struct {
-		metadata []*collection.MetadataUpdate
+		metadata []*metrics.MetadataUpdate
 	}
 	type fields struct {
 		payLoad map[string]interface{}
@@ -768,11 +768,11 @@ func TestConsumeMetadata(t *testing.T) {
 				},
 			},
 			args{
-				[]*collection.MetadataUpdate{
+				[]*metrics.MetadataUpdate{
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
-						MetadataDelta: collection.MetadataDelta{
+						MetadataDelta: metrics.MetadataDelta{
 							MetadataToAdd: map[string]string{
 								"prop.erty1": "val1",
 							},
@@ -802,11 +802,11 @@ func TestConsumeMetadata(t *testing.T) {
 				},
 			},
 			args{
-				[]*collection.MetadataUpdate{
+				[]*metrics.MetadataUpdate{
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
-						MetadataDelta: collection.MetadataDelta{
+						MetadataDelta: metrics.MetadataDelta{
 							MetadataToAdd: map[string]string{
 								"tag.1": "",
 							},
@@ -837,11 +837,11 @@ func TestConsumeMetadata(t *testing.T) {
 				},
 			},
 			args{
-				[]*collection.MetadataUpdate{
+				[]*metrics.MetadataUpdate{
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
-						MetadataDelta: collection.MetadataDelta{
+						MetadataDelta: metrics.MetadataDelta{
 							MetadataToAdd: map[string]string{
 								"tag.1":     "",
 								"property1": "val1",
@@ -858,7 +858,7 @@ func TestConsumeMetadata(t *testing.T) {
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
-						MetadataDelta: collection.MetadataDelta{
+						MetadataDelta: metrics.MetadataDelta{
 							MetadataToAdd: map[string]string{
 								"tag/2": "",
 							},
@@ -875,7 +875,7 @@ func TestConsumeMetadata(t *testing.T) {
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
-						MetadataDelta: collection.MetadataDelta{
+						MetadataDelta: metrics.MetadataDelta{
 							MetadataToAdd: map[string]string{},
 							MetadataToRemove: map[string]string{
 								"property3": "val33",
@@ -982,7 +982,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 	}
 }
 
-// Test to ensure SignalFx exporter implements collection.MetadataExporter in k8s_cluster receiver.
+// Test to ensure SignalFx exporter implements metrics.MetadataExporter in k8s_cluster receiver.
 func TestSignalFxExporterConsumeMetadata(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig()
@@ -992,7 +992,7 @@ func TestSignalFxExporterConsumeMetadata(t *testing.T) {
 	exp, err := f.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, rCfg)
 	require.NoError(t, err)
 
-	kme, ok := exp.(collection.MetadataExporter)
-	require.True(t, ok, "SignalFx exporter does not implement collection.MetadataExporter")
+	kme, ok := exp.(metrics.MetadataExporter)
+	require.True(t, ok, "SignalFx exporter does not implement metrics.MetadataExporter")
 	require.NotNil(t, kme)
 }
