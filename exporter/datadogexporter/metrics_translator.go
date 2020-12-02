@@ -47,7 +47,7 @@ func mapIntMetrics(name string, slice pdata.IntDataPointSlice, attrTags []string
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		tags := getTags(p.LabelsMap())
-		tags = append(tags, attrTags...)	
+		tags = append(tags, attrTags...)
 		ms = append(ms, metrics.NewGauge(name, uint64(p.Timestamp()), float64(p.Value()), tags))
 	}
 	return ms
