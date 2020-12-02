@@ -2602,7 +2602,6 @@ func indexPts(pts []*sfxpb.DataPoint) map[string][]*sfxpb.DataPoint {
 func doubleMD(secondsDelta int64, valueDelta float64) pdata.ResourceMetrics {
 	md := baseMD()
 	md.SetDataType(pdata.MetricDataTypeDoubleSum)
-
 	ms := md.DoubleSum()
 	ms.DataPoints().Append(dblTS("cpu0", "user", secondsDelta, 100, valueDelta))
 	ms.DataPoints().Append(dblTS("cpu0", "system", secondsDelta, 200, valueDelta))

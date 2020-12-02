@@ -40,8 +40,15 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	pdataStartTime := pdata.TimestampUnixNano(startTime.UnixNano())
 
 	rs := pdata.NewResourceSpans()
+	ilss := rs.InstrumentationLibrarySpans()
+	ilss.Resize(1)
+	il := ilss.At(0).InstrumentationLibrary()
+	il.SetName("test_il_name")
+	il.SetVersion("test_il_version")
+	spans := ilss.At(0).Spans()
+	spans.Resize(1)
 
-	span := pdata.NewSpan()
+	span := spans.At(0)
 	traceID := pdata.NewTraceID(mockTraceID)
 	spanID := pdata.NewSpanID(mockSpanID)
 	parentSpanID := pdata.NewSpanID(mockParentSpanID)
@@ -54,7 +61,7 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	span.SetEndTime(pdataEndTime)
 	span.SetTraceState("tracestatekey=tracestatevalue")
 
-	status := pdata.NewSpanStatus()
+	status := span.Status()
 	status.InitEmpty()
 
 	if statusCode == pdata.StatusCodeError {
@@ -64,9 +71,7 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 		status.SetCode(statusCode)
 	}
 
-	status.CopyTo(span.Status())
-
-	events := pdata.NewSpanEventSlice()
+	events := span.Events()
 	events.Resize(2)
 
 	events.At(0).SetTimestamp(pdataStartTime)
@@ -74,10 +79,9 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 
 	events.At(1).SetTimestamp(pdataEndTime)
 	events.At(1).SetName("end")
-	pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+	events.At(1).Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"flag": pdata.NewAttributeValueBool(false),
-	}).CopyTo(events.At(1).Attributes())
-	events.MoveAndAppendTo(span.Events())
+	})
 
 	attribs := map[string]pdata.AttributeValue{
 		"cache_hit":  pdata.NewAttributeValueBool(true),
@@ -90,38 +94,24 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 		attribs["http.status_code"] = pdata.NewAttributeValueString("501")
 	}
 
-	pdata.NewAttributeMap().InitFromMap(attribs).CopyTo(span.Attributes())
+	span.Attributes().InitFromMap(attribs)
 
-	resource := pdata.NewResource()
+	resource := rs.Resource()
 
 	if resourceEnvAndService {
-		pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+		resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 			"namespace":              pdata.NewAttributeValueString("kube-system"),
 			"service.name":           pdata.NewAttributeValueString("test-resource-service-name"),
 			"deployment.environment": pdata.NewAttributeValueString("test-env"),
 			"service.version":        pdata.NewAttributeValueString("test-version"),
-		}).CopyTo(resource.Attributes())
+		})
 
 	} else {
-		pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+		resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 			"namespace": pdata.NewAttributeValueString("kube-system"),
-		}).CopyTo(resource.Attributes())
+		})
 	}
 
-	resource.CopyTo(rs.Resource())
-
-	il := pdata.NewInstrumentationLibrary()
-	il.SetName("test_il_name")
-	il.SetVersion("test_il_version")
-
-	spans := pdata.NewSpanSlice()
-	spans.Append(span)
-
-	ilss := pdata.NewInstrumentationLibrarySpansSlice()
-	ilss.Resize(1)
-	il.CopyTo(ilss.At(0).InstrumentationLibrary())
-	spans.MoveAndAppendTo(ilss.At(0).Spans())
-	ilss.CopyTo(rs.InstrumentationLibrarySpans())
 	return rs
 }
 
@@ -148,30 +138,26 @@ func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 
 func TestObfuscation(t *testing.T) {
 	calculator := stats.NewSublayerCalculator()
-	resource := pdata.NewResource()
-	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"service.name": pdata.NewAttributeValueString("sure"),
-	})
-
-	instrumentationLibrary := pdata.NewInstrumentationLibrary()
-	instrumentationLibrary.SetName("flash")
-	instrumentationLibrary.SetVersion("v1")
-
-	span := pdata.NewSpan()
-
-	// Make this a FaaS span, which will trigger an error, because conversion
-	// of them is currently not supported.
-	span.Attributes().InsertString("testinfo?=123", "http.route")
 
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
 	rs := traces.ResourceSpans().At(0)
-	resource.CopyTo(rs.Resource())
+	resource := rs.Resource()
+	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		"service.name": pdata.NewAttributeValueString("sure"),
+	})
 	rs.InstrumentationLibrarySpans().Resize(1)
 	ilss := rs.InstrumentationLibrarySpans().At(0)
-	instrumentationLibrary.CopyTo(ilss.InstrumentationLibrary())
+	instrumentationLibrary := ilss.InstrumentationLibrary()
+	instrumentationLibrary.SetName("flash")
+	instrumentationLibrary.SetVersion("v1")
+
 	ilss.Spans().Resize(1)
-	span.CopyTo(ilss.Spans().At(0))
+	span := ilss.Spans().At(0)
+
+	// Make this a FaaS span, which will trigger an error, because conversion
+	// of them is currently not supported.
+	span.Attributes().InsertString("testinfo?=123", "http.route")
 
 	outputTraces, err := ConvertToDatadogTd(traces, calculator, &config.Config{})
 

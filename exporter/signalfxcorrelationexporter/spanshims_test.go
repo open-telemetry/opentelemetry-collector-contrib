@@ -24,10 +24,9 @@ import (
 
 func TestSpanShimList(t *testing.T) {
 	spans := pdata.NewResourceSpansSlice()
-	s1 := pdata.NewResourceSpans()
-	s2 := pdata.NewResourceSpans()
-	spans.Append(s1)
-	spans.Append(s2)
+	spans.Resize(2)
+	s1 := spans.At(0)
+	s2 := spans.At(1)
 	wrapped := spanListWrap{spans}
 	assert.Equal(t, 2, wrapped.Len())
 	assert.Equal(t, spanWrap{s1}, wrapped.At(0))

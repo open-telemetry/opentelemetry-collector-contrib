@@ -69,13 +69,14 @@ func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 
 func createTraceData(numberOfTraces int) pdata.Traces {
 	traces := pdata.NewTraces()
-	rs := pdata.NewResourceSpans()
-	traces.ResourceSpans().Append(rs)
-	ils := pdata.NewInstrumentationLibrarySpans()
-	rs.InstrumentationLibrarySpans().Append(ils)
+	traces.ResourceSpans().Resize(1)
+	rs := traces.ResourceSpans().At(0)
 	rs.Resource().Attributes().InsertString("resource", "R1")
+	rs.InstrumentationLibrarySpans().Resize(1)
+	ils := rs.InstrumentationLibrarySpans().At(0)
+	ils.Spans().Resize(numberOfTraces)
 	for i := 0; i < numberOfTraces; i++ {
-		span := pdata.NewSpan()
+		span := ils.Spans().At(i)
 		span.SetName("root")
 		span.SetStartTime(pdata.TimestampUnixNano((i + 1) * 1e9))
 		span.SetEndTime(pdata.TimestampUnixNano((i + 2) * 1e9))
@@ -89,7 +90,6 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 			span.Status().SetMessage("ok")
 
 		}
-		ils.Spans().Append(span)
 	}
 
 	return traces
@@ -97,10 +97,10 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 
 func createLogData(numberOfLogs int) pdata.Logs {
 	logs := pdata.NewLogs()
-	rl := pdata.NewResourceLogs()
-	logs.ResourceLogs().Append(rl)
-	ill := pdata.NewInstrumentationLibraryLogs()
-	rl.InstrumentationLibraryLogs().Append(ill)
+	logs.ResourceLogs().Resize(1)
+	rl := logs.ResourceLogs().At(0)
+	rl.InstrumentationLibraryLogs().Resize(1)
+	ill := rl.InstrumentationLibraryLogs().At(0)
 
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pdata.TimestampUnixNano(int64(i) * time.Millisecond.Nanoseconds())

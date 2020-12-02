@@ -111,15 +111,13 @@ func TestConsumeMetrics(t *testing.T) {
 
 	m.SetName("test_gauge")
 	m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-
-	dp := pdata.NewDoubleDataPoint()
+	m.DoubleGauge().DataPoints().Resize(1)
+	dp := m.DoubleGauge().DataPoints().At(0)
 	dp.LabelsMap().InitFromMap(map[string]string{
 		"k0": "v0",
 		"k1": "v1",
 	})
 	dp.SetValue(123)
-
-	m.DoubleGauge().DataPoints().Append(dp)
 
 	tests := []struct {
 		name                 string
@@ -250,14 +248,13 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		m.SetName("test_gauge")
 		m.SetDataType(pdata.MetricDataTypeDoubleGauge)
 
-		dp := pdata.NewDoubleDataPoint()
+		m.DoubleGauge().DataPoints().Resize(1)
+		dp := m.DoubleGauge().DataPoints().At(0)
 		dp.LabelsMap().InitFromMap(map[string]string{
 			"k0": "v0",
 			"k1": "v1",
 		})
 		dp.SetValue(123)
-
-		m.DoubleGauge().DataPoints().Append(dp)
 		return out
 	}
 
@@ -320,15 +317,13 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 
 				m.SetName("test_gauge")
 				m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-
-				dp := pdata.NewDoubleDataPoint()
+				m.DoubleGauge().DataPoints().Resize(1)
+				dp := m.DoubleGauge().DataPoints().At(0)
 				dp.LabelsMap().InitFromMap(map[string]string{
 					"k0": "v0",
 					"k1": "v1",
 				})
 				dp.SetValue(123)
-
-				m.DoubleGauge().DataPoints().Append(dp)
 
 				return out
 			}(),
@@ -476,8 +471,11 @@ func TestNewEventExporter(t *testing.T) {
 }
 
 func makeSampleResourceLogs() pdata.Logs {
-	logSlice := pdata.NewLogSlice()
+	out := pdata.NewLogs()
+	out.ResourceLogs().Resize(1)
+	out.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
 
+	logSlice := out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
 	logSlice.Resize(1)
 	l := logSlice.At(0)
 
@@ -504,11 +502,6 @@ func makeSampleResourceLogs() pdata.Logs {
 	attrs.Insert("com.splunk.signalfx.event_category", pdata.NewAttributeValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
 
 	l.Attributes().Sort()
-
-	out := pdata.NewLogs()
-	out.ResourceLogs().Resize(1)
-	out.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
-	logSlice.MoveAndAppendTo(out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs())
 
 	return out
 }

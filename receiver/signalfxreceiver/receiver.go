@@ -306,23 +306,19 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 		return
 	}
 
-	logSlice := signalFxV2EventsToLogRecords(r.logger, msg.Events)
-
 	ld := pdata.NewLogs()
 	rls := ld.ResourceLogs()
 	rls.Resize(1)
 	rl := rls.At(0)
-	resource := rl.Resource()
 
 	ills := rl.InstrumentationLibraryLogs()
 	ills.Resize(1)
 	ill := ills.At(0)
-
-	logSlice.MoveAndAppendTo(ill.Logs())
+	signalFxV2EventsToLogRecords(msg.Events, ill.Logs())
 
 	if r.config.AccessTokenPassthrough {
 		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
-			resource.Attributes().InsertString(splunk.SFxAccessTokenLabel, accessToken)
+			rl.Resource().Attributes().InsertString(splunk.SFxAccessTokenLabel, accessToken)
 		}
 	}
 

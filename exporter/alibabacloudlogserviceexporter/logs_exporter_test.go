@@ -28,14 +28,10 @@ import (
 
 func createSimpleLogData(numberOfLogs int) pdata.Logs {
 	logs := pdata.NewLogs()
-	rl := pdata.NewResourceLogs()
-	rl2 := pdata.NewResourceLogs()
-	logs.ResourceLogs().Append(rl)
-	logs.ResourceLogs().Append(rl2)
-	ill := pdata.NewInstrumentationLibraryLogs()
-	ill2 := pdata.NewInstrumentationLibraryLogs()
-	rl.InstrumentationLibraryLogs().Append(ill)
-	rl.InstrumentationLibraryLogs().Append(ill2)
+	logs.ResourceLogs().Resize(2)
+	rl := logs.ResourceLogs().At(0)
+	rl.InstrumentationLibraryLogs().Resize(2)
+	ill := rl.InstrumentationLibraryLogs().At(0)
 
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pdata.TimestampUnixNano(int64(i) * time.Millisecond.Nanoseconds())
