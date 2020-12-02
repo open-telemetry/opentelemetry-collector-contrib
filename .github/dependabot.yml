@@ -42,10 +42,6 @@ updates:
   #   EXTENSIONS   #
   ##################
   - package-ecosystem: "gomod"
-    directory: "/extension/jmxmetricsextension"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/extension/httpforwarder"
     schedule:
       interval: "weekly"
@@ -71,6 +67,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/exporter/awsemfexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/awsprometheusremotewriteexporter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -130,11 +130,11 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/exporter/signalfxexporter"
+    directory: "/exporter/signalfxcorrelationexporter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/exporter/signalfxcorrelationexporter"
+    directory: "/exporter/signalfxexporter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -202,11 +202,27 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/dockerstatsreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/jmxreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/k8sclusterreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/kubeletstatsreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/memcachedreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/nginxreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -251,6 +267,22 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/windowsperfcountersreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/zookeeperreceiver"
+    schedule:
+      interval: "weekly"
+
+  ###############
+  #   PKG       #
+  ###############
+  - package-ecosystem: "gomod"
+    directory: "/pkg/batchperresourceattr"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/batchpertrace"
     schedule:
       interval: "weekly"
 
