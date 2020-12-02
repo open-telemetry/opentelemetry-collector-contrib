@@ -49,8 +49,10 @@ func TestCreateMetricsExporter(t *testing.T) {
 	validConfigWithAuth.AuthConfig = AuthConfig{Region: "region", Service: "service"}
 
 	// Some form of AWS credentials chain required to test valid auth case
-	os.Setenv("AWS_ACCESS_KEY", "string")
-	os.Setenv("AWS_SECRET_ACCESS_KEY", "string2")
+	// This is a set of mock credentials strictly for testing purposes. Users
+	// should not set their credentials like this in production.
+	os.Setenv("AWS_ACCESS_KEY", "mock_value")
+	os.Setenv("AWS_SECRET_ACCESS_KEY", "mock_value2")
 
 	invalidConfigWithAuth := af.CreateDefaultConfig().(*Config)
 	invalidConfigWithAuth.AuthConfig = AuthConfig{Region: "", Service: "service"}
