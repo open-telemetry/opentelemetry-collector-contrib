@@ -20,6 +20,8 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	prw "go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter"
@@ -62,7 +64,21 @@ func (af *awsFactory) CreateDefaultConfig() configmodels.Exporter {
 			return nil, errors.New("invalid authentication configuration")
 		}
 
-		return newSigningRoundTripper(cfg.AuthConfig, next)
+		sess, err := session.NewSession(&aws.Config{
+			Region: aws.String(cfg.AuthConfig.Region)},
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if _, err = sess.Config.Credentials.Get(); err != nil {
+			return nil, err
+		}
+
+		// Get Credentials, either from ./aws or from environmental variables
+		creds := sess.Config.Credentials
+
+		return newSigningRoundTripper(cfg.AuthConfig, creds, next)
 	}
 
 	return cfg
