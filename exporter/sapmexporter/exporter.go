@@ -107,12 +107,15 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) (int
 		return 0, nil
 	}
 
+	// All metrics in the pdata.Metrics will have the same access token because of the BatchPerResourceMetrics.
 	accessToken := se.retrieveAccessToken(rss.At(0))
 	batches, err := jaeger.InternalTracesToJaegerProto(td)
 	if err != nil {
 		return td.SpanCount(), consumererror.Permanent(err)
 	}
 
+	// Cannot remove the access token from the pdata, because exporters required to not modify incoming pdata,
+	// so need to remove that after conversion.
 	filterToken(batches)
 
 	err = se.client.ExportWithAccessToken(ctx, batches, accessToken)
@@ -139,6 +142,7 @@ func (se *sapmExporter) retrieveAccessToken(md pdata.ResourceSpans) string {
 	return ""
 }
 
+// filterToken filters the access token from the batch processor to avoid leaking credentials to the backend.
 func filterToken(batches []*model.Batch) {
 	for _, batch := range batches {
 		filterTokenFromProcess(batch.Process)
