@@ -35,9 +35,10 @@ func (pattrs *processAttributes) extractTags() []string {
 	// According to OTel conventions: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/process.md,
 	// a process can be defined by any of the 4 following attributes: process.executable.name, process.executable.path, process.command or process.command_line
 	// (process.command_args isn't in the current attribute conventions: https://github.com/open-telemetry/opentelemetry-collector/blob/ecb27f49d4e26ae42d82e6ea18d57b08e252452d/translator/conventions/opentelemetry.go#L58-L63)
-	// We go through them in order of preference (from most concise to less concise), and add the first available one as identifier.
-	// We don't add all of them to avoid increasing the number of tags unnecessarily.
+	// We go through them, and add the first available one as a tag to identify the process.
+	// We don't want to add all of them to avoid unnecessarily increasing the number of tags attached to a metric.
 
+	// TODO: check if this order should be changed.
 	if pattrs.ExecutableName != "" { // otelcol
 		tags = append(tags, fmt.Sprintf("%s:%s", conventions.AttributeProcessExecutableName, pattrs.ExecutableName))
 	} else if pattrs.ExecutablePath != "" { // /usr/bin/cmd/otelcol
