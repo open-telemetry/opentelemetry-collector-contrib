@@ -106,6 +106,19 @@ class DatadogFormat(TextMapPropagator):
                 span.context.trace_state[constants.DD_ORIGIN],
             )
 
+    def fields(self):
+        """Returns a set with the fields set in `inject`.
+
+        See
+        `opentelemetry.trace.propagation.textmap.TextMapPropagator.fields`
+        """
+        return {
+            self.TRACE_ID_KEY,
+            self.PARENT_ID_KEY,
+            self.SAMPLING_PRIORITY_KEY,
+            self.ORIGIN_KEY,
+        }
+
 
 def format_trace_id(trace_id: int) -> str:
     """Format the trace id for Datadog."""

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add fields method
+  ([#226](https://github.com/open-telemetry/opentelemetry-python/pull/226))
+
 ## Version 0.15b0
 
 Released 2020-11-02
