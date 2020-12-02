@@ -87,7 +87,7 @@ func newCorrelationClient(cfg *Config, params component.ExporterCreateParams) (
 
 // AddSpans processes the provided spans to correlate the services and environment observed
 // to the resources (host, pods, etc.) emitting the spans.
-func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) {
+func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) (dropped int, err error) {
 	if cor == nil || traces.ResourceSpans().Len() == 0 {
 		return
 	}
@@ -127,24 +127,27 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) {
 			false,
 			nil,
 			cor.cfg.SyncAttributes)
-		cor.Start()
+		cor.start()
 	})
 
 	if cor.traceTracker != nil {
 		cor.traceTracker.AddSpansGeneric(ctx, spanListWrap{traces.ResourceSpans()})
 	}
+
+	return
 }
 
 // Start correlation tracking.
-func (cor *Tracker) Start() {
+func (cor *Tracker) start() {
 	if cor != nil && cor.correlation != nil {
 		cor.correlation.Start()
 	}
 }
 
 // Shutdown correlation tracking.
-func (cor *Tracker) Shutdown() {
+func (cor *Tracker) Shutdown(_ context.Context) error {
 	if cor != nil && cor.correlation != nil {
 		cor.correlation.cancel()
 	}
+	return nil
 }

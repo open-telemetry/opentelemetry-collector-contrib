@@ -21,12 +21,34 @@ import (
 
 	"github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-// Config defines configuration for signalfx_correlation exporter.
+// DefaultConfig returns default configuration correlation values.
+func DefaultConfig() *Config {
+	return &Config{
+		HTTPClientSettings:  confighttp.HTTPClientSettings{Timeout: 5 * time.Second},
+		StaleServiceTimeout: 5 * time.Minute,
+		HostTranslations: map[string]string{
+			conventions.AttributeHostName: "host",
+		},
+		SyncAttributes: map[string]string{
+			conventions.AttributeK8sPodUID:   conventions.AttributeK8sPodUID,
+			conventions.AttributeContainerID: conventions.AttributeContainerID,
+		},
+		Config: correlations.Config{
+			MaxRequests:     20,
+			MaxBuffered:     10_000,
+			MaxRetries:      2,
+			LogUpdates:      false,
+			RetryDelay:      30 * time.Second,
+			CleanupInterval: 1 * time.Minute,
+		},
+	}
+}
+
+// Config defines configuration for correlation via traces.
 type Config struct {
-	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 	correlations.Config           `mapstructure:",squash"`
 
@@ -46,7 +68,7 @@ type Config struct {
 
 func (c *Config) validate() error {
 	if c.Endpoint == "" {
-		return errors.New("`endpoint` not specified")
+		return errors.New("`correlation.endpoint` not specified")
 	}
 
 	_, err := url.Parse(c.Endpoint)

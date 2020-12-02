@@ -26,7 +26,7 @@ import (
 
 func TestTrackerAddSpans(t *testing.T) {
 	tracker := NewTracker(
-		createDefaultConfig().(*Config),
+		DefaultConfig(),
 		component.ExporterCreateParams{
 			Logger: zap.NewNop(),
 		},
@@ -48,5 +48,5 @@ func TestTrackerAddSpans(t *testing.T) {
 	assert.NotNil(t, tracker.correlation, "correlation context should be set")
 	assert.NotNil(t, tracker.traceTracker, "trace tracker should be set")
 
-	tracker.Shutdown()
+	assert.NoError(t, tracker.Shutdown(context.Background()))
 }

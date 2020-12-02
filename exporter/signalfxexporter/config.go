@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -88,6 +89,9 @@ type Config struct {
 	// backend. If translations enabled with SendCompatibleMetrics or TranslationRules
 	// options, the exclusion will be applied on translated metrics.
 	ExcludeMetrics []string `mapstructure:"exclude_metrics"`
+
+	// Correlation configuration for syncing traces service and environment to metrics.
+	Correlation *correlation.Config `mapstructure:"correlation"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
