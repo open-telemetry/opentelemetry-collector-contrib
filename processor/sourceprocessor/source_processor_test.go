@@ -99,7 +99,6 @@ func newTraceData(labels map[string]string) pdata.Traces {
 	td := pdata.NewTraces()
 	td.ResourceSpans().Resize(1)
 	rs := td.ResourceSpans().At(0)
-	rs.Resource().InitEmpty()
 	attrs := rs.Resource().Attributes()
 	for k, v := range labels {
 		attrs.UpsertString(k, v)
@@ -114,7 +113,6 @@ func newTraceDataWithSpans(_resourceLabels map[string]string, _spanLabels map[st
 	ils.Resize(1)
 	spans := ils.At(0).Spans()
 	spans.Resize(1)
-	spans.At(0).InitEmpty()
 	spans.At(0).SetName("foo")
 	spanAttrs := spans.At(0).Attributes()
 	for k, v := range _spanLabels {
