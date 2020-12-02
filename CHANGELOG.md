@@ -2,6 +2,52 @@
 
 ## Unreleased
 
+## v0.16.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.16.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.16.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🛑 Breaking changes 🛑
+
+- `honeycomb` exporter: Update to use internal data format (#1689)
+
+## 💡 Enhancements 💡
+
+- `newrelic` exporter: Add support for span events (#1643)
+- `awsemf` exporter:
+  - Add placeholder support in `log_group_name` and `log_stream_name` config (#1623, #1661)
+  - Add label matching filtering rule (#1619)
+- `resourcedetection` processor: Add new resource detector for AWS Elastic Beanstalk environments (#1585)
+- `loadbalancing` exporter:
+  - Add sort of endpoints in static resolver (#1692)
+  - Allow specifying port when using DNS resolver (#1650)
+- Add `batchperresourceattr` helper library that splits an incoming data based on an attribute in the resource (#1694)
+- `alibabacloudlogservice` exporter:
+  - Add logs exporter (#1609)
+  - Change trace type from opencensus to opentelemetry (#1713)
+- `datadog` exporter:
+  - Improve trace exporter performance (#1706, #1707)
+  - Add option to only send metadata (#1723)
+- `awsxray` exporter:
+  - Add parsing of Python stack traces (#1676)
+  - Add collector version to user agent (#1730)
+
+## 🧰 Bug fixes 🧰
+
+- `loadbalancing` exporter:
+  - Fix retry queue for exporters (#1687)
+  - Fix `periodicallyResolve` for DNS resolver checks (#1678)
+- `datadog` exporter: Fix status code handling (#1691)
+- `awsxray` exporter:
+  - Fix empty traces in X-Ray console (#1709)
+  - Stricter requirements for adding http request url (#1729)
+  - Fix status code handling for errors/faults (#1740)
+- `signalfx` exporter:
+  - Split incoming data requests by access token before enqueuing (#1727)
+  - Disable retry on 400 and 401, retry with backoff on 429 and 503 (#1672)
+- `awsecscontainermetrics` receiver: Improve error handling to fix seg fault (#1738)
+
 ## v0.15.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.15.0 (Beta) 🎉
