@@ -30,7 +30,7 @@ import (
 func makeCause(span pdata.Span, attributes map[string]string, resource pdata.Resource) (isError, isFault bool,
 	filtered map[string]string, cause *awsxray.CauseData) {
 	status := span.Status()
-	if status.IsNil() || status.Code() == pdata.StatusCodeUnset {
+	if status.IsNil() || status.Code() != pdata.StatusCodeError {
 		return false, false, attributes, nil
 	}
 	filtered = attributes
@@ -117,9 +117,16 @@ func makeCause(span pdata.Span, attributes map[string]string, resource pdata.Res
 		}
 	}
 
-	if status.Code() == pdata.StatusCodeError {
-		isError = true
-		isFault = false
+	if val, ok := span.Attributes().Get(semconventions.AttributeHTTPStatusCode); ok {
+		code := val.IntVal()
+		// We only differentiate between faults (server errors) and errors (client errors) for HTTP spans.
+		if code >= 400 && code <= 499 {
+			isError = true
+			isFault = false
+		} else {
+			isError = false
+			isFault = true
+		}
 	} else {
 		isError = false
 		isFault = true

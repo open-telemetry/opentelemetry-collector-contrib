@@ -27,9 +27,6 @@ import (
 func TestCauseWithExceptions(t *testing.T) {
 	errorMsg := "this is a test"
 	attributeMap := make(map[string]interface{})
-	attributeMap[semconventions.AttributeHTTPMethod] = "POST"
-	attributeMap[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
-	attributeMap[semconventions.AttributeHTTPStatusCode] = 500
 
 	event1 := pdata.NewSpanEvent()
 	event1.SetName(semconventions.AttributeExceptionEventName)
@@ -59,8 +56,8 @@ Caused by: java.lang.IllegalArgumentException: bad argument`)
 	res.Attributes().InsertString(semconventions.AttributeTelemetrySDKLanguage, "java")
 	isError, isFault, filteredResult, cause := makeCause(span, filtered, res)
 
-	assert.True(t, isError)
-	assert.False(t, isFault)
+	assert.True(t, isFault)
+	assert.False(t, isError)
 	assert.Equal(t, filtered, filteredResult)
 	assert.NotNil(t, cause)
 	assert.Len(t, cause.Exceptions, 3)
@@ -88,8 +85,8 @@ func TestCauseWithStatusMessage(t *testing.T) {
 	res := pdata.NewResource()
 	isError, isFault, filtered, cause := makeCause(span, filtered, res)
 
-	assert.True(t, isError)
-	assert.False(t, isFault)
+	assert.True(t, isFault)
+	assert.False(t, isError)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, cause)
 	w := testWriters.borrow()
@@ -114,8 +111,8 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	res := pdata.NewResource()
 	isError, isFault, filtered, cause := makeCause(span, filtered, res)
 
-	assert.True(t, isError)
-	assert.False(t, isFault)
+	assert.True(t, isFault)
+	assert.False(t, isError)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, cause)
 	w := testWriters.borrow()
