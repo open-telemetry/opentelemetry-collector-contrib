@@ -72,6 +72,14 @@ func TestNullTraceExporterConfig(tester *testing.T) {
 	assert.Error(tester, err, "Null exporter config should produce error")
 }
 
+func testMetricsExporter(md pdata.Metrics, t *testing.T, cfg *Config) {
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exporter, err := createMetricsExporter(context.Background(), params, cfg)
+	require.NoError(t, err)
+	err = exporter.ConsumeMetrics(context.Background(), md)
+	assert.NoError(t, err)
+}
+
 func TestNullExporterConfig(tester *testing.T) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	_, err := newLogzioExporter(nil, params)
@@ -89,8 +97,8 @@ func TestNullTokenConfig(tester *testing.T) {
 
 func TestEmptyNode(tester *testing.T) {
 	cfg := Config{
-		Token:  "test",
-		Region: "eu",
+		TracesToken: "test",
+		Region:      "eu",
 	}
 	td := consumerdata.TraceData{
 		Node:  nil,
@@ -101,8 +109,8 @@ func TestEmptyNode(tester *testing.T) {
 
 func TestWriteSpanError(tester *testing.T) {
 	cfg := Config{
-		Token:  "test",
-		Region: "eu",
+		TracesToken: "test",
+		Region:      "eu",
 	}
 	td := consumerdata.TraceData{
 		Node:  nil,
@@ -121,8 +129,8 @@ func TestWriteSpanError(tester *testing.T) {
 
 func TestConversionTraceError(tester *testing.T) {
 	cfg := Config{
-		Token:  "test",
-		Region: "eu",
+		TracesToken: "test",
+		Region:      "eu",
 	}
 	td := consumerdata.TraceData{
 		Node:  nil,
@@ -146,7 +154,7 @@ func TestPushTraceData(tester *testing.T) {
 		rw.WriteHeader(http.StatusOK)
 	}))
 	cfg := Config{
-		Token:          "test",
+		TracesToken:    "test",
 		Region:         "eu",
 		CustomEndpoint: server.URL,
 	}
@@ -176,4 +184,15 @@ func TestPushTraceData(tester *testing.T) {
 	assert.Equal(tester, testOperation, logzioService.OperationName)
 	assert.Equal(tester, testService, logzioService.ServiceName)
 
+}
+
+func TestPushMetricsData(tester *testing.T) {
+	cfg := Config{
+		MetricsToken:   "test",
+		Region:         "eu",
+		CustomEndpoint: "url",
+	}
+	md := pdata.NewMetrics()
+
+	testMetricsExporter(md, tester, &cfg)
 }
