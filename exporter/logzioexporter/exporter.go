@@ -52,7 +52,7 @@ func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*
 	}
 	writerConfig := store.LogzioConfig{
 		Region:            config.Region,
-		AccountToken:      config.Token,
+		AccountToken:      config.TracesToken,
 		CustomListenerURL: config.CustomEndpoint,
 	}
 
@@ -63,7 +63,7 @@ func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*
 
 	return &logzioExporter{
 		writer:                       spanWriter,
-		accountToken:                 config.Token,
+		accountToken:                 config.TracesToken,
 		logger:                       logger,
 		InternalTracesToJaegerTraces: jaeger.InternalTracesToJaegerProto,
 		WriteSpanFunc:                spanWriter.WriteSpan,
@@ -86,6 +86,15 @@ func newLogzioTraceExporter(config *Config, params component.ExporterCreateParam
 		exporterhelper.WithShutdown(exporter.Shutdown))
 }
 
+func newLogzioMetricsExporter(config *Config, params component.ExporterCreateParams) (component.MetricsExporter, error) {
+	exporter, _ := newLogzioExporter(config, params)
+	return exporterhelper.NewMetricsExporter(
+		config,
+		params.Logger,
+		exporter.pushMetricsData,
+		exporterhelper.WithShutdown(exporter.Shutdown))
+}
+
 func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces pdata.Traces) (droppedSpansCount int, err error) {
 	droppedSpans := 0
 	batches, err := exporter.InternalTracesToJaegerTraces(traces)
@@ -102,6 +111,10 @@ func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces pdata.
 		}
 	}
 	return droppedSpans, nil
+}
+
+func (exporter *logzioExporter) pushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
+	return 0, nil
 }
 
 func (exporter *logzioExporter) Shutdown(ctx context.Context) error {
