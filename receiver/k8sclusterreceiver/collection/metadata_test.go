@@ -21,6 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
 )
 
 func Test_getGenericMetadata(t *testing.T) {
@@ -51,7 +53,7 @@ func Test_getGenericMetadata(t *testing.T) {
 	rm := getGenericMetadata(om, "ResourceType")
 
 	assert.Equal(t, "k8s.resourcetype.uid", rm.resourceIDKey)
-	assert.Equal(t, ResourceID("test-uid"), rm.resourceID)
+	assert.Equal(t, metrics.ResourceID("test-uid"), rm.resourceID)
 	assert.Equal(t, map[string]string{
 		"k8s.workload.name":               "test-name",
 		"k8s.workload.kind":               "ResourceType",
@@ -73,7 +75,7 @@ func TestGetPropertiesDelta(t *testing.T) {
 	tests := []struct {
 		name          string
 		args          args
-		metadataDelta *MetadataDelta
+		metadataDelta *metrics.MetadataDelta
 	}{
 		{
 			"Add to new",
@@ -83,12 +85,12 @@ func TestGetPropertiesDelta(t *testing.T) {
 					"foo": "bar",
 				},
 			},
-			&MetadataDelta{
-				map[string]string{
+			&metrics.MetadataDelta{
+				MetadataToAdd: map[string]string{
 					"foo": "bar",
 				},
-				map[string]string{},
-				map[string]string{},
+				MetadataToRemove: map[string]string{},
+				MetadataToUpdate: map[string]string{},
 			},
 		},
 		{
@@ -102,12 +104,12 @@ func TestGetPropertiesDelta(t *testing.T) {
 					"foo":    "bar",
 				},
 			},
-			&MetadataDelta{
-				map[string]string{
+			&metrics.MetadataDelta{
+				MetadataToAdd: map[string]string{
 					"foo": "bar",
 				},
-				map[string]string{},
-				map[string]string{},
+				MetadataToRemove: map[string]string{},
+				MetadataToUpdate: map[string]string{},
 			},
 		},
 		{
@@ -120,10 +122,10 @@ func TestGetPropertiesDelta(t *testing.T) {
 					"foo": "newbar",
 				},
 			},
-			&MetadataDelta{
-				map[string]string{},
-				map[string]string{},
-				map[string]string{
+			&metrics.MetadataDelta{
+				MetadataToAdd:    map[string]string{},
+				MetadataToRemove: map[string]string{},
+				MetadataToUpdate: map[string]string{
 					"foo": "newbar",
 				},
 			},
@@ -139,12 +141,12 @@ func TestGetPropertiesDelta(t *testing.T) {
 					"foo1": "bar1",
 				},
 			},
-			&MetadataDelta{
-				map[string]string{},
-				map[string]string{
+			&metrics.MetadataDelta{
+				MetadataToAdd: map[string]string{},
+				MetadataToRemove: map[string]string{
 					"foo": "bar",
 				},
-				map[string]string{},
+				MetadataToUpdate: map[string]string{},
 			},
 		},
 		{
@@ -164,17 +166,17 @@ func TestGetPropertiesDelta(t *testing.T) {
 					"test":        "",
 				},
 			},
-			&MetadataDelta{
-				map[string]string{
+			&metrics.MetadataDelta{
+				MetadataToAdd: map[string]string{
 					"service_def": "",
 					"foo1":        "bar1",
 				},
-				map[string]string{
+				MetadataToRemove: map[string]string{
 					"foo2":        "bar2",
 					"service_abc": "",
 					"admin":       "",
 				},
-				map[string]string{
+				MetadataToUpdate: map[string]string{
 					"foo": "bar2",
 				},
 			},

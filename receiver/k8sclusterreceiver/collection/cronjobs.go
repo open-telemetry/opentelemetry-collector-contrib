@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
@@ -66,9 +67,9 @@ func getResourceForCronJob(cj *batchv1beta1.CronJob) *resourcepb.Resource {
 	}
 }
 
-func getMetadataForCronJob(cj *batchv1beta1.CronJob) map[ResourceID]*KubernetesMetadata {
+func getMetadataForCronJob(cj *batchv1beta1.CronJob) map[metrics.ResourceID]*KubernetesMetadata {
 	rm := getGenericMetadata(&cj.ObjectMeta, k8sKindCronJob)
 	rm.metadata[cronJobKeySchedule] = cj.Spec.Schedule
 	rm.metadata[cronJobKeyConcurrencyPolicy] = string(cj.Spec.ConcurrencyPolicy)
-	return map[ResourceID]*KubernetesMetadata{ResourceID(cj.UID): rm}
+	return map[metrics.ResourceID]*KubernetesMetadata{metrics.ResourceID(cj.UID): rm}
 }

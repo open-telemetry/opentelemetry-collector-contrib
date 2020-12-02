@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
@@ -93,14 +94,14 @@ func nodeConditionValue(node *corev1.Node, condType corev1.NodeConditionType) in
 	return nodeConditionValues[status]
 }
 
-func getMetadataForNode(node *corev1.Node) map[ResourceID]*KubernetesMetadata {
+func getMetadataForNode(node *corev1.Node) map[metrics.ResourceID]*KubernetesMetadata {
 	metadata := util.MergeStringMaps(map[string]string{}, node.Labels)
 
 	metadata[k8sKeyNodeName] = node.Name
 	metadata[nodeCreationTime] = node.GetCreationTimestamp().Format(time.RFC3339)
 
-	nodeID := ResourceID(node.UID)
-	return map[ResourceID]*KubernetesMetadata{
+	nodeID := metrics.ResourceID(node.UID)
+	return map[metrics.ResourceID]*KubernetesMetadata{
 		nodeID: {
 			resourceIDKey: k8sKeyNodeUID,
 			resourceID:    nodeID,

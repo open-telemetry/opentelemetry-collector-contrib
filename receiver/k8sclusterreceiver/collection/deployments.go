@@ -18,6 +18,8 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
 	appsv1 "k8s.io/api/apps/v1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
 )
 
 func getMetricsForDeployment(dep *appsv1.Deployment) []*resourceMetrics {
@@ -49,8 +51,8 @@ func getResourceForDeployment(dep *appsv1.Deployment) *resourcepb.Resource {
 	}
 }
 
-func getMetadataForDeployment(dep *appsv1.Deployment) map[ResourceID]*KubernetesMetadata {
+func getMetadataForDeployment(dep *appsv1.Deployment) map[metrics.ResourceID]*KubernetesMetadata {
 	rm := getGenericMetadata(&dep.ObjectMeta, k8sKindDeployment)
 	rm.metadata[conventions.AttributeK8sDeployment] = dep.Name
-	return map[ResourceID]*KubernetesMetadata{ResourceID(dep.UID): rm}
+	return map[metrics.ResourceID]*KubernetesMetadata{metrics.ResourceID(dep.UID): rm}
 }

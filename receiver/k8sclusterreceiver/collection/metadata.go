@@ -21,6 +21,7 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
 )
 
@@ -30,15 +31,13 @@ const (
 	k8sKeyWorkLoadName = "k8s.workload.name"
 )
 
-type ResourceID string
-
 // KubernetesMetadata associates a resource to a set of properties.
 type KubernetesMetadata struct {
 	// resourceIDKey is the label key of UID label for the resource.
 	resourceIDKey string
 	// resourceID is the Kubernetes UID of the resource. In case of
 	// containers, this value is the container id.
-	resourceID ResourceID
+	resourceID metrics.ResourceID
 	// metadata is a set of key-value pairs that describe a resource.
 	metadata map[string]string
 }
@@ -61,7 +60,7 @@ func getGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetad
 
 	return &KubernetesMetadata{
 		resourceIDKey: getResourceIDKey(rType),
-		resourceID:    ResourceID(om.UID),
+		resourceID:    metrics.ResourceID(om.UID),
 		metadata:      metadata,
 	}
 }
@@ -72,8 +71,8 @@ func getResourceIDKey(rType string) string {
 
 // mergeKubernetesMetadataMaps merges maps of string (resource id) to
 // KubernetesMetadata into a single map.
-func mergeKubernetesMetadataMaps(maps ...map[ResourceID]*KubernetesMetadata) map[ResourceID]*KubernetesMetadata {
-	out := map[ResourceID]*KubernetesMetadata{}
+func mergeKubernetesMetadataMaps(maps ...map[metrics.ResourceID]*KubernetesMetadata) map[metrics.ResourceID]*KubernetesMetadata {
+	out := map[metrics.ResourceID]*KubernetesMetadata{}
 	for _, m := range maps {
 		for id, km := range m {
 			out[id] = km
@@ -83,36 +82,17 @@ func mergeKubernetesMetadataMaps(maps ...map[ResourceID]*KubernetesMetadata) map
 	return out
 }
 
-// MetadataExporter provides an interface to implement
-// ConsumeMetadata in Exporters that support metadata.
-type MetadataExporter interface {
-	// ConsumeMetadata will be invoked every time there's an
-	// update to a resource that results in one or more MetadataUpdate.
-	ConsumeMetadata(metadata []*MetadataUpdate) error
-}
-
-// MetadataUpdate provides a delta view of metadata on a resource between
-// two revisions of a resource.
-type MetadataUpdate struct {
-	// ResourceIDKey is the label key of UID label for the resource.
-	ResourceIDKey string
-	// ResourceID is the Kubernetes UID of the resource. In case of
-	// containers, this value is the container id.
-	ResourceID ResourceID
-	MetadataDelta
-}
-
 // GetMetadataUpdate processes metadata updates and returns
 // a map of a delta of metadata mapped to each resource.
-func GetMetadataUpdate(old, new map[ResourceID]*KubernetesMetadata) []*MetadataUpdate {
-	var out []*MetadataUpdate
+func GetMetadataUpdate(old, new map[metrics.ResourceID]*KubernetesMetadata) []*metrics.MetadataUpdate {
+	var out []*metrics.MetadataUpdate
 
 	for id, oldMetadata := range old {
 		// if an object with the same id has a previous revision, take a delta
 		// of the metadata.
 		if newMetadata, ok := new[id]; ok {
 			if metadataDelta := getMetadataDelta(oldMetadata.metadata, newMetadata.metadata); metadataDelta != nil {
-				out = append(out, &MetadataUpdate{
+				out = append(out, &metrics.MetadataUpdate{
 					ResourceIDKey: oldMetadata.resourceIDKey,
 					ResourceID:    id,
 					MetadataDelta: *metadataDelta,
@@ -126,10 +106,10 @@ func GetMetadataUpdate(old, new map[ResourceID]*KubernetesMetadata) []*MetadataU
 	for id, km := range new {
 		// if an id is seen for the first time, all metadata need to be added.
 		if _, ok := old[id]; !ok {
-			out = append(out, &MetadataUpdate{
+			out = append(out, &metrics.MetadataUpdate{
 				ResourceIDKey: km.resourceIDKey,
 				ResourceID:    id,
-				MetadataDelta: MetadataDelta{MetadataToAdd: km.metadata},
+				MetadataDelta: metrics.MetadataDelta{MetadataToAdd: km.metadata},
 			})
 		}
 	}
@@ -137,38 +117,10 @@ func GetMetadataUpdate(old, new map[ResourceID]*KubernetesMetadata) []*MetadataU
 	return out
 }
 
-// MetadataDelta keeps track of changes to metadata on resources.
-// The fields on this struct should help determine if there have
-// been changes to resource metadata such as Kubernetes labels.
-// An example of how this is used. Let's say we are dealing with a
-// Pod that has the following labels -
-// {"env": "test", "team": "otell", "usser": "bob"}. Now, let's say
-// there's an update to one or more labels on the same Pod and the
-// labels now look like the following -
-// {"env": "test", "team": "otel", "user": "bob"}. The k8sclusterreceiver
-// upon receiving the event corresponding to the labels updates will
-// generate a MetadataDelta with the following values -
-// 					MetadataToAdd: {"user": "bob"}
-// 					MetadataToRemove: {"usser": "bob"}
-// 					MetadataToUpdate: {"team": "otel"}
-// Apart from Kubernetes labels, the other metadata collected by this
-// receiver are also handled in the same manner.
-type MetadataDelta struct {
-	// MetadataToAdd contains key-value pairs that are newly added to
-	// the resource description in the current revision.
-	MetadataToAdd map[string]string
-	// MetadataToRemove contains key-value pairs that no longer describe
-	// a resource and needs to be removed.
-	MetadataToRemove map[string]string
-	// MetadataToUpdate contains key-value pairs that have been updated
-	// in the current revision compared to the previous revisions(s).
-	MetadataToUpdate map[string]string
-}
-
 // getMetadataDelta returns MetadataDelta between two sets for properties.
 // If the delta between old (oldProps) and new (newProps) revisions of a
 // resource end up being empty, nil is returned.
-func getMetadataDelta(oldProps, newProps map[string]string) *MetadataDelta {
+func getMetadataDelta(oldProps, newProps map[string]string) *metrics.MetadataDelta {
 
 	toAdd, toRemove, toUpdate := map[string]string{}, map[string]string{}, map[string]string{}
 
@@ -193,7 +145,7 @@ func getMetadataDelta(oldProps, newProps map[string]string) *MetadataDelta {
 	}
 
 	if len(toAdd) > 0 || len(toRemove) > 0 || len(toUpdate) > 0 {
-		return &MetadataDelta{
+		return &metrics.MetadataDelta{
 			MetadataToAdd:    toAdd,
 			MetadataToRemove: toRemove,
 			MetadataToUpdate: toUpdate,
