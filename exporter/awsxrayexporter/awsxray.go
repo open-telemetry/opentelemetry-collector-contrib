@@ -33,16 +33,18 @@ const (
 	maxSegmentsPerPut = int(50) // limit imposed by PutTraceSegments API
 )
 
-// NewTraceExporter creates an component.TraceExporterOld that converts to an X-Ray PutTraceSegments
+// newTraceExporter creates an component.TraceExporter that converts to an X-Ray PutTraceSegments
 // request and then posts the request to the configured region's X-Ray endpoint.
-func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connAttr) (component.TracesExporter, error) {
+func newTraceExporter(
+	config configmodels.Exporter, params component.ExporterCreateParams, cn connAttr) (component.TracesExporter, error) {
 	typeLog := zap.String("type", string(config.Type()))
 	nameLog := zap.String("name", config.Name())
+	logger := params.Logger
 	awsConfig, session, err := GetAWSConfigSession(logger, cn, config.(*Config))
 	if err != nil {
 		return nil, err
 	}
-	xrayClient := NewXRay(logger, awsConfig, session)
+	xrayClient := newXRay(logger, awsConfig, params.ApplicationStartInfo, session)
 	return exporterhelper.NewTraceExporter(
 		config,
 		logger,
