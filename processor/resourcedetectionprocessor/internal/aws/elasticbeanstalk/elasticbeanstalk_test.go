@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -29,10 +30,6 @@ import (
 
 const xrayConf = "{\"deployment_id\":23,\"version_label\":\"env-version-1234\",\"environment_name\":\"BETA\"}"
 
-type fakeFile struct {
-	reader io.Reader
-}
-
 type mockFileSystem struct {
 	windows  bool
 	exists   bool
@@ -40,20 +37,12 @@ type mockFileSystem struct {
 	contents string
 }
 
-func (f fakeFile) Close() error {
-	return nil
-}
-
-func (f fakeFile) Read(p []byte) (n int, err error) {
-	return f.reader.Read(p)
-}
-
-func (mfs *mockFileSystem) Open(path string) (file, error) {
+func (mfs *mockFileSystem) Open(path string) (io.ReadCloser, error) {
 	if !mfs.exists {
 		return nil, errors.New("file not found")
 	}
 	mfs.path = path
-	f := fakeFile{reader: strings.NewReader(mfs.contents)}
+	f := ioutil.NopCloser(strings.NewReader(mfs.contents))
 	return f, nil
 }
 
