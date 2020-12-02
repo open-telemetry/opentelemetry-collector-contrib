@@ -28,11 +28,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
-	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/version"
-
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 )
@@ -55,11 +52,6 @@ const (
 	STSEndpointSuffix         = ".amazonaws.com"
 	STSAwsCnPartitionIDSuffix = ".amazonaws.com.cn" // AWS China partition.
 )
-
-var collectorUserAgentHandler = request.NamedHandler{
-	Name: "otel.collector.UserAgentHandler",
-	Fn:   request.MakeAddToUserAgentHandler("opentelemetry-collector-contrib", version.Version, version.GitHash),
-}
 
 // newHTTPClient returns new HTTP client instance with provided configuration.
 func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify bool,
@@ -157,8 +149,6 @@ func GetAWSConfigSession(logger *zap.Logger, cn connAttr, cfg *Config) (*aws.Con
 	if err != nil {
 		return nil, nil, err
 	}
-
-	s.Handlers.Build.PushBackNamed(collectorUserAgentHandler)
 
 	config := &aws.Config{
 		Region:                 aws.String(awsRegion),

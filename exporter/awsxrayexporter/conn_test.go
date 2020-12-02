@@ -21,8 +21,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws/client/metadata"
-	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -85,29 +83,6 @@ func TestRegionEnv(t *testing.T) {
 	assert.Equal(t, s, expectedSession, "Expect the session object is not overridden")
 	assert.Equal(t, *cfg.Region, region, "Region value fetched from environment")
 	assert.Nil(t, err)
-}
-
-func TestUserAgent(t *testing.T) {
-	logger := zap.NewNop()
-	xrayExporterCfg := loadExporterConfig(t)
-	region := "us-west-2"
-	env := stashEnv()
-	defer popEnv(env)
-	os.Setenv("AWS_REGION", region)
-
-	var m = &mockConn{}
-	var expectedSession *session.Session
-	expectedSession, _ = session.NewSession()
-	m.sn = expectedSession
-	cfg, s, err := GetAWSConfigSession(logger, m, xrayExporterCfg)
-	assert.Nil(t, err)
-
-	req := request.New(*cfg, metadata.ClientInfo{}, s.Handlers, nil, &request.Operation{
-		HTTPMethod: "GET",
-		HTTPPath:   "/",
-	}, nil, nil)
-	s.Handlers.Build.Run(req)
-	assert.Contains(t, req.HTTPRequest.UserAgent(), "opentelemetry-collector/latest")
 }
 
 func loadExporterConfig(t *testing.T) *Config {
