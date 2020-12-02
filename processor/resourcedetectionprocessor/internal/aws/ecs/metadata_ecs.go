@@ -16,8 +16,9 @@ package ecs
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
+
+	"go.uber.org/zap"
 )
 
 type TaskMetaData struct {
@@ -45,6 +46,7 @@ type LogData struct {
 }
 
 type ecsMetadataProviderImpl struct {
+	logger *zap.Logger
 	client HTTPClient
 }
 
@@ -52,7 +54,7 @@ var _ ecsMetadataProvider = &ecsMetadataProviderImpl{}
 
 // Retrieves the metadata for a task running on Amazon ECS
 func (md *ecsMetadataProviderImpl) fetchTaskMetaData(tmde string) (*TaskMetaData, error) {
-	ret, err := fetch(tmde+"/task", md, true)
+	ret, err := fetch(md.logger, tmde+"/task", md, true)
 	if ret == nil {
 		return nil, err
 	}
@@ -62,7 +64,7 @@ func (md *ecsMetadataProviderImpl) fetchTaskMetaData(tmde string) (*TaskMetaData
 
 // Retrieves the metadata for the Amazon ECS Container the collector is running on
 func (md *ecsMetadataProviderImpl) fetchContainerMetaData(tmde string) (*Container, error) {
-	ret, err := fetch(tmde, md, false)
+	ret, err := fetch(md.logger, tmde, md, false)
 	if ret == nil {
 		return nil, err
 	}
@@ -70,18 +72,18 @@ func (md *ecsMetadataProviderImpl) fetchContainerMetaData(tmde string) (*Contain
 	return ret.(*Container), err
 }
 
-func fetch(tmde string, md *ecsMetadataProviderImpl, task bool) (tmdeResp interface{}, err error) {
+func fetch(logger *zap.Logger, tmde string, md *ecsMetadataProviderImpl, task bool) (tmdeResp interface{}, err error) {
 	req, err := http.NewRequest(http.MethodGet, tmde, nil)
 
 	if err != nil {
-		log.Printf("Received error constructing request to ECS Task Metadata Endpoint: %v", err)
+		logger.Error("Received error constructing request to ECS Task Metadata Endpoint", zap.Error(err))
 		return nil, err
 	}
 
 	resp, err := md.client.Do(req)
 
 	if err != nil {
-		log.Printf("Received error from ECS Task Metadata Endpoint: %v", err)
+		logger.Error("Received error from ECS Task Metadata Endpoint", zap.Error(err))
 		return nil, err
 	}
 
@@ -95,7 +97,7 @@ func fetch(tmde string, md *ecsMetadataProviderImpl, task bool) (tmdeResp interf
 	defer resp.Body.Close()
 
 	if err != nil {
-		log.Printf("Encountered unexpected error reading response from ECS Task Metadata Endpoint: %v", err)
+		logger.Error("Encountered unexpected error reading response from ECS Task Metadata Endpoint", zap.Error(err))
 		return nil, err
 	}
 

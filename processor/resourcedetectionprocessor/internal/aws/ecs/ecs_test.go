@@ -20,7 +20,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -50,13 +52,13 @@ func (md *mockMetaDataProvider) fetchTaskMetaData(tmde string) (*TaskMetaData, e
 	return tmd, nil
 }
 
-func (md *mockMetaDataProvider) fetchContainerMetaData(tmde string) (*Container, error) {
+func (md *mockMetaDataProvider) fetchContainerMetaData(string) (*Container, error) {
 	c := createTestContainer(md.isV4)
 	return &c, nil
 }
 
 func Test_ecsNewDetector(t *testing.T) {
-	d, err := NewDetector()
+	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()})
 
 	assert.NotNil(t, d)
 	assert.Nil(t, err)
@@ -64,7 +66,7 @@ func Test_ecsNewDetector(t *testing.T) {
 
 func Test_detectorReturnsIfNoEnvVars(t *testing.T) {
 	os.Clearenv()
-	d, _ := NewDetector()
+	d, _ := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()})
 	res, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)

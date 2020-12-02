@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 const (
@@ -52,7 +53,7 @@ type mockClient struct {
 	retErr   bool
 }
 
-func (mc *mockClient) Do(req *http.Request) (*http.Response, error) {
+func (mc *mockClient) Do(*http.Request) (*http.Response, error) {
 	if mc.retErr {
 		return nil, errors.New("fake error")
 	}
@@ -65,7 +66,7 @@ func (mc *mockClient) Do(req *http.Request) (*http.Response, error) {
 }
 
 func Test_ecsMetadata_fetchTask(t *testing.T) {
-	md := ecsMetadataProviderImpl{client: &mockClient{response: taskMeta, retErr: false}}
+	md := ecsMetadataProviderImpl{logger: zap.NewNop(), client: &mockClient{response: taskMeta, retErr: false}}
 	fetchResp, err := md.fetchTaskMetaData("url")
 
 	assert.Nil(t, err)
@@ -78,7 +79,7 @@ func Test_ecsMetadata_fetchTask(t *testing.T) {
 }
 
 func Test_ecsMetadata_fetchContainer(t *testing.T) {
-	md := ecsMetadataProviderImpl{client: &mockClient{response: containerMeta, retErr: false}}
+	md := ecsMetadataProviderImpl{logger: zap.NewNop(), client: &mockClient{response: containerMeta, retErr: false}}
 	fetchResp, err := md.fetchContainerMetaData("url")
 
 	assert.Nil(t, err)
@@ -93,7 +94,7 @@ func Test_ecsMetadata_fetchContainer(t *testing.T) {
 }
 
 func Test_ecsMetadata_returnsError(t *testing.T) {
-	md := ecsMetadataProviderImpl{client: &mockClient{response: "{}", retErr: true}}
+	md := ecsMetadataProviderImpl{logger: zap.NewNop(), client: &mockClient{response: "{}", retErr: true}}
 	fetchResp, err := md.fetchContainerMetaData("url")
 
 	assert.Nil(t, fetchResp)

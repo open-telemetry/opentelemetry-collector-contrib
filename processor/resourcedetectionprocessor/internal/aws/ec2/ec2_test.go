@@ -22,7 +22,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -58,7 +60,7 @@ func (mm mockMetadata) hostname(ctx context.Context) (string, error) {
 }
 
 func TestNewDetector(t *testing.T) {
-	detector, err := NewDetector()
+	detector, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()})
 	assert.NotNil(t, detector)
 	assert.NoError(t, err)
 }
