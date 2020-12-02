@@ -18,7 +18,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/ttlmap"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
 type deltaTranslator struct {
