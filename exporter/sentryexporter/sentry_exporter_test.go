@@ -153,31 +153,9 @@ func generateOrphanSpansFromSpans(spans ...*sentry.Span) []*sentry.Span {
 }
 
 func TestSpanToSentrySpan(t *testing.T) {
-	t.Run("with nil span", func(t *testing.T) {
+	t.Run("with root span and invalid parent span_id", func(t *testing.T) {
 		testSpan := pdata.NewSpan()
-
-		sentrySpan := convertToSentrySpan(testSpan, pdata.NewInstrumentationLibrary(), map[string]string{})
-		assert.Nil(t, sentrySpan)
-	})
-
-	t.Run("with root span and nil parent span_id", func(t *testing.T) {
-		testSpan := pdata.NewSpan()
-		testSpan.InitEmpty()
-
-		parentSpanID := pdata.NewSpanID(nil)
-		testSpan.SetParentSpanID(parentSpanID)
-
-		sentrySpan := convertToSentrySpan(testSpan, pdata.NewInstrumentationLibrary(), map[string]string{})
-		assert.NotNil(t, sentrySpan)
-		assert.True(t, isRootSpan(sentrySpan))
-	})
-
-	t.Run("with root span and 0 byte slice", func(t *testing.T) {
-		testSpan := pdata.NewSpan()
-		testSpan.InitEmpty()
-
-		parentSpanID := pdata.NewSpanID([]byte{0, 0, 0, 0, 0, 0, 0, 0})
-		testSpan.SetParentSpanID(parentSpanID)
+		testSpan.SetParentSpanID(pdata.InvalidSpanID())
 
 		sentrySpan := convertToSentrySpan(testSpan, pdata.NewInstrumentationLibrary(), map[string]string{})
 		assert.NotNil(t, sentrySpan)
@@ -186,11 +164,10 @@ func TestSpanToSentrySpan(t *testing.T) {
 
 	t.Run("with full span", func(t *testing.T) {
 		testSpan := pdata.NewSpan()
-		testSpan.InitEmpty()
 
-		traceID := pdata.NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-		spanID := pdata.NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8})
-		parentSpanID := pdata.NewSpanID([]byte{8, 7, 6, 5, 4, 3, 2, 1})
+		traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+		spanID := pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+		parentSpanID := pdata.NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 		name := "span_name"
 		var startTime pdata.TimestampUnixNano = 123
 		var endTime pdata.TimestampUnixNano = 1234567890
@@ -212,7 +189,6 @@ func TestSpanToSentrySpan(t *testing.T) {
 		testSpan.Status().SetCode(pdata.StatusCodeOk)
 
 		library := pdata.NewInstrumentationLibrary()
-		library.InitEmpty()
 		library.SetName("otel-python")
 		library.SetVersion("1.4.3")
 
@@ -390,11 +366,11 @@ func TestStatusFromSpanStatus(t *testing.T) {
 				spanStatus := pdata.NewSpanStatus()
 				spanStatus.InitEmpty()
 				spanStatus.SetMessage("message")
-				spanStatus.SetCode(pdata.StatusCodeResourceExhausted)
+				spanStatus.SetCode(pdata.StatusCodeError)
 
 				return spanStatus
 			}(),
-			status:  "resource_exhausted",
+			status:  "unknown",
 			message: "message",
 		},
 		{
@@ -559,7 +535,6 @@ func TestPushTraceData(t *testing.T) {
 				traces := pdata.NewTraces()
 				resourceSpans := traces.ResourceSpans()
 				resourceSpans.Resize(1)
-				resourceSpans.At(0).InitEmpty()
 				resourceSpans.At(0).InstrumentationLibrarySpans().Resize(1)
 				resourceSpans.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
 				return traces

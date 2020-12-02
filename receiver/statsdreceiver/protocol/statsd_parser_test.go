@@ -24,15 +24,9 @@ import (
 )
 
 func Test_StatsDParser_Parse(t *testing.T) {
-	prevTimeNowFunc := timeNowFunc
 	timeNowFunc = func() int64 {
 		return 0
 	}
-	t.Cleanup(
-		func() {
-			timeNowFunc = prevTimeNowFunc
-		},
-	)
 
 	tests := []struct {
 		name       string
@@ -67,6 +61,7 @@ func Test_StatsDParser_Parse(t *testing.T) {
 				metricspb.MetricDescriptor_CUMULATIVE_INT64,
 				nil,
 				nil,
+				"",
 				&metricspb.Point{
 					Timestamp: &timestamppb.Timestamp{
 						Seconds: 0,
@@ -77,25 +72,26 @@ func Test_StatsDParser_Parse(t *testing.T) {
 				}),
 		},
 		{
-			name:  "gracefully handle float counter value",
+			name:  "float counter",
 			input: "test.metric:42.0|c",
 			wantMetric: testMetric("test.metric",
-				metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+				metricspb.MetricDescriptor_CUMULATIVE_INT64,
 				nil,
 				nil,
+				"",
 				&metricspb.Point{
 					Timestamp: &timestamppb.Timestamp{
 						Seconds: 0,
 					},
-					Value: &metricspb.Point_DoubleValue{
-						DoubleValue: 42,
+					Value: &metricspb.Point_Int64Value{
+						Int64Value: 42,
 					},
 				}),
 		},
 		{
-			name:  "invalid metric value",
+			name:  "invalid  counter metric value",
 			input: "test.metric:42.abc|c",
-			err:   errors.New("parse metric value string: 42.abc"),
+			err:   errors.New("counter: parse metric value string: 42.abc"),
 		},
 		{
 			name:  "unhandled metric type",
@@ -118,12 +114,39 @@ func Test_StatsDParser_Parse(t *testing.T) {
 						HasValue: true,
 					},
 				},
+				"",
 				&metricspb.Point{
 					Timestamp: &timestamppb.Timestamp{
 						Seconds: 0,
 					},
 					Value: &metricspb.Point_Int64Value{
-						Int64Value: 42,
+						Int64Value: 420,
+					},
+				}),
+		},
+		{
+			name:  "counter metric with sample rate(not divisible) and tags",
+			input: "test.metric:42|c|@0.8|#key:value",
+			wantMetric: testMetric("test.metric",
+				metricspb.MetricDescriptor_CUMULATIVE_INT64,
+				[]*metricspb.LabelKey{
+					{
+						Key: "key",
+					},
+				},
+				[]*metricspb.LabelValue{
+					{
+						Value:    "value",
+						HasValue: true,
+					},
+				},
+				"",
+				&metricspb.Point{
+					Timestamp: &timestamppb.Timestamp{
+						Seconds: 0,
+					},
+					Value: &metricspb.Point_Int64Value{
+						Int64Value: 52,
 					},
 				}),
 		},
@@ -143,6 +166,7 @@ func Test_StatsDParser_Parse(t *testing.T) {
 						HasValue: true,
 					},
 				},
+				"",
 				&metricspb.Point{
 					Timestamp: &timestamppb.Timestamp{
 						Seconds: 0,
@@ -156,7 +180,7 @@ func Test_StatsDParser_Parse(t *testing.T) {
 			name:  "int gauge metric",
 			input: "test.gauge:42|g|@0.1|#key:value",
 			wantMetric: testMetric("test.gauge",
-				metricspb.MetricDescriptor_GAUGE_INT64,
+				metricspb.MetricDescriptor_GAUGE_DOUBLE,
 				[]*metricspb.LabelKey{
 					{
 						Key: "key",
@@ -168,14 +192,68 @@ func Test_StatsDParser_Parse(t *testing.T) {
 						HasValue: true,
 					},
 				},
+				"",
 				&metricspb.Point{
 					Timestamp: &timestamppb.Timestamp{
 						Seconds: 0,
 					},
-					Value: &metricspb.Point_Int64Value{
-						Int64Value: 42,
+					Value: &metricspb.Point_DoubleValue{
+						DoubleValue: 42,
 					},
 				}),
+		},
+		{
+			name:  "gauge: invalid metric value",
+			input: "test.metric:invalidValue|g",
+			err:   errors.New("gauge: parse metric value string: invalidValue"),
+		},
+		{
+			name:  "timer metric with sample rate",
+			input: "test.timer:42.3|ms|@0.1",
+			wantMetric: testMetric("test.timer",
+				metricspb.MetricDescriptor_GAUGE_DOUBLE,
+				nil,
+				nil,
+				"ms",
+				&metricspb.Point{
+					Timestamp: &timestamppb.Timestamp{
+						Seconds: 0,
+					},
+					Value: &metricspb.Point_DoubleValue{
+						DoubleValue: 42.3,
+					},
+				}),
+		},
+		{
+			name:  "timer metric with sample rate and tag",
+			input: "test.timer:42|ms|@0.1|#key:value",
+			wantMetric: testMetric("test.timer",
+				metricspb.MetricDescriptor_GAUGE_DOUBLE,
+				[]*metricspb.LabelKey{
+					{
+						Key: "key",
+					},
+				},
+				[]*metricspb.LabelValue{
+					{
+						Value:    "value",
+						HasValue: true,
+					},
+				},
+				"ms",
+				&metricspb.Point{
+					Timestamp: &timestamppb.Timestamp{
+						Seconds: 0,
+					},
+					Value: &metricspb.Point_DoubleValue{
+						DoubleValue: 42,
+					},
+				}),
+		},
+		{
+			name:  "timer: invalid metric value",
+			input: "test.metric:invalidValue|ms",
+			err:   errors.New("timer: failed to parse metric value to float: invalidValue"),
 		},
 		{
 			name:  "invalid sample rate value",
@@ -214,12 +292,14 @@ func testMetric(metricName string,
 	metricType metricspb.MetricDescriptor_Type,
 	lableKeys []*metricspb.LabelKey,
 	labelValues []*metricspb.LabelValue,
+	unit string,
 	point *metricspb.Point) *metricspb.Metric {
 	return &metricspb.Metric{
 		MetricDescriptor: &metricspb.MetricDescriptor{
 			Name:      metricName,
 			Type:      metricType,
 			LabelKeys: lableKeys,
+			Unit:      unit,
 		},
 		Timeseries: []*metricspb.TimeSeries{
 			{

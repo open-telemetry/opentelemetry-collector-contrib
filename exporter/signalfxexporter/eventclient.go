@@ -16,7 +16,6 @@ package signalfxexporter
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -29,7 +28,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 // sfxEventClient sends the data to the SignalFx backend.
@@ -39,27 +38,30 @@ type sfxEventClient struct {
 	accessTokenPassthrough bool
 }
 
-func (s *sfxEventClient) pushResourceLogs(
-	ctx context.Context,
-	rls pdata.ResourceLogs,
-) (int, error) {
-	accessToken := s.retrieveAccessToken(rls)
+func (s *sfxEventClient) pushLogsData(ctx context.Context, ld pdata.Logs) (int, error) {
+	rls := ld.ResourceLogs()
+	if rls.Len() == 0 {
+		return 0, nil
+	}
+
+	accessToken := s.retrieveAccessToken(rls.At(0))
 
 	var sfxEvents []*sfxpb.Event
 	numDroppedLogRecords := 0
 
-	ills := rls.InstrumentationLibraryLogs()
-	for j := 0; j < ills.Len(); j++ {
-		ill := ills.At(j)
-
-		events, dropped := translation.LogSliceToSignalFxV2(s.logger, ill.Logs())
-		sfxEvents = append(sfxEvents, events...)
-		numDroppedLogRecords += dropped
+	for i := 0; i < rls.Len(); i++ {
+		ills := rls.At(0).InstrumentationLibraryLogs()
+		for j := 0; j < ills.Len(); j++ {
+			ill := ills.At(j)
+			events, dropped := translation.LogSliceToSignalFxV2(s.logger, ill.Logs())
+			sfxEvents = append(sfxEvents, events...)
+			numDroppedLogRecords += dropped
+		}
 	}
 
 	body, compressed, err := s.encodeBody(sfxEvents)
 	if err != nil {
-		return countRecords(rls), consumererror.Permanent(err)
+		return ld.LogRecordCount(), consumererror.Permanent(err)
 	}
 
 	eventURL := *s.ingestURL
@@ -68,7 +70,7 @@ func (s *sfxEventClient) pushResourceLogs(
 	}
 	req, err := http.NewRequestWithContext(ctx, "POST", eventURL.String(), body)
 	if err != nil {
-		return countRecords(rls), consumererror.Permanent(err)
+		return ld.LogRecordCount(), consumererror.Permanent(err)
 	}
 
 	for k, v := range s.headers {
@@ -85,7 +87,7 @@ func (s *sfxEventClient) pushResourceLogs(
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return countRecords(rls), err
+		return ld.LogRecordCount(), err
 	}
 
 	defer func() {
@@ -93,16 +95,9 @@ func (s *sfxEventClient) pushResourceLogs(
 		resp.Body.Close()
 	}()
 
-	// SignalFx accepts all 2XX codes.
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		body, _ := ioutil.ReadAll(resp.Body)
-		err = fmt.Errorf(
-			"HTTP %d %q for %q: %s",
-			resp.StatusCode,
-			http.StatusText(resp.StatusCode),
-			req.URL,
-			body)
-		return countRecords(rls), err
+	err = splunk.HandleHTTPCode(resp)
+	if err != nil {
+		return ld.LogRecordCount(), err
 	}
 
 	return numDroppedLogRecords, nil
@@ -120,25 +115,9 @@ func (s *sfxEventClient) encodeBody(events []*sfxpb.Event) (bodyReader io.Reader
 }
 
 func (s *sfxEventClient) retrieveAccessToken(rl pdata.ResourceLogs) string {
-	if rl.IsNil() || rl.Resource().IsNil() {
-		return ""
-	}
 	attrs := rl.Resource().Attributes()
 	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok && accessToken.Type() == pdata.AttributeValueSTRING {
-		// Drop internally passed access token in all cases
-		attrs.Delete(splunk.SFxAccessTokenLabel)
 		return accessToken.StringVal()
 	}
 	return ""
-}
-
-func countRecords(rs pdata.ResourceLogs) int {
-	logCount := 0
-
-	ill := rs.InstrumentationLibraryLogs()
-	for i := 0; i < ill.Len(); i++ {
-		logs := ill.At(i)
-		logCount += logs.Logs().Len()
-	}
-	return logCount
 }

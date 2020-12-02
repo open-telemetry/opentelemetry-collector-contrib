@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 // SplunkHecToMetricsData converts Splunk HEC metric points to
@@ -37,16 +37,19 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 
 	for _, event := range events {
 		resourceMetrics := pdata.NewResourceMetrics()
-		resourceMetrics.InitEmpty()
-
-		metrics := pdata.NewInstrumentationLibraryMetrics()
-		metrics.InitEmpty()
-		resourceMetrics.Resource().InitEmpty()
 		attrs := resourceMetrics.Resource().Attributes()
-		attrs.InitEmptyWithCapacity(3)
-		attrs.InsertString(conventions.AttributeHostHostname, event.Host)
-		attrs.InsertString(conventions.AttributeServiceName, event.Source)
-		attrs.InsertString(splunk.SourcetypeLabel, event.SourceType)
+		if event.Host != "" {
+			attrs.InsertString(conventions.AttributeHostName, event.Host)
+		}
+		if event.Source != "" {
+			attrs.InsertString(conventions.AttributeServiceName, event.Source)
+		}
+		if event.SourceType != "" {
+			attrs.InsertString(splunk.SourcetypeLabel, event.SourceType)
+		}
+		if event.Index != "" {
+			attrs.InsertString(splunk.IndexLabel, event.Index)
+		}
 		resourceCustomizer(resourceMetrics.Resource())
 
 		values := event.GetMetricValues()
@@ -64,10 +67,11 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 		}
 		sort.Strings(metricNames)
 
+		resourceMetrics.InstrumentationLibraryMetrics().Resize(1)
+		metrics := resourceMetrics.InstrumentationLibraryMetrics().At(0)
 		for _, metricName := range metricNames {
 			pointTimestamp := convertTimestamp(event.Time)
 			metric := pdata.NewMetric()
-			metric.InitEmpty()
 			metric.SetDataType(pdata.MetricDataTypeNone)
 			metric.SetName(metricName)
 
@@ -95,8 +99,8 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 				metrics.Metrics().Append(metric)
 			}
 		}
+
 		if metrics.Metrics().Len() > 0 {
-			resourceMetrics.InstrumentationLibraryMetrics().Append(metrics)
 			md.ResourceMetrics().Append(resourceMetrics)
 		}
 	}
@@ -117,32 +121,29 @@ func convertString(logger *zap.Logger, metricName string, s string, numDroppedTi
 }
 
 func addIntGauge(ts pdata.TimestampUnixNano, value int64, metric pdata.Metric, populateLabels func(pdata.StringMap)) {
-	intPt := pdata.NewIntDataPoint()
-	intPt.InitEmpty()
+	metric.SetDataType(pdata.MetricDataTypeIntGauge)
+	metric.IntGauge().DataPoints().Resize(1)
+	intPt := metric.IntGauge().DataPoints().At(0)
 	intPt.SetTimestamp(ts)
 	intPt.SetValue(value)
 	populateLabels(intPt.LabelsMap())
-	metric.SetDataType(pdata.MetricDataTypeIntGauge)
-	metric.IntGauge().InitEmpty()
-	metric.IntGauge().DataPoints().Append(intPt)
 }
 
 func addDoubleGauge(ts pdata.TimestampUnixNano, value float64, metric pdata.Metric, populateLabels func(pdata.StringMap)) {
-	doublePt := pdata.NewDoubleDataPoint()
-	doublePt.InitEmpty()
+	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+	metric.DoubleGauge().DataPoints().Resize(1)
+	doublePt := metric.DoubleGauge().DataPoints().At(0)
 	doublePt.SetTimestamp(ts)
 	doublePt.SetValue(value)
 	populateLabels(doublePt.LabelsMap())
-	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	metric.DoubleGauge().InitEmpty()
-	metric.DoubleGauge().DataPoints().Append(doublePt)
 }
 
-func convertTimestamp(sec float64) pdata.TimestampUnixNano {
-	if sec == 0 {
+func convertTimestamp(sec *float64) pdata.TimestampUnixNano {
+	if sec == nil {
 		return 0
 	}
-	return pdata.TimestampUnixNano(sec * 1e9)
+
+	return pdata.TimestampUnixNano(*sec * 1e9)
 }
 
 // Extract dimensions from the Splunk event fields to populate metric data point labels.

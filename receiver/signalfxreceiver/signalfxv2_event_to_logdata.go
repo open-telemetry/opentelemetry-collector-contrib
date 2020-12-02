@@ -17,24 +17,18 @@ package signalfxreceiver
 import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 // signalFxV2ToMetricsData converts SignalFx event proto data points to
 // pdata.LogSlice. Returning the converted data and the number of dropped log
 // records.
-func signalFxV2EventsToLogRecords(
-	logger *zap.Logger,
-	events []*sfxpb.Event,
-) pdata.LogSlice {
-	lrs := pdata.NewLogSlice()
+func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs pdata.LogSlice) {
 	lrs.Resize(len(events))
 
 	for i, event := range events {
 		lr := lrs.At(i)
-		lr.InitEmpty()
 
 		// The EventType field is the most logical "name" of the event.
 		lr.SetName(event.EventType)
@@ -60,7 +54,8 @@ func signalFxV2EventsToLogRecords(
 		}
 
 		if len(event.Properties) > 0 {
-			propMap := pdata.NewAttributeMap()
+			propMapVal := pdata.NewAttributeValueMap()
+			propMap := propMapVal.MapVal()
 			propMap.InitEmptyWithCapacity(len(event.Properties))
 
 			for _, prop := range event.Properties {
@@ -80,12 +75,8 @@ func signalFxV2EventsToLogRecords(
 					propMap.InsertNull(prop.Key)
 				}
 			}
-			propMapVal := pdata.NewAttributeValueMap()
-			propMapVal.SetMapVal(propMap)
 
 			attrs.Insert(splunk.SFxEventPropertiesKey, propMapVal)
 		}
 	}
-
-	return lrs
 }

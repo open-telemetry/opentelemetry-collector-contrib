@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package tests contains test cases. To run the tests go to tests directory and run:
-// TESTBED_CONFIG=local.yaml go test -v
+// RUN_TESTBED=1 go test -v
 
 package tests
 
@@ -31,6 +31,7 @@ var contribPerfResultsSummary testbed.TestResultsSummary = &testbed.PerformanceR
 
 // TestMain is used to initiate setup, execution and tear down of testbed.
 func TestMain(m *testing.M) {
+	testbed.GlobalConfig.DefaultAgentExeRelativeFile = "../../bin/otelcontribcol_{{.GOOS}}_{{.GOARCH}}"
 	testbed.DoTestMain(m, contribPerfResultsSummary)
 }
 
@@ -56,7 +57,7 @@ func TestTrace10kSPS(t *testing.T) {
 			datareceivers.NewSapmDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 40,
-				ExpectedMaxRAM: 80,
+				ExpectedMaxRAM: 85,
 			},
 		},
 	}

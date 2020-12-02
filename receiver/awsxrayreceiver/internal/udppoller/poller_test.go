@@ -285,7 +285,7 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 		},
 	}
 
-	longLivedCtx := obsreport.ReceiverContext(context.Background(), receiverName, Transport, "")
+	longLivedCtx := obsreport.ReceiverContext(context.Background(), receiverName, Transport)
 	p.Start(longLivedCtx)
 
 	testutil.WaitFor(t, func() bool {
@@ -322,7 +322,7 @@ func TestSocketReadTemporaryNetError(t *testing.T) {
 		},
 	}
 
-	longLivedCtx := obsreport.ReceiverContext(context.Background(), receiverName, Transport, "")
+	longLivedCtx := obsreport.ReceiverContext(context.Background(), receiverName, Transport)
 	p.Start(longLivedCtx)
 
 	testutil.WaitFor(t, func() bool {
@@ -357,7 +357,7 @@ func TestSocketGenericReadError(t *testing.T) {
 		},
 	}
 
-	longLivedCtx := obsreport.ReceiverContext(context.Background(), receiverName, Transport, "")
+	longLivedCtx := obsreport.ReceiverContext(context.Background(), receiverName, Transport)
 	p.Start(longLivedCtx)
 
 	testutil.WaitFor(t, func() bool {
@@ -437,7 +437,7 @@ func createAndOptionallyStartPoller(
 	assert.NoError(t, err, "receiver should be created")
 
 	if start {
-		longLivedCtx := obsreport.ReceiverContext(context.Background(), receiverName, Transport, "")
+		longLivedCtx := obsreport.ReceiverContext(context.Background(), receiverName, Transport)
 		poller.Start(longLivedCtx)
 	}
 	return addr, poller, recorded

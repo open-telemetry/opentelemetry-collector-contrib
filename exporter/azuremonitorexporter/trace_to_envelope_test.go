@@ -55,11 +55,11 @@ const (
 )
 
 var (
-	defaultTraceID                = []byte{35, 191, 77, 229, 162, 242, 217, 75, 148, 170, 81, 99, 227, 163, 145, 25}
+	defaultTraceID                = [16]byte{35, 191, 77, 229, 162, 242, 217, 75, 148, 170, 81, 99, 227, 163, 145, 25}
 	defaultTraceIDAsHex           = fmt.Sprintf("%02x", defaultTraceID)
-	defaultSpanID                 = []byte{35, 191, 77, 229, 162, 242, 217, 75, 148, 170, 81, 99, 227, 163, 145, 26}
+	defaultSpanID                 = [8]byte{35, 191, 77, 229, 162, 242, 217, 76}
 	defaultSpanIDAsHex            = fmt.Sprintf("%02x", defaultSpanID)
-	defaultParentSpanID           = []byte{35, 191, 77, 229, 162, 242, 217, 75, 148, 170, 81, 99, 227, 163, 145, 27}
+	defaultParentSpanID           = [8]byte{35, 191, 77, 229, 162, 242, 217, 77}
 	defaultParentSpanIDAsHex      = fmt.Sprintf("%02x", defaultParentSpanID)
 	defaultSpanStartTime          = pdata.TimestampUnixNano(0)
 	defaultSpanEndTme             = pdata.TimestampUnixNano(60000000000)
@@ -737,7 +737,7 @@ func assertAttributesCopiedToPropertiesOrMeasurements(
 			case pdata.AttributeValueDOUBLE:
 				m, exists := measurements[k]
 				assert.True(t, exists)
-				assert.Equal(t, float64(v.DoubleVal()), m)
+				assert.Equal(t, v.DoubleVal(), m)
 			}
 		})
 }
@@ -747,7 +747,6 @@ func assertAttributesCopiedToPropertiesOrMeasurements(
 */
 func getSpan(spanName string, spanKind pdata.SpanKind, initialAttributes map[string]pdata.AttributeValue) pdata.Span {
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetTraceID(pdata.NewTraceID(defaultTraceID))
 	span.SetSpanID(pdata.NewSpanID(defaultSpanID))
 	span.SetParentSpanID(pdata.NewSpanID(defaultParentSpanID))
@@ -835,7 +834,6 @@ func getDefaultInternalSpan() pdata.Span {
 // Returns a default Resource
 func getResource() pdata.Resource {
 	r := pdata.NewResource()
-	r.InitEmpty()
 	r.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		conventions.AttributeServiceName:      pdata.NewAttributeValueString(defaultServiceName),
 		conventions.AttributeServiceNamespace: pdata.NewAttributeValueString(defaultServiceNamespace),
@@ -848,7 +846,6 @@ func getResource() pdata.Resource {
 // Returns a default instrumentation library
 func getInstrumentationLibrary() pdata.InstrumentationLibrary {
 	il := pdata.NewInstrumentationLibrary()
-	il.InitEmpty()
 	il.SetName(defaultInstrumentationLibraryName)
 	il.SetVersion(defaultInstrumentationLibraryVersion)
 	return il

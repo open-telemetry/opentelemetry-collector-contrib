@@ -66,7 +66,7 @@ func createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	config configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 	c := config.(*Config)
 	k, err := kinesis.NewExporter(&kinesis.Options{
 		Name:               c.Name(),
@@ -95,5 +95,6 @@ func createTraceExporter(
 	if err != nil {
 		return nil, err
 	}
+
 	return Exporter{k, params.Logger}, nil
 }

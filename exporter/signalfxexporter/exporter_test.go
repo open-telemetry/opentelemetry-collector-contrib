@@ -18,31 +18,30 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sort"
 	"strconv"
 	"sync"
 	"testing"
 	"time"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/testutil/metricstestutil"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )
 
@@ -102,48 +101,71 @@ func TestNew(t *testing.T) {
 }
 
 func TestConsumeMetrics(t *testing.T) {
-	smallBatch := internaldata.OCToMetrics(
-		consumerdata.MetricsData{
-			Node: &commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
-			},
-			Resource: &resourcepb.Resource{Type: "test"},
-			Metrics: []*metricspb.Metric{
-				metricstestutil.Gauge(
-					"test_gauge",
-					[]string{"k0", "k1"},
-					metricstestutil.Timeseries(
-						time.Now(),
-						[]string{"v0", "v1"},
-						metricstestutil.Double(time.Now(), 123))),
-			},
-		})
+	smallBatch := pdata.NewMetrics()
+	smallBatch.ResourceMetrics().Resize(1)
+	rm := smallBatch.ResourceMetrics().At(0)
+	rm.InstrumentationLibraryMetrics().Resize(1)
+	ilm := rm.InstrumentationLibraryMetrics().At(0)
+	ilm.Metrics().Resize(1)
+	m := ilm.Metrics().At(0)
+
+	m.SetName("test_gauge")
+	m.SetDataType(pdata.MetricDataTypeDoubleGauge)
+	m.DoubleGauge().DataPoints().Resize(1)
+	dp := m.DoubleGauge().DataPoints().At(0)
+	dp.LabelsMap().InitFromMap(map[string]string{
+		"k0": "v0",
+		"k1": "v1",
+	})
+	dp.SetValue(123)
+
 	tests := []struct {
 		name                 string
 		md                   pdata.Metrics
-		reqTestFunc          func(t *testing.T, r *http.Request)
 		httpResponseCode     int
+		retryAfter           int
 		numDroppedTimeSeries int
 		wantErr              bool
+		wantPermanentErr     bool
+		wantThrottleErr      bool
 	}{
 		{
 			name:             "happy_path",
 			md:               smallBatch,
-			reqTestFunc:      nil,
 			httpResponseCode: http.StatusAccepted,
 		},
 		{
 			name:                 "response_forbidden",
 			md:                   smallBatch,
-			reqTestFunc:          nil,
 			httpResponseCode:     http.StatusForbidden,
 			numDroppedTimeSeries: 1,
 			wantErr:              true,
 		},
 		{
+			name:                 "response_bad_request",
+			md:                   smallBatch,
+			httpResponseCode:     http.StatusBadRequest,
+			numDroppedTimeSeries: 1,
+			wantPermanentErr:     true,
+		},
+		{
+			name:                 "response_throttle",
+			md:                   smallBatch,
+			httpResponseCode:     http.StatusTooManyRequests,
+			numDroppedTimeSeries: 1,
+			wantThrottleErr:      true,
+		},
+		{
+			name:                 "response_throttle_with_header",
+			md:                   smallBatch,
+			retryAfter:           123,
+			httpResponseCode:     http.StatusServiceUnavailable,
+			numDroppedTimeSeries: 1,
+			wantThrottleErr:      true,
+		},
+		{
 			name:             "large_batch",
-			md:               generateLargeDPBatch(t),
-			reqTestFunc:      nil,
+			md:               generateLargeDPBatch(),
 			httpResponseCode: http.StatusAccepted,
 		},
 	}
@@ -151,8 +173,9 @@ func TestConsumeMetrics(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "test", r.Header.Get("test_header_"))
-				if tt.reqTestFunc != nil {
-					tt.reqTestFunc(t, r)
+				if (tt.httpResponseCode == http.StatusTooManyRequests ||
+					tt.httpResponseCode == http.StatusServiceUnavailable) && tt.retryAfter != 0 {
+					w.Header().Add(splunk.HeaderRetryAfter, strconv.Itoa(tt.retryAfter))
 				}
 				w.WriteHeader(tt.httpResponseCode)
 			}))
@@ -184,6 +207,19 @@ func TestConsumeMetrics(t *testing.T) {
 				return
 			}
 
+			if tt.wantPermanentErr {
+				assert.Error(t, err)
+				assert.True(t, consumererror.IsPermanent(err))
+				return
+			}
+
+			if tt.wantThrottleErr {
+				expected := fmt.Errorf("HTTP %d %q", tt.httpResponseCode, http.StatusText(tt.httpResponseCode))
+				expected = exporterhelper.NewThrottleRetry(expected, time.Duration(tt.retryAfter)*time.Second)
+				assert.EqualValues(t, expected, err)
+				return
+			}
+
 			assert.NoError(t, err)
 		})
 	}
@@ -194,72 +230,68 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 	fromLabels := []string{"AccessTokenFromLabel0", "AccessTokenFromLabel1"}
 
 	validMetricsWithToken := func(includeToken bool, token string) pdata.Metrics {
-		md := consumerdata.MetricsData{
-			Node: &commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
-			},
-			Resource: &resourcepb.Resource{
-				Type: "test",
-				Labels: map[string]string{
-					"com.splunk.signalfx.access_token": token,
-				},
-			},
-			Metrics: []*metricspb.Metric{
-				metricstestutil.Gauge(
-					"test_gauge",
-					[]string{"k0", "k1"},
-					metricstestutil.Timeseries(
-						time.Now(),
-						[]string{"v0", "v1"},
-						metricstestutil.Double(time.Now(), 123))),
-			},
+		out := pdata.NewMetrics()
+		out.ResourceMetrics().Resize(1)
+		rm := out.ResourceMetrics().At(0)
+
+		if includeToken {
+			rm.Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{
+				"com.splunk.signalfx.access_token": pdata.NewAttributeValueString(token),
+			})
 		}
-		if !includeToken {
-			delete(md.Resource.Labels, "com.splunk.signalfx.access_token")
-		}
-		return internaldata.OCToMetrics(md)
+
+		rm.InstrumentationLibraryMetrics().Resize(1)
+		ilm := rm.InstrumentationLibraryMetrics().At(0)
+		ilm.Metrics().Resize(1)
+		m := ilm.Metrics().At(0)
+
+		m.SetName("test_gauge")
+		m.SetDataType(pdata.MetricDataTypeDoubleGauge)
+
+		m.DoubleGauge().DataPoints().Resize(1)
+		dp := m.DoubleGauge().DataPoints().At(0)
+		dp.LabelsMap().InitFromMap(map[string]string{
+			"k0": "v0",
+			"k1": "v1",
+		})
+		dp.SetValue(123)
+		return out
 	}
 
 	tests := []struct {
-		name                     string
-		accessTokenPassthrough   bool
-		metrics                  pdata.Metrics
-		additionalHeaders        map[string]string
-		failHTTP                 bool
-		droppedTimeseriesCount   int
-		numPushDataCallsPerToken map[string]int
+		name                   string
+		accessTokenPassthrough bool
+		metrics                pdata.Metrics
+		additionalHeaders      map[string]string
+		pushedTokens           []string
 	}{
 		{
 			name:                   "passthrough access token and included in md",
 			accessTokenPassthrough: true,
 			metrics:                validMetricsWithToken(true, fromLabels[0]),
-			numPushDataCallsPerToken: map[string]int{
-				fromLabels[0]: 1,
-			},
+			pushedTokens:           []string{fromLabels[0]},
 		},
 		{
 			name:                   "passthrough access token and not included in md",
 			accessTokenPassthrough: true,
 			metrics:                validMetricsWithToken(false, fromLabels[0]),
-			numPushDataCallsPerToken: map[string]int{
-				fromHeaders: 1,
-			},
+			pushedTokens:           []string{fromHeaders},
 		},
 		{
 			name:                   "don't passthrough access token and included in md",
 			accessTokenPassthrough: false,
-			metrics:                validMetricsWithToken(true, fromLabels[0]),
-			numPushDataCallsPerToken: map[string]int{
-				fromHeaders: 1,
-			},
+			metrics: func() pdata.Metrics {
+				forFirstToken := validMetricsWithToken(true, fromLabels[0])
+				forFirstToken.ResourceMetrics().Append(validMetricsWithToken(true, fromLabels[1]).ResourceMetrics().At(0))
+				return forFirstToken
+			}(),
+			pushedTokens: []string{fromHeaders},
 		},
 		{
 			name:                   "don't passthrough access token and not included in md",
 			accessTokenPassthrough: false,
 			metrics:                validMetricsWithToken(false, fromLabels[0]),
-			numPushDataCallsPerToken: map[string]int{
-				fromHeaders: 1,
-			},
+			pushedTokens:           []string{fromHeaders},
 		},
 		{
 			name:                   "override user-specified token-like header",
@@ -268,30 +300,34 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			additionalHeaders: map[string]string{
 				"x-sf-token": "user-specified",
 			},
-			numPushDataCallsPerToken: map[string]int{
-				fromLabels[0]: 1,
-			},
+			pushedTokens: []string{fromLabels[0]},
 		},
 		{
 			name:                   "use token from header when resource is nil",
 			accessTokenPassthrough: true,
-			metrics: internaldata.OCToMetrics(consumerdata.MetricsData{
-				Node: &commonpb.Node{
-					ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
-				},
-				Metrics: []*metricspb.Metric{
-					metricstestutil.Gauge(
-						"test_gauge",
-						[]string{"k0", "k1"},
-						metricstestutil.Timeseries(
-							time.Now(),
-							[]string{"v0", "v1"},
-							metricstestutil.Double(time.Now(), 123))),
-				},
-			}),
-			numPushDataCallsPerToken: map[string]int{
-				fromHeaders: 1,
-			},
+			metrics: func() pdata.Metrics {
+				out := pdata.NewMetrics()
+				out.ResourceMetrics().Resize(1)
+				rm := out.ResourceMetrics().At(0)
+
+				rm.InstrumentationLibraryMetrics().Resize(1)
+				ilm := rm.InstrumentationLibraryMetrics().At(0)
+				ilm.Metrics().Resize(1)
+				m := ilm.Metrics().At(0)
+
+				m.SetName("test_gauge")
+				m.SetDataType(pdata.MetricDataTypeDoubleGauge)
+				m.DoubleGauge().DataPoints().Resize(1)
+				dp := m.DoubleGauge().DataPoints().At(0)
+				dp.LabelsMap().InitFromMap(map[string]string{
+					"k0": "v0",
+					"k1": "v1",
+				})
+				dp.SetValue(123)
+
+				return out
+			}(),
+			pushedTokens: []string{fromHeaders},
 		},
 		{
 			name:                   "multiple tokens passed through",
@@ -304,17 +340,14 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 
 				return forSecondToken
 			}(),
-			numPushDataCallsPerToken: map[string]int{
-				fromLabels[0]: 1,
-				fromLabels[1]: 1,
-			},
+			pushedTokens: []string{fromLabels[0], fromLabels[1]},
 		},
 		{
 			name:                   "multiple tokens passed through - multiple md with same token",
 			accessTokenPassthrough: true,
 			metrics: func() pdata.Metrics {
-				forFirstToken := validMetricsWithToken(true, fromLabels[0])
-				forSecondToken := validMetricsWithToken(true, fromLabels[1])
+				forFirstToken := validMetricsWithToken(true, fromLabels[1])
+				forSecondToken := validMetricsWithToken(true, fromLabels[0])
 				moreForSecondToken := validMetricsWithToken(true, fromLabels[1])
 
 				forSecondToken.ResourceMetrics().Resize(3)
@@ -323,10 +356,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 
 				return forSecondToken
 			}(),
-			numPushDataCallsPerToken: map[string]int{
-				fromLabels[0]: 1,
-				fromLabels[1]: 2,
-			},
+			pushedTokens: []string{fromLabels[0], fromLabels[1]},
 		},
 		{
 			name:                   "multiple tokens passed through - multiple md with same token grouped together",
@@ -342,10 +372,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 
 				return forSecondToken
 			}(),
-			numPushDataCallsPerToken: map[string]int{
-				fromLabels[0]: 1,
-				fromLabels[1]: 1,
-			},
+			pushedTokens: []string{fromLabels[0], fromLabels[1]},
 		},
 		{
 			name:                   "multiple tokens passed through - one corrupted",
@@ -357,92 +384,55 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
 				return forSecondToken
 			}(),
-			numPushDataCallsPerToken: map[string]int{
-				fromLabels[0]: 1,
-				fromHeaders:   1,
-			},
-		},
-		{
-			name:                   "multiple tokens passed through - HTTP error cases",
-			accessTokenPassthrough: true,
-			metrics: func() pdata.Metrics {
-				forFirstToken := validMetricsWithToken(true, fromLabels[0])
-				forSecondToken := validMetricsWithToken(true, fromLabels[1])
-				forSecondToken.ResourceMetrics().Resize(2)
-				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
-				return forSecondToken
-			}(),
-			failHTTP:               true,
-			droppedTimeseriesCount: 2,
+			pushedTokens: []string{fromLabels[0], fromHeaders},
 		},
 	}
 	for _, tt := range tests {
 		receivedTokens := struct {
 			sync.Mutex
-			tokens     []string
-			totalCalls map[string]int
+			tokens []string
 		}{}
 		receivedTokens.tokens = []string{}
-		receivedTokens.totalCalls = map[string]int{}
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if tt.failHTTP {
-					w.WriteHeader(http.StatusInternalServerError)
-					return
-				}
-				assert.Equal(t, "test", r.Header.Get("test_header_"))
+				assert.Equal(t, tt.name, r.Header.Get("test_header_"))
 				receivedTokens.Lock()
 
 				token := r.Header.Get("x-sf-token")
 				receivedTokens.tokens = append(receivedTokens.tokens, token)
-				receivedTokens.totalCalls[token]++
 
 				receivedTokens.Unlock()
 				w.WriteHeader(http.StatusAccepted)
 			}))
 			defer server.Close()
 
-			serverURL, err := url.Parse(server.URL)
-			assert.NoError(t, err)
-
-			dpClient := &sfxDPClient{
-				sfxClientBase: sfxClientBase{
-					ingestURL: serverURL,
-					headers: map[string]string{
-						"test_header_": "test",
-						"X-Sf-Token":   fromHeaders,
-					},
-					client: &http.Client{
-						Timeout: 1 * time.Second,
-					},
-					zippers: sync.Pool{New: func() interface{} {
-						return gzip.NewWriter(nil)
-					}},
-				},
-				logger:                 zap.NewNop(),
-				accessTokenPassthrough: tt.accessTokenPassthrough,
-				converter:              translation.NewMetricsConverter(zap.NewNop(), nil),
-			}
-
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			cfg.IngestURL = server.URL
+			cfg.APIURL = server.URL
+			cfg.Headers = make(map[string]string)
 			for k, v := range tt.additionalHeaders {
-				dpClient.headers[k] = v
+				cfg.Headers[k] = v
 			}
+			cfg.Headers["test_header_"] = tt.name
+			cfg.AccessToken = fromHeaders
+			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
+			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+			require.NoError(t, err)
+			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
+			defer sfxExp.Shutdown(context.Background())
 
-			numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), tt.metrics)
+			err = sfxExp.ConsumeMetrics(context.Background(), tt.metrics)
 
-			if tt.failHTTP {
-				assert.Equal(t, tt.droppedTimeseriesCount, numDroppedTimeSeries)
-				assert.Error(t, err)
-				return
-			}
-
-			assert.Equal(t, 0, numDroppedTimeSeries)
 			assert.NoError(t, err)
-			require.Equal(t, tt.numPushDataCallsPerToken, receivedTokens.totalCalls)
-			for _, rt := range receivedTokens.tokens {
-				_, ok := tt.numPushDataCallsPerToken[rt]
-				require.True(t, ok)
-			}
+			require.Eventually(t, func() bool {
+				receivedTokens.Lock()
+				defer receivedTokens.Unlock()
+				return len(tt.pushedTokens) == len(receivedTokens.tokens)
+			}, 1*time.Second, 10*time.Millisecond)
+			sort.Strings(tt.pushedTokens)
+			sort.Strings(receivedTokens.tokens)
+			assert.Equal(t, tt.pushedTokens, receivedTokens.tokens)
 		})
 	}
 }
@@ -475,16 +465,17 @@ func TestNewEventExporter(t *testing.T) {
 	require.NotNil(t, got)
 
 	// This is expected to fail.
-	rls := makeSampleResourceLogs()
-	ld := pdata.NewLogs()
-	ld.ResourceLogs().Append(rls)
+	ld := makeSampleResourceLogs()
 	_, err = got.pushLogs(context.Background(), ld)
 	assert.Error(t, err)
 }
 
-func makeSampleResourceLogs() pdata.ResourceLogs {
-	logSlice := pdata.NewLogSlice()
+func makeSampleResourceLogs() pdata.Logs {
+	out := pdata.NewLogs()
+	out.ResourceLogs().Resize(1)
+	out.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
 
+	logSlice := out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
 	logSlice.Resize(1)
 	l := logSlice.At(0)
 
@@ -498,7 +489,8 @@ func makeSampleResourceLogs() pdata.ResourceLogs {
 		"k2": pdata.NewAttributeValueString("v2"),
 	})
 
-	propMap := pdata.NewAttributeMap()
+	propMapVal := pdata.NewAttributeValueMap()
+	propMap := propMapVal.MapVal()
 	propMap.InitFromMap(map[string]pdata.AttributeValue{
 		"env":      pdata.NewAttributeValueString("prod"),
 		"isActive": pdata.NewAttributeValueBool(true),
@@ -506,19 +498,10 @@ func makeSampleResourceLogs() pdata.ResourceLogs {
 		"temp":     pdata.NewAttributeValueDouble(40.5),
 	})
 	propMap.Sort()
-	propMapVal := pdata.NewAttributeValueMap()
-	propMapVal.SetMapVal(propMap)
 	attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
 	attrs.Insert("com.splunk.signalfx.event_category", pdata.NewAttributeValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
 
 	l.Attributes().Sort()
-
-	out := pdata.NewResourceLogs()
-	out.InitEmpty()
-	out.Resource().InitEmpty()
-	out.InstrumentationLibraryLogs().Resize(1)
-	out.InstrumentationLibraryLogs().At(0).InitEmpty()
-	logSlice.MoveAndAppendTo(out.InstrumentationLibraryLogs().At(0).Logs())
 
 	return out
 }
@@ -526,7 +509,7 @@ func makeSampleResourceLogs() pdata.ResourceLogs {
 func TestConsumeEventData(t *testing.T) {
 	tests := []struct {
 		name                 string
-		resourceLogs         pdata.ResourceLogs
+		resourceLogs         pdata.Logs
 		reqTestFunc          func(t *testing.T, r *http.Request)
 		httpResponseCode     int
 		numDroppedLogRecords int
@@ -540,9 +523,9 @@ func TestConsumeEventData(t *testing.T) {
 		},
 		{
 			name: "no_event_attribute",
-			resourceLogs: func() pdata.ResourceLogs {
+			resourceLogs: func() pdata.Logs {
 				out := makeSampleResourceLogs()
-				out.InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().Delete("com.splunk.signalfx.event_category")
+				out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().Delete("com.splunk.signalfx.event_category")
 				return out
 			}(),
 			reqTestFunc:          nil,
@@ -551,10 +534,10 @@ func TestConsumeEventData(t *testing.T) {
 		},
 		{
 			name: "nonconvertible_log_attrs",
-			resourceLogs: func() pdata.ResourceLogs {
+			resourceLogs: func() pdata.Logs {
 				out := makeSampleResourceLogs()
 
-				attrs := out.InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes()
+				attrs := out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes()
 				mapAttr := pdata.NewAttributeValueMap()
 				attrs.Insert("map", mapAttr)
 
@@ -578,7 +561,7 @@ func TestConsumeEventData(t *testing.T) {
 		},
 		{
 			name:             "large_batch",
-			resourceLogs:     generateLargeEventBatch(t),
+			resourceLogs:     generateLargeEventBatch(),
 			reqTestFunc:      nil,
 			httpResponseCode: http.StatusAccepted,
 		},
@@ -609,7 +592,7 @@ func TestConsumeEventData(t *testing.T) {
 				logger: zap.NewNop(),
 			}
 
-			numDroppedLogRecords, err := eventClient.pushResourceLogs(context.Background(), tt.resourceLogs)
+			numDroppedLogRecords, err := eventClient.pushLogsData(context.Background(), tt.resourceLogs)
 			assert.Equal(t, tt.numDroppedLogRecords, numDroppedLogRecords)
 
 			if tt.wantErr {
@@ -626,13 +609,13 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 	fromHeaders := "AccessTokenFromClientHeaders"
 	fromLabels := "AccessTokenFromLabel"
 
-	newLogData := func(includeToken bool) pdata.ResourceLogs {
+	newLogData := func(includeToken bool) pdata.Logs {
 		out := makeSampleResourceLogs()
+		out.ResourceLogs().Append(makeSampleResourceLogs().ResourceLogs().At(0))
 
 		if includeToken {
-			res := out.Resource()
-			res.InitEmpty()
-			res.Attributes().InsertString("com.splunk.signalfx.access_token", fromLabels)
+			out.ResourceLogs().At(0).Resource().Attributes().InsertString("com.splunk.signalfx.access_token", fromLabels)
+			out.ResourceLogs().At(1).Resource().Attributes().InsertString("com.splunk.signalfx.access_token", fromLabels)
 		}
 		return out
 	}
@@ -670,72 +653,79 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			receivedTokens := struct {
+				sync.Mutex
+				tokens []string
+			}{}
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				assert.Equal(t, "test", r.Header.Get("test_header_"))
-				assert.Equal(t, tt.expectedToken, r.Header.Get("x-sf-token"))
+				assert.Equal(t, tt.name, r.Header.Get("test_header_"))
+				receivedTokens.Lock()
+				receivedTokens.tokens = append(receivedTokens.tokens, r.Header.Get("x-sf-token"))
+				receivedTokens.Unlock()
 				w.WriteHeader(http.StatusAccepted)
 			}))
 			defer server.Close()
 
-			serverURL, err := url.Parse(server.URL)
-			assert.NoError(t, err)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			cfg.IngestURL = server.URL
+			cfg.APIURL = server.URL
+			cfg.Headers = make(map[string]string)
+			cfg.Headers["test_header_"] = tt.name
+			cfg.AccessToken = fromHeaders
+			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
+			sfxExp, err := NewFactory().CreateLogsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+			require.NoError(t, err)
+			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
+			defer sfxExp.Shutdown(context.Background())
 
-			eventClient := &sfxEventClient{
-				sfxClientBase: sfxClientBase{
-					ingestURL: serverURL,
-					headers: map[string]string{
-						"test_header_": "test",
-						"X-Sf-Token":   fromHeaders,
-					},
-					client: &http.Client{
-						Timeout: 1 * time.Second,
-					},
-					zippers: newGzipPool(),
-				},
-				logger:                 zap.NewNop(),
-				accessTokenPassthrough: tt.accessTokenPassthrough,
-			}
+			assert.NoError(t, sfxExp.ConsumeLogs(context.Background(), newLogData(tt.includedInLogData)))
 
-			numDroppedLogRecords, err := eventClient.pushResourceLogs(context.Background(), newLogData(tt.includedInLogData))
-			assert.Equal(t, 0, numDroppedLogRecords)
-			assert.NoError(t, err)
+			require.Eventually(t, func() bool {
+				receivedTokens.Lock()
+				defer receivedTokens.Unlock()
+				return len(receivedTokens.tokens) == 1
+			}, 1*time.Second, 10*time.Millisecond)
+			assert.Equal(t, receivedTokens.tokens[0], tt.expectedToken)
 		})
 	}
 }
 
-func generateLargeDPBatch(t *testing.T) pdata.Metrics {
-	mds := make([]consumerdata.MetricsData, 65000)
+func generateLargeDPBatch() pdata.Metrics {
+	md := pdata.NewMetrics()
+	md.ResourceMetrics().Resize(6500)
 
 	ts := time.Now()
-	for i := 0; i < 65000; i++ {
-		mds[i] = consumerdata.MetricsData{
-			Node: &commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
-			},
-			Resource: &resourcepb.Resource{Type: "test" + strconv.Itoa(i)},
-			Metrics: []*metricspb.Metric{metricstestutil.Gauge(
-				"test_"+strconv.Itoa(i),
-				[]string{"k0", "k1"},
-				metricstestutil.Timeseries(
-					time.Now(),
-					[]string{"v0", "v1"},
-					&metricspb.Point{
-						Timestamp: metricstestutil.Timestamp(ts),
-						Value:     &metricspb.Point_Int64Value{Int64Value: int64(i)},
-					},
-				),
-			)},
-		}
+	for i := 0; i < 6500; i++ {
+		rm := md.ResourceMetrics().At(i)
+
+		rm.InstrumentationLibraryMetrics().Resize(1)
+		ilm := rm.InstrumentationLibraryMetrics().At(0)
+		ilm.Metrics().Resize(1)
+		m := ilm.Metrics().At(0)
+
+		m.SetName("test_" + strconv.Itoa(i))
+		m.SetDataType(pdata.MetricDataTypeIntGauge)
+
+		dp := pdata.NewIntDataPoint()
+		dp.SetTimestamp(pdata.TimestampUnixNano(ts.UnixNano()))
+		dp.LabelsMap().InitFromMap(map[string]string{
+			"k0": "v0",
+			"k1": "v1",
+		})
+		dp.SetValue(int64(i))
+
+		m.IntGauge().DataPoints().Append(dp)
 	}
 
-	return internaldata.OCSliceToMetrics(mds)
+	return md
 }
 
-func generateLargeEventBatch(t *testing.T) pdata.ResourceLogs {
-	out := pdata.NewResourceLogs()
-	out.InitEmpty()
-	out.InstrumentationLibraryLogs().Resize(1)
-	logs := out.InstrumentationLibraryLogs().At(0).Logs()
+func generateLargeEventBatch() pdata.Logs {
+	out := pdata.NewLogs()
+	out.ResourceLogs().Resize(1)
+	out.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
+	logs := out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
 
 	batchSize := 65000
 	logs.Resize(batchSize)
@@ -959,9 +949,9 @@ func TestConsumeMetadata(t *testing.T) {
 
 func BenchmarkExporterConsumeData(b *testing.B) {
 	batchSize := 1000
-	mds := make([]consumerdata.MetricsData, 0, batchSize)
+	metrics := pdata.NewMetrics()
 	for i := 0; i < batchSize; i++ {
-		mds = append(mds, testMetricsData()...)
+		metrics.ResourceMetrics().Append(testMetricsData())
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -984,7 +974,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 		logger:    zap.NewNop(),
 		converter: translation.NewMetricsConverter(zap.NewNop(), nil),
 	}
-	metrics := internaldata.OCSliceToMetrics(mds)
+
 	for i := 0; i < b.N; i++ {
 		numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), metrics)
 		assert.NoError(b, err)
@@ -999,7 +989,7 @@ func TestSignalFxExporterConsumeMetadata(t *testing.T) {
 	rCfg := cfg.(*Config)
 	rCfg.AccessToken = "token"
 	rCfg.Realm = "realm"
-	exp, err := f.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{}, rCfg)
+	exp, err := f.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, rCfg)
 	require.NoError(t, err)
 
 	kme, ok := exp.(collection.MetadataExporter)

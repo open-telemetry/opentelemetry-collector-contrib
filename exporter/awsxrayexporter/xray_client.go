@@ -26,8 +26,11 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/xray"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 )
+
+var collectorDistribution = "opentelemetry-collector-contrib"
 
 // XRay defines X-Ray api call structure.
 type XRay interface {
@@ -50,8 +53,8 @@ func (c *XRayClient) PutTelemetryRecords(input *xray.PutTelemetryRecordsInput) (
 	return c.xRay.PutTelemetryRecords(input)
 }
 
-// NewXRay creates a new instance of the XRay client with a aws configuration and session .
-func NewXRay(logger *zap.Logger, awsConfig *aws.Config, s *session.Session) XRay {
+// newXRay creates a new instance of the XRay client with a aws configuration and session .
+func newXRay(logger *zap.Logger, awsConfig *aws.Config, startInfo component.ApplicationStartInfo, s *session.Session) XRay {
 	x := xray.New(s, awsConfig)
 	logger.Debug("Using Endpoint: %s", zap.String("endpoint", x.Endpoint))
 
@@ -59,6 +62,8 @@ func NewXRay(logger *zap.Logger, awsConfig *aws.Config, s *session.Session) XRay
 		Name: "tracing.XRayVersionUserAgentHandler",
 		Fn:   request.MakeAddToUserAgentHandler("xray", "1.0", os.Getenv("AWS_EXECUTION_ENV")),
 	})
+
+	x.Handlers.Build.PushBackNamed(newCollectorUserAgentHandler(startInfo))
 
 	x.Handlers.Sign.PushFrontNamed(request.NamedHandler{
 		Name: "tracing.TimestampHandler",
@@ -82,4 +87,11 @@ func IsTimeoutError(err error) bool {
 		}
 	}
 	return false
+}
+
+func newCollectorUserAgentHandler(startInfo component.ApplicationStartInfo) request.NamedHandler {
+	return request.NamedHandler{
+		Name: "otel.collector.UserAgentHandler",
+		Fn:   request.MakeAddToUserAgentHandler(collectorDistribution, startInfo.Version, startInfo.GitHash),
+	}
 }

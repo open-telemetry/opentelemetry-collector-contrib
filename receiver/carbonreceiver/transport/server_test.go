@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 
@@ -69,7 +69,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			port, err := strconv.Atoi(portStr)
 			require.NoError(t, err)
 
-			mc := new(exportertest.SinkMetricsExporter)
+			mc := new(consumertest.MetricsSink)
 			p, err := (&protocol.PlaintextConfig{}).BuildParser()
 			require.NoError(t, err)
 			mr := NewMockReporter(1)

@@ -29,6 +29,8 @@ const (
 )
 
 var (
-	errZeroTraceID = errors.New("OC span has an all zeros trace ID")
-	errZeroSpanID  = errors.New("OC span has an all zeros span ID")
+	errZeroTraceID    = errors.New("OC span has an all zeros trace ID")
+	errInvalidTraceID = errors.New("OC span has a non 16 byte array trace ID")
+	errZeroSpanID     = errors.New("OC span has an all zeros span ID")
+	errInvalidSpanID  = errors.New("OC span has a non 16 byte array span ID")
 )

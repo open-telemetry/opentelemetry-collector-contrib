@@ -47,9 +47,10 @@ General format is:
 
 `<name>:<value>|g|@<sample-rate>|#<tag1-key>:<tag1-value>`
 
-<!-- ### Timer/Histogram
+### Timer
 
-`<name>:<value>|<ms/h>|@<sample-rate>|#<tag1-key>:<tag1-value>` -->
+`<name>:<value>|ms|@<sample-rate>|#<tag1-key>:<tag1-value>`
+
 
 ## Testing
 

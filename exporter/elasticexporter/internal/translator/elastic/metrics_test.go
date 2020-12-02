@@ -34,7 +34,6 @@ func TestEncodeMetrics(t *testing.T) {
 	elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
 
 	instrumentationLibraryMetrics := pdata.NewInstrumentationLibraryMetrics()
-	instrumentationLibraryMetrics.InitEmpty()
 	metrics := instrumentationLibraryMetrics.Metrics()
 	appendMetric := func(name string, dataType pdata.MetricDataType) pdata.Metric {
 		n := metrics.Len()
@@ -50,19 +49,8 @@ func TestEncodeMetrics(t *testing.T) {
 
 	var expectDropped int
 
-	// Nil metrics should be dropped.
-	metrics.Append(pdata.NewMetric())
-	expectDropped++
-
-	for dataType := pdata.MetricDataTypeNone; dataType.String() != ""; dataType++ {
-		// Non-nil metrics with nil data-type specific values should be dropped.
-		appendMetric("nil_"+dataType.String(), dataType)
-		expectDropped++
-	}
-
 	metric := appendMetric("int_gauge_metric", pdata.MetricDataTypeIntGauge)
 	intGauge := metric.IntGauge()
-	intGauge.InitEmpty()
 	intGauge.DataPoints().Resize(4)
 	intGauge.DataPoints().At(0).SetTimestamp(pdata.TimestampUnixNano(timestamp0.UnixNano()))
 	intGauge.DataPoints().At(0).SetValue(1)
@@ -74,13 +62,9 @@ func TestEncodeMetrics(t *testing.T) {
 	intGauge.DataPoints().At(3).SetTimestamp(pdata.TimestampUnixNano(timestamp1.UnixNano()))
 	intGauge.DataPoints().At(3).SetValue(4)
 	intGauge.DataPoints().At(3).LabelsMap().InitFromMap(map[string]string{"k": "v2"})
-	// Nil data point should be dropped
-	intGauge.DataPoints().Append(pdata.NewIntDataPoint())
-	expectDropped++
 
 	metric = appendMetric("double_gauge_metric", pdata.MetricDataTypeDoubleGauge)
 	doubleGauge := metric.DoubleGauge()
-	doubleGauge.InitEmpty()
 	doubleGauge.DataPoints().Resize(4)
 	doubleGauge.DataPoints().At(0).SetTimestamp(pdata.TimestampUnixNano(timestamp0.UnixNano()))
 	doubleGauge.DataPoints().At(0).SetValue(5)
@@ -92,13 +76,9 @@ func TestEncodeMetrics(t *testing.T) {
 	doubleGauge.DataPoints().At(3).SetTimestamp(pdata.TimestampUnixNano(timestamp1.UnixNano()))
 	doubleGauge.DataPoints().At(3).SetValue(8)
 	doubleGauge.DataPoints().At(3).LabelsMap().InitFromMap(map[string]string{"k": "v2"})
-	// Nil data point should be dropped
-	doubleGauge.DataPoints().Append(pdata.NewDoubleDataPoint())
-	expectDropped++
 
 	metric = appendMetric("int_sum_metric", pdata.MetricDataTypeIntSum)
 	intSum := metric.IntSum()
-	intSum.InitEmpty()
 	intSum.DataPoints().Resize(3)
 	intSum.DataPoints().At(0).SetTimestamp(pdata.TimestampUnixNano(timestamp0.UnixNano()))
 	intSum.DataPoints().At(0).SetValue(9)
@@ -108,13 +88,9 @@ func TestEncodeMetrics(t *testing.T) {
 	intSum.DataPoints().At(2).SetTimestamp(pdata.TimestampUnixNano(timestamp1.UnixNano()))
 	intSum.DataPoints().At(2).SetValue(11)
 	intSum.DataPoints().At(2).LabelsMap().InitFromMap(map[string]string{"k2": "v"})
-	// Nil data point should be dropped
-	intSum.DataPoints().Append(pdata.NewIntDataPoint())
-	expectDropped++
 
 	metric = appendMetric("double_sum_metric", pdata.MetricDataTypeDoubleSum)
 	doubleSum := metric.DoubleSum()
-	doubleSum.InitEmpty()
 	doubleSum.DataPoints().Resize(3)
 	doubleSum.DataPoints().At(0).SetTimestamp(pdata.TimestampUnixNano(timestamp0.UnixNano()))
 	doubleSum.DataPoints().At(0).SetValue(12)
@@ -124,17 +100,12 @@ func TestEncodeMetrics(t *testing.T) {
 	doubleSum.DataPoints().At(2).SetTimestamp(pdata.TimestampUnixNano(timestamp1.UnixNano()))
 	doubleSum.DataPoints().At(2).SetValue(14)
 	doubleSum.DataPoints().At(2).LabelsMap().InitFromMap(map[string]string{"k2": "v"})
-	// Nil data point should be dropped
-	doubleSum.DataPoints().Append(pdata.NewDoubleDataPoint())
-	expectDropped++
 
 	// Histograms are currently not supported, and will be ignored.
 	metric = appendMetric("double_histogram_metric", pdata.MetricDataTypeDoubleHistogram)
-	metric.DoubleHistogram().InitEmpty()
 	metric.DoubleHistogram().DataPoints().Resize(1)
 	expectDropped++
 	metric = appendMetric("int_histogram_metric", pdata.MetricDataTypeIntHistogram)
-	metric.IntHistogram().InitEmpty()
 	metric.IntHistogram().DataPoints().Resize(1)
 	expectDropped++
 

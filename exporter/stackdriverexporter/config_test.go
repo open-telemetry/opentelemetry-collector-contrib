@@ -48,14 +48,11 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Exporters["stackdriver/customname"].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ExporterSettings:           configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "stackdriver/customname"},
-			ProjectID:                  "my-project",
-			Prefix:                     "prefix",
-			UserAgent:                  "opentelemetry-collector-contrib {{version}}",
-			Endpoint:                   "test-endpoint",
-			NumOfWorkers:               3,
-			SkipCreateMetricDescriptor: true,
-			UseInsecure:                true,
+			ExporterSettings: configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "stackdriver/customname"},
+			ProjectID:        "my-project",
+			UserAgent:        "opentelemetry-collector-contrib {{version}}",
+			Endpoint:         "test-endpoint",
+			UseInsecure:      true,
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 20 * time.Second,
 			},
@@ -80,6 +77,18 @@ func TestLoadConfig(t *testing.T) {
 					SourceType: "source.resource2",
 					TargetType: "target-resource2",
 				},
+			},
+			NumOfWorkers: 3,
+			TraceConfig: TraceConfig{
+				BundleDelayThreshold: 2 * time.Second,
+				BundleCountThreshold: 50,
+				BundleByteThreshold:  15000,
+				BundleByteLimit:      0,
+				BufferMaxBytes:       8000000,
+			},
+			MetricConfig: MetricConfig{
+				Prefix:                     "prefix",
+				SkipCreateMetricDescriptor: true,
 			},
 		})
 }

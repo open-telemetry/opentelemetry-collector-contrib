@@ -39,12 +39,12 @@ import (
 func newElasticTraceExporter(
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 	exporter, err := newElasticExporter(cfg.(*Config), params.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elastic APM trace exporter: %v", err)
 	}
-	return exporterhelper.NewTraceExporter(cfg, func(ctx context.Context, traces pdata.Traces) (int, error) {
+	return exporterhelper.NewTraceExporter(cfg, params.Logger, func(ctx context.Context, traces pdata.Traces) (int, error) {
 		var dropped int
 		var errs []error
 		resourceSpansSlice := traces.ResourceSpans()
@@ -68,7 +68,7 @@ func newElasticMetricsExporter(
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elastic APM metrics exporter: %v", err)
 	}
-	return exporterhelper.NewMetricsExporter(cfg, func(ctx context.Context, input pdata.Metrics) (int, error) {
+	return exporterhelper.NewMetricsExporter(cfg, params.Logger, func(ctx context.Context, input pdata.Metrics) (int, error) {
 		var dropped int
 		var errs []error
 		resourceMetricsSlice := input.ResourceMetrics()

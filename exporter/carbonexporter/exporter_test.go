@@ -31,12 +31,14 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
+	"go.uber.org/zap"
 )
 
 func TestNew(t *testing.T) {
@@ -66,7 +68,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newCarbonExporter(tt.config)
+			got, err := newCarbonExporter(tt.config, component.ExporterCreateParams{Logger: zap.NewNop()})
 			if tt.wantErr {
 				assert.Nil(t, got)
 				assert.Error(t, err)
@@ -147,7 +149,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			}
 
 			config := &Config{Endpoint: addr, Timeout: 1000 * time.Millisecond}
-			exp, err := newCarbonExporter(config)
+			exp, err := newCarbonExporter(config, component.ExporterCreateParams{Logger: zap.NewNop()})
 			require.NoError(t, err)
 
 			require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))

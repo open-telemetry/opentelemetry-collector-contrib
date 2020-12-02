@@ -64,9 +64,9 @@ func createDefaultConfig() configmodels.Exporter {
 func createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter) (component.TraceExporter, error) {
+	cfg configmodels.Exporter) (component.TracesExporter, error) {
 	eCfg := cfg.(*Config)
-	return newStackdriverTraceExporter(eCfg, params.ApplicationStartInfo.Version)
+	return newStackdriverTraceExporter(eCfg, params)
 }
 
 // createMetricsExporter creates a metrics exporter based on this config.
@@ -75,5 +75,5 @@ func createMetricsExporter(
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter) (component.MetricsExporter, error) {
 	eCfg := cfg.(*Config)
-	return newStackdriverMetricsExporter(eCfg, params.ApplicationStartInfo.Version)
+	return newStackdriverMetricsExporter(eCfg, params)
 }

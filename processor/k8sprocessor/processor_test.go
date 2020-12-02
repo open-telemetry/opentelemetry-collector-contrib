@@ -27,8 +27,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
@@ -36,13 +36,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
-func newTraceProcessor(cfg configmodels.Processor, nextTraceConsumer consumer.TraceConsumer, options ...Option) (component.TraceProcessor, error) {
+func newTraceProcessor(cfg configmodels.Processor, next consumer.TracesConsumer, options ...Option) (component.TracesProcessor, error) {
 	opts := append(options, withKubeClientProvider(newFakeClient))
 	return createTraceProcessorWithOptions(
 		context.Background(),
 		component.ProcessorCreateParams{Logger: zap.NewNop()},
 		cfg,
-		nextTraceConsumer,
+		next,
 		opts...,
 	)
 }
@@ -87,13 +87,13 @@ func withExtractKubernetesProcessorInto(kp **kubernetesprocessor) Option {
 type multiTest struct {
 	t *testing.T
 
-	tp component.TraceProcessor
+	tp component.TracesProcessor
 	mp component.MetricsProcessor
 	lp component.LogsProcessor
 
-	nextTrace   *exportertest.SinkTraceExporter
-	nextMetrics *exportertest.SinkMetricsExporter
-	nextLogs    *exportertest.SinkLogsExporter
+	nextTrace   *consumertest.TracesSink
+	nextMetrics *consumertest.MetricsSink
+	nextLogs    *consumertest.LogsSink
 
 	kpMetrics *kubernetesprocessor
 	kpTrace   *kubernetesprocessor
@@ -108,9 +108,9 @@ func newMultiTest(
 ) *multiTest {
 	m := &multiTest{
 		t:           t,
-		nextTrace:   &exportertest.SinkTraceExporter{},
-		nextMetrics: &exportertest.SinkMetricsExporter{},
-		nextLogs:    &exportertest.SinkLogsExporter{},
+		nextTrace:   new(consumertest.TracesSink),
+		nextMetrics: new(consumertest.MetricsSink),
+		nextLogs:    new(consumertest.LogsSink),
 	}
 
 	tp, err := newTraceProcessor(cfg, m.nextTrace, append(options, withExtractKubernetesProcessorInto(&m.kpTrace))...)
@@ -233,14 +233,10 @@ func generateTraces(resourceFunc ...generateResourceFunc) pdata.Traces {
 	t := pdata.NewTraces()
 	rs := t.ResourceSpans()
 	rs.Resize(1)
-	rs.At(0).InitEmpty()
 	rs.At(0).InstrumentationLibrarySpans().Resize(1)
 	rs.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
 	for _, resFun := range resourceFunc {
 		res := rs.At(0).Resource()
-		if res.IsNil() {
-			res.InitEmpty()
-		}
 		resFun(res)
 	}
 	span := rs.At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
@@ -252,14 +248,10 @@ func generateMetrics(resourceFunc ...generateResourceFunc) pdata.Metrics {
 	m := pdata.NewMetrics()
 	ms := m.ResourceMetrics()
 	ms.Resize(1)
-	ms.At(0).InitEmpty()
 	ms.At(0).InstrumentationLibraryMetrics().Resize(1)
 	ms.At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(1)
 	for _, resFun := range resourceFunc {
 		res := ms.At(0).Resource()
-		if res.IsNil() {
-			res.InitEmpty()
-		}
 		resFun(res)
 	}
 	metric := ms.At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
@@ -271,14 +263,10 @@ func generateLogs(resourceFunc ...generateResourceFunc) pdata.Logs {
 	l := pdata.NewLogs()
 	ls := l.ResourceLogs()
 	ls.Resize(1)
-	ls.At(0).InitEmpty()
 	ls.At(0).InstrumentationLibraryLogs().Resize(1)
 	ls.At(0).InstrumentationLibraryLogs().At(0).Logs().Resize(1)
 	for _, resFun := range resourceFunc {
 		res := ls.At(0).Resource()
-		if res.IsNil() {
-			res.InitEmpty()
-		}
 		resFun(res)
 	}
 	log := ls.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0)
@@ -294,7 +282,7 @@ func withPassthroughIP(passthroughIP string) generateResourceFunc {
 
 func withHostname(hostname string) generateResourceFunc {
 	return func(res pdata.Resource) {
-		res.Attributes().InsertString(conventions.AttributeHostHostname, hostname)
+		res.Attributes().InsertString(conventions.AttributeHostName, hostname)
 	}
 }
 
@@ -314,7 +302,7 @@ func TestIPDetectionFromContext(t *testing.T) {
 	m.assertBatchesLen(1)
 	m.assertResourceObjectLen(0, 1)
 	m.assertResource(0, 0, func(r pdata.Resource) {
-		require.False(t, r.IsNil())
+		require.Greater(t, r.Attributes().Len(), 0)
 		assertResourceHasStringAttribute(t, r, "k8s.pod.ip", "1.1.1.1")
 	})
 }
@@ -416,7 +404,7 @@ func TestNoIP(t *testing.T) {
 	m.assertBatchesLen(1)
 	m.assertResourceObjectLen(0, 1)
 	m.assertResource(0, 0, func(res pdata.Resource) {
-		assert.True(t, res.IsNil())
+		assert.Equal(t, 0, res.Attributes().Len())
 	})
 }
 
@@ -469,9 +457,6 @@ func TestIPSource(t *testing.T) {
 			}
 
 			for _, res := range resources {
-				if res.IsNil() {
-					res.InitEmpty()
-				}
 				if tc.resourceK8SIP != "" {
 					res.Attributes().InsertString(k8sIPLabelName, tc.resourceK8SIP)
 				}
@@ -483,7 +468,7 @@ func TestIPSource(t *testing.T) {
 			m.testConsume(ctx, traces, metrics, logs, nil)
 			m.assertBatchesLen(i + 1)
 			m.assertResource(i, 0, func(res pdata.Resource) {
-				require.False(t, res.IsNil())
+				require.Greater(t, res.Attributes().Len(), 0)
 				assertResourceHasStringAttribute(t, res, "k8s.pod.ip", tc.out)
 			})
 		})
@@ -528,7 +513,7 @@ func TestProcessorAddLabels(t *testing.T) {
 		m.assertBatchesLen(i + 1)
 		m.assertResourceObjectLen(i, 1)
 		m.assertResource(i, 0, func(res pdata.Resource) {
-			require.False(t, res.IsNil())
+			require.Greater(t, res.Attributes().Len(), 0)
 			assertResourceHasStringAttribute(t, res, "k8s.pod.ip", ip)
 			for k, v := range attrs {
 				assertResourceHasStringAttribute(t, res, k, v)
@@ -577,7 +562,7 @@ func TestProcessorPicksUpPassthoughPodIp(t *testing.T) {
 }
 
 func TestMetricsProcessorHostname(t *testing.T) {
-	next := &exportertest.SinkMetricsExporter{}
+	next := new(consumertest.MetricsSink)
 	var kp *kubernetesprocessor
 	p, err := newMetricsProcessor(
 		NewFactory().CreateDefaultConfig(),
@@ -614,16 +599,16 @@ func TestMetricsProcessorHostname(t *testing.T) {
 			name:     "invalid IP in hostname",
 			hostname: "invalid-ip",
 			expectedAttrs: map[string]string{
-				conventions.AttributeHostHostname: "invalid-ip",
+				conventions.AttributeHostName: "invalid-ip",
 			},
 		},
 		{
 			name:     "valid IP in hostname",
 			hostname: "3.3.3.3",
 			expectedAttrs: map[string]string{
-				conventions.AttributeHostHostname: "3.3.3.3",
-				k8sIPLabelName:                    "3.3.3.3",
-				"kk":                              "vv",
+				conventions.AttributeHostName: "3.3.3.3",
+				k8sIPLabelName:                "3.3.3.3",
+				"kk":                          "vv",
 			},
 		},
 	}
@@ -647,7 +632,7 @@ func TestMetricsProcessorHostname(t *testing.T) {
 }
 
 func TestPassthroughStart(t *testing.T) {
-	next := &exportertest.SinkTraceExporter{}
+	next := new(consumertest.TracesSink)
 	opts := []Option{WithPassthrough()}
 
 	p, err := newTraceProcessor(
@@ -678,7 +663,7 @@ func TestRealClient(t *testing.T) {
 func TestCapabilities(t *testing.T) {
 	p, err := newTraceProcessor(
 		NewFactory().CreateDefaultConfig(),
-		exportertest.NewNopTraceExporter(),
+		consumertest.NewTracesNop(),
 	)
 	assert.NoError(t, err)
 	caps := p.GetCapabilities()
@@ -689,7 +674,7 @@ func TestStartStop(t *testing.T) {
 	var kp *kubernetesprocessor
 	p, err := newTraceProcessor(
 		NewFactory().CreateDefaultConfig(),
-		exportertest.NewNopTraceExporter(),
+		consumertest.NewTracesNop(),
 		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)

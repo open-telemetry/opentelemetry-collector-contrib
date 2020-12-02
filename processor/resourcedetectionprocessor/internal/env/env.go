@@ -46,7 +46,6 @@ func NewDetector() (internal.Detector, error) {
 
 func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()
-	res.InitEmpty()
 
 	labels := strings.TrimSpace(os.Getenv(envVar))
 	if labels == "" {

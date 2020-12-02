@@ -50,8 +50,8 @@ func createDefaultConfig() configmodels.Exporter {
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: defaultHTTPTimeout,
 		},
-		RetrySettings:      exporterhelper.CreateDefaultRetrySettings(),
-		QueueSettings:      exporterhelper.CreateDefaultQueueSettings(),
+		RetrySettings:      exporterhelper.DefaultRetrySettings(),
+		QueueSettings:      exporterhelper.DefaultQueueSettings(),
 		DisableCompression: false,
 		MaxConnections:     defaultMaxIdleCons,
 	}
@@ -61,7 +61,7 @@ func createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	config configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
 	}
@@ -74,6 +74,7 @@ func createTraceExporter(
 
 	return exporterhelper.NewTraceExporter(
 		expCfg,
+		params.Logger,
 		exp.pushTraceData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -101,6 +102,7 @@ func createMetricsExporter(
 
 	return exporterhelper.NewMetricsExporter(
 		expCfg,
+		params.Logger,
 		exp.pushMetricsData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -128,6 +130,7 @@ func createLogsExporter(
 
 	return exporterhelper.NewLogsExporter(
 		expCfg,
+		params.Logger,
 		exp.pushLogData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),

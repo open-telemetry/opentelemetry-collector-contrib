@@ -1,0 +1,24 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  signalfx_correlation:
+  signalfx_correlation/configured:
+    # Endpoint is the destination to where API calls will be made. It should be a base URL, e.g.
+    # https://api.signalfx.com.
+    endpoint: https://api.signalfx.com
+
+    # AccessToken is the authentication token provided by SignalFx.
+    access_token: abcd1234
+    timeout: 10s
+
+service:
+  pipelines:
+    traces:
+        receivers: [examplereceiver]
+        processors: [exampleprocessor]
+        exporters: [signalfx_correlation]
+

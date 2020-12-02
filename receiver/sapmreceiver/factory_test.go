@@ -37,7 +37,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	tReceiver, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
@@ -53,7 +53,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 
 	rCfg.Endpoint = ""
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	_, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
+	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
 	assert.Error(t, err, "receiver creation with no endpoints must fail")
 }
 
@@ -64,7 +64,7 @@ func TestCreateNoPort(t *testing.T) {
 
 	rCfg.Endpoint = "localhost:"
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	_, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
+	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
 	assert.Error(t, err, "receiver creation with no port number must fail")
 }
 
@@ -75,6 +75,6 @@ func TestCreateLargePort(t *testing.T) {
 
 	rCfg.Endpoint = "localhost:65536"
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	_, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
+	_, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
 	assert.Error(t, err, "receiver creation with too large port number must fail")
 }

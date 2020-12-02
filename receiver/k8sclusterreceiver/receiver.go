@@ -47,7 +47,7 @@ type kubernetesReceiver struct {
 
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
 	var c context.Context
-	c, kr.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, typeStr, transport, kr.config.Name()))
+	c, kr.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, kr.config.Name(), transport))
 
 	exporters := host.GetExporters()
 	if err := kr.resourceWatcher.setupMetadataExporters(
@@ -103,10 +103,10 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 
 	c := obsreport.StartMetricsReceiveOp(ctx, typeStr, transport)
 
-	numTimeseries, numPoints := resourceMetrics.MetricAndDataPointCount()
+	_, numPoints := resourceMetrics.MetricAndDataPointCount()
 
 	err := kr.consumer.ConsumeMetrics(c, resourceMetrics)
-	obsreport.EndMetricsReceiveOp(c, typeStr, numPoints, numTimeseries, err)
+	obsreport.EndMetricsReceiveOp(c, typeStr, numPoints, err)
 }
 
 // newReceiver creates the Kubernetes cluster receiver with the given configuration.

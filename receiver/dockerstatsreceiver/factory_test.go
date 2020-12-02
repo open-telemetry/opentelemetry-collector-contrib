@@ -40,7 +40,7 @@ func TestCreateReceiver(t *testing.T) {
 	config := factory.CreateDefaultConfig()
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	traceReceiver, err := factory.CreateTraceReceiver(context.Background(), params, config, &testbed.MockTraceConsumer{})
+	traceReceiver, err := factory.CreateTracesReceiver(context.Background(), params, config, &testbed.MockTraceConsumer{})
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, traceReceiver)
 

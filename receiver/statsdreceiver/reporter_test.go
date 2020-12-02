@@ -34,14 +34,14 @@ func TestReporterObservability(t *testing.T) {
 
 	ctx := reporter.OnDataReceived(context.Background())
 
-	reporter.OnMetricsProcessed(ctx, 17, 13, nil)
+	reporter.OnMetricsProcessed(ctx, 17, nil)
 
 	obsreporttest.CheckReceiverMetricsViews(t, receiverName, "tcp", 17, 0)
 
 	// Below just exercise the error paths.
 	err = errors.New("fake error for tests")
 	reporter.OnTranslationError(ctx, err)
-	reporter.OnMetricsProcessed(ctx, 10, 10, err)
+	reporter.OnMetricsProcessed(ctx, 10, err)
 
 	obsreporttest.CheckReceiverMetricsViews(t, receiverName, "tcp", 17, 10)
 }

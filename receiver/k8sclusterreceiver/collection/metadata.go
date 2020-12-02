@@ -21,7 +21,7 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
 )
 
 const (
@@ -47,7 +47,7 @@ type KubernetesMetadata struct {
 // live on v1.ObjectMeta.
 func getGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetadata {
 	rType := strings.ToLower(resourceType)
-	metadata := utils.MergeStringMaps(map[string]string{}, om.Labels)
+	metadata := util.MergeStringMaps(map[string]string{}, om.Labels)
 
 	metadata[k8sKeyWorkLoadKind] = resourceType
 	metadata[k8sKeyWorkLoadName] = om.Name

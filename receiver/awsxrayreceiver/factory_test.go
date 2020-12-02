@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
@@ -42,15 +43,6 @@ func (m *mockMetricsConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metri
 	return nil
 }
 
-type mockTraceConsumer struct {
-}
-
-var _ (consumer.TraceConsumer) = (*mockTraceConsumer)(nil)
-
-func (m *mockTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	return nil
-}
-
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
@@ -60,7 +52,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, configmodels.Type(awsxray.TypeStr), factory.Type())
 }
 
-func TestCreateTraceReceiver(t *testing.T) {
+func TestCreateTracesReceiver(t *testing.T) {
 	// TODO review if test should succeed on Windows
 	if runtime.GOOS == "windows" {
 		t.Skip()
@@ -71,13 +63,13 @@ func TestCreateTraceReceiver(t *testing.T) {
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
 	factory := NewFactory()
-	_, err := factory.CreateTraceReceiver(
+	_, err := factory.CreateTracesReceiver(
 		context.Background(),
 		component.ReceiverCreateParams{
 			Logger: zap.NewNop(),
 		},
 		factory.CreateDefaultConfig().(*Config),
-		&mockTraceConsumer{},
+		consumertest.NewTracesNop(),
 	)
 	assert.Nil(t, err, "trace receiver can be created")
 }

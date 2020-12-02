@@ -48,9 +48,9 @@ func TestValidConfig(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestCreateTraceReceiver(t *testing.T) {
+func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
-	traceReceiver, err := factory.CreateTraceReceiver(
+	traceReceiver, err := factory.CreateTracesReceiver(
 		context.Background(),
 		component.ReceiverCreateParams{Logger: zap.NewNop()},
 		factory.CreateDefaultConfig(),

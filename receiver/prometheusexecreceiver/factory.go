@@ -64,5 +64,5 @@ func createMetricsReceiver(
 	nextConsumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)
-	return new(params, rCfg, nextConsumer)
+	return newPromExecReceiver(params, rCfg, nextConsumer)
 }

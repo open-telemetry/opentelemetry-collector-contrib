@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -41,7 +41,7 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 
 	addr := testutil.GetAvailableLocalAddress(t)
 	rCfg.Endpoint = addr
-	sink := new(exportertest.SinkMetricsExporter)
+	sink := new(consumertest.MetricsSink)
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	rcvr, err := createMetricsReceiver(context.Background(), params, rCfg, sink)
 	require.NoError(t, err)

@@ -161,47 +161,47 @@ workflows:
       - windows-test:
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - setup:
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - lint:
           requires:
             - setup
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - build-examples:
           requires:
             - setup
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - cross-compile:
           requires:
             - setup
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - loadtest:
           requires:
             - cross-compile 
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - unit-tests:
           requires:
             - setup
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - windows-msi:
           requires:
             - cross-compile
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - publish-check:
           requires:
             - lint
@@ -245,7 +245,7 @@ workflows:
       - integration-tests:
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - build-package:
           name: deb-package
           package_type: deb
@@ -283,6 +283,11 @@ jobs:
       - run:
           name: Checks
           command: make -j4 checklicense impi misspell
+      - run:
+          name: Codegen
+          command: |
+            make generate
+            git diff --exit-code ':!*go.sum' || (echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.' && exit 1)
 
   build-examples:
     docker:
@@ -320,6 +325,8 @@ jobs:
   loadtest:
     executor: golang
     resource_class: medium+
+    environment:
+      TEST_RESULTS: testbed/tests/results/junit/results.xml
     steps:
       - restore_workspace
       - run:
@@ -329,6 +336,7 @@ jobs:
           path: testbed/tests/results
       - store_test_results:
           path: testbed/tests/results/junit
+      - github_issue_generator
 
   windows-test:
     executor:

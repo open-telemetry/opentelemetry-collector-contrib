@@ -19,7 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-logr/zapr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/api/global"
@@ -43,7 +42,7 @@ func TestFixedNumberOfTraces(t *testing.T) {
 	}
 
 	// test
-	Run(cfg, zapr.NewLogger(zap.NewNop()))
+	require.NoError(t, Run(cfg, zap.NewNop()))
 
 	// verify
 	assert.Len(t, syncer.spans, 2) // each trace has two spans
@@ -68,7 +67,7 @@ func TestRateOfSpans(t *testing.T) {
 	require.Len(t, syncer.spans, 0)
 
 	// test
-	Run(cfg, zapr.NewLogger(zap.NewNop()))
+	require.NoError(t, Run(cfg, zap.NewNop()))
 
 	// verify
 	// the minimum acceptable number of spans for the rate of 10/sec for half a second
@@ -95,7 +94,7 @@ func TestUnthrottled(t *testing.T) {
 	require.Len(t, syncer.spans, 0)
 
 	// test
-	Run(cfg, zapr.NewLogger(zap.NewNop()))
+	require.NoError(t, Run(cfg, zap.NewNop()))
 
 	// verify
 	// the minimum acceptable number of spans -- the real number should be > 10k, but CI env might be slower

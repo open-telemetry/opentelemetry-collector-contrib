@@ -17,146 +17,53 @@ package honeycombexporter
 import (
 	"time"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // spanAttributesToMap converts an opencensus proto Span_Attributes object into a map
 // of strings to generic types usable for sending events to honeycomb.
-func spanAttributesToMap(spanAttrs *tracepb.Span_Attributes) map[string]interface{} {
-	var attrs map[string]interface{}
+func spanAttributesToMap(spanAttrs pdata.AttributeMap) map[string]interface{} {
+	var attrs = make(map[string]interface{}, spanAttrs.Len())
 
-	if spanAttrs == nil {
-		return attrs
-	}
-
-	attrMap := spanAttrs.GetAttributeMap()
-	if attrMap == nil {
-		return attrs
-	}
-
-	attrs = make(map[string]interface{}, len(attrMap))
-
-	for key, attributeValue := range attrMap {
-		switch val := attributeValue.Value.(type) {
-		case *tracepb.AttributeValue_StringValue:
-			attrs[key] = attributeValueAsString(attributeValue)
-		case *tracepb.AttributeValue_BoolValue:
-			attrs[key] = val.BoolValue
-		case *tracepb.AttributeValue_IntValue:
-			attrs[key] = val.IntValue
-		case *tracepb.AttributeValue_DoubleValue:
-			attrs[key] = val.DoubleValue
+	spanAttrs.ForEach(func(key string, value pdata.AttributeValue) {
+		switch value.Type() {
+		case pdata.AttributeValueSTRING:
+			attrs[key] = value.StringVal()
+		case pdata.AttributeValueBOOL:
+			attrs[key] = value.BoolVal()
+		case pdata.AttributeValueINT:
+			attrs[key] = value.IntVal()
+		case pdata.AttributeValueDOUBLE:
+			attrs[key] = value.DoubleVal()
 		}
-	}
+	})
+
 	return attrs
 }
 
-// hasRemoteParent returns true if the this span is a child of a span in a different process.
-func hasRemoteParent(span *tracepb.Span) bool {
-	if sameProcess := span.GetSameProcessAsParentSpan(); sameProcess != nil {
-		return !sameProcess.Value
-	}
-	return false
-}
-
 // timestampToTime converts a protobuf timestamp into a time.Time.
-func timestampToTime(ts *timestamppb.Timestamp) (t time.Time) {
-	if ts == nil {
+func timestampToTime(ts pdata.TimestampUnixNano) (t time.Time) {
+	if ts == 0 {
 		return
 	}
-	return time.Unix(ts.Seconds, int64(ts.Nanos)).UTC()
+	return time.Unix(0, int64(ts)).UTC()
 }
 
 // getStatusCode returns the status code
-func getStatusCode(status *tracepb.Status) int32 {
-	if status != nil {
-		return int32(codes.Code(status.Code))
+func getStatusCode(status pdata.SpanStatus) int32 {
+	if !status.IsNil() {
+		return int32(status.Code())
 	}
-
-	return int32(codes.OK)
+	return int32(pdata.StatusCodeOk)
 }
 
 // getStatusMessage returns the status message as a string
-func getStatusMessage(status *tracepb.Status) string {
-	if status != nil {
-		if len(status.GetMessage()) > 0 {
-			return status.GetMessage()
+func getStatusMessage(status pdata.SpanStatus) string {
+	if !status.IsNil() {
+		if len(status.Message()) > 0 {
+			return status.Message()
 		}
 	}
 
-	return codes.OK.String()
-}
-
-// getTraceLevelfFields extracts the node and resource fields from TraceData that
-// should be added as underlays on every span in a trace.
-func getTraceLevelFields(node *commonpb.Node, resource *resourcepb.Resource, sourceFormat string) map[string]interface{} {
-	fields := make(map[string]interface{})
-
-	// we want to get the service_name and some opencensus fields that are set when
-	// run as an agent from the node.
-	nodeFields := func(node *commonpb.Node, fields map[string]interface{}) {
-		if node == nil {
-			return
-		}
-		if node.ServiceInfo != nil {
-			fields["service_name"] = node.ServiceInfo.Name
-		}
-		if process := node.GetIdentifier(); process != nil {
-			if len(process.HostName) != 0 {
-				fields["process.hostname"] = process.HostName
-			}
-			if process.Pid != 0 {
-				fields["process.pid"] = process.Pid
-			}
-
-			startTime := timestampToTime(process.StartTimestamp)
-			if startTime != (time.Time{}) {
-				fields["opencensus.start_timestamp"] = startTime
-			}
-		}
-	}
-
-	// all resource labels should be applied as trace level fields
-	resourceFields := func(resource *resourcepb.Resource, fields map[string]interface{}) {
-		if resource == nil {
-			return
-		}
-		resourceType := resource.GetType()
-		if resourceType != "" {
-			fields["opencensus.resourcetype"] = resourceType
-		}
-		for k, v := range resource.GetLabels() {
-			fields[k] = v
-		}
-	}
-
-	nodeFields(node, fields)
-	resourceFields(resource, fields)
-
-	if sourceFormat := sourceFormat; len(sourceFormat) > 0 {
-		fields["source_format"] = sourceFormat
-	}
-
-	return fields
-}
-
-// attributeValueAsString converts a opencensus proto AttributeValue object into a string
-func attributeValueAsString(val *tracepb.AttributeValue) string {
-	if wrapper := val.GetStringValue(); wrapper != nil {
-		return wrapper.GetValue()
-	}
-
-	return ""
-}
-
-// truncatableStringAsString just returns the value part as a string. "" if s is nil
-func truncatableStringAsString(s *tracepb.TruncatableString) string {
-	if s != nil {
-		return s.GetValue()
-	}
-	return ""
+	return pdata.StatusCodeOk.String()
 }

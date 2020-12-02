@@ -34,18 +34,16 @@ import (
 //
 // TODO(axw) otlpLibrary is currently not used. We should consider recording it as metadata.
 func EncodeSpan(otlpSpan pdata.Span, otlpLibrary pdata.InstrumentationLibrary, w *fastjson.Writer) error {
-	var spanID, parentID model.SpanID
-	var traceID model.TraceID
-	copy(spanID[:], otlpSpan.SpanID().Bytes())
-	copy(traceID[:], otlpSpan.TraceID().Bytes())
-	copy(parentID[:], otlpSpan.ParentSpanID().Bytes())
+	spanID := model.SpanID(otlpSpan.SpanID().Bytes())
+	traceID := model.TraceID(otlpSpan.TraceID().Bytes())
+	parentID := model.SpanID(otlpSpan.ParentSpanID().Bytes())
 	root := parentID == model.SpanID{}
 
 	startTime := time.Unix(0, int64(otlpSpan.StartTime())).UTC()
 	endTime := time.Unix(0, int64(otlpSpan.EndTime())).UTC()
 	durationMillis := endTime.Sub(startTime).Seconds() * 1000
 
-	name := otlpSpan.Name()
+	name := truncate(otlpSpan.Name())
 	var transactionContext transactionContext
 	if root || otlpSpan.Kind() == pdata.SpanKindSERVER {
 		transaction := model.Transaction{
@@ -181,15 +179,17 @@ func setTransactionProperties(
 		}
 	})
 
-	if !otlpLibrary.IsNil() {
-		context.setFramework(otlpLibrary.Name(), otlpLibrary.Version())
-	}
+	context.setFramework(otlpLibrary.Name(), otlpLibrary.Version())
 
-	statusCode := pdata.StatusCode(0) // Default span staus is "Ok"
 	if status := otlpSpan.Status(); !status.IsNil() {
-		statusCode = status.Code()
+		tx.Outcome = spanStatusOutcome(status)
+		switch status.Code() {
+		case pdata.StatusCodeOk:
+			tx.Result = "OK"
+		case pdata.StatusCodeError:
+			tx.Result = "Error"
+		}
 	}
-	tx.Result = statusCode.String()
 
 	tx.Type = "unknown"
 	if context.model.Request != nil {
@@ -351,6 +351,7 @@ func setSpanProperties(otlpSpan pdata.Span, span *model.Span) error {
 		context.model.Destination.Service.Type = span.Type
 	}
 	span.Context = context.modelContext()
+	span.Outcome = spanStatusOutcome(otlpSpan.Status())
 	return nil
 }
 
@@ -559,4 +560,18 @@ func schemeDefaultPort(scheme string) int {
 		return 443
 	}
 	return 0
+}
+
+func spanStatusOutcome(status pdata.SpanStatus) string {
+	if status.IsNil() {
+		return ""
+	}
+	switch status.Code() {
+	case pdata.StatusCodeOk:
+		return "success"
+	case pdata.StatusCodeError:
+		return "failure"
+	}
+	// Outcome will be set by the server.
+	return ""
 }

@@ -1,0 +1,19 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  logzio:
+  logzio/2:
+    account_token: "logzioTESTtoken"
+    region: "eu"
+    custom_endpoint: "https://some-url.com:8888"
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [logzio]

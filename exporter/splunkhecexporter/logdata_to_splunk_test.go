@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func Test_logDataToSplunk(t *testing.T) {
@@ -31,21 +31,19 @@ func Test_logDataToSplunk(t *testing.T) {
 	ts := pdata.TimestampUnixNano(123)
 
 	tests := []struct {
-		name               string
-		logDataFn          func() pdata.Logs
-		configDataFn       func() *Config
-		wantSplunkEvents   []*splunk.Event
-		wantNumDroppedLogs int
+		name             string
+		logDataFn        func() pdata.Logs
+		configDataFn     func() *Config
+		wantSplunkEvents []*splunk.Event
 	}{
 		{
 			name: "valid",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
-				logRecord.InitEmpty()
 				logRecord.Body().SetStringVal("mylog")
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
+				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 				logRecord.Attributes().InsertString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 				return makeLog(logRecord)
@@ -59,17 +57,15 @@ func Test_logDataToSplunk(t *testing.T) {
 			wantSplunkEvents: []*splunk.Event{
 				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
 			},
-			wantNumDroppedLogs: 0,
 		},
 		{
 			name: "non-string attribute",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
-				logRecord.InitEmpty()
 				logRecord.Body().SetStringVal("mylog")
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
+				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 				logRecord.Attributes().InsertDouble("foo", 123)
 				logRecord.SetTimestamp(ts)
 				return makeLog(logRecord)
@@ -81,15 +77,13 @@ func Test_logDataToSplunk(t *testing.T) {
 				}
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent("mylog", ts, map[string]interface{}{}, "myhost", "myapp", "myapp-type"),
+				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"foo": float64(123)}, "myhost", "myapp", "myapp-type"),
 			},
-			wantNumDroppedLogs: 0,
 		},
 		{
 			name: "with_config",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
-				logRecord.InitEmpty()
 				logRecord.Body().SetStringVal("mylog")
 				logRecord.Attributes().InsertString("custom", "custom")
 				logRecord.SetTimestamp(ts)
@@ -104,13 +98,11 @@ func Test_logDataToSplunk(t *testing.T) {
 			wantSplunkEvents: []*splunk.Event{
 				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom"}, "unknown", "source", "sourcetype"),
 			},
-			wantNumDroppedLogs: 0,
 		},
 		{
-			name: "log_is_nil",
+			name: "log_is_empty",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
-				logRecord.InitEmpty()
 				return makeLog(logRecord)
 			},
 			configDataFn: func() *Config {
@@ -119,18 +111,18 @@ func Test_logDataToSplunk(t *testing.T) {
 					SourceType: "sourcetype",
 				}
 			},
-			wantSplunkEvents:   []*splunk.Event{},
-			wantNumDroppedLogs: 1,
+			wantSplunkEvents: []*splunk.Event{
+				commonLogSplunkEvent(nil, 0, map[string]interface{}{}, "unknown", "source", "sourcetype"),
+			},
 		},
 		{
 			name: "with double body",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
-				logRecord.InitEmpty()
 				logRecord.Body().SetDoubleVal(42)
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
+				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 				logRecord.Attributes().InsertString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 				return makeLog(logRecord)
@@ -144,17 +136,15 @@ func Test_logDataToSplunk(t *testing.T) {
 			wantSplunkEvents: []*splunk.Event{
 				commonLogSplunkEvent(float64(42), ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
 			},
-			wantNumDroppedLogs: 0,
 		},
 		{
 			name: "with int body",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
-				logRecord.InitEmpty()
 				logRecord.Body().SetIntVal(42)
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
+				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 				logRecord.Attributes().InsertString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 				return makeLog(logRecord)
@@ -168,17 +158,15 @@ func Test_logDataToSplunk(t *testing.T) {
 			wantSplunkEvents: []*splunk.Event{
 				commonLogSplunkEvent(int64(42), ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
 			},
-			wantNumDroppedLogs: 0,
 		},
 		{
 			name: "with bool body",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
-				logRecord.InitEmpty()
 				logRecord.Body().SetBoolVal(true)
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
+				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 				logRecord.Attributes().InsertString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 				return makeLog(logRecord)
@@ -192,20 +180,19 @@ func Test_logDataToSplunk(t *testing.T) {
 			wantSplunkEvents: []*splunk.Event{
 				commonLogSplunkEvent(true, ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
 			},
-			wantNumDroppedLogs: 0,
 		},
 		{
 			name: "with map body",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
-				logRecord.InitEmpty()
-				attMap := pdata.NewAttributeMap()
+				attVal := pdata.NewAttributeValueMap()
+				attMap := attVal.MapVal()
 				attMap.InsertDouble("23", 45)
 				attMap.InsertString("foo", "bar")
-				logRecord.Body().SetMapVal(attMap)
+				attVal.CopyTo(logRecord.Body())
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
+				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 				logRecord.Attributes().InsertString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 				return makeLog(logRecord)
@@ -219,17 +206,14 @@ func Test_logDataToSplunk(t *testing.T) {
 			wantSplunkEvents: []*splunk.Event{
 				commonLogSplunkEvent(map[string]interface{}{"23": float64(45), "foo": "bar"}, ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
 			},
-			wantNumDroppedLogs: 0,
 		},
 		{
 			name: "with nil body",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
-				logRecord.InitEmpty()
-				logRecord.Body().InitEmpty()
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
+				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 				logRecord.Attributes().InsertString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 				return makeLog(logRecord)
@@ -243,19 +227,18 @@ func Test_logDataToSplunk(t *testing.T) {
 			wantSplunkEvents: []*splunk.Event{
 				commonLogSplunkEvent(nil, ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
 			},
-			wantNumDroppedLogs: 0,
 		},
 		{
 			name: "with array body",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
-				logRecord.InitEmpty()
-				attArray := pdata.NewAnyValueArray()
+				attVal := pdata.NewAttributeValueArray()
+				attArray := attVal.ArrayVal()
 				attArray.Append(pdata.NewAttributeValueString("foo"))
-				logRecord.Body().SetArrayVal(attArray)
+				attVal.CopyTo(logRecord.Body())
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
+				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 				logRecord.Attributes().InsertString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 				return makeLog(logRecord)
@@ -269,13 +252,11 @@ func Test_logDataToSplunk(t *testing.T) {
 			wantSplunkEvents: []*splunk.Event{
 				commonLogSplunkEvent([]interface{}{"foo"}, ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
 			},
-			wantNumDroppedLogs: 0,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotEvents, gotNumDroppedLogs := logDataToSplunk(logger, tt.logDataFn(), tt.configDataFn())
-			assert.Equal(t, tt.wantNumDroppedLogs, gotNumDroppedLogs)
+			gotEvents := logDataToSplunk(logger, tt.logDataFn(), tt.configDataFn())
 			require.Equal(t, len(tt.wantSplunkEvents), len(gotEvents))
 			for i, want := range tt.wantSplunkEvents {
 				assert.EqualValues(t, want, gotEvents[i])
@@ -287,12 +268,10 @@ func Test_logDataToSplunk(t *testing.T) {
 
 func makeLog(record pdata.LogRecord) pdata.Logs {
 	logs := pdata.NewLogs()
-	rl := pdata.NewResourceLogs()
-	rl.InitEmpty()
-	logs.ResourceLogs().Append(rl)
-	ill := pdata.NewInstrumentationLibraryLogs()
-	ill.InitEmpty()
-	rl.InstrumentationLibraryLogs().Append(ill)
+	logs.ResourceLogs().Resize(1)
+	rl := logs.ResourceLogs().At(0)
+	rl.InstrumentationLibraryLogs().Resize(1)
+	ill := rl.InstrumentationLibraryLogs().At(0)
 	ill.Logs().Append(record)
 	return logs
 }
@@ -316,35 +295,31 @@ func commonLogSplunkEvent(
 }
 
 func Test_nilLogs(t *testing.T) {
-	events, dropped := logDataToSplunk(zap.NewNop(), pdata.NewLogs(), &Config{})
-	assert.Equal(t, 0, dropped)
+	events := logDataToSplunk(zap.NewNop(), pdata.NewLogs(), &Config{})
 	assert.Equal(t, 0, len(events))
 }
 
 func Test_nilResourceLogs(t *testing.T) {
 	logs := pdata.NewLogs()
-	resourceLog := pdata.NewResourceLogs()
-	logs.ResourceLogs().Append(resourceLog)
-	events, dropped := logDataToSplunk(zap.NewNop(), logs, &Config{})
-	assert.Equal(t, 0, dropped)
+	logs.ResourceLogs().Resize(1)
+	events := logDataToSplunk(zap.NewNop(), logs, &Config{})
 	assert.Equal(t, 0, len(events))
 }
 
 func Test_nilInstrumentationLogs(t *testing.T) {
 	logs := pdata.NewLogs()
-	resourceLog := pdata.NewResourceLogs()
-	resourceLog.InitEmpty()
-	logs.ResourceLogs().Append(resourceLog)
-	ils := pdata.NewInstrumentationLibraryLogs()
-	resourceLog.InstrumentationLibraryLogs().Append(ils)
-	events, dropped := logDataToSplunk(zap.NewNop(), logs, &Config{})
-	assert.Equal(t, 0, dropped)
+	logs.ResourceLogs().Resize(1)
+	resourceLog := logs.ResourceLogs().At(0)
+	resourceLog.InstrumentationLibraryLogs().Resize(1)
+	events := logDataToSplunk(zap.NewNop(), logs, &Config{})
 	assert.Equal(t, 0, len(events))
 }
 
 func Test_nanoTimestampToEpochMilliseconds(t *testing.T) {
 	splunkTs := nanoTimestampToEpochMilliseconds(1001000000)
-	assert.Equal(t, 1.001, splunkTs)
+	assert.Equal(t, 1.001, *splunkTs)
 	splunkTs = nanoTimestampToEpochMilliseconds(1001990000)
-	assert.Equal(t, 1.002, splunkTs)
+	assert.Equal(t, 1.002, *splunkTs)
+	splunkTs = nanoTimestampToEpochMilliseconds(0)
+	assert.True(t, nil == splunkTs)
 }

@@ -35,26 +35,14 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 	var metricsets metricsets
 	for i := 0; i < otlpMetrics.Len(); i++ {
 		metric := otlpMetrics.At(i)
-		if metric.IsNil() {
-			dropped++
-			continue
-		}
 
 		name := metric.Name()
 		switch metric.DataType() {
 		case pdata.MetricDataTypeIntGauge:
 			intGauge := metric.IntGauge()
-			if intGauge.IsNil() {
-				dropped++
-				continue
-			}
 			dps := intGauge.DataPoints()
 			for i := 0; i < dps.Len(); i++ {
 				dp := dps.At(i)
-				if dp.IsNil() {
-					dropped++
-					continue
-				}
 				metricsets.upsert(model.Metrics{
 					Timestamp: asTime(dp.Timestamp()),
 					Labels:    asStringMap(dp.LabelsMap()),
@@ -65,17 +53,9 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 			}
 		case pdata.MetricDataTypeDoubleGauge:
 			doubleGauge := metric.DoubleGauge()
-			if doubleGauge.IsNil() {
-				dropped++
-				continue
-			}
 			dps := doubleGauge.DataPoints()
 			for i := 0; i < dps.Len(); i++ {
 				dp := dps.At(i)
-				if dp.IsNil() {
-					dropped++
-					continue
-				}
 				metricsets.upsert(model.Metrics{
 					Timestamp: asTime(dp.Timestamp()),
 					Labels:    asStringMap(dp.LabelsMap()),
@@ -86,17 +66,9 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 			}
 		case pdata.MetricDataTypeIntSum:
 			intSum := metric.IntSum()
-			if intSum.IsNil() {
-				dropped++
-				continue
-			}
 			dps := intSum.DataPoints()
 			for i := 0; i < dps.Len(); i++ {
 				dp := dps.At(i)
-				if dp.IsNil() {
-					dropped++
-					continue
-				}
 				metricsets.upsert(model.Metrics{
 					Timestamp: asTime(dp.Timestamp()),
 					Labels:    asStringMap(dp.LabelsMap()),
@@ -107,17 +79,9 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 			}
 		case pdata.MetricDataTypeDoubleSum:
 			doubleSum := metric.DoubleSum()
-			if doubleSum.IsNil() {
-				dropped++
-				continue
-			}
 			dps := doubleSum.DataPoints()
 			for i := 0; i < dps.Len(); i++ {
 				dp := dps.At(i)
-				if dp.IsNil() {
-					dropped++
-					continue
-				}
 				metricsets.upsert(model.Metrics{
 					Timestamp: asTime(dp.Timestamp()),
 					Labels:    asStringMap(dp.LabelsMap()),
@@ -129,18 +93,10 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 		case pdata.MetricDataTypeIntHistogram:
 			// TODO(axw) requires https://github.com/elastic/apm-server/issues/3195
 			intHistogram := metric.IntHistogram()
-			if intHistogram.IsNil() {
-				dropped++
-				continue
-			}
 			dropped += intHistogram.DataPoints().Len()
 		case pdata.MetricDataTypeDoubleHistogram:
 			// TODO(axw) requires https://github.com/elastic/apm-server/issues/3195
 			doubleHistogram := metric.DoubleHistogram()
-			if doubleHistogram.IsNil() {
-				dropped++
-				continue
-			}
 			dropped += doubleHistogram.DataPoints().Len()
 		default:
 			// Unknown type, so just increment dropped by 1 as a best effort.
@@ -164,10 +120,10 @@ func asTime(in pdata.TimestampUnixNano) model.Time {
 func asStringMap(in pdata.StringMap) model.StringMap {
 	var out model.StringMap
 	in.Sort()
-	in.ForEach(func(k string, v pdata.StringValue) {
+	in.ForEach(func(k string, v string) {
 		out = append(out, model.StringMapItem{
 			Key:   k,
-			Value: v.Value(),
+			Value: v,
 		})
 	})
 	return out

@@ -23,12 +23,12 @@ type ContainerStats struct {
 	Read         time.Time `json:"read"`
 	PreviousRead time.Time `json:"preread"`
 
-	Memory      MemoryStats             `json:"memory_stats,omitempty"`
-	Disk        DiskStats               `json:"blkio_stats,omitempty"`
+	Memory      *MemoryStats            `json:"memory_stats,omitempty"`
+	Disk        *DiskStats              `json:"blkio_stats,omitempty"`
 	Network     map[string]NetworkStats `json:"networks,omitempty"`
-	NetworkRate NetworkRateStats        `json:"network_rate_stats,omitempty"`
-	CPU         CPUStats                `json:"cpu_stats,omitempty"`
-	PreviousCPU CPUStats                `json:"precpu_stats,omitempty"`
+	NetworkRate *NetworkRateStats       `json:"network_rate_stats,omitempty"`
+	CPU         *CPUStats               `json:"cpu_stats,omitempty"`
+	PreviousCPU *CPUStats               `json:"precpu_stats,omitempty"`
 }
 
 // MemoryStats defines the memory stats
@@ -82,9 +82,9 @@ type CPUUsage struct {
 
 // CPUStats defines Cpu stats
 type CPUStats struct {
-	CPUUsage       CPUUsage `json:"cpu_usage,omitempty"`
-	OnlineCpus     *uint64  `json:"online_cpus,omitempty"`
-	SystemCPUUsage *uint64  `json:"system_cpu_usage,omitempty"`
+	CPUUsage       *CPUUsage `json:"cpu_usage,omitempty"`
+	OnlineCpus     *uint64   `json:"online_cpus,omitempty"`
+	SystemCPUUsage *uint64   `json:"system_cpu_usage,omitempty"`
 	CPUUtilized    *uint64
 	CPUReserved    *uint64
 }

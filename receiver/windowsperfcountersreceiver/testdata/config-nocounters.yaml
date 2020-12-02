@@ -1,0 +1,17 @@
+receivers:
+  windowsperfcounters:
+    perfcounters:
+      - object: "object"
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [windowsperfcounters]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]

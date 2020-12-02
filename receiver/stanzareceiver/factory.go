@@ -58,7 +58,13 @@ func createLogsReceiver(
 
 	emitter := NewLogEmitter(params.Logger.Sugar())
 
-	logAgent, err := stanza.NewBuilder(&stanza.Config{Pipeline: obsConfig.Pipeline}, params.Logger.Sugar()).
+	pipeline, err := obsConfig.Operators.IntoPipelineConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	logAgent, err := stanza.NewBuilder(params.Logger.Sugar()).
+		WithConfig(&stanza.Config{Pipeline: pipeline}).
 		WithPluginDir(obsConfig.PluginDir).
 		WithDatabaseFile(obsConfig.OffsetsFile).
 		WithDefaultOutput(emitter).

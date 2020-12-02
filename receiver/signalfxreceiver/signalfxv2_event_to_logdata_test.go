@@ -23,7 +23,6 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
 )
 
 func TestSignalFxV2EventsToLogData(t *testing.T) {
@@ -65,7 +64,8 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 			"k2": pdata.NewAttributeValueString("v2"),
 		})
 
-		propMap := pdata.NewAttributeMap()
+		propMapVal := pdata.NewAttributeValueMap()
+		propMap := propMapVal.MapVal()
 		propMap.InitFromMap(map[string]pdata.AttributeValue{
 			"env":      pdata.NewAttributeValueString("prod"),
 			"isActive": pdata.NewAttributeValueBool(true),
@@ -74,8 +74,6 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 			"nullProp": pdata.NewAttributeValueNull(),
 		})
 		propMap.Sort()
-		propMapVal := pdata.NewAttributeValueMap()
-		propMapVal.SetMapVal(propMap)
 		attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
 		attrs.Insert("com.splunk.signalfx.event_category", pdata.NewAttributeValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
 
@@ -110,7 +108,8 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			lrs := signalFxV2EventsToLogRecords(zap.NewNop(), tt.sfxEvents)
+			lrs := pdata.NewLogSlice()
+			signalFxV2EventsToLogRecords(tt.sfxEvents, lrs)
 			for i := 0; i < lrs.Len(); i++ {
 				lrs.At(i).Attributes().Sort()
 			}

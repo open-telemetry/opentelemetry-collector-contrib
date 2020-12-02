@@ -101,7 +101,7 @@ func (u *udpServer) handlePacket(
 	data []byte,
 ) {
 	ctx := u.reporter.OnDataReceived(context.Background())
-	var numReceivedTimeseries, numInvalidTimeseries int
+	var numReceivedMetricPoints int
 	var metrics []*metricspb.Metric
 	buf := bytes.NewBuffer(data)
 	for {
@@ -114,10 +114,9 @@ func (u *udpServer) handlePacket(
 		}
 		line := strings.TrimSpace(string(bytes))
 		if line != "" {
-			numReceivedTimeseries++
+			numReceivedMetricPoints++
 			metric, err := p.Parse(line)
 			if err != nil {
-				numInvalidTimeseries++
 				u.reporter.OnTranslationError(ctx, err)
 				continue
 			}
@@ -130,5 +129,5 @@ func (u *udpServer) handlePacket(
 		Metrics: metrics,
 	}
 	err := nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
-	u.reporter.OnMetricsProcessed(ctx, numReceivedTimeseries, numInvalidTimeseries, err)
+	u.reporter.OnMetricsProcessed(ctx, numReceivedMetricPoints, err)
 }

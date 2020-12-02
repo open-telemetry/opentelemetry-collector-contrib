@@ -20,6 +20,9 @@ import (
 )
 
 func cpuMetrics(prefix string, s *stats.CPUStats) []*metricspb.Metric {
+	if s == nil {
+		return nil
+	}
 	return []*metricspb.Metric{
 		cpuUsageMetric(prefix, s),
 		cpuCumulativeUsageMetric(prefix, s),

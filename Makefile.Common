@@ -17,7 +17,7 @@ ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort 
 GOTEST_OPT?= -race -timeout 30s
 GOTEST_INTEGRATION_OPT?= -race -timeout 60s
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
-GOTEST_INTEGRATION_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -v -tags=integration -run=Integration -coverprofile=integration-coverage.txt -covermode=atomic
+GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -v -tags=integration -run=Integration -coverprofile=integration-coverage.txt -covermode=atomic
 GOTEST=go test
 GOOS=$(shell go env GOOS)
 GOARCH=$(shell go env GOARCH)

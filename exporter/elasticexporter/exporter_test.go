@@ -40,14 +40,13 @@ func TestTraceExporter(t *testing.T) {
 	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	te, err := factory.CreateTraceExporter(context.Background(), params, cfg)
+	te, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
 	traces := pdata.NewTraces()
 	resourceSpans := traces.ResourceSpans()
 	resourceSpans.Resize(1)
-	resourceSpans.At(0).InitEmpty()
 	resourceSpans.At(0).InstrumentationLibrarySpans().Resize(1)
 	resourceSpans.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
 	span := resourceSpans.At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
@@ -114,13 +113,11 @@ func sampleMetrics() pdata.Metrics {
 	resourceMetrics := metrics.ResourceMetrics()
 	resourceMetrics.Resize(2)
 	for i := 0; i < 2; i++ {
-		resourceMetrics.At(i).InitEmpty()
 		resourceMetrics.At(i).InstrumentationLibraryMetrics().Resize(1)
 		resourceMetrics.At(i).InstrumentationLibraryMetrics().At(0).Metrics().Resize(1)
 		metric := resourceMetrics.At(i).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 		metric.SetName("foobar")
 		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		metric.DoubleGauge().InitEmpty()
 		metric.DoubleGauge().DataPoints().Resize(1)
 		metric.DoubleGauge().DataPoints().At(0).SetValue(123)
 	}

@@ -25,10 +25,12 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
+	"go.uber.org/zap"
 	"google.golang.org/api/option"
 	cloudmetricpb "google.golang.org/genproto/googleapis/api/metric"
 	cloudtracepb "google.golang.org/genproto/googleapis/devtools/cloudtrace/v2"
@@ -54,49 +56,132 @@ func (ts *testServer) CreateSpan(context.Context, *cloudtracepb.Span) (*cloudtra
 }
 
 func TestStackdriverTraceExport(t *testing.T) {
-	srv := grpc.NewServer()
+	type testCase struct {
+		name        string
+		cfg         *Config
+		expectedErr string
+	}
 
-	reqCh := make(chan *cloudtracepb.BatchWriteSpansRequest)
+	testCases := []testCase{
+		{
+			name: "Standard",
+			cfg: &Config{
+				ProjectID:   "idk",
+				Endpoint:    "127.0.0.1:8080",
+				UseInsecure: true,
+			},
+		},
+		{
+			name: "Standard_WithBundling",
+			cfg: &Config{
+				ProjectID:   "idk",
+				Endpoint:    "127.0.0.1:8080",
+				UseInsecure: true,
+				TraceConfig: TraceConfig{
+					BundleDelayThreshold: time.Nanosecond,
+					BundleCountThreshold: 1,
+					BundleByteThreshold:  1,
+					BundleByteLimit:      1e9,
+					BufferMaxBytes:       1e9,
+				},
+			},
+		},
+		{
+			name: "Err_InvalidBundleDelayThreshold",
+			cfg: &Config{
+				ProjectID:   "idk",
+				Endpoint:    "127.0.0.1:8080",
+				UseInsecure: true,
+				TraceConfig: TraceConfig{BundleDelayThreshold: -1},
+			},
+			expectedErr: "invalid value for: BundleDelayThreshold",
+		},
+		{
+			name: "Err_InvalidBundleCountThreshold",
+			cfg: &Config{
+				ProjectID:   "idk",
+				Endpoint:    "127.0.0.1:8080",
+				UseInsecure: true,
+				TraceConfig: TraceConfig{BundleCountThreshold: -1},
+			},
+			expectedErr: "invalid value for: BundleCountThreshold",
+		},
+		{
+			name: "Err_InvalidBundleByteThreshold",
+			cfg: &Config{
+				ProjectID:   "idk",
+				Endpoint:    "127.0.0.1:8080",
+				UseInsecure: true,
+				TraceConfig: TraceConfig{BundleByteThreshold: -1},
+			},
+			expectedErr: "invalid value for: BundleByteThreshold",
+		},
+		{
+			name: "Err_InvalidBundleByteLimit",
+			cfg: &Config{
+				ProjectID:   "idk",
+				Endpoint:    "127.0.0.1:8080",
+				UseInsecure: true,
+				TraceConfig: TraceConfig{BundleByteLimit: -1},
+			},
+			expectedErr: "invalid value for: BundleByteLimit",
+		},
+		{
+			name: "Err_InvalidBufferMaxBytes",
+			cfg: &Config{
+				ProjectID:   "idk",
+				Endpoint:    "127.0.0.1:8080",
+				UseInsecure: true,
+				TraceConfig: TraceConfig{BufferMaxBytes: -1},
+			},
+			expectedErr: "invalid value for: BufferMaxBytes",
+		},
+	}
 
-	cloudtracepb.RegisterTraceServiceServer(srv, &testServer{reqCh: reqCh})
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			srv := grpc.NewServer()
+			reqCh := make(chan *cloudtracepb.BatchWriteSpansRequest)
+			cloudtracepb.RegisterTraceServiceServer(srv, &testServer{reqCh: reqCh})
 
-	lis, err := net.Listen("tcp", ":8080")
-	require.NoError(t, err)
-	defer lis.Close()
+			lis, err := net.Listen("tcp", ":8080")
+			require.NoError(t, err)
+			defer lis.Close()
 
-	go srv.Serve(lis)
+			go srv.Serve(lis)
 
-	sde, err := newStackdriverTraceExporter(
-		&Config{ProjectID: "idk", Endpoint: "127.0.0.1:8080", UseInsecure: true},
-		"v0.0.1",
-	)
-	require.NoError(t, err)
-	defer func() { require.NoError(t, sde.Shutdown(context.Background())) }()
+			createParams := component.ExporterCreateParams{Logger: zap.NewNop(), ApplicationStartInfo: component.ApplicationStartInfo{Version: "v0.0.1"}}
+			sde, err := newStackdriverTraceExporter(test.cfg, createParams)
+			if test.expectedErr != "" {
+				assert.EqualError(t, err, test.expectedErr)
+				return
+			}
+			require.NoError(t, err)
+			defer func() { require.NoError(t, sde.Shutdown(context.Background())) }()
 
-	testTime := time.Now()
-	spanName := "foobar"
+			testTime := time.Now()
+			spanName := "foobar"
 
-	resource := pdata.NewResource()
-	resource.InitEmpty()
-	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rspans := traces.ResourceSpans().At(0)
-	resource.CopyTo(rspans.Resource())
-	rspans.InstrumentationLibrarySpans().Resize(1)
-	ispans := rspans.InstrumentationLibrarySpans().At(0)
-	ispans.Spans().Resize(1)
-	span := pdata.NewSpan()
-	span.InitEmpty()
-	span.SetName(spanName)
-	span.SetStartTime(pdata.TimestampUnixNano(testTime.UnixNano()))
-	span.CopyTo(ispans.Spans().At(0))
-	err = sde.ConsumeTraces(context.Background(), traces)
-	assert.NoError(t, err)
+			resource := pdata.NewResource()
+			traces := pdata.NewTraces()
+			traces.ResourceSpans().Resize(1)
+			rspans := traces.ResourceSpans().At(0)
+			resource.CopyTo(rspans.Resource())
+			rspans.InstrumentationLibrarySpans().Resize(1)
+			ispans := rspans.InstrumentationLibrarySpans().At(0)
+			ispans.Spans().Resize(1)
+			span := ispans.Spans().At(0)
+			span.SetName(spanName)
+			span.SetStartTime(pdata.TimestampUnixNano(testTime.UnixNano()))
+			err = sde.ConsumeTraces(context.Background(), traces)
+			assert.NoError(t, err)
 
-	r := <-reqCh
-	assert.Len(t, r.Spans, 1)
-	assert.Equal(t, fmt.Sprintf("Span.internal-%s", spanName), r.Spans[0].GetDisplayName().Value)
-	assert.Equal(t, timestamppb.New(testTime), r.Spans[0].StartTime)
+			r := <-reqCh
+			assert.Len(t, r.Spans, 1)
+			assert.Equal(t, fmt.Sprintf("Span.internal-%s", spanName), r.Spans[0].GetDisplayName().Value)
+			assert.Equal(t, timestamppb.New(testTime), r.Spans[0].StartTime)
+		})
+	}
 }
 
 type mockMetricServer struct {
@@ -162,7 +247,14 @@ func TestStackdriverMetricExport(t *testing.T) {
 		GetClientOptions: func() []option.ClientOption {
 			return clientOptions
 		},
-	}, "v0.0.1")
+	},
+		component.ExporterCreateParams{
+			Logger: zap.NewNop(),
+			ApplicationStartInfo: component.ApplicationStartInfo{
+				Version: "v0.0.1",
+			},
+		},
+	)
 	require.NoError(t, err)
 	defer func() { require.NoError(t, sde.Shutdown(context.Background())) }()
 

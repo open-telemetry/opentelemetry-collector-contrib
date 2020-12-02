@@ -223,10 +223,14 @@ func TestAttributesToMap(t *testing.T) {
 	m := map[string]interface{}{
 		"str":    "a",
 		"int":    int64(5),
-		"double": float64(5.0),
+		"double": 5.0,
 		"bool":   true,
 		"map": map[string]interface{}{
 			"inner": "val",
+		},
+		"array": []interface{}{
+			"inner",
+			int64(42),
 		},
 	}
 	attr := pdata.NewAttributeMap()
@@ -235,10 +239,16 @@ func TestAttributesToMap(t *testing.T) {
 	attr.InsertDouble("double", 5.0)
 	attr.InsertBool("bool", true)
 	avm := pdata.NewAttributeValueMap()
-	innerAttr := pdata.NewAttributeMap()
+	innerAttr := avm.MapVal()
 	innerAttr.InsertString("inner", "val")
-	avm.SetMapVal(innerAttr)
 	attr.Insert("map", avm)
+
+	ava := pdata.NewAttributeValueArray()
+	arrayAttr := ava.ArrayVal()
+	arrayAttr.Resize(2)
+	arrayAttr.At(0).SetStringVal("inner")
+	arrayAttr.At(1).SetIntVal(42)
+	attr.Insert("array", ava)
 
 	assert.Equal(t, m, AttributesToMap(attr))
 }

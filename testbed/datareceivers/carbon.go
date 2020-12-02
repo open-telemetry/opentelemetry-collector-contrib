@@ -44,7 +44,7 @@ func NewCarbonDataReceiver(port int) *CarbonDataReceiver {
 }
 
 // Start the receiver.
-func (cr *CarbonDataReceiver) Start(_ consumer.TraceConsumer, mc consumer.MetricsConsumer, _ consumer.LogsConsumer) error {
+func (cr *CarbonDataReceiver) Start(_ consumer.TracesConsumer, mc consumer.MetricsConsumer, _ consumer.LogsConsumer) error {
 	addr := fmt.Sprintf("localhost:%d", cr.Port)
 	config := carbonreceiver.Config{
 		NetAddr: confignet.NetAddr{

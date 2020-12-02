@@ -1,0 +1,23 @@
+receivers:
+    examplereceiver:
+
+processors:
+    metricstransform:
+        transforms:
+            - include: metric_name
+              match_type: invalid
+              action: update
+
+exporters:
+    exampleexporter:
+
+service:
+    pipelines:
+        traces:
+            receivers: [examplereceiver]
+            processors: [metricstransform]
+            exporters: [exampleexporter]
+        metrics:
+            receivers: [examplereceiver]
+            processors: [metricstransform]
+            exporters: [exampleexporter]

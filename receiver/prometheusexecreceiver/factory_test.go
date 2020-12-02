@@ -37,7 +37,7 @@ import (
 
 func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	var (
-		traceReceiver  component.TraceReceiver
+		traceReceiver  component.TracesReceiver
 		metricReceiver component.MetricsReceiver
 	)
 
@@ -55,8 +55,8 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 
 	receiver := config.Receivers[receiverType]
 
-	// Test CreateTraceReceiver
-	traceReceiver, err = factory.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, receiver, nil)
+	// Test CreateTracesReceiver
+	traceReceiver, err = factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, receiver, nil)
 
 	assert.Equal(t, nil, traceReceiver)
 	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)

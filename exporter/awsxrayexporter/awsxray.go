@@ -33,43 +33,32 @@ const (
 	maxSegmentsPerPut = int(50) // limit imposed by PutTraceSegments API
 )
 
-// NewTraceExporter creates an component.TraceExporterOld that converts to an X-Ray PutTraceSegments
+// newTraceExporter creates an component.TraceExporter that converts to an X-Ray PutTraceSegments
 // request and then posts the request to the configured region's X-Ray endpoint.
-func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connAttr) (component.TraceExporter, error) {
+func newTraceExporter(
+	config configmodels.Exporter, params component.ExporterCreateParams, cn connAttr) (component.TracesExporter, error) {
 	typeLog := zap.String("type", string(config.Type()))
 	nameLog := zap.String("name", config.Name())
+	logger := params.Logger
 	awsConfig, session, err := GetAWSConfigSession(logger, cn, config.(*Config))
 	if err != nil {
 		return nil, err
 	}
-	xrayClient := NewXRay(logger, awsConfig, session)
+	xrayClient := newXRay(logger, awsConfig, params.ApplicationStartInfo, session)
 	return exporterhelper.NewTraceExporter(
 		config,
+		logger,
 		func(ctx context.Context, td pdata.Traces) (totalDroppedSpans int, err error) {
 			logger.Debug("TraceExporter", typeLog, nameLog, zap.Int("#spans", td.SpanCount()))
 			totalDroppedSpans = 0
 			documents := make([]*string, 0, td.SpanCount())
 			for i := 0; i < td.ResourceSpans().Len(); i++ {
 				rspans := td.ResourceSpans().At(i)
-				if rspans.IsNil() {
-					continue
-				}
-
 				resource := rspans.Resource()
 				for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
-					ispans := rspans.InstrumentationLibrarySpans().At(j)
-					if ispans.IsNil() {
-						continue
-					}
-
-					spans := ispans.Spans()
+					spans := rspans.InstrumentationLibrarySpans().At(j).Spans()
 					for k := 0; k < spans.Len(); k++ {
-						span := spans.At(k)
-						if span.IsNil() {
-							continue
-						}
-
-						document, localErr := translator.MakeSegmentDocumentString(span, resource,
+						document, localErr := translator.MakeSegmentDocumentString(spans.At(k), resource,
 							config.(*Config).IndexedAttributes, config.(*Config).IndexAllAttributes)
 						if localErr != nil {
 							totalDroppedSpans++

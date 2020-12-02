@@ -77,8 +77,8 @@ type runResult struct {
 	subprocessErr error
 }
 
-// new returns a prometheusExecReceiver
-func new(params component.ReceiverCreateParams, config *Config, consumer consumer.MetricsConsumer) (*prometheusExecReceiver, error) {
+// newPromExecReceiver returns a prometheusExecReceiver
+func newPromExecReceiver(params component.ReceiverCreateParams, config *Config, consumer consumer.MetricsConsumer) (*prometheusExecReceiver, error) {
 	if config.SubprocessConfig.Command == "" {
 		return nil, fmt.Errorf("no command to execute entered in config file for %v", config.Name())
 	}

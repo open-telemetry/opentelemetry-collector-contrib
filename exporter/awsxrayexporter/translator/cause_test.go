@@ -27,12 +27,8 @@ import (
 func TestCauseWithExceptions(t *testing.T) {
 	errorMsg := "this is a test"
 	attributeMap := make(map[string]interface{})
-	attributeMap[semconventions.AttributeHTTPMethod] = "POST"
-	attributeMap[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
-	attributeMap[semconventions.AttributeHTTPStatusCode] = 500
 
 	event1 := pdata.NewSpanEvent()
-	event1.InitEmpty()
 	event1.SetName(semconventions.AttributeExceptionEventName)
 	attributes := pdata.NewAttributeMap()
 	attributes.InsertString(semconventions.AttributeExceptionType, "java.lang.IllegalStateException")
@@ -45,25 +41,23 @@ Caused by: java.lang.IllegalArgumentException: bad argument`)
 	attributes.CopyTo(event1.Attributes())
 
 	event2 := pdata.NewSpanEvent()
-	event2.InitEmpty()
 	event2.SetName(semconventions.AttributeExceptionEventName)
 	attributes = pdata.NewAttributeMap()
 	attributes.InsertString(semconventions.AttributeExceptionType, "EmptyError")
 	attributes.CopyTo(event2.Attributes())
 
-	span := constructExceptionServerSpan(attributeMap, pdata.StatusCodeInternalError)
+	span := constructExceptionServerSpan(attributeMap, pdata.StatusCodeError)
 	span.Status().SetMessage(errorMsg)
 	span.Events().Append(event1)
 	span.Events().Append(event2)
 	filtered, _ := makeHTTP(span)
 
 	res := pdata.NewResource()
-	res.InitEmpty()
 	res.Attributes().InsertString(semconventions.AttributeTelemetrySDKLanguage, "java")
 	isError, isFault, filteredResult, cause := makeCause(span, filtered, res)
 
-	assert.False(t, isError)
 	assert.True(t, isFault)
+	assert.False(t, isError)
 	assert.Equal(t, filtered, filteredResult)
 	assert.NotNil(t, cause)
 	assert.Len(t, cause.Exceptions, 3)
@@ -84,16 +78,15 @@ func TestCauseWithStatusMessage(t *testing.T) {
 	attributes[semconventions.AttributeHTTPMethod] = "POST"
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[semconventions.AttributeHTTPStatusCode] = 500
-	span := constructExceptionServerSpan(attributes, pdata.StatusCodeInternalError)
+	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
 	span.Status().SetMessage(errorMsg)
 	filtered, _ := makeHTTP(span)
 
 	res := pdata.NewResource()
-	res.InitEmpty()
 	isError, isFault, filtered, cause := makeCause(span, filtered, res)
 
-	assert.False(t, isError)
 	assert.True(t, isFault)
+	assert.False(t, isError)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, cause)
 	w := testWriters.borrow()
@@ -112,15 +105,14 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[semconventions.AttributeHTTPStatusCode] = 500
 	attributes[semconventions.AttributeHTTPStatusText] = errorMsg
-	span := constructExceptionServerSpan(attributes, pdata.StatusCodeInternalError)
+	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
 	filtered, _ := makeHTTP(span)
 
 	res := pdata.NewResource()
-	res.InitEmpty()
 	isError, isFault, filtered, cause := makeCause(span, filtered, res)
 
-	assert.False(t, isError)
 	assert.True(t, isFault)
+	assert.False(t, isError)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, cause)
 	w := testWriters.borrow()
@@ -140,14 +132,13 @@ func TestCauseWithZeroStatusMessage(t *testing.T) {
 	attributes[semconventions.AttributeHTTPStatusCode] = 500
 	attributes[semconventions.AttributeHTTPStatusText] = errorMsg
 
-	span := constructExceptionServerSpan(attributes, pdata.StatusCodeOk)
+	span := constructExceptionServerSpan(attributes, pdata.StatusCodeUnset)
 	filtered, _ := makeHTTP(span)
 	// Status is used to determine whether an error or not.
 	// This span illustrates incorrect instrumentation,
 	// marking a success status with an error http status code, and status wins.
 	// We do not expect to see such spans in practice.
 	res := pdata.NewResource()
-	res.InitEmpty()
 	isError, isFault, filtered, cause := makeCause(span, filtered, res)
 
 	assert.False(t, isError)
@@ -164,11 +155,10 @@ func TestCauseWithClientErrorMessage(t *testing.T) {
 	attributes[semconventions.AttributeHTTPStatusCode] = 499
 	attributes[semconventions.AttributeHTTPStatusText] = errorMsg
 
-	span := constructExceptionServerSpan(attributes, pdata.StatusCodeCancelled)
+	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
 	filtered, _ := makeHTTP(span)
 
 	res := pdata.NewResource()
-	res.InitEmpty()
 	isError, isFault, filtered, cause := makeCause(span, filtered, res)
 
 	assert.True(t, isError)
@@ -183,7 +173,6 @@ func constructExceptionServerSpan(attributes map[string]interface{}, statuscode 
 	spanAttributes := constructSpanAttributes(attributes)
 
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
@@ -427,4 +416,217 @@ Caused by: java.lang.IllegalArgumentException: bad argument
 	assert.Equal(t, "org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively", *exceptions[1].Stack[1].Label)
 	assert.Equal(t, "NodeTestTask.java", *exceptions[1].Stack[1].Path)
 	assert.Equal(t, 0, *exceptions[1].Stack[1].Line)
+}
+
+func TestParseExceptionWithPythonStacktraceNoCause(t *testing.T) {
+	exceptionType := "TypeError"
+	message := "must be str, not int"
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `Traceback (most recent call last):
+  File "main.py", line 14, in <module>
+    greet_many(['Chad', 'Dan', 1])
+  File "greetings.py", line 12, in greet_many
+    print('hi, ' + person)
+TypeError: must be str, not int`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "python")
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "TypeError", *exceptions[0].Type)
+	assert.Equal(t, "must be str, not int", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 2)
+	assert.Equal(t, "greet_many", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "greetings.py", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 12, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "<module>", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "main.py", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 14, *exceptions[0].Stack[1].Line)
+}
+
+func TestParseExceptionWithPythonStacktraceAndCause(t *testing.T) {
+	exceptionType := "TypeError"
+	message := "must be str, not int"
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `Traceback (most recent call last):
+  File "bar.py", line 10, in greet_many
+    greet(person)
+  File "foo.py", line 5, in greet
+    print(greeting + ', ' + who_to_greet(someone))
+ValueError: bad value
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "main.py", line 14, in <module>
+    greet_many(['Chad', 'Dan', 1])
+  File "greetings.py", line 12, in greet_many
+    print('hi, ' + person)
+TypeError: must be str, not int`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "python")
+	assert.Len(t, exceptions, 2)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "TypeError", *exceptions[0].Type)
+	assert.Equal(t, "must be str, not int", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 2)
+	assert.Equal(t, "greet_many", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "greetings.py", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 12, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "<module>", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "main.py", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 14, *exceptions[0].Stack[1].Line)
+
+	assert.NotEmpty(t, exceptions[1].ID)
+	assert.Equal(t, "ValueError", *exceptions[1].Type)
+	assert.Equal(t, "bad value", *exceptions[1].Message)
+	assert.Len(t, exceptions[1].Stack, 2)
+	assert.Equal(t, "greet", *exceptions[1].Stack[0].Label)
+	assert.Equal(t, "foo.py", *exceptions[1].Stack[0].Path)
+	assert.Equal(t, 5, *exceptions[1].Stack[0].Line)
+	assert.Equal(t, "greet_many", *exceptions[1].Stack[1].Label)
+	assert.Equal(t, "bar.py", *exceptions[1].Stack[1].Path)
+	assert.Equal(t, 10, *exceptions[1].Stack[1].Line)
+}
+
+func TestParseExceptionWithPythonStacktraceAndMultiLineCause(t *testing.T) {
+	exceptionType := "TypeError"
+	message := "must be str, not int"
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `Traceback (most recent call last):
+  File "bar.py", line 10, in greet_many
+    greet(person)
+  File "foo.py", line 5, in greet
+    print(greeting + ', ' + who_to_greet(someone))
+ValueError: bad value
+with more on
+new lines
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "main.py", line 14, in <module>
+    greet_many(['Chad', 'Dan', 1])
+  File "greetings.py", line 12, in greet_many
+    print('hi, ' + person)
+TypeError: must be str, not int`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "python")
+	assert.Len(t, exceptions, 2)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "TypeError", *exceptions[0].Type)
+	assert.Equal(t, "must be str, not int", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 2)
+	assert.Equal(t, "greet_many", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "greetings.py", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 12, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "<module>", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "main.py", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 14, *exceptions[0].Stack[1].Line)
+
+	assert.NotEmpty(t, exceptions[1].ID)
+	assert.Equal(t, "ValueError", *exceptions[1].Type)
+	assert.Equal(t, "bad value\nwith more on\nnew lines", *exceptions[1].Message)
+	assert.Len(t, exceptions[1].Stack, 2)
+	assert.Equal(t, "greet", *exceptions[1].Stack[0].Label)
+	assert.Equal(t, "foo.py", *exceptions[1].Stack[0].Path)
+	assert.Equal(t, 5, *exceptions[1].Stack[0].Line)
+	assert.Equal(t, "greet_many", *exceptions[1].Stack[1].Label)
+	assert.Equal(t, "bar.py", *exceptions[1].Stack[1].Path)
+	assert.Equal(t, 10, *exceptions[1].Stack[1].Line)
+}
+
+func TestParseExceptionWithPythonStacktraceMalformedLines(t *testing.T) {
+	exceptionType := "TypeError"
+	message := "must be str, not int"
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `Traceback (most recent call last):
+  File "main.py", line 14 in <module>
+    greet_many(['Chad', 'Dan', 1])
+  File "main.py", lin 14, in <module>
+    greet_many(['Chad', 'Dan', 1])
+  File "main.py", line 14, fin <module>
+    greet_many(['Chad', 'Dan', 1])
+  File "greetings.py", line 12, in greet_many
+    print('hi, ' + person)
+TypeError: must be str, not int`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "python")
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "TypeError", *exceptions[0].Type)
+	assert.Equal(t, "must be str, not int", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 3)
+	assert.Equal(t, "greet_many", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "greetings.py", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 12, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "main.py", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 14, *exceptions[0].Stack[1].Line)
+	assert.Equal(t, "<module>", *exceptions[0].Stack[2].Label)
+	assert.Equal(t, "main.py", *exceptions[0].Stack[2].Path)
+	assert.Equal(t, 0, *exceptions[0].Stack[2].Line)
+}
+
+func TestParseExceptionWithPythonStacktraceAndMalformedCause(t *testing.T) {
+	exceptionType := "TypeError"
+	message := "must be str, not int"
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `Traceback (most recent call last):
+ValueError: bad value
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "main.py", line 14, in <module>
+    greet_many(['Chad', 'Dan', 1])
+  File "greetings.py", line 12, in greet_many
+    print('hi, ' + person)
+TypeError: must be str, not int`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "python")
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "TypeError", *exceptions[0].Type)
+	assert.Equal(t, "must be str, not int", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 2)
+	assert.Equal(t, "greet_many", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "greetings.py", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 12, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "<module>", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "main.py", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 14, *exceptions[0].Stack[1].Line)
+}
+
+func TestParseExceptionWithPythonStacktraceAndMalformedCauseMessage(t *testing.T) {
+	exceptionType := "TypeError"
+	message := "must be str, not int"
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `Traceback (most recent call last):
+  File "bar.py", line 10, in greet_many
+    greet(person)
+  File "foo.py", line 5, in greet
+    print(greeting + ', ' + who_to_greet(someone))
+ValueError bad value
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "main.py", line 14, in <module>
+    greet_many(['Chad', 'Dan', 1])
+  File "greetings.py", line 12, in greet_many
+    print('hi, ' + person)
+TypeError: must be str, not int`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "python")
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "TypeError", *exceptions[0].Type)
+	assert.Equal(t, "must be str, not int", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 2)
+	assert.Equal(t, "greet_many", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "greetings.py", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 12, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "<module>", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "main.py", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 14, *exceptions[0].Stack[1].Line)
 }

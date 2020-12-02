@@ -25,44 +25,113 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
-var (
-	testDataOperations = []Operation{
-		{
-			Action:   UpdateLabel,
-			Label:    "label",
-			NewLabel: "new_label",
-			ValueActions: []ValueAction{
-				{
-					Value:    "current_label_value",
-					NewValue: "new_label_value",
-				},
-			},
-		},
-		{
-			Action: AggregateLabels,
-			LabelSet: []string{
-				"label1",
-				"label2",
-			},
-			AggregationType: Sum,
-		},
-		{
-			Action: AggregateLabelValues,
-			Label:  "label",
-			AggregatedValues: []string{
-				"value1",
-				"value2",
-			},
-			NewValue:        "new_value",
-			AggregationType: Sum,
-		},
-	}
-
-	tests = []struct {
+func TestLoadingFullConfig(t *testing.T) {
+	tests := []struct {
+		configFile string
 		filterName string
 		expCfg     *Config
 	}{
 		{
+			configFile: "config_full.yaml",
+			filterName: "metricstransform",
+			expCfg: &Config{
+				ProcessorSettings: configmodels.ProcessorSettings{
+					TypeVal: "metricstransform",
+					NameVal: "metricstransform",
+				},
+				Transforms: []Transform{
+					{
+						MetricIncludeFilter: FilterConfig{
+							Include:   "name",
+							MatchType: "",
+						},
+						Action:  "update",
+						NewName: "new_name",
+					},
+				},
+			},
+		},
+		{
+			configFile: "config_full.yaml",
+			filterName: "metricstransform/multiple",
+			expCfg: &Config{
+				ProcessorSettings: configmodels.ProcessorSettings{
+					TypeVal: "metricstransform",
+					NameVal: "metricstransform/multiple",
+				},
+				Transforms: []Transform{
+					{
+						MetricIncludeFilter: FilterConfig{
+							Include:   "name1",
+							MatchType: "strict",
+						},
+						Action:  "insert",
+						NewName: "new_name",
+						Operations: []Operation{
+							{
+								Action:   "add_label",
+								NewLabel: "my_label",
+								NewValue: "my_value",
+							},
+						},
+					},
+					{
+						MetricIncludeFilter: FilterConfig{
+							Include:   "name2",
+							MatchType: "",
+						},
+						Action: "update",
+						Operations: []Operation{
+							{
+								Action:   "update_label",
+								Label:    "label",
+								NewLabel: "new_label_key",
+								ValueActions: []ValueAction{
+									{Value: "label1", NewValue: "new_label1"},
+								},
+							},
+							{
+								Action:          "aggregate_labels",
+								LabelSet:        []string{"new_label1", "label2"},
+								AggregationType: "sum",
+							},
+							{
+								Action:           "aggregate_label_values",
+								Label:            "new_label1",
+								AggregationType:  "sum",
+								AggregatedValues: []string{"value1", "value2"},
+								NewValue:         "new_value",
+							},
+						},
+					},
+					{
+						MetricIncludeFilter: FilterConfig{
+							Include:   "name3",
+							MatchType: "strict",
+						},
+						Action: "update",
+						Operations: []Operation{
+							{
+								Action:     "delete_label_value",
+								Label:      "my_label",
+								LabelValue: "delete_me",
+							},
+						},
+					},
+					{
+						MetricIncludeFilter: FilterConfig{
+							Include:   "^regexp (?P<my_label>.*)$",
+							MatchType: "regexp",
+						},
+						Action:       "combine",
+						NewName:      "combined_metric_name",
+						SubmatchCase: "lower",
+					},
+				},
+			},
+		},
+		{
+			configFile: "config_deprecated.yaml",
 			filterName: "metricstransform",
 			expCfg: &Config{
 				ProcessorSettings: configmodels.ProcessorSettings{
@@ -74,50 +143,24 @@ var (
 						MetricName: "old_name",
 						Action:     Update,
 						NewName:    "new_name",
-						Operations: testDataOperations,
-					},
-				},
-			},
-		},
-		{
-			filterName: "metricstransform/addlabel",
-			expCfg: &Config{
-				ProcessorSettings: configmodels.ProcessorSettings{
-					NameVal: "metricstransform/addlabel",
-					TypeVal: typeStr,
-				},
-				Transforms: []Transform{
-					{
-						MetricName: "some_name",
-						Action:     Update,
-						Operations: []Operation{
-							{
-								Action:   AddLabel,
-								NewLabel: "mylabel",
-								NewValue: "myvalue",
-							},
-						},
 					},
 				},
 			},
 		},
 	}
-)
-
-// TestLoadingFullConfig tests loading testdata/config_full.yaml.
-func TestLoadingFullConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Processors[configmodels.Type(typeStr)] = factory
-	config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_full.yaml"), factories)
-
-	assert.NoError(t, err)
-	require.NotNil(t, config)
 
 	for _, test := range tests {
 		t.Run(test.filterName, func(t *testing.T) {
+
+			factories, err := componenttest.ExampleComponents()
+			assert.NoError(t, err)
+
+			factory := NewFactory()
+			factories.Processors[configmodels.Type(typeStr)] = factory
+			config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", test.configFile), factories)
+			assert.NoError(t, err)
+			require.NotNil(t, config)
+
 			cfg := config.Processors[test.filterName]
 			assert.Equal(t, test.expCfg, cfg)
 		})

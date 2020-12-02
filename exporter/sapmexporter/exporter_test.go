@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func TestCreateTraceExporter(t *testing.T) {
@@ -54,32 +54,6 @@ func TestCreateTraceExporter(t *testing.T) {
 	assert.NoError(t, te.Shutdown(context.Background()), "trace exporter shutdown failed")
 }
 
-func TestCreateTraceExporterWithCorrelationEnabled(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:1234"
-	cfg.Correlation.Enabled = true
-	cfg.Correlation.Endpoint = "http://localhost"
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-
-	te, err := newSAPMExporter(cfg, params)
-	assert.Nil(t, err)
-	assert.NotNil(t, te, "failed to create trace exporter")
-
-	assert.NotNil(t, te.tracker, "correlation tracker should have been set")
-}
-
-func TestCreateTraceExporterWithCorrelationDisabled(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:1234"
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-
-	te, err := newSAPMExporter(cfg, params)
-	assert.Nil(t, err)
-	assert.NotNil(t, te, "failed to create trace exporter")
-
-	assert.Nil(t, te.tracker, "tracker correlation should not be created")
-}
-
 func TestCreateTraceExporterWithInvalidConfig(t *testing.T) {
 	config := &Config{}
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
@@ -96,9 +70,7 @@ func buildTestTraces(setTokenLabel, accessTokenPassthrough bool) (traces pdata.T
 
 	for i := 0; i < 50; i++ {
 		span := rss.At(i)
-		span.InitEmpty()
 		resource := span.Resource()
-		resource.InitEmpty()
 		token := ""
 		if setTokenLabel && i%2 == 1 {
 			tokenLabel := fmt.Sprintf("MyToken%d", i/25)
@@ -204,9 +176,7 @@ func buildTestTrace(setIds bool) pdata.Traces {
 	trace.ResourceSpans().Resize(2)
 	for i := 0; i < 2; i++ {
 		span := trace.ResourceSpans().At(i)
-		span.InitEmpty()
 		resource := span.Resource()
-		resource.InitEmpty()
 		resource.Attributes().InsertString("com.splunk.signalfx.access_token", fmt.Sprintf("TraceAccessToken%v", i))
 		span.InstrumentationLibrarySpans().Resize(1)
 		span.InstrumentationLibrarySpans().At(0).Spans().Resize(1)
@@ -218,8 +188,8 @@ func buildTestTrace(setIds bool) pdata.Traces {
 		rand.Read(traceIDBytes[:])
 		rand.Read(spanIDBytes[:])
 		if setIds {
-			span.InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID(traceIDBytes[:]))
-			span.InstrumentationLibrarySpans().At(0).Spans().At(0).SetSpanID(pdata.NewSpanID(spanIDBytes[:]))
+			span.InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID(traceIDBytes))
+			span.InstrumentationLibrarySpans().At(0).Spans().At(0).SetSpanID(pdata.NewSpanID(spanIDBytes))
 		}
 	}
 	return trace

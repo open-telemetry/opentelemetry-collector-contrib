@@ -34,7 +34,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 const (
@@ -58,8 +58,9 @@ const (
 )
 
 var (
-	errNilNextConsumer = errors.New("nil metricsConsumer")
-	errEmptyEndpoint   = errors.New("empty endpoint")
+	errNilNextMetricsConsumer = errors.New("nil metricsConsumer")
+	errNilNextLogsConsumer    = errors.New("nil logsConsumer")
+	errEmptyEndpoint          = errors.New("empty endpoint")
 
 	okRespBody                = initJSONResponse(responseOK)
 	invalidMethodRespBody     = initJSONResponse(responseInvalidMethod)
@@ -91,7 +92,7 @@ func NewMetricsReceiver(
 	nextConsumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
-		return nil, errNilNextConsumer
+		return nil, errNilNextMetricsConsumer
 	}
 
 	if config.Endpoint == "" {
@@ -119,9 +120,9 @@ func NewLogsReceiver(
 	logger *zap.Logger,
 	config Config,
 	nextConsumer consumer.LogsConsumer,
-) (component.MetricsReceiver, error) {
+) (component.LogsReceiver, error) {
 	if nextConsumer == nil {
-		return nil, errNilNextConsumer
+		return nil, errNilNextLogsConsumer
 	}
 
 	if config.Endpoint == "" {
@@ -193,7 +194,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	if r.config.TLSSetting != nil {
 		transport = "https"
 	}
-	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), transport, r.config.Name())
+	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), transport)
 	if r.logsConsumer == nil {
 		ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.Name(), transport)
 	}
@@ -263,9 +264,6 @@ func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(pdata.
 	if r.config.AccessTokenPassthrough {
 		if accessToken := req.Header.Get(splunk.HECTokenHeader); accessToken != "" {
 			return func(resource pdata.Resource) {
-				if resource.IsNil() {
-					resource.InitEmpty()
-				}
 				resource.Attributes().InsertString(splunk.HecTokenLabel, accessToken)
 			}
 		}
@@ -277,12 +275,7 @@ func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Ev
 	md, _ := SplunkHecToMetricsData(r.logger, events, r.createResourceCustomizer(req))
 
 	decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
-	obsreport.EndMetricsReceiveOp(
-		ctx,
-		typeStr,
-		len(events),
-		len(events),
-		decodeErr)
+	obsreport.EndMetricsReceiveOp(ctx, typeStr, len(events), decodeErr)
 
 	if decodeErr != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, decodeErr)

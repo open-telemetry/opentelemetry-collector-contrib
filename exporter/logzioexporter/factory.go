@@ -34,12 +34,16 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() configmodels.Exporter {
 	return &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
 		Region: "",
 		Token:  "",
 	}
 }
 
-func createTraceExporter(_ context.Context, params component.ExporterCreateParams, cfg configmodels.Exporter) (component.TraceExporter, error) {
+func createTraceExporter(_ context.Context, params component.ExporterCreateParams, cfg configmodels.Exporter) (component.TracesExporter, error) {
 	config := cfg.(*Config)
 	return newLogzioTraceExporter(config, params)
 }

@@ -19,7 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -27,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -72,22 +71,6 @@ func TestLoadConfig(t *testing.T) {
 				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,
-			},
-			Correlation: CorrelationConfig{
-				Enabled:             false,
-				StaleServiceTimeout: 5 * time.Minute,
-				SyncAttributes: map[string]string{
-					"k8s.pod.uid":  "k8s.pod.uid",
-					"container.id": "container.id",
-				},
-				Config: correlations.Config{
-					MaxRequests:     20,
-					MaxBuffered:     10_000,
-					MaxRetries:      2,
-					LogUpdates:      false,
-					RetryDelay:      30 * time.Second,
-					CleanupInterval: 1 * time.Minute,
-				},
 			},
 		})
 }

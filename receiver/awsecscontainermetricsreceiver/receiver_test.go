@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 )
 
@@ -46,7 +46,7 @@ func TestReceiver(t *testing.T) {
 	metricsReceiver, err := New(
 		zap.NewNop(),
 		cfg,
-		exportertest.NewNopMetricsExporter(),
+		consumertest.NewMetricsNop(),
 		&fakeRestClient{},
 	)
 
@@ -81,7 +81,7 @@ func TestCollectDataFromEndpoint(t *testing.T) {
 	metricsReceiver, err := New(
 		zap.NewNop(),
 		cfg,
-		new(exportertest.SinkMetricsExporter),
+		new(consumertest.MetricsSink),
 		&fakeRestClient{},
 	)
 
@@ -98,9 +98,9 @@ func TestCollectDataFromEndpoint(t *testing.T) {
 func TestCollectDataFromEndpointWithConsumerError(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
-	sme := new(exportertest.SinkMetricsExporter)
+	sme := new(consumertest.MetricsSink)
 	e := fmt.Errorf("Test Error for Metrics Consumer")
-	sme.SetConsumeMetricsError(e)
+	sme.SetConsumeError(e)
 
 	metricsReceiver, err := New(
 		zap.NewNop(),
@@ -139,7 +139,7 @@ func TestCollectDataFromEndpointWithEndpointError(t *testing.T) {
 	metricsReceiver, err := New(
 		zap.NewNop(),
 		cfg,
-		new(exportertest.SinkMetricsExporter),
+		new(consumertest.MetricsSink),
 		&invalidFakeClient{},
 	)
 

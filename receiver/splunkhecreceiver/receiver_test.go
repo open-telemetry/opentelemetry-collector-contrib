@@ -32,16 +32,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
@@ -62,13 +64,13 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 			args: args{
 				config: *defaultConfig,
 			},
-			wantErr: errNilNextConsumer,
+			wantErr: errNilNextLogsConsumer,
 		},
 		{
 			name: "empty_endpoint",
 			args: args{
 				config:       *emptyEndpointConfig,
-				logsConsumer: new(exportertest.SinkLogsExporter),
+				logsConsumer: new(consumertest.LogsSink),
 			},
 			wantErr: errEmptyEndpoint,
 		},
@@ -76,7 +78,7 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 			name: "default_endpoint",
 			args: args{
 				config:       *defaultConfig,
-				logsConsumer: exportertest.NewNopLogsExporter(),
+				logsConsumer: consumertest.NewLogsNop(),
 			},
 		},
 		{
@@ -87,7 +89,7 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 						Endpoint: "localhost:1234",
 					},
 				},
-				logsConsumer: exportertest.NewNopLogsExporter(),
+				logsConsumer: consumertest.NewLogsNop(),
 			},
 		},
 	}
@@ -122,13 +124,13 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 			args: args{
 				config: *defaultConfig,
 			},
-			wantErr: errNilNextConsumer,
+			wantErr: errNilNextMetricsConsumer,
 		},
 		{
 			name: "empty_endpoint",
 			args: args{
 				config:          *emptyEndpointConfig,
-				metricsConsumer: new(exportertest.SinkMetricsExporter),
+				metricsConsumer: new(consumertest.MetricsSink),
 			},
 			wantErr: errEmptyEndpoint,
 		},
@@ -136,7 +138,7 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 			name: "default_endpoint",
 			args: args{
 				config:          *defaultConfig,
-				metricsConsumer: exportertest.NewNopMetricsExporter(),
+				metricsConsumer: consumertest.NewMetricsNop(),
 			},
 		},
 		{
@@ -147,7 +149,7 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 						Endpoint: "localhost:1234",
 					},
 				},
-				metricsConsumer: exportertest.NewNopMetricsExporter(),
+				metricsConsumer: consumertest.NewMetricsNop(),
 			},
 		},
 	}
@@ -305,7 +307,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkLogsExporter)
+			sink := new(consumertest.LogsSink)
 			rcv, err := NewLogsReceiver(zap.NewNop(), *config, sink)
 			assert.NoError(t, err)
 
@@ -330,8 +332,8 @@ func Test_consumer_err(t *testing.T) {
 	splunkMsg := buildSplunkHecMsg(currentTime, "foo", 3)
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
-	sink := new(exportertest.SinkLogsExporter)
-	sink.SetConsumeLogError(errors.New("bad consumer"))
+	sink := new(consumertest.LogsSink)
+	sink.SetConsumeError(errors.New("bad consumer"))
 	rcv, err := NewLogsReceiver(zap.NewNop(), *config, sink)
 	assert.NoError(t, err)
 
@@ -360,8 +362,8 @@ func Test_consumer_err_metrics(t *testing.T) {
 	assert.True(t, splunkMsg.IsMetric())
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
-	sink := new(exportertest.SinkMetricsExporter)
-	sink.SetConsumeMetricsError(errors.New("bad consumer"))
+	sink := new(consumertest.MetricsSink)
+	sink.SetConsumeError(errors.New("bad consumer"))
 	rcv, err := NewMetricsReceiver(zap.NewNop(), *config, sink)
 	assert.NoError(t, err)
 
@@ -394,7 +396,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 			KeyFile:  "./testdata/testkey.key",
 		},
 	}
-	sink := new(exportertest.SinkLogsExporter)
+	sink := new(consumertest.LogsSink)
 	r, err := NewLogsReceiver(zap.NewNop(), *cfg, sink)
 	require.NoError(t, err)
 	defer r.Shutdown(context.Background())
@@ -410,26 +412,23 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	require.False(t, receivedError)
 	t.Log("Event Reception Started")
 
+	logs := pdata.NewLogs()
+	logs.ResourceLogs().Resize(1)
+	rl := logs.ResourceLogs().At(0)
+	rl.InstrumentationLibraryLogs().Resize(1)
+	ill := rl.InstrumentationLibraryLogs().At(0)
+	ill.Logs().Resize(1)
+	lr := ill.Logs().At(0)
+
 	now := time.Now()
 	msecInt64 := now.UnixNano() / 1e6
 	sec := float64(msecInt64) / 1e3
-	lr := pdata.NewLogRecord()
-	lr.InitEmpty()
 	lr.SetTimestamp(pdata.TimestampUnixNano(int64(sec * 1e9)))
+	lr.SetName("custom:sourcetype")
 
 	lr.Body().SetStringVal("foo")
-	logs := pdata.NewLogs()
-	rl := pdata.NewResourceLogs()
-	rl.InitEmpty()
-	rl.Resource().InitEmpty()
-	rl.Resource().Attributes().InsertString("host.hostname", "")
-	rl.Resource().Attributes().InsertString("service.name", "")
-	rl.Resource().Attributes().InsertString("com.splunk.sourcetype", "")
-	ill := pdata.NewInstrumentationLibraryLogs()
-	ill.InitEmpty()
-	ill.Logs().Append(lr)
-	rl.InstrumentationLibraryLogs().Append(ill)
-	logs.ResourceLogs().Append(rl)
+	lr.Attributes().InsertString("com.splunk.sourcetype", "custom:sourcetype")
+	lr.Attributes().InsertString("com.splunk.index", "myindex")
 	want := logs
 
 	t.Log("Sending Splunk HEC data Request")
@@ -500,7 +499,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			config.Endpoint = "localhost:0"
 			config.AccessTokenPassthrough = tt.passthrough
 
-			sink := new(exportertest.SinkLogsExporter)
+			sink := new(consumertest.LogsSink)
 			rcv, err := NewLogsReceiver(zap.NewNop(), *config, sink)
 			assert.NoError(t, err)
 
@@ -530,9 +529,6 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			got := sink.AllLogs()
 
 			resource := got[0].ResourceLogs().At(0).Resource()
-			if resource.IsNil() {
-				resource.InitEmpty()
-			}
 			tokenLabel, exists := resource.Attributes().Get("com.splunk.hec.access_token")
 
 			if tt.passthrough {
@@ -548,9 +544,205 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 	}
 }
 
+func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
+	tests := []struct {
+		name       string
+		index      string
+		sourcetype string
+	}{
+		{
+			name: "No index, no source type",
+		},
+		{
+			name:  "Index, no source type",
+			index: "myindex",
+		},
+		{
+			name:       "Index and source type",
+			index:      "myindex",
+			sourcetype: "source:type",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := createDefaultConfig().(*Config)
+			config.Endpoint = "localhost:0"
+
+			receivedSplunkLogs := make(chan []byte)
+			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				body, err := ioutil.ReadAll(req.Body)
+				assert.NoError(t, err)
+				rw.WriteHeader(http.StatusAccepted)
+				receivedSplunkLogs <- body
+			}))
+			defer endServer.Close()
+
+			factory := splunkhecexporter.NewFactory()
+			exporterConfig := splunkhecexporter.Config{
+				Token:              "ignored",
+				SourceType:         "defaultsourcetype",
+				Index:              "defaultindex",
+				InsecureSkipVerify: true,
+				DisableCompression: true,
+				Endpoint:           endServer.URL,
+			}
+			exporter, err := factory.CreateLogsExporter(context.Background(), component.ExporterCreateParams{
+				Logger: zap.NewNop(),
+			}, &exporterConfig)
+			exporter.Start(context.Background(), nil)
+			assert.NoError(t, err)
+			rcv, err := NewLogsReceiver(zap.NewNop(), *config, exporter)
+			assert.NoError(t, err)
+
+			currentTime := float64(time.Now().UnixNano()) / 1e6
+			splunkhecMsg := buildSplunkHecMsg(currentTime, "foo", 3)
+			splunkhecMsg.Index = tt.index
+			splunkhecMsg.SourceType = tt.sourcetype
+			msgBytes, _ := json.Marshal(splunkhecMsg)
+			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
+			req.Header.Set("Content-Type", "application/json")
+
+			done := make(chan bool)
+			go func() {
+				got := <-receivedSplunkLogs
+				var event splunk.Event
+				e := json.Unmarshal(got, &event)
+				assert.NoError(t, e)
+				if tt.index == "" {
+					assert.Equal(t, "defaultindex", event.Index)
+				} else {
+					assert.Equal(t, tt.index, event.Index)
+				}
+				if tt.sourcetype == "" {
+					assert.Equal(t, "defaultsourcetype", event.SourceType)
+				} else {
+					assert.Equal(t, tt.sourcetype, event.SourceType)
+				}
+				done <- true
+			}()
+
+			r := rcv.(*splunkReceiver)
+			w := httptest.NewRecorder()
+			r.handleReq(w, req)
+			resp := w.Result()
+			respBytes, err := ioutil.ReadAll(resp.Body)
+			assert.NoError(t, err)
+			var bodyStr string
+			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+			assert.Equal(t, http.StatusAccepted, resp.StatusCode)
+			assert.Equal(t, responseOK, bodyStr)
+			select {
+			case <-done:
+				break
+			case <-time.After(5 * time.Second):
+				assert.Fail(t, "Timeout waiting for logs")
+			}
+		})
+	}
+}
+
+func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
+	tests := []struct {
+		name       string
+		index      string
+		sourcetype string
+	}{
+		{
+			name: "No index, no source type",
+		},
+		{
+			name:  "Index, no source type",
+			index: "myindex",
+		},
+		{
+			name:       "Index and source type",
+			index:      "myindex",
+			sourcetype: "source:type",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := createDefaultConfig().(*Config)
+			config.Endpoint = "localhost:0"
+
+			receivedSplunkMetrics := make(chan []byte)
+			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				body, err := ioutil.ReadAll(req.Body)
+				assert.NoError(t, err)
+				rw.WriteHeader(http.StatusAccepted)
+				receivedSplunkMetrics <- body
+			}))
+			defer endServer.Close()
+
+			factory := splunkhecexporter.NewFactory()
+			exporterConfig := splunkhecexporter.Config{
+				Token:              "ignored",
+				SourceType:         "defaultsourcetype",
+				Index:              "defaultindex",
+				InsecureSkipVerify: true,
+				DisableCompression: true,
+				Endpoint:           endServer.URL,
+			}
+			exporter, err := factory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{
+				Logger: zap.NewNop(),
+			}, &exporterConfig)
+			exporter.Start(context.Background(), nil)
+			assert.NoError(t, err)
+			rcv, err := NewMetricsReceiver(zap.NewNop(), *config, exporter)
+			assert.NoError(t, err)
+
+			currentTime := float64(time.Now().UnixNano()) / 1e6
+			splunkhecMsg := buildSplunkHecMetricsMsg(currentTime, 42, 3)
+			splunkhecMsg.Index = tt.index
+			splunkhecMsg.SourceType = tt.sourcetype
+			msgBytes, _ := json.Marshal(splunkhecMsg)
+			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
+			req.Header.Set("Content-Type", "application/json")
+
+			done := make(chan bool)
+			go func() {
+				got := <-receivedSplunkMetrics
+				var event splunk.Event
+				e := json.Unmarshal(got, &event)
+				assert.NoError(t, e)
+				if tt.index == "" {
+					assert.Equal(t, "defaultindex", event.Index)
+				} else {
+					assert.Equal(t, tt.index, event.Index)
+				}
+				if tt.sourcetype == "" {
+					assert.Equal(t, "defaultsourcetype", event.SourceType)
+				} else {
+					assert.Equal(t, tt.sourcetype, event.SourceType)
+				}
+				done <- true
+			}()
+
+			r := rcv.(*splunkReceiver)
+			w := httptest.NewRecorder()
+			r.handleReq(w, req)
+			resp := w.Result()
+			respBytes, err := ioutil.ReadAll(resp.Body)
+			assert.NoError(t, err)
+			var bodyStr string
+			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+			assert.Equal(t, http.StatusAccepted, resp.StatusCode)
+			assert.Equal(t, responseOK, bodyStr)
+			select {
+			case <-done:
+				break
+			case <-time.After(5 * time.Second):
+				assert.Fail(t, "Timeout waiting for logs")
+			}
+		})
+	}
+}
+
 func buildSplunkHecMetricsMsg(time float64, value int64, dimensions uint) *splunk.Event {
 	ev := &splunk.Event{
-		Time:  time,
+		Time:  &time,
 		Event: "metric",
 		Fields: map[string]interface{}{
 			"metric_name:foo": value,
@@ -565,9 +757,11 @@ func buildSplunkHecMetricsMsg(time float64, value int64, dimensions uint) *splun
 
 func buildSplunkHecMsg(time float64, value string, dimensions uint) *splunk.Event {
 	ev := &splunk.Event{
-		Time:   time,
-		Event:  value,
-		Fields: map[string]interface{}{},
+		Time:       &time,
+		Event:      value,
+		Fields:     map[string]interface{}{},
+		Index:      "myindex",
+		SourceType: "custom:sourcetype",
 	}
 	for dim := uint(0); dim < dimensions; dim++ {
 		ev.Fields[fmt.Sprintf("k%d", dim)] = fmt.Sprintf("v%d", dim)

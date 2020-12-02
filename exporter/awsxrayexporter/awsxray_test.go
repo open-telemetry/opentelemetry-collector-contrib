@@ -49,7 +49,7 @@ func BenchmarkForTraceExporter(b *testing.B) {
 	}
 }
 
-func initializeTraceExporter() component.TraceExporter {
+func initializeTraceExporter() component.TracesExporter {
 	os.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
 	os.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
 	os.Setenv("AWS_DEFAULT_REGION", "us-east-1")
@@ -61,7 +61,7 @@ func initializeTraceExporter() component.TraceExporter {
 	config.(*Config).LocalMode = true
 	mconn := new(mockConn)
 	mconn.sn, _ = getDefaultSession(logger)
-	traceExporter, err := NewTraceExporter(config, logger, mconn)
+	traceExporter, err := newTraceExporter(config, component.ExporterCreateParams{Logger: logger}, mconn)
 	if err != nil {
 		panic(err)
 	}
@@ -85,7 +85,6 @@ func constructSpanData() pdata.Traces {
 
 func constructResource() pdata.Resource {
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeServiceName, "signup_aggregator")
 	attrs.InsertString(semconventions.AttributeContainerName, "signup_aggregator")
@@ -110,7 +109,6 @@ func constructHTTPClientSpan() pdata.Span {
 	spanAttributes := constructSpanAttributes(attributes)
 
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
@@ -141,7 +139,6 @@ func constructHTTPServerSpan() pdata.Span {
 	spanAttributes := constructSpanAttributes(attributes)
 
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
@@ -182,7 +179,7 @@ func newTraceID() pdata.TraceID {
 	if err != nil {
 		panic(err)
 	}
-	return pdata.NewTraceID(r[:])
+	return pdata.NewTraceID(r)
 }
 
 func newSegmentID() pdata.SpanID {
@@ -191,5 +188,5 @@ func newSegmentID() pdata.SpanID {
 	if err != nil {
 		panic(err)
 	}
-	return pdata.NewSpanID(r[:])
+	return pdata.NewSpanID(r)
 }

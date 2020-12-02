@@ -75,13 +75,13 @@ func (r *redisRunnable) Run() error {
 
 	inf, err := r.redisSvc.info()
 	if err != nil {
-		obsreport.EndMetricsReceiveOp(ctx, dataFormat, 0, 0, err)
+		obsreport.EndMetricsReceiveOp(ctx, dataFormat, 0, err)
 		return nil
 	}
 
 	uptime, err := inf.getUptimeInSeconds()
 	if err != nil {
-		obsreport.EndMetricsReceiveOp(ctx, dataFormat, 0, 0, err)
+		obsreport.EndMetricsReceiveOp(ctx, dataFormat, 0, err)
 		return nil
 	}
 
@@ -108,11 +108,11 @@ func (r *redisRunnable) Run() error {
 		)
 	}
 
-	md := newMetricsData(metrics, r.serviceName)
+	md := internaldata.OCToMetrics(newMetricsData(metrics, r.serviceName))
 
-	err = r.metricsConsumer.ConsumeMetrics(r.ctx, internaldata.OCToMetrics(md))
-	numTimeSeries, numPoints := obsreport.CountMetricPoints(md)
-	obsreport.EndMetricsReceiveOp(ctx, dataFormat, numPoints, numTimeSeries, err)
+	err = r.metricsConsumer.ConsumeMetrics(r.ctx, md)
+	_, numPoints := md.MetricAndDataPointCount()
+	obsreport.EndMetricsReceiveOp(ctx, dataFormat, numPoints, err)
 
 	return nil
 }

@@ -24,6 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/mapwithexpiry"
 )
@@ -76,13 +77,61 @@ type CWMetricStats struct {
 	Sum   float64
 }
 
+// Wrapper interface for:
+//  - pdata.IntDataPointSlice
+//  - pdata.DoubleDataPointSlice
+//  - pdata.IntHistogramDataPointSlice
+//  - pdata.DoubleHistogramDataPointSlice
+//  - pdata.DoubleSummaryDataPointSlice
+type DataPoints interface {
+	Len() int
+	At(int) DataPoint
+}
+
+// DataPoint is a wrapper interface for:
+//  - pdata.IntDataPoint
+//  - pdata.DoubleDataPoint
+//  - pdata.IntHistogramDataPoint
+//  - pdata.DoubleHistogramDataPoint
+//  - pdata.DoubleSummaryDataPointSlice
+type DataPoint interface {
+	LabelsMap() pdata.StringMap
+}
+
+// Define wrapper interfaces such that At(i) returns a `DataPoint`
+type IntDataPointSlice struct {
+	pdata.IntDataPointSlice
+}
+type DoubleDataPointSlice struct {
+	pdata.DoubleDataPointSlice
+}
+type DoubleHistogramDataPointSlice struct {
+	pdata.DoubleHistogramDataPointSlice
+}
+type DoubleSummaryDataPointSlice struct {
+	pdata.DoubleSummaryDataPointSlice
+}
+
+func (dps IntDataPointSlice) At(i int) DataPoint {
+	return dps.IntDataPointSlice.At(i)
+}
+func (dps DoubleDataPointSlice) At(i int) DataPoint {
+	return dps.DoubleDataPointSlice.At(i)
+}
+func (dps DoubleHistogramDataPointSlice) At(i int) DataPoint {
+	return dps.DoubleHistogramDataPointSlice.At(i)
+}
+func (dps DoubleSummaryDataPointSlice) At(i int) DataPoint {
+	return dps.DoubleSummaryDataPointSlice.At(i)
+}
+
 // TranslateOtToCWMetric converts OT metrics to CloudWatch Metric format
-func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, dimensionRollupOption string, namespace string) ([]*CWMetrics, int) {
-	var cwMetricLists []*CWMetrics
-	totalDroppedMetrics := 0
+func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, config *Config) ([]*CWMetrics, int) {
+	var cwMetricList []*CWMetrics
+	namespace := config.Namespace
 	var instrumentationLibName string
 
-	if len(namespace) == 0 && !rm.Resource().IsNil() {
+	if len(namespace) == 0 {
 		serviceName, svcNameOk := rm.Resource().Attributes().Get(conventions.AttributeServiceName)
 		serviceNamespace, svcNsOk := rm.Resource().Attributes().Get(conventions.AttributeServiceNamespace)
 		if svcNameOk && svcNsOk && serviceName.Type() == pdata.AttributeValueSTRING && serviceNamespace.Type() == pdata.AttributeValueSTRING {
@@ -101,10 +150,7 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, dimensionRollupOption stri
 	ilms := rm.InstrumentationLibraryMetrics()
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
-		if ilm.IsNil() {
-			continue
-		}
-		if ilm.InstrumentationLibrary().IsNil() {
+		if ilm.InstrumentationLibrary().Name() == "" {
 			instrumentationLibName = noInstrumentationLibraryName
 		} else {
 			instrumentationLibName = ilm.InstrumentationLibrary().Name()
@@ -113,26 +159,30 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, dimensionRollupOption stri
 		metrics := ilm.Metrics()
 		for k := 0; k < metrics.Len(); k++ {
 			metric := metrics.At(k)
-			if metric.IsNil() {
-				totalDroppedMetrics++
-				continue
-			}
-			cwMetricList := getMeasurements(&metric, namespace, instrumentationLibName, dimensionRollupOption)
-			cwMetricLists = append(cwMetricLists, cwMetricList...)
+			cwMetrics := getCWMetrics(&metric, namespace, instrumentationLibName, config)
+			cwMetricList = append(cwMetricList, cwMetrics...)
 		}
 	}
-	return cwMetricLists, totalDroppedMetrics
+	return cwMetricList, 0
 }
 
-func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics) []*LogEvent {
+// TranslateCWMetricToEMF converts CloudWatch Metric format to EMF.
+func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics, logger *zap.Logger) []*LogEvent {
 	// convert CWMetric into map format for compatible with PLE input
 	ples := make([]*LogEvent, 0, maximumLogEventsPerPut)
 	for _, met := range cwMetricLists {
 		cwmMap := make(map[string]interface{})
 		fieldMap := met.Fields
-		cwmMap["CloudWatchMetrics"] = met.Measurements
-		cwmMap["Timestamp"] = met.Timestamp
-		fieldMap["_aws"] = cwmMap
+
+		if len(met.Measurements) > 0 {
+			// Create `_aws` section only if there are measurements
+			cwmMap["CloudWatchMetrics"] = met.Measurements
+			cwmMap["Timestamp"] = met.Timestamp
+			fieldMap["_aws"] = cwmMap
+		} else {
+			str, _ := json.Marshal(fieldMap)
+			logger.Debug("Dropped metric due to no matching metric declarations", zap.String("labels", string(str)))
+		}
 
 		pleMsg, err := json.Marshal(fieldMap)
 		if err != nil {
@@ -150,215 +200,170 @@ func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics) []*LogEvent {
 	return ples
 }
 
-func getMeasurements(metric *pdata.Metric, namespace string, instrumentationLibName string, dimensionRollupOption string) []*CWMetrics {
-	var result []*CWMetrics
+// getCWMetrics translates OTLP Metric to a list of CW Metrics
+func getCWMetrics(metric *pdata.Metric, namespace string, instrumentationLibName string, config *Config) (cwMetrics []*CWMetrics) {
+	if metric == nil {
+		return
+	}
 
 	// metric measure data from OT
 	metricMeasure := make(map[string]string)
-	// metric measure slice could include multiple metric measures
-	metricSlice := []map[string]string{}
 	metricMeasure["Name"] = metric.Name()
 	metricMeasure["Unit"] = metric.Unit()
-	metricSlice = append(metricSlice, metricMeasure)
+	// metric measure slice could include multiple metric measures
+	metricSlice := []map[string]string{metricMeasure}
 
+	// Retrieve data points
+	var dps DataPoints
 	switch metric.DataType() {
 	case pdata.MetricDataTypeIntGauge:
-		dps := metric.IntGauge().DataPoints()
-		if dps.Len() == 0 {
-			return result
-		}
-		for m := 0; m < dps.Len(); m++ {
-			dp := dps.At(m)
-			if dp.IsNil() {
-				continue
-			}
-			cwMetric := buildCWMetricFromDP(dp, metric, namespace, metricSlice, instrumentationLibName, dimensionRollupOption)
-			if cwMetric != nil {
-				result = append(result, cwMetric)
-			}
-		}
+		dps = IntDataPointSlice{metric.IntGauge().DataPoints()}
 	case pdata.MetricDataTypeDoubleGauge:
-		dps := metric.DoubleGauge().DataPoints()
-		if dps.Len() == 0 {
-			return result
-		}
-		for m := 0; m < dps.Len(); m++ {
-			dp := dps.At(m)
-			if dp.IsNil() {
-				continue
-			}
-			cwMetric := buildCWMetricFromDP(dp, metric, namespace, metricSlice, instrumentationLibName, dimensionRollupOption)
-			if cwMetric != nil {
-				result = append(result, cwMetric)
-			}
-		}
+		dps = DoubleDataPointSlice{metric.DoubleGauge().DataPoints()}
 	case pdata.MetricDataTypeIntSum:
-		dps := metric.IntSum().DataPoints()
-		if dps.Len() == 0 {
-			return result
-		}
-		for m := 0; m < dps.Len(); m++ {
-			dp := dps.At(m)
-			if dp.IsNil() {
-				continue
-			}
-			cwMetric := buildCWMetricFromDP(dp, metric, namespace, metricSlice, instrumentationLibName, dimensionRollupOption)
-			if cwMetric != nil {
-				result = append(result, cwMetric)
-			}
-		}
+		dps = IntDataPointSlice{metric.IntSum().DataPoints()}
 	case pdata.MetricDataTypeDoubleSum:
-		dps := metric.DoubleSum().DataPoints()
-		if dps.Len() == 0 {
-			return result
-		}
-		for m := 0; m < dps.Len(); m++ {
-			dp := dps.At(m)
-			if dp.IsNil() {
-				continue
-			}
-			cwMetric := buildCWMetricFromDP(dp, metric, namespace, metricSlice, instrumentationLibName, dimensionRollupOption)
-			if cwMetric != nil {
-				result = append(result, cwMetric)
-			}
-		}
+		dps = DoubleDataPointSlice{metric.DoubleSum().DataPoints()}
 	case pdata.MetricDataTypeDoubleHistogram:
-		dps := metric.DoubleHistogram().DataPoints()
-		if dps.Len() == 0 {
-			return result
-		}
-		for m := 0; m < dps.Len(); m++ {
-			dp := dps.At(m)
-			if dp.IsNil() {
-				continue
-			}
-			cwMetric := buildCWMetricFromHistogram(dp, metric, namespace, metricSlice, instrumentationLibName, dimensionRollupOption)
-			if cwMetric != nil {
-				result = append(result, cwMetric)
-			}
+		dps = DoubleHistogramDataPointSlice{metric.DoubleHistogram().DataPoints()}
+	case pdata.MetricDataTypeDoubleSummary:
+		dps = DoubleSummaryDataPointSlice{metric.DoubleSummary().DataPoints()}
+	default:
+		config.logger.Warn(
+			"Unhandled metric data type.",
+			zap.String("DataType", metric.DataType().String()),
+			zap.String("Name", metric.Name()),
+			zap.String("Unit", metric.Unit()),
+		)
+		return
+	}
+
+	if dps.Len() == 0 {
+		return
+	}
+	for m := 0; m < dps.Len(); m++ {
+		dp := dps.At(m)
+		cwMetric := buildCWMetric(dp, metric, namespace, metricSlice, instrumentationLibName, config)
+		if cwMetric != nil {
+			cwMetrics = append(cwMetrics, cwMetric)
 		}
 	}
-	return result
+	return
 }
 
-func buildCWMetricFromDP(dp interface{}, pmd *pdata.Metric, namespace string, metricSlice []map[string]string, instrumentationLibName string, dimensionRollupOption string) *CWMetrics {
-	// fields contains metric and dimensions key/value pairs
-	fieldsPairs := make(map[string]interface{})
-	var dimensionArray [][]string
-	// Dimensions Slice
-	var dimensionSlice []string
-	var dimensionKV pdata.StringMap
-	switch metric := dp.(type) {
-	case pdata.IntDataPoint:
-		dimensionKV = metric.LabelsMap()
-	case pdata.DoubleDataPoint:
-		dimensionKV = metric.LabelsMap()
+// buildCWMetric builds CWMetric from DataPoint
+func buildCWMetric(dp DataPoint, pmd *pdata.Metric, namespace string, metricSlice []map[string]string, instrumentationLibName string, config *Config) *CWMetrics {
+	dimensionRollupOption := config.DimensionRollupOption
+	metricDeclarations := config.MetricDeclarations
+
+	labelsMap := dp.LabelsMap()
+	labelsSlice := make([]string, labelsMap.Len(), labelsMap.Len()+1)
+	// `labels` contains label key/value pairs
+	labels := make(map[string]string, labelsMap.Len()+1)
+	// `fields` contains metric and dimensions key/value pairs
+	fields := make(map[string]interface{}, labelsMap.Len()+2)
+	idx := 0
+	labelsMap.ForEach(func(k, v string) {
+		fields[k] = v
+		labels[k] = v
+		labelsSlice[idx] = k
+		idx++
+	})
+
+	// Apply single/zero dimension rollup to labels
+	rollupDimensionArray := dimensionRollup(dimensionRollupOption, labelsSlice, instrumentationLibName)
+
+	// Add OTel instrumentation lib name as an additional dimension if it is defined
+	if instrumentationLibName != noInstrumentationLibraryName {
+		labels[OTellibDimensionKey] = instrumentationLibName
+		fields[OTellibDimensionKey] = instrumentationLibName
 	}
 
-	dimensionKV.ForEach(func(k string, v pdata.StringValue) {
-		fieldsPairs[k] = v.Value()
-		dimensionSlice = append(dimensionSlice, k)
-	})
-	// add OTel instrumentation lib name as an additional dimension if it is defined
-	if instrumentationLibName != noInstrumentationLibraryName {
-		fieldsPairs[OTellibDimensionKey] = instrumentationLibName
-		dimensionArray = append(dimensionArray, append(dimensionSlice, OTellibDimensionKey))
+	// Create list of dimension sets
+	var dimensions [][]string
+	if len(metricDeclarations) > 0 {
+		// If metric declarations are defined, extract dimension sets from them
+		dimensions = processMetricDeclarations(metricDeclarations, pmd, labels, rollupDimensionArray)
 	} else {
-		dimensionArray = append(dimensionArray, dimensionSlice)
+		// If no metric declarations defined, create a single dimension set containing
+		// the list of labels
+		dims := labelsSlice
+		if instrumentationLibName != noInstrumentationLibraryName {
+			// If OTel instrumentation lib name is defined, add instrumentation lib
+			// name as a dimension
+			dims = append(dims, OTellibDimensionKey)
+		}
+
+		if len(rollupDimensionArray) > 0 {
+			// Perform de-duplication check for edge case with a single label and single roll-up
+			// is activated
+			if len(labelsSlice) > 1 || (dimensionRollupOption != SingleDimensionRollupOnly &&
+				dimensionRollupOption != ZeroAndSingleDimensionRollup) {
+				dimensions = [][]string{dims}
+			}
+			dimensions = append(dimensions, rollupDimensionArray...)
+		} else {
+			dimensions = [][]string{dims}
+		}
+	}
+
+	// Build list of CW Measurements
+	var cwMeasurements []CwMeasurement
+	if len(dimensions) > 0 {
+		cwMeasurements = []CwMeasurement{
+			{
+				Namespace:  namespace,
+				Dimensions: dimensions,
+				Metrics:    metricSlice,
+			},
+		}
 	}
 
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+
+	// Extract metric
 	var metricVal interface{}
 	switch metric := dp.(type) {
 	case pdata.IntDataPoint:
-		// Put a fake but identical metric value here in order to add metric name into fieldsPairs
+		// Put a fake but identical metric value here in order to add metric name into fields
 		// since calculateRate() needs metric name as one of metric identifiers
-		fieldsPairs[pmd.Name()] = int64(FakeMetricValue)
+		fields[pmd.Name()] = int64(FakeMetricValue)
 		metricVal = metric.Value()
 		if needsCalculateRate(pmd) {
-			metricVal = calculateRate(fieldsPairs, metric.Value(), timestamp)
+			metricVal = calculateRate(fields, metric.Value(), timestamp)
 		}
 	case pdata.DoubleDataPoint:
-		fieldsPairs[pmd.Name()] = float64(FakeMetricValue)
+		fields[pmd.Name()] = float64(FakeMetricValue)
 		metricVal = metric.Value()
 		if needsCalculateRate(pmd) {
-			metricVal = calculateRate(fieldsPairs, metric.Value(), timestamp)
+			metricVal = calculateRate(fields, metric.Value(), timestamp)
 		}
+	case pdata.DoubleHistogramDataPoint:
+		metricVal = &CWMetricStats{
+			Count: metric.Count(),
+			Sum:   metric.Sum(),
+		}
+	case pdata.DoubleSummaryDataPoint:
+		metricStat := &CWMetricStats{
+			Count: metric.Count(),
+			Sum:   metric.Sum(),
+		}
+		quantileValues := metric.QuantileValues()
+		if quantileValues.Len() > 0 {
+			metricStat.Min = quantileValues.At(0).Value()
+			metricStat.Max = quantileValues.At(quantileValues.Len() - 1).Value()
+		}
+		metricVal = metricStat
 	}
 	if metricVal == nil {
 		return nil
 	}
-	fieldsPairs[pmd.Name()] = metricVal
+	fields[pmd.Name()] = metricVal
 
-	// EMF dimension attr takes list of list on dimensions. Including single/zero dimension rollup
-	rollupDimensionArray := dimensionRollup(dimensionRollupOption, dimensionSlice, instrumentationLibName)
-	if len(rollupDimensionArray) > 0 {
-		dimensionArray = append(dimensionArray, rollupDimensionArray...)
-	}
-
-	cwMeasurement := &CwMeasurement{
-		Namespace:  namespace,
-		Dimensions: dimensionArray,
-		Metrics:    metricSlice,
-	}
-	metricList := make([]CwMeasurement, 1)
-	metricList[0] = *cwMeasurement
 	cwMetric := &CWMetrics{
-		Measurements: metricList,
+		Measurements: cwMeasurements,
 		Timestamp:    timestamp,
-		Fields:       fieldsPairs,
-	}
-	return cwMetric
-}
-
-func buildCWMetricFromHistogram(metric pdata.DoubleHistogramDataPoint, pmd *pdata.Metric, namespace string, metricSlice []map[string]string, instrumentationLibName string, dimensionRollupOption string) *CWMetrics {
-	// fields contains metric and dimensions key/value pairs
-	fieldsPairs := make(map[string]interface{})
-	var dimensionArray [][]string
-	// Dimensions Slice
-	var dimensionSlice []string
-	dimensionKV := metric.LabelsMap()
-
-	dimensionKV.ForEach(func(k string, v pdata.StringValue) {
-		fieldsPairs[k] = v.Value()
-		dimensionSlice = append(dimensionSlice, k)
-	})
-	// add OTel instrumentation lib name as an additional dimension if it is defined
-	if instrumentationLibName != noInstrumentationLibraryName {
-		fieldsPairs[OTellibDimensionKey] = instrumentationLibName
-		dimensionArray = append(dimensionArray, append(dimensionSlice, OTellibDimensionKey))
-	} else {
-		dimensionArray = append(dimensionArray, dimensionSlice)
-	}
-
-	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
-
-	bucketBounds := metric.ExplicitBounds()
-	metricStats := &CWMetricStats{
-		Min:   bucketBounds[0],
-		Max:   bucketBounds[len(bucketBounds)-1],
-		Count: metric.Count(),
-		Sum:   metric.Sum(),
-	}
-	fieldsPairs[pmd.Name()] = metricStats
-
-	// EMF dimension attr takes list of list on dimensions. Including single/zero dimension rollup
-	rollupDimensionArray := dimensionRollup(dimensionRollupOption, dimensionSlice, instrumentationLibName)
-	if len(rollupDimensionArray) > 0 {
-		dimensionArray = append(dimensionArray, rollupDimensionArray...)
-	}
-
-	cwMeasurement := &CwMeasurement{
-		Namespace:  namespace,
-		Dimensions: dimensionArray,
-		Metrics:    metricSlice,
-	}
-	metricList := make([]CwMeasurement, 1)
-	metricList[0] = *cwMeasurement
-	cwMetric := &CWMetrics{
-		Measurements: metricList,
-		Timestamp:    timestamp,
-		Fields:       fieldsPairs,
+		Fields:       fields,
 	}
 	return cwMetric
 }
@@ -420,9 +425,10 @@ func calculateRate(fields map[string]interface{}, val interface{}, timestamp int
 	return metricRate
 }
 
+// dimensionRollup creates rolled-up dimensions from the metric's label set.
 func dimensionRollup(dimensionRollupOption string, originalDimensionSlice []string, instrumentationLibName string) [][]string {
 	var rollupDimensionArray [][]string
-	dimensionZero := []string{}
+	var dimensionZero []string
 	if instrumentationLibName != noInstrumentationLibraryName {
 		dimensionZero = append(dimensionZero, OTellibDimensionKey)
 	}
@@ -434,10 +440,8 @@ func dimensionRollup(dimensionRollupOption string, originalDimensionSlice []stri
 	}
 	if dimensionRollupOption == ZeroAndSingleDimensionRollup || dimensionRollupOption == SingleDimensionRollupOnly {
 		//"One" dimension rollup
-		if len(originalDimensionSlice) > 1 {
-			for _, dimensionKey := range originalDimensionSlice {
-				rollupDimensionArray = append(rollupDimensionArray, append(dimensionZero, dimensionKey))
-			}
+		for _, dimensionKey := range originalDimensionSlice {
+			rollupDimensionArray = append(rollupDimensionArray, append(dimensionZero, dimensionKey))
 		}
 	}
 
@@ -447,11 +451,11 @@ func dimensionRollup(dimensionRollupOption string, originalDimensionSlice []stri
 func needsCalculateRate(pmd *pdata.Metric) bool {
 	switch pmd.DataType() {
 	case pdata.MetricDataTypeIntSum:
-		if !pmd.IntSum().IsNil() && pmd.IntSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative {
+		if pmd.IntSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative {
 			return true
 		}
 	case pdata.MetricDataTypeDoubleSum:
-		if !pmd.DoubleSum().IsNil() && pmd.DoubleSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative {
+		if pmd.DoubleSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative {
 			return true
 		}
 	}

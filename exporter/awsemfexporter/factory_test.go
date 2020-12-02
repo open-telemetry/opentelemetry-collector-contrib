@@ -49,7 +49,7 @@ func TestCreateTraceExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	exporter, err := factory.CreateTraceExporter(ctx, component.ExporterCreateParams{Logger: logger}, cfg.Exporters["awsemf/1"])
+	exporter, err := factory.CreateTracesExporter(ctx, component.ExporterCreateParams{Logger: logger}, cfg.Exporters["awsemf/1"])
 	assert.NotNil(t, err)
 	assert.Nil(t, exporter)
 }

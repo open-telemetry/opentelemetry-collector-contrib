@@ -40,7 +40,7 @@ import (
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func TestNew(t *testing.T) {
@@ -103,7 +103,7 @@ func TestConsumeMetricsData(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				assert.Equal(t, "test", metric.Source)
+				assert.Equal(t, "test_splunk", metric.Source)
 				assert.Equal(t, "test_type", metric.SourceType)
 				assert.Equal(t, "test_index", metric.Index)
 
@@ -193,23 +193,21 @@ func generateLargeBatch(t *testing.T) consumerdata.MetricsData {
 	return md
 }
 
-func generateLargeLogsBatch(t *testing.T) pdata.Logs {
+func generateLargeLogsBatch() pdata.Logs {
 	logs := pdata.NewLogs()
-	rl := pdata.NewResourceLogs()
-	rl.InitEmpty()
-	logs.ResourceLogs().Append(rl)
-	ill := pdata.NewInstrumentationLibraryLogs()
-	ill.InitEmpty()
-	rl.InstrumentationLibraryLogs().Append(ill)
-
+	logs.ResourceLogs().Resize(1)
+	rl := logs.ResourceLogs().At(0)
+	rl.InstrumentationLibraryLogs().Resize(1)
+	ill := rl.InstrumentationLibraryLogs().At(0)
+	ill.Logs().Resize(65000)
 	ts := pdata.TimestampUnixNano(123)
 	for i := 0; i < 65000; i++ {
-		logRecord := pdata.NewLogRecord()
-		logRecord.InitEmpty()
+		logRecord := ill.Logs().At(i)
 		logRecord.Body().SetStringVal("mylog")
 		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-		logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
+		logRecord.Attributes().InsertString(splunk.IndexLabel, "myindex")
+		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)
 	}
@@ -219,9 +217,8 @@ func generateLargeLogsBatch(t *testing.T) pdata.Logs {
 
 func TestConsumeLogsData(t *testing.T) {
 	logRecord := pdata.NewLogRecord()
-	logRecord.InitEmpty()
 	logRecord.Body().SetStringVal("mylog")
-	logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
+	logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 	logRecord.Attributes().InsertString("custom", "custom")
 	logRecord.SetTimestamp(123)
 	smallBatch := makeLog(logRecord)
@@ -271,7 +268,7 @@ func TestConsumeLogsData(t *testing.T) {
 		},
 		{
 			name:             "large_batch",
-			ld:               generateLargeLogsBatch(t),
+			ld:               generateLargeLogsBatch(),
 			reqTestFunc:      nil,
 			httpResponseCode: http.StatusAccepted,
 		},

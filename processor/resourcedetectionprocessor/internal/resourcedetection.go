@@ -108,7 +108,6 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 	p.detectedResource = &resourceResult{}
 
 	res := pdata.NewResource()
-	res.InitEmpty()
 
 	p.logger.Info("began detecting resource information")
 
@@ -130,29 +129,42 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 func AttributesToMap(am pdata.AttributeMap) map[string]interface{} {
 	mp := make(map[string]interface{}, am.Len())
 	am.ForEach(func(k string, v pdata.AttributeValue) {
-		switch v.Type() {
-		case pdata.AttributeValueBOOL:
-			mp[k] = v.BoolVal()
-		case pdata.AttributeValueINT:
-			mp[k] = v.IntVal()
-		case pdata.AttributeValueDOUBLE:
-			mp[k] = v.DoubleVal()
-		case pdata.AttributeValueSTRING:
-			mp[k] = v.StringVal()
-		case pdata.AttributeValueMAP:
-			mp[k] = AttributesToMap(v.MapVal())
-		}
+		mp[k] = UnwrapAttribute(v)
 	})
 	return mp
+}
+
+func UnwrapAttribute(v pdata.AttributeValue) interface{} {
+	switch v.Type() {
+	case pdata.AttributeValueBOOL:
+		return v.BoolVal()
+	case pdata.AttributeValueINT:
+		return v.IntVal()
+	case pdata.AttributeValueDOUBLE:
+		return v.DoubleVal()
+	case pdata.AttributeValueSTRING:
+		return v.StringVal()
+	case pdata.AttributeValueARRAY:
+		return getSerializableArray(v.ArrayVal())
+	case pdata.AttributeValueMAP:
+		return AttributesToMap(v.MapVal())
+	default:
+		return nil
+	}
+}
+
+func getSerializableArray(inArr pdata.AnyValueArray) []interface{} {
+	var outArr []interface{}
+	for i := 0; i < inArr.Len(); i++ {
+		outArr = append(outArr, UnwrapAttribute(inArr.At(i)))
+	}
+
+	return outArr
 }
 
 func MergeResource(to, from pdata.Resource, overrideTo bool) {
 	if IsEmptyResource(from) {
 		return
-	}
-
-	if to.IsNil() {
-		to.InitEmpty()
 	}
 
 	toAttr := to.Attributes()
@@ -166,5 +178,5 @@ func MergeResource(to, from pdata.Resource, overrideTo bool) {
 }
 
 func IsEmptyResource(res pdata.Resource) bool {
-	return res.IsNil() || res.Attributes().Len() == 0
+	return res.Attributes().Len() == 0
 }

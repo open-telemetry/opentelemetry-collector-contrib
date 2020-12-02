@@ -15,20 +15,19 @@
 package awsecscontainermetrics
 
 const (
-	AttributeECSDockerName   = "ecs.docker-name"
-	AttributeECSCluster      = "ecs.cluster"
-	AttributeECSTaskARN      = "ecs.task-arn"
-	AttributeECSTaskID       = "ecs.task-id"
-	AttributeECSTaskFamily   = "ecs.task-definition-family"
-	AttributeECSTaskRevesion = "ecs.task-definition-version"
-	AttributeECSServiceName  = "ecs.service"
+	AttributeECSDockerName   = "aws.ecs.docker.name"
+	AttributeECSCluster      = "aws.ecs.cluster.name"
+	AttributeECSTaskARN      = "aws.ecs.task.arn"
+	AttributeECSTaskID       = "aws.ecs.task.id"
+	AttributeECSTaskFamily   = "aws.ecs.task.family"
+	AttributeECSTaskRevesion = "aws.ecs.task.version"
+	AttributeECSServiceName  = "aws.ecs.service.name"
 
 	CPUsInVCpu = 1024
 	BytesInMiB = 1024 * 1024
 
-	TaskPrefix         = "ecs.task."
-	ContainerPrefix    = "container."
-	MetricResourceType = "aoc.ecs"
+	TaskPrefix      = "ecs.task."
+	ContainerPrefix = "container."
 
 	EndpointEnvKey   = "ECS_CONTAINER_METADATA_URI_V4"
 	TaskStatsPath    = "/task/stats"
@@ -66,9 +65,9 @@ const (
 	AttributeStorageWrite = "storage.write_bytes"
 
 	UnitBytes       = "Bytes"
-	UnitMegaBytes   = "MB"
-	UnitNanoSecond  = "NS"
-	UnitBytesPerSec = "Bytes/Sec"
+	UnitMegaBytes   = "Megabytes"
+	UnitNanoSecond  = "Nanoseconds"
+	UnitBytesPerSec = "Bytes/Second"
 	UnitCount       = "Count"
 	UnitVCpu        = "vCPU"
 	UnitPercent     = "Percent"

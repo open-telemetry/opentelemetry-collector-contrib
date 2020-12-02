@@ -18,16 +18,14 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 )
 
 // newTraceExporter return a new LogSerice trace exporter.
-func newTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.TraceExporter, error) {
+func newTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.TracesExporter, error) {
 
 	l := &logServiceTraceSender{
 		logger: logger,
@@ -40,6 +38,7 @@ func newTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.
 
 	return exporterhelper.NewTraceExporter(
 		cfg,
+		logger,
 		l.pushTraceData)
 }
 
@@ -52,16 +51,10 @@ func (s *logServiceTraceSender) pushTraceData(
 	_ context.Context,
 	td pdata.Traces,
 ) (int, error) {
-	octds := internaldata.TraceDataToOC(td)
-	var errs []error
-	for _, octd := range octds {
-		logs := traceDataToLogServiceData(octd)
-		if len(logs) > 0 {
-			if err := s.client.SendLogs(logs); err != nil {
-				errs = append(errs, err)
-			}
-		}
+	var err error
+	slsLogs, dropped := traceDataToLogServiceData(td)
+	if len(slsLogs) > 0 {
+		err = s.client.SendLogs(slsLogs)
 	}
-	return 0, componenterror.CombineErrors(errs)
-
+	return dropped, err
 }

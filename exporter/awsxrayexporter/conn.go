@@ -60,7 +60,7 @@ func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify
 		zap.String("proxyAddr", proxyAddress),
 	)
 	tls := &tls.Config{
-		InsecureSkipVerify: false,
+		InsecureSkipVerify: noVerify,
 	}
 
 	finalProxyAddress := getProxyAddress(proxyAddress)

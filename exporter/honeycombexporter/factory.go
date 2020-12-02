@@ -44,7 +44,6 @@ func createDefaultConfig() configmodels.Exporter {
 		APIKey:              "",
 		Dataset:             "",
 		APIURL:              "https://api.honeycomb.io",
-		SampleRate:          1,
 		SampleRateAttribute: "",
 		Debug:               false,
 	}
@@ -54,7 +53,16 @@ func createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 	eCfg := cfg.(*Config)
-	return newHoneycombTraceExporter(eCfg, params.Logger)
+	exporter, err := newHoneycombTraceExporter(eCfg, params.Logger)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewTraceExporter(
+		cfg,
+		params.Logger,
+		exporter.pushTraceData,
+		exporterhelper.WithShutdown(exporter.Shutdown))
 }

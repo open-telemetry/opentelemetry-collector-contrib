@@ -65,7 +65,7 @@ func TestMetricsStoreOperations(t *testing.T) {
 	// Remove non existent item
 	ms.remove(&corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
-			UID: types.UID("1"),
+			UID: "1",
 		},
 	})
 	require.Equal(t, len(updates), len(ms.metricsCache))

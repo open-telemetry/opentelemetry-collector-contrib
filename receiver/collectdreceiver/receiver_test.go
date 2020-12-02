@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -67,7 +67,7 @@ func TestNewReceiver(t *testing.T) {
 				addr:         ":0",
 				timeout:      defaultTimeout,
 				attrsPrefix:  "default_attr_",
-				nextConsumer: exportertest.NewNopMetricsExporter(),
+				nextConsumer: consumertest.NewMetricsNop(),
 			},
 		},
 	}
@@ -154,7 +154,7 @@ func TestCollectDServer(t *testing.T) {
 		wantData:     []consumerdata.MetricsData{},
 	}}
 
-	sink := new(exportertest.SinkMetricsExporter)
+	sink := new(consumertest.MetricsSink)
 
 	logger := zap.NewNop()
 	cdr, err := newCollectdReceiver(logger, endpoint, defaultTimeout, defaultAttrsPrefix, sink)

@@ -32,7 +32,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )
 
@@ -309,9 +309,7 @@ func generateSampleMetricsData(attrs map[string]string) pdata.Metrics {
 	m := pdata.NewMetrics()
 	rm := m.ResourceMetrics()
 	rm.Resize(1)
-	rm.At(0).InitEmpty()
 	res := rm.At(0).Resource()
-	res.InitEmpty()
 	for k, v := range attrs {
 		res.Attributes().InsertString(k, v)
 	}

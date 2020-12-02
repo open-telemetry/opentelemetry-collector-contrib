@@ -37,7 +37,7 @@ func TestCreateReceiver(t *testing.T) {
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
-	mReceiver, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
+	mReceiver, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
 	assert.Error(t, err)
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, mReceiver)
