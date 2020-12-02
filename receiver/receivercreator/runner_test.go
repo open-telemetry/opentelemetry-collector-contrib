@@ -19,12 +19,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
 )
 
 func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
-	run := &receiverRunner{logger: zap.NewNop(), nextConsumer: &mockMetricsConsumer{}, idNamespace: "receiver_creator/1"}
+	run := &receiverRunner{params: component.ReceiverCreateParams{Logger: zap.NewNop()}, nextConsumer: &mockMetricsConsumer{}, idNamespace: "receiver_creator/1"}
 	exampleFactory := &componenttest.ExampleReceiverFactory{}
 	template, err := newReceiverTemplate("examplereceiver/1", nil)
 	require.NoError(t, err)

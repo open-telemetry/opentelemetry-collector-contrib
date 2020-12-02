@@ -153,7 +153,7 @@ func extractName(cfg *Config) string {
 
 // Start creates the configs and calls the function that handles the prometheus_exec receiver
 func (per *prometheusExecReceiver) Start(ctx context.Context, host component.Host) error {
-	// Shutdown channel
+	// shutdown channel
 	per.shutdownCh = make(chan struct{})
 
 	go per.manageProcess(context.Background(), host)

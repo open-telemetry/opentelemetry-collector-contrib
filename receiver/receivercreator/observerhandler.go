@@ -38,8 +38,8 @@ type observerHandler struct {
 	runner runner
 }
 
-// Shutdown all receivers started at runtime.
-func (obs *observerHandler) Shutdown() error {
+// shutdown all receivers started at runtime.
+func (obs *observerHandler) shutdown() error {
 	obs.Lock()
 	defer obs.Unlock()
 

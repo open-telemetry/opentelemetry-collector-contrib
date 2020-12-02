@@ -56,7 +56,7 @@ func createMetricsReceiver(
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
-	return newReceiverCreator(params.Logger, consumer, cfg.(*Config))
+	return newReceiverCreator(params, cfg.(*Config), consumer)
 }
 
 func customUnmarshaler(sourceViperSection *viper.Viper, intoCfg interface{}) error {
