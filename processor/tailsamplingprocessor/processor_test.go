@@ -22,9 +22,8 @@ import (
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/collector/consumer/consumertest"
-
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
