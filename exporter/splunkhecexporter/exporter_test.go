@@ -193,16 +193,16 @@ func generateLargeBatch(t *testing.T) consumerdata.MetricsData {
 	return md
 }
 
-func generateLargeLogsBatch(t *testing.T) pdata.Logs {
+func generateLargeLogsBatch() pdata.Logs {
 	logs := pdata.NewLogs()
-	rl := pdata.NewResourceLogs()
-	logs.ResourceLogs().Append(rl)
-	ill := pdata.NewInstrumentationLibraryLogs()
-	rl.InstrumentationLibraryLogs().Append(ill)
-
+	logs.ResourceLogs().Resize(1)
+	rl := logs.ResourceLogs().At(0)
+	rl.InstrumentationLibraryLogs().Resize(1)
+	ill := rl.InstrumentationLibraryLogs().At(0)
+	ill.Logs().Resize(65000)
 	ts := pdata.TimestampUnixNano(123)
 	for i := 0; i < 65000; i++ {
-		logRecord := pdata.NewLogRecord()
+		logRecord := ill.Logs().At(i)
 		logRecord.Body().SetStringVal("mylog")
 		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
@@ -268,7 +268,7 @@ func TestConsumeLogsData(t *testing.T) {
 		},
 		{
 			name:             "large_batch",
-			ld:               generateLargeLogsBatch(t),
+			ld:               generateLargeLogsBatch(),
 			reqTestFunc:      nil,
 			httpResponseCode: http.StatusAccepted,
 		},

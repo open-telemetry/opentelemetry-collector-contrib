@@ -268,10 +268,10 @@ func Test_logDataToSplunk(t *testing.T) {
 
 func makeLog(record pdata.LogRecord) pdata.Logs {
 	logs := pdata.NewLogs()
-	rl := pdata.NewResourceLogs()
-	logs.ResourceLogs().Append(rl)
-	ill := pdata.NewInstrumentationLibraryLogs()
-	rl.InstrumentationLibraryLogs().Append(ill)
+	logs.ResourceLogs().Resize(1)
+	rl := logs.ResourceLogs().At(0)
+	rl.InstrumentationLibraryLogs().Resize(1)
+	ill := rl.InstrumentationLibraryLogs().At(0)
 	ill.Logs().Append(record)
 	return logs
 }
@@ -301,18 +301,16 @@ func Test_nilLogs(t *testing.T) {
 
 func Test_nilResourceLogs(t *testing.T) {
 	logs := pdata.NewLogs()
-	resourceLog := pdata.NewResourceLogs()
-	logs.ResourceLogs().Append(resourceLog)
+	logs.ResourceLogs().Resize(1)
 	events := logDataToSplunk(zap.NewNop(), logs, &Config{})
 	assert.Equal(t, 0, len(events))
 }
 
 func Test_nilInstrumentationLogs(t *testing.T) {
 	logs := pdata.NewLogs()
-	resourceLog := pdata.NewResourceLogs()
-	logs.ResourceLogs().Append(resourceLog)
-	ils := pdata.NewInstrumentationLibraryLogs()
-	resourceLog.InstrumentationLibraryLogs().Append(ils)
+	logs.ResourceLogs().Resize(1)
+	resourceLog := logs.ResourceLogs().At(0)
+	resourceLog.InstrumentationLibraryLogs().Resize(1)
 	events := logDataToSplunk(zap.NewNop(), logs, &Config{})
 	assert.Equal(t, 0, len(events))
 }

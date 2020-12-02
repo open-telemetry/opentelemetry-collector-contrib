@@ -366,8 +366,9 @@ func TestLogGroups(t *testing.T) {
 	resource := pdata.NewResource()
 	lg := pdata.NewAttributeValueArray()
 	ava := lg.ArrayVal()
-	ava.Append(pdata.NewAttributeValueString("group1"))
-	ava.Append(pdata.NewAttributeValueString("group2"))
+	ava.Resize(2)
+	ava.At(0).SetStringVal("group1")
+	ava.At(1).SetStringVal("group2")
 
 	resource.Attributes().Insert(awsLogGroupNames, lg)
 
@@ -396,8 +397,9 @@ func TestLogGroupsFromArns(t *testing.T) {
 	resource := pdata.NewResource()
 	lga := pdata.NewAttributeValueArray()
 	ava := lga.ArrayVal()
-	ava.Append(pdata.NewAttributeValueString(group1))
-	ava.Append(pdata.NewAttributeValueString(group2))
+	ava.Resize(2)
+	ava.At(0).SetStringVal(group1)
+	ava.At(1).SetStringVal(group2)
 
 	resource.Attributes().Insert(awsLogGroupArns, lga)
 

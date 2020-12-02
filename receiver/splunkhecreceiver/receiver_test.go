@@ -412,22 +412,23 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	require.False(t, receivedError)
 	t.Log("Event Reception Started")
 
+	logs := pdata.NewLogs()
+	logs.ResourceLogs().Resize(1)
+	rl := logs.ResourceLogs().At(0)
+	rl.InstrumentationLibraryLogs().Resize(1)
+	ill := rl.InstrumentationLibraryLogs().At(0)
+	ill.Logs().Resize(1)
+	lr := ill.Logs().At(0)
+
 	now := time.Now()
 	msecInt64 := now.UnixNano() / 1e6
 	sec := float64(msecInt64) / 1e3
-	lr := pdata.NewLogRecord()
 	lr.SetTimestamp(pdata.TimestampUnixNano(int64(sec * 1e9)))
 	lr.SetName("custom:sourcetype")
 
 	lr.Body().SetStringVal("foo")
-	logs := pdata.NewLogs()
-	rl := pdata.NewResourceLogs()
 	lr.Attributes().InsertString("com.splunk.sourcetype", "custom:sourcetype")
 	lr.Attributes().InsertString("com.splunk.index", "myindex")
-	ill := pdata.NewInstrumentationLibraryLogs()
-	ill.Logs().Append(lr)
-	rl.InstrumentationLibraryLogs().Append(ill)
-	logs.ResourceLogs().Append(rl)
 	want := logs
 
 	t.Log("Sending Splunk HEC data Request")

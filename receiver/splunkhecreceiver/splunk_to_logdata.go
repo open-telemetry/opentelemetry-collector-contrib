@@ -35,8 +35,8 @@ func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 	rls := ld.ResourceLogs()
 	rls.Resize(1)
 	rl := rls.At(0)
-	ill := pdata.NewInstrumentationLibraryLogs()
-	rl.InstrumentationLibraryLogs().Append(ill)
+	rl.InstrumentationLibraryLogs().Resize(1)
+	ill := rl.InstrumentationLibraryLogs().At(0)
 	for _, event := range events {
 		logRecord := pdata.NewLogRecord()
 

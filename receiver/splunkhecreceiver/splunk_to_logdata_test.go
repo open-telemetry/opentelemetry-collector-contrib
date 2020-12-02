@@ -90,8 +90,9 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				logsSlice := createLogsSlice("value", nanoseconds)
 				arrVal := pdata.NewAttributeValueArray()
 				arr := arrVal.ArrayVal()
-				arr.Append(pdata.NewAttributeValueString("foo"))
-				arr.Append(pdata.NewAttributeValueString("bar"))
+				arr.Resize(2)
+				arr.At(0).SetStringVal("foo")
+				arr.At(1).SetStringVal("bar")
 				arrVal.CopyTo(logsSlice.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body())
 				return logsSlice
 			}(),
@@ -114,9 +115,10 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				logsSlice := createLogsSlice("value", nanoseconds)
 				foosArr := pdata.NewAttributeValueArray()
 				foos := foosArr.ArrayVal()
-				foos.Append(pdata.NewAttributeValueString("foo"))
-				foos.Append(pdata.NewAttributeValueString("bar"))
-				foos.Append(pdata.NewAttributeValueString("foobar"))
+				foos.Resize(3)
+				foos.At(0).SetStringVal("foo")
+				foos.At(1).SetStringVal("bar")
+				foos.At(2).SetStringVal("foobar")
 
 				attVal := pdata.NewAttributeValueMap()
 				attMap := attVal.MapVal()
@@ -213,10 +215,11 @@ func Test_ConvertAttributeValueMap(t *testing.T) {
 func Test_ConvertAttributeValueArray(t *testing.T) {
 	value, err := convertInterfaceToAttributeValue(zap.NewNop(), []interface{}{"foo"})
 	assert.NoError(t, err)
-	arr := pdata.NewAttributeValueArray()
-	arrValue := arr.ArrayVal()
-	arrValue.Append(pdata.NewAttributeValueString("foo"))
-	assert.Equal(t, arr, value)
+	arrValue := pdata.NewAttributeValueArray()
+	arr := arrValue.ArrayVal()
+	arr.Resize(1)
+	arr.At(0).SetStringVal("foo")
+	assert.Equal(t, arrValue, value)
 }
 
 func Test_ConvertAttributeValueInvalid(t *testing.T) {

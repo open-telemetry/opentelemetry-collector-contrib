@@ -135,38 +135,35 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 
 	rm.InstrumentationLibraryMetrics().Resize(1)
 	ilm := rm.InstrumentationLibraryMetrics().At(0)
+	ilm.Metrics().Resize(4)
 
 	{
-		m := pdata.NewMetric()
+		m := ilm.Metrics().At(0)
 		m.SetName("gauge_double_with_dims")
 		m.SetDataType(pdata.MetricDataTypeDoubleGauge)
 		m.DoubleGauge().DataPoints().Append(doublePt)
-		ilm.Metrics().Append(m)
 	}
 	{
-		m := pdata.NewMetric()
+		m := ilm.Metrics().At(1)
 		m.SetName("gauge_int_with_dims")
 		m.SetDataType(pdata.MetricDataTypeIntGauge)
 		m.IntGauge().DataPoints().Append(int64Pt)
-		ilm.Metrics().Append(m)
 	}
 	{
-		m := pdata.NewMetric()
+		m := ilm.Metrics().At(2)
 		m.SetName("cumulative_double_with_dims")
 		m.SetDataType(pdata.MetricDataTypeDoubleSum)
 		m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		m.DoubleSum().SetIsMonotonic(true)
 		m.DoubleSum().DataPoints().Append(doublePt)
-		ilm.Metrics().Append(m)
 	}
 	{
-		m := pdata.NewMetric()
+		m := ilm.Metrics().At(3)
 		m.SetName("cumulative_int_with_dims")
 		m.SetDataType(pdata.MetricDataTypeIntSum)
 		m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		m.IntSum().SetIsMonotonic(true)
 		m.IntSum().DataPoints().Append(int64Pt)
-		ilm.Metrics().Append(m)
 	}
 
 	expCfg := &signalfxexporter.Config{
