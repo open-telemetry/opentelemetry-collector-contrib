@@ -17,7 +17,6 @@ package signalfxreceiver
 import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -25,11 +24,7 @@ import (
 // signalFxV2ToMetricsData converts SignalFx event proto data points to
 // pdata.LogSlice. Returning the converted data and the number of dropped log
 // records.
-func signalFxV2EventsToLogRecords(
-	logger *zap.Logger,
-	events []*sfxpb.Event,
-) pdata.LogSlice {
-	lrs := pdata.NewLogSlice()
+func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs pdata.LogSlice) {
 	lrs.Resize(len(events))
 
 	for i, event := range events {
@@ -84,6 +79,4 @@ func signalFxV2EventsToLogRecords(
 			attrs.Insert(splunk.SFxEventPropertiesKey, propMapVal)
 		}
 	}
-
-	return lrs
 }

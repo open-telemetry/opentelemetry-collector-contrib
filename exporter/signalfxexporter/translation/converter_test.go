@@ -96,72 +96,65 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pdata.NewResourceMetrics()
 				out.InstrumentationLibraryMetrics().Resize(1)
 				ilm := out.InstrumentationLibraryMetrics().At(0)
+				ilm.Metrics().Resize(8)
 
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(0)
 					m.SetName("gauge_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeDoubleGauge)
 					m.DoubleGauge().DataPoints().Append(doublePt)
-					ilm.Metrics().Append(m)
 				}
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(1)
 					m.SetName("gauge_int_with_dims")
 					m.SetDataType(pdata.MetricDataTypeIntGauge)
 					m.IntGauge().DataPoints().Append(int64Pt)
-					ilm.Metrics().Append(m)
 				}
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(2)
 					m.SetName("cumulative_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeDoubleSum)
 					m.DoubleSum().SetIsMonotonic(true)
 					m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 					m.DoubleSum().DataPoints().Append(doublePt)
-					ilm.Metrics().Append(m)
 				}
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(3)
 					m.SetName("cumulative_int_with_dims")
 					m.SetDataType(pdata.MetricDataTypeIntSum)
 					m.IntSum().SetIsMonotonic(true)
 					m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 					m.IntSum().DataPoints().Append(int64Pt)
-					ilm.Metrics().Append(m)
 				}
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(4)
 					m.SetName("delta_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeDoubleSum)
 					m.DoubleSum().SetIsMonotonic(true)
 					m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 					m.DoubleSum().DataPoints().Append(doublePt)
-					ilm.Metrics().Append(m)
 				}
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(5)
 					m.SetName("delta_int_with_dims")
 					m.SetDataType(pdata.MetricDataTypeIntSum)
 					m.IntSum().SetIsMonotonic(true)
 					m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 					m.IntSum().DataPoints().Append(int64Pt)
-					ilm.Metrics().Append(m)
 				}
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(6)
 					m.SetName("gauge_sum_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeDoubleSum)
 					m.DoubleSum().SetIsMonotonic(false)
 					m.DoubleSum().DataPoints().Append(doublePt)
-					ilm.Metrics().Append(m)
 				}
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(7)
 					m.SetName("gauge_sum_int_with_dims")
 					m.SetDataType(pdata.MetricDataTypeIntSum)
 					m.IntSum().SetIsMonotonic(false)
 					m.IntSum().DataPoints().Append(int64Pt)
-					ilm.Metrics().Append(m)
 				}
 
 				return out
@@ -183,36 +176,33 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pdata.NewResourceMetrics()
 				out.InstrumentationLibraryMetrics().Resize(1)
 				ilm := out.InstrumentationLibraryMetrics().At(0)
+				ilm.Metrics().Resize(4)
 
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(0)
 					m.SetName("gauge_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeDoubleGauge)
 					m.DoubleGauge().DataPoints().Append(doublePtWithLabels)
-					ilm.Metrics().Append(m)
 				}
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(1)
 					m.SetName("gauge_int_with_dims")
 					m.SetDataType(pdata.MetricDataTypeIntGauge)
 					m.IntGauge().DataPoints().Append(int64PtWithLabels)
-					ilm.Metrics().Append(m)
 				}
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(2)
 					m.SetName("cumulative_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeDoubleSum)
 					m.DoubleSum().SetIsMonotonic(true)
 					m.DoubleSum().DataPoints().Append(doublePtWithLabels)
-					ilm.Metrics().Append(m)
 				}
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(3)
 					m.SetName("cumulative_int_with_dims")
 					m.SetDataType(pdata.MetricDataTypeIntSum)
 					m.IntSum().SetIsMonotonic(true)
 					m.IntSum().DataPoints().Append(int64PtWithLabels)
-					ilm.Metrics().Append(m)
 				}
 
 				return out
@@ -236,20 +226,19 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 				out.InstrumentationLibraryMetrics().Resize(1)
 				ilm := out.InstrumentationLibraryMetrics().At(0)
+				ilm.Metrics().Resize(2)
 
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(0)
 					m.SetName("gauge_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeDoubleGauge)
 					m.DoubleGauge().DataPoints().Append(doublePtWithLabels)
-					ilm.Metrics().Append(m)
 				}
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(1)
 					m.SetName("gauge_int_with_dims")
 					m.SetDataType(pdata.MetricDataTypeIntGauge)
 					m.IntGauge().DataPoints().Append(int64PtWithLabels)
-					ilm.Metrics().Append(m)
 				}
 
 				return out
@@ -292,13 +281,13 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 				out.InstrumentationLibraryMetrics().Resize(1)
 				ilm := out.InstrumentationLibraryMetrics().At(0)
+				ilm.Metrics().Resize(1)
 
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(0)
 					m.SetName("gauge_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeDoubleGauge)
 					m.DoubleGauge().DataPoints().Append(doublePtWithLabels)
-					ilm.Metrics().Append(m)
 				}
 
 				return out
@@ -332,13 +321,13 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 				out.InstrumentationLibraryMetrics().Resize(1)
 				ilm := out.InstrumentationLibraryMetrics().At(0)
+				ilm.Metrics().Resize(1)
 
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(0)
 					m.SetName("gauge_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeDoubleGauge)
 					m.DoubleGauge().DataPoints().Append(doublePtWithLabels)
-					ilm.Metrics().Append(m)
 				}
 
 				return out
@@ -368,13 +357,13 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 				out.InstrumentationLibraryMetrics().Resize(1)
 				ilm := out.InstrumentationLibraryMetrics().At(0)
+				ilm.Metrics().Resize(1)
 
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(0)
 					m.SetName("gauge_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeDoubleGauge)
 					m.DoubleGauge().DataPoints().Append(doublePtWithLabels)
-					ilm.Metrics().Append(m)
 				}
 
 				return out
@@ -406,13 +395,13 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 				out.InstrumentationLibraryMetrics().Resize(1)
 				ilm := out.InstrumentationLibraryMetrics().At(0)
+				ilm.Metrics().Resize(1)
 
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(0)
 					m.SetName("gauge_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeDoubleGauge)
 					m.DoubleGauge().DataPoints().Append(doublePtWithLabels)
-					ilm.Metrics().Append(m)
 				}
 
 				return out
@@ -436,37 +425,34 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pdata.NewResourceMetrics()
 				out.InstrumentationLibraryMetrics().Resize(1)
 				ilm := out.InstrumentationLibraryMetrics().At(0)
+				ilm.Metrics().Resize(4)
 
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(0)
 					m.SetName("int_histo")
 					m.SetDataType(pdata.MetricDataTypeIntHistogram)
 					m.IntHistogram().DataPoints().Append(histDP)
-					ilm.Metrics().Append(m)
 				}
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(1)
 					m.SetName("double_histo")
 					m.SetDataType(pdata.MetricDataTypeDoubleHistogram)
 					m.DoubleHistogram().DataPoints().Append(doubleHistDP)
-					ilm.Metrics().Append(m)
 				}
 
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(2)
 					m.SetName("int_delta_histo")
 					m.SetDataType(pdata.MetricDataTypeIntHistogram)
 					m.IntHistogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 					m.IntHistogram().DataPoints().Append(histDP)
-					ilm.Metrics().Append(m)
 				}
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(3)
 					m.SetName("double_delta_histo")
 					m.SetDataType(pdata.MetricDataTypeDoubleHistogram)
 					m.DoubleHistogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 					m.DoubleHistogram().DataPoints().Append(doubleHistDP)
-					ilm.Metrics().Append(m)
 				}
 
 				return out
@@ -484,13 +470,13 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				out := pdata.NewResourceMetrics()
 				out.InstrumentationLibraryMetrics().Resize(1)
 				ilm := out.InstrumentationLibraryMetrics().At(0)
+				ilm.Metrics().Resize(1)
 
 				{
-					m := pdata.NewMetric()
+					m := ilm.Metrics().At(0)
 					m.SetName("no_bucket_histo")
 					m.SetDataType(pdata.MetricDataTypeIntHistogram)
 					m.IntHistogram().DataPoints().Append(histDPNoBuckets)
-					ilm.Metrics().Append(m)
 				}
 
 				return out

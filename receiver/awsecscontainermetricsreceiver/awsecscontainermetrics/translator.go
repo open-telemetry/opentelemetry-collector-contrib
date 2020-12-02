@@ -20,10 +20,9 @@ import (
 
 func convertToOTLPMetrics(prefix string, m ECSMetrics, r pdata.Resource, timestamp pdata.TimestampUnixNano) pdata.ResourceMetricsSlice {
 	rms := pdata.NewResourceMetricsSlice()
-
 	rms.Resize(1)
-
 	rm := rms.At(0)
+
 	r.CopyTo(rm.Resource())
 
 	ilms := rm.InstrumentationLibraryMetrics()

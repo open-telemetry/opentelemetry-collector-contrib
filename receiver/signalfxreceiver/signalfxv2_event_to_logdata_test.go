@@ -23,7 +23,6 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
 )
 
 func TestSignalFxV2EventsToLogData(t *testing.T) {
@@ -109,7 +108,8 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			lrs := signalFxV2EventsToLogRecords(zap.NewNop(), tt.sfxEvents)
+			lrs := pdata.NewLogSlice()
+			signalFxV2EventsToLogRecords(tt.sfxEvents, lrs)
 			for i := 0; i < lrs.Len(); i++ {
 				lrs.At(i).Attributes().Sort()
 			}

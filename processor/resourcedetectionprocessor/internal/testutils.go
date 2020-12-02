@@ -18,14 +18,19 @@ import "go.opentelemetry.io/collector/consumer/pdata"
 
 func NewResource(mp map[string]interface{}) pdata.Resource {
 	res := pdata.NewResource()
-	NewAttributeMap(mp).CopyTo(res.Attributes())
+	attr := res.Attributes()
+	fillAttributeMap(mp, attr)
 	return res
 }
 
 func NewAttributeMap(mp map[string]interface{}) pdata.AttributeMap {
 	attr := pdata.NewAttributeMap()
-	attr.InitEmptyWithCapacity(len(mp))
+	fillAttributeMap(mp, attr)
+	return attr
+}
 
+func fillAttributeMap(mp map[string]interface{}, attr pdata.AttributeMap) {
+	attr.InitEmptyWithCapacity(len(mp))
 	for k, v := range mp {
 		switch t := v.(type) {
 		case bool:
@@ -38,6 +43,4 @@ func NewAttributeMap(mp map[string]interface{}) pdata.AttributeMap {
 			attr.Insert(k, pdata.NewAttributeValueString(t))
 		}
 	}
-
-	return attr
 }

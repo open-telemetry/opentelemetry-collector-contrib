@@ -42,20 +42,7 @@ func TestTraceDataIterationNoResourceSpans(t *testing.T) {
 }
 
 // Tests the iteration logic over a pdata.Traces type when a ResourceSpans is nil
-func TestTraceDataIterationResourceSpansIsNil(t *testing.T) {
-	traces := pdata.NewTraces()
-	resourceSpans := pdata.NewResourceSpans()
-	traces.ResourceSpans().Append(resourceSpans)
-
-	visitor := getMockVisitor(true)
-
-	Accept(traces, visitor)
-
-	visitor.AssertNumberOfCalls(t, "visit", 0)
-}
-
-// Tests the iteration logic over a pdata.Traces type when a Resource is nil
-func TestTraceDataIterationResourceIsNil(t *testing.T) {
+func TestTraceDataIterationResourceSpansIsEmpty(t *testing.T) {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
 
