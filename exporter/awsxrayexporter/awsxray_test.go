@@ -61,7 +61,7 @@ func initializeTraceExporter() component.TracesExporter {
 	config.(*Config).LocalMode = true
 	mconn := new(mockConn)
 	mconn.sn, _ = getDefaultSession(logger)
-	traceExporter, err := NewTraceExporter(config, logger, mconn)
+	traceExporter, err := newTraceExporter(config, component.ExporterCreateParams{Logger: logger}, mconn)
 	if err != nil {
 		panic(err)
 	}
