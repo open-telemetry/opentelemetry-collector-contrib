@@ -43,7 +43,7 @@ type MemoryStats struct {
 
 // DiskStats defines the storage stats
 type DiskStats struct {
-	IoServiceBytesRecursives []*IoServiceBytesRecursive `json:"io_service_bytes_recursive,omitempty"`
+	IoServiceBytesRecursives []IoServiceBytesRecursive `json:"io_service_bytes_recursive,omitempty"`
 }
 
 //IoServiceBytesRecursive defines the IO device stats

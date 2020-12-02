@@ -21,93 +21,244 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetContainerAndTaskMetrics(t *testing.T) {
-	v := uint64(1)
-	f := 1.0
-	floatZero := float64(0)
-
-	memStats := make(map[string]uint64)
-	memStats["cache"] = v
-
-	mem := MemoryStats{
-		Usage:          &v,
-		MaxUsage:       &v,
-		Limit:          &v,
-		MemoryReserved: &v,
-		MemoryUtilized: &v,
-		Stats:          memStats,
-	}
-
-	disk := DiskStats{
-		IoServiceBytesRecursives: []IoServiceBytesRecursive{
-			{Op: "Read", Value: &v},
-			{Op: "Write", Value: &v},
-			{Op: "Total", Value: &v},
-		},
-	}
-
-	net := make(map[string]NetworkStats)
-	net["eth0"] = NetworkStats{
-		RxBytes:   &v,
-		RxPackets: &v,
-		RxErrors:  &v,
-		RxDropped: &v,
-		TxBytes:   &v,
-		TxPackets: &v,
-		TxErrors:  &v,
-		TxDropped: &v,
-	}
-
-	netRate := NetworkRateStats{
-		RxBytesPerSecond: &f,
-		TxBytesPerSecond: &f,
-	}
-
-	percpu := []*uint64{&v, &v}
-	cpuUsage := CPUUsage{
+var (
+	previousCPUUsage = CPUUsage{
 		TotalUsage:        &v,
 		UsageInKernelmode: &v,
 		UsageInUserMode:   &v,
 		PerCPUUsage:       percpu,
 	}
 
-	cpuStats := CPUStats{
-		CPUUsage:       cpuUsage,
+	previousCPUStats = CPUStats{
+		CPUUsage:       &previousCPUUsage,
 		OnlineCpus:     &v,
 		SystemCPUUsage: &v,
 		CPUUtilized:    &v,
 		CPUReserved:    &v,
 	}
+)
 
-	previousCPUUsage := CPUUsage{
-		TotalUsage:        &v,
-		UsageInKernelmode: &v,
-		UsageInUserMode:   &v,
-		PerCPUUsage:       percpu,
-	}
-
-	previousCPUStats := CPUStats{
-		CPUUsage:       previousCPUUsage,
-		OnlineCpus:     &v,
-		SystemCPUUsage: &v,
-		CPUUtilized:    &v,
-		CPUReserved:    &v,
-	}
-
-	containerStats := ContainerStats{
+func TestGetContainerMetricsAllValid(t *testing.T) {
+	containerStats = ContainerStats{
 		Name:         "test",
 		ID:           "001",
 		Read:         time.Now(),
 		PreviousRead: time.Now().Add(-10 * time.Second),
-		Memory:       mem,
-		Disk:         disk,
+		Memory:       &mem,
+		Disk:         &disk,
 		Network:      net,
-		NetworkRate:  netRate,
-		CPU:          cpuStats,
-		PreviousCPU:  previousCPUStats,
+		NetworkRate:  &netRate,
+		CPU:          &cpuStats,
+		PreviousCPU:  &previousCPUStats,
 	}
 
-	containerMetrics := getContainerMetrics(containerStats)
+	containerMetrics := getContainerMetrics(&containerStats, logger)
+	require.NotNil(t, containerMetrics)
+
+	require.EqualValues(t, v, containerMetrics.MemoryUsage)
+	require.EqualValues(t, floatZero, containerMetrics.MemoryUtilized)
+
+	require.EqualValues(t, v, containerMetrics.CPUTotalUsage)
+	require.EqualValues(t, v, containerMetrics.CPUUsageInKernelmode)
+	require.EqualValues(t, v, containerMetrics.CPUUsageInUserMode)
+
+	require.EqualValues(t, f, containerMetrics.NetworkRateRxBytesPerSecond)
+	require.EqualValues(t, f, containerMetrics.NetworkRateTxBytesPerSecond)
+
+	require.EqualValues(t, v, containerMetrics.NetworkRxBytes)
+	require.EqualValues(t, v, containerMetrics.NetworkTxBytes)
+
+	require.EqualValues(t, v, containerMetrics.StorageReadBytes)
+	require.EqualValues(t, v, containerMetrics.StorageWriteBytes)
+}
+
+func TestGetContainerMetricsMissingMemory(t *testing.T) {
+	containerStats = ContainerStats{
+		Name:         "test",
+		ID:           "001",
+		Read:         time.Now(),
+		PreviousRead: time.Now().Add(-10 * time.Second),
+		Memory:       nil,
+		Disk:         &disk,
+		Network:      net,
+		NetworkRate:  &netRate,
+		CPU:          &cpuStats,
+		PreviousCPU:  &previousCPUStats,
+	}
+
+	containerMetrics := getContainerMetrics(&containerStats, logger)
+	require.NotNil(t, containerMetrics)
+
+	require.EqualValues(t, 0, containerMetrics.MemoryUsage)
+	require.EqualValues(t, floatZero, containerMetrics.MemoryUtilized)
+
+	require.EqualValues(t, v, containerMetrics.CPUTotalUsage)
+	require.EqualValues(t, v, containerMetrics.CPUUsageInKernelmode)
+	require.EqualValues(t, v, containerMetrics.CPUUsageInUserMode)
+
+	require.EqualValues(t, f, containerMetrics.NetworkRateRxBytesPerSecond)
+	require.EqualValues(t, f, containerMetrics.NetworkRateTxBytesPerSecond)
+
+	require.EqualValues(t, v, containerMetrics.NetworkRxBytes)
+	require.EqualValues(t, v, containerMetrics.NetworkTxBytes)
+
+	require.EqualValues(t, v, containerMetrics.StorageReadBytes)
+	require.EqualValues(t, v, containerMetrics.StorageWriteBytes)
+}
+
+func TestGetContainerMetricsMissingCpu(t *testing.T) {
+	containerStats = ContainerStats{
+		Name:         "test",
+		ID:           "001",
+		Read:         time.Now(),
+		PreviousRead: time.Now().Add(-10 * time.Second),
+		Memory:       &mem,
+		Disk:         &disk,
+		Network:      net,
+		NetworkRate:  &netRate,
+		CPU:          nil,
+		PreviousCPU:  &previousCPUStats,
+	}
+
+	containerMetrics := getContainerMetrics(&containerStats, logger)
+	require.NotNil(t, containerMetrics)
+
+	require.EqualValues(t, v, containerMetrics.MemoryUsage)
+	require.EqualValues(t, floatZero, containerMetrics.MemoryUtilized)
+
+	require.EqualValues(t, 0, containerMetrics.CPUTotalUsage)
+	require.EqualValues(t, 0, containerMetrics.CPUUsageInKernelmode)
+	require.EqualValues(t, 0, containerMetrics.CPUUsageInUserMode)
+
+	require.EqualValues(t, f, containerMetrics.NetworkRateRxBytesPerSecond)
+	require.EqualValues(t, f, containerMetrics.NetworkRateTxBytesPerSecond)
+
+	require.EqualValues(t, v, containerMetrics.NetworkRxBytes)
+	require.EqualValues(t, v, containerMetrics.NetworkTxBytes)
+
+	require.EqualValues(t, v, containerMetrics.StorageReadBytes)
+	require.EqualValues(t, v, containerMetrics.StorageWriteBytes)
+}
+
+func TestGetContainerMetricsMissingNetworkRate(t *testing.T) {
+	containerStats = ContainerStats{
+		Name:         "test",
+		ID:           "001",
+		Read:         time.Now(),
+		PreviousRead: time.Now().Add(-10 * time.Second),
+		Memory:       &mem,
+		Disk:         &disk,
+		Network:      net,
+		NetworkRate:  nil,
+		CPU:          &cpuStats,
+		PreviousCPU:  &previousCPUStats,
+	}
+
+	containerMetrics := getContainerMetrics(&containerStats, logger)
+	require.NotNil(t, containerMetrics)
+
+	require.EqualValues(t, v, containerMetrics.MemoryUsage)
+	require.EqualValues(t, floatZero, containerMetrics.MemoryUtilized)
+
+	require.EqualValues(t, v, containerMetrics.CPUTotalUsage)
+	require.EqualValues(t, v, containerMetrics.CPUUsageInKernelmode)
+	require.EqualValues(t, v, containerMetrics.CPUUsageInUserMode)
+
+	require.EqualValues(t, floatZero, containerMetrics.NetworkRateRxBytesPerSecond)
+	require.EqualValues(t, floatZero, containerMetrics.NetworkRateTxBytesPerSecond)
+
+	require.EqualValues(t, v, containerMetrics.NetworkRxBytes)
+	require.EqualValues(t, v, containerMetrics.NetworkTxBytes)
+
+	require.EqualValues(t, v, containerMetrics.StorageReadBytes)
+	require.EqualValues(t, v, containerMetrics.StorageWriteBytes)
+}
+
+func TestGetContainerMetricsMissingNetworkAndDisk(t *testing.T) {
+	containerStats = ContainerStats{
+		Name:         "test",
+		ID:           "001",
+		Read:         time.Now(),
+		PreviousRead: time.Now().Add(-10 * time.Second),
+		Memory:       &mem,
+		Disk:         nil,
+		Network:      nil,
+		NetworkRate:  &netRate,
+		CPU:          &cpuStats,
+		PreviousCPU:  &previousCPUStats,
+	}
+
+	containerMetrics := getContainerMetrics(&containerStats, logger)
+	require.NotNil(t, containerMetrics)
+
+	require.EqualValues(t, v, containerMetrics.MemoryUsage)
+	require.EqualValues(t, floatZero, containerMetrics.MemoryUtilized)
+
+	require.EqualValues(t, v, containerMetrics.CPUTotalUsage)
+	require.EqualValues(t, v, containerMetrics.CPUUsageInKernelmode)
+	require.EqualValues(t, v, containerMetrics.CPUUsageInUserMode)
+
+	require.EqualValues(t, f, containerMetrics.NetworkRateRxBytesPerSecond)
+	require.EqualValues(t, f, containerMetrics.NetworkRateTxBytesPerSecond)
+
+	require.EqualValues(t, 0, containerMetrics.NetworkRxBytes)
+	require.EqualValues(t, 0, containerMetrics.NetworkTxBytes)
+
+	require.EqualValues(t, 0, containerMetrics.StorageReadBytes)
+	require.EqualValues(t, 0, containerMetrics.StorageWriteBytes)
+}
+
+func TestGetContainerMetricsMissingMemoryStats(t *testing.T) {
+	containerStats = ContainerStats{
+		Name:         "test",
+		ID:           "001",
+		Read:         time.Now(),
+		PreviousRead: time.Now().Add(-10 * time.Second),
+		Memory:       &mem,
+		Disk:         &disk,
+		Network:      net,
+		NetworkRate:  &netRate,
+		CPU:          &cpuStats,
+		PreviousCPU:  &previousCPUStats,
+	}
+
+	containerStats.Memory.Stats = nil
+
+	containerMetrics := getContainerMetrics(&containerStats, logger)
+	require.NotNil(t, containerMetrics)
+
+	require.EqualValues(t, v, containerMetrics.MemoryUsage)
+	require.EqualValues(t, floatZero, containerMetrics.MemoryUtilized)
+
+	require.EqualValues(t, v, containerMetrics.CPUTotalUsage)
+	require.EqualValues(t, v, containerMetrics.CPUUsageInKernelmode)
+	require.EqualValues(t, v, containerMetrics.CPUUsageInUserMode)
+
+	require.EqualValues(t, f, containerMetrics.NetworkRateRxBytesPerSecond)
+	require.EqualValues(t, f, containerMetrics.NetworkRateTxBytesPerSecond)
+
+	require.EqualValues(t, v, containerMetrics.NetworkRxBytes)
+	require.EqualValues(t, v, containerMetrics.NetworkTxBytes)
+
+	require.EqualValues(t, v, containerMetrics.StorageReadBytes)
+	require.EqualValues(t, v, containerMetrics.StorageWriteBytes)
+}
+
+func TestAggregateTaskMetrics(t *testing.T) {
+	containerStats = ContainerStats{
+		Name:         "test",
+		ID:           "001",
+		Read:         time.Now(),
+		PreviousRead: time.Now().Add(-10 * time.Second),
+		Memory:       &mem,
+		Disk:         &disk,
+		Network:      net,
+		NetworkRate:  &netRate,
+		CPU:          &cpuStats,
+		PreviousCPU:  &previousCPUStats,
+	}
+
+	containerMetrics := getContainerMetrics(&containerStats, logger)
 	require.NotNil(t, containerMetrics)
 
 	taskMetrics := ECSMetrics{}
@@ -115,21 +266,6 @@ func TestGetContainerAndTaskMetrics(t *testing.T) {
 	require.EqualValues(t, v, taskMetrics.MemoryUsage)
 	require.EqualValues(t, v, taskMetrics.MemoryMaxUsage)
 	require.EqualValues(t, v, taskMetrics.StorageReadBytes)
-
-	containerStats = ContainerStats{
-		Name:        "test",
-		ID:          "001",
-		Memory:      mem,
-		Disk:        disk,
-		Network:     net,
-		NetworkRate: NetworkRateStats{},
-		CPU:         cpuStats,
-	}
-	containerMetrics = getContainerMetrics(containerStats)
-	require.NotNil(t, containerMetrics)
-
-	require.EqualValues(t, floatZero, containerMetrics.NetworkRateRxBytesPerSecond)
-	require.EqualValues(t, floatZero, containerMetrics.NetworkRateTxBytesPerSecond)
 }
 
 func TestExtractStorageUsage(t *testing.T) {

@@ -29,7 +29,7 @@ func getContainerMetrics(stats *ContainerStats, logger *zap.Logger) ECSMetrics {
 			m.MemoryUtilized = (*stats.Memory.Usage - stats.Memory.Stats["cache"]) / BytesInMiB
 		}
 	} else {
-		logger.Warn("Nil memory stats found for docker container:" + stats.Name)
+		logger.Debug("Nil memory stats found for docker container:" + stats.Name)
 	}
 
 	if stats.CPU != nil && stats.CPU.CPUUsage != nil {
@@ -52,14 +52,14 @@ func getContainerMetrics(stats *ContainerStats, logger *zap.Logger) ECSMetrics {
 		m.CPUUsageInVCPU = cpuUsageInVCpu
 		m.CPUUtilized = cpuUtilized
 	} else {
-		logger.Warn("Nil CPUUsage stats found for docker container:" + stats.Name)
+		logger.Debug("Nil CPUUsage stats found for docker container:" + stats.Name)
 	}
 
 	if stats.NetworkRate != nil {
 		m.NetworkRateRxBytesPerSecond = *stats.NetworkRate.RxBytesPerSecond
 		m.NetworkRateTxBytesPerSecond = *stats.NetworkRate.TxBytesPerSecond
 	} else {
-		logger.Warn("Nil NetworkRate stats found for docker container:" + stats.Name)
+		logger.Debug("Nil NetworkRate stats found for docker container:" + stats.Name)
 	}
 
 	if stats.Network != nil {
@@ -75,7 +75,7 @@ func getContainerMetrics(stats *ContainerStats, logger *zap.Logger) ECSMetrics {
 		m.NetworkTxErrors = netStatArray[6]
 		m.NetworkTxDropped = netStatArray[7]
 	} else {
-		logger.Warn("Nil Network stats found for docker container:" + stats.Name)
+		logger.Debug("Nil Network stats found for docker container:" + stats.Name)
 	}
 
 	if stats.Disk != nil {
