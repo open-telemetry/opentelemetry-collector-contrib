@@ -29,7 +29,7 @@ type processAttributes struct {
 	Owner          string
 }
 
-func (pattrs *processAttributes) extractProcessTags() []string {
+func (pattrs *processAttributes) extractTags() []string {
 	tags := make([]string, 0, 1)
 
 	// According to OTel conventions: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/process.md,

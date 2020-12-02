@@ -25,9 +25,11 @@ func TagsFromAttributes(attrs pdata.AttributeMap) []string {
 	tags := make([]string, 0, attrs.Len())
 
 	var processAttributes processAttributes
+	var systemAttributes systemAttributes
 
 	attrs.ForEach(func(key string, value pdata.AttributeValue) {
 		switch key {
+		// Process attributes
 		case conventions.AttributeProcessExecutableName:
 			processAttributes.ExecutableName = value.StringVal()
 		case conventions.AttributeProcessExecutablePath:
@@ -40,10 +42,15 @@ func TagsFromAttributes(attrs pdata.AttributeMap) []string {
 			processAttributes.PID = value.IntVal()
 		case conventions.AttributeProcessOwner:
 			processAttributes.Owner = value.StringVal()
+
+		// System attributes
+		case conventions.AttributeOSType:
+			systemAttributes.OSType = value.StringVal()
 		}
 	})
 
-	tags = append(tags, processAttributes.extractProcessTags()...)
+	tags = append(tags, processAttributes.extractTags()...)
+	tags = append(tags, systemAttributes.extractTags()...)
 
 	return tags
 }

@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-func TestExtractProcessTags(t *testing.T) {
+func TestProcessExtractTags(t *testing.T) {
 	pattrs := processAttributes{
 		ExecutableName: "otelcol",
 		ExecutablePath: "/usr/bin/cmd/otelcol",
@@ -34,7 +34,7 @@ func TestExtractProcessTags(t *testing.T) {
 
 	assert.Equal(t, []string{
 		fmt.Sprintf("%s:%s", conventions.AttributeProcessExecutableName, "otelcol"),
-	}, pattrs.extractProcessTags())
+	}, pattrs.extractTags())
 
 	pattrs = processAttributes{
 		ExecutablePath: "/usr/bin/cmd/otelcol",
@@ -46,7 +46,7 @@ func TestExtractProcessTags(t *testing.T) {
 
 	assert.Equal(t, []string{
 		fmt.Sprintf("%s:%s", conventions.AttributeProcessExecutablePath, "/usr/bin/cmd/otelcol"),
-	}, pattrs.extractProcessTags())
+	}, pattrs.extractTags())
 
 	pattrs = processAttributes{
 		Command:     "cmd/otelcol",
@@ -57,7 +57,7 @@ func TestExtractProcessTags(t *testing.T) {
 
 	assert.Equal(t, []string{
 		fmt.Sprintf("%s:%s", conventions.AttributeProcessCommand, "cmd/otelcol"),
-	}, pattrs.extractProcessTags())
+	}, pattrs.extractTags())
 
 	pattrs = processAttributes{
 		CommandLine: "cmd/otelcol --config=\"/path/to/config.yaml\"",
@@ -67,11 +67,11 @@ func TestExtractProcessTags(t *testing.T) {
 
 	assert.Equal(t, []string{
 		fmt.Sprintf("%s:%s", conventions.AttributeProcessCommandLine, "cmd/otelcol --config=\"/path/to/config.yaml\""),
-	}, pattrs.extractProcessTags())
+	}, pattrs.extractTags())
 }
 
-func TestExtractProcessEmpty(t *testing.T) {
+func TestProcessExtractTagsEmpty(t *testing.T) {
 	pattrs := processAttributes{}
 
-	assert.Equal(t, []string{}, pattrs.extractProcessTags())
+	assert.Equal(t, []string{}, pattrs.extractTags())
 }

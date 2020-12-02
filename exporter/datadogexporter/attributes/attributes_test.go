@@ -31,11 +31,13 @@ func TestTagsFromAttributes(t *testing.T) {
 		conventions.AttributeProcessCommandLine:    pdata.NewAttributeValueString("cmd/otelcol --config=\"/path/to/config.yaml\""),
 		conventions.AttributeProcessID:             pdata.NewAttributeValueInt(1),
 		conventions.AttributeProcessOwner:          pdata.NewAttributeValueString("root"),
+		conventions.AttributeOSType:                pdata.NewAttributeValueString("LINUX"),
 	}
 	attrs := pdata.NewAttributeMap().InitFromMap(attributeMap)
 
 	assert.Equal(t, []string{
 		fmt.Sprintf("%s:%s", conventions.AttributeProcessExecutableName, "otelcol"),
+		fmt.Sprintf("%s:%s", conventions.AttributeOSType, "LINUX"),
 	}, TagsFromAttributes(attrs))
 }
 
