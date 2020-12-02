@@ -52,3 +52,16 @@ func TestCreateTestProcessor(t *testing.T) {
 	assert.NotNil(t, lp)
 	assert.Equal(t, true, lp.GetCapabilities().MutatesConsumedData)
 }
+
+func TestNoKeys(t *testing.T) {
+	gbap, err := createGroupByAttrsProcessor(logger, []string{})
+	assert.Error(t, err)
+	assert.Nil(t, gbap)
+}
+
+func TestDuplicateKeys(t *testing.T) {
+	gbap, err := createGroupByAttrsProcessor(logger, []string{"foo", "foo", ""})
+	assert.NoError(t, err)
+	assert.NotNil(t, gbap)
+	assert.EqualValues(t, []string{"foo"}, gbap.groupByKeys)
+}

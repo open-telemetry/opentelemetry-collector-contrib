@@ -24,5 +24,5 @@ type Config struct {
 
 	// GroupByKeys describes the attribute names that are going to be used for grouping.
 	// Must include at least one attribute name.
-	GroupByKeys []string `mapstructure:"group_by_keys"`
+	GroupByKeys []string `mapstructure:"keys"`
 }

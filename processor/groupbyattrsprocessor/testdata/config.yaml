@@ -3,7 +3,7 @@ receivers:
 
 processors:
   groupbyattrs/custom:
-    group_by_keys:
+    keys:
       - key1
       - key2
 

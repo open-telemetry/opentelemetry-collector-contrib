@@ -18,7 +18,7 @@ Examples:
 ```yaml
 processors:
   groupbyattrs:
-    group_by_keys:
+    keys:
       - foo
       - bar
 ```

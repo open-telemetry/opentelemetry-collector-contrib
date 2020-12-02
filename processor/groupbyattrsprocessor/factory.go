@@ -61,9 +61,17 @@ func createDefaultConfig() configmodels.Processor {
 
 func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) (*groupbyattrsprocessor, error) {
 	var nonEmptyAttributes []string
+	presentAttributes := make(map[string]struct{})
+
 	for _, str := range attributes {
 		if str != "" {
-			nonEmptyAttributes = append(nonEmptyAttributes, str)
+			_, isPresent := presentAttributes[str]
+			if isPresent {
+				logger.Warn("A grouping key is already present", zap.String("key", str))
+			} else {
+				nonEmptyAttributes = append(nonEmptyAttributes, str)
+				presentAttributes[str] = struct{}{}
+			}
 		}
 	}
 
