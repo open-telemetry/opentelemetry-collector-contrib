@@ -32,8 +32,8 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )
 
 func TestSyncMetadata(t *testing.T) {
@@ -47,7 +47,7 @@ func TestSyncMetadata(t *testing.T) {
 		hostStatErr        error
 		pushFail           bool
 		metricsData        pdata.Metrics
-		wantMetadataUpdate []*collection.MetadataUpdate
+		wantMetadataUpdate []*metrics.MetadataUpdate
 		wantLogs           []string
 	}{
 		{
@@ -69,11 +69,11 @@ func TestSyncMetadata(t *testing.T) {
 			hostStatErr: nil,
 			pushFail:    false,
 			metricsData: generateSampleMetricsData(map[string]string{conventions.AttributeHostName: "host1"}),
-			wantMetadataUpdate: []*collection.MetadataUpdate{
+			wantMetadataUpdate: []*metrics.MetadataUpdate{
 				{
 					ResourceIDKey: conventions.AttributeHostName,
 					ResourceID:    "host1",
-					MetadataDelta: collection.MetadataDelta{
+					MetadataDelta: metrics.MetadataDelta{
 						MetadataToUpdate: map[string]string{
 							"host_cpu_cores":      "4",
 							"host_cpu_model":      "testprocessor",
@@ -108,11 +108,11 @@ func TestSyncMetadata(t *testing.T) {
 			hostStatErr: errors.New("failed"),
 			pushFail:    false,
 			metricsData: generateSampleMetricsData(map[string]string{conventions.AttributeHostName: "host1"}),
-			wantMetadataUpdate: []*collection.MetadataUpdate{
+			wantMetadataUpdate: []*metrics.MetadataUpdate{
 				{
 					ResourceIDKey: conventions.AttributeHostName,
 					ResourceID:    "host1",
-					MetadataDelta: collection.MetadataDelta{
+					MetadataDelta: metrics.MetadataDelta{
 						MetadataToUpdate: map[string]string{
 							"host_cpu_cores":     "4",
 							"host_cpu_model":     "testprocessor",
@@ -139,11 +139,11 @@ func TestSyncMetadata(t *testing.T) {
 			hostStatErr: errors.New("failed"),
 			pushFail:    false,
 			metricsData: generateSampleMetricsData(map[string]string{conventions.AttributeHostName: "host1"}),
-			wantMetadataUpdate: []*collection.MetadataUpdate{
+			wantMetadataUpdate: []*metrics.MetadataUpdate{
 				{
 					ResourceIDKey: conventions.AttributeHostName,
 					ResourceID:    "host1",
-					MetadataDelta: collection.MetadataDelta{
+					MetadataDelta: metrics.MetadataDelta{
 						MetadataToUpdate: map[string]string{
 							"host_mem_total": "2",
 						},
@@ -205,11 +205,11 @@ func TestSyncMetadata(t *testing.T) {
 				conventions.AttributeCloudAccount:  "1234",
 				conventions.AttributeHostID:        "i-abc",
 			}),
-			wantMetadataUpdate: []*collection.MetadataUpdate{
+			wantMetadataUpdate: []*metrics.MetadataUpdate{
 				{
 					ResourceIDKey: string(splunk.HostIDKeyGCP),
 					ResourceID:    "1234_i-abc",
-					MetadataDelta: collection.MetadataDelta{
+					MetadataDelta: metrics.MetadataDelta{
 						MetadataToUpdate: map[string]string{
 							"host_mem_total": "2",
 						},
@@ -286,10 +286,10 @@ func TestSyncMetadata(t *testing.T) {
 type fakeDimClient struct {
 	sync.Mutex
 	fail            bool
-	metadataUpdates [][]*collection.MetadataUpdate
+	metadataUpdates [][]*metrics.MetadataUpdate
 }
 
-func (dc *fakeDimClient) PushMetadata(metadataUpdates []*collection.MetadataUpdate) error {
+func (dc *fakeDimClient) PushMetadata(metadataUpdates []*metrics.MetadataUpdate) error {
 	if dc.fail {
 		return errors.New("failed")
 	}
@@ -299,7 +299,7 @@ func (dc *fakeDimClient) PushMetadata(metadataUpdates []*collection.MetadataUpda
 	return nil
 }
 
-func (dc *fakeDimClient) getMetadataUpdates() [][]*collection.MetadataUpdate {
+func (dc *fakeDimClient) getMetadataUpdates() [][]*metrics.MetadataUpdate {
 	dc.Lock()
 	defer dc.Unlock()
 	return dc.metadataUpdates
