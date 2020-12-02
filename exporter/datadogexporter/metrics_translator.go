@@ -148,7 +148,13 @@ func MapMetrics(logger *zap.Logger, cfg config.MetricsConfig, md pdata.Metrics) 
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 
-		attributeTags := attributes.TagsFromAttributes(rm.Resource().Attributes())
+		var attributeTags []string
+
+		// Only fetch attribute tags if they're not already converted into labels.
+		// Otherwise some tags would be present twice in a metric's tag list.
+		if !cfg.ExporterConfig.ResourceAttributesAsTags {
+			attributeTags = attributes.TagsFromAttributes(rm.Resource().Attributes())
+		}
 
 		ilms := rm.InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
