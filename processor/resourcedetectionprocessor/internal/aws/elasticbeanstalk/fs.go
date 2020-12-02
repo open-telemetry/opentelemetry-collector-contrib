@@ -15,17 +15,22 @@
 package elasticbeanstalk
 
 import (
+	"io"
 	"os"
 	"runtime"
 )
 
-type ebReadOnlyFileSystem struct {
+type fileSystem interface {
+	Open(name string) (io.ReadCloser, error)
+	IsWindows() bool
 }
 
-func (fs ebReadOnlyFileSystem) Open(path string) (file, error) {
-	return os.Open(path)
+type ebFileSystem struct{}
+
+func (fs ebFileSystem) Open(name string) (io.ReadCloser, error) {
+	return os.Open(name)
 }
 
-func (fs ebReadOnlyFileSystem) IsWindows() bool {
+func (fs ebFileSystem) IsWindows() bool {
 	return runtime.GOOS == "windows"
 }

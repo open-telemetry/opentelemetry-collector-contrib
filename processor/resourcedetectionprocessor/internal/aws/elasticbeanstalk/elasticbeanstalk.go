@@ -17,6 +17,7 @@ package elasticbeanstalk
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"strconv"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -26,7 +27,8 @@ import (
 )
 
 const (
-	TypeStr     = "elastic_beanstalk"
+	TypeStr = "elastic_beanstalk"
+
 	linuxPath   = "/var/elasticbeanstalk/xray/environment.conf"
 	windowsPath = "C:\\Program Files\\Amazon\\XRay\\environment.conf"
 )
@@ -34,7 +36,7 @@ const (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
-	fs readOnlyFileSystem
+	fs fileSystem
 }
 
 type EbMetaData struct {
@@ -44,14 +46,14 @@ type EbMetaData struct {
 }
 
 func NewDetector() (internal.Detector, error) {
-	return &Detector{fs: &ebReadOnlyFileSystem{}}, nil
+	return &Detector{fs: &ebFileSystem{}}, nil
 }
 
 func (d Detector) Detect(context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()
-	var conf file
-	var err error
+	var conf io.ReadCloser
 
+	var err error
 	if d.fs.IsWindows() {
 		conf, err = d.fs.Open(windowsPath)
 	} else {
