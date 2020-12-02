@@ -53,8 +53,8 @@ func (c *XRayClient) PutTelemetryRecords(input *xray.PutTelemetryRecordsInput) (
 	return c.xRay.PutTelemetryRecords(input)
 }
 
-// NewXRay creates a new instance of the XRay client with a aws configuration and session .
-func NewXRay(logger *zap.Logger, awsConfig *aws.Config, startInfo component.ApplicationStartInfo, s *session.Session) XRay {
+// newXRay creates a new instance of the XRay client with a aws configuration and session .
+func newXRay(logger *zap.Logger, awsConfig *aws.Config, startInfo component.ApplicationStartInfo, s *session.Session) XRay {
 	x := xray.New(s, awsConfig)
 	logger.Debug("Using Endpoint: %s", zap.String("endpoint", x.Endpoint))
 

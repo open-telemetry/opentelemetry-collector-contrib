@@ -35,7 +35,7 @@ func TestUserAgent(t *testing.T) {
 	}
 
 	session, _ := session.NewSession()
-	xray := NewXRay(logger, &aws.Config{}, startInfo, session)
+	xray := newXRay(logger, &aws.Config{}, startInfo, session)
 	x := xray.(*XRayClient).xRay
 
 	req := request.New(aws.Config{}, metadata.ClientInfo{}, x.Handlers, nil, &request.Operation{
