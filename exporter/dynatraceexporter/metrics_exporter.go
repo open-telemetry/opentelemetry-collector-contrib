@@ -23,6 +23,7 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
@@ -36,22 +37,48 @@ func newMetricsExporter(params component.ExporterCreateParams, cfg *config.Confi
 	if err != nil {
 		return nil, err
 	}
-	return &exporter{params.Logger, cfg, client}, nil
+	return &exporter{
+		logger: params.Logger,
+		cfg:    cfg,
+		client: client,
+	}, nil
 }
 
 // exporter forwards metrics to a Dynatrace agent
 type exporter struct {
-	logger *zap.Logger
-	cfg    *config.Config
-	client *http.Client
+	logger     *zap.Logger
+	cfg        *config.Config
+	client     *http.Client
+	isDisabled bool
 }
 
 const (
 	maxMetricKeyLen = 250
 )
 
-// PushMetricsData exports the given metrics data
-func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error) {
+func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
+	if e.isDisabled {
+		return md.MetricCount(), nil
+	}
+
+	request, dropped := e.serializeMetrics(md)
+
+	// If request is empty string, there are no serializable metrics in the batch.
+	// This can happen if all metric names are invalid
+	if request == "" {
+		return md.MetricCount(), nil
+	}
+
+	droppedByCluster, err := e.send(ctx, request)
+
+	if err != nil {
+		return md.MetricCount(), err
+	}
+
+	return dropped + droppedByCluster, nil
+}
+
+func (e *exporter) serializeMetrics(md pdata.Metrics) (string, int) {
 	output := ""
 	dropped := 0
 
@@ -94,59 +121,70 @@ func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (dropp
 		}
 	}
 
-	if output != "" {
-		err = e.send(ctx, output)
-		if err != nil {
-			return 0, fmt.Errorf("error processing data: %s", err.Error())
-		}
-	}
-
-	return dropped, nil
+	return output, dropped
 }
 
-func (e *exporter) send(ctx context.Context, message string) error {
+// send sends a serialized metric batch to Dynatrace.
+// Returns the number of lines rejected by Dynatrace.
+// An error indicates all lines were dropped regardless of the returned number.
+func (e *exporter) send(ctx context.Context, message string) (int, error) {
 	e.logger.Debug("Sending lines to Dynatrace\n" + message)
 	req, err := http.NewRequestWithContext(ctx, "POST", e.cfg.Endpoint, bytes.NewBufferString(message))
 	if err != nil {
-		return fmt.Errorf("dynatrace error while creating HTTP request: %s", err.Error())
+		return 0, consumererror.Permanent(err)
 	}
-
-	req.Header.Add("Content-Type", "text/plain; charset=UTF-8")
-	req.Header.Add("Authorization", "Api-Token "+e.cfg.APIToken)
-	req.Header.Add("User-Agent", "opentelemetry-collector")
 
 	resp, err := e.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("error sending HTTP request: %s", err.Error())
+		return 0, fmt.Errorf("error sending HTTP request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("error while receiving HTTP response: %s", err.Error())
+	if resp.StatusCode == http.StatusRequestEntityTooLarge {
+		// If a payload is too large, resending it will not help
+		return 0, consumererror.Permanent(fmt.Errorf("payload too large"))
 	}
 
-	responseBody := metricsResponse{}
-	if err := json.Unmarshal(bodyBytes, &responseBody); err != nil {
-		e.logger.Error(fmt.Sprintf("failed to unmarshal response: %s", err.Error()))
-	} else {
-		e.logger.Debug(fmt.Sprintf("Exported %d lines to Dynatrace", responseBody.Ok))
-
-		if responseBody.Invalid > 0 {
-			e.logger.Debug(fmt.Sprintf("Failed to export %d lines to Dynatrace", responseBody.Invalid))
+	if resp.StatusCode == http.StatusBadRequest {
+		// At least some metrics were not accepted
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			// if the response cannot be read, do not retry the batch as it may have been successful
+			e.logger.Error(fmt.Sprintf("failed to read response: %s", err.Error()))
+			return 0, nil
 		}
+
+		responseBody := metricsResponse{}
+		if err := json.Unmarshal(bodyBytes, &responseBody); err != nil {
+			// if the response cannot be read, do not retry the batch as it may have been successful
+			e.logger.Error(fmt.Sprintf("failed to unmarshal response: %s", err.Error()))
+			return 0, nil
+		}
+
+		e.logger.Debug(fmt.Sprintf("Accepted %d lines", responseBody.Ok))
+		e.logger.Error(fmt.Sprintf("Rejected %d lines", responseBody.Invalid))
 
 		if responseBody.Error != "" {
 			e.logger.Error(fmt.Sprintf("Error from Dynatrace: %s", responseBody.Error))
 		}
+
+		return responseBody.Invalid, nil
+
 	}
 
-	if !(resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusAccepted) {
-		return fmt.Errorf("request failed with response code: %d", resp.StatusCode)
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		// Unauthorized and Unauthenticated errors are permanent
+		e.isDisabled = true
+		return 0, consumererror.Permanent(fmt.Errorf(resp.Status))
 	}
 
-	return nil
+	if resp.StatusCode == http.StatusNotFound {
+		e.isDisabled = true
+		return 0, consumererror.Permanent(fmt.Errorf("dynatrace metrics ingest module is disabled"))
+	}
 
+	// No known errors
+	return 0, nil
 }
 
 // normalizeMetricName formats the custom namespace and view name to
@@ -171,7 +209,7 @@ func normalizeMetricName(prefix, name string) (string, error) {
 
 // Response from Dynatrace is expected to be in JSON format
 type metricsResponse struct {
-	Ok      int64  `json:"linesOk"`
-	Invalid int64  `json:"linesInvalid"`
+	Ok      int    `json:"linesOk"`
+	Invalid int    `json:"linesInvalid"`
 	Error   string `json:"error"`
 }

@@ -46,6 +46,11 @@ func createDefaultConfig() configmodels.Exporter {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
+		RetrySettings: exporterhelper.DefaultRetrySettings(),
+		QueueSettings: exporterhelper.DefaultQueueSettings(),
+		ResourceToTelemetrySettings: exporterhelper.ResourceToTelemetrySettings{
+			Enabled: false,
+		},
 
 		APIToken:           "",
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
@@ -77,7 +82,8 @@ func createMetricsExporter(
 		cfg,
 		params.Logger,
 		exp.PushMetricsData,
-		exporterhelper.WithQueue(exporterhelper.DefaultQueueSettings()),
-		exporterhelper.WithRetry(exporterhelper.DefaultRetrySettings()),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithResourceToTelemetryConversion(cfg.ResourceToTelemetrySettings),
 	)
 }

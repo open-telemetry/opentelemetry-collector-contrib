@@ -16,16 +16,22 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for the Dynatrace exporter.
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
+
+	exporterhelper.QueueSettings               `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings               `mapstructure:"retry_on_failure"`
+	exporterhelper.ResourceToTelemetrySettings `mapstructure:"resource_to_telemetry_conversion"`
 
 	// Dynatrace API token with metrics ingest permission
 	APIToken string `mapstructure:"api_token"`
@@ -52,6 +58,14 @@ func (c *Config) Sanitize() error {
 	if !(strings.HasPrefix(c.Endpoint, "http://") || strings.HasPrefix(c.Endpoint, "https://")) {
 		return errors.New("endpoint must start with https:// or http://")
 	}
+
+	if c.HTTPClientSettings.Headers == nil {
+		c.HTTPClientSettings.Headers = make(map[string]string)
+	}
+
+	c.HTTPClientSettings.Headers["Content-Type"] = "text/plain; charset=UTF-8"
+	c.HTTPClientSettings.Headers["Authorization"] = fmt.Sprintf("Api-Token %s", c.APIToken)
+	c.HTTPClientSettings.Headers["User-Agent"] = "opentelemetry-collector"
 
 	return nil
 }
