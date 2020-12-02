@@ -17,11 +17,12 @@ package tailsamplingprocessor
 import (
 	"context"
 	"errors"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"sort"
 	"sync"
 	"testing"
 	"time"
+
+	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/pdata"
