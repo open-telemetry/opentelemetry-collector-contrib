@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestMetricSampleFile(t *testing.T) {
@@ -76,7 +77,7 @@ func TestMetricData(t *testing.T) {
 	}
 
 	cpuStats := CPUStats{
-		CPUUsage:       cpuUsage,
+		CPUUsage:       &cpuUsage,
 		OnlineCpus:     &v,
 		SystemCPUUsage: &v,
 		CPUUtilized:    &v,
@@ -85,11 +86,11 @@ func TestMetricData(t *testing.T) {
 	containerStats := ContainerStats{
 		Name:        "test",
 		ID:          "001",
-		Memory:      mem,
-		Disk:        disk,
+		Memory:      &mem,
+		Disk:        &disk,
 		Network:     net,
-		NetworkRate: netRate,
-		CPU:         cpuStats,
+		NetworkRate: &netRate,
+		CPU:         &cpuStats,
 	}
 
 	tm := TaskMetadata{
@@ -103,9 +104,10 @@ func TestMetricData(t *testing.T) {
 		Limits: Limit{CPU: &f, Memory: &v},
 	}
 
-	cstats := make(map[string]ContainerStats)
-	cstats["001"] = containerStats
+	cstats := make(map[string]*ContainerStats)
+	cstats["001"] = &containerStats
 
-	md := MetricsData(cstats, tm)
+	logger := zap.NewNop()
+	md := MetricsData(cstats, tm, logger)
 	require.Less(t, 0, len(md))
 }
