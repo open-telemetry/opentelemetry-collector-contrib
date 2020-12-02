@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.uber.org/zap"
 )
 
 // metricDataAccumulator defines the accumulator
@@ -26,17 +27,26 @@ type metricDataAccumulator struct {
 }
 
 // getMetricsData generates OT Metrics data from task metadata and docker stats
-func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]ContainerStats, metadata TaskMetadata) {
+func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*ContainerStats, metadata TaskMetadata, logger *zap.Logger) {
 
 	taskMetrics := ECSMetrics{}
 	timestamp := pdata.TimeToUnixNano(time.Now())
 	taskResource := taskResource(metadata)
 
 	for _, containerMetadata := range metadata.Containers {
-		stats := containerStatsMap[containerMetadata.DockerID]
-		containerMetrics := getContainerMetrics(stats)
-		containerMetrics.MemoryReserved = *containerMetadata.Limits.Memory
-		containerMetrics.CPUReserved = *containerMetadata.Limits.CPU
+		stats, ok := containerStatsMap[containerMetadata.DockerID]
+		if !ok || stats == nil {
+			continue
+		}
+
+		containerMetrics := getContainerMetrics(stats, logger)
+		if containerMetadata.Limits.Memory != nil {
+			containerMetrics.MemoryReserved = *containerMetadata.Limits.Memory
+		}
+
+		if containerMetadata.Limits.CPU != nil {
+			containerMetrics.CPUReserved = *containerMetadata.Limits.CPU
+		}
 
 		if containerMetrics.CPUReserved > 0 {
 			containerMetrics.CPUUtilized = (containerMetrics.CPUUtilized / containerMetrics.CPUReserved)
@@ -68,7 +78,9 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 	// at least in one place (either in task level or in container level). If the
 	// task level CPULimit is not present, we calculate it from the summation of
 	// all container CPU limits.
-	taskMetrics.CPUUtilized = ((taskMetrics.CPUUsageInVCPU / taskMetrics.CPUReserved) * 100)
+	if taskMetrics.CPUReserved > 0 {
+		taskMetrics.CPUUtilized = ((taskMetrics.CPUUsageInVCPU / taskMetrics.CPUReserved) * 100)
+	}
 
 	acc.accumulate(convertToOTLPMetrics(TaskPrefix, taskMetrics, taskResource, timestamp))
 }
