@@ -189,6 +189,68 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 	assert.NotNil(t, pusher)
 }
 
+func TestConsumeMetricsWithoutLogGroupStreamConfig(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	factory := NewFactory()
+	expCfg := factory.CreateDefaultConfig().(*Config)
+	expCfg.Region = "us-west-2"
+	expCfg.MaxRetries = defaultRetryCount
+	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	assert.Nil(t, err)
+	assert.NotNil(t, exp)
+
+	mdata := consumerdata.MetricsData{
+		Node: &commonpb.Node{},
+		Resource: &resourcepb.Resource{
+			Labels: map[string]string{
+				"resource": "R1",
+			},
+		},
+		Metrics: []*metricspb.Metric{
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+						{Key: "isItAnError"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan"},
+							{Value: "false"},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_Int64Value{
+									Int64Value: 1,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	md := internaldata.OCToMetrics(mdata)
+	require.NoError(t, exp.Start(ctx, nil))
+	require.Error(t, exp.ConsumeMetrics(ctx, md))
+	require.NoError(t, exp.Shutdown(ctx))
+	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["/metrics/default"]
+	assert.True(t, ok)
+	pusher, ok := streamToPusherMap["otel-stream-"+exp.(*emfExporter).collectorID]
+	assert.True(t, ok)
+	assert.NotNil(t, pusher)
+}
+
 func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -334,8 +396,8 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = defaultRetryCount
-	expCfg.LogGroupName = "test-logGroupName"
-	expCfg.LogStreamName = "{WrongKey}"
+	expCfg.LogGroupName = "{WrongGroupKey}"
+	expCfg.LogStreamName = "{WrongStreamKey}"
 	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
@@ -389,9 +451,9 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	require.NoError(t, exp.Start(ctx, nil))
 	require.Error(t, exp.ConsumeMetrics(ctx, md))
 	require.NoError(t, exp.Shutdown(ctx))
-	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"]
+	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["{WrongGroupKey}"]
 	assert.True(t, ok)
-	pusher, ok := streamToPusherMap["{WrongKey}"]
+	pusher, ok := streamToPusherMap["{WrongStreamKey}"]
 	assert.True(t, ok)
 	assert.NotNil(t, pusher)
 }
@@ -486,7 +548,6 @@ func TestNewExporterWithoutConfig(t *testing.T) {
 	assert.Nil(t, exp)
 	assert.NotNil(t, expCfg.logger)
 }
-
 func TestNewExporterWithMetricDeclarations(t *testing.T) {
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)

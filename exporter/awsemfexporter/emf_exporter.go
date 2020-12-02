@@ -112,63 +112,44 @@ func NewEmfExporter(
 	)
 }
 
-func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (droppedTimeSeries int, err error) {
-	var cwm []*CWMetrics
-	var totalDroppedMetrics int
-	var droppedMetrics int
+func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (totalDroppedMetrics int, err error) {
+	groupedMetrics := make(map[string]*GroupedMetric)
 	expConfig := emf.config.(*Config)
-	namespace := expConfig.Namespace
-	logGroup := "/metrics/default"
-	logStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
+	defaultLogStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
 
 	rms := md.ResourceMetrics()
 
 	for i := 0; i < rms.Len(); i++ {
-		droppedMetrics = 0
 		rm := rms.At(i)
-		cwm, droppedMetrics = TranslateOtToCWMetric(&rm, expConfig)
-		totalDroppedMetrics = totalDroppedMetrics + droppedMetrics
+		TranslateOtToGroupedMetric(&rm, groupedMetrics, expConfig)
+	}
 
-		if len(cwm) > 0 && len(cwm[0].Measurements) > 0 {
-			namespace = cwm[0].Measurements[0].Namespace
-		}
+	for _, groupedMetric := range groupedMetrics {
+		cWMetric := TranslateGroupedMetricToCWMetric(groupedMetric, expConfig)
+		putLogEvent := TranslateCWMetricToEMF(cWMetric)
 
-		putLogEvents := TranslateCWMetricToEMF(cwm, expConfig.logger)
-
-		if namespace != "" {
-			logGroup = fmt.Sprintf("/metrics/%s", namespace)
-		}
-
-		// override log group if found it in exp configuration, this configuration has top priority.
-		// However, in this case, customer won't have correlation experience
-		if len(expConfig.LogGroupName) > 0 {
-			logGroup = replacePatterns(expConfig.LogGroupName, rm.Resource().Attributes(), expConfig.logger)
-		}
-		if len(expConfig.LogStreamName) > 0 {
-			logStream = replacePatterns(expConfig.LogStreamName, rm.Resource().Attributes(), expConfig.logger)
+		logGroup := groupedMetric.Metadata.LogGroup
+		logStream := groupedMetric.Metadata.LogStream
+		if logStream == "" {
+			logStream = defaultLogStream
 		}
 
 		pusher := emf.getPusher(logGroup, logStream)
 		if pusher != nil {
-			for _, ple := range putLogEvents {
-				returnError := pusher.AddLogEntry(ple)
-				if returnError != nil {
-					err = wrapErrorIfBadRequest(&returnError)
-				}
-				if err != nil {
-					return totalDroppedMetrics, err
-				}
-			}
-			returnError := pusher.ForceFlush()
+			returnError := pusher.AddLogEntry(putLogEvent)
 			if returnError != nil {
 				err = wrapErrorIfBadRequest(&returnError)
+				return
 			}
-			if err != nil {
-				return totalDroppedMetrics, err
+			returnError = pusher.ForceFlush()
+			if returnError != nil {
+				err = wrapErrorIfBadRequest(&returnError)
+				return
 			}
 		}
 	}
-	return totalDroppedMetrics, nil
+
+	return
 }
 
 func (emf *emfExporter) getPusher(logGroup, logStream string) Pusher {
