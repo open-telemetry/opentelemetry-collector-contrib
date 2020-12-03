@@ -105,14 +105,13 @@ func (t *traceTransformer) SpanAttributes(span pdata.Span) map[string]interface{
 	length := 2 + len(t.ResourceAttributes) + span.Attributes().Len()
 
 	var hasStatusCode, hasStatusDesc bool
-	if s := span.Status(); !s.IsNil() {
-		if s.Code() != pdata.StatusCodeUnset {
-			hasStatusCode = true
+	s := span.Status()
+	if s.Code() != pdata.StatusCodeUnset {
+		hasStatusCode = true
+		length++
+		if s.Message() != "" {
+			hasStatusDesc = true
 			length++
-			if s.Message() != "" {
-				hasStatusDesc = true
-				length++
-			}
 		}
 	}
 

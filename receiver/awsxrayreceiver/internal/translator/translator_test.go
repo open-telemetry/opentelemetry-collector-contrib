@@ -972,7 +972,6 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 		sp.SetKind(props.spanKind)
 		traceIDBytes, _ := decodeXRayTraceID(&props.traceID)
 		sp.SetTraceID(pdata.NewTraceID(traceIDBytes))
-		sp.Status().InitEmpty()
 		sp.Status().SetMessage(props.spanStatus.message)
 		sp.Status().SetCode(props.spanStatus.code)
 

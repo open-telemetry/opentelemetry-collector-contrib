@@ -30,7 +30,7 @@ import (
 func makeCause(span pdata.Span, attributes map[string]string, resource pdata.Resource) (isError, isFault bool,
 	filtered map[string]string, cause *awsxray.CauseData) {
 	status := span.Status()
-	if status.IsNil() || status.Code() != pdata.StatusCodeError {
+	if status.Code() != pdata.StatusCodeError {
 		return false, false, attributes, nil
 	}
 	filtered = attributes

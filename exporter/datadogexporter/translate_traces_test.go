@@ -62,8 +62,6 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	span.SetTraceState("tracestatekey=tracestatevalue")
 
 	status := span.Status()
-	status.InitEmpty()
-
 	if statusCode == pdata.StatusCodeError {
 		status.SetCode(pdata.StatusCodeError)
 		status.SetMessage("This is not a drill!")

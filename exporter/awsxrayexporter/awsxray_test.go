@@ -118,7 +118,6 @@ func constructHTTPClientSpan() pdata.Span {
 	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
 
 	status := pdata.NewSpanStatus()
-	status.InitEmpty()
 	status.SetCode(0)
 	status.SetMessage("OK")
 	status.CopyTo(span.Status())
@@ -148,7 +147,6 @@ func constructHTTPServerSpan() pdata.Span {
 	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
 
 	status := pdata.NewSpanStatus()
-	status.InitEmpty()
 	status.SetCode(0)
 	status.SetMessage("OK")
 	status.CopyTo(span.Status())

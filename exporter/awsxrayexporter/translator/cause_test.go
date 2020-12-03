@@ -182,7 +182,6 @@ func constructExceptionServerSpan(attributes map[string]interface{}, statuscode 
 	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
 
 	status := pdata.NewSpanStatus()
-	status.InitEmpty()
 	status.SetCode(statuscode)
 	status.CopyTo(span.Status())
 

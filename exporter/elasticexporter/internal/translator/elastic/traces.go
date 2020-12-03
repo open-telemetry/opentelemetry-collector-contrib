@@ -181,14 +181,13 @@ func setTransactionProperties(
 
 	context.setFramework(otlpLibrary.Name(), otlpLibrary.Version())
 
-	if status := otlpSpan.Status(); !status.IsNil() {
-		tx.Outcome = spanStatusOutcome(status)
-		switch status.Code() {
-		case pdata.StatusCodeOk:
-			tx.Result = "OK"
-		case pdata.StatusCodeError:
-			tx.Result = "Error"
-		}
+	status := otlpSpan.Status()
+	tx.Outcome = spanStatusOutcome(status)
+	switch status.Code() {
+	case pdata.StatusCodeOk:
+		tx.Result = "OK"
+	case pdata.StatusCodeError:
+		tx.Result = "Error"
 	}
 
 	tx.Type = "unknown"
@@ -563,9 +562,6 @@ func schemeDefaultPort(scheme string) int {
 }
 
 func spanStatusOutcome(status pdata.SpanStatus) string {
-	if status.IsNil() {
-		return ""
-	}
 	switch status.Code() {
 	case pdata.StatusCodeOk:
 		return "success"
