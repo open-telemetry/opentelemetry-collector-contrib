@@ -154,6 +154,10 @@ updates:
   #   PROCESSORS   #
   ##################
   - package-ecosystem: "gomod"
+    directory: "/processor/groupbyattrsprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/processor/groupbytraceprocessor"
     schedule:
       interval: "weekly"
