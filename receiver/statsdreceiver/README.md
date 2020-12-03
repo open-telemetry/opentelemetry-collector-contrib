@@ -1,6 +1,6 @@
 # StatsD Receiver
 
-StatsD receiver for ingesting StatsD messages into the OpenTelemetry Collector.
+StatsD receiver for ingesting StatsD messages(https://github.com/statsd/statsd/blob/master/docs/metric_types.md) into the OpenTelemetry Collector.
 
 Supported pipeline types: metrics
 
@@ -36,7 +36,7 @@ Aggregation is done in statsD receiver. The default aggregation interval is 60s.
 
 It supports:
 
-Gauge:
+Gauge(transferred to double):
 - statsdTestMetric1:500|g|#mykey:myvalue
 statsdTestMetric1:400|g|#mykey:myvalue
 (get the latest value: 400)
@@ -45,7 +45,7 @@ statsdTestMetric1:+2|g|#mykey:myvalue
 statsdTestMetric1:-1|g|#mykey:myvalue
 (get the value after calculation: 501)
 
-Counter:
+Counter(transferred to int):
 - statsdTestMetric1:3000|c|#mykey:myvalue
 statsdTestMetric1:4000|c|#mykey:myvalue
 (get the value after incrementation: 7000)
@@ -68,7 +68,9 @@ it supports sample rate
 
 `<name>:<value>|g|@<sample-rate>|#<tag1-key>:<tag1-value>`
 
+### Timer
 
+TODO: add support for timer
 
 ## Testing
 
