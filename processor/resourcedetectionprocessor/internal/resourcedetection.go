@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
@@ -32,7 +33,7 @@ type Detector interface {
 	Detect(ctx context.Context) (pdata.Resource, error)
 }
 
-type DetectorFactory func() (Detector, error)
+type DetectorFactory func(component.ProcessorCreateParams) (Detector, error)
 
 type ResourceProviderFactory struct {
 	// detectors holds all possible detector types.
@@ -43,17 +44,20 @@ func NewProviderFactory(detectors map[DetectorType]DetectorFactory) *ResourcePro
 	return &ResourceProviderFactory{detectors: detectors}
 }
 
-func (f *ResourceProviderFactory) CreateResourceProvider(logger *zap.Logger, timeout time.Duration, detectorTypes ...DetectorType) (*ResourceProvider, error) {
-	detectors, err := f.getDetectors(detectorTypes)
+func (f *ResourceProviderFactory) CreateResourceProvider(
+	params component.ProcessorCreateParams,
+	timeout time.Duration,
+	detectorTypes ...DetectorType) (*ResourceProvider, error) {
+	detectors, err := f.getDetectors(params, detectorTypes)
 	if err != nil {
 		return nil, err
 	}
 
-	provider := NewResourceProvider(logger, timeout, detectors...)
+	provider := NewResourceProvider(params.Logger, timeout, detectors...)
 	return provider, nil
 }
 
-func (f *ResourceProviderFactory) getDetectors(detectorTypes []DetectorType) ([]Detector, error) {
+func (f *ResourceProviderFactory) getDetectors(params component.ProcessorCreateParams, detectorTypes []DetectorType) ([]Detector, error) {
 	detectors := make([]Detector, 0, len(detectorTypes))
 	for _, detectorType := range detectorTypes {
 		detectorFactory, ok := f.detectors[detectorType]
@@ -61,7 +65,7 @@ func (f *ResourceProviderFactory) getDetectors(detectorTypes []DetectorType) ([]
 			return nil, fmt.Errorf("invalid detector key: %v", detectorType)
 		}
 
-		detector, err := detectorFactory()
+		detector, err := detectorFactory(params)
 		if err != nil {
 			return nil, fmt.Errorf("failed creating detector type %q: %w", detectorType, err)
 		}

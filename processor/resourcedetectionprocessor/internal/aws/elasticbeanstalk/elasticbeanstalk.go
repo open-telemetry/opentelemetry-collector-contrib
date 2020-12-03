@@ -20,6 +20,7 @@ import (
 	"io"
 	"strconv"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
@@ -45,7 +46,7 @@ type EbMetaData struct {
 	VersionLabel    string `json:"version_label"`
 }
 
-func NewDetector() (internal.Detector, error) {
+func NewDetector(component.ProcessorCreateParams) (internal.Detector, error) {
 	return &Detector{fs: &ebFileSystem{}}, nil
 }
 

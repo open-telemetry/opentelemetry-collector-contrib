@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
@@ -37,7 +38,7 @@ type Detector struct {
 }
 
 // NewDetector creates a new system metadata detector
-func NewDetector() (internal.Detector, error) {
+func NewDetector(component.ProcessorCreateParams) (internal.Detector, error) {
 	return &Detector{provider: &systemMetadataImpl{}}, nil
 }
 
