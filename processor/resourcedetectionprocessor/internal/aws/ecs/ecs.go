@@ -22,6 +22,7 @@ import (
 	"os"
 	"strings"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
@@ -40,8 +41,8 @@ type Detector struct {
 	provider ecsMetadataProvider
 }
 
-func NewDetector() (internal.Detector, error) {
-	return &Detector{provider: &ecsMetadataProviderImpl{client: &http.Client{}}}, nil
+func NewDetector(params component.ProcessorCreateParams) (internal.Detector, error) {
+	return &Detector{provider: &ecsMetadataProviderImpl{logger: params.Logger, client: &http.Client{}}}, nil
 }
 
 // Records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes

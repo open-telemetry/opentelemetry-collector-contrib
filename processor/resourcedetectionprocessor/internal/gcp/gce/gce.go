@@ -19,6 +19,7 @@ package gce // import "cloud.google.com/go/compute/metadata"
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -36,7 +37,7 @@ type Detector struct {
 	metadata gceMetadata
 }
 
-func NewDetector() (internal.Detector, error) {
+func NewDetector(component.ProcessorCreateParams) (internal.Detector, error) {
 	return &Detector{metadata: &gceMetadataImpl{}}, nil
 }
 

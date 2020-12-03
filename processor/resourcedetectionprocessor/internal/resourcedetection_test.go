@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
@@ -81,14 +82,14 @@ func TestDetect(t *testing.T) {
 				md.On("Detect").Return(res, nil)
 
 				mockDetectorType := DetectorType(fmt.Sprintf("mockdetector%v", i))
-				mockDetectors[mockDetectorType] = func() (Detector, error) {
+				mockDetectors[mockDetectorType] = func(component.ProcessorCreateParams) (Detector, error) {
 					return md, nil
 				}
 				mockDetectorTypes = append(mockDetectorTypes, mockDetectorType)
 			}
 
 			f := NewProviderFactory(mockDetectors)
-			p, err := f.CreateResourceProvider(zap.NewNop(), time.Second, mockDetectorTypes...)
+			p, err := f.CreateResourceProvider(component.ProcessorCreateParams{Logger: zap.NewNop()}, time.Second, mockDetectorTypes...)
 			require.NoError(t, err)
 
 			got, err := p.Get(context.Background())
@@ -104,18 +105,18 @@ func TestDetect(t *testing.T) {
 func TestDetectResource_InvalidDetectorType(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{})
-	_, err := p.CreateResourceProvider(zap.NewNop(), time.Second, mockDetectorKey)
+	_, err := p.CreateResourceProvider(component.ProcessorCreateParams{Logger: zap.NewNop()}, time.Second, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("invalid detector key: %v", mockDetectorKey))
 }
 
 func TestDetectResource_DetectoryFactoryError(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{
-		mockDetectorKey: func() (Detector, error) {
+		mockDetectorKey: func(component.ProcessorCreateParams) (Detector, error) {
 			return nil, errors.New("creation failed")
 		},
 	})
-	_, err := p.CreateResourceProvider(zap.NewNop(), time.Second, mockDetectorKey)
+	_, err := p.CreateResourceProvider(component.ProcessorCreateParams{Logger: zap.NewNop()}, time.Second, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 

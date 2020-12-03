@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
@@ -98,7 +97,7 @@ func (f *factory) createTraceProcessor(
 	cfg configmodels.Processor,
 	nextConsumer consumer.TracesConsumer,
 ) (component.TracesProcessor, error) {
-	rdp, err := f.getResourceDetectionProcessor(params.Logger, cfg)
+	rdp, err := f.getResourceDetectionProcessor(params, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +116,7 @@ func (f *factory) createMetricsProcessor(
 	cfg configmodels.Processor,
 	nextConsumer consumer.MetricsConsumer,
 ) (component.MetricsProcessor, error) {
-	rdp, err := f.getResourceDetectionProcessor(params.Logger, cfg)
+	rdp, err := f.getResourceDetectionProcessor(params, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +135,7 @@ func (f *factory) createLogsProcessor(
 	cfg configmodels.Processor,
 	nextConsumer consumer.LogsConsumer,
 ) (component.LogsProcessor, error) {
-	rdp, err := f.getResourceDetectionProcessor(params.Logger, cfg)
+	rdp, err := f.getResourceDetectionProcessor(params, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -150,12 +149,12 @@ func (f *factory) createLogsProcessor(
 }
 
 func (f *factory) getResourceDetectionProcessor(
-	logger *zap.Logger,
+	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	provider, err := f.getResourceProvider(logger, cfg.Name(), oCfg.Timeout, oCfg.Detectors)
+	provider, err := f.getResourceProvider(params, cfg.Name(), oCfg.Timeout, oCfg.Detectors)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +166,7 @@ func (f *factory) getResourceDetectionProcessor(
 }
 
 func (f *factory) getResourceProvider(
-	logger *zap.Logger,
+	params component.ProcessorCreateParams,
 	processorName string,
 	timeout time.Duration,
 	configuredDetectors []string,
@@ -184,7 +183,7 @@ func (f *factory) getResourceProvider(
 		detectorTypes = append(detectorTypes, internal.DetectorType(strings.TrimSpace(key)))
 	}
 
-	provider, err := f.resourceProviderFactory.CreateResourceProvider(logger, timeout, detectorTypes...)
+	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, timeout, detectorTypes...)
 	if err != nil {
 		return nil, err
 	}
