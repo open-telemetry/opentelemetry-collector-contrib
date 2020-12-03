@@ -45,6 +45,7 @@ internal/splunk/                         @open-telemetry/collector-contrib-appro
 
 pkg/batchpertrace/                       @open-telemetry/collector-contrib-approvers @jpkrohling
 
+processor/groupbyattrsprocessor/         @open-telemetry/collector-contrib-approvers @pmm-sumo
 processor/groupbytraceprocessor/         @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/k8sprocessor/                  @open-telemetry/collector-contrib-approvers @owais @dmitryax @pmm-sumo
 processor/metricstransformprocessor/     @open-telemetry/collector-contrib-approvers @james-bebbington
