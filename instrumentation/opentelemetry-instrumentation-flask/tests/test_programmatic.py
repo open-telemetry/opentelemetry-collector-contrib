@@ -17,10 +17,10 @@ from unittest.mock import Mock, patch
 from flask import Flask, request
 
 from opentelemetry import trace
+from opentelemetry.configuration import Configuration
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.test.wsgitestutil import WsgiTestBase
-from opentelemetry.util import ExcludeList
 
 # pylint: disable=import-error
 from .base_test import InstrumentationTest
@@ -54,8 +54,23 @@ class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
 
         self._common_initialization()
 
+        self.env_patch = patch.dict(
+            "os.environ",
+            {
+                "OTEL_PYTHON_FLASK_EXCLUDED_URLS": "http://localhost/excluded_arg/123,excluded_noarg"
+            },
+        )
+        self.env_patch.start()
+        self.exclude_patch = patch(
+            "opentelemetry.instrumentation.flask._excluded_urls",
+            Configuration()._excluded_urls("flask"),
+        )
+        self.exclude_patch.start()
+
     def tearDown(self):
         super().tearDown()
+        self.env_patch.stop()
+        self.exclude_patch.stop()
         with self.disable_logging():
             FlaskInstrumentor().uninstrument_app(self.app)
 
@@ -158,10 +173,6 @@ class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
         self.assertEqual(span_list[0].kind, trace.SpanKind.SERVER)
         self.assertEqual(span_list[0].attributes, expected_attrs)
 
-    @patch(
-        "opentelemetry.instrumentation.flask._excluded_urls",
-        ExcludeList(["http://localhost/excluded_arg/123", "excluded_noarg"]),
-    )
     def test_exclude_lists(self):
         self.client.get("/excluded_arg/123")
         span_list = self.memory_exporter.get_finished_spans()

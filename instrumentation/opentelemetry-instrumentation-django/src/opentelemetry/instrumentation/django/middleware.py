@@ -28,7 +28,6 @@ from opentelemetry.instrumentation.wsgi import (
 )
 from opentelemetry.propagators import extract
 from opentelemetry.trace import SpanKind, get_tracer
-from opentelemetry.util import ExcludeList
 
 try:
     from django.core.urlresolvers import (  # pylint: disable=no-name-in-module
@@ -62,18 +61,9 @@ class _DjangoMiddleware(MiddlewareMixin):
     _environ_span_key = "opentelemetry-instrumentor-django.span_key"
     _environ_exception_key = "opentelemetry-instrumentor-django.exception_key"
 
-    _excluded_urls = Configuration().DJANGO_EXCLUDED_URLS or []
-    if _excluded_urls:
-        _excluded_urls = ExcludeList(str.split(_excluded_urls, ","))
-    else:
-        _excluded_urls = ExcludeList(_excluded_urls)
+    _excluded_urls = Configuration()._excluded_urls("django")
 
-    _traced_request_attrs = [
-        attr.strip()
-        for attr in (Configuration().DJANGO_TRACED_REQUEST_ATTRS or "").split(
-            ","
-        )
-    ]
+    _traced_request_attrs = Configuration()._traced_request_attrs("django")
 
     @staticmethod
     def _get_span_name(request):

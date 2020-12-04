@@ -17,10 +17,10 @@ from unittest.mock import Mock, patch
 from pyramid.config import Configurator
 
 from opentelemetry import trace
+from opentelemetry.configuration import Configuration
 from opentelemetry.instrumentation.pyramid import PyramidInstrumentor
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.test.wsgitestutil import WsgiTestBase
-from opentelemetry.util import ExcludeList
 
 # pylint: disable=import-error
 from .pyramid_base_test import InstrumentationTest
@@ -53,6 +53,19 @@ class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
         self.config = config
 
         self._common_initialization(self.config)
+
+        self.env_patch = patch.dict(
+            "os.environ",
+            {
+                "OTEL_PYTHON_PYRAMID_EXCLUDED_URLS": "http://localhost/excluded_arg/123,excluded_noarg"
+            },
+        )
+        self.env_patch.start()
+        self.exclude_patch = patch(
+            "opentelemetry.instrumentation.pyramid.callbacks._excluded_urls",
+            Configuration()._excluded_urls("pyramid"),
+        )
+        self.exclude_patch.start()
 
     def tearDown(self):
         super().tearDown()
@@ -187,10 +200,6 @@ class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
         self.assertEqual(len(span_list), 0)
         self.assertEqual(mock_logger.warning.called, True)
 
-    @patch(
-        "opentelemetry.instrumentation.pyramid.callbacks._excluded_urls",
-        ExcludeList(["http://localhost/excluded_arg/123", "excluded_noarg"]),
-    )
     def test_exclude_lists(self):
         self.client.get("/excluded_arg/123")
         span_list = self.memory_exporter.get_finished_spans()

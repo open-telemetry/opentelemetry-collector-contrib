@@ -56,7 +56,7 @@ from opentelemetry.instrumentation.utils import (
 )
 from opentelemetry.trace.propagation.textmap import DictGetter
 from opentelemetry.trace.status import Status
-from opentelemetry.util import ExcludeList, time_ns
+from opentelemetry.util import time_ns
 
 from .client import fetch_async  # pylint: disable=E0401
 
@@ -65,25 +65,9 @@ _TraceContext = namedtuple("TraceContext", ["activation", "span", "token"])
 _HANDLER_CONTEXT_KEY = "_otel_trace_context_key"
 _OTEL_PATCHED_KEY = "_otel_patched_key"
 
-
-def get_excluded_urls():
-    urls = configuration.Configuration().TORNADO_EXCLUDED_URLS or ""
-    if urls:
-        urls = str.split(urls, ",")
-    return ExcludeList(urls)
-
-
-def get_traced_request_attrs():
-    attrs = configuration.Configuration().TORNADO_TRACED_REQUEST_ATTRS or ""
-    if attrs:
-        attrs = [attr.strip() for attr in attrs.split(",")]
-    else:
-        attrs = []
-    return attrs
-
-
-_excluded_urls = get_excluded_urls()
-_traced_attrs = get_traced_request_attrs()
+cfg = configuration.Configuration()
+_excluded_urls = cfg._excluded_urls("tornado")
+_traced_attrs = cfg._traced_request_attrs("tornado")
 
 carrier_getter = DictGetter()
 

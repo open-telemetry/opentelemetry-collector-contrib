@@ -8,7 +8,7 @@ from pyramid.tweens import EXCVIEW
 import opentelemetry.instrumentation.wsgi as otel_wsgi
 from opentelemetry import configuration, context, propagators, trace
 from opentelemetry.instrumentation.pyramid.version import __version__
-from opentelemetry.util import ExcludeList, time_ns
+from opentelemetry.util import time_ns
 
 TWEEN_NAME = "opentelemetry.instrumentation.pyramid.trace_tween_factory"
 SETTING_TRACE_ENABLED = "opentelemetry-pyramid.trace_enabled"
@@ -22,14 +22,7 @@ _ENVIRON_TOKEN = "opentelemetry-pyramid.token"
 _logger = getLogger(__name__)
 
 
-def get_excluded_urls():
-    urls = configuration.Configuration().PYRAMID_EXCLUDED_URLS or []
-    if urls:
-        urls = str.split(urls, ",")
-    return ExcludeList(urls)
-
-
-_excluded_urls = get_excluded_urls()
+_excluded_urls = configuration.Configuration()._excluded_urls("pyramid")
 
 
 def includeme(config):

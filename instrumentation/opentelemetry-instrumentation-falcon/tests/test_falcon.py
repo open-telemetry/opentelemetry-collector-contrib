@@ -16,10 +16,10 @@ from unittest.mock import Mock, patch
 
 from falcon import testing
 
+from opentelemetry.configuration import Configuration
 from opentelemetry.instrumentation.falcon import FalconInstrumentor
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.trace.status import StatusCode
-from opentelemetry.util import ExcludeList
 
 from .app import make_app
 
@@ -29,6 +29,30 @@ class TestFalconInstrumentation(TestBase):
         super().setUp()
         FalconInstrumentor().instrument()
         self.app = make_app()
+        # pylint: disable=protected-access
+        Configuration()._reset()
+        self.env_patch = patch.dict(
+            "os.environ",
+            {
+                "OTEL_PYTHON_FALCON_EXCLUDED_URLS": "ping",
+                "OTEL_PYTHON_FALCON_TRACED_REQUEST_ATTRS": "query_string",
+            },
+        )
+        self.env_patch.start()
+        self.exclude_patch = patch(
+            "opentelemetry.instrumentation.falcon._excluded_urls",
+            Configuration()._excluded_urls("falcon"),
+        )
+        middleware = self.app._middleware[0][  # pylint:disable=W0212
+            0
+        ].__self__
+        self.traced_patch = patch.object(
+            middleware,
+            "_traced_request_attrs",
+            Configuration()._traced_request_attrs("falcon"),
+        )
+        self.exclude_patch.start()
+        self.traced_patch.start()
 
     def client(self):
         return testing.TestClient(self.app)
@@ -37,6 +61,9 @@ class TestFalconInstrumentation(TestBase):
         super().tearDown()
         with self.disable_logging():
             FalconInstrumentor().uninstrument()
+        self.env_patch.stop()
+        self.exclude_patch.stop()
+        self.traced_patch.stop()
 
     def test_get(self):
         self._test_method("GET")
@@ -155,10 +182,6 @@ class TestFalconInstrumentation(TestBase):
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 0)
 
-    @patch(
-        "opentelemetry.instrumentation.falcon._excluded_urls",
-        ExcludeList(["ping"]),
-    )
     def test_exclude_lists(self):
         self.client().simulate_get(path="/ping")
         span_list = self.memory_exporter.get_finished_spans()
@@ -171,19 +194,9 @@ class TestFalconInstrumentation(TestBase):
     def test_traced_request_attributes(self):
         self.client().simulate_get(path="/hello?q=abc")
         span = self.memory_exporter.get_finished_spans()[0]
-        self.assertNotIn("query_string", span.attributes)
-        self.memory_exporter.clear()
-
-        middleware = self.app._middleware[0][  # pylint:disable=W0212
-            0
-        ].__self__
-        with patch.object(
-            middleware, "_traced_request_attrs", ["query_string"]
-        ):
-            self.client().simulate_get(path="/hello?q=abc")
-            span = self.memory_exporter.get_finished_spans()[0]
-            self.assertIn("query_string", span.attributes)
-            self.assertEqual(span.attributes["query_string"], "q=abc")
+        self.assertIn("query_string", span.attributes)
+        self.assertEqual(span.attributes["query_string"], "q=abc")
+        self.assertNotIn("not_available_attr", span.attributes)
 
     def test_traced_not_recording(self):
         mock_tracer = Mock()

@@ -55,7 +55,7 @@ import opentelemetry.instrumentation.wsgi as otel_wsgi
 from opentelemetry import configuration, context, propagators, trace
 from opentelemetry.instrumentation.flask.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
-from opentelemetry.util import ExcludeList, time_ns
+from opentelemetry.util import time_ns
 
 _logger = getLogger(__name__)
 
@@ -65,14 +65,7 @@ _ENVIRON_ACTIVATION_KEY = "opentelemetry-flask.activation_key"
 _ENVIRON_TOKEN = "opentelemetry-flask.token"
 
 
-def get_excluded_urls():
-    urls = configuration.Configuration().FLASK_EXCLUDED_URLS or []
-    if urls:
-        urls = str.split(urls, ",")
-    return ExcludeList(urls)
-
-
-_excluded_urls = get_excluded_urls()
+_excluded_urls = configuration.Configuration()._excluded_urls("flask")
 
 
 def get_default_span_name():
