@@ -206,10 +206,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/receiver/dockerstatsreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/receiver/jmxreceiver"
     schedule:
       interval: "weekly"
