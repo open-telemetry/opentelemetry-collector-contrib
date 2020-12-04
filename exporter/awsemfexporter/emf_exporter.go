@@ -64,7 +64,7 @@ func New(
 	}
 
 	// create CWLogs client with aws session config
-	svcStructuredLog := NewCloudWatchLogsClient(logger, awsConfig, session)
+	svcStructuredLog := NewCloudWatchLogsClient(logger, awsConfig, params.ApplicationStartInfo, session)
 	collectorIdentifier, _ := uuid.NewRandom()
 
 	// Initialize metric declarations and filter out invalid ones
