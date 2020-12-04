@@ -13,6 +13,7 @@ Given an environment ID `abc12345` on Dynatrace SaaS, the [metrics ingest endpoi
 
  ```yaml
 dynatrace:
+  # Token must at least have the Ingest metrics (metrics.ingest) permission
   api_token: "my_api_token"
   endpoint: https://abc12345.live.dynatrace.com/api/v2/metrics/ingest
  ```
@@ -43,6 +44,7 @@ exporters:
     prefix: my_prefix
 
     endpoint: https://abc12345.live.dynatrace.com/api/v2/metrics/ingest
+    # Token must at least have the Ingest metrics (metrics.ingest) permission
     api_token: my_api_token
 
 service:
@@ -53,3 +55,11 @@ service:
       exporters: [dynatrace]
 
  ```
+
+## Advanced Configuration
+
+Several helper files are leveraged to provide additional capabilities automatically:
+
+- [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/config/confighttp/README.md)
+- [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/config/configtls/README.md)
+- [Queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/exporter/exporterhelper/README.md) except timeout which is handled by the HTTP settings

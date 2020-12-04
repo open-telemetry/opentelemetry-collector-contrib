@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
@@ -41,6 +42,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
+		},
+		RetrySettings: exporterhelper.DefaultRetrySettings(),
+		QueueSettings: exporterhelper.DefaultQueueSettings(),
+		ResourceToTelemetrySettings: exporterhelper.ResourceToTelemetrySettings{
+			Enabled: false,
 		},
 
 		Tags: []string{},
@@ -71,8 +77,17 @@ func TestLoadConfig(t *testing.T) {
 			TypeVal: typeStr,
 		},
 
-		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://example.com/api/v2/metrics/ingest"},
-		APIToken:           "token",
+		RetrySettings: exporterhelper.DefaultRetrySettings(),
+		QueueSettings: exporterhelper.DefaultQueueSettings(),
+
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "http://example.com/api/v2/metrics/ingest",
+			Headers: map[string]string{
+				"Authorization": "Api-Token token",
+				"Content-Type":  "text/plain; charset=UTF-8",
+				"User-Agent":    "opentelemetry-collector"},
+		},
+		APIToken: "token",
 
 		Prefix: "myprefix",
 
