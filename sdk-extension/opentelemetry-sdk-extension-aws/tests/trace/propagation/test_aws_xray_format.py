@@ -153,6 +153,21 @@ class AwsXRayPropagatorTest(unittest.TestCase):
 
         self.assertEqual(injected_items, expected_items)
 
+    def test_inject_reported_fields_matches_carrier_fields(self):
+        carrier = CaseInsensitiveDict()
+
+        AwsXRayPropagatorTest.XRAY_PROPAGATOR.inject(
+            AwsXRayPropagatorTest.carrier_setter,
+            carrier,
+            build_test_current_context(),
+        )
+
+        injected_keys = set(carrier.keys())
+
+        self.assertEqual(
+            injected_keys, AwsXRayPropagatorTest.XRAY_PROPAGATOR.fields()
+        )
+
     # Extract Tests
 
     def test_extract_empty_carrier_from_invalid_context(self):
