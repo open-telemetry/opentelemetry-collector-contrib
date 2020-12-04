@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
@@ -181,17 +182,8 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 }
 
 func Test_exporter_PushMetricsData_EmptyPayload(t *testing.T) {
-	sent := "not sent"
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		bodyBytes, _ := ioutil.ReadAll(r.Body)
-		sent = string(bodyBytes)
-
-		response := metricsResponse{
-			Ok:      0,
-			Invalid: 0,
-		}
-		body, _ := json.Marshal(response)
-		w.Write(body)
+		t.Fatal("Server should not be called")
 	}))
 	defer ts.Close()
 
@@ -209,72 +201,26 @@ func Test_exporter_PushMetricsData_EmptyPayload(t *testing.T) {
 	noneMetric := metrics.At(0)
 	noneMetric.SetName("none")
 
-	type fields struct {
-		logger *zap.Logger
-		cfg    *config.Config
-		client *http.Client
-	}
-	type args struct {
-		ctx context.Context
-		md  pdata.Metrics
-	}
-	test := struct {
-		name                  string
-		fields                fields
-		args                  args
-		wantDroppedTimeSeries int
-		wantErr               bool
-	}{
-		name: "Send metric data",
-		fields: fields{
-			logger: zap.NewNop(),
-			cfg: &config.Config{
-				APIToken:           "token",
-				HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
-				Prefix:             "prefix",
-				Tags:               []string{},
-			},
-			client: ts.Client(),
+	e := &exporter{
+		logger: zap.NewNop(),
+		cfg: &config.Config{
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
 		},
-		args: args{
-			ctx: context.Background(),
-			md:  md,
-		},
-		wantErr:               false,
-		wantDroppedTimeSeries: 0,
+		client: ts.Client(),
 	}
-
-	t.Run(test.name, func(t *testing.T) {
-		e := &exporter{
-			logger: test.fields.logger,
-			cfg:    test.fields.cfg,
-			client: test.fields.client,
-		}
-		gotDroppedTimeSeries, err := e.PushMetricsData(test.args.ctx, test.args.md)
-		if (err != nil) != test.wantErr {
-			t.Errorf("exporter.PushMetricsData() error = %v, wantErr %v", err, test.wantErr)
-			return
-		}
-		if gotDroppedTimeSeries != test.wantDroppedTimeSeries {
-			t.Errorf("exporter.PushMetricsData() = %v, want %v", gotDroppedTimeSeries, test.wantDroppedTimeSeries)
-		}
-	})
-
-	if sent != "not sent" {
-		t.Errorf("empty payload should not be sent: %s", sent)
+	gotDroppedTimeSeries, err := e.PushMetricsData(context.Background(), md)
+	if err != nil {
+		t.Errorf("exporter.PushMetricsData() error = %v", err)
+		return
+	}
+	if gotDroppedTimeSeries != md.MetricCount() {
+		t.Errorf("Expected %d metrics to be reported dropped, got %d", md.MetricCount(), gotDroppedTimeSeries)
 	}
 }
 
-func Test_exporter_PushMetricsData_Unauthorized(t *testing.T) {
+func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(401)
-		response := metricsResponse{
-			Ok:      0,
-			Invalid: 1,
-			Error:   "unauthorized",
-		}
-		body, _ := json.Marshal(response)
-		w.Write(body)
+		t.Fatal("Server should not be called")
 	}))
 	defer ts.Close()
 
@@ -289,66 +235,143 @@ func Test_exporter_PushMetricsData_Unauthorized(t *testing.T) {
 	metrics := ilm.Metrics()
 	metrics.Resize(1)
 
-	intGaugeMetric := metrics.At(0)
-	intGaugeMetric.SetDataType(pdata.MetricDataTypeIntGauge)
-	intGaugeMetric.SetName("int_gauge")
-	intGauge := intGaugeMetric.IntGauge()
+	metric := metrics.At(0)
+	metric.SetDataType(pdata.MetricDataTypeIntGauge)
+	metric.SetName("int_gauge")
+	intGauge := metric.IntGauge()
 	intGaugeDataPoints := intGauge.DataPoints()
 	intGaugeDataPoints.Resize(1)
 	intGaugeDataPoint := intGaugeDataPoints.At(0)
 	intGaugeDataPoint.SetValue(10)
 	intGaugeDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
 
-	type fields struct {
-		logger *zap.Logger
-		cfg    *config.Config
-		client *http.Client
-	}
-	type args struct {
-		ctx context.Context
-		md  pdata.Metrics
-	}
-	test := struct {
-		name                  string
-		fields                fields
-		args                  args
-		wantDroppedTimeSeries int
-		wantErr               bool
-	}{
-		name: "Send metric data",
-		fields: fields{
-			logger: zap.NewNop(),
-			cfg: &config.Config{
-				APIToken:           "token",
-				HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
-				Prefix:             "prefix",
-				Tags:               []string{},
-			},
-			client: ts.Client(),
+	e := &exporter{
+		logger: zap.NewNop(),
+		cfg: &config.Config{
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
 		},
-		args: args{
-			ctx: context.Background(),
-			md:  md,
-		},
-		wantErr:               true,
-		wantDroppedTimeSeries: 0,
+		client:     ts.Client(),
+		isDisabled: true,
 	}
+	gotDroppedTimeSeries, err := e.PushMetricsData(context.Background(), md)
+	if err != nil {
+		t.Errorf("exporter.PushMetricsData() error = %v", err)
+		return
+	}
+	if gotDroppedTimeSeries != md.MetricCount() {
+		t.Errorf("Expected %d metrics to be reported dropped, got %d", md.MetricCount(), gotDroppedTimeSeries)
+	}
+}
 
-	t.Run(test.name, func(t *testing.T) {
-		e := &exporter{
-			logger: test.fields.logger,
-			cfg:    test.fields.cfg,
-			client: test.fields.client,
-		}
-		gotDroppedTimeSeries, err := e.PushMetricsData(test.args.ctx, test.args.md)
-		if (err != nil) != test.wantErr {
-			t.Errorf("exporter.PushMetricsData() error = %v, wantErr %v", err, test.wantErr)
-			return
-		}
-		if gotDroppedTimeSeries != test.wantDroppedTimeSeries {
-			t.Errorf("exporter.PushMetricsData() = %v, want %v", gotDroppedTimeSeries, test.wantDroppedTimeSeries)
-		}
-	})
+func Test_exporter_send_BadRequest(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		body, _ := json.Marshal(metricsResponse{
+			Ok:      0,
+			Invalid: 10,
+		})
+		w.Write(body)
+	}))
+	defer ts.Close()
+
+	e := &exporter{
+		logger: zap.NewNop(),
+		cfg: &config.Config{
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+		},
+		client: ts.Client(),
+	}
+	invalid, err := e.send(context.Background(), "")
+	if invalid != 10 {
+		t.Errorf("Expected 10 lines to be reported invalid")
+		return
+	}
+	if consumererror.IsPermanent(err) {
+		t.Errorf("Expected error to not be permanent %v", err)
+		return
+	}
+	if e.isDisabled {
+		t.Error("Expected exporter to not be disabled")
+		return
+	}
+}
+
+func Test_exporter_send_Unauthorized(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte{})
+	}))
+	defer ts.Close()
+
+	e := &exporter{
+		logger: zap.NewNop(),
+		cfg: &config.Config{
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+		},
+		client: ts.Client(),
+	}
+	_, err := e.send(context.Background(), "")
+	if !consumererror.IsPermanent(err) {
+		t.Errorf("Expected error to be permanent %v", err)
+		return
+	}
+	if !e.isDisabled {
+		t.Error("Expected exporter to be disabled")
+		return
+	}
+}
+
+func Test_exporter_send_TooLarge(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusRequestEntityTooLarge)
+		w.Write([]byte{})
+	}))
+	defer ts.Close()
+
+	e := &exporter{
+		logger: zap.NewNop(),
+		cfg: &config.Config{
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+		},
+		client: ts.Client(),
+	}
+	_, err := e.send(context.Background(), "")
+	if !consumererror.IsPermanent(err) {
+		t.Errorf("Expected error to be permanent %v", err)
+		return
+	}
+	if e.isDisabled {
+		t.Error("Expected exporter not to be disabled")
+		return
+	}
+}
+
+func Test_exporter_send_NotFound(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(404)
+		w.Write([]byte{})
+	}))
+	defer ts.Close()
+
+	e := &exporter{
+		logger: zap.NewNop(),
+		cfg: &config.Config{
+			APIToken:           "token",
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+			Prefix:             "prefix",
+			Tags:               []string{},
+		},
+		client: ts.Client(),
+	}
+	_, err := e.send(context.Background(), "")
+	if !consumererror.IsPermanent(err) {
+		t.Errorf("Expected error to be permanent %v", err)
+		return
+	}
+	if !e.isDisabled {
+		t.Error("Expected exporter to be disabled")
+		return
+	}
 }
 
 func Test_exporter_PushMetricsData_Error(t *testing.T) {
@@ -394,7 +417,7 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 		wantDroppedTimeSeries int
 		wantErr               bool
 	}{
-		name: "Send metric data",
+		name: "When the client errors, all timeseries are assumed to be dropped",
 		fields: fields{
 			logger: zap.NewNop(),
 			cfg: &config.Config{
@@ -410,7 +433,7 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 			md:  md,
 		},
 		wantErr:               true,
-		wantDroppedTimeSeries: 0,
+		wantDroppedTimeSeries: 1,
 	}
 
 	t.Run(test.name, func(t *testing.T) {
