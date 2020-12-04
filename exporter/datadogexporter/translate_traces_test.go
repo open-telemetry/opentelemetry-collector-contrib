@@ -115,10 +115,14 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	return rs
 }
 
+func NewSublayerCalculator() *sublayerCalculator {
+	return &sublayerCalculator{sc: stats.NewSublayerCalculator()}
+}
+
 func TestConvertToDatadogTd(t *testing.T) {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
-	calculator := stats.NewSublayerCalculator()
+	calculator := NewSublayerCalculator()
 
 	outputTraces, err := ConvertToDatadogTd(traces, calculator, &config.Config{})
 
@@ -128,7 +132,7 @@ func TestConvertToDatadogTd(t *testing.T) {
 
 func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 	traces := pdata.NewTraces()
-	calculator := stats.NewSublayerCalculator()
+	calculator := NewSublayerCalculator()
 
 	outputTraces, err := ConvertToDatadogTd(traces, calculator, &config.Config{})
 
@@ -137,7 +141,7 @@ func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 }
 
 func TestObfuscation(t *testing.T) {
-	calculator := stats.NewSublayerCalculator()
+	calculator := NewSublayerCalculator()
 
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
@@ -174,7 +178,7 @@ func TestObfuscation(t *testing.T) {
 
 func TestBasicTracesTranslation(t *testing.T) {
 	hostname := "testhostname"
-	calculator := stats.NewSublayerCalculator()
+	calculator := NewSublayerCalculator()
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -241,7 +245,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 
 func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	hostname := "testhostname"
-	calculator := stats.NewSublayerCalculator()
+	calculator := NewSublayerCalculator()
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -292,7 +296,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 
 func TestTracesTranslationOkStatus(t *testing.T) {
 	hostname := "testhostname"
-	calculator := stats.NewSublayerCalculator()
+	calculator := NewSublayerCalculator()
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -344,7 +348,7 @@ func TestTracesTranslationOkStatus(t *testing.T) {
 // ensure that the datadog span uses the configured unified service tags
 func TestTracesTranslationConfig(t *testing.T) {
 	hostname := "testhostname"
-	calculator := stats.NewSublayerCalculator()
+	calculator := NewSublayerCalculator()
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -394,7 +398,7 @@ func TestTracesTranslationConfig(t *testing.T) {
 // ensure that the translation returns early if no resource instrumentation library spans
 func TestTracesTranslationNoIls(t *testing.T) {
 	hostname := "testhostname"
-	calculator := stats.NewSublayerCalculator()
+	calculator := NewSublayerCalculator()
 
 	rs := pdata.NewResourceSpans()
 
