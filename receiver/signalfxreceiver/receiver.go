@@ -218,7 +218,7 @@ func (r *sfxReceiver) writeResponse(ctx context.Context, resp http.ResponseWrite
 		return
 	}
 
-	resp.WriteHeader(http.StatusAccepted)
+	resp.WriteHeader(http.StatusOK)
 	resp.Write(okRespBody)
 }
 
