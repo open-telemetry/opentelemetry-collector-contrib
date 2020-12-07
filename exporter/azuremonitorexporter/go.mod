@@ -11,6 +11,6 @@ require (
 	go.opentelemetry.io/collector v0.16.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/net v0.0.0-20201021035429-f5854403a974
-	google.golang.org/grpc v1.33.2
+	google.golang.org/grpc v1.34.0
 	google.golang.org/grpc/examples v0.0.0-20200728194956-1c32b02682df // indirect
 )
