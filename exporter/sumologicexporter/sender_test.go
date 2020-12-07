@@ -65,6 +65,11 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 				Timeout: cfg.HTTPClientSettings.Timeout,
 			},
 			f,
+			sourceFormats{
+				host:     getTestSourceFormat(t, "source_host"),
+				category: getTestSourceFormat(t, "source_category"),
+				name:     getTestSourceFormat(t, "source_name"),
+			},
 		),
 	}
 }
@@ -103,7 +108,7 @@ func TestSend(t *testing.T) {
 		func(w http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			assert.Equal(t, "Example log\nAnother example log", body)
-			assert.Equal(t, "test_metadata", req.Header.Get("X-Sumo-Fields"))
+			assert.Equal(t, "key1=value, key2=value2", req.Header.Get("X-Sumo-Fields"))
 			assert.Equal(t, "otelcol", req.Header.Get("X-Sumo-Client"))
 			assert.Equal(t, "application/x-www-form-urlencoded", req.Header.Get("Content-Type"))
 		},
@@ -112,7 +117,7 @@ func TestSend(t *testing.T) {
 
 	test.s.buffer = exampleTwoLogs()
 
-	_, err := test.s.sendLogs("test_metadata")
+	_, err := test.s.sendLogs(fields{"key1": "value", "key2": "value2"})
 	assert.NoError(t, err)
 }
 
@@ -131,7 +136,7 @@ func TestSendSplit(t *testing.T) {
 	test.s.config.MaxRequestBodySize = 10
 	test.s.buffer = exampleTwoLogs()
 
-	_, err := test.s.sendLogs("test_metadata")
+	_, err := test.s.sendLogs(fields{})
 	assert.NoError(t, err)
 }
 func TestSendSplitFailedOne(t *testing.T) {
@@ -152,7 +157,7 @@ func TestSendSplitFailedOne(t *testing.T) {
 	test.s.config.LogFormat = TextFormat
 	test.s.buffer = exampleTwoLogs()
 
-	dropped, err := test.s.sendLogs("test_metadata")
+	dropped, err := test.s.sendLogs(fields{})
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 	assert.Equal(t, test.s.buffer[0:1], dropped)
 }
@@ -177,7 +182,7 @@ func TestSendSplitFailedAll(t *testing.T) {
 	test.s.config.LogFormat = TextFormat
 	test.s.buffer = exampleTwoLogs()
 
-	dropped, err := test.s.sendLogs("test_metadata")
+	dropped, err := test.s.sendLogs(fields{})
 	assert.EqualError(
 		t,
 		err,
@@ -193,7 +198,7 @@ func TestSendJson(t *testing.T) {
 			expected := `{"key1":"value1","key2":"value2","log":"Example log"}
 {"key1":"value1","key2":"value2","log":"Another example log"}`
 			assert.Equal(t, expected, body)
-			assert.Equal(t, "test_metadata", req.Header.Get("X-Sumo-Fields"))
+			assert.Equal(t, "key=value", req.Header.Get("X-Sumo-Fields"))
 			assert.Equal(t, "otelcol", req.Header.Get("X-Sumo-Client"))
 			assert.Equal(t, "application/x-www-form-urlencoded", req.Header.Get("Content-Type"))
 		},
@@ -202,7 +207,7 @@ func TestSendJson(t *testing.T) {
 	test.s.config.LogFormat = JSONFormat
 	test.s.buffer = exampleTwoLogs()
 
-	_, err := test.s.sendLogs("test_metadata")
+	_, err := test.s.sendLogs(fields{"key": "value"})
 	assert.NoError(t, err)
 }
 
@@ -222,7 +227,7 @@ func TestSendJsonSplit(t *testing.T) {
 	test.s.config.MaxRequestBodySize = 10
 	test.s.buffer = exampleTwoLogs()
 
-	_, err := test.s.sendLogs("test_metadata")
+	_, err := test.s.sendLogs(fields{})
 	assert.NoError(t, err)
 }
 
@@ -244,7 +249,7 @@ func TestSendJsonSplitFailedOne(t *testing.T) {
 	test.s.config.MaxRequestBodySize = 10
 	test.s.buffer = exampleTwoLogs()
 
-	dropped, err := test.s.sendLogs("test_metadata")
+	dropped, err := test.s.sendLogs(fields{})
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 	assert.Equal(t, test.s.buffer[0:1], dropped)
 }
@@ -269,7 +274,7 @@ func TestSendJsonSplitFailedAll(t *testing.T) {
 	test.s.config.MaxRequestBodySize = 10
 	test.s.buffer = exampleTwoLogs()
 
-	dropped, err := test.s.sendLogs("test_metadata")
+	dropped, err := test.s.sendLogs(fields{})
 	assert.EqualError(
 		t,
 		err,
@@ -287,52 +292,52 @@ func TestSendUnexpectedFormat(t *testing.T) {
 	test.s.config.LogFormat = "dummy"
 	test.s.buffer = exampleTwoLogs()
 
-	_, err := test.s.sendLogs("test_metadata")
+	_, err := test.s.sendLogs(fields{})
 	assert.Error(t, err)
 }
 
 func TestOverrideSourceName(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
-			assert.Equal(t, "Test source name", req.Header.Get("X-Sumo-Name"))
+			assert.Equal(t, "Test source name/test_name", req.Header.Get("X-Sumo-Name"))
 		},
 	})
 	defer func() { test.srv.Close() }()
 
-	test.s.config.SourceName = "Test source name"
+	test.s.sources.name = getTestSourceFormat(t, "Test source name/%{key1}")
 	test.s.buffer = exampleLog()
 
-	_, err := test.s.sendLogs("test_metadata")
+	_, err := test.s.sendLogs(fields{"key1": "test_name"})
 	assert.NoError(t, err)
 }
 
 func TestOverrideSourceCategory(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
-			assert.Equal(t, "Test source category", req.Header.Get("X-Sumo-Category"))
+			assert.Equal(t, "Test source category/test_name", req.Header.Get("X-Sumo-Category"))
 		},
 	})
 	defer func() { test.srv.Close() }()
 
-	test.s.config.SourceCategory = "Test source category"
+	test.s.sources.category = getTestSourceFormat(t, "Test source category/%{key1}")
 	test.s.buffer = exampleLog()
 
-	_, err := test.s.sendLogs("test_metadata")
+	_, err := test.s.sendLogs(fields{"key1": "test_name"})
 	assert.NoError(t, err)
 }
 
 func TestOverrideSourceHost(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
-			assert.Equal(t, "Test source host", req.Header.Get("X-Sumo-Host"))
+			assert.Equal(t, "Test source host/test_name", req.Header.Get("X-Sumo-Host"))
 		},
 	})
 	defer func() { test.srv.Close() }()
 
-	test.s.config.SourceHost = "Test source host"
+	test.s.sources.host = getTestSourceFormat(t, "Test source host/%{key1}")
 	test.s.buffer = exampleLog()
 
-	_, err := test.s.sendLogs("test_metadata")
+	_, err := test.s.sendLogs(fields{"key1": "test_name"})
 	assert.NoError(t, err)
 }
 
@@ -343,13 +348,13 @@ func TestBuffer(t *testing.T) {
 	assert.Equal(t, test.s.count(), 0)
 	logs := exampleTwoLogs()
 
-	droppedLogs, err := test.s.batch(logs[0], "")
+	droppedLogs, err := test.s.batch(logs[0], fields{})
 	require.NoError(t, err)
 	assert.Nil(t, droppedLogs)
 	assert.Equal(t, 1, test.s.count())
 	assert.Equal(t, []pdata.LogRecord{logs[0]}, test.s.buffer)
 
-	droppedLogs, err = test.s.batch(logs[1], "")
+	droppedLogs, err = test.s.batch(logs[1], fields{})
 	require.NoError(t, err)
 	assert.Nil(t, droppedLogs)
 	assert.Equal(t, 2, test.s.count())
@@ -367,7 +372,7 @@ func TestInvalidEndpoint(t *testing.T) {
 	test.s.config.HTTPClientSettings.Endpoint = ":"
 	test.s.buffer = exampleLog()
 
-	_, err := test.s.sendLogs("test_metadata")
+	_, err := test.s.sendLogs(fields{})
 	assert.EqualError(t, err, `parse ":": missing protocol scheme`)
 }
 
@@ -378,7 +383,7 @@ func TestInvalidPostRequest(t *testing.T) {
 	test.s.config.HTTPClientSettings.Endpoint = ""
 	test.s.buffer = exampleLog()
 
-	_, err := test.s.sendLogs("test_metadata")
+	_, err := test.s.sendLogs(fields{})
 	assert.EqualError(t, err, `Post "": unsupported protocol scheme ""`)
 }
 
@@ -390,11 +395,11 @@ func TestBufferOverflow(t *testing.T) {
 	log := exampleLog()
 
 	for test.s.count() < maxBufferSize-1 {
-		_, err := test.s.batch(log[0], "test_metadata")
+		_, err := test.s.batch(log[0], fields{})
 		require.NoError(t, err)
 	}
 
-	_, err := test.s.batch(log[0], "test_metadata")
+	_, err := test.s.batch(log[0], fields{})
 	assert.EqualError(t, err, `parse ":": missing protocol scheme`)
 	assert.Equal(t, 0, test.s.count())
 }
@@ -403,7 +408,7 @@ func TestMetricsPipeline(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	err := test.s.send(MetricsPipeline, strings.NewReader(""), "")
+	err := test.s.send(MetricsPipeline, strings.NewReader(""), fields{})
 	assert.EqualError(t, err, `current sender version doesn't support metrics`)
 }
 
@@ -411,6 +416,6 @@ func TestInvalidPipeline(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	err := test.s.send("invalidPipeline", strings.NewReader(""), "")
+	err := test.s.send("invalidPipeline", strings.NewReader(""), fields{})
 	assert.EqualError(t, err, `unexpected pipeline`)
 }
