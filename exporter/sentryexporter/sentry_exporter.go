@@ -50,8 +50,6 @@ type SentryExporter struct {
 // pushTraceData takes an incoming OpenTelemetry trace, converts them into Sentry spans and transactions
 // and sends them using Sentry's transport.
 func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) (droppedSpans int, err error) {
-	// For a ResourceSpan, InstrumentationLibrarySpan and Span struct if IsNil()
-	// is "true", all other methods will cause a runtime error.
 	resourceSpans := td.ResourceSpans()
 	if resourceSpans.Len() == 0 {
 		return 0, nil
@@ -289,10 +287,6 @@ func generateTagsFromAttributes(attrs pdata.AttributeMap) map[string]string {
 }
 
 func statusFromSpanStatus(spanStatus pdata.SpanStatus) (status string, message string) {
-	if spanStatus.IsNil() {
-		return "", ""
-	}
-
 	code := spanStatus.Code()
 	if code < 0 || int(code) >= len(canonicalCodes) {
 		return sentryStatusUnknown, fmt.Sprintf("error code %d", code)

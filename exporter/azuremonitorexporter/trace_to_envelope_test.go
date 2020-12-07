@@ -114,7 +114,6 @@ var (
 // - adds a few different types of attributes
 func TestHTTPServerSpanToRequestDataAttributeSet1(t *testing.T) {
 	span := getDefaultHTTPServerSpan()
-	span.Status().InitEmpty()
 	span.Status().SetCode(0)
 	spanAttributes := span.Attributes()
 

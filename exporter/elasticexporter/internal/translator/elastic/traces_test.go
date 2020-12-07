@@ -57,7 +57,6 @@ func TestEncodeSpan(t *testing.T) {
 	clientSpan.SetParentSpanID(pdata.NewSpanID(rootTransactionID))
 	clientSpan.SetKind(pdata.SpanKindCLIENT)
 	clientSpan.SetName("client_span")
-	clientSpan.Status().InitEmpty()
 	clientSpan.Status().SetCode(pdata.StatusCodeError)
 	clientSpan.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"string.attr": pdata.NewAttributeValueString("string_value"),
@@ -71,7 +70,6 @@ func TestEncodeSpan(t *testing.T) {
 	serverSpan.SetParentSpanID(pdata.NewSpanID(clientSpanID))
 	serverSpan.SetKind(pdata.SpanKindSERVER)
 	serverSpan.SetName("server_span")
-	serverSpan.Status().InitEmpty()
 	serverSpan.Status().SetCode(pdata.StatusCodeOk)
 
 	for _, span := range []pdata.Span{rootSpan, clientSpan, serverSpan} {
@@ -164,7 +162,6 @@ func TestEncodeSpanStatus(t *testing.T) {
 		span.SetName("span")
 
 		if statusCode >= 0 {
-			span.Status().InitEmpty()
 			span.Status().SetCode(statusCode)
 		}
 

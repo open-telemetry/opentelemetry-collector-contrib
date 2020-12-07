@@ -145,7 +145,6 @@ func fillHTTPClientSpan(span pdata.Span) {
 	link.Attributes().InsertString("link", "true")
 
 	status := span.Status()
-	status.InitEmpty()
 	status.SetCode(1)
 	status.SetMessage("OK")
 }
@@ -170,7 +169,6 @@ func fillHTTPServerSpan(span pdata.Span) {
 	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
 
 	status := span.Status()
-	status.InitEmpty()
 	status.SetCode(2)
 	status.SetMessage("something error")
 }

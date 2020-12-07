@@ -70,7 +70,6 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span0.SetName("DBSearch")
 	span0.SetStartTime(pdata.TimestampUnixNano(uint64(t1.UnixNano())))
 	span0.SetEndTime(pdata.TimestampUnixNano(uint64(t2.UnixNano())))
-	span0.Status().InitEmpty()
 	// Set invalid status code that is not with the valid list of value.
 	// This will be set from incoming invalid code.
 	span0.Status().SetCode(trace.StatusCodeNotFound)
@@ -82,7 +81,6 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span1.SetName("ProxyFetch")
 	span1.SetStartTime(pdata.TimestampUnixNano(uint64(t2.UnixNano())))
 	span1.SetEndTime(pdata.TimestampUnixNano(uint64(t3.UnixNano())))
-	span1.Status().InitEmpty()
 	// Set invalid status code that is not with the valid list of value.
 	// This will be set from incoming invalid code.
 	span1.Status().SetCode(trace.StatusCodeInternal)

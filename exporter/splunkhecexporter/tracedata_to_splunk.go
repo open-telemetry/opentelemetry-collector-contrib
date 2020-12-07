@@ -153,12 +153,9 @@ func toHecSpan(logger *zap.Logger, span pdata.Span) HecSpan {
 			Timestamp:  event.Timestamp(),
 		}
 	}
-	var status HecSpanStatus
-	if !span.Status().IsNil() {
-		status = HecSpanStatus{
-			Message: span.Status().Message(),
-			Code:    span.Status().Code().String(),
-		}
+	status := HecSpanStatus{
+		Message: span.Status().Message(),
+		Code:    span.Status().Code().String(),
 	}
 	return HecSpan{
 		TraceID:    span.TraceID().HexString(),

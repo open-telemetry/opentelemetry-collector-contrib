@@ -644,7 +644,6 @@ func constructClientSpan(parentSpanID pdata.SpanID, name string, code pdata.Stat
 	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
 
 	status := pdata.NewSpanStatus()
-	status.InitEmpty()
 	status.SetCode(code)
 	status.SetMessage(message)
 	status.CopyTo(span.Status())
@@ -672,7 +671,6 @@ func constructServerSpan(parentSpanID pdata.SpanID, name string, code pdata.Stat
 	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
 
 	status := pdata.NewSpanStatus()
-	status.InitEmpty()
 	status.SetCode(code)
 	status.SetMessage(message)
 	status.CopyTo(span.Status())

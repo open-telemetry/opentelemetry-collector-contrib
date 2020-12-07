@@ -80,10 +80,9 @@ func pdataSpanToOTSpanData(
 		Name:    il.Name(),
 		Version: il.Version(),
 	}
-	if status := span.Status(); !status.IsNil() {
-		sd.StatusCode = pdataStatusCodeToOTCode(status.Code())
-		sd.StatusMessage = status.Message()
-	}
+	status := span.Status()
+	sd.StatusCode = pdataStatusCodeToOTCode(status.Code())
+	sd.StatusMessage = status.Message()
 
 	return sd, nil
 }
