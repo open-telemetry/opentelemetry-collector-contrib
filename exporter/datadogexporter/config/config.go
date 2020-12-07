@@ -65,8 +65,8 @@ type MetricsConfig struct {
 	ExporterConfig MetricsExporterConfig `mapstructure:",squash"`
 }
 
-// MetricsExporterConfig provides options for a user to customize the behavior of an
-// exporter
+// MetricsExporterConfig provides options for a user to customize the behavior of the
+// metrics exporter
 type MetricsExporterConfig struct {
 	// ResourceAttributesAsTags, if set to true, will use the exporterhelper feature to transform all
 	// resource attributes into metric labels, which are then converted into tags
