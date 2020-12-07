@@ -19,13 +19,17 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/handler"
 )
+
+var collectorDistribution = "opentelemetry-collector-contrib"
 
 const (
 	// this is the retry count, the total attempts will be at most retry count + 1.
@@ -54,9 +58,10 @@ func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logger *z
 }
 
 // NewCloudWatchLogsClient create cloudWatchLogClient
-func NewCloudWatchLogsClient(logger *zap.Logger, awsConfig *aws.Config, sess *session.Session) LogClient {
+func NewCloudWatchLogsClient(logger *zap.Logger, awsConfig *aws.Config, startInfo component.ApplicationStartInfo, sess *session.Session) LogClient {
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
+	client.Handlers.Build.PushBackNamed(newCollectorUserAgentHandler(startInfo))
 	return newCloudWatchLogClient(client, logger)
 }
 
@@ -174,4 +179,11 @@ func (client *cloudWatchLogClient) CreateStream(logGroup, streamName *string) (t
 
 	//After a log stream is created the token is always empty.
 	return "", nil
+}
+
+func newCollectorUserAgentHandler(startInfo component.ApplicationStartInfo) request.NamedHandler {
+	return request.NamedHandler{
+		Name: "otel.collector.UserAgentHandler",
+		Fn:   request.MakeAddToUserAgentHandler(collectorDistribution, startInfo.Version, startInfo.GitHash),
+	}
 }
