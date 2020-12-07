@@ -37,7 +37,7 @@ class TestSystemMetrics(TestBase):
             mock_get_meter.return_value = meter
             SystemMetrics(self.memory_metrics_exporter)
 
-        self.assertEqual(len(meter.observers), 18)
+        self.assertEqual(len(meter.instruments), 18)
 
         observer_names = [
             "system.cpu.time",
@@ -60,7 +60,7 @@ class TestSystemMetrics(TestBase):
             "runtime.{}.gc_count".format(self.implementation),
         ]
 
-        for observer in meter.observers:
+        for observer in meter.instruments.values():
             self.assertIn(observer.name, observer_names)
             observer_names.remove(observer.name)
 
