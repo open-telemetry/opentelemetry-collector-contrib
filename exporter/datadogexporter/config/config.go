@@ -58,6 +58,14 @@ type MetricsConfig struct {
 	// Buckets states whether to report buckets from distribution metrics
 	Buckets bool `mapstructure:"report_buckets"`
 
+	// SendMonotonic states whether to report cumulative monotonic metrics as counters
+	// or gauges
+	SendMonotonic bool `mapstructure:"send_monotonic_counter"`
+
+	// DeltaTTL defines the time that previous points of a cumulative monotonic
+	// metric are kept in memory to calculate deltas
+	DeltaTTL int64 `mapstructure:"delta_ttl"`
+
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send metrics to.
 	// If unset, the value is obtained from the Site.
 	confignet.TCPAddr `mapstructure:",squash"`

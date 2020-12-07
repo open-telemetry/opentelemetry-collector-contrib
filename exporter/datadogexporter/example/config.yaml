@@ -63,6 +63,19 @@ exporters:
       #
       # report_buckets: false
 
+      ## @param send_monotonic_counter - boolean - optional - default: true
+      ## Whether to report monotonic metrics as counters or gauges (raw value).
+      ## See https://docs.datadoghq.com/integrations/guide/prometheus-metrics/#counter
+      ## for further details
+      #
+      # send_monotonic_counter: true
+
+      ## @param - delta_ttl - integer - optional - default: 3600
+      ## The amount of time (in seconds) that values are kept in memory for
+      ## calculating deltas for cumulative monotonic metrics.
+      #
+      # delta_ttl: 3600
+
       ## @param endpoint - string - optional
       ## The host of the Datadog intake server to send metrics to.
       ## If unset the value is obtained through the `site` parameter in the `api` section.
