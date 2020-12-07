@@ -84,9 +84,6 @@ func TestTimestampToTime(t *testing.T) {
 
 func TestStatusCode(t *testing.T) {
 	status := pdata.NewSpanStatus()
-	assert.Equal(t, int32(pdata.StatusCodeOk), getStatusCode(status), "uninitialized")
-
-	status.InitEmpty()
 	assert.Equal(t, int32(pdata.StatusCodeUnset), getStatusCode(status), "empty")
 
 	status.SetCode(pdata.StatusCodeError)
@@ -98,10 +95,7 @@ func TestStatusCode(t *testing.T) {
 
 func TestStatusMessage(t *testing.T) {
 	status := pdata.NewSpanStatus()
-	assert.Equal(t, "STATUS_CODE_OK", getStatusMessage(status), "uninitialized")
-
-	status.InitEmpty()
-	assert.Equal(t, "STATUS_CODE_OK", getStatusMessage(status), "empty")
+	assert.Equal(t, "STATUS_CODE_UNSET", getStatusMessage(status), "empty")
 
 	status.SetMessage("custom message")
 	assert.Equal(t, "custom message", getStatusMessage(status), "custom")

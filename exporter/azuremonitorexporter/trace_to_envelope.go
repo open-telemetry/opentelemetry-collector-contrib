@@ -600,10 +600,6 @@ func mapIncomingSpanToType(attributeMap pdata.AttributeMap) spanType {
 // map to the standard gRPC status codes if specified, otherwise default to 0 - OK
 // https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/api.md#status
 func getDefaultFormattedSpanStatus(spanStatus pdata.SpanStatus) (statusCodeAsString string, success bool) {
-	if spanStatus.IsNil() {
-		return "0", true
-	}
-
 	statusCode := int32(spanStatus.Code())
 	return strconv.FormatInt(int64(statusCode), 10), statusCode == int32(codes.OK)
 }

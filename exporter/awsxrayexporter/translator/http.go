@@ -119,7 +119,7 @@ func makeHTTP(span pdata.Span) (map[string]string, *awsxray.HTTPData) {
 		}
 	}
 
-	if !span.Status().IsNil() && info.Response.Status == nil {
+	if info.Response.Status == nil {
 		// TODO(anuraaga): Replace with direct translator of StatusCode without casting to int
 		info.Response.Status = aws.Int64(int64(tracetranslator.HTTPStatusCodeFromOCStatus(int32(span.Status().Code()))))
 	}

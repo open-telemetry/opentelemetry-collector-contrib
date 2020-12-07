@@ -414,40 +414,40 @@ func getDatadogResourceName(s pdata.Span, datadogTags map[string]string) string 
 func getSpanErrorAndSetTags(s pdata.Span, tags map[string]string) int32 {
 	isError := okCode
 	// Set Span Status and any response or error details
-	if status := s.Status(); !status.IsNil() {
-		switch status.Code() {
-		case pdata.StatusCodeOk:
-			isError = okCode
-		case pdata.StatusCodeError:
-			isError = errorCode
-		default:
-			isError = okCode
+	status := s.Status()
+	switch status.Code() {
+	case pdata.StatusCodeOk:
+		isError = okCode
+	case pdata.StatusCodeError:
+		isError = errorCode
+	default:
+		isError = okCode
+	}
+
+	if isError == errorCode {
+		tags[ext.ErrorType] = "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10)
+
+		// try to add a message if possible
+		if status.Message() != "" {
+			tags[ext.ErrorMsg] = status.Message()
+		} else {
+			tags[ext.ErrorMsg] = "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10)
 		}
+	}
 
-		if isError == errorCode {
-			tags[ext.ErrorType] = "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10)
-
-			// try to add a message if possible
-			if status.Message() != "" {
-				tags[ext.ErrorMsg] = status.Message()
-			} else {
-				tags[ext.ErrorMsg] = "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10)
-			}
-		}
-
-		// if status code exists check if error depending on type
-		if tags[conventions.AttributeHTTPStatusCode] != "" {
-			httpStatusCode, err := strconv.ParseInt(tags[conventions.AttributeHTTPStatusCode], 10, 64)
-			if err == nil {
-				// for 500 type, always mark as error
-				if httpStatusCode >= 500 {
-					isError = errorCode
-					// for 400 type, mark as error if it is an http client
-				} else if s.Kind() == pdata.SpanKindCLIENT && httpStatusCode >= 400 {
-					isError = errorCode
-				}
+	// if status code exists check if error depending on type
+	if tags[conventions.AttributeHTTPStatusCode] != "" {
+		httpStatusCode, err := strconv.ParseInt(tags[conventions.AttributeHTTPStatusCode], 10, 64)
+		if err == nil {
+			// for 500 type, always mark as error
+			if httpStatusCode >= 500 {
+				isError = errorCode
+				// for 400 type, mark as error if it is an http client
+			} else if s.Kind() == pdata.SpanKindCLIENT && httpStatusCode >= 400 {
+				isError = errorCode
 			}
 		}
 	}
+
 	return isError
 }

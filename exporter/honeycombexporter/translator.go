@@ -51,19 +51,14 @@ func timestampToTime(ts pdata.TimestampUnixNano) (t time.Time) {
 
 // getStatusCode returns the status code
 func getStatusCode(status pdata.SpanStatus) int32 {
-	if !status.IsNil() {
-		return int32(status.Code())
-	}
-	return int32(pdata.StatusCodeOk)
+	return int32(status.Code())
 }
 
 // getStatusMessage returns the status message as a string
 func getStatusMessage(status pdata.SpanStatus) string {
-	if !status.IsNil() {
-		if len(status.Message()) > 0 {
-			return status.Message()
-		}
+	if len(status.Message()) > 0 {
+		return status.Message()
 	}
 
-	return pdata.StatusCodeOk.String()
+	return status.Code().String()
 }

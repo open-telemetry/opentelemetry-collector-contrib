@@ -6,14 +6,9 @@ require (
 	github.com/shirou/gopsutil v3.20.11+incompatible
 	github.com/stretchr/testify v1.6.1
 	github.com/testcontainers/testcontainers-go v0.9.0
-	go.opentelemetry.io/collector v0.16.0
+	go.opentelemetry.io/collector v0.16.1-0.20201207152538-326931de8c32
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.16.0
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
-
-// Needed until testcontainers,docker logrus and docker/errdef dep issues are resolved
-replace github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.2.0
 
 replace github.com/docker/docker => github.com/docker/engine v17.12.0-ce-rc1.0.20200309214505-aa6a9891b09c+incompatible

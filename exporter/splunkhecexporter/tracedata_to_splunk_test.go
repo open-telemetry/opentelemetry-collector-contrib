@@ -151,7 +151,7 @@ func commonSplunkEvent(
 			},
 			EndTime: 0x0,
 			Kind:    "SPAN_KIND_UNSPECIFIED",
-			Status:  HecSpanStatus{Message: "", Code: ""},
+			Status:  HecSpanStatus{Message: "", Code: "STATUS_CODE_UNSET"},
 			Events: []HecEvent{
 				{
 					Attributes: map[string]interface{}{"foo": "bar"},

@@ -126,7 +126,6 @@ func populateSpan(
 	traceID, parentID *string,
 	span *pdata.Span) error {
 
-	span.Status().InitEmpty() // by default this sets the code to `Status_Unset`
 	attrs := span.Attributes()
 	attrs.InitEmptyWithCapacity(initAttrCapacity)
 

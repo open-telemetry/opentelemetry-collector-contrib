@@ -28,7 +28,7 @@ import (
 )
 
 func TestMetadataDefaults(t *testing.T) {
-	out := metadataWithResource(t, pdata.NewResource()) // resource.IsNil()
+	out := metadataWithResource(t, pdata.NewResource())
 	assert.Equal(t, metadata{
 		service: model.Service{
 			Name: "unknown",
