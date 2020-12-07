@@ -36,11 +36,12 @@ type appendResponse struct {
 }
 
 type sender struct {
-	buffer []pdata.LogRecord
-	config *Config
-	client *http.Client
-	filter filter
-	ctx    context.Context
+	buffer  []pdata.LogRecord
+	config  *Config
+	client  *http.Client
+	filter  filter
+	ctx     context.Context
+	sources sourceFormats
 }
 
 const (
@@ -55,17 +56,25 @@ func newAppendResponse() appendResponse {
 	}
 }
 
-func newSender(ctx context.Context, cfg *Config, cl *http.Client, f filter) *sender {
+func newSender(
+	ctx context.Context,
+	cfg *Config,
+	cl *http.Client,
+	f filter,
+	s sourceFormats,
+) *sender {
 	return &sender{
-		config: cfg,
-		client: cl,
-		filter: f,
-		ctx:    ctx,
+		config:  cfg,
+		client:  cl,
+		filter:  f,
+		ctx:     ctx,
+		sources: s,
 	}
 }
 
 // send sends data to sumologic
 func (s *sender) send(pipeline PipelineType, body io.Reader, flds fields) error {
+
 	// Add headers
 	req, err := http.NewRequestWithContext(s.ctx, http.MethodPost, s.config.HTTPClientSettings.Endpoint, body)
 	if err != nil {
@@ -74,22 +83,22 @@ func (s *sender) send(pipeline PipelineType, body io.Reader, flds fields) error 
 
 	req.Header.Add("X-Sumo-Client", s.config.Client)
 
-	if len(s.config.SourceHost) > 0 {
-		req.Header.Add("X-Sumo-Host", s.config.SourceHost)
+	if s.sources.host.isSet() {
+		req.Header.Add("X-Sumo-Host", s.sources.host.format(flds))
 	}
 
-	if len(s.config.SourceName) > 0 {
-		req.Header.Add("X-Sumo-Name", s.config.SourceName)
+	if s.sources.name.isSet() {
+		req.Header.Add("X-Sumo-Name", s.sources.name.format(flds))
 	}
 
-	if len(s.config.SourceCategory) > 0 {
-		req.Header.Add("X-Sumo-Category", s.config.SourceCategory)
+	if s.sources.category.isSet() {
+		req.Header.Add("X-Sumo-Category", s.sources.category.format(flds))
 	}
 
 	switch pipeline {
 	case LogsPipeline:
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-		req.Header.Add("X-Sumo-Fields", string(flds))
+		req.Header.Add("X-Sumo-Fields", flds.string())
 	case MetricsPipeline:
 		// ToDo: Implement metrics pipeline
 		return errors.New("current sender version doesn't support metrics")

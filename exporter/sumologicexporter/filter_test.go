@@ -34,8 +34,8 @@ func TestGetMetadata(t *testing.T) {
 	f, err := newFilter(regexes)
 	require.NoError(t, err)
 
-	metadata := f.getMetadata(attributes)
-	const expected fields = "key1=value1, key2=value2, key3=value3"
+	metadata := f.filterIn(attributes)
+	expected := fields{"key1": "value1", "key2": "value2", "key3": "value3"}
 	assert.Equal(t, expected, metadata)
 }
 
@@ -52,7 +52,7 @@ func TestFilterOutMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	data := f.filterOut(attributes)
-	expected := map[string]string{
+	expected := fields{
 		"additional_key2": "value2",
 		"additional_key3": "value3",
 	}

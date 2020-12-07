@@ -25,7 +25,8 @@ import (
 )
 
 type sumologicexporter struct {
-	config *Config
+	config  *Config
+	sources sourceFormats
 }
 
 func initExporter(cfg *Config) (*sumologicexporter, error) {
@@ -56,8 +57,14 @@ func initExporter(cfg *Config) (*sumologicexporter, error) {
 		return nil, errors.New("endpoint is not set")
 	}
 
+	sfs, err := newSourceFormats(cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	se := &sumologicexporter{
-		config: cfg,
+		config:  cfg,
+		sources: sfs,
 	}
 
 	return se, nil
