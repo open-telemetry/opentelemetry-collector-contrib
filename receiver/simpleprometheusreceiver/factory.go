@@ -19,10 +19,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 // This file implements factory for prometheus_simple receiver
@@ -30,11 +31,10 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "prometheus_simple"
 
-	defaultEndpoint    = "localhost:9090"
-	defaultMetricsPath = "/metrics"
+	defaultEndpoint           = "localhost:9090"
+	defaultMetricsPath        = "/metrics"
+	defaultCollectionInterval = 10 * time.Second
 )
-
-var defaultCollectionInterval = 10 * time.Second
 
 // NewFactory creates a factory for "Simple" Prometheus receiver.
 func NewFactory() component.ReceiverFactory {
@@ -46,15 +46,17 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() configmodels.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: typeStr,
+				NameVal: typeStr,
+			},
+			CollectionInterval: defaultCollectionInterval,
 		},
-		TCPAddr: confignet.TCPAddr{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: defaultEndpoint,
 		},
-		MetricsPath:        defaultMetricsPath,
-		CollectionInterval: defaultCollectionInterval,
+		MetricsPath: defaultMetricsPath,
 	}
 }
 
@@ -65,5 +67,15 @@ func createMetricsReceiver(
 	nextConsumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)
-	return new(params, rCfg, nextConsumer), nil
+	scraper, err := newPrometheusScraper(params.Logger, rCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return scraperhelper.NewScraperControllerReceiver(
+		&rCfg.ScraperControllerSettings,
+		params.Logger,
+		nextConsumer,
+		scraperhelper.AddResourceMetricsScraper(scraper),
+	)
 }

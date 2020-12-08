@@ -22,9 +22,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -41,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 4)
+	assert.Equal(t, len(cfg.Receivers), 3)
 
 	r1 := cfg.Receivers[receiverType]
 	assert.Equal(t, r1, factory.CreateDefaultConfig())
@@ -49,55 +51,41 @@ func TestLoadConfig(t *testing.T) {
 	r2 := cfg.Receivers["prometheus_simple/all_settings"].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(receiverType),
-				NameVal: "prometheus_simple/all_settings",
+			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					TypeVal: configmodels.Type(receiverType),
+					NameVal: "prometheus_simple/all_settings",
+				},
+				CollectionInterval: 30 * time.Second,
 			},
-			TCPAddr: confignet.TCPAddr{
+			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "localhost:1234",
-			},
-			httpConfig: httpConfig{
-				TLSEnabled: true,
-				TLSConfig: tlsConfig{
-					CAFile:             "path",
-					CertFile:           "path",
-					KeyFile:            "path",
+				TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile:   "path",
+						CertFile: "path",
+						KeyFile:  "path",
+					},
 					InsecureSkipVerify: true,
 				},
 			},
-			CollectionInterval: 30 * time.Second,
-			MetricsPath:        "/v2/metrics",
-			UseServiceAccount:  true,
+			MetricsPath:       "/v2/metrics",
+			UseServiceAccount: true,
 		})
 
 	r3 := cfg.Receivers["prometheus_simple/partial_settings"].(*Config)
 	assert.Equal(t, r3,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(receiverType),
-				NameVal: "prometheus_simple/partial_settings",
+			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					TypeVal: configmodels.Type(receiverType),
+					NameVal: "prometheus_simple/partial_settings",
+				},
+				CollectionInterval: 30 * time.Second,
 			},
-			TCPAddr: confignet.TCPAddr{
+			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "localhost:1234",
 			},
-			CollectionInterval: 30 * time.Second,
-			MetricsPath:        "/metrics",
-		})
-
-	r4 := cfg.Receivers["prometheus_simple/partial_tls_settings"].(*Config)
-	assert.Equal(t, r4,
-		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(receiverType),
-				NameVal: "prometheus_simple/partial_tls_settings",
-			},
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: "localhost:1234",
-			},
-			httpConfig: httpConfig{
-				TLSEnabled: true,
-			},
-			CollectionInterval: 30 * time.Second,
-			MetricsPath:        "/metrics",
+			MetricsPath: "/metrics",
 		})
 }

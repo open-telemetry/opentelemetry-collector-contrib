@@ -839,6 +839,7 @@ github.com/prometheus/procfs v0.2.0 h1:wH4vA7pcjKuZzjF7lM8awk4fnuJO6idemZXoKnULU
 github.com/prometheus/procfs v0.2.0/go.mod h1:lV6e/gmhEcM9IjHGsFOCxxuZ+z1YqCvr4OA4YeYWdaU=
 github.com/prometheus/prometheus v1.8.2-0.20201105135750-00f16d1ac3a4 h1:54z99l8Q3TuyyeoNZkyY4Lq7eFht9J2Mynq4T1Hxbzc=
 github.com/prometheus/prometheus v1.8.2-0.20201105135750-00f16d1ac3a4/go.mod h1:XYjkJiog7fyQu3puQNivZPI2pNq1C/775EIoHfDvuvY=
+github.com/prometheus/prometheus v1.8.2 h1:PAL466mnJw1VolZPm1OarpdUpqukUy/eX4tagia17DM=
 github.com/prometheus/statsd_exporter v0.15.0 h1:UiwC1L5HkxEPeapXdm2Ye0u1vUJfTj7uwT5yydYpa1E=
 github.com/prometheus/statsd_exporter v0.15.0/go.mod h1:Dv8HnkoLQkeEjkIE4/2ndAA7WL1zHKK7WMqFQqu72rw=
 github.com/prometheus/tsdb v0.7.1/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40TwIPHuXU=
@@ -982,6 +983,7 @@ go.opencensus.io v0.22.3/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
 go.opencensus.io v0.22.4/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
 go.opencensus.io v0.22.5 h1:dntmOdLpSpHlVqbW5Eay97DelsZHe+55D+xC6i0dDS0=
 go.opencensus.io v0.22.5/go.mod h1:5pWMHQbX5EPX2/62yrJeAkowc+lfs/XD7Uxpq3pI6kk=
+go.opentelemetry.io/collector v0.16.0 h1:x5WAHVmm4DvaBgN7uiwnt0buj1ae/dyIvxNGLgtlbrg=
 go.opentelemetry.io/collector v0.16.1-0.20201207152538-326931de8c32 h1:vxuxyBkBKcLXLq/uwgurb6PDzl2QKT0xlbQ0zCpl+9Y=
 go.opentelemetry.io/collector v0.16.1-0.20201207152538-326931de8c32/go.mod h1:h9AuSwXGdKT5M+avYsM8KGL7FiObqUL/1s+BBLpLB80=
 go.uber.org/atomic v1.3.2/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=

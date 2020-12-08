@@ -979,6 +979,7 @@ go.opencensus.io v0.22.3/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
 go.opencensus.io v0.22.4/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
 go.opencensus.io v0.22.5 h1:dntmOdLpSpHlVqbW5Eay97DelsZHe+55D+xC6i0dDS0=
 go.opencensus.io v0.22.5/go.mod h1:5pWMHQbX5EPX2/62yrJeAkowc+lfs/XD7Uxpq3pI6kk=
+go.opentelemetry.io/collector v0.16.0 h1:x5WAHVmm4DvaBgN7uiwnt0buj1ae/dyIvxNGLgtlbrg=
 go.opentelemetry.io/collector v0.16.1-0.20201207152538-326931de8c32 h1:vxuxyBkBKcLXLq/uwgurb6PDzl2QKT0xlbQ0zCpl+9Y=
 go.opentelemetry.io/collector v0.16.1-0.20201207152538-326931de8c32/go.mod h1:h9AuSwXGdKT5M+avYsM8KGL7FiObqUL/1s+BBLpLB80=
 go.uber.org/atomic v1.3.2/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
