@@ -46,8 +46,8 @@ func NewDetector() (internal.Detector, error) {
 }
 
 // Detect records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes
-// TODO(willarmiros): Replace all attribute fields and enums with values defined in "conventions" once they exist
 func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
+	// TODO(willarmiros): Replace all attribute fields and enums with values defined in "conventions" once they exist
 	res := pdata.NewResource()
 
 	tmde := getTmdeFromEnv()

@@ -23,11 +23,11 @@ import (
 )
 
 type metadataProvider interface {
-	fetchTask(tmde string) (*TaskMetaData, error)
+	fetchTask(tmde string) (*TaskMetadata, error)
 	fetchContainer(tmde string) (*Container, error)
 }
 
-type TaskMetaData struct {
+type TaskMetadata struct {
 	Cluster          string
 	LaunchType       string // TODO: Change to enum when defined in otel collector convent
 	TaskARN          string
@@ -59,13 +59,13 @@ type metadataClient struct {
 var _ metadataProvider = &metadataClient{}
 
 // Retrieves the metadata for a task running on Amazon ECS
-func (md *metadataClient) fetchTask(tmde string) (*TaskMetaData, error) {
+func (md *metadataClient) fetchTask(tmde string) (*TaskMetadata, error) {
 	ret, err := fetch(tmde+"/task", md, true)
 	if ret == nil {
 		return nil, err
 	}
 
-	return ret.(*TaskMetaData), err
+	return ret.(*TaskMetadata), err
 }
 
 // Retrieves the metadata for the Amazon ECS Container the collector is running on
@@ -79,6 +79,7 @@ func (md *metadataClient) fetchContainer(tmde string) (*Container, error) {
 }
 
 func fetch(tmde string, md *metadataClient, task bool) (tmdeResp interface{}, err error) {
+	// TODO(jbd): Use the zap logger instead of log.Print*.
 	req, err := http.NewRequest(http.MethodGet, tmde, nil)
 
 	if err != nil {
@@ -93,7 +94,7 @@ func fetch(tmde string, md *metadataClient, task bool) (tmdeResp interface{}, er
 	}
 
 	if task {
-		tmdeResp = &TaskMetaData{}
+		tmdeResp = &TaskMetadata{}
 	} else {
 		tmdeResp = &Container{}
 	}
