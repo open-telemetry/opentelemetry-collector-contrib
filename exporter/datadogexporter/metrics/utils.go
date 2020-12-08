@@ -27,23 +27,40 @@ import (
 const (
 	// Gauge is the Datadog Gauge metric type
 	Gauge               string = "gauge"
+	Count               string = "count"
 	otelNamespacePrefix string = "otel"
 )
 
-// NewGauge creates a new Datadog Gauge metric given a name, a Unix nanoseconds timestamp
+// newMetric creates a new Datadog metric given a name, a Unix nanoseconds timestamp
 // a value and a slice of tags
-func NewGauge(name string, ts uint64, value float64, tags []string) datadog.Metric {
+func newMetric(name string, ts uint64, value float64, tags []string) datadog.Metric {
 	// Transform UnixNano timestamp into Unix timestamp
 	// 1 second = 1e9 ns
 	timestamp := float64(ts / 1e9)
 
-	gauge := datadog.Metric{
+	metric := datadog.Metric{
 		Points: []datadog.DataPoint{[2]*float64{&timestamp, &value}},
 		Tags:   tags,
 	}
-	gauge.SetMetric(name)
+	metric.SetMetric(name)
+	metric.SetType(Gauge)
+	return metric
+}
+
+// NewGauge creates a new Datadog Gauge metric given a name, a Unix nanoseconds timestamp
+// a value and a slice of tags
+func NewGauge(name string, ts uint64, value float64, tags []string) datadog.Metric {
+	gauge := newMetric(name, ts, value, tags)
 	gauge.SetType(Gauge)
 	return gauge
+}
+
+// NewCount creates a new Datadog Count metric given a name, a Unix nanoseconds timestamp
+// a value and a slice of tags
+func NewCount(name string, ts uint64, value float64, tags []string) datadog.Metric {
+	count := newMetric(name, ts, value, tags)
+	count.SetType(Count)
+	return count
 }
 
 // DefaultMetrics creates built-in metrics to report that an exporter is running
