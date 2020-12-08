@@ -13,11 +13,13 @@
 # limitations under the License.
 
 import unittest
+from unittest.mock import patch
 
 import fastapi
 from fastapi.testclient import TestClient
 
 import opentelemetry.instrumentation.fastapi as otel_fastapi
+from opentelemetry.configuration import Configuration
 from opentelemetry.test.test_base import TestBase
 
 
@@ -29,9 +31,25 @@ class TestFastAPIManualInstrumentation(TestBase):
 
     def setUp(self):
         super().setUp()
+        Configuration()._reset()
+        self.env_patch = patch.dict(
+            "os.environ",
+            {"OTEL_PYTHON_FASTAPI_EXCLUDED_URLS": "/exclude/123,healthzz"},
+        )
+        self.env_patch.start()
+        self.exclude_patch = patch(
+            "opentelemetry.instrumentation.fastapi._excluded_urls",
+            Configuration()._excluded_urls("fastapi"),
+        )
+        self.exclude_patch.start()
         self._instrumentor = otel_fastapi.FastAPIInstrumentor()
         self._app = self._create_app()
         self._client = TestClient(self._app)
+
+    def tearDown(self):
+        super().tearDown()
+        self.env_patch.stop()
+        self.exclude_patch.stop()
 
     def test_basic_fastapi_call(self):
         self._client.get("/foobar")
@@ -54,6 +72,15 @@ class TestFastAPIManualInstrumentation(TestBase):
         # the asgi instrumentation is successfully feeding though.
         self.assertEqual(spans[-1].attributes["http.flavor"], "1.1")
 
+    def test_fastapi_excluded_urls(self):
+        """Ensure that given fastapi routes are excluded."""
+        self._client.get("/exclude/123")
+        spans = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(spans), 0)
+        self._client.get("/healthzz")
+        spans = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(spans), 0)
+
     @staticmethod
     def _create_fastapi_app():
         app = fastapi.FastAPI()
@@ -65,6 +92,14 @@ class TestFastAPIManualInstrumentation(TestBase):
         @app.get("/user/{username}")
         async def _(username: str):
             return {"message": username}
+
+        @app.get("/exclude/{param}")
+        async def _(param: str):
+            return {"message": param}
+
+        @app.get("/healthzz")
+        async def health():
+            return {"message": "ok"}
 
         return app
 

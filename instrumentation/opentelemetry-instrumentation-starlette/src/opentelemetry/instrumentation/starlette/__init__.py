@@ -16,9 +16,12 @@ from typing import Optional
 from starlette import applications
 from starlette.routing import Match
 
+from opentelemetry.configuration import Configuration
 from opentelemetry.instrumentation.asgi import OpenTelemetryMiddleware
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.starlette.version import __version__  # noqa
+
+_excluded_urls = Configuration()._excluded_urls("starlette")
 
 
 class StarletteInstrumentor(BaseInstrumentor):
@@ -36,6 +39,7 @@ class StarletteInstrumentor(BaseInstrumentor):
         if not getattr(app, "is_instrumented_by_opentelemetry", False):
             app.add_middleware(
                 OpenTelemetryMiddleware,
+                excluded_urls=_excluded_urls,
                 span_details_callback=_get_route_details,
             )
             app.is_instrumented_by_opentelemetry = True
@@ -52,7 +56,9 @@ class _InstrumentedStarlette(applications.Starlette):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.add_middleware(
-            OpenTelemetryMiddleware, span_details_callback=_get_route_details
+            OpenTelemetryMiddleware,
+            excluded_urls=_excluded_urls,
+            span_details_callback=_get_route_details,
         )
 
 

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import unittest
+from unittest.mock import patch
 
 from starlette import applications
 from starlette.responses import PlainTextResponse
@@ -20,6 +21,7 @@ from starlette.routing import Route
 from starlette.testclient import TestClient
 
 import opentelemetry.instrumentation.starlette as otel_starlette
+from opentelemetry.configuration import Configuration
 from opentelemetry.test.test_base import TestBase
 
 
@@ -31,9 +33,25 @@ class TestStarletteManualInstrumentation(TestBase):
 
     def setUp(self):
         super().setUp()
+        Configuration()._reset()
+        self.env_patch = patch.dict(
+            "os.environ",
+            {"OTEL_PYTHON_STARLETTE_EXCLUDED_URLS": "/exclude/123,healthzz"},
+        )
+        self.env_patch.start()
+        self.exclude_patch = patch(
+            "opentelemetry.instrumentation.starlette._excluded_urls",
+            Configuration()._excluded_urls("starlette"),
+        )
+        self.exclude_patch.start()
         self._instrumentor = otel_starlette.StarletteInstrumentor()
         self._app = self._create_app()
         self._client = TestClient(self._app)
+
+    def tearDown(self):
+        super().tearDown()
+        self.env_patch.stop()
+        self.exclude_patch.stop()
 
     def test_basic_starlette_call(self):
         self._client.get("/foobar")
@@ -56,13 +74,26 @@ class TestStarletteManualInstrumentation(TestBase):
         # the asgi instrumentation is successfully feeding though.
         self.assertEqual(spans[-1].attributes["http.flavor"], "1.1")
 
+    def test_starlette_excluded_urls(self):
+        """Ensure that givem starlette routes are excluded."""
+        self._client.get("/healthzz")
+        spans = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(spans), 0)
+
     @staticmethod
     def _create_starlette_app():
         def home(_):
             return PlainTextResponse("hi")
 
+        def health(_):
+            return PlainTextResponse("ok")
+
         app = applications.Starlette(
-            routes=[Route("/foobar", home), Route("/user/{username}", home)]
+            routes=[
+                Route("/foobar", home),
+                Route("/user/{username}", home),
+                Route("/healthzz", health),
+            ]
         )
         return app
 
