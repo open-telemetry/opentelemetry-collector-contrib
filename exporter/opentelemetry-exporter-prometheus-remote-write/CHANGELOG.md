@@ -7,3 +7,5 @@
   ((#206)[https://github.com/open-telemetry/opentelemetry-python-contrib/pull/206])
 - Add conversion to TimeSeries methods
   ((#207)[https://github.com/open-telemetry/opentelemetry-python-contrib/pull/207])
+- Add request methods
+  ((#212)[https://github.com/open-telemetry/opentelemetry-python-contrib/pull/212])

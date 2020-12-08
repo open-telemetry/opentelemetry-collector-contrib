@@ -16,6 +16,9 @@ import logging
 import re
 from typing import Dict, Sequence
 
+import requests
+
+import snappy
 from opentelemetry.exporter.prometheus_remote_write.gen.remote_pb2 import (
     WriteRequest,
 )
@@ -48,7 +51,7 @@ class PrometheusRemoteWriteMetricsExporter(MetricsExporter):
         endpoint: url where data will be sent (Required)
         basic_auth: username and password for authentication (Optional)
         headers: additional headers for remote write request (Optional)
-        timeout: timeout for requests to the remote write endpoint in seconds (Optional)
+        timeout: timeout for remote write requests in seconds, defaults to 30 (Optional)
         proxies: dict mapping request proxy protocols to proxy urls (Optional)
         tls_config: configuration for remote write TLS settings (Optional)
     """
@@ -96,15 +99,15 @@ class PrometheusRemoteWriteMetricsExporter(MetricsExporter):
         if basic_auth:
             if "username" not in basic_auth:
                 raise ValueError("username required in basic_auth")
-            if (
-                "password" not in basic_auth
-                and "password_file" not in basic_auth
-            ):
+            if "password_file" in basic_auth:
+                if "password" in basic_auth:
+                    raise ValueError(
+                        "basic_auth cannot contain password and password_file"
+                    )
+                with open(basic_auth["password_file"]) as file:
+                    basic_auth["password"] = file.readline().strip()
+            elif "password" not in basic_auth:
                 raise ValueError("password required in basic_auth")
-            if "password" in basic_auth and "password_file" in basic_auth:
-                raise ValueError(
-                    "basic_auth cannot contain password and password_file"
-                )
         self._basic_auth = basic_auth
 
     @property
@@ -159,10 +162,20 @@ class PrometheusRemoteWriteMetricsExporter(MetricsExporter):
     def export(
         self, export_records: Sequence[ExportRecord]
     ) -> MetricsExportResult:
-        raise NotImplementedError()
+        if not export_records:
+            return MetricsExportResult.SUCCESS
+        timeseries = self._convert_to_timeseries(export_records)
+        if not timeseries:
+            logger.error(
+                "All records contain unsupported aggregators, export aborted"
+            )
+            return MetricsExportResult.FAILURE
+        message = self._build_message(timeseries)
+        headers = self._build_headers()
+        return self._send_message(message, headers)
 
     def shutdown(self) -> None:
-        raise NotImplementedError()
+        pass
 
     def _convert_to_timeseries(
         self, export_records: Sequence[ExportRecord]
@@ -304,13 +317,60 @@ class PrometheusRemoteWriteMetricsExporter(MetricsExporter):
         timeseries.samples.append(sample)
         return timeseries
 
-    def build_message(self, timeseries: Sequence[TimeSeries]) -> bytes:
-        raise NotImplementedError()
+    def _build_message(self, timeseries: Sequence[TimeSeries]) -> bytes:
+        write_request = WriteRequest()
+        write_request.timeseries.extend(timeseries)
+        serialized_message = write_request.SerializeToString()
+        return snappy.compress(serialized_message)
 
-    def get_headers(self) -> Dict:
-        raise NotImplementedError()
+    def _build_headers(self) -> Dict:
+        headers = {
+            "Content-Encoding": "snappy",
+            "Content-Type": "application/x-protobuf",
+            "X-Prometheus-Remote-Write-Version": "0.1.0",
+        }
+        if self.headers:
+            for header_name, header_value in self.headers.items():
+                headers[header_name] = header_value
+        return headers
 
-    def send_message(
+    def _send_message(
         self, message: bytes, headers: Dict
     ) -> MetricsExportResult:
-        raise NotImplementedError()
+        auth = None
+        if self.basic_auth:
+            auth = (self.basic_auth["username"], self.basic_auth["password"])
+
+        cert = None
+        verify = True
+        if self.tls_config:
+            if "ca_file" in self.tls_config:
+                verify = self.tls_config["ca_file"]
+            elif "insecure_skip_verify" in self.tls_config:
+                verify = self.tls_config["insecure_skip_verify"]
+
+            if (
+                "cert_file" in self.tls_config
+                and "key_file" in self.tls_config
+            ):
+                cert = (
+                    self.tls_config["cert_file"],
+                    self.tls_config["key_file"],
+                )
+        try:
+            response = requests.post(
+                self.endpoint,
+                data=message,
+                headers=headers,
+                auth=auth,
+                timeout=self.timeout,
+                proxies=self.proxies,
+                cert=cert,
+                verify=verify,
+            )
+            if not response.ok:
+                response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            logger.error("Export POST request failed with reason: %s", e)
+            return MetricsExportResult.FAILURE
+        return MetricsExportResult.SUCCESS
