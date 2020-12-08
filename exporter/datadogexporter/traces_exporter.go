@@ -42,7 +42,7 @@ type sublayerCalculator struct {
 }
 
 // ComputeSublayers computes the sublayers of a trace
-func (s *sublayerCalculator) ComputeSublayers(trace pb.Trace) []stats.SublayerValue {
+func (s *sublayerCalculator) computeSublayers(trace pb.Trace) []stats.SublayerValue {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	return s.sc.ComputeSublayers(trace)
@@ -88,7 +88,7 @@ func newTraceExporter(params component.ExporterCreateParams, cfg *config.Config)
 	exporter := &traceExporter{
 		logger:         params.Logger,
 		cfg:            cfg,
-		edgeConnection: CreateTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key, params.ApplicationStartInfo),
+		edgeConnection: createTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key, params.ApplicationStartInfo),
 		obfuscator:     obfuscator,
 		calculator:     calculator,
 		client:         client,
@@ -116,7 +116,7 @@ func (exp *traceExporter) pushTraceData(
 	// convert traces to datadog traces and group trace payloads by env
 	// we largely apply the same logic as the serverless implementation, simplified a bit
 	// https://github.com/DataDog/datadog-serverless-functions/blob/f5c3aedfec5ba223b11b76a4239fcbf35ec7d045/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L61-L83
-	ddTraces, err := ConvertToDatadogTd(td, exp.calculator, exp.cfg)
+	ddTraces, err := convertToDatadogTd(td, exp.calculator, exp.cfg)
 
 	if err != nil {
 		exp.logger.Info("failed to convert traces", zap.Error(err))
@@ -124,11 +124,11 @@ func (exp *traceExporter) pushTraceData(
 	}
 
 	// group the traces by env to reduce the number of flushes
-	aggregatedTraces := AggregateTracePayloadsByEnv(ddTraces)
+	aggregatedTraces := aggregateTracePayloadsByEnv(ddTraces)
 
 	// security/obfuscation for db, query strings, stack traces, pii, etc
 	// TODO: is there any config we want here? OTEL has their own pipeline for regex obfuscation
-	ObfuscatePayload(exp.obfuscator, aggregatedTraces)
+	obfuscatePayload(exp.obfuscator, aggregatedTraces)
 
 	pushTime := time.Now().UTC().UnixNano()
 	for _, ddTracePayload := range aggregatedTraces {
@@ -156,7 +156,7 @@ func (exp *traceExporter) pushWithRetry(ctx context.Context, ddTracePayload *pb.
 	}
 
 	// this is for generating metrics like hits, errors, and latency, it uses a separate endpoint than Traces
-	stats := ComputeAPMStats(ddTracePayload, exp.calculator, pushTime)
+	stats := computeAPMStats(ddTracePayload, exp.calculator, pushTime)
 	errStats := exp.edgeConnection.SendStats(context.Background(), stats, maxRetries)
 
 	if errStats != nil {

@@ -124,7 +124,7 @@ func TestConvertToDatadogTd(t *testing.T) {
 	traces.ResourceSpans().Resize(1)
 	calculator := newSublayerCalculator()
 
-	outputTraces, err := ConvertToDatadogTd(traces, calculator, &config.Config{})
+	outputTraces, err := convertToDatadogTd(traces, calculator, &config.Config{})
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(outputTraces))
@@ -134,7 +134,7 @@ func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 	traces := pdata.NewTraces()
 	calculator := newSublayerCalculator()
 
-	outputTraces, err := ConvertToDatadogTd(traces, calculator, &config.Config{})
+	outputTraces, err := convertToDatadogTd(traces, calculator, &config.Config{})
 
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(outputTraces))
@@ -163,15 +163,15 @@ func TestObfuscation(t *testing.T) {
 	// of them is currently not supported.
 	span.Attributes().InsertString("testinfo?=123", "http.route")
 
-	outputTraces, err := ConvertToDatadogTd(traces, calculator, &config.Config{})
+	outputTraces, err := convertToDatadogTd(traces, calculator, &config.Config{})
 
 	assert.NoError(t, err)
 
-	aggregatedTraces := AggregateTracePayloadsByEnv(outputTraces)
+	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
 
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
 
-	ObfuscatePayload(obfuscator, aggregatedTraces)
+	obfuscatePayload(obfuscator, aggregatedTraces)
 
 	assert.Equal(t, 1, len(aggregatedTraces))
 }
@@ -547,7 +547,7 @@ func TestTracePayloadAggr(t *testing.T) {
 	originalPayload = append(originalPayload, &payloadOne)
 	originalPayload = append(originalPayload, &payloadTwo)
 
-	updatedPayloads := AggregateTracePayloadsByEnv(originalPayload)
+	updatedPayloads := aggregateTracePayloadsByEnv(originalPayload)
 
 	assert.Equal(t, 2, len(originalPayload))
 	assert.Equal(t, 1, len(updatedPayloads))
@@ -573,7 +573,7 @@ func TestTracePayloadAggr(t *testing.T) {
 	originalPayloadDifferentEnv = append(originalPayloadDifferentEnv, &payloadThree)
 	originalPayloadDifferentEnv = append(originalPayloadDifferentEnv, &payloadFour)
 
-	updatedPayloadsDifferentEnv := AggregateTracePayloadsByEnv(originalPayloadDifferentEnv)
+	updatedPayloadsDifferentEnv := aggregateTracePayloadsByEnv(originalPayloadDifferentEnv)
 
 	assert.Equal(t, 2, len(originalPayloadDifferentEnv))
 	assert.Equal(t, 2, len(updatedPayloadsDifferentEnv))

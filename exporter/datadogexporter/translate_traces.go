@@ -44,7 +44,7 @@ const (
 )
 
 // converts Traces into an array of datadog trace payloads grouped by env
-func ConvertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *config.Config) ([]*pb.TracePayload, error) {
+func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *config.Config) ([]*pb.TracePayload, error) {
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
 	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
@@ -74,7 +74,7 @@ func ConvertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *co
 	return traces, nil
 }
 
-func AggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePayload {
+func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePayload {
 	lookup := make(map[string]*pb.TracePayload)
 	for _, tracePayload := range tracePayloads {
 		key := fmt.Sprintf("%s|%s", tracePayload.HostName, tracePayload.Env)
@@ -163,12 +163,12 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 		// calculates analyzed spans for use in trace search and app analytics
 		// appends a specific piece of metadata to these spans marking them as analyzed
 		// TODO: allow users to configure specific spans to be marked as an analyzed spans for app analytics
-		top := GetAnalyzedSpans(apiTrace.Spans)
+		top := getAnalyzedSpans(apiTrace.Spans)
 
 		// calculates span metrics for representing direction and timing among it's different services for display in
 		// service overview graphs
 		// see: https://github.com/DataDog/datadog-agent/blob/f69a7d35330c563e9cad4c5b8865a357a87cd0dc/pkg/trace/stats/sublayers.go#L204
-		ComputeSublayerMetrics(calculator, apiTrace.Spans)
+		computeSublayerMetrics(calculator, apiTrace.Spans)
 		payload.Transactions = append(payload.Transactions, top...)
 		payload.Traces = append(payload.Traces, apiTrace)
 	}
