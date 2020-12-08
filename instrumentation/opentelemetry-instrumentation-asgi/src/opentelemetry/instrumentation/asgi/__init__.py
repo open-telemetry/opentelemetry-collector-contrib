@@ -34,7 +34,9 @@ from opentelemetry.trace.status import Status, StatusCode
 
 
 class CarrierGetter(DictGetter):
-    def get(self, carrier: dict, key: str) -> typing.List[str]:
+    def get(
+        self, carrier: dict, key: str
+    ) -> typing.Optional[typing.List[str]]:
         """Getter implementation to retrieve a HTTP header value from the ASGI
         scope.
 
@@ -43,14 +45,17 @@ class CarrierGetter(DictGetter):
             key: header name in scope
         Returns:
             A list with a single string with the header value if it exists,
-             else an empty list.
+                else None.
         """
         headers = carrier.get("headers")
-        return [
+        decoded = [
             _value.decode("utf8")
             for (_key, _value) in headers
             if _key.decode("utf8") == key
         ]
+        if not decoded:
+            return None
+        return decoded
 
 
 carrier_getter = CarrierGetter()
@@ -82,11 +87,12 @@ def collect_request_attributes(scope):
     http_method = scope.get("method")
     if http_method:
         result["http.method"] = http_method
-    http_host_value = ",".join(carrier_getter.get(scope, "host"))
-    if http_host_value:
-        result["http.server_name"] = http_host_value
+
+    http_host_value_list = carrier_getter.get(scope, "host")
+    if http_host_value_list:
+        result["http.server_name"] = ",".join(http_host_value_list)
     http_user_agent = carrier_getter.get(scope, "user-agent")
-    if len(http_user_agent) > 0:
+    if http_user_agent:
         result["http.user_agent"] = http_user_agent[0]
 
     if "client" in scope and scope["client"] is not None:

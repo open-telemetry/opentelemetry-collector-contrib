@@ -68,7 +68,9 @@ _HTTP_VERSION_PREFIX = "HTTP/"
 
 
 class CarrierGetter(DictGetter):
-    def get(self, carrier: dict, key: str) -> typing.List[str]:
+    def get(
+        self, carrier: dict, key: str
+    ) -> typing.Optional[typing.List[str]]:
         """Getter implementation to retrieve a HTTP header value from the
             PEP3333-conforming WSGI environ
 
@@ -77,13 +79,13 @@ class CarrierGetter(DictGetter):
             key: header name in environ object
         Returns:
             A list with a single string with the header value if it exists,
-            else an empty list.
+            else None.
         """
         environ_key = "HTTP_" + key.upper().replace("-", "_")
         value = carrier.get(environ_key)
         if value is not None:
             return [value]
-        return []
+        return None
 
     def keys(self, carrier):
         return []

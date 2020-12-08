@@ -80,7 +80,9 @@ _MESSAGE_ID_ATTRIBUTE_NAME = "messaging.message_id"
 
 class CarrierGetter(DictGetter):
     def get(self, carrier, key):
-        value = getattr(carrier, key, [])
+        value = getattr(carrier, key, None)
+        if value is None:
+            return None
         if isinstance(value, str) or not isinstance(value, Iterable):
             value = (value,)
         return value
