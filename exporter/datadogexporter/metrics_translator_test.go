@@ -24,6 +24,7 @@ import (
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
 func TestMetricValue(t *testing.T) {
@@ -53,6 +54,72 @@ func TestGetTags(t *testing.T) {
 	)
 }
 
+func TestIsCumulativeMonotonic(t *testing.T) {
+	// Some of these examples are from the hostmetrics receiver
+	// and reflect the semantic meaning of the metrics there.
+	//
+	// If the receiver changes these examples should be added here too
+
+	{ // IntSum: Cumulative but not monotonic
+		metric := pdata.NewMetric()
+		metric.SetName("system.filesystem.usage")
+		metric.SetDescription("Filesystem bytes used.")
+		metric.SetUnit("bytes")
+		metric.SetDataType(pdata.MetricDataTypeIntSum)
+		sum := metric.IntSum()
+		sum.SetIsMonotonic(false)
+		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+
+		assert.False(t, isCumulativeMonotonic(metric))
+	}
+
+	{ // IntSum: Cumulative and monotonic
+		metric := pdata.NewMetric()
+		metric.SetName("system.network.packets")
+		metric.SetDescription("The number of packets transferred.")
+		metric.SetUnit("1")
+		metric.SetDataType(pdata.MetricDataTypeIntSum)
+		sum := metric.IntSum()
+		sum.SetIsMonotonic(true)
+		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+
+		assert.True(t, isCumulativeMonotonic(metric))
+	}
+
+	{ // DoubleSumL Cumulative and monotonic
+		metric := pdata.NewMetric()
+		metric.SetName("metric.example")
+		metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+		sum := metric.DoubleSum()
+		sum.SetIsMonotonic(true)
+		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+
+		assert.True(t, isCumulativeMonotonic(metric))
+	}
+
+	{ // Not IntSum
+		metric := pdata.NewMetric()
+		metric.SetName("system.cpu.load_average.1m")
+		metric.SetDescription("Average CPU Load over 1 minute.")
+		metric.SetUnit("1")
+		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+
+		assert.False(t, isCumulativeMonotonic(metric))
+	}
+}
+
+func TestMetricDimensionsToMapKey(t *testing.T) {
+	metricName := "metric.name"
+	noTags := metricDimensionsToMapKey(metricName, []string{})
+	someTags := metricDimensionsToMapKey(metricName, []string{"key1:val1", "key2:val2"})
+	sameTags := metricDimensionsToMapKey(metricName, []string{"key2:val2", "key1:val1"})
+	diffTags := metricDimensionsToMapKey(metricName, []string{"key3:val3"})
+
+	assert.NotEqual(t, noTags, someTags)
+	assert.NotEqual(t, someTags, diffTags)
+	assert.Equal(t, someTags, sameTags)
+}
+
 func TestMapIntMetrics(t *testing.T) {
 	ts := time.Now().UnixNano()
 	slice := pdata.NewIntDataPointSlice()
@@ -78,6 +145,243 @@ func TestMapDoubleMetrics(t *testing.T) {
 	assert.ElementsMatch(t,
 		mapDoubleMetrics("float64.test", slice),
 		[]datadog.Metric{metrics.NewGauge("float64.test", uint64(ts), math.Pi, []string{})},
+	)
+}
+
+func newTTLMap() *ttlmap.TTLMap {
+	// don't start the sweeping goroutine
+	// since it is not needed
+	return ttlmap.New(1800, 3600)
+}
+
+func TestMapIntMonotonicMetrics(t *testing.T) {
+	// Create list of values
+	deltas := []int64{1, 2, 200, 3, 7, 0}
+	cumulative := make([]int64, len(deltas))
+	copy(cumulative, deltas)
+	for i := 1; i < len(cumulative); i++ {
+		cumulative[i] += cumulative[i-1]
+	}
+
+	//Map to OpenTelemetry format
+	ts := time.Now().UnixNano()
+	slice := pdata.NewIntDataPointSlice()
+	slice.Resize(len(cumulative))
+	for i, val := range cumulative {
+		point := slice.At(i)
+		point.SetValue(val)
+		point.SetTimestamp(pdata.TimestampUnixNano(ts + int64(i)))
+	}
+
+	// Map to Datadog format
+	metricName := "metric.example"
+	output := make([]datadog.Metric, len(deltas))
+	for i, val := range deltas {
+		output[i] = metrics.NewCount(metricName, uint64(ts+int64(i)), float64(val), []string{})
+	}
+
+	prevPts := newTTLMap()
+	assert.ElementsMatch(t,
+		mapIntMonotonicMetrics(metricName, prevPts, slice),
+		[]datadog.Metric{
+			metrics.NewCount(metricName, uint64(ts+1), 2, []string{}),
+			metrics.NewCount(metricName, uint64(ts+2), 200, []string{}),
+			metrics.NewCount(metricName, uint64(ts+3), 3, []string{}),
+			metrics.NewCount(metricName, uint64(ts+4), 7, []string{}),
+			metrics.NewCount(metricName, uint64(ts+5), 0, []string{}),
+		},
+	)
+}
+
+func TestMapIntMonotonicDifferentDimensions(t *testing.T) {
+	metricName := "metric.example"
+	ts := time.Now().UnixNano()
+	slice := pdata.NewIntDataPointSlice()
+	slice.Resize(6)
+
+	// No tags
+	point := slice.At(0)
+	point.SetTimestamp(pdata.TimestampUnixNano(ts))
+
+	point = slice.At(1)
+	point.SetValue(20)
+	point.SetTimestamp(pdata.TimestampUnixNano(ts + 1))
+
+	// One tag: valA
+	point = slice.At(2)
+	point.SetTimestamp(pdata.TimestampUnixNano(ts))
+	point.LabelsMap().Insert("key1", "valA")
+
+	point = slice.At(3)
+	point.SetValue(30)
+	point.SetTimestamp(pdata.TimestampUnixNano(ts + 1))
+	point.LabelsMap().Insert("key1", "valA")
+
+	// same tag: valB
+	point = slice.At(4)
+	point.SetTimestamp(pdata.TimestampUnixNano(ts))
+	point.LabelsMap().Insert("key1", "valB")
+
+	point = slice.At(5)
+	point.SetValue(40)
+	point.SetTimestamp(pdata.TimestampUnixNano(ts + 1))
+	point.LabelsMap().Insert("key1", "valB")
+
+	prevPts := newTTLMap()
+
+	assert.ElementsMatch(t,
+		mapIntMonotonicMetrics(metricName, prevPts, slice),
+		[]datadog.Metric{
+			metrics.NewCount(metricName, uint64(ts+1), 20, []string{}),
+			metrics.NewCount(metricName, uint64(ts+1), 30, []string{"key1:valA"}),
+			metrics.NewCount(metricName, uint64(ts+1), 40, []string{"key1:valB"}),
+		},
+	)
+}
+
+func TestMapIntMonotonicWithReboot(t *testing.T) {
+	metricName := "metric.example"
+	ts := time.Now().UnixNano()
+	slice := pdata.NewIntDataPointSlice()
+	slice.Resize(4)
+
+	point := slice.At(0)
+	point.SetTimestamp(pdata.TimestampUnixNano(ts))
+
+	point = slice.At(1)
+	point.SetValue(30)
+	point.SetTimestamp(pdata.TimestampUnixNano(ts + 1))
+
+	point = slice.At(2)
+	point.SetValue(0) // smaller than before, therefore it indicates a reboot
+	point.SetTimestamp(pdata.TimestampUnixNano(ts + 2))
+
+	point = slice.At(3)
+	point.SetValue(20)
+	point.SetTimestamp(pdata.TimestampUnixNano(ts + 3))
+
+	prevPts := newTTLMap()
+	assert.ElementsMatch(t,
+		mapIntMonotonicMetrics(metricName, prevPts, slice),
+		[]datadog.Metric{
+			metrics.NewCount(metricName, uint64(ts+1), 30, []string{}),
+			metrics.NewCount(metricName, uint64(ts+3), 20, []string{}),
+		},
+	)
+}
+
+func TestMapDoubleMonotonicMetrics(t *testing.T) {
+	deltas := []float64{1, 2, 200, 3, 7, 0}
+	cumulative := make([]float64, len(deltas))
+	copy(cumulative, deltas)
+	for i := 1; i < len(cumulative); i++ {
+		cumulative[i] += cumulative[i-1]
+	}
+
+	//Map to OpenTelemetry format
+	ts := time.Now().UnixNano()
+	slice := pdata.NewDoubleDataPointSlice()
+	slice.Resize(len(cumulative))
+	for i, val := range cumulative {
+		point := slice.At(i)
+		point.SetValue(val)
+		point.SetTimestamp(pdata.TimestampUnixNano(ts + int64(i)))
+	}
+
+	// Map to Datadog format
+	metricName := "metric.example"
+	output := make([]datadog.Metric, len(deltas))
+	for i, val := range deltas {
+		output[i] = metrics.NewCount(metricName, uint64(ts+int64(i)), val, []string{})
+	}
+
+	prevPts := newTTLMap()
+	assert.ElementsMatch(t,
+		mapDoubleMonotonicMetrics(metricName, prevPts, slice),
+		[]datadog.Metric{
+			metrics.NewCount(metricName, uint64(ts+1), 2, []string{}),
+			metrics.NewCount(metricName, uint64(ts+2), 200, []string{}),
+			metrics.NewCount(metricName, uint64(ts+3), 3, []string{}),
+			metrics.NewCount(metricName, uint64(ts+4), 7, []string{}),
+			metrics.NewCount(metricName, uint64(ts+5), 0, []string{}),
+		},
+	)
+}
+
+func TestMapDoubleMonotonicDifferentDimension(t *testing.T) {
+	metricName := "metric.example"
+	ts := time.Now().UnixNano()
+	slice := pdata.NewDoubleDataPointSlice()
+	slice.Resize(6)
+
+	// No tags
+	point := slice.At(0)
+	point.SetTimestamp(pdata.TimestampUnixNano(ts))
+
+	point = slice.At(1)
+	point.SetValue(20)
+	point.SetTimestamp(pdata.TimestampUnixNano(ts + 1))
+
+	// One tag: valA
+	point = slice.At(2)
+	point.SetTimestamp(pdata.TimestampUnixNano(ts))
+	point.LabelsMap().Insert("key1", "valA")
+
+	point = slice.At(3)
+	point.SetValue(30)
+	point.SetTimestamp(pdata.TimestampUnixNano(ts + 1))
+	point.LabelsMap().Insert("key1", "valA")
+
+	// one tag: valB
+	point = slice.At(4)
+	point.SetTimestamp(pdata.TimestampUnixNano(ts))
+	point.LabelsMap().Insert("key1", "valB")
+
+	point = slice.At(5)
+	point.SetValue(40)
+	point.SetTimestamp(pdata.TimestampUnixNano(ts + 1))
+	point.LabelsMap().Insert("key1", "valB")
+
+	prevPts := newTTLMap()
+
+	assert.ElementsMatch(t,
+		mapDoubleMonotonicMetrics(metricName, prevPts, slice),
+		[]datadog.Metric{
+			metrics.NewCount(metricName, uint64(ts), 20, []string{}),
+			metrics.NewCount(metricName, uint64(ts), 30, []string{"key1:valA"}),
+			metrics.NewCount(metricName, uint64(ts), 40, []string{"key1:valB"}),
+		},
+	)
+}
+
+func TestMapDoubleMonotonicWithReboot(t *testing.T) {
+	metricName := "metric.example"
+	ts := time.Now().UnixNano()
+	slice := pdata.NewDoubleDataPointSlice()
+	slice.Resize(4)
+
+	point := slice.At(0)
+	point.SetTimestamp(pdata.TimestampUnixNano(ts))
+
+	point = slice.At(1)
+	point.SetValue(30)
+	point.SetTimestamp(pdata.TimestampUnixNano(ts + 1))
+
+	point = slice.At(2)
+	point.SetValue(0) // smaller than before, therefore it indicates a reboot
+	point.SetTimestamp(pdata.TimestampUnixNano(ts + 2))
+
+	point = slice.At(3)
+	point.SetValue(20)
+	point.SetTimestamp(pdata.TimestampUnixNano(ts + 3))
+
+	prevPts := newTTLMap()
+	assert.ElementsMatch(t,
+		mapDoubleMonotonicMetrics(metricName, prevPts, slice),
+		[]datadog.Metric{
+			metrics.NewCount(metricName, uint64(ts+1), 30, []string{}),
+			metrics.NewCount(metricName, uint64(ts+3), 20, []string{}),
+		},
 	)
 }
 

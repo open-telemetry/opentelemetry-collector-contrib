@@ -16,14 +16,16 @@ package datadogexporter
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
 // getTags maps a stringMap into a slice of Datadog tags
@@ -39,9 +41,30 @@ func getTags(labels pdata.StringMap) []string {
 	return tags
 }
 
+// isCumulativeMonotonic checks if a metric is a cumulative monotonic metric
+func isCumulativeMonotonic(md pdata.Metric) bool {
+	switch md.DataType() {
+	case pdata.MetricDataTypeIntSum:
+		return md.IntSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative &&
+			md.IntSum().IsMonotonic()
+	case pdata.MetricDataTypeDoubleSum:
+		return md.DoubleSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative &&
+			md.DoubleSum().IsMonotonic()
+	}
+	return false
+}
+
+// metricDimensionsToMapKey maps name and tags to a string to use as an identifier
+// The tags order does not matter
+func metricDimensionsToMapKey(name string, tags []string) string {
+	const separator string = "}{" // These are invalid in tags
+	dimensions := append(tags, name)
+	sort.Strings(dimensions)
+	return strings.Join(dimensions, separator)
+}
+
 // mapIntMetrics maps int datapoints into Datadog metrics
 func mapIntMetrics(name string, slice pdata.IntDataPointSlice) []datadog.Metric {
-	// Allocate assuming none are nil
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
@@ -52,13 +75,46 @@ func mapIntMetrics(name string, slice pdata.IntDataPointSlice) []datadog.Metric 
 
 // mapDoubleMetrics maps double datapoints into Datadog metrics
 func mapDoubleMetrics(name string, slice pdata.DoubleDataPointSlice) []datadog.Metric {
-	// Allocate assuming none are nil
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		ms = append(ms,
 			metrics.NewGauge(name, uint64(p.Timestamp()), p.Value(), getTags(p.LabelsMap())),
 		)
+	}
+	return ms
+}
+
+// mapIntMonotonicMetrics maps monotonic datapoints into Datadog metrics
+func mapIntMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.IntDataPointSlice) []datadog.Metric {
+	ms := make([]datadog.Metric, 0, slice.Len())
+	for i := 0; i < slice.Len(); i++ {
+		p := slice.At(i)
+		tags := getTags(p.LabelsMap())
+		key := metricDimensionsToMapKey(name, tags)
+
+		if val := prevPts.Get(key); val != nil && p.Value() >= val.(int64) {
+			delta := p.Value() - val.(int64)
+			ms = append(ms, metrics.NewCount(name, uint64(p.Timestamp()), float64(delta), tags))
+		}
+		prevPts.Put(key, p.Value())
+	}
+	return ms
+}
+
+// mapDoubleMonotonicMetrics maps monotonic datapoints into Datadog metrics
+func mapDoubleMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.DoubleDataPointSlice) []datadog.Metric {
+	ms := make([]datadog.Metric, 0, slice.Len())
+	for i := 0; i < slice.Len(); i++ {
+		p := slice.At(i)
+		tags := getTags(p.LabelsMap())
+		key := metricDimensionsToMapKey(name, tags)
+
+		if val := prevPts.Get(key); val != nil && p.Value() >= val.(float64) {
+			delta := p.Value() - val.(float64)
+			ms = append(ms, metrics.NewCount(name, uint64(p.Timestamp()), delta, tags))
+		}
+		prevPts.Put(key, p.Value())
 	}
 	return ms
 }
@@ -135,8 +191,8 @@ func mapDoubleHistogramMetrics(name string, slice pdata.DoubleHistogramDataPoint
 	return ms
 }
 
-// MapMetrics maps OTLP metrics into the DataDog format
-func MapMetrics(logger *zap.Logger, cfg config.MetricsConfig, md pdata.Metrics) (series []datadog.Metric, droppedTimeSeries int) {
+// mapMetrics maps OTLP metrics into the DataDog format
+func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, md pdata.Metrics) (series []datadog.Metric, droppedTimeSeries int) {
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
@@ -155,11 +211,17 @@ func MapMetrics(logger *zap.Logger, cfg config.MetricsConfig, md pdata.Metrics) 
 				case pdata.MetricDataTypeDoubleGauge:
 					datapoints = mapDoubleMetrics(md.Name(), md.DoubleGauge().DataPoints())
 				case pdata.MetricDataTypeIntSum:
-					// Ignore aggregation temporality; report raw values
-					datapoints = mapIntMetrics(md.Name(), md.IntSum().DataPoints())
+					if cfg.SendMonotonic && isCumulativeMonotonic(md) {
+						datapoints = mapIntMonotonicMetrics(md.Name(), prevPts, md.IntSum().DataPoints())
+					} else {
+						datapoints = mapIntMetrics(md.Name(), md.IntSum().DataPoints())
+					}
 				case pdata.MetricDataTypeDoubleSum:
-					// Ignore aggregation temporality; report raw values
-					datapoints = mapDoubleMetrics(md.Name(), md.DoubleSum().DataPoints())
+					if cfg.SendMonotonic && isCumulativeMonotonic(md) {
+						datapoints = mapDoubleMonotonicMetrics(md.Name(), prevPts, md.DoubleSum().DataPoints())
+					} else {
+						datapoints = mapDoubleMetrics(md.Name(), md.DoubleSum().DataPoints())
+					}
 				case pdata.MetricDataTypeIntHistogram:
 					datapoints = mapIntHistogramMetrics(md.Name(), md.IntHistogram().DataPoints(), cfg.Buckets)
 				case pdata.MetricDataTypeDoubleHistogram:
