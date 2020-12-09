@@ -17,8 +17,11 @@ package loadbalancingexporter
 import (
 	"context"
 	"errors"
+	"math/rand"
+	"net"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -521,6 +524,110 @@ func TestNoTracesInBatch(t *testing.T) {
 	}
 }
 
+func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
+	// this test is based on the discussion in the following issue for this exporter:
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1690
+	// prepare
+
+	// simulate rolling updates, the dns resolver should resolve in the following order
+	// ["127.0.0.1"] -> ["127.0.0.1", "127.0.0.2"] -> ["127.0.0.1"]
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	require.NoError(t, err)
+
+	counter := 0
+	resolve := [][]net.IPAddr{
+		{
+			{IP: net.IPv4(127, 0, 0, 1)},
+		}, {
+			{IP: net.IPv4(127, 0, 0, 1)},
+			{IP: net.IPv4(127, 0, 0, 2)},
+		}, {
+			{IP: net.IPv4(127, 0, 0, 2)},
+		},
+	}
+	res.resolver = &mockDNSResolver{
+		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
+			defer func() {
+				counter++
+			}()
+
+			if counter > 2 {
+				return resolve[2], nil
+			}
+
+			return resolve[counter], nil
+		},
+	}
+	res.resInterval = 10 * time.Millisecond
+
+	config := &Config{
+		Resolver: ResolverSettings{
+			DNS: &DNSResolver{Hostname: "service-1", Port: ""},
+		},
+	}
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	p, err := newExporter(params, config)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	p.res = res
+
+	var counter1, counter2 int
+	defaultExporters := map[string]component.TracesExporter{
+		"127.0.0.1": &mockTracesExporter{
+			ConsumeTracesFn: func(ctx context.Context, td pdata.Traces) error {
+				counter1 += 1
+				// simulate an unreachable backend
+				time.Sleep(10 * time.Second)
+				return nil
+			},
+		},
+		"127.0.0.2": &mockTracesExporter{
+			ConsumeTracesFn: func(ctx context.Context, td pdata.Traces) error {
+				counter2 += 1
+				return nil
+			},
+		},
+	}
+
+	// test
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer p.Shutdown(context.Background())
+	// ensure using default exporters
+	p.exporters = defaultExporters
+	p.res.onChange(func(endpoints []string) {
+		p.exporters = defaultExporters
+	})
+
+	// keep consuming traces every 2ms
+	go func() {
+		ticker := time.NewTicker(2 * time.Millisecond)
+		for {
+			select {
+			case <- ticker.C:
+				go p.ConsumeTraces(context.Background(), randomTraces())
+			}
+		}
+	}()
+
+	// wait until rolling updates finish
+	time.Sleep(100 * time.Millisecond)
+
+	// verify
+	require.Equal(t, []string{"127.0.0.2"}, res.endpoints)
+	require.Greater(t, counter1, 0)
+	require.Greater(t, counter2, 0)
+}
+
+func randomTraces() pdata.Traces {
+	v1 := uint8(rand.Intn(256))
+	v2 := uint8(rand.Intn(256))
+	v3 := uint8(rand.Intn(256))
+	v4 := uint8(rand.Intn(256))
+	return simpleTraceWithID(pdata.NewTraceID([16]byte{v1, v2, v3, v4}))
+}
+
 func simpleTraces() pdata.Traces {
 	return simpleTraceWithID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
 }
@@ -543,4 +650,31 @@ func simpleConfig() *Config {
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
 		},
 	}
+}
+
+type mockTracesExporter struct {
+	ConsumeTracesFn func (ctx context.Context, td pdata.Traces) error
+	StartFn func (ctx context.Context, host component.Host) error
+	ShutdownFn func (ctx context.Context) error
+}
+
+func (e *mockTracesExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	if e.ConsumeTracesFn == nil {
+		return nil
+	}
+	return e.ConsumeTracesFn(ctx, td)
+}
+
+func (e *mockTracesExporter) Start(ctx context.Context, host component.Host) error {
+	if e.StartFn == nil {
+		return nil
+	}
+	return e.StartFn(ctx, host)
+}
+
+func (e *mockTracesExporter) Shutdown(ctx context.Context) error {
+	if e.ShutdownFn == nil {
+		return nil
+	}
+	return e.ShutdownFn(ctx)
 }
