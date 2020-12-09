@@ -16,7 +16,6 @@
 package awsxrayexporter
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -64,7 +63,7 @@ func newXRay(logger *zap.Logger, awsConfig *aws.Config, startInfo component.Appl
 		Fn:   request.MakeAddToUserAgentHandler("xray", "1.0", os.Getenv("AWS_EXECUTION_ENV")),
 	})
 
-	x.Handlers.Build.PushBackNamed(newCollectorUserAgentHandler(startInfo))
+	x.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(startInfo))
 
 	x.Handlers.Sign.PushFrontNamed(request.NamedHandler{
 		Name: "tracing.TimestampHandler",
@@ -91,19 +90,8 @@ func IsTimeoutError(err error) bool {
 }
 
 func newCollectorUserAgentHandler(startInfo component.ApplicationStartInfo) request.NamedHandler {
-	ua := fmt.Sprintf("%s/%s (%s)", collectorDistribution, startInfo.Version, startInfo.GitHash)
 	return request.NamedHandler{
 		Name: "otel.collector.UserAgentHandler",
-		Fn: func(r *request.Request) {
-			prependToUserAgent(r, ua)
-		},
+		Fn:   request.MakeAddToUserAgentHandler(collectorDistribution, startInfo.Version, startInfo.GitHash),
 	}
-}
-
-func prependToUserAgent(request *request.Request, ua string) {
-	curUA := request.HTTPRequest.UserAgent()
-	if len(curUA) > 0 {
-		ua = ua + " " + curUA
-	}
-	request.HTTPRequest.Header.Set("User-Agent", ua)
 }
