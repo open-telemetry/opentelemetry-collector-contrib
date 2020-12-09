@@ -16,6 +16,7 @@
 package awsxrayexporter
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -90,8 +91,19 @@ func IsTimeoutError(err error) bool {
 }
 
 func newCollectorUserAgentHandler(startInfo component.ApplicationStartInfo) request.NamedHandler {
+	ua := fmt.Sprintf("%s/%s (%s)", collectorDistribution, startInfo.Version, startInfo.GitHash)
 	return request.NamedHandler{
 		Name: "otel.collector.UserAgentHandler",
-		Fn:   request.MakeAddToUserAgentHandler(collectorDistribution, startInfo.Version, startInfo.GitHash),
+		Fn: func(r *request.Request) {
+			prependToUserAgent(r, ua)
+		},
 	}
+}
+
+func prependToUserAgent(request *request.Request, ua string) {
+	curUA := request.HTTPRequest.UserAgent()
+	if len(curUA) > 0 {
+		ua = ua + " " + curUA
+	}
+	request.HTTPRequest.Header.Set("User-Agent", ua)
 }
