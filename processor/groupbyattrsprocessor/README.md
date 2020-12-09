@@ -27,7 +27,7 @@ processors:
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using the processor.
 
-The `group_by_keys` property describes which attribute keys should be considered for grouping, if any of them is found
+The `keys` property describes which attribute keys should be considered for grouping, if any of them is found
 the grouping occurs.
 
 ## Metrics
