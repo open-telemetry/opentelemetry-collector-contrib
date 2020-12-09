@@ -39,3 +39,11 @@ services:
         - "16686:16686"
         - "14268:14268"
         - "9411:9411"
+  cortex:
+    image: quay.io/cortexproject/cortex:v1.5.0
+    command:
+      - -config.file=./config/cortex-config.yml
+    volumes:
+      - ./prometheus-remote-write-cortex/cortex-config.yml:/config/cortex-config.yml:ro
+    ports:
+      - 9009:9009
