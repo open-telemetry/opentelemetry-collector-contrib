@@ -34,7 +34,7 @@ processors:
   #attributes/copyfromexistingkey:
     #actions:
     #- key: environment
-      #from_attribute: YOUR_EXISTING_TAG_NAMEE
+      #from_attribute: YOUR_EXISTING_TAG_NAME
       #action: upsert
   # Optional: If you want to add an environment tag
   # If this option is enabled it must be added to the pipeline section below
@@ -60,10 +60,15 @@ processors:
 exporters:
   # Traces
   sapm:
+    # This expects SFX_TOKEN environment variable to contain the access token.
+    # Alternatively, specify the access token directly here.
     access_token: "${SFX_TOKEN}"
+    # This expects SFX_REALM environment variable to contain the realm (e.g. us0).
+    # Alternatively, specify the relm directly in the endpoint url here.
     endpoint: "https://ingest.${SFX_REALM}.signalfx.com/v2/trace"
   # Metrics + Events
   signalfx:
+    # See above for SFX_TOKEN and SFX_REALM.
     access_token: "${SFX_TOKEN}"
     realm: "${SFX_REALM}"
 service:
