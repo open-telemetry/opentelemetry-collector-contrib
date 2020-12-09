@@ -63,7 +63,7 @@ func newXRay(logger *zap.Logger, awsConfig *aws.Config, startInfo component.Appl
 		Fn:   request.MakeAddToUserAgentHandler("xray", "1.0", os.Getenv("AWS_EXECUTION_ENV")),
 	})
 
-	x.Handlers.Build.PushBackNamed(newCollectorUserAgentHandler(startInfo))
+	x.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(startInfo))
 
 	x.Handlers.Sign.PushFrontNamed(request.NamedHandler{
 		Name: "tracing.TimestampHandler",
