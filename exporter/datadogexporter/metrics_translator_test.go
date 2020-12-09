@@ -154,6 +154,8 @@ func newTTLMap() *ttlmap.TTLMap {
 	return ttlmap.New(1800, 3600)
 }
 
+const second int64 = 1e9
+
 func TestMapIntMonotonicMetrics(t *testing.T) {
 	// Create list of values
 	deltas := []int64{1, 2, 200, 3, 7, 0}
@@ -170,25 +172,25 @@ func TestMapIntMonotonicMetrics(t *testing.T) {
 	for i, val := range cumulative {
 		point := slice.At(i)
 		point.SetValue(val)
-		point.SetTimestamp(pdata.TimestampUnixNano(ts + int64(i)))
+		point.SetTimestamp(pdata.TimestampUnixNano(ts + int64(i)*second))
 	}
 
 	// Map to Datadog format
 	metricName := "metric.example"
 	output := make([]datadog.Metric, len(deltas))
 	for i, val := range deltas {
-		output[i] = metrics.NewCount(metricName, uint64(ts+int64(i)), float64(val), []string{})
+		output[i] = metrics.NewRate(metricName, uint64(ts+int64(i)*second), float64(val), []string{})
 	}
 
 	prevPts := newTTLMap()
 	assert.ElementsMatch(t,
 		mapIntMonotonicMetrics(metricName, prevPts, slice),
 		[]datadog.Metric{
-			metrics.NewCount(metricName, uint64(ts+1), 2, []string{}),
-			metrics.NewCount(metricName, uint64(ts+2), 200, []string{}),
-			metrics.NewCount(metricName, uint64(ts+3), 3, []string{}),
-			metrics.NewCount(metricName, uint64(ts+4), 7, []string{}),
-			metrics.NewCount(metricName, uint64(ts+5), 0, []string{}),
+			metrics.NewRate(metricName, uint64(ts+1), 2, []string{}),
+			metrics.NewRate(metricName, uint64(ts+2), 200, []string{}),
+			metrics.NewRate(metricName, uint64(ts+3), 3, []string{}),
+			metrics.NewRate(metricName, uint64(ts+4), 7, []string{}),
+			metrics.NewRate(metricName, uint64(ts+5), 0, []string{}),
 		},
 	)
 }
@@ -205,7 +207,7 @@ func TestMapIntMonotonicDifferentDimensions(t *testing.T) {
 
 	point = slice.At(1)
 	point.SetValue(20)
-	point.SetTimestamp(pdata.TimestampUnixNano(ts + 1))
+	point.SetTimestamp(pdata.TimestampUnixNano(ts + 1*second))
 
 	// One tag: valA
 	point = slice.At(2)
@@ -214,7 +216,7 @@ func TestMapIntMonotonicDifferentDimensions(t *testing.T) {
 
 	point = slice.At(3)
 	point.SetValue(30)
-	point.SetTimestamp(pdata.TimestampUnixNano(ts + 1))
+	point.SetTimestamp(pdata.TimestampUnixNano(ts + 1*second))
 	point.LabelsMap().Insert("key1", "valA")
 
 	// same tag: valB
@@ -224,7 +226,7 @@ func TestMapIntMonotonicDifferentDimensions(t *testing.T) {
 
 	point = slice.At(5)
 	point.SetValue(40)
-	point.SetTimestamp(pdata.TimestampUnixNano(ts + 1))
+	point.SetTimestamp(pdata.TimestampUnixNano(ts + 1*second))
 	point.LabelsMap().Insert("key1", "valB")
 
 	prevPts := newTTLMap()
@@ -232,9 +234,9 @@ func TestMapIntMonotonicDifferentDimensions(t *testing.T) {
 	assert.ElementsMatch(t,
 		mapIntMonotonicMetrics(metricName, prevPts, slice),
 		[]datadog.Metric{
-			metrics.NewCount(metricName, uint64(ts+1), 20, []string{}),
-			metrics.NewCount(metricName, uint64(ts+1), 30, []string{"key1:valA"}),
-			metrics.NewCount(metricName, uint64(ts+1), 40, []string{"key1:valB"}),
+			metrics.NewRate(metricName, uint64(ts+1), 20, []string{}),
+			metrics.NewRate(metricName, uint64(ts+1), 30, []string{"key1:valA"}),
+			metrics.NewRate(metricName, uint64(ts+1), 40, []string{"key1:valB"}),
 		},
 	)
 }
@@ -250,22 +252,22 @@ func TestMapIntMonotonicWithReboot(t *testing.T) {
 
 	point = slice.At(1)
 	point.SetValue(30)
-	point.SetTimestamp(pdata.TimestampUnixNano(ts + 1))
+	point.SetTimestamp(pdata.TimestampUnixNano(ts + 1*second))
 
 	point = slice.At(2)
 	point.SetValue(0) // smaller than before, therefore it indicates a reboot
-	point.SetTimestamp(pdata.TimestampUnixNano(ts + 2))
+	point.SetTimestamp(pdata.TimestampUnixNano(ts + 2*second))
 
 	point = slice.At(3)
 	point.SetValue(20)
-	point.SetTimestamp(pdata.TimestampUnixNano(ts + 3))
+	point.SetTimestamp(pdata.TimestampUnixNano(ts + 3*second))
 
 	prevPts := newTTLMap()
 	assert.ElementsMatch(t,
 		mapIntMonotonicMetrics(metricName, prevPts, slice),
 		[]datadog.Metric{
-			metrics.NewCount(metricName, uint64(ts+1), 30, []string{}),
-			metrics.NewCount(metricName, uint64(ts+3), 20, []string{}),
+			metrics.NewRate(metricName, uint64(ts+1), 30, []string{}),
+			metrics.NewRate(metricName, uint64(ts+3), 20, []string{}),
 		},
 	)
 }
@@ -285,26 +287,20 @@ func TestMapDoubleMonotonicMetrics(t *testing.T) {
 	for i, val := range cumulative {
 		point := slice.At(i)
 		point.SetValue(val)
-		point.SetTimestamp(pdata.TimestampUnixNano(ts + int64(i)))
+		point.SetTimestamp(pdata.TimestampUnixNano(ts + int64(i)*second))
 	}
 
 	// Map to Datadog format
 	metricName := "metric.example"
 	output := make([]datadog.Metric, len(deltas))
 	for i, val := range deltas {
-		output[i] = metrics.NewCount(metricName, uint64(ts+int64(i)), val, []string{})
+		output[i] = metrics.NewRate(metricName, uint64(ts+int64(i)), val, []string{})
 	}
 
 	prevPts := newTTLMap()
 	assert.ElementsMatch(t,
 		mapDoubleMonotonicMetrics(metricName, prevPts, slice),
-		[]datadog.Metric{
-			metrics.NewCount(metricName, uint64(ts+1), 2, []string{}),
-			metrics.NewCount(metricName, uint64(ts+2), 200, []string{}),
-			metrics.NewCount(metricName, uint64(ts+3), 3, []string{}),
-			metrics.NewCount(metricName, uint64(ts+4), 7, []string{}),
-			metrics.NewCount(metricName, uint64(ts+5), 0, []string{}),
-		},
+		output,
 	)
 }
 
@@ -347,9 +343,9 @@ func TestMapDoubleMonotonicDifferentDimension(t *testing.T) {
 	assert.ElementsMatch(t,
 		mapDoubleMonotonicMetrics(metricName, prevPts, slice),
 		[]datadog.Metric{
-			metrics.NewCount(metricName, uint64(ts), 20, []string{}),
-			metrics.NewCount(metricName, uint64(ts), 30, []string{"key1:valA"}),
-			metrics.NewCount(metricName, uint64(ts), 40, []string{"key1:valB"}),
+			metrics.NewRate(metricName, uint64(ts), 20, []string{}),
+			metrics.NewRate(metricName, uint64(ts), 30, []string{"key1:valA"}),
+			metrics.NewRate(metricName, uint64(ts), 40, []string{"key1:valB"}),
 		},
 	)
 }
@@ -379,8 +375,8 @@ func TestMapDoubleMonotonicWithReboot(t *testing.T) {
 	assert.ElementsMatch(t,
 		mapDoubleMonotonicMetrics(metricName, prevPts, slice),
 		[]datadog.Metric{
-			metrics.NewCount(metricName, uint64(ts+1), 30, []string{}),
-			metrics.NewCount(metricName, uint64(ts+3), 20, []string{}),
+			metrics.NewRate(metricName, uint64(ts+1), 30, []string{}),
+			metrics.NewRate(metricName, uint64(ts+3), 20, []string{}),
 		},
 	)
 }

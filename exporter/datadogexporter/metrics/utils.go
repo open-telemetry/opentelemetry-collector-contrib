@@ -27,7 +27,7 @@ import (
 const (
 	// Gauge is the Datadog Gauge metric type
 	Gauge               string = "gauge"
-	Count               string = "count"
+	Rate                string = "rate"
 	otelNamespacePrefix string = "otel"
 )
 
@@ -55,11 +55,11 @@ func NewGauge(name string, ts uint64, value float64, tags []string) datadog.Metr
 	return gauge
 }
 
-// NewCount creates a new Datadog Count metric given a name, a Unix nanoseconds timestamp
+// NewRate creates a new Datadog rate metric given a name, a Unix nanoseconds timestamp
 // a value and a slice of tags
-func NewCount(name string, ts uint64, value float64, tags []string) datadog.Metric {
+func NewRate(name string, ts uint64, value float64, tags []string) datadog.Metric {
 	count := newMetric(name, ts, value, tags)
-	count.SetType(Count)
+	count.SetType(Rate)
 	return count
 }
 

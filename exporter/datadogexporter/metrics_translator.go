@@ -85,21 +85,52 @@ func mapDoubleMetrics(name string, slice pdata.DoubleDataPointSlice) []datadog.M
 	return ms
 }
 
+// intCounter keeps the value of an integer
+// monotonic counter at a given point in time
+type intCounter struct {
+	ts    uint64
+	value int64
+}
+
 // mapIntMonotonicMetrics maps monotonic datapoints into Datadog metrics
 func mapIntMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.IntDataPointSlice) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
+		ts := uint64(p.Timestamp())
 		tags := getTags(p.LabelsMap())
 		key := metricDimensionsToMapKey(name, tags)
 
-		if val := prevPts.Get(key); val != nil && p.Value() >= val.(int64) {
-			delta := p.Value() - val.(int64)
-			ms = append(ms, metrics.NewCount(name, uint64(p.Timestamp()), float64(delta), tags))
+		if c := prevPts.Get(key); c != nil {
+			cnt := c.(intCounter)
+
+			// We calculate the time-normalized delta
+			dx := float64(p.Value() - cnt.value)
+			dt := float64(ts-cnt.ts) / 1e9
+
+			if dt <= 0 {
+				// We were given a point older than the one in memory so we drop it
+				// We keep the existing point in memory since it is the most recent
+				continue
+			}
+
+			// if dx < 0, we assume there was a reset, thus we save the point
+			// but don't export it (it's the first one so we can't do a delta)
+			if dx >= 0 {
+				ms = append(ms, metrics.NewRate(name, uint64(p.Timestamp()), dx/dt, tags))
+			}
+
 		}
-		prevPts.Put(key, p.Value())
+		prevPts.Put(key, intCounter{ts, p.Value()})
 	}
 	return ms
+}
+
+// doubleCounter keeps the value of a double
+// monotonic counter at a given point in time
+type doubleCounter struct {
+	ts    uint64
+	value float64
 }
 
 // mapDoubleMonotonicMetrics maps monotonic datapoints into Datadog metrics
@@ -107,14 +138,32 @@ func mapDoubleMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
+		ts := uint64(p.Timestamp())
 		tags := getTags(p.LabelsMap())
 		key := metricDimensionsToMapKey(name, tags)
 
-		if val := prevPts.Get(key); val != nil && p.Value() >= val.(float64) {
-			delta := p.Value() - val.(float64)
-			ms = append(ms, metrics.NewCount(name, uint64(p.Timestamp()), delta, tags))
+		if c := prevPts.Get(key); c != nil {
+			cnt := c.(doubleCounter)
+
+			// We calculate the time-normalized delta
+			dx := p.Value() - cnt.value
+			dt := float64(ts-cnt.ts) / 1e9
+
+			if dt <= 0 {
+				// We were given a point older than the one in memory so we drop it
+				// We keep the existing point in memory since it is the most recent
+				continue
+			}
+
+			// if dx < 0, we assume there was a reset, thus we save the point
+			// but don't export it (it's the first one so we can't do a delta)
+			if dx >= 0 {
+				ms = append(ms, metrics.NewRate(name, uint64(p.Timestamp()), dx/dt, tags))
+			}
+
 		}
-		prevPts.Put(key, p.Value())
+
+		prevPts.Put(key, doubleCounter{ts, p.Value()})
 	}
 	return ms
 }
