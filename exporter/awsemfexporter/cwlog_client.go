@@ -61,7 +61,7 @@ func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logger *z
 func NewCloudWatchLogsClient(logger *zap.Logger, awsConfig *aws.Config, startInfo component.ApplicationStartInfo, sess *session.Session) LogClient {
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
-	client.Handlers.Build.PushBackNamed(newCollectorUserAgentHandler(startInfo))
+	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(startInfo))
 	return newCloudWatchLogClient(client, logger)
 }
 
