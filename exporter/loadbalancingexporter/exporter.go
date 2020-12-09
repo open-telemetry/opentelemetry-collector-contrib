@@ -113,10 +113,7 @@ func newExporter(params component.ExporterCreateParams, cfg configmodels.Exporte
 func (e *exporterImp) Start(ctx context.Context, host component.Host) error {
 	e.res.onChange(e.onBackendChanges)
 	e.host = host
-	if err := e.res.start(ctx); err != nil {
-		return err
-	}
-
+	e.res.start(ctx)
 	return nil
 }
 
@@ -205,6 +202,11 @@ func (e *exporterImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error 
 }
 
 func (e *exporterImp) consumeTrace(ctx context.Context, td pdata.Traces) error {
+	if e.ring == nil {
+		// something is really wrong... how come we couldn't find the exporter??
+		return fmt.Errorf("couldn't find the exporter for the given host")
+	}
+
 	traceID := traceIDFromTraces(td)
 	if traceID == pdata.InvalidTraceID() {
 		return errNoTracesInBatch

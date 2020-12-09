@@ -76,10 +76,7 @@ func newDNSResolver(logger *zap.Logger, hostname string, port string) (*dnsResol
 }
 
 func (r *dnsResolver) start(ctx context.Context) error {
-	if _, err := r.resolve(ctx); err != nil {
-		return err
-	}
-
+	r.resolve(ctx)
 	go r.periodicallyResolve()
 
 	return nil
