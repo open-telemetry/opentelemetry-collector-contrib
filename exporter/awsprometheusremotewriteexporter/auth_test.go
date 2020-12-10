@@ -20,10 +20,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"strings"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -32,8 +32,8 @@ import (
 
 func TestRequestSignature(t *testing.T) {
 	// Some form of AWS credentials must be set up for tests to succeed
-	os.Setenv("AWS_ACCESS_KEY", "string")
-	os.Setenv("AWS_SECRET_ACCESS_KEY", "string2")
+	awsCreds := fetchMockCredentials()
+	authConfig := AuthConfig{Region: "region", Service: "service"}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, err := v4.GetSignedRequestSignature(r)
@@ -52,8 +52,7 @@ func TestRequestSignature(t *testing.T) {
 		WriteBufferSize: 0,
 		Timeout:         0,
 		CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
-			settings := AuthConfig{Region: "region", Service: "service"}
-			return newSigningRoundTripper(settings, next)
+			return createSigningRoundTripperWithCredentials(authConfig, awsCreds, next)
 		},
 	}
 	client, _ := setting.ToClient()
@@ -71,8 +70,7 @@ func (ert *ErrorRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
 
 func TestRoundTrip(t *testing.T) {
 	// Some form of AWS credentials must be set up for tests to succeed
-	os.Setenv("AWS_ACCESS_KEY", "string")
-	os.Setenv("AWS_SECRET_ACCESS_KEY", "string2")
+	awsCreds := fetchMockCredentials()
 
 	defaultRoundTripper := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
 	errorRoundTripper := &ErrorRoundTripper{}
@@ -103,8 +101,8 @@ func TestRoundTrip(t *testing.T) {
 			}))
 			defer server.Close()
 			serverURL, _ := url.Parse(server.URL)
-			settings := AuthConfig{Region: "region", Service: "service"}
-			rt, err := newSigningRoundTripper(settings, tt.rt)
+			authConfig := AuthConfig{Region: "region", Service: "service"}
+			rt, err := createSigningRoundTripperWithCredentials(authConfig, awsCreds, tt.rt)
 			assert.NoError(t, err)
 			req, err := http.NewRequest("POST", serverURL.String(), strings.NewReader(""))
 			assert.NoError(t, err)
@@ -120,22 +118,24 @@ func TestRoundTrip(t *testing.T) {
 	}
 }
 
-func TestNewSigningRoundTripper(t *testing.T) {
+func TestCreateSigningRoundTripperWithCredentials(t *testing.T) {
+
 	defaultRoundTripper := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
 
 	// Some form of AWS credentials must be set up for tests to succeed
-	os.Setenv("AWS_ACCESS_KEY", "string")
-	os.Setenv("AWS_SECRET_ACCESS_KEY", "string2")
+	awsCreds := fetchMockCredentials()
 
 	tests := []struct {
 		name         string
+		creds        *credentials.Credentials
 		roundTripper http.RoundTripper
-		settings     AuthConfig
+		authConfig   AuthConfig
 		authApplied  bool
 		returnError  bool
 	}{
 		{
 			"success_case",
+			awsCreds,
 			defaultRoundTripper,
 			AuthConfig{Region: "region", Service: "service"},
 			true,
@@ -143,16 +143,25 @@ func TestNewSigningRoundTripper(t *testing.T) {
 		},
 		{
 			"success_case_no_auth_applied",
+			awsCreds,
 			defaultRoundTripper,
 			AuthConfig{Region: "", Service: ""},
 			false,
 			false,
 		},
+		{
+			"no_credentials_provided_error",
+			nil,
+			defaultRoundTripper,
+			AuthConfig{Region: "region", Service: "service"},
+			true,
+			true,
+		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rtp, err := newSigningRoundTripper(tt.settings, tt.roundTripper)
+			rtp, err := createSigningRoundTripperWithCredentials(tt.authConfig, tt.creds, tt.roundTripper)
 			if tt.returnError {
 				assert.Error(t, err)
 				return
@@ -161,7 +170,7 @@ func TestNewSigningRoundTripper(t *testing.T) {
 			if tt.authApplied {
 				sRtp := rtp.(*signingRoundTripper)
 				assert.Equal(t, sRtp.transport, tt.roundTripper)
-				assert.Equal(t, tt.settings.Service, sRtp.service)
+				assert.Equal(t, tt.authConfig.Service, sRtp.service)
 			} else {
 				assert.Equal(t, rtp, tt.roundTripper)
 			}
@@ -170,10 +179,10 @@ func TestNewSigningRoundTripper(t *testing.T) {
 }
 
 func TestCloneRequest(t *testing.T) {
-	req1, err := http.NewRequest("GET", "http://example.com", nil)
+	req1, err := http.NewRequest("GET", "https://example.com", nil)
 	assert.NoError(t, err)
 
-	req2, err := http.NewRequest("GET", "http://example.com", nil)
+	req2, err := http.NewRequest("GET", "https://example.com", nil)
 	assert.NoError(t, err)
 	req2.Header.Add("Header1", "val1")
 
@@ -200,4 +209,10 @@ func TestCloneRequest(t *testing.T) {
 			assert.EqualValues(t, tt.request.Header, r2.Header)
 		})
 	}
+}
+
+func fetchMockCredentials() *credentials.Credentials {
+	return credentials.NewStaticCredentials("MOCK_AWS_ACCESS_KEY",
+		"MOCK_AWS_SECRET_ACCESS_KEY",
+		"MOCK_TOKEN")
 }
