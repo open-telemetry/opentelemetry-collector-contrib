@@ -54,7 +54,7 @@ func GetHostInfo(logger *zap.Logger) (hostInfo *HostInfo) {
 	meta := ec2metadata.New(sess)
 
 	if !meta.Available() {
-		logger.Info("EC2 Metadata not available")
+		logger.Debug("EC2 Metadata not available")
 		return
 	}
 
