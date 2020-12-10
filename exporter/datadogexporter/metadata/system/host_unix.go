@@ -17,6 +17,7 @@ package system
 
 import (
 	"context"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -26,6 +27,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/valid"
 )
 
+const hostnamePath = "/bin/hostname"
+
 func getSystemFQDN() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
 	defer cancel()
@@ -33,14 +36,21 @@ func getSystemFQDN() (string, error) {
 	// Go does not provide a way to get the full hostname
 	// so we make a best-effort by running the hostname binary
 	// if available
-	cmd := exec.CommandContext(ctx, "/bin/hostname", "-f")
+	if _, err := os.Stat(hostnamePath); err == nil {
+		cmd := exec.CommandContext(ctx, hostnamePath, "-f")
+		out, err := cmd.Output()
+		return strings.TrimSpace(string(out)), err
+	}
 
-	out, err := cmd.Output()
-	return strings.TrimSpace(string(out)), err
+	// if stat failed for any reason, fail silently
+	return "", nil
 }
 
 func (hi *HostInfo) GetHostname(logger *zap.Logger) string {
-	if err := valid.Hostname(hi.FQDN); err != nil {
+	if hi.FQDN == "" {
+		// Don't report failure since FQDN was just not available
+		return hi.OS
+	} else if err := valid.Hostname(hi.FQDN); err != nil {
 		logger.Info("FQDN is not valid", zap.Error(err))
 		return hi.OS
 	}
