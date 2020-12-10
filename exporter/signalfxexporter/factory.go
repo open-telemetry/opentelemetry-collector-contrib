@@ -16,6 +16,7 @@ package signalfxexporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -84,11 +85,11 @@ func createTraceExporter(
 		}
 		corrCfg.Endpoint = apiURL.String()
 	}
-	if corrCfg.AccessToken == "" {
-		corrCfg.AccessToken = cfg.AccessToken
+	if cfg.AccessToken == "" {
+		return nil, errors.New("access_token is required")
 	}
 	params.Logger.Info("Correlation tracking enabled", zap.String("endpoint", corrCfg.Endpoint))
-	tracker := correlation.NewTracker(corrCfg, params)
+	tracker := correlation.NewTracker(corrCfg, cfg.AccessToken, params)
 
 	return exporterhelper.NewTraceExporter(
 		cfg,

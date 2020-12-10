@@ -100,7 +100,6 @@ func TestLoadConfig(t *testing.T) {
 				Endpoint: "",
 				Timeout:  5 * time.Second,
 			},
-			AccessToken:         "",
 			StaleServiceTimeout: 5 * time.Minute,
 			SyncAttributes: map[string]string{
 				"k8s.pod.uid":  "k8s.pod.uid",

@@ -58,9 +58,6 @@ type Config struct {
 	// SyncAttributes is a key of the span attribute name to sync to the dimension as the value.
 	SyncAttributes map[string]string `mapstructure:"sync_attributes"`
 
-	// AccessToken is the authentication token provided by SignalFx.
-	AccessToken string `mapstructure:"access_token"`
-
 	// HostTranslations is a map where the key is the host attribute name to rename to the value.
 	// TODO: Remove once translations are removed from signalfx exporter.
 	HostTranslations map[string]string `mapstructure:"host_translations"`

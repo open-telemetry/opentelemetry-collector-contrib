@@ -28,15 +28,12 @@ func TestValidConfig(t *testing.T) {
 }
 
 func TestInvalidConfig(t *testing.T) {
-	invalid := Config{
-		AccessToken: "abcd1234",
-	}
+	invalid := Config{}
 	noEndpointErr := invalid.validate()
 	require.Error(t, noEndpointErr)
 
 	invalid = Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ":123:456"},
-		AccessToken:        "abcd1234",
 	}
 	invalidURLErr := invalid.validate()
 	require.Error(t, invalidURLErr)

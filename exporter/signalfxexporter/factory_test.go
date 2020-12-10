@@ -65,6 +65,15 @@ func TestCreateTracesExporter(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestCreateTracesExporterNoAccessToken(t *testing.T) {
+	cfg := createDefaultConfig()
+	c := cfg.(*Config)
+	c.Realm = "us0"
+
+	_, err := createTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+	assert.EqualError(t, err, "access_token is required")
+}
+
 func TestCreateInstanceViaFactory(t *testing.T) {
 	factory := NewFactory()
 
