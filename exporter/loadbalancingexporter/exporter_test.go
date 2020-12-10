@@ -534,6 +534,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
 	require.NoError(t, err)
 
+	resolverCh := make(chan int)
 	counter := 0
 	resolve := [][]net.IPAddr{
 		{
@@ -552,6 +553,8 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 			}()
 
 			if counter > 2 {
+				// stop as soon as rolling updates end
+				resolverCh <- 1
 				return resolve[2], nil
 			}
 
@@ -600,19 +603,33 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 		p.exporters = defaultExporters
 	})
 
+	ctx, cancel := context.WithCancel(context.Background())
 	// keep consuming traces every 2ms
-	go func() {
+	consumeCh := make(chan int)
+	go func(ctx context.Context) {
 		ticker := time.NewTicker(2 * time.Millisecond)
 		for {
 			select {
+			case <- ctx.Done():
+				consumeCh <- 1
+				return
 			case <- ticker.C:
-				go p.ConsumeTraces(context.Background(), randomTraces())
+				go p.ConsumeTraces(ctx, randomTraces())
 			}
 		}
+	}(ctx)
+
+	// give limited but enough time to rolling updates. otherwise this test
+	// will still pass due to the 10 secs of sleep that is used to simulate
+	// unreachable backends.
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		resolverCh<-1
 	}()
 
-	// wait until rolling updates finish
-	time.Sleep(100 * time.Millisecond)
+	<-resolverCh
+	cancel()
+	<-consumeCh
 
 	// verify
 	require.Equal(t, []string{"127.0.0.2"}, res.endpoints)
