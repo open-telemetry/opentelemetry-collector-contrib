@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/signalfx/signalfx-agent/pkg/apm/correlations"
+	apmcorrelation "github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -106,7 +106,7 @@ func TestLoadConfig(t *testing.T) {
 				"k8s.pod.uid":  "k8s.pod.uid",
 				"container.id": "container.id",
 			},
-			Config: correlations.Config{
+			Config: apmcorrelation.Config{
 				MaxRequests:     20,
 				MaxBuffered:     10_000,
 				MaxRetries:      2,
