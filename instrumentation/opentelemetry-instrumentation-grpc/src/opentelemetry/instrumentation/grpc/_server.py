@@ -113,9 +113,12 @@ class _OpenTelemetryServicerContext(grpc.ServicerContext):
     def abort(self, code, details):
         self.code = code
         self.details = details
-        self._active_span.set_attribute("rpc.grpc.status_code", code.name)
+        self._active_span.set_attribute("rpc.grpc.status_code", code.value[0])
         self._active_span.set_status(
-            Status(status_code=StatusCode.ERROR, description=details)
+            Status(
+                status_code=StatusCode.ERROR,
+                description="{}:{}".format(code, details),
+            )
         )
         return self._servicer_context.abort(code, details)
 
@@ -126,17 +129,25 @@ class _OpenTelemetryServicerContext(grpc.ServicerContext):
         self.code = code
         # use details if we already have it, otherwise the status description
         details = self.details or code.value[1]
-        self._active_span.set_attribute("rpc.grpc.status_code", code.name)
-        self._active_span.set_status(
-            Status(status_code=StatusCode.ERROR, description=details)
-        )
+        self._active_span.set_attribute("rpc.grpc.status_code", code.value[0])
+        if code != grpc.StatusCode.OK:
+            self._active_span.set_status(
+                Status(
+                    status_code=StatusCode.ERROR,
+                    description="{}:{}".format(code, details),
+                )
+            )
         return self._servicer_context.set_code(code)
 
     def set_details(self, details):
         self.details = details
-        self._active_span.set_status(
-            Status(status_code=StatusCode.ERROR, description=details)
-        )
+        if self.code != grpc.StatusCode.OK:
+            self._active_span.set_status(
+                Status(
+                    status_code=StatusCode.ERROR,
+                    description="{}:{}".format(self.code, details),
+                )
+            )
         return self._servicer_context.set_details(details)
 
 
@@ -181,12 +192,20 @@ class OpenTelemetryServerInterceptor(grpc.ServerInterceptor):
 
     def _start_span(self, handler_call_details, context):
 
+        # standard attributes
         attributes = {
-            "rpc.method": handler_call_details.method,
             "rpc.system": "grpc",
-            "rpc.grpc.status_code": grpc.StatusCode.OK,
+            "rpc.grpc.status_code": grpc.StatusCode.OK.value[0],
         }
 
+        # if we have details about the call, split into service and method
+        if handler_call_details.method:
+            service, method = handler_call_details.method.lstrip("/").split(
+                "/", 1
+            )
+            attributes.update({"rpc.method": method, "rpc.service": service})
+
+        # add some attributes from the metadata
         metadata = dict(context.invocation_metadata())
         if "user-agent" in metadata:
             attributes["rpc.user_agent"] = metadata["user-agent"]
@@ -198,15 +217,15 @@ class OpenTelemetryServerInterceptor(grpc.ServerInterceptor):
         # * ipv4:10.2.1.1:57284,127.0.0.1:57284
         #
         try:
-            host, port = (
+            ip, port = (
                 context.peer().split(",")[0].split(":", 1)[1].rsplit(":", 1)
             )
+            attributes.update({"net.peer.ip": ip, "net.peer.port": port})
 
-            # other telemetry sources convert this, so we will too
-            if host in ("[::1]", "127.0.0.1"):
-                host = "localhost"
+            # other telemetry sources add this, so we will too
+            if ip in ("[::1]", "127.0.0.1"):
+                attributes["net.peer.name"] = "localhost"
 
-            attributes.update({"net.peer.name": host, "net.peer.port": port})
         except IndexError:
             logger.warning("Failed to parse peer address '%s'", context.peer())
 

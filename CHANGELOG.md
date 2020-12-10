@@ -25,10 +25,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#237](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/237))
 - Add Prometheus Remote Write Exporter integration tests in opentelemetry-docker-tests
   ([#216](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/216))
+- `opentelemetry-instrumentation-grpc` Add tests for grpc span attributes, grpc `abort()` conditions
+  ([#236](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/236))
 
 ### Changed
 - `opentelemetry-instrumentation-asgi`, `opentelemetry-instrumentation-wsgi` Return `None` for `CarrierGetter` if key not found
   ([#1374](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/233))
+- `opentelemetry-instrumentation-grpc` Comply with updated spec, rework tests
+  ([#236](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/236))
 
 ## [0.16b1](https://github.com/open-telemetry/opentelemetry-python-contrib/releases/tag/v0.16b1) - 2020-11-26
 
