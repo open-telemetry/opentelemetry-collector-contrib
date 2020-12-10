@@ -63,7 +63,7 @@ func (s *prometheusScraper) scrape(ctx context.Context) (pdata.ResourceMetricsSl
 			return rms, err
 		}
 
-		convertMetricFamily(&mf, rms, ts)
+		convertMetricFamily(&mf, rms, ts, s.config)
 	}
 
 	return rms, nil
@@ -76,6 +76,9 @@ func newPrometheusScraper(logger *zap.Logger, cfg *Config) (scraperhelper.Resour
 	}
 
 	url := cfg.Endpoint
+	if !strings.HasPrefix(url, "http") {
+		url = "http://" + url
+	}
 	if !strings.HasPrefix(cfg.MetricsPath, "/") {
 		url += "/"
 	}

@@ -15,6 +15,7 @@
 package simpleprometheusreceiver
 
 import (
+	"fmt"
 	"net"
 
 	dto "github.com/prometheus/client_model/go"
@@ -108,17 +109,7 @@ func fillResourceMetrics(rm pdata.ResourceMetrics, labels map[string]string) {
 	})
 }
 
-func createMetric(name, description string, dataType pdata.MetricDataType) pdata.Metric {
-	md := pdata.NewMetric()
-	md.SetName(name)
-	md.SetDescription(description)
-	md.SetDataType(dataType)
-	// Units not available in Prometheus metrics
-	// md.SetUnit(unit)
-	return md
-}
-
-func processMetricFamily(mf *dto.MetricFamily, rms pdata.ResourceMetricsSlice, ext extractor) {
+func processMetricFamily(mf *dto.MetricFamily, rms pdata.ResourceMetricsSlice, ext extractor, config *Config) {
 	metricName := mf.GetName()
 	description := mf.GetHelp()
 	dataType := ext.DataType()
@@ -132,7 +123,7 @@ func processMetricFamily(mf *dto.MetricFamily, rms pdata.ResourceMetricsSlice, e
 			continue
 		}
 
-		labels := labelPairsToLabelsMap(m.GetLabel())
+		labels := labelPairsToLabelsMap(m.GetLabel(), config)
 
 		rm := rms.At(idx)
 		fillResourceMetrics(rm, labels)
@@ -152,8 +143,11 @@ func processMetricFamily(mf *dto.MetricFamily, rms pdata.ResourceMetricsSlice, e
 	rms.Resize(oldLen + idx)
 }
 
-func labelPairsToLabelsMap(pairs []*dto.LabelPair) map[string]string {
-	labels := make(map[string]string, len(pairs))
+func labelPairsToLabelsMap(pairs []*dto.LabelPair, config *Config) map[string]string {
+	labels := make(map[string]string, len(pairs) + 2)
+	// Add custom labels
+	labels[model.JobLabel] = fmt.Sprintf("%s/%s", typeStr, config.Endpoint)
+	labels[model.InstanceLabel] = config.Endpoint
 	for _, p := range pairs {
 		if p == nil {
 			continue
@@ -163,7 +157,7 @@ func labelPairsToLabelsMap(pairs []*dto.LabelPair) map[string]string {
 	return labels
 }
 
-func convertMetricFamily(mf *dto.MetricFamily, rms pdata.ResourceMetricsSlice, ts int64) {
+func convertMetricFamily(mf *dto.MetricFamily, rms pdata.ResourceMetricsSlice, ts int64, config *Config) {
 	if mf.Type == nil || mf.Name == nil {
 		return
 	}
@@ -182,5 +176,5 @@ func convertMetricFamily(mf *dto.MetricFamily, rms pdata.ResourceMetricsSlice, t
 		return
 	}
 
-	processMetricFamily(mf, rms, ext)
+	processMetricFamily(mf, rms, ext, config)
 }
