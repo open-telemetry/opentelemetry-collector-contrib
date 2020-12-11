@@ -18,6 +18,8 @@ import (
 	"os"
 
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/valid"
 )
 
 type HostInfo struct {
@@ -42,4 +44,17 @@ func GetHostInfo(logger *zap.Logger) (hostInfo *HostInfo) {
 	}
 
 	return
+}
+
+// GetHostname gets the hostname provided by the system
+func (hi *HostInfo) GetHostname(logger *zap.Logger) string {
+	if hi.FQDN == "" {
+		// Don't report failure since FQDN was just not available
+		return hi.OS
+	} else if err := valid.Hostname(hi.FQDN); err != nil {
+		logger.Info("FQDN is not valid", zap.Error(err))
+		return hi.OS
+	}
+
+	return hi.FQDN
 }
