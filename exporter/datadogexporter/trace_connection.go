@@ -49,8 +49,8 @@ const (
 	traceEdgeRetryInterval time.Duration = 10 * time.Second
 )
 
-// CreateTraceEdgeConnection returns a new TraceEdgeConnection
-func CreateTraceEdgeConnection(rootURL, apiKey string, startInfo component.ApplicationStartInfo) TraceEdgeConnection {
+// createTraceEdgeConnection returns a new TraceEdgeConnection
+func createTraceEdgeConnection(rootURL, apiKey string, startInfo component.ApplicationStartInfo) TraceEdgeConnection {
 
 	return &traceEdgeConnection{
 		traceURL:  rootURL + "/api/v0.2/traces",
