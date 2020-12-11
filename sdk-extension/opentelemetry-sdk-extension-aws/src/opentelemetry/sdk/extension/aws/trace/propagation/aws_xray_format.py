@@ -275,6 +275,7 @@ class AwsXRayFormat(TextMapPropagator):
             carrier, TRACE_HEADER_KEY, trace_header,
         )
 
+    @property
     def fields(self):
         """Returns a set with the fields set in `inject`.
 

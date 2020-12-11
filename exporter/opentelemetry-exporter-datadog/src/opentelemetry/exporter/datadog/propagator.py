@@ -106,6 +106,7 @@ class DatadogFormat(TextMapPropagator):
                 span.context.trace_state[constants.DD_ORIGIN],
             )
 
+    @property
     def fields(self):
         """Returns a set with the fields set in `inject`.
 
