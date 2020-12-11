@@ -84,6 +84,36 @@ func newElasticMetricsExporter(
 	})
 }
 
+func newElasticLogsExporter(params component.ExporterCreateParams, cfg configmodels.Exporter) (component.LogsExporter, error) {
+	exporter, err := newElasticExporter(cfg.(*Config), params.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("cannot configure Elastic APM logs exporter: %v", err)
+	}
+	return exporterhelper.NewLogsExporter(cfg, params.Logger, func(ctx context.Context, input pdata.Logs) (int, error) {
+		var dropped int
+		var errs []error
+
+		var w fastjson.Writer
+		logs := input.ResourceLogs()
+		for i := 0; i < logs.Len(); i++ {
+			log := logs.At(i)
+			instrumentationLibLogs := log.InstrumentationLibraryLogs()
+			for j := 0; j < instrumentationLibLogs.Len(); j++ {
+				item := instrumentationLibLogs.At(j)
+				n, err := elastic.EncodeLogs(item.Logs(), item.InstrumentationLibrary(), &w)
+				if err != nil {
+					errs = append(errs, err)
+				}
+				dropped += n
+			}
+		}
+		if err := exporter.sendEvents(ctx, &w); err != nil {
+			errs = append(errs, err)
+		}
+		return dropped, componenterror.CombineErrors(errs)
+	})
+}
+
 type elasticExporter struct {
 	transport transport.Transport
 	logger    *zap.Logger
