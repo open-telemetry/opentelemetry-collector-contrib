@@ -20,6 +20,7 @@ import (
 	"math/rand"
 	"net"
 	"path"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -575,11 +576,11 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 
 	p.res = res
 
-	var counter1, counter2 int
+	var counter1, counter2 int64
 	defaultExporters := map[string]component.TracesExporter{
 		"127.0.0.1": &mockTracesExporter{
 			ConsumeTracesFn: func(ctx context.Context, td pdata.Traces) error {
-				counter1 += 1
+				atomic.AddInt64(&counter1, 1)
 				// simulate an unreachable backend
 				time.Sleep(10 * time.Second)
 				return nil
@@ -587,7 +588,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 		},
 		"127.0.0.2": &mockTracesExporter{
 			ConsumeTracesFn: func(ctx context.Context, td pdata.Traces) error {
-				counter2 += 1
+				atomic.AddInt64(&counter2, 1)
 				return nil
 			},
 		},
@@ -598,9 +599,13 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	require.NoError(t, err)
 	defer p.Shutdown(context.Background())
 	// ensure using default exporters
+	p.updateLock.Lock()
 	p.exporters = defaultExporters
+	p.updateLock.Unlock()
 	p.res.onChange(func(endpoints []string) {
+		p.updateLock.Lock()
 		p.exporters = defaultExporters
+		p.updateLock.Unlock()
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -610,10 +615,10 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 		ticker := time.NewTicker(2 * time.Millisecond)
 		for {
 			select {
-			case <- ctx.Done():
+			case <-ctx.Done():
 				consumeCh <- 1
 				return
-			case <- ticker.C:
+			case <-ticker.C:
 				go p.ConsumeTraces(ctx, randomTraces())
 			}
 		}
@@ -624,7 +629,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	// unreachable backends.
 	go func() {
 		time.Sleep(50 * time.Millisecond)
-		resolverCh<-1
+		resolverCh <- 1
 	}()
 
 	<-resolverCh
@@ -633,8 +638,8 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 
 	// verify
 	require.Equal(t, []string{"127.0.0.2"}, res.endpoints)
-	require.Greater(t, counter1, 0)
-	require.Greater(t, counter2, 0)
+	require.Greater(t, atomic.LoadInt64(&counter1), int64(0))
+	require.Greater(t, atomic.LoadInt64(&counter2), int64(0))
 }
 
 func randomTraces() pdata.Traces {
@@ -670,9 +675,9 @@ func simpleConfig() *Config {
 }
 
 type mockTracesExporter struct {
-	ConsumeTracesFn func (ctx context.Context, td pdata.Traces) error
-	StartFn func (ctx context.Context, host component.Host) error
-	ShutdownFn func (ctx context.Context) error
+	ConsumeTracesFn func(ctx context.Context, td pdata.Traces) error
+	StartFn         func(ctx context.Context, host component.Host) error
+	ShutdownFn      func(ctx context.Context) error
 }
 
 func (e *mockTracesExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
