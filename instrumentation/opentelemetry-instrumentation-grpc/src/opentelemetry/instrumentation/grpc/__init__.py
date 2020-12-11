@@ -26,7 +26,7 @@ Usage Client
     import grpc
 
     from opentelemetry import trace
-    from opentelemetry.instrumentation.grpc import GrpcInstrumentorClient, client_interceptor
+    from opentelemetry.instrumentation.grpc import GrpcInstrumentorClient
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import (
         ConsoleSpanExporter,
@@ -51,8 +51,9 @@ Usage Client
     metrics.set_meter_provider(MeterProvider())
 
     # Optional - export GRPC specific metrics (latency, bytes in/out, errors) by passing an exporter
-    instrumentor = GrpcInstrumentorClient(exporter=ConsoleMetricsExporter(), interval=10)
-    instrumentor.instrument()
+    instrumentor = GrpcInstrumentorClient().instrument(
+        exporter = ConsoleMetricsExporter(),
+        interval = 10)
 
     def run():
         with grpc.insecure_channel("localhost:50051") as channel:
@@ -175,6 +176,16 @@ class GrpcInstrumentorServer(BaseInstrumentor):
 
 
 class GrpcInstrumentorClient(BaseInstrumentor):
+    """
+    Globally instrument the grpc client
+
+    Usage::
+
+        grpc_client_instrumentor = GrpcInstrumentorClient()
+        grpc.client_instrumentor.instrument()
+
+    """
+
     def _instrument(self, **kwargs):
         exporter = kwargs.get("exporter", None)
         interval = kwargs.get("interval", 30)
