@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"testing"
 
+	"go.uber.org/zap"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -115,7 +116,7 @@ func Test_ecsMetadata_returnsError(t *testing.T) {
 		},
 	}
 
-	c := metadataClient{client: client}
+	c := metadataClient{client: client, logger: zap.NewNop()}
 	fetchResp, err := c.fetchContainer("url")
 
 	assert.Nil(t, fetchResp)

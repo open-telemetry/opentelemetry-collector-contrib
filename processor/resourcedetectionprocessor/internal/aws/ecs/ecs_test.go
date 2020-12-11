@@ -19,9 +19,10 @@ import (
 	"os"
 	"testing"
 
+	"go.uber.org/zap"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
-
+	"go.opentelemetry.io/collector/component"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
@@ -31,11 +32,11 @@ type mockMetadataProvider struct {
 
 var _ metadataProvider = (*mockMetadataProvider)(nil)
 
-func (md *mockMetadataProvider) fetchTask(tmde string) (*TaskMetaData, error) {
+func (md *mockMetadataProvider) fetchTask(tmde string) (*TaskMetadata, error) {
 	c := createTestContainer(md.isV4)
 	c.DockerID = "05281997" // Simulate one "application" and one "collector" container
 	cs := []Container{createTestContainer(md.isV4), c}
-	tmd := &TaskMetaData{
+	tmd := &TaskMetadata{
 		Cluster:          "my-cluster",
 		TaskARN:          "arn:aws:ecs:us-west-2:123456789123:task/123",
 		Family:           "family",
@@ -56,7 +57,7 @@ func (md *mockMetadataProvider) fetchContainer(tmde string) (*Container, error) 
 }
 
 func Test_ecsNewDetector(t *testing.T) {
-	d, err := NewDetector()
+	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()})
 
 	assert.NotNil(t, d)
 	assert.Nil(t, err)
@@ -64,7 +65,7 @@ func Test_ecsNewDetector(t *testing.T) {
 
 func Test_detectorReturnsIfNoEnvVars(t *testing.T) {
 	os.Clearenv()
-	d, _ := NewDetector()
+	d, _ := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()})
 	res, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)

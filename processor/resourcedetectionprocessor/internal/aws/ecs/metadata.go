@@ -60,7 +60,7 @@ var _ metadataProvider = &metadataClient{}
 
 // Retrieves the metadata for a task running on Amazon ECS
 func (md *metadataClient) fetchTask(tmde string) (*TaskMetadata, error) {
-	ret, err := fetch(tmde+"/task", md, true)
+	ret, err := fetch(md.logger, tmde+"/task", md, true)
 	if ret == nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (md *metadataClient) fetchTask(tmde string) (*TaskMetadata, error) {
 
 // Retrieves the metadata for the Amazon ECS Container the collector is running on
 func (md *metadataClient) fetchContainer(tmde string) (*Container, error) {
-	ret, err := fetch(tmde, md, false)
+	ret, err := fetch(md.logger, tmde, md, false)
 	if ret == nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (md *metadataClient) fetchContainer(tmde string) (*Container, error) {
 	return ret.(*Container), err
 }
 
-func fetch(tmde string, md *metadataClient, task bool) (tmdeResp interface{}, err error) {
+func fetch(logger *zap.Logger, tmde string, md *metadataClient, task bool) (tmdeResp interface{}, err error) {
 	// TODO(jbd): Use the zap logger instead of log.Print*.
 	req, err := http.NewRequest(http.MethodGet, tmde, nil)
 
