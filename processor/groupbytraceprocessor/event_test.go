@@ -127,10 +127,10 @@ func TestOnTraceReleasedAsync(t *testing.T) {
 	}
 
 	em.fire(event{
-		typ: traceReleased,
+		typ:     traceReleased,
 		payload: make([]pdata.ResourceSpans, 0),
 	}, event{
-		typ: traceReceived,
+		typ:     traceReceived,
 		payload: pdata.NewTraces(),
 	})
 
