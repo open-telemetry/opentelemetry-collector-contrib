@@ -117,7 +117,7 @@ func mapIntMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.Int
 			// if dx < 0, we assume there was a reset, thus we save the point
 			// but don't export it (it's the first one so we can't do a delta)
 			if dx >= 0 {
-				ms = append(ms, metrics.NewRate(name, uint64(p.Timestamp()), dx/dt, tags))
+				ms = append(ms, metrics.NewRate(name, ts, dx/dt, tags))
 			}
 
 		}
@@ -158,7 +158,7 @@ func mapDoubleMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.
 			// if dx < 0, we assume there was a reset, thus we save the point
 			// but don't export it (it's the first one so we can't do a delta)
 			if dx >= 0 {
-				ms = append(ms, metrics.NewRate(name, uint64(p.Timestamp()), dx/dt, tags))
+				ms = append(ms, metrics.NewRate(name, ts, dx/dt, tags))
 			}
 
 		}
