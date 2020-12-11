@@ -162,9 +162,14 @@ func (em *eventMachine) handleEvent(e event) {
 			return
 		}
 
-		em.handleEventWithObservability("onTraceReleased", func() error {
-			return em.onTraceReleased(payload)
-		})
+		// onTraceReleased usually calls next consumers - shouldn't block here.
+		// moreover, common observability doesn't need to be applied to releasing,
+		// because last phase does not affect this processor anymore.
+		go func() {
+			if err := em.onTraceReleased(payload); err != nil {
+				em.logger.Error("onTraceReleased failed", zap.Error(err))
+			}
+		}()
 	case traceRemoved:
 		if em.onTraceRemoved == nil {
 			em.logger.Debug("onTraceRemoved not set, skipping event")
