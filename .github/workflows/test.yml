@@ -17,6 +17,7 @@ jobs:
       py37: 3.7
       py38: 3.8
       pypy3: pypy3
+      RUN_MATRIX_COMBINATION: ${{ matrix.python-version }}-${{ matrix.package }}-${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false  # ensures the entire test matrix is run, even if one permutation fails
@@ -53,9 +54,33 @@ jobs:
         uses: actions/cache@v2
         with:
           path: .tox
-          key: tox-cache-${{ matrix.python-version }}-${{ matrix.package }}-${{ matrix.os }}-${{ hashFiles('tox.ini', 'dev-requirements.txt') }}
+          key: tox-cache-${{ env.RUN_MATRIX_COMBINATION }}-${{ hashFiles('tox.ini', 'dev-requirements.txt') }}
       - name: run tox
-        run: tox -f ${{ matrix.python-version }}-${{ matrix.package }}
+        run: tox -f ${{ matrix.python-version }}-${{ matrix.package }} -- --benchmark-json=${{ env.RUN_MATRIX_COMBINATION }}-benchmark.json
+      - name: Find and merge benchmarks
+        # TODO: Add at least one benchmark to every package type to remove this
+        if: matrix.package == 'sdkextension'
+        run: >-
+          jq -s '.[0].benchmarks = ([.[].benchmarks] | add)
+          | if .[0].benchmarks == null then null else .[0] end'
+          **/**/tests/*${{ matrix.package }}*-benchmark.json > output.json
+      - name: Report on benchmark results
+        # TODO: Add at least one benchmark to every package type to remove this
+        if: matrix.package == 'sdkextension'
+        uses: rhysd/github-action-benchmark@v1
+        with:
+          name: OpenTelemetry Python Benchmarks - Python ${{ env[matrix.python-version ]}} - ${{ matrix.package-group }}
+          tool: pytest
+          output-file-path: output.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Alert with a commit comment on possible performance regression
+          alert-threshold: 200%
+          comment-always: true
+          fail-on-alert: true
+          # Make a commit on `gh-pages` with benchmarks from previous step
+          auto-push: ${{ github.ref == 'refs/heads/master' }}
+          gh-pages-branch: master
+          benchmark-data-dir-path: benchmarks
   misc:
     strategy:
       fail-fast: false
