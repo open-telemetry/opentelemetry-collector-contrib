@@ -75,7 +75,7 @@ def collect_request_attributes(scope):
         "component": scope["type"],
         "http.scheme": scope.get("scheme"),
         "http.host": server_host,
-        "host.port": port,
+        "net.host.port": port,
         "http.flavor": scope.get("http_version"),
         "http.target": scope.get("path"),
         "http.url": http_url,

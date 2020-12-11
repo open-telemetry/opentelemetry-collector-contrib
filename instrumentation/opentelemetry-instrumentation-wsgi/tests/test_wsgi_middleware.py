@@ -109,7 +109,7 @@ class TestWsgiApplication(WsgiTestBase):
             "component": "http",
             "http.server_name": "127.0.0.1",
             "http.scheme": "http",
-            "host.port": 80,
+            "net.host.port": 80,
             "http.host": "127.0.0.1",
             "http.flavor": "1.0",
             "http.url": "http://127.0.0.1/",
@@ -219,7 +219,7 @@ class TestWsgiAttributes(unittest.TestCase):
                 "http.method": "GET",
                 "http.host": "127.0.0.1",
                 "http.url": "http://127.0.0.1/?foo=bar",
-                "host.port": 80,
+                "net.host.port": 80,
                 "http.scheme": "http",
                 "http.server_name": "127.0.0.1",
                 "http.flavor": "1.0",
@@ -230,7 +230,8 @@ class TestWsgiAttributes(unittest.TestCase):
         parts = urlsplit(expected_url)
         expected = {
             "http.scheme": parts.scheme,
-            "host.port": parts.port or (80 if parts.scheme == "http" else 443),
+            "net.host.port": parts.port
+            or (80 if parts.scheme == "http" else 443),
             "http.server_name": parts.hostname,  # Not true in the general case, but for all tests.
         }
         if raw:
@@ -296,7 +297,7 @@ class TestWsgiAttributes(unittest.TestCase):
         expected = {
             "http.host": "127.0.0.1:8080",
             "http.url": "http://127.0.0.1:8080/",
-            "host.port": 80,
+            "net.host.port": 80,
         }
         self.assertGreaterEqual(
             otel_wsgi.collect_request_attributes(self.environ).items(),

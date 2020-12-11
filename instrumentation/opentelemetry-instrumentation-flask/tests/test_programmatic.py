@@ -32,7 +32,7 @@ def expected_attributes(override_attributes):
         "http.method": "GET",
         "http.server_name": "localhost",
         "http.scheme": "http",
-        "host.port": 80,
+        "net.host.port": 80,
         "http.host": "localhost",
         "http.target": "/",
         "http.flavor": "1.1",

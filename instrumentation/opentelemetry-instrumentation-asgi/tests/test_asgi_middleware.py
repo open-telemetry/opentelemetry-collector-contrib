@@ -137,7 +137,7 @@ class TestAsgiApplication(AsgiTestBase):
                     "component": "http",
                     "http.method": "GET",
                     "http.scheme": "http",
-                    "host.port": 80,
+                    "net.host.port": 80,
                     "http.host": "127.0.0.1",
                     "http.flavor": "1.0",
                     "http.target": "/",
@@ -218,7 +218,7 @@ class TestAsgiApplication(AsgiTestBase):
             expected[3]["attributes"].update(
                 {
                     "http.host": "0.0.0.0",
-                    "host.port": 80,
+                    "net.host.port": 80,
                     "http.url": "http://0.0.0.0/",
                 }
             )
@@ -326,7 +326,7 @@ class TestAsgiAttributes(unittest.TestCase):
                 "http.host": "127.0.0.1",
                 "http.target": "/",
                 "http.url": "http://127.0.0.1/?foo=bar",
-                "host.port": 80,
+                "net.host.port": 80,
                 "http.scheme": "http",
                 "http.server_name": "test",
                 "http.flavor": "1.0",

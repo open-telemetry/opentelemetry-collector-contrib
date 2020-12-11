@@ -112,7 +112,7 @@ def collect_request_attributes(environ):
 
     host_port = environ.get("SERVER_PORT")
     if host_port is not None:
-        result.update({"host.port": int(host_port)})
+        result.update({"net.host.port": int(host_port)})
 
     setifnotnone(result, "http.host", environ.get("HTTP_HOST"))
     target = environ.get("RAW_URI")
