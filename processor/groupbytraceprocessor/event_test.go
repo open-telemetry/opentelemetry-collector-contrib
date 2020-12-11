@@ -16,6 +16,7 @@ package groupbytraceprocessor
 
 import (
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -104,6 +105,38 @@ func TestEventCallback(t *testing.T) {
 			wg.Wait()
 		})
 	}
+}
+
+func TestOnTraceReleasedAsync(t *testing.T) {
+	waitCh := make(chan struct{})
+	defer close(waitCh)
+
+	em := newEventMachine(zap.NewNop(), 10)
+	em.onTraceReleased = func([]pdata.ResourceSpans) error {
+		<-waitCh
+		return nil
+	}
+
+	em.startInBackground()
+	defer em.shutdown()
+
+	var batchReceived int32
+	em.onBatchReceived = func(traces pdata.Traces) error {
+		atomic.StoreInt32(&batchReceived, 1)
+		return nil
+	}
+
+	em.fire(event{
+		typ: traceReleased,
+		payload: make([]pdata.ResourceSpans, 0),
+	}, event{
+		typ: traceReceived,
+		payload: pdata.NewTraces(),
+	})
+
+	time.Sleep(20 * time.Millisecond)
+	assert.EqualValues(t, 1, atomic.LoadInt32(&batchReceived),
+		"batch should be received even with blocked onTraceReleased")
 }
 
 func TestEventCallbackNotSet(t *testing.T) {
