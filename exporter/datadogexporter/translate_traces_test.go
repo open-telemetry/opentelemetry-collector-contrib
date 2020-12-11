@@ -113,12 +113,16 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	return rs
 }
 
+func newSublayerCalculator() *sublayerCalculator {
+	return &sublayerCalculator{sc: stats.NewSublayerCalculator()}
+}
+
 func TestConvertToDatadogTd(t *testing.T) {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
-	calculator := stats.NewSublayerCalculator()
+	calculator := newSublayerCalculator()
 
-	outputTraces, err := ConvertToDatadogTd(traces, calculator, &config.Config{})
+	outputTraces, err := convertToDatadogTd(traces, calculator, &config.Config{})
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(outputTraces))
@@ -126,16 +130,16 @@ func TestConvertToDatadogTd(t *testing.T) {
 
 func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 	traces := pdata.NewTraces()
-	calculator := stats.NewSublayerCalculator()
+	calculator := newSublayerCalculator()
 
-	outputTraces, err := ConvertToDatadogTd(traces, calculator, &config.Config{})
+	outputTraces, err := convertToDatadogTd(traces, calculator, &config.Config{})
 
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(outputTraces))
 }
 
 func TestObfuscation(t *testing.T) {
-	calculator := stats.NewSublayerCalculator()
+	calculator := newSublayerCalculator()
 
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
@@ -157,22 +161,22 @@ func TestObfuscation(t *testing.T) {
 	// of them is currently not supported.
 	span.Attributes().InsertString("testinfo?=123", "http.route")
 
-	outputTraces, err := ConvertToDatadogTd(traces, calculator, &config.Config{})
+	outputTraces, err := convertToDatadogTd(traces, calculator, &config.Config{})
 
 	assert.NoError(t, err)
 
-	aggregatedTraces := AggregateTracePayloadsByEnv(outputTraces)
+	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
 
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
 
-	ObfuscatePayload(obfuscator, aggregatedTraces)
+	obfuscatePayload(obfuscator, aggregatedTraces)
 
 	assert.Equal(t, 1, len(aggregatedTraces))
 }
 
 func TestBasicTracesTranslation(t *testing.T) {
 	hostname := "testhostname"
-	calculator := stats.NewSublayerCalculator()
+	calculator := newSublayerCalculator()
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -239,7 +243,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 
 func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	hostname := "testhostname"
-	calculator := stats.NewSublayerCalculator()
+	calculator := newSublayerCalculator()
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -290,7 +294,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 
 func TestTracesTranslationOkStatus(t *testing.T) {
 	hostname := "testhostname"
-	calculator := stats.NewSublayerCalculator()
+	calculator := newSublayerCalculator()
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -342,7 +346,7 @@ func TestTracesTranslationOkStatus(t *testing.T) {
 // ensure that the datadog span uses the configured unified service tags
 func TestTracesTranslationConfig(t *testing.T) {
 	hostname := "testhostname"
-	calculator := stats.NewSublayerCalculator()
+	calculator := newSublayerCalculator()
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -392,7 +396,7 @@ func TestTracesTranslationConfig(t *testing.T) {
 // ensure that the translation returns early if no resource instrumentation library spans
 func TestTracesTranslationNoIls(t *testing.T) {
 	hostname := "testhostname"
-	calculator := stats.NewSublayerCalculator()
+	calculator := newSublayerCalculator()
 
 	rs := pdata.NewResourceSpans()
 
@@ -541,7 +545,7 @@ func TestTracePayloadAggr(t *testing.T) {
 	originalPayload = append(originalPayload, &payloadOne)
 	originalPayload = append(originalPayload, &payloadTwo)
 
-	updatedPayloads := AggregateTracePayloadsByEnv(originalPayload)
+	updatedPayloads := aggregateTracePayloadsByEnv(originalPayload)
 
 	assert.Equal(t, 2, len(originalPayload))
 	assert.Equal(t, 1, len(updatedPayloads))
@@ -567,7 +571,7 @@ func TestTracePayloadAggr(t *testing.T) {
 	originalPayloadDifferentEnv = append(originalPayloadDifferentEnv, &payloadThree)
 	originalPayloadDifferentEnv = append(originalPayloadDifferentEnv, &payloadFour)
 
-	updatedPayloadsDifferentEnv := AggregateTracePayloadsByEnv(originalPayloadDifferentEnv)
+	updatedPayloadsDifferentEnv := aggregateTracePayloadsByEnv(originalPayloadDifferentEnv)
 
 	assert.Equal(t, 2, len(originalPayloadDifferentEnv))
 	assert.Equal(t, 2, len(updatedPayloadsDifferentEnv))
