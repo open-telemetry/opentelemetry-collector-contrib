@@ -662,6 +662,7 @@ func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 }
 
 type mockProcessor struct {
+	mutex    sync.Mutex
 	onTraces func(context.Context, pdata.Traces) error
 }
 
@@ -669,6 +670,8 @@ var _ component.TracesProcessor = (*mockProcessor)(nil)
 
 func (m *mockProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	if m.onTraces != nil {
+		m.mutex.Lock()
+		defer m.mutex.Unlock()
 		return m.onTraces(ctx, td)
 	}
 	return nil
