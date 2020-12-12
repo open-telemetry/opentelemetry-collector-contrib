@@ -535,7 +535,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
 	require.NoError(t, err)
 
-	resolverCh := make(chan int)
+	resolverCh := make(chan struct{}, 1)
 	counter := 0
 	resolve := [][]net.IPAddr{
 		{
@@ -553,13 +553,16 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 				counter++
 			}()
 
-			if counter > 2 {
-				// stop as soon as rolling updates end
-				resolverCh <- 1
-				return resolve[2], nil
+			if counter <= 2 {
+				return resolve[counter], nil
 			}
 
-			return resolve[counter], nil
+			if counter == 3 {
+				// stop as soon as rolling updates end
+				resolverCh <- struct{}{}
+			}
+
+			return resolve[2], nil
 		},
 	}
 	res.resInterval = 10 * time.Millisecond
@@ -610,13 +613,13 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	// keep consuming traces every 2ms
-	consumeCh := make(chan int)
+	consumeCh := make(chan struct{})
 	go func(ctx context.Context) {
 		ticker := time.NewTicker(2 * time.Millisecond)
 		for {
 			select {
 			case <-ctx.Done():
-				consumeCh <- 1
+				consumeCh <- struct{}{}
 				return
 			case <-ticker.C:
 				go p.ConsumeTraces(ctx, randomTraces())
@@ -629,7 +632,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	// unreachable backends.
 	go func() {
 		time.Sleep(50 * time.Millisecond)
-		resolverCh <- 1
+		resolverCh <- struct{}{}
 	}()
 
 	<-resolverCh
