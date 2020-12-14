@@ -12,40 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package signalfxcorrelationexporter
+package correlation
 
 import (
-	"context"
+	"errors"
+	"net/url"
 	"time"
 
 	"github.com/signalfx/signalfx-agent/pkg/apm/correlations"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "signalfx_correlation"
-)
-
-// NewFactory creates a factory for signalfx_correlation exporter.
-func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
-		typeStr,
-		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter))
-}
-
-func createDefaultConfig() configmodels.Exporter {
+// DefaultConfig returns default configuration correlation values.
+func DefaultConfig() *Config {
 	return &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 5 * time.Second},
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
+		HTTPClientSettings:  confighttp.HTTPClientSettings{Timeout: 5 * time.Second},
 		StaleServiceTimeout: 5 * time.Minute,
 		HostTranslations: map[string]string{
 			conventions.AttributeHostName: "host",
@@ -65,11 +47,31 @@ func createDefaultConfig() configmodels.Exporter {
 	}
 }
 
-func createTraceExporter(
-	_ context.Context,
-	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
-) (component.TracesExporter, error) {
-	eCfg := cfg.(*Config)
-	return newTraceExporter(eCfg, params)
+// Config defines configuration for correlation via traces.
+type Config struct {
+	confighttp.HTTPClientSettings `mapstructure:",squash"`
+	correlations.Config           `mapstructure:",squash"`
+
+	// How long to wait after a trace span's service name is last seen before
+	// uncorrelating that service.
+	StaleServiceTimeout time.Duration `mapstructure:"stale_service_timeout"`
+	// SyncAttributes is a key of the span attribute name to sync to the dimension as the value.
+	SyncAttributes map[string]string `mapstructure:"sync_attributes"`
+
+	// HostTranslations is a map where the key is the host attribute name to rename to the value.
+	// TODO: Remove once translations are removed from signalfx exporter.
+	HostTranslations map[string]string `mapstructure:"host_translations"`
+}
+
+func (c *Config) validate() error {
+	if c.Endpoint == "" {
+		return errors.New("`correlation.endpoint` not specified")
+	}
+
+	_, err := url.Parse(c.Endpoint)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

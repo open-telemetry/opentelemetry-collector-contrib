@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package signalfxcorrelationexporter
+package correlation
 
 import (
 	"context"
@@ -37,6 +37,7 @@ type Tracker struct {
 	params       component.ExporterCreateParams
 	traceTracker *tracetracker.ActiveServiceTracker
 	correlation  *correlationContext
+	accessToken  string
 }
 
 type correlationContext struct {
@@ -45,15 +46,16 @@ type correlationContext struct {
 }
 
 // NewTracker creates a new tracker instance for correlation.
-func NewTracker(cfg *Config, params component.ExporterCreateParams) *Tracker {
+func NewTracker(cfg *Config, accessToken string, params component.ExporterCreateParams) *Tracker {
 	return &Tracker{
-		log:    params.Logger,
-		cfg:    cfg,
-		params: params,
+		log:         params.Logger,
+		cfg:         cfg,
+		params:      params,
+		accessToken: accessToken,
 	}
 }
 
-func newCorrelationClient(cfg *Config, params component.ExporterCreateParams) (
+func newCorrelationClient(cfg *Config, accessToken string, params component.ExporterCreateParams) (
 	*correlationContext, error,
 ) {
 	corrURL, err := url.Parse(cfg.Endpoint)
@@ -70,7 +72,7 @@ func newCorrelationClient(cfg *Config, params component.ExporterCreateParams) (
 
 	client, err := correlations.NewCorrelationClient(newZapShim(params.Logger), ctx, httpClient, correlations.ClientConfig{
 		Config:      cfg.Config,
-		AccessToken: cfg.AccessToken,
+		AccessToken: accessToken,
 		URL:         corrURL,
 	})
 
@@ -87,7 +89,7 @@ func newCorrelationClient(cfg *Config, params component.ExporterCreateParams) (
 
 // AddSpans processes the provided spans to correlate the services and environment observed
 // to the resources (host, pods, etc.) emitting the spans.
-func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) {
+func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) (dropped int, err error) {
 	if cor == nil || traces.ResourceSpans().Len() == 0 {
 		return
 	}
@@ -104,7 +106,7 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) {
 		}
 
 		var err error
-		cor.correlation, err = newCorrelationClient(cor.cfg, cor.params)
+		cor.correlation, err = newCorrelationClient(cor.cfg, cor.accessToken, cor.params)
 		if err != nil {
 			cor.log.Error("Failed to create correlation client", zap.Error(err))
 			return
@@ -127,24 +129,27 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) {
 			false,
 			nil,
 			cor.cfg.SyncAttributes)
-		cor.Start()
+		cor.start()
 	})
 
 	if cor.traceTracker != nil {
 		cor.traceTracker.AddSpansGeneric(ctx, spanListWrap{traces.ResourceSpans()})
 	}
+
+	return
 }
 
 // Start correlation tracking.
-func (cor *Tracker) Start() {
+func (cor *Tracker) start() {
 	if cor != nil && cor.correlation != nil {
 		cor.correlation.Start()
 	}
 }
 
 // Shutdown correlation tracking.
-func (cor *Tracker) Shutdown() {
+func (cor *Tracker) Shutdown(_ context.Context) error {
 	if cor != nil && cor.correlation != nil {
 		cor.correlation.cancel()
 	}
+	return nil
 }
