@@ -25,7 +25,7 @@ import (
 
 type memoryStorage struct {
 	sync.RWMutex
-	content                   map[string][]pdata.ResourceSpans
+	content                   map[[16]byte][]pdata.ResourceSpans
 	stopped                   bool
 	stoppedLock               sync.RWMutex
 	metricsCollectionInterval time.Duration
@@ -35,34 +35,33 @@ var _ storage = (*memoryStorage)(nil)
 
 func newMemoryStorage() *memoryStorage {
 	return &memoryStorage{
-		content:                   make(map[string][]pdata.ResourceSpans),
+		content:                   make(map[[16]byte][]pdata.ResourceSpans),
 		metricsCollectionInterval: time.Second,
 	}
 }
 
 func (st *memoryStorage) createOrAppend(traceID pdata.TraceID, rs pdata.ResourceSpans) error {
-	sTraceID := traceID.HexString()
+	bTraceID := traceID.Bytes()
 
 	st.Lock()
 	defer st.Unlock()
 
-	if _, ok := st.content[sTraceID]; !ok {
-		st.content[sTraceID] = []pdata.ResourceSpans{}
-	}
+	content, _ := st.content[bTraceID]
 
 	newRS := pdata.NewResourceSpans()
 	rs.CopyTo(newRS)
-	st.content[sTraceID] = append(st.content[sTraceID], newRS)
+	content = append(content, newRS)
+	st.content[bTraceID] = content
 
 	return nil
 }
 func (st *memoryStorage) get(traceID pdata.TraceID) ([]pdata.ResourceSpans, error) {
-	sTraceID := traceID.HexString()
+	bTraceID := traceID.Bytes()
 
 	st.RLock()
 	defer st.RUnlock()
 
-	rss, ok := st.content[sTraceID]
+	rss, ok := st.content[bTraceID]
 	if !ok {
 		return nil, nil
 	}
@@ -80,13 +79,13 @@ func (st *memoryStorage) get(traceID pdata.TraceID) ([]pdata.ResourceSpans, erro
 // delete will return a reference to a ResourceSpans. Changes to the returned object may not be applied
 // to the version in the storage.
 func (st *memoryStorage) delete(traceID pdata.TraceID) ([]pdata.ResourceSpans, error) {
-	sTraceID := traceID.HexString()
+	bTraceID := traceID.Bytes()
 
 	st.Lock()
 	defer st.Unlock()
 
-	defer delete(st.content, sTraceID)
-	return st.content[sTraceID], nil
+	defer delete(st.content, bTraceID)
+	return st.content[bTraceID], nil
 }
 
 func (st *memoryStorage) start() error {
