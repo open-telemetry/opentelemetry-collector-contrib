@@ -256,6 +256,30 @@ func TestMapIntMonotonicWithReboot(t *testing.T) {
 	)
 }
 
+func TestMapIntMonotonicOutOfOrder(t *testing.T) {
+	stamps := []int{1, 0, 2, 3}
+	values := []int64{0, 1, 2, 3}
+
+	metricName := "metric.example"
+	slice := pdata.NewIntDataPointSlice()
+	slice.Resize(len(values))
+
+	for i, val := range values {
+		point := slice.At(i)
+		point.SetTimestamp(seconds(stamps[i]))
+		point.SetValue(val)
+	}
+
+	prevPts := newTTLMap()
+	assert.ElementsMatch(t,
+		mapIntMonotonicMetrics(metricName, prevPts, slice),
+		[]datadog.Metric{
+			metrics.NewRate(metricName, uint64(seconds(2)), 2, []string{}),
+			metrics.NewRate(metricName, uint64(seconds(3)), 1, []string{}),
+		},
+	)
+}
+
 func TestMapDoubleMonotonicMetrics(t *testing.T) {
 	deltas := []float64{1, 2, 200, 3, 7, 0}
 	cumulative := make([]float64, len(deltas)+1)
@@ -349,6 +373,30 @@ func TestMapDoubleMonotonicWithReboot(t *testing.T) {
 		[]datadog.Metric{
 			metrics.NewRate(metricName, uint64(seconds(1)), 30, []string{}),
 			metrics.NewRate(metricName, uint64(seconds(3)), 20, []string{}),
+		},
+	)
+}
+
+func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
+	stamps := []int{1, 0, 2, 3}
+	values := []float64{0, 1, 2, 3}
+
+	metricName := "metric.example"
+	slice := pdata.NewDoubleDataPointSlice()
+	slice.Resize(len(values))
+
+	for i, val := range values {
+		point := slice.At(i)
+		point.SetTimestamp(seconds(stamps[i]))
+		point.SetValue(val)
+	}
+
+	prevPts := newTTLMap()
+	assert.ElementsMatch(t,
+		mapDoubleMonotonicMetrics(metricName, prevPts, slice),
+		[]datadog.Metric{
+			metrics.NewRate(metricName, uint64(seconds(2)), 2, []string{}),
+			metrics.NewRate(metricName, uint64(seconds(3)), 1, []string{}),
 		},
 	)
 }

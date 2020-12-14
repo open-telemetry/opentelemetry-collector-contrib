@@ -104,15 +104,15 @@ func mapIntMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.Int
 		if c := prevPts.Get(key); c != nil {
 			cnt := c.(intCounter)
 
-			// We calculate the time-normalized delta
-			dx := float64(p.Value() - cnt.value)
-			dt := float64(ts-cnt.ts) / 1e9
-
-			if dt <= 0 {
+			if cnt.ts > ts {
 				// We were given a point older than the one in memory so we drop it
 				// We keep the existing point in memory since it is the most recent
 				continue
 			}
+
+			// We calculate the time-normalized delta
+			dx := float64(p.Value() - cnt.value)
+			dt := float64(ts-cnt.ts) / 1e9
 
 			// if dx < 0, we assume there was a reset, thus we save the point
 			// but don't export it (it's the first one so we can't do a delta)
@@ -145,15 +145,15 @@ func mapDoubleMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.
 		if c := prevPts.Get(key); c != nil {
 			cnt := c.(doubleCounter)
 
-			// We calculate the time-normalized delta
-			dx := p.Value() - cnt.value
-			dt := float64(ts-cnt.ts) / 1e9
-
-			if dt <= 0 {
+			if cnt.ts > ts {
 				// We were given a point older than the one in memory so we drop it
 				// We keep the existing point in memory since it is the most recent
 				continue
 			}
+
+			// We calculate the time-normalized delta
+			dx := p.Value() - cnt.value
+			dt := float64(ts-cnt.ts) / 1e9
 
 			// if dx < 0, we assume there was a reset, thus we save the point
 			// but don't export it (it's the first one so we can't do a delta)
