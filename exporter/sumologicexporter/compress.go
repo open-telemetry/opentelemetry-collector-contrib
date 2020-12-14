@@ -44,7 +44,7 @@ func newCompressor(format CompressEncodingType) (compressor, error) {
 	case GZIPCompression:
 		writer = gzip.NewWriter(ioutil.Discard)
 	case DeflateCompression:
-		writer, err = flate.NewWriter(ioutil.Discard, flate.BestCompression)
+		writer, err = flate.NewWriter(ioutil.Discard, flate.BestSpeed)
 		if err != nil {
 			return compressor{}, err
 		}
