@@ -21,15 +21,18 @@ import (
 	"testing"
 	"time"
 
+	apmcorrelation "github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -92,6 +95,28 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		DeltaTranslationTTL: 3600,
+		Correlation: &correlation.Config{
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint: "",
+				Timeout:  5 * time.Second,
+			},
+			StaleServiceTimeout: 5 * time.Minute,
+			SyncAttributes: map[string]string{
+				"k8s.pod.uid":  "k8s.pod.uid",
+				"container.id": "container.id",
+			},
+			Config: apmcorrelation.Config{
+				MaxRequests:     20,
+				MaxBuffered:     10_000,
+				MaxRetries:      2,
+				LogUpdates:      false,
+				RetryDelay:      30 * time.Second,
+				CleanupInterval: 1 * time.Minute,
+			},
+			HostTranslations: map[string]string{
+				"host.name": "host",
+			},
+		},
 	}
 	assert.Equal(t, &expectedCfg, e1)
 

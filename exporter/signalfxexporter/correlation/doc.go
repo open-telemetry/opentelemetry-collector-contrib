@@ -12,5 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package signalfxcorrelationexporter performs span to metric correlation for SignalFx.
-package signalfxcorrelationexporter
+// Package correlation performs span to metric correlation for SignalFx.
+package correlation
