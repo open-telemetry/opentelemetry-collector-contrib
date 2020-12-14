@@ -17,10 +17,9 @@ package sumologicexporter
 import (
 	"bytes"
 	"compress/flate"
+	"compress/gzip"
 	"io"
 	"io/ioutil"
-
-	gzip "github.com/klauspost/pgzip"
 )
 
 type compressor struct {
