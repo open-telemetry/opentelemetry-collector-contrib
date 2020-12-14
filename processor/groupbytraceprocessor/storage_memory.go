@@ -46,7 +46,8 @@ func (st *memoryStorage) createOrAppend(traceID pdata.TraceID, rs pdata.Resource
 	st.Lock()
 	defer st.Unlock()
 
-	content, _ := st.content[bTraceID]
+	// getting zero value is fine
+	content := st.content[bTraceID]
 
 	newRS := pdata.NewResourceSpans()
 	rs.CopyTo(newRS)
