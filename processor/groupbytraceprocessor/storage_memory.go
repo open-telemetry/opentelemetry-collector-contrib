@@ -59,9 +59,8 @@ func (st *memoryStorage) get(traceID pdata.TraceID) ([]pdata.ResourceSpans, erro
 	bTraceID := traceID.Bytes()
 
 	st.RLock()
-	defer st.RUnlock()
-
 	rss, ok := st.content[bTraceID]
+	st.RUnlock()
 	if !ok {
 		return nil, nil
 	}
