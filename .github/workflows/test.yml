@@ -58,28 +58,27 @@ jobs:
       - name: run tox
         run: tox -f ${{ matrix.python-version }}-${{ matrix.package }} -- --benchmark-json=${{ env.RUN_MATRIX_COMBINATION }}-benchmark.json
       - name: Find and merge benchmarks
-        # TODO: Add at least one benchmark to every package type to remove this
+        # TODO: Add at least one benchmark to every package type to remove this (#249)
         if: matrix.package == 'sdkextension'
         run: >-
           jq -s '.[0].benchmarks = ([.[].benchmarks] | add)
           | if .[0].benchmarks == null then null else .[0] end'
           **/**/tests/*${{ matrix.package }}*-benchmark.json > output.json
       - name: Report on benchmark results
-        # TODO: Add at least one benchmark to every package type to remove this
+        # TODO: Add at least one benchmark to every package type to remove this (#249)
         if: matrix.package == 'sdkextension'
         uses: rhysd/github-action-benchmark@v1
         with:
-          name: OpenTelemetry Python Benchmarks - Python ${{ env[matrix.python-version ]}} - ${{ matrix.package-group }}
+          name: OpenTelemetry Python Benchmarks - Python ${{ env[matrix.python-version ]}} - ${{ matrix.package }}
           tool: pytest
           output-file-path: output.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           # Alert with a commit comment on possible performance regression
           alert-threshold: 200%
-          comment-always: true
           fail-on-alert: true
           # Make a commit on `gh-pages` with benchmarks from previous step
           auto-push: ${{ github.ref == 'refs/heads/master' }}
-          gh-pages-branch: master
+          gh-pages-branch: gh-pages
           benchmark-data-dir-path: benchmarks
   misc:
     strategy:

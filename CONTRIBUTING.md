@@ -51,7 +51,7 @@ for more detail on available tox commands.
 
 ### Benchmarks
 
-Performance progression of benchmarks for packages distributed by OpenTelemetry Python can be viewed as a [graph of throughput vs commit history](https://open-telemetry.github.io/opentelemetry-python-contrib/benchmarks/index.html). From this page, you can download a JSON file with the performance results.
+Performance progression of benchmarks for packages distributed by OpenTelemetry Python can be viewed as a [graph of throughput vs commit history](https://opentelemetry-python-contrib.readthedocs.io/en/latest/performance/benchmarks.html). From the linked page, you can download a JSON file with the performance results.
 
 Running the `tox` tests also runs the performance tests if any are available. Benchmarking tests are done with `pytest-benchmark` and they output a table with results to the console.
 
