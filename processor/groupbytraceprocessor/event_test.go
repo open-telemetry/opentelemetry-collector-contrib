@@ -106,38 +106,6 @@ func TestEventCallback(t *testing.T) {
 	}
 }
 
-func TestOnTraceReleasedAsync(t *testing.T) {
-	waitCh := make(chan struct{})
-	defer close(waitCh)
-
-	em := newEventMachine(zap.NewNop(), 10)
-	em.onTraceReleased = func([]pdata.ResourceSpans) error {
-		<-waitCh
-		return nil
-	}
-
-	em.startInBackground()
-	defer em.shutdown()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	em.onBatchReceived = func(traces pdata.Traces) error {
-		wg.Done()
-		return nil
-	}
-
-	em.fire(event{
-		typ:     traceReleased,
-		payload: make([]pdata.ResourceSpans, 0),
-	}, event{
-		typ:     traceReceived,
-		payload: pdata.NewTraces(),
-	})
-
-	// This test will block forever in case of sync release
-	wg.Wait()
-}
-
 func TestEventCallbackNotSet(t *testing.T) {
 	for _, tt := range []struct {
 		casename string
