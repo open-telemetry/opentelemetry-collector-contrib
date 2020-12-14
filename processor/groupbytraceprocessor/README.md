@@ -43,6 +43,7 @@ The following metrics are recorded by this processor:
 * `otelcol_processor_groupbytrace_event_latency_bucket`, with the following `event` tag values:
   * `onBatchReceived` represents the number of batches the processor has received from the previous components
   * `onTraceExpired` represents the number of traces that finished waiting in memory for spans to arrive
+  * `onTraceReleased` represents the number of traces that have been marked as released to the next component
   * `onTraceRemoved` represents the number of traces that have been marked for removal from the internal storage
 * `otelcol_processor_groupbytrace_num_events_in_queue` representing the state of the internal queue. Ideally, this number would be close to zero, but might have temporary spikes if the storage is slow.
 * `otelcol_processor_groupbytrace_num_traces_in_memory` representing the state of the internal trace storage, waiting for spans to arrive. It's common to have items in memory all the time if the processor has a continuous flow of data. The longer the `wait_duration`, the higher the amount of traces in memory should be, given enough traffic.
@@ -52,7 +53,7 @@ The following metrics are recorded by this processor:
 
 A healthy system would have the same value for the metric `otelcol_processor_groupbytrace_spans_released` and for three events under `otelcol_processor_groupbytrace_event_latency_bucket`: `onTraceExpired`, `onTraceRemoved` and `onTraceReleased`.
 
-The metric `otelcol_processor_groupbytrace_event_latency_bucket` is a bucket and shows how long each event took to be processed in miliseconds. In most cases, it should take less than 5ms for an event to be processed, but it might be the case where an event could take 10ms. Higher latencies are possible, but it should never really reach the last item, representing 1s. Events taking more than 1s are killed automatically, and if you have multiple items in this bucket, it might indicate a bug in the software. Note that `onTraceReleased` usually calls next consumer, so this type of event is not recorded.
+The metric `otelcol_processor_groupbytrace_event_latency_bucket` is a bucket and shows how long each event took to be processed in miliseconds. In most cases, it should take less than 5ms for an event to be processed, but it might be the case where an event could take 10ms. Higher latencies are possible, but it should never really reach the last item, representing 1s. Events taking more than 1s are killed automatically, and if you have multiple items in this bucket, it might indicate a bug in the software.
 
 Most metrics are updated when the events occur, except for the following ones, which are updated periodically:
 * `otelcol_processor_groupbytrace_num_events_in_queue`

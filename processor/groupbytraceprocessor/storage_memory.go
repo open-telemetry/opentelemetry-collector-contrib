@@ -85,16 +85,8 @@ func (st *memoryStorage) delete(traceID pdata.TraceID) ([]pdata.ResourceSpans, e
 	st.Lock()
 	defer st.Unlock()
 
-	rss := st.content[sTraceID]
-	var result []pdata.ResourceSpans
-	for _, rs := range rss {
-		newRS := pdata.NewResourceSpans()
-		rs.CopyTo(newRS)
-		result = append(result, newRS)
-	}
-	delete(st.content, sTraceID)
-
-	return result, nil
+	defer delete(st.content, sTraceID)
+	return st.content[sTraceID], nil
 }
 
 func (st *memoryStorage) start() error {
