@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python-contrib/compare/v0.16b1...HEAD)
 
 ### Added
+- `opentelemetry-instrumentation-urllib` Add urllib instrumentation
+  ([#222](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/222))
 - `opentelemetry-exporter-datadog` Add fields method
   ([#226](https://github.com/open-telemetry/opentelemetry-python/pull/226))
 - `opentelemetry-sdk-extension-aws` Add method to return fields injected by propagator
