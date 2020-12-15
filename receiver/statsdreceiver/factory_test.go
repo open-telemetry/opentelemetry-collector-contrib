@@ -41,3 +41,15 @@ func TestCreateReceiver(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 }
+
+func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
+	receiver, err := createMetricsReceiver(
+		context.Background(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		createDefaultConfig(),
+		nil,
+	)
+
+	assert.Error(t, err, "nil consumer")
+	assert.Nil(t, receiver)
+}

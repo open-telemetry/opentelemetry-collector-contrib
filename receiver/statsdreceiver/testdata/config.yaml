@@ -3,6 +3,7 @@ receivers:
   statsd/receiver_settings:
     endpoint: "localhost:12345"
     transport: "custom_transport"
+    aggregation_interval: 70s
 
 processors:
   exampleprocessor:

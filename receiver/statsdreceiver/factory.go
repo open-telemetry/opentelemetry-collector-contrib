@@ -16,6 +16,7 @@ package statsdreceiver
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -26,9 +27,10 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr             = "statsd"
-	defaultBindEndpoint = "localhost:8125"
-	defaultTransport    = "udp"
+	typeStr                    = "statsd"
+	defaultBindEndpoint        = "localhost:8125"
+	defaultTransport           = "udp"
+	defaultAggregationInterval = 60 * time.Second
 )
 
 // NewFactory creates a factory for the StatsD receiver.
@@ -50,6 +52,7 @@ func createDefaultConfig() configmodels.Receiver {
 			Endpoint:  defaultBindEndpoint,
 			Transport: defaultTransport,
 		},
+		AggregationInterval: defaultAggregationInterval,
 	}
 }
 

@@ -17,6 +17,7 @@ package statsdreceiver
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -54,5 +55,6 @@ func TestLoadConfig(t *testing.T) {
 			Endpoint:  "localhost:12345",
 			Transport: "custom_transport",
 		},
+		AggregationInterval: 70 * time.Second,
 	}, r1)
 }

@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/testutil"
-	"go.opentelemetry.io/collector/translator/internaldata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport/client"
@@ -63,12 +62,13 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			p := &protocol.StatsDParser{}
 			require.NoError(t, err)
 			mr := NewMockReporter(1)
+			var transferChan = make(chan string, 10)
 
 			wgListenAndServe := sync.WaitGroup{}
 			wgListenAndServe.Add(1)
 			go func() {
 				defer wgListenAndServe.Done()
-				assert.Error(t, srv.ListenAndServe(p, mc, mr))
+				assert.Error(t, srv.ListenAndServe(p, mc, mr, transferChan))
 			}()
 
 			runtime.Gosched()
@@ -88,23 +88,11 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			err = gc.Disconnect()
 			assert.NoError(t, err)
 
-			mr.WaitAllOnMetricsProcessedCalls()
-
 			err = srv.Close()
 			assert.NoError(t, err)
 
 			wgListenAndServe.Wait()
-
-			mdd := mc.AllMetrics()
-			require.Len(t, mdd, 1)
-			ocmd := internaldata.MetricsToOC(mdd[0])
-			require.Len(t, ocmd, 1)
-			require.Len(t, ocmd[0].Metrics, 1)
-			metric := ocmd[0].Metrics[0]
-			assert.Equal(t, "test.metric", metric.GetMetricDescriptor().GetName())
-
-			// require.Equal(t, 1, len(mc.md))
-			// assert.Equal(t, "test.metric", mc.md[0].Metrics[0].GetMetricDescriptor().GetName())
+			assert.Equal(t, 1, len(transferChan))
 		})
 	}
 }
