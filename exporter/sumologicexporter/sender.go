@@ -36,12 +36,13 @@ type appendResponse struct {
 }
 
 type sender struct {
-	buffer  []pdata.LogRecord
-	config  *Config
-	client  *http.Client
-	filter  filter
-	ctx     context.Context
-	sources sourceFormats
+	buffer     []pdata.LogRecord
+	config     *Config
+	client     *http.Client
+	filter     filter
+	ctx        context.Context
+	sources    sourceFormats
+	compressor compressor
 }
 
 const (
@@ -62,23 +63,38 @@ func newSender(
 	cl *http.Client,
 	f filter,
 	s sourceFormats,
+	c compressor,
 ) *sender {
 	return &sender{
-		config:  cfg,
-		client:  cl,
-		filter:  f,
-		ctx:     ctx,
-		sources: s,
+		config:     cfg,
+		client:     cl,
+		filter:     f,
+		ctx:        ctx,
+		sources:    s,
+		compressor: c,
 	}
 }
 
 // send sends data to sumologic
 func (s *sender) send(pipeline PipelineType, body io.Reader, flds fields) error {
-
-	// Add headers
-	req, err := http.NewRequestWithContext(s.ctx, http.MethodPost, s.config.HTTPClientSettings.Endpoint, body)
+	data, err := s.compressor.compress(body)
 	if err != nil {
 		return err
+	}
+	req, err := http.NewRequestWithContext(s.ctx, http.MethodPost, s.config.HTTPClientSettings.Endpoint, data)
+	if err != nil {
+		return err
+	}
+
+	// Add headers
+	switch s.config.CompressEncoding {
+	case GZIPCompression:
+		req.Header.Set("Content-Encoding", "gzip")
+	case DeflateCompression:
+		req.Header.Set("Content-Encoding", "deflate")
+	case NoCompression:
+	default:
+		return fmt.Errorf("invalid content encoding: %s", s.config.CompressEncoding)
 	}
 
 	req.Header.Add("X-Sumo-Client", s.config.Client)
