@@ -1,0 +1,20 @@
+receivers:
+  stdin:
+  stdin/different:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    logs:
+      receivers: [stdin]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
+    logs/different:
+      receivers: [stdin/different]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
