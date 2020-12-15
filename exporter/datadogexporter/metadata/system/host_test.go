@@ -33,3 +33,25 @@ func TestGetHostInfo(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, hostInfo.OS, osHostname)
 }
+
+func TestGetHostname(t *testing.T) {
+	logger := zap.NewNop()
+
+	hostInfoAll := &HostInfo{
+		FQDN: "fqdn",
+		OS:   "os",
+	}
+	assert.Equal(t, hostInfoAll.GetHostname(logger), "fqdn")
+
+	hostInfoInvalid := &HostInfo{
+		FQDN: "fqdn_invalid",
+		OS:   "os",
+	}
+	assert.Equal(t, hostInfoInvalid.GetHostname(logger), "os")
+
+	hostInfoMissingFQDN := &HostInfo{
+		OS: "os",
+	}
+	assert.Equal(t, hostInfoMissingFQDN.GetHostname(logger), "os")
+
+}
