@@ -1,6 +1,6 @@
 # StatsD Receiver
 
-StatsD receiver for ingesting StatsD messages into the OpenTelemetry Collector.
+StatsD receiver for ingesting StatsD messages(https://github.com/statsd/statsd/blob/master/docs/metric_types.md) into the OpenTelemetry Collector.
 
 Supported pipeline types: metrics
 
@@ -12,6 +12,11 @@ The following settings are required:
 
 - `endpoint` (default = `localhost:8125`): Address and port to listen on.
 
+
+The Following settings are optional:
+
+- `aggregation_interval: 70s`(default value is 60s): The aggregation time that the receiver aggregates the metrics (similar to the flush interval in StatsD server)
+
 Example:
 
 ```yaml
@@ -19,6 +24,7 @@ receivers:
   statsd:
   statsd/2:
     endpoint: "localhost:8127"
+    aggregation_interval: 70s
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
@@ -26,13 +32,26 @@ with detailed sample configurations [here](./testdata/config.yaml).
 
 ## Aggregation
 
-Currently the `statsdreceiver` is not providing any aggregation. There are
-ideas such as the [Metrics Transform Processor
-Proposal](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/332)
-that intend to enable control over Metric aggregation in a processor.
+Aggregation is done in statsD receiver. The default aggregation interval is 60s. The receiver only aggregates the metrics with the same metric name, metric type, label keys and label values. After each aggregation interval, the receiver will send all metrics (after aggregation) in this aggregation interval to the following workflow.
 
-An alternative will be to implement some simple aggregation in this receiver.
+It supports:
 
+Gauge(transferred to double):
+- statsdTestMetric1:500|g|#mykey:myvalue
+statsdTestMetric1:400|g|#mykey:myvalue
+(get the latest value: 400)
+- statsdTestMetric1:500|g|#mykey:myvalue
+statsdTestMetric1:+2|g|#mykey:myvalue
+statsdTestMetric1:-1|g|#mykey:myvalue
+(get the value after calculation: 501)
+
+Counter(transferred to int):
+- statsdTestMetric1:3000|c|#mykey:myvalue
+statsdTestMetric1:4000|c|#mykey:myvalue
+(get the value after incrementation: 7000)
+- statsdTestMetric1:3000|c|#mykey:myvalue
+statsdTestMetric1:20|c|@0.8|#mykey:myvalue
+(get the value after incrementation with sample rate: 3000+20/0.8=3025)
 ## Metrics
 
 General format is:
@@ -43,14 +62,15 @@ General format is:
 
 `<name>:<value>|c|@<sample-rate>|#<tag1-key>:<tag1-value>`
 
+it supports sample rate
+
 ### Gauge
 
 `<name>:<value>|g|@<sample-rate>|#<tag1-key>:<tag1-value>`
 
 ### Timer
 
-`<name>:<value>|ms|@<sample-rate>|#<tag1-key>:<tag1-value>`
-
+TODO: add support for timer
 
 ## Testing
 
@@ -60,6 +80,7 @@ General format is:
 receivers:
   statsd:
     endpoint: "localhost:8125" # default
+    aggregation_interval: 60s  # default
 
 exporters:
   file:

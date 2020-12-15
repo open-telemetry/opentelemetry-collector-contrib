@@ -20,5 +20,7 @@ import (
 
 // Parser is something that can map input StatsD strings to OTLP Metric representations.
 type Parser interface {
-	Parse(in string) (*metricspb.Metric, error)
+	Initialize() error
+	GetMetrics() []*metricspb.Metric
+	Aggregate(line string) error
 }

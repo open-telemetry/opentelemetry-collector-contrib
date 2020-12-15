@@ -16,15 +16,11 @@ package transport
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"net"
 	"strings"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/translator/internaldata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
@@ -53,6 +49,7 @@ func (u *udpServer) ListenAndServe(
 	parser protocol.Parser,
 	nextConsumer consumer.MetricsConsumer,
 	reporter Reporter,
+	transferChan chan<- string,
 ) error {
 	if parser == nil || nextConsumer == nil || reporter == nil {
 		return errNilListenAndServeParameters
@@ -66,7 +63,7 @@ func (u *udpServer) ListenAndServe(
 		if n > 0 {
 			bufCopy := make([]byte, n)
 			copy(bufCopy, buf)
-			u.handlePacket(parser, nextConsumer, bufCopy)
+			u.handlePacket(bufCopy, transferChan)
 		}
 		if err != nil {
 			u.reporter.OnDebugf("UDP Transport (%s) - ReadFrom error: %v",
@@ -87,13 +84,9 @@ func (u *udpServer) Close() error {
 }
 
 func (u *udpServer) handlePacket(
-	p protocol.Parser,
-	nextConsumer consumer.MetricsConsumer,
 	data []byte,
+	transferChan chan<- string,
 ) {
-	ctx := u.reporter.OnDataReceived(context.Background())
-	var numReceivedMessages int
-	var metrics []*metricspb.Metric
 	buf := bytes.NewBuffer(data)
 	for {
 		bytes, err := buf.ReadBytes((byte)('\n'))
@@ -105,20 +98,7 @@ func (u *udpServer) handlePacket(
 		}
 		line := strings.TrimSpace(string(bytes))
 		if line != "" {
-			numReceivedMessages++
-			metric, err := p.Parse(line)
-			if err != nil {
-				u.reporter.OnTranslationError(ctx, err)
-				continue
-			}
-
-			metrics = append(metrics, metric)
+			transferChan <- line
 		}
 	}
-
-	md := consumerdata.MetricsData{
-		Metrics: metrics,
-	}
-	err := nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
-	u.reporter.OnMetricsProcessed(ctx, numReceivedMessages, err)
 }
