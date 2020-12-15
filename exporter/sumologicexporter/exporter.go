@@ -124,7 +124,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) (i
 	if err != nil {
 		return 0, consumererror.PartialLogsError(fmt.Errorf("failed to initialize compressor: %w", err), ld)
 	}
-	sdr := newSender(ctx, se.config, se.client, se.filter, se.sources, c)
+	sdr := newSender(se.config, se.client, se.filter, se.sources, c)
 
 	// Iterate over ResourceLogs
 	rls := ld.ResourceLogs()
@@ -154,7 +154,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) (i
 				// If metadata differs from currently buffered, flush the buffer
 				if currentMetadata.string() != previousMetadata.string() && previousMetadata.string() != "" {
 					var dropped []pdata.LogRecord
-					dropped, err = sdr.sendLogs(previousMetadata)
+					dropped, err = sdr.sendLogs(ctx, previousMetadata)
 					if err != nil {
 						errors = append(errors, err)
 						droppedRecords = append(droppedRecords, dropped...)
@@ -167,7 +167,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) (i
 
 				// add log to the buffer
 				var dropped []pdata.LogRecord
-				dropped, err = sdr.batch(log, previousMetadata)
+				dropped, err = sdr.batch(ctx, log, previousMetadata)
 				if err != nil {
 					droppedRecords = append(droppedRecords, dropped...)
 					errors = append(errors, err)
@@ -177,7 +177,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) (i
 	}
 
 	// Flush pending logs
-	dropped, err := sdr.sendLogs(previousMetadata)
+	dropped, err := sdr.sendLogs(ctx, previousMetadata)
 	if err != nil {
 		droppedRecords = append(droppedRecords, dropped...)
 		errors = append(errors, err)
