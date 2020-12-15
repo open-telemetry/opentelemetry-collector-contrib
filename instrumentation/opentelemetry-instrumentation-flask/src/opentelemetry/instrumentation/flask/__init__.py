@@ -149,11 +149,9 @@ def _teardown_request(exc):
 
     activation = flask.request.environ.get(_ENVIRON_ACTIVATION_KEY)
     if not activation:
-        _logger.warning(
-            "Flask environ's OpenTelemetry activation missing"
-            "at _teardown_flask_request(%s)",
-            exc,
-        )
+        # This request didn't start a span, maybe because it was created in a
+        # way that doesn't run `before_request`, like when it is created with
+        # `app.test_request_context`.
         return
 
     if exc is None:
