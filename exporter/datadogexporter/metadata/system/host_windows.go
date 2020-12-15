@@ -16,15 +16,9 @@
 
 package system
 
-import "go.uber.org/zap"
-
 func getSystemFQDN() (string, error) {
 	// The Datadog Agent uses CGo to get the FQDN of the host
 	// OpenTelemetry does not allow the use of CGo so this feature
 	// is disabled on Windows
 	return "", nil
-}
-
-func (hi *HostInfo) GetHostname(logger *zap.Logger) string {
-	return hi.OS
 }

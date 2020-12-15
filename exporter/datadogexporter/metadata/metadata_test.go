@@ -30,14 +30,32 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils/cache"
 )
 
+var (
+	mockMetadata = HostMetadata{
+		InternalHostname: "hostname",
+		Flavor:           "otelcontribcol",
+		Version:          "1.0",
+		Tags:             &HostTags{OTel: []string{"key1:val1"}},
+		Meta: &Meta{
+			InstanceID:     "i-XXXXXXXXXX",
+			EC2Hostname:    "ip-123-45-67-89",
+			Hostname:       "hostname",
+			SocketHostname: "ip-123-45-67-89",
+			SocketFqdn:     "ip-123-45-67-89.internal",
+		},
+	}
+
+	mockStartInfo = component.ApplicationStartInfo{
+		ExeName: "otelcontribcol",
+		Version: "1.0",
+	}
+)
+
 func TestGetHostMetadata(t *testing.T) {
 	cache.Cache.Flush()
 	params := component.ExporterCreateParams{
-		Logger: zap.NewNop(),
-		ApplicationStartInfo: component.ApplicationStartInfo{
-			ExeName: "otelcontribcol",
-			Version: "1.0",
-		},
+		Logger:               zap.NewNop(),
+		ApplicationStartInfo: mockStartInfo,
 	}
 
 	cfg := &config.Config{TagsConfig: config.TagsConfig{
@@ -56,27 +74,7 @@ func TestGetHostMetadata(t *testing.T) {
 }
 
 func TestPushMetadata(t *testing.T) {
-
 	cfg := &config.Config{API: config.APIConfig{Key: "apikey"}}
-
-	startInfo := component.ApplicationStartInfo{
-		ExeName: "otelcontribcol",
-		Version: "1.0",
-	}
-
-	metadata := HostMetadata{
-		InternalHostname: "hostname",
-		Flavor:           "otelcontribcol",
-		Version:          "1.0",
-		Tags:             &HostTags{OTel: []string{"key1:val1"}},
-		Meta: &Meta{
-			InstanceID:     "i-XXXXXXXXXX",
-			EC2Hostname:    "ip-123-45-67-89",
-			Hostname:       "hostname",
-			SocketHostname: "ip-123-45-67-89",
-			SocketFqdn:     "ip-123-45-67-89.internal",
-		},
-	}
 
 	handler := http.NewServeMux()
 	handler.HandleFunc("/intake", func(w http.ResponseWriter, r *http.Request) {
@@ -89,13 +87,27 @@ func TestPushMetadata(t *testing.T) {
 		var recvMetadata HostMetadata
 		err = json.Unmarshal(body, &recvMetadata)
 		require.NoError(t, err)
-		assert.Equal(t, metadata, recvMetadata)
+		assert.Equal(t, mockMetadata, recvMetadata)
 	})
 
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
 	cfg.Metrics.Endpoint = ts.URL
 
-	err := pushMetadata(cfg, startInfo, &metadata)
+	err := pushMetadata(cfg, mockStartInfo, &mockMetadata)
 	require.NoError(t, err)
+}
+
+func TestFailPushMetadata(t *testing.T) {
+	cfg := &config.Config{API: config.APIConfig{Key: "apikey"}}
+
+	handler := http.NewServeMux()
+	handler.Handle("/intake", http.NotFoundHandler())
+
+	ts := httptest.NewServer(handler)
+	defer ts.Close()
+	cfg.Metrics.Endpoint = ts.URL
+
+	err := pushMetadata(cfg, mockStartInfo, &mockMetadata)
+	require.Error(t, err)
 }
