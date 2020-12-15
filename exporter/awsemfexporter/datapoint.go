@@ -32,8 +32,9 @@ var currentState = mapwithexpiry.NewMapWithExpiry(CleanInterval)
 
 // DataPoint represents a processed metric data point
 type DataPoint struct {
-	Value  interface{}
-	Labels map[string]string
+	Value     interface{}
+	Labels    map[string]string
+	Timestamp int64
 }
 
 // DataPoints is a wrapper interface for:
@@ -90,17 +91,24 @@ type DoubleSummaryDataPointSlice struct {
 func (dps IntDataPointSlice) At(i int) DataPoint {
 	metric := dps.IntDataPointSlice.At(i)
 	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
+	timestamp := unixNanoToMilliseconds(metric.Timestamp())
 
 	var metricVal interface{}
 	metricVal = metric.Value()
 	if dps.needsCalculateRate {
 		rateKey := createMetricKey(labels, dps.rateKeyParams)
-		metricVal = calculateRate(rateKey, metricVal, dps.timestamp)
+		rateTS := dps.timestamp
+		if timestamp > 0 {
+			// Use metric timestamp if available
+			rateTS = timestamp
+		}
+		metricVal = calculateRate(rateKey, metricVal, rateTS)
 	}
 
 	return DataPoint{
-		Value:  metricVal,
-		Labels: labels,
+		Value:     metricVal,
+		Labels:    labels,
+		Timestamp: timestamp,
 	}
 }
 
@@ -108,17 +116,24 @@ func (dps IntDataPointSlice) At(i int) DataPoint {
 func (dps DoubleDataPointSlice) At(i int) DataPoint {
 	metric := dps.DoubleDataPointSlice.At(i)
 	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
+	timestamp := unixNanoToMilliseconds(metric.Timestamp())
 
 	var metricVal interface{}
 	metricVal = metric.Value()
 	if dps.needsCalculateRate {
 		rateKey := createMetricKey(labels, dps.rateKeyParams)
-		metricVal = calculateRate(rateKey, metricVal, dps.timestamp)
+		rateTS := dps.timestamp
+		if timestamp > 0 {
+			// Use metric timestamp if available
+			rateTS = timestamp
+		}
+		metricVal = calculateRate(rateKey, metricVal, rateTS)
 	}
 
 	return DataPoint{
-		Value:  metricVal,
-		Labels: labels,
+		Value:     metricVal,
+		Labels:    labels,
+		Timestamp: timestamp,
 	}
 }
 
@@ -126,6 +141,7 @@ func (dps DoubleDataPointSlice) At(i int) DataPoint {
 func (dps DoubleHistogramDataPointSlice) At(i int) DataPoint {
 	metric := dps.DoubleHistogramDataPointSlice.At(i)
 	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
+	timestamp := unixNanoToMilliseconds(metric.Timestamp())
 
 	var minBound, maxBound float64
 	bucketBounds := metric.ExplicitBounds()
@@ -141,7 +157,8 @@ func (dps DoubleHistogramDataPointSlice) At(i int) DataPoint {
 			Count: metric.Count(),
 			Sum:   metric.Sum(),
 		},
-		Labels: labels,
+		Labels:    labels,
+		Timestamp: timestamp,
 	}
 }
 
@@ -149,6 +166,7 @@ func (dps DoubleHistogramDataPointSlice) At(i int) DataPoint {
 func (dps DoubleSummaryDataPointSlice) At(i int) DataPoint {
 	metric := dps.DoubleSummaryDataPointSlice.At(i)
 	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
+	timestamp := unixNanoToMilliseconds(metric.Timestamp())
 
 	metricVal := &CWMetricStats{
 		Count: metric.Count(),
@@ -160,8 +178,9 @@ func (dps DoubleSummaryDataPointSlice) At(i int) DataPoint {
 	}
 
 	return DataPoint{
-		Value:  metricVal,
-		Labels: labels,
+		Value:     metricVal,
+		Labels:    labels,
+		Timestamp: timestamp,
 	}
 }
 

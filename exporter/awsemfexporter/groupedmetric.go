@@ -62,6 +62,10 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[string]*GroupedMet
 			Unit:  pmd.Unit(),
 		}
 
+		if dp.Timestamp > 0 {
+			metadata.Timestamp = dp.Timestamp
+		}
+
 		// Extra params to use when grouping metrics
 		groupKeyParams := map[string]string{
 			(namespaceKey): metadata.Namespace,

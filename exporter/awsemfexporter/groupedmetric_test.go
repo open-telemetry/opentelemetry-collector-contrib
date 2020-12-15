@@ -29,6 +29,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestAddToGroupedMetric(t *testing.T) {
@@ -208,6 +209,74 @@ func TestAddToGroupedMetric(t *testing.T) {
 			}
 			assert.Equal(t, expectedLabels, group.Labels)
 			assert.Equal(t, metadata, group.Metadata)
+		}
+	})
+
+	t.Run("Add multiple metrics w/ different timestamps", func(t *testing.T) {
+		groupedMetrics := make(map[string]*GroupedMetric)
+		oc := consumerdata.MetricsData{
+			Node: &commonpb.Node{},
+			Resource: &resourcepb.Resource{
+				Labels: map[string]string{
+					conventions.AttributeServiceName:      "myServiceName",
+					conventions.AttributeServiceNamespace: "myServiceNS",
+				},
+			},
+			Metrics: []*metricspb.Metric{
+				generateTestIntGauge("int-gauge"),
+				generateTestDoubleGauge("double-gauge"),
+				generateTestIntSum("int-sum"),
+				generateTestSummary("summary"),
+			},
+		}
+
+		timestamp1 := &timestamppb.Timestamp{
+			Seconds: int64(1608068109),
+			Nanos:   347942000,
+		}
+		timestamp2 := &timestamppb.Timestamp{
+			Seconds: int64(1608068110),
+			Nanos:   347942000,
+		}
+
+		// Give int gauge and int-sum the same timestamp
+		oc.Metrics[0].Timeseries[0].Points[0].Timestamp = timestamp1
+		oc.Metrics[2].Timeseries[0].Points[0].Timestamp = timestamp1
+		// Give summary a different timestamp
+		oc.Metrics[3].Timeseries[0].Points[0].Timestamp = timestamp2
+
+		rm := internaldata.OCToMetrics(oc)
+		rms := rm.ResourceMetrics()
+		ilms := rms.At(0).InstrumentationLibraryMetrics()
+		metrics := ilms.At(0).Metrics()
+		assert.Equal(t, 4, metrics.Len())
+
+		for i := 0; i < metrics.Len(); i++ {
+			metric := metrics.At(i)
+			addToGroupedMetric(&metric, groupedMetrics, metadata, logger)
+		}
+
+		assert.Equal(t, 3, len(groupedMetrics))
+		for _, group := range groupedMetrics {
+			for metricName := range group.Metrics {
+				if metricName == "int-gauge" || metricName == "int-sum" {
+					assert.Equal(t, 2, len(group.Metrics))
+					assert.Equal(t, int64(1608068109347), group.Metadata.Timestamp)
+				} else if metricName == "summary" {
+					assert.Equal(t, 1, len(group.Metrics))
+					assert.Equal(t, int64(1608068110347), group.Metadata.Timestamp)
+				} else {
+					// double-gauge should use the default timestamp
+					assert.Equal(t, 1, len(group.Metrics))
+					assert.Equal(t, "double-gauge", metricName)
+					assert.Equal(t, timestamp, group.Metadata.Timestamp)
+				}
+			}
+			expectedLabels := map[string]string{
+				(OTellibDimensionKey): "cloudwatch-otel",
+				"label1":              "value1",
+			}
+			assert.Equal(t, expectedLabels, group.Labels)
 		}
 	})
 
