@@ -99,7 +99,6 @@ github.com/Shopify/sarama v1.27.2 h1:1EyY1dsxNDUQEv0O/4TsjosHI2CgB1uo9H/v56xzTxc
 github.com/Shopify/sarama v1.27.2/go.mod h1:g5s5osgELxgM+Md9Qni9rzo7Rbt+vvFQI4bt/Mc93II=
 github.com/Shopify/toxiproxy v2.1.4+incompatible h1:TKdv8HiTLgE5wdJuEML90aBgNWsokNbMijUGhmcoBJc=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
-github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 h1:fLjPD/aNc3UIOA6tDi6QXUemppXK3P9BI7mr2hd6gx8=
 github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6/go.mod h1:3eOhrUMpNV+6aFIbp5/iudMxNCF27Vw2OZgy4xEx0Fg=
 github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d h1:G0m3OIz70MZUWq3EgK3CesDbo8upS2Vm9/P3FtgI+Jk=
 github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d/go.mod h1:3eOhrUMpNV+6aFIbp5/iudMxNCF27Vw2OZgy4xEx0Fg=
@@ -378,7 +377,6 @@ github.com/gobuffalo/syncx v0.0.0-20190224160051-33c29581e754/go.mod h1:HhnNqWY9
 github.com/gocql/gocql v0.0.0-20200228163523-cd4b606dd2fb/go.mod h1:DL0ekTmBSTdlNF25Orwt/JMzqIq3EJ4MVa/J/uK64OY=
 github.com/gofrs/uuid v3.3.0+incompatible/go.mod h1:b2aQJv3Z4Fp6yNu3cdSllBxTCLRxnplIgP/c0N/04lM=
 github.com/gogo/googleapis v1.1.0/go.mod h1:gf4bu3Q80BeJ6H1S1vYPm8/ELATdvryBaNFGgqEef3s=
-github.com/gogo/googleapis v1.3.0 h1:M695OaDJ5ipWvDPcoAg/YL9c3uORAegkEfBqTQF/fTQ=
 github.com/gogo/googleapis v1.3.0/go.mod h1:d+q1s/xVJxZGKWwC/6UfPIF33J+G1Tq4GYv9Y+Tg/EU=
 github.com/gogo/googleapis v1.3.1 h1:CzMaKrvF6Qa7XtRii064vKBQiyvmY8H8vG1xa1/W1JA=
 github.com/gogo/googleapis v1.3.1/go.mod h1:d+q1s/xVJxZGKWwC/6UfPIF33J+G1Tq4GYv9Y+Tg/EU=
@@ -1017,8 +1015,8 @@ go.opencensus.io v0.22.3/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
 go.opencensus.io v0.22.4/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
 go.opencensus.io v0.22.5 h1:dntmOdLpSpHlVqbW5Eay97DelsZHe+55D+xC6i0dDS0=
 go.opencensus.io v0.22.5/go.mod h1:5pWMHQbX5EPX2/62yrJeAkowc+lfs/XD7Uxpq3pI6kk=
-go.opentelemetry.io/collector v0.16.1-0.20201207152538-326931de8c32 h1:vxuxyBkBKcLXLq/uwgurb6PDzl2QKT0xlbQ0zCpl+9Y=
-go.opentelemetry.io/collector v0.16.1-0.20201207152538-326931de8c32/go.mod h1:h9AuSwXGdKT5M+avYsM8KGL7FiObqUL/1s+BBLpLB80=
+go.opentelemetry.io/collector v0.17.0 h1:Da/hGGexGLFjp444zMJ3y28y0R9Ll/kJTfNVpS2pliY=
+go.opentelemetry.io/collector v0.17.0/go.mod h1:h9AuSwXGdKT5M+avYsM8KGL7FiObqUL/1s+BBLpLB80=
 go.uber.org/atomic v1.3.2/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/atomic v1.4.0/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/atomic v1.5.0/go.mod h1:sABNBOSYdrvTF6hTgEIbc7YasKWGhgEQZyfxyTvoXHQ=

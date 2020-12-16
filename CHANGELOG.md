@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+## v0.17.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.17.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.17.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 💡 Enhancements 💡
+
+- `awsemf` exporter: Add collector version to EMF exporter user agent (#1778)
+- `signalfx` exporter: Add configuration for trace correlation (#1795)
+- `statsd` receiver: Add support for metric aggregation (#1670)
+- `datadog` exporter: Improve logging of hostname detection (#1796)
+
+## 🧰 Bug fixes 🧰
+
+- `resourcedetection` processor: Fix ecs detector to not use the default golang logger (#1745)
+- `signalfx` receiver: Return 200 when receiver succeed (#1785)
+- `datadog` exporter: Use a singleton for sublayer calculation (#1759)
+- `awsxray` and `awsemf` exporters: Change the User-Agent content order (#1791)
+
 ## v0.16.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.16.0 (Beta) 🎉
