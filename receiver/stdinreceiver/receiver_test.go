@@ -50,14 +50,17 @@ func TestReceiveLinesTwoReceivers(t *testing.T) {
 	err = r2.Start(context.Background(), nil)
 	assert.NoError(t, err)
 	write.WriteString("foo\nbar\nfoobar\n")
-	write.WriteString("foo\r\nbar\nfoobar")
+	write.WriteString("foo\r\nbar\nfoobar\n")
 	time.Sleep(time.Second * 1)
 	lds := sink.AllLogs()
 	assert.Equal(t, 6, len(lds))
 	lds2 := sink2.AllLogs()
 	assert.Equal(t, 6, len(lds2))
 
-	write.Close()
+	read.Chmod(000)
+	write.WriteString("foo\nbar\nfoobar\n")
+	time.Sleep(time.Second * 1)
+	write.Close() // close stdin early.
 
 	err = r.Shutdown(context.Background())
 	assert.NoError(t, err)

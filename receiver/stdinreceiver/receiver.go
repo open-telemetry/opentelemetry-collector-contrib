@@ -18,9 +18,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"io"
 	"os"
-	"strings"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -72,24 +70,17 @@ func NewLogsReceiver(
 func startStdinListener(logger *zap.Logger) {
 	listenerEnabled.Do(func() {
 		reader := bufio.NewReader(stdin)
-		data := make([]byte, 4096)
 		for {
-			amount, err := reader.Read(data)
-			if err == io.EOF { // EOF signal, stdin is closed.
-				return
-			} else if err != nil {
-				logger.Error("Error while listening to stdin", zap.Error(err))
-				continue
-			}
-			raw := string(data[:amount])
-			splitLines := strings.Split(raw, "\r\n")
-			for _, splitLine := range splitLines {
-				lines := strings.Split(splitLine, "\n")
-				for _, line := range lines {
-					for _, listener := range listeners {
-						listener <- line
-					}
+			scanner := bufio.NewScanner(reader)
+			scanner.Split(bufio.ScanLines) // Set up the split function.
+			for scanner.Scan() {
+				line := scanner.Text()
+				for _, listener := range listeners {
+					listener <- line
 				}
+			}
+			if err := scanner.Err(); err != nil {
+				logger.Error("Error reading stdin", zap.Error(err))
 			}
 		}
 	})
