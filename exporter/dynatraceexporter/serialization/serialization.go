@@ -115,7 +115,7 @@ func serializeLine(name, tagline, valueline string, timestamp pdata.TimestampUni
 
 	tsMilli := timestamp / 1_000_000
 
-	output += " " + valueline + " " + strconv.FormatUint(uint64(tsMilli), 10) + "\n"
+	output += " " + valueline + " " + strconv.FormatUint(uint64(tsMilli), 10)
 
 	return output
 }

@@ -176,7 +176,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 		}
 	})
 
-	if wantBody := "prefix.int_gauge 10 100\nprefix.int_sum 10 100\nprefix.double_histogram gauge,min=9.5,max=9.5,sum=19,count=2 100\nprefix.double_gauge 10.1 100\nprefix.double_sum 10.1 100\nprefix.double_histogram gauge,min=5.05,max=5.05,sum=10.1,count=2 100\n"; sent != wantBody {
+	if wantBody := "prefix.int_gauge 10 100\nprefix.int_sum 10 100\nprefix.double_histogram gauge,min=9.5,max=9.5,sum=19,count=2 100\nprefix.double_gauge 10.1 100\nprefix.double_sum 10.1 100\nprefix.double_histogram gauge,min=5.05,max=5.05,sum=10.1,count=2 100"; sent != wantBody {
 		t.Errorf("exporter.PushMetricsData():ResponseBody = %v, want %v", sent, wantBody)
 	}
 }
@@ -281,7 +281,7 @@ func Test_exporter_send_BadRequest(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	invalid, err := e.send(context.Background(), "")
+	invalid, err := e.send(context.Background(), []string{})
 	if invalid != 10 {
 		t.Errorf("Expected 10 lines to be reported invalid")
 		return
@@ -310,7 +310,7 @@ func Test_exporter_send_Unauthorized(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	_, err := e.send(context.Background(), "")
+	_, err := e.send(context.Background(), []string{})
 	if !consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to be permanent %v", err)
 		return
@@ -335,7 +335,7 @@ func Test_exporter_send_TooLarge(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	_, err := e.send(context.Background(), "")
+	_, err := e.send(context.Background(), []string{})
 	if !consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to be permanent %v", err)
 		return
@@ -363,7 +363,7 @@ func Test_exporter_send_NotFound(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	_, err := e.send(context.Background(), "")
+	_, err := e.send(context.Background(), []string{})
 	if !consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to be permanent %v", err)
 		return
