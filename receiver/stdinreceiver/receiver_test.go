@@ -56,6 +56,9 @@ func TestReceiveLinesTwoReceivers(t *testing.T) {
 	assert.Equal(t, 6, len(lds))
 	lds2 := sink2.AllLogs()
 	assert.Equal(t, 6, len(lds2))
+
+	write.Close()
+
 	err = r.Shutdown(context.Background())
 	assert.NoError(t, err)
 	err = r2.Shutdown(context.Background())

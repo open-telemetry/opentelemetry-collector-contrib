@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"io"
 	"os"
 	"strings"
 	"sync"
@@ -68,16 +69,16 @@ func NewLogsReceiver(
 	return r, nil
 }
 
-func startStdinListener() {
+func startStdinListener(logger *zap.Logger) {
 	listenerEnabled.Do(func() {
 		reader := bufio.NewReader(stdin)
 		data := make([]byte, 4096)
 		for {
 			amount, err := reader.Read(data)
-			if err != nil {
-				return // EOF signal
-			}
-			if amount == 0 {
+			if err == io.EOF { // EOF signal, stdin is closed.
+				return
+			} else if err != nil {
+				logger.Error("Error while listening to stdin", zap.Error(err))
 				continue
 			}
 			raw := string(data[:amount])
@@ -104,7 +105,7 @@ func (r *stdinReceiver) Start(_ context.Context, host component.Host) error {
 	listeners = append(listeners, listener)
 
 	go func() {
-		go startStdinListener()
+		go startStdinListener(r.logger)
 		for {
 			select {
 			case nextLine := <-listener:
