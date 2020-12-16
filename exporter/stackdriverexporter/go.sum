@@ -992,8 +992,12 @@ go.opentelemetry.io/collector v0.17.0 h1:Da/hGGexGLFjp444zMJ3y28y0R9Ll/kJTfNVpS2
 go.opentelemetry.io/collector v0.17.0/go.mod h1:h9AuSwXGdKT5M+avYsM8KGL7FiObqUL/1s+BBLpLB80=
 go.opentelemetry.io/otel v0.13.0 h1:2isEnyzjjJZq6r2EKMsFj4TxiQiexsM04AVhwbR/oBA=
 go.opentelemetry.io/otel v0.13.0/go.mod h1:dlSNewoRYikTkotEnxdmuBHgzT+k/idJSfDv/FxEnOY=
+go.opentelemetry.io/otel v0.15.0 h1:CZFy2lPhxd4HlhZnYK8gRyDotksO3Ip9rBweY1vVYJw=
+go.opentelemetry.io/otel v0.15.0/go.mod h1:e4GKElweB8W2gWUqbghw0B8t5MCTccc9212eNHnOHwA=
 go.opentelemetry.io/otel/sdk v0.13.0 h1:4VCfpKamZ8GtnepXxMRurSpHpMKkcxhtO33z1S4rGDQ=
 go.opentelemetry.io/otel/sdk v0.13.0/go.mod h1:dKvLH8Uu8LcEPlSAUsfW7kMGaJBhk/1NYvpPZ6wIMbU=
+go.opentelemetry.io/otel/sdk v0.15.0 h1:Hf2dl1Ad9Hn03qjcAuAq51GP5Pv1SV5puIkS2nRhdd8=
+go.opentelemetry.io/otel/sdk v0.15.0/go.mod h1:Qudkwgq81OcA9GYVlbyZ62wkLieeS1eWxIL0ufxgwoc=
 go.uber.org/atomic v1.3.2/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/atomic v1.4.0/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/atomic v1.5.0/go.mod h1:sABNBOSYdrvTF6hTgEIbc7YasKWGhgEQZyfxyTvoXHQ=
