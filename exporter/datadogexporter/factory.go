@@ -59,6 +59,9 @@ func createDefaultConfig() configmodels.Exporter {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "", // set during config sanitization
 			},
+			ExporterConfig: config.MetricsExporterConfig{
+				ResourceAttributesAsTags: false,
+			},
 		},
 
 		Traces: config.TracesConfig{
@@ -117,6 +120,9 @@ func createMetricsExporter(
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
 			return nil
+		}),
+		exporterhelper.WithResourceToTelemetryConversion(exporterhelper.ResourceToTelemetrySettings{
+			Enabled: cfg.Metrics.ExporterConfig.ResourceAttributesAsTags,
 		}),
 	)
 }
