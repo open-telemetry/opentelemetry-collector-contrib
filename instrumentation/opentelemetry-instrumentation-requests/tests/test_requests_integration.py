@@ -108,8 +108,8 @@ class RequestsIntegrationTestBase(abc.ABC):
                 self.assertGreaterEqual(view_data.aggregator.current.sum, 0)
 
     def test_name_callback(self):
-        def name_callback():
-            return "test_name"
+        def name_callback(method, url):
+            return "GET" + url
 
         RequestsInstrumentor().uninstrument()
         RequestsInstrumentor().instrument(name_callback=name_callback)
@@ -117,10 +117,10 @@ class RequestsIntegrationTestBase(abc.ABC):
         self.assertEqual(result.text, "Hello!")
         span = self.assert_span()
 
-        self.assertEqual(span.name, "test_name")
+        self.assertEqual(span.name, "GET" + self.URL)
 
     def test_name_callback_default(self):
-        def name_callback():
+        def name_callback(method, url):
             return 123
 
         RequestsInstrumentor().uninstrument()

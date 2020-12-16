@@ -101,8 +101,6 @@ class URLLibInstrumentor(BaseInstrumentor, MetricMixin):
         _uninstrument_from(opener, restore_as_bound_func=True)
 
 
-# pylint: disable=unused-argument
-# pylint: disable=R0915
 def get_default_span_name(method):
     """Default implementation for name_callback, returns HTTP {method_name}."""
     return "HTTP {}".format(method).strip()
@@ -145,7 +143,7 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
 
         span_name = ""
         if name_callback is not None:
-            span_name = name_callback()
+            span_name = name_callback(method, url)
         if not span_name or not isinstance(span_name, str):
             span_name = get_default_span_name(method)
 

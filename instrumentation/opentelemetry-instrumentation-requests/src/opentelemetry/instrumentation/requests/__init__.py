@@ -122,7 +122,7 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
         method = method.upper()
         span_name = ""
         if name_callback is not None:
-            span_name = name_callback()
+            span_name = name_callback(method, url)
         if not span_name or not isinstance(span_name, str):
             span_name = get_default_span_name(method)
 
