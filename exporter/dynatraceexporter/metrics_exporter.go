@@ -172,7 +172,9 @@ func (e *exporter) send(ctx context.Context, lines []string) (int, error) {
 
 		for _, line := range responseBody.Error.InvalidLines {
 			// Enabled debug logging to see which lines were dropped
-			e.logger.Debug(fmt.Sprintf("line %3d %s %s", line.Line, line.Error, lines[line.Line]))
+			if line.Line >= 0 && line.Line < len(lines) {
+				e.logger.Debug(fmt.Sprintf("rejected line %3d: [%s] %s", line.Line, line.Error, lines[line.Line]))
+			}
 		}
 
 		return responseBody.Invalid, nil
