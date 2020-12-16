@@ -52,7 +52,7 @@ func TestSerializeIntDataPoints(t *testing.T) {
 				data: intSlice,
 				tags: []string{},
 			},
-			want: "my_int_gauge 13 100\n",
+			want: "my_int_gauge 13 100",
 		},
 		{
 			name: "Serialize integer data points with tags",
@@ -61,7 +61,7 @@ func TestSerializeIntDataPoints(t *testing.T) {
 				data: intSlice,
 				tags: []string{"test_key=testval"},
 			},
-			want: "my_int_gauge_with_tags,test_key=testval 13 100\n",
+			want: "my_int_gauge_with_tags,test_key=testval 13 100",
 		},
 		{
 			name: "Serialize integer data points with labels",
@@ -70,7 +70,7 @@ func TestSerializeIntDataPoints(t *testing.T) {
 				data: labelIntSlice,
 				tags: []string{},
 			},
-			want: "my_int_gauge_with_labels,labelkey=\"labelValue\" 13 100\n",
+			want: "my_int_gauge_with_labels,labelkey=\"labelValue\" 13 100",
 		},
 	}
 	for _, tt := range tests {
@@ -113,7 +113,7 @@ func TestSerializeDoubleDataPoints(t *testing.T) {
 				data: doubleSlice,
 				tags: []string{},
 			},
-			want: "my_double_gauge 13.1 100\n",
+			want: "my_double_gauge 13.1 100",
 		},
 		{
 			name: "Serialize double data points with tags",
@@ -122,7 +122,7 @@ func TestSerializeDoubleDataPoints(t *testing.T) {
 				data: doubleSlice,
 				tags: []string{"test_key=testval"},
 			},
-			want: "my_double_gauge_with_tags,test_key=testval 13.1 100\n",
+			want: "my_double_gauge_with_tags,test_key=testval 13.1 100",
 		},
 		{
 			name: "Serialize double data points with labels",
@@ -131,7 +131,7 @@ func TestSerializeDoubleDataPoints(t *testing.T) {
 				data: labelDoubleSlice,
 				tags: []string{},
 			},
-			want: "my_double_gauge_with_labels,labelkey=\"labelValue\" 13.1 100\n",
+			want: "my_double_gauge_with_labels,labelkey=\"labelValue\" 13.1 100",
 		},
 	}
 	for _, tt := range tests {
@@ -183,7 +183,7 @@ func TestSerializeDoubleHistogramMetrics(t *testing.T) {
 				data: doubleHistSlice,
 				tags: []string{},
 			},
-			want: "my_double_hist gauge,min=10.1,max=10.1,sum=101,count=10 100\n",
+			want: "my_double_hist gauge,min=10.1,max=10.1,sum=101,count=10 100",
 		},
 		{
 			name: "Serialize double histogram data points with tags",
@@ -192,7 +192,7 @@ func TestSerializeDoubleHistogramMetrics(t *testing.T) {
 				data: doubleHistSlice,
 				tags: []string{"test_key=testval"},
 			},
-			want: "my_double_hist_with_tags,test_key=testval gauge,min=10.1,max=10.1,sum=101,count=10 100\n",
+			want: "my_double_hist_with_tags,test_key=testval gauge,min=10.1,max=10.1,sum=101,count=10 100",
 		},
 		{
 			name: "Serialize double histogram data points with labels",
@@ -201,7 +201,7 @@ func TestSerializeDoubleHistogramMetrics(t *testing.T) {
 				data: labelDoubleHistSlice,
 				tags: []string{},
 			},
-			want: "my_double_hist_with_labels,labelkey=\"labelValue\" gauge,min=10.1,max=10.1,sum=101,count=10 100\n",
+			want: "my_double_hist_with_labels,labelkey=\"labelValue\" gauge,min=10.1,max=10.1,sum=101,count=10 100",
 		},
 		{
 			name: "Serialize zero double histogram",
@@ -262,7 +262,7 @@ func TestSerializeIntHistogramMetrics(t *testing.T) {
 				data: intHistSlice,
 				tags: []string{},
 			},
-			want: "my_int_hist gauge,min=11,max=11,sum=110,count=10 100\n",
+			want: "my_int_hist gauge,min=11,max=11,sum=110,count=10 100",
 		},
 		{
 			name: "Serialize integer histogram data points with tags",
@@ -271,7 +271,7 @@ func TestSerializeIntHistogramMetrics(t *testing.T) {
 				data: intHistSlice,
 				tags: []string{"test_key=testval"},
 			},
-			want: "my_int_hist_with_tags,test_key=testval gauge,min=11,max=11,sum=110,count=10 100\n",
+			want: "my_int_hist_with_tags,test_key=testval gauge,min=11,max=11,sum=110,count=10 100",
 		},
 		{
 			name: "Serialize integer histogram data points with labels",
@@ -280,7 +280,7 @@ func TestSerializeIntHistogramMetrics(t *testing.T) {
 				data: labelIntHistSlice,
 				tags: []string{},
 			},
-			want: "my_int_hist_with_labels,labelkey=\"labelValue\" gauge,min=11,max=11,sum=110,count=10 100\n",
+			want: "my_int_hist_with_labels,labelkey=\"labelValue\" gauge,min=11,max=11,sum=110,count=10 100",
 		},
 		{
 			name: "Serialize zero integer histogram",
@@ -316,7 +316,7 @@ func Test_serializeLine(t *testing.T) {
 		{
 			name: "Constructs a Dynatrace metrics ingest string",
 			args: args{name: "metric_name", tagline: "tag=value", valueline: "gauge,60", timestamp: pdata.TimestampUnixNano(uint64(100_000_000))},
-			want: "metric_name,tag=value gauge,60 100\n",
+			want: "metric_name,tag=value gauge,60 100",
 		},
 	}
 	for _, tt := range tests {
