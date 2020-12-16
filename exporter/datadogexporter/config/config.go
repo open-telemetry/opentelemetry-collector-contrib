@@ -61,6 +61,16 @@ type MetricsConfig struct {
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send metrics to.
 	// If unset, the value is obtained from the Site.
 	confignet.TCPAddr `mapstructure:",squash"`
+
+	ExporterConfig MetricsExporterConfig `mapstructure:",squash"`
+}
+
+// MetricsExporterConfig provides options for a user to customize the behavior of the
+// metrics exporter
+type MetricsExporterConfig struct {
+	// ResourceAttributesAsTags, if set to true, will use the exporterhelper feature to transform all
+	// resource attributes into metric labels, which are then converted into tags
+	ResourceAttributesAsTags bool `mapstructure:"resource_attributes_as_tags"`
 }
 
 // TracesConfig defines the traces exporter specific configuration options

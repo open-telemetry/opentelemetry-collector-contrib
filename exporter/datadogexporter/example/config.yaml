@@ -69,6 +69,13 @@ exporters:
       #
       # endpoint: https://api.datadoghq.com
 
+      ## @param resource_attributes_as_tags - string - optional - default: false
+      ## Set to true to add all resource attributes of a metric to its metric tags.
+      ## When set to false, only a small predefined subset of resource attributes is converted
+      ## to metric tags.
+      #
+      # resource_attributes_as_tags: false
+
     ## @param traces - custom object - optional
     ## Trace exporter specific configuration.
     #
@@ -85,7 +92,6 @@ exporters:
       ## If unset the value is obtained through the `site` parameter in the `api` section.
       #
       # endpoint: https://api.datadoghq.com
-      
 
 service:
   pipelines:
