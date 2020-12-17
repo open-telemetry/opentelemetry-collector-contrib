@@ -32,8 +32,15 @@ import (
 // EncodeSpan encodes an OpenTelemetry span, and instrumentation library information,
 // as a transaction or span line, writing to w.
 //
+// otlpResource is used for language-specific translations, such as parsing stacktraces.
+//
 // TODO(axw) otlpLibrary is currently not used. We should consider recording it as metadata.
-func EncodeSpan(otlpSpan pdata.Span, otlpLibrary pdata.InstrumentationLibrary, w *fastjson.Writer) error {
+func EncodeSpan(
+	otlpSpan pdata.Span,
+	otlpLibrary pdata.InstrumentationLibrary,
+	otlpResource pdata.Resource,
+	w *fastjson.Writer,
+) error {
 	spanID := model.SpanID(otlpSpan.SpanID().Bytes())
 	traceID := model.TraceID(otlpSpan.TraceID().Bytes())
 	parentID := model.SpanID(otlpSpan.ParentSpanID().Bytes())
@@ -84,12 +91,9 @@ func EncodeSpan(otlpSpan pdata.Span, otlpLibrary pdata.InstrumentationLibrary, w
 		}
 		w.RawString("}\n")
 	}
-
-	// TODO(axw) we don't currently support sending arbitrary events
-	// to Elastic APM Server. If/when we do, we should also transmit
-	// otlpSpan.TimeEvents. When there's a convention specified for
-	// error events, we could send those.
-
+	if err := encodeSpanEvents(otlpSpan.Events(), otlpResource, traceID, spanID, w); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -351,6 +355,59 @@ func setSpanProperties(otlpSpan pdata.Span, span *model.Span) error {
 	}
 	span.Context = context.modelContext()
 	span.Outcome = spanStatusOutcome(otlpSpan.Status())
+	return nil
+}
+
+func encodeSpanEvents(
+	events pdata.SpanEventSlice,
+	resource pdata.Resource,
+	traceID model.TraceID, spanID model.SpanID,
+	w *fastjson.Writer,
+) error {
+	// Translate exception span events to errors.
+	//
+	// TODO(axw) we don't currently support sending arbitrary events
+	// to Elastic APM Server. If/when we do, we should also transmit
+	// otlpSpan.TimeEvents. When there's a convention specified for
+	// error events, we could send those.
+	var language string
+	if v, ok := resource.Attributes().Get(conventions.AttributeTelemetrySDKLanguage); ok {
+		language = v.StringVal()
+	}
+	for i := 0; i < events.Len(); i++ {
+		event := events.At(i)
+		if event.Name() != "exception" {
+			// `The name of the event MUST be "exception"`
+			continue
+		}
+		var exceptionEscaped bool
+		var exceptionMessage, exceptionStacktrace, exceptionType string
+		event.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+			switch k {
+			case conventions.AttributeExceptionMessage:
+				exceptionMessage = v.StringVal()
+			case conventions.AttributeExceptionStacktrace:
+				exceptionStacktrace = v.StringVal()
+			case conventions.AttributeExceptionType:
+				exceptionType = v.StringVal()
+			case "exception.escaped":
+				exceptionEscaped = v.BoolVal()
+			}
+		})
+		if exceptionMessage == "" && exceptionType == "" {
+			// `At least one of the following sets of attributes is required:
+			// - exception.type
+			// - exception.message`
+			continue
+		}
+		if err := encodeExceptionSpanEvent(
+			time.Unix(0, int64(event.Timestamp())).UTC(),
+			exceptionType, exceptionMessage, exceptionStacktrace,
+			exceptionEscaped, traceID, spanID, language, w,
+		); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

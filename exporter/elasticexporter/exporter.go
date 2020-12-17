@@ -144,7 +144,7 @@ func (e *elasticExporter) ExportResourceSpans(ctx context.Context, rs pdata.Reso
 			count++
 			span := spanSlice.At(i)
 			before := w.Size()
-			if err := elastic.EncodeSpan(span, instrumentationLibrary, &w); err != nil {
+			if err := elastic.EncodeSpan(span, instrumentationLibrary, rs.Resource(), &w); err != nil {
 				w.Rewind(before)
 				errs = append(errs, err)
 			}
