@@ -115,7 +115,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) (i
 	var (
 		currentMetadata  fields
 		previousMetadata fields
-		errors           []error
+		errs             []error
 		droppedRecords   []pdata.LogRecord
 		err              error
 	)
@@ -156,7 +156,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) (i
 					var dropped []pdata.LogRecord
 					dropped, err = sdr.sendLogs(ctx, previousMetadata)
 					if err != nil {
-						errors = append(errors, err)
+						errs = append(errs, err)
 						droppedRecords = append(droppedRecords, dropped...)
 					}
 					sdr.cleanBuffer()
@@ -170,7 +170,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) (i
 				dropped, err = sdr.batch(ctx, log, previousMetadata)
 				if err != nil {
 					droppedRecords = append(droppedRecords, dropped...)
-					errors = append(errors, err)
+					errs = append(errs, err)
 				}
 			}
 		}
@@ -180,7 +180,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) (i
 	dropped, err := sdr.sendLogs(ctx, previousMetadata)
 	if err != nil {
 		droppedRecords = append(droppedRecords, dropped...)
-		errors = append(errors, err)
+		errs = append(errs, err)
 	}
 
 	if len(droppedRecords) > 0 {
@@ -197,7 +197,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) (i
 			logs.Append(log)
 		}
 
-		return len(droppedRecords), consumererror.PartialLogsError(componenterror.CombineErrors(errors), droppedLogs)
+		return len(droppedRecords), consumererror.PartialLogsError(componenterror.CombineErrors(errs), droppedLogs)
 	}
 
 	return 0, nil
