@@ -16,6 +16,7 @@ package sumologicexporter
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"testing"
 
@@ -199,4 +200,33 @@ func TestPartiallyFailed(t *testing.T) {
 	partial, ok := err.(consumererror.PartialError)
 	require.True(t, ok)
 	assert.Equal(t, expected, partial.GetLogs())
+}
+
+func TestInvalidSourceFormats(t *testing.T) {
+	_, err := initExporter(&Config{
+		LogFormat:        "json",
+		MetricFormat:     "carbon2",
+		CompressEncoding: "gzip",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Timeout:  defaultTimeout,
+			Endpoint: "test_endpoint",
+		},
+		MetadataAttributes: []string{"[a-z"},
+	})
+	assert.EqualError(t, err, "error parsing regexp: missing closing ]: `[a-z`")
+}
+
+func TestInvalidHTTPCLient(t *testing.T) {
+	_, err := initExporter(&Config{
+		LogFormat:        "json",
+		MetricFormat:     "carbon2",
+		CompressEncoding: "gzip",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "test_endpoint",
+			CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
+				return nil, errors.New("roundTripperException")
+			},
+		},
+	})
+	assert.EqualError(t, err, "failed to create HTTP Client: roundTripperException")
 }
