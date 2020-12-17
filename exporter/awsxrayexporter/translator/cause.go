@@ -151,6 +151,8 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 		exceptions = fillJavaStacktrace(stacktrace, exceptions)
 	case "python":
 		exceptions = fillPythonStacktrace(stacktrace, exceptions)
+	case "javascript":
+		exceptions = fillJavaScriptStacktrace(stacktrace, exceptions)
 	}
 
 	return exceptions
@@ -344,5 +346,51 @@ func fillPythonStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 		line = lines[lineIdx]
 	}
 
+	return exceptions
+}
+
+func fillJavaScriptStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxray.Exception {
+	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
+
+	// Skip first line containing top level exception / message
+	r.ReadLine()
+	exception := &exceptions[0]
+	var line string
+	line, err := r.ReadLine()
+	if err != nil {
+		return exceptions
+	}
+
+	exception.Stack = make([]awsxray.StackFrame, 0)
+	for {
+		if strings.HasPrefix(line, "\tat ") {
+			parenIdx := strings.IndexByte(line, '(')
+			if parenIdx >= 0 && line[len(line)-1] == ')' {
+				label := line[len("\tat "):parenIdx]
+				path := line[parenIdx+1 : len(line)-1]
+				line := 0
+
+				colonIdx := strings.IndexByte(path, ':')
+				colonIdxLast := strings.LastIndexByte(path, ':')
+
+				if colonIdx >= 0 && colonIdxLast >= 0 && colonIdx != colonIdxLast {
+					lineStr := path[colonIdx+1 : colonIdxLast]
+					path = path[0:colonIdx]
+					line, _ = strconv.Atoi(lineStr)
+				}
+
+				stack := awsxray.StackFrame{
+					Path:  aws.String(path),
+					Label: aws.String(label),
+					Line:  aws.Int(line),
+				}
+				exception.Stack = append(exception.Stack, stack)
+			}
+		}
+		line, err = r.ReadLine()
+		if err != nil {
+			break
+		}
+	}
 	return exceptions
 }
