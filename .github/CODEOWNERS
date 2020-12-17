@@ -34,7 +34,7 @@ exporter/sentryexporter/                   @open-telemetry/collector-contrib-app
 exporter/signalfxexporter/                 @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
 exporter/signalfxcorrelationexporter/      @open-telemetry/collector-contrib-approvers @jrcamp @keitwb
 exporter/splunkhecexporter/                @open-telemetry/collector-contrib-approvers @atoulme
-exporter/stackdriverexporter/              @open-telemetry/collector-contrib-approvers @nilebox @james-bebbington
+exporter/stackdriverexporter/              @open-telemetry/collector-contrib-approvers @dashpole
 exporter/sumologicexporter/                @open-telemetry/collector-contrib-approvers @pmm-sumo @sumo-drosiek
 
 extension/httpforwarder/                   @open-telemetry/collector-contrib-approvers @asuresh4
@@ -50,7 +50,7 @@ processor/groupbyattrsprocessor/           @open-telemetry/collector-contrib-app
 processor/groupbytraceprocessor/           @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/k8sprocessor/                    @open-telemetry/collector-contrib-approvers @owais @dmitryax @pmm-sumo
 processor/metricstransformprocessor/       @open-telemetry/collector-contrib-approvers @james-bebbington
-processor/resourcedetectionprocessor/      @open-telemetry/collector-contrib-approvers @jrcamp @pmm-sumo @anuraaga @james-bebbington
+processor/resourcedetectionprocessor/      @open-telemetry/collector-contrib-approvers @jrcamp @pmm-sumo @anuraaga @dashpole
 processor/routingprocessor/                @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/tailsamplingprocessor/           @open-telemetry/collector-contrib-approvers @jpkrohling
 
@@ -62,7 +62,7 @@ receiver/dockerstatsreceiver/              @open-telemetry/collector-contrib-app
 receiver/jmxreceiver/                      @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/k8sclusterreceiver/               @open-telemetry/collector-contrib-approvers @asuresh4
 receiver/kubeletstatsreceiver/             @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
-receiver/prometheusexecreceiver/           @open-telemetry/collector-contrib-approvers @keitwb @james-bebbington
+receiver/prometheusexecreceiver/           @open-telemetry/collector-contrib-approvers @keitwb
 receiver/receivercreator/                  @open-telemetry/collector-contrib-approvers @jrcamp
 receiver/redisreceiver/                    @open-telemetry/collector-contrib-approvers @pmcollins @jrcamp
 receiver/sapmreceiver/                     @open-telemetry/collector-contrib-approvers @owais
@@ -72,6 +72,6 @@ receiver/splunkhecreceiver/                @open-telemetry/collector-contrib-app
 receiver/stanzareceiver/                   @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/statsdreceiver/                   @open-telemetry/collector-contrib-approvers @keitwb @jmacd
 receiver/wavefrontreceiver/                @open-telemetry/collector-contrib-approvers @pjanotti
-receiver/windowsperfcountersreceiver/      @open-telemetry/collector-contrib-approvers @james-bebbington
+receiver/windowsperfcountersreceiver/      @open-telemetry/collector-contrib-approvers @dashpole
 
 tracegen/                                  @open-telemetry/collector-contrib-approvers @jpkrohling
