@@ -17,7 +17,9 @@ package sumologicexporter
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -229,4 +231,59 @@ func TestInvalidHTTPCLient(t *testing.T) {
 		},
 	})
 	assert.EqualError(t, err, "failed to create HTTP Client: roundTripperException")
+}
+
+func TestPushInvalidCompressor(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
+		func(w http.ResponseWriter, req *http.Request) {
+			body := extractBody(t, req)
+			assert.Equal(t, `Example log`, body)
+			assert.Equal(t, "", req.Header.Get("X-Sumo-Fields"))
+		},
+	})
+	defer func() { test.srv.Close() }()
+
+	logs := LogRecordsToLogs(exampleLog())
+
+	test.exp.config.CompressEncoding = "invalid"
+
+	_, err := test.exp.pushLogsData(context.Background(), logs)
+	assert.EqualError(t, err, "invalid content encoding: invalid")
+}
+
+func TestPushFailedBatch(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
+		func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(500)
+			body := extractBody(t, req)
+
+			expected := fmt.Sprintf(
+				"%s%s",
+				strings.Repeat("Example log\n", maxBufferSize-1),
+				"Example log",
+			)
+
+			assert.Equal(t, expected, body)
+			assert.Equal(t, "", req.Header.Get("X-Sumo-Fields"))
+		},
+		func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(200)
+			body := extractBody(t, req)
+
+			assert.Equal(t, `Example log`, body)
+			assert.Equal(t, "", req.Header.Get("X-Sumo-Fields"))
+		},
+	})
+	defer func() { test.srv.Close() }()
+
+	logs := LogRecordsToLogs(exampleLog())
+	log := logs.ResourceLogs().At(0)
+
+	for i := 0; i < maxBufferSize; i++ {
+		logs.ResourceLogs().Append(log)
+	}
+
+	count, err := test.exp.pushLogsData(context.Background(), logs)
+	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
+	assert.Equal(t, maxBufferSize, count)
 }
