@@ -248,7 +248,7 @@ func TestPushInvalidCompressor(t *testing.T) {
 	test.exp.config.CompressEncoding = "invalid"
 
 	_, err := test.exp.pushLogsData(context.Background(), logs)
-	assert.EqualError(t, err, "invalid content encoding: invalid")
+	assert.EqualError(t, err, "failed to initialize compressor: invalid format: invalid")
 }
 
 func TestPushFailedBatch(t *testing.T) {
