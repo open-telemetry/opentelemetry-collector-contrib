@@ -38,9 +38,11 @@ const (
 type APIConfig struct {
 	// Key is the Datadog API key to associate your Agent's data with your organization.
 	// Create a new API key here: https://app.datadoghq.com/account/settings
+	// It can also be set through the `DD_API_KEY` environment variable.
 	Key string `mapstructure:"key"`
 
 	// Site is the site of the Datadog intake to send data to.
+	// It can also be set through the `DD_SITE` environment variable.
 	// The default value is "datadoghq.com".
 	Site string `mapstructure:"site"`
 }
@@ -59,6 +61,7 @@ type MetricsConfig struct {
 	Buckets bool `mapstructure:"report_buckets"`
 
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send metrics to.
+	// It can also be set through the `DD_URL` environment variable.
 	// If unset, the value is obtained from the Site.
 	confignet.TCPAddr `mapstructure:",squash"`
 
@@ -76,6 +79,7 @@ type MetricsExporterConfig struct {
 // TracesConfig defines the traces exporter specific configuration options
 type TracesConfig struct {
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send traces to.
+	// It can also be set through the `DD_APM_URL` environment variable.
 	// If unset, the value is obtained from the Site.
 	confignet.TCPAddr `mapstructure:",squash"`
 
@@ -95,14 +99,22 @@ type TagsConfig struct {
 	Hostname string `mapstructure:"hostname"`
 
 	// Env is the environment for unified service tagging.
+	// It can also be set through the `DD_ENV` environment variable.
 	Env string `mapstructure:"env"`
 
 	// Service is the service for unified service tagging.
+	// It can also be set through the `DD_SERVICE` environment variable.
 	Service string `mapstructure:"service"`
 
 	// Version is the version for unified service tagging.
+	// It can also be set through the `DD_VERSION` environment variable.
 	Version string `mapstructure:"version"`
 
+	// EnvVarTags is the list of space-separated tags passed by the `DD_TAGS` environment variable
+	// Superseded by Tags if the latter is set.
+	// Should not be set in the user-provided config.
+	EnvVarTags string `mapstructure:"envvartags"`
+	
 	// Tags is the list of default tags to add to every metric or trace.
 	Tags []string `mapstructure:"tags"`
 }
@@ -110,6 +122,11 @@ type TagsConfig struct {
 // GetHostTags gets the host tags extracted from the configuration
 func (t *TagsConfig) GetHostTags() []string {
 	tags := t.Tags
+
+	if len(tags) == 0 {
+		tags = strings.Split(t.EnvVarTags, " ")
+	}
+
 	if t.Env != "none" {
 		tags = append(tags, fmt.Sprintf("env:%s", t.Env))
 	}
@@ -168,6 +185,11 @@ func (c *Config) Sanitize() error {
 	}
 
 	c.API.Key = strings.TrimSpace(c.API.Key)
+
+	// Set default site
+	if c.API.Site == "" {
+		c.API.Site = "datadoghq.com"
+	}
 
 	// Set the endpoint based on the Site
 	if c.Metrics.TCPAddr.Endpoint == "" {

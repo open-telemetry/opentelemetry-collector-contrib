@@ -40,6 +40,43 @@ func TestHostTags(t *testing.T) {
 		},
 		tc.GetHostTags(),
 	)
+
+	tc = TagsConfig{
+		Hostname: "customhost",
+		Env:      "customenv",
+		// Service and version should be only used for traces
+		Service: "customservice",
+		Version: "customversion",
+		Tags:    []string{"key1:val1", "key2:val2"},
+		EnvVarTags: "key3:val3 key4:val4",
+	}
+
+	assert.ElementsMatch(t,
+		[]string{
+			"env:customenv",
+			"key1:val1",
+			"key2:val2",
+		},
+		tc.GetHostTags(),
+	)
+
+	tc = TagsConfig{
+		Hostname: "customhost",
+		Env:      "customenv",
+		// Service and version should be only used for traces
+		Service: "customservice",
+		Version: "customversion",
+		EnvVarTags: "key3:val3 key4:val4",
+	}
+
+	assert.ElementsMatch(t,
+		[]string{
+			"env:customenv",
+			"key3:val3",
+			"key4:val4",
+		},
+		tc.GetHostTags(),
+	)
 }
 
 // TestOverrideMetricsURL tests that the metrics URL is overridden
