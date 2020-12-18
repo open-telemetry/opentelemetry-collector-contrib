@@ -18,7 +18,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -382,18 +381,18 @@ func getDatadogSpanName(s pdata.Span, datadogTags map[string]string) string {
 	// The spec has changed over time and, depending on the original exporter, IL Name could represented a few different ways
 	// so we try to account for all permutations
 	if ilnOtlp, okOtlp := datadogTags[tracetranslator.TagInstrumentationName]; okOtlp {
-		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtlp, strings.TrimPrefix(s.Kind().String(), "SPAN_KIND_")))
+		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtlp, utils.NormalizeSpanKind(s.Kind())))
 	}
 
 	if ilnOtelCur, okOtelCur := datadogTags[currentILNameTag]; okOtelCur {
-		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtelCur, strings.TrimPrefix(s.Kind().String(), "SPAN_KIND_")))
+		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtelCur, utils.NormalizeSpanKind(s.Kind())))
 	}
 
 	if ilnOtelOld, okOtelOld := datadogTags[oldILNameTag]; okOtelOld {
-		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtelOld, strings.TrimPrefix(s.Kind().String(), "SPAN_KIND_")))
+		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtelOld, utils.NormalizeSpanKind(s.Kind())))
 	}
 
-	return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", "opentelemetry", strings.TrimPrefix(s.Kind().String(), "SPAN_KIND_")))
+	return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", "opentelemetry", utils.NormalizeSpanKind(s.Kind())))
 }
 
 func getDatadogResourceName(s pdata.Span, datadogTags map[string]string) string {
@@ -421,6 +420,15 @@ func getDatadogResourceName(s pdata.Span, datadogTags map[string]string) string 
 		}
 
 		return msgOperation
+	}
+
+	// add resource convention for rpc services , method+service, fallback to just method if no service attribute
+	if rpcMethod, rpcMethodOk := datadogTags[conventions.AttributeRPCMethod]; rpcMethodOk {
+		if rpcService, rpcServiceOk := datadogTags[conventions.AttributeRPCService]; rpcServiceOk {
+			return fmt.Sprintf("%s %s", rpcMethod, rpcService)
+		}
+
+		return rpcMethod
 	}
 
 	return s.Name()

@@ -17,6 +17,8 @@ package utils
 import (
 	"strings"
 	"unicode"
+
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // constants for tags
@@ -99,4 +101,9 @@ func NormalizeSpanName(tag string) string {
 	}
 
 	return s
+}
+
+// NormalizeSpanKind returns a span kind with the SPAN_KIND prefix trimmed off
+func NormalizeSpanKind(kind pdata.SpanKind) string {
+	return strings.TrimPrefix(kind.String(), "SPAN_KIND_")
 }
