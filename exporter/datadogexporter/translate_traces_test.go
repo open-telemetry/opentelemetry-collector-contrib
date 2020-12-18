@@ -218,7 +218,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, "End-To-End Here", datadogPayload.Traces[0].Spans[0].Resource)
 
 	// ensure that span.name defaults to string representing instrumentation library if present
-	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", datadogPayload.Traces[0].Spans[0].Meta[tracetranslator.TagInstrumentationName], pdata.SpanKindSERVER)), datadogPayload.Traces[0].Spans[0].Name)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", datadogPayload.Traces[0].Spans[0].Meta[tracetranslator.TagInstrumentationName], strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), datadogPayload.Traces[0].Spans[0].Name)
 
 	// ensure that span.type is based on otlp span.kind
 	assert.Equal(t, "web", datadogPayload.Traces[0].Spans[0].Type)
@@ -445,6 +445,52 @@ func TestSpanResourceTranslation(t *testing.T) {
 	assert.Equal(t, "Default Name", resourceNameDefault)
 }
 
+// ensure that datadog span resource naming uses http method+ grpc path when available
+func TestSpanResourceTranslationGRPC(t *testing.T) {
+	span := pdata.NewSpan()
+	span.SetKind(pdata.SpanKindSERVER)
+	span.SetName("Default Name")
+
+	ddHTTPTags := map[string]string{
+		"http.method": "POST",
+		"grpc.path":   "/api",
+	}
+
+	ddNotHTTPTags := map[string]string{
+		"other": "GET",
+	}
+
+	resourceNameHTTP := getDatadogResourceName(span, ddHTTPTags)
+
+	resourceNameDefault := getDatadogResourceName(span, ddNotHTTPTags)
+
+	assert.Equal(t, "POST /api", resourceNameHTTP)
+	assert.Equal(t, "Default Name", resourceNameDefault)
+}
+
+// ensure that datadog span resource naming uses messaging operation+destination when available
+func TestSpanResourceTranslationMessaging(t *testing.T) {
+	span := pdata.NewSpan()
+	span.SetKind(pdata.SpanKindSERVER)
+	span.SetName("Default Name")
+
+	ddHTTPTags := map[string]string{
+		"messaging.operation":   "receive",
+		"messaging.destination": "example.topic",
+	}
+
+	ddNotHTTPTags := map[string]string{
+		"other": "GET",
+	}
+
+	resourceNameHTTP := getDatadogResourceName(span, ddHTTPTags)
+
+	resourceNameDefault := getDatadogResourceName(span, ddNotHTTPTags)
+
+	assert.Equal(t, "receive example.topic", resourceNameHTTP)
+	assert.Equal(t, "Default Name", resourceNameDefault)
+}
+
 // ensure that the datadog span name uses IL name +kind whenn available and falls back to opetelemetry + kind
 func TestSpanNameTranslation(t *testing.T) {
 	span := pdata.NewSpan()
@@ -477,11 +523,11 @@ func TestSpanNameTranslation(t *testing.T) {
 	spanNameCur := getDatadogSpanName(span, ddIlTagsCur)
 	spanNameUnusual := getDatadogSpanName(span, ddIlTagsUnusual)
 
-	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "il_name", pdata.SpanKindSERVER)), spanNameIl)
-	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "opentelemetry", pdata.SpanKindSERVER)), spanNameDefault)
-	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "old_value", pdata.SpanKindSERVER)), spanNameOld)
-	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "current_value", pdata.SpanKindSERVER)), spanNameCur)
-	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "unusual_value", pdata.SpanKindSERVER)), spanNameUnusual)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "il_name", strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), spanNameIl)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "opentelemetry", strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), spanNameDefault)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "old_value", strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), spanNameOld)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "current_value", strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), spanNameCur)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "unusual_value", strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), spanNameUnusual)
 }
 
 // ensure that the datadog span type gets mapped from span kind

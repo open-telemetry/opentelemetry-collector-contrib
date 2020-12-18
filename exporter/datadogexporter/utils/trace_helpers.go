@@ -80,7 +80,8 @@ func NormalizeSpanName(tag string) string {
 		case buf.Len() == 0:
 			continue
 		// handle valid characters that can't start the string.
-		case unicode.IsDigit(c) || c == '.' || c == '-':
+		// '-' creates issues in the UI so we skip it
+		case unicode.IsDigit(c) || c == '.':
 			buf.WriteRune(c)
 			lastWasUnderscore = false
 		// convert anything else to underscores (including underscores), but only allow one in a row.

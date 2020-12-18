@@ -18,6 +18,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -41,6 +42,7 @@ const (
 	httpKind            string = "http"
 	webKind             string = "web"
 	customKind          string = "custom"
+	grpcPath            string = "grpc.path"
 )
 
 // converts Traces into an array of datadog trace payloads grouped by env
@@ -302,8 +304,8 @@ func aggregateSpanTags(span pdata.Span, datadogTags map[string]string) map[strin
 	return spanTags
 }
 
-// TODO: this seems to resolve to SPAN_KIND_UNSPECIFIED in e2e using jaeger receiver
-// even though span.kind is getting set at the app tracer level. Need to file bug ticket
+// TODO: some clients send SPAN_KIND_UNSPECIFIED for valid kinds
+// we also need a more formal mapping for cache and db types
 func spanKindToDatadogType(kind pdata.SpanKind) string {
 	switch kind {
 	case pdata.SpanKindCLIENT:
@@ -380,31 +382,45 @@ func getDatadogSpanName(s pdata.Span, datadogTags map[string]string) string {
 	// The spec has changed over time and, depending on the original exporter, IL Name could represented a few different ways
 	// so we try to account for all permutations
 	if ilnOtlp, okOtlp := datadogTags[tracetranslator.TagInstrumentationName]; okOtlp {
-		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtlp, s.Kind()))
+		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtlp, strings.TrimPrefix(s.Kind().String(), "SPAN_KIND_")))
 	}
 
 	if ilnOtelCur, okOtelCur := datadogTags[currentILNameTag]; okOtelCur {
-		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtelCur, s.Kind()))
+		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtelCur, strings.TrimPrefix(s.Kind().String(), "SPAN_KIND_")))
 	}
 
 	if ilnOtelOld, okOtelOld := datadogTags[oldILNameTag]; okOtelOld {
-		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtelOld, s.Kind()))
+		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtelOld, strings.TrimPrefix(s.Kind().String(), "SPAN_KIND_")))
 	}
 
-	return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", "opentelemetry", s.Kind()))
+	return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", "opentelemetry", strings.TrimPrefix(s.Kind().String(), "SPAN_KIND_")))
 }
 
 func getDatadogResourceName(s pdata.Span, datadogTags map[string]string) string {
 	// largely a port of logic here
 	// https://github.com/open-telemetry/opentelemetry-python/blob/b2559409b2bf82e693f3e68ed890dd7fd1fa8eae/exporter/opentelemetry-exporter-datadog/src/opentelemetry/exporter/datadog/exporter.py#L229
 	// Get span resource name by checking for existence http.method + http.route 'GET /api'
+	// Also check grpc path as fallback for http requests
 	// backing off to just http.method, and then span.name if unrelated to http
 	if method, methodOk := datadogTags[conventions.AttributeHTTPMethod]; methodOk {
 		if route, routeOk := datadogTags[conventions.AttributeHTTPRoute]; routeOk {
 			return fmt.Sprintf("%s %s", method, route)
 		}
 
+		if grpcRoute, grpcRouteOk := datadogTags[grpcPath]; grpcRouteOk {
+			return fmt.Sprintf("%s %s", method, grpcRoute)
+		}
+
 		return method
+	}
+
+	//add resource conventions for messaging queues, operaton + destination
+	if msgOperation, msgOperationOk := datadogTags[conventions.AttributeMessagingOperation]; msgOperationOk {
+		if destination, destinationOk := datadogTags[conventions.AttributeMessagingDestination]; destinationOk {
+			return fmt.Sprintf("%s %s", msgOperation, destination)
+		}
+
+		return msgOperation
 	}
 
 	return s.Name()
