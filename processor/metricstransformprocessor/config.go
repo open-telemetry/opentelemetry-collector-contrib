@@ -34,6 +34,9 @@ const (
 	// NewNameFieldName is the mapstructure field name for NewName field
 	NewNameFieldName = "new_name"
 
+	//
+	GroupName = "group_name"
+
 	// AggregationTypeFieldName is the mapstructure field name for AggregationType field
 	AggregationTypeFieldName = "aggregation_type"
 
@@ -75,6 +78,8 @@ type Transform struct {
 	// NewName specifies the name of the new metric when inserting or updating.
 	// REQUIRED only if Action is INSERT.
 	NewName string `mapstructure:"new_name"`
+
+	GroupName string `mapstructure:"group_name"`
 
 	// AggregationType specifies how to aggregate.
 	// REQUIRED only if Action is COMBINE.
@@ -147,9 +152,12 @@ const (
 
 	// Combine combines multiple metrics into a single metric.
 	Combine ConfigAction = "combine"
+
+	//
+	Group ConfigAction = "group"
 )
 
-var Actions = []ConfigAction{Insert, Update, Combine}
+var Actions = []ConfigAction{Insert, Update, Combine, Group}
 
 func (ca ConfigAction) isValid() bool {
 	for _, configAction := range Actions {

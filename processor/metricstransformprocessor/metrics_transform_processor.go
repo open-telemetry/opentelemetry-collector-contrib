@@ -22,6 +22,9 @@ import (
 	"strings"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
@@ -42,6 +45,7 @@ type internalTransform struct {
 	MetricIncludeFilter internalFilter
 	Action              ConfigAction
 	NewName             string
+	GroupName           string
 	AggregationType     AggregationType
 	SubmatchCase        SubmatchCase
 	Operations          []internalOperation
@@ -140,6 +144,7 @@ func newMetricsTransformProcessor(logger *zap.Logger, internalTransforms []inter
 // ProcessMetrics implements the MProcessor interface.
 func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 	mds := internaldata.MetricsToOC(md)
+	groupedMds := make([]consumerdata.MetricsData, 0)
 
 	for i := range mds {
 		data := &mds[i]
@@ -147,6 +152,21 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 		nameToMetricMapping := newMetricNameMapping(data)
 		for _, transform := range mtp.transforms {
 			matchedMetrics := transform.MetricIncludeFilter.getMatches(nameToMetricMapping)
+
+			if transform.Action == Group && len(matchedMetrics) > 0 {
+				ndata := consumerdata.MetricsData{
+					Node:     proto.Clone(data.Node).(*commonpb.Node),
+					Resource: proto.Clone(data.Resource).(*resourcepb.Resource),
+					Metrics: make([]*metricspb.Metric, 0),
+				}
+
+				ndata.Resource.GetLabels()["group"] = transform.GroupName
+
+				for _, match := range matchedMetrics {
+					ndata.Metrics = append(ndata.Metrics, match.metric)
+				}
+				groupedMds = append(groupedMds, ndata)
+			}
 
 			if transform.Action == Combine && len(matchedMetrics) > 0 {
 				if err := mtp.canBeCombined(matchedMetrics); err != nil {
@@ -181,8 +201,8 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 			}
 		}
 	}
-
-	return internaldata.OCSliceToMetrics(mds), nil
+	resultmds := append(mds, groupedMds...)
+	return internaldata.OCSliceToMetrics(resultmds), nil
 }
 
 // canBeCombined returns true if all the provided metrics share the same type, unit, and labels
