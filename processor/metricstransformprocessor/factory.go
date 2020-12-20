@@ -101,7 +101,7 @@ func validateConfiguration(config *Config) error {
 			return fmt.Errorf("missing required field %q while %q is %v", NewNameFieldName, ActionFieldName, Insert)
 		}
 
-		if transform.Action == Group && transform.GroupName == "" {
+		if transform.Action == Group && transform.GroupResourceLabels == nil {
 			return fmt.Errorf("missing required field %q while %q is %v", GroupName, ActionFieldName, Group)
 		}
 
@@ -154,7 +154,7 @@ func buildHelperConfig(config *Config, version string) []internalTransform {
 			MetricIncludeFilter: createFilter(t.MetricIncludeFilter),
 			Action:              t.Action,
 			NewName:             t.NewName,
-			GroupName: 			 t.GroupName,
+			GroupResourceLabels: t.GroupResourceLabels,
 			AggregationType:     t.AggregationType,
 			Operations:          make([]internalOperation, len(t.Operations)),
 		}
