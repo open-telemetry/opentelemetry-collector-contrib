@@ -160,10 +160,17 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 					Resource: proto.Clone(data.Resource).(*resourcepb.Resource),
 					Metrics:  make([]*metricspb.Metric, 0),
 				}
+
 				// update new resouce labels to the new ResouceMetrics bucket
-				nResource := nData.Resource.GetLabels()
+				if nData.Resource == nil || nData.Resource.GetLabels() == nil {
+					nData.Resource = &resourcepb.Resource{
+						Labels: make(map[string]string),
+					}
+				}
+
+				rlabels := nData.Resource.GetLabels()
 				for k, v := range transform.GroupResourceLabels {
-					nResource[k] = v
+					rlabels[k] = v
 				}
 
 				// reassign matched metrics to the new ResouceMetrics bucket
