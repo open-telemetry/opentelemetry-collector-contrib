@@ -1,0 +1,35 @@
+extensions:
+  ecs_observer:
+  ecs_observer/1:
+    refresh_interval: 15s
+    cluster_name: 'EC2-Testing'
+    cluster_region: 'us-west-2'
+    sd_result_file: '/opt/aws/amazon-cloudwatch-agent/etc/ecs_sd_targets.yaml'
+    docker_label:
+      job_name_label: 'ECS_PROMETHEUS_JOB_NAME'
+      metrics_path_label: 'ECS_PROMETHEUS_METRICS_PATH'
+      port_label: 'ECS_PROMETHEUS_EXPORTER_PORT_SUBSET_A'
+    task_definitions:
+    - job_name: 'task_def_1'
+      metrics_path: '/stats/metrics'
+      metrics_ports: '9901;9404;9406'
+      task_definition_arn_pattern: '.*:task-definition/bugbash-java-fargate-awsvpc-task-def-only:[0-9]+'
+    - container_name_pattern: '^bugbash-jar.*$'
+      metrics_ports: '9902'
+      task_definition_arn_pattern: '.*:task-definition/nginx:[0-9]+'
+
+service:
+  extensions: [ecs_observer, ecs_observer/1]
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
+
+# Data pipeline is required to load the config.
+receivers:
+  examplereceiver:
+processors:
+  exampleprocessor:
+exporters:
+  exampleexporter:
