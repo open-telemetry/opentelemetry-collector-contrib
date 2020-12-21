@@ -365,16 +365,15 @@ func fillJavaScriptStacktrace(stacktrace string, exceptions []awsxray.Exception)
 	for {
 		if strings.HasPrefix(line, "    at ") {
 			parenIdx := strings.IndexByte(line, '(')
-			atIdx := strings.Index(line, "at ")
 			label := ""
 			path := ""
 			lineIdx := 0
 			if parenIdx >= 0 && line[len(line)-1] == ')' {
-				label = line[atIdx+3 : parenIdx]
+				label = line[7:parenIdx]
 				path = line[parenIdx+1 : len(line)-1]
 			} else if parenIdx < 0 {
 				label = ""
-				path = line[atIdx+3:]
+				path = line[7:]
 			}
 
 			colonFirstIdx := strings.IndexByte(path, ':')
