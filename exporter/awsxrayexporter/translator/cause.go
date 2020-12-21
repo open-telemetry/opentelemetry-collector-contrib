@@ -17,7 +17,6 @@ package translator
 import (
 	"bufio"
 	"net/textproto"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -26,10 +25,6 @@ import (
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
-)
-
-var (
-	javascriptStackTracePrefixRegex = regexp.MustCompile(`\ *at (.*?)`)
 )
 
 func makeCause(span pdata.Span, attributes map[string]string, resource pdata.Resource) (isError, isFault bool,
@@ -368,7 +363,7 @@ func fillJavaScriptStacktrace(stacktrace string, exceptions []awsxray.Exception)
 
 	exception.Stack = make([]awsxray.StackFrame, 0)
 	for {
-		if javascriptStackTracePrefixRegex.MatchString(line) {
+		if strings.HasPrefix(line, "    at ") {
 			parenIdx := strings.IndexByte(line, '(')
 			atIdx := strings.Index(line, "at ")
 			label := ""
