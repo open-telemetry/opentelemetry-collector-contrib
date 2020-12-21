@@ -42,14 +42,13 @@ type metricPair struct {
 }
 
 type sender struct {
-	buffer       []pdata.LogRecord
-	metricBuffer []metricPair
-	config       *Config
-	client       *http.Client
-	filter       filter
-	ctx          context.Context
-	sources      sourceFormats
-	compressor   compressor
+	buffer     []pdata.LogRecord
+	config     *Config
+	client     *http.Client
+	filter     filter
+	ctx        context.Context
+	sources    sourceFormats
+	compressor compressor
 }
 
 const (
