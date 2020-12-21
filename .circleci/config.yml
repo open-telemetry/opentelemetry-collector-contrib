@@ -13,6 +13,7 @@ parameters:
 
 orbs:
   win: circleci/windows@2.4.0
+  aws-cli: circleci/aws-cli@1.3.1
 
 executors:
   golang:
@@ -112,33 +113,27 @@ commands:
         type: string
     steps:
       - run:
+          name: Setup Environment Variables
+          command: |
+            echo "export REGISTRY=public.ecr.aws/sumologic" >> $BASH_ENV
+            echo "export TAG_URL=public.ecr.aws/sumologic/<< parameters.repo >>:<< parameters.tag >>" >> $BASH_ENV
+            echo "export LATEST_URL=public.ecr.aws/sumologic/<< parameters.repo >>:latest" >> $BASH_ENV
+      - run:
           name: Build image
-          environment:
-            REGISTRY: public.ecr.aws/sumologic
-            TAG_URL: ${REGISTRY}/<< parameters.repo >>:<< parameters.tag >>
-            LATEST_URL: ${REGISTRY}/<< parameters.repo >>:latest
           command: |
             make docker-otelcontribcol
             docker tag otelcontribcol:latest ${TAG_URL}
             docker tag otelcontribcol:latest ${LATEST_URL}
+      - aws-cli/install
       - run:
           name: Login to AWS ECR
-          environment:
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_PUBLIC_ECR_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_PUBLIC_ECR_SECRET_ACCESS_KEY }}
-            REGISTRY: public.ecr.aws/sumologic
-          command: |
-            aws ecr get-login-password --region us-east-1 
-            | docker login --username AWS --password-stdin ${REGISTRY}
+          command: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${REGISTRY}
       - run:
           name: Push image
-          environment:
-            REGISTRY: public.ecr.aws/sumologic
-            TAG_URL: ${REGISTRY}/<< parameters.repo >>:<< parameters.tag >>
-            LATEST_URL: ${REGISTRY}/<< parameters.repo >>:latest
           command: |
             docker push ${TAG_URL}
             docker push ${LATEST_URL}
+
 
 workflows:
   version: 2
