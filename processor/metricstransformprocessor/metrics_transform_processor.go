@@ -154,20 +154,24 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 			matchedMetrics := transform.MetricIncludeFilter.getMatches(nameToMetricMapping)
 
 			if transform.Action == Group && len(matchedMetrics) > 0 {
+				// create new ResouceMetrics bucket
 				nData := consumerdata.MetricsData{
 					Node:     proto.Clone(data.Node).(*commonpb.Node),
 					Resource: proto.Clone(data.Resource).(*resourcepb.Resource),
 					Metrics:  make([]*metricspb.Metric, 0),
 				}
+				// update new resouce labels to the new ResouceMetrics bucket
 				nResource := nData.Resource.GetLabels()
 				for k, v := range transform.GroupResourceLabels {
 					nResource[k] = v
 				}
+
+				// reassign matched metrics to the new ResouceMetrics bucket
 				for _, match := range matchedMetrics {
 					nData.Metrics = append(nData.Metrics, match.metric)
 				}
-				groupedMds = append(groupedMds, nData)
 				data.Metrics = mtp.removeMatchedMetrics(data.Metrics, matchedMetrics)
+				groupedMds = append(groupedMds, nData)
 			}
 
 			if transform.Action == Combine && len(matchedMetrics) > 0 {
@@ -180,7 +184,8 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 				combined := mtp.combine(matchedMetrics, transform)
 				data.Metrics = mtp.removeMatchedMetricsAndAppendCombined(data.Metrics, matchedMetrics, combined)
 
-				// set matchedMetrics to the combined metric so that any additional operations are performed on the combined metric
+				// set matchedMetrics to the combined metric so that any additional operations are performed on
+				// the combined metric
 				matchedMetrics = []*match{{metric: combined}}
 			}
 
