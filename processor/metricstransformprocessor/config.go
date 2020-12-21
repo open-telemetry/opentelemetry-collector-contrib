@@ -34,9 +34,6 @@ const (
 	// NewNameFieldName is the mapstructure field name for NewName field
 	NewNameFieldName = "new_name"
 
-	//
-	GroupName = "group_name"
-
 	// AggregationTypeFieldName is the mapstructure field name for AggregationType field
 	AggregationTypeFieldName = "aggregation_type"
 
@@ -79,6 +76,8 @@ type Transform struct {
 	// REQUIRED only if Action is INSERT.
 	NewName string `mapstructure:"new_name"`
 
+	// GroupResourceLabels specifes resource labels that will be appended to this group's new ResourceMetrics message
+	// REQUIRED only if Action is GROUP
 	GroupResourceLabels map[string]string `mapstructure:"group_resource_labels"`
 
 	// AggregationType specifies how to aggregate.
