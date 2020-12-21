@@ -16,9 +16,17 @@ package ecsobserver
 
 import (
 	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+)
+
+const (
+	AwsSdkLevelRetryCount = 3
+
+	portSeparator = ";"
 )
 
 // DockerLabelConfig defines the configuration fo docker label-based service discovery.
@@ -39,6 +47,25 @@ type TaskDefinitionConfig struct {
 	containerNameRegex *regexp.Regexp
 	taskDefRegex       *regexp.Regexp
 	metricsPortList    []int
+}
+
+// init initializes the task definition config by compiling regex patterns and extracting
+// the list of metric ports.
+func (t *TaskDefinitionConfig) init() {
+	t.taskDefRegex = regexp.MustCompile(t.TaskDefArnPattern)
+
+	if t.ContainerNamePattern != "" {
+		t.containerNameRegex = regexp.MustCompile(t.ContainerNamePattern)
+	}
+
+	ports := strings.Split(t.MetricsPorts, portSeparator)
+	for _, v := range ports {
+		if port, err := strconv.Atoi(strings.TrimSpace(v)); err != nil || port < 0 {
+			continue
+		} else {
+			t.metricsPortList = append(t.metricsPortList, port)
+		}
+	}
 }
 
 // Config defines the configuration for ECS observers.

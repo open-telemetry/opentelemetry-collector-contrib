@@ -75,3 +75,28 @@ func TestLoadConfig(t *testing.T) {
 		ext1,
 	)
 }
+
+func TestTaskDefinitionConfigInit(t *testing.T) {
+	config := TaskDefinitionConfig{
+		JobName: "test_job_1",
+		MetricsPorts: "11;12;	 13 ;a;14  ",
+		TaskDefArnPattern: "^task.*$",
+	}
+
+	config.init()
+	assert.Nil(t, config.containerNameRegex)
+	assert.True(t, config.taskDefRegex.MatchString("task12"))
+	assert.False(t, config.taskDefRegex.MatchString("atask12"))
+	assert.Equal(t, config.metricsPortList, []int{11, 12, 13, 14})
+
+	config = TaskDefinitionConfig{
+		ContainerNamePattern: "^container.*$",
+		MetricsPorts: "a;b;	 c ;d;e  ",
+	}
+
+	config.init()
+	assert.NotNil(t, config.containerNameRegex)
+	assert.True(t, config.containerNameRegex.MatchString("container12"))
+	assert.False(t, config.containerNameRegex.MatchString("acontainer12"))
+	assert.Nil(t, config.metricsPortList)
+}
