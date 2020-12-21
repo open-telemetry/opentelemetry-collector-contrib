@@ -310,6 +310,7 @@ func replaceCaseOfSubmatch(replacement SubmatchCase, submatch string) string {
 	return submatch
 }
 
+// removeMatchedMetrics removes the set of matched metrics from metrics
 func (mtp *metricsTransformProcessor) removeMatchedMetrics(metrics []*metricspb.Metric, matchedMetrics []*match) []*metricspb.Metric {
 	filteredMetrics := make([]*metricspb.Metric, 0, len(metrics)-len(matchedMetrics))
 	for _, metric := range metrics {
