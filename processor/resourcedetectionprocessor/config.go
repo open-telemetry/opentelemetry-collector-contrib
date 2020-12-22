@@ -17,9 +17,9 @@ package resourcedetectionprocessor
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // Config defines configuration for Resource processor.
@@ -38,11 +38,13 @@ type Config struct {
 	DetectorConfigs DetectorConfigs `mapstructure:",squash"`
 }
 
+// DetectorConfigs contains user-specified configurations unique to all individual detectors
 type DetectorConfigs struct {
+	// EC2Config contains user-specified configurations for the EC2 detector
 	EC2Config ec2.Config `mapstructure:"ec2"`
 }
 
-func (d *DetectorConfigs) GetConfigFromType(detectorType internal.DetectorType) internal.DetectorConfig{
+func (d *DetectorConfigs) GetConfigFromType(detectorType internal.DetectorType) internal.DetectorConfig {
 	switch detectorType {
 	case ec2.TypeStr:
 		return d.EC2Config
