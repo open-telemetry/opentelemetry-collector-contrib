@@ -21,11 +21,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.uber.org/zap"
 )
 
 const (
-	AwsSdkLevelRetryCount = 3
-
 	portSeparator = ";"
 )
 
@@ -89,4 +88,6 @@ type Config struct {
 	// definition-based service discovery (optional). If this is not provided,
 	// task definition-based SD is disabled.
 	TaskDefinitions []*TaskDefinitionConfig `mapstructure:"task_definitions"`
+
+	logger *zap.Logger
 }

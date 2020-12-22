@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.uber.org/zap"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -71,6 +72,7 @@ func TestLoadConfig(t *testing.T) {
 					TaskDefArnPattern:    ".*:task-definition/nginx:[0-9]+",
 				},
 			},
+			logger: zap.NewNop(),
 		},
 		ext1,
 	)

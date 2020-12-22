@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
+	"go.uber.org/zap"
 )
 
 const (
@@ -46,8 +47,9 @@ func createDefaultConfig() configmodels.Extension {
 			NameVal: string(typeStr),
 		},
 		RefreshInterval: defaultCollectionInterval * time.Second,
-		ClusterName: "",
-		ClusterRegion: "",
+		ClusterName:     "",
+		ClusterRegion:   "",
+		logger:          zap.NewNop(),
 	}
 }
 
@@ -57,5 +59,6 @@ func createExtension(
 	cfg configmodels.Extension,
 ) (component.ServiceExtension, error) {
 	config := cfg.(*Config)
-	return newObserver(params.Logger, config)
+	config.logger = params.Logger
+	return newObserver(config)
 }

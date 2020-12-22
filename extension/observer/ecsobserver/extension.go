@@ -28,19 +28,18 @@ type ecsObserver struct {
 }
 
 type endpointsLister struct {
-	logger       *zap.Logger
-	observerName string
+	logger *zap.Logger
+	config *Config
 }
 
 var _ component.ServiceExtension = (*ecsObserver)(nil)
 
-func newObserver(logger *zap.Logger, config *Config) (component.ServiceExtension, error) {
+func newObserver(config *Config) (component.ServiceExtension, error) {
 	h := &ecsObserver{
 		EndpointsWatcher: observer.EndpointsWatcher{
 			RefreshInterval: config.RefreshInterval,
 			Endpointslister: endpointsLister{
-				logger:                logger,
-				observerName:          config.Name(),
+				config: config,
 			},
 		},
 	}
