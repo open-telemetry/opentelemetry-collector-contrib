@@ -17,8 +17,8 @@ import re
 from typing import Dict, Sequence
 
 import requests
-
 import snappy
+
 from opentelemetry.exporter.prometheus_remote_write.gen.remote_pb2 import (
     WriteRequest,
 )

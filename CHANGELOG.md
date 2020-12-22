@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#216](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/216))
 - `opentelemetry-instrumentation-grpc` Add tests for grpc span attributes, grpc `abort()` conditions
   ([#236](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/236))
+- Add README and example app for Prometheus Remote Write Exporter
+  ([#227](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/227]))
 
 ### Changed
 - `opentelemetry-instrumentation-asgi`, `opentelemetry-instrumentation-wsgi` Return `None` for `CarrierGetter` if key not found
@@ -36,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `opentelemetry-instrumentation-grpc` Comply with updated spec, rework tests
   ([#236](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/236))
 - `opentelemetry-instrumentation-asgi`, `opentelemetry-instrumentation-falcon`, `opentelemetry-instrumentation-flask`, `opentelemetry-instrumentation-pyramid`, `opentelemetry-instrumentation-wsgi` Renamed `host.port` attribute to `net.host.port`
-  ([#242](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/242))  
+  ([#242](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/242))
 - `opentelemetry-instrumentation-flask` Do not emit a warning message for request contexts created with `app.test_request_context`
   ([#253](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/253))
 - `opentelemetry-instrumentation-requests`, `opentelemetry-instrumentation-urllib` Fix span name callback parameters
