@@ -46,12 +46,11 @@ EC2 custom configuration example:
 ```yaml
 detectors: ["ec2"]
 ec2:
-    # A list of tags to add as resource attributes can be specified
-    tags_to_add:
+    # A list of regex's to match tags to add as resource attributes can be specified
+    tags:
         - tag1
         - tag2
-    # All tags can also be added as resource attributes using this flag
-    add_all_tags: true
+        - label.*
 ```
 
 * Amazon ECS: Queries the [Task Metadata Endpoint](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint.html) (TMDE) to record information about the current ECS Task. Only TMDE V4 and V3 are supported.

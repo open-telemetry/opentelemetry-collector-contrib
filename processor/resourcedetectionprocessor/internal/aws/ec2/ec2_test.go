@@ -204,7 +204,7 @@ func TestEC2Tags(t *testing.T) {
 		{
 			name: "success case one tag specified",
 			cfg: Config{
-				TagsToAdd: []string{"tag1"},
+				Tags: []string{"tag1"},
 			},
 			resourceID: "resource1",
 			expectedOutput: map[string]string{
@@ -215,20 +215,7 @@ func TestEC2Tags(t *testing.T) {
 		{
 			name: "success case all tags",
 			cfg: Config{
-				AddAllTags: true,
-			},
-			resourceID: "resource1",
-			expectedOutput: map[string]string{
-				"tag1": "val1",
-				"tag2": "val2",
-			},
-			shouldError: false,
-		},
-		{
-			name: "success case all tags override list",
-			cfg: Config{
-				AddAllTags: true,
-				TagsToAdd:  []string{"tag2"},
+				Tags: []string{".*"},
 			},
 			resourceID: "resource1",
 			expectedOutput: map[string]string{
@@ -240,10 +227,21 @@ func TestEC2Tags(t *testing.T) {
 		{
 			name: "error case in DescribeTags",
 			cfg: Config{
-				AddAllTags: true,
-				TagsToAdd:  []string{"tag2"},
+				Tags: []string{"tag2"},
 			},
 			resourceID: "error",
+			expectedOutput: map[string]string{
+				"tag1": "val1",
+				"tag2": "val2",
+			},
+			shouldError: true,
+		},
+		{
+			name: "error case invalid regex",
+			cfg: Config{
+				Tags: []string{"*"},
+			},
+			resourceID: "resource1",
 			expectedOutput: map[string]string{
 				"tag1": "val1",
 				"tag2": "val2",

@@ -12,7 +12,7 @@ processors:
     timeout: 2s
     override: false
     ec2:
-      tags_to_add:
+      tags:
         - tag1
         - tag2
   resourcedetection/ecs:

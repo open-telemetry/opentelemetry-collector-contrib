@@ -17,6 +17,7 @@ package ec2
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -91,7 +92,7 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 }
 
 func connectAndFetchEc2Tags(region string, instanceID string, cfg Config) (map[string]string, error) {
-	if !cfg.AddAllTags && len(cfg.TagsToAdd) == 0 {
+	if len(cfg.Tags) == 0 {
 		return nil, nil
 	}
 
@@ -120,18 +121,26 @@ func fetchEC2Tags(svc ec2iface.EC2API, instanceID string, cfg Config) (map[strin
 	}
 	tags := make(map[string]string)
 	for _, tag := range ec2Tags.Tags {
-		if cfg.AddAllTags || contains(cfg.TagsToAdd, *tag.Key) {
+		matched, err := regexArrayMatch(cfg.Tags, *tag.Key)
+		if err != nil {
+			return nil, err
+		}
+		if matched {
 			tags[*tag.Key] = *tag.Value
 		}
 	}
 	return tags, nil
 }
 
-func contains(arr []string, val string) bool {
+func regexArrayMatch(arr []string, val string) (bool, error) {
 	for _, elem := range arr {
-		if val == elem {
-			return true
+		matched, err := regexp.MatchString(elem, val)
+		if err != nil {
+			return false, err
+		}
+		if matched {
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
 }

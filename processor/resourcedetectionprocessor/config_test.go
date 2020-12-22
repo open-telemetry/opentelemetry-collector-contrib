@@ -63,7 +63,7 @@ func TestLoadConfig(t *testing.T) {
 		Detectors: []string{"env", "ec2"},
 		DetectorConfig: DetectorConfig{
 			EC2Config: ec2.Config{
-				TagsToAdd: []string{"tag1", "tag2"},
+				Tags: []string{"tag1", "tag2"},
 			},
 		},
 		Timeout:  2 * time.Second,
@@ -83,11 +83,11 @@ func TestGetConfigFromType(t *testing.T) {
 			detectorType: ec2.TypeStr,
 			inputDetectorConfig: DetectorConfig{
 				EC2Config: ec2.Config{
-					TagsToAdd: []string{"tag1", "tag2"},
+					Tags: []string{"tag1", "tag2"},
 				},
 			},
 			expectedConfig: ec2.Config{
-				TagsToAdd: []string{"tag1", "tag2"},
+				Tags: []string{"tag1", "tag2"},
 			},
 		},
 		{
@@ -95,7 +95,7 @@ func TestGetConfigFromType(t *testing.T) {
 			detectorType: internal.DetectorType("invalid input"),
 			inputDetectorConfig: DetectorConfig{
 				EC2Config: ec2.Config{
-					TagsToAdd: []string{"tag1", "tag2"},
+					Tags: []string{"tag1", "tag2"},
 				},
 			},
 			expectedConfig: nil,

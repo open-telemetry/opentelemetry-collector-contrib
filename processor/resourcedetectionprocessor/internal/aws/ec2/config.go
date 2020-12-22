@@ -14,11 +14,9 @@
 
 package ec2
 
+// Config defines user-specified configurations unique to the EC2 detector
 type Config struct {
-	// TagsToAdd is a list of ec2 instance tags that users want
+	// Tags is a list of regex's to match ec2 instance tags that users want
 	// to add as resource attributes to processed data
-	TagsToAdd []string `mapstructure:"tags_to_add"`
-	// AddAllTags is a boolean flag that adds all detected tags
-	// as resource attributes, and overrides the list TagsToAdd
-	AddAllTags bool `mapstructure:"add_all_tags"`
+	Tags []string `mapstructure:"tags"`
 }
