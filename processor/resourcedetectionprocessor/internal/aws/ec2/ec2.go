@@ -18,8 +18,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"go.opentelemetry.io/collector/component"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
@@ -28,20 +30,23 @@ import (
 
 const (
 	TypeStr = "ec2"
+	tagPrefix = "ec2.tag."
 )
 
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
 	metadataProvider metadataProvider
+	cfg Config
 }
 
-func NewDetector(component.ProcessorCreateParams) (internal.Detector, error) {
+func NewDetector(_ component.ProcessorCreateParams, dcfg internal.DetectorConfig) (internal.Detector, error) {
+	cfg := dcfg.(Config)
 	sess, err := session.NewSession()
 	if err != nil {
 		return nil, err
 	}
-	return &Detector{metadataProvider: newMetadataClient(sess)}, nil
+	return &Detector{metadataProvider: newMetadataClient(sess), cfg: cfg}, nil
 }
 
 func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
@@ -71,5 +76,61 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	attr.InsertString(conventions.AttributeHostType, meta.InstanceType)
 	attr.InsertString(conventions.AttributeHostName, hostname)
 
+	tags, err := fetchEc2Tags(meta.Region, meta.InstanceID, d.cfg)
+	if err != nil {
+		return res, err
+	}
+
+	for key, val := range tags {
+		attr.InsertString(tagPrefix + key, val)
+	}
+
 	return res, nil
+}
+
+func fetchEc2Tags(region string, instanceID string, cfg Config) (map[string]string, error) {
+	if(!cfg.AddAllTags && len(cfg.TagsToAdd) == 0){
+		fmt.Println("skipped ec2 tags")
+		return nil, nil
+	}
+
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String(region)},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	e := ec2.New(sess)
+	if _, err = sess.Config.Credentials.Get(); err != nil {
+		return nil, err
+	}
+
+	ec2Tags, err := e.DescribeTags(&ec2.DescribeTagsInput{
+		Filters: []*ec2.Filter{{
+			Name: aws.String("resource-id"),
+			Values: []*string{
+				aws.String(instanceID),
+			},
+		}},
+	})
+	if err != nil {
+		return nil, err
+	}
+	tags := make(map[string]string)
+	for _, tag := range ec2Tags.Tags {
+		if cfg.AddAllTags || contains(cfg.TagsToAdd, *tag.Key) {
+			tags[*tag.Key]= *tag.Value
+		}
+	}
+	return tags, nil
+}
+
+func contains(arr []string, val string) bool {
+	for _, elem := range arr {
+		if val == elem {
+			return true
+		}
+	}
+	return false
 }

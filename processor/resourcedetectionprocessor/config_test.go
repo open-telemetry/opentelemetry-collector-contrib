@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -57,7 +59,51 @@ func TestLoadConfig(t *testing.T) {
 			NameVal: "resourcedetection/ec2",
 		},
 		Detectors: []string{"env", "ec2"},
+		DetectorConfigs: DetectorConfigs {
+			EC2Config: ec2.Config{
+				TagsToAdd: []string{"tag1", "tag2"},
+			},
+		},
 		Timeout:   2 * time.Second,
 		Override:  false,
 	})
+}
+
+func TestGetConfigFromType(t *testing.T) {
+	tests := []struct {
+		name                string
+		detectorType        internal.DetectorType
+		inputDetectorConfig DetectorConfigs
+		expectedConfig      internal.DetectorConfig
+	}{
+		{
+			name: "Get EC2 Config",
+			detectorType: ec2.TypeStr,
+			inputDetectorConfig: DetectorConfigs {
+				EC2Config: ec2.Config{
+					TagsToAdd: []string{"tag1", "tag2"},
+				},
+			},
+			expectedConfig: ec2.Config{
+				TagsToAdd: []string{"tag1", "tag2"},
+			},
+		}, 
+		{
+			name: "Get Nil Config",
+			detectorType: internal.DetectorType("invalid input"),
+			inputDetectorConfig: DetectorConfigs {
+				EC2Config: ec2.Config{
+					TagsToAdd: []string{"tag1", "tag2"},
+				},
+			},
+			expectedConfig: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			output := tt.inputDetectorConfig.GetConfigFromType(tt.detectorType)
+			assert.Equal(t, output, tt.expectedConfig)
+		})
+	}
 }

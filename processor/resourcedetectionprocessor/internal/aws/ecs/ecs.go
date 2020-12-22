@@ -41,7 +41,7 @@ type Detector struct {
 	provider ecsMetadataProvider
 }
 
-func NewDetector(params component.ProcessorCreateParams) (internal.Detector, error) {
+func NewDetector(params component.ProcessorCreateParams, _ internal.DetectorConfig) (internal.Detector, error) {
 	return &Detector{provider: &ecsMetadataProviderImpl{logger: params.Logger, client: &http.Client{}}}, nil
 }
 

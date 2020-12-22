@@ -60,7 +60,7 @@ func (mm mockMetadata) hostname(ctx context.Context) (string, error) {
 }
 
 func TestNewDetector(t *testing.T) {
-	detector, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()})
+	detector, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, Config{})
 	assert.NotNil(t, detector)
 	assert.NoError(t, err)
 }

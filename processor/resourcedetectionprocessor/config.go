@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 )
 
 // Config defines configuration for Resource processor.
@@ -32,4 +34,19 @@ type Config struct {
 	// Override indicates whether any existing resource attributes
 	// should be overridden or preserved. Defaults to true.
 	Override bool `mapstructure:"override"`
+	// InternalConfig is a list of settings specific to all detectors
+	DetectorConfigs DetectorConfigs `mapstructure:",squash"`
+}
+
+type DetectorConfigs struct {
+	EC2Config ec2.Config `mapstructure:"ec2"`
+}
+
+func (d *DetectorConfigs) GetConfigFromType(detectorType internal.DetectorType) internal.DetectorConfig{
+	switch detectorType {
+	case ec2.TypeStr:
+		return d.EC2Config
+	default:
+		return nil
+	}
 }
