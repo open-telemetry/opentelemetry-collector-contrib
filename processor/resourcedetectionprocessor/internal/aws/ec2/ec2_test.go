@@ -20,12 +20,13 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
@@ -159,6 +160,104 @@ func TestDetector_Detect(t *testing.T) {
 				require.NotNil(t, got)
 				assert.Equal(t, internal.AttributesToMap(tt.want.Attributes()), internal.AttributesToMap(got.Attributes()))
 			}
+		})
+	}
+}
+
+// Define a mock client to mock connecting to an EC2 instance
+type mockEC2Client struct {
+    ec2iface.EC2API
+}
+
+// override the DescribeTags function to mock the output from an actual EC2 instance
+func (m *mockEC2Client) DescribeTags(input *ec2.DescribeTagsInput) (*ec2.DescribeTagsOutput, error) {
+	if *input.Filters[0].Values[0] == "error"{
+		return nil, errors.New("error")
+	}
+
+	tag1 := "tag1"
+	tag2 := "tag2"
+	resource1 := "resource1"
+	val1 := "val1"
+	val2 := "val2"
+	resourceType := "type"
+
+	return &ec2.DescribeTagsOutput{
+		Tags: []*ec2.TagDescription{
+			{Key: &tag1, ResourceId: &resource1, ResourceType: &resourceType, Value: &val1},
+			{Key: &tag2, ResourceId: &resource1, ResourceType: &resourceType, Value: &val2},
+		},
+	}, nil
+}
+
+func TestEC2Tags(t *testing.T) {
+	tests := []struct {
+		name           string
+		cfg            Config
+		resourceID     string
+		expectedOutput map[string]string
+		shouldError    bool
+	}{
+		{
+			name: "success case one tag specified",
+			cfg: Config{
+				TagsToAdd: []string{"tag1"},
+			},
+			resourceID: "resource1",
+			expectedOutput: map[string]string{
+				"tag1": "val1",
+			},
+			shouldError: false,
+		},
+		{
+			name: "success case all tags",
+			cfg: Config{
+				AddAllTags: true,
+			},
+			resourceID: "resource1",
+			expectedOutput: map[string]string{
+				"tag1": "val1",
+				"tag2": "val2",
+			},
+			shouldError: false,
+		},
+		{
+			name: "success case all tags override list",
+			cfg: Config{
+				AddAllTags: true,
+				TagsToAdd: []string{"tag2"},
+			},
+			resourceID: "resource1",
+			expectedOutput: map[string]string{
+				"tag1": "val1",
+				"tag2": "val2",
+			},
+			shouldError: false,
+		},
+		{
+			name: "error case in DescribeTags",
+			cfg: Config{
+				AddAllTags: true,
+				TagsToAdd: []string{"tag2"},
+			},
+			resourceID: "error",
+			expectedOutput: map[string]string{
+				"tag1": "val1",
+				"tag2": "val2",
+			},
+			shouldError: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &mockEC2Client{}
+			output, err := fetchEC2Tags(m, tt.resourceID, tt.cfg)
+			if tt.shouldError {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, output, tt.expectedOutput)
 		})
 	}
 }

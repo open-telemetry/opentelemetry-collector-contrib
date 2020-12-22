@@ -22,6 +22,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"go.opentelemetry.io/collector/component"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
@@ -76,9 +77,9 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	attr.InsertString(conventions.AttributeHostType, meta.InstanceType)
 	attr.InsertString(conventions.AttributeHostName, hostname)
 
-	tags, err := fetchEc2Tags(meta.Region, meta.InstanceID, d.cfg)
+	tags, err := connectAndFetchEc2Tags(meta.Region, meta.InstanceID, d.cfg)
 	if err != nil {
-		return res, err
+		return res, fmt.Errorf("failed fetching ec2 instance tags: %w", err)
 	}
 
 	for key, val := range tags {
@@ -88,9 +89,8 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	return res, nil
 }
 
-func fetchEc2Tags(region string, instanceID string, cfg Config) (map[string]string, error) {
+func connectAndFetchEc2Tags(region string, instanceID string, cfg Config) (map[string]string, error) {
 	if(!cfg.AddAllTags && len(cfg.TagsToAdd) == 0){
-		fmt.Println("skipped ec2 tags")
 		return nil, nil
 	}
 
@@ -100,12 +100,15 @@ func fetchEc2Tags(region string, instanceID string, cfg Config) (map[string]stri
 	if err != nil {
 		return nil, err
 	}
-
-	e := ec2.New(sess)
 	if _, err = sess.Config.Credentials.Get(); err != nil {
 		return nil, err
 	}
+	e := ec2.New(sess)
 
+	return fetchEC2Tags(e, instanceID, cfg)
+}
+
+func fetchEC2Tags(e ec2iface.EC2API, instanceID string, cfg Config) (map[string]string, error) {
 	ec2Tags, err := e.DescribeTags(&ec2.DescribeTagsInput{
 		Filters: []*ec2.Filter{{
 			Name: aws.String("resource-id"),
