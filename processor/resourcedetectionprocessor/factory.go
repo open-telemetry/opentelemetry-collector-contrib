@@ -154,7 +154,7 @@ func (f *factory) getResourceDetectionProcessor(
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	provider, err := f.getResourceProvider(params, cfg.Name(), oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfigs)
+	provider, err := f.getResourceProvider(params, cfg.Name(), oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +170,7 @@ func (f *factory) getResourceProvider(
 	processorName string,
 	timeout time.Duration,
 	configuredDetectors []string,
-	detectorConfigs DetectorConfigs,
+	detectorConfigs DetectorConfig,
 ) (*internal.ResourceProvider, error) {
 	f.lock.Lock()
 	defer f.lock.Unlock()

@@ -22,12 +22,15 @@ import (
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 type mockMetadata struct {
@@ -166,12 +169,12 @@ func TestDetector_Detect(t *testing.T) {
 
 // Define a mock client to mock connecting to an EC2 instance
 type mockEC2Client struct {
-    ec2iface.EC2API
+	ec2iface.EC2API
 }
 
 // override the DescribeTags function to mock the output from an actual EC2 instance
 func (m *mockEC2Client) DescribeTags(input *ec2.DescribeTagsInput) (*ec2.DescribeTagsOutput, error) {
-	if *input.Filters[0].Values[0] == "error"{
+	if *input.Filters[0].Values[0] == "error" {
 		return nil, errors.New("error")
 	}
 
@@ -225,7 +228,7 @@ func TestEC2Tags(t *testing.T) {
 			name: "success case all tags override list",
 			cfg: Config{
 				AddAllTags: true,
-				TagsToAdd: []string{"tag2"},
+				TagsToAdd:  []string{"tag2"},
 			},
 			resourceID: "resource1",
 			expectedOutput: map[string]string{
@@ -238,7 +241,7 @@ func TestEC2Tags(t *testing.T) {
 			name: "error case in DescribeTags",
 			cfg: Config{
 				AddAllTags: true,
-				TagsToAdd: []string{"tag2"},
+				TagsToAdd:  []string{"tag2"},
 			},
 			resourceID: "error",
 			expectedOutput: map[string]string{

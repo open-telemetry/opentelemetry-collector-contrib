@@ -20,17 +20,18 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"go.opentelemetry.io/collector/component"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 const (
-	TypeStr = "ec2"
+	TypeStr   = "ec2"
 	tagPrefix = "ec2.tag."
 )
 
@@ -38,7 +39,7 @@ var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
 	metadataProvider metadataProvider
-	cfg Config
+	cfg              Config
 }
 
 func NewDetector(_ component.ProcessorCreateParams, dcfg internal.DetectorConfig) (internal.Detector, error) {
@@ -83,14 +84,14 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	}
 
 	for key, val := range tags {
-		attr.InsertString(tagPrefix + key, val)
+		attr.InsertString(tagPrefix+key, val)
 	}
 
 	return res, nil
 }
 
 func connectAndFetchEc2Tags(region string, instanceID string, cfg Config) (map[string]string, error) {
-	if(!cfg.AddAllTags && len(cfg.TagsToAdd) == 0){
+	if !cfg.AddAllTags && len(cfg.TagsToAdd) == 0 {
 		return nil, nil
 	}
 
@@ -100,16 +101,13 @@ func connectAndFetchEc2Tags(region string, instanceID string, cfg Config) (map[s
 	if err != nil {
 		return nil, err
 	}
-	if _, err = sess.Config.Credentials.Get(); err != nil {
-		return nil, err
-	}
 	e := ec2.New(sess)
 
 	return fetchEC2Tags(e, instanceID, cfg)
 }
 
-func fetchEC2Tags(e ec2iface.EC2API, instanceID string, cfg Config) (map[string]string, error) {
-	ec2Tags, err := e.DescribeTags(&ec2.DescribeTagsInput{
+func fetchEC2Tags(svc ec2iface.EC2API, instanceID string, cfg Config) (map[string]string, error) {
+	ec2Tags, err := svc.DescribeTags(&ec2.DescribeTagsInput{
 		Filters: []*ec2.Filter{{
 			Name: aws.String("resource-id"),
 			Values: []*string{
@@ -123,7 +121,7 @@ func fetchEC2Tags(e ec2iface.EC2API, instanceID string, cfg Config) (map[string]
 	tags := make(map[string]string)
 	for _, tag := range ec2Tags.Tags {
 		if cfg.AddAllTags || contains(cfg.TagsToAdd, *tag.Key) {
-			tags[*tag.Key]= *tag.Value
+			tags[*tag.Key] = *tag.Value
 		}
 	}
 	return tags, nil

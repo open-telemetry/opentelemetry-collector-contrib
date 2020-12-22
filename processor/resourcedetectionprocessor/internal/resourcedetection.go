@@ -33,9 +33,9 @@ type Detector interface {
 	Detect(ctx context.Context) (pdata.Resource, error)
 }
 
-type DetectorConfig interface {}
+type DetectorConfig interface{}
 
-type InternalDetectorConfigs interface {
+type ResourceDetectorConfig interface {
 	GetConfigFromType(DetectorType) DetectorConfig
 }
 
@@ -53,7 +53,7 @@ func NewProviderFactory(detectors map[DetectorType]DetectorFactory) *ResourcePro
 func (f *ResourceProviderFactory) CreateResourceProvider(
 	params component.ProcessorCreateParams,
 	timeout time.Duration,
-	detectorConfigs InternalDetectorConfigs,
+	detectorConfigs ResourceDetectorConfig,
 	detectorTypes ...DetectorType) (*ResourceProvider, error) {
 	detectors, err := f.getDetectors(params, detectorConfigs, detectorTypes)
 	if err != nil {
@@ -64,7 +64,7 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 	return provider, nil
 }
 
-func (f *ResourceProviderFactory) getDetectors(params component.ProcessorCreateParams, detectorConfigs InternalDetectorConfigs, detectorTypes []DetectorType) ([]Detector, error) {
+func (f *ResourceProviderFactory) getDetectors(params component.ProcessorCreateParams, detectorConfigs ResourceDetectorConfig, detectorTypes []DetectorType) ([]Detector, error) {
 	detectors := make([]Detector, 0, len(detectorTypes))
 	for _, detectorType := range detectorTypes {
 		detectorFactory, ok := f.detectors[detectorType]

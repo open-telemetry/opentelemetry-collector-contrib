@@ -19,12 +19,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
+
 	"github.com/stretchr/testify/assert"
+
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -59,13 +61,13 @@ func TestLoadConfig(t *testing.T) {
 			NameVal: "resourcedetection/ec2",
 		},
 		Detectors: []string{"env", "ec2"},
-		DetectorConfigs: DetectorConfigs {
+		DetectorConfig: DetectorConfig{
 			EC2Config: ec2.Config{
 				TagsToAdd: []string{"tag1", "tag2"},
 			},
 		},
-		Timeout:   2 * time.Second,
-		Override:  false,
+		Timeout:  2 * time.Second,
+		Override: false,
 	})
 }
 
@@ -73,13 +75,13 @@ func TestGetConfigFromType(t *testing.T) {
 	tests := []struct {
 		name                string
 		detectorType        internal.DetectorType
-		inputDetectorConfig DetectorConfigs
+		inputDetectorConfig DetectorConfig
 		expectedConfig      internal.DetectorConfig
 	}{
 		{
-			name: "Get EC2 Config",
+			name:         "Get EC2 Config",
 			detectorType: ec2.TypeStr,
-			inputDetectorConfig: DetectorConfigs {
+			inputDetectorConfig: DetectorConfig{
 				EC2Config: ec2.Config{
 					TagsToAdd: []string{"tag1", "tag2"},
 				},
@@ -87,11 +89,11 @@ func TestGetConfigFromType(t *testing.T) {
 			expectedConfig: ec2.Config{
 				TagsToAdd: []string{"tag1", "tag2"},
 			},
-		}, 
+		},
 		{
-			name: "Get Nil Config",
+			name:         "Get Nil Config",
 			detectorType: internal.DetectorType("invalid input"),
-			inputDetectorConfig: DetectorConfigs {
+			inputDetectorConfig: DetectorConfig{
 				EC2Config: ec2.Config{
 					TagsToAdd: []string{"tag1", "tag2"},
 				},
