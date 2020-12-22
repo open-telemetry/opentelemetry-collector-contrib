@@ -2,6 +2,10 @@ package metricstransformprocessor
 
 import (
 	"context"
+	"regexp"
+	"sort"
+	"strings"
+
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/google/go-cmp/cmp"
@@ -13,12 +17,10 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"google.golang.org/protobuf/testing/protocmp"
-	"regexp"
-	"sort"
-	"strings"
+
+	"testing"
 
 	"go.uber.org/zap"
-	"testing"
 )
 
 type metricsGroupingTest struct {

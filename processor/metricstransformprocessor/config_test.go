@@ -132,11 +132,9 @@ func TestLoadingFullConfig(t *testing.T) {
 							Include:   "name2",
 							MatchType: "strict",
 						},
-						Action:       "group",
+						Action:              "group",
 						GroupResourceLabels: map[string]string{"metric_group": "2"},
 					},
-
-
 				},
 			},
 		},

@@ -161,7 +161,7 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 					Metrics:  make([]*metricspb.Metric, 0),
 				}
 
-				// update new resouce labels to the new ResouceMetrics bucket
+				// update new resource labels to the new ResouceMetrics bucket
 				if nData.Resource == nil || nData.Resource.GetLabels() == nil {
 					nData.Resource = &resourcepb.Resource{
 						Labels: make(map[string]string),
