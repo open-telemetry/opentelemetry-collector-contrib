@@ -119,7 +119,6 @@ func TestCreateProcessors(t *testing.T) {
 			succeed:      false,
 			errorMessage: fmt.Sprintf("%q must be in %q", SubmatchCaseFieldName, SubmatchCases),
 		},
-
 	}
 
 	for _, test := range tests {
