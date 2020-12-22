@@ -52,18 +52,22 @@ func (p *MetadataProcessor) Process(clusterName string, taskList []*ECSTask) ([]
 		if aws.StringValue(task.Task.LaunchType) != ecs.LaunchTypeEc2 {
 			continue
 		}
-		if ciArn := aws.StringValue(task.Task.ContainerInstanceArn); ciArn != "" {
-			if res, ok := p.ec2Cache.Get(ciArn); ok {
-				// Try retrieving from cache
-				task.EC2Info = res.(*EC2MetaData)
-			} else {
-				// Save for querying via API
-				if len(currBatch) >= batchSize {
-					arnBatches = append(arnBatches, currBatch)
-					currBatch = make([]string, 0, batchSize)
-				}
-				currBatch = append(currBatch, ciArn)
+	
+		ciArn := aws.StringValue(task.Task.ContainerInstanceArn)
+		if ciArn == "" {
+			continue
+		}
+	
+		if res, ok := p.ec2Cache.Get(ciArn); ok {
+			// Try retrieving from cache
+			task.EC2Info = res.(*EC2MetaData)
+		} else {
+			// Save for querying via API
+			if len(currBatch) >= batchSize {
+				arnBatches = append(arnBatches, currBatch)
+				currBatch = make([]string, 0, batchSize)
 			}
+			currBatch = append(currBatch, ciArn)
 		}
 	}
 
