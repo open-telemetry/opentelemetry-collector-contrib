@@ -40,6 +40,8 @@ to read resource information from the [GCE metadata server](https://cloud.google
     * host.name
     * host.type
 
+It also can optionally gather tags for the EC2 instance that the collector is running on
+
 * Amazon ECS: Queries the [Task Metadata Endpoint](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint.html) (TMDE) to record information about the current ECS Task. Only TMDE V4 and V3 are supported.
 
     * cloud.provider (aws)
@@ -71,6 +73,18 @@ to read resource information from the [GCE metadata server](https://cloud.google
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
+```
+
+EC2 custom configuration example:
+```yaml
+detectors: ["ec2"]
+ec2:
+    # A list of tags to add as resource attributes can be specified
+    tags_to_add:
+        - tag1
+        - tag2
+    # All tags can also be added as resource attributes using this flag
+    add_all_tags: true
 ```
 
 The full list of settings exposed for this extension are documented [here](./config.go)
