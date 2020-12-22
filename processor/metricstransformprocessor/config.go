@@ -34,6 +34,9 @@ const (
 	// NewNameFieldName is the mapstructure field name for NewName field
 	NewNameFieldName = "new_name"
 
+	// GroupResouceLabelsFieldName is the mapstructure field name for GroupResouceLabels field
+	GroupResouceLabelsFieldName = "group_resource_labels"
+
 	// AggregationTypeFieldName is the mapstructure field name for AggregationType field
 	AggregationTypeFieldName = "aggregation_type"
 

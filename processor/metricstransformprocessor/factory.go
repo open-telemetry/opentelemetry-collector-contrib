@@ -102,7 +102,7 @@ func validateConfiguration(config *Config) error {
 		}
 
 		if transform.Action == Group && transform.GroupResourceLabels == nil {
-			return fmt.Errorf("missing required field %q while %q is %v", GroupName, ActionFieldName, Group)
+			return fmt.Errorf("missing required field %q while %q is %v", GroupResouceLabelsFieldName, ActionFieldName, Group)
 		}
 
 		if transform.AggregationType != "" && !transform.AggregationType.isValid() {
