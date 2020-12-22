@@ -21,7 +21,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Get all running tasks for the target cluster
+// TaskRetrievalProcessor gets all running tasks for the target cluster.
 type TaskRetrievalProcessor struct {
 	svcEcs *ecs.ECS
 	logger *zap.Logger
@@ -54,7 +54,7 @@ func (p *TaskRetrievalProcessor) Process(clusterName string, taskList []*ECSTask
 
 		for _, f := range descTasksResp.Failures {
 			p.logger.Debug(
-				"DescribeTask Failure.",
+				"DescribeTask Failure",
 				zap.String("ARN", *f.Arn),
 				zap.String("Reason", *f.Reason),
 				zap.String("Detail", *f.Detail),
@@ -76,8 +76,9 @@ func (p *TaskRetrievalProcessor) Process(clusterName string, taskList []*ECSTask
 	return taskList, nil
 }
 
-func NewTaskProcessor(ecs *ecs.ECS) *TaskRetrievalProcessor {
+func NewTaskRetrievalProcessor(ecs *ecs.ECS, logger *zap.Logger) *TaskRetrievalProcessor {
 	return &TaskRetrievalProcessor{
 		svcEcs: ecs,
+		logger: logger,
 	}
 }

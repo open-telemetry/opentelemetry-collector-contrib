@@ -30,9 +30,12 @@ const (
 )
 
 type serviceDiscovery struct {
+	config *Config
+
 	svcEcs *ecs.ECS
 	svcEc2 *ec2.EC2
-	config *Config
+
+	processors []Processor
 }
 
 func (sd *serviceDiscovery) init() {
@@ -41,6 +44,14 @@ func (sd *serviceDiscovery) init() {
 	session := session.New(awsConfig)
 	sd.svcEcs = ecs.New(session, awsConfig)
 	sd.svcEc2 = ec2.New(session, awsConfig)
+	sd.initProcessors()
+}
+
+func (sd *serviceDiscovery) initProcessors() {
+	sd.processors = []Processor{
+		NewTaskRetrievalProcessor(sd.svcEcs, sd.config.logger),
+		NewMetadataProcessor(sd.svcEcs, sd.svcEc2, sd.config.logger),
+	}
 }
 
 // getAWSRegion retrieves the AWS region from the provided config, env var, or EC2 metadata.
