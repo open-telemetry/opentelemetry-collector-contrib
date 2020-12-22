@@ -17,10 +17,8 @@ package ecsobserver
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"go.opentelemetry.io/collector/component"
 )
 
 type ecsObserver struct {
@@ -28,18 +26,21 @@ type ecsObserver struct {
 }
 
 type endpointsLister struct {
-	logger *zap.Logger
-	config *Config
+	sd           *serviceDiscovery
+	observerName string
 }
 
 var _ component.ServiceExtension = (*ecsObserver)(nil)
 
 func newObserver(config *Config) (component.ServiceExtension, error) {
+	sd := &serviceDiscovery{config: config}
+	sd.init()
 	h := &ecsObserver{
 		EndpointsWatcher: observer.EndpointsWatcher{
 			RefreshInterval: config.RefreshInterval,
 			Endpointslister: endpointsLister{
-				config: config,
+				sd:           sd,
+				observerName: config.Name(),
 			},
 		},
 	}

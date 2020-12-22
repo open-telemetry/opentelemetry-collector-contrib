@@ -15,7 +15,6 @@
 package ecsobserver
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -42,51 +41,6 @@ func (sd *serviceDiscovery) init() {
 	session := session.New(awsConfig)
 	sd.svcEcs = ecs.New(session, awsConfig)
 	sd.svcEc2 = ec2.New(session, awsConfig)
-}
-
-func (sd *serviceDiscovery) getECSTasks() ([]*ECSTask, error) {
-	var taskList []*ECSTask
-	listTasksInput := &ecs.ListTasksInput{Cluster: &sd.config.ClusterName}
-
-	for {
-		// List all running task ARNs in the cluster
-		listTasksResp, listTasksErr := sd.svcEcs.ListTasks(listTasksInput)
-		if listTasksErr != nil {
-			return taskList, fmt.Errorf("Failed to list task ARNs for %s. Error: %s", sd.config.ClusterName, listTasksErr.Error())
-		}
-
-		// Retrieve tasks from task ARNs
-		descTasksInput := &ecs.DescribeTasksInput{
-			Cluster: &sd.config.ClusterName,
-			Tasks:   listTasksResp.TaskArns,
-		}
-		descTasksResp, descTasksErr := sd.svcEcs.DescribeTasks(descTasksInput)
-		if descTasksErr != nil {
-			return taskList, fmt.Errorf("Failed to describe ECS Tasks for %s. Error: %s", sd.config.ClusterName, descTasksErr.Error())
-		}
-
-		for _, f := range descTasksResp.Failures {
-			sd.config.logger.Debug(
-				"DescribeTask Failure.",
-				zap.String("ARN", *f.Arn),
-				zap.String("Reason", *f.Reason),
-				zap.String("Detai;", *f.Detail),
-			)
-		}
-
-		for _, task := range descTasksResp.Tasks {
-			ecsTask := &ECSTask{
-				Task: task,
-			}
-			taskList = append(taskList, ecsTask)
-		}
-
-		if listTasksResp.NextToken == nil {
-			break
-		}
-		listTasksInput.NextToken = listTasksResp.NextToken
-	}
-	return taskList, nil
 }
 
 // getAWSRegion retrieves the AWS region from the provided config, env var, or EC2 metadata.
