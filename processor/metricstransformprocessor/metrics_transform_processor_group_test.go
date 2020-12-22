@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
@@ -16,11 +17,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/translator/internaldata"
-	"google.golang.org/protobuf/testing/protocmp"
-
-	"testing"
-
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 type metricsGroupingTest struct {

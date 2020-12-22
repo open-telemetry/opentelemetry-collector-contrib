@@ -65,6 +65,11 @@ func TestCreateProcessors(t *testing.T) {
 			errorMessage: fmt.Sprintf("missing required field %q while %q is %v", NewNameFieldName, ActionFieldName, Insert),
 		},
 		{
+			configName:   "config_invalid_group.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("missing required field %q while %q is %v", GroupResouceLabelsFieldName, ActionFieldName, Group),
+		},
+		{
 			configName:   "config_invalid_action.yaml",
 			succeed:      false,
 			errorMessage: fmt.Sprintf("%q must be in %q", ActionFieldName, Actions),
@@ -114,6 +119,7 @@ func TestCreateProcessors(t *testing.T) {
 			succeed:      false,
 			errorMessage: fmt.Sprintf("%q must be in %q", SubmatchCaseFieldName, SubmatchCases),
 		},
+
 	}
 
 	for _, test := range tests {
