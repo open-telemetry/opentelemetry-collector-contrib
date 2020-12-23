@@ -425,8 +425,6 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	timerMetrics := map[string]*MetricInfo{
 		"spanTimer": {
 			Value: &CWMetricStats{
-				Max:   10,
-				Min:   0,
 				Count: 5,
 				Sum:   15,
 			},

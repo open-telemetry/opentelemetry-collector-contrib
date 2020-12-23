@@ -383,8 +383,6 @@ func TestDoubleHistogramDataPointSliceAt(t *testing.T) {
 
 	expectedDP := DataPoint{
 		Value: &CWMetricStats{
-			Min:   1,
-			Max:   3,
 			Sum:   17.13,
 			Count: 17,
 		},

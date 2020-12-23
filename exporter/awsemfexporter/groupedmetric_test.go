@@ -97,8 +97,6 @@ func TestAddToGroupedMetric(t *testing.T) {
 			map[string]*MetricInfo{
 				"foo": {
 					Value: &CWMetricStats{
-						Min:   0,
-						Max:   10,
 						Count: 18,
 						Sum:   35.0,
 					},

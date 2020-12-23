@@ -42,6 +42,7 @@ type DataPoint struct {
 // 	- pdata.DoubleDataPointSlice
 // 	- pdata.IntHistogramDataPointSlice
 // 	- pdata.DoubleHistogramDataPointSlice
+//  - pdata.DoubleSummaryDataPointSlice
 type DataPoints interface {
 	Len() int
 	// NOTE: At() is an expensive call as it calculates the metric's value
@@ -143,17 +144,8 @@ func (dps DoubleHistogramDataPointSlice) At(i int) DataPoint {
 	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
 	timestamp := unixNanoToMilliseconds(metric.Timestamp())
 
-	var minBound, maxBound float64
-	bucketBounds := metric.ExplicitBounds()
-	if len(bucketBounds) > 0 {
-		minBound = bucketBounds[0]
-		maxBound = bucketBounds[len(bucketBounds)-1]
-	}
-
 	return DataPoint{
 		Value: &CWMetricStats{
-			Min:   minBound,
-			Max:   maxBound,
 			Count: metric.Count(),
 			Sum:   metric.Sum(),
 		},
