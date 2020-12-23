@@ -73,6 +73,7 @@ jobs:
           tool: pytest
           output-file-path: output.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          max-items-in-chart: 100
           # Alert with a commit comment on possible performance regression
           alert-threshold: 200%
           fail-on-alert: true
