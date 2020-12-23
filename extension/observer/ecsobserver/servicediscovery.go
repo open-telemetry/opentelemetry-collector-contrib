@@ -50,7 +50,9 @@ func (sd *serviceDiscovery) init() {
 func (sd *serviceDiscovery) initProcessors() {
 	sd.processors = []Processor{
 		NewTaskRetrievalProcessor(sd.svcEcs, sd.config.logger),
+		NewTaskDefinitionProcessor(sd.svcEcs, sd.config.logger),
 		NewMetadataProcessor(sd.svcEcs, sd.svcEc2, sd.config.logger),
+		NewTargetProcessor(sd.svcEcs, sd.svcEc2, sd.config.logger),
 	}
 }
 

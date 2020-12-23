@@ -60,7 +60,7 @@ func (p *TaskDefinitionProcessor) Process(cluster string, taskList []*ECSTask) (
 			if err != nil {
 				return taskList, fmt.Errorf("Failed to describe task definition for %s. Error: %s", arn, err.Error())
 			}
-			
+
 			if taskDef := resp.TaskDefinition; taskDef != nil {
 				task.TaskDefinition = taskDef
 				p.taskDefCache.Add(arn, taskDef)
