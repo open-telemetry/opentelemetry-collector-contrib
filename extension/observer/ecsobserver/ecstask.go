@@ -16,7 +16,6 @@ package ecsobserver
 
 import (
 	"fmt"
-	"regexp"
 	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -35,16 +34,7 @@ const (
 	ec2InstanceTypeLabel = "InstanceType"
 	ec2VpcIdLabel        = "VpcId"
 	ec2SubnetIdLabel     = "SubnetId"
-
-	//https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config
-	defaultPrometheusMetricsPath = "/metrics"
-
-	// Prometheus <labelname> definition: a string matching the regular expression [a-zA-Z_][a-zA-Z0-9_]*
-	// Regex pattern to filter out invalid labels
-	prometheusLabelNamePattern = "^[a-zA-Z_][a-zA-Z0-9_]*$"
 )
-
-var prometheusLabelNameRegex = regexp.MustCompile(prometheusLabelNamePattern)
 
 type EC2MetaData struct {
 	ContainerInstanceId string
@@ -64,7 +54,7 @@ type ECSTask struct {
 	TaskDefinitionBased bool
 }
 
-func (t *ECSTask) addPrometheusTargets(targets map[string]*PrometheusTarget, config *Config) {
+func (t *ECSTask) addTargets(targets map[string]*Target, config *Config) {
 	ip := t.getPrivateIp()
 	if ip == "" {
 		return
@@ -102,8 +92,8 @@ func (t *ECSTask) getPrivateIp() (ip string) {
 	return
 }
 
-// addDockerLabelBasedTarget adds a Prometheus target based on docker labels.
-func (t *ECSTask) addDockerLabelBasedTarget(ip string, c *ecs.ContainerDefinition, targets map[string]*PrometheusTarget, config *Config) {
+// addDockerLabelBasedTarget adds a target based on docker labels.
+func (t *ECSTask) addDockerLabelBasedTarget(ip string, c *ecs.ContainerDefinition, targets map[string]*Target, config *Config) {
 	if !t.DockerLabelBased {
 		return
 	}
@@ -125,11 +115,9 @@ func (t *ECSTask) addDockerLabelBasedTarget(ip string, c *ecs.ContainerDefinitio
 		return
 	}
 
-	metricsPath := defaultPrometheusMetricsPath
-	metricsPathLabel := ""
+	metricsPath := ""
 	if v, ok := c.DockerLabels[config.DockerLabel.MetricsPathLabel]; ok {
 		metricsPath = aws.StringValue(v)
-		metricsPathLabel = metricsPath
 	}
 
 	targetAddr := fmt.Sprintf("%s:%d", ip, hostPort)
@@ -143,11 +131,15 @@ func (t *ECSTask) addDockerLabelBasedTarget(ip string, c *ecs.ContainerDefinitio
 		customizedJobName = aws.StringValue(jobName)
 	}
 
-	targets[endpoint] = t.generatePrometheusTarget(c, targetAddr, metricsPathLabel, customizedJobName)
+	targets[endpoint] = &Target{
+		Address:     targetAddr,
+		MetricsPath: metricsPath,
+		Labels:      t.generateTargetLabels(c, metricsPath, customizedJobName),
+	}
 }
 
-// addTaskDefinitionBasedTargets adds Prometheus targets based on task definition.
-func (t *ECSTask) addTaskDefinitionBasedTargets(ip string, c *ecs.ContainerDefinition, targets map[string]*PrometheusTarget, config *Config) {
+// addTaskDefinitionBasedTargets adds targets based on task definition.
+func (t *ECSTask) addTaskDefinitionBasedTargets(ip string, c *ecs.ContainerDefinition, targets map[string]*Target, config *Config) {
 	if !t.TaskDefinitionBased {
 		return
 	}
@@ -170,15 +162,14 @@ func (t *ECSTask) addTaskDefinitionBasedTargets(ip string, c *ecs.ContainerDefin
 				continue
 			}
 
-			metricsPath := defaultPrometheusMetricsPath
-			if taskDef.MetricsPath != "" {
-				metricsPath = taskDef.MetricsPath
-			}
-
 			targetAddr := fmt.Sprintf("%s:%d", ip, hostPort)
-			endpoint := targetAddr + metricsPath
+			endpoint := targetAddr + taskDef.MetricsPath
 			if _, ok := targets[endpoint]; !ok {
-				targets[endpoint] = t.generatePrometheusTarget(c, targetAddr, taskDef.MetricsPath, taskDef.JobName)
+				targets[endpoint] = &Target{
+					Address:     targetAddr,
+					MetricsPath: taskDef.MetricsPath,
+					Labels:      t.generateTargetLabels(c, taskDef.MetricsPath, taskDef.JobName),
+				}
 			}
 		}
 
@@ -218,8 +209,8 @@ func (t *ECSTask) getHostPort(containerPort int64, c *ecs.ContainerDefinition) i
 	return 0
 }
 
-// generatePrometheusTarget creates a Prometheus target with labels.
-func (t *ECSTask) generatePrometheusTarget(c *ecs.ContainerDefinition, targetAddr string, metricsPath string, jobName string) *PrometheusTarget {
+// generateTargetLabels creates labels for discovered target.
+func (t *ECSTask) generateTargetLabels(c *ecs.ContainerDefinition, metricsPath string, jobName string) map[string]string {
 	labels := make(map[string]string)
 	revisionStr := fmt.Sprintf("%d", *t.TaskDefinition.Revision)
 
@@ -238,18 +229,13 @@ func (t *ECSTask) generatePrometheusTarget(c *ecs.ContainerDefinition, targetAdd
 	}
 
 	for k, v := range c.DockerLabels {
-		if prometheusLabelNameRegex.MatchString(k) {
-			addTargetLabel(labels, k, v)
-		}
+		addTargetLabel(labels, k, v)
 	}
 
 	// handle customized job label last, so the previous job docker label is overriden
 	addTargetLabel(labels, taskJobNameLabel, &jobName)
 
-	return &PrometheusTarget{
-		Targets: []string{targetAddr},
-		Labels:  labels,
-	}
+	return labels
 }
 
 // addTargetLabel adds a label to the labels map if the given label value is valid.

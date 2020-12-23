@@ -32,6 +32,12 @@ func (e *Endpoint) String() string {
 	return fmt.Sprintf("Endpoint{ID: %v, Target: %v, Details: %T%+v}", e.ID, e.Target, e.Details, e.Details)
 }
 
+// Task is a discovered ECS task.
+type Task struct {
+	MetricsPath string
+	Labels      map[string]string
+}
+
 // Pod is a discovered k8s pod.
 type Pod struct {
 	// Name of the pod.
@@ -77,9 +83,18 @@ func EndpointToEnv(endpoint Endpoint) (EndpointEnv, error) {
 	ruleTypes := map[string]interface{}{
 		"port": false,
 		"pod":  false,
+		"task": false,
 	}
 
 	switch o := endpoint.Details.(type) {
+	case Task:
+		ruleTypes["task"] = true
+		return map[string]interface{}{
+			"type":        ruleTypes,
+			"endpoint":    endpoint.Target,
+			"metricsPath": o.MetricsPath,
+			"labels":      o.Labels,
+		}, nil
 	case Pod:
 		ruleTypes["pod"] = true
 		return map[string]interface{}{

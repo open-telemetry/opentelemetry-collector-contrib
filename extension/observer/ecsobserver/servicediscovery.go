@@ -23,11 +23,54 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
 const (
 	AwsSdkLevelRetryCount = 3
+
+	//https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config
+	defaultPrometheusMetricsPath = "/metrics"
 )
+
+// PrometheusTarget represents a discovered Prometheus target.
+type PrometheusTarget struct {
+	Targets []string          `yaml:"targets"`
+	Labels  map[string]string `yaml:"labels"`
+}
+
+// Target represents a discovered ECS endpoint.
+type Target struct {
+	Address     string
+	MetricsPath string
+	Labels      map[string]string
+}
+
+// toPrometheusTarget converts target into seriablizable Prometheus target.
+func (t *Target) toPrometheusTarget() *PrometheusTarget {
+	metricsPath := t.MetricsPath
+	if metricsPath == "" {
+		metricsPath = defaultPrometheusMetricsPath
+	}
+
+	return &PrometheusTarget{
+		Targets: []string{t.Address + metricsPath},
+		Labels:  t.Labels,
+	}
+}
+
+// toEndpoint converts target into seriablizable Prometheus target.
+func (t *Target) toEndpoint() *observer.Endpoint {
+	return &observer.Endpoint{
+		ID:     observer.EndpointID(t.Address + t.MetricsPath),
+		Target: t.Address,
+		Details: observer.Task{
+			MetricsPath: t.MetricsPath,
+			Labels:      t.Labels,
+		},
+	}
+}
 
 type serviceDiscovery struct {
 	config *Config
@@ -52,8 +95,34 @@ func (sd *serviceDiscovery) initProcessors() {
 		NewTaskRetrievalProcessor(sd.svcEcs, sd.config.logger),
 		NewTaskDefinitionProcessor(sd.svcEcs, sd.config.logger),
 		NewMetadataProcessor(sd.svcEcs, sd.svcEc2, sd.config.logger),
-		NewTargetProcessor(sd.svcEcs, sd.svcEc2, sd.config.logger),
 	}
+}
+
+func (sd *serviceDiscovery) discoverTargets() map[string]*Target {
+	var taskList []*ECSTask
+	var err error
+	for _, p := range sd.processors {
+		taskList, err = p.Process(sd.config.ClusterName, taskList)
+		// Ignore partial result to avoid overwriting existing targets
+		if err != nil {
+			sd.config.logger.Error(
+				"ECS Service Discovery failed to discover targets",
+				zap.String("processor name", p.ProcessorName()),
+				zap.String("error", err.Error()),
+			)
+			return nil
+		}
+	}
+
+	// Dedup Key for Targets: target + metricsPath
+	// e.g. 10.0.0.28:9404/metrics
+	//      10.0.0.28:9404/stats/metrics
+	targets := make(map[string]*Target)
+	for _, t := range taskList {
+		t.addTargets(targets, sd.config)
+	}
+
+	return targets
 }
 
 // getAWSRegion retrieves the AWS region from the provided config, env var, or EC2 metadata.
