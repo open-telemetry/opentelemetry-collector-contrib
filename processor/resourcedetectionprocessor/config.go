@@ -17,10 +17,10 @@ package resourcedetectionprocessor
 import (
 	"time"
 
+	"go.opentelemetry.io/collector/config/configmodels"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
-
-	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // Config defines configuration for Resource processor.
