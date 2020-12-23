@@ -322,7 +322,7 @@ func buildDatadogContainerTags(spanTags map[string]string) string {
 		b.WriteString(fmt.Sprintf("%s:%s,", "pod_name", val))
 	}
 
-	return b.String()
+	return strings.TrimSuffix(b.String(), ",")
 }
 
 // TODO: this seems to resolve to SPAN_KIND_UNSPECIFIED in e2e using jaeger receiver
