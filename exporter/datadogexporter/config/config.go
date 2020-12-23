@@ -93,6 +93,7 @@ type TracesConfig struct {
 // It is embedded in the configuration
 type TagsConfig struct {
 	// Hostname is the host name for unified service tagging.
+	// It can also be set through the `DD_HOST` environment variable.
 	// If unset, it is determined automatically.
 	// See https://docs.datadoghq.com/agent/faq/how-datadog-agent-determines-the-hostname
 	// for more details.
