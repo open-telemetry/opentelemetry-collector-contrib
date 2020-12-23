@@ -99,6 +99,18 @@ func TestOverrideMetricsURL(t *testing.T) {
 	assert.Equal(t, cfg.Metrics.Endpoint, DebugEndpoint)
 }
 
+// TestDefaultSite tests that the Site option is set to the
+// default value when no value was set prior to running Sanitize
+func TestDefaultSite(t *testing.T) {
+	cfg := Config{
+		API: APIConfig{Key: "notnull"},
+	}
+
+	err := cfg.Sanitize()
+	require.NoError(t, err)
+	assert.Equal(t, cfg.API.Site, DefaultSite)
+}
+
 func TestAPIKeyUnset(t *testing.T) {
 	cfg := Config{}
 	err := cfg.Sanitize()
