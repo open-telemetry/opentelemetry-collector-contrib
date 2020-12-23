@@ -52,7 +52,7 @@ func createDefaultConfig() configmodels.Exporter {
 
 		API: config.APIConfig{
 			Key:  "$DD_API_KEY", // Must be set if using API
-			Site: "$DD_SITE", // If not provided, set during config sanitization
+			Site: "$DD_SITE",    // If not provided, set during config sanitization
 		},
 
 		TagsConfig: config.TagsConfig{

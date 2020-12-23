@@ -45,9 +45,9 @@ func TestHostTags(t *testing.T) {
 		Hostname: "customhost",
 		Env:      "customenv",
 		// Service and version should be only used for traces
-		Service: "customservice",
-		Version: "customversion",
-		Tags:    []string{"key1:val1", "key2:val2"},
+		Service:    "customservice",
+		Version:    "customversion",
+		Tags:       []string{"key1:val1", "key2:val2"},
 		EnvVarTags: "key3:val3 key4:val4",
 	}
 
@@ -64,8 +64,8 @@ func TestHostTags(t *testing.T) {
 		Hostname: "customhost",
 		Env:      "customenv",
 		// Service and version should be only used for traces
-		Service: "customservice",
-		Version: "customversion",
+		Service:    "customservice",
+		Version:    "customversion",
 		EnvVarTags: "key3:val3 key4:val4",
 	}
 

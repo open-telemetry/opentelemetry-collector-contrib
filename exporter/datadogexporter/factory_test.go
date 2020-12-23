@@ -48,7 +48,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		},
 
 		API: config.APIConfig{
-			Key: "$DD_API_KEY",
+			Key:  "$DD_API_KEY",
 			Site: "$DD_SITE",
 		},
 
@@ -251,7 +251,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 		SendMetadata: true,
 		OnlyMetadata: false,
 	}, apiConfig)
-	
+
 	defaultConfig := cfg.Exporters["datadog/default2"].(*config.Config)
 	err = defaultConfig.Sanitize()
 

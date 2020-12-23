@@ -115,7 +115,7 @@ type TagsConfig struct {
 	// Superseded by Tags if the latter is set.
 	// Should not be set in the user-provided config.
 	EnvVarTags string `mapstructure:"envvartags"`
-	
+
 	// Tags is the list of default tags to add to every metric or trace.
 	Tags []string `mapstructure:"tags"`
 }
