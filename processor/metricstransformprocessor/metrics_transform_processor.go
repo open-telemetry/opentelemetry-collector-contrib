@@ -153,7 +153,7 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 			matchedMetrics := transform.MetricIncludeFilter.getMatches(nameToMetricMapping)
 
 			if transform.Action == Group && len(matchedMetrics) > 0 {
-				nData := mtp.regroupMatchedMetrics(data, matchedMetrics, transform)
+				nData := mtp.groupMatchedMetrics(data, matchedMetrics, transform)
 				groupedMds = append(groupedMds, *nData)
 				data.Metrics = mtp.removeMatchedMetrics(data.Metrics, matchedMetrics)
 			}
@@ -198,7 +198,7 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 }
 
 // regroupMatchedMetrics groups matched metrics into a new MetricsData with a new Resource and returns it.
-func (mtp *metricsTransformProcessor) regroupMatchedMetrics(oData *consumerdata.MetricsData, matchedMetrics []*match,
+func (mtp *metricsTransformProcessor) groupMatchedMetrics(oData *consumerdata.MetricsData, matchedMetrics []*match,
 	transform internalTransform) (nData *consumerdata.MetricsData) {
 	// create new ResouceMetrics bucket
 	nData = &consumerdata.MetricsData{
