@@ -4,6 +4,8 @@ StatsD receiver for ingesting StatsD messages(https://github.com/statsd/statsd/b
 
 Supported pipeline types: metrics
 
+Use case: it does not support horizontal pool of collectors. Desired work case is that customers use the receiver as an agent with a single input at the same time.
+
 > :construction: This receiver is currently in **BETA**.
 
 ## Configuration
@@ -35,6 +37,20 @@ with detailed sample configurations [here](./testdata/config.yaml).
 Aggregation is done in statsD receiver. The default aggregation interval is 60s. The receiver only aggregates the metrics with the same metric name, metric type, label keys and label values. After each aggregation interval, the receiver will send all metrics (after aggregation) in this aggregation interval to the following workflow.
 
 It supports:
+Counter(transferred to int):
+- statsdTestMetric1:3000|c|#mykey:myvalue
+statsdTestMetric1:4000|c|#mykey:myvalue
+(get the value after incrementation: 7000)
+- statsdTestMetric1:3000|c|#mykey:myvalue
+statsdTestMetric1:20|c|@0.25|#mykey:myvalue
+(get the value after incrementation with sample rate: 3000+20/0.25=3080)
+
+When the receiver receives valid sample rate (greater than 0 and less than 1), we covert the count value to float, divide by the sample rate and then covert back to integer.
+
+The official [doc](https://github.com/statsd/statsd/blob/master/docs/metric_types.md#counting) does not support negative counter, we follow this pattern at this time. There are some requests for negative counters, we need to ake a look if we want to support later. For example:
+https://github.com/influxdata/telegraf/issues/1898
+https://thenewstack.io/collecting-metrics-using-statsd-a-standard-for-real-time-monitoring/
+https://docs.datadoghq.com/developers/metrics/dogstatsd_metrics_submission/#count
 
 Gauge(transferred to double):
 - statsdTestMetric1:500|g|#mykey:myvalue
@@ -45,13 +61,6 @@ statsdTestMetric1:+2|g|#mykey:myvalue
 statsdTestMetric1:-1|g|#mykey:myvalue
 (get the value after calculation: 501)
 
-Counter(transferred to int):
-- statsdTestMetric1:3000|c|#mykey:myvalue
-statsdTestMetric1:4000|c|#mykey:myvalue
-(get the value after incrementation: 7000)
-- statsdTestMetric1:3000|c|#mykey:myvalue
-statsdTestMetric1:20|c|@0.8|#mykey:myvalue
-(get the value after incrementation with sample rate: 3000+20/0.8=3025)
 ## Metrics
 
 General format is:
@@ -62,15 +71,20 @@ General format is:
 
 `<name>:<value>|c|@<sample-rate>|#<tag1-key>:<tag1-value>`
 
-it supports sample rate
+It supports sample rate.
+TODO: Use OTLP type(Sum data points, with AggregationTemporality=Delta and Monotonic=False) for transferred data types (now we are using OpenCensus types).
+TODO: Need to change the implementation part for sample rate after OTLP supports sample rate as a parameter later.
+
 
 ### Gauge
 
 `<name>:<value>|g|@<sample-rate>|#<tag1-key>:<tag1-value>`
 
+TODO: Use OTLP type for transferred data types (now we are using OpenCensus types).
+
 ### Timer
 
-TODO: add support for timer
+TODO: add support for timer and histogram.
 
 ## Testing
 
