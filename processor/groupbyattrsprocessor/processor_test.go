@@ -55,6 +55,7 @@ func prepareResource(attrMap pdata.AttributeMap, selectedKeys []string) pdata.Re
 
 func filterAttributeMap(attrMap pdata.AttributeMap, selectedKeys []string) pdata.AttributeMap {
 	filteredAttrMap := pdata.NewAttributeMap()
+	filteredAttrMap.InitEmptyWithCapacity(10)
 	for _, key := range selectedKeys {
 		val, _ := attrMap.Get(key)
 		filteredAttrMap.Insert(key, val)
@@ -138,8 +139,8 @@ func TestAttributeGrouping(t *testing.T) {
 				log.Attributes().Sort()
 				span.Attributes().Sort()
 
-				assert.Equal(t, expectedAttributes, log.Attributes())
-				assert.Equal(t, expectedAttributes, span.Attributes())
+				assert.EqualValues(t, expectedAttributes, log.Attributes())
+				assert.EqualValues(t, expectedAttributes, span.Attributes())
 			}
 		})
 	}

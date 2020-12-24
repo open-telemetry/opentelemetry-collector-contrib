@@ -56,13 +56,9 @@ var (
 	count    = 1000
 	groups   = randomGroups(count)
 	rs       = simpleResource()
-	lagAttrs = &logAttributeGroups{
-		attributeGroups{
-			entries: []attributeEntry{},
-		},
-	}
+	lagAttrs = &logsGroupedByAttrs{}
 )
 
 func BenchmarkAttrs(b *testing.B) {
-	lagAttrs.attributeEntry(groups[rand.Intn(count)], rs)
+	lagAttrs.attributeGroup(groups[rand.Intn(count)], rs)
 }

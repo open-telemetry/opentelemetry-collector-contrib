@@ -18,20 +18,25 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// attributeEntry keeps a grouping attributes and matching records
-type attributeEntry struct {
+// spansHavingAttrs keeps a grouping attributes and matching span records
+type spansHavingAttrs struct {
 	attrs         pdata.AttributeMap
 	resourceSpans pdata.ResourceSpans
-	resourceLogs  pdata.ResourceLogs
+}
+
+// logsHavingAttrs keeps a grouping attributes and matching log records
+type logsHavingAttrs struct {
+	attrs        pdata.AttributeMap
+	resourceLogs pdata.ResourceLogs
 }
 
 func instrumentationLibrariesEqual(il1, il2 pdata.InstrumentationLibrary) bool {
 	return il1.Name() == il2.Name() && il1.Version() == il2.Version()
 }
 
-// instrumentationLibrarySpans searches for a pdata.InstrumentationLibrarySpans instance matching
-// given InstrumentatonLibrary. If nothing is found, it creates a new one
-func (ae *attributeEntry) instrumentationLibrarySpans(library pdata.InstrumentationLibrary) pdata.InstrumentationLibrarySpans {
+// matchingInstrumentationLibrarySpans searches for a pdata.InstrumentationLibrarySpans instance matching
+// given InstrumentationLibrary. If nothing is found, it creates a new one
+func (ae *spansHavingAttrs) matchingInstrumentationLibrarySpans(library pdata.InstrumentationLibrary) pdata.InstrumentationLibrarySpans {
 	ilss := ae.resourceSpans.InstrumentationLibrarySpans()
 	for i := 0; i < ilss.Len(); i++ {
 		ill := ilss.At(i)
@@ -46,9 +51,9 @@ func (ae *attributeEntry) instrumentationLibrarySpans(library pdata.Instrumentat
 	return ils
 }
 
-// instrumentationLibraryLogs searches for a pdata.InstrumentationLibraryLogs instance matching
-// given InstrumentatonLibrary. If nothing is found, it creates a new one
-func (ae *attributeEntry) instrumentationLibraryLogs(library pdata.InstrumentationLibrary) pdata.InstrumentationLibraryLogs {
+// matchingInstrumentationLibraryLogs searches for a pdata.InstrumentationLibraryLogs instance matching
+// given InstrumentationLibrary. If nothing is found, it creates a new one
+func (ae *logsHavingAttrs) matchingInstrumentationLibraryLogs(library pdata.InstrumentationLibrary) pdata.InstrumentationLibraryLogs {
 	ills := ae.resourceLogs.InstrumentationLibraryLogs()
 	for i := 0; i < ills.Len(); i++ {
 		ill := ills.At(i)
@@ -63,39 +68,33 @@ func (ae *attributeEntry) instrumentationLibraryLogs(library pdata.Instrumentati
 	return ill
 }
 
-// attributeGroups keeps all found grouping attributes, together with the matching records
-type attributeGroups struct {
-	entries []attributeEntry
+// spansGroupedByAttrs keeps all found grouping attributes for spans, together with the matching records
+type spansGroupedByAttrs []spansHavingAttrs
+
+// logsGroupedByAttrs keeps all found grouping attributes for logs, together with the matching records
+type logsGroupedByAttrs []logsHavingAttrs
+
+func newLogsGroupedByAttrs() *logsGroupedByAttrs {
+	return &logsGroupedByAttrs{}
 }
 
-type logAttributeGroups struct {
-	attributeGroups
+func newSpansGroupedByAttrs() *spansGroupedByAttrs {
+	return &spansGroupedByAttrs{}
 }
 
-func newLogAttributeGroups() *logAttributeGroups {
-	return &logAttributeGroups{
-		attributeGroups{
-			entries: []attributeEntry{},
-		},
+func (lag logsGroupedByAttrs) findGroup(attrs pdata.AttributeMap) *logsHavingAttrs {
+	for i := 0; i < len(lag); i++ {
+		if attributeMapsEqual(lag[i].attrs, attrs) {
+			return &lag[i]
+		}
 	}
+	return nil
 }
 
-type spanAttributeGroups struct {
-	attributeGroups
-}
-
-func newSpanAttributeGroups() *spanAttributeGroups {
-	return &spanAttributeGroups{
-		attributeGroups{
-			entries: []attributeEntry{},
-		},
-	}
-}
-
-func (ag *attributeGroups) findAttr(attrs pdata.AttributeMap) *attributeEntry {
-	for i := 0; i < len(ag.entries); i++ {
-		if attributeMapsEqual(ag.entries[i].attrs, attrs) {
-			return &ag.entries[i]
+func (sag spansGroupedByAttrs) findGroup(attrs pdata.AttributeMap) *spansHavingAttrs {
+	for i := 0; i < len(sag); i++ {
+		if attributeMapsEqual(sag[i].attrs, attrs) {
+			return &sag[i]
 		}
 	}
 	return nil
@@ -111,11 +110,7 @@ func attributeMapsEqual(attrs1 pdata.AttributeMap, attrs2 pdata.AttributeMap) bo
 	attrs1.ForEach(func(k1 string, v1 pdata.AttributeValue) {
 		if matching {
 			v2, found := attrs2.Get(k1)
-			if found {
-				if !v1.Equal(v2) {
-					matching = false
-				}
-			} else {
+			if !found || !v1.Equal(v2) {
 				matching = false
 			}
 		}
@@ -124,36 +119,37 @@ func attributeMapsEqual(attrs1 pdata.AttributeMap, attrs2 pdata.AttributeMap) bo
 	return matching
 }
 
-// attributeEntry searches for an entry with matching attributes and returns it, if nothing is found, it is being created
-func (sag *spanAttributeGroups) attributeEntry(attrs pdata.AttributeMap, res pdata.Resource) attributeEntry {
-	entry := sag.findAttr(attrs)
+// attributeGroup searches for a group with matching attributes and returns it, if nothing is found, it is being created
+func (sag *spansGroupedByAttrs) attributeGroup(attrs pdata.AttributeMap, baseResource pdata.Resource) spansHavingAttrs {
+	entry := sag.findGroup(attrs)
 	if entry == nil {
-		entry = &attributeEntry{
+		entry = &spansHavingAttrs{
 			attrs:         attrs,
 			resourceSpans: pdata.NewResourceSpans(),
 		}
 
-		res.CopyTo(entry.resourceSpans.Resource())
+		baseResource.CopyTo(entry.resourceSpans.Resource())
 		attrs.CopyTo(entry.resourceSpans.Resource().Attributes())
 
-		sag.entries = append(sag.entries, *entry)
+		*sag = append(*sag, *entry)
 	}
 
 	return *entry
 }
 
-func (lag *logAttributeGroups) attributeEntry(attrs pdata.AttributeMap, res pdata.Resource) attributeEntry {
-	entry := lag.findAttr(attrs)
+// attributeGroup searches for a group with matching attributes and returns it, if nothing is found, it is being created
+func (lag *logsGroupedByAttrs) attributeGroup(attrs pdata.AttributeMap, baseResource pdata.Resource) logsHavingAttrs {
+	entry := lag.findGroup(attrs)
 	if entry == nil {
-		entry = &attributeEntry{
+		entry = &logsHavingAttrs{
 			attrs:        attrs,
 			resourceLogs: pdata.NewResourceLogs(),
 		}
 
-		res.CopyTo(entry.resourceLogs.Resource())
+		baseResource.CopyTo(entry.resourceLogs.Resource())
 		attrs.CopyTo(entry.resourceLogs.Resource().Attributes())
 
-		lag.entries = append(lag.entries, *entry)
+		*lag = append(*lag, *entry)
 	}
 
 	return *entry

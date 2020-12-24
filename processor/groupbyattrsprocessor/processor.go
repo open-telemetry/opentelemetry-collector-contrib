@@ -21,18 +21,21 @@ import (
 	"go.uber.org/zap"
 )
 
-type groupbyattrsprocessor struct {
+type groupByAttrsProcessor struct {
 	logger      *zap.Logger
 	groupByKeys []string
 }
 
 // ProcessTraces process traces and groups traces by attribute.
-func (gap *groupbyattrsprocessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (gap *groupByAttrsProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
 	rss := td.ResourceSpans()
+	groupedTraces := pdata.NewTraces()
+	groupedResourceSpans := groupedTraces.ResourceSpans()
+
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
 
-		extractedResourceSpans := newSpanAttributeGroups()
+		extractedGroups := newSpansGroupedByAttrs()
 
 		ilss := rs.InstrumentationLibrarySpans()
 		for j := 0; j < ilss.Len(); j++ {
@@ -40,35 +43,42 @@ func (gap *groupbyattrsprocessor) ProcessTraces(_ context.Context, td pdata.Trac
 			for k := 0; k < ils.Spans().Len(); k++ {
 				span := ils.Spans().At(k)
 
-				groupedAnything, groupedAttrMap, nonGroupedAttrMap := gap.splitAttrMap(span.Attributes())
+				groupedAnything, groupedAttrMap := gap.splitAttrMap(span.Attributes())
 				if groupedAnything {
 					mNumGroupedSpans.M(1)
-					overwriteAttributes(nonGroupedAttrMap, span.Attributes())
+					// Some attributes are going to be moved from log record to resource level,
+					// so we can delete those on the record level
+					deleteAttributes(groupedAttrMap, span.Attributes())
 				} else {
 					mNumNonGroupedSpans.M(1)
 				}
 
-				entry := extractedResourceSpans.attributeEntry(groupedAttrMap, rs.Resource())
-				entry.instrumentationLibrarySpans(ils.InstrumentationLibrary()).Spans().Append(span)
+				// Lets combine the base resource attributes + the extracted (grouped) attributes
+				// and keep them in the grouping entry
+				entry := extractedGroups.attributeGroup(groupedAttrMap, rs.Resource())
+				entry.matchingInstrumentationLibrarySpans(ils.InstrumentationLibrary()).Spans().Append(span)
 			}
 		}
 
-		for _, ers := range extractedResourceSpans.entries {
-			ers.resourceSpans.CopyTo(rs)
+		// Copy the grouped data into output
+		for _, eg := range *extractedGroups {
+			groupedResourceSpans.Append(eg.resourceSpans)
 		}
-		mDistSpanGroups.M(int64(len(extractedResourceSpans.entries)))
+		mDistSpanGroups.M(int64(len(*extractedGroups)))
 	}
 
-	return td, nil
+	return groupedTraces, nil
 }
 
-func (gap *groupbyattrsprocessor) ProcessLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
+func (gap *groupByAttrsProcessor) ProcessLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
 	rl := ld.ResourceLogs()
+	groupedLogs := pdata.NewLogs()
+	groupedResourceLogs := groupedLogs.ResourceLogs()
 
 	for i := 0; i < rl.Len(); i++ {
 		ls := rl.At(i)
 
-		extractedResourceLogs := newLogAttributeGroups()
+		extractedGroups := newLogsGroupedByAttrs()
 
 		ills := ls.InstrumentationLibraryLogs()
 		for j := 0; j < ills.Len(); j++ {
@@ -76,41 +86,44 @@ func (gap *groupbyattrsprocessor) ProcessLogs(_ context.Context, ld pdata.Logs) 
 			for k := 0; k < ill.Logs().Len(); k++ {
 				log := ill.Logs().At(k)
 
-				groupedAnything, groupedAttrMap, nonGroupedAttrMap := gap.splitAttrMap(log.Attributes())
+				groupedAnything, groupedAttrMap := gap.splitAttrMap(log.Attributes())
 				if groupedAnything {
 					mNumGroupedLogs.M(1)
-					overwriteAttributes(nonGroupedAttrMap, log.Attributes())
+					// Some attributes are going to be moved from log record to resource level,
+					// so we can delete those on the record level
+					deleteAttributes(groupedAttrMap, log.Attributes())
 				} else {
 					mNumNonGroupedLogs.M(1)
 				}
 
-				entry := extractedResourceLogs.attributeEntry(groupedAttrMap, ls.Resource())
-				entry.instrumentationLibraryLogs(ill.InstrumentationLibrary()).Logs().Append(log)
+				// Lets combine the base resource attributes + the extracted (grouped) attributes
+				// and keep them in the grouping entry
+				entry := extractedGroups.attributeGroup(groupedAttrMap, ls.Resource())
+				entry.matchingInstrumentationLibraryLogs(ill.InstrumentationLibrary()).Logs().Append(log)
 			}
 		}
 
-		for _, erl := range extractedResourceLogs.entries {
-			erl.resourceLogs.CopyTo(ls)
+		// Copy the grouped data into output
+		for _, eg := range *extractedGroups {
+			groupedResourceLogs.Append(eg.resourceLogs)
 		}
-		mDistLogGroups.M(int64(len(extractedResourceLogs.entries)))
+		mDistLogGroups.M(int64(len(*extractedGroups)))
 	}
 
-	return ld, nil
+	return groupedLogs, nil
 }
 
-func overwriteAttributes(selectedAttrs, targetAttrs pdata.AttributeMap) {
-	targetAttrs.InitEmptyWithCapacity(selectedAttrs.Len())
-	selectedAttrs.CopyTo(targetAttrs)
+func deleteAttributes(attrsForRemoval, targetAttrs pdata.AttributeMap) {
+	attrsForRemoval.ForEach(func(key string, _ pdata.AttributeValue) {
+		targetAttrs.Delete(key)
+	})
 }
 
-// splitAttrMap splits the AttributeMap by groupByKeys and returns three-tuple:
+// splitAttrMap splits the AttributeMap by groupByKeys and returns a tuple:
 //  - the first element indicates if anything was matched (true) or nothing (false)
-//  - the second element contains groupByKeys that did not match the keys
-//  - the third element contains groupByKeys that match given keys
-func (gap *groupbyattrsprocessor) splitAttrMap(attrMap pdata.AttributeMap) (bool, pdata.AttributeMap, pdata.AttributeMap) {
+//  - the second element contains groupByKeys that match given keys
+func (gap *groupByAttrsProcessor) splitAttrMap(attrMap pdata.AttributeMap) (bool, pdata.AttributeMap) {
 	groupedAttrMap := pdata.NewAttributeMap()
-	nonGroupedAttrMap := pdata.NewAttributeMap()
-
 	groupedAnything := false
 
 	for _, attrKey := range gap.groupByKeys {
@@ -121,18 +134,5 @@ func (gap *groupbyattrsprocessor) splitAttrMap(attrMap pdata.AttributeMap) (bool
 		}
 	}
 
-	if !groupedAnything {
-		return groupedAnything, groupedAttrMap, attrMap
-	}
-
-	groupedAttrMap.Sort()
-
-	attrMap.ForEach(func(k string, v pdata.AttributeValue) {
-		_, selected := groupedAttrMap.Get(k)
-		if !selected {
-			nonGroupedAttrMap.Insert(k, v)
-		}
-	})
-
-	return groupedAnything, groupedAttrMap, nonGroupedAttrMap
+	return groupedAnything, groupedAttrMap
 }
