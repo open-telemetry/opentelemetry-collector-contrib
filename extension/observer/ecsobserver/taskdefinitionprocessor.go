@@ -20,7 +20,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/hashicorp/golang-lru/simplelru"
-	"go.uber.org/zap"
 )
 
 const (
@@ -33,7 +32,6 @@ type TaskDefinitionProcessor struct {
 	svcEcs *ecs.ECS
 
 	taskDefCache *simplelru.LRU
-	logger       *zap.Logger
 }
 
 func (p *TaskDefinitionProcessor) ProcessorName() string {
@@ -84,13 +82,12 @@ func (p *TaskDefinitionProcessor) Process(cluster string, taskList []*ECSTask) (
 	return filteredTaskList, nil
 }
 
-func NewTaskDefinitionProcessor(ecs *ecs.ECS, logger *zap.Logger) *TaskDefinitionProcessor {
+func NewTaskDefinitionProcessor(ecs *ecs.ECS) *TaskDefinitionProcessor {
 	// Initiate the task definition LRU caching
 	lru, _ := simplelru.NewLRU(taskDefCacheSize, nil)
 
 	return &TaskDefinitionProcessor{
 		svcEcs:       ecs,
 		taskDefCache: lru,
-		logger:       logger,
 	}
 }
