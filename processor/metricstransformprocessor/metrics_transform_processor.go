@@ -153,31 +153,9 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 			matchedMetrics := transform.MetricIncludeFilter.getMatches(nameToMetricMapping)
 
 			if transform.Action == Group && len(matchedMetrics) > 0 {
-				// create new ResouceMetrics bucket
-				nData := consumerdata.MetricsData{
-					Node:     proto.Clone(data.Node).(*commonpb.Node),
-					Resource: proto.Clone(data.Resource).(*resourcepb.Resource),
-					Metrics:  make([]*metricspb.Metric, 0),
-				}
-
-				// update new resource labels to the new ResouceMetrics bucket
-				if nData.Resource == nil || nData.Resource.GetLabels() == nil {
-					nData.Resource = &resourcepb.Resource{
-						Labels: make(map[string]string),
-					}
-				}
-
-				rlabels := nData.Resource.GetLabels()
-				for k, v := range transform.GroupResourceLabels {
-					rlabels[k] = v
-				}
-
-				// reassign matched metrics to the new ResouceMetrics bucket
-				for _, match := range matchedMetrics {
-					nData.Metrics = append(nData.Metrics, match.metric)
-				}
+				nData := mtp.regroupMatchedMetrics(data, matchedMetrics, transform)
+				groupedMds = append(groupedMds, *nData)
 				data.Metrics = mtp.removeMatchedMetrics(data.Metrics, matchedMetrics)
-				groupedMds = append(groupedMds, nData)
 			}
 
 			if transform.Action == Combine && len(matchedMetrics) > 0 {
@@ -217,6 +195,35 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 
 	resultmds := append(mds, groupedMds...)
 	return internaldata.OCSliceToMetrics(resultmds), nil
+}
+
+// regroupMatchedMetrics groups matched metrics into a new MetricsData with a new Resource and returns it.
+func (mtp *metricsTransformProcessor) regroupMatchedMetrics(oData *consumerdata.MetricsData, matchedMetrics []*match,
+	transform internalTransform) (nData *consumerdata.MetricsData) {
+	// create new ResouceMetrics bucket
+	nData = &consumerdata.MetricsData{
+		Node:     proto.Clone(oData.Node).(*commonpb.Node),
+		Resource: proto.Clone(oData.Resource).(*resourcepb.Resource),
+		Metrics:  make([]*metricspb.Metric, 0),
+	}
+
+	// update new resource labels to the new ResouceMetrics bucket
+	if nData.Resource == nil || nData.Resource.GetLabels() == nil {
+		nData.Resource = &resourcepb.Resource{
+			Labels: make(map[string]string),
+		}
+	}
+
+	rlabels := nData.Resource.GetLabels()
+	for k, v := range transform.GroupResourceLabels {
+		rlabels[k] = v
+	}
+
+	// reassign matched metrics to the new ResouceMetrics bucket
+	for _, match := range matchedMetrics {
+		nData.Metrics = append(nData.Metrics, match.metric)
+	}
+	return nData
 }
 
 // canBeCombined returns true if all the provided metrics share the same type, unit, and labels
