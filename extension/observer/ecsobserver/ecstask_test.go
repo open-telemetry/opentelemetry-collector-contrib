@@ -20,6 +20,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func buildWorkloadFargateAwsvpc(dockerLabel bool, taskDef bool) *ECSTask {
@@ -438,6 +439,7 @@ func TestAddTargets(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc.config.logger = zap.NewNop()
 		t.Run(tc.testName, func(t *testing.T) {
 			for _, taskDef := range tc.config.TaskDefinitions {
 				taskDef.init()

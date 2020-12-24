@@ -102,7 +102,6 @@ func writeTargetsToFile(targets map[string]*Target, filePath string) error {
 		idx++
 	}
 
-
 	m, err := yaml.Marshal(promTargets)
 	if err != nil {
 		return fmt.Errorf("Failed to marshal Prometheus targets. Error: %s", err.Error())

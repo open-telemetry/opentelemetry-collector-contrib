@@ -53,6 +53,7 @@ func (p *TaskDefinitionProcessor) Process(cluster string, taskList []*ECSTask) (
 		if res, ok := p.taskDefCache.Get(arn); ok {
 			// Try retrieving from cache
 			task.TaskDefinition = res.(*ecs.TaskDefinition)
+			numValidTasks++
 		} else {
 			// Query API
 			input := &ecs.DescribeTaskDefinitionInput{TaskDefinition: &arn}

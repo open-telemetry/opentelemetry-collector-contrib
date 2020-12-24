@@ -60,5 +60,10 @@ func createExtension(
 ) (component.ServiceExtension, error) {
 	config := cfg.(*Config)
 	config.logger = params.Logger
+
+	for _, taskDef := range config.TaskDefinitions {
+		taskDef.init()
+	}
+
 	return newObserver(config)
 }

@@ -145,13 +145,15 @@ func (t *ECSTask) addTaskDefinitionBasedTargets(ip string, c *ecs.ContainerDefin
 	}
 
 	for _, taskDef := range config.TaskDefinitions {
+		taskDefArn := aws.StringValue(t.Task.TaskDefinitionArn)
 		// skip if task def regex mismatch
-		if !taskDef.taskDefRegex.MatchString(*t.Task.TaskDefinitionArn) {
+		if !taskDef.taskDefRegex.MatchString(taskDefArn) {
 			continue
 		}
 
+		containerName := aws.StringValue(c.Name)
 		// skip if there is container name regex pattern configured and container name mismatch
-		if taskDef.ContainerNamePattern != "" && !taskDef.containerNameRegex.MatchString(*c.Name) {
+		if taskDef.ContainerNamePattern != "" && !taskDef.containerNameRegex.MatchString(containerName) {
 			continue
 		}
 
