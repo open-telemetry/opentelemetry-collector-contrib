@@ -197,7 +197,7 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 	return internaldata.OCSliceToMetrics(resultmds), nil
 }
 
-// regroupMatchedMetrics groups matched metrics into a new MetricsData with a new Resource and returns it.
+// groupMatchedMetrics groups matched metrics into a new MetricsData with a new Resource and returns it.
 func (mtp *metricsTransformProcessor) groupMatchedMetrics(oData *consumerdata.MetricsData, matchedMetrics []*match,
 	transform internalTransform) (nData *consumerdata.MetricsData) {
 	// create new ResouceMetrics bucket
