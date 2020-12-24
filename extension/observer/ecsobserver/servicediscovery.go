@@ -49,13 +49,8 @@ type Target struct {
 
 // toPrometheusTarget converts target into seriablizable Prometheus target.
 func (t *Target) toPrometheusTarget() *PrometheusTarget {
-	metricsPath := t.MetricsPath
-	if metricsPath == "" {
-		metricsPath = defaultPrometheusMetricsPath
-	}
-
 	return &PrometheusTarget{
-		Targets: []string{t.Address + metricsPath},
+		Targets: []string{t.Address},
 		Labels:  t.Labels,
 	}
 }
