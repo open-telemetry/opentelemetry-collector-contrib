@@ -10,7 +10,7 @@ require (
 	go.uber.org/zap v1.16.0
 	k8s.io/api v0.20.1
 	k8s.io/apimachinery v0.20.1
-	k8s.io/client-go v0.20.0
+	k8s.io/client-go v0.20.1
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ./../../internal/k8sconfig
