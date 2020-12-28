@@ -60,5 +60,5 @@ var (
 )
 
 func BenchmarkAttrs(b *testing.B) {
-	lagAttrs.attributeGroup(groups[rand.Intn(count)], rs)
+	lagAttrs.attributeGroup(rs, groups[rand.Intn(count)])
 }

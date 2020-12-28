@@ -64,6 +64,160 @@ func filterAttributeMap(attrMap pdata.AttributeMap, selectedKeys []string) pdata
 	return filteredAttrMap
 }
 
+func someComplexLogs(withResourceAttrIndex bool, rlCount int, illCount int) pdata.Logs {
+	logs := pdata.NewLogs()
+
+	for i := 0; i < rlCount; i++ {
+		rl := pdata.NewResourceLogs()
+		if withResourceAttrIndex {
+			rl.Resource().Attributes().InsertInt("resourceAttrIndex", int64(i))
+		}
+
+		for j := 0; j < illCount; j++ {
+			log := pdata.NewLogRecord()
+			log.SetName(fmt.Sprintf("foo-%d-%d", i, j))
+			log.Attributes().InsertString("commonGroupedAttr", "abc")
+			log.Attributes().InsertString("commonNonGroupedAttr", "xyz")
+
+			ill := pdata.NewInstrumentationLibraryLogs()
+			ill.Logs().Append(log)
+			rl.InstrumentationLibraryLogs().Append(ill)
+		}
+
+		logs.ResourceLogs().Append(rl)
+	}
+
+	return logs
+}
+
+func someComplexTraces(withResourceAttrIndex bool, rsCount int, ilsCount int) pdata.Traces {
+	traces := pdata.NewTraces()
+
+	for i := 0; i < rsCount; i++ {
+		rs := pdata.NewResourceSpans()
+		if withResourceAttrIndex {
+			rs.Resource().Attributes().InsertInt("resourceAttrIndex", int64(i))
+		}
+
+		for j := 0; j < ilsCount; j++ {
+			span := pdata.NewSpan()
+			span.SetName(fmt.Sprintf("foo-%d-%d", i, j))
+			span.Attributes().InsertString("commonGroupedAttr", "abc")
+			span.Attributes().InsertString("commonNonGroupedAttr", "xyz")
+
+			ils := pdata.NewInstrumentationLibrarySpans()
+			ils.Spans().Append(span)
+			rs.InstrumentationLibrarySpans().Append(ils)
+		}
+
+		traces.ResourceSpans().Append(rs)
+	}
+
+	return traces
+}
+
+// The "complex" use case has following input data:
+//  * Resource[Spans|Logs] #1
+//    Attributes: resourceAttrIndex => <resource_no> (when `withResourceAttrIndex` set to true)
+//      * InstrumentationLibrary[Spans|Logs] #1
+//          * [Span|Log] foo-1-1
+//            Attributes: commonGroupedAttr => abc, commonNonGroupedAttr => xyz
+//      * InstrumentationLibrary[Spans|Logs] #M
+//        ...
+//    ...
+//   * Resource[Spans|Logs] #N
+//      ...
+func TestComplexAttributeGrouping(t *testing.T) {
+	// Following are record-level attributes that should be preserved after processing
+	outputRecordAttrs := pdata.NewAttributeMap()
+	outputRecordAttrs.InsertString("commonNonGroupedAttr", "xyz")
+
+	tests := []struct {
+		name                              string
+		withResourceAttrIndex             bool
+		inputResourceCount                int
+		inputInstrumentationLibraryCount  int
+		outputResourceCount               int
+		outputInstrumentationLibraryCount int // Per each Resource
+		outputTotalRecordsCount           int // Per each Instrumentation Library
+	}{
+		{
+			name:                             "With no unique Resource-level attributes",
+			withResourceAttrIndex:            false,
+			inputResourceCount:               4,
+			inputInstrumentationLibraryCount: 4,
+			// All resources and instrumentation libraries are matching and can be joined together
+			outputResourceCount:               1,
+			outputInstrumentationLibraryCount: 1,
+			outputTotalRecordsCount:           16,
+		},
+		{
+			name:                             "With unique Resource-level attributes",
+			withResourceAttrIndex:            true,
+			inputResourceCount:               4,
+			inputInstrumentationLibraryCount: 4,
+			// Since each resource has unique attribute value, they cannot be joined together into one
+			outputResourceCount:               4,
+			outputInstrumentationLibraryCount: 1,
+			outputTotalRecordsCount:           16,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inputLogs := someComplexLogs(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount)
+			inputTraces := someComplexTraces(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount)
+
+			gap, err := createGroupByAttrsProcessor(logger, []string{"commonGroupedAttr"})
+			require.NoError(t, err)
+
+			processedLogs, err := gap.ProcessLogs(context.Background(), inputLogs)
+			assert.NoError(t, err)
+
+			processedSpans, err := gap.ProcessTraces(context.Background(), inputTraces)
+			assert.NoError(t, err)
+
+			rls := processedLogs.ResourceLogs()
+			assert.Equal(t, tt.outputResourceCount, rls.Len())
+			assert.Equal(t, tt.outputTotalRecordsCount, processedLogs.LogRecordCount())
+			for i := 0; i < rls.Len(); i++ {
+				rl := rls.At(i)
+				assert.Equal(t, tt.outputInstrumentationLibraryCount, rl.InstrumentationLibraryLogs().Len())
+
+				// This was present at record level and should be found on Resource level after the processor
+				commonAttrValue, _ := rl.Resource().Attributes().Get("commonGroupedAttr")
+				assert.Equal(t, pdata.NewAttributeValueString("abc"), commonAttrValue)
+
+				for j := 0; j < rl.InstrumentationLibraryLogs().Len(); j++ {
+					logs := rl.InstrumentationLibraryLogs().At(j).Logs()
+					for k := 0; k < logs.Len(); k++ {
+						assert.EqualValues(t, outputRecordAttrs, logs.At(k).Attributes())
+					}
+				}
+			}
+
+			rss := processedSpans.ResourceSpans()
+			assert.Equal(t, tt.outputResourceCount, rss.Len())
+			assert.Equal(t, tt.outputTotalRecordsCount, processedSpans.SpanCount())
+			for i := 0; i < rss.Len(); i++ {
+				rs := rss.At(i)
+				assert.Equal(t, tt.outputInstrumentationLibraryCount, rs.InstrumentationLibrarySpans().Len())
+
+				// This was present at record level and should be found on Resource level after the processor
+				commonAttrValue, _ := rs.Resource().Attributes().Get("commonGroupedAttr")
+				assert.Equal(t, pdata.NewAttributeValueString("abc"), commonAttrValue)
+
+				for j := 0; j < rs.InstrumentationLibrarySpans().Len(); j++ {
+					spans := rs.InstrumentationLibrarySpans().At(j).Spans()
+					for k := 0; k < spans.Len(); k++ {
+						assert.EqualValues(t, outputRecordAttrs, spans.At(k).Attributes())
+					}
+				}
+			}
+		})
+	}
+}
+
 func TestAttributeGrouping(t *testing.T) {
 	tests := []struct {
 		name           string

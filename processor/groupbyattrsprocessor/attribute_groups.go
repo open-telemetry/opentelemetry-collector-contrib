@@ -18,30 +18,18 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-// spansHavingAttrs keeps a grouping attributes and matching span records
-type spansHavingAttrs struct {
-	attrs         pdata.AttributeMap
-	resourceSpans pdata.ResourceSpans
-}
-
-// logsHavingAttrs keeps a grouping attributes and matching log records
-type logsHavingAttrs struct {
-	attrs        pdata.AttributeMap
-	resourceLogs pdata.ResourceLogs
-}
-
 func instrumentationLibrariesEqual(il1, il2 pdata.InstrumentationLibrary) bool {
 	return il1.Name() == il2.Name() && il1.Version() == il2.Version()
 }
 
 // matchingInstrumentationLibrarySpans searches for a pdata.InstrumentationLibrarySpans instance matching
 // given InstrumentationLibrary. If nothing is found, it creates a new one
-func (ae *spansHavingAttrs) matchingInstrumentationLibrarySpans(library pdata.InstrumentationLibrary) pdata.InstrumentationLibrarySpans {
-	ilss := ae.resourceSpans.InstrumentationLibrarySpans()
+func matchingInstrumentationLibrarySpans(rl pdata.ResourceSpans, library pdata.InstrumentationLibrary) pdata.InstrumentationLibrarySpans {
+	ilss := rl.InstrumentationLibrarySpans()
 	for i := 0; i < ilss.Len(); i++ {
-		ill := ilss.At(i)
-		if instrumentationLibrariesEqual(ill.InstrumentationLibrary(), library) {
-			return ill
+		ils := ilss.At(i)
+		if instrumentationLibrariesEqual(ils.InstrumentationLibrary(), library) {
+			return ils
 		}
 	}
 
@@ -53,8 +41,8 @@ func (ae *spansHavingAttrs) matchingInstrumentationLibrarySpans(library pdata.In
 
 // matchingInstrumentationLibraryLogs searches for a pdata.InstrumentationLibraryLogs instance matching
 // given InstrumentationLibrary. If nothing is found, it creates a new one
-func (ae *logsHavingAttrs) matchingInstrumentationLibraryLogs(library pdata.InstrumentationLibrary) pdata.InstrumentationLibraryLogs {
-	ills := ae.resourceLogs.InstrumentationLibraryLogs()
+func matchingInstrumentationLibraryLogs(rl pdata.ResourceLogs, library pdata.InstrumentationLibrary) pdata.InstrumentationLibraryLogs {
+	ills := rl.InstrumentationLibraryLogs()
 	for i := 0; i < ills.Len(); i++ {
 		ill := ills.At(i)
 		if instrumentationLibrariesEqual(ill.InstrumentationLibrary(), library) {
@@ -69,10 +57,10 @@ func (ae *logsHavingAttrs) matchingInstrumentationLibraryLogs(library pdata.Inst
 }
 
 // spansGroupedByAttrs keeps all found grouping attributes for spans, together with the matching records
-type spansGroupedByAttrs []spansHavingAttrs
+type spansGroupedByAttrs []pdata.ResourceSpans
 
 // logsGroupedByAttrs keeps all found grouping attributes for logs, together with the matching records
-type logsGroupedByAttrs []logsHavingAttrs
+type logsGroupedByAttrs []pdata.ResourceLogs
 
 func newLogsGroupedByAttrs() *logsGroupedByAttrs {
 	return &logsGroupedByAttrs{}
@@ -82,75 +70,115 @@ func newSpansGroupedByAttrs() *spansGroupedByAttrs {
 	return &spansGroupedByAttrs{}
 }
 
-func (lag logsGroupedByAttrs) findGroup(attrs pdata.AttributeMap) *logsHavingAttrs {
-	for i := 0; i < len(lag); i++ {
-		if attributeMapsEqual(lag[i].attrs, attrs) {
-			return &lag[i]
+// findGroup searches for an existing pdata.ResourceLogs that contains both the grouped attributes
+// and base resource attributes. Returns the matching pdata.ResourceLogs and bool value which is set to true if found
+func (lgba logsGroupedByAttrs) findGroup(baseResource pdata.Resource, attrs pdata.AttributeMap) (pdata.ResourceLogs, bool) {
+	for i := 0; i < len(lgba); i++ {
+		if resourceMatches(lgba[i].Resource(), baseResource, attrs) {
+			return lgba[i], true
 		}
 	}
-	return nil
+	return pdata.ResourceLogs{}, false
 }
 
-func (sag spansGroupedByAttrs) findGroup(attrs pdata.AttributeMap) *spansHavingAttrs {
-	for i := 0; i < len(sag); i++ {
-		if attributeMapsEqual(sag[i].attrs, attrs) {
-			return &sag[i]
+// findGroup searches for an existing pdata.ResourceLogs that contains both the grouped attributes
+// and base resource attributes. Returns the matching pdata.ResourceLogs and bool value which is set to true if found
+func (sgba spansGroupedByAttrs) findGroup(baseResource pdata.Resource, attrs pdata.AttributeMap) (pdata.ResourceSpans, bool) {
+	for i := 0; i < len(sgba); i++ {
+		if resourceMatches(sgba[i].Resource(), baseResource, attrs) {
+			return sgba[i], true
 		}
 	}
-	return nil
+	return pdata.ResourceSpans{}, false
 }
 
-func attributeMapsEqual(attrs1 pdata.AttributeMap, attrs2 pdata.AttributeMap) bool {
-	if attrs1.Len() != attrs2.Len() {
+// resourceMatches verifies if given pdata.Resource matches a composition of another (base) resource and attributes
+func resourceMatches(res pdata.Resource, baseResource pdata.Resource, recordAttrs pdata.AttributeMap) bool {
+	baseAttrs := baseResource.Attributes()
+
+	// Some attributes in baseResource and recordAttrs might overlap, lets check obvious condition first before iterating
+	minCommonAttrs := baseAttrs.Len() - recordAttrs.Len()
+	if minCommonAttrs < 0 {
+		minCommonAttrs = recordAttrs.Len() - baseAttrs.Len()
+	}
+	maxCommonAttrs := baseAttrs.Len() + recordAttrs.Len()
+	if res.Attributes().Len() > maxCommonAttrs || res.Attributes().Len() < minCommonAttrs {
 		return false
 	}
 
 	matching := true
+	matchedBaseAttrs := 0
+	matchedRecordAttrs := 0
 
-	attrs1.ForEach(func(k1 string, v1 pdata.AttributeValue) {
+	res.Attributes().ForEach(func(k1 string, v1 pdata.AttributeValue) {
 		if matching {
-			v2, found := attrs2.Get(k1)
-			if !found || !v1.Equal(v2) {
+			// Prioritize span-level attributes over resource attributes
+			v2, recordAttrFound := recordAttrs.Get(k1)
+			if recordAttrFound {
+				matchedRecordAttrs++
+				if !v1.Equal(v2) {
+					matching = false
+					return
+				}
+			}
+
+			v2, baseAttrFound := baseAttrs.Get(k1)
+			if baseAttrFound {
+				matchedBaseAttrs++
+				if !v1.Equal(v2) {
+					matching = false
+					return
+				}
+			}
+
+			if !recordAttrFound && !baseAttrFound {
 				matching = false
 			}
 		}
 	})
 
+	if matchedBaseAttrs != baseAttrs.Len() || matchedRecordAttrs != recordAttrs.Len() {
+		return false
+	}
+
 	return matching
 }
 
-// attributeGroup searches for a group with matching attributes and returns it, if nothing is found, it is being created
-func (sag *spansGroupedByAttrs) attributeGroup(attrs pdata.AttributeMap, baseResource pdata.Resource) spansHavingAttrs {
-	entry := sag.findGroup(attrs)
-	if entry == nil {
-		entry = &spansHavingAttrs{
-			attrs:         attrs,
-			resourceSpans: pdata.NewResourceSpans(),
-		}
+// attributeGroup searches for a group with matching attributes and returns it. If nothing is found, it is being created
+func (sgba *spansGroupedByAttrs) attributeGroup(baseResource pdata.Resource, recordAttrs pdata.AttributeMap) pdata.ResourceSpans {
+	res, found := sgba.findGroup(baseResource, recordAttrs)
+	if !found {
+		res = pdata.NewResourceSpans()
 
-		baseResource.CopyTo(entry.resourceSpans.Resource())
-		attrs.CopyTo(entry.resourceSpans.Resource().Attributes())
+		baseResource.CopyTo(res.Resource())
 
-		*sag = append(*sag, *entry)
+		// This prioritizes span attributes over resource attributes, if they overlap
+		attrs := res.Resource().Attributes()
+		recordAttrs.ForEach(func(k string, v pdata.AttributeValue) {
+			attrs.Upsert(k, v)
+		})
+
+		*sgba = append(*sgba, res)
 	}
 
-	return *entry
+	return res
 }
 
-// attributeGroup searches for a group with matching attributes and returns it, if nothing is found, it is being created
-func (lag *logsGroupedByAttrs) attributeGroup(attrs pdata.AttributeMap, baseResource pdata.Resource) logsHavingAttrs {
-	entry := lag.findGroup(attrs)
-	if entry == nil {
-		entry = &logsHavingAttrs{
-			attrs:        attrs,
-			resourceLogs: pdata.NewResourceLogs(),
-		}
+// attributeGroup searches for a group with matching attributes and returns it. If nothing is found, it is being created
+func (lgba *logsGroupedByAttrs) attributeGroup(baseResource pdata.Resource, recordAttrs pdata.AttributeMap) pdata.ResourceLogs {
+	res, found := lgba.findGroup(baseResource, recordAttrs)
+	if !found {
+		res = pdata.NewResourceLogs()
+		baseResource.CopyTo(res.Resource())
 
-		baseResource.CopyTo(entry.resourceLogs.Resource())
-		attrs.CopyTo(entry.resourceLogs.Resource().Attributes())
+		// This prioritizes log attributes over resource attributes, if they overlap
+		attrs := res.Resource().Attributes()
+		recordAttrs.ForEach(func(k string, v pdata.AttributeValue) {
+			attrs.Upsert(k, v)
+		})
 
-		*lag = append(*lag, *entry)
+		*lgba = append(*lgba, res)
 	}
 
-	return *entry
+	return res
 }

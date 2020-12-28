@@ -29,13 +29,10 @@ type groupByAttrsProcessor struct {
 // ProcessTraces process traces and groups traces by attribute.
 func (gap *groupByAttrsProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
 	rss := td.ResourceSpans()
-	groupedTraces := pdata.NewTraces()
-	groupedResourceSpans := groupedTraces.ResourceSpans()
+	extractedGroups := newSpansGroupedByAttrs()
 
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
-
-		extractedGroups := newSpansGroupedByAttrs()
 
 		ilss := rs.InstrumentationLibrarySpans()
 		for j := 0; j < ilss.Len(); j++ {
@@ -55,30 +52,29 @@ func (gap *groupByAttrsProcessor) ProcessTraces(_ context.Context, td pdata.Trac
 
 				// Lets combine the base resource attributes + the extracted (grouped) attributes
 				// and keep them in the grouping entry
-				entry := extractedGroups.attributeGroup(groupedAttrMap, rs.Resource())
-				entry.matchingInstrumentationLibrarySpans(ils.InstrumentationLibrary()).Spans().Append(span)
+				groupedSpans := extractedGroups.attributeGroup(rs.Resource(), groupedAttrMap)
+				matchingInstrumentationLibrarySpans(groupedSpans, ils.InstrumentationLibrary()).Spans().Append(span)
 			}
 		}
-
-		// Copy the grouped data into output
-		for _, eg := range *extractedGroups {
-			groupedResourceSpans.Append(eg.resourceSpans)
-		}
-		mDistSpanGroups.M(int64(len(*extractedGroups)))
 	}
+
+	// Copy the grouped data into output
+	groupedTraces := pdata.NewTraces()
+	groupedResourceSpans := groupedTraces.ResourceSpans()
+	for _, eg := range *extractedGroups {
+		groupedResourceSpans.Append(eg)
+	}
+	mDistSpanGroups.M(int64(len(*extractedGroups)))
 
 	return groupedTraces, nil
 }
 
 func (gap *groupByAttrsProcessor) ProcessLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
 	rl := ld.ResourceLogs()
-	groupedLogs := pdata.NewLogs()
-	groupedResourceLogs := groupedLogs.ResourceLogs()
+	extractedGroups := newLogsGroupedByAttrs()
 
 	for i := 0; i < rl.Len(); i++ {
 		ls := rl.At(i)
-
-		extractedGroups := newLogsGroupedByAttrs()
 
 		ills := ls.InstrumentationLibraryLogs()
 		for j := 0; j < ills.Len(); j++ {
@@ -98,17 +94,20 @@ func (gap *groupByAttrsProcessor) ProcessLogs(_ context.Context, ld pdata.Logs) 
 
 				// Lets combine the base resource attributes + the extracted (grouped) attributes
 				// and keep them in the grouping entry
-				entry := extractedGroups.attributeGroup(groupedAttrMap, ls.Resource())
-				entry.matchingInstrumentationLibraryLogs(ill.InstrumentationLibrary()).Logs().Append(log)
+				groupedLogs := extractedGroups.attributeGroup(ls.Resource(), groupedAttrMap)
+				matchingInstrumentationLibraryLogs(groupedLogs, ill.InstrumentationLibrary()).Logs().Append(log)
 			}
 		}
 
-		// Copy the grouped data into output
-		for _, eg := range *extractedGroups {
-			groupedResourceLogs.Append(eg.resourceLogs)
-		}
-		mDistLogGroups.M(int64(len(*extractedGroups)))
 	}
+
+	// Copy the grouped data into output
+	groupedLogs := pdata.NewLogs()
+	groupedResourceLogs := groupedLogs.ResourceLogs()
+	for _, eg := range *extractedGroups {
+		groupedResourceLogs.Append(eg)
+	}
+	mDistLogGroups.M(int64(len(*extractedGroups)))
 
 	return groupedLogs, nil
 }

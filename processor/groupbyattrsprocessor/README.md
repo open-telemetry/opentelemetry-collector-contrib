@@ -4,7 +4,9 @@ Supported pipeline types: traces, logs
 Status: in development
 
 This processor groups the records by provided attributes, extracting them from the 
-record to resource level. 
+record to resource level. When the grouped attribute key already exists at the resource-level,
+it's value is being overwritten with the record-level one. The processor also merges collections of records 
+under matching InstrumentationLibrary.
 
 Typical use-cases:
 
