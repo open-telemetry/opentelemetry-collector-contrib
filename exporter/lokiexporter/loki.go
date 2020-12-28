@@ -25,7 +25,7 @@ import (
 )
 
 type lokiExporter struct {
-	pushLogData func(ctx context.Context, ld pdata.Logs) (numDroppedSpans int, err error)
+	pushLogData func(ctx context.Context, ld pdata.Logs) (numDroppedLogs int, err error)
 	stop        func(ctx context.Context) (err error)
 	start       func(ctx context.Context, host component.Host) (err error)
 }
