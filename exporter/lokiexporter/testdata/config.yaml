@@ -7,7 +7,7 @@ processors:
 exporters:
   loki:
     endpoint: "https://loki:3100/loki/api/v1/push"
-    allowed_labels:
+    allowed_attributes_for_stream_labels:
       - app
       - level
   loki/allsettings:
@@ -30,7 +30,7 @@ exporters:
       max_elapsed_time: 10m
     headers:
       "X-Scope-OrgID": "example"
-    allowed_labels:
+    allowed_attributes_for_stream_labels:
       - app
       - level
 

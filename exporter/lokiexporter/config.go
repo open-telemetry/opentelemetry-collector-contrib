@@ -28,5 +28,5 @@ type Config struct {
 	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
 
 	// The labels that are allowed to be added to the log stream sent to Loki.
-	AllowedLabels []string `mapstructure:"allowed_labels"`
+	AllowedAttributesForStreamLabels []string `mapstructure:"allowed_attributes_for_stream_labels"`
 }

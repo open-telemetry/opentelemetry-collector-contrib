@@ -48,9 +48,9 @@ func createDefaultConfig() configmodels.Exporter {
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			WriteBufferSize: 512 * 1024,
 		},
-		RetrySettings: exporterhelper.DefaultRetrySettings(),
-		QueueSettings: exporterhelper.DefaultQueueSettings(),
-		AllowedLabels: []string{},
+		RetrySettings:                    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:                    exporterhelper.DefaultQueueSettings(),
+		AllowedAttributesForStreamLabels: []string{},
 	}
 }
 

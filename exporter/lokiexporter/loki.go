@@ -40,7 +40,7 @@ func newExporter(config *Config, logger *zap.Logger) (*lokiExporter, error) {
 		return nil, err
 	}
 
-	if len(config.AllowedLabels) == 0 {
+	if len(config.AllowedAttributesForStreamLabels) == 0 {
 		return nil, errors.New("allowed_labels must have a least one label")
 	}
 

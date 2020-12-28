@@ -47,7 +47,7 @@ func TestCreateLogExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
-	cfg.AllowedLabels = []string{"app", "level"}
+	cfg.AllowedAttributesForStreamLabels = []string{"app", "level"}
 
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)

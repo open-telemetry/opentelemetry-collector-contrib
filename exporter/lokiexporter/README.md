@@ -13,11 +13,11 @@ The following settings are required:
   e.g.: https://loki.example.com:3100/loki/api/v1/push).
 
 
-- `allowed_labels` (no default): List of allowed labels to be added to Loki log streams. This is a safety net to help
-  prevent accidentally adding dynamic labels that may significantly increase cardinality, thus having a performance
-  impact on your Loki instance. See
-  the [Loki label best practices](https://grafana.com/docs/loki/latest/best-practices/current-best-practices/)
-  page for additional details on the types of labels you may want to associate with log streams.
+- `allowed_attributes_for_stream_labels` (no default): List of allowed attributes to be added as labels to Loki log 
+  streams. This is a safety net to help prevent accidentally adding dynamic labels that may significantly increase 
+  cardinality, thus having a performance impact on your Loki instance. See the 
+  [Loki label best practices](https://grafana.com/docs/loki/latest/best-practices/current-best-practices/) page for 
+  additional details on the types of labels you may want to associate with log streams.
 
 The following settings can be optionally configured:
 

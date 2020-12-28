@@ -78,7 +78,7 @@ func TestNoAllowedLabelsReturnsError(t *testing.T) {
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: validEndpoint,
 		},
-		AllowedLabels: nil,
+		AllowedAttributesForStreamLabels: nil,
 	}
 	f := NewFactory()
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
@@ -91,7 +91,7 @@ func TestPushLogDataReturnsWithoutErrorWhileNotImplemented(t *testing.T) {
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: validEndpoint,
 		},
-		AllowedLabels: validLabels,
+		AllowedAttributesForStreamLabels: validLabels,
 	}
 	e, err := newExporter(config, zap.NewNop())
 	assert.NoError(t, err)
@@ -105,7 +105,7 @@ func TestExporterStartAlwaysReturnsNil(t *testing.T) {
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: validEndpoint,
 		},
-		AllowedLabels: validLabels,
+		AllowedAttributesForStreamLabels: validLabels,
 	}
 	e, err := newExporter(config, zap.NewNop())
 	assert.NoError(t, err)
@@ -117,7 +117,7 @@ func TestExporterStopAlwaysReturnsNil(t *testing.T) {
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: validEndpoint,
 		},
-		AllowedLabels: validLabels,
+		AllowedAttributesForStreamLabels: validLabels,
 	}
 	e, err := newExporter(config, zap.NewNop())
 	assert.NoError(t, err)
