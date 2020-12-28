@@ -16,7 +16,7 @@ and only exports the following combination:
 
 ## Configuration
 The following settings are required:
-- `endpoint`: protocol:host:port to which the exporter is going to send traces or metrics, using the HTTP/HTTPS protocol. 
+- `endpoint`: The Prometheus remote write endpoint in the format. For example, https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-xxx/api/v1/remote_write.
 
 The following settings can be optionally configured:
 - `namespace`: prefix attached to each exported metric name.
@@ -39,13 +39,20 @@ Simplest configuration:
 ```yaml
 exporters:
   awsprometheusremotewrite:
-    endpoint: "http://some.url:9411/api/prom/push"
+    endpoint: "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-xxx/api/v1/remote_write"
+    aws_auth: # required for the Amazon Managed Service for Prometheus.
+      region: "us-east-1"
+      service: "aps"
 ```
 
 All configurations:
 ```yaml
 exporters:
   awsprometheusremotewrite:
+    endpoint: "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-xxx/api/v1/remote_write"
+    aws_auth:
+      region: "us-east-1"
+      service: "aps"
     namespace: "test-space"
     sending_queue:
         enabled: true
@@ -56,15 +63,11 @@ exporters:
         initial_interval: 10s
         max_interval: 60s
         max_elapsed_time: 10m
-    endpoint: "http://localhost:9009"
     ca_file: "/var/lib/mycert.pem"
     write_buffer_size: 524288
     headers:
         Prometheus-Remote-Write-Version: "0.1.0"
         X-Scope-OrgID: 234
-    aws_auth:
-        region: "us-west-2"
-        service: "service-name"
     external_labels:
         key1: value1
         key2: value2

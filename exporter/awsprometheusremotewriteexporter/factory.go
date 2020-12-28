@@ -17,7 +17,6 @@ package awsprometheusremotewriteexporter
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
@@ -40,8 +39,7 @@ func (af *awsFactory) Type() configmodels.Type {
 	return typeStr
 }
 
-func (af *awsFactory) CreateMetricsExporter(ctx context.Context, params component.ExporterCreateParams,
-	cfg configmodels.Exporter) (component.MetricsExporter, error) {
+func (af *awsFactory) CreateMetricsExporter(ctx context.Context, params component.ExporterCreateParams, cfg configmodels.Exporter) (component.MetricsExporter, error) {
 	return af.ExporterFactory.CreateMetricsExporter(ctx, params, &cfg.(*Config).Config)
 }
 
@@ -56,18 +54,8 @@ func (af *awsFactory) CreateDefaultConfig() configmodels.Exporter {
 
 	cfg.TypeVal = typeStr
 	cfg.NameVal = typeStr
-
 	cfg.HTTPClientSettings.CustomRoundTripper = func(next http.RoundTripper) (http.RoundTripper, error) {
-		if !isAuthConfigValid(cfg.AuthConfig) {
-			return nil, errors.New("invalid authentication configuration")
-		}
-
 		return newSigningRoundTripper(cfg.AuthConfig, next)
 	}
-
 	return cfg
-}
-
-func isAuthConfigValid(params AuthConfig) bool {
-	return !(params.Region != "" && params.Service == "" || params.Region == "" && params.Service != "")
 }

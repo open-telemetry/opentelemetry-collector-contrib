@@ -52,7 +52,7 @@ func TestRequestSignature(t *testing.T) {
 		WriteBufferSize: 0,
 		Timeout:         0,
 		CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
-			return createSigningRoundTripperWithCredentials(authConfig, awsCreds, next)
+			return newSigningRoundTripperWithCredentials(authConfig, awsCreds, next)
 		},
 	}
 	client, _ := setting.ToClient()
@@ -102,7 +102,7 @@ func TestRoundTrip(t *testing.T) {
 			defer server.Close()
 			serverURL, _ := url.Parse(server.URL)
 			authConfig := AuthConfig{Region: "region", Service: "service"}
-			rt, err := createSigningRoundTripperWithCredentials(authConfig, awsCreds, tt.rt)
+			rt, err := newSigningRoundTripperWithCredentials(authConfig, awsCreds, tt.rt)
 			assert.NoError(t, err)
 			req, err := http.NewRequest("POST", serverURL.String(), strings.NewReader(""))
 			assert.NoError(t, err)
@@ -118,8 +118,7 @@ func TestRoundTrip(t *testing.T) {
 	}
 }
 
-func TestCreateSigningRoundTripperWithCredentials(t *testing.T) {
-
+func TestNewSigningRoundTripperWithCredentials(t *testing.T) {
 	defaultRoundTripper := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
 
 	// Some form of AWS credentials must be set up for tests to succeed
@@ -161,7 +160,7 @@ func TestCreateSigningRoundTripperWithCredentials(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rtp, err := createSigningRoundTripperWithCredentials(tt.authConfig, tt.creds, tt.roundTripper)
+			rtp, err := newSigningRoundTripperWithCredentials(tt.authConfig, tt.creds, tt.roundTripper)
 			if tt.returnError {
 				assert.Error(t, err)
 				return
