@@ -23,12 +23,11 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 )
 
-// signingRoundTripper is a Custom RoundTripper that performs AWS Sig V4
+// signingRoundTripper is a Custom RoundTripper that performs AWS Sig V4.
 type signingRoundTripper struct {
 	transport http.RoundTripper
 	signer    *v4.Signer
@@ -36,7 +35,7 @@ type signingRoundTripper struct {
 	service   string
 }
 
-// RoundTrip signs each outgoing request
+// RoundTrip signs each outgoing request.
 func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	reqBody, err := req.GetBody()
 	if err != nil {
@@ -69,7 +68,14 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	return resp, err
 }
 
+// newSigningRoundTripper will return a RoundTripper that will sign the
+// outgoing requests with SigV4 if the auth is configured. If not confiured,
+// it will return the given next as a RoundTripper.
 func newSigningRoundTripper(auth AuthConfig, next http.RoundTripper) (http.RoundTripper, error) {
+	if !isSigv4Requested(auth) {
+		return next, nil
+	}
+
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(auth.Region)},
 	)
@@ -77,40 +83,26 @@ func newSigningRoundTripper(auth AuthConfig, next http.RoundTripper) (http.Round
 		return nil, err
 	}
 
+	// Get Credentials, either from ./aws or from environmental variables.
 	if _, err = sess.Config.Credentials.Get(); err != nil {
 		return nil, err
 	}
-
-	// Get Credentials, either from ./aws or from environmental variables
 	creds := sess.Config.Credentials
-
-	return createSigningRoundTripperWithCredentials(auth, creds, next)
-}
-
-func createSigningRoundTripperWithCredentials(auth AuthConfig, creds *credentials.Credentials, next http.RoundTripper) (http.RoundTripper, error) {
-	if !isValidAuth(auth) {
-		return next, nil
-	}
-
 	if creds == nil {
-		return nil, errors.New("no AWS credentials exist")
+		return nil, errors.New("missing AWS credentials")
 	}
 
 	signer := v4.NewSigner(creds)
-
-	rt := signingRoundTripper{
+	return &signingRoundTripper{
 		transport: next,
 		signer:    signer,
 		region:    auth.Region,
 		service:   auth.Service,
-	}
-
-	// return a RoundTripper
-	return &rt, nil
+	}, nil
 }
 
-func isValidAuth(params AuthConfig) bool {
-	return params.Region != "" && params.Service != ""
+func isSigv4Requested(config AuthConfig) bool {
+	return config.Region != "" && config.Service != ""
 }
 
 func cloneRequest(r *http.Request) *http.Request {
