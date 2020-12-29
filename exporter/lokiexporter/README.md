@@ -23,10 +23,9 @@ The following settings can be optionally configured:
 
 - `insecure` (default = false): When set to true disables verifying the server's certificate chain and host name. The
   connection is still encrypted but server identity is not verified.
-- `ca_file` (no default) Path to the CA cert. For a client this verifies the server certificate. Should only be used if
-  `insecure` is set to false.
-- `cert_file` (no default) Path to the TLS cert to use for TLS required connections. Should only be used if `insecure`
-  is set to false.
+- `ca_file` (no default) Path to the CA cert to verify the server being connected to.
+- `cert_file` (no default) Path to the TLS cert to use for client connections when TLS client auth is required. 
+  Should only be used if `insecure`
 - `key_file` (no default) Path to the TLS key to use for TLS required connections. Should only be used if `insecure` is
   set to false.
 
