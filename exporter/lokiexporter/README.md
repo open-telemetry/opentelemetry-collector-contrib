@@ -45,8 +45,9 @@ Example:
 loki:
   endpoint: https://loki.example.com:3100/loki/api/v1/push
   attributes_for_labels:
-    - app
-    - level
+    - container.name
+    - k8s.cluster.name
+    - severity
   headers:
     "X-Scope-OrgID": "example"
 ```

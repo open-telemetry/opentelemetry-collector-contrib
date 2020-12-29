@@ -19,6 +19,8 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/collector/translator/conventions"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -73,7 +75,7 @@ func TestLoadConfig(t *testing.T) {
 			NumConsumers: 2,
 			QueueSize:    10,
 		},
-		AttributesForLabels: []string{"app", "level"},
+		AttributesForLabels: []string{conventions.AttributeContainerName, conventions.AttributeK8sCluster, "severity"},
 	}
 	assert.Equal(t, &expectedCfg, actualCfg)
 }
