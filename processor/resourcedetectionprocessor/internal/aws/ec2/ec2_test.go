@@ -62,9 +62,43 @@ func (mm mockMetadata) hostname(ctx context.Context) (string, error) {
 }
 
 func TestNewDetector(t *testing.T) {
-	detector, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, Config{})
-	assert.NotNil(t, detector)
-	assert.NoError(t, err)
+	tests := []struct {
+		name        string
+		cfg         Config
+		shouldError bool
+	}{
+		{
+			name:        "Success Case Empty Config",
+			cfg:         Config{},
+			shouldError: false,
+		},
+		{
+			name: "Success Case Valid Config",
+			cfg: Config{
+				Tags: []string{"tag1"},
+			},
+			shouldError: false,
+		},
+		{
+			name: "Error Case Invalid Regex",
+			cfg: Config{
+				Tags: []string{"*"},
+			},
+			shouldError: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			detector, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, tt.cfg)
+			if tt.shouldError {
+				assert.Error(t, err)
+				assert.Nil(t, detector)
+			} else {
+				assert.NotNil(t, detector)
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestDetector_Detect(t *testing.T) {
@@ -228,18 +262,6 @@ func TestEC2Tags(t *testing.T) {
 				Tags: []string{"tag2"},
 			},
 			resourceID: "error",
-			expectedOutput: map[string]string{
-				"tag1": "val1",
-				"tag2": "val2",
-			},
-			shouldError: true,
-		},
-		{
-			name: "error case invalid regex",
-			cfg: Config{
-				Tags: []string{"*"},
-			},
-			resourceID: "resource1",
 			expectedOutput: map[string]string{
 				"tag1": "val1",
 				"tag2": "val2",

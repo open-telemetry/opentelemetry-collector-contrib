@@ -48,6 +48,10 @@ func NewDetector(_ component.ProcessorCreateParams, dcfg internal.DetectorConfig
 	if err != nil {
 		return nil, err
 	}
+	err = validateRegexes(cfg)
+	if err != nil {
+		return nil, err
+	}
 	return &Detector{metadataProvider: newMetadataClient(sess), cfg: cfg}, nil
 }
 
@@ -120,10 +124,7 @@ func fetchEC2Tags(svc ec2iface.EC2API, instanceID string, cfg Config) (map[strin
 	}
 	tags := make(map[string]string)
 	for _, tag := range ec2Tags.Tags {
-		matched, err := regexArrayMatch(cfg.Tags, *tag.Key)
-		if err != nil {
-			return nil, err
-		}
+		matched := regexArrayMatch(cfg.Tags, *tag.Key)
 		if matched {
 			tags[*tag.Key] = *tag.Value
 		}
@@ -131,15 +132,22 @@ func fetchEC2Tags(svc ec2iface.EC2API, instanceID string, cfg Config) (map[strin
 	return tags, nil
 }
 
-func regexArrayMatch(arr []string, val string) (bool, error) {
-	for _, elem := range arr {
-		matched, err := regexp.MatchString(elem, val)
+func validateRegexes(cfg Config) error {
+	for _, elem := range cfg.Tags {
+		_, err := regexp.Compile(elem)
 		if err != nil {
-			return false, err
-		}
-		if matched {
-			return true, nil
+			return err
 		}
 	}
-	return false, nil
+	return nil
+}
+
+func regexArrayMatch(arr []string, val string) bool {
+	for _, elem := range arr {
+		matched, _ := regexp.MatchString(elem, val)
+		if matched {
+			return true
+		}
+	}
+	return false
 }

@@ -16,7 +16,7 @@ package ec2
 
 // Config defines user-specified configurations unique to the EC2 detector
 type Config struct {
-	// Tags is a list of regex's to match ec2 instance tags that users want
+	// Tags is a list of regex's to match ec2 instance tag keys that users want
 	// to add as resource attributes to processed data
 	Tags []string `mapstructure:"tags"`
 }

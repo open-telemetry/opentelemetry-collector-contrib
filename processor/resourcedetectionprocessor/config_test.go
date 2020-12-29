@@ -62,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 		Detectors: []string{"env", "ec2"},
 		DetectorConfig: DetectorConfig{
 			EC2Config: ec2.Config{
-				Tags: []string{"tag1", "tag2"},
+				Tags: []string{"^tag1$", "^tag2$"},
 			},
 		},
 		Timeout:  2 * time.Second,
