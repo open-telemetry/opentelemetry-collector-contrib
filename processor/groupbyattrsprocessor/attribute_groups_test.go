@@ -19,6 +19,7 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -55,10 +56,97 @@ func randomGroups(count int) []pdata.AttributeMap {
 var (
 	count    = 1000
 	groups   = randomGroups(count)
-	rs       = simpleResource()
+	res      = simpleResource()
 	lagAttrs = &logsGroupedByAttrs{}
 )
 
-func BenchmarkAttrs(b *testing.B) {
-	lagAttrs.attributeGroup(rs, groups[rand.Intn(count)])
+func TestResourceAttributeScenarios(t *testing.T) {
+	tests := []struct {
+		name                    string
+		baseResource            pdata.Resource
+		fillRecordAttributesFun func(attributeMap pdata.AttributeMap)
+		fillExpectedResourceFun func(baseResource pdata.Resource, expectedResource pdata.Resource)
+	}{
+		{
+			name:         "When the same key is present at Resource and Record level, the latter value should be used",
+			baseResource: simpleResource(),
+			fillRecordAttributesFun: func(attributeMap pdata.AttributeMap) {
+				attributeMap.InsertString("somekey1", "replaced-value")
+			},
+			fillExpectedResourceFun: func(baseResource pdata.Resource, expectedResource pdata.Resource) {
+				baseResource.CopyTo(expectedResource)
+				expectedResource.Attributes().UpdateString("somekey1", "replaced-value")
+			},
+		},
+		{
+			name:                    "Empty Resource and attributes",
+			baseResource:            pdata.NewResource(),
+			fillRecordAttributesFun: nil,
+			fillExpectedResourceFun: nil,
+		},
+		{
+			name:         "Empty Resource",
+			baseResource: pdata.NewResource(),
+			fillRecordAttributesFun: func(attributeMap pdata.AttributeMap) {
+				attributeMap.InsertString("somekey1", "some-value")
+			},
+			fillExpectedResourceFun: func(_ pdata.Resource, expectedResource pdata.Resource) {
+				expectedResource.Attributes().InsertString("somekey1", "some-value")
+			},
+		},
+		{
+			name:                    "Empty Attributes",
+			baseResource:            simpleResource(),
+			fillRecordAttributesFun: nil,
+			fillExpectedResourceFun: func(baseResource pdata.Resource, expectedResource pdata.Resource) {
+				baseResource.CopyTo(expectedResource)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			recordAttributeMap := pdata.NewAttributeMap()
+			if tt.fillRecordAttributesFun != nil {
+				tt.fillRecordAttributesFun(recordAttributeMap)
+			}
+
+			expectedResource := pdata.NewResource()
+			if tt.fillExpectedResourceFun != nil {
+				tt.fillExpectedResourceFun(tt.baseResource, expectedResource)
+			}
+
+			rl := lagAttrs.attributeGroup(tt.baseResource, recordAttributeMap)
+			assert.EqualValues(t, expectedResource.Attributes(), rl.Resource().Attributes())
+		})
+	}
+}
+
+func TestInstrumentationLibraryMatching(t *testing.T) {
+	rl := pdata.NewResourceLogs()
+	rs := pdata.NewResourceSpans()
+
+	il1 := pdata.NewInstrumentationLibrary()
+	il1.SetName("Name1")
+	il2 := pdata.NewInstrumentationLibrary()
+	il2.SetName("Name2")
+
+	ill1 := matchingInstrumentationLibraryLogs(rl, il1)
+	ils1 := matchingInstrumentationLibrarySpans(rs, il1)
+	assert.EqualValues(t, il1, ill1.InstrumentationLibrary())
+	assert.EqualValues(t, il1, ils1.InstrumentationLibrary())
+
+	ill2 := matchingInstrumentationLibraryLogs(rl, il2)
+	ils2 := matchingInstrumentationLibrarySpans(rs, il2)
+	assert.EqualValues(t, il2, ill2.InstrumentationLibrary())
+	assert.EqualValues(t, il2, ils2.InstrumentationLibrary())
+
+	ill1 = matchingInstrumentationLibraryLogs(rl, il1)
+	ils1 = matchingInstrumentationLibrarySpans(rs, il1)
+	assert.EqualValues(t, il1, ill1.InstrumentationLibrary())
+	assert.EqualValues(t, il1, ils1.InstrumentationLibrary())
+}
+
+func BenchmarkAttrGrouping(b *testing.B) {
+	lagAttrs.attributeGroup(res, groups[rand.Intn(count)])
 }

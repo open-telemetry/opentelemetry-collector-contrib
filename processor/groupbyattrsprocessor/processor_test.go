@@ -142,7 +142,7 @@ func TestComplexAttributeGrouping(t *testing.T) {
 		outputTotalRecordsCount           int // Per each Instrumentation Library
 	}{
 		{
-			name:                             "With no unique Resource-level attributes",
+			name:                             "With not unique Resource-level attributes",
 			withResourceAttrIndex:            false,
 			inputResourceCount:               4,
 			inputInstrumentationLibraryCount: 4,
@@ -156,7 +156,7 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			withResourceAttrIndex:            true,
 			inputResourceCount:               4,
 			inputInstrumentationLibraryCount: 4,
-			// Since each resource has unique attribute value, they cannot be joined together into one
+			// Since each resource has a unique attribute value, so they cannot be joined together into one
 			outputResourceCount:               4,
 			outputInstrumentationLibraryCount: 1,
 			outputTotalRecordsCount:           16,
