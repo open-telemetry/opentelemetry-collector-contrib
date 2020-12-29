@@ -140,25 +140,17 @@ func spanToLogServiceData(span pdata.Span, resourceContents, instrumentationLibr
 		Key:   proto.String(attributeField),
 		Value: proto.String(string(attributeJSONBytes)),
 	})
-	if span.Status().IsNil() {
-		contentsBuffer = append(contentsBuffer, sls.LogContent{
-			Key:   proto.String(statusCodeField),
-			Value: proto.String("UNSET"),
-		})
-		contentsBuffer = append(contentsBuffer, sls.LogContent{
-			Key:   proto.String(statusMessageField),
-			Value: proto.String("status is nil"),
-		})
-	} else {
-		contentsBuffer = append(contentsBuffer, sls.LogContent{
-			Key:   proto.String(statusCodeField),
-			Value: proto.String(statusCodeToShortString(span.Status().Code())),
-		})
-		contentsBuffer = append(contentsBuffer, sls.LogContent{
-			Key:   proto.String(statusMessageField),
-			Value: proto.String(span.Status().Message()),
-		})
-	}
+
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
+		Key:   proto.String(statusCodeField),
+		Value: proto.String(statusCodeToShortString(span.Status().Code())),
+	})
+
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
+		Key:   proto.String(statusMessageField),
+		Value: proto.String(span.Status().Message()),
+	})
+
 	for i := range contentsBuffer {
 		slsLog.Contents = append(slsLog.Contents, &contentsBuffer[i])
 	}

@@ -15,10 +15,7 @@
 package sumologicexporter
 
 import (
-	"fmt"
 	"regexp"
-	"sort"
-	"strings"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -27,9 +24,6 @@ import (
 type filter struct {
 	regexes []*regexp.Regexp
 }
-
-// fields represents concatenated metadata
-type fields string
 
 func newFilter(flds []string) (filter, error) {
 	metadataRegexes := make([]*regexp.Regexp, len(flds))
@@ -48,9 +42,9 @@ func newFilter(flds []string) (filter, error) {
 	}, nil
 }
 
-// filterIn returns map of strings which matches at least one of the filter regexes
-func (f *filter) filterIn(attributes pdata.AttributeMap) map[string]string {
-	returnValue := make(map[string]string)
+// filterIn returns fields which match at least one of the filter regexes
+func (f *filter) filterIn(attributes pdata.AttributeMap) fields {
+	returnValue := make(fields)
 
 	attributes.ForEach(func(k string, v pdata.AttributeValue) {
 		for _, regex := range f.regexes {
@@ -63,9 +57,9 @@ func (f *filter) filterIn(attributes pdata.AttributeMap) map[string]string {
 	return returnValue
 }
 
-// filterOut returns map of strings which doesn't match any of the filter regexes
-func (f *filter) filterOut(attributes pdata.AttributeMap) map[string]string {
-	returnValue := make(map[string]string)
+// filterOut returns fields which don't match any of the filter regexes
+func (f *filter) filterOut(attributes pdata.AttributeMap) fields {
+	returnValue := make(fields)
 
 	attributes.ForEach(func(k string, v pdata.AttributeValue) {
 		for _, regex := range f.regexes {
@@ -76,17 +70,4 @@ func (f *filter) filterOut(attributes pdata.AttributeMap) map[string]string {
 		returnValue[k] = tracetranslator.AttributeValueToString(v, false)
 	})
 	return returnValue
-}
-
-// getMetadata builds string which represents metadata in alphabetical order
-func (f *filter) getMetadata(attributes pdata.AttributeMap) fields {
-	attrs := f.filterIn(attributes)
-	metadata := make([]string, 0, len(attrs))
-
-	for k, v := range attrs {
-		metadata = append(metadata, fmt.Sprintf("%s=%s", k, v))
-	}
-	sort.Strings(metadata)
-
-	return fields(strings.Join(metadata, ", "))
 }

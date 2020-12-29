@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metrics"
@@ -64,22 +65,26 @@ func metricDimensionsToMapKey(name string, tags []string) string {
 }
 
 // mapIntMetrics maps int datapoints into Datadog metrics
-func mapIntMetrics(name string, slice pdata.IntDataPointSlice) []datadog.Metric {
+func mapIntMetrics(name string, slice pdata.IntDataPointSlice, attrTags []string) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
-		ms = append(ms, metrics.NewGauge(name, uint64(p.Timestamp()), float64(p.Value()), getTags(p.LabelsMap())))
+		tags := getTags(p.LabelsMap())
+		tags = append(tags, attrTags...)
+		ms = append(ms, metrics.NewGauge(name, uint64(p.Timestamp()), float64(p.Value()), tags))
 	}
 	return ms
 }
 
 // mapDoubleMetrics maps double datapoints into Datadog metrics
-func mapDoubleMetrics(name string, slice pdata.DoubleDataPointSlice) []datadog.Metric {
+func mapDoubleMetrics(name string, slice pdata.DoubleDataPointSlice, attrTags []string) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
+		tags := getTags(p.LabelsMap())
+		tags = append(tags, attrTags...)
 		ms = append(ms,
-			metrics.NewGauge(name, uint64(p.Timestamp()), p.Value(), getTags(p.LabelsMap())),
+			metrics.NewGauge(name, uint64(p.Timestamp()), p.Value(), tags),
 		)
 	}
 	return ms
@@ -93,12 +98,13 @@ type intCounter struct {
 }
 
 // mapIntMonotonicMetrics maps monotonic datapoints into Datadog metrics
-func mapIntMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.IntDataPointSlice) []datadog.Metric {
+func mapIntMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.IntDataPointSlice, attrTags []string) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
 		tags := getTags(p.LabelsMap())
+    tags = append(tags, attrTags...)
 		key := metricDimensionsToMapKey(name, tags)
 
 		if c := prevPts.Get(key); c != nil {
@@ -134,12 +140,13 @@ type doubleCounter struct {
 }
 
 // mapDoubleMonotonicMetrics maps monotonic datapoints into Datadog metrics
-func mapDoubleMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.DoubleDataPointSlice) []datadog.Metric {
+func mapDoubleMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.DoubleDataPointSlice, attrTags []string) []datadog.Metric {
 	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
 		tags := getTags(p.LabelsMap())
+    tags = append(tags, attrTags...)
 		key := metricDimensionsToMapKey(name, tags)
 
 		if c := prevPts.Get(key); c != nil {
@@ -181,13 +188,14 @@ func mapDoubleMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.
 // We follow a similar approach to our OpenCensus exporter:
 // we report sum and count by default; buckets count can also
 // be reported (opt-in), but bounds are ignored.
-func mapIntHistogramMetrics(name string, slice pdata.IntHistogramDataPointSlice, buckets bool) []datadog.Metric {
+func mapIntHistogramMetrics(name string, slice pdata.IntHistogramDataPointSlice, buckets bool, attrTags []string) []datadog.Metric {
 	// Allocate assuming none are nil and no buckets
 	ms := make([]datadog.Metric, 0, 2*slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
 		tags := getTags(p.LabelsMap())
+		tags = append(tags, attrTags...)
 
 		ms = append(ms,
 			metrics.NewGauge(fmt.Sprintf("%s.count", name), ts, float64(p.Count()), tags),
@@ -212,13 +220,14 @@ func mapIntHistogramMetrics(name string, slice pdata.IntHistogramDataPointSlice,
 // mapIntHistogramMetrics maps double histogram metrics slices to Datadog metrics
 //
 // see mapIntHistogramMetrics docs for further details.
-func mapDoubleHistogramMetrics(name string, slice pdata.DoubleHistogramDataPointSlice, buckets bool) []datadog.Metric {
+func mapDoubleHistogramMetrics(name string, slice pdata.DoubleHistogramDataPointSlice, buckets bool, attrTags []string) []datadog.Metric {
 	// Allocate assuming none are nil and no buckets
 	ms := make([]datadog.Metric, 0, 2*slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
 		tags := getTags(p.LabelsMap())
+		tags = append(tags, attrTags...)
 
 		ms = append(ms,
 			metrics.NewGauge(fmt.Sprintf("%s.count", name), ts, float64(p.Count()), tags),
@@ -245,6 +254,15 @@ func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, md pdata.Metri
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
+
+		var attributeTags []string
+
+		// Only fetch attribute tags if they're not already converted into labels.
+		// Otherwise some tags would be present twice in a metric's tag list.
+		if !cfg.ExporterConfig.ResourceAttributesAsTags {
+			attributeTags = attributes.TagsFromAttributes(rm.Resource().Attributes())
+		}
+
 		ilms := rm.InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
@@ -256,25 +274,25 @@ func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, md pdata.Metri
 				case pdata.MetricDataTypeNone:
 					continue
 				case pdata.MetricDataTypeIntGauge:
-					datapoints = mapIntMetrics(md.Name(), md.IntGauge().DataPoints())
+					datapoints = mapIntMetrics(md.Name(), md.IntGauge().DataPoints(), attributeTags)
 				case pdata.MetricDataTypeDoubleGauge:
-					datapoints = mapDoubleMetrics(md.Name(), md.DoubleGauge().DataPoints())
+					datapoints = mapDoubleMetrics(md.Name(), md.DoubleGauge().DataPoints(), attributeTags)
 				case pdata.MetricDataTypeIntSum:
 					if cfg.SendMonotonic && isCumulativeMonotonic(md) {
 						datapoints = mapIntMonotonicMetrics(md.Name(), prevPts, md.IntSum().DataPoints())
 					} else {
-						datapoints = mapIntMetrics(md.Name(), md.IntSum().DataPoints())
+						datapoints = mapIntMetrics(md.Name(), md.IntSum().DataPoints(), atttributeTags)
 					}
 				case pdata.MetricDataTypeDoubleSum:
 					if cfg.SendMonotonic && isCumulativeMonotonic(md) {
 						datapoints = mapDoubleMonotonicMetrics(md.Name(), prevPts, md.DoubleSum().DataPoints())
 					} else {
-						datapoints = mapDoubleMetrics(md.Name(), md.DoubleSum().DataPoints())
+						datapoints = mapDoubleMetrics(md.Name(), md.DoubleSum().DataPoints(), attributeTags)
 					}
 				case pdata.MetricDataTypeIntHistogram:
-					datapoints = mapIntHistogramMetrics(md.Name(), md.IntHistogram().DataPoints(), cfg.Buckets)
+					datapoints = mapIntHistogramMetrics(md.Name(), md.IntHistogram().DataPoints(), cfg.Buckets, attributeTags)
 				case pdata.MetricDataTypeDoubleHistogram:
-					datapoints = mapDoubleHistogramMetrics(md.Name(), md.DoubleHistogram().DataPoints(), cfg.Buckets)
+					datapoints = mapDoubleHistogramMetrics(md.Name(), md.DoubleHistogram().DataPoints(), cfg.Buckets, attributeTags)
 				}
 
 				// Try to get host from resource

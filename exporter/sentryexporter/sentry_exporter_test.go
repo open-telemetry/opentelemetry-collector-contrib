@@ -184,7 +184,6 @@ func TestSpanToSentrySpan(t *testing.T) {
 		testSpan.SetEndTime(endTime)
 		testSpan.SetKind(kind)
 
-		testSpan.Status().InitEmpty()
 		testSpan.Status().SetMessage(statusMessage)
 		testSpan.Status().SetCode(pdata.StatusCodeOk)
 
@@ -355,16 +354,15 @@ type SpanStatusCase struct {
 func TestStatusFromSpanStatus(t *testing.T) {
 	testCases := []SpanStatusCase{
 		{
-			testName:   "with nil status",
+			testName:   "with empty status",
 			spanStatus: pdata.NewSpanStatus(),
-			status:     "",
+			status:     "unknown",
 			message:    "",
 		},
 		{
 			testName: "with status code",
 			spanStatus: func() pdata.SpanStatus {
 				spanStatus := pdata.NewSpanStatus()
-				spanStatus.InitEmpty()
 				spanStatus.SetMessage("message")
 				spanStatus.SetCode(pdata.StatusCodeError)
 
@@ -377,7 +375,6 @@ func TestStatusFromSpanStatus(t *testing.T) {
 			testName: "with unimplemented status code",
 			spanStatus: func() pdata.SpanStatus {
 				spanStatus := pdata.NewSpanStatus()
-				spanStatus.InitEmpty()
 				spanStatus.SetMessage("message")
 				spanStatus.SetCode(pdata.StatusCode(1337))
 

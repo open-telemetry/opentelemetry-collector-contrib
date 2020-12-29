@@ -17,11 +17,13 @@ package awsprometheusremotewriteexporter
 
 import (
 	"bytes"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 )
@@ -30,7 +32,7 @@ import (
 type signingRoundTripper struct {
 	transport http.RoundTripper
 	signer    *v4.Signer
-	cfg       *aws.Config
+	region    string
 	service   string
 }
 
@@ -53,7 +55,7 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	req2 := cloneRequest(req)
 
 	// Sign the request
-	_, err = si.signer.Sign(req2, body, si.service, *si.cfg.Region, time.Now())
+	_, err = si.signer.Sign(req2, body, si.service, si.region, time.Now())
 	if err != nil {
 		return nil, err
 	}
@@ -68,10 +70,6 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 }
 
 func newSigningRoundTripper(auth AuthConfig, next http.RoundTripper) (http.RoundTripper, error) {
-	if !isValidAuth(auth) {
-		return next, nil
-	}
-
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(auth.Region)},
 	)
@@ -85,12 +83,25 @@ func newSigningRoundTripper(auth AuthConfig, next http.RoundTripper) (http.Round
 
 	// Get Credentials, either from ./aws or from environmental variables
 	creds := sess.Config.Credentials
+
+	return createSigningRoundTripperWithCredentials(auth, creds, next)
+}
+
+func createSigningRoundTripperWithCredentials(auth AuthConfig, creds *credentials.Credentials, next http.RoundTripper) (http.RoundTripper, error) {
+	if !isValidAuth(auth) {
+		return next, nil
+	}
+
+	if creds == nil {
+		return nil, errors.New("no AWS credentials exist")
+	}
+
 	signer := v4.NewSigner(creds)
 
 	rt := signingRoundTripper{
 		transport: next,
 		signer:    signer,
-		cfg:       sess.Config,
+		region:    auth.Region,
 		service:   auth.Service,
 	}
 

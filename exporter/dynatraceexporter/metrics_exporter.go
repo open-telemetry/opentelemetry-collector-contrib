@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -61,15 +62,15 @@ func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, 
 		return md.MetricCount(), nil
 	}
 
-	request, dropped := e.serializeMetrics(md)
+	lines, dropped := e.serializeMetrics(md)
 
 	// If request is empty string, there are no serializable metrics in the batch.
 	// This can happen if all metric names are invalid
-	if request == "" {
+	if len(lines) == 0 {
 		return md.MetricCount(), nil
 	}
 
-	droppedByCluster, err := e.send(ctx, request)
+	droppedByCluster, err := e.send(ctx, lines)
 
 	if err != nil {
 		return md.MetricCount(), err
@@ -78,8 +79,8 @@ func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, 
 	return dropped + droppedByCluster, nil
 }
 
-func (e *exporter) serializeMetrics(md pdata.Metrics) (string, int) {
-	output := ""
+func (e *exporter) serializeMetrics(md pdata.Metrics) ([]string, int) {
+	lines := make([]string, 0)
 	dropped := 0
 
 	resourceMetrics := md.ResourceMetrics()
@@ -105,29 +106,30 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) (string, int) {
 				case pdata.MetricDataTypeNone:
 					continue
 				case pdata.MetricDataTypeIntGauge:
-					output += serialization.SerializeIntDataPoints(name, metric.IntGauge().DataPoints(), e.cfg.Tags)
+					lines = append(lines, serialization.SerializeIntDataPoints(name, metric.IntGauge().DataPoints(), e.cfg.Tags))
 				case pdata.MetricDataTypeDoubleGauge:
-					output += serialization.SerializeDoubleDataPoints(name, metric.DoubleGauge().DataPoints(), e.cfg.Tags)
+					lines = append(lines, serialization.SerializeDoubleDataPoints(name, metric.DoubleGauge().DataPoints(), e.cfg.Tags))
 				case pdata.MetricDataTypeIntSum:
-					output += serialization.SerializeIntDataPoints(name, metric.IntSum().DataPoints(), e.cfg.Tags)
+					lines = append(lines, serialization.SerializeIntDataPoints(name, metric.IntSum().DataPoints(), e.cfg.Tags))
 				case pdata.MetricDataTypeDoubleSum:
-					output += serialization.SerializeDoubleDataPoints(name, metric.DoubleSum().DataPoints(), e.cfg.Tags)
+					lines = append(lines, serialization.SerializeDoubleDataPoints(name, metric.DoubleSum().DataPoints(), e.cfg.Tags))
 				case pdata.MetricDataTypeIntHistogram:
-					output += serialization.SerializeIntHistogramMetrics(name, metric.IntHistogram().DataPoints(), e.cfg.Tags)
+					lines = append(lines, serialization.SerializeIntHistogramMetrics(name, metric.IntHistogram().DataPoints(), e.cfg.Tags))
 				case pdata.MetricDataTypeDoubleHistogram:
-					output += serialization.SerializeDoubleHistogramMetrics(name, metric.DoubleHistogram().DataPoints(), e.cfg.Tags)
+					lines = append(lines, serialization.SerializeDoubleHistogramMetrics(name, metric.DoubleHistogram().DataPoints(), e.cfg.Tags))
 				}
 			}
 		}
 	}
 
-	return output, dropped
+	return lines, dropped
 }
 
 // send sends a serialized metric batch to Dynatrace.
 // Returns the number of lines rejected by Dynatrace.
 // An error indicates all lines were dropped regardless of the returned number.
-func (e *exporter) send(ctx context.Context, message string) (int, error) {
+func (e *exporter) send(ctx context.Context, lines []string) (int, error) {
+	message := strings.Join(lines, "\n")
 	e.logger.Debug("Sending lines to Dynatrace\n" + message)
 	req, err := http.NewRequestWithContext(ctx, "POST", e.cfg.Endpoint, bytes.NewBufferString(message))
 	if err != nil {
@@ -164,12 +166,18 @@ func (e *exporter) send(ctx context.Context, message string) (int, error) {
 		e.logger.Debug(fmt.Sprintf("Accepted %d lines", responseBody.Ok))
 		e.logger.Error(fmt.Sprintf("Rejected %d lines", responseBody.Invalid))
 
-		if responseBody.Error != "" {
-			e.logger.Error(fmt.Sprintf("Error from Dynatrace: %s", responseBody.Error))
+		if responseBody.Error.Message != "" {
+			e.logger.Error(fmt.Sprintf("Error from Dynatrace: %s", responseBody.Error.Message))
+		}
+
+		for _, line := range responseBody.Error.InvalidLines {
+			// Enabled debug logging to see which lines were dropped
+			if line.Line >= 0 && line.Line < len(lines) {
+				e.logger.Debug(fmt.Sprintf("rejected line %3d: [%s] %s", line.Line, line.Error, lines[line.Line]))
+			}
 		}
 
 		return responseBody.Invalid, nil
-
 	}
 
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
@@ -209,7 +217,18 @@ func normalizeMetricName(prefix, name string) (string, error) {
 
 // Response from Dynatrace is expected to be in JSON format
 type metricsResponse struct {
-	Ok      int    `json:"linesOk"`
-	Invalid int    `json:"linesInvalid"`
-	Error   string `json:"error"`
+	Ok      int                  `json:"linesOk"`
+	Invalid int                  `json:"linesInvalid"`
+	Error   metricsResponseError `json:"error"`
+}
+
+type metricsResponseError struct {
+	Code         string                            `json:"code"`
+	Message      string                            `json:"message"`
+	InvalidLines []metricsResponseErrorInvalidLine `json:"invalidLines"`
+}
+
+type metricsResponseErrorInvalidLine struct {
+	Line  int    `json:"line"`
+	Error string `json:"error"`
 }

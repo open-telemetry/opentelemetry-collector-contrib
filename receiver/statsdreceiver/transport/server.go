@@ -37,6 +37,7 @@ type Server interface {
 		p protocol.Parser,
 		mc consumer.MetricsConsumer,
 		r Reporter,
+		transferChan chan<- string,
 	) error
 
 	// Close stops any running ListenAndServe, however, it waits for any

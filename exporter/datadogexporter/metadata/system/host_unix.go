@@ -17,33 +17,27 @@ package system
 
 import (
 	"context"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
-
-	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/valid"
 )
 
-func getSystemFQDN() (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
-	defer cancel()
+// keep as var for testing
+var hostnamePath string = "/bin/hostname"
 
+func getSystemFQDN() (string, error) {
 	// Go does not provide a way to get the full hostname
 	// so we make a best-effort by running the hostname binary
 	// if available
-	cmd := exec.CommandContext(ctx, "/bin/hostname", "-f")
-
-	out, err := cmd.Output()
-	return strings.TrimSpace(string(out)), err
-}
-
-func (hi *HostInfo) GetHostname(logger *zap.Logger) string {
-	if err := valid.Hostname(hi.FQDN); err != nil {
-		logger.Info("FQDN is not valid", zap.Error(err))
-		return hi.OS
+	if _, err := os.Stat(hostnamePath); err == nil {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, hostnamePath, "-f")
+		out, err := cmd.Output()
+		return strings.TrimSpace(string(out)), err
 	}
 
-	return hi.FQDN
+	// if stat failed for any reason, fail silently
+	return "", nil
 }

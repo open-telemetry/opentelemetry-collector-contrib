@@ -15,6 +15,8 @@
 package statsdreceiver
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 )
@@ -23,4 +25,5 @@ import (
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 	NetAddr                       confignet.NetAddr `mapstructure:",squash"`
+	AggregationInterval           time.Duration     `mapstructure:"aggregation_interval"`
 }

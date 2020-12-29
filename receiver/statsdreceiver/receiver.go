@@ -19,10 +19,14 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
@@ -41,6 +45,7 @@ type statsdReceiver struct {
 	reporter     transport.Reporter
 	parser       protocol.Parser
 	nextConsumer consumer.MetricsConsumer
+	cancel       context.CancelFunc
 
 	startOnce sync.Once
 	stopOnce  sync.Once
@@ -87,17 +92,36 @@ func buildTransportServer(config Config) (transport.Server, error) {
 }
 
 // StartMetricsReception starts a UDP server that can process StatsD messages.
-func (r *statsdReceiver) Start(_ context.Context, host component.Host) error {
+func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 	r.Lock()
 	defer r.Unlock()
-
 	err := componenterror.ErrAlreadyStarted
 	r.startOnce.Do(func() {
+		ctx, r.cancel = context.WithCancel(ctx)
+		var transferChan = make(chan string, 10)
+		ticker := time.NewTicker(r.config.AggregationInterval)
 		err = nil
+		r.parser.Initialize()
 		go func() {
-			err = r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter)
+			err = r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter, transferChan)
 			if err != nil {
 				host.ReportFatalError(err)
+			}
+		}()
+		go func() {
+			for {
+				select {
+				case <-ticker.C:
+					metrics := r.parser.GetMetrics()
+					if len(metrics) > 0 {
+						r.Flush(ctx, metrics, r.nextConsumer)
+					}
+				case rawMetric := <-transferChan:
+					r.parser.Aggregate(rawMetric)
+				case <-ctx.Done():
+					ticker.Stop()
+					return
+				}
 			}
 		}()
 	})
@@ -113,6 +137,19 @@ func (r *statsdReceiver) Shutdown(context.Context) error {
 	var err = componenterror.ErrAlreadyStopped
 	r.stopOnce.Do(func() {
 		err = r.server.Close()
+		r.cancel()
 	})
 	return err
+}
+
+func (r *statsdReceiver) Flush(ctx context.Context, metrics []*metricspb.Metric, nextConsumer consumer.MetricsConsumer) error {
+	md := consumerdata.MetricsData{
+		Metrics: metrics,
+	}
+	error := nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
+	if error != nil {
+		return error
+	}
+
+	return nil
 }

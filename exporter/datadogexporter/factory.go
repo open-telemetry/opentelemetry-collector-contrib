@@ -61,6 +61,9 @@ func createDefaultConfig() configmodels.Exporter {
 			},
 			SendMonotonic: true,
 			DeltaTTL:      3600,
+			ExporterConfig: config.MetricsExporterConfig{
+				ResourceAttributesAsTags: false,
+			},
 		},
 
 		Traces: config.TracesConfig{
@@ -119,6 +122,9 @@ func createMetricsExporter(
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
 			return nil
+		}),
+		exporterhelper.WithResourceToTelemetryConversion(exporterhelper.ResourceToTelemetrySettings{
+			Enabled: cfg.Metrics.ExporterConfig.ResourceAttributesAsTags,
 		}),
 	)
 }

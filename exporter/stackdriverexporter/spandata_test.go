@@ -60,7 +60,6 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 	span.SetEndTime(pdataEndTime)
 
 	status := span.Status()
-	status.InitEmpty()
 	status.SetCode(pdata.StatusCodeError)
 	status.SetMessage("This is not a drill!")
 

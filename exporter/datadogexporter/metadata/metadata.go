@@ -120,8 +120,7 @@ func pushMetadata(cfg *config.Config, startInfo component.ApplicationStartInfo, 
 
 	if resp.StatusCode >= 400 {
 		return fmt.Errorf(
-			"'%d - %s' error when sending metadata payload to %s",
-			resp.StatusCode,
+			"'%s' error when sending metadata payload to %s",
 			resp.Status,
 			path,
 		)

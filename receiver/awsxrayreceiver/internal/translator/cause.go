@@ -38,8 +38,7 @@ func addCause(seg *awsxray.Segment, span *pdata.Span) {
 	// updated to a more specific error in the `segToSpans()` in translator.go once
 	// we traverse through all the subsegments.
 	if span.Status().Code() == pdata.StatusCodeUnset {
-		// StatusCodeUnset is the default value after span.Status().InitEmpty()
-		// is called
+		// StatusCodeUnset is the default value for the span.Status().
 		span.Status().SetCode(pdata.StatusCodeError)
 	}
 

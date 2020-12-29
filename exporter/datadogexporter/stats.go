@@ -26,14 +26,13 @@ const (
 )
 
 // ComputeAPMStats calculates the stats that should be submitted to APM about a given trace
-func ComputeAPMStats(tracePayload *pb.TracePayload, calculator *stats.SublayerCalculator, pushTime int64) *stats.Payload {
-
+func computeAPMStats(tracePayload *pb.TracePayload, calculator *sublayerCalculator, pushTime int64) *stats.Payload {
 	statsRawBuckets := make(map[int64]*stats.RawBucket)
 
 	bucketTS := pushTime - statsBucketDuration
 	for _, trace := range tracePayload.Traces {
-		spans := GetAnalyzedSpans(trace.Spans)
-		sublayers := calculator.ComputeSublayers(trace.Spans)
+		spans := getAnalyzedSpans(trace.Spans)
+		sublayers := calculator.computeSublayers(trace.Spans)
 		for _, span := range spans {
 
 			// TODO: While this is hardcoded to assume a single 10s buckets for now,

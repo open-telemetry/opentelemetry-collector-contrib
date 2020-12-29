@@ -27,7 +27,7 @@ exporters:
     send_compatible_metrics: true
     translation_rules:
     - action: rename_dimension_keys
-      mapping: 
+      mapping:
         k8s.cluster.name: kubernetes_cluster
 
 service:
@@ -36,3 +36,7 @@ service:
       receivers: [examplereceiver]
       processors: [exampleprocessor]
       exporters: [signalfx, signalfx/allsettings]
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [signalfx]

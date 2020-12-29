@@ -54,12 +54,11 @@ func TestTraceDataIterationResourceSpansIsEmpty(t *testing.T) {
 }
 
 // Tests the iteration logic over a pdata.Traces type when InstrumentationLibrarySpans is nil
-func TestTraceDataIterationInstrumentationLibrarySpansIsNil(t *testing.T) {
+func TestTraceDataIterationInstrumentationLibrarySpansIsEmpty(t *testing.T) {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
 	rs := traces.ResourceSpans().At(0)
-	instrumentationLibrarySpans := pdata.NewInstrumentationLibrarySpans()
-	rs.InstrumentationLibrarySpans().Append(instrumentationLibrarySpans)
+	rs.InstrumentationLibrarySpans().Resize(1)
 
 	visitor := getMockVisitor(true)
 
