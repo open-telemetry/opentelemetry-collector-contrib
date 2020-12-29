@@ -113,7 +113,7 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 			}, resolvedDiscoveredConfig)
 
 			if err != nil {
-				obs.logger.Error("failed to start receiver", zap.String("receiver", template.fullName))
+				obs.logger.Error("failed to start receiver", zap.String("receiver", template.fullName), zap.Error(err))
 				continue
 			}
 
