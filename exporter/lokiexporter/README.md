@@ -1,7 +1,6 @@
 # Loki Exporter
 
-Exports data via HTTP to [Loki](https://grafana.com/docs/loki/latest/). By default, this exporter requires TLS and
-offers queued retry capabilities.
+Exports data via HTTP to [Loki](https://grafana.com/docs/loki/latest/).
 
 Supported pipeline types: logs
 
@@ -23,9 +22,10 @@ The following settings can be optionally configured:
 
 - `insecure` (default = false): When set to true disables verifying the server's certificate chain and host name. The
   connection is still encrypted but server identity is not verified.
-- `ca_file` (no default) Path to the CA cert to verify the server being connected to.
+- `ca_file` (no default) Path to the CA cert to verify the server being connected to. Should only be used if `insecure` 
+  is set to false.
 - `cert_file` (no default) Path to the TLS cert to use for client connections when TLS client auth is required. 
-  Should only be used if `insecure`
+  Should only be used if `insecure` is set to false.
 - `key_file` (no default) Path to the TLS key to use for TLS required connections. Should only be used if `insecure` is
   set to false.
 
