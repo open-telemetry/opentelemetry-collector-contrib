@@ -19,8 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/collector/translator/conventions"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -29,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 func TestLoadConfig(t *testing.T) {
