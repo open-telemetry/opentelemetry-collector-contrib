@@ -73,7 +73,7 @@ func TestLoadConfig(t *testing.T) {
 			NumConsumers: 2,
 			QueueSize:    10,
 		},
-		AllowedAttributesForStreamLabels: []string{"app", "level"},
+		AttributesForLabels: []string{"app", "level"},
 	}
 	assert.Equal(t, &expectedCfg, actualCfg)
 }

@@ -13,7 +13,7 @@ The following settings are required:
   e.g.: https://loki.example.com:3100/loki/api/v1/push).
 
 
-- `allowed_attributes_for_stream_labels` (no default): List of allowed attributes to be added as labels to Loki log 
+- `attributes_for_labels` (no default): List of allowed attributes to be added as labels to Loki log 
   streams. This is a safety net to help prevent accidentally adding dynamic labels that may significantly increase 
   cardinality, thus having a performance impact on your Loki instance. See the 
   [Loki label best practices](https://grafana.com/docs/loki/latest/best-practices/current-best-practices/) page for 
@@ -44,7 +44,7 @@ Example:
 ```yaml
 loki:
   endpoint: https://loki.example.com:3100/loki/api/v1/push
-  allowed_labels:
+  attributes_for_labels:
     - app
     - level
   headers:
