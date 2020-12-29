@@ -196,7 +196,7 @@ func TestMapIntMonotonicMetrics(t *testing.T) {
 	}
 
 	prevPts := newTTLMap()
-	output := mapIntMonotonicMetrics(metricName, prevPts, slice)
+	output := mapIntMonotonicMetrics(metricName, prevPts, slice, []string{})
 
 	assert.ElementsMatch(t, output, expected)
 }
@@ -237,7 +237,7 @@ func TestMapIntMonotonicDifferentDimensions(t *testing.T) {
 	prevPts := newTTLMap()
 
 	assert.ElementsMatch(t,
-		mapIntMonotonicMetrics(metricName, prevPts, slice),
+		mapIntMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
 			metrics.NewRate(metricName, uint64(seconds(1)), 20, []string{}),
 			metrics.NewRate(metricName, uint64(seconds(1)), 30, []string{"key1:valA"}),
@@ -260,7 +260,7 @@ func TestMapIntMonotonicWithReboot(t *testing.T) {
 
 	prevPts := newTTLMap()
 	assert.ElementsMatch(t,
-		mapIntMonotonicMetrics(metricName, prevPts, slice),
+		mapIntMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
 			metrics.NewRate(metricName, uint64(seconds(1)), 30, []string{}),
 			metrics.NewRate(metricName, uint64(seconds(3)), 20, []string{}),
@@ -284,7 +284,7 @@ func TestMapIntMonotonicOutOfOrder(t *testing.T) {
 
 	prevPts := newTTLMap()
 	assert.ElementsMatch(t,
-		mapIntMonotonicMetrics(metricName, prevPts, slice),
+		mapIntMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
 			metrics.NewRate(metricName, uint64(seconds(2)), 2, []string{}),
 			metrics.NewRate(metricName, uint64(seconds(3)), 1, []string{}),
@@ -317,7 +317,7 @@ func TestMapDoubleMonotonicMetrics(t *testing.T) {
 	}
 
 	prevPts := newTTLMap()
-	output := mapDoubleMonotonicMetrics(metricName, prevPts, slice)
+	output := mapDoubleMonotonicMetrics(metricName, prevPts, slice, []string{})
 
 	assert.ElementsMatch(t, expected, output)
 }
@@ -358,7 +358,7 @@ func TestMapDoubleMonotonicDifferentDimensions(t *testing.T) {
 	prevPts := newTTLMap()
 
 	assert.ElementsMatch(t,
-		mapDoubleMonotonicMetrics(metricName, prevPts, slice),
+		mapDoubleMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
 			metrics.NewRate(metricName, uint64(seconds(1)), 20, []string{}),
 			metrics.NewRate(metricName, uint64(seconds(1)), 30, []string{"key1:valA"}),
@@ -381,7 +381,7 @@ func TestMapDoubleMonotonicWithReboot(t *testing.T) {
 
 	prevPts := newTTLMap()
 	assert.ElementsMatch(t,
-		mapDoubleMonotonicMetrics(metricName, prevPts, slice),
+		mapDoubleMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
 			metrics.NewRate(metricName, uint64(seconds(1)), 30, []string{}),
 			metrics.NewRate(metricName, uint64(seconds(3)), 20, []string{}),
@@ -405,7 +405,7 @@ func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
 
 	prevPts := newTTLMap()
 	assert.ElementsMatch(t,
-		mapDoubleMonotonicMetrics(metricName, prevPts, slice),
+		mapDoubleMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
 			metrics.NewRate(metricName, uint64(seconds(2)), 2, []string{}),
 			metrics.NewRate(metricName, uint64(seconds(3)), 1, []string{}),

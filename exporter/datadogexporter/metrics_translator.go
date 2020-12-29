@@ -104,7 +104,7 @@ func mapIntMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.Int
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
 		tags := getTags(p.LabelsMap())
-    tags = append(tags, attrTags...)
+		tags = append(tags, attrTags...)
 		key := metricDimensionsToMapKey(name, tags)
 
 		if c := prevPts.Get(key); c != nil {
@@ -146,7 +146,7 @@ func mapDoubleMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.
 		p := slice.At(i)
 		ts := uint64(p.Timestamp())
 		tags := getTags(p.LabelsMap())
-    tags = append(tags, attrTags...)
+		tags = append(tags, attrTags...)
 		key := metricDimensionsToMapKey(name, tags)
 
 		if c := prevPts.Get(key); c != nil {
@@ -279,13 +279,13 @@ func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, md pdata.Metri
 					datapoints = mapDoubleMetrics(md.Name(), md.DoubleGauge().DataPoints(), attributeTags)
 				case pdata.MetricDataTypeIntSum:
 					if cfg.SendMonotonic && isCumulativeMonotonic(md) {
-						datapoints = mapIntMonotonicMetrics(md.Name(), prevPts, md.IntSum().DataPoints())
+						datapoints = mapIntMonotonicMetrics(md.Name(), prevPts, md.IntSum().DataPoints(), attributeTags)
 					} else {
-						datapoints = mapIntMetrics(md.Name(), md.IntSum().DataPoints(), atttributeTags)
+						datapoints = mapIntMetrics(md.Name(), md.IntSum().DataPoints(), attributeTags)
 					}
 				case pdata.MetricDataTypeDoubleSum:
 					if cfg.SendMonotonic && isCumulativeMonotonic(md) {
-						datapoints = mapDoubleMonotonicMetrics(md.Name(), prevPts, md.DoubleSum().DataPoints())
+						datapoints = mapDoubleMonotonicMetrics(md.Name(), prevPts, md.DoubleSum().DataPoints(), attributeTags)
 					} else {
 						datapoints = mapDoubleMetrics(md.Name(), md.DoubleSum().DataPoints(), attributeTags)
 					}
