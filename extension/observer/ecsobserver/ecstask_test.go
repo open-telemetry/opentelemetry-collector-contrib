@@ -216,7 +216,8 @@ func TestAddTargets(t *testing.T) {
 			},
 			map[string]*Target{
 				"10.0.0.129:9404": &Target{
-					Address:     "10.0.0.129:9404",
+					IP:          "10.0.0.129",
+					Port:        9404,
 					MetricsPath: "",
 					Labels: map[string]string{
 						"job":                              "java-tomcat-fargate-awsvpc",
@@ -227,7 +228,8 @@ func TestAddTargets(t *testing.T) {
 					},
 				},
 				"10.0.0.129:9406/metrics": &Target{
-					Address:     "10.0.0.129:9406",
+					IP:          "10.0.0.129",
+					Port:        9406,
 					MetricsPath: "/metrics",
 					Labels: map[string]string{
 						"container_name":                   "bugbash-jar-fargate-awsvpc-with-docker-label",
@@ -254,7 +256,8 @@ func TestAddTargets(t *testing.T) {
 			},
 			map[string]*Target{
 				"10.0.0.129:9404/stats/metrics": &Target{
-					Address:     "10.0.0.129:9404",
+					IP:          "10.0.0.129",
+					Port:        9404,
 					MetricsPath: "/stats/metrics",
 					Labels: map[string]string{
 						"container_name":                   "bugbash-tomcat-fargate-awsvpc-with-docker-label",
@@ -265,7 +268,8 @@ func TestAddTargets(t *testing.T) {
 					},
 				},
 				"10.0.0.129:9406/stats/metrics": &Target{
-					Address:     "10.0.0.129:9406",
+					IP:          "10.0.0.129",
+					Port:        9406,
 					MetricsPath: "/stats/metrics",
 					Labels: map[string]string{
 						"container_name":                   "bugbash-jar-fargate-awsvpc-with-docker-label",
@@ -293,7 +297,8 @@ func TestAddTargets(t *testing.T) {
 			},
 			map[string]*Target{
 				"10.4.0.205:9494/metrics": &Target{
-					Address:     "10.4.0.205:9494",
+					IP:          "10.4.0.205",
+					Port:        9494,
 					MetricsPath: "/metrics",
 					Labels: map[string]string{
 						"container_name":               "bugbash-tomcat-prometheus-workload-java-ec2-bridge-mapped-port",
@@ -328,7 +333,8 @@ func TestAddTargets(t *testing.T) {
 			},
 			map[string]*Target{
 				"10.0.0.129:9404": &Target{
-					Address:     "10.0.0.129:9404",
+					IP:          "10.0.0.129",
+					Port:        9404,
 					MetricsPath: "",
 					Labels: map[string]string{
 						"job":                              "java-tomcat-fargate-awsvpc",
@@ -339,7 +345,8 @@ func TestAddTargets(t *testing.T) {
 					},
 				},
 				"10.0.0.129:9406/metrics": &Target{
-					Address:     "10.0.0.129:9406",
+					IP:          "10.0.0.129",
+					Port:        9406,
 					MetricsPath: "/metrics",
 					Labels: map[string]string{
 						"container_name":                   "bugbash-jar-fargate-awsvpc-with-docker-label",
@@ -350,7 +357,8 @@ func TestAddTargets(t *testing.T) {
 					},
 				},
 				"10.0.0.129:9404/stats/metrics": &Target{
-					Address:     "10.0.0.129:9404",
+					IP:          "10.0.0.129",
+					Port:        9404,
 					MetricsPath: "/stats/metrics",
 					Labels: map[string]string{
 						"container_name":                   "bugbash-tomcat-fargate-awsvpc-with-docker-label",
@@ -361,7 +369,8 @@ func TestAddTargets(t *testing.T) {
 					},
 				},
 				"10.0.0.129:9406/stats/metrics": &Target{
-					Address:     "10.0.0.129:9406",
+					IP:          "10.0.0.129",
+					Port:        9406,
 					MetricsPath: "/stats/metrics",
 					Labels: map[string]string{
 						"container_name":                   "bugbash-jar-fargate-awsvpc-with-docker-label",
@@ -393,7 +402,8 @@ func TestAddTargets(t *testing.T) {
 			},
 			map[string]*Target{
 				"10.4.0.205:32774/metrics": &Target{
-					Address:     "10.4.0.205:32774",
+					IP:          "10.4.0.205",
+					Port:        32774,
 					MetricsPath: "/metrics",
 					Labels: map[string]string{
 						"InstanceType":                 "t3.medium",
@@ -407,7 +417,8 @@ func TestAddTargets(t *testing.T) {
 					},
 				},
 				"10.4.0.205:9494": &Target{
-					Address:     "10.4.0.205:9494",
+					IP:          "10.4.0.205",
+					Port:        9494,
 					MetricsPath: "",
 					Labels: map[string]string{
 						"job":                          "bugbash-tomcat-ec2-bridge-mapped-port",
@@ -421,7 +432,8 @@ func TestAddTargets(t *testing.T) {
 					},
 				},
 				"10.4.0.205:9494/metrics": &Target{
-					Address:     "10.4.0.205:9494",
+					IP:          "10.4.0.205",
+					Port:        9494,
 					MetricsPath: "/metrics",
 					Labels: map[string]string{
 						"InstanceType":                 "t3.medium",

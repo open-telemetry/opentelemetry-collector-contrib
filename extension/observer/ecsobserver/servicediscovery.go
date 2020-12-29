@@ -15,6 +15,7 @@
 package ecsobserver
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -42,25 +43,29 @@ type PrometheusTarget struct {
 
 // Target represents a discovered ECS endpoint.
 type Target struct {
-	Address     string
+	IP          string
+	Port        int64
 	MetricsPath string
 	Labels      map[string]string
 }
 
 // toPrometheusTarget converts target into seriablizable Prometheus target.
 func (t *Target) toPrometheusTarget() *PrometheusTarget {
+	address := fmt.Sprintf("%s:%d", t.IP, t.Port)
 	return &PrometheusTarget{
-		Targets: []string{t.Address},
+		Targets: []string{address},
 		Labels:  t.Labels,
 	}
 }
 
 // toEndpoint converts target into seriablizable Prometheus target.
 func (t *Target) toEndpoint() *observer.Endpoint {
+	id := fmt.Sprintf("%s:%d%s", t.IP, t.Port, t.MetricsPath)
 	return &observer.Endpoint{
-		ID:     observer.EndpointID(t.Address + t.MetricsPath),
-		Target: t.Address,
+		ID:     observer.EndpointID(id),
+		Target: t.IP,
 		Details: observer.Task{
+			Port:        t.Port,
 			MetricsPath: t.MetricsPath,
 			Labels:      t.Labels,
 		},

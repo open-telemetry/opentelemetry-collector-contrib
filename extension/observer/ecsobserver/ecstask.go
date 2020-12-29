@@ -120,8 +120,7 @@ func (t *ECSTask) addDockerLabelBasedTarget(ip string, c *ecs.ContainerDefinitio
 		metricsPath = aws.StringValue(v)
 	}
 
-	targetAddr := fmt.Sprintf("%s:%d", ip, hostPort)
-	endpoint := targetAddr + metricsPath
+	endpoint := fmt.Sprintf("%s:%d%s", ip, hostPort, metricsPath)
 	if _, ok := targets[endpoint]; ok {
 		return
 	}
@@ -132,7 +131,8 @@ func (t *ECSTask) addDockerLabelBasedTarget(ip string, c *ecs.ContainerDefinitio
 	}
 
 	targets[endpoint] = &Target{
-		Address:     targetAddr,
+		IP:          ip,
+		Port:        hostPort,
 		MetricsPath: metricsPath,
 		Labels:      t.generateTargetLabels(c, metricsPath, customizedJobName),
 	}
@@ -164,11 +164,11 @@ func (t *ECSTask) addTaskDefinitionBasedTargets(ip string, c *ecs.ContainerDefin
 				continue
 			}
 
-			targetAddr := fmt.Sprintf("%s:%d", ip, hostPort)
-			endpoint := targetAddr + taskDef.MetricsPath
+			endpoint := fmt.Sprintf("%s:%d%s", ip, hostPort, taskDef.MetricsPath)
 			if _, ok := targets[endpoint]; !ok {
 				targets[endpoint] = &Target{
-					Address:     targetAddr,
+					IP:          ip,
+					Port:        hostPort,
 					MetricsPath: taskDef.MetricsPath,
 					Labels:      t.generateTargetLabels(c, taskDef.MetricsPath, taskDef.JobName),
 				}

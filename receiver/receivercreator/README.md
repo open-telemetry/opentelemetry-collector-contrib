@@ -58,7 +58,7 @@ config:
 
 ## Rule Expressions
 
-Each rule must start with `type.(pod|port) &&` such that the rule matches
+Each rule must start with `type.(pod|port|task) &&` such that the rule matches
 only one endpoint type. Depending on the type of endpoint the rule is
 targeting it will have different variables available.
 
@@ -83,6 +83,15 @@ targeting it will have different variables available.
 | pod.annotations | map of annotations of the owning pod |
 | protocol        | `TCP` or `UDP`                       |
 
+### Task
+
+| Variable        | Description                          |
+|-----------------|--------------------------------------|
+| type.task       | `true`                               |
+| port            | port number                          |
+| metricsPath     | path for scraping metrics            |
+| labels          | generated labels for scrape target   |
+
 ## Example
 
 ```yaml
@@ -90,6 +99,8 @@ extensions:
   # Configures the Kubernetes observer to watch for pod start and stop events.
   k8s_observer:
   host_observer:
+  # Configures the ECS observer to watch for task start and stop events.
+  ecs_observer:
 
 receivers:
   receiver_creator/1:
@@ -120,6 +131,15 @@ receivers:
         rule: type.port && port == 6379 && is_ipv6 == true
         config:
           service_name: redis_on_host
+  receiver_creator/3:
+    # Name of the extensions to watch for endpoints to start and stop.
+    watch_observers: [ecs_observer]
+    receivers:
+      prometheus_simple:
+        rule: type.task && metricsPath == '/metrics'
+        config:
+          metrics_path: '`metricsPath`'
+          endpoint: '`endpoint`:`port`'
 
 
 processors:
@@ -131,10 +151,10 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [receiver_creator/1, receiver_creator/2]
+      receivers: [receiver_creator/1, receiver_creator/2, receiver_creator/3]
       processors: [exampleprocessor]
       exporters: [exampleexporter]
-  extensions: [k8s_observer, host_observer]
+  extensions: [k8s_observer, host_observer, ecs_observer]
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)

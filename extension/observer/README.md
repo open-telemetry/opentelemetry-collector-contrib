@@ -8,3 +8,4 @@ Currently the only component that uses observers is the [receiver_creator](../..
 
 * [k8sobserver](k8sobserver/README.md)
 * [hostobserver](hostobserver/README.md)
+* [ecsobserver](ecsobserver/README.md)

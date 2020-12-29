@@ -34,7 +34,11 @@ func (e *Endpoint) String() string {
 
 // Task is a discovered ECS task.
 type Task struct {
+	// Port number of the endpoint.
+	Port        int64
+	// MetricsPath is the metrics path of the endpoint.
 	MetricsPath string
+	// Labels exported by the ECS Observer (mainly for use with Prometheus).
 	Labels      map[string]string
 }
 
@@ -87,14 +91,6 @@ func EndpointToEnv(endpoint Endpoint) (EndpointEnv, error) {
 	}
 
 	switch o := endpoint.Details.(type) {
-	case Task:
-		ruleTypes["task"] = true
-		return map[string]interface{}{
-			"type":        ruleTypes,
-			"endpoint":    endpoint.Target,
-			"metricsPath": o.MetricsPath,
-			"labels":      o.Labels,
-		}, nil
 	case Pod:
 		ruleTypes["pod"] = true
 		return map[string]interface{}{
@@ -128,6 +124,15 @@ func EndpointToEnv(endpoint Endpoint) (EndpointEnv, error) {
 			"is_ipv6":   o.IsIPv6,
 			"port":      o.Port,
 			"transport": o.Transport,
+		}, nil
+	case Task:
+		ruleTypes["task"] = true
+		return map[string]interface{}{
+			"type":        ruleTypes,
+			"endpoint":    endpoint.Target,
+			"port":        o.Port,
+			"metricsPath": o.MetricsPath,
+			"labels":      o.Labels,
 		}, nil
 
 	default:
