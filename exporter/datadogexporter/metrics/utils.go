@@ -43,7 +43,6 @@ func newMetric(name string, ts uint64, value float64, tags []string) datadog.Met
 		Tags:   tags,
 	}
 	metric.SetMetric(name)
-	metric.SetType(Gauge)
 	return metric
 }
 

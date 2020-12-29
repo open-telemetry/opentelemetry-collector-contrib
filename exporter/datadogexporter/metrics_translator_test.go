@@ -310,7 +310,7 @@ func TestMapDoubleMonotonicMetrics(t *testing.T) {
 	assert.ElementsMatch(t, expected, output)
 }
 
-func TestMapDoubleMonotonicDifferentDimension(t *testing.T) {
+func TestMapDoubleMonotonicDifferentDimensions(t *testing.T) {
 	metricName := "metric.example"
 	slice := pdata.NewDoubleDataPointSlice()
 	slice.Resize(6)
