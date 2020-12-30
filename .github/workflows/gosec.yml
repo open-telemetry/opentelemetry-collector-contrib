@@ -1,9 +1,5 @@
 name: Run Gosec
 on:
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
   workflow_dispatch:
   schedule:
     #        ┌───────────── minute (0 - 59)
@@ -15,7 +11,7 @@ on:
     #        │  │ │ │ │
     #        │  │ │ │ │
     #        *  * * * *
-    - cron: '30 0 * * *'
+    - cron: '30 2 * * *'
 jobs:
   tests:
     runs-on: ubuntu-latest
