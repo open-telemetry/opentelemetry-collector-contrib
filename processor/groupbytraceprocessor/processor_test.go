@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
@@ -637,6 +638,20 @@ func TestErrorOnProcessResourceSpansContinuesProcessing(t *testing.T) {
 	assert.True(t, returnedError)
 }
 
+func TestAsyncOnRelease(t *testing.T) {
+	blockCh := make(chan struct{})
+	blocker := &blockingConsumer{
+		blockCh: blockCh,
+	}
+
+	sp := &groupByTraceProcessor{
+		logger:       zap.NewNop(),
+		nextConsumer: blocker,
+	}
+	assert.NoError(t, sp.onTraceReleased(nil))
+	close(blockCh)
+}
+
 func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 	// prepare
 	config := Config{
@@ -724,6 +739,17 @@ func (st *mockStorage) shutdown() error {
 	if st.onShutdown != nil {
 		return st.onShutdown()
 	}
+	return nil
+}
+
+type blockingConsumer struct {
+	blockCh <-chan struct{}
+}
+
+var _ consumer.TracesConsumer = (*blockingConsumer)(nil)
+
+func (b *blockingConsumer) ConsumeTraces(context.Context, pdata.Traces) error {
+	<-b.blockCh
 	return nil
 }
 
