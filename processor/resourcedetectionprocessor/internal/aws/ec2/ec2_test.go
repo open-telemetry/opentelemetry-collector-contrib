@@ -17,6 +17,7 @@ package ec2
 import (
 	"context"
 	"errors"
+	"regexp"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
@@ -228,28 +229,24 @@ func (m *mockEC2Client) DescribeTags(input *ec2.DescribeTagsInput) (*ec2.Describ
 func TestEC2Tags(t *testing.T) {
 	tests := []struct {
 		name           string
-		cfg            Config
+		tagKeyRegexes  []*regexp.Regexp
 		resourceID     string
 		expectedOutput map[string]string
 		shouldError    bool
 	}{
 		{
-			name: "success case one tag specified",
-			cfg: Config{
-				Tags: []string{"tag1"},
-			},
-			resourceID: "resource1",
+			name:          "success case one tag specified",
+			tagKeyRegexes: []*regexp.Regexp{regexp.MustCompile("^tag1$")},
+			resourceID:    "resource1",
 			expectedOutput: map[string]string{
 				"tag1": "val1",
 			},
 			shouldError: false,
 		},
 		{
-			name: "success case all tags",
-			cfg: Config{
-				Tags: []string{".*"},
-			},
-			resourceID: "resource1",
+			name:          "success case all tags",
+			tagKeyRegexes: []*regexp.Regexp{regexp.MustCompile(".*")},
+			resourceID:    "resource1",
 			expectedOutput: map[string]string{
 				"tag1": "val1",
 				"tag2": "val2",
@@ -257,11 +254,9 @@ func TestEC2Tags(t *testing.T) {
 			shouldError: false,
 		},
 		{
-			name: "error case in DescribeTags",
-			cfg: Config{
-				Tags: []string{"tag2"},
-			},
-			resourceID: "error",
+			name:          "error case in DescribeTags",
+			tagKeyRegexes: []*regexp.Regexp{regexp.MustCompile("^tag2$")},
+			resourceID:    "error",
 			expectedOutput: map[string]string{
 				"tag1": "val1",
 				"tag2": "val2",
@@ -272,7 +267,7 @@ func TestEC2Tags(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &mockEC2Client{}
-			output, err := fetchEC2Tags(m, tt.resourceID, tt.cfg)
+			output, err := fetchEC2Tags(m, tt.resourceID, tt.tagKeyRegexes)
 			if tt.shouldError {
 				assert.Error(t, err)
 				return

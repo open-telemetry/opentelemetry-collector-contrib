@@ -39,7 +39,7 @@ var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
 	metadataProvider metadataProvider
-	cfg              Config
+	tagKeyRegexes    []*regexp.Regexp
 }
 
 func NewDetector(_ component.ProcessorCreateParams, dcfg internal.DetectorConfig) (internal.Detector, error) {
@@ -48,11 +48,11 @@ func NewDetector(_ component.ProcessorCreateParams, dcfg internal.DetectorConfig
 	if err != nil {
 		return nil, err
 	}
-	err = validateRegexes(cfg)
+	tagKeyRegexes, err := compileRegexes(cfg)
 	if err != nil {
 		return nil, err
 	}
-	return &Detector{metadataProvider: newMetadataClient(sess), cfg: cfg}, nil
+	return &Detector{metadataProvider: newMetadataClient(sess), tagKeyRegexes: tagKeyRegexes}, nil
 }
 
 func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
@@ -82,7 +82,7 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	attr.InsertString(conventions.AttributeHostType, meta.InstanceType)
 	attr.InsertString(conventions.AttributeHostName, hostname)
 
-	tags, err := connectAndFetchEc2Tags(meta.Region, meta.InstanceID, d.cfg)
+	tags, err := connectAndFetchEc2Tags(meta.Region, meta.InstanceID, d.tagKeyRegexes)
 	if err != nil {
 		return res, fmt.Errorf("failed fetching ec2 instance tags: %w", err)
 	}
@@ -94,8 +94,8 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	return res, nil
 }
 
-func connectAndFetchEc2Tags(region string, instanceID string, cfg Config) (map[string]string, error) {
-	if len(cfg.Tags) == 0 {
+func connectAndFetchEc2Tags(region string, instanceID string, tagKeyRegexes []*regexp.Regexp) (map[string]string, error) {
+	if len(tagKeyRegexes) == 0 {
 		return nil, nil
 	}
 
@@ -107,10 +107,10 @@ func connectAndFetchEc2Tags(region string, instanceID string, cfg Config) (map[s
 	}
 	e := ec2.New(sess)
 
-	return fetchEC2Tags(e, instanceID, cfg)
+	return fetchEC2Tags(e, instanceID, tagKeyRegexes)
 }
 
-func fetchEC2Tags(svc ec2iface.EC2API, instanceID string, cfg Config) (map[string]string, error) {
+func fetchEC2Tags(svc ec2iface.EC2API, instanceID string, tagKeyRegexes []*regexp.Regexp) (map[string]string, error) {
 	ec2Tags, err := svc.DescribeTags(&ec2.DescribeTagsInput{
 		Filters: []*ec2.Filter{{
 			Name: aws.String("resource-id"),
@@ -124,7 +124,7 @@ func fetchEC2Tags(svc ec2iface.EC2API, instanceID string, cfg Config) (map[strin
 	}
 	tags := make(map[string]string)
 	for _, tag := range ec2Tags.Tags {
-		matched := regexArrayMatch(cfg.Tags, *tag.Key)
+		matched := regexArrayMatch(tagKeyRegexes, *tag.Key)
 		if matched {
 			tags[*tag.Key] = *tag.Value
 		}
@@ -132,19 +132,21 @@ func fetchEC2Tags(svc ec2iface.EC2API, instanceID string, cfg Config) (map[strin
 	return tags, nil
 }
 
-func validateRegexes(cfg Config) error {
-	for _, elem := range cfg.Tags {
-		_, err := regexp.Compile(elem)
+func compileRegexes(cfg Config) ([]*regexp.Regexp, error) {
+	tagRegexes := make([]*regexp.Regexp, len(cfg.Tags))
+	for i, elem := range cfg.Tags {
+		regex, err := regexp.Compile(elem)
 		if err != nil {
-			return err
+			return nil, err
 		}
+		tagRegexes[i] = regex
 	}
-	return nil
+	return tagRegexes, nil
 }
 
-func regexArrayMatch(arr []string, val string) bool {
+func regexArrayMatch(arr []*regexp.Regexp, val string) bool {
 	for _, elem := range arr {
-		matched, _ := regexp.MatchString(elem, val)
+		matched := elem.MatchString(val)
 		if matched {
 			return true
 		}
