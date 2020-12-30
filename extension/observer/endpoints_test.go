@@ -45,6 +45,7 @@ func TestEndpointToEnv(t *testing.T) {
 				"type": map[string]interface{}{
 					"port": false,
 					"pod":  true,
+					"task": false,
 				},
 				"endpoint": "192.68.73.2",
 				"name":     "pod_name",
@@ -81,6 +82,7 @@ func TestEndpointToEnv(t *testing.T) {
 				"type": map[string]interface{}{
 					"port": true,
 					"pod":  false,
+					"task": false,
 				},
 				"endpoint": "192.68.73.2",
 				"name":     "port_name",
@@ -115,6 +117,7 @@ func TestEndpointToEnv(t *testing.T) {
 				"type": map[string]interface{}{
 					"port": true,
 					"pod":  false,
+					"task": false,
 				},
 				"endpoint":  "127.0.0.1",
 				"name":      "process_name",
@@ -122,6 +125,36 @@ func TestEndpointToEnv(t *testing.T) {
 				"is_ipv6":   true,
 				"port":      uint16(2379),
 				"transport": ProtocolUDP,
+			},
+			wantErr: false,
+		},
+		{
+			name: "ECS Task",
+			endpoint: Endpoint{
+				ID:     EndpointID("127.0.0.1:9090"),
+				Target: "127.0.0.1",
+				Details: Task{
+					Port:        2379,
+					MetricsPath: "/metrics",
+					Labels: map[string]string{
+						"label1": "value1",
+						"label2": "value2",
+					},
+				},
+			},
+			want: EndpointEnv{
+				"type": map[string]interface{}{
+					"port": false,
+					"pod":  false,
+					"task": true,
+				},
+				"endpoint":    "127.0.0.1",
+				"port":        int64(2379),
+				"metricsPath": "/metrics",
+				"labels": map[string]string{
+					"label1": "value1",
+					"label2": "value2",
+				},
 			},
 			wantErr: false,
 		},
