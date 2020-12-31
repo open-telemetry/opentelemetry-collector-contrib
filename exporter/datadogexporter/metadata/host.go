@@ -83,13 +83,12 @@ func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
 		return customHostname.StringVal(), true
 	}
 
-	// Kubernetes: node-cluster if cluster is available, else node
+	// Kubernetes: node-cluster if cluster name is available, else node
 	if k8sNodeName, ok := attrs.Get(AttributeK8sNodeName); ok {
 		if k8sClusterName, ok := attrs.Get(conventions.AttributeK8sCluster); ok {
 			return k8sNodeName.StringVal() + "-" + k8sClusterName.StringVal(), true
-		} else {
-			return k8sNodeName.StringVal(), true
 		}
+		return k8sNodeName.StringVal(), true
 	}
 
 	// container id (e.g. from Docker)
