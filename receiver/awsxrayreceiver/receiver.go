@@ -125,6 +125,12 @@ func (x *xrayReceiver) Shutdown(_ context.Context) error {
 
 func (x *xrayReceiver) start() {
 	incomingSegments := x.poller.SegmentsChan()
+	for w := 1; w <= 4; w++ {
+		go x.woker(incomingSegments)
+	}
+}
+
+func (x *xrayReceiver) woker(incomingSegments <-chan udppoller.RawSegment) {
 	for seg := range incomingSegments {
 		traces, totalSpansCount, err := translator.ToTraces(seg.Payload)
 		if err != nil {
