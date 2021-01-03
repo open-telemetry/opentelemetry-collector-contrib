@@ -25,13 +25,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils/cache"
 )
 
-func TestNewGauge(t *testing.T) {
+func TestNewMetric(t *testing.T) {
 	name := "test.metric"
 	ts := uint64(1e9)
 	value := 2.0
 	tags := []string{"tag:value"}
 
-	metric := NewGauge(name, ts, value, tags)
+	metric := newMetric(name, ts, value, tags)
 
 	assert.Equal(t, "test.metric", *metric.Metric)
 	// Assert timestamp conversion from uint64 ns to float64 s
@@ -40,6 +40,20 @@ func TestNewGauge(t *testing.T) {
 	assert.Equal(t, 2.0, *metric.Points[0][1])
 	// Assert tags
 	assert.Equal(t, []string{"tag:value"}, metric.Tags)
+}
+
+func TestNewType(t *testing.T) {
+	name := "test.metric"
+	ts := uint64(1e9)
+	value := 2.0
+	tags := []string{"tag:value"}
+
+	gauge := NewGauge(name, ts, value, tags)
+	assert.Equal(t, gauge.GetType(), Gauge)
+
+	count := NewRate(name, ts, value, tags)
+	assert.Equal(t, count.GetType(), Rate)
+
 }
 
 func TestDefaultMetrics(t *testing.T) {

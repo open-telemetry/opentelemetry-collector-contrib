@@ -59,6 +59,8 @@ func createDefaultConfig() configmodels.Exporter {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "", // set during config sanitization
 			},
+			SendMonotonic: true,
+			DeltaTTL:      3600,
 			ExporterConfig: config.MetricsExporterConfig{
 				ResourceAttributesAsTags: false,
 			},
