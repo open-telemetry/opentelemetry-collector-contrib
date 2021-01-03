@@ -28,6 +28,7 @@ exporter/jaegerthrifthttpexporter/         @open-telemetry/collector-contrib-app
 exporter/kinesisexporter/                  @open-telemetry/collector-contrib-approvers @owais
 exporter/loadbalancingexporter/            @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logzioexporter/                   @open-telemetry/collector-contrib-approvers @yyyogev
+exporter/lokiexporter/                     @open-telemetry/collector-contrib-approvers @gramidt
 exporter/newrelicexporter/                 @open-telemetry/collector-contrib-approvers @MrAlias
 exporter/sapmexporter/                     @open-telemetry/collector-contrib-approvers @owais @dmitryax
 exporter/sentryexporter/                   @open-telemetry/collector-contrib-approvers @AbhiPrasad
