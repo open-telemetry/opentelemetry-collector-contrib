@@ -7,10 +7,13 @@ processors:
 exporters:
   loki:
     endpoint: "https://loki:3100/loki/api/v1/push"
-    attributes_for_labels:
-      - container.name
-      - k8s.cluster.name
-      - severity
+    labels:
+      default:
+        example: value
+      attributes_for_labels:
+        - container.name
+        - k8s.cluster.name
+        - severity
   loki/allsettings:
     endpoint: "https://loki:3100/loki/api/v1/push"
     insecure: true
@@ -31,10 +34,13 @@ exporters:
       max_elapsed_time: 10m
     headers:
       "X-Scope-OrgID": "example"
-    attributes_for_labels:
-      - container.name
-      - k8s.cluster.name
-      - severity
+    labels:
+      default:
+        example: value
+      attributes_for_labels:
+        - container.name
+        - k8s.cluster.name
+        - severity
 service:
   pipelines:
     metrics:

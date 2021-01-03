@@ -27,7 +27,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestCreateDefaultConfig(t *testing.T) {
+func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
@@ -43,14 +43,30 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, true, ocfg.QueueSettings.Enabled, "default sending queue is enabled")
 }
 
-func TestCreateLogExporter(t *testing.T) {
+func TestFactory_CreateLogExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
-	cfg.AttributesForLabels = []string{"app", "level"}
-
+	cfg.Labels = LabelsConfig{
+		Default:             map[string]string{"example": "value"},
+		AttributesForLabels: []string{"app", "level"},
+	}
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, exp)
+}
+
+func TestFactory_CreateLogExporterInvalidConfig(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.HTTPClientSettings.Endpoint = ""
+	cfg.Labels = LabelsConfig{
+		Default:             map[string]string{},
+		AttributesForLabels: []string{},
+	}
+	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
+	require.Error(t, err)
+	require.Nil(t, exp)
 }

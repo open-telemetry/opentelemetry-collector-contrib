@@ -78,7 +78,10 @@ func TestNoAllowedLabelsReturnsError(t *testing.T) {
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: validEndpoint,
 		},
-		AttributesForLabels: nil,
+		Labels: LabelsConfig{
+			Default:             map[string]string{},
+			AttributesForLabels: nil,
+		},
 	}
 	f := NewFactory()
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
@@ -91,9 +94,12 @@ func TestPushLogDataReturnsWithoutErrorWhileNotImplemented(t *testing.T) {
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: validEndpoint,
 		},
-		AttributesForLabels: validLabels,
+		Labels: LabelsConfig{
+			Default:             map[string]string{},
+			AttributesForLabels: validLabels,
+		},
 	}
-	e, err := newExporter(config)
+	e, err := newExporter(config, zap.NewNop())
 	assert.NoError(t, err)
 
 	_, err = e.pushLogData(context.Background(), createLogData(1))
@@ -105,9 +111,12 @@ func TestExporterStartAlwaysReturnsNil(t *testing.T) {
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: validEndpoint,
 		},
-		AttributesForLabels: validLabels,
+		Labels: LabelsConfig{
+			Default:             map[string]string{},
+			AttributesForLabels: validLabels,
+		},
 	}
-	e, err := newExporter(config)
+	e, err := newExporter(config, zap.NewNop())
 	assert.NoError(t, err)
 	assert.NoError(t, e.start(context.Background(), componenttest.NewNopHost()))
 }
@@ -117,9 +126,12 @@ func TestExporterStopAlwaysReturnsNil(t *testing.T) {
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: validEndpoint,
 		},
-		AttributesForLabels: validLabels,
+		Labels: LabelsConfig{
+			Default:             map[string]string{},
+			AttributesForLabels: validLabels,
+		},
 	}
-	e, err := newExporter(config)
+	e, err := newExporter(config, zap.NewNop())
 	assert.NoError(t, err)
 	assert.NoError(t, e.stop(context.Background()))
 }

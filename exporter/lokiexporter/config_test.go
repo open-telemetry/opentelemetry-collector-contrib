@@ -74,7 +74,103 @@ func TestLoadConfig(t *testing.T) {
 			NumConsumers: 2,
 			QueueSize:    10,
 		},
-		AttributesForLabels: []string{conventions.AttributeContainerName, conventions.AttributeK8sCluster, "severity"},
+		Labels: LabelsConfig{
+			Default:             map[string]string{"example": "value"},
+			AttributesForLabels: []string{conventions.AttributeContainerName, conventions.AttributeK8sCluster, "severity"},
+		},
 	}
 	assert.Equal(t, &expectedCfg, actualCfg)
+}
+
+func TestConfig_validate(t *testing.T) {
+	const validEndpoint = "https://validendpoint.local"
+	validLabelsConfig := LabelsConfig{
+		Default:             map[string]string{},
+		AttributesForLabels: []string{"container.name", "k8s.cluster.name", "severity"},
+	}
+
+	type fields struct {
+		ExporterSettings configmodels.ExporterSettings
+		Endpoint         string
+		Source           string
+		CredentialFile   string
+		Audience         string
+		Labels           LabelsConfig
+	}
+	tests := []struct {
+		name         string
+		fields       fields
+		errorMessage string
+		shouldError  bool
+	}{
+		{
+			name: "Test valid endpoint",
+			fields: fields{
+				Endpoint: validEndpoint,
+				Labels:   validLabelsConfig,
+			},
+			shouldError: false,
+		},
+		{
+			name: "Test missing endpoint",
+			fields: fields{
+				Endpoint: "",
+				Labels:   validLabelsConfig,
+			},
+			errorMessage: "\"endpoint\" must be a valid URL",
+			shouldError:  true,
+		},
+		{
+			name: "Test invalid endpoint",
+			fields: fields{
+				Endpoint: "this://is:an:invalid:endpoint.com",
+				Labels:   validLabelsConfig,
+			},
+			errorMessage: "\"endpoint\" must be a valid URL",
+			shouldError:  true,
+		},
+		{
+			name: "Test missing `labels.attributes_to_labels`",
+			fields: fields{
+				Endpoint: validEndpoint,
+				Labels: LabelsConfig{
+					Default:             map[string]string{},
+					AttributesForLabels: nil,
+				},
+			},
+			errorMessage: "\"labels.attributes_for_labels\" must have a least one label",
+			shouldError:  true,
+		},
+		{
+			name: "Test valid `labels` config",
+			fields: fields{
+				Endpoint: validEndpoint,
+				Labels:   validLabelsConfig,
+			},
+			shouldError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			cfg.ExporterSettings = tt.fields.ExporterSettings
+			cfg.Endpoint = tt.fields.Endpoint
+			cfg.Labels = tt.fields.Labels
+
+			err := cfg.validate()
+			if (err != nil) != tt.shouldError {
+				t.Errorf("validate() error = %v, shouldError %v", err, tt.shouldError)
+				return
+			}
+
+			if tt.shouldError {
+				assert.Error(t, err)
+				if len(tt.errorMessage) != 0 {
+					assert.Equal(t, tt.errorMessage, err.Error())
+				}
+			}
+		})
+	}
 }

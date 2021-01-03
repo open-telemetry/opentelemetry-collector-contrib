@@ -15,52 +15,102 @@
 package lokiexporter
 
 import (
+	"bytes"
 	"context"
-	"errors"
-	"net/url"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"sync"
 
+	"github.com/gogo/protobuf/proto"
+	"github.com/golang/snappy"
+	"github.com/grafana/loki/pkg/logproto"
+	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.uber.org/zap"
 )
 
 type lokiExporter struct {
-	pushLogData func(ctx context.Context, ld pdata.Logs) (numDroppedLogs int, err error)
-	stop        func(ctx context.Context) (err error)
-	start       func(ctx context.Context, host component.Host) (err error)
+	config                 *Config
+	logger                 *zap.Logger
+	client                 *http.Client
+	attributesToLabelNames *map[string]model.LabelName
+	wg                     sync.WaitGroup
 }
 
-func newExporter(config *Config) (*lokiExporter, error) {
-	if _, err := url.Parse(config.Endpoint); config.Endpoint == "" || err != nil {
-		return nil, errors.New("endpoint must be a valid URL")
-	}
-
-	_, err := config.HTTPClientSettings.ToClient()
+func newExporter(config *Config, logger *zap.Logger) (*lokiExporter, error) {
+	client, err := config.HTTPClientSettings.ToClient()
 	if err != nil {
 		return nil, err
 	}
 
-	if len(config.AttributesForLabels) == 0 {
-		return nil, errors.New("attributes_for_labels must have a least one label")
-	}
-
 	return &lokiExporter{
-		pushLogData: pushLogData,
-		stop:        stop,
-		start:       start,
+		config:                 config,
+		logger:                 logger,
+		client:                 client,
+		attributesToLabelNames: config.Labels.getAttributesToLabelNames(),
 	}, nil
 }
 
-// TODO: Implement in second PR
-func pushLogData(ctx context.Context, ld pdata.Logs) (numDroppedLogs int, err error) {
-	return 0, nil
+func (l *lokiExporter) pushLogData(ctx context.Context, ld pdata.Logs) (numDroppedLogs int, err error) {
+	l.wg.Add(1)
+	defer l.wg.Done()
+
+	pushReq, numDroppedLogs := logDataToLoki(l.logger, ld, l.attributesToLabelNames)
+	if len(pushReq.Streams) == 0 {
+		return numDroppedLogs, nil
+	}
+
+	buf, err := encodePushRequest(pushReq)
+	if err != nil {
+		numDroppedLogs += ld.LogRecordCount()
+		return numDroppedLogs, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", l.config.HTTPClientSettings.Endpoint, bytes.NewReader(buf))
+	if err != nil {
+		return numDroppedLogs, consumererror.Permanent(err)
+	}
+
+	for k, v := range l.config.HTTPClientSettings.Headers {
+		req.Header.Set(k, v)
+	}
+	req.Header.Set("Content-Type", "application/x-protobuf")
+
+	resp, err := l.client.Do(req)
+	if err != nil {
+		numDroppedLogs += ld.LogRecordCount()
+		return numDroppedLogs, err
+	}
+
+	_, _ = io.Copy(ioutil.Discard, resp.Body)
+	_ = resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		err = fmt.Errorf("HTTP %d %q", resp.StatusCode, http.StatusText(resp.StatusCode))
+		return numDroppedLogs, err
+	}
+
+	return numDroppedLogs, nil
 }
 
-// TODO: Implement in second PR
-func start(ctx context.Context, host component.Host) (err error) {
+func encodePushRequest(pushRequest *logproto.PushRequest) ([]byte, error) {
+	buf, err := proto.Marshal(pushRequest)
+	if err != nil {
+		return nil, err
+	}
+	buf = snappy.Encode(nil, buf)
+	return buf, nil
+}
+
+func (l *lokiExporter) start(ctx context.Context, host component.Host) (err error) {
 	return nil
 }
 
-// TODO: Implement in second PR
-func stop(ctx context.Context) (err error) {
+func (l *lokiExporter) stop(ctx context.Context) (err error) {
+	l.wg.Wait()
 	return nil
 }
