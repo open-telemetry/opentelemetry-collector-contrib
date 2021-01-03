@@ -48,17 +48,46 @@ func TestHost(t *testing.T) {
 	assert.Equal(t, *host, osHostname)
 }
 
+const (
+	testHostID      = "example-host-id"
+	testHostName    = "example-host-name"
+	testContainerID = "example-container-id"
+	testClusterName = "clusterName"
+	testNodeName    = "nodeName"
+	testCustomName  = "example-custom-host-name"
+)
+
 func TestHostnameFromAttributes(t *testing.T) {
-	testHostID := "example-host-id"
-	testHostName := "example-host-name"
+	// Custom hostname
+	attrs := testutils.NewAttributeMap(map[string]string{
+		AttributeDatadogHostname:         testCustomName,
+		AttributeK8sNodeName:             testNodeName,
+		conventions.AttributeK8sCluster:  testClusterName,
+		conventions.AttributeContainerID: testContainerID,
+		conventions.AttributeHostID:      testHostID,
+		conventions.AttributeHostName:    testHostName,
+	})
+	hostname, ok := HostnameFromAttributes(attrs)
+	assert.True(t, ok)
+	assert.Equal(t, hostname, testCustomName)
+
+	// Container ID
+	attrs = testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeContainerID: testContainerID,
+		conventions.AttributeHostID:      testHostID,
+		conventions.AttributeHostName:    testHostName,
+	})
+	hostname, ok = HostnameFromAttributes(attrs)
+	assert.True(t, ok)
+	assert.Equal(t, hostname, testContainerID)
 
 	// AWS cloud provider means relying on the EC2 function
-	attrs := testutils.NewAttributeMap(map[string]string{
+	attrs = testutils.NewAttributeMap(map[string]string{
 		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
 		conventions.AttributeHostID:        testHostID,
 		conventions.AttributeHostName:      testHostName,
 	})
-	hostname, ok := HostnameFromAttributes(attrs)
+	hostname, ok = HostnameFromAttributes(attrs)
 	assert.True(t, ok)
 	assert.Equal(t, hostname, testHostName)
 
@@ -76,5 +105,41 @@ func TestHostnameFromAttributes(t *testing.T) {
 	hostname, ok = HostnameFromAttributes(attrs)
 	assert.False(t, ok)
 	assert.Empty(t, hostname)
+}
 
+func TestHostnameKubernetes(t *testing.T) {
+	// Node name and cluster name
+	attrs := testutils.NewAttributeMap(map[string]string{
+		AttributeK8sNodeName:             testNodeName,
+		conventions.AttributeK8sCluster:  testClusterName,
+		conventions.AttributeContainerID: testContainerID,
+		conventions.AttributeHostID:      testHostID,
+		conventions.AttributeHostName:    testHostName,
+	})
+	hostname, ok := HostnameFromAttributes(attrs)
+	assert.True(t, ok)
+	assert.Equal(t, hostname, "nodeName-clusterName")
+
+	// Node name, no cluster name
+	attrs = testutils.NewAttributeMap(map[string]string{
+		AttributeK8sNodeName:             testNodeName,
+		conventions.AttributeContainerID: testContainerID,
+		conventions.AttributeHostID:      testHostID,
+		conventions.AttributeHostName:    testHostName,
+	})
+	hostname, ok = HostnameFromAttributes(attrs)
+	assert.True(t, ok)
+	assert.Equal(t, hostname, "nodeName")
+
+	// no node name, cluster name
+	attrs = testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeK8sCluster:  testClusterName,
+		conventions.AttributeContainerID: testContainerID,
+		conventions.AttributeHostID:      testHostID,
+		conventions.AttributeHostName:    testHostName,
+	})
+	hostname, ok = HostnameFromAttributes(attrs)
+	assert.True(t, ok)
+	// cluster name gets ignored, fallback to next option
+	assert.Equal(t, hostname, testContainerID)
 }
