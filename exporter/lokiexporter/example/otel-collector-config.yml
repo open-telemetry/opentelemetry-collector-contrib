@@ -1,0 +1,29 @@
+receivers:
+  fluentforward:
+    endpoint: 0.0.0.0:24224
+
+processors:
+  batch:
+    send_batch_size: 50
+    timeout: 5s
+
+exporters:
+  loki:
+    endpoint: "http://loki:3100/loki/api/v1/push"
+    labels:
+      attributes:
+        container_name: ""
+        source: ""
+
+extensions:
+  health_check:
+  pprof:
+  zpages:
+
+service:
+  extensions: [pprof, zpages, health_check]
+  pipelines:
+    logs:
+      receivers: [ fluentforward ]
+      processors: [ batch ]
+      exporters: [ loki ]
