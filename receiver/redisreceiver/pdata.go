@@ -101,7 +101,7 @@ func newIntMetric(m *redisMetric, pt pdata.IntDataPoint, t *timeBundle) pdata.Me
 	} else if m.pdType == pdata.MetricDataTypeIntSum {
 		pt.SetStartTime(pdata.TimestampUnixNano(t.serverStart.UnixNano()))
 		sum := pdm.IntSum()
-		sum.SetIsMonotonic(true)
+		sum.SetIsMonotonic(m.isMonotonic)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		points = sum.DataPoints()
 	}
@@ -122,7 +122,7 @@ func newDoubleMetric(m *redisMetric, pt pdata.DoubleDataPoint, t *timeBundle) pd
 	} else if m.pdType == pdata.MetricDataTypeDoubleSum {
 		pt.SetStartTime(pdata.TimestampUnixNano(t.serverStart.UnixNano()))
 		sum := pdm.DoubleSum()
-		sum.SetIsMonotonic(true)
+		sum.SetIsMonotonic(m.isMonotonic)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		points = sum.DataPoints()
 	}

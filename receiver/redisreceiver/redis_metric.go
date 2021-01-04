@@ -23,12 +23,13 @@ import (
 // An intermediate data type that allows us to define at startup which metrics to
 // convert (from the string-string map we get from redisSvc) and how to convert them.
 type redisMetric struct {
-	key    string
-	name   string
-	units  string
-	desc   string
-	labels map[string]string
-	pdType pdata.MetricDataType
+	key         string
+	name        string
+	units       string
+	desc        string
+	labels      map[string]string
+	pdType      pdata.MetricDataType
+	isMonotonic bool
 }
 
 // Parse a numeric string to build a metric based on this redisMetric. The
