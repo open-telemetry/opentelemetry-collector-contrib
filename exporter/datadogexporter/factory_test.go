@@ -48,6 +48,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 		Traces: config.TracesConfig{
 			SampleRate: 1,
 		},
+		Metrics: config.MetricsConfig{
+			DeltaTTL:      3600,
+			SendMonotonic: true,
+		},
 		SendMetadata: true,
 		OnlyMetadata: false,
 	}, cfg, "failed to create default config")
@@ -94,6 +98,8 @@ func TestLoadConfig(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://api.datadoghq.eu",
 			},
+			DeltaTTL:      3600,
+			SendMonotonic: true,
 		},
 
 		Traces: config.TracesConfig{

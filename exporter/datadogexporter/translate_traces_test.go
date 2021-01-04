@@ -25,6 +25,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/stats"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
@@ -98,10 +99,12 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 
 	if resourceEnvAndService {
 		resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-			"namespace":              pdata.NewAttributeValueString("kube-system"),
-			"service.name":           pdata.NewAttributeValueString("test-resource-service-name"),
-			"deployment.environment": pdata.NewAttributeValueString("test-env"),
-			"service.version":        pdata.NewAttributeValueString("test-version"),
+			conventions.AttributeContainerID: pdata.NewAttributeValueString("3249847017410247"),
+			conventions.AttributeK8sPod:      pdata.NewAttributeValueString("example-pod-name"),
+			"namespace":                      pdata.NewAttributeValueString("kube-system"),
+			"service.name":                   pdata.NewAttributeValueString("test-resource-service-name"),
+			"deployment.environment":         pdata.NewAttributeValueString("test-env"),
+			"service.version":                pdata.NewAttributeValueString("test-version"),
 		})
 
 	} else {
@@ -224,7 +227,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, "web", datadogPayload.Traces[0].Spans[0].Type)
 
 	// ensure that span.meta and span.metrics pick up attibutes, instrumentation ibrary and resource attribs
-	assert.Equal(t, 8, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 9, len(datadogPayload.Traces[0].Spans[0].Meta))
 	assert.Equal(t, 1, len(datadogPayload.Traces[0].Spans[0].Metrics))
 
 	// ensure that span error is based on otlp span status
@@ -289,7 +292,10 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	// ensure that version gives resource service.version priority
 	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
 
-	assert.Equal(t, 14, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 17, len(datadogPayload.Traces[0].Spans[0].Meta))
+
+	assert.Contains(t, datadogPayload.Traces[0].Spans[0].Meta[tagContainersTags], "container_id:3249847017410247")
+	assert.Contains(t, datadogPayload.Traces[0].Spans[0].Meta[tagContainersTags], "pod_name:example-pod-name")
 }
 
 func TestTracesTranslationOkStatus(t *testing.T) {
@@ -340,7 +346,7 @@ func TestTracesTranslationOkStatus(t *testing.T) {
 	// ensure that version gives resource service.version priority
 	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
 
-	assert.Equal(t, 14, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 17, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
 
 // ensure that the datadog span uses the configured unified service tags
@@ -390,7 +396,7 @@ func TestTracesTranslationConfig(t *testing.T) {
 	// ensure that version gives resource service.version priority
 	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
 
-	assert.Equal(t, 11, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 14, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
 
 // ensure that the translation returns early if no resource instrumentation library spans

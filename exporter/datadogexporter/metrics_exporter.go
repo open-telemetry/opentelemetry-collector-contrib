@@ -26,12 +26,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
 type metricsExporter struct {
-	logger *zap.Logger
-	cfg    *config.Config
-	client *datadog.Client
+	logger  *zap.Logger
+	cfg     *config.Config
+	client  *datadog.Client
+	prevPts *ttlmap.TTLMap
 }
 
 func newMetricsExporter(params component.ExporterCreateParams, cfg *config.Config) (*metricsExporter, error) {
@@ -41,11 +43,18 @@ func newMetricsExporter(params component.ExporterCreateParams, cfg *config.Confi
 
 	utils.ValidateAPIKey(params.Logger, client)
 
-	return &metricsExporter{params.Logger, cfg, client}, nil
+	var sweepInterval int64 = 1
+	if cfg.Metrics.DeltaTTL > 1 {
+		sweepInterval = cfg.Metrics.DeltaTTL / 2
+	}
+	prevPts := ttlmap.New(sweepInterval, cfg.Metrics.DeltaTTL)
+	prevPts.Start()
+
+	return &metricsExporter{params.Logger, cfg, client, prevPts}, nil
 }
 
 func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
-	ms, droppedTimeSeries := MapMetrics(exp.logger, exp.cfg.Metrics, md)
+	ms, droppedTimeSeries := mapMetrics(exp.cfg.Metrics, exp.prevPts, md)
 
 	// Append the default 'running' metric
 	pushTime := uint64(time.Now().UTC().UnixNano())

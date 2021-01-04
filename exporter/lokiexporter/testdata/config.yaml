@@ -1,0 +1,43 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  loki:
+    endpoint: "https://loki:3100/loki/api/v1/push"
+    attributes_for_labels:
+      - container.name
+      - k8s.cluster.name
+      - severity
+  loki/allsettings:
+    endpoint: "https://loki:3100/loki/api/v1/push"
+    insecure: true
+    ca_file: /var/lib/mycert.pem
+    cert_file: certfile
+    key_file: keyfile
+    timeout: 10s
+    read_buffer_size: 123
+    write_buffer_size: 345
+    sending_queue:
+      enabled: true
+      num_consumers: 2
+      queue_size: 10
+    retry_on_failure:
+      enabled: true
+      initial_interval: 10s
+      max_interval: 60s
+      max_elapsed_time: 10m
+    headers:
+      "X-Scope-OrgID": "example"
+    attributes_for_labels:
+      - container.name
+      - k8s.cluster.name
+      - severity
+service:
+  pipelines:
+    metrics:
+      receivers: [ examplereceiver ]
+      processors: [ exampleprocessor ]
+      exporters: [ loki, loki/allsettings ]
