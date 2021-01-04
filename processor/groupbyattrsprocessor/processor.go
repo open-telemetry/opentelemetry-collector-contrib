@@ -43,7 +43,7 @@ func (gap *groupByAttrsProcessor) ProcessTraces(_ context.Context, td pdata.Trac
 				groupedAnything, groupedAttrMap := gap.splitAttrMap(span.Attributes())
 				if groupedAnything {
 					mNumGroupedSpans.M(1)
-					// Some attributes are going to be moved from log record to resource level,
+					// Some attributes are going to be moved from span to resource level,
 					// so we can delete those on the record level
 					deleteAttributes(groupedAttrMap, span.Attributes())
 				} else {
