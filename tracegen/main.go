@@ -22,7 +22,7 @@ import (
 	"time"
 
 	grpcZap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -58,7 +58,7 @@ func main() {
 		expOptions = append(expOptions, otlp.WithInsecure())
 	}
 
-	exp, err := otlp.NewExporter(expOptions...)
+	exp, err := otlp.NewExporter(context.Background(), expOptions...)
 	if err != nil {
 		logger.Error("failed to obtain OTLP exporter", zap.Error(err))
 		return
@@ -72,14 +72,14 @@ func main() {
 	}()
 
 	ssp := sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second))
-	defer ssp.Shutdown()
+	defer ssp.Shutdown(context.Background())
 
 	tracerProvider := sdktrace.NewTracerProvider(
-		sdktrace.WithResource(resource.New(semconv.ServiceNameKey.String(cfg.ServiceName))),
+		sdktrace.WithResource(resource.NewWithAttributes(semconv.ServiceNameKey.String(cfg.ServiceName))),
 	)
 
 	tracerProvider.RegisterSpanProcessor(ssp)
-	global.SetTracerProvider(tracerProvider)
+	otel.SetTracerProvider(tracerProvider)
 
 	if err := tracegen.Run(cfg, logger); err != nil {
 		logger.Error("failed to stop the exporter", zap.Error(err))
