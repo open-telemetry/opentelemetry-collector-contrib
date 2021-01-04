@@ -18,6 +18,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -41,6 +42,10 @@ const (
 	httpKind            string = "http"
 	webKind             string = "web"
 	customKind          string = "custom"
+
+	// tagContainersTags specifies the name of the tag which holds key/value
+	// pairs representing information about the container (Docker, EC2, etc).
+	tagContainersTags = "_dd.tags.container"
 )
 
 // converts Traces into an array of datadog trace payloads grouped by env
@@ -252,8 +257,8 @@ func resourceToDatadogServiceNameAndAttributeMap(
 	resource pdata.Resource,
 ) (serviceName string, datadogTags map[string]string) {
 	attrs := resource.Attributes()
-	// predefine capacity where possible
-	datadogTags = make(map[string]string, attrs.Len())
+	// predefine capacity where possible with extra for _dd.tags.container payload
+	datadogTags = make(map[string]string, attrs.Len()+1)
 
 	if attrs.Len() == 0 {
 		return tracetranslator.ResourceNoServiceName, datadogTags
@@ -291,15 +296,33 @@ func aggregateSpanTags(span pdata.Span, datadogTags map[string]string) map[strin
 	// predefine capacity as at most the size attributes and global tags
 	// there may be overlap between the two.
 	spanTags := make(map[string]string, span.Attributes().Len()+len(datadogTags))
+
 	for key, val := range datadogTags {
 		spanTags[key] = val
 	}
 
 	span.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
 		spanTags[k] = tracetranslator.AttributeValueToString(v, false)
+
 	})
 
+	spanTags[tagContainersTags] = buildDatadogContainerTags(spanTags)
 	return spanTags
+}
+
+// buildDatadogContainerTags returns container and orchestrator tags belonging to containerID
+// as a comma delimeted list for datadog's special container tag key
+func buildDatadogContainerTags(spanTags map[string]string) string {
+	var b strings.Builder
+
+	if val, ok := spanTags[conventions.AttributeContainerID]; ok {
+		b.WriteString(fmt.Sprintf("%s:%s,", "container_id", val))
+	}
+	if val, ok := spanTags[conventions.AttributeK8sPod]; ok {
+		b.WriteString(fmt.Sprintf("%s:%s,", "pod_name", val))
+	}
+
+	return strings.TrimSuffix(b.String(), ",")
 }
 
 // TODO: this seems to resolve to SPAN_KIND_UNSPECIFIED in e2e using jaeger receiver
