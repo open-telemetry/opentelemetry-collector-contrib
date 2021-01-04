@@ -17,6 +17,8 @@ package utils
 import (
 	"strings"
 	"unicode"
+
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // constants for tags
@@ -80,7 +82,8 @@ func NormalizeSpanName(tag string) string {
 		case buf.Len() == 0:
 			continue
 		// handle valid characters that can't start the string.
-		case unicode.IsDigit(c) || c == '.' || c == '-':
+		// '-' creates issues in the UI so we skip it
+		case unicode.IsDigit(c) || c == '.':
 			buf.WriteRune(c)
 			lastWasUnderscore = false
 		// convert anything else to underscores (including underscores), but only allow one in a row.
@@ -98,4 +101,9 @@ func NormalizeSpanName(tag string) string {
 	}
 
 	return s
+}
+
+// NormalizeSpanKind returns a span kind with the SPAN_KIND prefix trimmed off
+func NormalizeSpanKind(kind pdata.SpanKind) string {
+	return strings.TrimPrefix(kind.String(), "SPAN_KIND_")
 }
