@@ -82,23 +82,20 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	attr.InsertString(conventions.AttributeHostType, meta.InstanceType)
 	attr.InsertString(conventions.AttributeHostName, hostname)
 
-	tags, err := connectAndFetchEc2Tags(meta.Region, meta.InstanceID, d.tagKeyRegexes)
-	if err != nil {
-		return res, fmt.Errorf("failed fetching ec2 instance tags: %w", err)
-	}
-
-	for key, val := range tags {
-		attr.InsertString(tagPrefix+key, val)
+	if len(d.tagKeyRegexes) != 0 {
+		tags, err := connectAndFetchEc2Tags(meta.Region, meta.InstanceID, d.tagKeyRegexes)
+		if err != nil {
+			return res, fmt.Errorf("failed fetching ec2 instance tags: %w", err)
+		}
+		for key, val := range tags {
+			attr.InsertString(tagPrefix+key, val)
+		}
 	}
 
 	return res, nil
 }
 
 func connectAndFetchEc2Tags(region string, instanceID string, tagKeyRegexes []*regexp.Regexp) (map[string]string, error) {
-	if len(tagKeyRegexes) == 0 {
-		return nil, nil
-	}
-
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(region)},
 	)
