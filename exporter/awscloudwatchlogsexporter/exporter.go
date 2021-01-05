@@ -29,19 +29,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	jsonKeyName                   = "name"
-	jsonKeyBody                   = "body"
-	jsonKeySeverityNumber         = "severity_number"
-	jsonKeySeverityText           = "severity_text"
-	jsonKeyDroppedAttributesCount = "dropped_attributes_count"
-	jsonKeyFlags                  = "flags"
-	jsonKeyTraceID                = "trace_id"
-	jsonKeySpanID                 = "span_id"
-	jsonKeyAttributes             = "attributes"
-	jsonKeyPrefixResource         = "resource_"
-)
-
 type exporter struct {
 	config *Config
 	logger *zap.Logger
@@ -87,7 +74,10 @@ func (e *exporter) Start(ctx context.Context, host component.Host) error {
 			return
 		}
 		stream := out.LogStreams[0]
-		e.seqToken = *stream.UploadSequenceToken // no need to guard
+
+		e.seqTokenMu.Lock()
+		e.seqToken = *stream.UploadSequenceToken
+		e.seqTokenMu.Unlock()
 	})
 	return startErr
 }
@@ -98,14 +88,14 @@ func (e *exporter) Shutdown(ctx context.Context) error {
 }
 
 func (e *exporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	logEvents, dropped, err := logsToCWLogs(ld)
+	logEvents, dropped, err := logsToCWLogs(e.logger, ld)
 	if err != nil {
 		return err
 	}
+	if dropped > 0 {
+		e.logger.Warn("CloudWatch Logs exporter dropped log records", zap.Any("count", dropped))
+	}
 	if len(logEvents) == 0 {
-		if dropped > 0 {
-			return fmt.Errorf("dropped %d log entries", dropped)
-		}
 		return nil
 	}
 
@@ -138,7 +128,7 @@ func (e *exporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	return nil
 }
 
-func logsToCWLogs(ld pdata.Logs) ([]*cloudwatchlogs.InputLogEvent, int, error) {
+func logsToCWLogs(logger *zap.Logger, ld pdata.Logs) ([]*cloudwatchlogs.InputLogEvent, int, error) {
 	n := ld.ResourceLogs().Len()
 	if n == 0 {
 		return []*cloudwatchlogs.InputLogEvent{}, 0, nil
@@ -158,6 +148,7 @@ func logsToCWLogs(ld pdata.Logs) ([]*cloudwatchlogs.InputLogEvent, int, error) {
 				log := logs.At(k)
 				event, err := logToCWLog(rl.Resource(), log)
 				if err != nil {
+					logger.Debug("Failed to convert to CloudWatch Log", zap.Error(err))
 					dropped++
 				} else {
 					out = append(out, event)
@@ -168,32 +159,53 @@ func logsToCWLogs(ld pdata.Logs) ([]*cloudwatchlogs.InputLogEvent, int, error) {
 	return out, dropped, nil
 }
 
+type cwLogBody struct {
+	Name                   string                 `json:"name,omitempty"`
+	Body                   interface{}            `json:"body,omitempty"`
+	SeverityNumber         int32                  `json:"severity_number,omitempty"`
+	SeverityText           string                 `json:"severity_text,omitempty"`
+	DroppedAttributesCount uint32                 `json:"dropped_attributes_count,omitempty"`
+	Flags                  uint32                 `json:"flags,omitempty"`
+	TraceID                string                 `json:"trace_id,omitempty"`
+	SpanID                 string                 `json:"span_id,omitempty"`
+	Attributes             map[string]interface{} `json:"attributes,omitempty"`
+	Resource               map[string]interface{} `json:"resource,omitempty"`
+}
+
 func logToCWLog(resource pdata.Resource, log pdata.LogRecord) (*cloudwatchlogs.InputLogEvent, error) {
 	// TODO(jbd): Benchmark and improve the allocations.
 	// Evaluate go.elastic.co/fastjson as a replacement for encoding/json.
-	body := map[string]interface{}{}
-	body[jsonKeyName] = log.Name()
-	body[jsonKeyBody] = attrValue(log.Body())
-	body[jsonKeySeverityNumber] = log.SeverityNumber()
-	body[jsonKeySeverityText] = log.SeverityText()
-	body[jsonKeyDroppedAttributesCount] = log.DroppedAttributesCount()
-	body[jsonKeyFlags] = log.Flags()
+	body := &cwLogBody{
+		Name:                   log.Name(),
+		Body:                   attrValue(log.Body()),
+		SeverityNumber:         int32(log.SeverityNumber()),
+		SeverityText:           log.SeverityText(),
+		DroppedAttributesCount: uint32(log.DroppedAttributesCount()),
+		Flags:                  log.Flags(),
+	}
 	if traceID := log.TraceID(); traceID.IsValid() {
-		body[jsonKeyTraceID] = traceID.HexString()
+		body.TraceID = traceID.HexString()
 	}
 	if spanID := log.SpanID(); spanID.IsValid() {
-		body[jsonKeySpanID] = spanID.HexString()
+		body.TraceID = spanID.HexString()
 	}
-	attrs := make(map[string]interface{}, log.Attributes().Len())
-	log.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-		attrs[k] = attrValue(v)
-	})
-	body[jsonKeyAttributes] = attrs
+
+	if log.Attributes().Len() > 0 {
+		attrs := make(map[string]interface{}, log.Attributes().Len())
+		log.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+			attrs[k] = attrValue(v)
+		})
+		body.Attributes = attrs
+	}
 
 	// Add resource attributes.
-	resource.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-		body[jsonKeyPrefixResource+k] = attrValue(v)
-	})
+	if resource.Attributes().Len() > 0 {
+		attrs := make(map[string]interface{}, log.Attributes().Len())
+		resource.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+			attrs[k] = attrValue(v)
+		})
+		body.Resource = attrs
+	}
 
 	bodyJSON, err := json.Marshal(body)
 	if err != nil {

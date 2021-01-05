@@ -37,7 +37,7 @@ func TestLogToCWLog(t *testing.T) {
 			log:      testLogRecord(),
 			want: &cloudwatchlogs.InputLogEvent{
 				Timestamp: aws.Int64(1609719139),
-				Message:   aws.String(`{"attributes":{"key1":1,"key2":"attr2"},"body":"hello world","dropped_attributes_count":4,"flags":255,"name":"test","resource_host":"abc123","resource_node":5,"severity_number":5,"severity_text":"debug","span_id":"0102030405060708","trace_id":"0102030405060708090a0b0c0d0e0f10"}`),
+				Message:   aws.String(`{"name":"test","body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":255,"trace_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"},"resource":{"host":"abc123","node":5}}`),
 			},
 		},
 		{
@@ -46,7 +46,7 @@ func TestLogToCWLog(t *testing.T) {
 			log:      testLogRecord(),
 			want: &cloudwatchlogs.InputLogEvent{
 				Timestamp: aws.Int64(1609719139),
-				Message:   aws.String(`{"attributes":{"key1":1,"key2":"attr2"},"body":"hello world","dropped_attributes_count":4,"flags":255,"name":"test","severity_number":5,"severity_text":"debug","span_id":"0102030405060708","trace_id":"0102030405060708090a0b0c0d0e0f10"}`),
+				Message:   aws.String(`{"name":"test","body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":255,"trace_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"}}`),
 			},
 		},
 		{
@@ -55,7 +55,7 @@ func TestLogToCWLog(t *testing.T) {
 			log:      testLogRecordWithoutTrace(),
 			want: &cloudwatchlogs.InputLogEvent{
 				Timestamp: aws.Int64(1609719139),
-				Message:   aws.String(`{"attributes":{"key1":1,"key2":"attr2"},"body":"hello world","dropped_attributes_count":4,"flags":0,"name":"test","resource_host":"abc123","resource_node":5,"severity_number":5,"severity_text":"debug"}`),
+				Message:   aws.String(`{"name":"test","body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"attributes":{"key1":1,"key2":"attr2"},"resource":{"host":"abc123","node":5}}`),
 			},
 		},
 	}
