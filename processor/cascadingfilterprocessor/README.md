@@ -11,12 +11,23 @@ The following configuration options should be configured as desired:
 - `policies` (no default): Policies used to make a sampling decision
 - `spans_per_second` (default = 1500): Maximum total number of emitted spans per second
 - `probabilistic_filtering_ratio` (default = 0.2): Ratio of spans that are always probabilistically filtered 
-(hence might be used for metrics calculation)
+(hence might be used for metrics calculation). The ratio is specified as portion of output spans (defined by
+`spans_per_second`) rather than input spans. So the default filtering rate of `0.2` and default max span rate of
+`1500` produces at most `300` probabilistically sampled spans per second.
 
 The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since the first span of a trace before making a filtering decision
 - `num_traces` (default = 50000): Number of traces kept in memory
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
+
+## Updated span attributes
+
+The processor modifies each span attributes, by setting following two attributes:
+- `sampling.rule`: describing if `probabilistic` or `filtered` policy was applied
+- `sampling.probability`: describing the effective sampling rate in case of `probabilistic` rule. E.g. if there were `5000`
+spans evaluated in a given second, with `1500` max total spans per second and `0.2` filtering ratio, at most `300` spans
+would be selected by such rule. This would effect in having `sampling.probability=0.06` (`300/5000=0.6`). If such value is already
+set by head-based (or other) sampling, it's multiplied by the calculated value.
 
 ## Policy configuration
 
