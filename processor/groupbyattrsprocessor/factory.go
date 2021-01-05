@@ -59,7 +59,7 @@ func createDefaultConfig() configmodels.Processor {
 	}
 }
 
-func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) (*groupbyattrsprocessor, error) {
+func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) (*groupByAttrsProcessor, error) {
 	var nonEmptyAttributes []string
 	presentAttributes := make(map[string]struct{})
 
@@ -79,7 +79,7 @@ func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) (*grou
 		return nil, errAtLeastOneAttributeNeeded
 	}
 
-	return &groupbyattrsprocessor{logger: logger, groupByKeys: nonEmptyAttributes}, nil
+	return &groupByAttrsProcessor{logger: logger, groupByKeys: nonEmptyAttributes}, nil
 }
 
 // createTraceProcessor creates a trace processor based on this config.
