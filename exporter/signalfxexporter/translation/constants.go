@@ -331,7 +331,48 @@ translation_rules:
 - action: aggregate_metric
   metric_name: cpu.num_processors
   aggregation_method: count
-  without_dimensions: 
+  without_dimensions:
+  - cpu
+
+- action: aggregate_metric
+  metric_name: cpu.idle
+  aggregation_method: sum
+  without_dimensions:
+  - cpu
+- action: aggregate_metric
+  metric_name: cpu.interrupt
+  aggregation_method: sum
+  without_dimensions:
+  - cpu
+- action: aggregate_metric
+  metric_name: cpu.system
+  aggregation_method: sum
+  without_dimensions:
+  - cpu
+- action: aggregate_metric
+  metric_name: cpu.user
+  aggregation_method: sum
+  without_dimensions:
+  - cpu
+- action: aggregate_metric
+  metric_name: cpu.steal
+  aggregation_method: sum
+  without_dimensions:
+  - cpu
+- action: aggregate_metric
+  metric_name: cpu.wait
+  aggregation_method: sum
+  without_dimensions:
+  - cpu
+- action: aggregate_metric
+  metric_name: cpu.softirq
+  aggregation_method: sum
+  without_dimensions:
+  - cpu
+- action: aggregate_metric
+  metric_name: cpu.nice
+  aggregation_method: sum
+  without_dimensions:
   - cpu
 
 # compute memory.total
@@ -347,7 +388,7 @@ translation_rules:
 - action: aggregate_metric
   metric_name: memory.total
   aggregation_method: sum
-  without_dimensions: 
+  without_dimensions:
   - state
 
 # convert memory metrics
@@ -501,7 +542,7 @@ translation_rules:
 - action: aggregate_metric
   metric_name: network.total
   aggregation_method: sum
-  without_dimensions: 
+  without_dimensions:
   - direction
   - interface
 - action: split_metric
