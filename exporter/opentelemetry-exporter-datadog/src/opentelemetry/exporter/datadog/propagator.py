@@ -60,7 +60,7 @@ class DatadogFormat(TextMapPropagator):
             constants.AUTO_KEEP,
             constants.USER_KEEP,
         ):
-            trace_flags |= trace.TraceFlags.SAMPLED
+            trace_flags = trace.TraceFlags(trace.TraceFlags.SAMPLED)
 
         if trace_id is None or span_id is None:
             return set_span_in_context(trace.INVALID_SPAN, context)
