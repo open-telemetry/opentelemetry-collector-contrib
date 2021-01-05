@@ -98,7 +98,7 @@ class TestFastAPIManualInstrumentation(TestBase):
             return {"message": param}
 
         @app.get("/healthzz")
-        async def health():
+        async def _():
             return {"message": "ok"}
 
         return app

@@ -268,7 +268,7 @@ class PrometheusRemoteWriteMetricsExporter(MetricsExporter):
     ) -> Sequence[TimeSeries]:
         raise NotImplementedError()
 
-    # pylint: disable=no-member
+    # pylint: disable=no-member,no-self-use
     def _create_timeseries(
         self,
         export_record: ExportRecord,
@@ -317,6 +317,7 @@ class PrometheusRemoteWriteMetricsExporter(MetricsExporter):
         timeseries.samples.append(sample)
         return timeseries
 
+    # pylint: disable=no-member,no-self-use
     def _build_message(self, timeseries: Sequence[TimeSeries]) -> bytes:
         write_request = WriteRequest()
         write_request.timeseries.extend(timeseries)
@@ -370,7 +371,7 @@ class PrometheusRemoteWriteMetricsExporter(MetricsExporter):
             )
             if not response.ok:
                 response.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            logger.error("Export POST request failed with reason: %s", e)
+        except requests.exceptions.RequestException as err:
+            logger.error("Export POST request failed with reason: %s", err)
             return MetricsExportResult.FAILURE
         return MetricsExportResult.SUCCESS

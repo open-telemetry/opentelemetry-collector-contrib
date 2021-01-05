@@ -13,15 +13,13 @@
 # limitations under the License.
 
 import unittest
-from logging import Logger
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import patch
 
 from opentelemetry.exporter.prometheus_remote_write import (
     PrometheusRemoteWriteMetricsExporter,
 )
 from opentelemetry.exporter.prometheus_remote_write.gen.types_pb2 import (
     Label,
-    Sample,
     TimeSeries,
 )
 from opentelemetry.sdk.metrics import Counter
@@ -339,15 +337,17 @@ class TestConversion(unittest.TestCase):
         )
 
         expected_timeseries = TimeSeries()
-        expected_timeseries.labels.append(create_label("__name__", "testname"))
-        expected_timeseries.labels.append(
+        expected_timeseries.labels.append(  # pylint:disable=E1101
+            create_label("__name__", "testname")
+        )
+        expected_timeseries.labels.append(  # pylint:disable=E1101
             create_label("resource_name", "resource_value")
         )
-        expected_timeseries.labels.append(
+        expected_timeseries.labels.append(  # pylint:disable=E1101
             create_label("record_name", "record_value")
         )
 
-        sample = expected_timeseries.samples.add()
+        sample = expected_timeseries.samples.add()  # pylint:disable=E1101
         sample.timestamp = int(sum_aggregator.last_update_timestamp / 1000000)
         sample.value = 5.0
 

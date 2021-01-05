@@ -509,7 +509,7 @@ def lint_args(args):
     )
     runsubprocess(
         args.dry_run,
-        ("isort", "--recursive", ".")
+        ("isort", ".")
         + (("--diff", "--check-only") if args.check_only else ()),
         cwd=rootdir,
         check=True,

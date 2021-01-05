@@ -21,17 +21,15 @@ from ddtrace.internal.writer import AgentWriter
 from ddtrace.span import Span as DatadogSpan
 
 import opentelemetry.trace as trace_api
-from opentelemetry.sdk.trace import sampling
-from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
-
-# pylint:disable=relative-beyond-top-level
-from .constants import (
+from opentelemetry.exporter.datadog.constants import (
     DD_ORIGIN,
     ENV_KEY,
     SAMPLE_RATE_METRIC_KEY,
     SERVICE_NAME_TAG,
     VERSION_KEY,
 )
+from opentelemetry.sdk.trace import sampling
+from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
 
 logger = logging.getLogger(__name__)
 

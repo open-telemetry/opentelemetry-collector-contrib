@@ -25,11 +25,13 @@ from typing import MutableMapping
 import grpc
 
 from opentelemetry import metrics, propagators, trace
+from opentelemetry.instrumentation.grpc import grpcext
+from opentelemetry.instrumentation.grpc._utilities import (
+    RpcInfo,
+    TimedMetricRecorder,
+)
 from opentelemetry.sdk.metrics.export.controller import PushController
 from opentelemetry.trace.status import Status, StatusCode
-
-from . import grpcext
-from ._utilities import RpcInfo, TimedMetricRecorder
 
 
 class _GuardedSpan:

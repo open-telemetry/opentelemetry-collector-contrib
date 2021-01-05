@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import grpc
+from tests.protobuf import test_server_pb2_grpc
 
 import opentelemetry.instrumentation.grpc
 from opentelemetry import trace
@@ -22,7 +23,6 @@ from opentelemetry.sdk.metrics.export.aggregate import (
     SumAggregator,
 )
 from opentelemetry.test.test_base import TestBase
-from tests.protobuf import test_server_pb2_grpc
 
 from ._client import (
     bidirectional_streaming_method,

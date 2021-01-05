@@ -50,7 +50,9 @@ from opentelemetry.instrumentation.metric import (
     HTTPMetricType,
     MetricMixin,
 )
-from opentelemetry.instrumentation.urllib.version import __version__
+from opentelemetry.instrumentation.urllib.version import (  # pylint: disable=no-name-in-module,import-error
+    __version__,
+)
 from opentelemetry.instrumentation.utils import http_status_to_status_code
 from opentelemetry.trace import SpanKind, get_tracer
 from opentelemetry.trace.status import Status, StatusCode
@@ -98,6 +100,7 @@ class URLLibInstrumentor(BaseInstrumentor, MetricMixin):
     def uninstrument_opener(
         self, opener: OpenerDirector
     ):  # pylint: disable=no-self-use
+        """uninstrument_opener a specific instance of urllib.request.OpenerDirector"""
         _uninstrument_from(opener, restore_as_bound_func=True)
 
 
@@ -131,7 +134,7 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
         )
 
     def _instrumented_open_call(
-        opener, request, call_wrapped, get_or_create_headers
+        _, request, call_wrapped, get_or_create_headers
     ):  # pylint: disable=too-many-locals
         if context.get_value("suppress_instrumentation") or context.get_value(
             _SUPPRESS_URLLIB_INSTRUMENTATION_KEY

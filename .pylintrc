@@ -70,7 +70,15 @@ disable=missing-docstring,
       wrong-import-order, # Leave this up to isort
       bad-continuation, # Leave this up to black
       line-too-long, # Leave this up to black
-      exec-used
+      exec-used,
+      super-with-arguments, # temp-pylint-upgrade
+      isinstance-second-argument-not-valid-type, # temp-pylint-upgrade
+      raise-missing-from, # temp-pylint-upgrade 
+      unused-argument, # temp-pylint-upgrade  
+      protected-access, # temp-pylint-upgrade 
+      super-init-not-called, # temp-pylint-upgrade
+      invalid-overridden-method, # temp-pylint-upgrade 
+      missing-module-docstring, # temp-pylint-upgrad, # temp-pylint-upgradee 
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -165,7 +173,7 @@ contextmanager-decorators=contextlib.contextmanager
 # List of members which are set dynamically and missed by pylint inference
 # system, and so shouldn't trigger E1101 when accessed. Python regular
 # expressions are accepted.
-generated-members=*_pb2.py
+generated-members=types_pb2.*
 
 # Tells whether missing members accessed in mixin class should be ignored. A
 # mixin class is detected if its name ends with "mixin" (case insensitive).

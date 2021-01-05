@@ -31,11 +31,11 @@ from opentelemetry.trace import SpanKind, get_tracer
 
 try:
     from django.core.urlresolvers import (  # pylint: disable=no-name-in-module
-        resolve,
         Resolver404,
+        resolve,
     )
 except ImportError:
-    from django.urls import resolve, Resolver404
+    from django.urls import Resolver404, resolve
 
 try:
     from django.utils.deprecation import MiddlewareMixin

@@ -24,7 +24,7 @@ import collections
 
 import grpc
 
-from .. import grpcext
+from opentelemetry.instrumentation.grpc import grpcext
 
 
 class _UnaryClientInfo(
