@@ -74,7 +74,9 @@ class EngineTracer:
 
     # pylint: disable=unused-argument
     def _before_cur_exec(self, conn, cursor, statement, *args):
-        self.current_span = self.tracer.start_span(statement)
+        self.current_span = self.tracer.start_span(
+            statement, kind=trace.SpanKind.CLIENT
+        )
         with self.tracer.use_span(self.current_span, end_on_exit=False):
             if self.current_span.is_recording():
                 self.current_span.set_attribute(_STMT, statement)
