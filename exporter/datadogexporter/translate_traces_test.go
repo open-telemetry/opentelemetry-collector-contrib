@@ -125,9 +125,7 @@ func TestConvertToDatadogTd(t *testing.T) {
 	traces.ResourceSpans().Resize(1)
 	calculator := newSublayerCalculator()
 
-	outputTraces, err := convertToDatadogTd(traces, calculator, &config.Config{})
-
-	assert.NoError(t, err)
+	outputTraces := convertToDatadogTd(traces, calculator, &config.Config{})
 	assert.Equal(t, 1, len(outputTraces))
 }
 
@@ -135,9 +133,7 @@ func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 	traces := pdata.NewTraces()
 	calculator := newSublayerCalculator()
 
-	outputTraces, err := convertToDatadogTd(traces, calculator, &config.Config{})
-
-	assert.NoError(t, err)
+	outputTraces := convertToDatadogTd(traces, calculator, &config.Config{})
 	assert.Equal(t, 0, len(outputTraces))
 }
 
@@ -164,10 +160,7 @@ func TestObfuscation(t *testing.T) {
 	// of them is currently not supported.
 	span.Attributes().InsertString("testinfo?=123", "http.route")
 
-	outputTraces, err := convertToDatadogTd(traces, calculator, &config.Config{})
-
-	assert.NoError(t, err)
-
+	outputTraces := convertToDatadogTd(traces, calculator, &config.Config{})
 	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
 
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
@@ -191,12 +184,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeUnset, false)
 
 	// translate mocks to datadog traces
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{})
-
-	if err != nil {
-		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
-	}
-
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{})
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -264,12 +252,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 		},
 	}
 
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
-
-	if err != nil {
-		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
-	}
-
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -318,12 +301,7 @@ func TestTracesTranslationOkStatus(t *testing.T) {
 		},
 	}
 
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
-
-	if err != nil {
-		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
-	}
-
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -371,12 +349,7 @@ func TestTracesTranslationConfig(t *testing.T) {
 	}
 
 	// translate mocks to datadog traces
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
-
-	if err != nil {
-		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
-	}
-
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -414,12 +387,7 @@ func TestTracesTranslationNoIls(t *testing.T) {
 	}
 
 	// translate mocks to datadog traces
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
-
-	if err != nil {
-		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
-	}
-
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 

@@ -178,21 +178,21 @@ func (m *multiTest) assertBatchesLen(batchesLen int) {
 	require.Len(m.t, m.nextLogs.AllLogs(), batchesLen)
 }
 
-func (m *multiTest) assertResourceObjectLen(batchNo int, rsObjectLen int) {
-	assert.Equal(m.t, m.nextTrace.AllTraces()[batchNo].ResourceSpans().Len(), rsObjectLen)
-	assert.Equal(m.t, m.nextMetrics.AllMetrics()[batchNo].ResourceMetrics().Len(), rsObjectLen)
-	assert.Equal(m.t, m.nextLogs.AllLogs()[batchNo].ResourceLogs().Len(), rsObjectLen)
+func (m *multiTest) assertResourceObjectLen(batchNo int) {
+	assert.Equal(m.t, m.nextTrace.AllTraces()[batchNo].ResourceSpans().Len(), 1)
+	assert.Equal(m.t, m.nextMetrics.AllMetrics()[batchNo].ResourceMetrics().Len(), 1)
+	assert.Equal(m.t, m.nextLogs.AllLogs()[batchNo].ResourceLogs().Len(), 1)
 }
 
-func (m *multiTest) assertResourceAttributesLen(batchNo int, resourceObjectNo int, attrsLen int) {
-	assert.Equal(m.t, m.nextTrace.AllTraces()[batchNo].ResourceSpans().At(resourceObjectNo).Resource().Attributes().Len(), attrsLen)
-	assert.Equal(m.t, m.nextMetrics.AllMetrics()[batchNo].ResourceMetrics().At(resourceObjectNo).Resource().Attributes().Len(), attrsLen)
-	assert.Equal(m.t, m.nextLogs.AllLogs()[batchNo].ResourceLogs().At(resourceObjectNo).Resource().Attributes().Len(), attrsLen)
+func (m *multiTest) assertResourceAttributesLen(batchNo int, attrsLen int) {
+	assert.Equal(m.t, m.nextTrace.AllTraces()[batchNo].ResourceSpans().At(0).Resource().Attributes().Len(), attrsLen)
+	assert.Equal(m.t, m.nextMetrics.AllMetrics()[batchNo].ResourceMetrics().At(0).Resource().Attributes().Len(), attrsLen)
+	assert.Equal(m.t, m.nextLogs.AllLogs()[batchNo].ResourceLogs().At(0).Resource().Attributes().Len(), attrsLen)
 }
 
-func (m *multiTest) assertResource(batchNum int, resourceObjectNum int, resourceFunc func(res pdata.Resource)) {
+func (m *multiTest) assertResource(batchNum int, resourceFunc func(res pdata.Resource)) {
 	rss := m.nextTrace.AllTraces()[batchNum].ResourceSpans()
-	r := rss.At(resourceObjectNum).Resource()
+	r := rss.At(0).Resource()
 
 	if resourceFunc != nil {
 		resourceFunc(r)
@@ -300,8 +300,8 @@ func TestIPDetectionFromContext(t *testing.T) {
 		})
 
 	m.assertBatchesLen(1)
-	m.assertResourceObjectLen(0, 1)
-	m.assertResource(0, 0, func(r pdata.Resource) {
+	m.assertResourceObjectLen(0)
+	m.assertResource(0, func(r pdata.Resource) {
 		require.Greater(t, r.Attributes().Len(), 0)
 		assertResourceHasStringAttribute(t, r, "k8s.pod.ip", "1.1.1.1")
 	})
@@ -346,8 +346,8 @@ func TestProcessorNoAttrs(t *testing.T) {
 		})
 
 	m.assertBatchesLen(1)
-	m.assertResourceObjectLen(0, 1)
-	m.assertResourceAttributesLen(0, 0, 1)
+	m.assertResourceObjectLen(0)
+	m.assertResourceAttributesLen(0, 1)
 
 	// attrs should be added now
 	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
@@ -371,8 +371,8 @@ func TestProcessorNoAttrs(t *testing.T) {
 		})
 
 	m.assertBatchesLen(2)
-	m.assertResourceObjectLen(1, 1)
-	m.assertResourceAttributesLen(1, 0, 4)
+	m.assertResourceObjectLen(1)
+	m.assertResourceAttributesLen(1, 4)
 
 	// passthrough doesn't add attrs
 	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
@@ -388,8 +388,8 @@ func TestProcessorNoAttrs(t *testing.T) {
 		})
 
 	m.assertBatchesLen(3)
-	m.assertResourceObjectLen(2, 1)
-	m.assertResourceAttributesLen(2, 0, 1)
+	m.assertResourceObjectLen(2)
+	m.assertResourceAttributesLen(2, 1)
 }
 
 func TestNoIP(t *testing.T) {
@@ -402,8 +402,8 @@ func TestNoIP(t *testing.T) {
 	m.testConsume(context.Background(), generateTraces(), generateMetrics(), generateLogs(), nil)
 
 	m.assertBatchesLen(1)
-	m.assertResourceObjectLen(0, 1)
-	m.assertResource(0, 0, func(res pdata.Resource) {
+	m.assertResourceObjectLen(0)
+	m.assertResource(0, func(res pdata.Resource) {
 		assert.Equal(t, 0, res.Attributes().Len())
 	})
 }
@@ -467,7 +467,7 @@ func TestIPSource(t *testing.T) {
 
 			m.testConsume(ctx, traces, metrics, logs, nil)
 			m.assertBatchesLen(i + 1)
-			m.assertResource(i, 0, func(res pdata.Resource) {
+			m.assertResource(i, func(res pdata.Resource) {
 				require.Greater(t, res.Attributes().Len(), 0)
 				assertResourceHasStringAttribute(t, res, "k8s.pod.ip", tc.out)
 			})
@@ -511,8 +511,8 @@ func TestProcessorAddLabels(t *testing.T) {
 			})
 
 		m.assertBatchesLen(i + 1)
-		m.assertResourceObjectLen(i, 1)
-		m.assertResource(i, 0, func(res pdata.Resource) {
+		m.assertResourceObjectLen(i)
+		m.assertResource(i, func(res pdata.Resource) {
 			require.Greater(t, res.Attributes().Len(), 0)
 			assertResourceHasStringAttribute(t, res, "k8s.pod.ip", ip)
 			for k, v := range attrs {
@@ -551,10 +551,10 @@ func TestProcessorPicksUpPassthoughPodIp(t *testing.T) {
 		})
 
 	m.assertBatchesLen(1)
-	m.assertResourceObjectLen(0, 1)
-	m.assertResourceAttributesLen(0, 0, 3)
+	m.assertResourceObjectLen(0)
+	m.assertResourceAttributesLen(0, 3)
 
-	m.assertResource(0, 0, func(res pdata.Resource) {
+	m.assertResource(0, func(res pdata.Resource) {
 		assertResourceHasStringAttribute(t, res, k8sIPLabelName, "2.2.2.2")
 		assertResourceHasStringAttribute(t, res, "k", "v")
 		assertResourceHasStringAttribute(t, res, "1", "2")

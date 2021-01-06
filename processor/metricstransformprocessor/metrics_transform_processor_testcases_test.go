@@ -557,16 +557,16 @@ var (
 					addTimeseries(1, []string{"label1-value1", "label2-value1"}).
 					addTimeseries(1, []string{"label1-value1", "label2-value2"}).
 					addTimeseries(1, []string{"label1-value1", "label2-value3"}).
-					addDistributionPoints(0, 1, 3, 6, []float64{1, 2, 3}, []int64{0, 1, 1, 1}, 2).  // pointGroup1: {1, 2, 3}, SumOfSquaredDeviation = 2
-					addDistributionPoints(1, 1, 5, 10, []float64{1, 2, 3}, []int64{0, 2, 1, 2}, 4). // pointGroup2: {1, 2, 3, 3, 1}, SumOfSquaredDeviation = 4
-					addDistributionPoints(2, 1, 7, 14, []float64{1, 2, 3}, []int64{0, 3, 1, 3}, 6). // pointGroup3: {1, 1, 2, 3, 3, 1, 3}, SumOfSquaredDeviation = 6
+					addDistributionPoints(0, 3, 6, []float64{1, 2, 3}, []int64{0, 1, 1, 1}).  // pointGroup1: {1, 2, 3}, SumOfSquaredDeviation = 2
+					addDistributionPoints(1, 5, 10, []float64{1, 2, 3}, []int64{0, 2, 1, 2}). // pointGroup2: {1, 2, 3, 3, 1}, SumOfSquaredDeviation = 4
+					addDistributionPoints(2, 7, 14, []float64{1, 2, 3}, []int64{0, 3, 1, 3}). // pointGroup3: {1, 1, 2, 3, 3, 1, 3}, SumOfSquaredDeviation = 6
 					build(),
 			},
 			out: []*metricspb.Metric{
 				metricBuilder().setName("metric1").setLabels([]string{"label1"}).
 					setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).
 					addTimeseries(1, []string{"label1-value1"}).
-					addDistributionPoints(0, 1, 15, 30, []float64{1, 2, 3}, []int64{0, 6, 3, 6}, 12). // pointGroupCombined: {1, 2, 3, 1, 2, 3, 3, 1, 1, 1, 2, 3, 3, 1, 3}, SumOfSquaredDeviation = 12
+					addDistributionPoints(0, 15, 30, []float64{1, 2, 3}, []int64{0, 6, 3, 6}). // pointGroupCombined: {1, 2, 3, 1, 2, 3, 3, 1, 1, 1, 2, 3, 3, 1, 3}, SumOfSquaredDeviation = 12
 					build(),
 			},
 		},
@@ -592,14 +592,14 @@ var (
 				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).
 					setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).
 					addTimeseries(1, []string{"label1-value1", "label2-value1"}).
-					addDistributionPoints(0, 1, 3, 6, []float64{1, 2, 3}, []int64{0, 1, 1, 1}, 2).
+					addDistributionPoints(0, 3, 6, []float64{1, 2, 3}, []int64{0, 1, 1, 1}).
 					build(),
 			},
 			out: []*metricspb.Metric{
 				metricBuilder().setName("metric1").setLabels([]string{"label1"}).
 					setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).
 					addTimeseries(1, []string{"label1-value1"}).
-					addDistributionPoints(0, 1, 3, 6, []float64{1, 2, 3}, []int64{0, 1, 1, 1}, 2).
+					addDistributionPoints(0, 3, 6, []float64{1, 2, 3}, []int64{0, 1, 1, 1}).
 					build(),
 			},
 		},
@@ -835,19 +835,19 @@ var (
 			in: []*metricspb.Metric{
 				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).
 					addTimeseries(1, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addDistributionPoints(0, 1, 3, 6, []float64{1, 2}, []int64{0, 1, 2}, 3).
-					addDistributionPoints(1, 1, 5, 10, []float64{1, 2}, []int64{1, 1, 3}, 4).
+					addDistributionPoints(0, 3, 6, []float64{1, 2}, []int64{0, 1, 2}).
+					addDistributionPoints(1, 5, 10, []float64{1, 2}, []int64{1, 1, 3}).
 					build(),
 			},
 			out: []*metricspb.Metric{
 				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).
 					addTimeseries(1, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addDistributionPoints(0, 1, 3, 6, []float64{1, 2}, []int64{0, 1, 2}, 3).
-					addDistributionPoints(1, 1, 5, 10, []float64{1, 2}, []int64{1, 1, 3}, 4).
+					addDistributionPoints(0, 3, 6, []float64{1, 2}, []int64{0, 1, 2}).
+					addDistributionPoints(1, 5, 10, []float64{1, 2}, []int64{1, 1, 3}).
 					build(),
 				metricBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).
 					addTimeseries(1, []string{"label1-value1"}).
-					addDistributionPoints(0, 1, 8, 16, []float64{1, 2}, []int64{1, 2, 5}, 7).
+					addDistributionPoints(0, 8, 16, []float64{1, 2}, []int64{1, 2, 5}).
 					build(),
 			},
 		},

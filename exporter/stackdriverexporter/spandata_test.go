@@ -89,10 +89,7 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 		"agent":      pdata.NewAttributeValueString("ocagent"),
 	})
 
-	gotOTSpanData, err := pdataResourceSpansToOTSpanData(rs)
-	if err != nil {
-		t.Fatalf("Failed to convert from pdata ResourceSpans to OTSpanData: %v", err)
-	}
+	gotOTSpanData := pdataResourceSpansToOTSpanData(rs)
 
 	wantOTSpanData := &trace.SpanData{
 		SpanContext: apitrace.SpanContext{

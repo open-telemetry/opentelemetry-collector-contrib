@@ -39,7 +39,7 @@ const (
 	bucketSuffix = "_bucket"
 )
 
-func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) ([]*splunk.Event, int, error) {
+func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) ([]*splunk.Event, int) {
 	numDroppedTimeSeries := 0
 	_, dpCount := data.MetricAndDataPointCount()
 	splunkMetrics := make([]*splunk.Event, 0, dpCount)
@@ -229,7 +229,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 		}
 	}
 
-	return splunkMetrics, numDroppedTimeSeries, nil
+	return splunkMetrics, numDroppedTimeSeries
 }
 
 func createEvent(timestamp pdata.TimestampUnixNano, host string, source string, sourceType string, index string, fields map[string]interface{}) *splunk.Event {

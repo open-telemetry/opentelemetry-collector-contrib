@@ -88,5 +88,5 @@ func createTraceProcessor(
 	// the only supported storage for now
 	st = newMemoryStorage()
 
-	return newGroupByTraceProcessor(params.Logger, st, nextConsumer, *oCfg)
+	return newGroupByTraceProcessor(params.Logger, st, nextConsumer, *oCfg), nil
 }

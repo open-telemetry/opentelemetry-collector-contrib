@@ -68,7 +68,7 @@ func (aecmr *awsEcsContainerMetricsReceiver) Start(ctx context.Context, host com
 		for {
 			select {
 			case <-ticker.C:
-				aecmr.collectDataFromEndpoint(ctx, typeStr)
+				aecmr.collectDataFromEndpoint(ctx)
 			case <-ctx.Done():
 				return
 			}
@@ -84,7 +84,7 @@ func (aecmr *awsEcsContainerMetricsReceiver) Shutdown(context.Context) error {
 }
 
 // collectDataFromEndpoint collects container stats from Amazon ECS Task Metadata Endpoint
-func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context.Context, typeStr string) error {
+func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context.Context) error {
 	aecmr.provider = awsecscontainermetrics.NewStatsProvider(aecmr.restClient)
 	stats, metadata, err := aecmr.provider.GetStats()
 

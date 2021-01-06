@@ -75,7 +75,7 @@ var (
 	}
 )
 
-func newTraceExporter(params component.ExporterCreateParams, cfg *config.Config) (*traceExporter, error) {
+func newTraceExporter(params component.ExporterCreateParams, cfg *config.Config) *traceExporter {
 	// client to send running metric to the backend & perform API key validation
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	utils.ValidateAPIKey(params.Logger, client)
@@ -94,7 +94,7 @@ func newTraceExporter(params component.ExporterCreateParams, cfg *config.Config)
 		client:         client,
 	}
 
-	return exporter, nil
+	return exporter
 }
 
 // TODO: when component.Host exposes a way to retrieve processors, check for batch processors
@@ -116,12 +116,7 @@ func (exp *traceExporter) pushTraceData(
 	// convert traces to datadog traces and group trace payloads by env
 	// we largely apply the same logic as the serverless implementation, simplified a bit
 	// https://github.com/DataDog/datadog-serverless-functions/blob/f5c3aedfec5ba223b11b76a4239fcbf35ec7d045/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L61-L83
-	ddTraces, err := convertToDatadogTd(td, exp.calculator, exp.cfg)
-
-	if err != nil {
-		exp.logger.Info("failed to convert traces", zap.Error(err))
-		return 0, err
-	}
+	ddTraces := convertToDatadogTd(td, exp.calculator, exp.cfg)
 
 	// group the traces by env to reduce the number of flushes
 	aggregatedTraces := aggregateTracePayloadsByEnv(ddTraces)

@@ -160,8 +160,7 @@ func TestNewTraceExporter(t *testing.T) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
 	// The client should have been created correctly
-	exp, err := newTraceExporter(params, cfg)
-	assert.NoError(t, err)
+	exp := newTraceExporter(params, cfg)
 	assert.NotNil(t, exp)
 }
 
@@ -198,10 +197,7 @@ func TestPushTraceData(t *testing.T) {
 	}
 
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := newTraceExporter(params, cfg)
-
-	assert.NoError(t, err)
-
+	exp := newTraceExporter(params, cfg)
 	tracesLength, err := exp.pushTraceData(context.Background(), func() pdata.Traces {
 		traces := pdata.NewTraces()
 		resourceSpans := traces.ResourceSpans()

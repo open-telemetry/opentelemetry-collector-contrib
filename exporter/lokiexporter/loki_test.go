@@ -93,7 +93,7 @@ func TestPushLogDataReturnsWithoutErrorWhileNotImplemented(t *testing.T) {
 		},
 		AttributesForLabels: validLabels,
 	}
-	e, err := newExporter(config, zap.NewNop())
+	e, err := newExporter(config)
 	assert.NoError(t, err)
 
 	_, err = e.pushLogData(context.Background(), createLogData(1))
@@ -107,7 +107,7 @@ func TestExporterStartAlwaysReturnsNil(t *testing.T) {
 		},
 		AttributesForLabels: validLabels,
 	}
-	e, err := newExporter(config, zap.NewNop())
+	e, err := newExporter(config)
 	assert.NoError(t, err)
 	assert.NoError(t, e.start(context.Background(), componenttest.NewNopHost()))
 }
@@ -119,7 +119,7 @@ func TestExporterStopAlwaysReturnsNil(t *testing.T) {
 		},
 		AttributesForLabels: validLabels,
 	}
-	e, err := newExporter(config, zap.NewNop())
+	e, err := newExporter(config)
 	assert.NoError(t, err)
 	assert.NoError(t, e.stop(context.Background()))
 }

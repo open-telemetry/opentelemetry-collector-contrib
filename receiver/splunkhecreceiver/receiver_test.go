@@ -171,7 +171,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 
 	currentTime := float64(time.Now().UnixNano()) / 1e6
-	splunkMsg := buildSplunkHecMsg(currentTime, "foo", 3)
+	splunkMsg := buildSplunkHecMsg(currentTime, 3)
 
 	tests := []struct {
 		name           string
@@ -201,7 +201,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 		{
 			name: "metric_unsupported",
 			req: func() *http.Request {
-				metricMsg := buildSplunkHecMsg(currentTime, "foo", 3)
+				metricMsg := buildSplunkHecMsg(currentTime, 3)
 				metricMsg.Event = "metric"
 				msgBytes, err := json.Marshal(metricMsg)
 				require.NoError(t, err)
@@ -329,7 +329,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 
 func Test_consumer_err(t *testing.T) {
 	currentTime := float64(time.Now().UnixNano()) / 1e6
-	splunkMsg := buildSplunkHecMsg(currentTime, "foo", 3)
+	splunkMsg := buildSplunkHecMsg(currentTime, 3)
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 	sink := new(consumertest.LogsSink)
@@ -433,7 +433,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 
 	t.Log("Sending Splunk HEC data Request")
 
-	body, err := json.Marshal(buildSplunkHecMsg(sec, "foo", 0))
+	body, err := json.Marshal(buildSplunkHecMsg(sec, 0))
 	require.NoError(t, err, fmt.Sprintf("failed to marshal Splunk message: %v", err))
 
 	url := fmt.Sprintf("https://%s%s", addr, hecPath)
@@ -504,7 +504,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			assert.NoError(t, err)
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6
-			splunkhecMsg := buildSplunkHecMsg(currentTime, "foo", 3)
+			splunkhecMsg := buildSplunkHecMsg(currentTime, 3)
 			msgBytes, _ := json.Marshal(splunkhecMsg)
 			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
 			req.Header.Set("Content-Type", "application/json")
@@ -596,7 +596,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			assert.NoError(t, err)
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6
-			splunkhecMsg := buildSplunkHecMsg(currentTime, "foo", 3)
+			splunkhecMsg := buildSplunkHecMsg(currentTime, 3)
 			splunkhecMsg.Index = tt.index
 			splunkhecMsg.SourceType = tt.sourcetype
 			msgBytes, _ := json.Marshal(splunkhecMsg)
@@ -755,10 +755,10 @@ func buildSplunkHecMetricsMsg(time float64, value int64, dimensions uint) *splun
 	return ev
 }
 
-func buildSplunkHecMsg(time float64, value string, dimensions uint) *splunk.Event {
+func buildSplunkHecMsg(time float64, dimensions uint) *splunk.Event {
 	ev := &splunk.Event{
 		Time:       &time,
-		Event:      value,
+		Event:      "foo",
 		Fields:     map[string]interface{}{},
 		Index:      "myindex",
 		SourceType: "custom:sourcetype",

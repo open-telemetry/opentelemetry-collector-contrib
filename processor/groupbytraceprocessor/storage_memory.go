@@ -109,7 +109,7 @@ func (st *memoryStorage) shutdown() error {
 	return nil
 }
 
-func (st *memoryStorage) periodicMetrics() error {
+func (st *memoryStorage) periodicMetrics() {
 	numTraces := st.count()
 	stats.Record(context.Background(), mNumTracesInMemory.M(int64(numTraces)))
 
@@ -117,14 +117,12 @@ func (st *memoryStorage) periodicMetrics() error {
 	stopped := st.stopped
 	st.stoppedLock.RUnlock()
 	if stopped {
-		return nil
+		return
 	}
 
 	time.AfterFunc(st.metricsCollectionInterval, func() {
 		st.periodicMetrics()
 	})
-
-	return nil
 }
 
 func (st *memoryStorage) count() int {

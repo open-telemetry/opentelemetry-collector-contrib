@@ -30,11 +30,10 @@ func TestMetricsReceiver(t *testing.T) {
 	o, err := cfg.getReceiverOptions()
 	require.NoError(t, err)
 
-	metricsReceiver, err := newReceiver(
+	metricsReceiver := newReceiver(
 		o, zap.NewNop(), &fakeRestClient{},
 		&testbed.MockMetricConsumer{},
 	)
-	require.NoError(t, err)
 	ctx := context.Background()
 	err = metricsReceiver.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
