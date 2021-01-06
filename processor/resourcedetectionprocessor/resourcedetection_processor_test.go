@@ -162,7 +162,7 @@ func TestResourceProcessor(t *testing.T) {
 			md1 := &MockDetector{}
 			md1.On("Detect").Return(tt.detectedResource, tt.detectedError)
 			factory.resourceProviderFactory = internal.NewProviderFactory(
-				map[internal.DetectorType]internal.DetectorFactory{"mock": func(component.ProcessorCreateParams) (internal.Detector, error) {
+				map[internal.DetectorType]internal.DetectorFactory{"mock": func(component.ProcessorCreateParams, internal.DetectorConfig) (internal.Detector, error) {
 					return md1, nil
 				}})
 

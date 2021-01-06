@@ -25,8 +25,7 @@ The exporter will try to retrieve a hostname following the OpenTelemetry semanti
 
 See the sample configuration file under the `example` folder for other available options.
 
-## Trace Export Configuration
-
+## Trace exporter
 ### **Important Pipeline Setup Details** 
 
 This exporter assumes a pipeline using the datadog exporter also includes a [batch processor](https://github.com/open-telemetry/opentelemetry-collector/tree/master/processor/batchprocessor) configured with the following: 
@@ -67,3 +66,13 @@ service:
       processors: [batch]
       exporters: [datadog/api]
  ```
+
+## Metric exporter
+
+The metrics exporter does not assume any specific pipeline setup.
+There are a number of optional settings for configuring how to send your metrics:
+
+| Option name | Description | Default |
+|-|-|-|
+| `send_monotonic_counters` | Cumulative monotonic metrics are sent as time-normalized deltas between successive measurements. Disable this flag to send get the raw, monotonically increasing value. | `true` |
+| `delta_ttl` | Maximum number of seconds values from cumulative monotonic metrics are kept in memory. | 3600 |

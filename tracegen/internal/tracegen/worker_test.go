@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel"
 	export "go.opentelemetry.io/otel/sdk/export/trace"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
@@ -34,7 +34,7 @@ func TestFixedNumberOfTraces(t *testing.T) {
 	tracerProvider := sdktrace.NewTracerProvider()
 	sp := sdktrace.NewSimpleSpanProcessor(syncer)
 	tracerProvider.RegisterSpanProcessor(sp)
-	global.SetTracerProvider(tracerProvider)
+	otel.SetTracerProvider(tracerProvider)
 
 	cfg := &Config{
 		NumTraces:   1,
@@ -55,7 +55,7 @@ func TestRateOfSpans(t *testing.T) {
 	tracerProvider := sdktrace.NewTracerProvider()
 	sp := sdktrace.NewSimpleSpanProcessor(syncer)
 	tracerProvider.RegisterSpanProcessor(sp)
-	global.SetTracerProvider(tracerProvider)
+	otel.SetTracerProvider(tracerProvider)
 
 	cfg := &Config{
 		Rate:          10,
@@ -83,7 +83,7 @@ func TestUnthrottled(t *testing.T) {
 	tracerProvider := sdktrace.NewTracerProvider()
 	sp := sdktrace.NewSimpleSpanProcessor(syncer)
 	tracerProvider.RegisterSpanProcessor(sp)
-	global.SetTracerProvider(tracerProvider)
+	otel.SetTracerProvider(tracerProvider)
 
 	cfg := &Config{
 		TotalDuration: 50 * time.Millisecond,

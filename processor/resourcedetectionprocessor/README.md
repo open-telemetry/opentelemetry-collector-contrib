@@ -40,6 +40,20 @@ to read resource information from the [GCE metadata server](https://cloud.google
     * host.name
     * host.type
 
+It also can optionally gather tags for the EC2 instance that the collector is running on. 
+Note that in order to fetch EC2 tags, the IAM role assigned to the EC2 instance must have a policy that includes the `ec2:DescribeTags` permission.
+
+EC2 custom configuration example:
+```yaml
+detectors: ["ec2"]
+ec2:
+    # A list of regex's to match tag keys to add as resource attributes can be specified
+    tags:
+        - ^tag1$
+        - ^tag2$
+        - ^label.*$
+```
+
 * Amazon ECS: Queries the [Task Metadata Endpoint](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint.html) (TMDE) to record information about the current ECS Task. Only TMDE V4 and V3 are supported.
 
     * cloud.provider (aws)

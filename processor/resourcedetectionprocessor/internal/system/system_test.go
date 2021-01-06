@@ -44,7 +44,7 @@ func (m *mockMetadata) OSType() (string, error) {
 }
 
 func TestNewDetector(t *testing.T) {
-	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()})
+	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, d)
 }

@@ -151,6 +151,8 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 		exceptions = fillJavaStacktrace(stacktrace, exceptions)
 	case "python":
 		exceptions = fillPythonStacktrace(stacktrace, exceptions)
+	case "javascript":
+		exceptions = fillJavaScriptStacktrace(stacktrace, exceptions)
 	}
 
 	return exceptions
@@ -345,4 +347,72 @@ func fillPythonStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 	}
 
 	return exceptions
+}
+
+func fillJavaScriptStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxray.Exception {
+	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
+
+	// Skip first line containing top level exception / message
+	r.ReadLine()
+	exception := &exceptions[0]
+	var line string
+	line, err := r.ReadLine()
+	if err != nil {
+		return exceptions
+	}
+
+	exception.Stack = make([]awsxray.StackFrame, 0)
+	for {
+		if strings.HasPrefix(line, "    at ") {
+			parenIdx := strings.IndexByte(line, '(')
+			label := ""
+			path := ""
+			lineIdx := 0
+			if parenIdx >= 0 && line[len(line)-1] == ')' {
+				label = line[7:parenIdx]
+				path = line[parenIdx+1 : len(line)-1]
+			} else if parenIdx < 0 {
+				label = ""
+				path = line[7:]
+			}
+
+			colonFirstIdx := strings.IndexByte(path, ':')
+			colonSecondIdx := indexOf(path, ':', colonFirstIdx)
+
+			if colonFirstIdx >= 0 && colonSecondIdx >= 0 && colonFirstIdx != colonSecondIdx {
+				lineStr := path[colonFirstIdx+1 : colonSecondIdx]
+				path = path[0:colonFirstIdx]
+				lineIdx, _ = strconv.Atoi(lineStr)
+			} else if colonFirstIdx < 0 && strings.Contains(path, "native") {
+				path = "native"
+			}
+
+			// only append the exception if all the values of the exception are not default
+			if path != "" || label != "" || lineIdx != 0 {
+				stack := awsxray.StackFrame{
+					Path:  aws.String(path),
+					Label: aws.String(label),
+					Line:  aws.Int(lineIdx),
+				}
+				exception.Stack = append(exception.Stack, stack)
+			}
+		}
+		line, err = r.ReadLine()
+		if err != nil {
+			break
+		}
+	}
+	return exceptions
+}
+
+// indexOf returns position of the first occurrence of a Byte in str starting at pos index.
+func indexOf(str string, c byte, pos int) int {
+	if pos < 0 {
+		return -1
+	}
+	index := strings.IndexByte(str[pos+1:], c)
+	if index > -1 {
+		return index + pos + 1
+	}
+	return -1
 }

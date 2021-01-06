@@ -56,6 +56,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "$DD_URL",
 			},
+			DeltaTTL:      3600,
+			SendMonotonic: true,
 		},
 
 		Traces: config.TracesConfig{
@@ -120,6 +122,8 @@ func TestLoadConfig(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://api.datadoghq.eu",
 			},
+			DeltaTTL:      3600,
+			SendMonotonic: true,
 		},
 
 		Traces: config.TracesConfig{
@@ -159,6 +163,8 @@ func TestLoadConfig(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://api.datadoghq.com",
 			},
+			SendMonotonic: true,
+			DeltaTTL: 3600,
 		},
 
 		Traces: config.TracesConfig{
@@ -240,6 +246,8 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://api.datadoghq.test",
 			},
+			SendMonotonic: true,
+			DeltaTTL: 3600,
 		},
 
 		Traces: config.TracesConfig{
@@ -282,6 +290,8 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://api.datadoghq.com",
 			},
+			SendMonotonic: true,
+			DeltaTTL: 3600,
 		},
 
 		Traces: config.TracesConfig{

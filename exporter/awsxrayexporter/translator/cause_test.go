@@ -629,3 +629,78 @@ TypeError: must be str, not int`
 	assert.Equal(t, "main.py", *exceptions[0].Stack[1].Path)
 	assert.Equal(t, 14, *exceptions[0].Stack[1].Line)
 }
+
+func TestParseExceptionWithJavaScriptStacktrace(t *testing.T) {
+	exceptionType := "TypeError"
+	message := "Cannot read property 'value' of null"
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `TypeError: Cannot read property 'value' of null
+    at speedy (/home/gbusey/file.js:6:11)
+    at makeFaster (/home/gbusey/file.js:5:3)
+    at Object.<anonymous> (/home/gbusey/file.js:10:1)
+    at node.js:906:3
+    at Array.forEach (native)
+    at native`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "javascript")
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "TypeError", *exceptions[0].Type)
+	assert.Equal(t, "Cannot read property 'value' of null", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 6)
+	assert.Equal(t, "speedy ", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "/home/gbusey/file.js", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 6, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "makeFaster ", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "/home/gbusey/file.js", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 5, *exceptions[0].Stack[1].Line)
+	assert.Equal(t, "Object.<anonymous> ", *exceptions[0].Stack[2].Label)
+	assert.Equal(t, "/home/gbusey/file.js", *exceptions[0].Stack[2].Path)
+	assert.Equal(t, 10, *exceptions[0].Stack[2].Line)
+	assert.Equal(t, "", *exceptions[0].Stack[3].Label)
+	assert.Equal(t, "node.js", *exceptions[0].Stack[3].Path)
+	assert.Equal(t, 906, *exceptions[0].Stack[3].Line)
+	assert.Equal(t, "Array.forEach ", *exceptions[0].Stack[4].Label)
+	assert.Equal(t, "native", *exceptions[0].Stack[4].Path)
+	assert.Equal(t, 0, *exceptions[0].Stack[4].Line)
+	assert.Equal(t, "", *exceptions[0].Stack[5].Label)
+	assert.Equal(t, "native", *exceptions[0].Stack[5].Path)
+	assert.Equal(t, 0, *exceptions[0].Stack[5].Line)
+}
+
+func TestParseExceptionWithStacktraceNotJavaScript(t *testing.T) {
+	exceptionType := "TypeError"
+	message := "Cannot read property 'value' of null"
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `TypeError: Cannot read property 'value' of null
+    at speedy (/home/gbusey/file.js:6:11)
+    at makeFaster (/home/gbusey/file.js:5:3)
+    at Object.<anonymous> (/home/gbusey/file.js:10:1)`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "")
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "TypeError", *exceptions[0].Type)
+	assert.Equal(t, "Cannot read property 'value' of null", *exceptions[0].Message)
+	assert.Empty(t, exceptions[0].Stack)
+}
+
+func TestParseExceptionWithJavaScriptStactracekMalformedLines(t *testing.T) {
+	exceptionType := "TypeError"
+	message := "Cannot read property 'value' of null"
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `TypeError: Cannot read property 'value' of null
+    at speedy (/home/gbusey/file.js)
+    at makeFaster (/home/gbusey/file.js:5:3)malformed123
+    at Object.<anonymous> (/home/gbusey/file.js:10`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "javascript")
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "TypeError", *exceptions[0].Type)
+	assert.Equal(t, "Cannot read property 'value' of null", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 1)
+	assert.Equal(t, "speedy ", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "/home/gbusey/file.js", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 0, *exceptions[0].Stack[0].Line)
+}
