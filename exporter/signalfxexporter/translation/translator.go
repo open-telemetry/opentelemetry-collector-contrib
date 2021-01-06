@@ -22,6 +22,8 @@ import (
 	"github.com/gogo/protobuf/proto"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
 )
 
 // Action is the enum to capture actions to perform on metrics.
@@ -194,8 +196,11 @@ type Rule struct {
 	// existing SFx content for desired metric name.  This will duplicate the dimension value and isn't a rename.
 	CopyDimensions map[string]string `mapstructure:"copy_dimensions"`
 
-	// MetricNames is used by "rename_dimension_keys" and "drop_metrics" translation rules.
+	// MetricNames is used by "rename_dimension_keys" translation rule.
 	MetricNames map[string]bool `mapstructure:"metric_names"`
+
+	// MetricFilters is used by "drop_metrics" translation rule.
+	MetricFilters []dpfilters.MetricFilter `mapstructure:"metric_filters"`
 
 	Operand1Metric string         `mapstructure:"operand1_metric"`
 	Operand2Metric string         `mapstructure:"operand2_metric"`
@@ -209,6 +214,10 @@ type MetricTranslator struct {
 	dimensionsMap map[string]string
 
 	deltaTranslator *deltaTranslator
+
+	// Maps dpfilters.FilterSet to corresponding drop_metrics rule, in
+	// case there are multiple occurrences of the drop_metrics rule.
+	filterSetMap map[int]*dpfilters.FilterSet
 }
 
 func NewMetricTranslator(rules []Rule, ttl int64) (*MetricTranslator, error) {
@@ -217,10 +226,16 @@ func NewMetricTranslator(rules []Rule, ttl int64) (*MetricTranslator, error) {
 		return nil, err
 	}
 
+	fsMap, err := createFilterSetMap(rules)
+	if err != nil {
+		return nil, err
+	}
+
 	return &MetricTranslator{
 		rules:           rules,
 		dimensionsMap:   createDimensionsMap(rules),
 		deltaTranslator: newDeltaTranslator(ttl),
+		filterSetMap:    fsMap,
 	}, nil
 }
 
@@ -310,8 +325,8 @@ func validateTranslationRules(rules []Rule) error {
 				return fmt.Errorf("invalid operator %q for %q translation rule", tr.Operator, tr.Action)
 			}
 		case ActionDropMetrics:
-			if len(tr.MetricNames) == 0 {
-				return fmt.Errorf(`field "metric_names" is required for %q translation rule`, tr.Action)
+			if len(tr.MetricFilters) == 0 {
+				return fmt.Errorf(`field "metric_filters" is required for %q translation rule`, tr.Action)
 			}
 		case ActionDeltaMetric:
 			if len(tr.Mapping) == 0 {
@@ -336,12 +351,27 @@ func createDimensionsMap(rules []Rule) map[string]string {
 	return nil
 }
 
+func createFilterSetMap(rules []Rule) (map[int]*dpfilters.FilterSet, error) {
+	out := make(map[int]*dpfilters.FilterSet, len(rules))
+	for i, r := range rules {
+		if r.Action == ActionDropMetrics {
+			var err error
+			out[i], err = dpfilters.NewFilterSet(r.MetricFilters)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return out, nil
+}
+
 // TranslateDataPoints transforms datapoints to a format compatible with signalfx backend
 // sfxDataPoints represents one metric converted to signalfx protobuf datapoints
 func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoints []*sfxpb.DataPoint) []*sfxpb.DataPoint {
 	processedDataPoints := sfxDataPoints
 
-	for _, tr := range mp.rules {
+	for i, tr := range mp.rules {
 		switch tr.Action {
 		case ActionRenameDimensionKeys:
 			for _, dp := range processedDataPoints {
@@ -460,9 +490,18 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 			processedDataPoints = append(otherDps, aggregatedDps...)
 
 		case ActionDropMetrics:
+			fs := mp.filterSetMap[i]
+			if fs == nil {
+				logger.Warn(
+					"got nil filter set for drop_metrics action",
+					zap.Any("metric_filters", tr.MetricFilters),
+				)
+				continue
+			}
+
 			resultSliceLen := 0
 			for i, dp := range processedDataPoints {
-				if match := tr.MetricNames[dp.Metric]; !match {
+				if !fs.Matches(dp) {
 					if resultSliceLen < i {
 						processedDataPoints[resultSliceLen] = dp
 					}

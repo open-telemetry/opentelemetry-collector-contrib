@@ -37,6 +37,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -242,9 +243,11 @@ func TestCreateMetricsExporterWithExcludedMetrics(t *testing.T) {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
-		AccessToken:    "testToken",
-		Realm:          "us1",
-		ExcludeMetrics: []string{"metric1"},
+		AccessToken: "testToken",
+		Realm:       "us1",
+		ExcludeMetrics: []dpfilters.MetricFilter{{
+			MetricName: "metric1",
+		}},
 	}
 
 	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
@@ -253,8 +256,8 @@ func TestCreateMetricsExporterWithExcludedMetrics(t *testing.T) {
 
 	assert.Equal(t, 1, len(config.TranslationRules))
 	assert.Equal(t, translation.ActionDropMetrics, config.TranslationRules[0].Action)
-	assert.Equal(t, 1, len(config.TranslationRules[0].MetricNames))
-	assert.True(t, config.TranslationRules[0].MetricNames["metric1"])
+	require.Equal(t, 1, len(config.TranslationRules[0].MetricFilters))
+	assert.Equal(t, "metric1", config.TranslationRules[0].MetricFilters[0].MetricName)
 }
 
 func TestCreateMetricsExporterWithDefinedRulesAndExcludedMetrics(t *testing.T) {
@@ -273,7 +276,9 @@ func TestCreateMetricsExporterWithDefinedRulesAndExcludedMetrics(t *testing.T) {
 				},
 			},
 		},
-		ExcludeMetrics: []string{"metric1"},
+		ExcludeMetrics: []dpfilters.MetricFilter{{
+			MetricName: "metric1",
+		}},
 	}
 
 	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
@@ -283,8 +288,8 @@ func TestCreateMetricsExporterWithDefinedRulesAndExcludedMetrics(t *testing.T) {
 	assert.Equal(t, 2, len(config.TranslationRules))
 	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
 	assert.Equal(t, translation.ActionDropMetrics, config.TranslationRules[1].Action)
-	assert.Equal(t, 1, len(config.TranslationRules[1].MetricNames))
-	assert.True(t, config.TranslationRules[1].MetricNames["metric1"])
+	require.Equal(t, 1, len(config.TranslationRules[1].MetricFilters))
+	assert.Equal(t, "metric1", config.TranslationRules[1].MetricFilters[0].MetricName)
 }
 
 func TestDefaultTranslationRules(t *testing.T) {

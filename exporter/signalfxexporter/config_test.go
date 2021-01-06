@@ -34,6 +34,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -91,6 +92,49 @@ func TestLoadConfig(t *testing.T) {
 				Action: translation.ActionRenameDimensionKeys,
 				Mapping: map[string]string{
 					"k8s.cluster.name": "kubernetes_cluster",
+				},
+			},
+			{
+				Action: translation.ActionDropMetrics,
+				MetricFilters: []dpfilters.MetricFilter{
+					{
+						MetricName: "metric1",
+					},
+					{
+						MetricNames: []string{"metric2", "metric3"},
+					},
+					{
+						MetricName: "metric4",
+						Dimensions: map[string]interface{}{
+							"dimension_key": "dimension_val",
+						},
+					},
+					{
+						MetricName: "metric5",
+						Dimensions: map[string]interface{}{
+							"dimension_key": []interface{}{"dimension_val1", "dimension_val2"},
+						},
+					},
+				},
+			},
+		},
+		ExcludeMetrics: []dpfilters.MetricFilter{
+			{
+				MetricName: "metric1",
+			},
+			{
+				MetricNames: []string{"metric2", "metric3"},
+			},
+			{
+				MetricName: "metric4",
+				Dimensions: map[string]interface{}{
+					"dimension_key": "dimension_val",
+				},
+			},
+			{
+				MetricName: "metric5",
+				Dimensions: map[string]interface{}{
+					"dimension_key": []interface{}{"dimension_val1", "dimension_val2"},
 				},
 			},
 		},

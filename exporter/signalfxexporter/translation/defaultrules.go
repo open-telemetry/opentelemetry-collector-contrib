@@ -14,14 +14,12 @@
 
 package translation
 
+import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
+
 // GetExcludeMetricsRule returns DropMetrics translation rule for provided metrics slice
-func GetExcludeMetricsRule(excludeMetrics []string) Rule {
-	rule := Rule{
-		Action:      ActionDropMetrics,
-		MetricNames: map[string]bool{},
+func GetExcludeMetricsRule(excludeMetrics []dpfilters.MetricFilter) Rule {
+	return Rule{
+		Action:        ActionDropMetrics,
+		MetricFilters: excludeMetrics,
 	}
-	for _, m := range excludeMetrics {
-		rule.MetricNames[m] = true
-	}
-	return rule
 }

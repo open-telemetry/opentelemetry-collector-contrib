@@ -584,13 +584,14 @@ translation_rules:
 
 # remove redundant metrics
 - action: drop_metrics
-  metric_names:
-    df_complex.used_total: true
-    disk.ops: true
-    disk.summary_total: true
-    disk.total: true
-    system.cpu.usage: true
-    system.cpu.total: true
-    system.cpu.delta: true
+  metric_filters:
+  - metric_names:
+      - df_complex.used_total
+      - disk.ops
+      - disk.summary_total
+      - disk.total
+      - system.cpu.usage
+      - system.cpu.total
+      - system.cpu.delta
 `
 )

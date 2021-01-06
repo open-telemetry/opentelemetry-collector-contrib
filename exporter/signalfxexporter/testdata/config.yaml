@@ -26,9 +26,30 @@ exporters:
     access_token_passthrough: false
     send_compatible_metrics: true
     translation_rules:
-    - action: rename_dimension_keys
-      mapping:
-        k8s.cluster.name: kubernetes_cluster
+      - action: rename_dimension_keys
+        mapping:
+          k8s.cluster.name: kubernetes_cluster
+      - action: drop_metrics
+        metric_filters:
+          - metric_name: metric1
+          - metric_names: [metric2, metric3]
+          - metric_name: metric4
+            dimensions:
+              dimension_key: dimension_val
+          - metric_name: metric5
+            dimensions:
+              dimension_key: [dimension_val1, dimension_val2]
+    exclude_metrics:
+      - metric_name: metric1
+      - metric_names: [metric2, metric3]
+      - metric_name: metric4
+        dimensions:
+          dimension_key: dimension_val
+      - metric_name: metric5
+        dimensions:
+          dimension_key: [dimension_val1, dimension_val2]
+
+
 
 service:
   pipelines:

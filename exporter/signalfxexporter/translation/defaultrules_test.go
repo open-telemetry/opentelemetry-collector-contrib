@@ -18,12 +18,27 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
 )
 
 func TestGetExcludeMetricsRule(t *testing.T) {
-	rule := GetExcludeMetricsRule([]string{"m1", "m2"})
+	rule := GetExcludeMetricsRule([]dpfilters.MetricFilter{
+		{
+			MetricName: "m0",
+		},
+		{
+			MetricNames: []string{"m1"},
+			Dimensions: map[string]interface{}{
+				"d1": []string{"dv1"},
+			},
+		},
+	})
 	assert.Equal(t, rule.Action, ActionDropMetrics)
-	assert.Equal(t, 2, len(rule.MetricNames))
-	assert.False(t, rule.MetricNames["m0"])
-	assert.True(t, rule.MetricNames["m1"])
+	require.Equal(t, 2, len(rule.MetricFilters))
+	assert.Equal(t, "m0", rule.MetricFilters[0].MetricName)
+	require.Equal(t, 1, len(rule.MetricFilters[1].MetricNames))
+	assert.Equal(t, "m1", rule.MetricFilters[1].MetricNames[0])
+	assert.Equal(t, []string{"dv1"}, rule.MetricFilters[1].Dimensions["d1"])
 }
