@@ -20,7 +20,7 @@ import (
 )
 
 type (
-	// EndpointID unique identifies an endpoint per-observer instance.
+	// EndpointID uniquely identifies an endpoint per-observer instance.
 	EndpointID string
 	// EndpointEnv is a map of endpoint attributes.
 	EndpointEnv map[string]interface{}
