@@ -35,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#236](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/236))
 - Add README and example app for Prometheus Remote Write Exporter
   ([#227](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/227]))
+- `opentelemetry-instrumentation-botocore` Adds a field to report the number of retries it take to complete an API call
+  ([#275](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/275))
 
 ### Changed
 - `opentelemetry-instrumentation-asgi`, `opentelemetry-instrumentation-wsgi` Return `None` for `CarrierGetter` if key not found

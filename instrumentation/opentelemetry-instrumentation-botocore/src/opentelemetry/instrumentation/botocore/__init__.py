@@ -153,6 +153,11 @@ class BotocoreInstrumentor(BaseInstrumentor):
                             "aws.request_id", req_id,
                         )
 
+                    if "RetryAttempts" in metadata:
+                        span.set_attribute(
+                            "retry_attempts", metadata["RetryAttempts"],
+                        )
+
                     if "HTTPStatusCode" in metadata:
                         span.set_attribute(
                             "http.status_code", metadata["HTTPStatusCode"],
