@@ -37,7 +37,7 @@ type Detector struct {
 	metadata gceMetadata
 }
 
-func NewDetector(component.ProcessorCreateParams) (internal.Detector, error) {
+func NewDetector(component.ProcessorCreateParams, internal.DetectorConfig) (internal.Detector, error) {
 	return &Detector{metadata: &gceMetadataImpl{}}, nil
 }
 

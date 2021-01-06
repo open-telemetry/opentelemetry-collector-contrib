@@ -68,7 +68,7 @@ func (m *mockMetadata) Get(suffix string) (string, error) {
 }
 
 func TestNewDetector(t *testing.T) {
-	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()})
+	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
 	assert.NotNil(t, d)
 	assert.NoError(t, err)
 }

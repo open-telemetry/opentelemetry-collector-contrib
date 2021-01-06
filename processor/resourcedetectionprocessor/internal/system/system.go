@@ -38,7 +38,7 @@ type Detector struct {
 }
 
 // NewDetector creates a new system metadata detector
-func NewDetector(component.ProcessorCreateParams) (internal.Detector, error) {
+func NewDetector(component.ProcessorCreateParams, internal.DetectorConfig) (internal.Detector, error) {
 	return &Detector{provider: &systemMetadataImpl{}}, nil
 }
 
