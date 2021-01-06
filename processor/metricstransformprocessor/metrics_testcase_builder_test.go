@@ -120,7 +120,7 @@ func (b builder) addDoublePoint(tidx int, val float64, timestampVal int64) build
 }
 
 // addDistributionPoints adds a distribution point to the tidx-th timseries
-func (b builder) addDistributionPoints(tidx int, timestampVal int64, count int64, sum float64, bounds []float64, bucketsVal []int64, sumOfSquaredDeviation float64) builder {
+func (b builder) addDistributionPoints(tidx int, count int64, sum float64, bounds []float64, bucketsVal []int64) builder {
 	buckets := make([]*metricspb.DistributionValue_Bucket, len(bucketsVal))
 	for buIdx, bucket := range bucketsVal {
 		buckets[buIdx] = &metricspb.DistributionValue_Bucket{
@@ -129,7 +129,7 @@ func (b builder) addDistributionPoints(tidx int, timestampVal int64, count int64
 	}
 	point := &metricspb.Point{
 		Timestamp: &timestamppb.Timestamp{
-			Seconds: timestampVal,
+			Seconds: 1,
 			Nanos:   0,
 		},
 		Value: &metricspb.Point_DistributionValue{

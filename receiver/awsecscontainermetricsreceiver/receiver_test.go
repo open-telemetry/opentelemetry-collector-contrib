@@ -91,7 +91,7 @@ func TestCollectDataFromEndpoint(t *testing.T) {
 	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
 	ctx := context.Background()
 
-	err = r.collectDataFromEndpoint(ctx, "")
+	err = r.collectDataFromEndpoint(ctx)
 	require.NoError(t, err)
 }
 
@@ -115,7 +115,7 @@ func TestCollectDataFromEndpointWithConsumerError(t *testing.T) {
 	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
 	ctx := context.Background()
 
-	err = r.collectDataFromEndpoint(ctx, "")
+	err = r.collectDataFromEndpoint(ctx)
 	require.EqualError(t, err, "Test Error for Metrics Consumer")
 }
 
@@ -149,6 +149,6 @@ func TestCollectDataFromEndpointWithEndpointError(t *testing.T) {
 	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
 	ctx := context.Background()
 
-	err = r.collectDataFromEndpoint(ctx, "")
+	err = r.collectDataFromEndpoint(ctx)
 	require.Error(t, err)
 }

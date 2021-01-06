@@ -40,5 +40,5 @@ func cpuUsageMetric(prefix string, s *stats.CPUStats) *metricspb.Metric {
 
 func cpuCumulativeUsageMetric(prefix string, s *stats.CPUStats) *metricspb.Metric {
 	value := float64(*s.UsageCoreNanoSeconds) / 1_000_000_000
-	return cumulativeDouble(prefix+"cpu.time", "s", &value)
+	return cumulativeDouble(prefix+"cpu.time", &value)
 }

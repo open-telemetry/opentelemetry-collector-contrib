@@ -27,7 +27,6 @@ import (
 
 const (
 	typeStr      = "jmx"
-	otlpExporter = "otlp"
 	otlpEndpoint = "0.0.0.0:0"
 )
 

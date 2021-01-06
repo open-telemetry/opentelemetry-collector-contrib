@@ -81,8 +81,7 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return newReceiver(rOptions, params.Logger, rest, consumer)
-
+	return newReceiver(rOptions, params.Logger, rest, consumer), nil
 }
 
 func customUnmarshaller(sourceViperSection *viper.Viper, intoCfg interface{}) error {

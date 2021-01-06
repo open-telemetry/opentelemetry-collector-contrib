@@ -62,7 +62,6 @@ const (
 	k8sKindJob                   = "Job"
 	k8sKindReplicationController = "ReplicationController"
 	k8sKindReplicaSet            = "ReplicaSet"
-	k8sKindService               = "Service"
 	k8sStatefulSet               = "StatefulSet"
 )
 

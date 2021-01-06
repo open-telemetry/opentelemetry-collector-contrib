@@ -49,7 +49,7 @@ const (
 )
 
 // converts Traces into an array of datadog trace payloads grouped by env
-func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *config.Config) ([]*pb.TracePayload, error) {
+func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *config.Config) []*pb.TracePayload {
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
 	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
@@ -67,16 +67,11 @@ func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *co
 			hostname = resHostname
 		}
 
-		payload, err := resourceSpansToDatadogSpans(rs, calculator, hostname, cfg)
-		if err != nil {
-			return traces, err
-		}
-
+		payload := resourceSpansToDatadogSpans(rs, calculator, hostname, cfg)
 		traces = append(traces, &payload)
-
 	}
 
-	return traces, nil
+	return traces
 }
 
 func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePayload {
@@ -106,7 +101,7 @@ func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePa
 }
 
 // converts a Trace's resource spans into a trace payload
-func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCalculator, hostname string, cfg *config.Config) (pb.TracePayload, error) {
+func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCalculator, hostname string, cfg *config.Config) pb.TracePayload {
 	// get env tag
 	env := cfg.Env
 
@@ -121,7 +116,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 	}
 
 	if resource.Attributes().Len() == 0 && ilss.Len() == 0 {
-		return payload, nil
+		return payload
 	}
 
 	resourceServiceName, datadogTags := resourceToDatadogServiceNameAndAttributeMap(resource)
@@ -139,12 +134,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 		extractInstrumentationLibraryTags(ils.InstrumentationLibrary(), datadogTags)
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
-			span, err := spanToDatadogSpan(spans.At(j), resourceServiceName, datadogTags, cfg)
-
-			if err != nil {
-				return payload, err
-			}
-
+			span := spanToDatadogSpan(spans.At(j), resourceServiceName, datadogTags, cfg)
 			var apiTrace *pb.APITrace
 			var ok bool
 
@@ -178,7 +168,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 		payload.Traces = append(payload.Traces, apiTrace)
 	}
 
-	return payload, nil
+	return payload
 }
 
 // convertSpan takes an internal span representation and returns a Datadog span.
@@ -186,7 +176,7 @@ func spanToDatadogSpan(s pdata.Span,
 	serviceName string,
 	datadogTags map[string]string,
 	cfg *config.Config,
-) (*pb.Span, error) {
+) *pb.Span {
 
 	tags := aggregateSpanTags(s, datadogTags)
 
@@ -250,7 +240,7 @@ func spanToDatadogSpan(s pdata.Span,
 		setStringTag(span, key, val)
 	}
 
-	return span, nil
+	return span
 }
 
 func resourceToDatadogServiceNameAndAttributeMap(
@@ -457,7 +447,7 @@ func getDatadogResourceName(s pdata.Span, datadogTags map[string]string) string 
 }
 
 func getSpanErrorAndSetTags(s pdata.Span, tags map[string]string) int32 {
-	isError := okCode
+	var isError int32
 	// Set Span Status and any response or error details
 	status := s.Status()
 	switch status.Code() {

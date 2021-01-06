@@ -373,7 +373,7 @@ func TestSpanWithResourceNotStoredIfSubsegment(t *testing.T) {
 	attributes["attr1@1"] = "val1"
 	attributes["attr2@2"] = "val2"
 	resource := constructDefaultResource()
-	span := constructClientSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
+	span := constructClientSpan(parentSpanID, spanName, pdata.StatusCodeError, "ERROR", attributes)
 
 	segment, _ := MakeSegment(span, resource, nil, false)
 

@@ -58,7 +58,6 @@ func TestSpanAttributesToMap(t *testing.T) {
 				t.Errorf("Got: %+v, Want: %+v", got[k], want[k])
 			}
 		}
-		i++
 	}
 }
 

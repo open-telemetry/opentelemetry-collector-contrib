@@ -55,7 +55,7 @@ type groupByTraceProcessor struct {
 var _ component.TracesProcessor = (*groupByTraceProcessor)(nil)
 
 // newGroupByTraceProcessor returns a new processor.
-func newGroupByTraceProcessor(logger *zap.Logger, st storage, nextConsumer consumer.TracesConsumer, config Config) (*groupByTraceProcessor, error) {
+func newGroupByTraceProcessor(logger *zap.Logger, st storage, nextConsumer consumer.TracesConsumer, config Config) *groupByTraceProcessor {
 	// the event machine will buffer up to N concurrent events before blocking
 	eventMachine := newEventMachine(logger, 10000)
 
@@ -74,7 +74,7 @@ func newGroupByTraceProcessor(logger *zap.Logger, st storage, nextConsumer consu
 	eventMachine.onTraceReleased = sp.onTraceReleased
 	eventMachine.onTraceRemoved = sp.onTraceRemoved
 
-	return sp, nil
+	return sp
 }
 
 func (sp *groupByTraceProcessor) ConsumeTraces(_ context.Context, td pdata.Traces) error {
@@ -106,25 +106,19 @@ func (sp *groupByTraceProcessor) Shutdown(_ context.Context) error {
 	return sp.st.shutdown()
 }
 
-func (sp *groupByTraceProcessor) onBatchReceived(batch pdata.Traces) error {
+func (sp *groupByTraceProcessor) onBatchReceived(batch pdata.Traces) {
 	for i := 0; i < batch.ResourceSpans().Len(); i++ {
-		if err := sp.processResourceSpans(batch.ResourceSpans().At(i)); err != nil {
-			sp.logger.Info("failed to process batch", zap.Error(err))
-		}
+		sp.processResourceSpans(batch.ResourceSpans().At(i))
 	}
-
-	return nil
 }
 
-func (sp *groupByTraceProcessor) processResourceSpans(rs pdata.ResourceSpans) error {
+func (sp *groupByTraceProcessor) processResourceSpans(rs pdata.ResourceSpans) {
 	for _, batch := range splitByTrace(rs) {
 		if err := sp.processBatch(batch); err != nil {
 			sp.logger.Warn("failed to process batch", zap.Error(err),
 				zap.String("traceID", batch.traceID.HexString()))
 		}
 	}
-
-	return nil
 }
 
 func (sp *groupByTraceProcessor) processBatch(batch *singleTraceBatch) error {

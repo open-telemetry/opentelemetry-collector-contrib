@@ -89,7 +89,7 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	return traces
 }
 
-func grpcFixture(t1 time.Time, d1, d2 time.Duration) *model.Batch {
+func grpcFixture(t1 time.Time) *model.Batch {
 	traceID := model.TraceID{}
 	traceID.Unmarshal([]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
 	parentSpanID := model.NewSpanID(binary.BigEndian.Uint64([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
@@ -110,7 +110,7 @@ func grpcFixture(t1 time.Time, d1, d2 time.Duration) *model.Batch {
 				SpanID:        childSpanID,
 				OperationName: "DBSearch",
 				StartTime:     t1,
-				Duration:      d1,
+				Duration:      10 * time.Minute,
 				Tags: []model.KeyValue{
 					model.String(tracetranslator.TagStatusMsg, "Stale indices"),
 					model.Int64(tracetranslator.TagStatusCode, trace.StatusCodeNotFound),
@@ -128,8 +128,8 @@ func grpcFixture(t1 time.Time, d1, d2 time.Duration) *model.Batch {
 				TraceID:       traceID,
 				SpanID:        parentSpanID,
 				OperationName: "ProxyFetch",
-				StartTime:     t1.Add(d1),
-				Duration:      d2,
+				StartTime:     t1.Add(10 * time.Minute),
+				Duration:      2 * time.Second,
 				Tags: []model.KeyValue{
 					model.String(tracetranslator.TagStatusMsg, "Frontend crash"),
 					model.Int64(tracetranslator.TagStatusCode, trace.StatusCodeInternal),
@@ -257,7 +257,7 @@ func TestReception(t *testing.T) {
 						Endpoint: defaultEndpoint,
 					},
 				},
-				sapm:   &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now, time.Minute*10, time.Second*2)}},
+				sapm:   &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now)}},
 				zipped: false,
 				useTLS: false,
 			},
@@ -271,7 +271,7 @@ func TestReception(t *testing.T) {
 						Endpoint: defaultEndpoint,
 					},
 				},
-				sapm:   &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now, time.Minute*10, time.Second*2)}},
+				sapm:   &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now)}},
 				zipped: true,
 				useTLS: false,
 			},
@@ -291,7 +291,7 @@ func TestReception(t *testing.T) {
 						},
 					},
 				},
-				sapm:   &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now, time.Minute*10, time.Second*2)}},
+				sapm:   &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now)}},
 				zipped: false,
 				useTLS: true,
 			},
@@ -362,7 +362,7 @@ func TestAccessTokenPassthrough(t *testing.T) {
 			}
 
 			sapm := &splunksapm.PostSpansRequest{
-				Batches: []*model.Batch{grpcFixture(time.Now().UTC(), time.Minute*10, time.Second*2)},
+				Batches: []*model.Batch{grpcFixture(time.Now().UTC())},
 			}
 
 			sink := new(consumertest.TracesSink)

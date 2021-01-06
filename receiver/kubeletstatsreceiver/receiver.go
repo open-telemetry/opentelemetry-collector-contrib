@@ -47,13 +47,13 @@ type receiverOptions struct {
 
 func newReceiver(rOptions *receiverOptions,
 	logger *zap.Logger, rest kubelet.RestClient,
-	next consumer.MetricsConsumer) (*receiver, error) {
+	next consumer.MetricsConsumer) *receiver {
 	return &receiver{
 		options:  rOptions,
 		logger:   logger,
 		consumer: next,
 		rest:     rest,
-	}, nil
+	}
 }
 
 // Creates and starts the kubelet stats runnable.

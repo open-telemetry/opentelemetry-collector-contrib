@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
-	"go.uber.org/zap"
 )
 
 const (
@@ -43,7 +42,7 @@ const (
 	slsLogInstrumentationVersion = "otlp.version"
 )
 
-func logDataToLogService(logger *zap.Logger, ld pdata.Logs) ([]*sls.Log, int) {
+func logDataToLogService(ld pdata.Logs) ([]*sls.Log, int) {
 	numDroppedLogs := 0
 	slsLogs := make([]*sls.Log, 0)
 	rls := ld.ResourceLogs()

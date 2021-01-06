@@ -57,7 +57,7 @@ func createDefaultConfig() configmodels.Exporter {
 func createLogsExporter(_ context.Context, params component.ExporterCreateParams, config configmodels.Exporter) (component.LogsExporter, error) {
 	expCfg := config.(*Config)
 
-	exp, err := newExporter(expCfg, params.Logger)
+	exp, err := newExporter(expCfg)
 	if err != nil {
 		return nil, err
 	}

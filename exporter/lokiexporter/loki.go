@@ -21,7 +21,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
 )
 
 type lokiExporter struct {
@@ -30,7 +29,7 @@ type lokiExporter struct {
 	start       func(ctx context.Context, host component.Host) (err error)
 }
 
-func newExporter(config *Config, logger *zap.Logger) (*lokiExporter, error) {
+func newExporter(config *Config) (*lokiExporter, error) {
 	if _, err := url.Parse(config.Endpoint); config.Endpoint == "" || err != nil {
 		return nil, errors.New("endpoint must be a valid URL")
 	}
