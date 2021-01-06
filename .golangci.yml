@@ -97,6 +97,7 @@ linters:
     - gofmt
     - goimports
     - golint
+    - gosec
     - govet
     - staticcheck
     - misspell
@@ -111,3 +112,9 @@ issues:
     - path: _test\.go
       linters:
         - scopelint
+    - text: "G404:"
+      linters:
+        - gosec
+    - text: "G402:"
+      linters:
+        - gosec

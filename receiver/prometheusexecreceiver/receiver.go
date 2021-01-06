@@ -297,7 +297,7 @@ func (per *prometheusExecReceiver) fillPortPlaceholders(newPort int) *subprocess
 
 // generateRandomPort will generate a random available port
 func generateRandomPort() (int, error) {
-	listener, err := net.Listen("tcp", ":0")
+	listener, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		return 0, err
 	}
