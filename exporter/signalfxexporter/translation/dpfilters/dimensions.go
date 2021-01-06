@@ -62,10 +62,11 @@ func (f *dimensionsFilter) Matches(dimensions []*sfxpb.Dimension) bool {
 
 		if !dimF.Matches(dim.Value) {
 			return false
-		} else {
-			atLeastOneMatchedDimension = true
 		}
 
+		if !atLeastOneMatchedDimension {
+			atLeastOneMatchedDimension = true
+		}
 	}
 
 	return atLeastOneMatchedDimension
