@@ -594,4 +594,22 @@ translation_rules:
       - system.cpu.total
       - system.cpu.delta
 `
+
+	// DefaultExcludeMetricsYaml defines the metrics that will be excluded by default. This list
+	// consists of metrics categorized as non-default by SignalFx Agent or the OpenTelemetry equivalent
+	// of such metrics.
+	DefaultExcludeMetricsYaml = `
+exclude_metrics:
+- metric_names:
+    # Non-default CPU metrics 
+    # https://docs.signalfx.com/en/latest/integrations/agent/monitors/cpu.html
+    - cpu.interrupt
+    - cpu.nice
+    - cpu.softirq
+    - cpu.steal
+    - cpu.system
+    - cpu.user
+    - cpu.utilization_per_core
+    - cpu.wait
+`
 )

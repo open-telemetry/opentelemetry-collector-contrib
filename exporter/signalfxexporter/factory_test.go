@@ -185,6 +185,8 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 	}
 }
 
+const numTranslationRulesFromExcludeMetrics = 1
+
 func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
 	config := &Config{
 		ExporterSettings: configmodels.ExporterSettings{
@@ -202,9 +204,29 @@ func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
 
 	// Validate that default translation rules are loaded
 	// Expected values has to be updated once default config changed
-	assert.Equal(t, 59, len(config.TranslationRules))
+	assert.Equal(t, 59+numTranslationRulesFromExcludeMetrics, len(config.TranslationRules))
 	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
 	assert.Equal(t, 33, len(config.TranslationRules[0].Mapping))
+}
+
+func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
+	config := &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
+		AccessToken:           "testToken",
+		Realm:                 "us1",
+		SendCompatibleMetrics: true,
+	}
+
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	require.NoError(t, err)
+	require.NotNil(t, te)
+	require.Equal(t, 1, len(config.ExcludeMetrics))
+	// Assert number of non-default metrics per receiver type.
+	// CPU metrics
+	require.Equal(t, 8, len(config.ExcludeMetrics[0].MetricNames))
 }
 
 func TestCreateMetricsExporterWithSpecifiedTranslaitonRules(t *testing.T) {
@@ -231,7 +253,7 @@ func TestCreateMetricsExporterWithSpecifiedTranslaitonRules(t *testing.T) {
 	assert.NotNil(t, te)
 
 	// Validate that specified translation rules are loaded instead of default ones
-	assert.Equal(t, 1, len(config.TranslationRules))
+	assert.Equal(t, 1+numTranslationRulesFromExcludeMetrics, len(config.TranslationRules))
 	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
 	assert.Equal(t, 1, len(config.TranslationRules[0].Mapping))
 	assert.Equal(t, "new_dimension", config.TranslationRules[0].Mapping["old_dimension"])
