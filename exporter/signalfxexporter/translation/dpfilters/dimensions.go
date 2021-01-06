@@ -25,9 +25,10 @@ type dimensionsFilter struct {
 }
 
 // newDimensionsFilter returns a filter that matches against a
-// sfxpb.Dimension slice. The filter will return true, if there's
-// at least one matching dimension in the provided slice or if the
-// slice if empty.
+// sfxpb.Dimension slice. The filter will return false if there's
+// at least one dimension in the slice that fails to match. In case`
+// there are no filters for any of the dimension keys in the slice,
+// the filter will return false.
 func newDimensionsFilter(m map[string][]string) (*dimensionsFilter, error) {
 	filterMap := map[string]*stringFilter{}
 	for k := range m {

@@ -27,6 +27,7 @@ import (
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -51,13 +52,18 @@ var (
 type MetricsConverter struct {
 	logger           *zap.Logger
 	metricTranslator *MetricTranslator
+	filterSet        *dpfilters.FilterSet
 }
 
 // NewMetricsConverter creates a MetricsConverter from the passed in logger and
 // MetricTranslator. Pass in a nil MetricTranslator to not use translation
 // rules.
-func NewMetricsConverter(logger *zap.Logger, t *MetricTranslator) *MetricsConverter {
-	return &MetricsConverter{logger: logger, metricTranslator: t}
+func NewMetricsConverter(logger *zap.Logger, t *MetricTranslator, excludes []dpfilters.MetricFilter) (*MetricsConverter, error) {
+	fs, err := dpfilters.NewFilterSet(excludes)
+	if err != nil {
+		return nil, err
+	}
+	return &MetricsConverter{logger: logger, metricTranslator: t, filterSet: fs}, nil
 }
 
 // MetricDataToSignalFxV2 converts the passed in MetricsData to SFx datapoints,
@@ -110,6 +116,21 @@ func (c *MetricsConverter) metricToSfxDataPoints(metric pdata.Metric, extraDimen
 	if c.metricTranslator != nil {
 		dps = c.metricTranslator.TranslateDataPoints(c.logger, dps)
 	}
+
+	// TODO:
+	// 1) Add hard coded list of metrics to be excluded to omit non-default metrics
+	// 2) Add an include_metrics options that will serve as an override to the exclude
+	// list. This will help to include metrics that are excluded by default.
+	resultSliceLen := 0
+	for i, dp := range dps {
+		if !c.filterSet.Matches(dp) {
+			if resultSliceLen < i {
+				dps[resultSliceLen] = dp
+			}
+			resultSliceLen++
+		}
+	}
+	dps = dps[:resultSliceLen]
 
 	return dps
 }
