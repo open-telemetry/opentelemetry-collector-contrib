@@ -16,6 +16,7 @@ package datadogexporter
 
 import (
 	"context"
+	"os"
 	"path"
 	"testing"
 
@@ -38,20 +39,42 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
+	// Note: the default configuration created by CreateDefaultConfig
+	// still has the unresolved environment variables.
 	assert.Equal(t, &config.Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
 
-		API: config.APIConfig{Site: "datadoghq.com"},
-		Traces: config.TracesConfig{
-			SampleRate: 1,
+		API: config.APIConfig{
+			Key:  "$DD_API_KEY",
+			Site: "$DD_SITE",
 		},
+
 		Metrics: config.MetricsConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "$DD_URL",
+			},
 			DeltaTTL:      3600,
 			SendMonotonic: true,
 		},
+
+		Traces: config.TracesConfig{
+			SampleRate: 1,
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "$DD_APM_URL",
+			},
+		},
+
+		TagsConfig: config.TagsConfig{
+			Hostname:   "$DD_HOST",
+			Env:        "$DD_ENV",
+			Service:    "$DD_SERVICE",
+			Version:    "$DD_VERSION",
+			EnvVarTags: "$DD_TAGS",
+		},
+
 		SendMetadata: true,
 		OnlyMetadata: false,
 	}, cfg, "failed to create default config")
@@ -82,11 +105,12 @@ func TestLoadConfig(t *testing.T) {
 		},
 
 		TagsConfig: config.TagsConfig{
-			Hostname: "customhostname",
-			Env:      "prod",
-			Service:  "myservice",
-			Version:  "myversion",
-			Tags:     []string{"example:tag"},
+			Hostname:   "customhostname",
+			Env:        "prod",
+			Service:    "myservice",
+			Version:    "myversion",
+			EnvVarTags: "",
+			Tags:       []string{"example:tag"},
 		},
 
 		API: config.APIConfig{
@@ -112,10 +136,173 @@ func TestLoadConfig(t *testing.T) {
 		OnlyMetadata: false,
 	}, apiConfig)
 
-	invalidConfig2 := cfg.Exporters["datadog/invalid"].(*config.Config)
-	err = invalidConfig2.Sanitize()
-	require.Error(t, err)
+	defaultConfig := cfg.Exporters["datadog/default"].(*config.Config)
+	err = defaultConfig.Sanitize()
 
+	require.NoError(t, err)
+	assert.Equal(t, &config.Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			NameVal: "datadog/default",
+			TypeVal: typeStr,
+		},
+
+		TagsConfig: config.TagsConfig{
+			Hostname:   "",
+			Env:        "none",
+			Service:    "",
+			Version:    "",
+			EnvVarTags: "",
+		},
+
+		API: config.APIConfig{
+			Key:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			Site: "datadoghq.com",
+		},
+
+		Metrics: config.MetricsConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "https://api.datadoghq.com",
+			},
+			SendMonotonic: true,
+			DeltaTTL:      3600,
+		},
+
+		Traces: config.TracesConfig{
+			SampleRate: 1,
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "https://trace.agent.datadoghq.com",
+			},
+		},
+		SendMetadata: true,
+		OnlyMetadata: false,
+	}, defaultConfig)
+
+	invalidConfig := cfg.Exporters["datadog/invalid"].(*config.Config)
+	err = invalidConfig.Sanitize()
+	require.Error(t, err)
+}
+
+// TestLoadConfigEnvVariables tests that the loading configuration takes into account
+// environment variables for default values
+func TestLoadConfigEnvVariables(t *testing.T) {
+	assert.NoError(t, os.Setenv("DD_API_KEY", "replacedapikey"))
+	assert.NoError(t, os.Setenv("DD_HOST", "testhost"))
+	assert.NoError(t, os.Setenv("DD_ENV", "testenv"))
+	assert.NoError(t, os.Setenv("DD_SERVICE", "testservice"))
+	assert.NoError(t, os.Setenv("DD_VERSION", "testversion"))
+	assert.NoError(t, os.Setenv("DD_SITE", "datadoghq.test"))
+	assert.NoError(t, os.Setenv("DD_TAGS", "envexample:tag envexample2:tag"))
+	assert.NoError(t, os.Setenv("DD_URL", "https://api.datadoghq.com"))
+	assert.NoError(t, os.Setenv("DD_APM_URL", "https://trace.agent.datadoghq.com"))
+
+	defer func() {
+		assert.NoError(t, os.Unsetenv("DD_API_KEY"))
+		assert.NoError(t, os.Unsetenv("DD_HOST"))
+		assert.NoError(t, os.Unsetenv("DD_ENV"))
+		assert.NoError(t, os.Unsetenv("DD_SERVICE"))
+		assert.NoError(t, os.Unsetenv("DD_VERSION"))
+		assert.NoError(t, os.Unsetenv("DD_SITE"))
+		assert.NoError(t, os.Unsetenv("DD_TAGS"))
+		assert.NoError(t, os.Unsetenv("DD_URL"))
+		assert.NoError(t, os.Unsetenv("DD_APM_URL"))
+	}()
+
+	factories, err := componenttest.ExampleComponents()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	apiConfig := cfg.Exporters["datadog/api2"].(*config.Config)
+	err = apiConfig.Sanitize()
+
+	// Check that settings with env variables get overridden when explicitly set in config
+	require.NoError(t, err)
+	assert.Equal(t, &config.Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			NameVal: "datadog/api2",
+			TypeVal: typeStr,
+		},
+
+		TagsConfig: config.TagsConfig{
+			Hostname:   "customhostname",
+			Env:        "prod",
+			Service:    "myservice",
+			Version:    "myversion",
+			EnvVarTags: "envexample:tag envexample2:tag",
+			Tags:       []string{"example:tag"},
+		},
+
+		API: config.APIConfig{
+			Key:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			Site: "datadoghq.eu",
+		},
+
+		Metrics: config.MetricsConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "https://api.datadoghq.test",
+			},
+			SendMonotonic: true,
+			DeltaTTL:      3600,
+		},
+
+		Traces: config.TracesConfig{
+			SampleRate: 1,
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "https://trace.agent.datadoghq.test",
+			},
+		},
+		SendMetadata: true,
+		OnlyMetadata: false,
+	}, apiConfig)
+
+	defaultConfig := cfg.Exporters["datadog/default2"].(*config.Config)
+	err = defaultConfig.Sanitize()
+
+	require.NoError(t, err)
+
+	// Check that settings with env variables get taken into account when
+	// no settings are given.
+	assert.Equal(t, &config.Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			NameVal: "datadog/default2",
+			TypeVal: typeStr,
+		},
+
+		TagsConfig: config.TagsConfig{
+			Hostname:   "testhost",
+			Env:        "testenv",
+			Service:    "testservice",
+			Version:    "testversion",
+			EnvVarTags: "envexample:tag envexample2:tag",
+		},
+
+		API: config.APIConfig{
+			Key:  "replacedapikey",
+			Site: "datadoghq.test",
+		},
+
+		Metrics: config.MetricsConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "https://api.datadoghq.com",
+			},
+			SendMonotonic: true,
+			DeltaTTL:      3600,
+		},
+
+		Traces: config.TracesConfig{
+			SampleRate: 1,
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "https://trace.agent.datadoghq.com",
+			},
+		},
+		SendMetadata: true,
+		OnlyMetadata: false,
+	}, defaultConfig)
 }
 
 func TestCreateAPIMetricsExporter(t *testing.T) {
