@@ -53,7 +53,7 @@ func (mfs *mockFileSystem) IsWindows() bool {
 }
 
 func Test_newDetector(t *testing.T) {
-	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()})
+	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, d)

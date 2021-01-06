@@ -17,8 +17,12 @@ package ec2
 import (
 	"context"
 	"fmt"
+	"regexp"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -27,21 +31,28 @@ import (
 )
 
 const (
-	TypeStr = "ec2"
+	TypeStr   = "ec2"
+	tagPrefix = "ec2.tag."
 )
 
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
 	metadataProvider metadataProvider
+	tagKeyRegexes    []*regexp.Regexp
 }
 
-func NewDetector(component.ProcessorCreateParams) (internal.Detector, error) {
+func NewDetector(_ component.ProcessorCreateParams, dcfg internal.DetectorConfig) (internal.Detector, error) {
+	cfg := dcfg.(Config)
 	sess, err := session.NewSession()
 	if err != nil {
 		return nil, err
 	}
-	return &Detector{metadataProvider: newMetadataClient(sess)}, nil
+	tagKeyRegexes, err := compileRegexes(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &Detector{metadataProvider: newMetadataClient(sess), tagKeyRegexes: tagKeyRegexes}, nil
 }
 
 func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
@@ -71,5 +82,71 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	attr.InsertString(conventions.AttributeHostType, meta.InstanceType)
 	attr.InsertString(conventions.AttributeHostName, hostname)
 
+	if len(d.tagKeyRegexes) != 0 {
+		tags, err := connectAndFetchEc2Tags(meta.Region, meta.InstanceID, d.tagKeyRegexes)
+		if err != nil {
+			return res, fmt.Errorf("failed fetching ec2 instance tags: %w", err)
+		}
+		for key, val := range tags {
+			attr.InsertString(tagPrefix+key, val)
+		}
+	}
+
 	return res, nil
+}
+
+func connectAndFetchEc2Tags(region string, instanceID string, tagKeyRegexes []*regexp.Regexp) (map[string]string, error) {
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String(region)},
+	)
+	if err != nil {
+		return nil, err
+	}
+	e := ec2.New(sess)
+
+	return fetchEC2Tags(e, instanceID, tagKeyRegexes)
+}
+
+func fetchEC2Tags(svc ec2iface.EC2API, instanceID string, tagKeyRegexes []*regexp.Regexp) (map[string]string, error) {
+	ec2Tags, err := svc.DescribeTags(&ec2.DescribeTagsInput{
+		Filters: []*ec2.Filter{{
+			Name: aws.String("resource-id"),
+			Values: []*string{
+				aws.String(instanceID),
+			},
+		}},
+	})
+	if err != nil {
+		return nil, err
+	}
+	tags := make(map[string]string)
+	for _, tag := range ec2Tags.Tags {
+		matched := regexArrayMatch(tagKeyRegexes, *tag.Key)
+		if matched {
+			tags[*tag.Key] = *tag.Value
+		}
+	}
+	return tags, nil
+}
+
+func compileRegexes(cfg Config) ([]*regexp.Regexp, error) {
+	tagRegexes := make([]*regexp.Regexp, len(cfg.Tags))
+	for i, elem := range cfg.Tags {
+		regex, err := regexp.Compile(elem)
+		if err != nil {
+			return nil, err
+		}
+		tagRegexes[i] = regex
+	}
+	return tagRegexes, nil
+}
+
+func regexArrayMatch(arr []*regexp.Regexp, val string) bool {
+	for _, elem := range arr {
+		matched := elem.MatchString(val)
+		if matched {
+			return true
+		}
+	}
+	return false
 }
