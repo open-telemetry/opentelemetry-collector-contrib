@@ -18,19 +18,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-func newTestPrometheusFormatter(t *testing.T) prometheusFormatter {
-	pf, err := newPrometheusFormatter()
-	require.NoError(t, err)
-
-	return pf
-}
-
 func TestSanitizeKey(t *testing.T) {
-	f := newTestPrometheusFormatter(t)
+	f := newPrometheusFormatter()
 
 	key := "&^*123-abc-ABC!?"
 	expected := "___123_abc_ABC__"
@@ -38,7 +30,7 @@ func TestSanitizeKey(t *testing.T) {
 }
 
 func TestSanitizeValue(t *testing.T) {
-	f := newTestPrometheusFormatter(t)
+	f := newPrometheusFormatter()
 
 	value := `&^*123-abc-ABC!?"\\n`
 	expected := `&^*123-abc-ABC!?\"\\\n`
@@ -46,7 +38,7 @@ func TestSanitizeValue(t *testing.T) {
 }
 
 func TestTags2StringNoLabels(t *testing.T) {
-	f := newTestPrometheusFormatter(t)
+	f := newPrometheusFormatter()
 
 	mp := exampleIntMetric()
 	mp.attributes.InitEmptyWithCapacity(0)
@@ -54,7 +46,7 @@ func TestTags2StringNoLabels(t *testing.T) {
 }
 
 func TestTags2String(t *testing.T) {
-	f := newTestPrometheusFormatter(t)
+	f := newPrometheusFormatter()
 
 	mp := exampleIntMetric()
 	assert.Equal(
@@ -65,7 +57,7 @@ func TestTags2String(t *testing.T) {
 }
 
 func TestTags2StringNoAttributes(t *testing.T) {
-	f := newTestPrometheusFormatter(t)
+	f := newPrometheusFormatter()
 
 	mp := exampleIntMetric()
 	mp.attributes.InitEmptyWithCapacity(0)
@@ -73,74 +65,64 @@ func TestTags2StringNoAttributes(t *testing.T) {
 }
 
 func TestPrometheusMetricDataTypeIntGauge(t *testing.T) {
-	f := newTestPrometheusFormatter(t)
+	f := newPrometheusFormatter()
 	metric := exampleIntGaugeMetric()
 
-	result, err := f.metric2String(metric)
+	result := f.metric2String(metric)
 	expected := `gauge_metric_name{foo="bar",remote_name="156920",url="http://example_url"} 124 1608124661166
 gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1608124662166`
-
-	require.NoError(t, err)
 	assert.Equal(t, expected, result)
 }
 
 func TestPrometheusMetricDataTypeDoubleGauge(t *testing.T) {
-	f := newTestPrometheusFormatter(t)
+	f := newPrometheusFormatter()
 	metric := exampleDoubleGaugeMetric()
 
-	result, err := f.metric2String(metric)
+	result := f.metric2String(metric)
 	expected := `gauge_metric_name_double_test{foo="bar",local_name="156720",endpoint="http://example_url"} 33.4 1608124661169
 gauge_metric_name_double_test{foo="bar",local_name="156155",endpoint="http://another_url"} 56.8 1608124662186`
-
-	require.NoError(t, err)
 	assert.Equal(t, expected, result)
 }
 
 func TestPrometheusMetricDataTypeIntSum(t *testing.T) {
-	f := newTestPrometheusFormatter(t)
+	f := newPrometheusFormatter()
 	metric := exampleIntSumMetric()
 
-	result, err := f.metric2String(metric)
+	result := f.metric2String(metric)
 	expected := `sum_metric_int_test{foo="bar",name="156720",address="http://example_url"} 45 1608124444169
 sum_metric_int_test{foo="bar",name="156155",address="http://another_url"} 1238 1608124699186`
-
-	require.NoError(t, err)
 	assert.Equal(t, expected, result)
 }
 
 func TestPrometheusMetricDataTypeDoubleSum(t *testing.T) {
-	f := newTestPrometheusFormatter(t)
+	f := newPrometheusFormatter()
 	metric := exampleDoubleSumMetric()
 
-	result, err := f.metric2String(metric)
+	result := f.metric2String(metric)
 	expected := `sum_metric_double_test{foo="bar",pod_name="lorem",namespace="default"} 45.6 1618124444169
 sum_metric_double_test{foo="bar",pod_name="opsum",namespace="kube-config"} 1238.1 1608424699186`
-
-	require.NoError(t, err)
 	assert.Equal(t, expected, result)
 }
 
 func TestPrometheusMetricDataTypeDoubleSummary(t *testing.T) {
-	f := newTestPrometheusFormatter(t)
+	f := newPrometheusFormatter()
 	metric := exampleDoubleSummaryMetric()
 
-	result, err := f.metric2String(metric)
+	result := f.metric2String(metric)
 	expected := `summary_metric_double_test{foo="bar",quantile="0.6",pod_name="dolor",namespace="sumologic"} 0.7 1618124444169
 summary_metric_double_test{foo="bar",quantile="2.6",pod_name="dolor",namespace="sumologic"} 4 1618124444169
 summary_metric_double_test_sum{foo="bar",pod_name="dolor",namespace="sumologic"} 45.6 1618124444169
 summary_metric_double_test_count{foo="bar",pod_name="dolor",namespace="sumologic"} 3 1618124444169
 summary_metric_double_test_sum{foo="bar",pod_name="sit",namespace="main"} 1238.1 1608424699186
 summary_metric_double_test_count{foo="bar",pod_name="sit",namespace="main"} 7 1608424699186`
-
-	require.NoError(t, err)
 	assert.Equal(t, expected, result)
 }
 
 func TestPrometheusMetricDataTypeIntHistogram(t *testing.T) {
-	f := newTestPrometheusFormatter(t)
+	f := newPrometheusFormatter()
 	metric := exampleIntHistogramMetric()
 
-	result, err := f.metric2String(metric)
+	result := f.metric2String(metric)
 	expected := `histogram_metric_int_test{foo="bar",le="0.1",pod_name="dolor",namespace="sumologic"} 0 1618124444169
 histogram_metric_int_test{foo="bar",le="0.2",pod_name="dolor",namespace="sumologic"} 12 1618124444169
 histogram_metric_int_test{foo="bar",le="0.5",pod_name="dolor",namespace="sumologic"} 19 1618124444169
@@ -157,16 +139,14 @@ histogram_metric_int_test{foo="bar",le="1",pod_name="sit",namespace="main"} 16 1
 histogram_metric_int_test{foo="bar",le="+Inf",pod_name="sit",namespace="main"} 22 1608424699186
 histogram_metric_int_test_sum{foo="bar",pod_name="sit",namespace="main"} 54 1608424699186
 histogram_metric_int_test_count{foo="bar",pod_name="sit",namespace="main"} 5 1608424699186`
-
-	require.NoError(t, err)
 	assert.Equal(t, expected, result)
 }
 
 func TestPrometheusMetricDataTypeDoubleHistogram(t *testing.T) {
-	f := newTestPrometheusFormatter(t)
+	f := newPrometheusFormatter()
 	metric := exampleDoubleHistogramMetric()
 
-	result, err := f.metric2String(metric)
+	result := f.metric2String(metric)
 	expected := `histogram_metric_double_test{bar="foo",le="0.1",container="dolor",branch="sumologic"} 0 1618124444169
 histogram_metric_double_test{bar="foo",le="0.2",container="dolor",branch="sumologic"} 12 1618124444169
 histogram_metric_double_test{bar="foo",le="0.5",container="dolor",branch="sumologic"} 19 1618124444169
@@ -183,7 +163,5 @@ histogram_metric_double_test{bar="foo",le="1",container="sit",branch="main"} 16 
 histogram_metric_double_test{bar="foo",le="+Inf",container="sit",branch="main"} 22 1608424699186
 histogram_metric_double_test_sum{bar="foo",container="sit",branch="main"} 54.1 1608424699186
 histogram_metric_double_test_count{bar="foo",container="sit",branch="main"} 98 1608424699186`
-
-	require.NoError(t, err)
 	assert.Equal(t, expected, result)
 }

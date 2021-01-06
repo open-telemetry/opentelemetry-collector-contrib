@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
@@ -46,7 +45,6 @@ func TestNewExporter(t *testing.T) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
 	// The client should have been created correctly
-	exp, err := newMetricsExporter(params, cfg)
-	require.NoError(t, err)
+	exp := newMetricsExporter(params, cfg)
 	assert.NotNil(t, exp)
 }

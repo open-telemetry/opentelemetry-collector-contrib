@@ -70,13 +70,12 @@ func Test_ParseMessageToMetric(t *testing.T) {
 		{
 			name:  "integer counter",
 			input: "test.metric:42|c",
-			wantMetric: testStatsDMetric("test.metric",
+			wantMetric: testStatsDMetric(
 				"42",
 				42,
 				0,
 				false,
-				"c",
-				"", 1, 0, nil, nil),
+				"c", 1, 0, nil, nil),
 		},
 		{
 			name:  "invalid  counter metric value",
@@ -91,13 +90,12 @@ func Test_ParseMessageToMetric(t *testing.T) {
 		{
 			name:  "counter metric with sample rate and tag",
 			input: "test.metric:42|c|@0.1|#key:value",
-			wantMetric: testStatsDMetric("test.metric",
+			wantMetric: testStatsDMetric(
 				"42",
 				420,
 				0,
 				false,
 				"c",
-				"",
 				1,
 				0.1,
 				[]*metricspb.LabelKey{
@@ -115,13 +113,12 @@ func Test_ParseMessageToMetric(t *testing.T) {
 		{
 			name:  "counter metric with sample rate(not divisible) and tag",
 			input: "test.metric:42|c|@0.8|#key:value",
-			wantMetric: testStatsDMetric("test.metric",
+			wantMetric: testStatsDMetric(
 				"42",
 				52,
 				0,
 				false,
 				"c",
-				"",
 				1,
 				0.8,
 				[]*metricspb.LabelKey{
@@ -139,13 +136,12 @@ func Test_ParseMessageToMetric(t *testing.T) {
 		{
 			name:  "counter metric with sample rate(not divisible) and two tags",
 			input: "test.metric:42|c|@0.8|#key:value,key2:value2",
-			wantMetric: testStatsDMetric("test.metric",
+			wantMetric: testStatsDMetric(
 				"42",
 				52,
 				0,
 				false,
 				"c",
-				"",
 				1,
 				0.8,
 				[]*metricspb.LabelKey{
@@ -170,24 +166,22 @@ func Test_ParseMessageToMetric(t *testing.T) {
 		{
 			name:  "double gauge",
 			input: "test.metric:42.0|g",
-			wantMetric: testStatsDMetric("test.metric",
+			wantMetric: testStatsDMetric(
 				"42.0",
 				0,
 				42,
 				false,
-				"g",
-				"", 2, 0, nil, nil),
+				"g", 2, 0, nil, nil),
 		},
 		{
 			name:  "int gauge",
 			input: "test.metric:42|g",
-			wantMetric: testStatsDMetric("test.metric",
+			wantMetric: testStatsDMetric(
 				"42",
 				0,
 				42,
 				false,
-				"g",
-				"", 2, 0, nil, nil),
+				"g", 2, 0, nil, nil),
 		},
 		{
 			name:  "invalid gauge metric value",
@@ -197,13 +191,12 @@ func Test_ParseMessageToMetric(t *testing.T) {
 		{
 			name:  "gauge metric with sample rate and tag",
 			input: "test.metric:11|g|@0.1|#key:value",
-			wantMetric: testStatsDMetric("test.metric",
+			wantMetric: testStatsDMetric(
 				"11",
 				0,
 				11,
 				false,
 				"g",
-				"",
 				2,
 				0.1,
 				[]*metricspb.LabelKey{
@@ -221,13 +214,12 @@ func Test_ParseMessageToMetric(t *testing.T) {
 		{
 			name:  "gauge metric with sample rate and two tags",
 			input: "test.metric:11|g|@0.8|#key:value,key2:value2",
-			wantMetric: testStatsDMetric("test.metric",
+			wantMetric: testStatsDMetric(
 				"11",
 				0,
 				11,
 				false,
 				"g",
-				"",
 				2,
 				0.8,
 				[]*metricspb.LabelKey{
@@ -252,46 +244,42 @@ func Test_ParseMessageToMetric(t *testing.T) {
 		{
 			name:  "double gauge plus",
 			input: "test.metric:+42.0|g",
-			wantMetric: testStatsDMetric("test.metric",
+			wantMetric: testStatsDMetric(
 				"+42.0",
 				0,
 				42,
 				true,
-				"g",
-				"", 2, 0, nil, nil),
+				"g", 2, 0, nil, nil),
 		},
 		{
 			name:  "double gauge minus",
 			input: "test.metric:-42.0|g",
-			wantMetric: testStatsDMetric("test.metric",
+			wantMetric: testStatsDMetric(
 				"-42.0",
 				0,
 				-42,
 				true,
-				"g",
-				"", 2, 0, nil, nil),
+				"g", 2, 0, nil, nil),
 		},
 		{
 			name:  "int gauge plus",
 			input: "test.metric:+42|g",
-			wantMetric: testStatsDMetric("test.metric",
+			wantMetric: testStatsDMetric(
 				"+42",
 				0,
 				42,
 				true,
-				"g",
-				"", 2, 0, nil, nil),
+				"g", 2, 0, nil, nil),
 		},
 		{
 			name:  "int gauge minus",
 			input: "test.metric:-42|g",
-			wantMetric: testStatsDMetric("test.metric",
+			wantMetric: testStatsDMetric(
 				"-42",
 				0,
 				-42,
 				true,
-				"g",
-				"", 2, 0, nil, nil),
+				"g", 2, 0, nil, nil),
 		},
 	}
 
@@ -310,11 +298,10 @@ func Test_ParseMessageToMetric(t *testing.T) {
 	}
 }
 
-func testStatsDMetric(name string,
-	value string, intValue int64,
+func testStatsDMetric(value string, intValue int64,
 	floatValue float64,
 	addition bool, statsdMetricType string,
-	unit string, metricType metricspb.MetricDescriptor_Type,
+	metricType metricspb.MetricDescriptor_Type,
 	sampleRate float64, labelKeys []*metricspb.LabelKey,
 	labelValue []*metricspb.LabelValue) statsDMetric {
 	if len(labelKeys) > 0 {
@@ -328,7 +315,7 @@ func testStatsDMetric(name string,
 		set := label.NewSetWithSortable(kvs, &sortable)
 		return statsDMetric{
 			description: statsDMetricdescription{
-				name:             name,
+				name:             "test.metric",
 				statsdMetricType: statsdMetricType,
 				labels:           set.Equivalent(),
 			},
@@ -336,7 +323,7 @@ func testStatsDMetric(name string,
 			intvalue:    intValue,
 			floatvalue:  floatValue,
 			addition:    addition,
-			unit:        unit,
+			unit:        "",
 			metricType:  metricType,
 			sampleRate:  sampleRate,
 			labelKeys:   labelKeys,
@@ -345,14 +332,14 @@ func testStatsDMetric(name string,
 	}
 	return statsDMetric{
 		description: statsDMetricdescription{
-			name:             name,
+			name:             "test.metric",
 			statsdMetricType: statsdMetricType,
 		},
 		value:       value,
 		intvalue:    intValue,
 		floatvalue:  floatValue,
 		addition:    addition,
-		unit:        unit,
+		unit:        "",
 		metricType:  metricType,
 		sampleRate:  sampleRate,
 		labelKeys:   labelKeys,
@@ -426,7 +413,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 							HasValue: true,
 						},
 					},
-					"",
 					&metricspb.Point{
 						Timestamp: &timestamppb.Timestamp{
 							Seconds: 0,
@@ -449,7 +435,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 							HasValue: true,
 						},
 					},
-					"",
 					&metricspb.Point{
 						Timestamp: &timestamppb.Timestamp{
 							Seconds: 0,
@@ -490,7 +475,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 							HasValue: true,
 						},
 					},
-					"",
 					&metricspb.Point{
 						Timestamp: &timestamppb.Timestamp{
 							Seconds: 0,
@@ -513,7 +497,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 							HasValue: true,
 						},
 					},
-					"",
 					&metricspb.Point{
 						Timestamp: &timestamppb.Timestamp{
 							Seconds: 0,
@@ -554,7 +537,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 							HasValue: true,
 						},
 					},
-					"",
 					&metricspb.Point{
 						Timestamp: &timestamppb.Timestamp{
 							Seconds: 0,
@@ -577,7 +559,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 							HasValue: true,
 						},
 					},
-					"",
 					&metricspb.Point{
 						Timestamp: &timestamppb.Timestamp{
 							Seconds: 0,
@@ -613,7 +594,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 							HasValue: true,
 						},
 					},
-					"",
 					&metricspb.Point{
 						Timestamp: &timestamppb.Timestamp{
 							Seconds: 0,
@@ -636,7 +616,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 							HasValue: true,
 						},
 					},
-					"",
 					&metricspb.Point{
 						Timestamp: &timestamppb.Timestamp{
 							Seconds: 0,
@@ -675,7 +654,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 							HasValue: true,
 						},
 					},
-					"",
 					&metricspb.Point{
 						Timestamp: &timestamppb.Timestamp{
 							Seconds: 0,
@@ -700,7 +678,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 							HasValue: true,
 						},
 					},
-					"",
 					&metricspb.Point{
 						Timestamp: &timestamppb.Timestamp{
 							Seconds: 0,
@@ -723,7 +700,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 							HasValue: true,
 						},
 					},
-					"",
 					&metricspb.Point{
 						Timestamp: &timestamppb.Timestamp{
 							Seconds: 0,
@@ -763,7 +739,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 							HasValue: true,
 						},
 					},
-					"",
 					&metricspb.Point{
 						Timestamp: &timestamppb.Timestamp{
 							Seconds: 0,
@@ -786,7 +761,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 							HasValue: true,
 						},
 					},
-					"",
 					&metricspb.Point{
 						Timestamp: &timestamppb.Timestamp{
 							Seconds: 0,
@@ -811,7 +785,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 							HasValue: true,
 						},
 					},
-					"",
 					&metricspb.Point{
 						Timestamp: &timestamppb.Timestamp{
 							Seconds: 0,
@@ -834,7 +807,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 							HasValue: true,
 						},
 					},
-					"",
 					&metricspb.Point{
 						Timestamp: &timestamppb.Timestamp{
 							Seconds: 0,
@@ -868,14 +840,13 @@ func testMetric(metricName string,
 	metricType metricspb.MetricDescriptor_Type,
 	lableKeys []*metricspb.LabelKey,
 	labelValues []*metricspb.LabelValue,
-	unit string,
 	point *metricspb.Point) *metricspb.Metric {
 	return &metricspb.Metric{
 		MetricDescriptor: &metricspb.MetricDescriptor{
 			Name:      metricName,
 			Type:      metricType,
 			LabelKeys: lableKeys,
-			Unit:      unit,
+			Unit:      "",
 		},
 		Timeseries: []*metricspb.TimeSeries{
 			{
@@ -953,7 +924,6 @@ func TestStatsDParser_GetMetrics(t *testing.T) {
 		metricspb.MetricDescriptor_GAUGE_DOUBLE,
 		nil,
 		nil,
-		"",
 		&metricspb.Point{
 			Timestamp: &timestamppb.Timestamp{
 				Seconds: 0,
@@ -967,7 +937,6 @@ func TestStatsDParser_GetMetrics(t *testing.T) {
 		metricspb.MetricDescriptor_GAUGE_DOUBLE,
 		nil,
 		nil,
-		"",
 		&metricspb.Point{
 			Timestamp: &timestamppb.Timestamp{
 				Seconds: 0,
@@ -981,7 +950,6 @@ func TestStatsDParser_GetMetrics(t *testing.T) {
 		metricspb.MetricDescriptor_GAUGE_INT64,
 		nil,
 		nil,
-		"",
 		&metricspb.Point{
 			Timestamp: &timestamppb.Timestamp{
 				Seconds: 0,

@@ -35,25 +35,25 @@ func networkMetrics(prefix string, s *stats.NetworkStats) []*metricspb.Metric {
 const directionLabel = "direction"
 
 func rxBytesMetric(prefix string, s *stats.NetworkStats) *metricspb.Metric {
-	metric := cumulativeInt(prefix+"network.io", "By", s.RxBytes)
+	metric := cumulativeInt(prefix+"network.io", s.RxBytes)
 	applyLabels(metric, map[string]string{"interface": s.Name, directionLabel: "receive"})
 	return metric
 }
 
 func txBytesMetric(prefix string, s *stats.NetworkStats) *metricspb.Metric {
-	metric := cumulativeInt(prefix+"network.io", "By", s.TxBytes)
+	metric := cumulativeInt(prefix+"network.io", s.TxBytes)
 	applyLabels(metric, map[string]string{"interface": s.Name, directionLabel: "transmit"})
 	return metric
 }
 
 func rxErrorsMetric(prefix string, s *stats.NetworkStats) *metricspb.Metric {
-	metric := cumulativeInt(prefix+"network.errors", "By", s.RxErrors)
+	metric := cumulativeInt(prefix+"network.errors", s.RxErrors)
 	applyLabels(metric, map[string]string{"interface": s.Name, directionLabel: "receive"})
 	return metric
 }
 
 func txErrorsMetric(prefix string, s *stats.NetworkStats) *metricspb.Metric {
-	metric := cumulativeInt(prefix+"network.errors", "By", s.TxErrors)
+	metric := cumulativeInt(prefix+"network.errors", s.TxErrors)
 	applyLabels(metric, map[string]string{"interface": s.Name, directionLabel: "transmit"})
 	return metric
 }

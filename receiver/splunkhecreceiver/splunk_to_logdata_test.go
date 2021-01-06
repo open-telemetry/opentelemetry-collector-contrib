@@ -49,7 +49,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				},
 			},
 			output: func() pdata.ResourceLogsSlice {
-				return createLogsSlice("value", nanoseconds)
+				return createLogsSlice(nanoseconds)
 			}(),
 			wantErr: nil,
 		},
@@ -67,7 +67,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				},
 			},
 			output: func() pdata.ResourceLogsSlice {
-				logsSlice := createLogsSlice("value", nanoseconds)
+				logsSlice := createLogsSlice(nanoseconds)
 				logsSlice.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetDoubleVal(12.3)
 				return logsSlice
 			}(),
@@ -87,7 +87,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				},
 			},
 			output: func() pdata.ResourceLogsSlice {
-				logsSlice := createLogsSlice("value", nanoseconds)
+				logsSlice := createLogsSlice(nanoseconds)
 				arrVal := pdata.NewAttributeValueArray()
 				arr := arrVal.ArrayVal()
 				arr.Resize(2)
@@ -112,7 +112,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				},
 			},
 			output: func() pdata.ResourceLogsSlice {
-				logsSlice := createLogsSlice("value", nanoseconds)
+				logsSlice := createLogsSlice(nanoseconds)
 				foosArr := pdata.NewAttributeValueArray()
 				foos := foosArr.ArrayVal()
 				foos.Resize(3)
@@ -144,7 +144,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				},
 			},
 			output: func() pdata.ResourceLogsSlice {
-				return createLogsSlice("value", 0)
+				return createLogsSlice(0)
 			}(),
 			wantErr: nil,
 		},
@@ -159,7 +159,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 	}
 }
 
-func createLogsSlice(body string, nanoseconds int) pdata.ResourceLogsSlice {
+func createLogsSlice(nanoseconds int) pdata.ResourceLogsSlice {
 	lrs := pdata.NewResourceLogsSlice()
 	lrs.Resize(1)
 	lr := lrs.At(0)
@@ -168,7 +168,7 @@ func createLogsSlice(body string, nanoseconds int) pdata.ResourceLogsSlice {
 	ill.Logs().Resize(1)
 	logRecord := ill.Logs().At(0)
 	logRecord.SetName("mysourcetype")
-	logRecord.Body().SetStringVal(body)
+	logRecord.Body().SetStringVal("value")
 	logRecord.SetTimestamp(pdata.TimestampUnixNano(nanoseconds))
 	logRecord.Attributes().InsertString("host.name", "localhost")
 	logRecord.Attributes().InsertString("service.name", "mysource")

@@ -83,7 +83,7 @@ func New(
 
 	// This should be the last one built, or if any other error is raised after
 	// it, the server should be closed.
-	server, err := buildTransportServer(config, logger)
+	server, err := buildTransportServer(config)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func New(
 	return &r, nil
 }
 
-func buildTransportServer(config Config, logger *zap.Logger) (transport.Server, error) {
+func buildTransportServer(config Config) (transport.Server, error) {
 	switch strings.ToLower(config.Transport) {
 	case "", "tcp":
 		return transport.NewTCPServer(config.Endpoint, config.TCPIdleTimeout)

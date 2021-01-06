@@ -144,7 +144,7 @@ func TestStackdriverTraceExport(t *testing.T) {
 			reqCh := make(chan *cloudtracepb.BatchWriteSpansRequest)
 			cloudtracepb.RegisterTraceServiceServer(srv, &testServer{reqCh: reqCh})
 
-			lis, err := net.Listen("tcp", ":8080")
+			lis, err := net.Listen("tcp", "localhost:8080")
 			require.NoError(t, err)
 			defer lis.Close()
 
@@ -227,7 +227,7 @@ func TestStackdriverMetricExport(t *testing.T) {
 	mockServer := &mockMetricServer{descriptorReqCh: descriptorReqCh, timeSeriesReqCh: timeSeriesReqCh}
 	cloudmonitoringpb.RegisterMetricServiceServer(srv, mockServer)
 
-	lis, err := net.Listen("tcp", ":8080")
+	lis, err := net.Listen("tcp", "localhost:8080")
 	require.NoError(t, err)
 	defer lis.Close()
 

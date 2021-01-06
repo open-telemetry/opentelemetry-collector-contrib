@@ -58,7 +58,7 @@ type eventMachine struct {
 
 	logger *zap.Logger
 
-	onBatchReceived func(pdata.Traces) error
+	onBatchReceived func(pdata.Traces)
 	onTraceExpired  func(pdata.TraceID) error
 	onTraceReleased func([]pdata.ResourceSpans) error
 	onTraceRemoved  func(pdata.TraceID) error
@@ -131,7 +131,8 @@ func (em *eventMachine) handleEvent(e event) {
 		}
 
 		em.handleEventWithObservability("onBatchReceived", func() error {
-			return em.onBatchReceived(payload)
+			em.onBatchReceived(payload)
+			return nil
 		})
 	case traceExpired:
 		if em.onTraceExpired == nil {

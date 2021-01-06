@@ -60,9 +60,7 @@ func TestTraceIsDispatchedAfterDuration(t *testing.T) {
 		},
 	}
 
-	p, err := newGroupByTraceProcessor(logger, st, mockProcessor, config)
-	require.NoError(t, err)
-
+	p := newGroupByTraceProcessor(logger, st, mockProcessor, config)
 	ctx := context.Background()
 	p.Start(ctx, nil)
 	defer p.Shutdown(ctx)
@@ -103,8 +101,7 @@ func TestInternalCacheLimit(t *testing.T) {
 
 	st := newMemoryStorage()
 
-	p, err := newGroupByTraceProcessor(logger, st, mockProcessor, config)
-	require.NoError(t, err)
+	p := newGroupByTraceProcessor(logger, st, mockProcessor, config)
 
 	ctx := context.Background()
 	p.Start(ctx, nil)
@@ -150,11 +147,10 @@ func TestProcessorCapabilities(t *testing.T) {
 	next := &mockProcessor{}
 
 	// test
-	p, err := newGroupByTraceProcessor(logger, st, next, config)
+	p := newGroupByTraceProcessor(logger, st, next, config)
 	caps := p.GetCapabilities()
 
 	// verify
-	assert.NoError(t, err)
 	assert.NotNil(t, p)
 	assert.Equal(t, true, caps.MutatesConsumedData)
 }
@@ -180,15 +176,11 @@ func TestProcessBatchDoesntFail(t *testing.T) {
 	span.SetTraceID(traceID)
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
 
-	p, err := newGroupByTraceProcessor(logger, st, next, config)
-	require.NoError(t, err)
+	p := newGroupByTraceProcessor(logger, st, next, config)
+	assert.NotNil(t, p)
 
 	// test
-	err = p.onBatchReceived(batch)
-
-	// verify
-	assert.NoError(t, err)
-	assert.NotNil(t, p)
+	p.onBatchReceived(batch)
 }
 
 func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
@@ -204,8 +196,7 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 	}
 	next := &mockProcessor{}
 
-	p, err := newGroupByTraceProcessor(logger, st, next, config)
-	require.NoError(t, err)
+	p := newGroupByTraceProcessor(logger, st, next, config)
 	require.NotNil(t, p)
 
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
@@ -215,7 +206,7 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 	p.Start(ctx, nil)
 	defer p.Shutdown(ctx)
 
-	err = p.ConsumeTraces(context.Background(), batch)
+	err := p.ConsumeTraces(context.Background(), batch)
 	require.NoError(t, err)
 
 	// test
@@ -240,8 +231,7 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 	}
 	next := &mockProcessor{}
 
-	p, err := newGroupByTraceProcessor(logger, st, next, config)
-	require.NoError(t, err)
+	p := newGroupByTraceProcessor(logger, st, next, config)
 	require.NotNil(t, p)
 
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
@@ -251,7 +241,7 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 	p.Start(ctx, nil)
 	defer p.Shutdown(ctx)
 
-	err = p.ConsumeTraces(context.Background(), batch)
+	err := p.ConsumeTraces(context.Background(), batch)
 	require.NoError(t, err)
 
 	// test
@@ -276,8 +266,7 @@ func TestTraceErrorFromStorageWhileProcessingTrace(t *testing.T) {
 	}
 	next := &mockProcessor{}
 
-	p, err := newGroupByTraceProcessor(logger, st, next, config)
-	require.NoError(t, err)
+	p := newGroupByTraceProcessor(logger, st, next, config)
 	require.NotNil(t, p)
 
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
@@ -293,7 +282,7 @@ func TestTraceErrorFromStorageWhileProcessingTrace(t *testing.T) {
 	batch := splitByTrace(rs)
 
 	// test
-	err = p.processBatch(batch[0])
+	err := p.processBatch(batch[0])
 
 	// verify
 	assert.True(t, errors.Is(err, expectedError))
@@ -319,8 +308,7 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 		},
 	}
 
-	p, err := newGroupByTraceProcessor(logger, st, next, config)
-	require.NoError(t, err)
+	p := newGroupByTraceProcessor(logger, st, next, config)
 	require.NotNil(t, p)
 
 	ctx := context.Background()
@@ -356,8 +344,7 @@ func TestTraceErrorFromStorageWhileProcessingSecondTrace(t *testing.T) {
 	st := &mockStorage{}
 	next := &mockProcessor{}
 
-	p, err := newGroupByTraceProcessor(logger, st, next, config)
-	require.NoError(t, err)
+	p := newGroupByTraceProcessor(logger, st, next, config)
 	require.NotNil(t, p)
 
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
@@ -373,7 +360,7 @@ func TestTraceErrorFromStorageWhileProcessingSecondTrace(t *testing.T) {
 	batch := splitByTrace(rs)
 
 	// test
-	err = p.processBatch(batch[0])
+	err := p.processBatch(batch[0])
 	assert.NoError(t, err)
 
 	expectedError := errors.New("some unexpected error")
@@ -402,14 +389,13 @@ func TestErrorFromStorageWhileRemovingTrace(t *testing.T) {
 	}
 	next := &mockProcessor{}
 
-	p, err := newGroupByTraceProcessor(logger, st, next, config)
-	require.NoError(t, err)
+	p := newGroupByTraceProcessor(logger, st, next, config)
 	require.NotNil(t, p)
 
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
 	// test
-	err = p.onTraceRemoved(traceID)
+	err := p.onTraceRemoved(traceID)
 
 	// verify
 	assert.True(t, errors.Is(err, expectedError))
@@ -428,14 +414,13 @@ func TestTraceNotFoundWhileRemovingTrace(t *testing.T) {
 	}
 	next := &mockProcessor{}
 
-	p, err := newGroupByTraceProcessor(logger, st, next, config)
-	require.NoError(t, err)
+	p := newGroupByTraceProcessor(logger, st, next, config)
 	require.NotNil(t, p)
 
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
 	// test
-	err = p.onTraceRemoved(traceID)
+	err := p.onTraceRemoved(traceID)
 
 	// verify
 	assert.Error(t, err)
@@ -459,15 +444,12 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 		},
 	}
 
-	p, err := newGroupByTraceProcessor(logger, st, next, config)
-	require.NoError(t, err)
+	p := newGroupByTraceProcessor(logger, st, next, config)
 	require.NotNil(t, p)
 
 	ctx := context.Background()
 	p.Start(ctx, nil)
 	defer p.Shutdown(ctx)
-
-	require.NoError(t, err)
 
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
@@ -489,11 +471,8 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 	// test
 	wg.Add(2)
 
-	err = p.processResourceSpans(firstResourceSpans)
-	require.NoError(t, err)
-
-	err = p.processResourceSpans(secondResourceSpans)
-	require.NoError(t, err)
+	p.processResourceSpans(firstResourceSpans)
+	p.processResourceSpans(secondResourceSpans)
 
 	wg.Wait()
 
@@ -608,8 +587,7 @@ func TestErrorOnProcessResourceSpansContinuesProcessing(t *testing.T) {
 	st := &mockStorage{}
 	next := &mockProcessor{}
 
-	p, err := newGroupByTraceProcessor(logger, st, next, config)
-	require.NoError(t, err)
+	p := newGroupByTraceProcessor(logger, st, next, config)
 	require.NotNil(t, p)
 
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
@@ -630,10 +608,9 @@ func TestErrorOnProcessResourceSpansContinuesProcessing(t *testing.T) {
 	}
 
 	// test
-	err = p.processResourceSpans(rs)
+	p.processResourceSpans(rs)
 
 	// verify
-	assert.NoError(t, err)
 	assert.True(t, returnedError)
 }
 
@@ -646,8 +623,7 @@ func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 	st := newMemoryStorage()
 	next := &mockProcessor{}
 
-	p, err := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
-	require.NoError(b, err)
+	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	require.NotNil(b, p)
 
 	ctx := context.Background()

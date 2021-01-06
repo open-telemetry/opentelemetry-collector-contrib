@@ -106,11 +106,8 @@ func createMetricsExporter(
 			// if only sending metadata ignore all metrics
 			return 0, nil
 		}
-	} else if exp, err := newMetricsExporter(params, cfg); err == nil {
-		pushMetricsFn = exp.PushMetricsData
 	} else {
-		// error creating the exporter
-		return nil, err
+		pushMetricsFn = newMetricsExporter(params, cfg).PushMetricsData
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -158,11 +155,8 @@ func createTraceExporter(
 			// if only sending metadata, ignore all traces
 			return 0, nil
 		}
-	} else if exp, err := newTraceExporter(params, cfg); err == nil {
-		pushTracesFn = exp.pushTraceData
 	} else {
-		// error creating the exporter
-		return nil, err
+		pushTracesFn = newTraceExporter(params, cfg).pushTraceData
 	}
 
 	ctx, cancel := context.WithCancel(ctx)

@@ -120,7 +120,7 @@ func TestConsumeMetricsData(t *testing.T) {
 		},
 		{
 			name:             "large_batch",
-			md:               generateLargeBatch(t),
+			md:               generateLargeBatch(),
 			reqTestFunc:      nil,
 			httpResponseCode: http.StatusAccepted,
 		},
@@ -164,7 +164,7 @@ func TestConsumeMetricsData(t *testing.T) {
 	}
 }
 
-func generateLargeBatch(t *testing.T) consumerdata.MetricsData {
+func generateLargeBatch() consumerdata.MetricsData {
 	md := consumerdata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test_splunkhec"},

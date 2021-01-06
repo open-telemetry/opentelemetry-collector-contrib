@@ -39,9 +39,8 @@ func TestEventCallback(t *testing.T) {
 			typ:      traceReceived,
 			payload:  pdata.NewTraces(),
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onBatchReceived = func(expired pdata.Traces) error {
+				em.onBatchReceived = func(expired pdata.Traces) {
 					wg.Done()
-					return nil
 				}
 			},
 		},
@@ -163,9 +162,7 @@ func TestEventInvalidPayload(t *testing.T) {
 			casename: "onTraceReceived",
 			typ:      traceReceived,
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onBatchReceived = func(expired pdata.Traces) error {
-					return nil
-				}
+				em.onBatchReceived = func(expired pdata.Traces) {}
 			},
 		},
 		{
@@ -255,9 +252,8 @@ func TestEventShutdown(t *testing.T) {
 
 	traceReceivedFired, traceExpiredFired := false, false
 	em := newEventMachine(logger, 50)
-	em.onBatchReceived = func(pdata.Traces) error {
+	em.onBatchReceived = func(pdata.Traces) {
 		traceReceivedFired = true
-		return nil
 	}
 	em.onTraceExpired = func(pdata.TraceID) error {
 		traceExpiredFired = true

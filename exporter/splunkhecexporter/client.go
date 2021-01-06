@@ -52,10 +52,7 @@ func (c *client) pushMetricsData(
 	c.wg.Add(1)
 	defer c.wg.Done()
 
-	splunkDataPoints, numDroppedTimeseries, err := metricDataToSplunk(c.logger, md, c.config)
-	if err != nil {
-		return numMetricPoint(md), consumererror.Permanent(err)
-	}
+	splunkDataPoints, numDroppedTimeseries := metricDataToSplunk(c.logger, md, c.config)
 	if len(splunkDataPoints) == 0 {
 		return numDroppedTimeseries, nil
 	}

@@ -115,7 +115,6 @@ func NewEmfExporter(
 func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (droppedTimeSeries int, err error) {
 	var cwm []*CWMetrics
 	var totalDroppedMetrics int
-	var droppedMetrics int
 	expConfig := emf.config.(*Config)
 	namespace := expConfig.Namespace
 	logGroup := "/metrics/default"
@@ -124,8 +123,8 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (dr
 	rms := md.ResourceMetrics()
 
 	for i := 0; i < rms.Len(); i++ {
-		droppedMetrics = 0
 		rm := rms.At(i)
+		var droppedMetrics int
 		cwm, droppedMetrics = TranslateOtToCWMetric(&rm, expConfig)
 		totalDroppedMetrics = totalDroppedMetrics + droppedMetrics
 

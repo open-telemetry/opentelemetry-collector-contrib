@@ -139,11 +139,11 @@ func (s *sender) send(pipeline PipelineType, body io.Reader, flds fields) error 
 }
 
 // logToText converts LogRecord to a plain text line, returns it and error eventually
-func (s *sender) logToText(record pdata.LogRecord) (string, error) {
-	return record.Body().StringVal(), nil
+func (s *sender) logToText(record pdata.LogRecord) string {
+	return record.Body().StringVal()
 }
 
-// logToText converts LogRecord to a json line, returns it and error eventually
+// logToJSON converts LogRecord to a json line, returns it and error eventually
 func (s *sender) logToJSON(record pdata.LogRecord) (string, error) {
 	data := s.filter.filterOut(record.Attributes())
 	data[logKey] = record.Body().StringVal()
@@ -168,14 +168,12 @@ func (s *sender) sendLogs(flds fields) ([]pdata.LogRecord, error) {
 	)
 
 	for _, record := range s.buffer {
-		var (
-			formattedLine string
-			err           error
-		)
+		var formattedLine string
+		var err error
 
 		switch s.config.LogFormat {
 		case TextFormat:
-			formattedLine, err = s.logToText(record)
+			formattedLine = s.logToText(record)
 		case JSONFormat:
 			formattedLine, err = s.logToJSON(record)
 		default:
