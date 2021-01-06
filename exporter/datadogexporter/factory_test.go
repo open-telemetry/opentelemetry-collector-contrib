@@ -164,7 +164,7 @@ func TestLoadConfig(t *testing.T) {
 				Endpoint: "https://api.datadoghq.com",
 			},
 			SendMonotonic: true,
-			DeltaTTL: 3600,
+			DeltaTTL:      3600,
 		},
 
 		Traces: config.TracesConfig{
@@ -247,7 +247,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 				Endpoint: "https://api.datadoghq.test",
 			},
 			SendMonotonic: true,
-			DeltaTTL: 3600,
+			DeltaTTL:      3600,
 		},
 
 		Traces: config.TracesConfig{
@@ -291,7 +291,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 				Endpoint: "https://api.datadoghq.com",
 			},
 			SendMonotonic: true,
-			DeltaTTL: 3600,
+			DeltaTTL:      3600,
 		},
 
 		Traces: config.TracesConfig{
