@@ -46,6 +46,13 @@ func newSpanPropertiesFilter(operationNamePattern *string, minDuration *time.Dur
 	}, nil
 }
 
+func evaluate(t *testing.T, evaluator policyEvaluator, traces *TraceData, expectedDecision Decision) {
+	u, _ := uuid.NewRandom()
+	decision, err := evaluator.Evaluate(pdata.NewTraceID(u), traces)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedDecision, decision)
+}
+
 func TestPartialSpanPropertiesFilter(t *testing.T) {
 	opFilter, _ := newSpanPropertiesFilter(&operationNamePattern, nil, nil)
 	durationFilter, _ := newSpanPropertiesFilter(nil, &minDuration, nil)
@@ -74,15 +81,13 @@ func TestPartialSpanPropertiesFilter(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			u, _ := uuid.NewRandom()
-			decision, err := c.Evaluator.Evaluate(pdata.NewTraceID(u), matchingTraces)
-			assert.NoError(t, err)
-			assert.Equal(t, decision, Sampled)
+			c.Evaluator.invertMatch = false
+			evaluate(t, c.Evaluator, matchingTraces, Sampled)
+			evaluate(t, c.Evaluator, nonMatchingTraces, NotSampled)
 
-			u, _ = uuid.NewRandom()
-			decision, err = c.Evaluator.Evaluate(pdata.NewTraceID(u), nonMatchingTraces)
-			assert.NoError(t, err)
-			assert.Equal(t, decision, NotSampled)
+			c.Evaluator.invertMatch = true
+			evaluate(t, c.Evaluator, matchingTraces, NotSampled)
+			evaluate(t, c.Evaluator, nonMatchingTraces, Sampled)
 		})
 	}
 }
@@ -117,11 +122,17 @@ func TestSpanPropertiesFilter(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
+			// Regular match
 			filter, _ := newSpanPropertiesFilter(&operationNamePattern, &minDuration, &minNumberOfSpans)
-			u, _ := uuid.NewRandom()
-			decision, err := filter.Evaluate(pdata.NewTraceID(u), c.Trace)
-			assert.NoError(t, err)
-			assert.Equal(t, decision, c.Decision)
+			evaluate(t, filter, c.Trace, c.Decision)
+
+			// Invert match
+			filter.invertMatch = true
+			invertDecision := Sampled
+			if c.Decision == Sampled {
+				invertDecision = NotSampled
+			}
+			evaluate(t, filter, c.Trace, invertDecision)
 		})
 	}
 }
