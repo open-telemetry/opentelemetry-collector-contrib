@@ -61,6 +61,7 @@ func newTraceExporter(
 						document, localErr := translator.MakeSegmentDocumentString(spans.At(k), resource,
 							config.(*Config).IndexedAttributes, config.(*Config).IndexAllAttributes)
 						if localErr != nil {
+							logger.Debug("Error translating span.", zap.Error(localErr))
 							totalDroppedSpans++
 							continue
 						}
