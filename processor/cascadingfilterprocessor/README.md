@@ -47,6 +47,10 @@ of the provided values (either at resource of span level)
 (use `s` or `ms` as the suffix to indicate unit)
 - `properties: { name_pattern: <regex>`}: selects the span if its operation name matches the provided regular expression
 
+To invert the decision (which is still a subject to rate limiting), additional property can be configured:
+- `invert_match: <invert>` (default=`false`): when set to `true`, the opposite decision is selected for the trace. E.g.
+if trace matches a given string attribute and `invert_match=true`, then the trace is not selected
+
 ## Limiting the number of spans 
 
 There are two `spans_per_second` settings. The global one and the policy-one.
@@ -79,39 +83,40 @@ processors:
     probabilistic_filtering_ratio: 0.1
     policies:
       [
-          {
-            name: test-policy-1,
-          },
-          {
-            name: test-policy-2,
-            numeric_attribute: {key: key1, min_value: 50, max_value: 100}
-          },
-          {
-            name: test-policy-3,
-            string_attribute: {key: key2, values: [value1, value2]}
-          },
-          {
-            name: test-policy-4,
-            spans_per_second: 35,
-          },
-          {
-            name: test-policy-5,
-            spans_per_second: 123,
-            numeric_attribute: {key: key1, min_value: 50, max_value: 100}
-          },
-          {
-            name: test-policy-6,
-            spans_per_second: 50,
-            properties: {min_duration: 9s }
-          },
-          {
-            name: test-policy-7,
-            properties: {
-              name_pattern: "foo.*",
-              min_number_of_spans: 10,
-              min_duration: 9s
-            }
-         },
+        {
+          name: test-policy-1,
+        },
+        {
+          name: test-policy-2,
+          numeric_attribute: { key: key1, min_value: 50, max_value: 100 }
+        },
+        {
+          name: test-policy-3,
+          string_attribute: { key: key2, values: [ value1, value2 ] }
+        },
+        {
+          name: test-policy-4,
+          spans_per_second: 35,
+        },
+        {
+          name: test-policy-5,
+          spans_per_second: 123,
+          numeric_attribute: { key: key1, min_value: 50, max_value: 100 },
+          invert_match: true
+        },
+        {
+          name: test-policy-6,
+          spans_per_second: 50,
+          properties: { min_duration: 9s }
+        },
+        {
+          name: test-policy-7,
+          properties: {
+            name_pattern: "foo.*",
+            min_number_of_spans: 10,
+            min_duration: 9s
+          }
+        },
         {
           name: everything_else,
           spans_per_second: -1
