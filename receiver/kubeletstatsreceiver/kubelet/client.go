@@ -29,7 +29,7 @@ import (
 )
 
 const svcAcctCACertPath = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-const svcAcctTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+const svcAcctTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token" // #nosec
 
 type Client interface {
 	Get(path string) ([]byte, error)

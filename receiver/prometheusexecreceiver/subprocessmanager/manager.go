@@ -30,21 +30,14 @@ import (
 
 // Run will start the process and keep track of running time
 func (proc *SubprocessConfig) Run(ctx context.Context, logger *zap.Logger) (time.Duration, error) {
-
-	var argsSlice []string
-
 	// Parse the command line string into arguments
 	args, err := shellquote.Split(proc.Command)
 	if err != nil {
 		return 0, fmt.Errorf("could not parse command, error: %w", err)
 	}
-	// Separate the executable from the flags for the Command object
-	if len(args) > 1 {
-		argsSlice = args[1:]
-	}
 
 	// Create the command object and attach current os environment + environment variables defined by the user
-	childProcess := exec.Command(args[0], argsSlice...)
+	childProcess := exec.Command(args[0], args[1:]...) // #nosec
 	childProcess.Env = append(os.Environ(), formatEnvSlice(&proc.Env)...)
 
 	// Handle the subprocess standard and error outputs in goroutines

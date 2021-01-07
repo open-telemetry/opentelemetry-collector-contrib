@@ -16,7 +16,7 @@ package awsemfexporter
 
 import (
 	"bytes"
-	"crypto/sha1"
+	"crypto/sha1" // #nosec
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -390,7 +390,7 @@ func calculateRate(fields map[string]interface{}, val interface{}, timestamp int
 			continue
 		}
 	}
-	h := sha1.New()
+	h := sha1.New() // #nosec
 	h.Write(b.Bytes())
 	bs := h.Sum(nil)
 	hashStr := string(bs)
