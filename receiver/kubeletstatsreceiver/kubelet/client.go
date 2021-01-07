@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -98,7 +97,7 @@ func (p *saClientProvider) BuildClient() (Client, error) {
 	}
 	tok, err := ioutil.ReadFile(p.tokenPath)
 	if err != nil {
-		return nil, errors.WithMessagef(err, "Unable to read token file %s", p.tokenPath)
+		return nil, fmt.Errorf("unable to read token file %s: %w", p.tokenPath, err)
 	}
 	tr := defaultTransport()
 	tr.TLSClientConfig = &tls.Config{
@@ -143,7 +142,7 @@ func defaultTLSClient(
 func defaultEndpoint() (string, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
-		return "", errors.WithMessage(err, "Unable to get hostname for default endpoint")
+		return "", fmt.Errorf("unable to get hostname for default endpoint: %w", err)
 	}
 	const kubeletPort = "10250"
 	return hostname + ":" + kubeletPort, nil
@@ -182,7 +181,7 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to read Kubelet response body")
+		return nil, fmt.Errorf("failed to read Kubelet response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {

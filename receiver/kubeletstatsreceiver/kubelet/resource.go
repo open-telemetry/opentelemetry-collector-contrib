@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/collector/translator/conventions"
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
 )
@@ -55,7 +54,7 @@ func containerResource(pod *resourcepb.Resource, s stats.ContainerStats, metadat
 		MetadataLabelContainerID, labels[conventions.AttributeK8sContainer],
 	)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to set extra labels from metadata")
+		return nil, fmt.Errorf("failed to set extra labels from metadata: %w", err)
 
 	}
 	return &resourcepb.Resource{
@@ -74,7 +73,7 @@ func volumeResource(pod *resourcepb.Resource, vs stats.VolumeStats, metadata Met
 		MetadataLabelVolumeType, labels[labelVolumeName],
 	)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to set extra labels from metadata")
+		return nil, fmt.Errorf("failed to set extra labels from metadata: %w", err)
 	}
 
 	if labels[labelVolumeType] == labelValuePersistentVolumeClaim {
@@ -84,7 +83,7 @@ func volumeResource(pod *resourcepb.Resource, vs stats.VolumeStats, metadata Met
 			pod.Labels[conventions.AttributeK8sNamespace], labels,
 		)
 		if err != nil {
-			return nil, errors.WithMessage(err, "failed to set labels from volume claim")
+			return nil, fmt.Errorf("failed to set labels from volume claim: %w", err)
 		}
 	}
 
