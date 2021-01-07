@@ -34,7 +34,6 @@ import (
 
 const certPath = "../testdata/testcert.crt"
 const keyFile = "../testdata/testkey.key"
-const tokenPath = "../testdata/token"
 
 func TestClient(t *testing.T) {
 	tr := &fakeRoundTripper{}
@@ -98,7 +97,7 @@ func TestSvcAcctClient(t *testing.T) {
 	p := &saClientProvider{
 		endpoint:   "localhost:9876",
 		caCertPath: certPath,
-		tokenPath:  tokenPath,
+		tokenPath:  "../testdata/token",
 		logger:     zap.NewNop(),
 	}
 	cl, err := p.BuildClient()
@@ -178,7 +177,7 @@ func TestBuildReq(t *testing.T) {
 	p := &saClientProvider{
 		endpoint:   "localhost:9876",
 		caCertPath: certPath,
-		tokenPath:  tokenPath,
+		tokenPath:  "../testdata/token",
 		logger:     zap.NewNop(),
 	}
 	cl, err := p.BuildClient()
@@ -193,7 +192,7 @@ func TestBuildBadReq(t *testing.T) {
 	p := &saClientProvider{
 		endpoint:   "localhost:9876",
 		caCertPath: certPath,
-		tokenPath:  tokenPath,
+		tokenPath:  "../testdata/token",
 		logger:     zap.NewNop(),
 	}
 	cl, err := p.BuildClient()
