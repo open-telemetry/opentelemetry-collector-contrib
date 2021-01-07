@@ -18,6 +18,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -448,6 +449,28 @@ func TestAddTargets(t *testing.T) {
 				},
 			},
 		},
+		{
+			"no network mode",
+			&ECSTask{
+				TaskDefinition: &ecs.TaskDefinition{},
+			},
+			&Config{
+				DockerLabel: &DockerLabelConfig{
+					JobNameLabel:     "EC2_PROMETHEUS_JOB_NAME",
+					PortLabel:        "EC2_PROMETHEUS_EXPORTER_PORT",
+					MetricsPathLabel: "ECS_PROMETHEUS_METRICS_PATH",
+				},
+				TaskDefinitions: []*TaskDefinitionConfig{
+					{
+						JobName:           "",
+						MetricsPorts:      "9404;9406",
+						TaskDefArnPattern: ".*:task-definition/prometheus-java-tomcat-ec2-awsvpc:[0-9]+",
+						MetricsPath:       "/metrics",
+					},
+				},
+			},
+			map[string]*Target{},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -460,6 +483,73 @@ func TestAddTargets(t *testing.T) {
 			targets := make(map[string]*Target)
 			tc.task.addTargets(targets, tc.config)
 			assert.Equal(t, tc.expectedTargets, targets)
+		})
+	}
+}
+
+func TestGetPrivateIp(t *testing.T) {
+	testCases := []struct {
+		testName string
+		task     *ECSTask
+		ip       string
+	}{
+		{
+			"AWS VPC",
+			buildWorkloadFargateAwsvpc(true, false),
+			"10.0.0.129",
+		},
+		{
+			"Bridge",
+			buildWorkloadEC2BridgeDynamicPort(true, false),
+			"10.4.0.205",
+		},
+		{
+			"AWS VPC w/ no valid address",
+			&ECSTask{
+				Task: &ecs.Task{
+					Attachments: []*ecs.Attachment{
+						{
+							Type: aws.String("ElasticNetworkInterface"),
+							Details: []*ecs.KeyValuePair{
+								{
+									Name:  aws.String("networkInterfaceId"),
+									Value: aws.String("eni-03de9d47faaa2e5ec"),
+								},
+							},
+						},
+						{
+							Type: aws.String("invalid"),
+						},
+					},
+				},
+				TaskDefinition: &ecs.TaskDefinition{
+					NetworkMode: aws.String(ecs.NetworkModeAwsvpc),
+				},
+			},
+			"",
+		},
+		{
+			"bridge w/ no EC2 Info",
+			&ECSTask{
+				TaskDefinition: &ecs.TaskDefinition{
+					NetworkMode: aws.String(ecs.NetworkModeBridge),
+				},
+			},
+			"",
+		},
+		{
+			"no network mode",
+			&ECSTask{
+				TaskDefinition: &ecs.TaskDefinition{},
+			},
+			"",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			ip := tc.task.getPrivateIp()
+			assert.Equal(t, tc.ip, ip)
 		})
 	}
 }
