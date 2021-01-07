@@ -46,6 +46,8 @@ type policyEvaluator struct {
 	maxSpansPerSecond    int64
 	spansInCurrentSecond int64
 
+	invertMatch bool
+
 	logger *zap.Logger
 }
 
@@ -124,5 +126,6 @@ func NewFilter(logger *zap.Logger, cfg *config.PolicyCfg) (PolicyEvaluator, erro
 		currentSecond:        0,
 		spansInCurrentSecond: 0,
 		maxSpansPerSecond:    cfg.SpansPerSecond,
+		invertMatch:          cfg.InvertMatch,
 	}, nil
 }

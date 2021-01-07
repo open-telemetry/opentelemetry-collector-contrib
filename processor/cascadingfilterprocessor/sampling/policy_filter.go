@@ -156,9 +156,15 @@ func (pe *policyEvaluator) evaluateRules(_ pdata.TraceID, trace *TraceData) (Dec
 		conditionMet.operationName &&
 		conditionMet.numericAttr &&
 		conditionMet.stringAttr {
+		if pe.invertMatch {
+			return NotSampled, nil
+		}
 		return Sampled, nil
 	}
 
+	if pe.invertMatch {
+		return Sampled, nil
+	}
 	return NotSampled, nil
 }
 

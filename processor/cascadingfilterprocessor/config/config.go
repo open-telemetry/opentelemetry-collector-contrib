@@ -32,6 +32,8 @@ type PolicyCfg struct {
 	PropertiesCfg PropertiesCfg `mapstructure:"properties"`
 	// SpansPerSecond specifies the rule budget that should never be exceeded for it
 	SpansPerSecond int64 `mapstructure:"spans_per_second"`
+	// InvertMatch specifies if the match should be inverted. Default: false
+	InvertMatch bool `mapstructure:"invert_match"`
 }
 
 // PropertiesCfg holds the configurable settings to create a duration filter

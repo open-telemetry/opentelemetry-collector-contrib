@@ -76,6 +76,7 @@ func TestLoadConfig(t *testing.T) {
 					SpansPerSecond: 123,
 					NumericAttributeCfg: &config.NumericAttributeCfg{
 						Key: "key1", MinValue: 50, MaxValue: 100},
+					InvertMatch: true,
 				},
 				{
 					Name:           "test-policy-6",
