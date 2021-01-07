@@ -30,7 +30,7 @@ type sourceFormat struct {
 	template string
 }
 
-const sourceRegex = `\%\{(\w+)\}`
+const sourceRegex = `\%\{([\w\.]+)\}`
 
 // newSourceFormat builds sourceFormat basing on the regex and given text.
 // Regex is basing on the `sourceRegex` const
