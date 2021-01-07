@@ -16,6 +16,7 @@ package simpleprometheusreceiver
 
 import (
 	"context"
+	"net/url"
 	"reflect"
 	"testing"
 	"time"
@@ -90,6 +91,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 				},
 				CollectionInterval: 10 * time.Second,
 				MetricsPath:        "/metric",
+				Params:             url.Values{"foo": []string{"bar", "foobar"}},
 			},
 			want: &prometheusreceiver.Config{
 				PrometheusConfig: &config.Config{
@@ -101,6 +103,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 							HonorTimestamps: true,
 							Scheme:          "http",
 							MetricsPath:     "/metric",
+							Params:          url.Values{"foo": []string{"bar", "foobar"}},
 							ServiceDiscoveryConfigs: discovery.Configs{
 								&discovery.StaticConfig{
 									{

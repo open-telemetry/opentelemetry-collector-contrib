@@ -4,6 +4,9 @@ receivers:
     endpoint: "localhost:1234"
     collection_interval: 30s
     metrics_path: /v2/metrics
+    params:
+      columns: "name,messages"
+      key: ["foo","bar"]
     use_service_account: true
     tls_enabled: true
     tls_config:

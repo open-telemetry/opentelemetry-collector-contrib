@@ -96,6 +96,7 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 		HonorTimestamps: true,
 		Scheme:          scheme,
 		MetricsPath:     cfg.MetricsPath,
+		Params:          cfg.Params,
 		ServiceDiscoveryConfigs: discovery.Configs{
 			&discovery.StaticConfig{
 				{
