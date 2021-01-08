@@ -42,7 +42,7 @@ type metricPair struct {
 }
 
 type sender struct {
-	buffer     []pdata.LogRecord
+	logBuffer  []pdata.LogRecord
 	config     *Config
 	client     *http.Client
 	filter     filter
@@ -52,7 +52,7 @@ type sender struct {
 
 const (
 	logKey string = "log"
-	// maxBufferSize defines size of the buffer (maximum number of pdata.LogRecord entries)
+	// maxBufferSize defines size of the logBuffer (maximum number of pdata.LogRecord entries)
 	maxBufferSize int = 1024 * 1024
 )
 
@@ -153,7 +153,7 @@ func (s *sender) logToJSON(record pdata.LogRecord) (string, error) {
 	return bytes.NewBuffer(nextLine).String(), nil
 }
 
-// sendLogs sends log records from the buffer formatted according
+// sendLogs sends log records from the logBuffer formatted according
 // to configured LogFormat and as the result of execution
 // returns array of records which has not been sent correctly and error
 func (s *sender) sendLogs(ctx context.Context, flds fields) ([]pdata.LogRecord, error) {
@@ -164,7 +164,7 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]pdata.LogRecord, 
 		currentRecords []pdata.LogRecord
 	)
 
-	for _, record := range s.buffer {
+	for _, record := range s.logBuffer {
 		var formattedLine string
 		var err error
 
@@ -218,7 +218,7 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]pdata.LogRecord, 
 }
 
 // appendAndSend appends line to the request body that will be sent and sends
-// the accumulated data if the internal buffer has been filled (with maxBufferSize elements).
+// the accumulated data if the internal logBuffer has been filled (with maxBufferSize elements).
 // It returns appendResponse
 func (s *sender) appendAndSend(
 	ctx context.Context,
@@ -260,26 +260,26 @@ func (s *sender) appendAndSend(
 	return ar, nil
 }
 
-// cleanBuffer zeroes buffer
-func (s *sender) cleanBuffer() {
-	s.buffer = (s.buffer)[:0]
+// cleanLogsBuffer zeroes logBuffer
+func (s *sender) cleanLogsBuffer() {
+	s.logBuffer = (s.logBuffer)[:0]
 }
 
-// batch adds log to the buffer and flushes them if buffer is full to avoid overflow
+// batchLog adds log to the logBuffer and flushes them if logBuffer is full to avoid overflow
 // returns list of log records which were not sent successfully
-func (s *sender) batch(ctx context.Context, log pdata.LogRecord, metadata fields) ([]pdata.LogRecord, error) {
-	s.buffer = append(s.buffer, log)
+func (s *sender) batchLog(ctx context.Context, log pdata.LogRecord, metadata fields) ([]pdata.LogRecord, error) {
+	s.logBuffer = append(s.logBuffer, log)
 
-	if s.count() >= maxBufferSize {
+	if s.countLogs() >= maxBufferSize {
 		dropped, err := s.sendLogs(ctx, metadata)
-		s.cleanBuffer()
+		s.cleanLogsBuffer()
 		return dropped, err
 	}
 
 	return nil, nil
 }
 
-// count returns number of logs in buffer
-func (s *sender) count() int {
-	return len(s.buffer)
+// countLogs returns number of logs in logBuffer
+func (s *sender) countLogs() int {
+	return len(s.logBuffer)
 }

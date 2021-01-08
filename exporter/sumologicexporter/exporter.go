@@ -159,7 +159,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) (i
 						errs = append(errs, err)
 						droppedRecords = append(droppedRecords, dropped...)
 					}
-					sdr.cleanBuffer()
+					sdr.cleanLogsBuffer()
 				}
 
 				// assign metadata
@@ -167,7 +167,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) (i
 
 				// add log to the buffer
 				var dropped []pdata.LogRecord
-				dropped, err = sdr.batch(ctx, log, previousMetadata)
+				dropped, err = sdr.batchLog(ctx, log, previousMetadata)
 				if err != nil {
 					droppedRecords = append(droppedRecords, dropped...)
 					errs = append(errs, err)
