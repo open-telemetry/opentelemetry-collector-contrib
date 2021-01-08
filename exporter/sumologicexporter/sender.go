@@ -214,9 +214,11 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]pdata.LogRecord, 
 		}
 	}
 
-	if err := s.send(ctx, LogsPipeline, strings.NewReader(body.String()), flds); err != nil {
-		errs = append(errs, err)
-		droppedRecords = append(droppedRecords, currentRecords...)
+	if body.Len() > 0 {
+		if err := s.send(ctx, LogsPipeline, strings.NewReader(body.String()), flds); err != nil {
+			errs = append(errs, err)
+			droppedRecords = append(droppedRecords, currentRecords...)
+		}
 	}
 
 	if len(errs) > 0 {
@@ -236,12 +238,19 @@ func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, er
 
 	for _, record := range s.metricBuffer {
 		var formattedLine string
+		var err error
 
 		switch s.config.MetricFormat {
 		case PrometheusFormat:
 			formattedLine = s.prometheusFormatter.metric2String(record)
 		default:
-			return nil, errors.New("unexpected metric format")
+			err = fmt.Errorf("unexpected metric format: %s", s.config.MetricFormat)
+		}
+
+		if err != nil {
+			droppedRecords = append(droppedRecords, record)
+			errs = append(errs, err)
+			continue
 		}
 
 		ar, err := s.appendAndSend(ctx, formattedLine, MetricsPipeline, &body, flds)
@@ -267,9 +276,11 @@ func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, er
 		}
 	}
 
-	if err := s.send(ctx, MetricsPipeline, strings.NewReader(body.String()), flds); err != nil {
-		errs = append(errs, err)
-		droppedRecords = append(droppedRecords, currentRecords...)
+	if body.Len() > 0 {
+		if err := s.send(ctx, MetricsPipeline, strings.NewReader(body.String()), flds); err != nil {
+			errs = append(errs, err)
+			droppedRecords = append(droppedRecords, currentRecords...)
+		}
 	}
 
 	if len(errs) > 0 {

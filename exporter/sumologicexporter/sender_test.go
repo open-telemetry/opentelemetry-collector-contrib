@@ -317,10 +317,12 @@ func TestSendLogsUnexpectedFormat(t *testing.T) {
 	})
 	defer func() { test.srv.Close() }()
 	test.s.config.LogFormat = "dummy"
-	test.s.logBuffer = exampleTwoLogs()
+	logs := exampleTwoLogs()
+	test.s.logBuffer = logs
 
-	_, err := test.s.sendLogs(context.Background(), fields{})
+	dropped, err := test.s.sendLogs(context.Background(), fields{})
 	assert.Error(t, err)
+	assert.Equal(t, logs, dropped)
 }
 
 func TestOverrideSourceName(t *testing.T) {
@@ -517,4 +519,180 @@ func TestInvalidContentEncoding(t *testing.T) {
 
 	err := test.s.send(context.Background(), LogsPipeline, reader, fields{})
 	assert.EqualError(t, err, "invalid content encoding: test")
+}
+
+func TestSendMetrics(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
+		func(w http.ResponseWriter, req *http.Request) {
+			body := extractBody(t, req)
+			expected := `test_metric_data{test="test_value",test2="second_value"} 14500 1605534165000
+gauge_metric_name{foo="bar",remote_name="156920",url="http://example_url"} 124 1608124661166
+gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1608124662166`
+			assert.Equal(t, expected, body)
+			assert.Equal(t, "otelcol", req.Header.Get("X-Sumo-Client"))
+			assert.Equal(t, "application/vnd.sumologic.prometheus", req.Header.Get("Content-Type"))
+		},
+	})
+	defer func() { test.srv.Close() }()
+
+	test.s.config.MetricFormat = PrometheusFormat
+	test.s.metricBuffer = []metricPair{
+		exampleIntMetric(),
+		exampleIntGaugeMetric(),
+	}
+	_, err := test.s.sendMetrics(context.Background(), fields{"key1": "value", "key2": "value2"})
+	assert.NoError(t, err)
+}
+
+func TestSendMetricsSplit(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
+		func(w http.ResponseWriter, req *http.Request) {
+			body := extractBody(t, req)
+			expected := `test_metric_data{test="test_value",test2="second_value"} 14500 1605534165000`
+			assert.Equal(t, expected, body)
+		},
+		func(w http.ResponseWriter, req *http.Request) {
+			body := extractBody(t, req)
+			expected := `gauge_metric_name{foo="bar",remote_name="156920",url="http://example_url"} 124 1608124661166
+gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1608124662166`
+			assert.Equal(t, expected, body)
+		},
+	})
+	defer func() { test.srv.Close() }()
+	test.s.config.MaxRequestBodySize = 10
+	test.s.config.MetricFormat = PrometheusFormat
+	test.s.metricBuffer = []metricPair{
+		exampleIntMetric(),
+		exampleIntGaugeMetric(),
+	}
+
+	_, err := test.s.sendMetrics(context.Background(), fields{})
+	assert.NoError(t, err)
+}
+
+func TestSendMetricsSplitFailedOne(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
+		func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(500)
+
+			body := extractBody(t, req)
+			expected := `test_metric_data{test="test_value",test2="second_value"} 14500 1605534165000`
+			assert.Equal(t, expected, body)
+		},
+		func(w http.ResponseWriter, req *http.Request) {
+			body := extractBody(t, req)
+			expected := `gauge_metric_name{foo="bar",remote_name="156920",url="http://example_url"} 124 1608124661166
+gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1608124662166`
+			assert.Equal(t, expected, body)
+		},
+	})
+	defer func() { test.srv.Close() }()
+	test.s.config.MaxRequestBodySize = 10
+	test.s.config.MetricFormat = PrometheusFormat
+	test.s.metricBuffer = []metricPair{
+		exampleIntMetric(),
+		exampleIntGaugeMetric(),
+	}
+
+	dropped, err := test.s.sendMetrics(context.Background(), fields{})
+	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
+	assert.Equal(t, test.s.metricBuffer[0:1], dropped)
+}
+
+func TestSendMetricsSplitFailedAll(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
+		func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(500)
+
+			body := extractBody(t, req)
+			expected := `test_metric_data{test="test_value",test2="second_value"} 14500 1605534165000`
+			assert.Equal(t, expected, body)
+		},
+		func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(404)
+
+			body := extractBody(t, req)
+			expected := `gauge_metric_name{foo="bar",remote_name="156920",url="http://example_url"} 124 1608124661166
+gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1608124662166`
+			assert.Equal(t, expected, body)
+		},
+	})
+	defer func() { test.srv.Close() }()
+	test.s.config.MaxRequestBodySize = 10
+	test.s.config.MetricFormat = PrometheusFormat
+	test.s.metricBuffer = []metricPair{
+		exampleIntMetric(),
+		exampleIntGaugeMetric(),
+	}
+
+	dropped, err := test.s.sendMetrics(context.Background(), fields{})
+	assert.EqualError(
+		t,
+		err,
+		"[error during sending data: 500 Internal Server Error; error during sending data: 404 Not Found]",
+	)
+	assert.Equal(t, test.s.metricBuffer[0:2], dropped)
+}
+
+func TestSendMetricsUnexpectedFormat(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
+		func(w http.ResponseWriter, req *http.Request) {
+		},
+	})
+	defer func() { test.srv.Close() }()
+	test.s.config.MetricFormat = "invalid"
+	metrics := []metricPair{
+		exampleIntMetric(),
+	}
+	test.s.metricBuffer = metrics
+
+	dropped, err := test.s.sendMetrics(context.Background(), fields{})
+	assert.EqualError(t, err, "unexpected metric format: invalid")
+	assert.Equal(t, dropped, metrics)
+}
+
+func TestMetricsBuffer(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
+	defer func() { test.srv.Close() }()
+
+	assert.Equal(t, test.s.countMetrics(), 0)
+	metrics := []metricPair{
+		exampleIntMetric(),
+		exampleIntGaugeMetric(),
+	}
+
+	droppedMetrics, err := test.s.batchMetric(context.Background(), metrics[0], fields{})
+	require.NoError(t, err)
+	assert.Nil(t, droppedMetrics)
+	assert.Equal(t, 1, test.s.countMetrics())
+	assert.Equal(t, metrics[0:1], test.s.metricBuffer)
+
+	droppedMetrics, err = test.s.batchMetric(context.Background(), metrics[1], fields{})
+	require.NoError(t, err)
+	assert.Nil(t, droppedMetrics)
+	assert.Equal(t, 2, test.s.countMetrics())
+	assert.Equal(t, metrics, test.s.metricBuffer)
+
+	test.s.cleanMetricBuffer()
+	assert.Equal(t, 0, test.s.countMetrics())
+	assert.Equal(t, []metricPair{}, test.s.metricBuffer)
+}
+
+func TestMetricsBufferOverflow(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
+	defer func() { test.srv.Close() }()
+
+	test.s.config.HTTPClientSettings.Endpoint = ":"
+	test.s.config.MetricFormat = PrometheusFormat
+	test.s.config.MaxRequestBodySize = 1024 * 1024 * 1024 * 1024
+	metric := exampleIntMetric()
+
+	for test.s.countMetrics() < maxBufferSize-1 {
+		_, err := test.s.batchMetric(context.Background(), metric, fields{})
+		require.NoError(t, err)
+	}
+
+	_, err := test.s.batchMetric(context.Background(), metric, fields{})
+	assert.EqualError(t, err, `parse ":": missing protocol scheme`)
+	assert.Equal(t, 0, test.s.countMetrics())
 }
