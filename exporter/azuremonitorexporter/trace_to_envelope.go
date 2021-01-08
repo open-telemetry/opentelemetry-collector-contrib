@@ -105,10 +105,12 @@ func spanToEnvelope(
 		data.BaseType = remoteDependencyData.BaseType()
 	}
 
-	// Record the Span status message as a property if there
+	// Record the raw Span status values as properties
+	dataProperties[attributeOtelStatusCode] = span.Status().Code().String()
+	dataProperties[attributeOtelStatusDeprecatedCode] = span.Status().DeprecatedCode().String()
 	statusMessage := span.Status().Message()
 	if len(statusMessage) > 0 {
-		dataProperties["Status.message"] = statusMessage
+		dataProperties[attributeOtelStatusDescription] = statusMessage
 	}
 
 	envelope.Data = data
