@@ -123,8 +123,12 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, body io.Reader
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Add("X-Sumo-Fields", flds.string())
 	case MetricsPipeline:
-		// ToDo: Implement metrics pipeline
-		return errors.New("current sender version doesn't support metrics")
+		switch s.config.MetricFormat {
+		case PrometheusFormat:
+			req.Header.Add("Content-Type", "application/vnd.sumologic.prometheus")
+		default:
+			return fmt.Errorf("unsupported metrics format: %s", s.config.MetricFormat)
+		}
 	default:
 		return errors.New("unexpected pipeline")
 	}

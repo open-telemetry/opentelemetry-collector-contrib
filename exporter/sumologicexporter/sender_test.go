@@ -431,12 +431,14 @@ func TestLogsBufferOverflow(t *testing.T) {
 	assert.Equal(t, 0, test.s.countLogs())
 }
 
-func TestMetricsPipeline(t *testing.T) {
+func TestInvalidMetricFormat(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
+	test.s.config.MetricFormat = "invalid"
+
 	err := test.s.send(context.Background(), MetricsPipeline, strings.NewReader(""), fields{})
-	assert.EqualError(t, err, `current sender version doesn't support metrics`)
+	assert.EqualError(t, err, `unsupported metrics format: invalid`)
 }
 
 func TestInvalidPipeline(t *testing.T) {
