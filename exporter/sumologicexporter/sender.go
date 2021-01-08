@@ -42,12 +42,13 @@ type metricPair struct {
 }
 
 type sender struct {
-	logBuffer  []pdata.LogRecord
-	config     *Config
-	client     *http.Client
-	filter     filter
-	sources    sourceFormats
-	compressor compressor
+	logBuffer    []pdata.LogRecord
+	metricBuffer []metricPair
+	config       *Config
+	client       *http.Client
+	filter       filter
+	sources      sourceFormats
+	compressor   compressor
 }
 
 const (
@@ -217,6 +218,57 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]pdata.LogRecord, 
 	return droppedRecords, nil
 }
 
+// sendMetrics sends metrics in right format basing on the s.config.MetricFormat
+func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, error) {
+	var (
+		body           strings.Builder
+		errs           []error
+		droppedRecords []metricPair
+		currentRecords []metricPair
+	)
+
+	for _, record := range s.metricBuffer {
+		var formattedLine string
+
+		switch s.config.MetricFormat {
+		default:
+			return nil, errors.New("unexpected metric format")
+		}
+
+		ar, err := s.appendAndSend(ctx, formattedLine, MetricsPipeline, &body, flds)
+		if err != nil {
+			errs = append(errs, err)
+			if ar.sent {
+				droppedRecords = append(droppedRecords, currentRecords...)
+			}
+
+			if !ar.appended {
+				droppedRecords = append(droppedRecords, record)
+			}
+		}
+
+		// If data was sent, cleanup the currentTimeSeries counter
+		if ar.sent {
+			currentRecords = currentRecords[:0]
+		}
+
+		// If log has been appended to body, increment the currentTimeSeries
+		if ar.appended {
+			currentRecords = append(currentRecords, record)
+		}
+	}
+
+	if err := s.send(ctx, MetricsPipeline, strings.NewReader(body.String()), flds); err != nil {
+		errs = append(errs, err)
+		droppedRecords = append(droppedRecords, currentRecords...)
+	}
+
+	if len(errs) > 0 {
+		return droppedRecords, componenterror.CombineErrors(errs)
+	}
+	return droppedRecords, nil
+}
+
 // appendAndSend appends line to the request body that will be sent and sends
 // the accumulated data if the internal logBuffer has been filled (with maxBufferSize elements).
 // It returns appendResponse
@@ -282,4 +334,28 @@ func (s *sender) batchLog(ctx context.Context, log pdata.LogRecord, metadata fie
 // countLogs returns number of logs in logBuffer
 func (s *sender) countLogs() int {
 	return len(s.logBuffer)
+}
+
+// cleanMetricBuffer zeroes metricBuffer
+func (s *sender) cleanMetricBuffer() {
+	s.metricBuffer = (s.metricBuffer)[:0]
+}
+
+// batchMetric adds metric to the metricBuffer and flushes them if metricBuffer is full to avoid overflow
+// returns list of metric records which were not sent successfully
+func (s *sender) batchMetric(ctx context.Context, metric metricPair, metadata fields) ([]metricPair, error) {
+	s.metricBuffer = append(s.metricBuffer, metric)
+
+	if s.countMetrics() >= maxBufferSize {
+		dropped, err := s.sendMetrics(ctx, metadata)
+		s.cleanMetricBuffer()
+		return dropped, err
+	}
+
+	return nil, nil
+}
+
+// countMetrics returns number of metrics in metricBuffer
+func (s *sender) countMetrics() int {
+	return len(s.metricBuffer)
 }
