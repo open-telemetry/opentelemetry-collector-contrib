@@ -375,7 +375,7 @@ func TestMapDoubleMonotonicWithReboot(t *testing.T) {
 
 	for i, val := range values {
 		point := slice.At(i)
-		point.SetTimestamp(seconds(i))
+		point.SetTimestamp(seconds(2 * i))
 		point.SetValue(val)
 	}
 
@@ -383,8 +383,8 @@ func TestMapDoubleMonotonicWithReboot(t *testing.T) {
 	assert.ElementsMatch(t,
 		mapDoubleMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
-			metrics.NewCount(metricName, uint64(seconds(1)), 30, []string{}),
-			metrics.NewCount(metricName, uint64(seconds(3)), 20, []string{}),
+			metrics.NewCount(metricName, uint64(seconds(2)), 30, []string{}),
+			metrics.NewCount(metricName, uint64(seconds(6)), 20, []string{}),
 		},
 	)
 }
