@@ -51,8 +51,8 @@ func TestNewType(t *testing.T) {
 	gauge := NewGauge(name, ts, value, tags)
 	assert.Equal(t, gauge.GetType(), Gauge)
 
-	count := NewRate(name, ts, value, tags)
-	assert.Equal(t, count.GetType(), Rate)
+	count := NewCount(name, ts, value, tags)
+	assert.Equal(t, count.GetType(), Count)
 
 }
 

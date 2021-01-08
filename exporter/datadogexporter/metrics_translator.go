@@ -118,12 +118,11 @@ func mapIntMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.Int
 
 			// We calculate the time-normalized delta
 			dx := float64(p.Value() - cnt.value)
-			dt := float64(ts-cnt.ts) / 1e9
 
 			// if dx < 0, we assume there was a reset, thus we save the point
 			// but don't export it (it's the first one so we can't do a delta)
 			if dx >= 0 {
-				ms = append(ms, metrics.NewRate(name, ts, dx/dt, tags))
+				ms = append(ms, metrics.NewCount(name, ts, dx, tags))
 			}
 
 		}
@@ -160,12 +159,11 @@ func mapDoubleMonotonicMetrics(name string, prevPts *ttlmap.TTLMap, slice pdata.
 
 			// We calculate the time-normalized delta
 			dx := p.Value() - cnt.value
-			dt := float64(ts-cnt.ts) / 1e9
 
 			// if dx < 0, we assume there was a reset, thus we save the point
 			// but don't export it (it's the first one so we can't do a delta)
 			if dx >= 0 {
-				ms = append(ms, metrics.NewRate(name, ts, dx/dt, tags))
+				ms = append(ms, metrics.NewCount(name, ts, dx, tags))
 			}
 
 		}
