@@ -82,8 +82,8 @@ var (
 	}
 
 	requiredDatabaseAttributes = map[string]pdata.AttributeValue{
-		attributeDBSystem: pdata.NewAttributeValueString(defaultDBSystem),
-		attributeDBName:   pdata.NewAttributeValueString(defaultDBName),
+		conventions.AttributeDBSystem: pdata.NewAttributeValueString(defaultDBSystem),
+		conventions.AttributeDBName:   pdata.NewAttributeValueString(defaultDBName),
 	}
 
 	requiredMessagingAttributes = map[string]pdata.AttributeValue{
@@ -108,13 +108,14 @@ var (
 // http.scheme, http.host, http.target => data.Url
 // Also sets a few other things to increase code coverage:
 // - a specific SpanStatus as opposed to none
-// - an error  http.status_code
+// - an error http.status_code
 // - http.route is specified which should replace Span name as part of the RequestData name
 // - no  http.client_ip or net.peer.ip specified which causes data.Source to be empty
 // - adds a few different types of attributes
 func TestHTTPServerSpanToRequestDataAttributeSet1(t *testing.T) {
 	span := getDefaultHTTPServerSpan()
-	span.Status().SetCode(0)
+	span.Status().SetCode(pdata.StatusCodeError)
+	span.Status().SetMessage("Fubar")
 	spanAttributes := span.Attributes()
 
 	set := map[string]pdata.AttributeValue{
@@ -148,6 +149,7 @@ func TestHTTPServerSpanToRequestDataAttributeSet1(t *testing.T) {
 	assert.Equal(t, "", data.Source)
 	assert.Equal(t, "GET /bizzle", data.Name)
 	assert.Equal(t, "https://foo/bar?biz=baz", data.Url)
+	assert.Equal(t, span.Status().Message(), data.Properties[attributeOtelStatusDescription])
 }
 
 // Tests proper assignment for a HTTP server span
@@ -404,6 +406,34 @@ func TestRPCClientSpanToRemoteDependencyData(t *testing.T) {
 	envelope, _ = spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
 	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
 	defaultRPCRemoteDependencyDataValidations(t, span, data, "127.0.0.1:81")
+
+	// test RPC error using the new rpc.grpc.status_code attribute
+	span.Status().SetCode(pdata.StatusCodeError)
+	span.Status().SetMessage("Resource exhausted")
+	spanAttributes.InsertInt(attributeRPCGRPCStatusCode, 8)
+
+	envelope, _ = spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
+	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
+
+	assert.Equal(t, "8", data.ResultCode)
+	assert.Equal(t, span.Status().Code().String(), data.Properties[attributeOtelStatusCode])
+	assert.Equal(t, pdata.DeprecatedStatusCodeUnknownError.String(), data.Properties[attributeOtelStatusDeprecatedCode])
+	assert.Equal(t, span.Status().Message(), data.Properties[attributeOtelStatusDescription])
+
+	// test RPC error using the legacy Deprecated status code
+	span.Status().SetCode(pdata.StatusCodeUnset)
+	spanAttributes.Delete(attributeRPCGRPCStatusCode)
+
+	span.Status().SetDeprecatedCode(8)
+	span.Status().SetMessage("Resource exhausted")
+
+	envelope, _ = spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
+	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
+
+	assert.Equal(t, "8", data.ResultCode)
+	assert.Equal(t, pdata.StatusCodeUnset.String(), data.Properties[attributeOtelStatusCode])
+	assert.Equal(t, pdata.DeprecatedStatusCodeResourceExhausted.String(), data.Properties[attributeOtelStatusDeprecatedCode])
+	assert.Equal(t, span.Status().Message(), data.Properties[attributeOtelStatusDescription])
 }
 
 // Tests proper assignment for a Database client span
@@ -432,7 +462,7 @@ func TestDatabaseClientSpanToRemoteDependencyData(t *testing.T) {
 		spanAttributes,
 		map[string]pdata.AttributeValue{
 			conventions.AttributeDBStatement: pdata.NewAttributeValueString(""),
-			attributeDBOperation:             pdata.NewAttributeValueString(defaultDBOperation),
+			conventions.AttributeDBOperation: pdata.NewAttributeValueString(defaultDBOperation),
 		})
 
 	envelope, _ = spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
