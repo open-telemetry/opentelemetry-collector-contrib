@@ -53,6 +53,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#259](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/259))
 - `opentelemetry-exporter-datadog` Fix unintentional type change of span trace flags
   ([#261](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/261))
+- `opentelemetry-instrumentation-aiopg` Fix AttributeError `__aexit__` when `aiopg.connect` and `aio[g].create_pool` used with async context manager
+  ([#235](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/235))
 
 ## [0.16b1](https://github.com/open-telemetry/opentelemetry-python-contrib/releases/tag/v0.16b1) - 2020-11-26
 

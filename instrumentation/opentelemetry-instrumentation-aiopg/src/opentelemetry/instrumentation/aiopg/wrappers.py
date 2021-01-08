@@ -34,6 +34,7 @@ import typing
 
 import aiopg
 import wrapt
+from aiopg.utils import _ContextManager, _PoolContextManager
 
 from opentelemetry.instrumentation.aiopg.aiopg_integration import (
     AiopgIntegration,
@@ -99,7 +100,7 @@ def wrap_connect(
     """
 
     # pylint: disable=unused-argument
-    async def wrap_connect_(
+    def wrap_connect_(
         wrapped: typing.Callable[..., typing.Any],
         instance: typing.Any,
         args: typing.Tuple[typing.Any, typing.Any],
@@ -113,7 +114,9 @@ def wrap_connect(
             version=version,
             tracer_provider=tracer_provider,
         )
-        return await db_integration.wrapped_connection(wrapped, args, kwargs)
+        return _ContextManager(
+            db_integration.wrapped_connection(wrapped, args, kwargs)
+        )
 
     try:
         wrapt.wrap_function_wrapper(aiopg, "connect", wrap_connect_)
@@ -191,7 +194,7 @@ def wrap_create_pool(
     tracer_provider: typing.Optional[TracerProvider] = None,
 ):
     # pylint: disable=unused-argument
-    async def wrap_create_pool_(
+    def wrap_create_pool_(
         wrapped: typing.Callable[..., typing.Any],
         instance: typing.Any,
         args: typing.Tuple[typing.Any, typing.Any],
@@ -205,7 +208,9 @@ def wrap_create_pool(
             version=version,
             tracer_provider=tracer_provider,
         )
-        return await db_integration.wrapped_pool(wrapped, args, kwargs)
+        return _PoolContextManager(
+            db_integration.wrapped_pool(wrapped, args, kwargs)
+        )
 
     try:
         wrapt.wrap_function_wrapper(aiopg, "create_pool", wrap_create_pool_)

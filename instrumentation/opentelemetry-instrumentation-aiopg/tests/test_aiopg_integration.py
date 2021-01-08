@@ -79,6 +79,26 @@ class TestAiopgInstrumentor(TestBase):
         spans_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans_list), 1)
 
+    def test_instrumentor_connect_ctx_manager(self):
+        async def _ctx_manager_connect():
+            AiopgInstrumentor().instrument()
+
+            async with aiopg.connect(database="test") as cnx:
+                async with cnx.cursor() as cursor:
+                    query = "SELECT * FROM test"
+                    await cursor.execute(query)
+
+                    spans_list = self.memory_exporter.get_finished_spans()
+                    self.assertEqual(len(spans_list), 1)
+                    span = spans_list[0]
+
+                    # Check version and name in span's instrumentation info
+                    self.check_span_instrumentation_info(
+                        span, opentelemetry.instrumentation.aiopg
+                    )
+
+        async_call(_ctx_manager_connect())
+
     def test_instrumentor_create_pool(self):
         AiopgInstrumentor().instrument()
 
@@ -109,6 +129,27 @@ class TestAiopgInstrumentor(TestBase):
 
         spans_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans_list), 1)
+
+    def test_instrumentor_create_pool_ctx_manager(self):
+        async def _ctx_manager_pool():
+            AiopgInstrumentor().instrument()
+
+            async with aiopg.create_pool(database="test") as pool:
+                async with pool.acquire() as cnx:
+                    async with cnx.cursor() as cursor:
+                        query = "SELECT * FROM test"
+                        await cursor.execute(query)
+
+                        spans_list = self.memory_exporter.get_finished_spans()
+                        self.assertEqual(len(spans_list), 1)
+                        span = spans_list[0]
+
+                        # Check version and name in span's instrumentation info
+                        self.check_span_instrumentation_info(
+                            span, opentelemetry.instrumentation.aiopg
+                        )
+
+        async_call(_ctx_manager_pool())
 
     def test_custom_tracer_provider_connect(self):
         resource = resources.Resource.create({})
@@ -428,6 +469,12 @@ class MockPool:
         )
         return connect
 
+    def close(self):
+        pass
+
+    async def wait_closed(self):
+        pass
+
 
 class MockPsycopg2Connection:
     def __init__(self, database, server_port, server_host, user):
@@ -470,6 +517,9 @@ class MockCursor:
     async def callproc(self, query, params=None, throw_exception=False):
         if throw_exception:
             raise Exception("Test Exception")
+
+    def close(self):
+        pass
 
 
 class AiopgConnectionMock:
