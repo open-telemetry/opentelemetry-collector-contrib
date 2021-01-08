@@ -149,7 +149,7 @@ func TestHTTPServerSpanToRequestDataAttributeSet1(t *testing.T) {
 	assert.Equal(t, "", data.Source)
 	assert.Equal(t, "GET /bizzle", data.Name)
 	assert.Equal(t, "https://foo/bar?biz=baz", data.Url)
-	assert.Equal(t, span.Status().Message(), data.Properties["Status.message"])
+	assert.Equal(t, span.Status().Message(), data.Properties[attributeOtelStatusDescription])
 }
 
 // Tests proper assignment for a HTTP server span
