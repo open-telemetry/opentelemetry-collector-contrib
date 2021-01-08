@@ -64,6 +64,9 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 	c, err := newCompressor(NoCompression)
 	require.NoError(t, err)
 
+	pf, err := newPrometheusFormatter()
+	require.NoError(t, err)
+
 	return &senderTest{
 		srv: testServer,
 		exp: exp,
@@ -79,6 +82,7 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 				name:     getTestSourceFormat(t, "source_name"),
 			},
 			c,
+			pf,
 		),
 	}
 }

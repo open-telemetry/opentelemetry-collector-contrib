@@ -42,13 +42,14 @@ type metricPair struct {
 }
 
 type sender struct {
-	logBuffer    []pdata.LogRecord
-	metricBuffer []metricPair
-	config       *Config
-	client       *http.Client
-	filter       filter
-	sources      sourceFormats
-	compressor   compressor
+	logBuffer           []pdata.LogRecord
+	metricBuffer        []metricPair
+	config              *Config
+	client              *http.Client
+	filter              filter
+	sources             sourceFormats
+	compressor          compressor
+	prometheusFormatter prometheusFormatter
 }
 
 const (
@@ -69,13 +70,15 @@ func newSender(
 	f filter,
 	s sourceFormats,
 	c compressor,
+	pf prometheusFormatter,
 ) *sender {
 	return &sender{
-		config:     cfg,
-		client:     cl,
-		filter:     f,
-		sources:    s,
-		compressor: c,
+		config:              cfg,
+		client:              cl,
+		filter:              f,
+		sources:             s,
+		compressor:          c,
+		prometheusFormatter: pf,
 	}
 }
 

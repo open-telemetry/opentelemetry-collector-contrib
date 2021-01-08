@@ -28,10 +28,11 @@ import (
 )
 
 type sumologicexporter struct {
-	sources sourceFormats
-	config  *Config
-	client  *http.Client
-	filter  filter
+	sources             sourceFormats
+	config              *Config
+	client              *http.Client
+	filter              filter
+	prometheusFormatter prometheusFormatter
 }
 
 func initExporter(cfg *Config) (*sumologicexporter, error) {
@@ -72,16 +73,22 @@ func initExporter(cfg *Config) (*sumologicexporter, error) {
 		return nil, err
 	}
 
+	pf, err := newPrometheusFormatter()
+	if err != nil {
+		return nil, err
+	}
+
 	httpClient, err := cfg.HTTPClientSettings.ToClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
 
 	se := &sumologicexporter{
-		config:  cfg,
-		sources: sfs,
-		client:  httpClient,
-		filter:  f,
+		config:              cfg,
+		sources:             sfs,
+		client:              httpClient,
+		filter:              f,
+		prometheusFormatter: pf,
 	}
 
 	return se, nil
@@ -124,7 +131,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) (i
 	if err != nil {
 		return 0, consumererror.PartialLogsError(fmt.Errorf("failed to initialize compressor: %w", err), ld)
 	}
-	sdr := newSender(se.config, se.client, se.filter, se.sources, c)
+	sdr := newSender(se.config, se.client, se.filter, se.sources, c, se.prometheusFormatter)
 
 	// Iterate over ResourceLogs
 	rls := ld.ResourceLogs()
