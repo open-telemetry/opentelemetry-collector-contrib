@@ -28,6 +28,12 @@ from opentelemetry.test.test_base import TestBase
 from opentelemetry.trace.status import StatusCode
 
 
+class InvalidResponseObjectException(Exception):
+    def __init__(self):
+        super().__init__()
+        self.response = {}
+
+
 class RequestsIntegrationTestBase(abc.ABC):
     # pylint: disable=no-member
 
@@ -277,6 +283,42 @@ class RequestsIntegrationTestBase(abc.ABC):
     )
     def test_requests_exception_without_response(self, *_, **__):
         with self.assertRaises(requests.RequestException):
+            self.perform_request(self.URL)
+
+        span = self.assert_span()
+        self.assertEqual(
+            span.attributes,
+            {"component": "http", "http.method": "GET", "http.url": self.URL},
+        )
+        self.assertEqual(span.status.status_code, StatusCode.ERROR)
+
+        self.assertIsNotNone(RequestsInstrumentor().meter)
+        self.assertEqual(len(RequestsInstrumentor().meter.instruments), 1)
+        recorder = list(RequestsInstrumentor().meter.instruments.values())[0]
+        match_key = get_dict_as_key(
+            {
+                "http.method": "GET",
+                "http.url": "http://httpbin.org/status/200",
+            }
+        )
+        for key in recorder.bound_instruments.keys():
+            self.assertEqual(key, match_key)
+            # pylint: disable=protected-access
+            bound = recorder.bound_instruments.get(key)
+            for view_data in bound.view_datas:
+                self.assertEqual(view_data.labels, key)
+                self.assertEqual(view_data.aggregator.current.count, 1)
+
+    mocked_response = requests.Response()
+    mocked_response.status_code = 500
+    mocked_response.reason = "Internal Server Error"
+
+    @mock.patch(
+        "requests.adapters.HTTPAdapter.send",
+        side_effect=InvalidResponseObjectException,
+    )
+    def test_requests_exception_without_proper_response_type(self, *_, **__):
+        with self.assertRaises(InvalidResponseObjectException):
             self.perform_request(self.URL)
 
         span = self.assert_span()

@@ -38,6 +38,7 @@ import types
 
 from requests import Timeout, URLRequired
 from requests.exceptions import InvalidSchema, InvalidURL, MissingSchema
+from requests.models import Response
 from requests.sessions import Session
 from requests.structures import CaseInsensitiveDict
 
@@ -158,7 +159,7 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
                 finally:
                     context.detach(token)
 
-                if result is not None:
+                if isinstance(result, Response):
                     if span.is_recording():
                         span.set_attribute(
                             "http.status_code", result.status_code

@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#227](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/227]))
 - `opentelemetry-instrumentation-botocore` Adds a field to report the number of retries it take to complete an API call
   ([#275](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/275))
+- `opentelemetry-instrumentation-requests` Use instanceof to check if responses are valid Response objects
+  ([#273](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/273))
 
 ### Changed
 - `opentelemetry-instrumentation-asgi`, `opentelemetry-instrumentation-wsgi` Return `None` for `CarrierGetter` if key not found
