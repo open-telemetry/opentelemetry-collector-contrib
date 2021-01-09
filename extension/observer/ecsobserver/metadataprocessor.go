@@ -15,9 +15,9 @@
 package ecsobserver
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
 	"fmt"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/hashicorp/golang-lru/simplelru"
@@ -52,12 +52,12 @@ func (p *MetadataProcessor) Process(clusterName string, taskList []*ECSTask) ([]
 		if aws.StringValue(task.Task.LaunchType) != ecs.LaunchTypeEc2 {
 			continue
 		}
-	
+
 		ciArn := aws.StringValue(task.Task.ContainerInstanceArn)
 		if ciArn == "" {
 			continue
 		}
-	
+
 		if res, ok := p.ec2Cache.Get(ciArn); ok {
 			// Try retrieving from cache
 			task.EC2Info = res.(*EC2MetaData)
@@ -107,7 +107,7 @@ func (p *MetadataProcessor) getEC2Metadata(clusterName string, arns []string, ec
 	}
 	resp, ecsErr := p.svcEcs.DescribeContainerInstances(ecsInput)
 	if ecsErr != nil {
-		return fmt.Errorf("Failed to DescribeContainerInstances. Error: %s", ecsErr.Error())
+		return fmt.Errorf("failed to DescribeContainerInstances. Error: %s", ecsErr.Error())
 	}
 
 	for _, f := range resp.Failures {
@@ -137,7 +137,7 @@ func (p *MetadataProcessor) getEC2Metadata(clusterName string, arns []string, ec
 	for {
 		ec2resp, ec2err := p.svcEc2.DescribeInstances(ec2input)
 		if ec2err != nil {
-			return fmt.Errorf("Failed to DescribeInstances. Error: %s", ec2err.Error())
+			return fmt.Errorf("failed to DescribeInstances. Error: %s", ec2err.Error())
 		}
 
 		for _, rsv := range ec2resp.Reservations {
@@ -152,12 +152,12 @@ func (p *MetadataProcessor) getEC2Metadata(clusterName string, arns []string, ec
 				}
 				ciArn := aws.StringValue(ciArnPtr)
 				metadata := &EC2MetaData{
-					ContainerInstanceId: ciArn,
-					ECInstanceId:        ec2Id,
+					ContainerInstanceID: ciArn,
+					ECInstanceID:        ec2Id,
 					PrivateIP:           aws.StringValue(instance.PrivateIpAddress),
 					InstanceType:        aws.StringValue(instance.InstanceType),
-					VpcId:               aws.StringValue(instance.VpcId),
-					SubnetId:            aws.StringValue(instance.SubnetId),
+					VpcID:               aws.StringValue(instance.VpcId),
+					SubnetID:            aws.StringValue(instance.SubnetId),
 				}
 				ec2MetadataMap[ciArn] = metadata
 				p.ec2Cache.Add(ciArn, metadata)

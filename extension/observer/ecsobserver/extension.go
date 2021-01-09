@@ -17,13 +17,14 @@ package ecsobserver
 import (
 	"context"
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v2"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
 type ecsObserver struct {
@@ -104,18 +105,18 @@ func writeTargetsToFile(targets map[string]*Target, filePath string) error {
 
 	m, err := yaml.Marshal(promTargets)
 	if err != nil {
-		return fmt.Errorf("Failed to marshal Prometheus targets. Error: %s", err.Error())
+		return fmt.Errorf("failed to marshal Prometheus targets. Error: %s", err.Error())
 	}
 
 	err = ioutil.WriteFile(tmpFilePath, m, 0644)
 	if err != nil {
-		return fmt.Errorf("Failed to marshal Prometheus targets into file: %s. Error: %s", tmpFilePath, err.Error())
+		return fmt.Errorf("failed to marshal Prometheus targets into file: %s. Error: %s", tmpFilePath, err.Error())
 	}
 
 	err = os.Rename(tmpFilePath, filePath)
 	if err != nil {
 		os.Remove(tmpFilePath)
-		return fmt.Errorf("Failed to rename tmp result file %s to %s. Error: %s", tmpFilePath, filePath, err.Error())
+		return fmt.Errorf("failed to rename tmp result file %s to %s. Error: %s", tmpFilePath, filePath, err.Error())
 	}
 
 	return nil

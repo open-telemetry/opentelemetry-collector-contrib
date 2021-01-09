@@ -24,7 +24,7 @@ import (
 
 func TestProcess(t *testing.T) {
 	taskList := []*ECSTask{
-		&ECSTask{
+		{
 			TaskDefinition: &ecs.TaskDefinition{
 				ContainerDefinitions: []*ecs.ContainerDefinition{
 					{
@@ -42,7 +42,7 @@ func TestProcess(t *testing.T) {
 				},
 			},
 		},
-		&ECSTask{
+		{
 			TaskDefinition: &ecs.TaskDefinition{
 				TaskDefinitionArn: aws.String("arn:aws:ecs:us-east-2:1234567890:task-definition/prometheus-java-tomcat-fargate-awsvpc:1"),
 				ContainerDefinitions: []*ecs.ContainerDefinition{
@@ -52,7 +52,7 @@ func TestProcess(t *testing.T) {
 				},
 			},
 		},
-		&ECSTask{
+		{
 			TaskDefinition: &ecs.TaskDefinition{
 				TaskDefinitionArn: aws.String("arn:aws:ecs:us-east-2:1234567890:task-definition/prometheus-java-tomcat-fargate-awsvpc:1"),
 				ContainerDefinitions: []*ecs.ContainerDefinition{
@@ -72,7 +72,7 @@ func TestProcess(t *testing.T) {
 				},
 			},
 		},
-		&ECSTask{
+		{
 			TaskDefinition: &ecs.TaskDefinition{
 				TaskDefinitionArn: aws.String("arn:aws:ecs:us-east-2:1234567890:task-definition/prometheus-java-tomcat-fargate-awsvpc:1"),
 				ContainerDefinitions: []*ecs.ContainerDefinition{
@@ -91,7 +91,7 @@ func TestProcess(t *testing.T) {
 	taskDefsConfig := []*TaskDefinitionConfig{
 		{TaskDefArnPattern: "^.*prometheus-java-jar-ec2-bridge:2$"},
 		{
-			TaskDefArnPattern: "^.*prometheus-java-tomcat-fargate-awsvpc:[1-9][0-9]*$",
+			TaskDefArnPattern:    "^.*prometheus-java-tomcat-fargate-awsvpc:[1-9][0-9]*$",
 			ContainerNamePattern: "^envoy$",
 		},
 		{TaskDefArnPattern: "^.*task:[0-9]+$"},
@@ -102,7 +102,7 @@ func TestProcess(t *testing.T) {
 
 	p := TaskFilterProcessor{
 		dockerPortLabel: "PORT_LABEL",
-		taskDefsConfig: taskDefsConfig,
+		taskDefsConfig:  taskDefsConfig,
 	}
 
 	processedTasks, err := p.Process("", taskList)

@@ -39,7 +39,7 @@ func (p *TaskRetrievalProcessor) Process(clusterName string, taskList []*ECSTask
 		// List all running task ARNs in the cluster
 		listTasksResp, listTasksErr := p.svcEcs.ListTasks(listTasksInput)
 		if listTasksErr != nil {
-			return taskList, fmt.Errorf("Failed to list task ARNs for %s. Error: %s", clusterName, listTasksErr.Error())
+			return taskList, fmt.Errorf("failed to list task ARNs for %s. Error: %s", clusterName, listTasksErr.Error())
 		}
 
 		// Retrieve tasks from task ARNs
@@ -49,7 +49,7 @@ func (p *TaskRetrievalProcessor) Process(clusterName string, taskList []*ECSTask
 		}
 		descTasksResp, descTasksErr := p.svcEcs.DescribeTasks(descTasksInput)
 		if descTasksErr != nil {
-			return taskList, fmt.Errorf("Failed to describe ECS Tasks for %s. Error: %s", clusterName, descTasksErr.Error())
+			return taskList, fmt.Errorf("failed to describe ECS Tasks for %s. Error: %s", clusterName, descTasksErr.Error())
 		}
 
 		for _, f := range descTasksResp.Failures {

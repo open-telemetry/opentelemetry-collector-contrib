@@ -57,7 +57,7 @@ func (p *TaskDefinitionProcessor) Process(cluster string, taskList []*ECSTask) (
 			input := &ecs.DescribeTaskDefinitionInput{TaskDefinition: &arn}
 			resp, err := p.svcEcs.DescribeTaskDefinition(input)
 			if err != nil {
-				return taskList, fmt.Errorf("Failed to describe task definition for %s. Error: %s", arn, err.Error())
+				return taskList, fmt.Errorf("failed to describe task definition for %s. Error: %s", arn, err.Error())
 			}
 
 			if taskDef := resp.TaskDefinition; taskDef != nil {

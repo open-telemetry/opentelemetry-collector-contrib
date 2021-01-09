@@ -32,17 +32,17 @@ const (
 	taskJobNameLabel     = "job"
 	taskMetricsPathLabel = "__metrics_path__"
 	ec2InstanceTypeLabel = "InstanceType"
-	ec2VpcIdLabel        = "VpcId"
-	ec2SubnetIdLabel     = "SubnetId"
+	ec2VpcIDLabel        = "VpcId"
+	ec2SubnetIDLabel     = "SubnetId"
 )
 
 type EC2MetaData struct {
-	ContainerInstanceId string
-	ECInstanceId        string
+	ContainerInstanceID string
+	ECInstanceID        string
 	PrivateIP           string
 	InstanceType        string
-	VpcId               string
-	SubnetId            string
+	VpcID               string
+	SubnetID            string
 }
 
 type ECSTask struct {
@@ -55,7 +55,7 @@ type ECSTask struct {
 }
 
 func (t *ECSTask) addTargets(targets map[string]*Target, config *Config) {
-	ip := t.getPrivateIp()
+	ip := t.getPrivateIP()
 	if ip == "" {
 		return
 	}
@@ -65,8 +65,8 @@ func (t *ECSTask) addTargets(targets map[string]*Target, config *Config) {
 	}
 }
 
-// getPrivateIp retrieves the private ip of the ECS task.
-func (t *ECSTask) getPrivateIp() (ip string) {
+// getPrivateIP retrieves the private ip of the ECS task.
+func (t *ECSTask) getPrivateIP() (ip string) {
 	if t.TaskDefinition.NetworkMode == nil {
 		return
 	}
@@ -226,15 +226,15 @@ func (t *ECSTask) generateTargetLabels(c *ecs.ContainerDefinition, metricsPath s
 
 	if t.EC2Info != nil {
 		addTargetLabel(labels, ec2InstanceTypeLabel, &t.EC2Info.InstanceType)
-		addTargetLabel(labels, ec2SubnetIdLabel, &t.EC2Info.SubnetId)
-		addTargetLabel(labels, ec2VpcIdLabel, &t.EC2Info.VpcId)
+		addTargetLabel(labels, ec2SubnetIDLabel, &t.EC2Info.SubnetID)
+		addTargetLabel(labels, ec2VpcIDLabel, &t.EC2Info.VpcID)
 	}
 
 	for k, v := range c.DockerLabels {
 		addTargetLabel(labels, k, v)
 	}
 
-	// handle customized job label last, so the previous job docker label is overriden
+	// handle customized job label last, so the previous job docker label is overridden
 	addTargetLabel(labels, taskJobNameLabel, &jobName)
 
 	return labels

@@ -26,7 +26,7 @@ import (
 
 func buildWorkloadFargateAwsvpc(dockerLabel bool, taskDef bool) *ECSTask {
 	networkMode := ecs.NetworkModeAwsvpc
-	taskAttachmentId := "775c6c63-b5f7-4a5b-8a60-8f8295a04cda"
+	taskAttachmentID := "775c6c63-b5f7-4a5b-8a60-8f8295a04cda"
 	taskAttachmentType := "ElasticNetworkInterface"
 	taskAttachmentStatus := "ATTACHING"
 	taskAttachmentDetailsKey1 := "networkInterfaceId"
@@ -53,7 +53,7 @@ func buildWorkloadFargateAwsvpc(dockerLabel bool, taskDef bool) *ECSTask {
 			TaskDefinitionArn: &taskDefinitionArn,
 			Attachments: []*ecs.Attachment{
 				{
-					Id:     &taskAttachmentId,
+					Id:     &taskAttachmentID,
 					Type:   &taskAttachmentType,
 					Status: &taskAttachmentStatus,
 					Details: []*ecs.KeyValuePair{
@@ -129,12 +129,12 @@ func buildWorkloadEC2BridgeDynamicPort(dockerLabel bool, taskDef bool) *ECSTask 
 		DockerLabelBased:    dockerLabel,
 		TaskDefinitionBased: taskDef,
 		EC2Info: &EC2MetaData{
-			ContainerInstanceId: "arn:aws:ecs:us-east-2:211220956907:container-instance/7b0a9662-ee0b-4cf6-9391-03f50ca501a5",
-			ECInstanceId:        "i-02aa8e82e91b2c30e",
+			ContainerInstanceID: "arn:aws:ecs:us-east-2:211220956907:container-instance/7b0a9662-ee0b-4cf6-9391-03f50ca501a5",
+			ECInstanceID:        "i-02aa8e82e91b2c30e",
 			PrivateIP:           "10.4.0.205",
 			InstanceType:        "t3.medium",
-			VpcId:               "vpc-03e9f55a92516a5e4",
-			SubnetId:            "subnet-0d0b0212d14b70250",
+			VpcID:               "vpc-03e9f55a92516a5e4",
+			SubnetID:            "subnet-0d0b0212d14b70250",
 		},
 		Task: &ecs.Task{
 			TaskDefinitionArn: &taskDefinitionArn,
@@ -216,7 +216,7 @@ func TestAddTargets(t *testing.T) {
 				},
 			},
 			map[string]*Target{
-				"10.0.0.129:9404": &Target{
+				"10.0.0.129:9404": {
 					IP:          "10.0.0.129",
 					Port:        9404,
 					MetricsPath: "",
@@ -228,7 +228,7 @@ func TestAddTargets(t *testing.T) {
 						"FARGATE_PROMETHEUS_JOB_NAME":      "java-tomcat-fargate-awsvpc",
 					},
 				},
-				"10.0.0.129:9406/metrics": &Target{
+				"10.0.0.129:9406/metrics": {
 					IP:          "10.0.0.129",
 					Port:        9406,
 					MetricsPath: "/metrics",
@@ -256,7 +256,7 @@ func TestAddTargets(t *testing.T) {
 				},
 			},
 			map[string]*Target{
-				"10.0.0.129:9404/stats/metrics": &Target{
+				"10.0.0.129:9404/stats/metrics": {
 					IP:          "10.0.0.129",
 					Port:        9404,
 					MetricsPath: "/stats/metrics",
@@ -268,7 +268,7 @@ func TestAddTargets(t *testing.T) {
 						"FARGATE_PROMETHEUS_JOB_NAME":      "java-tomcat-fargate-awsvpc",
 					},
 				},
-				"10.0.0.129:9406/stats/metrics": &Target{
+				"10.0.0.129:9406/stats/metrics": {
 					IP:          "10.0.0.129",
 					Port:        9406,
 					MetricsPath: "/stats/metrics",
@@ -297,7 +297,7 @@ func TestAddTargets(t *testing.T) {
 				},
 			},
 			map[string]*Target{
-				"10.4.0.205:9494/metrics": &Target{
+				"10.4.0.205:9494/metrics": {
 					IP:          "10.4.0.205",
 					Port:        9494,
 					MetricsPath: "/metrics",
@@ -333,7 +333,7 @@ func TestAddTargets(t *testing.T) {
 				},
 			},
 			map[string]*Target{
-				"10.0.0.129:9404": &Target{
+				"10.0.0.129:9404": {
 					IP:          "10.0.0.129",
 					Port:        9404,
 					MetricsPath: "",
@@ -345,7 +345,7 @@ func TestAddTargets(t *testing.T) {
 						"FARGATE_PROMETHEUS_JOB_NAME":      "java-tomcat-fargate-awsvpc",
 					},
 				},
-				"10.0.0.129:9406/metrics": &Target{
+				"10.0.0.129:9406/metrics": {
 					IP:          "10.0.0.129",
 					Port:        9406,
 					MetricsPath: "/metrics",
@@ -357,7 +357,7 @@ func TestAddTargets(t *testing.T) {
 						"ECS_PROMETHEUS_METRICS_PATH":      "/metrics",
 					},
 				},
-				"10.0.0.129:9404/stats/metrics": &Target{
+				"10.0.0.129:9404/stats/metrics": {
 					IP:          "10.0.0.129",
 					Port:        9404,
 					MetricsPath: "/stats/metrics",
@@ -369,7 +369,7 @@ func TestAddTargets(t *testing.T) {
 						"FARGATE_PROMETHEUS_JOB_NAME":      "java-tomcat-fargate-awsvpc",
 					},
 				},
-				"10.0.0.129:9406/stats/metrics": &Target{
+				"10.0.0.129:9406/stats/metrics": {
 					IP:          "10.0.0.129",
 					Port:        9406,
 					MetricsPath: "/stats/metrics",
@@ -402,7 +402,7 @@ func TestAddTargets(t *testing.T) {
 				},
 			},
 			map[string]*Target{
-				"10.4.0.205:32774/metrics": &Target{
+				"10.4.0.205:32774/metrics": {
 					IP:          "10.4.0.205",
 					Port:        32774,
 					MetricsPath: "/metrics",
@@ -417,7 +417,7 @@ func TestAddTargets(t *testing.T) {
 						"__metrics_path__":             "/metrics",
 					},
 				},
-				"10.4.0.205:9494": &Target{
+				"10.4.0.205:9494": {
 					IP:          "10.4.0.205",
 					Port:        9494,
 					MetricsPath: "",
@@ -432,7 +432,7 @@ func TestAddTargets(t *testing.T) {
 						"EC2_PROMETHEUS_EXPORTER_PORT": "9404",
 					},
 				},
-				"10.4.0.205:9494/metrics": &Target{
+				"10.4.0.205:9494/metrics": {
 					IP:          "10.4.0.205",
 					Port:        9494,
 					MetricsPath: "/metrics",
@@ -548,7 +548,7 @@ func TestGetPrivateIp(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			ip := tc.task.getPrivateIp()
+			ip := tc.task.getPrivateIP()
 			assert.Equal(t, tc.ip, ip)
 		})
 	}

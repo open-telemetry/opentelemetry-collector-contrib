@@ -30,9 +30,6 @@ import (
 
 const (
 	AwsSdkLevelRetryCount = 3
-
-	//https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config
-	defaultPrometheusMetricsPath = "/metrics"
 )
 
 // PrometheusTarget represents a discovered Prometheus target.
@@ -84,7 +81,11 @@ type serviceDiscovery struct {
 func (sd *serviceDiscovery) init() {
 	region := getAWSRegion(sd.config)
 	awsConfig := aws.NewConfig().WithRegion(region).WithMaxRetries(AwsSdkLevelRetryCount)
-	session := session.New(awsConfig)
+	session, err := session.NewSession(awsConfig)
+	if err != nil {
+		sd.config.logger.Fatal("Failed to create AWS session", zap.Error(err))
+		panic(err)
+	}
 	sd.svcEcs = ecs.New(session, awsConfig)
 	sd.svcEc2 = ec2.New(session, awsConfig)
 	sd.initProcessors()

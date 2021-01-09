@@ -60,13 +60,13 @@ func TestLoadConfig(t *testing.T) {
 				PortLabel:        "ECS_PROMETHEUS_EXPORTER_PORT_SUBSET_A",
 			},
 			TaskDefinitions: []*TaskDefinitionConfig{
-				&TaskDefinitionConfig{
+				{
 					JobName:           "task_def_1",
 					MetricsPath:       "/stats/metrics",
 					MetricsPorts:      "9901;9404;9406",
 					TaskDefArnPattern: ".*:task-definition/bugbash-java-fargate-awsvpc-task-def-only:[0-9]+",
 				},
-				&TaskDefinitionConfig{
+				{
 					ContainerNamePattern: "^bugbash-jar.*$",
 					MetricsPorts:         "9902",
 					TaskDefArnPattern:    ".*:task-definition/nginx:[0-9]+",
