@@ -35,11 +35,11 @@ func (e *Endpoint) String() string {
 // Task is a discovered ECS task.
 type Task struct {
 	// Port number of the endpoint.
-	Port        int64
+	Port int64
 	// MetricsPath is the metrics path of the endpoint.
 	MetricsPath string
 	// Labels exported by the ECS Observer (mainly for use with Prometheus).
-	Labels      map[string]string
+	Labels map[string]string
 }
 
 // Pod is a discovered k8s pod.
