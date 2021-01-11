@@ -10,7 +10,7 @@ Supported pipeline types: logs, metrics, traces
 
 The following configuration options are required:
 
-- `token` (no default): HEC requires a token to authenticate incoming traffic.
+- `token` (no default): HEC requires a token to authenticate incoming traffic. To procure a token, please refer to the [Splunk documentation](https://docs.splunk.com/Documentation/Splunk/latest/Data/UsetheHTTPEventCollector).
 - `endpoint` (no default): Splunk HEC URL.
 
 The following configuration options can also be configured:
