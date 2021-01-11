@@ -42,16 +42,16 @@ const (
 	prometheusInfValue    string = "+Inf"
 )
 
-func newPrometheusFormatter() (prometheusFormatter, error) {
+func newPrometheusFormatter() prometheusFormatter {
 	sanitNameRegex, err := regexp.Compile(`[^0-9a-zA-Z]`)
 	if err != nil {
-		return prometheusFormatter{}, nil
+		return prometheusFormatter{}
 	}
 
 	return prometheusFormatter{
 		sanitNameRegex: sanitNameRegex,
 		replacer:       strings.NewReplacer(`\`, `\\`, `"`, `\"`),
-	}, nil
+	}
 }
 
 // PrometheusLabels returns all attributes as sanitized prometheus labels string
@@ -425,7 +425,7 @@ func (f *prometheusFormatter) doubleHistogram2Strings(record metricPair) []strin
 }
 
 // metric2String returns stringified metricPair
-func (f *prometheusFormatter) metric2String(record metricPair) (string, error) {
+func (f *prometheusFormatter) metric2String(record metricPair) string {
 	var lines []string
 
 	switch record.metric.DataType() {
@@ -444,5 +444,5 @@ func (f *prometheusFormatter) metric2String(record metricPair) (string, error) {
 	case pdata.MetricDataTypeDoubleHistogram:
 		lines = f.doubleHistogram2Strings(record)
 	}
-	return strings.Join(lines, "\n"), nil
+	return strings.Join(lines, "\n")
 }

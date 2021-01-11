@@ -46,7 +46,6 @@ type sender struct {
 	config     *Config
 	client     *http.Client
 	filter     filter
-	ctx        context.Context
 	sources    sourceFormats
 	compressor compressor
 }
@@ -64,7 +63,6 @@ func newAppendResponse() appendResponse {
 }
 
 func newSender(
-	ctx context.Context,
 	cfg *Config,
 	cl *http.Client,
 	f filter,
@@ -75,19 +73,18 @@ func newSender(
 		config:     cfg,
 		client:     cl,
 		filter:     f,
-		ctx:        ctx,
 		sources:    s,
 		compressor: c,
 	}
 }
 
 // send sends data to sumologic
-func (s *sender) send(pipeline PipelineType, body io.Reader, flds fields) error {
+func (s *sender) send(ctx context.Context, pipeline PipelineType, body io.Reader, flds fields) error {
 	data, err := s.compressor.compress(body)
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(s.ctx, http.MethodPost, s.config.HTTPClientSettings.Endpoint, data)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.config.HTTPClientSettings.Endpoint, data)
 	if err != nil {
 		return err
 	}
@@ -139,11 +136,11 @@ func (s *sender) send(pipeline PipelineType, body io.Reader, flds fields) error 
 }
 
 // logToText converts LogRecord to a plain text line, returns it and error eventually
-func (s *sender) logToText(record pdata.LogRecord) (string, error) {
-	return record.Body().StringVal(), nil
+func (s *sender) logToText(record pdata.LogRecord) string {
+	return record.Body().StringVal()
 }
 
-// logToText converts LogRecord to a json line, returns it and error eventually
+// logToJSON converts LogRecord to a json line, returns it and error eventually
 func (s *sender) logToJSON(record pdata.LogRecord) (string, error) {
 	data := s.filter.filterOut(record.Attributes())
 	data[logKey] = record.Body().StringVal()
@@ -159,7 +156,7 @@ func (s *sender) logToJSON(record pdata.LogRecord) (string, error) {
 // sendLogs sends log records from the buffer formatted according
 // to configured LogFormat and as the result of execution
 // returns array of records which has not been sent correctly and error
-func (s *sender) sendLogs(flds fields) ([]pdata.LogRecord, error) {
+func (s *sender) sendLogs(ctx context.Context, flds fields) ([]pdata.LogRecord, error) {
 	var (
 		body           strings.Builder
 		errs           []error
@@ -168,14 +165,12 @@ func (s *sender) sendLogs(flds fields) ([]pdata.LogRecord, error) {
 	)
 
 	for _, record := range s.buffer {
-		var (
-			formattedLine string
-			err           error
-		)
+		var formattedLine string
+		var err error
 
 		switch s.config.LogFormat {
 		case TextFormat:
-			formattedLine, err = s.logToText(record)
+			formattedLine = s.logToText(record)
 		case JSONFormat:
 			formattedLine, err = s.logToJSON(record)
 		default:
@@ -188,7 +183,7 @@ func (s *sender) sendLogs(flds fields) ([]pdata.LogRecord, error) {
 			continue
 		}
 
-		ar, err := s.appendAndSend(formattedLine, LogsPipeline, &body, flds)
+		ar, err := s.appendAndSend(ctx, formattedLine, LogsPipeline, &body, flds)
 		if err != nil {
 			errs = append(errs, err)
 			if ar.sent {
@@ -211,7 +206,7 @@ func (s *sender) sendLogs(flds fields) ([]pdata.LogRecord, error) {
 		}
 	}
 
-	if err := s.send(LogsPipeline, strings.NewReader(body.String()), flds); err != nil {
+	if err := s.send(ctx, LogsPipeline, strings.NewReader(body.String()), flds); err != nil {
 		errs = append(errs, err)
 		droppedRecords = append(droppedRecords, currentRecords...)
 	}
@@ -226,6 +221,7 @@ func (s *sender) sendLogs(flds fields) ([]pdata.LogRecord, error) {
 // the accumulated data if the internal buffer has been filled (with maxBufferSize elements).
 // It returns appendResponse
 func (s *sender) appendAndSend(
+	ctx context.Context,
 	line string,
 	pipeline PipelineType,
 	body *strings.Builder,
@@ -236,7 +232,7 @@ func (s *sender) appendAndSend(
 
 	if body.Len() > 0 && body.Len()+len(line) >= s.config.MaxRequestBodySize {
 		ar.sent = true
-		if err := s.send(pipeline, strings.NewReader(body.String()), flds); err != nil {
+		if err := s.send(ctx, pipeline, strings.NewReader(body.String()), flds); err != nil {
 			errors = append(errors, err)
 		}
 		body.Reset()
@@ -271,11 +267,11 @@ func (s *sender) cleanBuffer() {
 
 // batch adds log to the buffer and flushes them if buffer is full to avoid overflow
 // returns list of log records which were not sent successfully
-func (s *sender) batch(log pdata.LogRecord, metadata fields) ([]pdata.LogRecord, error) {
+func (s *sender) batch(ctx context.Context, log pdata.LogRecord, metadata fields) ([]pdata.LogRecord, error) {
 	s.buffer = append(s.buffer, log)
 
 	if s.count() >= maxBufferSize {
-		dropped, err := s.sendLogs(metadata)
+		dropped, err := s.sendLogs(ctx, metadata)
 		s.cleanBuffer()
 		return dropped, err
 	}

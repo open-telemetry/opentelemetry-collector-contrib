@@ -4,7 +4,9 @@ Supported pipeline types: traces, logs
 Status: in development
 
 This processor groups the records by provided attributes, extracting them from the 
-record to resource level. 
+record to resource level. When the grouped attribute key already exists at the resource-level,
+it's value is being overwritten with the record-level one. The processor also merges collections of records 
+under matching InstrumentationLibrary.
 
 Typical use-cases:
 
@@ -27,7 +29,7 @@ processors:
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using the processor.
 
-The `group_by_keys` property describes which attribute keys should be considered for grouping, if any of them is found
+The `keys` property describes which attribute keys should be considered for grouping, if any of them is found
 the grouping occurs.
 
 ## Metrics

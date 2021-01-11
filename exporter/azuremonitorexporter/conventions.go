@@ -26,17 +26,11 @@ import (
 */
 
 const (
-	// TODO replace with convention.* values once available
-	attributeDBSystem              string = "db.system"
-	attributeDBConnectionString    string = "db.connection_string"
-	attributeDBMSSQLInstanceName   string = "db.mssql.instance_name"
-	attributeDBJDBCDriverClassName string = "db.jdbc.driver_classname"
-	attributeDBName                string = "db.name"
-	attributeDBOperation           string = "db.operation"
-	attributeDBCassandraKeyspace   string = "db.cassandra.keyspace"
-	attributeDBHBaseNamespace      string = "db.hbase.namespace"
-	attributeDBRedisDatabaseIndex  string = "db.redis.database_index"
-	attributeDBMongoDBCollection   string = "db.mongodb.collection"
+	// TODO replace with convention.* values once/if available
+	attributeRPCGRPCStatusCode        string = "rpc.grpc.status_code"
+	attributeOtelStatusCode           string = "otel.status_code"
+	attributeOtelStatusDeprecatedCode string = "otel.status_deprecatedcode"
+	attributeOtelStatusDescription    string = "otel.status_description"
 )
 
 // NetworkAttributes is the set of known network attributes
@@ -160,6 +154,7 @@ type RPCAttributes struct {
 	RPCSystem         string
 	RPCService        string
 	RPCMethod         string
+	RPCGRPCStatusCode int64
 	NetworkAttributes NetworkAttributes
 }
 
@@ -172,6 +167,8 @@ func (attrs *RPCAttributes) MapAttribute(k string, v pdata.AttributeValue) {
 		attrs.RPCService = v.StringVal()
 	case conventions.AttributeRPCMethod:
 		attrs.RPCMethod = v.StringVal()
+	case attributeRPCGRPCStatusCode:
+		attrs.RPCGRPCStatusCode = v.IntVal()
 
 	default:
 		attrs.NetworkAttributes.MapAttribute(k, v)
@@ -198,27 +195,27 @@ type DatabaseAttributes struct {
 // MapAttribute attempts to map a Span attribute to one of the known types
 func (attrs *DatabaseAttributes) MapAttribute(k string, v pdata.AttributeValue) {
 	switch k {
-	case attributeDBSystem:
+	case conventions.AttributeDBSystem:
 		attrs.DBSystem = v.StringVal()
-	case attributeDBConnectionString:
+	case conventions.AttributeDBConnectionString:
 		attrs.DBConnectionString = v.StringVal()
 	case conventions.AttributeDBUser:
 		attrs.DBUser = v.StringVal()
 	case conventions.AttributeDBStatement:
 		attrs.DBStatement = v.StringVal()
-	case attributeDBOperation:
+	case conventions.AttributeDBOperation:
 		attrs.DBOperation = v.StringVal()
-	case attributeDBMSSQLInstanceName:
+	case conventions.AttributeDBMsSQLInstanceName:
 		attrs.DBMSSQLInstanceName = v.StringVal()
-	case attributeDBJDBCDriverClassName:
+	case conventions.AttributeDBJDBCDriverClassname:
 		attrs.DBJDBCDriverClassName = v.StringVal()
-	case attributeDBCassandraKeyspace:
+	case conventions.AttributeDBCassandraKeyspace:
 		attrs.DBCassandraKeyspace = v.StringVal()
-	case attributeDBHBaseNamespace:
+	case conventions.AttributeDBHBaseNamespace:
 		attrs.DBHBaseNamespace = v.StringVal()
-	case attributeDBRedisDatabaseIndex:
+	case conventions.AttributeDBRedisDatabaseIndex:
 		attrs.DBRedisDatabaseIndex = v.StringVal()
-	case attributeDBMongoDBCollection:
+	case conventions.AttributeDBMongoDBCollection:
 		attrs.DBMongoDBCollection = v.StringVal()
 
 	default:

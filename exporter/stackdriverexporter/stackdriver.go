@@ -284,12 +284,8 @@ func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) (int, 
 	spans := make([]*traceexport.SpanData, 0, numSpans)
 
 	for i := 0; i < resourceSpans.Len(); i++ {
-		sd, err := pdataResourceSpansToOTSpanData(resourceSpans.At(i))
-		if err == nil {
-			spans = append(spans, sd...)
-		} else {
-			errs = append(errs, err)
-		}
+		sd := pdataResourceSpansToOTSpanData(resourceSpans.At(i))
+		spans = append(spans, sd...)
 	}
 
 	err := te.texporter.ExportSpans(ctx, spans)

@@ -91,16 +91,19 @@ linters-settings:
       - kilometres
 
 linters:
-  disable-all: true
+  disable:
+    - errcheck
   enable:
     - gofmt
     - goimports
     - golint
+    - gosec
     - govet
     - staticcheck
     - misspell
     - scopelint
     - unconvert
+    - unparam
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
@@ -109,3 +112,9 @@ issues:
     - path: _test\.go
       linters:
         - scopelint
+    - text: "G404:"
+      linters:
+        - gosec
+    - text: "G402:"
+      linters:
+        - gosec

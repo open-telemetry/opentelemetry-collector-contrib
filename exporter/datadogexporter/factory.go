@@ -51,13 +51,21 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 
 		API: config.APIConfig{
-			Key:  "", // must be set if using API
-			Site: config.DefaultSite,
+			Key:  "$DD_API_KEY", // Must be set if using API
+			Site: "$DD_SITE",    // If not provided, set during config sanitization
+		},
+
+		TagsConfig: config.TagsConfig{
+			Hostname:   "$DD_HOST",
+			Env:        "$DD_ENV",
+			Service:    "$DD_SERVICE",
+			Version:    "$DD_VERSION",
+			EnvVarTags: "$DD_TAGS", // Only taken into account if Tags is not set
 		},
 
 		Metrics: config.MetricsConfig{
 			TCPAddr: confignet.TCPAddr{
-				Endpoint: "", // set during config sanitization
+				Endpoint: "$DD_URL", // If not provided, set during config sanitization
 			},
 			SendMonotonic: true,
 			DeltaTTL:      3600,
@@ -69,7 +77,7 @@ func createDefaultConfig() configmodels.Exporter {
 		Traces: config.TracesConfig{
 			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
-				Endpoint: "", // set during config sanitization
+				Endpoint: "$DD_APM_URL", // If not provided, set during config sanitization
 			},
 		},
 
@@ -98,11 +106,8 @@ func createMetricsExporter(
 			// if only sending metadata ignore all metrics
 			return 0, nil
 		}
-	} else if exp, err := newMetricsExporter(params, cfg); err == nil {
-		pushMetricsFn = exp.PushMetricsData
 	} else {
-		// error creating the exporter
-		return nil, err
+		pushMetricsFn = newMetricsExporter(params, cfg).PushMetricsData
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -150,11 +155,8 @@ func createTraceExporter(
 			// if only sending metadata, ignore all traces
 			return 0, nil
 		}
-	} else if exp, err := newTraceExporter(params, cfg); err == nil {
-		pushTracesFn = exp.pushTraceData
 	} else {
-		// error creating the exporter
-		return nil, err
+		pushTracesFn = newTraceExporter(params, cfg).pushTraceData
 	}
 
 	ctx, cancel := context.WithCancel(ctx)

@@ -51,7 +51,7 @@ type logServiceLogsSender struct {
 func (s *logServiceLogsSender) pushLogsData(
 	ctx context.Context,
 	md pdata.Logs) (droppedTimeSeries int, err error) {
-	slsLogs, dropped := logDataToLogService(s.logger, md)
+	slsLogs, dropped := logDataToLogService(md)
 	var errs []error
 	if len(slsLogs) > 0 {
 		if err := s.client.SendLogs(slsLogs); err != nil {

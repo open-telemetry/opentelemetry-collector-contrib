@@ -22,11 +22,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/propagation"
-	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/label"
 	"go.opentelemetry.io/otel/semconv"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
@@ -48,7 +47,7 @@ const (
 )
 
 func (w worker) simulateTraces() {
-	tracer := global.Tracer("tracegen")
+	tracer := otel.Tracer("tracegen")
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 	var i int
 	for atomic.LoadUint32(w.running) == 1 {
@@ -62,10 +61,10 @@ func (w worker) simulateTraces() {
 		if w.propagateContext {
 			header := http.Header{}
 			// simulates going remote
-			propagation.InjectHTTP(childCtx, global.Propagators(), header)
+			otel.GetTextMapPropagator().Inject(childCtx, header)
 
 			// simulates getting a request from a client
-			childCtx = propagation.ExtractHTTP(childCtx, global.Propagators(), header)
+			childCtx = otel.GetTextMapPropagator().Extract(childCtx, header)
 		}
 
 		_, child := tracer.Start(childCtx, "okey-dokey", trace.WithAttributes(

@@ -15,10 +15,10 @@
 package kubelet
 
 import (
+	"errors"
 	"io/ioutil"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

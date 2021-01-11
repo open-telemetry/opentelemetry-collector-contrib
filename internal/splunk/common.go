@@ -17,14 +17,14 @@ package splunk
 import "strings"
 
 const (
-	SFxAccessTokenHeader  = "X-Sf-Token"
-	SFxAccessTokenLabel   = "com.splunk.signalfx.access_token"
+	SFxAccessTokenHeader  = "X-Sf-Token"                       // #nosec
+	SFxAccessTokenLabel   = "com.splunk.signalfx.access_token" // #nosec
 	SFxEventCategoryKey   = "com.splunk.signalfx.event_category"
 	SFxEventPropertiesKey = "com.splunk.signalfx.event_properties"
 	SourcetypeLabel       = "com.splunk.sourcetype"
 	IndexLabel            = "com.splunk.index"
 	HECTokenHeader        = "Splunk"
-	HecTokenLabel         = "com.splunk.hec.access_token"
+	HecTokenLabel         = "com.splunk.hec.access_token" // #nosec
 	// HecEventMetricType is the type of HEC event. Set to metric, as per https://docs.splunk.com/Documentation/Splunk/8.0.3/Metrics/GetMetricsInOther.
 	HecEventMetricType = "metric"
 )

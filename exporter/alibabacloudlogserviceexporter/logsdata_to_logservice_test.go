@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
-	"go.uber.org/zap"
 )
 
 func getComplexAttributeValueMap() pdata.AttributeValue {
@@ -101,7 +100,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 func TestLogsDataToLogService(t *testing.T) {
 	totalLogCount := 10
 	validLogCount := totalLogCount - 1
-	gotLogs, dropped := logDataToLogService(zap.NewNop(), createLogData(10))
+	gotLogs, dropped := logDataToLogService(createLogData(10))
 	assert.Equal(t, len(gotLogs), 9)
 	assert.Equal(t, dropped, 1)
 

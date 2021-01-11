@@ -44,7 +44,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 	tests := []struct {
 		name                     string
 		metricsDataFn            func() pdata.Metrics
-		wantSplunkMetrics        []splunk.Event
+		wantSplunkMetrics        []*splunk.Event
 		wantNumDroppedTimeseries int
 	}{
 		{
@@ -54,14 +54,12 @@ func Test_metricDataToSplunk(t *testing.T) {
 				metrics.ResourceMetrics().Resize(1)
 				return metrics
 			},
-			wantSplunkMetrics: []splunk.Event{},
 		},
 		{
 			name: "nil_instrumentation_library_metrics",
 			metricsDataFn: func() pdata.Metrics {
 				return newMetricsWithResources()
 			},
-			wantSplunkMetrics: []splunk.Event{},
 		},
 		{
 			name: "nil_metric",
@@ -71,7 +69,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 				ilm.Metrics().Resize(1)
 				return metrics
 			},
-			wantSplunkMetrics:        []splunk.Event{},
 			wantNumDroppedTimeseries: 1,
 		},
 		{
@@ -85,7 +82,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 				doubleGauge.SetDataType(pdata.MetricDataTypeDoubleGauge)
 				return metrics
 			},
-			wantSplunkMetrics: []splunk.Event{},
 		},
 		{
 			name: "nil_int_gauge_value",
@@ -98,7 +94,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 				intGauge.SetDataType(pdata.MetricDataTypeIntGauge)
 				return metrics
 			},
-			wantSplunkMetrics: []splunk.Event{},
 		},
 		{
 			name: "nil_int_histogram_value",
@@ -111,7 +106,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 				intHistogram.SetDataType(pdata.MetricDataTypeIntHistogram)
 				return metrics
 			},
-			wantSplunkMetrics: []splunk.Event{},
 		},
 		{
 			name: "nil_double_histogram_value",
@@ -124,7 +118,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 				doubleHistogram.SetDataType(pdata.MetricDataTypeDoubleHistogram)
 				return metrics
 			},
-			wantSplunkMetrics: []splunk.Event{},
 		},
 		{
 			name: "nil_double_sum_value",
@@ -137,7 +130,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 				doubleSum.SetDataType(pdata.MetricDataTypeDoubleSum)
 				return metrics
 			},
-			wantSplunkMetrics: []splunk.Event{},
 		},
 		{
 			name: "nil_int_sum_value",
@@ -150,7 +142,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 				intSum.SetDataType(pdata.MetricDataTypeIntSum)
 				return metrics
 			},
-			wantSplunkMetrics: []splunk.Event{},
 		},
 		{
 			name: "double_gauge_empty_data_point",
@@ -164,7 +155,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 				doubleGauge.DoubleGauge().DataPoints().Resize(1)
 				return metrics
 			},
-			wantSplunkMetrics: []splunk.Event{},
 		},
 		{
 			name: "int_gauge_empty_data_point",
@@ -178,7 +168,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 				intGauge.IntGauge().DataPoints().Resize(1)
 				return metrics
 			},
-			wantSplunkMetrics: []splunk.Event{},
 		},
 		{
 			name: "int_histogram_empty_data_point",
@@ -192,7 +181,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 				intHistogram.IntHistogram().DataPoints().Resize(1)
 				return metrics
 			},
-			wantSplunkMetrics: []splunk.Event{},
 		},
 		{
 			name: "double_histogram_empty_data_point",
@@ -206,7 +194,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 				doubleHistogram.DoubleHistogram().DataPoints().Resize(1)
 				return metrics
 			},
-			wantSplunkMetrics: []splunk.Event{},
 		},
 		{
 			name: "int_sum_empty_data_point",
@@ -220,7 +207,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 				intSum.IntSum().DataPoints().Resize(1)
 				return metrics
 			},
-			wantSplunkMetrics: []splunk.Event{},
 		},
 		{
 			name: "double_sum_empty_data_point",
@@ -234,7 +220,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 				doubleSum.DoubleSum().DataPoints().Resize(1)
 				return metrics
 			},
-			wantSplunkMetrics: []splunk.Event{},
 		},
 		{
 			name: "gauges",
@@ -272,7 +257,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 
 				return metrics
 			},
-			wantSplunkMetrics: []splunk.Event{
+			wantSplunkMetrics: []*splunk.Event{
 				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{"com.splunk.index", "com.splunk.sourcetype", "host.name", "service.name", "k0", "k1"}, []interface{}{"myindex", "mysourcetype", "myhost", "mysource", "v0", "v1"}, doubleVal, "mysource", "mysourcetype", "myindex", "myhost"),
 				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{"com.splunk.index", "com.splunk.sourcetype", "host.name", "service.name", "k0", "k1"}, []interface{}{"myindex", "mysourcetype", "myhost", "mysource", "v0", "v1"}, int64Val, "mysource", "mysourcetype", "myindex", "myhost"),
 			},
@@ -296,7 +281,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 				doubleHistogramPt.SetTimestamp(pdata.TimestampUnixNano(tsUnix.UnixNano()))
 				return metrics
 			},
-			wantSplunkMetrics: []splunk.Event{},
 		},
 		{
 			name: "double_histogram",
@@ -316,7 +300,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				doubleHistogramPt.SetTimestamp(pdata.TimestampUnixNano(tsUnix.UnixNano()))
 				return metrics
 			},
-			wantSplunkMetrics: []splunk.Event{
+			wantSplunkMetrics: []*splunk.Event{
 				{
 					Host:       "unknown",
 					Source:     "",
@@ -413,7 +397,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 				intHistogramPt.SetTimestamp(pdata.TimestampUnixNano(tsUnix.UnixNano()))
 				return metrics
 			},
-			wantSplunkMetrics: []splunk.Event{},
 		},
 
 		{
@@ -434,7 +417,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				intHistogramPt.SetTimestamp(pdata.TimestampUnixNano(tsUnix.UnixNano()))
 				return metrics
 			},
-			wantSplunkMetrics: []splunk.Event{
+			wantSplunkMetrics: []*splunk.Event{
 				{
 					Host:       "unknown",
 					Source:     "",
@@ -528,7 +511,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				intDataPt.SetValue(62)
 				return metrics
 			},
-			wantSplunkMetrics: []splunk.Event{
+			wantSplunkMetrics: []*splunk.Event{
 				{
 					Host:       "unknown",
 					Source:     "",
@@ -558,7 +541,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				doubleDataPt.SetValue(62)
 				return metrics
 			},
-			wantSplunkMetrics: []splunk.Event{
+			wantSplunkMetrics: []*splunk.Event{
 				{
 					Host:       "unknown",
 					Source:     "",
@@ -584,18 +567,16 @@ func Test_metricDataToSplunk(t *testing.T) {
 				doubleSum.SetDataType(pdata.MetricDataTypeNone)
 				return metrics
 			},
-			wantSplunkMetrics:        []splunk.Event{},
 			wantNumDroppedTimeseries: 1,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			md := tt.metricsDataFn()
-			gotMetrics, gotNumDroppedTimeSeries, err := metricDataToSplunk(logger, md, &Config{})
-			assert.NoError(t, err)
+			gotMetrics, gotNumDroppedTimeSeries := metricDataToSplunk(logger, md, &Config{})
 			assert.Equal(t, tt.wantNumDroppedTimeseries, gotNumDroppedTimeSeries)
 			for i, want := range tt.wantSplunkMetrics {
-				assert.Equal(t, &want, gotMetrics[i])
+				assert.Equal(t, want, gotMetrics[i])
 			}
 		})
 	}
@@ -611,14 +592,14 @@ func commonSplunkMetric(
 	sourcetype string,
 	index string,
 	host string,
-) splunk.Event {
+) *splunk.Event {
 	fields := map[string]interface{}{fmt.Sprintf("metric_name:%s", metricName): val}
 
 	for i, k := range keys {
 		fields[k] = values[i]
 	}
 
-	return splunk.Event{
+	return &splunk.Event{
 		Time:       ts,
 		Source:     source,
 		SourceType: sourcetype,

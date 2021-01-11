@@ -36,7 +36,7 @@ type metricsExporter struct {
 	prevPts *ttlmap.TTLMap
 }
 
-func newMetricsExporter(params component.ExporterCreateParams, cfg *config.Config) (*metricsExporter, error) {
+func newMetricsExporter(params component.ExporterCreateParams, cfg *config.Config) *metricsExporter {
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.ApplicationStartInfo)
 	client.HttpClient = utils.NewHTTPClient(10 * time.Second)
@@ -50,7 +50,7 @@ func newMetricsExporter(params component.ExporterCreateParams, cfg *config.Confi
 	prevPts := ttlmap.New(sweepInterval, cfg.Metrics.DeltaTTL)
 	prevPts.Start()
 
-	return &metricsExporter{params.Logger, cfg, client, prevPts}, nil
+	return &metricsExporter{params.Logger, cfg, client, prevPts}
 }
 
 func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {

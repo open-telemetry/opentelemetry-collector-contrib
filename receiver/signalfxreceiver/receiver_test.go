@@ -371,7 +371,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 
 	currentTime := time.Now().Unix() * 1e3
-	sFxMsg := buildSFxEventMsg(currentTime, 13, 3)
+	sFxMsg := buildSFxEventMsg(currentTime, 3)
 
 	tests := []struct {
 		name             string
@@ -749,7 +749,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 			rcv.RegisterLogsConsumer(sink)
 
 			currentTime := time.Now().Unix() * 1e3
-			sFxMsg := buildSFxEventMsg(currentTime, 13, 3)
+			sFxMsg := buildSFxEventMsg(currentTime, 3)
 			msgBytes, _ := sFxMsg.Marshal()
 			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
 			req.Header.Set("Content-Type", "application/x-protobuf")
@@ -803,7 +803,7 @@ func buildSFxDatapointMsg(time int64, value int64, dimensions uint) *sfxpb.DataP
 	}
 }
 
-func buildSFxEventMsg(time int64, value int64, dimensions uint) *sfxpb.EventUploadMessage {
+func buildSFxEventMsg(time int64, dimensions uint) *sfxpb.EventUploadMessage {
 	return &sfxpb.EventUploadMessage{
 		Events: []*sfxpb.Event{
 			{

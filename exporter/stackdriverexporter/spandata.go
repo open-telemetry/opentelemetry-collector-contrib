@@ -27,7 +27,7 @@ import (
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 )
 
-func pdataResourceSpansToOTSpanData(rs pdata.ResourceSpans) ([]*export.SpanData, error) {
+func pdataResourceSpansToOTSpanData(rs pdata.ResourceSpans) []*export.SpanData {
 	resource := rs.Resource()
 	var sds []*export.SpanData
 	ilss := rs.InstrumentationLibrarySpans()
@@ -35,22 +35,19 @@ func pdataResourceSpansToOTSpanData(rs pdata.ResourceSpans) ([]*export.SpanData,
 		ils := ilss.At(i)
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
-			sd, err := pdataSpanToOTSpanData(spans.At(j), resource, ils.InstrumentationLibrary())
-			if err != nil {
-				return nil, err
-			}
+			sd := pdataSpanToOTSpanData(spans.At(j), resource, ils.InstrumentationLibrary())
 			sds = append(sds, sd)
 		}
 	}
 
-	return sds, nil
+	return sds
 }
 
 func pdataSpanToOTSpanData(
 	span pdata.Span,
 	resource pdata.Resource,
 	il pdata.InstrumentationLibrary,
-) (*export.SpanData, error) {
+) *export.SpanData {
 	sc := apitrace.SpanContext{}
 	sc.TraceID = span.TraceID().Bytes()
 	sc.SpanID = span.SpanID().Bytes()
@@ -84,7 +81,7 @@ func pdataSpanToOTSpanData(
 	sd.StatusCode = pdataStatusCodeToOTCode(status.Code())
 	sd.StatusMessage = status.Message()
 
-	return sd, nil
+	return sd
 }
 
 func pdataSpanKindToOTSpanKind(k pdata.SpanKind) apitrace.SpanKind {

@@ -15,6 +15,7 @@
 package simpleprometheusreceiver
 
 import (
+	"net/url"
 	"path"
 	"testing"
 	"time"
@@ -67,6 +68,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 			CollectionInterval: 30 * time.Second,
 			MetricsPath:        "/v2/metrics",
+			Params:             url.Values{"columns": []string{"name", "messages"}, "key": []string{"foo", "bar"}},
 			UseServiceAccount:  true,
 		})
 

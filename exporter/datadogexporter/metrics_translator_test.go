@@ -192,7 +192,7 @@ func TestMapIntMonotonicMetrics(t *testing.T) {
 	metricName := "metric.example"
 	expected := make([]datadog.Metric, len(deltas))
 	for i, val := range deltas {
-		expected[i] = metrics.NewRate(metricName, uint64(seconds(i+1)), float64(val), []string{})
+		expected[i] = metrics.NewCount(metricName, uint64(seconds(i+1)), float64(val), []string{})
 	}
 
 	prevPts := newTTLMap()
@@ -239,9 +239,9 @@ func TestMapIntMonotonicDifferentDimensions(t *testing.T) {
 	assert.ElementsMatch(t,
 		mapIntMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
-			metrics.NewRate(metricName, uint64(seconds(1)), 20, []string{}),
-			metrics.NewRate(metricName, uint64(seconds(1)), 30, []string{"key1:valA"}),
-			metrics.NewRate(metricName, uint64(seconds(1)), 40, []string{"key1:valB"}),
+			metrics.NewCount(metricName, uint64(seconds(1)), 20, []string{}),
+			metrics.NewCount(metricName, uint64(seconds(1)), 30, []string{"key1:valA"}),
+			metrics.NewCount(metricName, uint64(seconds(1)), 40, []string{"key1:valB"}),
 		},
 	)
 }
@@ -262,8 +262,8 @@ func TestMapIntMonotonicWithReboot(t *testing.T) {
 	assert.ElementsMatch(t,
 		mapIntMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
-			metrics.NewRate(metricName, uint64(seconds(1)), 30, []string{}),
-			metrics.NewRate(metricName, uint64(seconds(3)), 20, []string{}),
+			metrics.NewCount(metricName, uint64(seconds(1)), 30, []string{}),
+			metrics.NewCount(metricName, uint64(seconds(3)), 20, []string{}),
 		},
 	)
 }
@@ -286,8 +286,8 @@ func TestMapIntMonotonicOutOfOrder(t *testing.T) {
 	assert.ElementsMatch(t,
 		mapIntMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
-			metrics.NewRate(metricName, uint64(seconds(2)), 2, []string{}),
-			metrics.NewRate(metricName, uint64(seconds(3)), 1, []string{}),
+			metrics.NewCount(metricName, uint64(seconds(2)), 2, []string{}),
+			metrics.NewCount(metricName, uint64(seconds(3)), 1, []string{}),
 		},
 	)
 }
@@ -313,7 +313,7 @@ func TestMapDoubleMonotonicMetrics(t *testing.T) {
 	metricName := "metric.example"
 	expected := make([]datadog.Metric, len(deltas))
 	for i, val := range deltas {
-		expected[i] = metrics.NewRate(metricName, uint64(seconds(i+1)), val, []string{})
+		expected[i] = metrics.NewCount(metricName, uint64(seconds(i+1)), val, []string{})
 	}
 
 	prevPts := newTTLMap()
@@ -360,9 +360,9 @@ func TestMapDoubleMonotonicDifferentDimensions(t *testing.T) {
 	assert.ElementsMatch(t,
 		mapDoubleMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
-			metrics.NewRate(metricName, uint64(seconds(1)), 20, []string{}),
-			metrics.NewRate(metricName, uint64(seconds(1)), 30, []string{"key1:valA"}),
-			metrics.NewRate(metricName, uint64(seconds(1)), 40, []string{"key1:valB"}),
+			metrics.NewCount(metricName, uint64(seconds(1)), 20, []string{}),
+			metrics.NewCount(metricName, uint64(seconds(1)), 30, []string{"key1:valA"}),
+			metrics.NewCount(metricName, uint64(seconds(1)), 40, []string{"key1:valB"}),
 		},
 	)
 }
@@ -375,7 +375,7 @@ func TestMapDoubleMonotonicWithReboot(t *testing.T) {
 
 	for i, val := range values {
 		point := slice.At(i)
-		point.SetTimestamp(seconds(i))
+		point.SetTimestamp(seconds(2 * i))
 		point.SetValue(val)
 	}
 
@@ -383,8 +383,8 @@ func TestMapDoubleMonotonicWithReboot(t *testing.T) {
 	assert.ElementsMatch(t,
 		mapDoubleMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
-			metrics.NewRate(metricName, uint64(seconds(1)), 30, []string{}),
-			metrics.NewRate(metricName, uint64(seconds(3)), 20, []string{}),
+			metrics.NewCount(metricName, uint64(seconds(2)), 30, []string{}),
+			metrics.NewCount(metricName, uint64(seconds(6)), 20, []string{}),
 		},
 	)
 }
@@ -407,8 +407,8 @@ func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
 	assert.ElementsMatch(t,
 		mapDoubleMonotonicMetrics(metricName, prevPts, slice, []string{}),
 		[]datadog.Metric{
-			metrics.NewRate(metricName, uint64(seconds(2)), 2, []string{}),
-			metrics.NewRate(metricName, uint64(seconds(3)), 1, []string{}),
+			metrics.NewCount(metricName, uint64(seconds(2)), 2, []string{}),
+			metrics.NewCount(metricName, uint64(seconds(3)), 1, []string{}),
 		},
 	)
 }
