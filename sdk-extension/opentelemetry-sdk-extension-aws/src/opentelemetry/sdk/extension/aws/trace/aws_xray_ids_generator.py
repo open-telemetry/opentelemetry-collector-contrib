@@ -15,10 +15,13 @@
 import random
 import time
 
-from opentelemetry import trace
+from opentelemetry.sdk.trace.ids_generator import (
+    IdsGenerator,
+    RandomIdsGenerator,
+)
 
 
-class AwsXRayIdsGenerator(trace.IdsGenerator):
+class AwsXRayIdsGenerator(IdsGenerator):
     """Generates tracing IDs compatible with the AWS X-Ray tracing service. In
     the X-Ray system, the first 32 bits of the `TraceId` are the Unix epoch time
     in seconds. Since spans (AWS calls them segments) with an embedded timestamp
@@ -28,7 +31,7 @@ class AwsXRayIdsGenerator(trace.IdsGenerator):
     See: https://docs.aws.amazon.com/xray/latest/devguide/xray-api-sendingdata.html#xray-api-traceids
     """
 
-    random_ids_generator = trace.RandomIdsGenerator()
+    random_ids_generator = RandomIdsGenerator()
 
     def generate_span_id(self) -> int:
         return self.random_ids_generator.generate_span_id()
