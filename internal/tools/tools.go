@@ -11,11 +11,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
 // +build tools
 
-package internal
+package tools
 
 // This file follows the recommendation at
 // https://github.com/golang/go/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module

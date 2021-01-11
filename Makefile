@@ -111,17 +111,18 @@ $(MODULEDIRS):
 	$(MAKE) -C $(@:for-all-target-%=%) $(TARGET)
 .PHONY: for-all-target
 
+TOOLS_MOD_DIR := ./internal/tools
 .PHONY: install-tools
 install-tools:
-	go install github.com/client9/misspell/cmd/misspell
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint
-	go install github.com/google/addlicense
-	go install github.com/jstemmer/go-junit-report
-	go install github.com/pavius/impi/cmd/impi
-	go install github.com/tcnksm/ghr
-	go install honnef.co/go/tools/cmd/staticcheck
-	go install go.opentelemetry.io/collector/cmd/mdatagen
-	go install go.opentelemetry.io/collector/cmd/issuegenerator
+	cd $(TOOLS_MOD_DIR) && go install github.com/client9/misspell/cmd/misspell
+	cd $(TOOLS_MOD_DIR) && go install github.com/golangci/golangci-lint/cmd/golangci-lint
+	cd $(TOOLS_MOD_DIR) && go install github.com/google/addlicense
+	cd $(TOOLS_MOD_DIR) && go install github.com/jstemmer/go-junit-report
+	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
+	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
+	cd $(TOOLS_MOD_DIR) && go install honnef.co/go/tools/cmd/staticcheck
+	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/collector/cmd/mdatagen
+	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/collector/cmd/issuegenerator
 
 .PHONY: run
 run:
