@@ -14,7 +14,8 @@ Supported pipeline types: logs (events), metrics, traces (trace to metric correl
 The following configuration options are required:
 
 - `access_token` (no default): The access token is the authentication token
-  provided by SignalFx.
+  provided by SignalFx. The SignalFx access token can be obtained from the
+  web app. For details on how to do so please refer the documentation [here](https://docs.signalfx.com/en/latest/admin-guide/tokens.html#access-tokens).
 - Either `realm` or both `api_url` and `ingest_url`. Both `api_url` and
   `ingest_url` take precedence over `realm`.
   - `realm` (no default): SignalFx realm where the data will be received.
