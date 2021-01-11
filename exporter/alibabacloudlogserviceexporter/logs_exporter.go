@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -52,11 +51,8 @@ func (s *logServiceLogsSender) pushLogsData(
 	ctx context.Context,
 	md pdata.Logs) (droppedTimeSeries int, err error) {
 	slsLogs, dropped := logDataToLogService(md)
-	var errs []error
 	if len(slsLogs) > 0 {
-		if err := s.client.SendLogs(slsLogs); err != nil {
-			errs = append(errs, err)
-		}
+		err = s.client.SendLogs(slsLogs)
 	}
-	return dropped, componenterror.CombineErrors(errs)
+	return dropped, err
 }

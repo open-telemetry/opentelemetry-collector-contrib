@@ -33,4 +33,6 @@ type Config struct {
 	AccessKeySecret string `mapstructure:"access_key_secret"`
 	// Set AlibabaCLoud ECS ram role if you are using ACK
 	ECSRamRole string `mapstructure:"ecs_ram_role"`
+	// Set Token File Path if you are using ACK
+	TokenFilePath string `mapstructure:"token_file_path"`
 }
