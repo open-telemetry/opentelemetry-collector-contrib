@@ -55,7 +55,7 @@ type processorImp struct {
 	latencyBounds       []float64
 }
 
-func newProcessor(logger *zap.Logger, config configmodels.Exporter, nextConsumer consumer.TracesConsumer) (*processorImp, error) {
+func newProcessor(logger *zap.Logger, config configmodels.Exporter, nextConsumer consumer.TracesConsumer) *processorImp {
 	logger.Info("building spanmetricsprocessor")
 	pConfig := config.(*Config)
 
@@ -81,7 +81,7 @@ func newProcessor(logger *zap.Logger, config configmodels.Exporter, nextConsumer
 		latencyBucketCounts: make(map[string][]uint64),
 		nextConsumer:        nextConsumer,
 		dimensions:          pConfig.Dimensions,
-	}, nil
+	}
 }
 
 func mapDurationsToMillis(vs []time.Duration, f func(duration time.Duration) float64) []float64 {
