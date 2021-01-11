@@ -16,7 +16,6 @@ package utils
 
 import (
 	"strings"
-	"sync"
 	"unicode"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -25,10 +24,10 @@ import (
 // constants for tags
 const (
 	// maximum for tag string lengths
-	MaxTagLength           = 200
-	ServiceLangOtel string = "otel"
+	MaxTagLength = 200
 	// DefaultServiceName is the default name we assign a service if it's missing and we have no reasonable fallback
-	DefaultServiceName string = "unnamed-service"
+	// From: https://github.com/DataDog/datadog-agent/blob/eab0dde41fe3a069a65c33d82a81b1ef1cf6b3bc/pkg/trace/traceutil/normalize.go#L15
+	DefaultServiceName string = "unnamed-otel-service"
 )
 
 // NormalizeSpanName returns a cleaned up, normalized span name. Span names are used to formulate tags,
@@ -117,40 +116,18 @@ func NormalizeSpanKind(kind pdata.SpanKind) string {
 	return strings.TrimPrefix(kind.String(), "SPAN_KIND_")
 }
 
-// ported from https://github.com/DataDog/datadog-agent/blob/eab0dde41fe3a069a65c33d82a81b1ef1cf6b3bc/pkg/trace/traceutil/normalize.go#L72
-// fallbackServiceNames is a cache of default service names to use
-// when the span's service is unset or invalid.
-var fallbackServiceNames sync.Map
-
-// fallbackService returns the fallback service name for a service
-// belonging to language lang.
-func fallbackService(lang string) string {
-	if lang == "" {
-		return DefaultServiceName
-	}
-	if v, ok := fallbackServiceNames.Load(lang); ok {
-		return v.(string)
-	}
-	var str strings.Builder
-	str.WriteString("unnamed-")
-	str.WriteString(lang)
-	str.WriteString("-service")
-	fallbackServiceNames.Store(lang, str.String())
-	return str.String()
-}
-
-// NormalizeSpanKind returns a span service name normalized to remove invalid characters
+// NormalizeServiceName returns a span service name normalized to remove invalid characters
 // TODO: we'd like to move to the datadog-agent traceutil version of this once it's available in the exportable package
 // https://github.com/DataDog/datadog-agent/blob/eab0dde41fe3a069a65c33d82a81b1ef1cf6b3bc/pkg/trace/traceutil/normalize.go#L52
 func NormalizeServiceName(service string) string {
 	if service == "" {
-		return fallbackService(ServiceLangOtel)
+		return DefaultServiceName
 	}
 
 	s := NormalizeSpanName(service, true)
 
 	if s == "" {
-		return fallbackService(ServiceLangOtel)
+		return DefaultServiceName
 	}
 
 	return s

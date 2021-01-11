@@ -29,6 +29,7 @@ import (
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
 )
 
 func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSpanID [8]byte, statusCode pdata.StatusCode, resourceEnvAndService bool) pdata.ResourceSpans {
@@ -631,6 +632,32 @@ func TestSpanNameTranslation(t *testing.T) {
 	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "current_value", strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), spanNameCur)
 	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "unusual_value", strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), spanNameUnusual)
 	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "hyphenated_value", strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), spanNameHyphen)
+}
+
+// ensure that the datadog span name uses IL name +kind when available and falls back to opetelemetry + kind
+func TestSpanNameNormalization(t *testing.T) {
+	emptyName := ""
+	dashName := "k-e-b-a-b"
+	camelCaseName := "camelCase"
+	periodName := "first.second"
+	removeSpacesName := "removes Spaces"
+	numericsName := "num3r1cs_OK"
+	underscoresName := "permits_underscores"
+	tabName := "\t"
+	junkName := "\tgetsRidOf\x1c\x1c\x18Junk"
+	onlyJunkName := "\x02\x1c\x18\x08_only_junk_"
+
+	assert.Equal(t, utils.NormalizeSpanName(emptyName, false), "")
+	assert.Equal(t, utils.NormalizeSpanName(dashName, false), "k_e_b_a_b")
+	assert.Equal(t, utils.NormalizeServiceName(dashName), "k-e-b-a-b")
+	assert.Equal(t, utils.NormalizeSpanName(camelCaseName, false), "camelcase")
+	assert.Equal(t, utils.NormalizeSpanName(periodName, false), "first.second")
+	assert.Equal(t, utils.NormalizeSpanName(removeSpacesName, false), "removes_spaces")
+	assert.Equal(t, utils.NormalizeSpanName(numericsName, false), "num3r1cs_ok")
+	assert.Equal(t, utils.NormalizeSpanName(underscoresName, false), "permits_underscores")
+	assert.Equal(t, utils.NormalizeSpanName(tabName, false), "")
+	assert.Equal(t, utils.NormalizeSpanName(junkName, false), "getsridof_junk")
+	assert.Equal(t, utils.NormalizeSpanName(onlyJunkName, false), "only_junk")
 }
 
 // ensure that the datadog span type gets mapped from span kind
