@@ -14,7 +14,7 @@ It can also be easily configured to tail and parse any structured or unstructure
 
 ## Required Parameters
 
-- `pipeline` is an array of [operators](https://github.com/observIQ/stanza/blob/master/docs/README.md#what-operators-are-available). Each operator performs a simple responsibility, such as reading from a file, or parsing JSON. Chain together operators to process logs into a desired format.
+- `operators` is an array of [operators](https://github.com/observIQ/stanza/blob/master/docs/README.md#what-operators-are-available). Each operator performs a simple responsibility, such as reading from a file, or parsing JSON. Chain together operators to process logs into a desired format.
 
 ## Optional Parameters
 
@@ -42,7 +42,7 @@ Receiver Configuration
 ```yaml
 receivers:
   stanza:
-    pipeline:
+    operators:
       - type: file_input
         include: [ /var/log/myservice/*.json ]
       - type: json_parser
