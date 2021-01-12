@@ -231,7 +231,7 @@ func spanToDatadogSpan(s pdata.Span,
 		Error:    isSpanError,
 	}
 
-	if s.ParentSpanID().IsValid() {
+	if !s.ParentSpanID().IsEmpty() {
 		span.ParentID = decodeAPMSpanID(s.ParentSpanID().Bytes())
 	}
 

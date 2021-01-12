@@ -40,7 +40,7 @@ func (r *ringBuffer) put(traceID pdata.TraceID) pdata.TraceID {
 	// see if the ring has an item already
 	evicted := r.ids[r.index]
 
-	if evicted.IsValid() {
+	if !evicted.IsEmpty() {
 		// clear space for the new item
 		r.delete(evicted)
 	}

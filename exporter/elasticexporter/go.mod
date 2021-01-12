@@ -8,9 +8,8 @@ require (
 	github.com/stretchr/testify v1.6.1
 	go.elastic.co/apm v1.9.1-0.20201218004853-18a8126106c6
 	go.elastic.co/fastjson v1.1.0
-	go.opentelemetry.io/collector v0.17.1-0.20210106191745-ca6f1a0287d0
+	go.opentelemetry.io/collector v0.17.1-0.20210111170652-28e3cc1d73ab
 	go.uber.org/zap v1.16.0
-	golang.org/x/sys v0.0.0-20201113233024-12cec1faf1ba // indirect
 	google.golang.org/grpc/examples v0.0.0-20200728194956-1c32b02682df // indirect
 	howett.net/plist v0.0.0-20201026045517-117a925f2150 // indirect
 )
