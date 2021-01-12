@@ -251,6 +251,26 @@ func TestProcessorConsumeTraces(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func BenchmarkProcessorConsumeTraces(b *testing.B) {
+	// Prepare
+	mexp := &mocks.MetricsExporter{}
+	tcon := &mocks.TracesConsumer{}
+
+	mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
+	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
+
+	defaultNullValue := "defaultNullValue"
+	p := newProcessorImp(mexp, tcon, &JSONSerde{}, &defaultNullValue)
+
+	traces := buildSampleTrace()
+
+	// Test
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	for n := 0; n < b.N; n++ {
+		p.ConsumeTraces(ctx, traces)
+	}
+}
+
 func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, jsonSerder JSONSerder, defaultNullValue *string) *processorImp {
 	return &processorImp{
 		logger:          zap.NewNop(),
@@ -263,6 +283,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, js
 		latencyBucketCounts: make(map[string][]uint64),
 		latencyBounds:       defaultLatencyHistogramBucketsMs,
 		dimensions: []Dimension{
+			// Set nil defaults to force a lookup for the attribute in the span.
 			{stringAttrName, nil},
 			{intAttrName, nil},
 			{doubleAttrName, nil},
@@ -275,6 +296,8 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, js
 	}
 }
 
+// verifyConsumeMetricsInput verifies the input of the ConsumeMetrics call from this processor.
+// This is the best point to verify the computed metrics from spans are as expected.
 func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 	require.Equal(t, 6, input.MetricCount(),
 		"Should be 3 for each of call count and latency. Each group of 3 metrics is made of: "+
@@ -304,7 +327,7 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 		require.Equal(t, 1, dps.Len())
 
 		dp := dps.At(0)
-		assert.Equal(t, int64(1), dp.Value(), "Service/operation/kind only seen once")
+		assert.Equal(t, int64(1), dp.Value(), "There should only be one metric per Service/operation/kind combination")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
 		verifyMetricLabels(dp, t, seenMetricIDs)
@@ -344,7 +367,6 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 		}
 		verifyMetricLabels(dp, t, seenMetricIDs)
 	}
-
 	return true
 }
 

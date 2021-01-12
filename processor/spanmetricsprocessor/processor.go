@@ -269,29 +269,38 @@ func (p *processorImp) aggregateMetrics(traces pdata.Traces) error {
 			continue
 		}
 		serviceName := attr.StringVal()
-		ilsSlice := rspans.InstrumentationLibrarySpans()
-		for j := 0; j < ilsSlice.Len(); j++ {
-			ils := ilsSlice.At(j)
-			spans := ils.Spans()
-			for k := 0; k < spans.Len(); k++ {
-				span := spans.At(k)
-				key, err := p.buildKey(serviceName, span)
-				if err != nil {
-					return err
-				}
+		if err := p.aggregateMetricsForServiceSpans(rspans, serviceName); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
-				p.withLock(func() error {
-					p.updateCallMetrics(key)
-					return nil
-				})
-
-				latency := float64(span.EndTime()-span.StartTime()) / float64(time.Millisecond.Nanoseconds())
-				index := sort.SearchFloat64s(p.latencyBounds, latency)
-				p.withLock(func() error {
-					p.updateLatencyMetrics(key, latency, index)
-					return nil
-				})
+func (p *processorImp) aggregateMetricsForServiceSpans(rspans pdata.ResourceSpans, serviceName string) error {
+	ilsSlice := rspans.InstrumentationLibrarySpans()
+	for j := 0; j < ilsSlice.Len(); j++ {
+		ils := ilsSlice.At(j)
+		spans := ils.Spans()
+		for k := 0; k < spans.Len(); k++ {
+			span := spans.At(k)
+			key, err := p.buildKey(serviceName, span)
+			if err != nil {
+				return err
 			}
+
+			p.withLock(func() error {
+				p.updateCallMetrics(key)
+				return nil
+			})
+
+			latency := float64(span.EndTime()-span.StartTime()) / float64(time.Millisecond.Nanoseconds())
+
+			// Binary search to find the latency bucket index.
+			index := sort.SearchFloat64s(p.latencyBounds, latency)
+			p.withLock(func() error {
+				p.updateLatencyMetrics(key, latency, index)
+				return nil
+			})
 		}
 	}
 	return nil
@@ -324,8 +333,7 @@ func (p *processorImp) buildKey(serviceName string, span pdata.Span) (string, er
 	}
 	spanAttr := span.Attributes()
 	for _, d := range p.dimensions {
-		// Set the default if configured, otherwise this metric will have
-		// no value set for the dimension.
+		// Set the default if configured, otherwise this metric will have no value set for the dimension.
 		if d.Default != nil {
 			kmap[d.Name] = *d.Default
 		}
