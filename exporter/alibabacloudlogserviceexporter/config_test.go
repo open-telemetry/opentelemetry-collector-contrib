@@ -59,7 +59,6 @@ func TestLoadConfig(t *testing.T) {
 		Logstore:        "demo-logstore",
 		AccessKeyID:     "test-id",
 		AccessKeySecret: "test-secret",
-		ECSRamRole:      "test-role",
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
@@ -85,5 +84,4 @@ func TestLoadConfig(t *testing.T) {
 	le, err = factory.CreateLogsExporter(context.Background(), params, e1)
 	require.NoError(t, err)
 	require.NotNil(t, le)
-
 }
