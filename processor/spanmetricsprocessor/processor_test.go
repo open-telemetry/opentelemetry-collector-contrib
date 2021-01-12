@@ -34,7 +34,7 @@ func TestProcessorStart(t *testing.T) {
 	p := &processorImp{
 		logger: zap.NewNop(),
 	}
-	p.Start(context.Background(), nil)
+	assert.NoError(t, p.Start(context.Background(), nil))
 
 	// Verify
 	// TODO: Add verification once processor logic is in place
@@ -47,12 +47,10 @@ func TestProcessorShutdown(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zap.NewNop(), cfg, next)
-	require.NoError(t, err)
-	err = p.Shutdown(context.Background())
-
+	p := newProcessor(zap.NewNop(), cfg, next)
+	require.NotNil(t, p)
 	// Verify
-	assert.NoError(t, err)
+	assert.NoError(t, p.Shutdown(context.Background()))
 }
 
 func TestProcessorCapabilities(t *testing.T) {
@@ -62,13 +60,13 @@ func TestProcessorCapabilities(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zap.NewNop(), cfg, next)
+	p := newProcessor(zap.NewNop(), cfg, next)
+	require.NotNil(t, p)
 	caps := p.GetCapabilities()
 
 	// Verify
-	assert.NoError(t, err)
-	assert.NotNil(t, p)
-	assert.Equal(t, false, caps.MutatesConsumedData)
+	assert.False(t, caps.MutatesConsumedData)
+	assert.NoError(t, p.Shutdown(context.Background()))
 }
 
 func TestProcessorConsumeTraces(t *testing.T) {

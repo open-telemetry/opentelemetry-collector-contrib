@@ -37,6 +37,10 @@ updates:
     directory: "/internal/splunk"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/tools"
+    schedule:
+      interval: "weekly"
 
   ##################
   #   EXTENSIONS   #
