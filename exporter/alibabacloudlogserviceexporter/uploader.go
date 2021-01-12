@@ -20,7 +20,8 @@ import (
 	"os"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
-	"github.com/gogo/protobuf/proto"
+	"github.com/aliyun/aliyun-log-go-sdk/producer"
+	slsutil "github.com/aliyun/aliyun-log-go-sdk/util"
 	"go.uber.org/zap"
 )
 
@@ -31,11 +32,12 @@ type LogServiceClient interface {
 }
 
 type logServiceClientImpl struct {
-	clientInstance sls.ClientInterface
+	clientInstance *producer.Producer
 	project        string
 	logstore       string
 	topic          string
 	source         string
+	logger         *zap.Logger
 }
 
 func getIPAddress() (ipAddress string, err error) {
@@ -56,13 +58,23 @@ func NewLogServiceClient(config *Config, logger *zap.Logger) (LogServiceClient, 
 		return nil, errors.New("missing logservice params: Endpoint, Project, Logstore")
 	}
 
-	//Create client instance
-	clientInterface := sls.CreateNormalInterface(config.Endpoint, config.AccessKeyID, config.AccessKeySecret, "")
+	producerConfig := producer.GetDefaultProducerConfig()
+	producerConfig.Endpoint = config.Endpoint
+	producerConfig.AccessKeyID = config.AccessKeyID
+	producerConfig.AccessKeySecret = config.AccessKeySecret
+	if config.ECSRamRole != "" || config.TokenFilePath != "" {
+		tokenUpdateFunc, _ := slsutil.NewTokenUpdateFunc(config.ECSRamRole, config.TokenFilePath)
+		producerConfig.UpdateStsToken = tokenUpdateFunc
+		producerConfig.StsTokenShutDown = make(chan struct{})
+	}
+
 	c := &logServiceClientImpl{
 		project:        config.Project,
 		logstore:       config.Logstore,
-		clientInstance: clientInterface,
+		clientInstance: producer.InitProducer(producerConfig),
+		logger:         logger,
 	}
+	c.clientInstance.Start()
 	// do not return error if get hostname or ip address fail
 	c.topic, _ = os.Hostname()
 	c.source, _ = getIPAddress()
@@ -72,10 +84,18 @@ func NewLogServiceClient(config *Config, logger *zap.Logger) (LogServiceClient, 
 
 // SendLogs send message to LogService
 func (c *logServiceClientImpl) SendLogs(logs []*sls.Log) error {
-	logGroup := &sls.LogGroup{
-		Source: proto.String(c.source),
-		Topic:  proto.String(c.topic),
-		Logs:   logs,
-	}
-	return c.clientInstance.PutLogs(c.project, c.logstore, logGroup)
+	return c.clientInstance.SendLogListWithCallBack(c.project, c.logstore, c.topic, c.source, logs, c)
+}
+
+// Success is impl of producer.CallBack
+func (c *logServiceClientImpl) Success(*producer.Result) {}
+
+// Fail is impl of producer.CallBack
+func (c *logServiceClientImpl) Fail(result *producer.Result) {
+	c.logger.Warn("Send to LogService failed",
+		zap.String("project", c.project),
+		zap.String("store", c.logstore),
+		zap.String("code", result.GetErrorCode()),
+		zap.String("error_message", result.GetErrorMessage()),
+		zap.String("request_id", result.GetRequestId()))
 }

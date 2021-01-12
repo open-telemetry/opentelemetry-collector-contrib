@@ -51,7 +51,7 @@ func TestNewMetricsExporter(t *testing.T) {
 		},
 	}))
 	// a
-	assert.Error(t, err)
+	assert.NoError(t, err)
 }
 
 func TestNewFailsWithEmptyMetricsExporterName(t *testing.T) {
