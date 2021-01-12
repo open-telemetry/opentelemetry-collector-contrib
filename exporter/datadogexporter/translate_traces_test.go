@@ -658,10 +658,9 @@ func TestSpanNameNormalization(t *testing.T) {
 	assert.Equal(t, utils.NormalizeSpanName(tabName, false), "")
 	assert.Equal(t, utils.NormalizeSpanName(junkName, false), "getsridof_junk")
 	assert.Equal(t, utils.NormalizeSpanName(onlyJunkName, false), "only_junk")
-
 	assert.Equal(t, utils.NormalizeServiceName(dashName), "k-e-b-a-b")
- 	assert.Equal(t, utils.NormalizeServiceName(onlyBadCharsName), utils.DefaultServiceName)
- 	assert.Equal(t, utils.NormalizeServiceName(emptyName), utils.DefaultServiceName)	
+	assert.Equal(t, utils.NormalizeServiceName(onlyBadCharsName), utils.DefaultServiceName)
+	assert.Equal(t, utils.NormalizeServiceName(emptyName), utils.DefaultServiceName)
 }
 
 // ensure that the datadog span type gets mapped from span kind
