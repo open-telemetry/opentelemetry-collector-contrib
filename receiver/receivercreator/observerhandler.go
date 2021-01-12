@@ -66,7 +66,7 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 	defer obs.Unlock()
 
 	for _, e := range added {
-		env, err := observer.EndpointToEnv(e)
+		env, err := e.Env()
 		if err != nil {
 			obs.logger.Error("unable to convert endpoint to environment map", zap.String("endpoint", string(e.ID)), zap.Error(err))
 			continue
