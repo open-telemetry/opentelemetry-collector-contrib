@@ -35,19 +35,22 @@ const (
 	// number of goroutines polling the UDP socket.
 	// https://github.com/aws/aws-xray-daemon/blob/master/pkg/cfg/cfg.go#L184
 	maxPollerCount = 2
+	maxWorkerCount = 4
 )
 
 // xrayReceiver implements the component.TracesReceiver interface for converting
 // AWS X-Ray segment document into the OT internal trace format.
 type xrayReceiver struct {
 	instanceName string
-	poller       udppoller.Poller
-	server       proxy.Server
-	logger       *zap.Logger
-	consumer     consumer.TracesConsumer
-	longLivedCtx context.Context
-	startOnce    sync.Once
-	stopOnce     sync.Once
+	poller       	udppoller.Poller
+	server       	proxy.Server
+	logger       	*zap.Logger
+	consumer     	consumer.TracesConsumer
+	longLivedCtx 	context.Context
+	startOnce    	sync.Once
+	stopOnce     	sync.Once
+	shutDown     	chan struct{}
+	numOfWorkerToStart int
 }
 
 func newReceiver(config *Config,
@@ -84,6 +87,8 @@ func newReceiver(config *Config,
 		server:       srv,
 		logger:       logger,
 		consumer:     consumer,
+		shutDown:     make(chan struct{}),
+		numOfWorkerToStart: maxWorkerCount,
 	}, nil
 }
 
@@ -105,6 +110,7 @@ func (x *xrayReceiver) Shutdown(_ context.Context) error {
 	var err = componenterror.ErrAlreadyStopped
 	x.stopOnce.Do(func() {
 		err = nil
+		close(x.shutDown)
 		pollerErr := x.poller.Close()
 		if pollerErr != nil {
 			err = pollerErr
@@ -125,26 +131,32 @@ func (x *xrayReceiver) Shutdown(_ context.Context) error {
 
 func (x *xrayReceiver) start() {
 	incomingSegments := x.poller.SegmentsChan()
-	for w := 1; w <= 4; w++ {
-		go x.woker(incomingSegments)
+	bufPool := x.poller.BufferPool()
+	for w := 1; w <= x.numOfWorkerToStart; w++ {
+		go x.worker(incomingSegments, bufPool)
 	}
 }
 
-func (x *xrayReceiver) woker(incomingSegments <-chan udppoller.RawSegment) {
-	for seg := range incomingSegments {
-		traces, totalSpansCount, err := translator.ToTraces(seg.Payload)
-		if err != nil {
-			x.logger.Warn("X-Ray segment to OT traces conversion failed", zap.Error(err))
-			obsreport.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, totalSpansCount, err)
-			continue
+func (x *xrayReceiver) worker(incomingSegments <-chan udppoller.RawSegment, bufferPool sync.Pool) {
+	for{
+		select {
+		case <-x.shutDown:
+			return
+		default:
+			seg := <- incomingSegments
+			traces, totalSpansCount, err := translator.ToTraces(seg.Payload)
+			if err != nil {
+				x.logger.Warn("X-Ray segment to OT traces conversion failed", zap.Error(err))
+				obsreport.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, totalSpansCount, err)
+				continue
+			}
+			bufferPool.Put(seg.BufferPointer)
+			err = x.consumer.ConsumeTraces(seg.Ctx, *traces)
+			if err != nil {
+				x.logger.Warn("Trace consumer errored out", zap.Error(err))
+				obsreport.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, totalSpansCount, err)
+				continue
+			}
 		}
-
-		err = x.consumer.ConsumeTraces(seg.Ctx, *traces)
-		if err != nil {
-			x.logger.Warn("Trace consumer errored out", zap.Error(err))
-			obsreport.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, totalSpansCount, err)
-			continue
-		}
-		obsreport.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, totalSpansCount, nil)
 	}
 }

@@ -45,12 +45,15 @@ const (
 	segChanSize = 30
 )
 
+
+
 // Poller represents one or more goroutines that are
 // polling from a UDP socket
 type Poller interface {
 	SegmentsChan() <-chan RawSegment
 	Start(receiverLongTermCtx context.Context)
 	Close() error
+	BufferPool() sync.Pool
 }
 
 // RawSegment represents a raw X-Ray segment document.
@@ -59,6 +62,9 @@ type RawSegment struct {
 	Payload []byte
 	// Ctx is the short-lived context created per raw segment received
 	Ctx context.Context
+	// BufferPointer is the buffer pointer used by the RawSegment passed to receiver.go to reuse.
+	BufferPointer *[]byte
+
 }
 
 // Config represents the configurations needed to
@@ -83,6 +89,7 @@ type poller struct {
 
 	// all segments read by the poller will be sent to this channel
 	segChan chan RawSegment
+	bufPool sync.Pool
 }
 
 // New creates a new UDP poller
@@ -112,6 +119,12 @@ func New(cfg *Config, logger *zap.Logger) (Poller, error) {
 		maxPollerCount:       cfg.NumOfPollerToStart,
 		shutDown:             make(chan struct{}),
 		segChan:              make(chan RawSegment, segChanSize),
+		bufPool:			  sync.Pool{
+									New: func() interface{}{
+										b := make([]byte, pollerBufferSizeKB)
+										return &b
+									},
+								},
 	}, nil
 }
 
@@ -137,6 +150,10 @@ func (p *poller) SegmentsChan() <-chan RawSegment {
 	return p.segChan
 }
 
+func (p *poller) BufferPool() sync.Pool{
+	return p.bufPool
+}
+
 func (p *poller) read(buf *[]byte) (int, error) {
 	bufVal := *buf
 	rlen, err := p.udpSock.Read(bufVal)
@@ -156,7 +173,6 @@ func (p *poller) read(buf *[]byte) (int, error) {
 
 func (p *poller) poll() {
 	defer p.wg.Done()
-	buffer := make([]byte, pollerBufferSizeKB)
 	var (
 		errRecv   *recvErr.ErrRecoverable
 		errIrrecv *recvErr.ErrIrrecoverable
@@ -167,14 +183,16 @@ func (p *poller) poll() {
 		case <-p.shutDown:
 			return
 		default:
+			if len(p.segChan) == segChanSize {
+				continue
+			}
 			ctx := obsreport.StartTraceDataReceiveOp(
 				p.receiverLongLivedCtx,
 				p.receiverInstanceName,
 				Transport,
 				obsreport.WithLongLivedCtx())
-
-			bufPointer := &buffer
-			rlen, err := p.read(bufPointer)
+			bufferPointer := p.bufPool.Get().(*[]byte)
+			rlen, err := p.read(bufferPointer)
 			if errors.As(err, &errIrrecv) {
 				// TODO: We may want to attempt to shutdown/clean the broken socket and open a new one
 				// with the same address
@@ -186,9 +204,8 @@ func (p *poller) poll() {
 				obsreport.EndTraceDataReceiveOp(ctx, awsxray.TypeStr, 1, err)
 				continue
 			}
-
+			buffer := *bufferPointer
 			bufMessage := buffer[0:rlen]
-
 			header, body, err := tracesegment.SplitHeaderBody(bufMessage)
 			// For now tracesegment.SplitHeaderBody does not return irrecoverable error
 			// so we don't check for it
@@ -208,12 +225,11 @@ func (p *poller) poll() {
 					errors.New("dropped span due to missing body that contains segment"))
 				continue
 			}
-			copybody := make([]byte, len(body))
-			copy(copybody, body)
 
 			p.segChan <- RawSegment{
-				Payload: copybody,
+				Payload: body,
 				Ctx:     ctx,
+				BufferPointer: bufferPointer,
 			}
 		}
 	}
