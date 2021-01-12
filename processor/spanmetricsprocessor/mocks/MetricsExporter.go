@@ -5,8 +5,10 @@ package mocks
 import (
 	context "context"
 
-	mock "github.com/stretchr/testify/mock"
 	component "go.opentelemetry.io/collector/component"
+
+	mock "github.com/stretchr/testify/mock"
+
 	pdata "go.opentelemetry.io/collector/consumer/pdata"
 )
 
