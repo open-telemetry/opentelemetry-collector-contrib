@@ -646,10 +646,10 @@ func TestSpanNameNormalization(t *testing.T) {
 	tabName := "\t"
 	junkName := "\tgetsRidOf\x1c\x1c\x18Junk"
 	onlyJunkName := "\x02\x1c\x18\x08_only_junk_"
+	onlyBadCharsName := "\x02\x1c\x18\x08"
 
 	assert.Equal(t, utils.NormalizeSpanName(emptyName, false), "")
 	assert.Equal(t, utils.NormalizeSpanName(dashName, false), "k_e_b_a_b")
-	assert.Equal(t, utils.NormalizeServiceName(dashName), "k-e-b-a-b")
 	assert.Equal(t, utils.NormalizeSpanName(camelCaseName, false), "camelcase")
 	assert.Equal(t, utils.NormalizeSpanName(periodName, false), "first.second")
 	assert.Equal(t, utils.NormalizeSpanName(removeSpacesName, false), "removes_spaces")
@@ -658,6 +658,10 @@ func TestSpanNameNormalization(t *testing.T) {
 	assert.Equal(t, utils.NormalizeSpanName(tabName, false), "")
 	assert.Equal(t, utils.NormalizeSpanName(junkName, false), "getsridof_junk")
 	assert.Equal(t, utils.NormalizeSpanName(onlyJunkName, false), "only_junk")
+
+	assert.Equal(t, utils.NormalizeServiceName(dashName), "k-e-b-a-b")
+ 	assert.Equal(t, utils.NormalizeServiceName(onlyBadCharsName), utils.DefaultServiceName)
+ 	assert.Equal(t, utils.NormalizeServiceName(emptyName), utils.DefaultServiceName)	
 }
 
 // ensure that the datadog span type gets mapped from span kind
