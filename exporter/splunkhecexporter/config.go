@@ -36,7 +36,7 @@ type Config struct {
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 
-	// HEC Token is the authentication token provided by Splunk.
+	// HEC Token is the authentication token provided by Splunk: https://docs.splunk.com/Documentation/Splunk/latest/Data/UsetheHTTPEventCollector.
 	Token string `mapstructure:"token"`
 
 	// URL is the Splunk HEC endpoint where data is going to be sent to.
