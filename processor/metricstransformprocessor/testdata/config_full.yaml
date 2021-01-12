@@ -51,6 +51,11 @@ processors:
         new_name: combined_metric_name
         submatch_case: lower
 
+      - include: name2
+        match_type: strict
+        action: group
+        group_resource_labels: {"metric_group": "2"}
+
 exporters:
   exampleexporter:
 

@@ -34,6 +34,9 @@ const (
 	// NewNameFieldName is the mapstructure field name for NewName field
 	NewNameFieldName = "new_name"
 
+	// GroupResouceLabelsFieldName is the mapstructure field name for GroupResouceLabels field
+	GroupResouceLabelsFieldName = "group_resource_labels"
+
 	// AggregationTypeFieldName is the mapstructure field name for AggregationType field
 	AggregationTypeFieldName = "aggregation_type"
 
@@ -75,6 +78,10 @@ type Transform struct {
 	// NewName specifies the name of the new metric when inserting or updating.
 	// REQUIRED only if Action is INSERT.
 	NewName string `mapstructure:"new_name"`
+
+	// GroupResourceLabels specifes resource labels that will be appended to this group's new ResourceMetrics message
+	// REQUIRED only if Action is GROUP
+	GroupResourceLabels map[string]string `mapstructure:"group_resource_labels"`
 
 	// AggregationType specifies how to aggregate.
 	// REQUIRED only if Action is COMBINE.
@@ -147,9 +154,12 @@ const (
 
 	// Combine combines multiple metrics into a single metric.
 	Combine ConfigAction = "combine"
+
+	// Group groups mutiple metrics matching the predicate into multiple ResourceMetrics messages
+	Group ConfigAction = "group"
 )
 
-var Actions = []ConfigAction{Insert, Update, Combine}
+var Actions = []ConfigAction{Insert, Update, Combine, Group}
 
 func (ca ConfigAction) isValid() bool {
 	for _, configAction := range Actions {
