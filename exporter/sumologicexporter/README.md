@@ -7,7 +7,7 @@ The following configuration options are supported:
 - `endpoint` (required): Unique URL generated for your HTTP Metrics Source. This is the address to send metrics to.
 - `compress_encoding` (optional): Compression encoding format, either empty string (`""`), `gzip` or `deflate` (default `gzip`).
 Empty string means no compression
-- `max_request_body_size` (optional): Max HTTP request body size in bytes before compression (if applied). By default 1MB is used.
+- `max_request_body_size` (optional): Max HTTP request body size in bytes before compression (if applied). By default `1_048_576` (1MB) is used.
 - `metadata_attributes` (optional): List of regexes for attributes which should be send as metadata
 - `log_format` (optional) (logs only): Format to use when sending logs to Sumo. (default `json`) (possible values: `json`, `text`)
 - `metric_format` (optional) (metrics only): Format of the metrics to be sent, either graphite, carbon2 or prometheus (default is carbon2).
@@ -34,10 +34,9 @@ Example:
 ```yaml
 exporters:
   sumologic:
-    url: "https://events.sumologic.net/receiver/v1/http/<UniqueHTTPCollectorCode>"
-    compress: true
+    endpoint: http://localhost:3000
     compress_encoding: "gzip"
-    max_request_body_size: "1MB"
+    max_request_body_size: "1_048_576"  # 1MB
     log_format: "text"
     metric_format: "prometheus"
     source_category: "custom category"
