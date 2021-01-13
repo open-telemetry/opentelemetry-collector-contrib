@@ -58,7 +58,7 @@ config:
 
 ## Rule Expressions
 
-Each rule must start with `type.(pod|port) &&` such that the rule matches
+Each rule must start with `type.(pod|port|hostport) &&` such that the rule matches
 only one endpoint type. Depending on the type of endpoint the rule is
 targeting it will have different variables available.
 
@@ -85,14 +85,14 @@ targeting it will have different variables available.
 
 ### Host Port
 
-| Variable  | Description                                      |
-|-----------|--------------------------------------------------|
-| type.host | `true`                                           |
-| name      | Name of the process                              |
-| command   | Command line with the used to invoke the process |
-| is_ipv6   | true if endpoint is IPv6, otherwise false        |
-| port      | Port number                                      |
-| transport | The transport protocol ("TCP" or "UDP")          |
+| Variable       | Description                                      |
+|----------------|--------------------------------------------------|
+| type.hostport  | `true`                                           |
+| name           | Name of the process                              |
+| command        | Command line with the used to invoke the process |
+| is_ipv6        | true if endpoint is IPv6, otherwise false        |
+| port           | Port number                                      |
+| transport      | The transport protocol ("TCP" or "UDP")          |
 
 ## Example
 

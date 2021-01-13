@@ -42,10 +42,10 @@ func TestEndpointEnv(t *testing.T) {
 				},
 			},
 			want: EndpointEnv{
-				"type": map[EndpointType]bool{
-					PodType:      true,
-					HostPortType: false,
-					PortType:     false,
+				"type": map[string]bool{
+					"pod":      true,
+					"hostport": false,
+					"port":     false,
 				},
 				"endpoint": "192.68.73.2",
 				"name":     "pod_name",
@@ -79,10 +79,10 @@ func TestEndpointEnv(t *testing.T) {
 				},
 			},
 			want: EndpointEnv{
-				"type": map[EndpointType]bool{
-					PodType:      false,
-					HostPortType: false,
-					PortType:     true,
+				"type": map[string]bool{
+					"pod":      false,
+					"hostport": false,
+					"port":     true,
 				},
 				"endpoint": "192.68.73.2",
 				"name":     "port_name",
@@ -114,10 +114,10 @@ func TestEndpointEnv(t *testing.T) {
 				},
 			},
 			want: EndpointEnv{
-				"type": map[EndpointType]bool{
-					HostPortType: true,
-					PodType:      false,
-					PortType:     false,
+				"type": map[string]bool{
+					"hostport": true,
+					"pod":      false,
+					"port":     false,
 				},
 				"endpoint":  "127.0.0.1",
 				"name":      "process_name",
@@ -133,11 +133,11 @@ func TestEndpointEnv(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.endpoint.Env()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("EndpointToEnv() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Env() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("EndpointToEnv() got = %v, want %v", got, tt.want)
+				t.Errorf("Env() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
