@@ -150,7 +150,7 @@ func classifyAsOrphanSpans(orphanSpans []*sentry.Span, prevLength int, idMap map
 
 func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, resourceTags map[string]string) (sentrySpan *sentry.Span) {
 	parentSpanID := ""
-	if psID := span.ParentSpanID(); psID.IsValid() {
+	if psID := span.ParentSpanID(); !psID.IsEmpty() {
 		parentSpanID = psID.HexString()
 	}
 

@@ -138,7 +138,7 @@ func (sp *groupByTraceProcessor) processBatch(batch *singleTraceBatch) error {
 
 	// place the trace ID in the buffer, and check if an item had to be evicted
 	evicted := sp.ringBuffer.put(traceID)
-	if evicted.IsValid() {
+	if !evicted.IsEmpty() {
 		// delete from the storage
 		sp.eventMachine.fire(event{
 			typ:     traceRemoved,
@@ -265,7 +265,7 @@ func splitByTrace(rs pdata.ResourceSpans) []*singleTraceBatch {
 		ils := rs.InstrumentationLibrarySpans().At(i)
 		for j := 0; j < ils.Spans().Len(); j++ {
 			span := ils.Spans().At(j)
-			if !span.TraceID().IsValid() {
+			if span.TraceID().IsEmpty() {
 				// this should have already been caught before our processor, but let's
 				// protect ourselves against bad clients
 				continue
