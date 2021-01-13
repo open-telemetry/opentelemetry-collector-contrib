@@ -2,6 +2,39 @@
 
 ## Unreleased
 
+## v0.18.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.18.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.18.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+
+- `sumologic` exporter to send logs and metrics data to Sumo Logic
+- `dynatrace` exporter to send metrics to Dynatrace
+
+## 💡 Enhancements 💡
+
+- `datadog` exporter:
+  - Add resource attributes to tags conversion feature (#1782)
+  - Add Kubernetes conventions for hostnames (#1919)
+  - Add container tags to datadog export for container infra metrics in service view (#1895)
+  - Update resource naming and span naming (#1861)
+  - Add environment variables support for config options (#1897)
+- `awsxray` exporter: Add parsing of JavaScript stack traces (#1888)
+- `elastic` exporter: Translate exception span events (#1858)
+- `signalfx` exporter: Add translation rules to aggregate per core CPU metrics in default translations (#1841)
+- `resourcedetection` processor: Gather tags associated with the EC2 instance and add them as resource attributes (#1899)
+- `simpleprometheus` receiver: Add support for passing params to the prometheus scrape config (#1949)
+- `azuremonitor` exporter: Implement Span status code specification changes - gRPC (#1960)
+- `metricstransform` processor: Add grouping option ($1887)
+- `alibabacloudlogservice` exporter: Use producer to send data to improve performance (#1981)
+
+## 🧰 Bug fixes 🧰
+
+- `datadog` exporter: Handle monotonic metrics client-side (#1805)
+- `awsxray` exporter: Log error when translating span (#1809)
+
 ## v0.17.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.17.0 (Beta) 🎉
