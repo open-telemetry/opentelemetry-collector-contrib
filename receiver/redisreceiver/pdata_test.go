@@ -86,6 +86,8 @@ func TestMissingMetricValue(t *testing.T) {
 }
 
 func TestMissingMetric(t *testing.T) {
+	// unlike the above test, the key "foo" not in the set of known keys
+	// which should cause a warning
 	redisMetrics := []*redisMetric{{key: "foo"}}
 	_, warnings, err := testFetchMetrics(redisMetrics)
 	require.NoError(t, err)
