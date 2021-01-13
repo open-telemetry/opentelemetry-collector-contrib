@@ -29,6 +29,7 @@ import (
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
 )
 
 func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSpanID [8]byte, statusCode pdata.StatusCode, resourceEnvAndService bool) pdata.ResourceSpans {
@@ -225,7 +226,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, "kube-system", datadogPayload.Traces[0].Spans[0].Meta["namespace"])
 
 	// ensure that span service name gives resource service.name priority
-	assert.Equal(t, "OTLPResourceNoServiceName", datadogPayload.Traces[0].Spans[0].Service)
+	assert.Equal(t, "otlpresourcenoservicename", datadogPayload.Traces[0].Spans[0].Service)
 
 	// ensure a duration and start time are calculated
 	assert.NotNil(t, datadogPayload.Traces[0].Spans[0].Start)
@@ -394,6 +395,62 @@ func TestTracesTranslationNoIls(t *testing.T) {
 	// ensure hostname arg is respected
 	assert.Equal(t, hostname, datadogPayload.HostName)
 	assert.Equal(t, 0, len(datadogPayload.Traces))
+}
+
+// ensure that the translation returns early if no resource instrumentation library spans
+func TestTracesTranslationInvalidService(t *testing.T) {
+	hostname := "testhostname"
+	calculator := newSublayerCalculator()
+
+	// generate mock trace, span and parent span ids
+	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
+	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
+	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
+
+	// create mock resource span data
+	// toggle on errors and custom service naming to test edge case code paths
+	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeUnset, false)
+
+	// add a tab and an invalid character to see if it gets normalized
+	cfgInvalidService := config.Config{
+		TagsConfig: config.TagsConfig{
+			Version: "v1",
+			Service: "alt-s	ervice",
+		},
+	}
+
+	// use only an invalid character
+	cfgEmptyService := config.Config{
+		TagsConfig: config.TagsConfig{
+			Version: "v1",
+			Service: "	",
+		},
+	}
+
+	// start with an invalid character
+	cfgStartWithInvalidService := config.Config{
+		TagsConfig: config.TagsConfig{
+			Version: "v1",
+			Service: "	alt-service",
+		},
+	}
+
+	// translate mocks to datadog traces
+	datadogPayloadInvalidService := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfgInvalidService)
+	datadogPayloadEmptyService := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfgEmptyService)
+	datadogPayloadStartWithInvalidService := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfgStartWithInvalidService)
+
+	// ensure we return the correct type
+	assert.IsType(t, pb.TracePayload{}, datadogPayloadInvalidService)
+	assert.IsType(t, pb.TracePayload{}, datadogPayloadEmptyService)
+	assert.IsType(t, pb.TracePayload{}, datadogPayloadStartWithInvalidService)
+
+	// ensure that span service name replaces invalid chars
+	assert.Equal(t, "alt-s_ervice", datadogPayloadInvalidService.Traces[0].Spans[0].Service)
+	// ensure that span service name has default
+	assert.Equal(t, "unnamed-otel-service", datadogPayloadEmptyService.Traces[0].Spans[0].Service)
+	// ensure that span service name removes invalid starting chars
+	assert.Equal(t, "alt-service", datadogPayloadStartWithInvalidService.Traces[0].Spans[0].Service)
 }
 
 // ensure that datadog span resource naming uses http method+route when available
@@ -575,6 +632,35 @@ func TestSpanNameTranslation(t *testing.T) {
 	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "current_value", strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), spanNameCur)
 	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "unusual_value", strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), spanNameUnusual)
 	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "hyphenated_value", strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), spanNameHyphen)
+}
+
+// ensure that the datadog span name uses IL name +kind when available and falls back to opetelemetry + kind
+func TestSpanNameNormalization(t *testing.T) {
+	emptyName := ""
+	dashName := "k-e-b-a-b"
+	camelCaseName := "camelCase"
+	periodName := "first.second"
+	removeSpacesName := "removes Spaces"
+	numericsName := "num3r1cs_OK"
+	underscoresName := "permits_underscores"
+	tabName := "\t"
+	junkName := "\tgetsRidOf\x1c\x1c\x18Junk"
+	onlyJunkName := "\x02\x1c\x18\x08_only_junk_"
+	onlyBadCharsName := "\x02\x1c\x18\x08"
+
+	assert.Equal(t, utils.NormalizeSpanName(emptyName, false), "")
+	assert.Equal(t, utils.NormalizeSpanName(dashName, false), "k_e_b_a_b")
+	assert.Equal(t, utils.NormalizeSpanName(camelCaseName, false), "camelcase")
+	assert.Equal(t, utils.NormalizeSpanName(periodName, false), "first.second")
+	assert.Equal(t, utils.NormalizeSpanName(removeSpacesName, false), "removes_spaces")
+	assert.Equal(t, utils.NormalizeSpanName(numericsName, false), "num3r1cs_ok")
+	assert.Equal(t, utils.NormalizeSpanName(underscoresName, false), "permits_underscores")
+	assert.Equal(t, utils.NormalizeSpanName(tabName, false), "")
+	assert.Equal(t, utils.NormalizeSpanName(junkName, false), "getsridof_junk")
+	assert.Equal(t, utils.NormalizeSpanName(onlyJunkName, false), "only_junk")
+	assert.Equal(t, utils.NormalizeServiceName(dashName), "k-e-b-a-b")
+	assert.Equal(t, utils.NormalizeServiceName(onlyBadCharsName), utils.DefaultServiceName)
+	assert.Equal(t, utils.NormalizeServiceName(emptyName), utils.DefaultServiceName)
 }
 
 // ensure that the datadog span type gets mapped from span kind

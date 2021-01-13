@@ -182,9 +182,14 @@ func spanToDatadogSpan(s pdata.Span,
 
 	// otel specification resource service.name takes precedence
 	// and configuration DD_ENV as fallback if it exists
-	if serviceName == "" && cfg.Service != "" {
-		serviceName = cfg.Service
+	if cfg.Service != "" {
+		// prefer the collector level service name over an empty string or otel default
+		if serviceName == "" || serviceName == tracetranslator.ResourceNoServiceName {
+			serviceName = cfg.Service
+		}
 	}
+
+	normalizedServiceName := utils.NormalizeServiceName(serviceName)
 
 	//  canonical resource attribute version should override others if it exists
 	if rsTagVersion := tags[conventions.AttributeServiceVersion]; rsTagVersion != "" {
@@ -222,7 +227,7 @@ func spanToDatadogSpan(s pdata.Span,
 		SpanID:   decodeAPMSpanID(s.SpanID().Bytes()),
 		Name:     getDatadogSpanName(s, tags),
 		Resource: getDatadogResourceName(s, tags),
-		Service:  serviceName,
+		Service:  normalizedServiceName,
 		Start:    int64(startTime),
 		Duration: duration,
 		Metrics:  map[string]float64{},
@@ -393,18 +398,18 @@ func getDatadogSpanName(s pdata.Span, datadogTags map[string]string) string {
 	// The spec has changed over time and, depending on the original exporter, IL Name could represented a few different ways
 	// so we try to account for all permutations
 	if ilnOtlp, okOtlp := datadogTags[tracetranslator.TagInstrumentationName]; okOtlp {
-		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtlp, utils.NormalizeSpanKind(s.Kind())))
+		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtlp, utils.NormalizeSpanKind(s.Kind())), false)
 	}
 
 	if ilnOtelCur, okOtelCur := datadogTags[currentILNameTag]; okOtelCur {
-		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtelCur, utils.NormalizeSpanKind(s.Kind())))
+		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtelCur, utils.NormalizeSpanKind(s.Kind())), false)
 	}
 
 	if ilnOtelOld, okOtelOld := datadogTags[oldILNameTag]; okOtelOld {
-		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtelOld, utils.NormalizeSpanKind(s.Kind())))
+		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtelOld, utils.NormalizeSpanKind(s.Kind())), false)
 	}
 
-	return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", "opentelemetry", utils.NormalizeSpanKind(s.Kind())))
+	return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", "opentelemetry", utils.NormalizeSpanKind(s.Kind())), false)
 }
 
 func getDatadogResourceName(s pdata.Span, datadogTags map[string]string) string {
