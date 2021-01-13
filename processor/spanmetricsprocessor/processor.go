@@ -23,6 +23,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/metricsdimensioncache"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
@@ -69,10 +71,12 @@ type processorImp struct {
 	latencyBounds       []float64
 
 	jsonSerder JSONSerder
+
+	keyCache *metricsdimensioncache.DimensionCache
 }
 
 func newProcessor(logger *zap.Logger, config configmodels.Exporter, nextConsumer consumer.TracesConsumer) (*processorImp, error) {
-	logger.Info("building spanmetricsprocessor")
+	logger.Info("Building spanmetricsprocessor")
 	pConfig := config.(*Config)
 
 	bounds := defaultLatencyHistogramBucketsMs
@@ -98,6 +102,7 @@ func newProcessor(logger *zap.Logger, config configmodels.Exporter, nextConsumer
 		nextConsumer:        nextConsumer,
 		dimensions:          pConfig.Dimensions,
 		jsonSerder:          &JSONSerde{},
+		keyCache:            metricsdimensioncache.NewDimensionCache(),
 	}, nil
 }
 
@@ -111,7 +116,7 @@ func mapDurationsToMillis(vs []time.Duration, f func(duration time.Duration) flo
 
 // Start implements the component.Component interface.
 func (p *processorImp) Start(ctx context.Context, host component.Host) error {
-	p.logger.Info("starting spanmetricsprocessor")
+	p.logger.Info("Starting spanmetricsprocessor")
 	exporters := host.GetExporters()
 
 	var availableMetricsExporters []string
@@ -125,10 +130,10 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 
 		availableMetricsExporters = append(availableMetricsExporters, k.Name())
 
-		p.logger.Info("checking if : '" + k.Name() + "' is the configured spanmetrics exporter: '" + p.config.MetricsExporter + "'")
+		p.logger.Info("Checking if : '" + k.Name() + "' is the configured spanmetrics exporter: '" + p.config.MetricsExporter + "'")
 		if k.Name() == p.config.MetricsExporter {
 			p.metricsExporter = metricsExp
-			p.logger.Info("found exporter: '" + p.config.MetricsExporter + "'")
+			p.logger.Info("Found exporter: '" + p.config.MetricsExporter + "'")
 			break
 		}
 	}
@@ -136,13 +141,13 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 		return fmt.Errorf("failed to find metrics exporter: '%s'; please configure metrics_exporter from one of: %+v",
 			p.config.MetricsExporter, availableMetricsExporters)
 	}
-	p.logger.Info("started spanmetricsprocessor")
+	p.logger.Info("Started spanmetricsprocessor")
 	return nil
 }
 
 // Shutdown implements the component.Component interface.
 func (p *processorImp) Shutdown(ctx context.Context) error {
-	p.logger.Info("shutting down spanmetricsprocessor")
+	p.logger.Info("Shutting down spanmetricsprocessor")
 	return nil
 }
 
@@ -157,7 +162,7 @@ func (p *processorImp) GetCapabilities() component.ProcessorCapabilities {
 // to the discovered metrics exporter.
 // The original input trace data will be forwarded to the next consumer, unmodified.
 func (p *processorImp) ConsumeTraces(ctx context.Context, traces pdata.Traces) error {
-	p.logger.Info("consuming trace data")
+	p.logger.Info("Consuming trace data")
 
 	if err := p.aggregateMetrics(traces); err != nil {
 		return err
@@ -325,6 +330,9 @@ func (p *processorImp) updateLatencyMetrics(key string, latency float64, index i
 // such as operation, kind, status_code and any additional dimensions the
 // user has configured.
 func (p *processorImp) buildKey(serviceName string, span pdata.Span) (string, error) {
+	dimension := p.keyCache.InsertDimensions(
+		[]string{serviceName, span.Name(), span.Kind().String(), span.Status().Code().String()}...,
+	)
 	kmap := map[string]string{
 		serviceNameKey: serviceName,
 		operationKey:   span.Name(),
@@ -351,16 +359,27 @@ func (p *processorImp) buildKey(serviceName string, span pdata.Span) (string, er
 			case pdata.AttributeValueNULL:
 				kmap[d.Name] = ""
 			default:
-				p.logger.Warn("unsupported tag data type: " + attr.Type().String())
+				p.logger.Warn("Unsupported tag data type: " + attr.Type().String())
+				continue
 			}
 		}
+		dimension = dimension.InsertDimensions(kmap[d.Name])
 	}
 
+	// Found a cached key, just return it.
+	if dimension.FoundCachedDimensionKey() {
+		return dimension.GetCachedDimensionKey(), nil
+	}
+
+	// Otherwise, serialize the map to JSON.
 	kjson, err := p.jsonSerder.Marshal(kmap)
 	if err != nil {
 		return "", err
 	}
-	return string(kjson), nil
+
+	kjsonstr := string(kjson)
+	dimension.SetCachedDimensionKey(kjsonstr)
+	return kjsonstr, nil
 }
 
 func (p *processorImp) withRLock(f func() error) error {

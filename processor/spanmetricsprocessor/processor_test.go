@@ -33,6 +33,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/metricsdimensioncache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/mocks"
 )
 
@@ -271,6 +272,31 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	}
 }
 
+func TestDimensionKeyCache(t *testing.T) {
+	// Prepare
+	mexp := &mocks.MetricsExporter{}
+	tcon := &mocks.TracesConsumer{}
+
+	mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
+	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
+
+	defaultNullValue := "defaultNullValue"
+	p := newProcessorImp(mexp, tcon, &JSONSerde{}, &defaultNullValue)
+
+	traces := buildSampleTrace()
+
+	// Test
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+
+	// Send 2 traces with the same span attributes should reuse a cached dimension key.
+	assert.True(t, p.keyCache.Empty())
+	p.ConsumeTraces(ctx, traces)
+	p.ConsumeTraces(ctx, traces)
+	assert.False(t, p.keyCache.Empty())
+	d := p.keyCache.InsertDimensions([]string{"service-a", "/ping", "SPAN_KIND_SERVER", "STATUS_CODE_OK", "stringAttrValue", "99", "99.99", "true", ""}...)
+	assert.True(t, d.FoundCachedDimensionKey())
+}
+
 func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, jsonSerder JSONSerder, defaultNullValue *string) *processorImp {
 	return &processorImp{
 		logger:          zap.NewNop(),
@@ -293,6 +319,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, js
 			{nullAttrName, defaultNullValue},
 		},
 		jsonSerder: jsonSerder,
+		keyCache:   metricsdimensioncache.NewDimensionCache(),
 	}
 }
 
