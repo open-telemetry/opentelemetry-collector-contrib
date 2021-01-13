@@ -58,7 +58,14 @@ func TestNewType(t *testing.T) {
 
 func TestDefaultMetrics(t *testing.T) {
 	logger := zap.NewNop()
-	cfg := &config.Config{}
+	cfg := &config.Config{
+		// Global tags should be ignored and sent as metadata
+		TagsConfig: config.TagsConfig{
+			Hostname: "test-host",
+			Env:      "test_env",
+			Tags:     []string{"key:val"},
+		},
+	}
 
 	ms := DefaultMetrics("metrics", uint64(2e9))
 	ProcessMetrics(ms, logger, cfg)
@@ -70,6 +77,10 @@ func TestDefaultMetrics(t *testing.T) {
 	assert.Equal(t, 2.0, *ms[0].Points[0][0])
 	// Assert value (should always be 1.0)
 	assert.Equal(t, 1.0, *ms[0].Points[0][1])
+	// Assert hostname tag is set
+	assert.Equal(t, "test-host", *ms[0].Host)
+	// Assert no other tags are set
+	assert.ElementsMatch(t, []string{}, ms[0].Tags)
 }
 
 func TestProcessMetrics(t *testing.T) {
