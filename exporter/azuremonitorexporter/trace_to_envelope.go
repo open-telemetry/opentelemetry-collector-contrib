@@ -594,14 +594,14 @@ func mapIncomingSpanToType(attributeMap pdata.AttributeMap) spanType {
 		return unknownSpanType
 	}
 
-	// HTTP
-	if _, exists := attributeMap.Get(conventions.AttributeHTTPMethod); exists {
-		return httpSpanType
-	}
-
 	// RPC
 	if _, exists := attributeMap.Get(conventions.AttributeRPCSystem); exists {
 		return rpcSpanType
+	}
+
+	// HTTP
+	if _, exists := attributeMap.Get(conventions.AttributeHTTPMethod); exists {
+		return httpSpanType
 	}
 
 	// Database
