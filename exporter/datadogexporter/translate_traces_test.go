@@ -755,3 +755,38 @@ func TestTracePayloadAggr(t *testing.T) {
 	assert.Equal(t, 2, len(originalPayloadDifferentEnv))
 	assert.Equal(t, 2, len(updatedPayloadsDifferentEnv))
 }
+
+// ensure that stats payloads get tagged with version tag
+func TestStatsAggregations(t *testing.T) {
+	hostname := "testhostname"
+	calculator := newSublayerCalculator()
+
+	// generate mock trace, span and parent span ids
+	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
+	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
+	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
+
+	// create mock resource span data
+	// toggle on errors and custom service naming to test edge case code paths
+	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeError, true)
+
+	// translate mocks to datadog traces
+	cfg := config.Config{}
+
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
+
+	statsOutput := computeAPMStats(&datadogPayload, calculator, time.Now().UTC().UnixNano())
+
+	var statsVersionTag stats.Tag
+
+	// extract the first stats.TagSet containing a stats.Tag of "version"
+	for _, countVal := range statsOutput.Stats[0].Counts {
+		for _, tagVal := range countVal.TagSet {
+			if tagVal.Name == versionAggregationTag {
+				statsVersionTag = tagVal
+			}
+		}
+	}
+
+	assert.Equal(t, "test-version", statsVersionTag.Value)
+}
