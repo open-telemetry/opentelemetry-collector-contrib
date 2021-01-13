@@ -11,8 +11,8 @@ ALL_SRC_AND_DOC := $(shell find . \( -name "*.md" -o -name "*.go" -o -name "*.ya
 
 # ALL_PKGS is used with 'go cover'
 ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))) 2>/dev/null)
-# ALL_MODULES includes ./* dirs (excludes . dir)
-ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
+# ALL_MODULES includes ./* dirs (excludes . dir and example with go code)
+ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' | grep -v 'receiver/simpleprometheusreceiver/examples/' )
 
 GOTEST_OPT?= -race -timeout 30s
 GOTEST_INTEGRATION_OPT?= -race -timeout 60s
@@ -126,6 +126,6 @@ misspell-correction:
 impi:
 	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal ./...
 
-.PHONY: dep 
+.PHONY: dep
 dep:
 	go mod download
