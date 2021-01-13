@@ -23,7 +23,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/metricsdimensioncache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/metricsdimensions"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -72,10 +72,10 @@ type processorImp struct {
 
 	jsonSerder JSONSerder
 
-	keyCache *metricsdimensioncache.DimensionCache
+	metricsKeyCache *metricsdimensions.Cache
 }
 
-func newProcessor(logger *zap.Logger, config configmodels.Exporter, nextConsumer consumer.TracesConsumer) (*processorImp, error) {
+func newProcessor(logger *zap.Logger, config configmodels.Exporter, nextConsumer consumer.TracesConsumer) *processorImp {
 	logger.Info("Building spanmetricsprocessor")
 	pConfig := config.(*Config)
 
@@ -102,8 +102,8 @@ func newProcessor(logger *zap.Logger, config configmodels.Exporter, nextConsumer
 		nextConsumer:        nextConsumer,
 		dimensions:          pConfig.Dimensions,
 		jsonSerder:          &JSONSerde{},
-		keyCache:            metricsdimensioncache.NewDimensionCache(),
-	}, nil
+		metricsKeyCache:     metricsdimensions.NewCache(),
+	}
 }
 
 func mapDurationsToMillis(vs []time.Duration, f func(duration time.Duration) float64) []float64 {
@@ -192,14 +192,14 @@ func (p *processorImp) buildMetrics() (*pdata.Metrics, error) {
 	ilm := pdata.NewInstrumentationLibraryMetrics()
 	ilm.InstrumentationLibrary().SetName("spanmetricsprocessor")
 
-	if err := p.withRLock(func() error {
-		if err := p.collectCallMetrics(&ilm); err != nil {
-			return err
-		}
-		return p.collectLatencyMetrics(&ilm)
-	}); err != nil {
+	p.lock.RLock()
+	if err := p.collectCallMetrics(&ilm); err != nil {
 		return nil, err
 	}
+	if err := p.collectLatencyMetrics(&ilm); err != nil {
+		return nil, err
+	}
+	p.lock.RUnlock()
 
 	rm := pdata.NewResourceMetrics()
 	ilms := rm.InstrumentationLibraryMetrics()
@@ -288,24 +288,26 @@ func (p *processorImp) aggregateMetricsForServiceSpans(rspans pdata.ResourceSpan
 		spans := ils.Spans()
 		for k := 0; k < spans.Len(); k++ {
 			span := spans.At(k)
+
+			p.lock.Lock()
 			key, err := p.buildKey(serviceName, span)
+			p.lock.Unlock()
 			if err != nil {
 				return err
 			}
 
-			p.withLock(func() error {
-				p.updateCallMetrics(key)
-				return nil
-			})
+			p.lock.Lock()
+			p.updateCallMetrics(key)
+			p.lock.Unlock()
 
 			latency := float64(span.EndTime()-span.StartTime()) / float64(time.Millisecond.Nanoseconds())
 
 			// Binary search to find the latency bucket index.
 			index := sort.SearchFloat64s(p.latencyBounds, latency)
-			p.withLock(func() error {
-				p.updateLatencyMetrics(key, latency, index)
-				return nil
-			})
+
+			p.lock.Lock()
+			p.updateLatencyMetrics(key, latency, index)
+			p.lock.Unlock()
 		}
 	}
 	return nil
@@ -330,68 +332,59 @@ func (p *processorImp) updateLatencyMetrics(key string, latency float64, index i
 // such as operation, kind, status_code and any additional dimensions the
 // user has configured.
 func (p *processorImp) buildKey(serviceName string, span pdata.Span) (string, error) {
-	dimension := p.keyCache.InsertDimensions(
-		[]string{serviceName, span.Name(), span.Kind().String(), span.Status().Code().String()}...,
+	keyMap := make(map[string]string)
+	dimension := p.metricsKeyCache.InsertDimensions(
+		keyMap,
+		[]metricsdimensions.DimensionKeyValue{
+			{Key: serviceNameKey, Value: serviceName},
+			{Key: operationKey, Value: span.Name()},
+			{Key: spanKindKey, Value: span.Kind().String()},
+			{Key: statusCodeKey, Value: span.Status().Code().String()},
+		}...,
 	)
-	kmap := map[string]string{
-		serviceNameKey: serviceName,
-		operationKey:   span.Name(),
-		spanKindKey:    span.Kind().String(),
-		statusCodeKey:  span.Status().Code().String(),
-	}
 	spanAttr := span.Attributes()
+	var value string
 	for _, d := range p.dimensions {
 		// Set the default if configured, otherwise this metric will have no value set for the dimension.
 		if d.Default != nil {
-			kmap[d.Name] = *d.Default
+			value = *d.Default
 		}
 		// Map the various attribute values to string.
 		if attr, ok := spanAttr.Get(d.Name); ok {
 			switch attr.Type() {
 			case pdata.AttributeValueSTRING:
-				kmap[d.Name] = attr.StringVal()
+				value = attr.StringVal()
 			case pdata.AttributeValueINT:
-				kmap[d.Name] = strconv.FormatInt(attr.IntVal(), 10)
+				value = strconv.FormatInt(attr.IntVal(), 10)
 			case pdata.AttributeValueDOUBLE:
-				kmap[d.Name] = strconv.FormatFloat(attr.DoubleVal(), 'f', -1, 64)
+				value = strconv.FormatFloat(attr.DoubleVal(), 'f', -1, 64)
 			case pdata.AttributeValueBOOL:
-				kmap[d.Name] = strconv.FormatBool(attr.BoolVal())
+				value = strconv.FormatBool(attr.BoolVal())
 			case pdata.AttributeValueNULL:
-				kmap[d.Name] = ""
+				value = ""
 			default:
 				p.logger.Warn("Unsupported tag data type: " + attr.Type().String())
 				continue
 			}
 		}
-		dimension = dimension.InsertDimensions(kmap[d.Name])
+		dimension = dimension.InsertDimensions(
+			keyMap,
+			metricsdimensions.DimensionKeyValue{Key: d.Name, Value: value},
+		)
 	}
 
 	// Found a cached key, just return it.
-	if dimension.FoundCachedDimensionKey() {
-		return dimension.GetCachedDimensionKey(), nil
+	if dimension.HasCachedMetricKey() {
+		return dimension.GetCachedMetricKey(), nil
 	}
 
 	// Otherwise, serialize the map to JSON.
-	kjson, err := p.jsonSerder.Marshal(kmap)
+	kjson, err := p.jsonSerder.Marshal(keyMap)
 	if err != nil {
 		return "", err
 	}
 
 	kjsonstr := string(kjson)
-	dimension.SetCachedDimensionKey(kjsonstr)
+	dimension.SetCachedMetricKey(kjsonstr)
 	return kjsonstr, nil
-}
-
-func (p *processorImp) withRLock(f func() error) error {
-	p.lock.RLock()
-	err := f()
-	p.lock.RUnlock()
-	return err
-}
-
-func (p *processorImp) withLock(f func() error) error {
-	p.lock.Lock()
-	err := f()
-	p.lock.Unlock()
-	return err
 }

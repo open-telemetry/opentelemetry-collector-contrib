@@ -33,7 +33,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/metricsdimensioncache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/metricsdimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/mocks"
 )
 
@@ -126,9 +126,8 @@ func TestProcessorShutdown(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zap.NewNop(), cfg, next)
-	require.NoError(t, err)
-	err = p.Shutdown(context.Background())
+	p := newProcessor(zap.NewNop(), cfg, next)
+	err := p.Shutdown(context.Background())
 
 	// Verify
 	assert.NoError(t, err)
@@ -141,11 +140,10 @@ func TestProcessorCapabilities(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zap.NewNop(), cfg, next)
+	p := newProcessor(zap.NewNop(), cfg, next)
 	caps := p.GetCapabilities()
 
 	// Verify
-	assert.NoError(t, err)
 	assert.NotNil(t, p)
 	assert.Equal(t, false, caps.MutatesConsumedData)
 }
@@ -289,12 +287,24 @@ func TestDimensionKeyCache(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 
 	// Send 2 traces with the same span attributes should reuse a cached dimension key.
-	assert.True(t, p.keyCache.Empty())
+	assert.True(t, p.metricsKeyCache.Empty())
 	p.ConsumeTraces(ctx, traces)
 	p.ConsumeTraces(ctx, traces)
-	assert.False(t, p.keyCache.Empty())
-	d := p.keyCache.InsertDimensions([]string{"service-a", "/ping", "SPAN_KIND_SERVER", "STATUS_CODE_OK", "stringAttrValue", "99", "99.99", "true", ""}...)
-	assert.True(t, d.FoundCachedDimensionKey())
+	assert.False(t, p.metricsKeyCache.Empty())
+
+	keyMap := make(map[string]string)
+	d := p.metricsKeyCache.InsertDimensions(keyMap, []metricsdimensions.DimensionKeyValue{
+		{Key: serviceNameKey, Value: "service-a"},
+		{Key: operationKey, Value: "/ping"},
+		{Key: spanKindKey, Value: "SPAN_KIND_SERVER"},
+		{Key: statusCodeKey, Value: "STATUS_CODE_OK"},
+		{Key: stringAttrName, Value: "stringAttrValue"},
+		{Key: intAttrName, Value: "99"},
+		{Key: doubleAttrName, Value: "99.99"},
+		{Key: boolAttrName, Value: "true"},
+		{Key: nullAttrName},
+	}...)
+	assert.True(t, d.HasCachedMetricKey())
 }
 
 func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, jsonSerder JSONSerder, defaultNullValue *string) *processorImp {
@@ -318,8 +328,8 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, js
 			{arrayAttrName, nil},
 			{nullAttrName, defaultNullValue},
 		},
-		jsonSerder: jsonSerder,
-		keyCache:   metricsdimensioncache.NewDimensionCache(),
+		jsonSerder:      jsonSerder,
+		metricsKeyCache: metricsdimensions.NewCache(),
 	}
 }
 

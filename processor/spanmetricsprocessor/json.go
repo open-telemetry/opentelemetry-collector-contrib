@@ -23,12 +23,15 @@ type JSONSerder interface {
 	Unmarshal(data []byte, v interface{}) error
 }
 
+// JSONSerde implements JSONSerder.
 type JSONSerde struct{}
 
+// Marshal wraps the json.Marshal function.
 func (j *JSONSerde) Marshal(v interface{}) ([]byte, error) {
 	return json.Marshal(v)
 }
 
+// Marshal wraps the json.Unmarshal function.
 func (j *JSONSerde) Unmarshal(data []byte, v interface{}) error {
 	return json.Unmarshal(data, v)
 }
