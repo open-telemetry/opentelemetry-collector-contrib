@@ -31,7 +31,7 @@ func (j *JSONSerde) Marshal(v interface{}) ([]byte, error) {
 	return json.Marshal(v)
 }
 
-// Marshal wraps the json.Unmarshal function.
+// Unmarshal wraps the json.Unmarshal function.
 func (j *JSONSerde) Unmarshal(data []byte, v interface{}) error {
 	return json.Unmarshal(data, v)
 }
