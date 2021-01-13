@@ -127,6 +127,14 @@ func TestLoadingFullConfig(t *testing.T) {
 						NewName:      "combined_metric_name",
 						SubmatchCase: "lower",
 					},
+					{
+						MetricIncludeFilter: FilterConfig{
+							Include:   "name2",
+							MatchType: "strict",
+						},
+						Action:              "group",
+						GroupResourceLabels: map[string]string{"metric_group": "2"},
+					},
 				},
 			},
 		},

@@ -16,6 +16,7 @@ package alibabacloudlogserviceexporter
 
 import (
 	"context"
+	"path"
 	"testing"
 	"time"
 
@@ -63,7 +64,19 @@ func TestNewLogsExporter(t *testing.T) {
 	// This will put trace data to send buffer and return success.
 	err = got.ConsumeLogs(context.Background(), createSimpleLogData(3))
 	// a
-	assert.Error(t, err)
+	assert.NoError(t, err)
+	time.Sleep(time.Second * 4)
+}
+
+func TestSTSTokenExporter(t *testing.T) {
+	got, err := newLogsExporter(zap.NewNop(), &Config{
+		Endpoint:      "us-west-1.log.aliyuncs.com",
+		Project:       "demo-project",
+		Logstore:      "demo-logstore",
+		TokenFilePath: path.Join(".", "testdata", "config.yaml"),
+	})
+	assert.NoError(t, err)
+	require.NotNil(t, got)
 }
 
 func TestNewFailsWithEmptyLogsExporterName(t *testing.T) {

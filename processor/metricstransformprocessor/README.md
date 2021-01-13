@@ -232,3 +232,21 @@ submatch_case: lower
 operations:
   ...
 ```
+
+### Group Metrics 
+```yaml
+# Group metrics from one single ResourceMetrics and report them as multiple ResourceMetrics.
+# 
+# ex: Consider pod and container metrics collected from Kubernetes. Both the metrics are recorded under under one ResourceMetric
+# applying this transformation will result in two separate ResourceMetric packets with corresponding resource labels in the resource headers
+
+
+- include: ^k8s\.pod\.(.*)$
+  match_type: regexp
+  action: group
+  group_resource_labels: {"resouce.type": "k8s.pod", "source": "kubelet"}
+- include: ^container\.(.*)$
+  match_type: regexp
+  action: group
+  group_resource_labels: {"resouce.type": "container", "source": "kubelet"}
+```

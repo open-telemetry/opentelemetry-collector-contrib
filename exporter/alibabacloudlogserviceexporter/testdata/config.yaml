@@ -13,7 +13,6 @@ exporters:
     logstore: "demo-logstore"
     access_key_id: "test-id"
     access_key_secret: "test-secret"
-    ecs_ram_role: "test-role"
 
 service:
   pipelines:
