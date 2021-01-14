@@ -133,11 +133,11 @@ func (x *xrayReceiver) start() {
 	incomingSegments := x.poller.SegmentsChan()
 	bufPool := x.poller.BufferPool()
 	for w := 1; w <= x.numOfWorkerToStart; w++ {
-		go x.worker(incomingSegments, bufPool)
+		go x.worker(incomingSegments, &bufPool)
 	}
 }
 
-func (x *xrayReceiver) worker(incomingSegments <-chan udppoller.RawSegment, bufferPool sync.Pool) {
+func (x *xrayReceiver) worker(incomingSegments <-chan udppoller.RawSegment, bufferPool *sync.Pool) {
 	for{
 		select {
 		case <-x.shutDown:
