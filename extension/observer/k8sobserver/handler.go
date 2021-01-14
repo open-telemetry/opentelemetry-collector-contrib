@@ -57,7 +57,7 @@ func (h *handler) convertPodToEndpoints(pod *v1.Pod) []observer.Endpoint {
 	endpoints := []observer.Endpoint{{
 		ID:      podID,
 		Target:  podIP,
-		Details: podDetails,
+		Details: &podDetails,
 	}}
 
 	// Map of running containers by name.
@@ -84,7 +84,7 @@ func (h *handler) convertPodToEndpoints(pod *v1.Pod) []observer.Endpoint {
 			endpoints = append(endpoints, observer.Endpoint{
 				ID:     endpointID,
 				Target: fmt.Sprintf("%s:%d", podIP, port.ContainerPort),
-				Details: observer.Port{
+				Details: &observer.Port{
 					Pod:       podDetails,
 					Name:      port.Name,
 					Port:      uint16(port.ContainerPort),

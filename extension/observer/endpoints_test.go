@@ -19,7 +19,7 @@ import (
 	"testing"
 )
 
-func TestEndpointToEnv(t *testing.T) {
+func TestEndpointEnv(t *testing.T) {
 	tests := []struct {
 		name     string
 		endpoint Endpoint
@@ -31,7 +31,7 @@ func TestEndpointToEnv(t *testing.T) {
 			endpoint: Endpoint{
 				ID:     EndpointID("pod_id"),
 				Target: "192.68.73.2",
-				Details: Pod{
+				Details: &Pod{
 					Name: "pod_name",
 					Labels: map[string]string{
 						"label_key": "label_val",
@@ -42,9 +42,10 @@ func TestEndpointToEnv(t *testing.T) {
 				},
 			},
 			want: EndpointEnv{
-				"type": map[string]interface{}{
-					"port": false,
-					"pod":  true,
+				"type": map[string]bool{
+					"pod":      true,
+					"hostport": false,
+					"port":     false,
 				},
 				"endpoint": "192.68.73.2",
 				"name":     "pod_name",
@@ -62,7 +63,7 @@ func TestEndpointToEnv(t *testing.T) {
 			endpoint: Endpoint{
 				ID:     EndpointID("port_id"),
 				Target: "192.68.73.2",
-				Details: Port{
+				Details: &Port{
 					Name: "port_name",
 					Pod: Pod{
 						Name: "pod_name",
@@ -78,9 +79,10 @@ func TestEndpointToEnv(t *testing.T) {
 				},
 			},
 			want: EndpointEnv{
-				"type": map[string]interface{}{
-					"port": true,
-					"pod":  false,
+				"type": map[string]bool{
+					"pod":      false,
+					"hostport": false,
+					"port":     true,
 				},
 				"endpoint": "192.68.73.2",
 				"name":     "port_name",
@@ -103,7 +105,7 @@ func TestEndpointToEnv(t *testing.T) {
 			endpoint: Endpoint{
 				ID:     EndpointID("port_id"),
 				Target: "127.0.0.1",
-				Details: HostPort{
+				Details: &HostPort{
 					Name:      "process_name",
 					Command:   "./cmd --config config.yaml",
 					Port:      2379,
@@ -112,9 +114,10 @@ func TestEndpointToEnv(t *testing.T) {
 				},
 			},
 			want: EndpointEnv{
-				"type": map[string]interface{}{
-					"port": true,
-					"pod":  false,
+				"type": map[string]bool{
+					"hostport": true,
+					"pod":      false,
+					"port":     false,
 				},
 				"endpoint":  "127.0.0.1",
 				"name":      "process_name",
@@ -125,26 +128,16 @@ func TestEndpointToEnv(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		{
-			name: "Unsupported endpoint",
-			endpoint: Endpoint{
-				ID:      EndpointID("port_id"),
-				Target:  "127.0.0.1:2379",
-				Details: map[string]interface{}{},
-			},
-			want:    nil,
-			wantErr: true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := EndpointToEnv(tt.endpoint)
+			got, err := tt.endpoint.Env()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("EndpointToEnv() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Env() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("EndpointToEnv() got = %v, want %v", got, tt.want)
+				t.Errorf("Env() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
