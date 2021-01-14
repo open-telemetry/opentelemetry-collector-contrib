@@ -64,10 +64,7 @@ func NewMetricsConverter(logger *zap.Logger, t *MetricTranslator) *MetricsConver
 func (c *MetricsConverter) MetricDataToSignalFxV2(rm pdata.ResourceMetrics) []*sfxpb.DataPoint {
 	var sfxDatapoints []*sfxpb.DataPoint
 
-	res := rm.Resource()
-
-	var extraDimensions []*sfxpb.Dimension
-	extraDimensions = resourceToDimensions(res)
+	extraDimensions := resourceToDimensions(rm.Resource())
 
 	for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
 		ilm := rm.InstrumentationLibraryMetrics().At(j)
@@ -381,13 +378,6 @@ func resourceToDimensions(res pdata.Resource) []*sfxpb.Dimension {
 	})
 
 	return dims
-}
-
-func getStringAttr(attrs pdata.AttributeMap, key string) string {
-	if a, ok := attrs.Get(key); ok {
-		return a.StringVal()
-	}
-	return ""
 }
 
 func timestampToSignalFx(ts pdata.TimestampUnixNano) int64 {
