@@ -117,7 +117,7 @@ func TestHostObserver(t *testing.T) {
 				require.NotEmpty(t, actualEndpoint, "expected endpoint ID not found. ID: %v", expectedID)
 				assert.Equal(t, expectedID, actualEndpoint.ID, "unexpected endpoint ID found")
 
-				details, ok := actualEndpoint.Details.(observer.HostPort)
+				details, ok := actualEndpoint.Details.(*observer.HostPort)
 				assert.True(t, ok, "failed to get Endpoint.Details")
 				assert.Equal(t, filepath.Base(exe), details.Name)
 				assert.Equal(t, tt.protocol, details.Transport)
@@ -463,7 +463,7 @@ func TestCollectEndpoints(t *testing.T) {
 				{
 					ID:     observer.EndpointID("()123.345.567.789-80-TCP"),
 					Target: "123.345.567.789:80",
-					Details: observer.HostPort{
+					Details: &observer.HostPort{
 						Name:      "",
 						Port:      80,
 						Transport: observer.ProtocolTCP,

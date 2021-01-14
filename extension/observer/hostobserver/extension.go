@@ -124,7 +124,7 @@ func (e endpointsLister) collectEndpoints(conns []net.ConnectionStat) []observer
 			endpoints = append(endpoints, observer.Endpoint{
 				ID:     id,
 				Target: cd.target,
-				Details: observer.HostPort{
+				Details: &observer.HostPort{
 					Port:      cd.port,
 					Transport: cd.transport,
 					// TODO: Move this field to observer.Endpoint and
@@ -166,7 +166,7 @@ func (e endpointsLister) collectEndpoints(conns []net.ConnectionStat) []observer
 			e := observer.Endpoint{
 				ID:     id,
 				Target: cd.target,
-				Details: observer.HostPort{
+				Details: &observer.HostPort{
 					Name:      pd.name,
 					Command:   pd.args,
 					Port:      cd.port,

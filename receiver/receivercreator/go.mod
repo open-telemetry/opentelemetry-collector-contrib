@@ -6,7 +6,6 @@ require (
 	github.com/antonmedv/expr v1.8.9
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.0.0-00010101000000-000000000000
-	github.com/spf13/cast v1.3.1
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
 	go.opentelemetry.io/collector v0.18.0
