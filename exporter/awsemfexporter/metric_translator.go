@@ -369,10 +369,10 @@ func buildCWMetric(dp DataPoint, pmd *pdata.Metric, namespace string, metricSlic
 }
 
 // rate is calculated by valDelta / timeDelta
-func calculateRate(fields map[string]interface{}, val interface{}, timestamp int64) interface{} {
+func calculateRate(fields map[string]interface{}, val interface{}, timestamp int64) float64 {
 	keys := make([]string, 0, len(fields))
 	var b bytes.Buffer
-	var metricRate interface{}
+	var metricRate float64
 	// hash the key of str: metric + dimension key/value pairs (sorted alpha)
 	for k := range fields {
 		keys = append(keys, k)
@@ -409,7 +409,7 @@ func calculateRate(fields map[string]interface{}, val interface{}, timestamp int
 		} else {
 			deltaVal = val.(int64) - prevStats.value.(int64)
 			if deltaTime > MinTimeDiff.Milliseconds() && deltaVal.(int64) >= 0 {
-				metricRate = deltaVal.(int64) * 1e3 / deltaTime
+				metricRate = float64(deltaVal.(int64)*1e3) / float64(deltaTime)
 			}
 		}
 	}
@@ -419,9 +419,6 @@ func calculateRate(fields map[string]interface{}, val interface{}, timestamp int
 	}
 	currentState.Set(hashStr, content)
 	currentState.Unlock()
-	if metricRate == nil {
-		metricRate = 0
-	}
 	return metricRate
 }
 
