@@ -22,13 +22,13 @@ Example:
 
 ```yaml
 exporters:
-    newrelic:
-        apikey: super-secret-api-key
-        timeout: 30s
-        common_attributes:
-          server: prod-server-01
-          ready_to_rock: true
-          volume: 11
+  newrelic:
+    apikey: super-secret-api-key
+    timeout: 30s
+    common_attributes:
+      server: prod-server-01
+      ready_to_rock: true
+      volume: 11
 ```
 
 
