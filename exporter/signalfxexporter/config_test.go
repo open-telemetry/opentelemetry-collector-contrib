@@ -114,6 +114,18 @@ func TestLoadConfig(t *testing.T) {
 					"dimension_key": []interface{}{"dimension_val1", "dimension_val2"},
 				},
 			},
+			{
+				MetricName: `/cpu\..*/`,
+			},
+			{
+				MetricNames: []string{"cpu.util*", "memory.util*"},
+			},
+			{
+				MetricName: "cpu.utilization",
+				Dimensions: map[string]interface{}{
+					"container_name": "/^[A-Z][A-Z]$/",
+				},
+			},
 		},
 		DeltaTranslationTTL: 3600,
 		Correlation: &correlation.Config{
