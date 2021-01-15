@@ -15,6 +15,7 @@
 package datadogexporter
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -45,6 +46,6 @@ func TestNewExporter(t *testing.T) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
 	// The client should have been created correctly
-	exp := newMetricsExporter(params, cfg)
+	exp := newMetricsExporter(context.Background(), params, cfg)
 	assert.NotNil(t, exp)
 }

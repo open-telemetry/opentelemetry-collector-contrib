@@ -51,7 +51,7 @@ var (
 	}
 )
 
-func TestGetHostMetadata(t *testing.T) {
+func TestFillHostMetadata(t *testing.T) {
 	cache.Cache.Flush()
 	params := component.ExporterCreateParams{
 		Logger:               zap.NewNop(),
@@ -64,7 +64,8 @@ func TestGetHostMetadata(t *testing.T) {
 		Tags:     []string{"key1:tag1", "key2:tag2"},
 	}}
 
-	metadata := getHostMetadata(params, cfg)
+	metadata := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
+	fillHostMetadata(params, cfg, metadata)
 
 	assert.Equal(t, metadata.InternalHostname, "hostname")
 	assert.Equal(t, metadata.Flavor, "otelcontribcol")

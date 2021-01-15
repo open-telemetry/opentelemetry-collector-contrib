@@ -75,8 +75,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 			EnvVarTags: "$DD_TAGS",
 		},
 
-		SendMetadata: true,
-		OnlyMetadata: false,
+		SendMetadata:        true,
+		OnlyMetadata:        false,
+		UseResourceMetadata: true,
 	}, cfg, "failed to create default config")
 
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
@@ -132,8 +133,9 @@ func TestLoadConfig(t *testing.T) {
 				Endpoint: "https://trace.agent.datadoghq.eu",
 			},
 		},
-		SendMetadata: true,
-		OnlyMetadata: false,
+		SendMetadata:        true,
+		OnlyMetadata:        false,
+		UseResourceMetadata: true,
 	}, apiConfig)
 
 	defaultConfig := cfg.Exporters["datadog/default"].(*config.Config)
@@ -173,8 +175,9 @@ func TestLoadConfig(t *testing.T) {
 				Endpoint: "https://trace.agent.datadoghq.com",
 			},
 		},
-		SendMetadata: true,
-		OnlyMetadata: false,
+		SendMetadata:        true,
+		OnlyMetadata:        false,
+		UseResourceMetadata: true,
 	}, defaultConfig)
 
 	invalidConfig := cfg.Exporters["datadog/invalid"].(*config.Config)
@@ -256,8 +259,9 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 				Endpoint: "https://trace.agent.datadoghq.test",
 			},
 		},
-		SendMetadata: true,
-		OnlyMetadata: false,
+		SendMetadata:        true,
+		OnlyMetadata:        false,
+		UseResourceMetadata: true,
 	}, apiConfig)
 
 	defaultConfig := cfg.Exporters["datadog/default2"].(*config.Config)
@@ -300,8 +304,9 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 				Endpoint: "https://trace.agent.datadoghq.com",
 			},
 		},
-		SendMetadata: true,
-		OnlyMetadata: false,
+		SendMetadata:        true,
+		OnlyMetadata:        false,
+		UseResourceMetadata: true,
 	}, defaultConfig)
 }
 
@@ -385,8 +390,9 @@ func TestOnlyMetadata(t *testing.T) {
 			Key:  "notnull",
 			Site: "example.com",
 		},
-		SendMetadata: true,
-		OnlyMetadata: true,
+		SendMetadata:        true,
+		OnlyMetadata:        true,
+		UseResourceMetadata: true,
 	}
 
 	expTraces, err := factory.CreateTracesExporter(
