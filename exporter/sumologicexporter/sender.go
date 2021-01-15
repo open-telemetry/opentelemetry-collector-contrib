@@ -56,6 +56,20 @@ const (
 	logKey string = "log"
 	// maxBufferSize defines size of the logBuffer (maximum number of pdata.LogRecord entries)
 	maxBufferSize int = 1024 * 1024
+
+	headerContentType     string = "Content-Type"
+	headerContentEncoding string = "Content-Encoding"
+	headerClient          string = "X-Sumo-Client"
+	headerHost            string = "X-Sumo-Host"
+	headerName            string = "X-Sumo-Name"
+	headerCategory        string = "X-Sumo-Category"
+	headerFields          string = "X-Sumo-Fields"
+
+	contentTypeLogs       string = "application/x-www-form-urlencoded"
+	contentTypePrometheus string = "application/vnd.sumologic.prometheus"
+
+	contentEncodingGzip    string = "gzip"
+	contentEncodingDeflate string = "deflate"
 )
 
 func newAppendResponse() appendResponse {
@@ -96,36 +110,36 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, body io.Reader
 	// Add headers
 	switch s.config.CompressEncoding {
 	case GZIPCompression:
-		req.Header.Set("Content-Encoding", "gzip")
+		req.Header.Set(headerContentEncoding, contentEncodingGzip)
 	case DeflateCompression:
-		req.Header.Set("Content-Encoding", "deflate")
+		req.Header.Set(headerContentEncoding, contentEncodingDeflate)
 	case NoCompression:
 	default:
 		return fmt.Errorf("invalid content encoding: %s", s.config.CompressEncoding)
 	}
 
-	req.Header.Add("X-Sumo-Client", s.config.Client)
+	req.Header.Add(headerClient, s.config.Client)
 
 	if s.sources.host.isSet() {
-		req.Header.Add("X-Sumo-Host", s.sources.host.format(flds))
+		req.Header.Add(headerHost, s.sources.host.format(flds))
 	}
 
 	if s.sources.name.isSet() {
-		req.Header.Add("X-Sumo-Name", s.sources.name.format(flds))
+		req.Header.Add(headerName, s.sources.name.format(flds))
 	}
 
 	if s.sources.category.isSet() {
-		req.Header.Add("X-Sumo-Category", s.sources.category.format(flds))
+		req.Header.Add(headerCategory, s.sources.category.format(flds))
 	}
 
 	switch pipeline {
 	case LogsPipeline:
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-		req.Header.Add("X-Sumo-Fields", flds.string())
+		req.Header.Add(headerContentType, contentTypeLogs)
+		req.Header.Add(headerFields, flds.string())
 	case MetricsPipeline:
 		switch s.config.MetricFormat {
 		case PrometheusFormat:
-			req.Header.Add("Content-Type", "application/vnd.sumologic.prometheus")
+			req.Header.Add(headerContentType, contentTypePrometheus)
 		default:
 			return fmt.Errorf("unsupported metrics format: %s", s.config.MetricFormat)
 		}
