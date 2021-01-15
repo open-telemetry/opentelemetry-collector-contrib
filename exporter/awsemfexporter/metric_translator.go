@@ -51,7 +51,7 @@ const (
 var currentState = mapwithexpiry.NewMapWithExpiry(CleanInterval)
 
 type rateState struct {
-	value     interface{}
+	value     float64
 	timestamp int64
 }
 
@@ -327,10 +327,10 @@ func buildCWMetric(dp DataPoint, pmd *pdata.Metric, namespace string, metricSlic
 	case pdata.IntDataPoint:
 		// Put a fake but identical metric value here in order to add metric name into fields
 		// since calculateRate() needs metric name as one of metric identifiers
-		fields[pmd.Name()] = int64(FakeMetricValue)
+		fields[pmd.Name()] = float64(FakeMetricValue)
 		metricVal = metric.Value()
 		if needsCalculateRate(pmd) {
-			metricVal = calculateRate(fields, metric.Value(), timestamp)
+			metricVal = calculateRate(fields, float64(metric.Value()), timestamp)
 		}
 	case pdata.DoubleDataPoint:
 		fields[pmd.Name()] = float64(FakeMetricValue)
@@ -369,10 +369,10 @@ func buildCWMetric(dp DataPoint, pmd *pdata.Metric, namespace string, metricSlic
 }
 
 // rate is calculated by valDelta / timeDelta
-func calculateRate(fields map[string]interface{}, val interface{}, timestamp int64) interface{} {
+func calculateRate(fields map[string]interface{}, val float64, timestamp int64) float64 {
 	keys := make([]string, 0, len(fields))
 	var b bytes.Buffer
-	var metricRate interface{}
+	var metricRate float64
 	// hash the key of str: metric + dimension key/value pairs (sorted alpha)
 	for k := range fields {
 		keys = append(keys, k)
@@ -380,7 +380,7 @@ func calculateRate(fields map[string]interface{}, val interface{}, timestamp int
 	sort.Strings(keys)
 	for _, k := range keys {
 		switch v := fields[k].(type) {
-		case int64:
+		case float64:
 			b.WriteString(k)
 			continue
 		case string:
@@ -400,17 +400,9 @@ func calculateRate(fields map[string]interface{}, val interface{}, timestamp int
 	if state, ok := currentState.Get(hashStr); ok {
 		prevStats := state.(*rateState)
 		deltaTime := timestamp - prevStats.timestamp
-		var deltaVal interface{}
-		if _, ok := val.(float64); ok {
-			deltaVal = val.(float64) - prevStats.value.(float64)
-			if deltaTime > MinTimeDiff.Milliseconds() && deltaVal.(float64) >= 0 {
-				metricRate = deltaVal.(float64) * 1e3 / float64(deltaTime)
-			}
-		} else {
-			deltaVal = val.(int64) - prevStats.value.(int64)
-			if deltaTime > MinTimeDiff.Milliseconds() && deltaVal.(int64) >= 0 {
-				metricRate = deltaVal.(int64) * 1e3 / deltaTime
-			}
+		deltaVal := val - prevStats.value
+		if deltaTime > MinTimeDiff.Milliseconds() && deltaVal >= 0 {
+			metricRate = deltaVal * 1e3 / float64(deltaTime)
 		}
 	}
 	content := &rateState{
@@ -419,9 +411,6 @@ func calculateRate(fields map[string]interface{}, val interface{}, timestamp int
 	}
 	currentState.Set(hashStr, content)
 	currentState.Unlock()
-	if metricRate == nil {
-		metricRate = 0
-	}
 	return metricRate
 }
 

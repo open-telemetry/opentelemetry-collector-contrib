@@ -229,7 +229,237 @@ func createMetricTestData() consumerdata.MetricsData {
 			},
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanTimerSummary",
+					Description: "How long the spans take",
+					Unit:        "Seconds",
+					Type:        metricspb.MetricDescriptor_SUMMARY,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan"},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_SummaryValue{
+									SummaryValue: &metricspb.SummaryValue{
+										Sum: &wrappers.DoubleValue{
+											Value: 15.0,
+										},
+										Count: &wrappers.Int64Value{
+											Value: 5,
+										},
+										Snapshot: &metricspb.SummaryValue_Snapshot{
+											PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{{
+												Percentile: 0,
+												Value:      1,
+											},
+												{
+													Percentile: 100,
+													Value:      5,
+												}},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func createMetricTestDataSecondBatch() consumerdata.MetricsData {
+	return consumerdata.MetricsData{
+		Node: &commonpb.Node{
+			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
+		},
+		Resource: &resourcepb.Resource{
+			Labels: map[string]string{
+				conventions.AttributeServiceName:      "myServiceName",
+				conventions.AttributeServiceNamespace: "myServiceNS",
+			},
+		},
+		Metrics: []*metricspb.Metric{
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+						{Key: "isItAnError"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan", HasValue: true},
+							{Value: "false", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 105,
+								},
+								Value: &metricspb.Point_Int64Value{
+									Int64Value: 6,
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanGaugeCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+						{Key: "isItAnError"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan", HasValue: true},
+							{Value: "false", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 105,
+								},
+								Value: &metricspb.Point_Int64Value{
+									Int64Value: 6,
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanDoubleCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+						{Key: "isItAnError"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan", HasValue: true},
+							{Value: "false", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 105,
+								},
+								Value: &metricspb.Point_DoubleValue{
+									DoubleValue: 0.6,
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanGaugeDoubleCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+						{Key: "isItAnError"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan", HasValue: true},
+							{Value: "false", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 105,
+								},
+								Value: &metricspb.Point_DoubleValue{
+									DoubleValue: 0.6,
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
 					Name:        "spanTimer",
+					Description: "How long the spans take",
+					Unit:        "Seconds",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_DistributionValue{
+									DistributionValue: &metricspb.DistributionValue{
+										Sum:   15.0,
+										Count: 5,
+										BucketOptions: &metricspb.DistributionValue_BucketOptions{
+											Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
+												Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
+													Bounds: []float64{0, 10},
+												},
+											},
+										},
+										Buckets: []*metricspb.DistributionValue_Bucket{
+											{
+												Count: 0,
+											},
+											{
+												Count: 4,
+											},
+											{
+												Count: 1,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanTimerSummary",
 					Description: "How long the spans take",
 					Unit:        "Seconds",
 					Type:        metricspb.MetricDescriptor_SUMMARY,
@@ -302,6 +532,13 @@ func assertCwMeasurementEqual(t *testing.T, expected, actual CwMeasurement) {
 	assertDimsEqual(t, expected.Dimensions, actual.Dimensions)
 }
 
+func assertCwStatsEqual(t *testing.T, expected, actual *CWMetricStats) {
+	assert.Equal(t, expected.Min, actual.Min)
+	assert.Equal(t, expected.Max, actual.Max)
+	assert.Equal(t, expected.Count, actual.Count)
+	assert.Equal(t, expected.Sum, actual.Sum)
+}
+
 func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 	config := &Config{
 		Namespace:             "",
@@ -321,7 +558,7 @@ func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 
 	met := cwm[0]
 
-	assert.Equal(t, met.Fields["spanCounter"], 0)
+	assert.Equal(t, met.Fields["spanCounter"], float64(0))
 
 	expectedMeasurement := CwMeasurement{
 		Namespace: "myServiceNS/myServiceName",
@@ -339,6 +576,37 @@ func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 		},
 	}
 	assertCwMeasurementEqual(t, expectedMeasurement, met.Measurements[0])
+
+	assert.Equal(t, int64(1), cwm[1].Fields["spanGaugeCounter"])
+	assert.Equal(t, float64(0), cwm[2].Fields["spanDoubleCounter"])
+	assert.Equal(t, 0.1, cwm[3].Fields["spanGaugeDoubleCounter"])
+	expectedCwStats := &CWMetricStats{
+		Count: 5,
+		Sum:   15,
+	}
+	assertCwStatsEqual(t, expectedCwStats, cwm[4].Fields["spanTimer"].(*CWMetricStats))
+	expectedCwStats = &CWMetricStats{
+		Count: 5,
+		Sum:   15,
+		Min:   1,
+		Max:   5,
+	}
+	assertCwStatsEqual(t, expectedCwStats, cwm[5].Fields["spanTimerSummary"].(*CWMetricStats))
+
+	time.Sleep(5 * time.Second)
+	md = createMetricTestDataSecondBatch()
+	rm = internaldata.OCToMetrics(md).ResourceMetrics().At(0)
+	ilms = rm.InstrumentationLibraryMetrics()
+	ilm = ilms.At(0)
+	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
+	cwm, totalDroppedMetrics = TranslateOtToCWMetric(&rm, config)
+	assert.Equal(t, 0, totalDroppedMetrics)
+	assert.NotNil(t, cwm)
+	assert.Equal(t, 6, len(cwm))
+	assert.Equal(t, 1, len(cwm[0].Measurements))
+
+	assert.True(t, 1-cwm[0].Fields["spanCounter"].(float64) < 0.01)
+	assert.True(t, 0.1-cwm[2].Fields["spanDoubleCounter"].(float64) < 0.001)
 }
 
 func TestTranslateOtToCWMetricWithoutInstrLibrary(t *testing.T) {
@@ -357,7 +625,7 @@ func TestTranslateOtToCWMetricWithoutInstrLibrary(t *testing.T) {
 
 	met := cwm[0]
 	assert.NotContains(t, met.Fields, OTellibDimensionKey)
-	assert.Equal(t, met.Fields["spanCounter"], 0)
+	assert.Equal(t, met.Fields["spanCounter"], float64(0))
 
 	expectedMeasurement := CwMeasurement{
 		Namespace: "myServiceNS/myServiceName",
@@ -375,6 +643,34 @@ func TestTranslateOtToCWMetricWithoutInstrLibrary(t *testing.T) {
 		},
 	}
 	assertCwMeasurementEqual(t, expectedMeasurement, met.Measurements[0])
+
+	assert.Equal(t, int64(1), cwm[1].Fields["spanGaugeCounter"])
+	assert.Equal(t, float64(0), cwm[2].Fields["spanDoubleCounter"])
+	assert.Equal(t, 0.1, cwm[3].Fields["spanGaugeDoubleCounter"])
+	expectedCwStats := &CWMetricStats{
+		Count: 5,
+		Sum:   15,
+	}
+	assertCwStatsEqual(t, expectedCwStats, cwm[4].Fields["spanTimer"].(*CWMetricStats))
+	expectedCwStats = &CWMetricStats{
+		Count: 5,
+		Sum:   15,
+		Min:   1,
+		Max:   5,
+	}
+	assertCwStatsEqual(t, expectedCwStats, cwm[5].Fields["spanTimerSummary"].(*CWMetricStats))
+
+	time.Sleep(5 * time.Second)
+	md = createMetricTestDataSecondBatch()
+	rm = internaldata.OCToMetrics(md).ResourceMetrics().At(0)
+	cwm, totalDroppedMetrics = TranslateOtToCWMetric(&rm, config)
+	assert.Equal(t, 0, totalDroppedMetrics)
+	assert.NotNil(t, cwm)
+	assert.Equal(t, 6, len(cwm))
+	assert.Equal(t, 1, len(cwm[0].Measurements))
+
+	assert.True(t, 1-cwm[0].Fields["spanCounter"].(float64) < 0.01)
+	assert.True(t, 0.1-cwm[2].Fields["spanDoubleCounter"].(float64) < 0.001)
 }
 
 func TestTranslateOtToCWMetricWithNameSpace(t *testing.T) {
@@ -972,7 +1268,7 @@ func TestGetCWMetrics(t *testing.T) {
 					},
 					Fields: map[string]interface{}{
 						OTelLib:  instrumentationLibName,
-						"foo":    0,
+						"foo":    float64(0),
 						"label1": "value1",
 						"label2": "value2",
 					},
@@ -991,7 +1287,7 @@ func TestGetCWMetrics(t *testing.T) {
 					},
 					Fields: map[string]interface{}{
 						OTelLib:  instrumentationLibName,
-						"foo":    0,
+						"foo":    float64(0),
 						"label2": "value2",
 					},
 				},
@@ -1053,7 +1349,7 @@ func TestGetCWMetrics(t *testing.T) {
 					},
 					Fields: map[string]interface{}{
 						OTelLib:  instrumentationLibName,
-						"foo":    0,
+						"foo":    float64(0),
 						"label1": "value1",
 						"label2": "value2",
 					},
@@ -1072,7 +1368,7 @@ func TestGetCWMetrics(t *testing.T) {
 					},
 					Fields: map[string]interface{}{
 						OTelLib:  instrumentationLibName,
-						"foo":    0,
+						"foo":    float64(0),
 						"label2": "value2",
 					},
 				},
@@ -1515,7 +1811,7 @@ func TestBuildCWMetric(t *testing.T) {
 		assertCwMeasurementEqual(t, expectedMeasurement, cwMetric.Measurements[0])
 		expectedFields := map[string]interface{}{
 			OTelLib:  instrLibName,
-			"foo":    0,
+			"foo":    float64(0),
 			"label1": "value1",
 		}
 		assert.Equal(t, expectedFields, cwMetric.Fields)
@@ -1542,7 +1838,7 @@ func TestBuildCWMetric(t *testing.T) {
 		assertCwMeasurementEqual(t, expectedMeasurement, cwMetric.Measurements[0])
 		expectedFields := map[string]interface{}{
 			OTelLib:  instrLibName,
-			"foo":    0,
+			"foo":    float64(0),
 			"label1": "value1",
 		}
 		assert.Equal(t, expectedFields, cwMetric.Fields)
@@ -2028,16 +2324,16 @@ func TestCalculateRate(t *testing.T) {
 	fields["type"] = "Int64"
 	prevTime := time.Now().UnixNano() / int64(time.Millisecond)
 	curTime := time.Unix(0, prevTime*int64(time.Millisecond)).Add(time.Second*10).UnixNano() / int64(time.Millisecond)
-	rate := calculateRate(fields, prevValue, prevTime)
-	assert.Equal(t, 0, rate)
-	rate = calculateRate(fields, curValue, curTime)
-	assert.Equal(t, int64(1), rate)
+	rate := calculateRate(fields, float64(prevValue), prevTime)
+	assert.Equal(t, float64(0), rate)
+	rate = calculateRate(fields, float64(curValue), curTime)
+	assert.Equal(t, float64(1), rate)
 
 	prevDoubleValue := 0.0
 	curDoubleValue := 5.0
 	fields["type"] = "Float64"
 	rate = calculateRate(fields, prevDoubleValue, prevTime)
-	assert.Equal(t, 0, rate)
+	assert.Equal(t, float64(0), rate)
 	rate = calculateRate(fields, curDoubleValue, curTime)
 	assert.Equal(t, 0.5, rate)
 }
