@@ -2324,9 +2324,9 @@ func TestCalculateRate(t *testing.T) {
 	fields["type"] = "Int64"
 	prevTime := time.Now().UnixNano() / int64(time.Millisecond)
 	curTime := time.Unix(0, prevTime*int64(time.Millisecond)).Add(time.Second*10).UnixNano() / int64(time.Millisecond)
-	rate := calculateRate(fields, prevValue, prevTime)
+	rate := calculateRate(fields, float64(prevValue), prevTime)
 	assert.Equal(t, float64(0), rate)
-	rate = calculateRate(fields, curValue, curTime)
+	rate = calculateRate(fields, float64(curValue), curTime)
 	assert.Equal(t, float64(1), rate)
 
 	prevDoubleValue := 0.0
