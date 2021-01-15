@@ -33,7 +33,7 @@ This is configuration that will be used when creating the receiver at
 runtime.
 
 This option can use static and dynamic configuration values. Static values
-are normal YAML values. However the value can also be dynamically constructed
+are normal YAML values. However, the value can also be dynamically constructed
 from the discovered endpoint object. Dynamic values are surrounded by
 backticks (\`). If a literal backtick is needed use \\` to escape it. Dynamic
 values can be used with static values in which case they are concatenated.
@@ -58,7 +58,7 @@ config:
 
 ## Rule Expressions
 
-Each rule must start with `type.(pod|port) &&` such that the rule matches
+Each rule must start with `type.(pod|port|hostport) &&` such that the rule matches
 only one endpoint type. Depending on the type of endpoint the rule is
 targeting it will have different variables available.
 
@@ -82,6 +82,17 @@ targeting it will have different variables available.
 | pod.labels      | map of labels of the owning pod      |
 | pod.annotations | map of annotations of the owning pod |
 | protocol        | `TCP` or `UDP`                       |
+
+### Host Port
+
+| Variable       | Description                                      |
+|----------------|--------------------------------------------------|
+| type.hostport  | `true`                                           |
+| name           | Name of the process                              |
+| command        | Command line with the used to invoke the process |
+| is_ipv6        | true if endpoint is IPv6, otherwise false        |
+| port           | Port number                                      |
+| transport      | The transport protocol ("TCP" or "UDP")          |
 
 ## Example
 

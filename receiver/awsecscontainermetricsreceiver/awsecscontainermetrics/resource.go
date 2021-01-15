@@ -26,27 +26,74 @@ func containerResource(cm ContainerMetadata) pdata.Resource {
 	resource.Attributes().UpsertString(conventions.AttributeContainerName, cm.ContainerName)
 	resource.Attributes().UpsertString(conventions.AttributeContainerID, cm.DockerID)
 	resource.Attributes().UpsertString(AttributeECSDockerName, cm.DockerName)
-
+	resource.Attributes().UpsertString(conventions.AttributeContainerImage, cm.Image)
+	resource.Attributes().UpsertString(AttributeContainerImageID, cm.ImageID)
+	resource.Attributes().UpsertString(AttributeContainerImageVersion, getVersionFromIamge(cm.Image))
+	resource.Attributes().UpsertString(AttributeContainerCreatedAt, cm.CreatedAt)
+	resource.Attributes().UpsertString(AttributeContainerStartedAt, cm.StartedAt)
+	resource.Attributes().UpsertString(AttributeContainerFinishedAt, cm.FinishedAt)
+	resource.Attributes().UpsertString(AttributeContainerKnownStatus, cm.KnownStatus)
+	resource.Attributes().UpsertString(AttributeContainerExitCode, cm.ExitCode)
 	return resource
 }
 
 func taskResource(tm TaskMetadata) pdata.Resource {
 	resource := pdata.NewResource()
-	resource.Attributes().UpsertString(AttributeECSCluster, getResourceFromARN(tm.Cluster))
+	region, accountID, taskID := getResourceFromARN(tm.TaskARN)
+	resource.Attributes().UpsertString(AttributeECSCluster, getNameFromCluster(tm.Cluster))
 	resource.Attributes().UpsertString(AttributeECSTaskARN, tm.TaskARN)
-	resource.Attributes().UpsertString(AttributeECSTaskID, getResourceFromARN(tm.TaskARN))
+	resource.Attributes().UpsertString(AttributeECSTaskID, taskID)
 	resource.Attributes().UpsertString(AttributeECSTaskFamily, tm.Family)
-	resource.Attributes().UpsertString(AttributeECSTaskRevesion, tm.Revision)
+	resource.Attributes().UpsertString(AttributeECSTaskRevision, tm.Revision)
 	resource.Attributes().UpsertString(AttributeECSServiceName, "undefined")
+
+	resource.Attributes().UpsertString(conventions.AttributeCloudZone, tm.AvailabilityZone)
+	resource.Attributes().UpsertString(AttributeECSTaskPullStartedAt, tm.PullStartedAt)
+	resource.Attributes().UpsertString(AttributeECSTaskPullStoppedAt, tm.PullStoppedAt)
+	resource.Attributes().UpsertString(AttributeECSTaskKnownStatus, tm.KnownStatus)
+	resource.Attributes().UpsertString(AttributeECSTaskLaunchType, tm.LaunchType)
+	resource.Attributes().UpsertString(conventions.AttributeCloudRegion, region)
+	resource.Attributes().UpsertString(conventions.AttributeCloudAccount, accountID)
 
 	return resource
 }
 
-func getResourceFromARN(arn string) string {
-	if arn == "" || !strings.HasPrefix(arn, "arn:aws") {
-		return arn
+// https://docs.aws.amazon.com/AmazonECS/latest/userguide/ecs-account-settings.html
+// The new taskARN format: New: arn:aws:ecs:region:aws_account_id:task/cluster-name/task-id
+//  Old(current): arn:aws:ecs:region:aws_account_id:task/task-id
+func getResourceFromARN(arn string) (string, string, string) {
+	if !strings.HasPrefix(arn, "arn:aws:ecs") {
+		return "", "", ""
 	}
 	splits := strings.Split(arn, "/")
+	taskID := splits[len(splits)-1]
+
+	subSplits := strings.Split(splits[0], ":")
+	region := subSplits[3]
+	accountID := subSplits[4]
+
+	return region, accountID, taskID
+}
+
+func getVersionFromIamge(image string) string {
+	if image == "" {
+		return ""
+	}
+	splits := strings.Split(image, ":")
+	if len(splits) == 1 {
+		return "latest"
+	}
+	return splits[len(splits)-1]
+}
+
+//The Amazon Resource Name (ARN) that identifies the cluster. The ARN contains the arn:aws:ecs namespace,
+//followed by the Region of the cluster, the AWS account ID of the cluster owner, the cluster namespace,
+//and then the cluster name. For example, arn:aws:ecs:region:012345678910:cluster/test.
+func getNameFromCluster(cluster string) string {
+	if cluster == "" || !strings.HasPrefix(cluster, "arn:aws") {
+		return cluster
+	}
+	splits := strings.Split(cluster, "/")
 
 	return splits[len(splits)-1]
 }

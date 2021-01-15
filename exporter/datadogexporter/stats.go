@@ -22,7 +22,8 @@ import (
 )
 
 const (
-	statsBucketDuration int64 = int64(10 * time.Second)
+	statsBucketDuration   int64  = int64(10 * time.Second)
+	versionAggregationTag string = "version"
 )
 
 // ComputeAPMStats calculates the stats that should be submitted to APM about a given trace
@@ -57,7 +58,7 @@ func computeAPMStats(tracePayload *pb.TracePayload, calculator *sublayerCalculat
 				Weight:   1,
 				TopLevel: true,
 			}
-			statsRawBucket.HandleSpan(weightedSpan, tracePayload.Env, []string{}, sublayers)
+			statsRawBucket.HandleSpan(weightedSpan, tracePayload.Env, []string{versionAggregationTag}, sublayers)
 		}
 	}
 

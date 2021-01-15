@@ -1,6 +1,6 @@
 receivers:
-  stanza/simple:
-    pipeline:
+  stanza:
+    operators:
       - type: file_input
         include: [ receiver/stanzareceiver/testdata/simple.log ]
         start_at: beginning
@@ -11,11 +11,6 @@ receivers:
           layout: '%Y-%m-%d'
         severity:
           parse_from: sev
-  stanza/plugin:
-    plugin_dir: receiver/stanzareceiver/testdata/plugins
-    pipeline:
-      - type: say_hello
-        name: Tom
 
 processors:
   exampleprocessor:
@@ -26,6 +21,6 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [stanza/simple, stanza/plugin]
+      receivers: [stanza]
       processors: [exampleprocessor]
       exporters: [exampleexporter]

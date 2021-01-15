@@ -25,6 +25,9 @@ import (
 const (
 	// maximum for tag string lengths
 	MaxTagLength = 200
+	// DefaultServiceName is the default name we assign a service if it's missing and we have no reasonable fallback
+	// From: https://github.com/DataDog/datadog-agent/blob/eab0dde41fe3a069a65c33d82a81b1ef1cf6b3bc/pkg/trace/traceutil/normalize.go#L15
+	DefaultServiceName string = "unnamed-otel-service"
 )
 
 // NormalizeSpanName returns a cleaned up, normalized span name. Span names are used to formulate tags,
@@ -37,7 +40,8 @@ const (
 // 	5. Truncate to MaxTagLength (200) characters
 // 	6. Strip trailing underscores
 //
-func NormalizeSpanName(tag string) string {
+
+func NormalizeSpanName(tag string, isService bool) string {
 	// unless you just throw out unicode, this is already as fast as it gets
 	bufSize := len(tag)
 	if bufSize > MaxTagLength {
@@ -86,6 +90,10 @@ func NormalizeSpanName(tag string) string {
 		case unicode.IsDigit(c) || c == '.':
 			buf.WriteRune(c)
 			lastWasUnderscore = false
+		// '-' only creates issues for span operation names not service names
+		case c == '-' && isService:
+			buf.WriteRune(c)
+			lastWasUnderscore = false
 		// convert anything else to underscores (including underscores), but only allow one in a row.
 		case !lastWasUnderscore:
 			buf.WriteRune('_')
@@ -106,4 +114,21 @@ func NormalizeSpanName(tag string) string {
 // NormalizeSpanKind returns a span kind with the SPAN_KIND prefix trimmed off
 func NormalizeSpanKind(kind pdata.SpanKind) string {
 	return strings.TrimPrefix(kind.String(), "SPAN_KIND_")
+}
+
+// NormalizeServiceName returns a span service name normalized to remove invalid characters
+// TODO: we'd like to move to the datadog-agent traceutil version of this once it's available in the exportable package
+// https://github.com/DataDog/datadog-agent/blob/eab0dde41fe3a069a65c33d82a81b1ef1cf6b3bc/pkg/trace/traceutil/normalize.go#L52
+func NormalizeServiceName(service string) string {
+	if service == "" {
+		return DefaultServiceName
+	}
+
+	s := NormalizeSpanName(service, true)
+
+	if s == "" {
+		return DefaultServiceName
+	}
+
+	return s
 }
