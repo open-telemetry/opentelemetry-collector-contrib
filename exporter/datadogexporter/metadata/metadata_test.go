@@ -24,9 +24,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/testutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils/cache"
 )
 
@@ -72,6 +74,63 @@ func TestFillHostMetadata(t *testing.T) {
 	assert.Equal(t, metadata.Version, "1.0")
 	assert.Equal(t, metadata.Meta.Hostname, "hostname")
 	assert.ElementsMatch(t, metadata.Tags.OTel, []string{"key1:tag1", "key2:tag2", "env:prod"})
+
+	metadataWithVals := &HostMetadata{
+		InternalHostname: "my-custom-hostname",
+		Meta:             &Meta{Hostname: "my-custom-hostname"},
+		Tags:             &HostTags{},
+	}
+
+	fillHostMetadata(params, cfg, metadataWithVals)
+	assert.Equal(t, metadataWithVals.InternalHostname, "my-custom-hostname")
+	assert.Equal(t, metadataWithVals.Flavor, "otelcontribcol")
+	assert.Equal(t, metadataWithVals.Version, "1.0")
+	assert.Equal(t, metadataWithVals.Meta.Hostname, "my-custom-hostname")
+	assert.ElementsMatch(t, metadataWithVals.Tags.OTel, []string{"key1:tag1", "key2:tag2", "env:prod"})
+}
+
+func TestMetadataFromAttributes(t *testing.T) {
+	// AWS
+	attrsAWS := testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
+		conventions.AttributeHostID:        "host-id",
+		conventions.AttributeHostName:      "ec2amaz-host-name",
+		"ec2.tag.tag1":                     "val1",
+		"ec2.tag.tag2":                     "val2",
+	})
+	metadataAWS := metadataFromAttributes(attrsAWS)
+	assert.Equal(t, metadataAWS.InternalHostname, "host-id")
+	assert.Equal(t, metadataAWS.Meta,
+		&Meta{
+			Hostname:    "host-id",
+			InstanceID:  "host-id",
+			EC2Hostname: "ec2amaz-host-name",
+		})
+	assert.ElementsMatch(t, metadataAWS.Tags.EC2, []string{"tag1:val1", "tag2:val2"})
+	assert.ElementsMatch(t, metadataAWS.Tags.OTel, []string{})
+
+	// GCP
+	attrsGCP := testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP,
+		conventions.AttributeHostID:        "host-id",
+		conventions.AttributeHostName:      "host-name",
+		conventions.AttributeHostType:      "host-type",
+		conventions.AttributeCloudZone:     "cloud-zone",
+	})
+	metadataGCP := metadataFromAttributes(attrsGCP)
+	assert.Equal(t, metadataGCP.InternalHostname, "host-id")
+	assert.Equal(t, metadataGCP.Meta, &Meta{Hostname: "host-id"})
+	assert.Equal(t, metadataGCP.Tags, &HostTags{})
+
+	// Other
+	attrsOther := testutils.NewAttributeMap(map[string]string{
+		AttributeDatadogHostname: "custom-name",
+	})
+	metadataOther := metadataFromAttributes(attrsOther)
+	assert.Equal(t, metadataOther.InternalHostname, "custom-name")
+	assert.Equal(t, metadataOther.Meta, &Meta{Hostname: "custom-name"})
+	assert.Equal(t, metadataOther.Tags, &HostTags{})
+
 }
 
 func TestPushMetadata(t *testing.T) {

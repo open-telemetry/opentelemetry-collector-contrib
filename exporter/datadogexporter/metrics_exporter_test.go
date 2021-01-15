@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
@@ -48,4 +49,10 @@ func TestNewExporter(t *testing.T) {
 	// The client should have been created correctly
 	exp := newMetricsExporter(context.Background(), params, cfg)
 	assert.NotNil(t, exp)
+
+	_, _ = exp.PushMetricsData(context.Background(), pdata.NewMetrics())
+
+	onceUsed := true
+	cfg.OnceMetadata().Do(func() { onceUsed = false })
+	assert.False(t, onceUsed)
 }

@@ -198,6 +198,7 @@ func TestPushTraceData(t *testing.T) {
 
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exp := newTraceExporter(context.Background(), params, cfg)
+
 	tracesLength, err := exp.pushTraceData(context.Background(), func() pdata.Traces {
 		traces := pdata.NewTraces()
 		resourceSpans := traces.ResourceSpans()
@@ -206,6 +207,10 @@ func TestPushTraceData(t *testing.T) {
 		resourceSpans.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
 		return traces
 	}())
+
+	onceUsed := true
+	cfg.OnceMetadata().Do(func() { onceUsed = false })
+	assert.False(t, onceUsed)
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, tracesLength)
