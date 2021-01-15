@@ -549,7 +549,7 @@ func TestRunningMetrics(t *testing.T) {
 			if metric.Host != nil {
 				runningHostnames = append(runningHostnames, *metric.Host)
 			} else {
-				noHostname += 1
+				noHostname++
 			}
 		}
 	}
