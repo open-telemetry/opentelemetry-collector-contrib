@@ -155,7 +155,7 @@ aws.ecs.task.launch_type | aws.ecs.task.launch_type
 &nbsp; | container.name
 &nbsp; | container.id
 &nbsp; | aws.ecs.docker.name 
-&nbsp; | aws.ecs.container.image.tag
+&nbsp; | container.image.tag
 &nbsp; | aws.ecs.container.image.id
 &nbsp; | aws.ecs.container.exit_code
 
