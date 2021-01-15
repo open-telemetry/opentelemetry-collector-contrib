@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"gopkg.in/zorkian/go-datadog-api.v2"
@@ -249,6 +250,7 @@ func mapDoubleHistogramMetrics(name string, slice pdata.DoubleHistogramDataPoint
 
 // mapMetrics maps OTLP metrics into the DataDog format
 func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, md pdata.Metrics) (series []datadog.Metric, droppedTimeSeries int) {
+	pushTime := uint64(time.Now().UTC().UnixNano())
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
@@ -261,12 +263,21 @@ func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, md pdata.Metri
 			attributeTags = attributes.TagsFromAttributes(rm.Resource().Attributes())
 		}
 
+		host, hostFromAttrs := metadata.HostnameFromAttributes(rm.Resource().Attributes())
+
+		// Report the host as running
+		runningMetric := metrics.DefaultMetrics("metrics", pushTime)
+		if hostFromAttrs {
+			runningMetric[0].Host = &host
+		}
+		series = append(series, runningMetric...)
+
 		ilms := rm.InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
-			metrics := ilm.Metrics()
-			for k := 0; k < metrics.Len(); k++ {
-				md := metrics.At(k)
+			metricsArray := ilm.Metrics()
+			for k := 0; k < metricsArray.Len(); k++ {
+				md := metricsArray.At(k)
 				var datapoints []datadog.Metric
 				switch md.DataType() {
 				case pdata.MetricDataTypeNone:
@@ -294,7 +305,7 @@ func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, md pdata.Metri
 				}
 
 				// Try to get host from resource
-				if host, ok := metadata.HostnameFromAttributes(rm.Resource().Attributes()); ok {
+				if hostFromAttrs {
 					for i := range datapoints {
 						datapoints[i].SetHost(host)
 					}

@@ -56,10 +56,6 @@ func newMetricsExporter(params component.ExporterCreateParams, cfg *config.Confi
 func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
 	ms, droppedTimeSeries := mapMetrics(exp.cfg.Metrics, exp.prevPts, md)
 
-	// Append the default 'running' metric
-	pushTime := uint64(time.Now().UTC().UnixNano())
-	ms = append(ms, metrics.DefaultMetrics("metrics", pushTime)...)
-
 	metrics.ProcessMetrics(ms, exp.logger, exp.cfg)
 
 	err := exp.client.PostMetrics(ms)

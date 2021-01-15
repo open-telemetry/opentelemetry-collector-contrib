@@ -29,7 +29,6 @@ import (
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
 )
 
@@ -116,7 +115,7 @@ func (exp *traceExporter) pushTraceData(
 	// convert traces to datadog traces and group trace payloads by env
 	// we largely apply the same logic as the serverless implementation, simplified a bit
 	// https://github.com/DataDog/datadog-serverless-functions/blob/f5c3aedfec5ba223b11b76a4239fcbf35ec7d045/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L61-L83
-	ddTraces := convertToDatadogTd(td, exp.calculator, exp.cfg)
+	ddTraces, ms := convertToDatadogTd(td, exp.calculator, exp.cfg)
 
 	// group the traces by env to reduce the number of flushes
 	aggregatedTraces := aggregateTracePayloadsByEnv(ddTraces)
@@ -134,9 +133,6 @@ func (exp *traceExporter) pushTraceData(
 		})
 	}
 
-	ms := metrics.DefaultMetrics("traces", uint64(pushTime))
-
-	metrics.ProcessMetrics(ms, exp.logger, exp.cfg)
 	_ = exp.client.PostMetrics(ms)
 
 	return len(aggregatedTraces), nil
