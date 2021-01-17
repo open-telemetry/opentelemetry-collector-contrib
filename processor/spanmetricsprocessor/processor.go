@@ -131,10 +131,13 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 
 		availableMetricsExporters = append(availableMetricsExporters, k.Name())
 
-		p.logger.Info("Checking if : '" + k.Name() + "' is the configured spanmetrics exporter: '" + p.config.MetricsExporter + "'")
+		p.logger.Info("Looking for spanmetrics exporter from available exporters",
+			zap.String("spanmetrics-exporter", p.config.MetricsExporter),
+			zap.Any("available-exporters", availableMetricsExporters),
+		)
 		if k.Name() == p.config.MetricsExporter {
 			p.metricsExporter = metricsExp
-			p.logger.Info("Found exporter: '" + p.config.MetricsExporter + "'")
+			p.logger.Info("Found exporter", zap.String("spanmetrics-exporter", p.config.MetricsExporter))
 			break
 		}
 	}
@@ -392,7 +395,7 @@ func (p *processorImp) getDimensions(serviceName string, span pdata.Span) []metr
 			case pdata.AttributeValueNULL:
 				value = ""
 			default:
-				p.logger.Warn("Unsupported tag data type: " + attr.Type().String())
+				p.logger.Warn("Unsupported tag data type", zap.String("data-type", attr.Type().String()))
 				continue
 			}
 		}
