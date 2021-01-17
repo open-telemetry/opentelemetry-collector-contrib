@@ -24,12 +24,10 @@ func TestDimensionCache(t *testing.T) {
 	dc := NewCache()
 	assert.True(t, dc.Empty())
 
-	keyMap := make(map[string]string)
 	// Insert dimensions into the trie.
 	// Exercise inserting dimensions from both the trie as well as trie nodes.
-	d := dc.InsertDimensions(keyMap, DimensionKeyValue{"a", "foo"})
-	d = d.InsertDimensions(keyMap, DimensionKeyValue{"b", "bar"})
-	assert.Equal(t, map[string]string{"a": "foo", "b": "bar"}, keyMap)
+	d := dc.InsertDimensions(DimensionKeyValue{"a", "foo"})
+	d = d.InsertDimensions(DimensionKeyValue{"b", "bar"})
 
 	// After inserting all the dimensions, verify that no cached key is present.
 	assert.False(t, d.HasCachedMetricKey())
@@ -39,12 +37,10 @@ func TestDimensionCache(t *testing.T) {
 	d.SetCachedMetricKey(jsonKey)
 
 	// Simulate building the metrics dimension key again.
-	keyMap = make(map[string]string)
-	d = dc.InsertDimensions(keyMap, []DimensionKeyValue{
+	d = dc.InsertDimensions([]DimensionKeyValue{
 		{"a", "foo"},
 		{"b", "bar"},
 	}...)
-	assert.Equal(t, map[string]string{"a": "foo", "b": "bar"}, keyMap)
 
 	// Verify the key was found in cache.
 	assert.True(t, d.HasCachedMetricKey())

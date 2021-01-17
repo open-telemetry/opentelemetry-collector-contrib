@@ -292,8 +292,7 @@ func TestDimensionKeyCache(t *testing.T) {
 	p.ConsumeTraces(ctx, traces)
 	assert.False(t, p.metricsKeyCache.Empty())
 
-	keyMap := make(map[string]string)
-	d := p.metricsKeyCache.InsertDimensions(keyMap, []metricsdimensions.DimensionKeyValue{
+	d := p.metricsKeyCache.InsertDimensions([]metricsdimensions.DimensionKeyValue{
 		{Key: serviceNameKey, Value: "service-a"},
 		{Key: operationKey, Value: "/ping"},
 		{Key: spanKindKey, Value: "SPAN_KIND_SERVER"},

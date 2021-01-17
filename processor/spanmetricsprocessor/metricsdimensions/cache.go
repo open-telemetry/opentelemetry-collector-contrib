@@ -65,35 +65,29 @@ func (c *Cache) Empty() bool {
 	return len(c.root.children) == 0
 }
 
-// InsertDimensions inserts the list of dimension values into the Cache
-// returning the last dimension inserted into the metric.
-// The provided keyMap will be populated with the DimensionKeyValue list.
-func (c *Cache) InsertDimensions(keyMap map[string]string, keyValues ...DimensionKeyValue) *CacheNode {
-	return c.root.InsertDimensions(keyMap, keyValues...)
+// InsertDimensions inserts dimension key-value pairs from the Cache starting from the root CacheNode.
+func (c *Cache) InsertDimensions(keyValues ...DimensionKeyValue) *CacheNode {
+	return c.root.InsertDimensions(keyValues...)
 }
 
-// InsertDimensions inserts the list of dimension values into the Cache.
-// returning the last dimension inserted into the metric.
-// The provided keyMap will be populated with the DimensionKeyValue list.
-func (n *CacheNode) InsertDimensions(keyMap map[string]string, keyValues ...DimensionKeyValue) *CacheNode {
+// InsertDimensions inserts the list of dimension values into the Cache returning the last dimension inserted
+// into the metric. The last metric is where the serialized representation of the metric's dimensions can be
+// saved via a call to SetCachedMetricKey.
+func (n *CacheNode) InsertDimensions(keyValues ...DimensionKeyValue) *CacheNode {
 	child := n
 	for _, k := range keyValues {
-		child = child.insertNextDimension(keyMap, k)
+		child = child.insertNextDimension(k)
 	}
 	return child
 }
 
-// insertNextDimension inserts the given DimensionKeyValue's value into the cache
-// and populates the keyMap with the DimensionKeyValue.
+// insertNextDimension inserts the given DimensionKeyValue's value into the cache.
 // insertNextDimension will return the CacheNode representing the given DimensionKeyValue.
-func (n *CacheNode) insertNextDimension(keyMap map[string]string, keyValue DimensionKeyValue) *CacheNode {
-	child, ok := n.children[keyValue.Value]
-	if !ok {
-		child = &CacheNode{children: make(map[string]*CacheNode)}
-		n.children[keyValue.Value] = child
+func (n *CacheNode) insertNextDimension(keyValue DimensionKeyValue) *CacheNode {
+	if _, ok := n.children[keyValue.Value]; !ok {
+		n.children[keyValue.Value] = &CacheNode{children: make(map[string]*CacheNode)}
 	}
-	keyMap[keyValue.Key] = keyValue.Value
-	return child
+	return n.children[keyValue.Value]
 }
 
 // HasCachedMetricKey returns whether if a cached metric key exists on this CacheNode.

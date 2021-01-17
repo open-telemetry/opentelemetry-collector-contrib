@@ -48,6 +48,7 @@ var (
 	defaultLatencyHistogramBucketsMs = []float64{
 		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000, maxDurationMs,
 	}
+	mandatoryDimensions = []string{serviceNameKey, operationKey, spanKindKey, statusCodeKey}
 )
 
 type processorImp struct {
@@ -158,8 +159,7 @@ func (p *processorImp) GetCapabilities() component.ProcessorCapabilities {
 }
 
 // ConsumeTraces implements the consumer.TracesConsumer interface.
-// It aggregates the trace data to generate metrics, forwarding these metrics
-// to the discovered metrics exporter.
+// It aggregates the trace data to generate metrics, forwarding these metrics to the discovered metrics exporter.
 // The original input trace data will be forwarded to the next consumer, unmodified.
 func (p *processorImp) ConsumeTraces(ctx context.Context, traces pdata.Traces) error {
 	p.logger.Info("Consuming trace data")
@@ -288,28 +288,32 @@ func (p *processorImp) aggregateMetricsForServiceSpans(rspans pdata.ResourceSpan
 		spans := ils.Spans()
 		for k := 0; k < spans.Len(); k++ {
 			span := spans.At(k)
-
-			p.lock.Lock()
-			key, err := p.buildKey(serviceName, span)
-			p.lock.Unlock()
-			if err != nil {
+			if err := p.aggregateMetricsForSpan(serviceName, span); err != nil {
 				return err
 			}
-
-			p.lock.Lock()
-			p.updateCallMetrics(key)
-			p.lock.Unlock()
-
-			latency := float64(span.EndTime()-span.StartTime()) / float64(time.Millisecond.Nanoseconds())
-
-			// Binary search to find the latency bucket index.
-			index := sort.SearchFloat64s(p.latencyBounds, latency)
-
-			p.lock.Lock()
-			p.updateLatencyMetrics(key, latency, index)
-			p.lock.Unlock()
 		}
 	}
+	return nil
+}
+
+func (p *processorImp) aggregateMetricsForSpan(serviceName string, span pdata.Span) error {
+	key, err := p.buildKey(serviceName, span)
+	if err != nil {
+		return err
+	}
+
+	p.lock.Lock()
+	p.updateCallMetrics(key)
+	p.lock.Unlock()
+
+	latency := float64(span.EndTime()-span.StartTime()) / float64(time.Millisecond.Nanoseconds())
+
+	// Binary search to find the latency bucket index.
+	index := sort.SearchFloat64s(p.latencyBounds, latency)
+
+	p.lock.Lock()
+	p.updateLatencyMetrics(key, latency, index)
+	p.lock.Unlock()
 	return nil
 }
 
@@ -332,15 +336,40 @@ func (p *processorImp) updateLatencyMetrics(key string, latency float64, index i
 // such as operation, kind, status_code and any additional dimensions the
 // user has configured.
 func (p *processorImp) buildKey(serviceName string, span pdata.Span) (string, error) {
+	d := p.getDimensions(serviceName, span)
+	p.lock.Lock()
+	lastDimension := p.metricsKeyCache.InsertDimensions(d...)
+	p.lock.Unlock()
+
+	// Found a cached key, just return it.
+	if lastDimension.HasCachedMetricKey() {
+		return lastDimension.GetCachedMetricKey(), nil
+	}
+
 	keyMap := make(map[string]string)
-	dimension := p.metricsKeyCache.InsertDimensions(
-		keyMap,
-		[]metricsdimensions.DimensionKeyValue{
-			{Key: serviceNameKey, Value: serviceName},
-			{Key: operationKey, Value: span.Name()},
-			{Key: spanKindKey, Value: span.Kind().String()},
-			{Key: statusCodeKey, Value: span.Status().Code().String()},
-		}...,
+	for _, kv := range d {
+		keyMap[kv.Key] = kv.Value
+	}
+
+	// Otherwise, serialize the map to JSON.
+	kjson, err := p.jsonSerder.Marshal(keyMap)
+	if err != nil {
+		return "", err
+	}
+
+	kjsonstr := string(kjson)
+	lastDimension.SetCachedMetricKey(kjsonstr)
+	return kjsonstr, nil
+}
+
+// getDimensions returns a list of key-value pairs of dimensions for the given span's metrics.
+func (p *processorImp) getDimensions(serviceName string, span pdata.Span) []metricsdimensions.DimensionKeyValue {
+	ds := make([]metricsdimensions.DimensionKeyValue, 0, len(mandatoryDimensions)+len(p.dimensions))
+	ds = append(ds,
+		metricsdimensions.DimensionKeyValue{Key: serviceNameKey, Value: serviceName},
+		metricsdimensions.DimensionKeyValue{Key: operationKey, Value: span.Name()},
+		metricsdimensions.DimensionKeyValue{Key: spanKindKey, Value: span.Kind().String()},
+		metricsdimensions.DimensionKeyValue{Key: statusCodeKey, Value: span.Status().Code().String()},
 	)
 	spanAttr := span.Attributes()
 	var value string
@@ -367,24 +396,7 @@ func (p *processorImp) buildKey(serviceName string, span pdata.Span) (string, er
 				continue
 			}
 		}
-		dimension = dimension.InsertDimensions(
-			keyMap,
-			metricsdimensions.DimensionKeyValue{Key: d.Name, Value: value},
-		)
+		ds = append(ds, metricsdimensions.DimensionKeyValue{Key: d.Name, Value: value})
 	}
-
-	// Found a cached key, just return it.
-	if dimension.HasCachedMetricKey() {
-		return dimension.GetCachedMetricKey(), nil
-	}
-
-	// Otherwise, serialize the map to JSON.
-	kjson, err := p.jsonSerder.Marshal(keyMap)
-	if err != nil {
-		return "", err
-	}
-
-	kjsonstr := string(kjson)
-	dimension.SetCachedMetricKey(kjsonstr)
-	return kjsonstr, nil
+	return ds
 }
