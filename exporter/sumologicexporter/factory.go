@@ -56,6 +56,7 @@ func createDefaultConfig() configmodels.Exporter {
 		SourceName:         DefaultSourceName,
 		SourceHost:         DefaultSourceHost,
 		Client:             DefaultClient,
+		GraphiteTemplate:   DefaultGraphiteTemplate,
 
 		HTTPClientSettings: CreateDefaultHTTPClientSettings(),
 		RetrySettings:      exporterhelper.DefaultRetrySettings(),

@@ -10,11 +10,16 @@ Empty string means no compression
 - `max_request_body_size` (optional): Max HTTP request body size in bytes before compression (if applied). By default `1_048_576` (1MB) is used.
 - `metadata_attributes` (optional): List of regexes for attributes which should be send as metadata
 - `log_format` (optional) (logs only): Format to use when sending logs to Sumo. (default `json`) (possible values: `json`, `text`)
-- `metric_format` (optional) (metrics only): Format of the metrics to be sent (default is `prometheus`) (possible values: `carbon2`, `prometheus`)
-  `carbon2` and `graphite` are going to be supported soon.
+- `metric_format` (optional) (metrics only): Format of the metrics to be sent (default is `prometheus`) (possible values: `carbon2`, `graphite`, `prometheus`).
+- `graphite_template` (default=`%{_metric_}`) (optional) (metrics only): Template for Graphite format.
+Placeholders `%{attr_name}` will be replaced with attribute value for `attr_name`. `%{_metric_}` is going to be replaced with metric name.
+Applied only if `metric_format` is set to `graphite`.
 - `source_category` (optional): Desired source category. Useful if you want to override the source category configured for the source.
+Placeholders `%{attr_name}` will be replaced with attribute value for `attr_name`.
 - `source_name` (optional): Desired source name. Useful if you want to override the source name configured for the source.
+Placeholders `%{attr_name}` will be replaced with attribute value for `attr_name`.
 - `source_host` (optional): Desired host name. Useful if you want to override the source host configured for the source.
+Placeholders `%{attr_name}` will be replaced with attribute value for `attr_name`.
 - `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.
 Maximum connection timeout is 55s.
 - `retry_on_failure`

@@ -32,6 +32,7 @@ type sumologicexporter struct {
 	client              *http.Client
 	filter              filter
 	prometheusFormatter prometheusFormatter
+	graphiteFormatter   graphiteFormatter
 }
 
 func initExporter(cfg *Config) (*sumologicexporter, error) {
@@ -77,6 +78,11 @@ func initExporter(cfg *Config) (*sumologicexporter, error) {
 		return nil, err
 	}
 
+	gf, err := newGraphiteFormatter(cfg.GraphiteTemplate)
+	if err != nil {
+		return nil, err
+	}
+
 	httpClient, err := cfg.HTTPClientSettings.ToClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
@@ -88,6 +94,7 @@ func initExporter(cfg *Config) (*sumologicexporter, error) {
 		client:              httpClient,
 		filter:              f,
 		prometheusFormatter: pf,
+		graphiteFormatter:   gf,
 	}
 
 	return se, nil
@@ -151,7 +158,15 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) (i
 	if err != nil {
 		return 0, consumererror.PartialLogsError(fmt.Errorf("failed to initialize compressor: %w", err), ld)
 	}
-	sdr := newSender(se.config, se.client, se.filter, se.sources, c, se.prometheusFormatter)
+	sdr := newSender(
+		se.config,
+		se.client,
+		se.filter,
+		se.sources,
+		c,
+		se.prometheusFormatter,
+		se.graphiteFormatter,
+	)
 
 	// Iterate over ResourceLogs
 	rls := ld.ResourceLogs()
@@ -246,7 +261,15 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metri
 	if err != nil {
 		return 0, consumererror.PartialMetricsError(fmt.Errorf("failed to initialize compressor: %w", err), md)
 	}
-	sdr := newSender(se.config, se.client, se.filter, se.sources, c, se.prometheusFormatter)
+	sdr := newSender(
+		se.config,
+		se.client,
+		se.filter,
+		se.sources,
+		c,
+		se.prometheusFormatter,
+		se.graphiteFormatter,
+	)
 
 	// Iterate over ResourceMetrics
 	rms := md.ResourceMetrics()

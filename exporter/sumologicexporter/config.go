@@ -46,6 +46,9 @@ type Config struct {
 	// The format of metrics you will be sending, either graphite or carbon2 or prometheus (Default is prometheus)
 	// Possible values are `carbon2` and `prometheus`
 	MetricFormat MetricFormatType `mapstructure:"metric_format"`
+	// Graphite template.
+	// Placeholders `%{attr_name}` will be replaced with attribute value for attr_name.
+	GraphiteTemplate string `mapstructure:"graphite_template"`
 
 	// List of regexes for attributes which should be send as metadata
 	MetadataAttributes []string `mapstructure:"metadata_attributes"`
@@ -53,12 +56,15 @@ type Config struct {
 	// Sumo specific options
 	// Desired source category.
 	// Useful if you want to override the source category configured for the source.
+	// Placeholders `%{attr_name}` will be replaced with attribute value for attr_name.
 	SourceCategory string `mapstructure:"source_category"`
 	// Desired source name.
 	// Useful if you want to override the source name configured for the source.
+	// Placeholders `%{attr_name}` will be replaced with attribute value for attr_name.
 	SourceName string `mapstructure:"source_name"`
 	// Desired host name.
 	// Useful if you want to override the source host configured for the source.
+	// Placeholders `%{attr_name}` will be replaced with attribute value for attr_name.
 	SourceHost string `mapstructure:"source_host"`
 	// Name of the client
 	Client string `mapstructure:"client"`
@@ -124,4 +130,6 @@ const (
 	DefaultSourceHost string = ""
 	// DefaultClient defines default Client
 	DefaultClient string = "otelcol"
+	// DefaultGraphiteTemplate defines default template for Graphite
+	DefaultGraphiteTemplate string = "%{_metric_}"
 )

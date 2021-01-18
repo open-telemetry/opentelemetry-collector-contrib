@@ -67,6 +67,9 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 	pf, err := newPrometheusFormatter()
 	require.NoError(t, err)
 
+	gf, err := newGraphiteFormatter(DefaultGraphiteTemplate)
+	require.NoError(t, err)
+
 	return &senderTest{
 		srv: testServer,
 		exp: exp,
@@ -83,6 +86,7 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 			},
 			c,
 			pf,
+			gf,
 		),
 	}
 }
@@ -807,5 +811,41 @@ foo=bar metric=gauge_metric_name  245 1608124662`
 	test.s.metricBuffer[0].attributes.InsertBool("metric", true)
 
 	_, err := test.s.sendMetrics(context.Background(), flds)
+	assert.NoError(t, err)
+}
+
+func TestSendGraphiteMetrics(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
+		func(w http.ResponseWriter, req *http.Request) {
+			body := extractBody(t, req)
+			expected := `test_metric_data.true.m/s 14500 1605534165
+gauge_metric_name.. 124 1608124661
+gauge_metric_name.. 245 1608124662`
+			assert.Equal(t, expected, body)
+			assert.Equal(t, "otelcol", req.Header.Get("X-Sumo-Client"))
+			assert.Equal(t, "application/vnd.sumologic.graphite", req.Header.Get("Content-Type"))
+		},
+	})
+	defer func() { test.srv.Close() }()
+
+	gf, err := newGraphiteFormatter("%{_metric_}.%{metric}.%{unit}")
+	require.NoError(t, err)
+	test.s.graphiteFormatter = gf
+
+	test.s.config.MetricFormat = GraphiteFormat
+	test.s.metricBuffer = []metricPair{
+		exampleIntMetric(),
+		exampleIntGaugeMetric(),
+	}
+
+	flds := fieldsFromMap(map[string]string{
+		"key1": "value",
+		"key2": "value2",
+	})
+
+	test.s.metricBuffer[0].attributes.InsertString("unit", "m/s")
+	test.s.metricBuffer[0].attributes.InsertBool("metric", true)
+
+	_, err = test.s.sendMetrics(context.Background(), flds)
 	assert.NoError(t, err)
 }
