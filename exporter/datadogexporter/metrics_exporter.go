@@ -20,7 +20,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
@@ -65,14 +64,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 			attrs := pdata.NewAttributeMap()
 			if md.ResourceMetrics().Len() > 0 {
 				attrs = md.ResourceMetrics().At(0).Resource().Attributes()
-			} else {
-				exp.params.Logger.Info("No attrs :()")
 			}
-
-			attrs.ForEach(func(k string, v pdata.AttributeValue) {
-				exp.params.Logger.Info("Attributes", zap.String("key", k), zap.String("val", v.StringVal()))
-			})
-
 			go metadata.Pusher(exp.ctx, exp.params, exp.cfg, attrs)
 		})
 	}
