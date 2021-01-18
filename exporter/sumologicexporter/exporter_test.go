@@ -277,6 +277,7 @@ func TestPushFailedBatch(t *testing.T) {
 	defer func() { test.srv.Close() }()
 
 	logs := LogRecordsToLogs(exampleLog())
+	logs.ResourceLogs().Resize(maxBufferSize + 1)
 	log := logs.ResourceLogs().At(0)
 
 	for i := 0; i < maxBufferSize; i++ {
@@ -447,6 +448,7 @@ gauge_metric_name{foo="bar",key2="value2",remote_name="156955",url="http://anoth
 }
 
 func TestPushMetricsFailedBatch(t *testing.T) {
+	t.Skip("Skip test due to prometheus format complexity. Execution can take over 30s")
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(500)
@@ -472,6 +474,7 @@ func TestPushMetricsFailedBatch(t *testing.T) {
 	test.exp.config.MaxRequestBodySize = 1024 * 1024 * 1024 * 1024
 
 	metrics := metricPairToMetrics([]metricPair{exampleIntMetric()})
+	metrics.ResourceMetrics().Resize(maxBufferSize + 1)
 	metric := metrics.ResourceMetrics().At(0)
 
 	for i := 0; i < maxBufferSize; i++ {
