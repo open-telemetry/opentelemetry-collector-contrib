@@ -41,9 +41,10 @@ The following configuration options can also be configured:
   configuration option for [SignalFx
   receiver](../../receiver/signalfxreceiver/README.md) to preserve datapoint
   origin.
-- `exclude_metrics`: metric names that will be excluded from sending
-  to Signalfx backend. If `send_compatible_metrics` or `translation_rules`
-  options are enabled, the exclusion will be applied on translated metrics.
+- `exclude_metrics`: List of metric filters that will determine metrics to be
+  excluded from sending to Signalfx backend. If `send_compatible_metrics`
+  or `translation_rules` options are enabled, the exclusion will be applied
+  on translated metrics. See [here](./testdata/config.yaml) for examples.
 - `headers` (no default): Headers to pass in the payload.
 - `log_dimension_updates` (default = `false`): Whether or not to log dimension
   updates.

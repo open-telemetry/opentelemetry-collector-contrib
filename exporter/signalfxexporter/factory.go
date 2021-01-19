@@ -151,10 +151,6 @@ func setTranslationRules(cfg *Config) error {
 		}
 		cfg.TranslationRules = defaultRules
 	}
-	if len(cfg.ExcludeMetrics) > 0 {
-		cfg.TranslationRules = append(cfg.TranslationRules,
-			translation.GetExcludeMetricsRule(cfg.ExcludeMetrics))
-	}
 	return nil
 }
 

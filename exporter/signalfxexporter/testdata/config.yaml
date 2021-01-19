@@ -29,6 +29,23 @@ exporters:
     - action: rename_dimension_keys
       mapping:
         k8s.cluster.name: kubernetes_cluster
+    exclude_metrics:
+      - metric_name: metric1
+      - metric_names: [metric2, metric3]
+      - metric_name: metric4
+        dimensions:
+          dimension_key: dimension_val
+      - metric_name: metric5
+        dimensions:
+          dimension_key: [dimension_val1, dimension_val2]
+      # Apart from exact matches these fields also take regex and globs
+      - metric_name: /cpu\..*/
+      - metric_names: [cpu.util*, memory.util*]
+      - metric_name: cpu.utilization
+        dimensions:
+          container_name: /^[A-Z][A-Z]$/
+
+
 
 service:
   pipelines:
