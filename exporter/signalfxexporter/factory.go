@@ -29,6 +29,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
 )
@@ -110,6 +111,11 @@ func createMetricsExporter(
 		return nil, err
 	}
 
+	err = setDefaultExcludes(expCfg)
+	if err != nil {
+		return nil, err
+	}
+
 	exp, err := newSignalFxExporter(expCfg, params.Logger)
 	if err != nil {
 		return nil, err
@@ -166,6 +172,34 @@ func loadDefaultTranslationRules() ([]translation.Rule, error) {
 	}
 
 	return config.TranslationRules, nil
+}
+
+// setDefaultExcludes appends default metrics to be excluded to the exclude_metrics option.
+func setDefaultExcludes(cfg *Config) error {
+	defaultExcludeMetrics, err := loadDefaultExcludes()
+	if err != nil {
+		return err
+	}
+	if cfg.ExcludeMetrics == nil {
+		cfg.ExcludeMetrics = defaultExcludeMetrics
+	} else {
+		cfg.ExcludeMetrics = append(cfg.ExcludeMetrics, defaultExcludeMetrics...)
+	}
+	return nil
+}
+
+func loadDefaultExcludes() ([]dpfilters.MetricFilter, error) {
+	config := Config{}
+
+	v := otelconfig.NewViper()
+	v.SetConfigType("yaml")
+	v.ReadConfig(strings.NewReader(translation.DefaultExcludeMetricsYaml))
+	err := v.UnmarshalExact(&config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load default exclude metrics: %v", err)
+	}
+
+	return config.ExcludeMetrics, nil
 }
 
 func createLogsExporter(

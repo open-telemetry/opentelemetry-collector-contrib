@@ -37,6 +37,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -308,6 +309,47 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.True(t, ok, "container_memory_page_faults not found")
 	_, ok = metrics["container_memory_major_page_faults"]
 	require.True(t, ok, "container_memory_major_page_faults not found")
+}
+
+func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
+	config := &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
+		AccessToken: "testToken",
+		Realm:       "us1",
+	}
+
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	// Validate that default excludes are always loaded.
+	assert.Equal(t, 7, len(config.ExcludeMetrics))
+}
+
+func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
+	config := &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
+		AccessToken: "testToken",
+		Realm:       "us1",
+		ExcludeMetrics: []dpfilters.MetricFilter{
+			{
+				MetricNames: []string{"metric1"},
+			},
+		},
+	}
+
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	// Validate that default excludes are always loaded.
+	assert.Equal(t, 8, len(config.ExcludeMetrics))
 }
 
 func testMetricsData() pdata.ResourceMetrics {
