@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/elastic/go-sysinfo v1.4.0 // indirect
 	github.com/elastic/go-windows v1.0.1 // indirect
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	go.elastic.co/apm v1.9.1-0.20201218004853-18a8126106c6
 	go.elastic.co/fastjson v1.1.0
 	go.opentelemetry.io/collector v0.18.0
