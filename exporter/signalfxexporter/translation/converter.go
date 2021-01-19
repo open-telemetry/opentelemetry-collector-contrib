@@ -58,8 +58,12 @@ type MetricsConverter struct {
 // NewMetricsConverter creates a MetricsConverter from the passed in logger and
 // MetricTranslator. Pass in a nil MetricTranslator to not use translation
 // rules.
-func NewMetricsConverter(logger *zap.Logger, t *MetricTranslator, excludes []dpfilters.MetricFilter) (*MetricsConverter, error) {
-	fs, err := dpfilters.NewFilterSet(excludes)
+func NewMetricsConverter(
+	logger *zap.Logger,
+	t *MetricTranslator,
+	excludes []dpfilters.MetricFilter,
+	includes []dpfilters.MetricFilter) (*MetricsConverter, error) {
+	fs, err := dpfilters.NewFilterSet(excludes, includes)
 	if err != nil {
 		return nil, err
 	}
