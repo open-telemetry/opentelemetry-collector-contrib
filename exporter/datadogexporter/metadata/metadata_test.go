@@ -106,7 +106,7 @@ func TestMetadataFromAttributes(t *testing.T) {
 			InstanceID:  "host-id",
 			EC2Hostname: "ec2amaz-host-name",
 		})
-	assert.ElementsMatch(t, metadataAWS.Tags.EC2, []string{"tag1:val1", "tag2:val2"})
+	assert.ElementsMatch(t, metadataAWS.Tags.System, []string{"tag1:val1", "tag2:val2"})
 	assert.ElementsMatch(t, metadataAWS.Tags.OTel, []string{})
 
 	// GCP
