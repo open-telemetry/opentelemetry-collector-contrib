@@ -38,6 +38,13 @@ func TestDefaultPath(t *testing.T) {
 	assert.True(t, c.(*Config).pathGlob.Match("/bar"))
 }
 
+func TestBadGlob(t *testing.T) {
+	c := createDefaultConfig().(*Config)
+	c.Path = "["
+	err := c.initialize()
+	assert.Error(t, err)
+}
+
 func TestFixedPath(t *testing.T) {
 	c := createDefaultConfig()
 	c.(*Config).Path = "/foo"

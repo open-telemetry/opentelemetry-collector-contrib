@@ -78,6 +78,26 @@ func TestCreateNilNextConsumerMetrics(t *testing.T) {
 	assert.Nil(t, mReceiver, "receiver creation failed")
 }
 
+func TestCreateMetricsReceiverWithBadConfig(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:1"
+	cfg.Path = " *[* "
+
+	mReceiver, err := createMetricsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewMetricsNop())
+	assert.EqualError(t, err, "unexpected end of input")
+	assert.Nil(t, mReceiver, "receiver creation failed")
+}
+
+func TestCreateLogsReceiverWithBadConfig(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:1"
+	cfg.Path = " *[* "
+
+	mReceiver, err := createLogsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewLogsNop())
+	assert.EqualError(t, err, "unexpected end of input")
+	assert.Nil(t, mReceiver, "receiver creation failed")
+}
+
 func TestCreateNilNextConsumerLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:1"
