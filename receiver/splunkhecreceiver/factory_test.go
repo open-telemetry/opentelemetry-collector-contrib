@@ -57,39 +57,15 @@ func TestFactoryType(t *testing.T) {
 	assert.Equal(t, configmodels.Type("splunk_hec"), NewFactory().Type())
 }
 
-func TestCreateValidEndpoint(t *testing.T) {
-	endpoint, err := extractPortFromEndpoint("localhost:123")
-	assert.NoError(t, err)
-	assert.Equal(t, 123, endpoint)
-}
-
-func TestCreateInvalidEndpoint(t *testing.T) {
-	endpoint, err := extractPortFromEndpoint("")
-	assert.EqualError(t, err, "endpoint is not formatted correctly: missing port in address")
-	assert.Equal(t, 0, endpoint)
-}
-
-func TestCreateNoPort(t *testing.T) {
-	endpoint, err := extractPortFromEndpoint("localhost:")
-	assert.EqualError(t, err, "endpoint port is not a number: strconv.ParseInt: parsing \"\": invalid syntax")
-	assert.Equal(t, 0, endpoint)
-}
-
-func TestCreateLargePort(t *testing.T) {
-	endpoint, err := extractPortFromEndpoint("localhost:65536")
-	assert.EqualError(t, err, "port number must be between 1 and 65535")
-	assert.Equal(t, 0, endpoint)
-}
-
 func TestValidate(t *testing.T) {
-	err := createDefaultConfig().(*Config).validate()
+	err := createDefaultConfig().(*Config).initialize()
 	assert.NoError(t, err)
 }
 
 func TestValidateBadEndpoint(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:abr"
-	err := config.validate()
+	err := config.initialize()
 	assert.EqualError(t, err, "endpoint port is not a number: strconv.ParseInt: parsing \"abr\": invalid syntax")
 }
 
