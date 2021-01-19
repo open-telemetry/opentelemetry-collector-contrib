@@ -90,6 +90,11 @@ func newSignalFxExporter(
 
 	headers := buildHeaders(config)
 
+	converter, err := translation.NewMetricsConverter(logger, options.metricTranslator, config.ExcludeMetrics)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create metric converter: %v", err)
+	}
+
 	dpClient := &sfxDPClient{
 		sfxClientBase: sfxClientBase{
 			ingestURL: options.ingestURL,
@@ -103,7 +108,7 @@ func newSignalFxExporter(
 		},
 		logger:                 logger,
 		accessTokenPassthrough: config.AccessTokenPassthrough,
-		converter:              translation.NewMetricsConverter(logger, options.metricTranslator),
+		converter:              converter,
 	}
 
 	dimClient := dimensions.NewDimensionClient(

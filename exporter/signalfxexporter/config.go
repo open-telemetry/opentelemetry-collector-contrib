@@ -25,6 +25,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -85,10 +86,11 @@ type Config struct {
 	//            And keep `override=true` in resourcedetection config.
 	SyncHostMetadata bool `mapstructure:"sync_host_metadata"`
 
-	// ExcludeMetrics defines metrics that will be excluded from sending to Signalfx
-	// backend. If translations enabled with SendCompatibleMetrics or TranslationRules
-	// options, the exclusion will be applied on translated metrics.
-	ExcludeMetrics []string `mapstructure:"exclude_metrics"`
+	// ExcludeMetrics defines dpfilter.MetricFilters that will determine metrics to be
+	// excluded from sending to SignalFx backend. If translations enabled with
+	// SendCompatibleMetrics or TranslationRules options, the exclusion will be applied
+	// on translated metrics.
+	ExcludeMetrics []dpfilters.MetricFilter `mapstructure:"exclude_metrics"`
 
 	// Correlation configuration for syncing traces service and environment to metrics.
 	Correlation *correlation.Config `mapstructure:"correlation"`

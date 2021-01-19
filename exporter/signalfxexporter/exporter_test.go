@@ -41,6 +41,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -61,6 +62,15 @@ func TestNew(t *testing.T) {
 			name: "bad config fails",
 			config: &Config{
 				APIURL: "abc",
+			},
+			wantErr: true,
+		},
+		{
+			name: "fails to create metrics converter",
+			config: &Config{
+				AccessToken:    "test",
+				Realm:          "realm",
+				ExcludeMetrics: []dpfilters.MetricFilter{{}},
 			},
 			wantErr: true,
 		},
@@ -184,6 +194,9 @@ func TestConsumeMetrics(t *testing.T) {
 			serverURL, err := url.Parse(server.URL)
 			assert.NoError(t, err)
 
+			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil)
+			require.NoError(t, err)
+			require.NotNil(t, c)
 			dpClient := &sfxDPClient{
 				sfxClientBase: sfxClientBase{
 					ingestURL: serverURL,
@@ -196,7 +209,7 @@ func TestConsumeMetrics(t *testing.T) {
 					}},
 				},
 				logger:    zap.NewNop(),
-				converter: translation.NewMetricsConverter(zap.NewNop(), nil),
+				converter: c,
 			}
 
 			numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), tt.md)
@@ -961,6 +974,9 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 	serverURL, err := url.Parse(server.URL)
 	assert.NoError(b, err)
 
+	c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil)
+	require.NoError(b, err)
+	require.NotNil(b, c)
 	dpClient := &sfxDPClient{
 		sfxClientBase: sfxClientBase{
 			ingestURL: serverURL,
@@ -972,7 +988,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 			}},
 		},
 		logger:    zap.NewNop(),
-		converter: translation.NewMetricsConverter(zap.NewNop(), nil),
+		converter: c,
 	}
 
 	for i := 0; i < b.N; i++ {
