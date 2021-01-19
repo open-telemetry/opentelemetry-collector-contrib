@@ -3,6 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpertra
 go 1.14
 
 require (
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.18.0
 )
