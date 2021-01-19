@@ -29,6 +29,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
 )
@@ -63,6 +64,9 @@ type HostTags struct {
 
 	// EC2 are host tags from EC2
 	EC2 []string `json:"ec2,omitempty"`
+
+	// GCP are Google Cloud Platform tags
+	GCP []string `json:"google cloud platform,omitempty"`
 }
 
 // Meta includes metadata about the host aliases
@@ -103,6 +107,10 @@ func metadataFromAttributes(attrs pdata.AttributeMap) *HostMetadata {
 		hm.Meta.InstanceID = ec2HostInfo.InstanceID
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
 		hm.Tags.EC2 = ec2HostInfo.EC2Tags
+	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP {
+		gcpHostInfo := gcp.HostInfoFromAttributes(attrs)
+		hm.Tags.GCP = gcpHostInfo.GCPTags
+		hm.Meta.HostAliases = append(hm.Meta.HostAliases, gcpHostInfo.HostAliases...)
 	}
 
 	return hm

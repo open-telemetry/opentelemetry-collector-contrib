@@ -118,9 +118,11 @@ func TestMetadataFromAttributes(t *testing.T) {
 		conventions.AttributeCloudZone:     "cloud-zone",
 	})
 	metadataGCP := metadataFromAttributes(attrsGCP)
-	assert.Equal(t, metadataGCP.InternalHostname, "host-id")
-	assert.Equal(t, metadataGCP.Meta, &Meta{Hostname: "host-id"})
-	assert.Equal(t, metadataGCP.Tags, &HostTags{})
+	assert.Equal(t, metadataGCP.InternalHostname, "host-name")
+	assert.Equal(t, metadataGCP.Meta.Hostname, "host-name")
+	assert.ElementsMatch(t, metadataGCP.Meta.HostAliases, []string{"host-id"})
+	assert.ElementsMatch(t, metadataGCP.Tags.GCP,
+		[]string{"instance-id:host-id", "zone:cloud-zone", "instance-type:host-type"})
 
 	// Other
 	attrsOther := testutils.NewAttributeMap(map[string]string{
