@@ -23,6 +23,7 @@ exporter/carbonexporter/                   @open-telemetry/collector-contrib-app
 exporter/datadogexporter/                  @open-telemetry/collector-contrib-approvers @KSerrania @ericmustin @mx-psi
 exporter/dynatraceexporter/                @open-telemetry/collector-contrib-approvers @dyladan
 exporter/elasticexporter/                  @open-telemetry/collector-contrib-approvers @axw @simitt @jalvz
+exporter/f5cloudexporter/                  @open-telemetry/collector-contrib-approvers @gramidt
 exporter/honeycombexporter/                @open-telemetry/collector-contrib-approvers @paulosman @lizthegrey @MikeGoldsmith
 exporter/jaegerthrifthttpexporter/         @open-telemetry/collector-contrib-approvers @jpkrohling @pavolloffay
 exporter/kinesisexporter/                  @open-telemetry/collector-contrib-approvers @owais
