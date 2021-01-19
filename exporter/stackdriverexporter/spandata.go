@@ -16,15 +16,16 @@
 package stackdriverexporter
 
 import (
+	"context"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	apitrace "go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/label"
 	export "go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
+	apitrace "go.opentelemetry.io/otel/trace"
 )
 
 func pdataResourceSpansToOTSpanData(rs pdata.ResourceSpans) []*export.SpanData {
@@ -53,8 +54,10 @@ func pdataSpanToOTSpanData(
 	sc.SpanID = span.SpanID().Bytes()
 	startTime := time.Unix(0, int64(span.StartTime()))
 	endTime := time.Unix(0, int64(span.EndTime()))
-	r := sdkresource.New(
-		pdataAttributesToOTAttributes(pdata.NewAttributeMap(), resource)...,
+	// TODO: Decide if ignoring the error is fine.
+	r, _ := sdkresource.New(
+		context.Background(),
+		sdkresource.WithAttributes(pdataAttributesToOTAttributes(pdata.NewAttributeMap(), resource)...),
 	)
 
 	sd := &export.SpanData{
