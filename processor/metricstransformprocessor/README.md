@@ -36,7 +36,7 @@ In addition to the above:
 - When renaming metrics, capturing groups from the `regexp` filter will be
   expanded
 - When adding or updating a label value, `{{version}}` will be replaced with
-  this collector's version number.
+  this collector's version number
 
 ## Configuration
 
