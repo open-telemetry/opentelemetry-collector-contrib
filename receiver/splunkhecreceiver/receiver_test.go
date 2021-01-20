@@ -197,6 +197,18 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			},
 		},
 		{
+			name: "incorrect_content_type",
+			req: func() *http.Request {
+				req := httptest.NewRequest("POST", "http://localhost/foo", nil)
+				req.Header.Set("Content-Type", "application/not-json")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, responseOK, body)
+			},
+		},
+		{
 			name: "metric_unsupported",
 			req: func() *http.Request {
 				metricMsg := buildSplunkHecMsg(currentTime, 3)
@@ -499,8 +511,6 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			splunkhecMsg := buildSplunkHecMsg(currentTime, 3)
 			msgBytes, _ := json.Marshal(splunkhecMsg)
 			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
-			// unchecked Content-Type:
-			req.Header.Set("Content-Type", "application/splunk")
 			if tt.token.Type() != pdata.AttributeValueNULL {
 				req.Header.Set("Splunk", tt.token.StringVal())
 			}
