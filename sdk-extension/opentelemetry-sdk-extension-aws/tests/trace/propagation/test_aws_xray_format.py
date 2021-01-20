@@ -139,7 +139,9 @@ class AwsXRayPropagatorTest(unittest.TestCase):
         AwsXRayPropagatorTest.XRAY_PROPAGATOR.inject(
             AwsXRayPropagatorTest.carrier_setter,
             carrier,
-            build_test_current_context(trace_state=TraceState({"foo": "bar"})),
+            build_test_current_context(
+                trace_state=TraceState([("foo", "bar")])
+            ),
         )
 
         # TODO: (NathanielRN) Assert trace state when the propagator supports it

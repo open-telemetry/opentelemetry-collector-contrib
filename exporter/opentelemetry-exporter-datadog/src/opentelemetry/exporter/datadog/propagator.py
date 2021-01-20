@@ -70,7 +70,7 @@ class DatadogFormat(TextMapPropagator):
             span_id=int(span_id),
             is_remote=True,
             trace_flags=trace_flags,
-            trace_state=trace.TraceState({constants.DD_ORIGIN: origin}),
+            trace_state=trace.TraceState([(constants.DD_ORIGIN, origin)]),
         )
 
         return set_span_in_context(trace.DefaultSpan(span_context), context)

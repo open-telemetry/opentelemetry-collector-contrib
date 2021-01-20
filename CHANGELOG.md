@@ -65,6 +65,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#246](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/246))
 - `opentelemetry-instrumentation-dbapi`, `opentelemetry-instrumentation-psycopg2`, `opentelemetry-instrumentation-mysql`, `opentelemetry-instrumentation-pymysql`, `opentelemetry-instrumentation-aiopg` Use SQL command name as the span operation name instead of the entire query.
   ([#246](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/246))
+- Update TraceState to adhere to specs
+  ([#276](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/276))
 
 ## [0.16b1](https://github.com/open-telemetry/opentelemetry-python-contrib/releases/tag/v0.16b1) - 2020-11-26
 

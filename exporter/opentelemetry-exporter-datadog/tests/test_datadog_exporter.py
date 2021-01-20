@@ -542,7 +542,7 @@ class TestDatadogSpanExporter(unittest.TestCase):
             span_id=trace_api.INVALID_SPAN,
             is_remote=True,
             trace_state=trace_api.TraceState(
-                {datadog.constants.DD_ORIGIN: "origin-service"}
+                [(datadog.constants.DD_ORIGIN, "origin-service")]
             ),
         )
 
