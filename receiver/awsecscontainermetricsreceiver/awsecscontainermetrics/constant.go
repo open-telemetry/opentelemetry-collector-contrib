@@ -26,7 +26,6 @@ const (
 	AttributeECSTaskPullStoppedAt  = "aws.ecs.task.pull_stopped_at"
 	AttributeECSTaskKnownStatus    = "aws.ecs.task.known_status"
 	AttributeECSTaskLaunchType     = "aws.ecs.task.launch_type"
-	AttributeContainerImageVersion = "aws.ecs.container.image.tag"
 	AttributeContainerImageID      = "aws.ecs.container.image.id"
 	AttributeContainerCreatedAt    = "aws.ecs.container.created_at"
 	AttributeContainerStartedAt    = "aws.ecs.container.started_at"
