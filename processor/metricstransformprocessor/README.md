@@ -49,19 +49,19 @@ transformations or operations.
 # transforms is a list of transformations with each element transforming a metric selected by metric name
 transforms:
 
-    # SPECIFY HOW TO MATCH AGAINST THE METRIC(S)
+    # SPECIFY WHICH METRIC(S) TO MATCH
     
     # include specifies the metric name used to determine which metric(s) to operate on
   - include: <metric_name>
     # match_type specifies whether the include name should be used as a strict match or regexp match, default = strict
     match_type: {strict, regexp}
     
-    # SPECIFY THE ACTION
+    # SPECIFY THE ACTION TO TAKE ON THE MATCHED METRIC(S)
     
     # action specifies if the operations (specified below) are performed on metrics in place (update), on an inserted clone (insert), or on a new combined metric (combine)
     action: {update, insert, combine}
     
-    # SPECIFY HOW TO TRANSFORM THE RESULTING METRIC
+    # SPECIFY HOW TO TRANSFORM THE METRIC GENERATED AS A RESULT OF APPLYING THE ABOVE ACTION
     
     # new_name specifies the updated name of the metric; if action is insert or combine, new_name is required
     new_name: <new_metric_name_inserted>
@@ -69,7 +69,7 @@ transforms:
     aggregation_type: {sum, mean, min, max}
     # submatch_case specifies the case that should be used when adding label values based on regexp submatches when performing a combine action; leave blank to use the submatch value as is
     submatch_case: {lower, upper}
-    # operations contain a list of operations that will be performed on the selected metric(s) as determined by the action (specified above)
+    # operations contain a list of operations that will be performed on the selected metric(s)
     operations:
         # action defines the type of operation that will be performed, see examples below for more details
       - action: {add_label, update_label, delete_label_value, toggle_scalar_data_type, aggregate_labels, aggregate_label_values}
