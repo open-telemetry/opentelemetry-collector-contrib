@@ -43,7 +43,6 @@ const (
 	responseOK                        = "OK"
 	responseNotFound                  = "Not found"
 	responseInvalidMethod             = `Only "POST" method is supported`
-	responseInvalidContentType        = `"Content-Type" must be "application/json"`
 	responseInvalidEncoding           = `"Content-Encoding" must be "gzip" or empty`
 	responseErrGzipReader             = "Error on gzip body"
 	responseErrUnmarshalBody          = "Failed to unmarshal message body"
@@ -52,9 +51,7 @@ const (
 	responseErrUnsupportedLogEvent    = "Unsupported log event"
 
 	// Centralizing some HTTP and related string constants.
-	jsonContentType           = "application/json"
 	gzipEncoding              = "gzip"
-	httpContentTypeHeader     = "Content-Type"
 	httpContentEncodingHeader = "Content-Encoding"
 )
 
@@ -66,7 +63,6 @@ var (
 	okRespBody                = initJSONResponse(responseOK)
 	notFoundRespBody          = initJSONResponse(responseNotFound)
 	invalidMethodRespBody     = initJSONResponse(responseInvalidMethod)
-	invalidContentRespBody    = initJSONResponse(responseInvalidContentType)
 	invalidEncodingRespBody   = initJSONResponse(responseInvalidEncoding)
 	errGzipReaderRespBody     = initJSONResponse(responseErrGzipReader)
 	errUnmarshalBodyRespBody  = initJSONResponse(responseErrUnmarshalBody)
@@ -210,11 +206,6 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 
 	if req.Method != http.MethodPost {
 		r.failRequest(ctx, resp, http.StatusBadRequest, invalidMethodRespBody, nil)
-		return
-	}
-
-	if req.Header.Get(httpContentTypeHeader) != jsonContentType {
-		r.failRequest(ctx, resp, http.StatusUnsupportedMediaType, invalidContentRespBody, nil)
 		return
 	}
 
