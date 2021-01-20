@@ -51,7 +51,7 @@ The following configuration options can also be configured:
   that are dropped by default. For example, the following configuration can be
   used to send through some of that are dropped by default.
   ```yaml
-  include_metrics
+  include_metrics:
     # When sending in translated metrics.
     - metric_names: [cpu.interrupt, cpu.user, cpu.system]
     # When sending in metrics in OTel convention.
