@@ -1,70 +1,9 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://help.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
-
 version: 2
 updates:
-  - package-ecosystem: "gomod" # See documentation for possible values
-    directory: "/" # Location of package manifests
-    schedule:
-      interval: "weekly" # Check for updates to GitHub Actions every week
-
-  ################
-  #   INTERNAL   #
-  ################
   - package-ecosystem: "gomod"
-    directory: "/internal/awsxray"
+    directory: "/"
     schedule:
       interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/internal/awsxray/testdata/sampleapp"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/internal/awsxray/testdata/sampleserver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/internal/common"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/internal/k8sconfig"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/internal/splunk"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/internal/tools"
-    schedule:
-      interval: "weekly"
-
-  ##################
-  #   EXTENSIONS   #
-  ##################
-  - package-ecosystem: "gomod"
-    directory: "/extension/httpforwarder"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/extension/observer"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/extension/observer/hostobserver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/extension/observer/k8sobserver"
-    schedule:
-      interval: "weekly"
-
-  #################
-  #   EXPORTERS   #
-  #################
   - package-ecosystem: "gomod"
     directory: "/exporter/alibabacloudlogserviceexporter"
     schedule:
@@ -142,10 +81,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/exporter/signalfxcorrelationexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/exporter/signalfxexporter"
     schedule:
       interval: "weekly"
@@ -161,10 +96,58 @@ updates:
     directory: "/exporter/sumologicexporter"
     schedule:
       interval: "weekly"
-
-  ##################
-  #   PROCESSORS   #
-  ##################
+  - package-ecosystem: "gomod"
+    directory: "/extension/httpforwarder"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/extension/observer"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/extension/observer/hostobserver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/extension/observer/k8sobserver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/awsxray"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/awsxray/testdata/sampleapp"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/awsxray/testdata/sampleserver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/common"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/k8sconfig"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/splunk"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/tools"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/batchperresourceattr"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/batchpertrace"
+    schedule:
+      interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/processor/groupbyattrsprocessor"
     schedule:
@@ -190,13 +173,13 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/processor/spanmetricsprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/processor/tailsamplingprocessor"
     schedule:
       interval: "weekly"
-
-  #################
-  #   RECEIVERS   #
-  #################
   - package-ecosystem: "gomod"
     directory: "/receiver/awsecscontainermetricsreceiver"
     schedule:
@@ -285,30 +268,14 @@ updates:
     directory: "/receiver/zookeeperreceiver"
     schedule:
       interval: "weekly"
-
-  ###############
-  #   PKG       #
-  ###############
-  - package-ecosystem: "gomod"
-    directory: "/pkg/batchperresourceattr"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/pkg/batchpertrace"
-    schedule:
-      interval: "weekly"
-
-  ###############
-  #   TESTBED   #
-  ###############
   - package-ecosystem: "gomod"
     directory: "/testbed"
     schedule:
       interval: "weekly"
-
-  ################
-  #   TRACEGEN   #
-  ################
+  - package-ecosystem: "gomod"
+    directory: "/testbed/mockdatareceivers/mockawsxrayreceiver"
+    schedule:
+      interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/tracegen"
     schedule:
