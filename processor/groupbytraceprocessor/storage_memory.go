@@ -25,7 +25,7 @@ import (
 
 type memoryStorage struct {
 	sync.RWMutex
-	content                   map[[16]byte][]pdata.ResourceSpans
+	content                   map[pdata.TraceID][]pdata.ResourceSpans
 	stopped                   bool
 	stoppedLock               sync.RWMutex
 	metricsCollectionInterval time.Duration
@@ -35,32 +35,28 @@ var _ storage = (*memoryStorage)(nil)
 
 func newMemoryStorage() *memoryStorage {
 	return &memoryStorage{
-		content:                   make(map[[16]byte][]pdata.ResourceSpans),
+		content:                   make(map[pdata.TraceID][]pdata.ResourceSpans),
 		metricsCollectionInterval: time.Second,
 	}
 }
 
 func (st *memoryStorage) createOrAppend(traceID pdata.TraceID, rs pdata.ResourceSpans) error {
-	bTraceID := traceID.Bytes()
-
 	st.Lock()
 	defer st.Unlock()
 
 	// getting zero value is fine
-	content := st.content[bTraceID]
+	content := st.content[traceID]
 
 	newRS := pdata.NewResourceSpans()
 	rs.CopyTo(newRS)
 	content = append(content, newRS)
-	st.content[bTraceID] = content
+	st.content[traceID] = content
 
 	return nil
 }
 func (st *memoryStorage) get(traceID pdata.TraceID) ([]pdata.ResourceSpans, error) {
-	bTraceID := traceID.Bytes()
-
 	st.RLock()
-	rss, ok := st.content[bTraceID]
+	rss, ok := st.content[traceID]
 	st.RUnlock()
 	if !ok {
 		return nil, nil
@@ -79,13 +75,11 @@ func (st *memoryStorage) get(traceID pdata.TraceID) ([]pdata.ResourceSpans, erro
 // delete will return a reference to a ResourceSpans. Changes to the returned object may not be applied
 // to the version in the storage.
 func (st *memoryStorage) delete(traceID pdata.TraceID) ([]pdata.ResourceSpans, error) {
-	bTraceID := traceID.Bytes()
-
 	st.Lock()
 	defer st.Unlock()
 
-	defer delete(st.content, bTraceID)
-	return st.content[bTraceID], nil
+	defer delete(st.content, traceID)
+	return st.content[traceID], nil
 }
 
 func (st *memoryStorage) start() error {
