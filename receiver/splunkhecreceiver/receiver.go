@@ -41,6 +41,7 @@ const (
 	defaultServerTimeout = 20 * time.Second
 
 	responseOK                        = "OK"
+	responseNotFound                  = "Not found"
 	responseInvalidMethod             = `Only "POST" method is supported`
 	responseInvalidContentType        = `"Content-Type" must be "application/json"`
 	responseInvalidEncoding           = `"Content-Encoding" must be "gzip" or empty`
@@ -63,6 +64,7 @@ var (
 	errEmptyEndpoint          = errors.New("empty endpoint")
 
 	okRespBody                = initJSONResponse(responseOK)
+	notFoundRespBody          = initJSONResponse(responseNotFound)
 	invalidMethodRespBody     = initJSONResponse(responseInvalidMethod)
 	invalidContentRespBody    = initJSONResponse(responseInvalidContentType)
 	invalidEncodingRespBody   = initJSONResponse(responseInvalidEncoding)
@@ -160,7 +162,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	}
 
 	mx := mux.NewRouter()
-	mx.HandleFunc(hecPath, r.handleReq)
+	mx.NewRoute().HandlerFunc(r.handleReq)
 
 	r.server = r.config.HTTPServerSettings.ToServer(mx)
 
@@ -190,13 +192,20 @@ func (r *splunkReceiver) Shutdown(context.Context) error {
 }
 
 func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
+
 	transport := "http"
 	if r.config.TLSSetting != nil {
 		transport = "https"
 	}
+
 	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), transport)
 	if r.logsConsumer == nil {
 		ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.Name(), transport)
+	}
+	reqPath := req.URL.Path
+	if !r.config.pathGlob.Match(reqPath) {
+		r.failRequest(ctx, resp, http.StatusNotFound, notFoundRespBody, nil)
+		return
 	}
 
 	if req.Method != http.MethodPost {
