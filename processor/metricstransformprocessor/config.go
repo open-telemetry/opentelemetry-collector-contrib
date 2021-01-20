@@ -63,9 +63,9 @@ type Config struct {
 
 // Transform defines the transformation applied to the specific metric
 type Transform struct {
-	
-	// SPECIFY WHICH METRIC(S) TO MATCH
-	
+
+	// --- SPECIFY WHICH METRIC(S) TO MATCH ---
+
 	// MetricIncludeFilter is used to select the metric(s) to operate on.
 	// REQUIRED
 	MetricIncludeFilter FilterConfig `mapstructure:",squash"`
@@ -74,8 +74,8 @@ type Transform struct {
 	// DEPRECATED. Use MetricIncludeFilter instead.
 	MetricName string `mapstructure:"metric_name"`
 
-	// SPECIFY THE ACTION TO TAKE ON THE MATCHED METRIC(S)
-	
+	// --- SPECIFY THE ACTION TO TAKE ON THE MATCHED METRIC(S) ---
+
 	// Action specifies the action performed on the matched metric. Action specifies
 	// if the operations (specified below) are performed on metrics in place (update),
 	// on an inserted clone (insert), or on a new combined metric that includes all
@@ -83,8 +83,8 @@ type Transform struct {
 	// REQUIRED
 	Action ConfigAction `mapstructure:"action"`
 
-	// SPECIFY HOW TO TRANSFORM THE METRIC GENERATED AS A RESULT OF APPLYING THE ABOVE ACTION
-	
+	// --- SPECIFY HOW TO TRANSFORM THE METRIC GENERATED AS A RESULT OF APPLYING THE ABOVE ACTION ---
+
 	// NewName specifies the name of the new metric when inserting or updating.
 	// REQUIRED only if Action is INSERT.
 	NewName string `mapstructure:"new_name"`
