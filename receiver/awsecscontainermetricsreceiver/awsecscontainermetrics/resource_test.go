@@ -47,13 +47,12 @@ func TestContainerResource(t *testing.T) {
 		AttributeECSDockerName:              "docker-container-1",
 		conventions.AttributeContainerImage: "nginx:v1.0",
 		AttributeContainerImageID:           "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
-		conventions.AttributeContainerTag:    "v1.0",
+		conventions.AttributeContainerTag:   "v1.0",
 		AttributeContainerCreatedAt:         "2020-07-30T22:12:29.837074927Z",
 		AttributeContainerStartedAt:         "2020-07-30T22:12:31.153459485Z",
 		AttributeContainerFinishedAt:        "2020-07-31T22:12:29.837074927Z",
 		AttributeContainerKnownStatus:       "RUNNING",
 	}
-
 
 	verifyAttributeMap(t, expected, attrMap)
 }

@@ -31,11 +31,11 @@ func containerResource(cm ContainerMetadata) pdata.Resource {
 	resource.Attributes().UpsertString(conventions.AttributeContainerTag, getVersionFromIamge(cm.Image))
 	resource.Attributes().UpsertString(AttributeContainerCreatedAt, cm.CreatedAt)
 	resource.Attributes().UpsertString(AttributeContainerStartedAt, cm.StartedAt)
-	if cm.FinishedAt != ""{
+	if cm.FinishedAt != "" {
 		resource.Attributes().UpsertString(AttributeContainerFinishedAt, cm.FinishedAt)
 	}
 	resource.Attributes().UpsertString(AttributeContainerKnownStatus, cm.KnownStatus)
-	if cm.ExitCode != nil{
+	if cm.ExitCode != nil {
 		resource.Attributes().UpsertInt(AttributeContainerExitCode, *cm.ExitCode)
 	}
 	return resource
