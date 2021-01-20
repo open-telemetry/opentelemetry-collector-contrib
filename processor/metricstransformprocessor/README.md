@@ -29,12 +29,14 @@ In addition to the above:
 
 - Operations can be applied to one or more metrics using a `strict` or `regexp`
   filter
-- Metrics can be updated in place or on an inserted copy
-- A set of matching metrics can be combined into a single metric
+- Metrics can be updated in-place (`action = update`), on an inserted copy
+  (`action = insert`), or on a new inserted metric that is generated as the
+  result of combining all data points from the set of matching metrics into a
+  single metric (`action = combine`)
 - When renaming metrics, capturing groups from the `regexp` filter will be
   expanded
 - When adding or updating a label value, `{{version}}` will be replaced with
-  this collector's version number
+  this collector's version number.
 
 ## Configuration
 
@@ -46,19 +48,28 @@ transformations or operations.
 ```yaml
 # transforms is a list of transformations with each element transforming a metric selected by metric name
 transforms:
+
+    # SPECIFY HOW TO MATCH AGAINST THE METRIC(S)
+    
     # include specifies the metric name used to determine which metric(s) to operate on
   - include: <metric_name>
     # match_type specifies whether the include name should be used as a strict match or regexp match, default = strict
     match_type: {strict, regexp}
-    # action specifies if the operations are performed on a metric in place, on an inserted clone, or if the matched metrics should be combined
+    
+    # SPECIFY THE ACTION
+    
+    # action specifies if the operations (specified below) are performed on metrics in place (update), on an inserted clone (insert), or on a new combined metric (combine)
     action: {update, insert, combine}
-    # new_name specifies the updated name of the metric; if action is insert, new_name is required
+    
+    # SPECIFY HOW TO TRANSFORM THE RESULTING METRIC
+    
+    # new_name specifies the updated name of the metric; if action is insert or combine, new_name is required
     new_name: <new_metric_name_inserted>
     # aggregation_type defines how combined data points will be aggregated; if action is combine, aggregation_type is required
     aggregation_type: {sum, mean, min, max}
     # submatch_case specifies the case that should be used when adding label values based on regexp submatches when performing a combine action; leave blank to use the submatch value as is
     submatch_case: {lower, upper}
-    # operations contain a list of operations that will be performed on the selected metrics
+    # operations contain a list of operations that will be performed on the selected metric(s) as determined by the action (specified above)
     operations:
         # action defines the type of operation that will be performed, see examples below for more details
       - action: {add_label, update_label, delete_label_value, toggle_scalar_data_type, aggregate_labels, aggregate_label_values}
