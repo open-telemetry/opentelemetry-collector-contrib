@@ -92,6 +92,11 @@ type Config struct {
 	// on translated metrics.
 	ExcludeMetrics []dpfilters.MetricFilter `mapstructure:"exclude_metrics"`
 
+	// IncludeMetrics defines dpfilter.MetricFilters to override exclusion any of metric.
+	// This option can be used to included metrics that are otherwise dropped by default.
+	// See ./translation/default_metrics.go for a list of metrics that are dropped by default.
+	IncludeMetrics []dpfilters.MetricFilter `mapstructure:"include_metrics"`
+
 	// Correlation configuration for syncing traces service and environment to metrics.
 	Correlation *correlation.Config `mapstructure:"correlation"`
 }

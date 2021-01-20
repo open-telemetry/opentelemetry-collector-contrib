@@ -23,18 +23,17 @@ import (
 
 func TestFilterSet(t *testing.T) {
 	tests := []struct {
-		name                 string
-		metricNameInFilter   string
-		metricsNamesInFilter []string
-		dimensionsInFilter   map[string]interface{}
-		expectedMatches      []*sfxpb.DataPoint
-		expectedNonMatches   []*sfxpb.DataPoint
-		wantErr              bool
-		wantErrMsg           string
+		name               string
+		excludes           []MetricFilter
+		includes           []MetricFilter
+		expectedMatches    []*sfxpb.DataPoint
+		expectedNonMatches []*sfxpb.DataPoint
+		wantErr            bool
+		wantErrMsg         string
 	}{
 		{
-			name:               "Match based on simple metric name as string",
-			metricNameInFilter: "cpu.utilization",
+			name:     "Match based on simple metric name as string",
+			excludes: []MetricFilter{{MetricName: "cpu.utilization"}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric: "cpu.utilization",
@@ -47,8 +46,8 @@ func TestFilterSet(t *testing.T) {
 			},
 		},
 		{
-			name:                 "Match based on simple metric name",
-			metricsNamesInFilter: []string{"cpu.utilization"},
+			name:     "Match based on simple metric name",
+			excludes: []MetricFilter{{MetricNames: []string{"cpu.utilization"}}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric: "cpu.utilization",
@@ -61,8 +60,8 @@ func TestFilterSet(t *testing.T) {
 			},
 		},
 		{
-			name:                 "Match based on multiple metric names",
-			metricsNamesInFilter: []string{"cpu.utilization", "memory.utilization"},
+			name:     "Match based on multiple metric names",
+			excludes: []MetricFilter{{MetricNames: []string{"cpu.utilization", "memory.utilization"}}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric: "cpu.utilization",
@@ -78,8 +77,8 @@ func TestFilterSet(t *testing.T) {
 			},
 		},
 		{
-			name:                 "Match based on regex metric name",
-			metricsNamesInFilter: []string{`/cpu\..*/`},
+			name:     "Match based on regex metric name",
+			excludes: []MetricFilter{{MetricNames: []string{`/cpu\..*/`}}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric: "cpu.utilization",
@@ -92,8 +91,8 @@ func TestFilterSet(t *testing.T) {
 			},
 		},
 		{
-			name:                 "Match based on glob metric name",
-			metricsNamesInFilter: []string{`cpu.util*`, "memor*"},
+			name:     "Match based on glob metric name",
+			excludes: []MetricFilter{{MetricNames: []string{`cpu.util*`, "memor*"}}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric: "cpu.utilization",
@@ -110,9 +109,10 @@ func TestFilterSet(t *testing.T) {
 		},
 		{
 			name: "Match based on dimension name as string",
-			dimensionsInFilter: map[string]interface{}{
-				"container_name": "PO",
-			},
+			excludes: []MetricFilter{{
+				Dimensions: map[string]interface{}{
+					"container_name": "PO",
+				}}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric:     "cpu.utilization",
@@ -128,9 +128,10 @@ func TestFilterSet(t *testing.T) {
 		},
 		{
 			name: "Match based on dimension name",
-			dimensionsInFilter: map[string]interface{}{
-				"container_name": []interface{}{"PO"},
-			},
+			excludes: []MetricFilter{{
+				Dimensions: map[string]interface{}{
+					"container_name": []interface{}{"PO"},
+				}}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric:     "cpu.utilization",
@@ -146,9 +147,10 @@ func TestFilterSet(t *testing.T) {
 		},
 		{
 			name: "Match based on dimension name regex",
-			dimensionsInFilter: map[string]interface{}{
-				"container_name": []interface{}{`/^[A-Z][A-Z]$/`},
-			},
+			excludes: []MetricFilter{{
+				Dimensions: map[string]interface{}{
+					"container_name": []interface{}{`/^[A-Z][A-Z]$/`},
+				}}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric:     "cpu.utilization",
@@ -164,9 +166,10 @@ func TestFilterSet(t *testing.T) {
 		},
 		{
 			name: "Match based on dimension presence",
-			dimensionsInFilter: map[string]interface{}{
-				"container_name": []interface{}{`/.+/`},
-			},
+			excludes: []MetricFilter{{
+				Dimensions: map[string]interface{}{
+					"container_name": []interface{}{`/.+/`},
+				}}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric:     "cpu.utilization",
@@ -182,9 +185,10 @@ func TestFilterSet(t *testing.T) {
 		},
 		{
 			name: "Match based on dimension name glob",
-			dimensionsInFilter: map[string]interface{}{
-				"container_name": []interface{}{`*O*`},
-			},
+			excludes: []MetricFilter{{
+				Dimensions: map[string]interface{}{
+					"container_name": []interface{}{`*O*`},
+				}}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric:     "cpu.utilization",
@@ -203,11 +207,13 @@ func TestFilterSet(t *testing.T) {
 			},
 		},
 		{
-			name:                 "Match based on conjunction of both dimensions and metric name",
-			metricsNamesInFilter: []string{"*.utilization"},
-			dimensionsInFilter: map[string]interface{}{
-				"container_name": []interface{}{"test"},
-			},
+			name: "Match based on conjunction of both dimensions and metric name",
+			excludes: []MetricFilter{{
+				MetricNames: []string{"*.utilization"},
+				Dimensions: map[string]interface{}{
+					"container_name": []interface{}{"test"},
+				},
+			}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric:     "disk.utilization",
@@ -225,8 +231,8 @@ func TestFilterSet(t *testing.T) {
 			},
 		},
 		{
-			name:                 "Doesn't match if no dimension filter specified",
-			metricsNamesInFilter: []string{"cpu.utilization"},
+			name:     "Doesn't match if no dimension filter specified",
+			excludes: []MetricFilter{{MetricNames: []string{"cpu.utilization"}}},
 			expectedNonMatches: []*sfxpb.DataPoint{
 				{
 					Metric:     "disk.utilization",
@@ -236,9 +242,10 @@ func TestFilterSet(t *testing.T) {
 		},
 		{
 			name: "Doesn't match if no metric name filter specified",
-			dimensionsInFilter: map[string]interface{}{
-				"container_name": []interface{}{"mycontainer"},
-			},
+			excludes: []MetricFilter{{
+				Dimensions: map[string]interface{}{
+					"container_name": []interface{}{"mycontainer"},
+				}}},
 			expectedNonMatches: []*sfxpb.DataPoint{
 				{
 					Metric: "cpu.utilization",
@@ -247,10 +254,11 @@ func TestFilterSet(t *testing.T) {
 		},
 		{
 			name: "Doesn't match metric when no (matching) dimensions exist",
-			dimensionsInFilter: map[string]interface{}{
-				"host":   []interface{}{"localhost"},
-				"system": []interface{}{"r4"},
-			},
+			excludes: []MetricFilter{{
+				Dimensions: map[string]interface{}{
+					"host":   []interface{}{"localhost"},
+					"system": []interface{}{"r4"},
+				}}},
 			expectedNonMatches: []*sfxpb.DataPoint{
 				{
 					Metric: "cpu.utilization",
@@ -265,10 +273,11 @@ func TestFilterSet(t *testing.T) {
 		},
 		{
 			name: "Matches on at least one dimension",
-			dimensionsInFilter: map[string]interface{}{
-				"host":   []interface{}{"localhost"},
-				"system": []interface{}{"r4"},
-			},
+			excludes: []MetricFilter{{
+				Dimensions: map[string]interface{}{
+					"host":   []interface{}{"localhost"},
+					"system": []interface{}{"r4"},
+				}}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric: "cpu.utilization",
@@ -280,10 +289,11 @@ func TestFilterSet(t *testing.T) {
 		},
 		{
 			name: "Matches against all dimension pairs",
-			dimensionsInFilter: map[string]interface{}{
-				"host":   []interface{}{"localhost"},
-				"system": []interface{}{"r4"},
-			},
+			excludes: []MetricFilter{{
+				Dimensions: map[string]interface{}{
+					"host":   []interface{}{"localhost"},
+					"system": []interface{}{"r4"},
+				}}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric: "cpu.utilization",
@@ -305,9 +315,10 @@ func TestFilterSet(t *testing.T) {
 		},
 		{
 			name: "Negated dim values take precedent",
-			dimensionsInFilter: map[string]interface{}{
-				"container_name": []interface{}{"*", "!pause", "!/.*idle/"},
-			},
+			excludes: []MetricFilter{{
+				Dimensions: map[string]interface{}{
+					"container_name": []interface{}{"*", "!pause", "!/.*idle/"},
+				}}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric:     "cpu.utilization",
@@ -329,51 +340,65 @@ func TestFilterSet(t *testing.T) {
 			},
 		},
 		{
-			name:       "Error creating empty filter",
+			name:       "Error creating exclude empty filter",
+			excludes:   []MetricFilter{{}},
+			wantErr:    true,
+			wantErrMsg: "metric filter must have at least one metric or dimension defined on it",
+		},
+		{
+			name:       "Error creating include empty filter",
+			includes:   []MetricFilter{{}},
 			wantErr:    true,
 			wantErrMsg: "metric filter must have at least one metric or dimension defined on it",
 		},
 		{
 			name: "Error creating filter with empty dimension list",
-			dimensionsInFilter: map[string]interface{}{
-				"dim": []interface{}{},
-			},
+			excludes: []MetricFilter{{
+				Dimensions: map[string]interface{}{
+					"dim": []interface{}{},
+				}}},
 			wantErr:    true,
 			wantErrMsg: "string map value in filter cannot be empty",
 		},
 		{
-			name:                 "Error creating filter with invalid glob",
-			metricsNamesInFilter: []string{"cpu.*["},
-			wantErr:              true,
-			wantErrMsg:           "unexpected end of input",
+			name:       "Error creating filter with invalid glob",
+			excludes:   []MetricFilter{{MetricNames: []string{"cpu.*["}}},
+			wantErr:    true,
+			wantErrMsg: "unexpected end of input",
 		},
 		{
 			name: "Error creating filter with invalid glob in dimensions",
-			dimensionsInFilter: map[string]interface{}{
-				"container_name": []interface{}{"cpu.*["},
-			},
+			excludes: []MetricFilter{{
+				Dimensions: map[string]interface{}{
+					"container_name": []interface{}{"cpu.*["},
+				}}},
 			wantErr:    true,
 			wantErrMsg: "unexpected end of input",
 		},
 		{
 			name: "Error on invalid dimensions input",
-			dimensionsInFilter: map[string]interface{}{
-				"host": 1,
-			},
+			excludes: []MetricFilter{{
+				Dimensions: map[string]interface{}{
+					"host": 1,
+				}}},
 			wantErr:    true,
 			wantErrMsg: "1 should be either a string or string list",
+		},
+		{
+			name:     "Match in include filters correctly overrides exclude",
+			excludes: []MetricFilter{{MetricNames: []string{"cpu.utilization"}}},
+			includes: []MetricFilter{{MetricNames: []string{"cpu.utilization"}}},
+			expectedNonMatches: []*sfxpb.DataPoint{
+				{
+					Metric: "cpu.utilization",
+				},
+			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			f, err := NewFilterSet([]MetricFilter{
-				{
-					MetricName:  test.metricNameInFilter,
-					MetricNames: test.metricsNamesInFilter,
-					Dimensions:  test.dimensionsInFilter,
-				},
-			})
+			f, err := NewFilterSet(test.excludes, test.includes)
 			if test.wantErr {
 				require.EqualError(t, err, test.wantErrMsg)
 				require.Nil(t, f)
