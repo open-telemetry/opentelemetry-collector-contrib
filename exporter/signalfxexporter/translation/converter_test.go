@@ -101,6 +101,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		name              string
 		metricsDataFn     func() pdata.ResourceMetrics
 		excludeMetrics    []dpfilters.MetricFilter
+		includeMetrics    []dpfilters.MetricFilter
 		wantSfxDataPoints []*sfxpb.DataPoint
 	}{
 		{
@@ -559,10 +560,80 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				doubleSFxDataPoint("cumulative_double_with_dims", tsMSecs, &sfxMetricTypeCumulativeCounter, differentLabelMap, doubleVal),
 			},
 		},
+		{
+			// To validate that filters in include serves as override to the ones in exclude list.
+			name: "with_include_and_exclude_metrics_filter",
+			metricsDataFn: func() pdata.ResourceMetrics {
+				out := pdata.NewResourceMetrics()
+				out.InstrumentationLibraryMetrics().Resize(1)
+				ilm := out.InstrumentationLibraryMetrics().At(0)
+				ilm.Metrics().Resize(4)
+
+				{
+					m := ilm.Metrics().At(0)
+					m.SetName("gauge_double_with_dims")
+					m.SetDataType(pdata.MetricDataTypeDoubleGauge)
+					m.DoubleGauge().DataPoints().Append(doublePtWithLabels)
+				}
+				{
+					m := ilm.Metrics().At(1)
+					m.SetName("gauge_int_with_dims")
+					m.SetDataType(pdata.MetricDataTypeIntGauge)
+					m.IntGauge().DataPoints().Append(int64PtWithLabels)
+				}
+				{
+					m := ilm.Metrics().At(2)
+					m.SetName("cumulative_double_with_dims")
+					m.SetDataType(pdata.MetricDataTypeDoubleSum)
+					m.DoubleSum().SetIsMonotonic(true)
+					m.DoubleSum().DataPoints().Append(doublePtWithLabels)
+					m.DoubleSum().DataPoints().Append(doublePtWithDifferentLabels)
+				}
+				{
+					m := ilm.Metrics().At(3)
+					m.SetName("cumulative_int_with_dims")
+					m.SetDataType(pdata.MetricDataTypeIntSum)
+					m.IntSum().SetIsMonotonic(true)
+					m.IntSum().DataPoints().Append(int64PtWithLabels)
+				}
+
+				return out
+			},
+			excludeMetrics: []dpfilters.MetricFilter{
+				{
+					MetricNames: []string{"gauge_double_with_dims"},
+				},
+				{
+					MetricName: "cumulative_int_with_dims",
+				},
+				{
+					MetricName: "gauge_int_with_dims",
+					Dimensions: map[string]interface{}{
+						"k0": []interface{}{"v1"},
+					},
+				},
+				{
+					MetricName: "cumulative_double_with_dims",
+					Dimensions: map[string]interface{}{
+						"k0": []interface{}{"v0"},
+					},
+				},
+			},
+			includeMetrics: []dpfilters.MetricFilter{
+				{
+					MetricName: "cumulative_int_with_dims",
+				},
+			},
+			wantSfxDataPoints: []*sfxpb.DataPoint{
+				int64SFxDataPoint("gauge_int_with_dims", tsMSecs, &sfxMetricTypeGauge, labelMap, int64Val),
+				doubleSFxDataPoint("cumulative_double_with_dims", tsMSecs, &sfxMetricTypeCumulativeCounter, differentLabelMap, doubleVal),
+				int64SFxDataPoint("cumulative_int_with_dims", tsMSecs, &sfxMetricTypeCumulativeCounter, labelMap, int64Val),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, err := NewMetricsConverter(logger, nil, tt.excludeMetrics)
+			c, err := NewMetricsConverter(logger, nil, tt.excludeMetrics, tt.includeMetrics)
 			require.NoError(t, err)
 			gotSfxDataPoints := c.MetricDataToSignalFxV2(tt.metricsDataFn())
 			// Sort SFx dimensions since they are built from maps and the order
@@ -611,7 +682,7 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 			},
 		},
 	}
-	c, err := NewMetricsConverter(zap.NewNop(), translator, nil)
+	c, err := NewMetricsConverter(zap.NewNop(), translator, nil, nil)
 	require.NoError(t, err)
 	assert.EqualValues(t, expected, c.MetricDataToSignalFxV2(wrapMetric(md)))
 }
@@ -780,7 +851,7 @@ func TestNewMetricsConverter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewMetricsConverter(zap.NewNop(), nil, tt.excludes)
+			got, err := NewMetricsConverter(zap.NewNop(), nil, tt.excludes, nil)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewMetricsConverter() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -90,7 +90,7 @@ func newSignalFxExporter(
 
 	headers := buildHeaders(config)
 
-	converter, err := translation.NewMetricsConverter(logger, options.metricTranslator, config.ExcludeMetrics)
+	converter, err := translation.NewMetricsConverter(logger, options.metricTranslator, config.ExcludeMetrics, config.IncludeMetrics)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metric converter: %v", err)
 	}
