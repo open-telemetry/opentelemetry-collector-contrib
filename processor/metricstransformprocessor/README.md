@@ -69,7 +69,7 @@ transforms:
     aggregation_type: {sum, mean, min, max}
     # submatch_case specifies the case that should be used when adding label values based on regexp submatches when performing a combine action; leave blank to use the submatch value as is
     submatch_case: {lower, upper}
-    # operations contain a list of operations that will be performed on the selected metric(s)
+    # operations contain a list of operations that will be performed on the resulting metric(s)
     operations:
         # action defines the type of operation that will be performed, see examples below for more details
       - action: {add_label, update_label, delete_label_value, toggle_scalar_data_type, aggregate_labels, aggregate_label_values}
