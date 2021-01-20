@@ -23,7 +23,7 @@ import (
 )
 
 func TestContainerResource(t *testing.T) {
-
+	var exitCode int64 = 2
 	cm := ContainerMetadata{
 		ContainerName: "container-1",
 		DockerID:      "001",
@@ -34,13 +34,16 @@ func TestContainerResource(t *testing.T) {
 		StartedAt:     "2020-07-30T22:12:31.153459485Z",
 		FinishedAt:    "2020-07-31T22:12:29.837074927Z",
 		KnownStatus:   "RUNNING",
+		ExitCode: 		&exitCode,
 	}
 
 	r := containerResource(cm)
 	require.NotNil(t, r)
-
 	attrMap := r.Attributes()
-	//require.EqualValues(t, 11, attrMap.Len())
+	getExitCodeAd, found := attrMap.Get(AttributeContainerExitCode)
+	require.EqualValues(t, true, found)
+	require.EqualValues(t, 2, getExitCodeAd.IntVal())
+	require.EqualValues(t, 11, attrMap.Len())
 	expected := map[string]string{
 		conventions.AttributeContainerName:  "container-1",
 		conventions.AttributeContainerID:    "001",
