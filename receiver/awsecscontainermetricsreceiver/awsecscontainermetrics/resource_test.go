@@ -34,7 +34,7 @@ func TestContainerResource(t *testing.T) {
 		StartedAt:     "2020-07-30T22:12:31.153459485Z",
 		FinishedAt:    "2020-07-31T22:12:29.837074927Z",
 		KnownStatus:   "RUNNING",
-		ExitCode: 		&exitCode,
+		ExitCode:      &exitCode,
 	}
 
 	r := containerResource(cm)
