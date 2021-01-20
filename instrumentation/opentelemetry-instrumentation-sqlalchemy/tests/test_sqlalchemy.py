@@ -35,7 +35,7 @@ class TestSqlalchemyInstrumentation(TestBase):
         spans = self.memory_exporter.get_finished_spans()
 
         self.assertEqual(len(spans), 1)
-        self.assertEqual(spans[0].name, "SELECT	1 + 1;")
+        self.assertEqual(spans[0].name, "SELECT :memory:")
         self.assertEqual(spans[0].kind, trace.SpanKind.CLIENT)
 
     def test_not_recording(self):
@@ -68,5 +68,5 @@ class TestSqlalchemyInstrumentation(TestBase):
         spans = self.memory_exporter.get_finished_spans()
 
         self.assertEqual(len(spans), 1)
-        self.assertEqual(spans[0].name, "SELECT	1 + 1;")
+        self.assertEqual(spans[0].name, "SELECT :memory:")
         self.assertEqual(spans[0].kind, trace.SpanKind.CLIENT)

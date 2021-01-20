@@ -67,7 +67,7 @@ class MysqlConnectorTestCase(SQLAlchemyTestMixin):
         self.assertEqual(len(spans), 1)
         span = spans[0]
         # span fields
-        self.assertEqual(span.name, "SELECT * FROM a_wrong_table")
+        self.assertEqual(span.name, "SELECT opentelemetry-tests")
         self.assertEqual(
             span.attributes.get(_STMT), "SELECT * FROM a_wrong_table"
         )

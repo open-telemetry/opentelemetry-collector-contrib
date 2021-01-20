@@ -56,7 +56,7 @@ class SQLAlchemyInstrumentTestCase(TestBase):
 
     def test_engine_traced(self):
         # ensures that the engine is traced
-        rows = self.conn.execute("SELECT 1").fetchall()
+        rows = self.conn.execute("SELECT").fetchall()
         self.assertEqual(len(rows), 1)
 
         traces = self.memory_exporter.get_finished_spans()
@@ -64,6 +64,6 @@ class SQLAlchemyInstrumentTestCase(TestBase):
         self.assertEqual(len(traces), 1)
         span = traces[0]
         # check subset of span fields
-        self.assertEqual(span.name, "SELECT 1")
+        self.assertEqual(span.name, "SELECT opentelemetry-tests")
         self.assertIs(span.status.status_code, trace.status.StatusCode.UNSET)
         self.assertGreater((span.end_time - span.start_time), 0)

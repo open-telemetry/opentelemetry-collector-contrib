@@ -43,7 +43,7 @@ class SQLiteTestCase(SQLAlchemyTestMixin):
         self.assertEqual(len(spans), 1)
         span = spans[0]
         # span fields
-        self.assertEqual(span.name, stmt)
+        self.assertEqual(span.name, "SELECT :memory:")
         self.assertEqual(
             span.attributes.get(_STMT), "SELECT * FROM a_wrong_table"
         )

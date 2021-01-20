@@ -110,6 +110,8 @@ class SQLAlchemyTestMixin(TestBase):
         super().tearDown()
 
     def _check_span(self, span, name):
+        if self.SQL_DB:
+            name = "{0} {1}".format(name, self.SQL_DB)
         self.assertEqual(span.name, name)
         self.assertEqual(span.attributes.get(_DB), self.SQL_DB)
         self.assertIs(span.status.status_code, trace.status.StatusCode.UNSET)
@@ -129,7 +131,7 @@ class SQLAlchemyTestMixin(TestBase):
             stmt += "(?, ?)"
         else:
             stmt += "(%(id)s, %(name)s)"
-        self._check_span(span, stmt)
+        self._check_span(span, "INSERT")
         self.assertIn("INSERT INTO players", span.attributes.get(_STMT))
         self.check_meta(span)
 
@@ -146,7 +148,7 @@ class SQLAlchemyTestMixin(TestBase):
             stmt += "?"
         else:
             stmt += "%(name_1)s"
-        self._check_span(span, stmt)
+        self._check_span(span, "SELECT")
         self.assertIn(
             "SELECT players.id AS players_id, players.name AS players_name \nFROM players \nWHERE players.name",
             span.attributes.get(_STMT),
@@ -163,7 +165,7 @@ class SQLAlchemyTestMixin(TestBase):
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 1)
         span = spans[0]
-        self._check_span(span, stmt)
+        self._check_span(span, "SELECT")
         self.assertEqual(span.attributes.get(_STMT), "SELECT * FROM players")
         self.check_meta(span)
 
@@ -188,4 +190,4 @@ class SQLAlchemyTestMixin(TestBase):
         self.assertEqual(parent_span.name, "sqlalch_op")
         self.assertEqual(parent_span.instrumentation_info.name, "sqlalch_svc")
 
-        self.assertEqual(child_span.name, stmt)
+        self.assertEqual(child_span.name, "SELECT " + self.SQL_DB)
