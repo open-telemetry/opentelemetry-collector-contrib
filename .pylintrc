@@ -78,7 +78,7 @@ disable=missing-docstring,
       protected-access, # temp-pylint-upgrade 
       super-init-not-called, # temp-pylint-upgrade
       invalid-overridden-method, # temp-pylint-upgrade 
-      missing-module-docstring, # temp-pylint-upgrad, # temp-pylint-upgradee 
+      missing-module-docstring, # temp-pylint-upgrade
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

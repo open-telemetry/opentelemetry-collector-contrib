@@ -50,7 +50,7 @@ class TestDBApiIntegration(TestBase):
         spans_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans_list), 1)
         span = spans_list[0]
-        self.assertEqual(span.name, "Test query")
+        self.assertEqual(span.name, "Test")
         self.assertIs(span.kind, trace_api.SpanKind.CLIENT)
 
         self.assertEqual(span.attributes["component"], "testcomponent")
@@ -64,6 +64,27 @@ class TestDBApiIntegration(TestBase):
         self.assertIs(
             span.status.status_code, trace_api.status.StatusCode.UNSET
         )
+
+    def test_span_name(self):
+        db_integration = dbapi.DatabaseApiIntegration(
+            self.tracer, "testcomponent", "testtype", {}
+        )
+        mock_connection = db_integration.wrapped_connection(
+            mock_connect, {}, {}
+        )
+        cursor = mock_connection.cursor()
+        cursor.execute("Test query", ("param1Value", False))
+        cursor.execute(
+            """multi
+        line
+        query"""
+        )
+        cursor.execute("tab\tseparated query")
+        spans_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(spans_list), 3)
+        self.assertEqual(spans_list[0].name, "Test")
+        self.assertEqual(spans_list[1].name, "multi")
+        self.assertEqual(spans_list[2].name, "tab")
 
     def test_span_succeeded_with_capture_of_statement_parameters(self):
         connection_props = {
@@ -93,7 +114,7 @@ class TestDBApiIntegration(TestBase):
         spans_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans_list), 1)
         span = spans_list[0]
-        self.assertEqual(span.name, "Test query")
+        self.assertEqual(span.name, "Test")
         self.assertIs(span.kind, trace_api.SpanKind.CLIENT)
 
         self.assertEqual(span.attributes["component"], "testcomponent")

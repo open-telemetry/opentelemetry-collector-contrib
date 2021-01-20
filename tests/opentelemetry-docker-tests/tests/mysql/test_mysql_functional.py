@@ -81,7 +81,7 @@ class TestFunctionalMysql(TestBase):
         stmt = "CREATE TABLE IF NOT EXISTS test (id INT)"
         with self._tracer.start_as_current_span("rootSpan"):
             self._cursor.execute(stmt)
-        self.validate_spans(stmt)
+        self.validate_spans("CREATE")
 
     def test_execute_with_connection_context_manager(self):
         """Should create a child span for execute with connection context"""
@@ -90,7 +90,7 @@ class TestFunctionalMysql(TestBase):
             with self._connection as conn:
                 cursor = conn.cursor()
                 cursor.execute(stmt)
-        self.validate_spans(stmt)
+        self.validate_spans("CREATE")
 
     def test_execute_with_cursor_context_manager(self):
         """Should create a child span for execute with cursor context"""
@@ -98,7 +98,7 @@ class TestFunctionalMysql(TestBase):
         with self._tracer.start_as_current_span("rootSpan"):
             with self._connection.cursor() as cursor:
                 cursor.execute(stmt)
-        self.validate_spans(stmt)
+        self.validate_spans("CREATE")
 
     def test_executemany(self):
         """Should create a child span for executemany"""
@@ -106,7 +106,7 @@ class TestFunctionalMysql(TestBase):
         with self._tracer.start_as_current_span("rootSpan"):
             data = (("1",), ("2",), ("3",))
             self._cursor.executemany(stmt, data)
-        self.validate_spans(stmt)
+        self.validate_spans("INSERT")
 
     def test_callproc(self):
         """Should create a child span for callproc"""

@@ -4,8 +4,8 @@ import wrapt
 from aiopg.utils import _ContextManager, _PoolAcquireContextManager
 
 from opentelemetry.instrumentation.dbapi import (
+    CursorTracer,
     DatabaseApiIntegration,
-    TracedCursor,
 )
 from opentelemetry.trace import SpanKind
 from opentelemetry.trace.status import Status, StatusCode
@@ -94,25 +94,29 @@ def get_traced_pool_proxy(pool, db_api_integration, *args, **kwargs):
     return TracedPoolProxy(pool, *args, **kwargs)
 
 
-class AsyncTracedCursor(TracedCursor):
+class AsyncCursorTracer(CursorTracer):
     async def traced_execution(
         self,
+        cursor,
         query_method: typing.Callable[..., typing.Any],
         *args: typing.Tuple[typing.Any, typing.Any],
         **kwargs: typing.Dict[typing.Any, typing.Any]
     ):
         name = ""
-        if len(args) > 0 and args[0]:
-            name = args[0]
-        elif self._db_api_integration.database:
-            name = self._db_api_integration.database
-        else:
-            name = self._db_api_integration.name
+        if args:
+            name = self.get_operation_name(cursor, args)
+
+        if not name:
+            name = (
+                self._db_api_integration.database
+                if self._db_api_integration.database
+                else self._db_api_integration.name
+            )
 
         with self._db_api_integration.get_tracer().start_as_current_span(
             name, kind=SpanKind.CLIENT
         ) as span:
-            self._populate_span(span, *args)
+            self._populate_span(span, cursor, *args)
             try:
                 result = await query_method(*args, **kwargs)
                 return result
@@ -123,10 +127,10 @@ class AsyncTracedCursor(TracedCursor):
 
 
 def get_traced_cursor_proxy(cursor, db_api_integration, *args, **kwargs):
-    _traced_cursor = AsyncTracedCursor(db_api_integration)
+    _traced_cursor = AsyncCursorTracer(db_api_integration)
 
     # pylint: disable=abstract-method
-    class AsyncTracedCursorProxy(AsyncProxyObject):
+    class AsyncCursorTracerProxy(AsyncProxyObject):
 
         # pylint: disable=unused-argument
         def __init__(self, cursor, *args, **kwargs):
@@ -134,20 +138,20 @@ def get_traced_cursor_proxy(cursor, db_api_integration, *args, **kwargs):
 
         async def execute(self, *args, **kwargs):
             result = await _traced_cursor.traced_execution(
-                self.__wrapped__.execute, *args, **kwargs
+                self, self.__wrapped__.execute, *args, **kwargs
             )
             return result
 
         async def executemany(self, *args, **kwargs):
             result = await _traced_cursor.traced_execution(
-                self.__wrapped__.executemany, *args, **kwargs
+                self, self.__wrapped__.executemany, *args, **kwargs
             )
             return result
 
         async def callproc(self, *args, **kwargs):
             result = await _traced_cursor.traced_execution(
-                self.__wrapped__.callproc, *args, **kwargs
+                self, self.__wrapped__.callproc, *args, **kwargs
             )
             return result
 
-    return AsyncTracedCursorProxy(cursor, *args, **kwargs)
+    return AsyncCursorTracerProxy(cursor, *args, **kwargs)

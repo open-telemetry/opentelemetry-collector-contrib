@@ -256,7 +256,7 @@ class TestAiopgIntegration(TestBase):
         spans_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans_list), 1)
         span = spans_list[0]
-        self.assertEqual(span.name, "Test query")
+        self.assertEqual(span.name, "Test")
         self.assertIs(span.kind, trace_api.SpanKind.CLIENT)
 
         self.assertEqual(span.attributes["component"], "testcomponent")

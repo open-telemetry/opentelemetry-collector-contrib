@@ -60,7 +60,7 @@ class TestSQLite3(TestBase):
         stmt = "CREATE TABLE IF NOT EXISTS test (id integer)"
         with self._tracer.start_as_current_span("rootSpan"):
             self._cursor.execute(stmt)
-        self.validate_spans(stmt)
+        self.validate_spans("CREATE")
 
     def test_executemany(self):
         """Should create a child span for executemany"""
@@ -68,7 +68,7 @@ class TestSQLite3(TestBase):
         with self._tracer.start_as_current_span("rootSpan"):
             data = [("1",), ("2",), ("3",)]
             self._cursor.executemany(stmt, data)
-        self.validate_spans(stmt)
+        self.validate_spans("INSERT")
 
     def test_callproc(self):
         """Should create a child span for callproc"""

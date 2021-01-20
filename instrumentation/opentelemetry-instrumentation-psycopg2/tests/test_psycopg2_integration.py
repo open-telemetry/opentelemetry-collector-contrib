@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import types
 from unittest import mock
 
 import psycopg2
@@ -22,15 +23,69 @@ from opentelemetry.sdk import resources
 from opentelemetry.test.test_base import TestBase
 
 
+class MockCursor:
+
+    execute = mock.MagicMock(spec=types.MethodType)
+    execute.__name__ = "execute"
+
+    executemany = mock.MagicMock(spec=types.MethodType)
+    executemany.__name__ = "executemany"
+
+    callproc = mock.MagicMock(spec=types.MethodType)
+    callproc.__name__ = "callproc"
+
+    rowcount = "SomeRowCount"
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return self
+
+
+class MockConnection:
+
+    commit = mock.MagicMock(spec=types.MethodType)
+    commit.__name__ = "commit"
+
+    rollback = mock.MagicMock(spec=types.MethodType)
+    rollback.__name__ = "rollback"
+
+    def __init__(self, *args, **kwargs):
+        self.cursor_factory = kwargs.pop("cursor_factory", None)
+
+    def cursor(self):
+        if self.cursor_factory:
+            return self.cursor_factory(self)
+        return MockCursor()
+
+    def get_dsn_parameters(self):  # pylint: disable=no-self-use
+        return dict(dbname="test")
+
+
 class TestPostgresqlIntegration(TestBase):
+    def setUp(self):
+        self.cursor_mock = mock.patch(
+            "opentelemetry.instrumentation.psycopg2.pg_cursor", MockCursor
+        )
+        self.connection_mock = mock.patch("psycopg2.connect", MockConnection)
+
+        self.cursor_mock.start()
+        self.connection_mock.start()
+
     def tearDown(self):
         super().tearDown()
+        self.memory_exporter.clear()
+        self.cursor_mock.stop()
+        self.connection_mock.stop()
         with self.disable_logging():
             Psycopg2Instrumentor().uninstrument()
 
-    @mock.patch("psycopg2.connect")
     # pylint: disable=unused-argument
-    def test_instrumentor(self, mock_connect):
+    def test_instrumentor(self):
         Psycopg2Instrumentor().instrument()
 
         cnx = psycopg2.connect(database="test")
@@ -60,9 +115,8 @@ class TestPostgresqlIntegration(TestBase):
         spans_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans_list), 1)
 
-    @mock.patch("psycopg2.connect")
     # pylint: disable=unused-argument
-    def test_not_recording(self, mock_connect):
+    def test_not_recording(self):
         mock_tracer = mock.Mock()
         mock_span = mock.Mock()
         mock_span.is_recording.return_value = False
@@ -83,9 +137,8 @@ class TestPostgresqlIntegration(TestBase):
 
         Psycopg2Instrumentor().uninstrument()
 
-    @mock.patch("psycopg2.connect")
     # pylint: disable=unused-argument
-    def test_custom_tracer_provider(self, mock_connect):
+    def test_custom_tracer_provider(self):
         resource = resources.Resource.create({})
         result = self.create_tracer_provider(resource=resource)
         tracer_provider, exporter = result
@@ -103,9 +156,8 @@ class TestPostgresqlIntegration(TestBase):
 
         self.assertIs(span.resource, resource)
 
-    @mock.patch("psycopg2.connect")
     # pylint: disable=unused-argument
-    def test_instrument_connection(self, mock_connect):
+    def test_instrument_connection(self):
         cnx = psycopg2.connect(database="test")
         query = "SELECT * FROM test"
         cursor = cnx.cursor()
@@ -121,9 +173,8 @@ class TestPostgresqlIntegration(TestBase):
         spans_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans_list), 1)
 
-    @mock.patch("psycopg2.connect")
     # pylint: disable=unused-argument
-    def test_uninstrument_connection(self, mock_connect):
+    def test_uninstrument_connection(self):
         Psycopg2Instrumentor().instrument()
         cnx = psycopg2.connect(database="test")
         query = "SELECT * FROM test"

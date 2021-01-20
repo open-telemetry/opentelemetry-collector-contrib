@@ -15,6 +15,7 @@
 import os
 
 import psycopg2
+from psycopg2 import sql
 
 from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
@@ -81,7 +82,7 @@ class TestFunctionalPsycopg(TestBase):
         stmt = "CREATE TABLE IF NOT EXISTS test (id integer)"
         with self._tracer.start_as_current_span("rootSpan"):
             self._cursor.execute(stmt)
-        self.validate_spans(stmt)
+        self.validate_spans("CREATE")
 
     def test_execute_with_connection_context_manager(self):
         """Should create a child span for execute with connection context"""
@@ -90,7 +91,7 @@ class TestFunctionalPsycopg(TestBase):
             with self._connection as conn:
                 cursor = conn.cursor()
                 cursor.execute(stmt)
-        self.validate_spans(stmt)
+        self.validate_spans("CREATE")
 
     def test_execute_with_cursor_context_manager(self):
         """Should create a child span for execute with cursor context"""
@@ -98,7 +99,7 @@ class TestFunctionalPsycopg(TestBase):
         with self._tracer.start_as_current_span("rootSpan"):
             with self._connection.cursor() as cursor:
                 cursor.execute(stmt)
-        self.validate_spans(stmt)
+        self.validate_spans("CREATE")
         self.assertTrue(cursor.closed)
 
     def test_executemany(self):
@@ -107,7 +108,7 @@ class TestFunctionalPsycopg(TestBase):
         with self._tracer.start_as_current_span("rootSpan"):
             data = (("1",), ("2",), ("3",))
             self._cursor.executemany(stmt, data)
-        self.validate_spans(stmt)
+        self.validate_spans("INSERT")
 
     def test_callproc(self):
         """Should create a child span for callproc"""
@@ -116,3 +117,30 @@ class TestFunctionalPsycopg(TestBase):
         ):
             self._cursor.callproc("test", ())
             self.validate_spans("test")
+
+    def test_register_types(self):
+        psycopg2.extras.register_default_jsonb(
+            conn_or_curs=self._cursor, loads=lambda x: x
+        )
+
+    def test_composed_queries(self):
+        stmt = "CREATE TABLE IF NOT EXISTS users (id integer, name varchar)"
+        with self._tracer.start_as_current_span("rootSpan"):
+            self._cursor.execute(stmt)
+        self.validate_spans("CREATE")
+
+        self._cursor.execute(
+            sql.SQL("SELECT FROM {table} where {field}='{value}'").format(
+                table=sql.Identifier("users"),
+                field=sql.Identifier("name"),
+                value=sql.Identifier("abc"),
+            )
+        )
+
+        spans = self.memory_exporter.get_finished_spans()
+        span = spans[2]
+        self.assertEqual(span.name, "SELECT")
+        self.assertEqual(
+            span.attributes["db.statement"],
+            'SELECT FROM "users" where "name"=\'"abc"\'',
+        )

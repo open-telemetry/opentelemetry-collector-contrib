@@ -39,12 +39,19 @@ API
 ---
 """
 
+import typing
+
 import psycopg2
+from psycopg2.extensions import (
+    cursor as pg_cursor,  # pylint: disable=no-name-in-module
+)
+from psycopg2.sql import Composed  # pylint: disable=no-name-in-module
 
 from opentelemetry.instrumentation import dbapi
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.psycopg2.version import __version__
-from opentelemetry.trace import get_tracer
+
+_OTEL_CURSOR_FACTORY_KEY = "_otel_orig_cursor_factory"
 
 
 class Psycopg2Instrumentor(BaseInstrumentor):
@@ -62,7 +69,6 @@ class Psycopg2Instrumentor(BaseInstrumentor):
         """Integrate with PostgreSQL Psycopg library.
            Psycopg: http://initd.org/psycopg/
         """
-
         tracer_provider = kwargs.get("tracer_provider")
 
         dbapi.wrap_connect(
@@ -74,39 +80,101 @@ class Psycopg2Instrumentor(BaseInstrumentor):
             self._CONNECTION_ATTRIBUTES,
             version=__version__,
             tracer_provider=tracer_provider,
+            db_api_integration_factory=DatabaseApiIntegration,
         )
 
     def _uninstrument(self, **kwargs):
         """"Disable Psycopg2 instrumentation"""
         dbapi.unwrap_connect(psycopg2, "connect")
 
-    # pylint:disable=no-self-use
-    def instrument_connection(self, connection):
-        """Enable instrumentation in a Psycopg2 connection.
+    # TODO(owais): check if core dbapi can do this for all dbapi implementations e.g, pymysql and mysql
+    def instrument_connection(self, connection):  # pylint: disable=no-self-use
+        setattr(
+            connection, _OTEL_CURSOR_FACTORY_KEY, connection.cursor_factory
+        )
+        connection.cursor_factory = _new_cursor_factory()
+        return connection
 
-        Args:
-            connection: The connection to instrument.
+    # TODO(owais): check if core dbapi can do this for all dbapi implementations e.g, pymysql and mysql
+    def uninstrument_connection(
+        self, connection
+    ):  # pylint: disable=no-self-use
+        connection.cursor_factory = getattr(
+            connection, _OTEL_CURSOR_FACTORY_KEY, None
+        )
+        return connection
 
-        Returns:
-            An instrumented connection.
-        """
-        tracer = get_tracer(__name__, __version__)
 
-        return dbapi.instrument_connection(
-            tracer,
-            connection,
-            self._DATABASE_COMPONENT,
-            self._DATABASE_TYPE,
-            self._CONNECTION_ATTRIBUTES,
+# TODO(owais): check if core dbapi can do this for all dbapi implementations e.g, pymysql and mysql
+class DatabaseApiIntegration(dbapi.DatabaseApiIntegration):
+    def wrapped_connection(
+        self,
+        connect_method: typing.Callable[..., typing.Any],
+        args: typing.Tuple[typing.Any, typing.Any],
+        kwargs: typing.Dict[typing.Any, typing.Any],
+    ):
+        """Add object proxy to connection object."""
+        base_cursor_factory = kwargs.pop("cursor_factory", None)
+        new_factory_kwargs = {"db_api": self}
+        if base_cursor_factory:
+            new_factory_kwargs["base_factory"] = base_cursor_factory
+        kwargs["cursor_factory"] = _new_cursor_factory(**new_factory_kwargs)
+        connection = connect_method(*args, **kwargs)
+        self.get_connection_attributes(connection)
+        return connection
+
+
+class CursorTracer(dbapi.CursorTracer):
+    def get_operation_name(self, cursor, args):
+        if not args:
+            return ""
+
+        statement = args[0]
+        if isinstance(statement, Composed):
+            statement = statement.as_string(cursor)
+
+        if isinstance(statement, str):
+            return statement.split()[0]
+
+        return ""
+
+    def get_statement(self, cursor, args):
+        if not args:
+            return ""
+
+        statement = args[0]
+        if isinstance(statement, Composed):
+            statement = statement.as_string(cursor)
+        return statement
+
+
+def _new_cursor_factory(db_api=None, base_factory=None):
+    if not db_api:
+        db_api = DatabaseApiIntegration(
+            __name__,
+            Psycopg2Instrumentor._DATABASE_COMPONENT,
+            database_type=Psycopg2Instrumentor._DATABASE_TYPE,
+            connection_attributes=Psycopg2Instrumentor._CONNECTION_ATTRIBUTES,
+            version=__version__,
         )
 
-    def uninstrument_connection(self, connection):
-        """Disable instrumentation in a Psycopg2 connection.
+    base_factory = base_factory or pg_cursor
+    _cursor_tracer = CursorTracer(db_api)
 
-        Args:
-            connection: The connection to uninstrument.
+    class TracedCursorFactory(base_factory):
+        def execute(self, *args, **kwargs):
+            return _cursor_tracer.traced_execution(
+                self, super().execute, *args, **kwargs
+            )
 
-        Returns:
-            An uninstrumented connection.
-        """
-        return dbapi.uninstrument_connection(connection)
+        def executemany(self, *args, **kwargs):
+            return _cursor_tracer.traced_execution(
+                self, super().executemany, *args, **kwargs
+            )
+
+        def callproc(self, *args, **kwargs):
+            return _cursor_tracer.traced_execution(
+                self, super().callproc, *args, **kwargs
+            )
+
+    return TracedCursorFactory

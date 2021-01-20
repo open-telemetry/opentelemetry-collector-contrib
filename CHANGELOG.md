@@ -56,9 +56,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `opentelemetry-instrumentation-aiopg` Fix AttributeError `__aexit__` when `aiopg.connect` and `aio[g].create_pool` used with async context manager
   ([#235](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/235))
 - `opentelemetry-exporter-datadog` `opentelemetry-sdk-extension-aws` Fix reference to ids_generator in sdk
-  ([#235](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/235))
+  ([#283](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/283))
 - `opentelemetry-instrumentation-sqlalchemy` Use SQL operation and DB name as span name.
   ([#254](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/254))
+- `opentelemetry-instrumentation-dbapi`, `TracedCursor` replaced by `CursorTracer`
+  ([#246](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/246))
+- `opentelemetry-instrumentation-psycopg2`, Added support for psycopg2 registered types.
+  ([#246](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/246))
+- `opentelemetry-instrumentation-dbapi`, `opentelemetry-instrumentation-psycopg2`, `opentelemetry-instrumentation-mysql`, `opentelemetry-instrumentation-pymysql`, `opentelemetry-instrumentation-aiopg` Use SQL command name as the span operation name instead of the entire query.
+  ([#246](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/246))
 
 ## [0.16b1](https://github.com/open-telemetry/opentelemetry-python-contrib/releases/tag/v0.16b1) - 2020-11-26
 

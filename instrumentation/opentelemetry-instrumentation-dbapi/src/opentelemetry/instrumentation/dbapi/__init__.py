@@ -60,6 +60,7 @@ def trace_integration(
     connection_attributes: typing.Dict = None,
     tracer_provider: typing.Optional[TracerProvider] = None,
     capture_parameters: bool = False,
+    db_api_integration_factory=None,
 ):
     """Integrate with DB API library.
     https://www.python.org/dev/peps/pep-0249/
@@ -86,6 +87,7 @@ def trace_integration(
         version=__version__,
         tracer_provider=tracer_provider,
         capture_parameters=capture_parameters,
+        db_api_integration_factory=db_api_integration_factory,
     )
 
 
@@ -99,6 +101,7 @@ def wrap_connect(
     version: str = "",
     tracer_provider: typing.Optional[TracerProvider] = None,
     capture_parameters: bool = False,
+    db_api_integration_factory=None,
 ):
     """Integrate with DB API library.
     https://www.python.org/dev/peps/pep-0249/
@@ -115,6 +118,9 @@ def wrap_connect(
         capture_parameters: Configure if db.statement.parameters should be captured.
 
     """
+    db_api_integration_factory = (
+        db_api_integration_factory or DatabaseApiIntegration
+    )
 
     # pylint: disable=unused-argument
     def wrap_connect_(
@@ -123,7 +129,7 @@ def wrap_connect(
         args: typing.Tuple[typing.Any, typing.Any],
         kwargs: typing.Dict[typing.Any, typing.Any],
     ):
-        db_integration = DatabaseApiIntegration(
+        db_integration = db_api_integration_factory(
             name,
             database_component,
             database_type=database_type,
@@ -314,16 +320,19 @@ def get_traced_connection_proxy(
     return TracedConnectionProxy(connection, *args, **kwargs)
 
 
-class TracedCursor:
+class CursorTracer:
     def __init__(self, db_api_integration: DatabaseApiIntegration):
         self._db_api_integration = db_api_integration
 
     def _populate_span(
-        self, span: trace_api.Span, *args: typing.Tuple[typing.Any, typing.Any]
+        self,
+        span: trace_api.Span,
+        cursor,
+        *args: typing.Tuple[typing.Any, typing.Any]
     ):
         if not span.is_recording():
             return
-        statement = args[0] if args else ""
+        statement = self.get_statement(cursor, args)
         span.set_attribute(
             "component", self._db_api_integration.database_component
         )
@@ -342,24 +351,38 @@ class TracedCursor:
         if self._db_api_integration.capture_parameters and len(args) > 1:
             span.set_attribute("db.statement.parameters", str(args[1]))
 
+    def get_operation_name(self, cursor, args):  # pylint: disable=no-self-use
+        if args and isinstance(args[0], str):
+            return args[0].split()[0]
+        return ""
+
+    def get_statement(self, cursor, args):  # pylint: disable=no-self-use
+        if not args:
+            return ""
+        statement = args[0]
+        if isinstance(statement, bytes):
+            return statement.decode("utf8", "replace")
+        return statement
+
     def traced_execution(
         self,
+        cursor,
         query_method: typing.Callable[..., typing.Any],
         *args: typing.Tuple[typing.Any, typing.Any],
         **kwargs: typing.Dict[typing.Any, typing.Any]
     ):
-        name = ""
-        if args:
-            name = args[0]
-        elif self._db_api_integration.database:
-            name = self._db_api_integration.database
-        else:
-            name = self._db_api_integration.name
+        name = self.get_operation_name(cursor, args)
+        if not name:
+            name = (
+                self._db_api_integration.database
+                if self._db_api_integration.database
+                else self._db_api_integration.name
+            )
 
         with self._db_api_integration.get_tracer().start_as_current_span(
             name, kind=SpanKind.CLIENT
         ) as span:
-            self._populate_span(span, *args)
+            self._populate_span(span, cursor, *args)
             try:
                 result = query_method(*args, **kwargs)
                 return result
@@ -370,7 +393,7 @@ class TracedCursor:
 
 
 def get_traced_cursor_proxy(cursor, db_api_integration, *args, **kwargs):
-    _traced_cursor = TracedCursor(db_api_integration)
+    _cursor_tracer = CursorTracer(db_api_integration)
 
     # pylint: disable=abstract-method
     class TracedCursorProxy(wrapt.ObjectProxy):
@@ -380,18 +403,18 @@ def get_traced_cursor_proxy(cursor, db_api_integration, *args, **kwargs):
             wrapt.ObjectProxy.__init__(self, cursor)
 
         def execute(self, *args, **kwargs):
-            return _traced_cursor.traced_execution(
-                self.__wrapped__.execute, *args, **kwargs
+            return _cursor_tracer.traced_execution(
+                self.__wrapped__, self.__wrapped__.execute, *args, **kwargs
             )
 
         def executemany(self, *args, **kwargs):
-            return _traced_cursor.traced_execution(
-                self.__wrapped__.executemany, *args, **kwargs
+            return _cursor_tracer.traced_execution(
+                self.__wrapped__, self.__wrapped__.executemany, *args, **kwargs
             )
 
         def callproc(self, *args, **kwargs):
-            return _traced_cursor.traced_execution(
-                self.__wrapped__.callproc, *args, **kwargs
+            return _cursor_tracer.traced_execution(
+                self.__wrapped__, self.__wrapped__.callproc, *args, **kwargs
             )
 
         def __enter__(self):
