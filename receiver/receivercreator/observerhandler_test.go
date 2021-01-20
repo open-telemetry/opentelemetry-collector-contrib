@@ -155,7 +155,7 @@ func TestDynamicConfig(t *testing.T) {
 			config:   userConfigMap{endpointConfigKey: "localhost:6379"},
 		},
 		userConfigMap{},
-		mock.IsType((*resourceEnhancer)(nil)),
+		mock.IsType(&resourceEnhancer{}),
 	).Return(&componenttest.ExampleReceiverProducer{}, nil)
 	handler.OnAdd([]observer.Endpoint{
 		podEndpoint,

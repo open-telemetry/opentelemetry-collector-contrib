@@ -87,6 +87,29 @@ func Test_newResourceEnhancer(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			// If the configured attribute value is empty it should not touch that
+			// attribute.
+			name: "attribute value empty",
+			args: args{
+				resources: func() resourceAttr {
+					res := createDefaultConfig().(*Config).ResourceAttr
+					res[observer.PodType]["k8s.pod.name"] = ""
+					return res
+				}(),
+				env:          podEnv,
+				endpoint:     podEndpoint,
+				nextConsumer: nil,
+			},
+			want: &resourceEnhancer{
+				nextConsumer: nil,
+				attrs: map[string]string{
+					"k8s.pod.uid":        "uid-1",
+					"k8s.namespace.name": "default",
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "error",
 			args: args{
 				resources: func() resourceAttr {

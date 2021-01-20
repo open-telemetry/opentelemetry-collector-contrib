@@ -48,7 +48,12 @@ func newResourceEnhancer(
 		if err != nil {
 			return nil, fmt.Errorf("failed processing resource attribute %q for endpoint %v: %v", attr, endpoint.ID, err)
 		}
-		attrs[attr] = fmt.Sprint(res)
+
+		// If the attribute value is empty user has likely removed the default value so skip it.
+		val := fmt.Sprint(res)
+		if val != "" {
+			attrs[attr] = val
+		}
 	}
 
 	return &resourceEnhancer{

@@ -82,5 +82,5 @@ type Config struct {
 	WatchObservers []configmodels.Type `mapstructure:"watch_observers"`
 	// ResourceAttr is a map of default resource attributes to add to each resource
 	// object received by this receiver from dynamically created receivers.
-	ResourceAttr   resourceAttr        `mapstructure:"resource_attr"`
+	ResourceAttr resourceAttr `mapstructure:"resource_attr"`
 }
