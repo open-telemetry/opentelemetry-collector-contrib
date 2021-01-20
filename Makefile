@@ -103,6 +103,19 @@ delete-tag:
 	 	git tag -d "$${dir:2}/$${TAG}" ); \
 	done
 
+DEPENDABOT_PATH=".github/dependabot.yml"
+.PHONY: update-dependabot
+update-dependabot:
+	@echo "Recreate dependabot.yml file"
+	@echo "version: 2" > ${DEPENDABOT_PATH}
+	@echo "updates:" >> ${DEPENDABOT_PATH}
+	@echo "Add entry for \"/\""
+	@echo "  - package-ecosystem: \"gomod\"\n    directory: \"/\"\n    schedule:\n      interval: \"weekly\"" >> ${DEPENDABOT_PATH}
+	@set -e; for dir in $(ALL_MODULES); do \
+		(echo "Add entry for \"$${dir:1}\"" && \
+		  echo "  - package-ecosystem: \"gomod\"\n    directory: \"$${dir:1}\"\n    schedule:\n      interval: \"weekly\"" >> ${DEPENDABOT_PATH}); \
+	done
+
 GOMODULES = $(ALL_MODULES) $(PWD)
 .PHONY: $(GOMODULES)
 MODULEDIRS = $(GOMODULES:%=for-all-target-%)
