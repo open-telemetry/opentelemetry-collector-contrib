@@ -23,6 +23,7 @@ import (
 )
 
 func TestContainerResource(t *testing.T) {
+	var exitCode int64 = 2
 	cm := ContainerMetadata{
 		ContainerName: "container-1",
 		DockerID:      "001",
@@ -33,27 +34,27 @@ func TestContainerResource(t *testing.T) {
 		StartedAt:     "2020-07-30T22:12:31.153459485Z",
 		FinishedAt:    "2020-07-31T22:12:29.837074927Z",
 		KnownStatus:   "RUNNING",
-		ExitCode:      "1",
+		ExitCode:      &exitCode,
 	}
 
 	r := containerResource(cm)
 	require.NotNil(t, r)
-
 	attrMap := r.Attributes()
+	getExitCodeAd, found := attrMap.Get(AttributeContainerExitCode)
+	require.EqualValues(t, true, found)
+	require.EqualValues(t, 2, getExitCodeAd.IntVal())
 	require.EqualValues(t, 11, attrMap.Len())
-
 	expected := map[string]string{
 		conventions.AttributeContainerName:  "container-1",
 		conventions.AttributeContainerID:    "001",
 		AttributeECSDockerName:              "docker-container-1",
 		conventions.AttributeContainerImage: "nginx:v1.0",
 		AttributeContainerImageID:           "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
-		AttributeContainerImageVersion:      "v1.0",
+		conventions.AttributeContainerTag:   "v1.0",
 		AttributeContainerCreatedAt:         "2020-07-30T22:12:29.837074927Z",
 		AttributeContainerStartedAt:         "2020-07-30T22:12:31.153459485Z",
 		AttributeContainerFinishedAt:        "2020-07-31T22:12:29.837074927Z",
 		AttributeContainerKnownStatus:       "RUNNING",
-		AttributeContainerExitCode:          "1",
 	}
 
 	verifyAttributeMap(t, expected, attrMap)
@@ -76,7 +77,6 @@ func TestTaskResource(t *testing.T) {
 
 	attrMap := r.Attributes()
 	require.EqualValues(t, 13, attrMap.Len())
-
 	expected := map[string]string{
 		AttributeECSCluster:               "cluster-1",
 		AttributeECSTaskARN:               "arn:aws:ecs:us-west-2:111122223333:task/default/158d1c8083dd49d6b527399fd6414f5c",
