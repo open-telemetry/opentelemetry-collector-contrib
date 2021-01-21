@@ -187,25 +187,10 @@ func logToCWLog(resource pdata.Resource, log pdata.LogRecord) (*cloudwatchlogs.I
 		body.TraceID = traceID.HexString()
 	}
 	if spanID := log.SpanID(); spanID.IsValid() {
-		body.TraceID = spanID.HexString()
+		body.SpanID = spanID.HexString()
 	}
-
-	if log.Attributes().Len() > 0 {
-		attrs := make(map[string]interface{}, log.Attributes().Len())
-		log.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-			attrs[k] = attrValue(v)
-		})
-		body.Attributes = attrs
-	}
-
-	// Add resource attributes.
-	if resource.Attributes().Len() > 0 {
-		attrs := make(map[string]interface{}, log.Attributes().Len())
-		resource.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-			attrs[k] = attrValue(v)
-		})
-		body.Resource = attrs
-	}
+	body.Attributes = attrsValue(log.Attributes())
+	body.Resource = attrsValue(resource.Attributes())
 
 	bodyJSON, err := json.Marshal(body)
 	if err != nil {
@@ -215,6 +200,17 @@ func logToCWLog(resource pdata.Resource, log pdata.LogRecord) (*cloudwatchlogs.I
 		Timestamp: aws.Int64(int64(log.Timestamp()) / (1000 * 1000)), // milliseconds
 		Message:   aws.String(string(bodyJSON)),
 	}, nil
+}
+
+func attrsValue(attrs pdata.AttributeMap) map[string]interface{} {
+	if attrs.Len() == 0 {
+		return nil
+	}
+	out := make(map[string]interface{}, attrs.Len())
+	attrs.ForEach(func(k string, v pdata.AttributeValue) {
+		out[k] = attrValue(v)
+	})
+	return out
 }
 
 func attrValue(value pdata.AttributeValue) interface{} {
