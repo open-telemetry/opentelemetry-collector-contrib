@@ -18,28 +18,46 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-func TestBuildSingleProtoMetric_PointTimestamp(t *testing.T) {
+func TestParseMetric_PointTimestamp(t *testing.T) {
 	now := time.Now()
 	uptimeMetric := uptimeInSeconds()
-	metric, err := uptimeMetric.parseMetric("42", newTimeBundle(now, 100))
+	pdm, err := uptimeMetric.parseMetric("42", newTimeBundle(now, 100))
 	require.Nil(t, err)
-	ts := metric.Timeseries[0]
-	pt := ts.Points[0]
-	require.Equal(t, now.Unix(), pt.Timestamp.GetSeconds())
-	nanosecond := now.Nanosecond()
-	require.Equal(t, int32(nanosecond), pt.Timestamp.GetNanos())
+
+	pt := pdm.IntSum().DataPoints().At(0)
+	ptTime := pt.Timestamp()
+
+	assert.EqualValues(t, now.UnixNano(), int64(ptTime))
 }
 
-func TestBuildSingleProtoMetric_Labels(t *testing.T) {
+func TestParseMetric_Labels(t *testing.T) {
 	cpuMetric := usedCPUSys()
-	metric, err := cpuMetric.parseMetric("42", newTimeBundle(time.Now(), 100))
-	require.Nil(t, err)
-	require.Equal(t, 1, len(metric.MetricDescriptor.LabelKeys))
-	key := metric.MetricDescriptor.LabelKeys[0].Key
-	require.Equal(t, "state", key)
-	require.Equal(t, 1, len(metric.Timeseries[0].LabelValues))
-	require.Equal(t, "sys", metric.Timeseries[0].LabelValues[0].Value)
+	pdm, err := cpuMetric.parseMetric("42", newTimeBundle(time.Now(), 100))
+	require.NoError(t, err)
+
+	pt := pdm.DoubleSum().DataPoints().At(0)
+	labelsMap := pt.LabelsMap()
+	l := labelsMap.Len()
+	assert.Equal(t, 1, l)
+	state, ok := labelsMap.Get("state")
+	assert.True(t, ok)
+	assert.Equal(t, "sys", state)
+}
+
+func TestParseMetric_Errors(t *testing.T) {
+	for _, dataType := range []pdata.MetricDataType{
+		pdata.MetricDataTypeIntSum,
+		pdata.MetricDataTypeIntGauge,
+		pdata.MetricDataTypeDoubleSum,
+		pdata.MetricDataTypeDoubleGauge,
+	} {
+		m := redisMetric{pdType: dataType}
+		_, err := m.parseMetric("foo", &timeBundle{})
+		assert.Error(t, err)
+	}
 }
