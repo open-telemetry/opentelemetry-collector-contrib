@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/prometheusexporter"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/processor/queuedprocessor"
 	"go.opentelemetry.io/collector/receiver/jaegerreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
@@ -70,7 +69,6 @@ func TestLoadConfig(t *testing.T) {
 
 			factories.Processors[typeStr] = NewFactory()
 			factories.Processors["batch"] = batchprocessor.NewFactory()
-			factories.Processors["queued_retry"] = queuedprocessor.NewFactory()
 
 			factories.Exporters["otlp"] = otlpexporter.NewFactory()
 			factories.Exporters["prometheus"] = prometheusexporter.NewFactory()
