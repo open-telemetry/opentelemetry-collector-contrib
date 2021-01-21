@@ -8,7 +8,7 @@ OTEL_VERSION=master
 BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/version
 GIT_SHA=$(shell git rev-parse --short HEAD)
 BUILD_X1=-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)
-VERSION=$(shell git describe --match "v[0-9]*" HEAD)
+VERSION ?= $(shell git describe --match "v[0-9]*" HEAD)
 BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
 BUILD_X3=-X go.opentelemetry.io/collector/internal/version.BuildType=$(BUILD_TYPE)
 BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
