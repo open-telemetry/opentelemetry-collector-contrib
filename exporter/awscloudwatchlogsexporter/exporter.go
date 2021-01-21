@@ -88,15 +88,12 @@ func (e *exporter) Shutdown(ctx context.Context) error {
 }
 
 func (e *exporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	logEvents, dropped, err := logsToCWLogs(e.logger, ld)
-	if err != nil {
-		return err
+	logEvents, dropped := logsToCWLogs(e.logger, ld)
+	if len(logEvents) == 0 {
+		return nil
 	}
 	if dropped > 0 {
 		e.logger.Warn("CloudWatch Logs exporter dropped log records", zap.Any("count", dropped))
-	}
-	if len(logEvents) == 0 {
-		return nil
 	}
 
 	var seqToken string
@@ -128,10 +125,10 @@ func (e *exporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	return nil
 }
 
-func logsToCWLogs(logger *zap.Logger, ld pdata.Logs) ([]*cloudwatchlogs.InputLogEvent, int, error) {
+func logsToCWLogs(logger *zap.Logger, ld pdata.Logs) ([]*cloudwatchlogs.InputLogEvent, int) {
 	n := ld.ResourceLogs().Len()
 	if n == 0 {
-		return []*cloudwatchlogs.InputLogEvent{}, 0, nil
+		return []*cloudwatchlogs.InputLogEvent{}, 0
 	}
 
 	var dropped int
@@ -156,7 +153,7 @@ func logsToCWLogs(logger *zap.Logger, ld pdata.Logs) ([]*cloudwatchlogs.InputLog
 			}
 		}
 	}
-	return out, dropped, nil
+	return out, dropped
 }
 
 type cwLogBody struct {
@@ -180,7 +177,7 @@ func logToCWLog(resource pdata.Resource, log pdata.LogRecord) (*cloudwatchlogs.I
 		Body:                   attrValue(log.Body()),
 		SeverityNumber:         int32(log.SeverityNumber()),
 		SeverityText:           log.SeverityText(),
-		DroppedAttributesCount: uint32(log.DroppedAttributesCount()),
+		DroppedAttributesCount: log.DroppedAttributesCount(),
 		Flags:                  log.Flags(),
 	}
 	if traceID := log.TraceID(); traceID.IsValid() {
