@@ -43,7 +43,7 @@ type ContainerMetadata struct {
 	StartedAt     string            `json:"StartedAt,omitempty"`
 	FinishedAt    string            `json:"FinishedAt,omitempty"`
 	KnownStatus   string            `json:"KnownStatus,omitempty"`
-	ExitCode      string            `json:"ExitCode,omitempty"`
+	ExitCode      *int64            `json:"ExitCode,omitempty"`
 }
 
 // Limit defines the Cpu and Memory limts

@@ -28,12 +28,16 @@ func containerResource(cm ContainerMetadata) pdata.Resource {
 	resource.Attributes().UpsertString(AttributeECSDockerName, cm.DockerName)
 	resource.Attributes().UpsertString(conventions.AttributeContainerImage, cm.Image)
 	resource.Attributes().UpsertString(AttributeContainerImageID, cm.ImageID)
-	resource.Attributes().UpsertString(AttributeContainerImageVersion, getVersionFromIamge(cm.Image))
+	resource.Attributes().UpsertString(conventions.AttributeContainerTag, getVersionFromIamge(cm.Image))
 	resource.Attributes().UpsertString(AttributeContainerCreatedAt, cm.CreatedAt)
 	resource.Attributes().UpsertString(AttributeContainerStartedAt, cm.StartedAt)
-	resource.Attributes().UpsertString(AttributeContainerFinishedAt, cm.FinishedAt)
+	if cm.FinishedAt != "" {
+		resource.Attributes().UpsertString(AttributeContainerFinishedAt, cm.FinishedAt)
+	}
 	resource.Attributes().UpsertString(AttributeContainerKnownStatus, cm.KnownStatus)
-	resource.Attributes().UpsertString(AttributeContainerExitCode, cm.ExitCode)
+	if cm.ExitCode != nil {
+		resource.Attributes().UpsertInt(AttributeContainerExitCode, *cm.ExitCode)
+	}
 	return resource
 }
 
