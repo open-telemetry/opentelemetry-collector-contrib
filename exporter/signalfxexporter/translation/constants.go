@@ -545,30 +545,6 @@ translation_rules:
   without_dimensions:
   - direction
   - interface
-- action: split_metric
-  metric_name: system.network.dropped_packets
-  dimension_key: direction
-  mapping:
-    receive: if_dropped.rx
-    transmit: if_dropped.tx
-- action: split_metric
-  metric_name: system.network.errors
-  dimension_key: direction
-  mapping:
-    receive: if_errors.rx
-    transmit: if_errors.tx
-- action: split_metric
-  metric_name: system.network.io
-  dimension_key: direction
-  mapping:
-    receive: if_octets.rx
-    transmit: if_octets.tx
-- action: split_metric
-  metric_name: system.network.packets
-  dimension_key: direction
-  mapping:
-    receive: if_packets.rx
-    transmit: if_packets.tx
 
 # memory utilization
 - action: calculate_new_metric
