@@ -326,7 +326,7 @@ func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
 	require.NotNil(t, te)
 
 	// Validate that default excludes are always loaded.
-	assert.Equal(t, 7, len(config.ExcludeMetrics))
+	assert.Equal(t, 8, len(config.ExcludeMetrics))
 }
 
 func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
@@ -349,7 +349,7 @@ func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 	require.NotNil(t, te)
 
 	// Validate that default excludes are always loaded.
-	assert.Equal(t, 8, len(config.ExcludeMetrics))
+	assert.Equal(t, 9, len(config.ExcludeMetrics))
 }
 
 func testMetricsData() pdata.ResourceMetrics {
