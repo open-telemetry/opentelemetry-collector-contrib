@@ -101,6 +101,6 @@ exclude_metrics:
 # Network-IO metrics.
 - metric_names:
   - system.network.packets
-  - system.network.dropped_packets
+  - system.network.dropped
   - system.network.tcp_connections
 `
