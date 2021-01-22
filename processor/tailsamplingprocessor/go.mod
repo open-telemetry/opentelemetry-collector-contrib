@@ -6,6 +6,6 @@ require (
 	github.com/google/uuid v1.1.5
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.22.5
-	go.opentelemetry.io/collector v0.18.1-0.20210119200128-ea702a906fbf
+	go.opentelemetry.io/collector v0.18.1-0.20210121231022-15322cf01768
 	go.uber.org/zap v1.16.0
 )
