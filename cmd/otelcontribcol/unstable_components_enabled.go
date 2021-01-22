@@ -19,13 +19,11 @@ package main
 import (
 	"go.opentelemetry.io/collector/component"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stanzareceiver"
 )
 
 func extraReceivers() []component.ReceiverFactory {
 	return []component.ReceiverFactory{
-		jmxreceiver.NewFactory(),
 		stanzareceiver.NewFactory(),
 	}
 }
