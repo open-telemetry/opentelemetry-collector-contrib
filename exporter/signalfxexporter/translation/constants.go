@@ -119,11 +119,6 @@ translation_rules:
     k8s.statefulset.ready_pods: kubernetes.stateful_set.ready
     k8s.statefulset.updated_pods: kubernetes.stateful_set.updated
 
-    # load metrics
-    system.cpu.load_average.15m: load.longterm
-    system.cpu.load_average.5m: load.midterm
-    system.cpu.load_average.1m: load.shortterm
-
   # Docker Stats Receiver
 - action: rename_metrics
   mapping:
@@ -287,6 +282,9 @@ translation_rules:
   operand1_metric: system.cpu.usage
   operand2_metric: system.cpu.total
   operator: /
+- action: multiply_float
+  scale_factors_float:
+    cpu.utilization: 100
 
 # convert cpu metrics
 - action: split_metric
@@ -375,7 +373,19 @@ translation_rules:
   without_dimensions:
   - cpu
 
-# compute memory.total
+
+# Translations to derive memory.utilization.
+- action: copy_metrics
+  mapping:
+    system.memory.usage: memory.used
+  dimension_key: state
+  dimension_values:
+    used: true
+- action: split_metric
+  metric_name: memory.used
+  dimension_key: state
+  mapping:
+    used: memory.used
 - action: copy_metrics
   mapping:
     system.memory.usage: memory.total
@@ -391,17 +401,15 @@ translation_rules:
   without_dimensions:
   - state
 
-# convert memory metrics
-- action: split_metric
-  metric_name: system.memory.usage
-  dimension_key: state
-  mapping:
-    buffered: memory.buffered
-    cached: memory.cached
-    free: memory.free
-    slab_reclaimable: memory.slab_recl
-    slab_unreclaimable: memory.slab_unrecl
-    used: memory.used
+## memory.utilization
+- action: calculate_new_metric
+  metric_name: memory.utilization
+  operand1_metric: memory.used
+  operand2_metric: memory.total
+  operator: /
+- action: multiply_float
+  scale_factors_float:
+    memory.utilization: 100
 
 
 # Translations to derive disk.utilization.
@@ -479,7 +487,8 @@ translation_rules:
   scale_factors_float:
     disk.summary_utilization: 100
 
-# convert disk I/O metrics
+
+# Translations to derive disk_ops.total and disk_ops.pending.
 - action: copy_metrics
   mapping:
     system.disk.ops: disk.ops
@@ -492,6 +501,13 @@ translation_rules:
 - action: delta_metric
   mapping:
     disk.ops: disk_ops.total
+- action: delta_metric
+  mapping:
+    system.disk.pending_operations: disk_ops.pending
+
+
+# Translations to derive other Disk I/O metrics. Note that these translations
+# depend on renaming dimension device to disk.
 - action: rename_dimension_keys
   metric_names:
     system.disk.merged: true
@@ -524,11 +540,9 @@ translation_rules:
   mapping:
     read: disk_time.read
     write: disk_time.write
-- action: delta_metric
-  mapping:
-    system.disk.pending_operations: disk_ops.pending
 
-# convert network I/O metrics
+
+# Translations for network.total.
 - action: copy_metrics
   mapping:
     system.network.io: network.total
@@ -543,18 +557,6 @@ translation_rules:
   - direction
   - interface
 
-# memory utilization
-- action: calculate_new_metric
-  metric_name: memory.utilization
-  operand1_metric: memory.used
-  operand2_metric: memory.total
-  operator: /
-
-- action: multiply_float
-  scale_factors_float:
-    memory.utilization: 100
-    cpu.utilization: 100
-
 # remove redundant metrics
 - action: drop_metrics
   metric_names:
@@ -566,5 +568,6 @@ translation_rules:
     system.cpu.usage: true
     system.cpu.total: true
     system.cpu.delta: true
+    memory.used: true
 `
 )
