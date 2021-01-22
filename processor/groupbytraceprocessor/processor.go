@@ -227,7 +227,14 @@ func (sp *groupByTraceProcessor) onTraceReleased(rss []pdata.ResourceSpans) erro
 	}
 	stats.Record(context.Background(), mReleasedSpans.M(int64(trace.SpanCount())))
 	stats.Record(context.Background(), mReleasedTraces.M(1))
-	return sp.nextConsumer.ConsumeTraces(context.Background(), trace)
+
+	// Do async consuming not to block event worker
+	go func() {
+		if err := sp.nextConsumer.ConsumeTraces(context.Background(), trace); err != nil {
+			sp.logger.Error("consume failed", zap.Error(err))
+		}
+	}()
+	return nil
 }
 
 func (sp *groupByTraceProcessor) onTraceRemoved(traceID pdata.TraceID) error {
