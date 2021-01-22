@@ -33,7 +33,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/metricsdimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/mocks"
 )
 
@@ -150,33 +149,11 @@ func TestProcessorCapabilities(t *testing.T) {
 
 func TestProcessorConsumeTracesErrors(t *testing.T) {
 	for _, tc := range []struct {
-		name                              string
-		numMarshalCallsBeforeRaisingErr   int
-		marshalErr                        error
-		numUnmarshalCallsBeforeRaisingErr int
-		unmarshalErr                      error
-		consumeMetricsErr                 error
-		consumeTracesErr                  error
-		wantErrMsg                        string
+		name              string
+		consumeMetricsErr error
+		consumeTracesErr  error
+		wantErrMsg        string
 	}{
-		{
-			name:                            "aggregateMetrics error",
-			numMarshalCallsBeforeRaisingErr: 0,
-			marshalErr:                      fmt.Errorf("marshal error"),
-			wantErrMsg:                      "marshal error",
-		},
-		{
-			name:                              "collectCallMetrics error",
-			numUnmarshalCallsBeforeRaisingErr: 0,
-			unmarshalErr:                      fmt.Errorf("unmarshal error"),
-			wantErrMsg:                        "unmarshal error",
-		},
-		{
-			name:                              "collectCallMetrics error",
-			numUnmarshalCallsBeforeRaisingErr: 1,
-			unmarshalErr:                      fmt.Errorf("unmarshal error"),
-			wantErrMsg:                        "unmarshal error",
-		},
 		{
 			name:              "metricsExporter error",
 			consumeMetricsErr: fmt.Errorf("metricsExporter error"),
@@ -196,24 +173,7 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 			tcon := &mocks.TracesConsumer{}
 			tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(tc.consumeTracesErr)
 
-			// Mock json.Marshal
-			jsonSerder := &mocks.JsonSerder{}
-			if tc.marshalErr != nil {
-				for callNum := 0; callNum < tc.numMarshalCallsBeforeRaisingErr; callNum++ {
-					jsonSerder.On("Marshal", mock.Anything).Return([]byte(""), nil).Once()
-				}
-			}
-			jsonSerder.On("Marshal", mock.Anything).Return([]byte(""), tc.marshalErr)
-
-			// Mock json.Unmarshal
-			if tc.unmarshalErr != nil {
-				for callNum := 0; callNum < tc.numUnmarshalCallsBeforeRaisingErr; callNum++ {
-					jsonSerder.On("Unmarshal", mock.Anything, mock.Anything).Return(nil).Once()
-				}
-			}
-			jsonSerder.On("Unmarshal", mock.Anything, mock.Anything).Return(tc.unmarshalErr)
-
-			p := newProcessorImp(mexp, tcon, jsonSerder, nil)
+			p := newProcessorImp(mexp, tcon, nil)
 
 			traces := buildSampleTrace()
 
@@ -238,7 +198,7 @@ func TestProcessorConsumeTraces(t *testing.T) {
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 	defaultNullValue := "defaultNullValue"
-	p := newProcessorImp(mexp, tcon, &JSONSerde{}, &defaultNullValue)
+	p := newProcessorImp(mexp, tcon, &defaultNullValue)
 
 	traces := buildSampleTrace()
 
@@ -250,6 +210,35 @@ func TestProcessorConsumeTraces(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestMetricKeyCache(t *testing.T) {
+	// Prepare
+	mexp := &mocks.MetricsExporter{}
+	tcon := &mocks.TracesConsumer{}
+
+	mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
+	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
+
+	defaultNullValue := "defaultNullValue"
+	p := newProcessorImp(mexp, tcon, &defaultNullValue)
+
+	traces := buildSampleTrace()
+
+	// Test
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	err := p.ConsumeTraces(ctx, traces)
+
+	// Validate
+	require.NoError(t, err)
+
+	origKeyCache := make(map[string]dimKV)
+	for k, v := range p.metricKeyToDimensions {
+		origKeyCache[k] = v
+	}
+	err = p.ConsumeTraces(ctx, traces)
+	require.NoError(t, err)
+	assert.Equal(t, origKeyCache, p.metricKeyToDimensions)
+}
+
 func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	// Prepare
 	mexp := &mocks.MetricsExporter{}
@@ -259,7 +248,7 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 	defaultNullValue := "defaultNullValue"
-	p := newProcessorImp(mexp, tcon, &JSONSerde{}, &defaultNullValue)
+	p := newProcessorImp(mexp, tcon, &defaultNullValue)
 
 	traces := buildSampleTrace()
 
@@ -270,48 +259,13 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	}
 }
 
-func TestDimensionKeyCache(t *testing.T) {
-	// Prepare
-	mexp := &mocks.MetricsExporter{}
-	tcon := &mocks.TracesConsumer{}
-
-	mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
-	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
-
-	defaultNullValue := "defaultNullValue"
-	p := newProcessorImp(mexp, tcon, &JSONSerde{}, &defaultNullValue)
-
-	traces := buildSampleTrace()
-
-	// Test
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
-
-	// Send 2 traces with the same span attributes should reuse a cached dimension key.
-	assert.True(t, p.metricsKeyCache.Empty())
-	p.ConsumeTraces(ctx, traces)
-	p.ConsumeTraces(ctx, traces)
-	assert.False(t, p.metricsKeyCache.Empty())
-
-	d := p.metricsKeyCache.InsertDimensions([]metricsdimensions.DimensionKeyValue{
-		{Key: serviceNameKey, Value: "service-a"},
-		{Key: operationKey, Value: "/ping"},
-		{Key: spanKindKey, Value: "SPAN_KIND_SERVER"},
-		{Key: statusCodeKey, Value: "STATUS_CODE_OK"},
-		{Key: stringAttrName, Value: "stringAttrValue"},
-		{Key: intAttrName, Value: "99"},
-		{Key: doubleAttrName, Value: "99.99"},
-		{Key: boolAttrName, Value: "true"},
-		{Key: nullAttrName},
-	}...)
-	assert.True(t, d.HasCachedMetricKey())
-}
-
-func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, jsonSerder JSONSerder, defaultNullValue *string) *processorImp {
+func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *string) *processorImp {
 	return &processorImp{
 		logger:          zap.NewNop(),
 		metricsExporter: mexp,
 		nextConsumer:    tcon,
 
+		startTime:           time.Now(),
 		callSum:             make(map[string]int64),
 		latencySum:          make(map[string]float64),
 		latencyCount:        make(map[string]uint64),
@@ -327,8 +281,8 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, js
 			{arrayAttrName, nil},
 			{nullAttrName, defaultNullValue},
 		},
-		jsonSerder:      jsonSerder,
-		metricsKeyCache: metricsdimensions.NewCache(),
+		metricKeyToDimensions: make(map[string]dimKV),
+		dimensionsBuffer:      make(map[string]string),
 	}
 }
 
@@ -364,6 +318,7 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 
 		dp := dps.At(0)
 		assert.Equal(t, int64(1), dp.Value(), "There should only be one metric per Service/operation/kind combination")
+		assert.NotZero(t, dp.StartTime(), "StartTimestamp should be set")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
 		verifyMetricLabels(dp, t, seenMetricIDs)
