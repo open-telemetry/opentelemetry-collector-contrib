@@ -89,7 +89,7 @@ exporters:
 pipelines:
   traces:
     receivers: [jaeger]
-    processors: [spanmetrics, batch, queued_retry]
+    processors: [spanmetrics, batch]
     exporters: [jaeger]
 
   # The exporter name must match the metrics_exporter name.
