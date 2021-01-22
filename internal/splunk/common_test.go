@@ -15,6 +15,8 @@
 package splunk
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -65,4 +67,61 @@ func TestIsMetric_WithoutEventField(t *testing.T) {
 		},
 	}
 	assert.True(t, fieldsWithMetrics.IsMetric())
+}
+
+func TestDecodeJsonWithNoTime(t *testing.T) {
+	dec := json.NewDecoder(strings.NewReader("{\"event\":\"hello\"}"))
+
+	dec.More()
+	var msg Event
+	err := dec.Decode(&msg)
+	assert.NoError(t, err)
+	assert.Nil(t, msg.Time)
+}
+
+func TestDecodeJsonWithNumberTime(t *testing.T) {
+	dec := json.NewDecoder(strings.NewReader("{\"time\":1610760752.606,\"event\":\"hello\"}"))
+
+	dec.More()
+	var msg Event
+	err := dec.Decode(&msg)
+	assert.NoError(t, err)
+	assert.Equal(t, 1610760752.606, *msg.Time)
+}
+
+func TestDecodeJsonWithStringTime(t *testing.T) {
+	dec := json.NewDecoder(strings.NewReader("{\"time\":\"1610760752.606\",\"event\":\"hello\"}"))
+
+	dec.More()
+	var msg Event
+	err := dec.Decode(&msg)
+	assert.NoError(t, err)
+	assert.Equal(t, 1610760752.606, *msg.Time)
+}
+
+func TestDecodeJsonWithInvalidStringTime(t *testing.T) {
+	dec := json.NewDecoder(strings.NewReader("{\"time\":\"1610760752.606\\\"\",\"event\":\"hello\"}"))
+
+	dec.More()
+	var msg Event
+	err := dec.Decode(&msg)
+	assert.Error(t, err)
+}
+
+func TestDecodeJsonWithInvalidNumberStringTime(t *testing.T) {
+	dec := json.NewDecoder(strings.NewReader("{\"time\":\"0xdeadbeef\",\"event\":\"hello\"}"))
+
+	dec.More()
+	var msg Event
+	err := dec.Decode(&msg)
+	assert.Error(t, err)
+}
+
+func TestDecodeJsonWithInvalidNumberTime(t *testing.T) {
+	dec := json.NewDecoder(strings.NewReader("{\"time\":1e1024,\"event\":\"hello\"}"))
+
+	dec.More()
+	var msg Event
+	err := dec.Decode(&msg)
+	assert.Error(t, err)
 }
