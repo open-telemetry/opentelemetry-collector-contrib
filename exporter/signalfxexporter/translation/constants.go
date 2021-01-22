@@ -491,7 +491,7 @@ translation_rules:
 # convert disk I/O metrics
 - action: copy_metrics
   mapping:
-    system.disk.ops: disk.ops
+    system.disk.operations: disk.ops
 - action: aggregate_metric
   metric_name: disk.ops
   aggregation_method: sum
@@ -505,7 +505,7 @@ translation_rules:
   metric_names:
     system.disk.merged: true
     system.disk.io: true
-    system.disk.ops: true
+    system.disk.operations: true
     system.disk.time: true
   mapping:
     device: disk
@@ -522,7 +522,7 @@ translation_rules:
     read: disk_octets.read
     write: disk_octets.write
 - action: split_metric
-  metric_name: system.disk.ops
+  metric_name: system.disk.operations
   dimension_key: direction
   mapping:
     read: disk_ops.read
