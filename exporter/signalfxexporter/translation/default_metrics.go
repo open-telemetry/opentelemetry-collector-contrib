@@ -131,4 +131,25 @@ exclude_metrics:
   # matches any node condition but k8s.node.condition_ready
   - /^k8s\.node\.condition_.+$/
   - '!k8s.node.condition_ready'
+
+  # kubelet metrics
+  # matches (container|k8s.node|k8s.pod).memory...
+  - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.available$/
+  - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.major_page_faults$/
+  - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.page_faults$/
+  - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.rss$/
+  - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.usage$/
+  - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.working_set$/
+  # matches (k8s.node|k8s.pod).filesystem...
+  - /^k8s\.(?i:(node)|(pod))\.filesystem\.available$/
+  - /^k8s\.(?i:(node)|(pod))\.filesystem\.capacity$/
+  - /^k8s\.(?i:(node)|(pod))\.filesystem\.usage$/
+  # matches (k8s.node|k8s.pod).cpu.time
+  - /^k8s\.(?i:(node)|(pod))\.cpu\.time$/
+  # matches (container|k8s.node|k8s.pod).cpu.utilization
+  - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.cpu\.utilization$/
+  # matches k8s.node.network.io and k8s.node.network.errors
+  - /^k8s\.node\.network\.(?:(io)|(errors))$/
+  # matches k8s.volume.inodes, k8s.volume.inodes and k8s.volume.inodes.used
+  - /^k8s\.volume\.(?:(inodes)|(inodes\.free)|(inodes\.used))$/
 `
