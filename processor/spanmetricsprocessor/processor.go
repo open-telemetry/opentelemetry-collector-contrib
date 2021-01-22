@@ -47,7 +47,6 @@ var (
 	defaultLatencyHistogramBucketsMs = []float64{
 		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000, maxDurationMs,
 	}
-	mandatoryDimensions = []string{serviceNameKey, operationKey, spanKindKey, statusCodeKey}
 )
 
 // dimKV represents the dimension key-value pairs for a metric.
