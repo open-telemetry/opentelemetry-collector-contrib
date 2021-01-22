@@ -113,7 +113,7 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 			// Adds default and/or configured resource attributes (e.g. k8s.pod.uid) to resources
 			// as telemetry is emitted.
 			resourceEnhancer, err := newResourceEnhancer(
-				obs.config.ResourceAttr,
+				obs.config.ResourceAttributes,
 				env,
 				e,
 				obs.nextConsumer,

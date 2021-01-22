@@ -50,7 +50,7 @@ func createDefaultConfig() configmodels.Receiver {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
-		ResourceAttr: resourceAttr{
+		ResourceAttributes: resourceAttributes{
 			observer.PodType: map[string]string{
 				conventions.AttributeK8sPod:       "`name`",
 				conventions.AttributeK8sPodUID:    "`uid`",

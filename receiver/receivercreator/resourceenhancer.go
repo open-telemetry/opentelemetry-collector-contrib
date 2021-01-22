@@ -35,7 +35,7 @@ type resourceEnhancer struct {
 }
 
 func newResourceEnhancer(
-	resources resourceAttr,
+	resources resourceAttributes,
 	env observer.EndpointEnv,
 	endpoint observer.Endpoint,
 	nextConsumer consumer.MetricsConsumer,

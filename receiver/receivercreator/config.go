@@ -54,8 +54,8 @@ type receiverTemplate struct {
 	rule rule
 }
 
-// resourceAttr holds a map of default resource attributes for each Endpoint type.
-type resourceAttr map[observer.EndpointType]map[string]string
+// resourceAttributes holds a map of default resource attributes for each Endpoint type.
+type resourceAttributes map[observer.EndpointType]map[string]string
 
 // newReceiverTemplate creates a receiverTemplate instance from the full name of a subreceiver
 // and its arbitrary config map values.
@@ -80,7 +80,7 @@ type Config struct {
 	receiverTemplates             map[string]receiverTemplate
 	// WatchObservers are the extensions to listen to endpoints from.
 	WatchObservers []configmodels.Type `mapstructure:"watch_observers"`
-	// ResourceAttr is a map of default resource attributes to add to each resource
+	// ResourceAttributes is a map of default resource attributes to add to each resource
 	// object received by this receiver from dynamically created receivers.
-	ResourceAttr resourceAttr `mapstructure:"resource_attr"`
+	ResourceAttributes resourceAttributes `mapstructure:"resource_attributes"`
 }

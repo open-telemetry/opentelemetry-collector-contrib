@@ -39,7 +39,7 @@ func Test_newResourceEnhancer(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	type args struct {
-		resources    resourceAttr
+		resources    resourceAttributes
 		env          observer.EndpointEnv
 		endpoint     observer.Endpoint
 		nextConsumer consumer.MetricsConsumer
@@ -53,7 +53,7 @@ func Test_newResourceEnhancer(t *testing.T) {
 		{
 			name: "pod endpoint",
 			args: args{
-				resources:    cfg.ResourceAttr,
+				resources:    cfg.ResourceAttributes,
 				env:          podEnv,
 				endpoint:     podEndpoint,
 				nextConsumer: &consumertest.MetricsSink{},
@@ -71,7 +71,7 @@ func Test_newResourceEnhancer(t *testing.T) {
 		{
 			name: "port endpoint",
 			args: args{
-				resources:    cfg.ResourceAttr,
+				resources:    cfg.ResourceAttributes,
 				env:          portEnv,
 				endpoint:     portEndpoint,
 				nextConsumer: &consumertest.MetricsSink{},
@@ -91,8 +91,8 @@ func Test_newResourceEnhancer(t *testing.T) {
 			// attribute.
 			name: "attribute value empty",
 			args: args{
-				resources: func() resourceAttr {
-					res := createDefaultConfig().(*Config).ResourceAttr
+				resources: func() resourceAttributes {
+					res := createDefaultConfig().(*Config).ResourceAttributes
 					res[observer.PodType]["k8s.pod.name"] = ""
 					return res
 				}(),
@@ -112,8 +112,8 @@ func Test_newResourceEnhancer(t *testing.T) {
 		{
 			name: "error",
 			args: args{
-				resources: func() resourceAttr {
-					res := createDefaultConfig().(*Config).ResourceAttr
+				resources: func() resourceAttributes {
+					res := createDefaultConfig().(*Config).ResourceAttributes
 					res[observer.PodType]["k8s.pod.name"] = "`unbalanced"
 					return res
 				}(),
