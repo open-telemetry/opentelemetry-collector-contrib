@@ -1,0 +1,16 @@
+sumologic:
+  accessId: <ENTER_YOUR_SUMOLOGIC_ACCESS_ID>
+  accessKey: <ENTER_YOUR_SUMOLOGIC_ACCESS_KEY>
+  clusterName: <ENTER_YOUR_CLUSTER_NAME>
+  traces:
+    enabled: true
+otelcol:
+  ## This enables exposing OpenTelemetry Collector metrics. Note that they will consume your DPM
+  ## hence by default they are disabled
+  metrics:
+    enabled:
+      true
+## Following enables OpenTelemetry Agent which runs on each node as a DaemonSet
+otelagent:
+  enabled:
+    true
