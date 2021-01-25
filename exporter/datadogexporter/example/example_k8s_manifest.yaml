@@ -159,6 +159,7 @@ data:
           http:
     processors:
       batch:
+        timeout: 10s
       k8s_tagger:
     extensions:
       health_check: {}
