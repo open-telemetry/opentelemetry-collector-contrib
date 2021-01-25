@@ -5,7 +5,7 @@ go 1.14
 require (
 	cloud.google.com/go v0.75.0
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/aws/aws-sdk-go v1.36.30
+	github.com/aws/aws-sdk-go v1.36.31
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.18.1-0.20210121231022-15322cf01768
