@@ -12,6 +12,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+AWS X-Ray Propagator
+--------------------
+
+The **AWS X-Ray Propagator** provides a propagator that when used, adds a `trace
+header`_ to outgoing traces that is compatible with the AWS X-Ray backend service.
+This allows the trace context to be propagated when a trace span multiple AWS
+services.
+
+Usage
+-----
+
+Use the provided AWS X-Ray Propagator to inject the necessary context into
+traces sent to external systems.
+
+This can be done by either setting this environment variable:
+
+::
+
+    export OTEL_PROPAGATORS = aws_xray
+
+
+Or by setting this propagator in your instrumented application:
+
+.. code-block:: python
+
+    from opentelemetry import propagators
+    from opentelemetry.sdk.extension.aws.trace.propagation.aws_xray_format import AwsXRayFormat
+
+    propagators.set_global_textmap(AwsXRayFormat())
+
+API
+---
+.. _trace header: https://docs.aws.amazon.com/xray/latest/devguide/xray-concepts.html#xray-concepts-tracingheader
+"""
+
 import logging
 import typing
 

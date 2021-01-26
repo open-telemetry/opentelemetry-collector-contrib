@@ -12,6 +12,50 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Installation
+------------
+
+::
+
+    pip install opentelemetry-sdk-extension-aws
+
+AWS X-Ray IDs Generator
+-----------------------
+
+The **AWS X-Ray IDs Generator** provides a custom IDs Generator to make
+traces generated using the OpenTelemetry SDKs `TracerProvider` compatible
+with the AWS X-Ray backend service `trace ID format`_.
+
+Usage
+-----
+
+Configure the OTel SDK TracerProvider with the provided custom IDs Generator to
+make spans compatible with the AWS X-Ray backend tracing service.
+
+Install the OpenTelemetry SDK package.
+
+::
+
+    pip install opentelemetry-sdk
+
+Next, use the provided `AwsXRayIdsGenerator` to initialize the `TracerProvider`.
+
+.. code-block:: python
+
+    import opentelemetry.trace as trace
+    from opentelemetry.sdk.extension.aws.trace import AwsXRayIdsGenerator
+    from opentelemetry.sdk.trace import TracerProvider
+
+    trace.set_tracer_provider(
+        TracerProvider(ids_generator=AwsXRayIdsGenerator())
+    )
+
+API
+---
+.. _trace ID format: https://docs.aws.amazon.com/xray/latest/devguide/xray-api-sendingdata.html#xray-api-traceids
+"""
+
 import random
 import time
 
