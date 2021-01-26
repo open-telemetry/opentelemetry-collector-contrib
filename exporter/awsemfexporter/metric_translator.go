@@ -417,7 +417,7 @@ func calculateRate(fields map[string]interface{}, val float64, timestamp int64) 
 // dimensionRollup creates rolled-up dimensions from the metric's label set.
 func dimensionRollup(dimensionRollupOption string, originalDimensionSlice []string, instrumentationLibName string) [][]string {
 	var rollupDimensionArray [][]string
-	var dimensionZero []string
+	dimensionZero := make([]string, 0)
 	if instrumentationLibName != noInstrumentationLibraryName {
 		dimensionZero = append(dimensionZero, OTellibDimensionKey)
 	}
