@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
@@ -51,6 +52,7 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	spans.Resize(1)
 
 	span := spans.At(0)
+
 	traceID := pdata.NewTraceID(mockTraceID)
 	spanID := pdata.NewSpanID(mockSpanID)
 	parentSpanID := pdata.NewSpanID(mockParentSpanID)
@@ -280,6 +282,78 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 
 	assert.Contains(t, datadogPayload.Traces[0].Spans[0].Meta[tagContainersTags], "container_id:3249847017410247")
 	assert.Contains(t, datadogPayload.Traces[0].Spans[0].Meta[tagContainersTags], "pod_name:example-pod-name")
+}
+
+func TestTracesTranslationErrorsFromEvents(t *testing.T) {
+	hostname := "testhostname"
+	calculator := newSublayerCalculator()
+	// translate mocks to datadog traces
+	cfg := config.Config{
+		TagsConfig: config.TagsConfig{
+			Version: "v1",
+		},
+	}
+
+	endTime := time.Now().Round(time.Second)
+	pdataEndTime := pdata.TimestampUnixNano(endTime.UnixNano())
+	startTime := endTime.Add(-90 * time.Second)
+	pdataStartTime := pdata.TimestampUnixNano(startTime.UnixNano())
+
+	traces := pdata.NewTraces()
+	traces.ResourceSpans().Resize(1)
+	rs := traces.ResourceSpans().At(0)
+	resource := rs.Resource()
+	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		"service.name": pdata.NewAttributeValueString("sure"),
+	})
+	rs.InstrumentationLibrarySpans().Resize(1)
+	ilss := rs.InstrumentationLibrarySpans().At(0)
+	instrumentationLibrary := ilss.InstrumentationLibrary()
+	instrumentationLibrary.SetName("flash")
+	instrumentationLibrary.SetVersion("v1")
+
+	ilss.Spans().Resize(1)
+	span := ilss.Spans().At(0)
+	span.Status().SetCode(pdata.StatusCodeError)
+
+	events := span.Events()
+	events.Resize(4)
+
+	events.At(0).SetTimestamp(pdataStartTime)
+	events.At(0).SetName("start")
+
+	events.At(1).SetTimestamp(pdataEndTime)
+	events.At(1).SetName(conventions.AttributeExceptionEventName)
+	events.At(1).Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		conventions.AttributeExceptionType:       pdata.NewAttributeValueString("SomeOtherErr"),
+		conventions.AttributeExceptionStacktrace: pdata.NewAttributeValueString("SomeOtherErr at line 67\nthing at line 45"),
+		conventions.AttributeExceptionMessage:    pdata.NewAttributeValueString("SomeOtherErr error occurred"),
+	})
+
+	attribs := map[string]pdata.AttributeValue{
+		conventions.AttributeExceptionType:       pdata.NewAttributeValueString("HttpError"),
+		conventions.AttributeExceptionStacktrace: pdata.NewAttributeValueString("HttpError at line 67\nthing at line 45"),
+		conventions.AttributeExceptionMessage:    pdata.NewAttributeValueString("HttpError error occurred"),
+	}
+	events.At(2).SetTimestamp(pdataEndTime)
+	events.At(2).SetName(conventions.AttributeExceptionEventName)
+	events.At(2).Attributes().InitFromMap(attribs)
+
+	events.At(3).SetTimestamp(pdataEndTime)
+	events.At(3).SetName("end")
+	events.At(3).Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		"flag": pdata.NewAttributeValueBool(false),
+	})
+
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
+	// Ensure the error type is copied over from the last error event logged
+	assert.Equal(t, attribs[conventions.AttributeExceptionType].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorType])
+
+	// Ensure the stack trace is copied over from the last error event logged
+	assert.Equal(t, attribs[conventions.AttributeExceptionStacktrace].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorStack])
+
+	// Ensure the error message is copied over from the last error event logged
+	assert.Equal(t, attribs[conventions.AttributeExceptionMessage].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorMsg])
 }
 
 func TestTracesTranslationOkStatus(t *testing.T) {
