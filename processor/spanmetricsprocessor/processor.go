@@ -33,10 +33,11 @@ import (
 )
 
 const (
-	serviceNameKey = conventions.AttributeServiceName
-	operationKey   = "operation" // is there a constant we can refer to?
-	spanKindKey    = tracetranslator.TagSpanKind
-	statusCodeKey  = tracetranslator.TagStatusCode
+	serviceNameKey     = conventions.AttributeServiceName
+	operationKey       = "operation" // is there a constant we can refer to?
+	spanKindKey        = tracetranslator.TagSpanKind
+	statusCodeKey      = tracetranslator.TagStatusCode
+	metricKeySeparator = string(byte(0))
 )
 
 var (
@@ -76,15 +77,9 @@ type processorImp struct {
 	latencyBucketCounts map[metricKey][]uint64
 	latencyBounds       []float64
 
-	// Builds the unique identifier for a metric: an ordered concatenation the metric's dimension values.
-	metricKeyBuilder strings.Builder
-
 	// A cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
 	metricKeyToDimensions map[metricKey]dimKV
-
-	// A reusable buffer for storing intermediate dimension key-values as they are added to the metric key.
-	dimensionsBuffer map[string]string
 }
 
 func newProcessor(logger *zap.Logger, config configmodels.Exporter, nextConsumer consumer.TracesConsumer) *processorImp {
@@ -114,7 +109,6 @@ func newProcessor(logger *zap.Logger, config configmodels.Exporter, nextConsumer
 		latencyBucketCounts:   make(map[metricKey][]uint64),
 		nextConsumer:          nextConsumer,
 		dimensions:            pConfig.Dimensions,
-		dimensionsBuffer:      make(map[string]string),
 		metricKeyToDimensions: make(map[metricKey]dimKV),
 	}
 }
@@ -296,7 +290,8 @@ func (p *processorImp) aggregateMetricsForSpan(serviceName string, span pdata.Sp
 	index := sort.SearchFloat64s(p.latencyBounds, latencyInMilliseconds)
 
 	p.lock.Lock()
-	key := p.buildKey(serviceName, span)
+	key := buildKey(serviceName, span, p.dimensions)
+	p.cache(serviceName, span, key)
 	p.updateCallMetrics(key)
 	p.updateLatencyMetrics(key, latencyInMilliseconds, index)
 	p.lock.Unlock()
@@ -317,34 +312,15 @@ func (p *processorImp) updateLatencyMetrics(key metricKey, latency float64, inde
 	p.latencyBucketCounts[key][index]++
 }
 
-func (p *processorImp) addDimension(key, value string) {
-	// It's worth noting that from pprof benchmarks, WriteString is the most expensive operation of this processor.
-	// Specifically, the need to grow the underlying []byte slice to make room for the appended string.
-	p.metricKeyBuilder.WriteString(value)
-	p.dimensionsBuffer[key] = value
-}
-
-// buildKey builds the metric key from the service name and span metadata such as operation, kind, status_code and
-// any additional dimensions the user has configured.
-// The metric key is a simple concatenation of dimension values.
-func (p *processorImp) buildKey(serviceName string, span pdata.Span) metricKey {
-	// Reset back to a clean state.
-	defer func() {
-		// Compiler will optimize this map clearing operation.
-		// https://github.com/golang/go/blob/master/doc/go1.11.html#L447
-		for k := range p.dimensionsBuffer {
-			delete(p.dimensionsBuffer, k)
-		}
-		p.metricKeyBuilder.Reset()
-	}()
-
-	p.addDimension(serviceNameKey, serviceName)
-	p.addDimension(operationKey, span.Name())
-	p.addDimension(spanKindKey, span.Kind().String())
-	p.addDimension(statusCodeKey, span.Status().Code().String())
+func buildDimensionKVs(serviceName string, span pdata.Span, optionalDims []Dimension) dimKV {
+	dims := make(dimKV)
+	dims[serviceNameKey] = serviceName
+	dims[operationKey] = span.Name()
+	dims[spanKindKey] = span.Kind().String()
+	dims[statusCodeKey] = span.Status().Code().String()
 	spanAttr := span.Attributes()
 	var value string
-	for _, d := range p.dimensions {
+	for _, d := range optionalDims {
 		// Set the default if configured, otherwise this metric will have no value set for the dimension.
 		if d.Default != nil {
 			value = *d.Default
@@ -352,28 +328,52 @@ func (p *processorImp) buildKey(serviceName string, span pdata.Span) metricKey {
 		if attr, ok := spanAttr.Get(d.Name); ok {
 			value = tracetranslator.AttributeValueToString(attr, false)
 		}
-		p.addDimension(d.Name, value)
+		dims[d.Name] = value
 	}
-	metricKey := metricKey(p.metricKeyBuilder.String())
-
-	p.cache(metricKey)
-
-	return metricKey
+	return dims
 }
 
-// cache caches the dimension key-value map stored in the dimensionsBuffer for the given metricKey.
+func concatDimensionValue(metricKeyBuilder *strings.Builder, value string, prefixSep bool) {
+	// It's worth noting that from pprof benchmarks, WriteString is the most expensive operation of this processor.
+	// Specifically, the need to grow the underlying []byte slice to make room for the appended string.
+	if prefixSep {
+		metricKeyBuilder.WriteString(metricKeySeparator)
+	}
+	metricKeyBuilder.WriteString(value)
+}
+
+// buildKey builds the metric key from the service name and span metadata such as operation, kind, status_code and
+// any additional dimensions the user has configured.
+// The metric key is a simple concatenation of dimension values.
+func buildKey(serviceName string, span pdata.Span, optionalDims []Dimension) metricKey {
+	var metricKeyBuilder strings.Builder
+	concatDimensionValue(&metricKeyBuilder, serviceName, false)
+	concatDimensionValue(&metricKeyBuilder, span.Name(), true)
+	concatDimensionValue(&metricKeyBuilder, span.Kind().String(), true)
+	concatDimensionValue(&metricKeyBuilder, span.Status().Code().String(), true)
+
+	spanAttr := span.Attributes()
+	var value string
+	for _, d := range optionalDims {
+		// Set the default if configured, otherwise this metric will have no value set for the dimension.
+		if d.Default != nil {
+			value = *d.Default
+		}
+		if attr, ok := spanAttr.Get(d.Name); ok {
+			value = tracetranslator.AttributeValueToString(attr, false)
+		}
+		concatDimensionValue(&metricKeyBuilder, value, true)
+	}
+
+	k := metricKey(metricKeyBuilder.String())
+	return k
+}
+
+// cache the dimension key-value map for the metricKey if there is a cache miss.
 // This enables a lookup of the dimension key-value map when constructing the metric like so:
 //   LabelsMap().InitFromMap(p.metricKeyToDimensions[key])
-func (p *processorImp) cache(metricKey metricKey) {
-	if _, ok := p.metricKeyToDimensions[metricKey]; ok {
-		return
+func (p *processorImp) cache(serviceName string, span pdata.Span, k metricKey) {
+	if _, ok := p.metricKeyToDimensions[k]; !ok {
+		p.metricKeyToDimensions[k] = buildDimensionKVs(serviceName, span, p.dimensions)
 	}
-	// Create new map to copy the buffer contents.
-	targetMap := make(dimKV)
-
-	// Copy from the original map to the target map
-	for key, value := range p.dimensionsBuffer {
-		targetMap[key] = value
-	}
-	p.metricKeyToDimensions[metricKey] = targetMap
 }

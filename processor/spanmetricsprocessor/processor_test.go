@@ -282,7 +282,6 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 			{nullAttrName, defaultNullValue},
 		},
 		metricKeyToDimensions: make(map[metricKey]dimKV),
-		dimensionsBuffer:      make(map[string]string),
 	}
 }
 
@@ -480,4 +479,16 @@ func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExpo
 	texp, err := otlpExpFactory.CreateTracesExporter(context.Background(), expCreationParams, otlpConfig)
 	require.NoError(t, err)
 	return otlpConfig, mexp, texp
+}
+
+func TestBuildKey(t *testing.T) {
+	span0 := pdata.NewSpan()
+	span0.SetName("c")
+	k0 := buildKey("ab", span0, nil)
+
+	span1 := pdata.NewSpan()
+	span1.SetName("bc")
+	k1 := buildKey("a", span1, nil)
+
+	assert.NotEqual(t, k0, k1)
 }
