@@ -16,15 +16,17 @@ package datadogexporter
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/testutils"
 )
 
@@ -42,17 +44,20 @@ func TestNewExporter(t *testing.T) {
 			},
 		},
 	}
-
-	cfg.Sanitize()
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
 	// The client should have been created correctly
 	exp := newMetricsExporter(context.Background(), params, cfg)
 	assert.NotNil(t, exp)
+	_, _ = exp.PushMetricsData(context.Background(), testutils.TestMetrics.Clone())
+	assert.Equal(t, len(server.MetadataChan), 0)
 
-	_, _ = exp.PushMetricsData(context.Background(), pdata.NewMetrics())
-
-	onceUsed := true
-	cfg.OnceMetadata().Do(func() { onceUsed = false })
-	assert.False(t, onceUsed)
+	cfg.SendMetadata = true
+	cfg.UseResourceMetadata = true
+	_, _ = exp.PushMetricsData(context.Background(), testutils.TestMetrics.Clone())
+	body := <-server.MetadataChan
+	var recvMetadata metadata.HostMetadata
+	err := json.Unmarshal(body, &recvMetadata)
+	require.NoError(t, err)
+	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
 }
