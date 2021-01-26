@@ -473,9 +473,9 @@ func getSpanErrorAndSetTags(s pdata.Span, tags map[string]string) int32 {
 		//
 		// TODO:
 		//  Seems that the spec has an attribute that hasn't made it to the collector yet -- "exception.escaped".
-		//  This seems optional (SHOULD vs. MUST be set), but it's likely that we want to send the exception that
-		//  escaped the scope of the span instead of the last exception event, assuming that the span has an error
-		//  status and there is an exception event with "escaped.escaped" == true
+		//  This seems optional (SHOULD vs. MUST be set), but it's likely that we want to bubble up the exception
+		//  that escaped the scope of the span ("exception.escaped" == true) instead of the last exception event
+		//  in the case that these events differ.
 		//
 		//  https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/exceptions.md#attributes
 		attribs := pdata.NewAttributeMap()
