@@ -57,7 +57,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.0.0-00010101000000-000000000000
 	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.18.1-0.20210121231022-15322cf01768
+	go.opentelemetry.io/collector v0.18.1-0.20210126001456-ef40657447c0
 	golang.org/x/sys v0.0.0-20201214210602-f9fddec55a1e
 )
 
