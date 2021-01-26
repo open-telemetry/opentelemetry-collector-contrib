@@ -1,0 +1,188 @@
+[
+  {
+    "cpu.interrupt": null
+  },
+  {
+    "cpu.nice": null
+  },
+  {
+    "cpu.softirq": null
+  },
+  {
+    "cpu.steal": null
+  },
+  {
+    "cpu.system": null
+  },
+  {
+    "cpu.user": null
+  },
+  {
+    "cpu.utilization_per_core": null
+  },
+  {
+    "cpu.wait": null
+  },
+  {
+    "memory.available": null
+  },
+  {
+    "df_complex.reserved": null
+  },
+  {
+    "df_inodes.free": null
+  },
+  {
+    "df_inodes.used": null
+  },
+  {
+    "percent_inodes.free": null
+  },
+  {
+    "percent_inodes.used": null
+  },
+  {
+    "percent_bytes.free": null
+  },
+  {
+    "percent_bytes.free": null
+  },
+  {
+    "percent_bytes.free": null
+  },
+  {
+    "disk_merged.read": null
+  },
+  {
+    "disk_merged.write": null
+  },
+  {
+    "disk_octets.read": null
+  },
+  {
+    "disk_octets.write": null
+  },
+  {
+    "disk_ops.pending": null
+  },
+  {
+    "disk_time.read": null
+  },
+  {
+    "disk_time.write": null
+  },
+  {
+    "disk_octets.avg_read": null
+  },
+  {
+    "disk_octets.avg_write": null
+  },
+  {
+    "disk_time.avg_read": null
+  },
+  {
+    "disk_time.avg_write": null
+  },
+  {
+    "if_dropped.rx": null
+  },
+  {
+    "if_dropped.tx": null
+  },
+  {
+    "if_packets.rx": null
+  },
+  {
+    "if_packets.tx": null
+  },
+  {
+    "kubernetes.cronjob.active": null
+  },
+  {
+    "kubernetes.daemon_set.updated": null
+  },
+  {
+    "kubernetes.deployment.updated": null
+  },
+  {
+    "kubernetes.job.active": null
+  },
+  {
+    "kubernetes.job.completions": null
+  },
+  {
+    "kubernetes.job.failed": null
+  },
+  {
+    "kubernetes.job.parallelism": null
+  },
+  {
+    "kubernetes.job.succeeded": null
+  },
+  {
+    "kubernetes.stateful_set.current": null
+  },
+  {
+    "kubernetes.stateful_set.desired": null
+  },
+  {
+    "kubernetes.stateful_set.ready": null
+  },
+  {
+    "kubernetes.stateful_set.updated": null
+  },
+  {
+    "kubernetes.container_cpu_request": null
+  },
+  {
+    "kubernetes.container_ephemeral_storage_limit": null
+  },
+  {
+    "kubernetes.container_ephemeral_storage_request": null
+  },
+  {
+    "kubernetes.container_memory_request": null
+  },
+  {
+    "k8s.node.condition_memory_pressure": null
+  },
+  {
+    "k8s.node.condition_network_unavailable": null
+  },
+  {
+    "k8s.node.condition_out_of_disk": null
+  },
+  {
+    "k8s.node.condition_p_i_d_pressure": null
+  },
+  {
+    "container_memory_available_bytes": null
+  },
+  {
+    "container_memory_major_page_faults": null
+  },
+  {
+    "container_memory_page_faults": null
+  },
+  {
+    "container_memory_rss_bytes": null
+  },
+  {
+    "container_memory_working_set_bytes": null
+  },
+  {
+    "pod_ephemeral_storage_used_bytes": null
+  },
+  {
+    "pod_ephemeral_storage_capacity_bytes": null
+  },
+  {
+    "kubernetes.volume_inodes": null
+  },
+  {
+    "kubernetes.volume_inodes_free": null
+  },
+  {
+    "kubernetes.volume_inodes_used": null
+  }
+]
