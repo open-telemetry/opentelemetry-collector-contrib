@@ -15,10 +15,12 @@
 package metadata
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -172,4 +174,38 @@ func TestFailPushMetadata(t *testing.T) {
 
 	err := pushMetadata(cfg, mockStartInfo, &mockMetadata)
 	require.Error(t, err)
+}
+
+func TestPusher(t *testing.T) {
+	cfg := &config.Config{
+		API:                 config.APIConfig{Key: "apikey"},
+		UseResourceMetadata: true,
+	}
+	mockParams := component.ExporterCreateParams{
+		Logger:               zap.NewNop(),
+		ApplicationStartInfo: mockStartInfo,
+	}
+	attrs := testutils.NewAttributeMap(map[string]string{
+		AttributeDatadogHostname: "datadog-hostname",
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	server := testutils.DatadogServerMock()
+	defer server.Close()
+	cfg.Metrics.Endpoint = server.URL
+
+	go Pusher(ctx, mockParams, cfg, attrs)
+
+	body := <-server.MetadataChan
+	var recvMetadata HostMetadata
+	err := json.Unmarshal(body, &recvMetadata)
+	require.NoError(t, err)
+	assert.Equal(t, recvMetadata.InternalHostname, "datadog-hostname")
+	assert.Equal(t, recvMetadata.Version, mockStartInfo.Version)
+	assert.Equal(t, recvMetadata.Flavor, mockStartInfo.ExeName)
+	require.NotNil(t, recvMetadata.Meta)
+	hostname, err := os.Hostname()
+	require.NoError(t, err)
+	assert.Equal(t, recvMetadata.Meta.SocketHostname, hostname)
 }

@@ -16,21 +16,32 @@ package testutils
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
+type DatadogServer struct {
+	*httptest.Server
+	MetadataChan chan []byte
+}
+
 // DatadogServerMock mocks a Datadog backend server
-func DatadogServerMock() *httptest.Server {
+func DatadogServerMock() *DatadogServer {
+	metadataChan := make(chan []byte)
 	handler := http.NewServeMux()
 	handler.HandleFunc("/api/v1/validate", validateAPIKeyEndpoint)
 	handler.HandleFunc("/api/v1/series", metricsEndpoint)
+	handler.HandleFunc("/intake", newMetadataEndpoint(metadataChan))
 
 	srv := httptest.NewServer(handler)
 
-	return srv
+	return &DatadogServer{
+		srv,
+		metadataChan,
+	}
 }
 
 type validateAPIKeyResponse struct {
@@ -56,6 +67,13 @@ func metricsEndpoint(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
 	w.Write(resJSON)
+}
+
+func newMetadataEndpoint(c chan []byte) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		body, _ := ioutil.ReadAll(r.Body)
+		c <- body
+	}
 }
 
 // NewAttributeMap creates a new attribute map (string only)
