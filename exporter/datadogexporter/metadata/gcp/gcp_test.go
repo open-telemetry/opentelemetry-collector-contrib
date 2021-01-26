@@ -39,6 +39,10 @@ func TestHostnameFromAttributes(t *testing.T) {
 	hostname, ok := HostnameFromAttributes(attrs)
 	assert.True(t, ok)
 	assert.Equal(t, hostname, testHostname)
+
+	attrs = testutils.NewAttributeMap(map[string]string{})
+	_, ok = HostnameFromAttributes(attrs)
+	assert.False(t, ok)
 }
 
 func TestHostInfoFromAttributes(t *testing.T) {
