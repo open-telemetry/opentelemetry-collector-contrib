@@ -2,6 +2,42 @@
 
 ## Unreleased
 
+## v0.19.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.19.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.19.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+
+- `f5cloud` exporter to export metric, trace, and log data to F5 Cloud
+- `jmx` receiver to report metrics from a target MBean server in conjunction with the [JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/master/contrib/jmx-metrics/README.md)
+
+## 🛑 Breaking changes 🛑
+
+- `signalfx` exporter: The `exclude_metrics` option now takes slice of metric filters instead of just metric names (slice of strings) (#1951)
+
+## 💡 Enhancements 💡
+
+- `datadog` exporter: Sanitize datadog service names (#1982)
+- `awsecscontainermetrics` receiver: Add more metadata (#2011)
+- `azuremonitor` exporter: Favor RPC over HTTP spans (#2006)
+- `awsemf` exporter: Always use float64 as calculated rate (#2019)
+- `splunkhec` receiver: Make the HEC receiver path configurable, and use `/*` by default (#2137)
+- `signalfx` exporter:
+  - Drop non-default metrics and add `include_metrics` option to override (#2145, #2146, #2162)
+  - Rename `system.network.dropped_packets` metric to `system.network.dropped` (#2160)
+  - Do not filter cloud attributes from dimensions (#2020)
+- `redis` receiver: Migrate to pdata metrics #1889
+
+## 🧰 Bug fixes 🧰
+
+- `datadog` exporter: Ensure that version tag is added to trace stats (#2010)
+- `loadbalancing` exporter: Rolling update of collector can stop the periodical check of DNS updates (#1798)
+- `awsecscontainermetrics` receiver: Change the type of `exit_code` from string to int and deal with the situation when there is no data (#2147)
+- `groupbytrace` processor: Make onTraceReleased asynchronous to fix processor overload (#1808)
+- Handle cases where the time field of Splunk HEC events is encoded as a String (#2159)
+
 ## v0.18.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.18.0 (Beta) 🎉
