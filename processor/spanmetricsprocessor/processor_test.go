@@ -230,7 +230,7 @@ func TestMetricKeyCache(t *testing.T) {
 	// Validate
 	require.NoError(t, err)
 
-	origKeyCache := make(map[string]dimKV)
+	origKeyCache := make(map[metricKey]dimKV)
 	for k, v := range p.metricKeyToDimensions {
 		origKeyCache[k] = v
 	}
@@ -266,10 +266,10 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 		nextConsumer:    tcon,
 
 		startTime:           time.Now(),
-		callSum:             make(map[string]int64),
-		latencySum:          make(map[string]float64),
-		latencyCount:        make(map[string]uint64),
-		latencyBucketCounts: make(map[string][]uint64),
+		callSum:             make(map[metricKey]int64),
+		latencySum:          make(map[metricKey]float64),
+		latencyCount:        make(map[metricKey]uint64),
+		latencyBucketCounts: make(map[metricKey][]uint64),
 		latencyBounds:       defaultLatencyHistogramBucketsMs,
 		dimensions: []Dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
@@ -281,7 +281,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 			{arrayAttrName, nil},
 			{nullAttrName, defaultNullValue},
 		},
-		metricKeyToDimensions: make(map[string]dimKV),
+		metricKeyToDimensions: make(map[metricKey]dimKV),
 		dimensionsBuffer:      make(map[string]string),
 	}
 }

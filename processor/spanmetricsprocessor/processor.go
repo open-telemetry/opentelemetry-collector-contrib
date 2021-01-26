@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"math"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -52,6 +51,8 @@ var (
 // dimKV represents the dimension key-value pairs for a metric.
 type dimKV map[string]string
 
+type metricKey string
+
 type processorImp struct {
 	lock   sync.RWMutex
 	logger *zap.Logger
@@ -67,12 +68,12 @@ type processorImp struct {
 	startTime time.Time
 
 	// Call & Error counts.
-	callSum map[string]int64
+	callSum map[metricKey]int64
 
 	// Latency histogram.
-	latencyCount        map[string]uint64
-	latencySum          map[string]float64
-	latencyBucketCounts map[string][]uint64
+	latencyCount        map[metricKey]uint64
+	latencySum          map[metricKey]float64
+	latencyBucketCounts map[metricKey][]uint64
 	latencyBounds       []float64
 
 	// Builds the unique identifier for a metric: an ordered concatenation the metric's dimension values.
@@ -80,7 +81,7 @@ type processorImp struct {
 
 	// A cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
-	metricKeyToDimensions map[string]dimKV
+	metricKeyToDimensions map[metricKey]dimKV
 
 	// A reusable buffer for storing intermediate dimension key-values as they are added to the metric key.
 	dimensionsBuffer map[string]string
@@ -106,15 +107,15 @@ func newProcessor(logger *zap.Logger, config configmodels.Exporter, nextConsumer
 		logger:                logger,
 		config:                *pConfig,
 		startTime:             time.Now(),
-		callSum:               make(map[string]int64),
+		callSum:               make(map[metricKey]int64),
 		latencyBounds:         bounds,
-		latencySum:            make(map[string]float64),
-		latencyCount:          make(map[string]uint64),
-		latencyBucketCounts:   make(map[string][]uint64),
+		latencySum:            make(map[metricKey]float64),
+		latencyCount:          make(map[metricKey]uint64),
+		latencyBucketCounts:   make(map[metricKey][]uint64),
 		nextConsumer:          nextConsumer,
 		dimensions:            pConfig.Dimensions,
 		dimensionsBuffer:      make(map[string]string),
-		metricKeyToDimensions: make(map[string]dimKV),
+		metricKeyToDimensions: make(map[metricKey]dimKV),
 	}
 }
 
@@ -302,12 +303,12 @@ func (p *processorImp) aggregateMetricsForSpan(serviceName string, span pdata.Sp
 }
 
 // updateCallMetrics increments the call count for the given metric key.
-func (p *processorImp) updateCallMetrics(key string) {
+func (p *processorImp) updateCallMetrics(key metricKey) {
 	p.callSum[key]++
 }
 
 // updateLatencyMetrics increments the histogram counts for the given metric key and bucket index.
-func (p *processorImp) updateLatencyMetrics(key string, latency float64, index int) {
+func (p *processorImp) updateLatencyMetrics(key metricKey, latency float64, index int) {
 	if _, ok := p.latencyBucketCounts[key]; !ok {
 		p.latencyBucketCounts[key] = make([]uint64, len(p.latencyBounds))
 	}
@@ -326,7 +327,7 @@ func (p *processorImp) addDimension(key, value string) {
 // buildKey builds the metric key from the service name and span metadata such as operation, kind, status_code and
 // any additional dimensions the user has configured.
 // The metric key is a simple concatenation of dimension values.
-func (p *processorImp) buildKey(serviceName string, span pdata.Span) string {
+func (p *processorImp) buildKey(serviceName string, span pdata.Span) metricKey {
 	// Reset back to a clean state.
 	defer func() {
 		// Compiler will optimize this map clearing operation.
@@ -348,27 +349,12 @@ func (p *processorImp) buildKey(serviceName string, span pdata.Span) string {
 		if d.Default != nil {
 			value = *d.Default
 		}
-		// Map the various attribute values to string.
 		if attr, ok := spanAttr.Get(d.Name); ok {
-			switch attr.Type() {
-			case pdata.AttributeValueSTRING:
-				value = attr.StringVal()
-			case pdata.AttributeValueINT:
-				value = strconv.FormatInt(attr.IntVal(), 10)
-			case pdata.AttributeValueDOUBLE:
-				value = strconv.FormatFloat(attr.DoubleVal(), 'f', -1, 64)
-			case pdata.AttributeValueBOOL:
-				value = strconv.FormatBool(attr.BoolVal())
-			case pdata.AttributeValueNULL:
-				value = ""
-			default:
-				p.logger.Warn("Unsupported tag data type", zap.String("data-type", attr.Type().String()))
-				continue
-			}
+			value = tracetranslator.AttributeValueToString(attr, false)
 		}
 		p.addDimension(d.Name, value)
 	}
-	metricKey := p.metricKeyBuilder.String()
+	metricKey := metricKey(p.metricKeyBuilder.String())
 
 	p.cache(metricKey)
 
@@ -378,7 +364,7 @@ func (p *processorImp) buildKey(serviceName string, span pdata.Span) string {
 // cache caches the dimension key-value map stored in the dimensionsBuffer for the given metricKey.
 // This enables a lookup of the dimension key-value map when constructing the metric like so:
 //   LabelsMap().InitFromMap(p.metricKeyToDimensions[key])
-func (p *processorImp) cache(metricKey string) {
+func (p *processorImp) cache(metricKey metricKey) {
 	if _, ok := p.metricKeyToDimensions[metricKey]; ok {
 		return
 	}
