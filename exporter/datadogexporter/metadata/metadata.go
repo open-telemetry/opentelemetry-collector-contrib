@@ -62,11 +62,6 @@ type HostTags struct {
 	// OTel are host tags set in the configuration
 	OTel []string `json:"otel,omitempty"`
 
-	// System are host tags from EC2.
-	// For compatibility with the Datadog Agent we use the
-	// system host tags to send EC2 host tags
-	System []string `json:"system,omitempty"`
-
 	// GCP are Google Cloud Platform tags
 	GCP []string `json:"google cloud platform,omitempty"`
 }
@@ -108,7 +103,7 @@ func metadataFromAttributes(attrs pdata.AttributeMap) *HostMetadata {
 		ec2HostInfo := ec2.HostInfoFromAttributes(attrs)
 		hm.Meta.InstanceID = ec2HostInfo.InstanceID
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
-		hm.Tags.System = ec2HostInfo.EC2Tags
+		hm.Tags.OTel = append(hm.Tags.OTel, ec2HostInfo.EC2Tags...)
 	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP {
 		gcpHostInfo := gcp.HostInfoFromAttributes(attrs)
 		hm.Tags.GCP = gcpHostInfo.GCPTags
@@ -130,7 +125,7 @@ func fillHostMetadata(params component.ExporterCreateParams, cfg *config.Config,
 	// since it does not come from OTEL conventions
 	hm.Flavor = params.ApplicationStartInfo.ExeName
 	hm.Version = params.ApplicationStartInfo.Version
-	hm.Tags.OTel = cfg.GetHostTags()
+	hm.Tags.OTel = append(hm.Tags.OTel, cfg.GetHostTags()...)
 
 	// EC2 data was not set from attributes
 	if hm.Meta.EC2Hostname == "" {
