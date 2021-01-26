@@ -516,6 +516,7 @@ func assertDimsEqual(t *testing.T, expected, actual [][]string) {
 		expectedStringified[i] = strings.Join(v, ",")
 	}
 	for i, v := range actual {
+		assert.NotNil(t, v)
 		sort.Strings(v)
 		actualStringified[i] = strings.Join(v, ",")
 	}
