@@ -73,6 +73,36 @@ exclude_metrics:
   - if_packets.rx
   - if_packets.tx
 
+  # k8s metrics
+  # Derived from https://docs.signalfx.com/en/latest/integrations/agent/monitors/kubernetes-cluster.html.
+  - kubernetes.cronjob.active
+  - kubernetes.daemon_set.updated
+  - kubernetes.deployment.updated
+
+  # matches kubernetes.job.(active|completions|failed|parallelism|succeeded)
+  - /^kubernetes\.job\.(?:active|completions|failed|parallelism|succeeded)$/
+
+  # matches kubernetes.stateful_set.(current|desired|ready|updated)
+  - /^kubernetes\.stateful_set\.(?:current|desired|ready|updated)$/
+
+  # matches all container limit metrics but kubernetes.container_cpu_limit and kubernetes.container_memory_limit
+  - /^kubernetes\.container_.+_limit$/
+  - '!kubernetes.container_memory_limit'
+  - '!kubernetes.container_cpu_limit'
+
+  - /^kubernetes\.container_.+_request$/
+
+  # matches all metrics that starts with kubernetes.node_ but kubernetes.node_ready
+  - /^kubernetes\.node_.+$/
+  - '!kubernetes.node_ready'
+
+  # kubelet metrics
+  # Derived from https://docs.signalfx.com/en/latest/integrations/agent/monitors/kubelet-metrics.html
+  - /^container_memory_(?:available_bytes|major_page_faults|page_faults|rss_bytes|working_set_bytes)$/
+  - /^pod_ephemeral_storage_(?:used_bytes|capacity_bytes)$/
+  - /^kubernetes\.volume_inodes(_free|_used)*$/
+
+
 # Metrics in OpenTelemetry Convention.
 
 # CPU Metrics.
@@ -131,4 +161,30 @@ exclude_metrics:
   # matches any node condition but k8s.node.condition_ready
   - /^k8s\.node\.condition_.+$/
   - '!k8s.node.condition_ready'
+
+  # kubelet metrics
+  # matches (container|k8s.node|k8s.pod).memory...
+  - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.available$/
+  - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.major_page_faults$/
+  - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.page_faults$/
+  - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.rss$/
+  - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.usage$/
+  - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.working_set$/
+
+  # matches (k8s.node|k8s.pod).filesystem...
+  - /^k8s\.(?i:(node)|(pod))\.filesystem\.available$/
+  - /^k8s\.(?i:(node)|(pod))\.filesystem\.capacity$/
+  - /^k8s\.(?i:(node)|(pod))\.filesystem\.usage$/
+
+  # matches (k8s.node|k8s.pod).cpu.time
+  - /^k8s\.(?i:(node)|(pod))\.cpu\.time$/
+
+  # matches (container|k8s.node|k8s.pod).cpu.utilization
+  - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.cpu\.utilization$/
+
+  # matches k8s.node.network.io and k8s.node.network.errors
+  - /^k8s\.node\.network\.(?:(io)|(errors))$/
+
+  # matches k8s.volume.inodes, k8s.volume.inodes and k8s.volume.inodes.used
+  - /^k8s\.volume\.inodes(\.free|\.used)*$/
 `

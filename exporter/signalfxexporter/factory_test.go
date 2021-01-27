@@ -876,6 +876,66 @@ func TestDefaultCPUTranslations(t *testing.T) {
 	}
 }
 
+func TestDefaultExcludes_translated(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	setDefaultExcludes(cfg)
+
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics)
+	require.NoError(t, err)
+
+	var metrics []map[string]string
+	err = testReadJSON("testdata/json/non_default_metrics.json", &metrics)
+	require.NoError(t, err)
+
+	rms := getResourceMetrics(metrics)
+	require.Equal(t, 62, rms.InstrumentationLibraryMetrics().At(0).Metrics().Len())
+	dps := converter.MetricDataToSignalFxV2(rms)
+	require.Equal(t, 0, len(dps))
+}
+
+func TestDefaultExcludes_not_translated(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	setDefaultExcludes(cfg)
+
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), nil, cfg.ExcludeMetrics, cfg.IncludeMetrics)
+	require.NoError(t, err)
+
+	var metrics []map[string]string
+	err = testReadJSON("testdata/json/non_default_metrics_otel_convention.json", &metrics)
+	require.NoError(t, err)
+
+	rms := getResourceMetrics(metrics)
+	require.Equal(t, 72, rms.InstrumentationLibraryMetrics().At(0).Metrics().Len())
+	dps := converter.MetricDataToSignalFxV2(rms)
+	require.Equal(t, 0, len(dps))
+}
+
+func getResourceMetrics(metrics []map[string]string) pdata.ResourceMetrics {
+	rms := pdata.NewResourceMetrics()
+	rms.InstrumentationLibraryMetrics().Resize(1)
+	ilms := rms.InstrumentationLibraryMetrics().At(0)
+	ilms.Metrics().Resize(len(metrics))
+
+	for i, mp := range metrics {
+		m := ilms.Metrics().At(i)
+		// Set data type to some arbitrary since it does not matter for this test.
+		m.SetDataType(pdata.MetricDataTypeIntSum)
+		m.IntSum().DataPoints().Resize(1)
+		m.IntSum().DataPoints().At(0).SetValue(0)
+		labelsMap := m.IntSum().DataPoints().At(0).LabelsMap()
+		for k, v := range mp {
+			if v == "" {
+				m.SetName(k)
+				continue
+			}
+			labelsMap.Insert(k, v)
+		}
+	}
+	return rms
+}
+
 func testReadJSON(f string, v interface{}) error {
 	file, err := os.Open(f)
 	if err != nil {
