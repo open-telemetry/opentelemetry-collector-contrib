@@ -47,6 +47,18 @@ processors:
           value: value2
           op: not-equals
 
+    pod_association:
+      - from: labels
+        name: ip
+      - from: labels
+        name: k8s.pod.ip
+      - from: labels
+        name: host.hostname
+      - from: connection
+        name: ip
+      - from: labels
+        name: pod_uid
+
 exporters:
   exampleexporter:
 

@@ -45,9 +45,10 @@ type WatchClient struct {
 	deleteQueue     []deleteRequest
 	stopCh          chan struct{}
 
-	Pods    map[string]*Pod
-	Rules   ExtractionRules
-	Filters Filters
+	Pods         map[string]*Pod
+	Rules        ExtractionRules
+	Filters      Filters
+	Associations Associations
 }
 
 // Extract deployment name from the pod name. Pod name is created using
@@ -55,8 +56,15 @@ type WatchClient struct {
 var dRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]*-[0-9a-zA-Z]*$`)
 
 // New initializes a new k8s Client.
-func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, newClientSet APIClientsetProvider, newInformer InformerProvider) (Client, error) {
-	c := &WatchClient{logger: logger, Rules: rules, Filters: filters, deploymentRegex: dRegex, stopCh: make(chan struct{})}
+func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations Associations, newClientSet APIClientsetProvider, newInformer InformerProvider) (Client, error) {
+	c := &WatchClient{
+		logger:          logger,
+		Rules:           rules,
+		Filters:         filters,
+		Associations:    associations,
+		deploymentRegex: dRegex,
+		stopCh:          make(chan struct{}),
+	}
 	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
 
 	c.Pods = map[string]*Pod{}
@@ -152,11 +160,11 @@ func (c *WatchClient) deleteLoop(interval time.Duration, gracePeriod time.Durati
 
 			c.m.Lock()
 			for _, d := range toDelete {
-				if p, ok := c.Pods[d.ip]; ok {
+				if p, ok := c.Pods[d.id]; ok {
 					// Sanity check: make sure we are deleting the same pod
 					// and the underlying state (ip<>pod mapping) has not changed.
 					if p.Name == d.name {
-						delete(c.Pods, d.ip)
+						delete(c.Pods, d.id)
 					}
 				}
 			}
@@ -168,10 +176,10 @@ func (c *WatchClient) deleteLoop(interval time.Duration, gracePeriod time.Durati
 	}
 }
 
-// GetPodByIP takes an IP address and returns the pod the IP address is associated with.
-func (c *WatchClient) GetPodByIP(ip string) (*Pod, bool) {
+// GetPod takes an IP address or Pod UID and returns the pod the identifier is associated with.
+func (c *WatchClient) GetPod(identifier string) (*Pod, bool) {
 	c.m.RLock()
-	pod, ok := c.Pods[ip]
+	pod, ok := c.Pods[identifier]
 	c.m.RUnlock()
 	if ok {
 		if pod.Ignore {
@@ -253,24 +261,12 @@ func (c *WatchClient) extractField(v string, r FieldExtractionRule) string {
 }
 
 func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
-	if pod.Status.PodIP == "" {
-		return
-	}
-
 	c.m.Lock()
 	defer c.m.Unlock()
-	// compare initial scheduled timestamp for existing pod and new pod with same IP
-	// and only replace old pod if scheduled time of new pod is newer? This should fix
-	// the case where scheduler has assigned the same IP to a new pod but update event for
-	// the old pod came in later
-	if p, ok := c.Pods[pod.Status.PodIP]; ok {
-		if p.StartTime != nil && pod.Status.StartTime.Before(p.StartTime) {
-			return
-		}
-	}
 	newPod := &Pod{
 		Name:      pod.Name,
 		Address:   pod.Status.PodIP,
+		PodUID:    string(pod.UID),
 		StartTime: pod.Status.StartTime,
 	}
 
@@ -279,21 +275,48 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	} else {
 		newPod.Attributes = c.extractPodAttributes(pod)
 	}
-	c.Pods[pod.Status.PodIP] = newPod
+	if pod.Status.PodIP != "" {
+		// compare initial scheduled timestamp for existing pod and new pod with same IP
+		// and only replace old pod if scheduled time of new pod is newer? This should fix
+		// the case where scheduler has assigned the same IP to a new pod but update event for
+		// the old pod came in later.
+		func() {
+			if p, ok := c.Pods[pod.Status.PodIP]; ok {
+				if p.StartTime != nil && pod.Status.StartTime.Before(p.StartTime) {
+					return
+				}
+			}
+			c.Pods[pod.Status.PodIP] = newPod
+		}()
+		if pod.UID != "" {
+			c.Pods[string(pod.UID)] = newPod
+		}
+	}
 }
 
 func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
-	if pod.Status.PodIP == "" {
-		return
-	}
 	c.m.RLock()
-	p, ok := c.GetPodByIP(pod.Status.PodIP)
+	p, ok := c.GetPod(pod.Status.PodIP)
 	c.m.RUnlock()
 
 	if ok && p.Name == pod.Name {
 		c.deleteMut.Lock()
 		c.deleteQueue = append(c.deleteQueue, deleteRequest{
-			ip:   pod.Status.PodIP,
+			id:   pod.Status.PodIP,
+			name: pod.Name,
+			ts:   time.Now(),
+		})
+		c.deleteMut.Unlock()
+	}
+
+	c.m.RLock()
+	p, ok = c.GetPod(string(pod.UID))
+	c.m.RUnlock()
+
+	if ok && p.Name == pod.Name {
+		c.deleteMut.Lock()
+		c.deleteQueue = append(c.deleteQueue, deleteRequest{
+			id:   string(pod.UID),
 			name: pod.Name,
 			ts:   time.Now(),
 		})

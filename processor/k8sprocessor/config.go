@@ -39,6 +39,8 @@ type Config struct {
 	// Filter section allows specifying filters to filter
 	// pods by labels, fields, namespaces, nodes, etc.
 	Filter FilterConfig `mapstructure:"filter"`
+
+	Association []PodAssociationConfig `mapstructure:"pod_association"`
 }
 
 // ExtractConfig section allows specifying extraction rules to extract
@@ -172,4 +174,16 @@ type FieldFilterConfig struct {
 	// Key: Value pair. The following operations are supported
 	//   equals, not-equals, exists, does-not-exist.
 	Op string `mapstructure:"op"`
+}
+
+// PodAssociationConfig allows specifying rules for associating resources
+// with pod metadata
+type PodAssociationConfig struct {
+	// From represents the source of the association.
+	// Allowed values are connection and label
+	From string `mapstructure:"from"`
+
+	// Name represents the name of the association.
+	// e.g. ip, pod_uid
+	Name string `mapstructure:"name"`
 }
