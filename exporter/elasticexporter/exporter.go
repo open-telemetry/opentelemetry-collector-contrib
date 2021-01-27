@@ -17,30 +17,26 @@
 package elasticexporter
 
 import (
-	"bytes"
-	"compress/zlib"
 	"context"
 	"fmt"
-	"net/http"
-	"net/url"
 
-	"go.elastic.co/apm/transport"
-	"go.elastic.co/fastjson"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter/internal/translator/elastic"
 )
 
-func newElasticTraceExporter(
+// newElasticTraceExporter creates a new exporter for traces.
+//
+// Traces need to be processed by APM Server. Traces can will not be indexed
+// into Elasticsearch as is.
+// The "apm_server_url" must be configured in order to create the trace exporter.
+func newTraceExporter(
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.TracesExporter, error) {
-	exporter, err := newElasticExporter(cfg.(*Config), params.Logger)
+	exporter, err := newAPMServerExporter(cfg.(*Config), params.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elastic APM trace exporter: %v", err)
 	}
@@ -60,11 +56,16 @@ func newElasticTraceExporter(
 	})
 }
 
-func newElasticMetricsExporter(
+// newElasticMetricsExporter creates a new exporter for metrics.
+//
+// Metrics currently need to be processed by APM Server and can not be directly
+// indexed into Elasticsearch as is.
+// The "apm_server_url" must be configured in order to create the metrics exporter.
+func newMetricsExporter(
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.MetricsExporter, error) {
-	exporter, err := newElasticExporter(cfg.(*Config), params.Logger)
+	exporter, err := newAPMServerExporter(cfg.(*Config), params.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elastic APM metrics exporter: %v", err)
 	}
@@ -84,122 +85,24 @@ func newElasticMetricsExporter(
 	})
 }
 
-type elasticExporter struct {
-	transport transport.Transport
-	logger    *zap.Logger
-}
-
-func newElasticExporter(config *Config, logger *zap.Logger) (*elasticExporter, error) {
-	if err := config.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid config: %s", err)
-	}
-	transport, err := newTransport(config)
+// newElasticLogsExporter creates a new exporter for logs.
+//
+// Logs are directly indexed into Elasticsearch and can currently not be
+// processed by APM Server.
+// The "elasticsearch_url" must be configured in order to create the logs exporter.
+func newLogsExporter(
+	params component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.LogsExporter, error) {
+	exporter, err := newElasticsearchExporter(cfg.(*Config), params.Logger)
 	if err != nil {
-		return nil, err
-	}
-	return &elasticExporter{transport: transport, logger: logger}, nil
-}
-
-func newTransport(config *Config) (transport.Transport, error) {
-	transport, err := transport.NewHTTPTransport()
-	if err != nil {
-		return nil, fmt.Errorf("error creating HTTP transport: %v", err)
-	}
-	tlsConfig, err := config.LoadTLSConfig()
-	if err != nil {
-		return nil, err
-	}
-	httpTransport := transport.Client.Transport.(*http.Transport)
-	httpTransport.TLSClientConfig = tlsConfig
-
-	url, err := url.Parse(config.APMServerURL)
-	if err != nil {
-		return nil, err
-	}
-	transport.SetServerURL(url)
-
-	if config.APIKey != "" {
-		transport.SetAPIKey(config.APIKey)
-	} else if config.SecretToken != "" {
-		transport.SetSecretToken(config.SecretToken)
+		return nil, fmt.Errorf("cannot configure Elasticsearch logs exporter: %w", err)
 	}
 
-	transport.SetUserAgent("opentelemetry-collector")
-	return transport, nil
-}
-
-// ExportResourceSpans exports OTLP trace data to Elastic APM Server,
-// returning the number of spans that were dropped along with any errors.
-func (e *elasticExporter) ExportResourceSpans(ctx context.Context, rs pdata.ResourceSpans) (int, error) {
-	var w fastjson.Writer
-	elastic.EncodeResourceMetadata(rs.Resource(), &w)
-	var errs []error
-	var count int
-	instrumentationLibrarySpansSlice := rs.InstrumentationLibrarySpans()
-	for i := 0; i < instrumentationLibrarySpansSlice.Len(); i++ {
-		instrumentationLibrarySpans := instrumentationLibrarySpansSlice.At(i)
-		instrumentationLibrary := instrumentationLibrarySpans.InstrumentationLibrary()
-		spanSlice := instrumentationLibrarySpans.Spans()
-		for i := 0; i < spanSlice.Len(); i++ {
-			count++
-			span := spanSlice.At(i)
-			before := w.Size()
-			if err := elastic.EncodeSpan(span, instrumentationLibrary, rs.Resource(), &w); err != nil {
-				w.Rewind(before)
-				errs = append(errs, err)
-			}
-		}
-	}
-	if err := e.sendEvents(ctx, &w); err != nil {
-		return count, err
-	}
-	return len(errs), componenterror.CombineErrors(errs)
-}
-
-// ExportResourceMetrics exports OTLP metrics to Elastic APM Server,
-// returning the number of metrics that were dropped along with any errors.
-func (e *elasticExporter) ExportResourceMetrics(ctx context.Context, rm pdata.ResourceMetrics) (int, error) {
-	var w fastjson.Writer
-	elastic.EncodeResourceMetadata(rm.Resource(), &w)
-	var errs []error
-	var totalDropped int
-	instrumentationLibraryMetricsSlice := rm.InstrumentationLibraryMetrics()
-	for i := 0; i < instrumentationLibraryMetricsSlice.Len(); i++ {
-		instrumentationLibraryMetrics := instrumentationLibraryMetricsSlice.At(i)
-		instrumentationLibrary := instrumentationLibraryMetrics.InstrumentationLibrary()
-		metrics := instrumentationLibraryMetrics.Metrics()
-		before := w.Size()
-		dropped, err := elastic.EncodeMetrics(metrics, instrumentationLibrary, &w)
-		if err != nil {
-			w.Rewind(before)
-			errs = append(errs, err)
-		}
-		totalDropped += dropped
-	}
-	if err := e.sendEvents(ctx, &w); err != nil {
-		return totalDropped, err
-	}
-	return totalDropped, componenterror.CombineErrors(errs)
-}
-
-func (e *elasticExporter) sendEvents(ctx context.Context, w *fastjson.Writer) error {
-	e.logger.Debug("sending events", zap.ByteString("events", w.Bytes()))
-
-	var buf bytes.Buffer
-	zw, err := zlib.NewWriterLevel(&buf, zlib.DefaultCompression)
-	if err != nil {
-		return err
-	}
-	if _, err := zw.Write(w.Bytes()); err != nil {
-		return err
-	}
-	if err := zw.Close(); err != nil {
-		return err
-	}
-	if err := e.transport.SendStream(ctx, &buf); err != nil {
-		// TODO(axw) check response for number of accepted items,
-		// and take that into account in the result.
-		return err
-	}
-	return nil
+	return exporterhelper.NewLogsExporter(
+		cfg,
+		params.Logger,
+		exporter.pushLogsData,
+		exporterhelper.WithShutdown(exporter.Shutdown),
+	)
 }

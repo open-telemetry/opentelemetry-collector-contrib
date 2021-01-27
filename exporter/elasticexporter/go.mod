@@ -3,6 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasti
 go 1.14
 
 require (
+	github.com/cenkalti/backoff v2.2.1+incompatible
+	github.com/elastic/go-elasticsearch/v7 v7.10.0
 	github.com/elastic/go-sysinfo v1.4.0 // indirect
 	github.com/elastic/go-windows v1.0.1 // indirect
 	github.com/stretchr/testify v1.7.0

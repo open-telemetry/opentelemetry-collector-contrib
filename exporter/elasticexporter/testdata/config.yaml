@@ -7,9 +7,28 @@ processors:
 exporters:
   elastic:
   elastic/customname:
+    # APM Server settings
     apm_server_url: https://elastic.example.com
     api_key: RTNxMjlXNEJt
     secret_token: hunter2
+
+    # Elasticsearch settings
+    elasticsearch_urls: [https://elastic.example.com:9200]
+    cloudid: TRNMxjXlNJEt
+    timeout: 2m
+    headers:
+      myheader: test
+    index: myindex
+    pipeline: mypipeline
+    user: elastic
+    password: search
+    elasticsearch_api_key: AvFsEiPs==
+    discover:
+      on_start: true
+    flush:
+      bytes: 10485760
+    retry:
+      max: 5
 
 service:
   pipelines:

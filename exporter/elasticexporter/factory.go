@@ -16,6 +16,7 @@ package elasticexporter
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -25,6 +26,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "elastic"
+
+	mappingFieldName = "mapping"
 )
 
 // NewFactory creates a factory for Elastic exporter.
@@ -34,6 +37,7 @@ func NewFactory() component.ExporterFactory {
 		createDefaultConfig,
 		exporterhelper.WithTraces(createTraceExporter),
 		exporterhelper.WithMetrics(createMetricsExporter),
+		// TODO: hook up 'createLogsExporter'
 	)
 }
 
@@ -43,6 +47,16 @@ func createDefaultConfig() configmodels.Exporter {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
+		ElasticsearchConfig: ElasticsearchConfig{
+			Timeout: 5 * time.Minute,
+			Index:   "logs-generic",
+			Retry: RetryConfig{
+				Enabled:         true,
+				Max:             3,
+				InitialInterval: 100 * time.Millisecond,
+				MaxInterval:     1 * time.Minute,
+			},
+		},
 	}
 }
 
@@ -51,7 +65,7 @@ func createTraceExporter(
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.TracesExporter, error) {
-	return newElasticTraceExporter(params, cfg)
+	return newTraceExporter(params, cfg)
 }
 
 func createMetricsExporter(
@@ -59,5 +73,13 @@ func createMetricsExporter(
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.MetricsExporter, error) {
-	return newElasticMetricsExporter(params, cfg)
+	return newMetricsExporter(params, cfg)
+}
+
+func createLogsExporter(
+	ctx context.Context,
+	params component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.LogsExporter, error) {
+	return newLogsExporter(params, cfg)
 }

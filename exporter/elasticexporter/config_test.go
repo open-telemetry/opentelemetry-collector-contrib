@@ -21,6 +21,7 @@ import (
 	"net/http/httptest"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -52,9 +53,38 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Exporters["elastic/customname"].(*Config)
 	assert.Equal(t, r1, &Config{
 		ExporterSettings: configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "elastic/customname"},
-		APMServerURL:     "https://elastic.example.com",
-		APIKey:           "RTNxMjlXNEJt",
-		SecretToken:      "hunter2",
+		APMServerConfig: APMServerConfig{
+			APMServerURL: "https://elastic.example.com",
+			APIKey:       "RTNxMjlXNEJt",
+			SecretToken:  "hunter2",
+		},
+		ElasticsearchConfig: ElasticsearchConfig{
+			URLs:    []string{"https://elastic.example.com:9200"},
+			CloudID: "TRNMxjXlNJEt",
+			Timeout: 2 * time.Minute,
+			Headers: map[string]string{
+				"myheader": "test",
+			},
+			Index:    "myindex",
+			Pipeline: "mypipeline",
+			Authentication: ElasticsearchAuthentication{
+				User:     "elastic",
+				Password: "search",
+				APIKey:   "AvFsEiPs==",
+			},
+			Discovery: Discovery{
+				OnStart: true,
+			},
+			Flush: FlushConfig{
+				Bytes: 10485760,
+			},
+			Retry: RetryConfig{
+				Enabled:         true,
+				Max:             5,
+				InitialInterval: 100 * time.Millisecond,
+				MaxInterval:     1 * time.Minute,
+			},
+		},
 	})
 }
 
