@@ -1,0 +1,3 @@
+Windows is starting up.
+
+This event is logged when LSASS.EXE starts and the auditing subsystem is initialized.
