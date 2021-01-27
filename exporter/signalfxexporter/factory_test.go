@@ -202,7 +202,7 @@ func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
 
 	// Validate that default translation rules are loaded
 	// Expected values has to be updated once default config changed
-	assert.Equal(t, 55, len(config.TranslationRules))
+	assert.Equal(t, 60, len(config.TranslationRules))
 	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
 	assert.Equal(t, 33, len(config.TranslationRules[0].Mapping))
 }
@@ -264,7 +264,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Equal(t, 1, len(dps))
 	require.Equal(t, 40.0, *dps[0].Value.DoubleValue)
 
-	// system.disk.ops metric split and dimension rename
+	// system.disk.operations metric split and dimension rename
 	dps, ok = metrics["disk_ops.read"]
 	require.True(t, ok, "disk_ops.read metrics not found")
 	require.Equal(t, 4, len(dps))
@@ -285,7 +285,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Equal(t, "disk", dps[1].Dimensions[1].Key)
 	require.Equal(t, "sda2", dps[1].Dimensions[1].Value)
 
-	// disk_ops.total gauge from system.disk.ops cumulative, where is disk_ops.total
+	// disk_ops.total gauge from system.disk.operations cumulative, where is disk_ops.total
 	// is the cumulative across devices and directions.
 	dps, ok = metrics["disk_ops.total"]
 	require.True(t, ok, "disk_ops.total metrics not found")
@@ -421,7 +421,7 @@ func testMetricsData() pdata.ResourceMetrics {
 			},
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "system.disk.ops",
+					Name:        "system.disk.operations",
 					Description: "Disk operations count.",
 					Unit:        "bytes",
 					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
@@ -520,7 +520,7 @@ func testMetricsData() pdata.ResourceMetrics {
 			},
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "system.disk.ops",
+					Name:        "system.disk.operations",
 					Description: "Disk operations count.",
 					Unit:        "bytes",
 					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
