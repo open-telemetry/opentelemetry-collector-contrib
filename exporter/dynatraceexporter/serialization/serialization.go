@@ -153,7 +153,7 @@ func escapeDimension(dim string) string {
 func NormalizeString(str string, max int) (normalizedString string, err error) {
 	normalizedString = reNameDisallowedCharList.ReplaceAllString(str, "_")
 
-	// Strip Digits and underscores if they are at the beginning of the string
+	// Strip Digits if they are at the beginning of the string
 	normalizedString = strings.TrimLeft(normalizedString, ".0123456789")
 
 	if len(normalizedString) > max {
