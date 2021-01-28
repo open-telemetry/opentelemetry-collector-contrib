@@ -17,6 +17,44 @@ Installation
      pip install opentelemetry-instrumentation-aiohttp-client
 
 
+Example
+-------
+
+.. code:: python
+
+   import asyncio
+   
+   import aiohttp
+
+   from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor
+   from opentelemetry import trace
+   from opentelemetry.exporter import jaeger
+   from opentelemetry.sdk.trace import TracerProvider
+   from opentelemetry.sdk.trace.export import BatchExportSpanProcessor
+
+
+   _JAEGER_EXPORTER = jaeger.JaegerSpanExporter(
+      service_name="example-xxx",
+      agent_host_name="localhost",
+      agent_port=6831,
+   )
+
+   _TRACE_PROVIDER = TracerProvider()
+   _TRACE_PROVIDER.add_span_processor(BatchExportSpanProcessor(_JAEGER_EXPORTER))
+   trace.set_tracer_provider(_TRACE_PROVIDER)
+
+   AioHttpClientInstrumentor().instrument()
+
+
+   async def span_emitter():
+      async with aiohttp.ClientSession() as session:
+         async with session.get("https://example.com") as resp:
+               print(resp.status)
+
+
+   asyncio.run(span_emitter())
+
+
 References
 ----------
 
