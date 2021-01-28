@@ -51,7 +51,7 @@ func addNameAndNamespace(seg *awsxray.Segment, span *pdata.Span) error {
 
 	attrs := span.Attributes()
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/segment.go#L163
-	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/api.md#spankind
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#spankind
 	span.SetKind(pdata.SpanKindCLIENT)
 	switch *seg.Namespace {
 	case validAWSNamespace:

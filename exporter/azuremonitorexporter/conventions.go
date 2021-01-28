@@ -35,7 +35,7 @@ const (
 
 // NetworkAttributes is the set of known network attributes
 type NetworkAttributes struct {
-	// see https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes
+	// see https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes
 	NetTransport string
 	NetPeerIP    string
 	NetPeerPort  int64
@@ -72,7 +72,7 @@ func (attrs *NetworkAttributes) MapAttribute(k string, v pdata.AttributeValue) {
 // HTTPAttributes is the set of known attributes for HTTP Spans
 type HTTPAttributes struct {
 	// common attributes
-	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/http.md#common-attributes
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#common-attributes
 	HTTPMethod                            string
 	HTTPURL                               string
 	HTTPTarget                            string
@@ -88,7 +88,7 @@ type HTTPAttributes struct {
 	HTTPResponseContentLengthUncompressed int64
 
 	// Server Span specific
-	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/http.md#http-server-semantic-conventions
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#http-server-semantic-conventions
 	HTTPRoute      string
 	HTTPServerName string
 	HTTPClientIP   string
