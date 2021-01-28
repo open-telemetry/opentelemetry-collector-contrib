@@ -1,7 +1,7 @@
 # Contributing
 
 If you would like to contribute please read OpenTelemetry Collector
-[contributing guidelines](https://github.com/open-telemetry/opentelemetry-collector/blob/master/CONTRIBUTING.md)
+[contributing guidelines](https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md)
 before you begin your work.
 
 ## Adding New Components
@@ -56,6 +56,6 @@ rigid rules and there are exceptions but in general try to follow them.
   processors (that also can be reused by other receivers and exporters).
 - When implementing exporters try to leverage the exporter helpers from the
   core repo, see [exporterhelper
-  package](https://github.com/open-telemetry/opentelemetry-collector/tree/master/exporter/exporterhelper).
+  package](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper).
   This will ensure that the exporter provides
   [zPages](https://opencensus.io/zpages/) and a standard set of metrics.

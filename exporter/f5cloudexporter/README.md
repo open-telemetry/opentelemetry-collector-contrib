@@ -39,4 +39,4 @@ The full list of settings exposed for this exporter are documented [here](./conf
 configurations [here](./testdata/config.yaml).
 
 This exporter also offers proxy support as documented 
-[here](https://github.com/open-telemetry/opentelemetry-collector/tree/master/exporter#proxy-support).
+[here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).

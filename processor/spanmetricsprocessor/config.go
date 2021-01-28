@@ -41,6 +41,6 @@ type Config struct {
 	// - span.kind
 	// - status.code
 	// The dimensions will be fetched from the span's attributes. Examples of some conventionally used attributes:
-	// https://github.com/open-telemetry/opentelemetry-collector/blob/master/translator/conventions/opentelemetry.go.
+	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/translator/conventions/opentelemetry.go.
 	Dimensions []Dimension `mapstructure:"dimensions"`
 }

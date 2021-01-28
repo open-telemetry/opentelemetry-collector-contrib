@@ -22,9 +22,9 @@ Supported pipeline types: metrics
 
 > :information_source: If you do not need to spawn the binaries locally,
 please consider using the [core Prometheus
-receiver](https://github.com/open-telemetry/opentelemetry-collector/tree/master/receiver/prometheusreceiver)
+receiver](https://github.com/open-telemetry/opentelemetry-collector/tree/main/receiver/prometheusreceiver)
 or the [Simple Prometheus
-receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/master/receiver/simpleprometheusreceiver).
+receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/simpleprometheusreceiver).
 
 ## Configuration
 
