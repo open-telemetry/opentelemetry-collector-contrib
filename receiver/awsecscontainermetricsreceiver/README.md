@@ -149,9 +149,9 @@ cloud.account.id | cloud.account.id
 cloud.region | cloud.region
 aws.ecs.task.pull_started_at | aws.ecs.container.started_at
 aws.ecs.task.pull_stopped_at | aws.ecs.container.finished_at
-aws.ecs.task.known_status | ws.ecs.container.know_status
+aws.ecs.task.known_status | aws.ecs.container.know_status
 aws.ecs.task.launch_type | aws.ecs.task.launch_type
-&nbsp; | ws.ecs.container.created_at
+&nbsp; | aws.ecs.container.created_at
 &nbsp; | container.name
 &nbsp; | container.id
 &nbsp; | aws.ecs.docker.name 
