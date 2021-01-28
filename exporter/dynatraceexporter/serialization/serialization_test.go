@@ -433,7 +433,7 @@ func TestNormalizeString(t *testing.T) {
 		},
 		{
 			name:    "Leading _ are not stripped",
-			args:    args{str: "_strip", max: 5},
+			args:    args{str: "_strip", max: 6},
 			want:    "_strip",
 			wantErr: false,
 		},
