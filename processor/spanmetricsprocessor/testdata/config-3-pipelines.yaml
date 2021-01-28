@@ -37,7 +37,6 @@ exporters:
 
 processors:
   batch:
-  queued_retry:
   spanmetrics:
     metrics_exporter: otlp/spanmetrics
 
@@ -47,7 +46,7 @@ service:
       receivers: [jaeger]
       # spanmetrics will pass on span data untouched to next processor
       # while also accumulating metrics to be sent to the configured 'otlp/spanmetrics' exporter.
-      processors: [spanmetrics, batch, queued_retry]
+      processors: [spanmetrics, batch]
       exporters: [jaeger]
 
     # This pipeline acts as a proxy to the 'metrics' pipeline below,

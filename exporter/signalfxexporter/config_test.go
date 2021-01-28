@@ -127,6 +127,14 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		IncludeMetrics: []dpfilters.MetricFilter{
+			{
+				MetricName: "metric1",
+			},
+			{
+				MetricNames: []string{"metric2", "metric3"},
+			},
+		},
 		DeltaTranslationTTL: 3600,
 		Correlation: &correlation.Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{

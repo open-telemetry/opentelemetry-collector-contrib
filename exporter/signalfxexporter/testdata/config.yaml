@@ -44,6 +44,10 @@ exporters:
       - metric_name: cpu.utilization
         dimensions:
           container_name: /^[A-Z][A-Z]$/
+    include_metrics:
+      - metric_name: metric1
+      - metric_names: [metric2, metric3]
+
 
 
 

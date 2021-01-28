@@ -45,6 +45,20 @@ The following configuration options can also be configured:
   excluded from sending to Signalfx backend. If `send_compatible_metrics`
   or `translation_rules` options are enabled, the exclusion will be applied
   on translated metrics. See [here](./testdata/config.yaml) for examples.
+- `include_metrics`: List of filters to override exclusion of any metrics.
+  This option can be used to included metrics that are otherwise dropped by
+  default. See [here](./translation/default_metrics.go) for a list of metrics
+  that are dropped by default. For example, the following configuration can be
+  used to send through some of that are dropped by default.
+  ```yaml
+  include_metrics:
+    # When sending in translated metrics.
+    - metric_names: [cpu.interrupt, cpu.user, cpu.system]
+    # When sending in metrics in OTel convention.
+    - metric_name: system.cpu.time
+      dimensions:
+        state: [interrupt, user, system]
+  ```
 - `headers` (no default): Headers to pass in the payload.
 - `log_dimension_updates` (default = `false`): Whether or not to log dimension
   updates.

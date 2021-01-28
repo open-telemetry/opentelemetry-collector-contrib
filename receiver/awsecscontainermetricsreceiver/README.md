@@ -144,9 +144,20 @@ aws.ecs.task.arn     | aws.ecs.task.arn
 aws.ecs.task.id      | aws.ecs.task.id
 aws.ecs.task.version | aws.ecs.task.version
 aws.ecs.service.name | aws.ecs.service.name
+cloud.zone | cloud.zone
+cloud.account.id | cloud.account.id
+cloud.region | cloud.region
+aws.ecs.task.pull_started_at | aws.ecs.container.started_at
+aws.ecs.task.pull_stopped_at | aws.ecs.container.finished_at
+aws.ecs.task.known_status | ws.ecs.container.know_status
+aws.ecs.task.launch_type | aws.ecs.task.launch_type
+&nbsp; | ws.ecs.container.created_at
 &nbsp; | container.name
 &nbsp; | container.id
 &nbsp; | aws.ecs.docker.name 
+&nbsp; | container.image.tag
+&nbsp; | aws.ecs.container.image.id
+&nbsp; | aws.ecs.container.exit_code
 
 ## Full Configuration Examples
 This receiver emits 52 unique metrics. Customer may not want to send all of them to destinations. Following sections will show full configuration files for filtering and transforming existing metrics with different processors/exporters. 
