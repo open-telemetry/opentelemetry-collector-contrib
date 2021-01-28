@@ -3,7 +3,7 @@ include ./Makefile.Common
 RUN_CONFIG=local/config.yaml
 CMD?=
 STATIC_CHECK=staticcheck
-OTEL_VERSION=master
+OTEL_VERSION=main
 
 BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/version
 GIT_SHA=$(shell git rev-parse --short HEAD)
