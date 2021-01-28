@@ -716,8 +716,8 @@ github.com/observiq/ctimefmt v1.0.0 h1:r7vTJ+Slkrt9fZ67mkf+mA6zAdR5nGIJRMTzkUyvi
 github.com/observiq/ctimefmt v1.0.0/go.mod h1:mxi62//WbSpG/roCO1c6MqZ7zQTvjVtYheqHN3eOjvc=
 github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc h1:49ewVBwLcy+eYqI4R0ICilCI4dPjddpFXWv3liXzUxM=
 github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc/go.mod h1:WXIHwGy+c7/IK2PiJ4oxuTHkpnkSut7TNFpKnI5llPU=
-github.com/observiq/stanza v0.13.11 h1:dW8gQHE2ZmfgQlKyG267JqQJFmoprQ/3Dn84NLBdSZc=
-github.com/observiq/stanza v0.13.11/go.mod h1:LJfJG+RiDGdUOyukMbdUJR0OVU+5Bnbwh7GP4QTZyMI=
+github.com/observiq/stanza v0.13.12 h1:o4LHbaa0mk/aU+iPFRtQuFEVsoLxmIAH3ytZ/NSq9po=
+github.com/observiq/stanza v0.13.12/go.mod h1:LJfJG+RiDGdUOyukMbdUJR0OVU+5Bnbwh7GP4QTZyMI=
 github.com/oklog/oklog v0.3.2/go.mod h1:FCV+B7mhrz4o+ueLpx+KqkyXRGMWOYEvfiXtdGtbWGs=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
 github.com/oklog/run v1.1.0/go.mod h1:sVPdnTZT1zYwAJeCMu2Th4T21pA3FPOQRfWjQlk7DVU=
