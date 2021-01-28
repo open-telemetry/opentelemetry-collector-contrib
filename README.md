@@ -22,6 +22,7 @@ SumoLogic version of OpenTelemetry Collector introduces a number of additions ov
   which include more tags being collected and field extraction enhancements
 * A [sourceprocessor](https://github.com/SumoLogic/opentelemetry-collector-contrib/tree/master/processor/sourceprocessor) that 
   adds additional tags (mostly relevant to K8s environment) and provides some data filtering rules
-* [Tail sampling processor](https://github.com/SumoLogic/opentelemetry-collector/tree/master/processor/samplingprocessor/tailsamplingprocessor) 
+* [Cascading filter processor](https://github.com/pmm-sumo/opentelemetry-collector-contrib/tree/remote-conf-poc/processor/cascadingfilterprocessor) 
   extensions, which include *cascading* policy with two-pass rules for determining span budget for each of the defined rules
+* Support for spans in [filtering processor](https://github.com/SumoLogic/opentelemetry-collector/tree/master/processor/filterprocessor)
 * Additional release schedule, which allows to quickly introduce bugfixes and extensions
