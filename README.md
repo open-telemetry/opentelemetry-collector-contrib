@@ -28,17 +28,17 @@
 
 <p align="center">
   <strong>
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/master/CONTRIBUTING.md">Contributing<a/>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md">Contributing<a/>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/master/docs/vision.md">Vision<a/>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/vision.md">Vision<a/>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/master/docs/design.md">Design<a/>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/design.md">Design<a/>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/master/docs/monitoring.md">Monitoring<a/>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/monitoring.md">Monitoring<a/>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/master/docs/performance.md">Performance<a/>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/performance.md">Performance<a/>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/master/docs/roadmap.md">Roadmap<a/>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/roadmap.md">Roadmap<a/>
   </strong>
 </p>
 
@@ -92,7 +92,7 @@ Learn more about roles in the [community repository](https://github.com/open-tel
 ## PRs and Reviews
 
 When creating a PR please following the process [described
-here](https://github.com/open-telemetry/opentelemetry-collector/blob/master/CONTRIBUTING.md#how-to-structure-prs-to-get-expedient-reviews).
+here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md#how-to-structure-prs-to-get-expedient-reviews).
 
 News PRs will be automatically associated with the reviewers based on
 [CODEOWNERS](.github/CODEOWNERS). PRs will be also automatically assigned to one of the
