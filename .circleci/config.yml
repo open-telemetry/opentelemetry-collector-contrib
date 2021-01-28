@@ -129,7 +129,7 @@ commands:
     steps:
       - when:
           condition:
-            equal: [master, << pipeline.git.branch >>]
+            equal: [main, << pipeline.git.branch >>]
           steps:
             - run:
                 name: Generate GitHub Issue
@@ -239,7 +239,7 @@ workflows:
             - cross-compile
           filters:
             branches:
-              only: /master|release\/.+/
+              only: /main|release\/.+/
             tags:
               ignore: /.*/
       - integration-tests:
