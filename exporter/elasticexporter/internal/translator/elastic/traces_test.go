@@ -447,7 +447,7 @@ func TestSpanHTTPStatusCode(t *testing.T) {
 }
 
 func TestSpanDatabaseContext(t *testing.T) {
-	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/database.md#mysql
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/database.md#mysql
 	connectionString := "Server=shopdb.example.com;Database=ShopDb;Uid=billing_user;TableCache=true;UseCompression=True;MinimumPoolSize=10;MaximumPoolSize=50;"
 	span := spanWithAttributes(t, map[string]pdata.AttributeValue{
 		"db.system":            pdata.NewAttributeValueString("mysql"),

@@ -32,7 +32,7 @@ type processAttributes struct {
 func (pattrs *processAttributes) extractTags() []string {
 	tags := make([]string, 0, 1)
 
-	// According to OTel conventions: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/process.md,
+	// According to OTel conventions: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/process.md,
 	// a process can be defined by any of the 4 following attributes: process.executable.name, process.executable.path, process.command or process.command_line
 	// (process.command_args isn't in the current attribute conventions: https://github.com/open-telemetry/opentelemetry-collector/blob/ecb27f49d4e26ae42d82e6ea18d57b08e252452d/translator/conventions/opentelemetry.go#L58-L63)
 	// We go through them, and add the first available one as a tag to identify the process.
