@@ -144,10 +144,10 @@ func (p *Port) Type() EndpointType {
 
 // HostPort is an endpoint discovered on a host.
 type HostPort struct {
-	// Name of the process associated to Endpoint.  If host_observer
+	// ProcessName of the process associated to Endpoint.  If host_observer
 	// is unable to collect information about process using the
 	// Port, this value is an empty string.
-	Name string
+	ProcessName string
 	// Command used to invoke the process using the Endpoint.
 	Command string
 	// Port number of the endpoint.
@@ -160,11 +160,11 @@ type HostPort struct {
 
 func (h *HostPort) Env() EndpointEnv {
 	return map[string]interface{}{
-		"name":      h.Name,
-		"command":   h.Command,
-		"is_ipv6":   h.IsIPv6,
-		"port":      h.Port,
-		"transport": h.Transport,
+		"process_name": h.ProcessName,
+		"command":      h.Command,
+		"is_ipv6":      h.IsIPv6,
+		"port":         h.Port,
+		"transport":    h.Transport,
 	}
 }
 

@@ -120,7 +120,7 @@ targeting it will have different variables available.
 | Variable      | Description                                      |
 |---------------|--------------------------------------------------|
 | type.hostport | `true`                                           |
-| name          | Name of the process                              |
+| process_name  | Name of the process                              |
 | command       | Command line with the used to invoke the process |
 | is_ipv6       | true if endpoint is IPv6, otherwise false        |
 | port          | Port number                                      |
