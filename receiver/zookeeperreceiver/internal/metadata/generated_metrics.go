@@ -24,43 +24,54 @@ import (
 // Type is the component type name.
 const Type configmodels.Type = "zookeeperreceiver"
 
-type metricIntf interface {
+// MetricIntf is an interface to generically interact with generated metric.
+type MetricIntf interface {
 	Name() string
 	New() pdata.Metric
+	Init(metric pdata.Metric)
 }
 
 // Intentionally not exposing this so that it is opaque and can change freely.
 type metricImpl struct {
-	name    string
-	newFunc func() pdata.Metric
+	name     string
+	initFunc func(pdata.Metric)
 }
 
+// Name returns the metric name.
 func (m *metricImpl) Name() string {
 	return m.name
 }
 
+// New creates a metric object preinitialized.
 func (m *metricImpl) New() pdata.Metric {
-	return m.newFunc()
+	metric := pdata.NewMetric()
+	m.Init(metric)
+	return metric
+}
+
+// Init initializes the provided metric object.
+func (m *metricImpl) Init(metric pdata.Metric) {
+	m.initFunc(metric)
 }
 
 type metricStruct struct {
-	ZookeeperApproximateDateSize   metricIntf
-	ZookeeperConnectionsAlive      metricIntf
-	ZookeeperEphemeralNodes        metricIntf
-	ZookeeperFollowers             metricIntf
-	ZookeeperFsyncThresholdExceeds metricIntf
-	ZookeeperLatencyAvg            metricIntf
-	ZookeeperLatencyMax            metricIntf
-	ZookeeperLatencyMin            metricIntf
-	ZookeeperMaxFileDescriptors    metricIntf
-	ZookeeperOpenFileDescriptors   metricIntf
-	ZookeeperOutstandingRequests   metricIntf
-	ZookeeperPacketsReceived       metricIntf
-	ZookeeperPacketsSent           metricIntf
-	ZookeeperPendingSyncs          metricIntf
-	ZookeeperSyncedFollowers       metricIntf
-	ZookeeperWatches               metricIntf
-	ZookeeperZnodes                metricIntf
+	ZookeeperApproximateDateSize   MetricIntf
+	ZookeeperConnectionsAlive      MetricIntf
+	ZookeeperEphemeralNodes        MetricIntf
+	ZookeeperFollowers             MetricIntf
+	ZookeeperFsyncThresholdExceeds MetricIntf
+	ZookeeperLatencyAvg            MetricIntf
+	ZookeeperLatencyMax            MetricIntf
+	ZookeeperLatencyMin            MetricIntf
+	ZookeeperMaxFileDescriptors    MetricIntf
+	ZookeeperOpenFileDescriptors   MetricIntf
+	ZookeeperOutstandingRequests   MetricIntf
+	ZookeeperPacketsReceived       MetricIntf
+	ZookeeperPacketsSent           MetricIntf
+	ZookeeperPendingSyncs          MetricIntf
+	ZookeeperSyncedFollowers       MetricIntf
+	ZookeeperWatches               MetricIntf
+	ZookeeperZnodes                MetricIntf
 }
 
 // Names returns a list of all the metric name strings.
@@ -86,7 +97,7 @@ func (m *metricStruct) Names() []string {
 	}
 }
 
-var metricsByName = map[string]metricIntf{
+var metricsByName = map[string]MetricIntf{
 	"zookeeper.approximate_date_size":   Metrics.ZookeeperApproximateDateSize,
 	"zookeeper.connections_alive":       Metrics.ZookeeperConnectionsAlive,
 	"zookeeper.ephemeral_nodes":         Metrics.ZookeeperEphemeralNodes,
@@ -106,7 +117,7 @@ var metricsByName = map[string]metricIntf{
 	"zookeeper.znodes":                  Metrics.ZookeeperZnodes,
 }
 
-func (m *metricStruct) ByName(n string) metricIntf {
+func (m *metricStruct) ByName(n string) MetricIntf {
 	return metricsByName[n]
 }
 
@@ -137,212 +148,161 @@ func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
 var Metrics = &metricStruct{
 	&metricImpl{
 		"zookeeper.approximate_date_size",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("zookeeper.approximate_date_size")
 			metric.SetDescription("Size of data in bytes that a ZooKeeper server has in its data tree.")
 			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"zookeeper.connections_alive",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("zookeeper.connections_alive")
 			metric.SetDescription("Number of active clients connected to a ZooKeeper server.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"zookeeper.ephemeral_nodes",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("zookeeper.ephemeral_nodes")
 			metric.SetDescription("Number of ephemeral nodes that a ZooKeeper server has in its data tree.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"zookeeper.followers",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("zookeeper.followers")
 			metric.SetDescription("The number of followers in sync with the leader. Only exposed by the leader.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"zookeeper.fsync_threshold_exceeds",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("zookeeper.fsync_threshold_exceeds")
 			metric.SetDescription("Number of times fsync duration has exceeded warning threshold.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			metric.IntSum().SetIsMonotonic(true)
 			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"zookeeper.latency.avg",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("zookeeper.latency.avg")
 			metric.SetDescription("Average time in milliseconds for requests to be processed.")
 			metric.SetUnit("ms")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"zookeeper.latency.max",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("zookeeper.latency.max")
 			metric.SetDescription("Maximum time in milliseconds for requests to be processed.")
 			metric.SetUnit("ms")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"zookeeper.latency.min",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("zookeeper.latency.min")
 			metric.SetDescription("Minimum time in milliseconds for requests to be processed.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"zookeeper.max_file_descriptors",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("zookeeper.max_file_descriptors")
 			metric.SetDescription("Maximum number of file descriptors that a ZooKeeper server can open.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"zookeeper.open_file_descriptors",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("zookeeper.open_file_descriptors")
 			metric.SetDescription("Number of file descriptors that a ZooKeeper server has open.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"zookeeper.outstanding_requests",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("zookeeper.outstanding_requests")
 			metric.SetDescription("Number of currently executing requests.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"zookeeper.packets.received",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("zookeeper.packets.received")
 			metric.SetDescription("Number of ZooKeeper packets received by a server.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			metric.IntSum().SetIsMonotonic(true)
 			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"zookeeper.packets.sent",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("zookeeper.packets.sent")
 			metric.SetDescription("Number of ZooKeeper packets sent by a server.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			metric.IntSum().SetIsMonotonic(true)
 			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"zookeeper.pending_syncs",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("zookeeper.pending_syncs")
 			metric.SetDescription("The number of pending syncs from the followers. Only exposed by the leader.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"zookeeper.synced_followers",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("zookeeper.synced_followers")
 			metric.SetDescription("The number of followers in sync with the leader. Only exposed by the leader.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"zookeeper.watches",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("zookeeper.watches")
 			metric.SetDescription("Number of watches placed on Z-Nodes on a ZooKeeper server.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"zookeeper.znodes",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("zookeeper.znodes")
 			metric.SetDescription("Number of z-nodes that a ZooKeeper server has in its data tree.")
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-
-			return metric
 		},
 	},
 }
