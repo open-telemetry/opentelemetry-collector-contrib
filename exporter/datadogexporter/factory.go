@@ -81,7 +81,8 @@ func createDefaultConfig() configmodels.Exporter {
 			},
 		},
 
-		SendMetadata: true,
+		SendMetadata:        true,
+		UseResourceMetadata: true,
 	}
 }
 
@@ -99,23 +100,24 @@ func createMetricsExporter(
 		return nil, err
 	}
 
+	ctx, cancel := context.WithCancel(ctx)
 	var pushMetricsFn exporterhelper.PushMetrics
 
 	if cfg.OnlyMetadata {
-		pushMetricsFn = func(context.Context, pdata.Metrics) (int, error) {
-			// if only sending metadata ignore all metrics
+		pushMetricsFn = func(_ context.Context, md pdata.Metrics) (int, error) {
+			// only sending metadata use only metrics
+			once := cfg.OnceMetadata()
+			once.Do(func() {
+				attrs := pdata.NewAttributeMap()
+				if md.ResourceMetrics().Len() > 0 {
+					attrs = md.ResourceMetrics().At(0).Resource().Attributes()
+				}
+				go metadata.Pusher(ctx, params, cfg, attrs)
+			})
 			return 0, nil
 		}
 	} else {
-		pushMetricsFn = newMetricsExporter(params, cfg).PushMetricsData
-	}
-
-	ctx, cancel := context.WithCancel(ctx)
-	if cfg.SendMetadata {
-		once := cfg.OnceMetadata()
-		once.Do(func() {
-			go metadata.Pusher(ctx, params, cfg)
-		})
+		pushMetricsFn = newMetricsExporter(ctx, params, cfg).PushMetricsData
 	}
 
 	return exporterhelper.NewMetricsExporter(
@@ -148,23 +150,24 @@ func createTraceExporter(
 		return nil, err
 	}
 
+	ctx, cancel := context.WithCancel(ctx)
 	var pushTracesFn exporterhelper.PushTraces
 
 	if cfg.OnlyMetadata {
-		pushTracesFn = func(context.Context, pdata.Traces) (int, error) {
-			// if only sending metadata, ignore all traces
+		pushTracesFn = func(_ context.Context, td pdata.Traces) (int, error) {
+			// only sending metadata, use only attributes
+			once := cfg.OnceMetadata()
+			once.Do(func() {
+				attrs := pdata.NewAttributeMap()
+				if td.ResourceSpans().Len() > 0 {
+					attrs = td.ResourceSpans().At(0).Resource().Attributes()
+				}
+				go metadata.Pusher(ctx, params, cfg, attrs)
+			})
 			return 0, nil
 		}
 	} else {
-		pushTracesFn = newTraceExporter(params, cfg).pushTraceData
-	}
-
-	ctx, cancel := context.WithCancel(ctx)
-	if cfg.SendMetadata {
-		once := cfg.OnceMetadata()
-		once.Do(func() {
-			go metadata.Pusher(ctx, params, cfg)
-		})
+		pushTracesFn = newTraceExporter(ctx, params, cfg).pushTraceData
 	}
 
 	return exporterhelper.NewTraceExporter(

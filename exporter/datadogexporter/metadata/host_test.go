@@ -91,6 +91,16 @@ func TestHostnameFromAttributes(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, hostname, testHostName)
 
+	// GCP cloud provider means relying on the GCP function
+	attrs = testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP,
+		conventions.AttributeHostID:        testHostID,
+		conventions.AttributeHostName:      testHostName,
+	})
+	hostname, ok = HostnameFromAttributes(attrs)
+	assert.True(t, ok)
+	assert.Equal(t, hostname, testHostName)
+
 	// Host Id takes preference
 	attrs = testutils.NewAttributeMap(map[string]string{
 		conventions.AttributeHostID:   testHostID,

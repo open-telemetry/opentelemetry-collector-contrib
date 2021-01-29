@@ -16,21 +16,39 @@ package testutils
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
+var (
+	TestAttributes = map[string]string{"datadog.host.name": "custom-hostname"}
+	TestMetrics    = newMetricsWithAttributeMap(TestAttributes)
+	TestTraces     = newTracesWithAttributeMap(TestAttributes)
+)
+
+type DatadogServer struct {
+	*httptest.Server
+	MetadataChan chan []byte
+}
+
 // DatadogServerMock mocks a Datadog backend server
-func DatadogServerMock() *httptest.Server {
+func DatadogServerMock() *DatadogServer {
+	metadataChan := make(chan []byte)
 	handler := http.NewServeMux()
 	handler.HandleFunc("/api/v1/validate", validateAPIKeyEndpoint)
 	handler.HandleFunc("/api/v1/series", metricsEndpoint)
+	handler.HandleFunc("/intake", newMetadataEndpoint(metadataChan))
+	handler.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
 
 	srv := httptest.NewServer(handler)
 
-	return srv
+	return &DatadogServer{
+		srv,
+		metadataChan,
+	}
 }
 
 type validateAPIKeyResponse struct {
@@ -58,15 +76,43 @@ func metricsEndpoint(w http.ResponseWriter, r *http.Request) {
 	w.Write(resJSON)
 }
 
+func newMetadataEndpoint(c chan []byte) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		body, _ := ioutil.ReadAll(r.Body)
+		c <- body
+	}
+}
+
+func fillAttributeMap(attrs *pdata.AttributeMap, mp map[string]string) {
+	attrs.InitEmptyWithCapacity(len(mp))
+	for k, v := range mp {
+		attrs.Insert(k, pdata.NewAttributeValueString(v))
+	}
+}
+
 // NewAttributeMap creates a new attribute map (string only)
 // from a Go map
 func NewAttributeMap(mp map[string]string) pdata.AttributeMap {
 	attrs := pdata.NewAttributeMap()
-	attrs.InitEmptyWithCapacity(len(mp))
-
-	for k, v := range mp {
-		attrs.Insert(k, pdata.NewAttributeValueString(v))
-	}
-
+	fillAttributeMap(&attrs, mp)
 	return attrs
+}
+
+func newMetricsWithAttributeMap(mp map[string]string) pdata.Metrics {
+	md := pdata.NewMetrics()
+	md.ResourceMetrics().Resize(1)
+	attrs := md.ResourceMetrics().At(0).Resource().Attributes()
+	fillAttributeMap(&attrs, mp)
+	return md
+}
+
+func newTracesWithAttributeMap(mp map[string]string) pdata.Traces {
+	traces := pdata.NewTraces()
+	resourceSpans := traces.ResourceSpans()
+	resourceSpans.Resize(1)
+	resourceSpans.At(0).InstrumentationLibrarySpans().Resize(1)
+	resourceSpans.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+	attrs := resourceSpans.At(0).Resource().Attributes()
+	fillAttributeMap(&attrs, mp)
+	return traces
 }

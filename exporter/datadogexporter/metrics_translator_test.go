@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
@@ -515,4 +517,47 @@ func TestMapDoubleHistogramMetrics(t *testing.T) {
 		mapDoubleHistogramMetrics("doubleHist.test", slice, true, []string{"attribute_tag:attribute_value"}), // buckets
 		append(noBucketsAttributeTags, bucketsAttributeTags...),
 	)
+}
+
+func TestRunningMetrics(t *testing.T) {
+	ms := pdata.NewMetrics()
+	rms := ms.ResourceMetrics()
+	rms.Resize(4)
+
+	rm := rms.At(0)
+	resAttrs := rm.Resource().Attributes()
+	resAttrs.Insert(metadata.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-1"))
+
+	rm = rms.At(1)
+	resAttrs = rm.Resource().Attributes()
+	resAttrs.Insert(metadata.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-1"))
+
+	rm = rms.At(2)
+	resAttrs = rm.Resource().Attributes()
+	resAttrs.Insert(metadata.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-2"))
+
+	cfg := config.MetricsConfig{}
+	prevPts := newTTLMap()
+
+	series, _ := mapMetrics(cfg, prevPts, ms)
+
+	runningHostnames := []string{}
+	noHostname := 0
+
+	for _, metric := range series {
+		if *metric.Metric == "datadog_exporter.metrics.running" {
+			if metric.Host != nil {
+				runningHostnames = append(runningHostnames, *metric.Host)
+			} else {
+				noHostname++
+			}
+		}
+	}
+
+	assert.Equal(t, noHostname, 1)
+	assert.ElementsMatch(t,
+		runningHostnames,
+		[]string{"resource-hostname-1", "resource-hostname-1", "resource-hostname-2"},
+	)
+
 }
