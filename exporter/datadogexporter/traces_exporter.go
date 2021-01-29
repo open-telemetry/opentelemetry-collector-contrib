@@ -29,7 +29,7 @@ import (
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
 )
 
@@ -49,8 +49,9 @@ func (s *sublayerCalculator) computeSublayers(trace pb.Trace) []stats.SublayerVa
 }
 
 type traceExporter struct {
-	logger         *zap.Logger
+	params         component.ExporterCreateParams
 	cfg            *config.Config
+	ctx            context.Context
 	edgeConnection TraceEdgeConnection
 	obfuscator     *obfuscate.Obfuscator
 	calculator     *sublayerCalculator
@@ -75,7 +76,7 @@ var (
 	}
 )
 
-func newTraceExporter(params component.ExporterCreateParams, cfg *config.Config) *traceExporter {
+func newTraceExporter(ctx context.Context, params component.ExporterCreateParams, cfg *config.Config) *traceExporter {
 	// client to send running metric to the backend & perform API key validation
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	utils.ValidateAPIKey(params.Logger, client)
@@ -86,8 +87,9 @@ func newTraceExporter(params component.ExporterCreateParams, cfg *config.Config)
 
 	calculator := &sublayerCalculator{sc: stats.NewSublayerCalculator()}
 	exporter := &traceExporter{
-		logger:         params.Logger,
+		params:         params,
 		cfg:            cfg,
+		ctx:            ctx,
 		edgeConnection: createTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key, params.ApplicationStartInfo),
 		obfuscator:     obfuscator,
 		calculator:     calculator,
@@ -113,10 +115,23 @@ func (exp *traceExporter) pushTraceData(
 	td pdata.Traces,
 ) (int, error) {
 
+	// Start host metadata with resource attributes from
+	// the first payload.
+	if exp.cfg.SendMetadata {
+		once := exp.cfg.OnceMetadata()
+		once.Do(func() {
+			attrs := pdata.NewAttributeMap()
+			if td.ResourceSpans().Len() > 0 {
+				attrs = td.ResourceSpans().At(0).Resource().Attributes()
+			}
+			go metadata.Pusher(exp.ctx, exp.params, exp.cfg, attrs)
+		})
+	}
+
 	// convert traces to datadog traces and group trace payloads by env
 	// we largely apply the same logic as the serverless implementation, simplified a bit
 	// https://github.com/DataDog/datadog-serverless-functions/blob/f5c3aedfec5ba223b11b76a4239fcbf35ec7d045/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L61-L83
-	ddTraces := convertToDatadogTd(td, exp.calculator, exp.cfg)
+	ddTraces, ms := convertToDatadogTd(td, exp.calculator, exp.cfg)
 
 	// group the traces by env to reduce the number of flushes
 	aggregatedTraces := aggregateTracePayloadsByEnv(ddTraces)
@@ -134,9 +149,6 @@ func (exp *traceExporter) pushTraceData(
 		})
 	}
 
-	ms := metrics.DefaultMetrics("traces", uint64(pushTime))
-
-	metrics.ProcessMetrics(ms, exp.logger, exp.cfg)
 	_ = exp.client.PostMetrics(ms)
 
 	return len(aggregatedTraces), nil
@@ -147,7 +159,7 @@ func (exp *traceExporter) pushWithRetry(ctx context.Context, ddTracePayload *pb.
 	err := exp.edgeConnection.SendTraces(ctx, ddTracePayload, maxRetries)
 
 	if err != nil {
-		exp.logger.Info("failed to send traces", zap.Error(err))
+		exp.params.Logger.Info("failed to send traces", zap.Error(err))
 	}
 
 	// this is for generating metrics like hits, errors, and latency, it uses a separate endpoint than Traces
@@ -155,7 +167,7 @@ func (exp *traceExporter) pushWithRetry(ctx context.Context, ddTracePayload *pb.
 	errStats := exp.edgeConnection.SendStats(context.Background(), stats, maxRetries)
 
 	if errStats != nil {
-		exp.logger.Info("failed to send trace stats", zap.Error(errStats))
+		exp.params.Logger.Info("failed to send trace stats", zap.Error(errStats))
 	}
 
 	return fn()

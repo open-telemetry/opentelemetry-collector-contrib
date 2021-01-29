@@ -16,6 +16,7 @@ package datadogexporter
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path"
 	"testing"
@@ -31,6 +32,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/testutils"
 )
 
@@ -75,8 +77,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 			EnvVarTags: "$DD_TAGS",
 		},
 
-		SendMetadata: true,
-		OnlyMetadata: false,
+		SendMetadata:        true,
+		OnlyMetadata:        false,
+		UseResourceMetadata: true,
 	}, cfg, "failed to create default config")
 
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
@@ -132,8 +135,9 @@ func TestLoadConfig(t *testing.T) {
 				Endpoint: "https://trace.agent.datadoghq.eu",
 			},
 		},
-		SendMetadata: true,
-		OnlyMetadata: false,
+		SendMetadata:        true,
+		OnlyMetadata:        false,
+		UseResourceMetadata: true,
 	}, apiConfig)
 
 	defaultConfig := cfg.Exporters["datadog/default"].(*config.Config)
@@ -173,8 +177,9 @@ func TestLoadConfig(t *testing.T) {
 				Endpoint: "https://trace.agent.datadoghq.com",
 			},
 		},
-		SendMetadata: true,
-		OnlyMetadata: false,
+		SendMetadata:        true,
+		OnlyMetadata:        false,
+		UseResourceMetadata: true,
 	}, defaultConfig)
 
 	invalidConfig := cfg.Exporters["datadog/invalid"].(*config.Config)
@@ -256,8 +261,9 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 				Endpoint: "https://trace.agent.datadoghq.test",
 			},
 		},
-		SendMetadata: true,
-		OnlyMetadata: false,
+		SendMetadata:        true,
+		OnlyMetadata:        false,
+		UseResourceMetadata: true,
 	}, apiConfig)
 
 	defaultConfig := cfg.Exporters["datadog/default2"].(*config.Config)
@@ -300,8 +306,9 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 				Endpoint: "https://trace.agent.datadoghq.com",
 			},
 		},
-		SendMetadata: true,
-		OnlyMetadata: false,
+		SendMetadata:        true,
+		OnlyMetadata:        false,
+		UseResourceMetadata: true,
 	}, defaultConfig)
 }
 
@@ -371,6 +378,8 @@ func TestCreateAPITracesExporter(t *testing.T) {
 }
 
 func TestOnlyMetadata(t *testing.T) {
+	server := testutils.DatadogServerMock()
+	defer server.Close()
 	logger := zap.NewNop()
 
 	factories, err := componenttest.ExampleComponents()
@@ -381,12 +390,13 @@ func TestOnlyMetadata(t *testing.T) {
 
 	ctx := context.Background()
 	cfg := &config.Config{
-		API: config.APIConfig{
-			Key:  "notnull",
-			Site: "example.com",
-		},
-		SendMetadata: true,
-		OnlyMetadata: true,
+		API:     config.APIConfig{Key: "notnull"},
+		Metrics: config.MetricsConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
+		Traces:  config.TracesConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
+
+		SendMetadata:        true,
+		OnlyMetadata:        true,
+		UseResourceMetadata: true,
 	}
 
 	expTraces, err := factory.CreateTracesExporter(
@@ -394,7 +404,6 @@ func TestOnlyMetadata(t *testing.T) {
 		component.ExporterCreateParams{Logger: logger},
 		cfg,
 	)
-
 	assert.NoError(t, err)
 	assert.NotNil(t, expTraces)
 
@@ -403,7 +412,16 @@ func TestOnlyMetadata(t *testing.T) {
 		component.ExporterCreateParams{Logger: logger},
 		cfg,
 	)
-
 	assert.NoError(t, err)
 	assert.NotNil(t, expMetrics)
+
+	err = expTraces.ConsumeTraces(ctx, testutils.TestTraces.Clone())
+	require.NoError(t, err)
+
+	body := <-server.MetadataChan
+	var recvMetadata metadata.HostMetadata
+	err = json.Unmarshal(body, &recvMetadata)
+	require.NoError(t, err)
+	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
+
 }
