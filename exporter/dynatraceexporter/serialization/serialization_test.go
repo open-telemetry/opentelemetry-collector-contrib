@@ -421,7 +421,7 @@ func TestNormalizeString(t *testing.T) {
 		},
 		{
 			name:    "Strings trimmed to nothing cause an error",
-			args:    args{str: "_0.231", max: 5},
+			args:    args{str: "0.231", max: 5},
 			want:    "",
 			wantErr: true,
 		},
@@ -429,6 +429,12 @@ func TestNormalizeString(t *testing.T) {
 			name:    "Trailing _ are stripped",
 			args:    args{str: "strip_", max: 5},
 			want:    "strip",
+			wantErr: false,
+		},
+		{
+			name:    "Leading _ are not stripped",
+			args:    args{str: "_strip", max: 6},
+			want:    "_strip",
 			wantErr: false,
 		},
 	}
