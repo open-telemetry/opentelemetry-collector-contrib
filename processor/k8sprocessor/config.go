@@ -180,7 +180,7 @@ type FieldFilterConfig struct {
 // with pod metadata
 type PodAssociationConfig struct {
 	// From represents the source of the association.
-	// Allowed values are connection and label
+	// Allowed values are connection and labels
 	From string `mapstructure:"from"`
 
 	// Name represents the name of the association.

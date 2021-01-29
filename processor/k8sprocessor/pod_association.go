@@ -63,7 +63,7 @@ func k8sPodAssociationFromAttributes(ctx context.Context, attrs pdata.AttributeM
 			}
 			if asso.Name == "ip" {
 				switch asso.From {
-				case "label":
+				case "labels":
 					if clientIP != "" {
 						podAssociation[k8sIPLabelName] = clientIP
 					}
