@@ -26,7 +26,7 @@ import (
 )
 
 // k8sPodAssociationFromAttributes extracts IP and pod UID from attributes
-func k8sPodAssociationFromAttributes(ctx context.Context, attrs pdata.AttributeMap, associations kube.Associations) map[string]string {
+func k8sPodAssociationFromAttributes(ctx context.Context, attrs pdata.AttributeMap, associations []kube.Association) map[string]string {
 	var podIP, clientIP, contextIP string
 	podAssociation := make(map[string]string)
 
@@ -37,7 +37,7 @@ func k8sPodAssociationFromAttributes(ctx context.Context, attrs pdata.AttributeM
 	}
 
 	// If pod association is not set
-	if len(associations.Associations) == 0 {
+	if len(associations) == 0 {
 		if podIP != "" {
 			podAssociation[k8sIPLabelName] = podIP
 		} else if clientIP != "" {
@@ -49,7 +49,7 @@ func k8sPodAssociationFromAttributes(ctx context.Context, attrs pdata.AttributeM
 
 	}
 
-	for _, asso := range associations.Associations {
+	for _, asso := range associations {
 		if asso.Name == podUIDLabelName {
 			uid := stringAttributeFromMap(attrs, asso.Name)
 			if uid != "" {

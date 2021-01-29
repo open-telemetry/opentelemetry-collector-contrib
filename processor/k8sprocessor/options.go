@@ -245,7 +245,7 @@ func WithExtractPodAssociations(podAssociations ...PodAssociationConfig) Option 
 				Name: association.Name,
 			})
 		}
-		p.podAssociations.Associations = associations
+		p.podAssociations = associations
 		return nil
 	}
 }
