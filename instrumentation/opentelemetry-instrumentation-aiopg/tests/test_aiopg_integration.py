@@ -242,7 +242,6 @@ class TestAiopgIntegration(TestBase):
         db_integration = AiopgIntegration(
             self.tracer,
             "testcomponent",
-            "testtype",
             connection_attributes,
             capture_parameters=True,
         )
@@ -259,7 +258,6 @@ class TestAiopgIntegration(TestBase):
         self.assertEqual(span.name, "Test")
         self.assertIs(span.kind, trace_api.SpanKind.CLIENT)
 
-        self.assertEqual(span.attributes["component"], "testcomponent")
         self.assertEqual(span.attributes["db.system"], "testcomponent")
         self.assertEqual(span.attributes["db.name"], "testdatabase")
         self.assertEqual(span.attributes["db.statement"], "Test query")
@@ -294,7 +292,7 @@ class TestAiopgIntegration(TestBase):
         mock_tracer.use_span.return_value.__enter__ = mock_span
         mock_tracer.use_span.return_value.__exit__ = True
         db_integration = AiopgIntegration(
-            mock_tracer, "testcomponent", "testtype", connection_attributes
+            mock_tracer, "testcomponent", connection_attributes
         )
         mock_connection = async_call(
             db_integration.wrapped_connection(

@@ -169,7 +169,6 @@ def create_trace_config(
 
         if trace_config_ctx.span.is_recording():
             attributes = {
-                "component": "http",
                 "http.method": http_method,
                 "http.url": trace_config_ctx.url_filter(params.url)
                 if callable(trace_config_ctx.url_filter)

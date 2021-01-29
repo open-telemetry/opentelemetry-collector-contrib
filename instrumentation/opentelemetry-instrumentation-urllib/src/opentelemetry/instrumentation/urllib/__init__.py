@@ -163,7 +163,6 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
             exception = None
             with recorder.record_client_duration(labels):
                 if span.is_recording():
-                    span.set_attribute("component", "http")
                     span.set_attribute("http.method", method)
                     span.set_attribute("http.url", url)
 

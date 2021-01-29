@@ -128,7 +128,6 @@ class TestTornadoInstrumentation(TornadoTest):
         self.assert_span_has_attributes(
             server,
             {
-                "component": "tornado",
                 "http.method": method,
                 "http.scheme": "http",
                 "http.host": "127.0.0.1:" + str(self.get_http_port()),
@@ -146,7 +145,6 @@ class TestTornadoInstrumentation(TornadoTest):
         self.assert_span_has_attributes(
             client,
             {
-                "component": "tornado",
                 "http.url": self.get_url("/"),
                 "http.method": method,
                 "http.status_code": 201,
@@ -205,7 +203,6 @@ class TestTornadoInstrumentation(TornadoTest):
         self.assert_span_has_attributes(
             server,
             {
-                "component": "tornado",
                 "http.method": "GET",
                 "http.scheme": "http",
                 "http.host": "127.0.0.1:" + str(self.get_http_port()),
@@ -223,7 +220,6 @@ class TestTornadoInstrumentation(TornadoTest):
         self.assert_span_has_attributes(
             client,
             {
-                "component": "tornado",
                 "http.url": self.get_url(url),
                 "http.method": "GET",
                 "http.status_code": 201,
@@ -243,7 +239,6 @@ class TestTornadoInstrumentation(TornadoTest):
         self.assert_span_has_attributes(
             server,
             {
-                "component": "tornado",
                 "http.method": "GET",
                 "http.scheme": "http",
                 "http.host": "127.0.0.1:" + str(self.get_http_port()),
@@ -258,7 +253,6 @@ class TestTornadoInstrumentation(TornadoTest):
         self.assert_span_has_attributes(
             client,
             {
-                "component": "tornado",
                 "http.url": self.get_url("/error"),
                 "http.method": "GET",
                 "http.status_code": 500,
@@ -278,7 +272,6 @@ class TestTornadoInstrumentation(TornadoTest):
         self.assert_span_has_attributes(
             server,
             {
-                "component": "tornado",
                 "http.method": "GET",
                 "http.scheme": "http",
                 "http.host": "127.0.0.1:" + str(self.get_http_port()),
@@ -294,7 +287,6 @@ class TestTornadoInstrumentation(TornadoTest):
         self.assert_span_has_attributes(
             client,
             {
-                "component": "tornado",
                 "http.url": self.get_url("/missing-url"),
                 "http.method": "GET",
                 "http.status_code": 404,
@@ -324,7 +316,6 @@ class TestTornadoInstrumentation(TornadoTest):
         self.assert_span_has_attributes(
             server,
             {
-                "component": "tornado",
                 "http.method": "GET",
                 "http.scheme": "http",
                 "http.host": "127.0.0.1:" + str(self.get_http_port()),
@@ -342,7 +333,6 @@ class TestTornadoInstrumentation(TornadoTest):
         self.assert_span_has_attributes(
             client,
             {
-                "component": "tornado",
                 "http.url": self.get_url("/dyna"),
                 "http.method": "GET",
                 "http.status_code": 202,
@@ -362,7 +352,6 @@ class TestTornadoInstrumentation(TornadoTest):
             self.assert_span_has_attributes(
                 client,
                 {
-                    "component": "tornado",
                     "http.url": self.get_url(path),
                     "http.method": "GET",
                     "http.status_code": 200,

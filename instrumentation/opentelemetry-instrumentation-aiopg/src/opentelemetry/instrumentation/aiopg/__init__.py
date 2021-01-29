@@ -58,8 +58,7 @@ class AiopgInstrumentor(BaseInstrumentor):
         "user": "info.user",
     }
 
-    _DATABASE_COMPONENT = "postgresql"
-    _DATABASE_TYPE = "sql"
+    _DATABASE_SYSTEM = "postgresql"
 
     def _instrument(self, **kwargs):
         """Integrate with PostgreSQL aiopg library.
@@ -70,8 +69,7 @@ class AiopgInstrumentor(BaseInstrumentor):
 
         wrappers.wrap_connect(
             __name__,
-            self._DATABASE_COMPONENT,
-            self._DATABASE_TYPE,
+            self._DATABASE_SYSTEM,
             self._CONNECTION_ATTRIBUTES,
             version=__version__,
             tracer_provider=tracer_provider,
@@ -79,8 +77,7 @@ class AiopgInstrumentor(BaseInstrumentor):
 
         wrappers.wrap_create_pool(
             __name__,
-            self._DATABASE_COMPONENT,
-            self._DATABASE_TYPE,
+            self._DATABASE_SYSTEM,
             self._CONNECTION_ATTRIBUTES,
             version=__version__,
             tracer_provider=tracer_provider,
@@ -104,8 +101,7 @@ class AiopgInstrumentor(BaseInstrumentor):
         return wrappers.instrument_connection(
             __name__,
             connection,
-            self._DATABASE_COMPONENT,
-            self._DATABASE_TYPE,
+            self._DATABASE_SYSTEM,
             self._CONNECTION_ATTRIBUTES,
         )
 

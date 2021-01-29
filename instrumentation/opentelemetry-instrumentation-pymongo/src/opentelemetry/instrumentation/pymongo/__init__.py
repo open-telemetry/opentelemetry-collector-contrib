@@ -45,7 +45,7 @@ from opentelemetry.instrumentation.pymongo.version import __version__
 from opentelemetry.trace import SpanKind, get_tracer
 from opentelemetry.trace.status import Status, StatusCode
 
-DATABASE_TYPE = "mongodb"
+DATABASE_SYSTEM = "mongodb"
 
 
 class CommandTracer(monitoring.CommandListener):
@@ -68,7 +68,7 @@ class CommandTracer(monitoring.CommandListener):
         try:
             span = self._tracer.start_span(name, kind=SpanKind.CLIENT)
             if span.is_recording():
-                span.set_attribute("db.system", DATABASE_TYPE)
+                span.set_attribute("db.system", DATABASE_SYSTEM)
                 span.set_attribute("db.name", event.database_name)
                 span.set_attribute("db.statement", statement)
                 if event.connection_id is not None:

@@ -129,7 +129,6 @@ class TestAioHttpIntegration(TestBase):
                             "HTTP GET",
                             (span_status, None),
                             {
-                                "component": "http",
                                 "http.method": "GET",
                                 "http.url": "http://{}:{}/test-path?query=param#foobar".format(
                                     host, port
@@ -187,7 +186,6 @@ class TestAioHttpIntegration(TestBase):
                             expected,
                             (StatusCode.UNSET, None),
                             {
-                                "component": "http",
                                 "http.method": method,
                                 "http.url": "http://{}:{}{}".format(
                                     host, port, path
@@ -219,7 +217,6 @@ class TestAioHttpIntegration(TestBase):
                     "HTTP GET",
                     (StatusCode.UNSET, None),
                     {
-                        "component": "http",
                         "http.method": "GET",
                         "http.url": "http://{}:{}/some/path".format(
                             host, port
@@ -256,11 +253,7 @@ class TestAioHttpIntegration(TestBase):
                     (
                         "HTTP GET",
                         (expected_status, None),
-                        {
-                            "component": "http",
-                            "http.method": "GET",
-                            "http.url": url,
-                        },
+                        {"http.method": "GET", "http.url": url},
                     )
                 ]
             )
@@ -285,7 +278,6 @@ class TestAioHttpIntegration(TestBase):
                     "HTTP GET",
                     (StatusCode.ERROR, None),
                     {
-                        "component": "http",
                         "http.method": "GET",
                         "http.url": "http://{}:{}/test_timeout".format(
                             host, port
@@ -315,7 +307,6 @@ class TestAioHttpIntegration(TestBase):
                     "HTTP GET",
                     (StatusCode.ERROR, None),
                     {
-                        "component": "http",
                         "http.method": "GET",
                         "http.url": "http://{}:{}/test_too_many_redirects".format(
                             host, port
@@ -364,7 +355,6 @@ class TestAioHttpClientInstrumentor(TestBase):
             self.get_default_request(), self.URL, self.default_handler
         )
         span = self.assert_spans(1)
-        self.assertEqual("http", span.attributes["component"])
         self.assertEqual("GET", span.attributes["http.method"])
         self.assertEqual(
             "http://{}:{}/test-path".format(host, port),

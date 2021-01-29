@@ -43,7 +43,6 @@ def fetch_async(tracer, func, _, args, kwargs):
 
     if span.is_recording():
         attributes = {
-            "component": "tornado",
             "http.url": request.url,
             "http.method": request.method,
         }

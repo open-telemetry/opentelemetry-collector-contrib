@@ -72,7 +72,6 @@ def collect_request_attributes(scope):
         http_url = http_url + ("?" + urllib.parse.unquote(query_string))
 
     result = {
-        "component": scope["type"],
         "http.scheme": scope.get("scheme"),
         "http.host": server_host,
         "net.host.port": port,

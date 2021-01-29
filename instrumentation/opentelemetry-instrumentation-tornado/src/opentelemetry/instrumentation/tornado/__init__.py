@@ -174,7 +174,6 @@ def _log_exception(tracer, func, handler, args, kwargs):
 
 def _get_attributes_from_request(request):
     attrs = {
-        "component": "tornado",
         "http.method": request.method,
         "http.scheme": request.protocol,
         "http.host": request.host,

@@ -128,8 +128,7 @@ def _wrap_perform_request(tracer, span_name_prefix):
         ) as span:
             if span.is_recording():
                 attributes = {
-                    "component": "elasticsearch-py",
-                    "db.type": "elasticsearch",
+                    "db.system": "elasticsearch",
                 }
                 if url:
                     attributes["elasticsearch.url"] = url

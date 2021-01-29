@@ -104,7 +104,6 @@ class RequestsIntegrationTestBase(abc.ABC):
         self.assertEqual(
             span.attributes,
             {
-                "component": "http",
                 "http.method": "GET",
                 "http.url": self.URL,
                 "http.status_code": 200,
@@ -289,7 +288,6 @@ class RequestsIntegrationTestBase(abc.ABC):
         self.assertEqual(
             span.attributes,
             {
-                "component": "http",
                 "http.method": "GET",
                 "http.url": self.URL,
                 "http.status_code": 200,
@@ -320,7 +318,6 @@ class RequestsIntegrationTestBase(abc.ABC):
         self.assertEqual(
             dict(span.attributes),
             {
-                "component": "http",
                 "http.method": "GET",
                 "http.url": "http://httpbin.org/status/500",
                 "http.status_code": 500,

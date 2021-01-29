@@ -106,7 +106,6 @@ class TestWsgiApplication(WsgiTestBase):
         self.assertEqual(span_list[0].name, span_name)
         self.assertEqual(span_list[0].kind, trace_api.SpanKind.SERVER)
         expected_attributes = {
-            "component": "http",
             "http.server_name": "127.0.0.1",
             "http.scheme": "http",
             "net.host.port": 80,
@@ -215,7 +214,6 @@ class TestWsgiAttributes(unittest.TestCase):
         self.assertDictEqual(
             attrs,
             {
-                "component": "http",
                 "http.method": "GET",
                 "http.host": "127.0.0.1",
                 "http.url": "http://127.0.0.1/?foo=bar",

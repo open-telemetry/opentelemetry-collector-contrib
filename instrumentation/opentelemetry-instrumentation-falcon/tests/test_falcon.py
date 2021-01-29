@@ -95,7 +95,6 @@ class TestFalconInstrumentation(TestBase):
         self.assert_span_has_attributes(
             span,
             {
-                "component": "http",
                 "http.method": method,
                 "http.server_name": "falconframework.org",
                 "http.scheme": "http",
@@ -122,7 +121,6 @@ class TestFalconInstrumentation(TestBase):
         self.assert_span_has_attributes(
             span,
             {
-                "component": "http",
                 "http.method": "GET",
                 "http.server_name": "falconframework.org",
                 "http.scheme": "http",
@@ -155,7 +153,6 @@ class TestFalconInstrumentation(TestBase):
         self.assert_span_has_attributes(
             span,
             {
-                "component": "http",
                 "http.method": "GET",
                 "http.server_name": "falconframework.org",
                 "http.scheme": "http",

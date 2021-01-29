@@ -28,7 +28,6 @@ from .pyramid_base_test import InstrumentationTest
 
 def expected_attributes(override_attributes):
     default_attributes = {
-        "component": "http",
         "http.method": "GET",
         "http.server_name": "localhost",
         "http.scheme": "http",

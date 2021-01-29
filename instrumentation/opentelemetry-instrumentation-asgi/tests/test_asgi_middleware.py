@@ -134,7 +134,6 @@ class TestAsgiApplication(AsgiTestBase):
                 "name": "GET asgi",
                 "kind": trace_api.SpanKind.SERVER,
                 "attributes": {
-                    "component": "http",
                     "http.method": "GET",
                     "http.scheme": "http",
                     "net.host.port": 80,
@@ -321,7 +320,6 @@ class TestAsgiAttributes(unittest.TestCase):
         self.assertDictEqual(
             attrs,
             {
-                "component": "http",
                 "http.method": "GET",
                 "http.host": "127.0.0.1",
                 "http.target": "/",

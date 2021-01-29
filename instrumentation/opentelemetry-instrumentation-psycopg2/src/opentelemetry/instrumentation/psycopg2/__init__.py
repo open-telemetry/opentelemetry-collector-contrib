@@ -62,8 +62,7 @@ class Psycopg2Instrumentor(BaseInstrumentor):
         "user": "info.user",
     }
 
-    _DATABASE_COMPONENT = "postgresql"
-    _DATABASE_TYPE = "sql"
+    _DATABASE_SYSTEM = "postgresql"
 
     def _instrument(self, **kwargs):
         """Integrate with PostgreSQL Psycopg library.
@@ -75,8 +74,7 @@ class Psycopg2Instrumentor(BaseInstrumentor):
             __name__,
             psycopg2,
             "connect",
-            self._DATABASE_COMPONENT,
-            self._DATABASE_TYPE,
+            self._DATABASE_SYSTEM,
             self._CONNECTION_ATTRIBUTES,
             version=__version__,
             tracer_provider=tracer_provider,
@@ -152,8 +150,7 @@ def _new_cursor_factory(db_api=None, base_factory=None):
     if not db_api:
         db_api = DatabaseApiIntegration(
             __name__,
-            Psycopg2Instrumentor._DATABASE_COMPONENT,
-            database_type=Psycopg2Instrumentor._DATABASE_TYPE,
+            Psycopg2Instrumentor._DATABASE_SYSTEM,
             connection_attributes=Psycopg2Instrumentor._CONNECTION_ATTRIBUTES,
             version=__version__,
         )

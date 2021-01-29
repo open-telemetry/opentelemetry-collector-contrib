@@ -104,7 +104,6 @@ def collect_request_attributes(environ):
     WSGI environ and returns a dictionary to be used as span creation attributes."""
 
     result = {
-        "component": "http",
         "http.method": environ.get("REQUEST_METHOD"),
         "http.server_name": environ.get("SERVER_NAME"),
         "http.scheme": environ.get("wsgi.url_scheme"),

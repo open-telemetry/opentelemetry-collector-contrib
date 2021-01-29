@@ -79,7 +79,6 @@ class RequestsIntegrationTestBase(abc.ABC):
         self.assertEqual(
             span.attributes,
             {
-                "component": "http",
                 "http.method": "GET",
                 "http.url": self.URL,
                 "http.status_code": 200,
@@ -255,7 +254,6 @@ class RequestsIntegrationTestBase(abc.ABC):
         self.assertEqual(
             span.attributes,
             {
-                "component": "http",
                 "http.method": "GET",
                 "http.url": self.URL,
                 "http.status_code": 200,
@@ -287,8 +285,7 @@ class RequestsIntegrationTestBase(abc.ABC):
 
         span = self.assert_span()
         self.assertEqual(
-            span.attributes,
-            {"component": "http", "http.method": "GET", "http.url": self.URL},
+            span.attributes, {"http.method": "GET", "http.url": self.URL}
         )
         self.assertEqual(span.status.status_code, StatusCode.ERROR)
 
@@ -323,8 +320,7 @@ class RequestsIntegrationTestBase(abc.ABC):
 
         span = self.assert_span()
         self.assertEqual(
-            span.attributes,
-            {"component": "http", "http.method": "GET", "http.url": self.URL},
+            span.attributes, {"http.method": "GET", "http.url": self.URL}
         )
         self.assertEqual(span.status.status_code, StatusCode.ERROR)
 
@@ -361,7 +357,6 @@ class RequestsIntegrationTestBase(abc.ABC):
         self.assertEqual(
             span.attributes,
             {
-                "component": "http",
                 "http.method": "GET",
                 "http.url": self.URL,
                 "http.status_code": 500,
@@ -423,8 +418,7 @@ class TestRequestsIntegration(RequestsIntegrationTestBase, TestBase):
 
         self.assertEqual(span.name, "HTTP POST")
         self.assertEqual(
-            span.attributes,
-            {"component": "http", "http.method": "POST", "http.url": url},
+            span.attributes, {"http.method": "POST", "http.url": url}
         )
         self.assertEqual(span.status.status_code, StatusCode.ERROR)
 

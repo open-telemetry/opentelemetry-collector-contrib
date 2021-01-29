@@ -29,9 +29,9 @@ Usage
 
 
     # Ex: mysql.connector
-    trace_integration(mysql.connector, "connect", "mysql", "sql")
+    trace_integration(mysql.connector, "connect", "mysql")
     # Ex: pyodbc
-    trace_integration(pyodbc, "Connection", "odbc", "sql")
+    trace_integration(pyodbc, "Connection", "odbc")
 
 API
 ---
@@ -55,8 +55,7 @@ logger = logging.getLogger(__name__)
 def trace_integration(
     connect_module: typing.Callable[..., typing.Any],
     connect_method_name: str,
-    database_component: str,
-    database_type: str = "",
+    database_system: str,
     connection_attributes: typing.Dict = None,
     tracer_provider: typing.Optional[TracerProvider] = None,
     capture_parameters: bool = False,
@@ -68,21 +67,19 @@ def trace_integration(
     Args:
         connect_module: Module name where connect method is available.
         connect_method_name: The connect method name.
-        database_component: Database driver name or database name "JDBI",
-            "jdbc", "odbc", "postgreSQL".
-        database_type: The Database type. For any SQL database, "sql".
+        database_system: An identifier for the database management system (DBMS)
+            product being used.
         connection_attributes: Attribute names for database, port, host and
             user in Connection object.
         tracer_provider: The :class:`opentelemetry.trace.TracerProvider` to
-            use. If ommited the current configured one is used.
+            use. If omitted the current configured one is used.
         capture_parameters: Configure if db.statement.parameters should be captured.
     """
     wrap_connect(
         __name__,
         connect_module,
         connect_method_name,
-        database_component,
-        database_type,
+        database_system,
         connection_attributes,
         version=__version__,
         tracer_provider=tracer_provider,
@@ -95,8 +92,7 @@ def wrap_connect(
     name: str,
     connect_module: typing.Callable[..., typing.Any],
     connect_method_name: str,
-    database_component: str,
-    database_type: str = "",
+    database_system: str,
     connection_attributes: typing.Dict = None,
     version: str = "",
     tracer_provider: typing.Optional[TracerProvider] = None,
@@ -107,14 +103,14 @@ def wrap_connect(
     https://www.python.org/dev/peps/pep-0249/
 
     Args:
-        tracer: The :class:`opentelemetry.trace.Tracer` to use.
         connect_module: Module name where connect method is available.
         connect_method_name: The connect method name.
-        database_component: Database driver name or database name "JDBI",
-            "jdbc", "odbc", "postgreSQL".
-        database_type: The Database type. For any SQL database, "sql".
+        database_system: An identifier for the database management system (DBMS)
+            product being used.
         connection_attributes: Attribute names for database, port, host and
             user in Connection object.
+        tracer_provider: The :class:`opentelemetry.trace.TracerProvider` to
+            use. If omitted the current configured one is used.
         capture_parameters: Configure if db.statement.parameters should be captured.
 
     """
@@ -131,8 +127,7 @@ def wrap_connect(
     ):
         db_integration = db_api_integration_factory(
             name,
-            database_component,
-            database_type=database_type,
+            database_system,
             connection_attributes=connection_attributes,
             version=version,
             tracer_provider=tracer_provider,
@@ -164,8 +159,7 @@ def unwrap_connect(
 def instrument_connection(
     name: str,
     connection,
-    database_component: str,
-    database_type: str = "",
+    database_system: str,
     connection_attributes: typing.Dict = None,
     version: str = "",
     tracer_provider: typing.Optional[TracerProvider] = None,
@@ -174,21 +168,20 @@ def instrument_connection(
     """Enable instrumentation in a database connection.
 
     Args:
-        tracer: The :class:`opentelemetry.trace.Tracer` to use.
         connection: The connection to instrument.
-        database_component: Database driver name or database name "JDBI",
-            "jdbc", "odbc", "postgreSQL".
-        database_type: The Database type. For any SQL database, "sql".
+        database_system: An identifier for the database management system (DBMS)
+            product being used.
         connection_attributes: Attribute names for database, port, host and
             user in a connection object.
+        tracer_provider: The :class:`opentelemetry.trace.TracerProvider` to
+            use. If omitted the current configured one is used.
         capture_parameters: Configure if db.statement.parameters should be captured.
     Returns:
         An instrumented connection.
     """
     db_integration = DatabaseApiIntegration(
         name,
-        database_component,
-        database_type,
+        database_system,
         connection_attributes=connection_attributes,
         version=version,
         tracer_provider=tracer_provider,
@@ -218,8 +211,7 @@ class DatabaseApiIntegration:
     def __init__(
         self,
         name: str,
-        database_component: str,
-        database_type: str = "sql",
+        database_system: str,
         connection_attributes=None,
         version: str = "",
         tracer_provider: typing.Optional[TracerProvider] = None,
@@ -237,8 +229,7 @@ class DatabaseApiIntegration:
         self._version = version
         self._tracer_provider = tracer_provider
         self.capture_parameters = capture_parameters
-        self.database_component = database_component
-        self.database_type = database_type
+        self.database_system = database_system
         self.connection_props = {}
         self.span_attributes = {}
         self.name = ""
@@ -275,7 +266,7 @@ class DatabaseApiIntegration:
             )
             if attribute:
                 self.connection_props[key] = attribute
-        self.name = self.database_component
+        self.name = self.database_system
         self.database = self.connection_props.get("database", "")
         if self.database:
             # PyMySQL encodes names with utf-8
@@ -334,10 +325,7 @@ class CursorTracer:
             return
         statement = self.get_statement(cursor, args)
         span.set_attribute(
-            "component", self._db_api_integration.database_component
-        )
-        span.set_attribute(
-            "db.system", self._db_api_integration.database_component
+            "db.system", self._db_api_integration.database_system
         )
         span.set_attribute("db.name", self._db_api_integration.database)
         span.set_attribute("db.statement", statement)

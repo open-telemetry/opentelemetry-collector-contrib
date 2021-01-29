@@ -248,8 +248,7 @@ class TestElasticsearchIntegration(TestBase):
         self.assertEqual(
             span.attributes,
             {
-                "component": "elasticsearch-py",
-                "db.type": "elasticsearch",
+                "db.system": "elasticsearch",
                 "elasticsearch.url": "/test-index/_search",
                 "elasticsearch.method": helpers.dsl_search_method,
                 "db.statement": str(
@@ -276,8 +275,7 @@ class TestElasticsearchIntegration(TestBase):
         self.assertEqual(
             span1.attributes,
             {
-                "component": "elasticsearch-py",
-                "db.type": "elasticsearch",
+                "db.system": "elasticsearch",
                 "elasticsearch.url": "/test-index",
                 "elasticsearch.method": "HEAD",
             },
@@ -285,8 +283,7 @@ class TestElasticsearchIntegration(TestBase):
 
         self.assertEqual(span2.name, "Elasticsearch/test-index")
         attributes = {
-            "component": "elasticsearch-py",
-            "db.type": "elasticsearch",
+            "db.system": "elasticsearch",
             "elasticsearch.url": "/test-index",
             "elasticsearch.method": "PUT",
         }
@@ -312,8 +309,7 @@ class TestElasticsearchIntegration(TestBase):
         span = spans[0]
         self.assertEqual(span.name, helpers.dsl_index_span_name)
         attributes = {
-            "component": "elasticsearch-py",
-            "db.type": "elasticsearch",
+            "db.system": "elasticsearch",
             "elasticsearch.url": helpers.dsl_index_url,
             "elasticsearch.method": "PUT",
         }
