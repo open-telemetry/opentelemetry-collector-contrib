@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
 	otelconfig "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -49,6 +50,7 @@ func NewFactory() component.ExporterFactory {
 		exporterhelper.WithMetrics(createMetricsExporter),
 		exporterhelper.WithLogs(createLogsExporter),
 		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithCustomUnmarshaler(customUnmarshaler),
 	)
 }
 
@@ -64,11 +66,32 @@ func createDefaultConfig() configmodels.Exporter {
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
 		},
-		SendCompatibleMetrics: false,
-		TranslationRules:      nil,
-		DeltaTranslationTTL:   3600,
-		Correlation:           correlation.DefaultConfig(),
+		DeltaTranslationTTL: 3600,
+		Correlation:         correlation.DefaultConfig(),
 	}
+}
+
+func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) (err error) {
+	if componentViperSection == nil {
+		// Nothing to do if there is no config given.
+		return nil
+	}
+
+	if err = componentViperSection.Unmarshal(intoCfg); err != nil {
+		return err
+	}
+
+	config := intoCfg.(*Config)
+
+	// custom unmarhalling is required to get []translation.Rule, the default
+	// unmarshaller only supports string slices. If translations_config is not
+	// set in the config, set it to the defaults and return.
+	if !componentViperSection.IsSet(translationRulesConfigKey) {
+		config.TranslationRules, err = loadDefaultTranslationRules()
+		return err
+	}
+
+	return nil
 }
 
 func createTraceExporter(
@@ -106,12 +129,8 @@ func createMetricsExporter(
 ) (component.MetricsExporter, error) {
 
 	expCfg := config.(*Config)
-	err := setTranslationRules(expCfg)
-	if err != nil {
-		return nil, err
-	}
 
-	err = setDefaultExcludes(expCfg)
+	err := setDefaultExcludes(expCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -147,17 +166,6 @@ func createMetricsExporter(
 		MetricsExporter: me,
 		pushMetadata:    exp.pushMetadata,
 	}, nil
-}
-
-func setTranslationRules(cfg *Config) error {
-	if cfg.SendCompatibleMetrics && cfg.TranslationRules == nil {
-		defaultRules, err := loadDefaultTranslationRules()
-		if err != nil {
-			return err
-		}
-		cfg.TranslationRules = defaultRules
-	}
-	return nil
 }
 
 func loadDefaultTranslationRules() ([]translation.Rule, error) {

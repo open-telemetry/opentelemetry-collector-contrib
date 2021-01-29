@@ -29,6 +29,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
+const (
+	translationRulesConfigKey = "translation_rules"
+)
+
 // Config defines configuration for SignalFx exporter.
 type Config struct {
 	configmodels.ExporterSettings  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
@@ -63,10 +67,6 @@ type Config struct {
 	LogDimensionUpdates bool `mapstructure:"log_dimension_updates"`
 
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
-
-	// SendCompatibleMetrics specifies if metrics must be sent in a format backward-compatible with
-	// SignalFx naming conventions, "false" by default.
-	SendCompatibleMetrics bool `mapstructure:"send_compatible_metrics"`
 
 	// TranslationRules defines a set of rules how to translate metrics to a SignalFx compatible format
 	// Rules defined in translation/constants.go are used by default.
@@ -120,12 +120,9 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 		cfg.Timeout = 5 * time.Second
 	}
 
-	var metricTranslator *translation.MetricTranslator
-	if cfg.SendCompatibleMetrics {
-		metricTranslator, err = translation.NewMetricTranslator(cfg.TranslationRules, cfg.DeltaTranslationTTL)
-		if err != nil {
-			return nil, fmt.Errorf("invalid \"translation_rules\": %v", err)
-		}
+	metricTranslator, err := translation.NewMetricTranslator(cfg.TranslationRules, cfg.DeltaTranslationTTL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid \"%s\": %v", translationRulesConfigKey, err)
 	}
 
 	return &exporterOptions{
