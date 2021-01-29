@@ -289,8 +289,9 @@ func (p *processorImp) aggregateMetricsForSpan(serviceName string, span pdata.Sp
 	// Binary search to find the latencyInMilliseconds bucket index.
 	index := sort.SearchFloat64s(p.latencyBounds, latencyInMilliseconds)
 
-	p.lock.Lock()
 	key := buildKey(serviceName, span, p.dimensions)
+
+	p.lock.Lock()
 	p.cache(serviceName, span, key)
 	p.updateCallMetrics(key)
 	p.updateLatencyMetrics(key, latencyInMilliseconds, index)
