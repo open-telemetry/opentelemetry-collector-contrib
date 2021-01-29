@@ -25,8 +25,8 @@ installed separately via pip:
     pip install opentelemetry-sdk-extension-{sdkextension}
 
 A complete list of packages can be found at the 
-`Contrib repo instrumentation <https://github.com/open-telemetry/opentelemetry-python-contrib/tree/master/instrumentation>`_
-and `Contrib repo exporter <https://github.com/open-telemetry/opentelemetry-python-contrib/tree/master/exporter>`_ directories.
+`Contrib repo instrumentation <https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation>`_
+and `Contrib repo exporter <https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/exporter>`_ directories.
 
 Extensions
 ----------

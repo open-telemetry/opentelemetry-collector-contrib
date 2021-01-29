@@ -157,7 +157,7 @@ html_static_path = []
 # Support external links to specific versions of the files in the Github repo
 branch = os.environ.get("READTHEDOCS_VERSION")
 if branch is None or branch == "latest":
-    branch = "master"
+    branch = "main"
 
 REPO = "open-telemetry/opentelemetry-python-contrib/"
 scm_raw_web = "https://raw.githubusercontent.com/" + REPO + branch

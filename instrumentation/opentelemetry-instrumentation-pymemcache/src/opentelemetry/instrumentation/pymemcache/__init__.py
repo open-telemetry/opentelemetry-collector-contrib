@@ -51,12 +51,12 @@ from opentelemetry.trace import SpanKind, get_tracer
 logger = logging.getLogger(__name__)
 
 # Network attribute semantic convention here:
-# https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes
+# https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes
 _HOST = "net.peer.name"
 _PORT = "net.peer.port"
 _TRANSPORT = "net.transport"
 # Database semantic conventions here:
-# https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/database.md
+# https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/database.md
 _DB = "db.system"
 
 _DEFAULT_SERVICE = "memcached"

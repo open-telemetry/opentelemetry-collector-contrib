@@ -119,7 +119,7 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
             return call_wrapped()
 
         # See
-        # https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/http.md#http-client
+        # https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#http-client
         method = method.upper()
         span_name = ""
         if name_callback is not None:

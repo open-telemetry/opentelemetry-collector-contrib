@@ -232,10 +232,10 @@ and key files in the ``tls_config`` parameter.
 
 Supported Aggregators
 ---------------------
-Behaviour of these aggregators is outlined in the `OpenTelemetry Specification <https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/metrics/api.md#aggregations>`_.
+Behaviour of these aggregators is outlined in the `OpenTelemetry Specification <https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/api.md#aggregations>`_.
 All aggregators are converted into the `timeseries`_ data format. However, method in
-which they are converted `differs <https://github.com/open-telemetry/opentelemetry-python-contrib/blob/master/exporter/opentelemetry-exporter-prometheus-remote-write/src/opentelemetry/exporter/prometheus_remote_write/__init__.py#L196>`_ from aggregator to aggregator. A
-map of the conversion methods can be found `here <https://github.com/open-telemetry/opentelemetry-python-contrib/blob/master/exporter/opentelemetry-exporter-prometheus-remote-write/src/opentelemetry/exporter/prometheus_remote_write/__init__.py#L75>`_.
+which they are converted `differs <https://github.com/open-telemetry/opentelemetry-python-contrib/blob/main/exporter/opentelemetry-exporter-prometheus-remote-write/src/opentelemetry/exporter/prometheus_remote_write/__init__.py#L196>`_ from aggregator to aggregator. A
+map of the conversion methods can be found `here <https://github.com/open-telemetry/opentelemetry-python-contrib/blob/main/exporter/opentelemetry-exporter-prometheus-remote-write/src/opentelemetry/exporter/prometheus_remote_write/__init__.py#L75>`_.
 
 +------------------------------+-------------------------------------+------------------------------------------------------------------------------------------------------------+
 | **OpenTelemetry Aggregator** | **Equivalent Prometheus Data Type** | **Behaviour**                                                                                              |
@@ -308,13 +308,13 @@ significantly increase the size of this repo.
 .. _RFC 7617: https://tools.ietf.org/html/rfc7617
 .. _RFC 6750: https://tools.ietf.org/html/rfc6750
 .. _Design Document: https://github.com/open-o11y/docs/blob/master/python-prometheus-remote-write/design-doc.md
-.. _OTLP: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/protocol/otlp.md
+.. _OTLP: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md
 .. _OpenTelemetry Python SDK: https://github.com/open-telemetry/opentelemetry-python
-.. _Prometheus "pull" exporter: https://github.com/open-telemetry/opentelemetry-python/tree/master/exporter/opentelemetry-exporter-prometheus
+.. _Prometheus "pull" exporter: https://github.com/open-telemetry/opentelemetry-python/tree/main/exporter/opentelemetry-exporter-prometheus
 .. _Prometheus Remote Write integrated backend: https://prometheus.io/docs/operating/integrations/
 .. _types.proto: https://github.com/prometheus/prometheus/blob/master/prompb/types.proto
 .. _remote.proto: https://github.com/prometheus/prometheus/blob/master/prompb/remote.proto
-.. _push controller: https://github.com/open-telemetry/opentelemetry-python/blob/master/opentelemetry-sdk/src/opentelemetry/sdk/metrics/export/controller.py#L22
+.. _push controller: https://github.com/open-telemetry/opentelemetry-python/blob/main/opentelemetry-sdk/src/opentelemetry/sdk/metrics/export/controller.py#L22
 .. _timeseries: https://prometheus.io/docs/concepts/data_model/
 .. _Docker Compose: https://docs.docker.com/compose/
 .. _Cortex: https://cortexmetrics.io/

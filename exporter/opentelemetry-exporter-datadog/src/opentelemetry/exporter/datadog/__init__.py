@@ -66,7 +66,7 @@ API
 ---
 .. _Datadog: https://www.datadoghq.com/
 .. _OpenTelemetry: https://github.com/open-telemetry/opentelemetry-python/
-.. _docs/examples/datadog_exporter: https://github.com/open-telemetry/opentelemetry-python/tree/master/docs/examples/datadog_exporter
+.. _docs/examples/datadog_exporter: https://github.com/open-telemetry/opentelemetry-python/tree/main/docs/examples/datadog_exporter
 """
 # pylint: disable=import-error
 

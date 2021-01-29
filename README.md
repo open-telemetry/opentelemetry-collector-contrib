@@ -13,10 +13,10 @@
   <a href="https://github.com/open-telemetry/opentelemetry-python-contrib/releases">
     <img alt="GitHub release (latest by date including pre-releases)" src="https://img.shields.io/github/v/release/open-telemetry/opentelemetry-python-contrib?include_prereleases&style=for-the-badge">
   </a>
-  <a href="https://codecov.io/gh/open-telemetry/opentelemetry-python-contrib/branch/master/">
+  <a href="https://codecov.io/gh/open-telemetry/opentelemetry-python-contrib/branch/main/">
     <img alt="Codecov Status" src="https://img.shields.io/codecov/c/github/open-telemetry/opentelemetry-python-contrib?style=for-the-badge">
   </a>
-  <a href="https://github.com/open-telemetry/opentelemetry-python-contrib/blob/master/LICENSE">
+  <a href="https://github.com/open-telemetry/opentelemetry-python-contrib/blob/main/LICENSE">
     <img alt="license" src="https://img.shields.io/badge/license-Apache_2.0-green.svg?style=for-the-badge">
   </a>
   <br/>
@@ -38,7 +38,7 @@
 
 ## OpenTelemetry Python Contrib
 
-The Python auto-instrumentation libraries for [OpenTelemetry](https://opentelemetry.io/) (per [OTEP 0001](https://github.com/open-telemetry/oteps/blob/master/text/0001-telemetry-without-manual-instrumentation.md))
+The Python auto-instrumentation libraries for [OpenTelemetry](https://opentelemetry.io/) (per [OTEP 0001](https://github.com/open-telemetry/oteps/blob/main/text/0001-telemetry-without-manual-instrumentation.md))
 
 ### Installation
 
@@ -50,7 +50,7 @@ depend on `opentelemetry-sdk` or another package that implements the API.
 generally be used in production environments.
 
 The
-[`instrumentation/`](https://github.com/open-telemetry/opentelemetry-python-contrib/tree/master/instrumentation)
+[`instrumentation/`](https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation)
 directory includes OpenTelemetry instrumentation packages, which can be installed
 separately as:
 
@@ -84,14 +84,14 @@ Approvers ([@open-telemetry/python-approvers](https://github.com/orgs/open-telem
 - [Owais Lone](https://github.com/owais), Splunk
 - [Yusuke Tsutsumi](https://github.com/toumorokoshi), Google
 
-*Find more about the approver role in [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md#approver).*
+*Find more about the approver role in [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md#approver).*
 
 Maintainers ([@open-telemetry/python-maintainers](https://github.com/orgs/open-telemetry/teams/python-maintainers)):
 
 - [Alex Boten](https://github.com/codeboten), Lightstep
 - [Leighton Chen](https://github.com/lzchen), Microsoft
 
-*Find more about the maintainer role in [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md#maintainer).*
+*Find more about the maintainer role in [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md#maintainer).*
 
 ## Running Tests Locally
 

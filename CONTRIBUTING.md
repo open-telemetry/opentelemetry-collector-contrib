@@ -8,10 +8,10 @@ See the [public meeting notes](https://docs.google.com/document/d/1CIMGoIOZ-c3-i
 for a summary description of past meetings. To request edit access, join the
 meeting or get in touch on [Gitter](https://gitter.im/open-telemetry/opentelemetry-python).
 
-See to the [community membership document](https://github.com/open-telemetry/community/blob/master/community-membership.md)
-on how to become a [**Member**](https://github.com/open-telemetry/community/blob/master/community-membership.md#member),
-[**Approver**](https://github.com/open-telemetry/community/blob/master/community-membership.md#approver)
-and [**Maintainer**](https://github.com/open-telemetry/community/blob/master/community-membership.md#maintainer).
+See to the [community membership document](https://github.com/open-telemetry/community/blob/main/community-membership.md)
+on how to become a [**Member**](https://github.com/open-telemetry/community/blob/main/community-membership.md#member),
+[**Approver**](https://github.com/open-telemetry/community/blob/main/community-membership.md#approver)
+and [**Maintainer**](https://github.com/open-telemetry/community/blob/main/community-membership.md#maintainer).
 
 ## Find a Buddy and get Started Quickly!
 
@@ -46,7 +46,7 @@ You can run:
 - `tox -e lint` to run lint checks on all code
 
 See
-[`tox.ini`](https://github.com/open-telemetry/opentelemetry-python-contrib/blob/master/tox.ini)
+[`tox.ini`](https://github.com/open-telemetry/opentelemetry-python-contrib/blob/main/tox.ini)
 for more detail on available tox commands.
 
 ### Benchmarks
@@ -121,8 +121,8 @@ Open a pull request against the main `opentelemetry-python-contrib` repo.
 ### How to Get PRs Merged
 
 A PR is considered to be **ready to merge** when:
-* It has received two approvals from [Approvers](https://github.com/open-telemetry/community/blob/master/community-membership.md#approver)
-  / [Maintainers](https://github.com/open-telemetry/community/blob/master/community-membership.md#maintainer)
+* It has received two approvals from [Approvers](https://github.com/open-telemetry/community/blob/main/community-membership.md#approver)
+  / [Maintainers](https://github.com/open-telemetry/community/blob/main/community-membership.md#maintainer)
   (at different companies).
 * Major feedbacks are resolved.
 * It has been open for review for at least one working day. This gives people
@@ -138,7 +138,7 @@ Any Approver / Maintainer can merge the PR once it is **ready to merge**.
 As with other OpenTelemetry clients, opentelemetry-python follows the
 [opentelemetry-specification](https://github.com/open-telemetry/opentelemetry-specification).
 
-It's especially valuable to read through the [library guidelines](https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/library-guidelines.md).
+It's especially valuable to read through the [library guidelines](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/library-guidelines.md).
 
 ### Focus on Capabilities, Not Structure Compliance
 

@@ -19,11 +19,11 @@ from opentelemetry.instrumentation.sqlalchemy.version import __version__
 from opentelemetry.trace.status import Status, StatusCode
 
 # Network attribute semantic convention here:
-# https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes
+# https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes
 _HOST = "net.peer.name"
 _PORT = "net.peer.port"
 # Database semantic conventions here:
-# https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/database.md
+# https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/database.md
 _STMT = "db.statement"
 _DB = "db.name"
 _USER = "db.user"

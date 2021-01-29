@@ -78,7 +78,7 @@ jobs:
           alert-threshold: 200%
           fail-on-alert: true
           # Make a commit on `gh-pages` with benchmarks from previous step
-          auto-push: ${{ github.ref == 'refs/heads/master' }}
+          auto-push: ${{ github.ref == 'refs/heads/main' }}
           gh-pages-branch: gh-pages
           benchmark-data-dir-path: benchmarks
   misc:
