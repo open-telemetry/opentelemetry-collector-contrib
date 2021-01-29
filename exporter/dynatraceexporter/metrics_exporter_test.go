@@ -497,7 +497,7 @@ func Test_normalizeMetricName(t *testing.T) {
 				name:   "^*&(metric_name^&*(_",
 				prefix: "prefix",
 			},
-			want:    "prefix.metric_name",
+			want:    "prefix._metric_name",
 			wantErr: false,
 		},
 	}
