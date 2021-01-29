@@ -15,7 +15,6 @@
 package translation
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -23,10 +22,10 @@ import (
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -51,13 +50,22 @@ var (
 type MetricsConverter struct {
 	logger           *zap.Logger
 	metricTranslator *MetricTranslator
+	filterSet        *dpfilters.FilterSet
 }
 
 // NewMetricsConverter creates a MetricsConverter from the passed in logger and
 // MetricTranslator. Pass in a nil MetricTranslator to not use translation
 // rules.
-func NewMetricsConverter(logger *zap.Logger, t *MetricTranslator) *MetricsConverter {
-	return &MetricsConverter{logger: logger, metricTranslator: t}
+func NewMetricsConverter(
+	logger *zap.Logger,
+	t *MetricTranslator,
+	excludes []dpfilters.MetricFilter,
+	includes []dpfilters.MetricFilter) (*MetricsConverter, error) {
+	fs, err := dpfilters.NewFilterSet(excludes, includes)
+	if err != nil {
+		return nil, err
+	}
+	return &MetricsConverter{logger: logger, metricTranslator: t, filterSet: fs}, nil
 }
 
 // MetricDataToSignalFxV2 converts the passed in MetricsData to SFx datapoints,
@@ -66,11 +74,7 @@ func NewMetricsConverter(logger *zap.Logger, t *MetricTranslator) *MetricsConver
 func (c *MetricsConverter) MetricDataToSignalFxV2(rm pdata.ResourceMetrics) []*sfxpb.DataPoint {
 	var sfxDatapoints []*sfxpb.DataPoint
 
-	res := rm.Resource()
-
-	var extraDimensions []*sfxpb.Dimension
-	resourceAttribs := res.Attributes()
-	extraDimensions = resourceAttributesToDimensions(resourceAttribs)
+	extraDimensions := resourceToDimensions(rm.Resource())
 
 	for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
 		ilm := rm.InstrumentationLibraryMetrics().At(j)
@@ -110,6 +114,21 @@ func (c *MetricsConverter) metricToSfxDataPoints(metric pdata.Metric, extraDimen
 	if c.metricTranslator != nil {
 		dps = c.metricTranslator.TranslateDataPoints(c.logger, dps)
 	}
+
+	// TODO:
+	// 1) Add hard coded list of metrics to be excluded to omit non-default metrics
+	// 2) Add an include_metrics options that will serve as an override to the exclude
+	// list. This will help to include metrics that are excluded by default.
+	resultSliceLen := 0
+	for i, dp := range dps {
+		if !c.filterSet.Matches(dp) {
+			if resultSliceLen < i {
+				dps[resultSliceLen] = dp
+			}
+			resultSliceLen++
+		}
+	}
+	dps = dps[:resultSliceLen]
 
 	return dps
 }
@@ -358,58 +377,22 @@ func float64ToDimValue(f float64) string {
 	return strconv.FormatFloat(f, 'g', -1, 64)
 }
 
-// resourceAttributesToDimensions will return a set of dimension from the
+// resourceToDimensions will return a set of dimension from the
 // resource attributes, including a cloud host id (AWSUniqueId, gcp_id, etc.)
 // if it can be constructed from the provided metadata.
-func resourceAttributesToDimensions(resourceAttr pdata.AttributeMap) []*sfxpb.Dimension {
+func resourceToDimensions(res pdata.Resource) []*sfxpb.Dimension {
 	var dims []*sfxpb.Dimension
 
-	// TODO: Replace with internal/splunk/hostid.go once signalfxexporter is converted to pdata.
-	accountID := getStringAttr(resourceAttr, conventions.AttributeCloudAccount)
-	region := getStringAttr(resourceAttr, conventions.AttributeCloudRegion)
-	instanceID := getStringAttr(resourceAttr, conventions.AttributeHostID)
-	provider := getStringAttr(resourceAttr, conventions.AttributeCloudProvider)
-
-	filter := func(k string) bool { return true }
-
-	switch provider {
-	case conventions.AttributeCloudProviderAWS:
-		if instanceID == "" || region == "" || accountID == "" {
-			break
-		}
-		filter = func(k string) bool {
-			return k != conventions.AttributeCloudAccount &&
-				k != conventions.AttributeCloudRegion &&
-				k != conventions.AttributeHostID &&
-				k != conventions.AttributeCloudProvider
-		}
+	if hostID, ok := splunk.ResourceToHostID(res); ok && hostID.Key != splunk.HostIDKeyHost {
 		dims = append(dims, &sfxpb.Dimension{
-			Key:   "AWSUniqueId",
-			Value: fmt.Sprintf("%s_%s_%s", instanceID, region, accountID),
+			Key:   string(hostID.Key),
+			Value: hostID.ID,
 		})
-	case conventions.AttributeCloudProviderGCP:
-		if accountID == "" || instanceID == "" {
-			break
-		}
-		filter = func(k string) bool {
-			return k != conventions.AttributeCloudAccount &&
-				k != conventions.AttributeHostID &&
-				k != conventions.AttributeCloudProvider
-		}
-		dims = append(dims, &sfxpb.Dimension{
-			Key:   "gcp_id",
-			Value: fmt.Sprintf("%s_%s", accountID, instanceID),
-		})
-	default:
 	}
 
-	resourceAttr.ForEach(func(k string, val pdata.AttributeValue) {
+	res.Attributes().ForEach(func(k string, val pdata.AttributeValue) {
 		// Never send the SignalFX token
 		if k == splunk.SFxAccessTokenLabel {
-			return
-		}
-
-		if !filter(k) {
 			return
 		}
 
@@ -420,13 +403,6 @@ func resourceAttributesToDimensions(resourceAttr pdata.AttributeMap) []*sfxpb.Di
 	})
 
 	return dims
-}
-
-func getStringAttr(attrs pdata.AttributeMap, key string) string {
-	if a, ok := attrs.Get(key); ok {
-		return a.StringVal()
-	}
-	return ""
 }
 
 func timestampToSignalFx(ts pdata.TimestampUnixNano) int64 {

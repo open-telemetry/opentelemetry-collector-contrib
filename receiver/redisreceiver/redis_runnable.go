@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/interval"
@@ -91,7 +91,22 @@ func (r *redisRunnable) Run() error {
 		r.timeBundle.update(time.Now(), uptime)
 	}
 
-	metrics, warnings := inf.buildFixedProtoMetrics(r.redisMetrics, r.timeBundle)
+	pdm := pdata.NewMetrics()
+	rms := pdm.ResourceMetrics()
+
+	rm := pdata.NewResourceMetrics()
+	rms.Append(rm)
+	resource := rm.Resource()
+	rattrs := resource.Attributes()
+	rattrs.InsertString("service.name", r.serviceName)
+
+	ilms := rm.InstrumentationLibraryMetrics()
+
+	ilm := pdata.NewInstrumentationLibraryMetrics()
+	ilms.Append(ilm)
+
+	fixedMS, warnings := inf.buildFixedMetrics(r.redisMetrics, r.timeBundle)
+	fixedMS.MoveAndAppendTo(ilm.Metrics())
 	if warnings != nil {
 		r.logger.Warn(
 			"errors parsing redis string",
@@ -99,19 +114,17 @@ func (r *redisRunnable) Run() error {
 		)
 	}
 
-	keyspaceMetrics, warnings := inf.buildKeyspaceProtoMetrics(r.timeBundle)
-	metrics = append(metrics, keyspaceMetrics...)
+	keyspaceMS, warnings := inf.buildKeyspaceMetrics(r.timeBundle)
 	if warnings != nil {
 		r.logger.Warn(
 			"errors parsing keyspace string",
 			zap.Errors("parsing errors", warnings),
 		)
 	}
+	keyspaceMS.MoveAndAppendTo(ilm.Metrics())
 
-	md := internaldata.OCToMetrics(newMetricsData(metrics, r.serviceName))
-
-	err = r.metricsConsumer.ConsumeMetrics(r.ctx, md)
-	_, numPoints := md.MetricAndDataPointCount()
+	err = r.metricsConsumer.ConsumeMetrics(r.ctx, pdm)
+	_, numPoints := pdm.MetricAndDataPointCount()
 	obsreport.EndMetricsReceiveOp(ctx, dataFormat, numPoints, err)
 
 	return nil

@@ -37,6 +37,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -201,7 +202,7 @@ func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
 
 	// Validate that default translation rules are loaded
 	// Expected values has to be updated once default config changed
-	assert.Equal(t, 59, len(config.TranslationRules))
+	assert.Equal(t, 60, len(config.TranslationRules))
 	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
 	assert.Equal(t, 33, len(config.TranslationRules[0].Mapping))
 }
@@ -236,57 +237,6 @@ func TestCreateMetricsExporterWithSpecifiedTranslaitonRules(t *testing.T) {
 	assert.Equal(t, "new_dimension", config.TranslationRules[0].Mapping["old_dimension"])
 }
 
-func TestCreateMetricsExporterWithExcludedMetrics(t *testing.T) {
-	config := &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		AccessToken:    "testToken",
-		Realm:          "us1",
-		ExcludeMetrics: []string{"metric1"},
-	}
-
-	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
-	require.NoError(t, err)
-	require.NotNil(t, te)
-
-	assert.Equal(t, 1, len(config.TranslationRules))
-	assert.Equal(t, translation.ActionDropMetrics, config.TranslationRules[0].Action)
-	assert.Equal(t, 1, len(config.TranslationRules[0].MetricNames))
-	assert.True(t, config.TranslationRules[0].MetricNames["metric1"])
-}
-
-func TestCreateMetricsExporterWithDefinedRulesAndExcludedMetrics(t *testing.T) {
-	config := &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		AccessToken: "testToken",
-		Realm:       "us1",
-		TranslationRules: []translation.Rule{
-			{
-				Action: translation.ActionRenameDimensionKeys,
-				Mapping: map[string]string{
-					"old_dimension": "new_dimension",
-				},
-			},
-		},
-		ExcludeMetrics: []string{"metric1"},
-	}
-
-	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
-	require.NoError(t, err)
-	require.NotNil(t, te)
-
-	assert.Equal(t, 2, len(config.TranslationRules))
-	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
-	assert.Equal(t, translation.ActionDropMetrics, config.TranslationRules[1].Action)
-	assert.Equal(t, 1, len(config.TranslationRules[1].MetricNames))
-	assert.True(t, config.TranslationRules[1].MetricNames["metric1"])
-}
-
 func TestDefaultTranslationRules(t *testing.T) {
 	rules, err := loadDefaultTranslationRules()
 	require.NoError(t, err)
@@ -295,7 +245,8 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.NoError(t, err)
 	data := testMetricsData()
 
-	c := translation.NewMetricsConverter(zap.NewNop(), tr)
+	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil)
+	require.NoError(t, err)
 	translated := c.MetricDataToSignalFxV2(data)
 	require.NotNil(t, translated)
 
@@ -313,7 +264,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Equal(t, 1, len(dps))
 	require.Equal(t, 40.0, *dps[0].Value.DoubleValue)
 
-	// system.disk.ops metric split and dimension rename
+	// system.disk.operations metric split and dimension rename
 	dps, ok = metrics["disk_ops.read"]
 	require.True(t, ok, "disk_ops.read metrics not found")
 	require.Equal(t, 4, len(dps))
@@ -334,7 +285,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Equal(t, "disk", dps[1].Dimensions[1].Key)
 	require.Equal(t, "sda2", dps[1].Dimensions[1].Value)
 
-	// disk_ops.total gauge from system.disk.ops cumulative, where is disk_ops.total
+	// disk_ops.total gauge from system.disk.operations cumulative, where is disk_ops.total
 	// is the cumulative across devices and directions.
 	dps, ok = metrics["disk_ops.total"]
 	require.True(t, ok, "disk_ops.total metrics not found")
@@ -358,6 +309,47 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.True(t, ok, "container_memory_page_faults not found")
 	_, ok = metrics["container_memory_major_page_faults"]
 	require.True(t, ok, "container_memory_major_page_faults not found")
+}
+
+func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
+	config := &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
+		AccessToken: "testToken",
+		Realm:       "us1",
+	}
+
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	// Validate that default excludes are always loaded.
+	assert.Equal(t, 8, len(config.ExcludeMetrics))
+}
+
+func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
+	config := &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
+		AccessToken: "testToken",
+		Realm:       "us1",
+		ExcludeMetrics: []dpfilters.MetricFilter{
+			{
+				MetricNames: []string{"metric1"},
+			},
+		},
+	}
+
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	// Validate that default excludes are always loaded.
+	assert.Equal(t, 9, len(config.ExcludeMetrics))
 }
 
 func testMetricsData() pdata.ResourceMetrics {
@@ -429,7 +421,7 @@ func testMetricsData() pdata.ResourceMetrics {
 			},
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "system.disk.ops",
+					Name:        "system.disk.operations",
 					Description: "Disk operations count.",
 					Unit:        "bytes",
 					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
@@ -528,7 +520,7 @@ func testMetricsData() pdata.ResourceMetrics {
 			},
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "system.disk.ops",
+					Name:        "system.disk.operations",
 					Description: "Disk operations count.",
 					Unit:        "bytes",
 					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
@@ -882,6 +874,66 @@ func TestDefaultCPUTranslations(t *testing.T) {
 	for _, pt := range cpuUtil {
 		require.Equal(t, 66, int(*pt.Value.DoubleValue))
 	}
+}
+
+func TestDefaultExcludes_translated(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	setDefaultExcludes(cfg)
+
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics)
+	require.NoError(t, err)
+
+	var metrics []map[string]string
+	err = testReadJSON("testdata/json/non_default_metrics.json", &metrics)
+	require.NoError(t, err)
+
+	rms := getResourceMetrics(metrics)
+	require.Equal(t, 62, rms.InstrumentationLibraryMetrics().At(0).Metrics().Len())
+	dps := converter.MetricDataToSignalFxV2(rms)
+	require.Equal(t, 0, len(dps))
+}
+
+func TestDefaultExcludes_not_translated(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	setDefaultExcludes(cfg)
+
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), nil, cfg.ExcludeMetrics, cfg.IncludeMetrics)
+	require.NoError(t, err)
+
+	var metrics []map[string]string
+	err = testReadJSON("testdata/json/non_default_metrics_otel_convention.json", &metrics)
+	require.NoError(t, err)
+
+	rms := getResourceMetrics(metrics)
+	require.Equal(t, 72, rms.InstrumentationLibraryMetrics().At(0).Metrics().Len())
+	dps := converter.MetricDataToSignalFxV2(rms)
+	require.Equal(t, 0, len(dps))
+}
+
+func getResourceMetrics(metrics []map[string]string) pdata.ResourceMetrics {
+	rms := pdata.NewResourceMetrics()
+	rms.InstrumentationLibraryMetrics().Resize(1)
+	ilms := rms.InstrumentationLibraryMetrics().At(0)
+	ilms.Metrics().Resize(len(metrics))
+
+	for i, mp := range metrics {
+		m := ilms.Metrics().At(i)
+		// Set data type to some arbitrary since it does not matter for this test.
+		m.SetDataType(pdata.MetricDataTypeIntSum)
+		m.IntSum().DataPoints().Resize(1)
+		m.IntSum().DataPoints().At(0).SetValue(0)
+		labelsMap := m.IntSum().DataPoints().At(0).LabelsMap()
+		for k, v := range mp {
+			if v == "" {
+				m.SetName(k)
+				continue
+			}
+			labelsMap.Insert(k, v)
+		}
+	}
+	return rms
 }
 
 func testReadJSON(f string, v interface{}) error {

@@ -17,8 +17,12 @@ package loadbalancingexporter
 import (
 	"context"
 	"errors"
+	"math/rand"
+	"net"
 	"path"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -521,6 +525,134 @@ func TestNoTracesInBatch(t *testing.T) {
 	}
 }
 
+func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
+	// this test is based on the discussion in the following issue for this exporter:
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1690
+	// prepare
+
+	// simulate rolling updates, the dns resolver should resolve in the following order
+	// ["127.0.0.1"] -> ["127.0.0.1", "127.0.0.2"] -> ["127.0.0.2"]
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	require.NoError(t, err)
+
+	resolverCh := make(chan struct{}, 1)
+	counter := 0
+	resolve := [][]net.IPAddr{
+		{
+			{IP: net.IPv4(127, 0, 0, 1)},
+		}, {
+			{IP: net.IPv4(127, 0, 0, 1)},
+			{IP: net.IPv4(127, 0, 0, 2)},
+		}, {
+			{IP: net.IPv4(127, 0, 0, 2)},
+		},
+	}
+	res.resolver = &mockDNSResolver{
+		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
+			defer func() {
+				counter++
+			}()
+
+			if counter <= 2 {
+				return resolve[counter], nil
+			}
+
+			if counter == 3 {
+				// stop as soon as rolling updates end
+				resolverCh <- struct{}{}
+			}
+
+			return resolve[2], nil
+		},
+	}
+	res.resInterval = 10 * time.Millisecond
+
+	config := &Config{
+		Resolver: ResolverSettings{
+			DNS: &DNSResolver{Hostname: "service-1", Port: ""},
+		},
+	}
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	p, err := newExporter(params, config)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	p.res = res
+
+	var counter1, counter2 int64
+	defaultExporters := map[string]component.TracesExporter{
+		"127.0.0.1": &mockTracesExporter{
+			ConsumeTracesFn: func(ctx context.Context, td pdata.Traces) error {
+				atomic.AddInt64(&counter1, 1)
+				// simulate an unreachable backend
+				time.Sleep(10 * time.Second)
+				return nil
+			},
+		},
+		"127.0.0.2": &mockTracesExporter{
+			ConsumeTracesFn: func(ctx context.Context, td pdata.Traces) error {
+				atomic.AddInt64(&counter2, 1)
+				return nil
+			},
+		},
+	}
+
+	// test
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer p.Shutdown(context.Background())
+	// ensure using default exporters
+	p.updateLock.Lock()
+	p.exporters = defaultExporters
+	p.updateLock.Unlock()
+	p.res.onChange(func(endpoints []string) {
+		p.updateLock.Lock()
+		p.exporters = defaultExporters
+		p.updateLock.Unlock()
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	// keep consuming traces every 2ms
+	consumeCh := make(chan struct{})
+	go func(ctx context.Context) {
+		ticker := time.NewTicker(2 * time.Millisecond)
+		for {
+			select {
+			case <-ctx.Done():
+				consumeCh <- struct{}{}
+				return
+			case <-ticker.C:
+				go p.ConsumeTraces(ctx, randomTraces())
+			}
+		}
+	}(ctx)
+
+	// give limited but enough time to rolling updates. otherwise this test
+	// will still pass due to the 10 secs of sleep that is used to simulate
+	// unreachable backends.
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		resolverCh <- struct{}{}
+	}()
+
+	<-resolverCh
+	cancel()
+	<-consumeCh
+
+	// verify
+	require.Equal(t, []string{"127.0.0.2"}, res.endpoints)
+	require.Greater(t, atomic.LoadInt64(&counter1), int64(0))
+	require.Greater(t, atomic.LoadInt64(&counter2), int64(0))
+}
+
+func randomTraces() pdata.Traces {
+	v1 := uint8(rand.Intn(256))
+	v2 := uint8(rand.Intn(256))
+	v3 := uint8(rand.Intn(256))
+	v4 := uint8(rand.Intn(256))
+	return simpleTraceWithID(pdata.NewTraceID([16]byte{v1, v2, v3, v4}))
+}
+
 func simpleTraces() pdata.Traces {
 	return simpleTraceWithID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
 }
@@ -543,4 +675,31 @@ func simpleConfig() *Config {
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
 		},
 	}
+}
+
+type mockTracesExporter struct {
+	ConsumeTracesFn func(ctx context.Context, td pdata.Traces) error
+	StartFn         func(ctx context.Context, host component.Host) error
+	ShutdownFn      func(ctx context.Context) error
+}
+
+func (e *mockTracesExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	if e.ConsumeTracesFn == nil {
+		return nil
+	}
+	return e.ConsumeTracesFn(ctx, td)
+}
+
+func (e *mockTracesExporter) Start(ctx context.Context, host component.Host) error {
+	if e.StartFn == nil {
+		return nil
+	}
+	return e.StartFn(ctx, host)
+}
+
+func (e *mockTracesExporter) Shutdown(ctx context.Context) error {
+	if e.ShutdownFn == nil {
+		return nil
+	}
+	return e.ShutdownFn(ctx)
 }

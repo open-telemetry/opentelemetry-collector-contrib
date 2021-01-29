@@ -5,7 +5,7 @@ the AWS Signature Version 4 signing process. AWS region and service must be prov
 credentials are retrieved from the [default credential chain](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials)
 of the AWS SDK for Go.
 
-Note: this exporter imports and uses the [Prometheus remote write exporter](https://github.com/open-telemetry/opentelemetry-collector/tree/master/exporter/prometheusremotewriteexporter)
+Note: this exporter imports and uses the [Prometheus remote write exporter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/prometheusremotewriteexporter)
 from upstream, and simply wraps it in Sigv4 authentication logic
 
 Same as the Prometheus remote write exporter, this exporter checks the temporality and the type of each incoming metric 

@@ -33,7 +33,7 @@ import (
 )
 
 // TODO: Consider moving some of these constants to
-// https://go.opentelemetry.io/collector/blob/master/translator/conventions/opentelemetry.go.
+// https://go.opentelemetry.io/collector/blob/main/translator/conventions/opentelemetry.go.
 
 // Resource label keys.
 const (

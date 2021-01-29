@@ -41,9 +41,24 @@ The following configuration options can also be configured:
   configuration option for [SignalFx
   receiver](../../receiver/signalfxreceiver/README.md) to preserve datapoint
   origin.
-- `exclude_metrics`: metric names that will be excluded from sending
-  to Signalfx backend. If `send_compatible_metrics` or `translation_rules`
-  options are enabled, the exclusion will be applied on translated metrics.
+- `exclude_metrics`: List of metric filters that will determine metrics to be
+  excluded from sending to Signalfx backend. If `send_compatible_metrics`
+  or `translation_rules` options are enabled, the exclusion will be applied
+  on translated metrics. See [here](./testdata/config.yaml) for examples.
+- `include_metrics`: List of filters to override exclusion of any metrics.
+  This option can be used to included metrics that are otherwise dropped by
+  default. See [here](./translation/default_metrics.go) for a list of metrics
+  that are dropped by default. For example, the following configuration can be
+  used to send through some of that are dropped by default.
+  ```yaml
+  include_metrics:
+    # When sending in translated metrics.
+    - metric_names: [cpu.interrupt, cpu.user, cpu.system]
+    # When sending in metrics in OTel convention.
+    - metric_name: system.cpu.time
+      dimensions:
+        state: [interrupt, user, system]
+  ```
 - `headers` (no default): Headers to pass in the payload.
 - `log_dimension_updates` (default = `false`): Whether or not to log dimension
   updates.
@@ -64,7 +79,7 @@ The following configuration options can also be configured:
 
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
-[here](https://github.com/open-telemetry/opentelemetry-collector/blob/master/exporter/exporterhelper/README.md).
+[here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
 
 ## Traces Configuration (correlation only)
 
@@ -131,4 +146,4 @@ The full list of settings exposed for this exporter are documented [here](config
 with detailed sample configurations [here](testdata/config.yaml).
 
 This exporter also offers proxy support as documented
-[here](https://github.com/open-telemetry/opentelemetry-collector/tree/master/exporter#proxy-support).
+[here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).

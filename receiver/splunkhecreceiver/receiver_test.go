@@ -169,6 +169,8 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.Path = "/foo"
+	config.initialize()
 
 	currentTime := float64(time.Now().UnixNano()) / 1e6
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
@@ -180,22 +182,30 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	}{
 		{
 			name: "incorrect_method",
-			req:  httptest.NewRequest("PUT", "http://localhost", nil),
+			req:  httptest.NewRequest("PUT", "http://localhost/foo", nil),
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusBadRequest, status)
 				assert.Equal(t, responseInvalidMethod, body)
 			},
 		},
 		{
+			name: "incorrect_path",
+			req:  httptest.NewRequest("POST", "http://localhost/bar", nil),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusNotFound, status)
+				assert.Equal(t, responseNotFound, body)
+			},
+		},
+		{
 			name: "incorrect_content_type",
 			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost", nil)
+				req := httptest.NewRequest("POST", "http://localhost/foo", nil)
 				req.Header.Set("Content-Type", "application/not-json")
 				return req
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
-				assert.Equal(t, http.StatusUnsupportedMediaType, status)
-				assert.Equal(t, responseInvalidContentType, body)
+				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, responseOK, body)
 			},
 		},
 		{
@@ -205,8 +215,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				metricMsg.Event = "metric"
 				msgBytes, err := json.Marshal(metricMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
-				req.Header.Set("Content-Type", "application/json")
+				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
@@ -217,8 +226,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 		{
 			name: "incorrect_content_encoding",
 			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost", nil)
-				req.Header.Set("Content-Type", "application/json")
+				req := httptest.NewRequest("POST", "http://localhost/foo", nil)
 				req.Header.Set("Content-Encoding", "superzipper")
 				return req
 			}(),
@@ -230,8 +238,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 		{
 			name: "bad_data_in_body",
 			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader([]byte{1, 2, 3, 4}))
-				req.Header.Set("Content-Type", "application/json")
+				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader([]byte{1, 2, 3, 4}))
 				return req
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
@@ -242,8 +249,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 		{
 			name: "empty_body",
 			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(nil))
-				req.Header.Set("Content-Type", "application/json")
+				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(nil))
 				return req
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
@@ -256,8 +262,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
-				req.Header.Set("Content-Type", "application/json")
+				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
@@ -277,8 +282,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, gzipWriter.Close())
 
-				req := httptest.NewRequest("POST", "http://localhost", &buf)
-				req.Header.Set("Content-Type", "application/json")
+				req := httptest.NewRequest("POST", "http://localhost/foo", &buf)
 				req.Header.Set("Content-Encoding", "gzip")
 				return req
 			}(),
@@ -293,8 +297,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
 
-				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
-				req.Header.Set("Content-Type", "application/json")
+				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
 				req.Header.Set("Content-Encoding", "gzip")
 				return req
 			}(),
@@ -332,6 +335,7 @@ func Test_consumer_err(t *testing.T) {
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.initialize()
 	sink := new(consumertest.LogsSink)
 	sink.SetConsumeError(errors.New("bad consumer"))
 	rcv, err := NewLogsReceiver(zap.NewNop(), *config, sink)
@@ -342,7 +346,6 @@ func Test_consumer_err(t *testing.T) {
 	msgBytes, err := json.Marshal(splunkMsg)
 	require.NoError(t, err)
 	req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
-	req.Header.Set("Content-Type", "application/json")
 	r.handleReq(w, req)
 
 	resp := w.Result()
@@ -361,7 +364,8 @@ func Test_consumer_err_metrics(t *testing.T) {
 	splunkMsg := buildSplunkHecMetricsMsg(currentTime, 13, 3)
 	assert.True(t, splunkMsg.IsMetric())
 	config := createDefaultConfig().(*Config)
-	config.Endpoint = "localhost:0" // Actually not creating the endpoint
+	config.Endpoint = "localhost:0" // Actually not creating the endpoint\
+	config.initialize()
 	sink := new(consumertest.MetricsSink)
 	sink.SetConsumeError(errors.New("bad consumer"))
 	rcv, err := NewMetricsReceiver(zap.NewNop(), *config, sink)
@@ -372,7 +376,6 @@ func Test_consumer_err_metrics(t *testing.T) {
 	msgBytes, err := json.Marshal(splunkMsg)
 	require.NoError(t, err)
 	req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
-	req.Header.Set("Content-Type", "application/json")
 	r.handleReq(w, req)
 
 	resp := w.Result()
@@ -396,6 +399,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 			KeyFile:  "./testdata/testkey.key",
 		},
 	}
+	cfg.initialize()
 	sink := new(consumertest.LogsSink)
 	r, err := NewLogsReceiver(zap.NewNop(), *cfg, sink)
 	require.NoError(t, err)
@@ -436,11 +440,10 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	body, err := json.Marshal(buildSplunkHecMsg(sec, 0))
 	require.NoError(t, err, fmt.Sprintf("failed to marshal Splunk message: %v", err))
 
-	url := fmt.Sprintf("https://%s%s", addr, hecPath)
+	url := fmt.Sprintf("https://%s", addr)
 
 	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
 	require.NoErrorf(t, err, "should have no errors with new request: %v", err)
-	req.Header.Set("Content-Type", "application/json")
 
 	caCert, err := ioutil.ReadFile("./testdata/testcert.crt")
 	require.NoErrorf(t, err, "failed to load certificate: %v", err)
@@ -498,6 +501,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			config := createDefaultConfig().(*Config)
 			config.Endpoint = "localhost:0"
 			config.AccessTokenPassthrough = tt.passthrough
+			config.initialize()
 
 			sink := new(consumertest.LogsSink)
 			rcv, err := NewLogsReceiver(zap.NewNop(), *config, sink)
@@ -507,7 +511,6 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			splunkhecMsg := buildSplunkHecMsg(currentTime, 3)
 			msgBytes, _ := json.Marshal(splunkhecMsg)
 			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
-			req.Header.Set("Content-Type", "application/json")
 			if tt.token.Type() != pdata.AttributeValueNULL {
 				req.Header.Set("Splunk", tt.token.StringVal())
 			}
@@ -568,6 +571,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			config := createDefaultConfig().(*Config)
 			config.Endpoint = "localhost:0"
+			config.initialize()
 
 			receivedSplunkLogs := make(chan []byte)
 			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -601,7 +605,6 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			splunkhecMsg.SourceType = tt.sourcetype
 			msgBytes, _ := json.Marshal(splunkhecMsg)
 			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
-			req.Header.Set("Content-Type", "application/json")
 
 			done := make(chan bool)
 			go func() {
@@ -666,6 +669,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			config := createDefaultConfig().(*Config)
 			config.Endpoint = "localhost:0"
+			config.initialize()
 
 			receivedSplunkMetrics := make(chan []byte)
 			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -699,7 +703,6 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			splunkhecMsg.SourceType = tt.sourcetype
 			msgBytes, _ := json.Marshal(splunkhecMsg)
 			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
-			req.Header.Set("Content-Type", "application/json")
 
 			done := make(chan bool)
 			go func() {

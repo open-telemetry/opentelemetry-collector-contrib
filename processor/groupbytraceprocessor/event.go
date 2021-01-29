@@ -251,14 +251,13 @@ func (em *eventMachine) handleEventWithObservability(event string, do func() err
 	ctx, _ := tag.New(context.Background(), tag.Upsert(tag.MustNewKey("event"), event))
 	stats.Record(ctx, mEventLatency.M(duration.Milliseconds()))
 
-	logger := em.logger.With(zap.String("event", event))
 	if err != nil {
-		logger.Error("failed to process event", zap.Error(err))
+		em.logger.Error("failed to process event", zap.Error(err), zap.String("event", event))
 	}
 	if succeeded {
-		logger.Debug("event finished")
+		em.logger.Debug("event finished", zap.String("event", event))
 	} else {
-		logger.Debug("event aborted")
+		em.logger.Debug("event aborted", zap.String("event", event))
 	}
 }
 

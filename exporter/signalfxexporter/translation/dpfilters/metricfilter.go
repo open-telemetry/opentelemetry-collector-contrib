@@ -29,9 +29,6 @@ type MetricFilter struct {
 
 func (mf *MetricFilter) normalize() (map[string][]string, error) {
 	if mf.MetricName != "" {
-		if mf.MetricNames == nil {
-			mf.MetricNames = make([]string, 1)
-		}
 		mf.MetricNames = append(mf.MetricNames, mf.MetricName)
 	}
 

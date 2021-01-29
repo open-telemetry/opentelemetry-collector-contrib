@@ -20,11 +20,13 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
+// Dimension defines the dimension name and optional default value if the Dimension is missing from a span attribute.
 type Dimension struct {
 	Name    string  `mapstructure:"name"`
 	Default *string `mapstructure:"default"`
 }
 
+// Config defines the configuration options for spanmetricsprocessor.
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 
@@ -41,6 +43,6 @@ type Config struct {
 	// - span.kind
 	// - status.code
 	// The dimensions will be fetched from the span's attributes. Examples of some conventionally used attributes:
-	// https://github.com/open-telemetry/opentelemetry-collector/blob/master/translator/conventions/opentelemetry.go.
+	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/translator/conventions/opentelemetry.go.
 	Dimensions []Dimension `mapstructure:"dimensions"`
 }

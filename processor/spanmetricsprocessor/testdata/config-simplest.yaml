@@ -23,7 +23,6 @@ exporters:
 
 processors:
   batch:
-  queued_retry:
   spanmetrics:
     metrics_exporter: prometheus
 
@@ -33,7 +32,7 @@ service:
       receivers: [jaeger]
       # spanmetrics will pass on span data untouched to next processor
       # while also accumulating metrics to be sent to the configured 'prometheus' exporter.
-      processors: [spanmetrics, batch, queued_retry]
+      processors: [spanmetrics, batch]
       exporters: [jaeger]
 
     metrics:

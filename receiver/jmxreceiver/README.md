@@ -2,7 +2,7 @@
 
 ### Overview
 
-The JMX Receiver will work in conjunction with the [OpenTelemetry JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/master/contrib/jmx-metrics/README.md)
+The JMX Receiver will work in conjunction with the [OpenTelemetry JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/main/contrib/jmx-metrics/README.md)
 to report metrics from a target MBean server using a built-in or your custom `otel` helper-utilizing
 Groovy script.
 

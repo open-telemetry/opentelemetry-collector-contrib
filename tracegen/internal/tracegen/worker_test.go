@@ -104,10 +104,10 @@ func TestUnthrottled(t *testing.T) {
 var _ export.SpanExporter = (*mockSyncer)(nil)
 
 type mockSyncer struct {
-	spans []*export.SpanData
+	spans []*export.SpanSnapshot
 }
 
-func (m *mockSyncer) ExportSpans(_ context.Context, spanData []*export.SpanData) error {
+func (m *mockSyncer) ExportSpans(_ context.Context, spanData []*export.SpanSnapshot) error {
 	m.spans = append(m.spans, spanData...)
 	return nil
 }
@@ -117,5 +117,5 @@ func (m *mockSyncer) Shutdown(context.Context) error {
 }
 
 func (m *mockSyncer) Reset() {
-	m.spans = []*export.SpanData{}
+	m.spans = []*export.SpanSnapshot{}
 }

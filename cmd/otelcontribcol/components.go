@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kinesisexporter"
@@ -54,6 +55,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
@@ -97,6 +99,7 @@ func components() (component.Factories, error) {
 		carbonreceiver.NewFactory(),
 		collectdreceiver.NewFactory(),
 		dockerstatsreceiver.NewFactory(),
+		jmxreceiver.NewFactory(),
 		k8sclusterreceiver.NewFactory(),
 		kubeletstatsreceiver.NewFactory(),
 		prometheusexecreceiver.NewFactory(),
@@ -132,6 +135,7 @@ func components() (component.Factories, error) {
 		datadogexporter.NewFactory(),
 		dynatraceexporter.NewFactory(),
 		elasticexporter.NewFactory(),
+		f5cloudexporter.NewFactory(),
 		honeycombexporter.NewFactory(),
 		jaegerthrifthttpexporter.NewFactory(),
 		kinesisexporter.NewFactory(),
