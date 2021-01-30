@@ -1,0 +1,116 @@
+{
+  "Cluster": "arn:aws:ecs:us-west-2:641248382826:cluster/default",
+  "TaskARN": "arn:aws:ecs:us-west-2:641248382826:task/default/8b541de6f9184e19a1c6363b663fcaa7",
+  "Family": "tmdsV4",
+  "Revision": "1",
+  "DesiredStatus": "RUNNING",
+  "KnownStatus": "RUNNING",
+  "Limits": {
+    "CPU": 0.25,
+    "Memory": 512
+  },
+  "PullStartedAt": "2021-01-28T19:13:50.176256749Z",
+  "PullStoppedAt": "2021-01-28T19:13:57.059227945Z",
+  "AvailabilityZone": "us-west-2b",
+  "Containers": [
+    {
+      "DockerId": "476e366a13b3407882d611ede16001aa-1624567963",
+      "Name": "essential",
+      "DockerName": "essential",
+      "Image": "amazonlinux:2",
+      "ImageID": "sha256:ed6a24ee79bb52f2308a20fb20e48b73cfa0b65e89d8a84b6eb68738d4a16152",
+      "Labels": {
+        "com.amazonaws.ecs.cluster": "arn:aws:ecs:us-west-2:641248382826:cluster/default",
+        "com.amazonaws.ecs.container-name": "essential",
+        "com.amazonaws.ecs.task-arn": "arn:aws:ecs:us-west-2:641248382826:task/default/8b541de6f9184e19a1c6363b663fcaa7",
+        "com.amazonaws.ecs.task-definition-family": "tmdsV4",
+        "com.amazonaws.ecs.task-definition-version": "1"
+      },
+      "DesiredStatus": "RUNNING",
+      "KnownStatus": "RUNNING",
+      "Limits": {
+        "CPU": 2
+      },
+      "CreatedAt": "2021-01-28T19:14:00.082946738Z",
+      "StartedAt": "2021-01-28T19:14:00.082946738Z",
+      "Type": "NORMAL",
+      "Networks": [
+        {
+          "NetworkMode": "awsvpc",
+          "IPv4Addresses": [
+            "172.31.64.211"
+          ],
+          "AttachmentIndex": 0,
+          "MACAddress": "06:7b:c8:56:49:df",
+          "IPv4SubnetCIDRBlock": "172.31.64.0/20",
+          "DomainNameServers": [
+            "172.31.0.2"
+          ],
+          "DomainNameSearchList": [
+            "us-west-2.compute.internal"
+          ],
+          "PrivateDNSName": "ip-172-31-64-211.us-west-2.compute.internal",
+          "SubnetGatewayIpv4Address": "172.31.64.1/20"
+        }
+      ],
+      "ContainerARN": "arn:aws:ecs:us-west-2:641248382826:container/e1f0d89d-090e-4c3e-b253-92632ac3c53b",
+      "LogOptions": {
+        "awslogs-group": "/ecs/tmdsV4",
+        "awslogs-region": "us-west-2",
+        "awslogs-stream": "ecs/essential/8b541de6f9184e19a1c6363b663fcaa7"
+      },
+      "LogDriver": "awslogs"
+    },
+    {
+      "DockerId": "476e366a13b3407882d611ede16001aa-800171516",
+      "Name": "non",
+      "DockerName": "non",
+      "Image": "busybox",
+      "ImageID": "sha256:c5439d7db88ab5423999530349d327b04279ad3161d7596d2126dfb5b02bfd1f",
+      "Labels": {
+        "com.amazonaws.ecs.cluster": "arn:aws:ecs:us-west-2:641248382826:cluster/default",
+        "com.amazonaws.ecs.container-name": "non",
+        "com.amazonaws.ecs.task-arn": "arn:aws:ecs:us-west-2:641248382826:task/default/8b541de6f9184e19a1c6363b663fcaa7",
+        "com.amazonaws.ecs.task-definition-family": "tmdsV4",
+        "com.amazonaws.ecs.task-definition-version": "1"
+      },
+      "DesiredStatus": "RUNNING",
+      "KnownStatus": "STOPPED",
+      "ExitCode": 42,
+      "Limits": {
+        "CPU": 2
+      },
+      "CreatedAt": "2021-01-28T19:14:00.117677643Z",
+      "StartedAt": "2021-01-28T19:14:00.117677643Z",
+      "FinishedAt": "2021-01-28T19:14:10.168894791Z",
+      "Type": "NORMAL",
+      "Networks": [
+        {
+          "NetworkMode": "awsvpc",
+          "IPv4Addresses": [
+            "172.31.64.211"
+          ],
+          "AttachmentIndex": 0,
+          "MACAddress": "06:7b:c8:56:49:df",
+          "IPv4SubnetCIDRBlock": "172.31.64.0/20",
+          "DomainNameServers": [
+            "172.31.0.2"
+          ],
+          "DomainNameSearchList": [
+            "us-west-2.compute.internal"
+          ],
+          "PrivateDNSName": "ip-172-31-64-211.us-west-2.compute.internal",
+          "SubnetGatewayIpv4Address": "172.31.64.1/20"
+        }
+      ],
+      "ContainerARN": "arn:aws:ecs:us-west-2:641248382826:container/46a920ca-6740-4c38-bdd9-46d7fd46a3e8",
+      "LogOptions": {
+        "awslogs-group": "/ecs/tmdsV4",
+        "awslogs-region": "us-west-2",
+        "awslogs-stream": "ecs/non/8b541de6f9184e19a1c6363b663fcaa7"
+      },
+      "LogDriver": "awslogs"
+    }
+  ],
+  "LaunchType": "FARGATE"
+}
