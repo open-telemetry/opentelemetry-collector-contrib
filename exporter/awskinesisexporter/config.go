@@ -12,21 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kinesisexporter
+package awskinesisexporter
 
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
-// AWSConfig contains AWS specific configuration such as kinesis stream, region, etc.
+// AWSConfig contains AWS specific configuration such as awskinesis stream, region, etc.
 type AWSConfig struct {
 	StreamName      string `mapstructure:"stream_name"`
-	KinesisEndpoint string `mapstructure:"kinesis_endpoint"`
+	KinesisEndpoint string `mapstructure:"awskinesis_endpoint"`
 	Region          string `mapstructure:"region"`
 	Role            string `mapstructure:"role"`
 }
 
-// KPLConfig contains kinesis producer library related config to controls things
+// KPLConfig contains awskinesis producer library related config to controls things
 // like aggregation, batching, connections, retries, etc.
 type KPLConfig struct {
 	AggregateBatchCount  int `mapstructure:"aggregate_batch_count"`
@@ -40,7 +40,7 @@ type KPLConfig struct {
 	MaxBackoffSeconds    int `mapstructure:"max_backoff_seconds"`
 }
 
-// Config contains the main configuration options for the kinesis exporter
+// Config contains the main configuration options for the awskinesis exporter
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"`
 

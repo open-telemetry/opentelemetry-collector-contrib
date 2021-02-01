@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kinesisexporter
+package awskinesisexporter
 
 import (
 	"context"
 
-	kinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
+	awskinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -25,7 +25,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr      = "kinesis"
+	typeStr      = "awskinesis"
 	exportFormat = "jaeger-proto"
 )
 
@@ -68,7 +68,7 @@ func createTraceExporter(
 	config configmodels.Exporter,
 ) (component.TracesExporter, error) {
 	c := config.(*Config)
-	k, err := kinesis.NewExporter(&kinesis.Options{
+	k, err := awskinesis.NewExporter(&awskinesis.Options{
 		Name:               c.Name(),
 		StreamName:         c.AWS.StreamName,
 		AWSRegion:          c.AWS.Region,

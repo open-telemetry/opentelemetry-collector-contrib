@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kinesisexporter
+module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter
 
 go 1.14
 
