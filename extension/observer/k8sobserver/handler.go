@@ -49,9 +49,11 @@ func (h *handler) convertPodToEndpoints(pod *v1.Pod) []observer.Endpoint {
 	podIP := pod.Status.PodIP
 
 	podDetails := observer.Pod{
+		UID:         string(pod.UID),
 		Annotations: pod.Annotations,
 		Labels:      pod.Labels,
 		Name:        pod.Name,
+		Namespace:   pod.Namespace,
 	}
 
 	endpoints := []observer.Endpoint{{

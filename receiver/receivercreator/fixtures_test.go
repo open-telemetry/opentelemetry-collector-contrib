@@ -19,7 +19,9 @@ import (
 )
 
 var pod = observer.Pod{
-	Name: "pod-1",
+	UID:       "uid-1",
+	Namespace: "default",
+	Name:      "pod-1",
 	Labels: map[string]string{
 		"app":    "redis",
 		"region": "west-1",

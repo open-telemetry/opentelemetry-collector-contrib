@@ -19,21 +19,25 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
-var _ observer.Notify = (*observerHandler)(nil)
+var (
+	_ observer.Notify = (*observerHandler)(nil)
+)
 
 // observerHandler manages endpoint change notifications.
 type observerHandler struct {
 	sync.Mutex
+	config *Config
 	logger *zap.Logger
-	// receiverTemplates maps receiver template full name to a receiverTemplate value.
-	receiverTemplates map[string]receiverTemplate
 	// receiversByEndpointID is a map of endpoint IDs to a receiver instance.
 	receiversByEndpointID receiverMap
+	// nextConsumer is the receiver_creator's own consumer
+	nextConsumer consumer.MetricsConsumer
 	// runner starts and stops receiver instances.
 	runner runner
 }
@@ -72,7 +76,7 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 			continue
 		}
 
-		for _, template := range obs.receiverTemplates {
+		for _, template := range obs.config.receiverTemplates {
 			if matches, err := template.rule.eval(env); err != nil {
 				obs.logger.Error("failed matching rule", zap.String("rule", template.Rule), zap.Error(err))
 				continue
@@ -106,11 +110,29 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 				continue
 			}
 
-			rcvr, err := obs.runner.start(receiverConfig{
-				fullName: template.fullName,
-				typeStr:  template.typeStr,
-				config:   resolvedConfig,
-			}, resolvedDiscoveredConfig)
+			// Adds default and/or configured resource attributes (e.g. k8s.pod.uid) to resources
+			// as telemetry is emitted.
+			resourceEnhancer, err := newResourceEnhancer(
+				obs.config.ResourceAttributes,
+				env,
+				e,
+				obs.nextConsumer,
+			)
+
+			if err != nil {
+				obs.logger.Error("failed creating resource enhancer", zap.String("receiver", template.fullName), zap.Error(err))
+				continue
+			}
+
+			rcvr, err := obs.runner.start(
+				receiverConfig{
+					fullName: template.fullName,
+					typeStr:  template.typeStr,
+					config:   resolvedConfig,
+				},
+				resolvedDiscoveredConfig,
+				resourceEnhancer,
+			)
 
 			if err != nil {
 				obs.logger.Error("failed to start receiver", zap.String("receiver", template.fullName))

@@ -167,10 +167,10 @@ func (e endpointsLister) collectEndpoints(conns []net.ConnectionStat) []observer
 				ID:     id,
 				Target: cd.target,
 				Details: &observer.HostPort{
-					Name:      pd.name,
-					Command:   pd.args,
-					Port:      cd.port,
-					Transport: cd.transport,
+					ProcessName: pd.name,
+					Command:     pd.args,
+					Port:        cd.port,
+					Transport:   cd.transport,
 					// TODO: Move this field to observer.Endpoint and
 					// update receiver_creator to filter IPv4/IPv6.
 					IsIPv6: cd.isIPv6,
