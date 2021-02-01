@@ -284,7 +284,7 @@ func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) (int, 
 	var errs []error
 	resourceSpans := td.ResourceSpans()
 	numSpans := td.SpanCount()
-	spans := make([]*traceexport.SpanData, 0, numSpans)
+	spans := make([]*traceexport.SpanSnapshot, 0, numSpans)
 
 	for i := 0; i < resourceSpans.Len(); i++ {
 		sd := pdataResourceSpansToOTSpanData(resourceSpans.At(i))
