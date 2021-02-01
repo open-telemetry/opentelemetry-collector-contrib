@@ -21,6 +21,7 @@ import (
 	"path"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/viper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -60,6 +61,9 @@ type Config struct {
 
 	// insecure_skip_verify skips checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
+
+	// MaxSendSize is the maximum payload size to be sent. 0 means unlimited.
+	MaxPayloadSize viper.Size `mapstructure:"max_payload_size"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {

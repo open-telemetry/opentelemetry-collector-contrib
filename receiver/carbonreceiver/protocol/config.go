@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/spf13/viper"
+	"go.opentelemetry.io/collector/config/viper"
 )
 
 var (

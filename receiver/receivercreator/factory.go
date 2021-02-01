@@ -18,10 +18,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/viper"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
@@ -71,13 +70,13 @@ func customUnmarshaler(sourceViperSection *viper.Viper, intoCfg interface{}) err
 		return err
 	}
 
-	receiversCfg, err := config.ViperSubExact(sourceViperSection, receiversConfigKey)
+	receiversCfg, err := sourceViperSection.SubExact(receiversConfigKey)
 	if err != nil {
 		return fmt.Errorf("unable to extract key %v: %v", receiversConfigKey, err)
 	}
 
 	for subreceiverKey := range receiversCfg.AllSettings() {
-		subreceiverSection, err := config.ViperSubExact(receiversCfg, subreceiverKey)
+		subreceiverSection, err := receiversCfg.SubExact(subreceiverKey)
 		if err != nil {
 			return fmt.Errorf("unable to extract subreceiver key %v: %v", subreceiverKey, err)
 		}
