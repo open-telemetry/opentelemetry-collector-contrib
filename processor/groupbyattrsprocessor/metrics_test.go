@@ -22,8 +22,8 @@ import (
 
 func TestProcessorMetrics(t *testing.T) {
 	expectedViewNames := []string{
-		"processor/groupbyattrs/num_grouped_traces",
-		"processor/groupbyattrs/num_non_grouped_traces",
+		"processor/groupbyattrs/num_grouped_spans",
+		"processor/groupbyattrs/num_non_grouped_spans",
 		"processor/groupbyattrs/span_groups",
 		"processor/groupbyattrs/num_grouped_logs",
 		"processor/groupbyattrs/num_non_grouped_logs",
