@@ -41,7 +41,6 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 		})
 
 		stats, ok := containerStatsMap[containerMetadata.DockerID]
-		acc.accumulate(convertContainerResource(containerResource))
 
 		if ok && !isEmptyStats(stats) {
 			containerMetrics := convertContainerMetrics(stats, logger, containerMetadata)
@@ -49,6 +48,8 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 			aggregateTaskMetrics(&taskMetrics, containerMetrics)
 			calculatTaskLevelLimit(&taskMetrics, metadata)
 			acc.accumulate(convertToOTLPMetrics(TaskPrefix, taskMetrics, taskResource, timestamp))
+		} else {
+			acc.accumulate(convertContainerResource(containerResource))
 		}
 	}
 }
