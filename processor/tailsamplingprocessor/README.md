@@ -1,5 +1,7 @@
 # Tail Sampling Processor
 
+**WARNING: this processor is deprecated as of v0.20.0**
+
 Supported pipeline types: traces
 
 The tail sampling processor samples traces based on a set of defined policies.
@@ -7,6 +9,8 @@ Today, this processor only works with a single instance of the collector.
 Technically, trace ID aware load balancing could be used to support multiple
 collector instances, but this configuration has not been tested. Please refer to
 [config.go](./config.go) for the config spec.
+
+This processor is deprecated and a replacement is currently being planned. See [#1797](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1797) for more information.
 
 The following configuration options are required:
 - `policies` (no default): Policies used to make a sampling decision
