@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -31,8 +32,12 @@ type mockRunner struct {
 	mock.Mock
 }
 
-func (run *mockRunner) start(receiver receiverConfig, discoveredConfig userConfigMap) (component.Receiver, error) {
-	args := run.Called(receiver, discoveredConfig)
+func (run *mockRunner) start(
+	receiver receiverConfig,
+	discoveredConfig userConfigMap,
+	nextConsumer consumer.MetricsConsumer,
+) (component.Receiver, error) {
+	args := run.Called(receiver, discoveredConfig, nextConsumer)
 	return args.Get(0).(component.Receiver), args.Error(1)
 }
 
@@ -46,16 +51,23 @@ var _ runner = (*mockRunner)(nil)
 func TestOnAdd(t *testing.T) {
 	runner := &mockRunner{}
 	rcvrCfg := receiverConfig{typeStr: configmodels.Type("name"), config: userConfigMap{"foo": "bar"}, fullName: "name/1"}
+	cfg := createDefaultConfig().(*Config)
+	cfg.receiverTemplates = map[string]receiverTemplate{
+		"name/1": {rcvrCfg, "", newRuleOrPanic(`type.port`)},
+	}
 	handler := &observerHandler{
-		logger: zap.NewNop(),
-		receiverTemplates: map[string]receiverTemplate{
-			"name/1": {rcvrCfg, "", newRuleOrPanic(`type.port`)},
-		},
+		config:                cfg,
+		logger:                zap.NewNop(),
 		receiversByEndpointID: receiverMap{},
 		runner:                runner,
 	}
 
-	runner.On("start", rcvrCfg, userConfigMap{endpointConfigKey: "localhost:1234"}).Return(&componenttest.ExampleReceiverProducer{}, nil)
+	runner.On(
+		"start",
+		rcvrCfg,
+		userConfigMap{endpointConfigKey: "localhost:1234"},
+		mock.IsType(&resourceEnhancer{}),
+	).Return(&componenttest.ExampleReceiverProducer{}, nil)
 
 	handler.OnAdd([]observer.Endpoint{
 		portEndpoint,
@@ -70,6 +82,7 @@ func TestOnRemove(t *testing.T) {
 	runner := &mockRunner{}
 	rcvr := &componenttest.ExampleReceiverProducer{}
 	handler := &observerHandler{
+		config:                createDefaultConfig().(*Config),
 		logger:                zap.NewNop(),
 		receiversByEndpointID: receiverMap{},
 		runner:                runner,
@@ -90,11 +103,13 @@ func TestOnChange(t *testing.T) {
 	rcvrCfg := receiverConfig{typeStr: configmodels.Type("name"), config: userConfigMap{"foo": "bar"}, fullName: "name/1"}
 	oldRcvr := &componenttest.ExampleReceiverProducer{}
 	newRcvr := &componenttest.ExampleReceiverProducer{}
+	cfg := createDefaultConfig().(*Config)
+	cfg.receiverTemplates = map[string]receiverTemplate{
+		"name/1": {rcvrCfg, "", newRuleOrPanic(`type.port`)},
+	}
 	handler := &observerHandler{
-		logger: zap.NewNop(),
-		receiverTemplates: map[string]receiverTemplate{
-			"name/1": {rcvrCfg, "", newRuleOrPanic(`type.port`)},
-		},
+		config:                cfg,
+		logger:                zap.NewNop(),
 		receiversByEndpointID: receiverMap{},
 		runner:                runner,
 	}
@@ -102,7 +117,12 @@ func TestOnChange(t *testing.T) {
 	handler.receiversByEndpointID.Put("port-1", oldRcvr)
 
 	runner.On("shutdown", oldRcvr).Return(nil)
-	runner.On("start", rcvrCfg, userConfigMap{endpointConfigKey: "localhost:1234"}).Return(newRcvr, nil)
+	runner.On(
+		"start",
+		rcvrCfg,
+		userConfigMap{endpointConfigKey: "localhost:1234"},
+		mock.IsType(&resourceEnhancer{}),
+	).Return(newRcvr, nil)
 
 	handler.OnChange([]observer.Endpoint{portEndpoint})
 
@@ -113,23 +133,30 @@ func TestOnChange(t *testing.T) {
 
 func TestDynamicConfig(t *testing.T) {
 	runner := &mockRunner{}
+	cfg := createDefaultConfig().(*Config)
+	cfg.receiverTemplates = map[string]receiverTemplate{
+		"name/1": {
+			receiverConfig: receiverConfig{typeStr: configmodels.Type("name"), config: userConfigMap{"endpoint": "`endpoint`:6379"}, fullName: "name/1"},
+			Rule:           "type.pod",
+			rule:           newRuleOrPanic("type.pod"),
+		},
+	}
 	handler := &observerHandler{
+		config:                cfg,
 		logger:                zap.NewNop(),
 		receiversByEndpointID: receiverMap{},
 		runner:                runner,
-		receiverTemplates: map[string]receiverTemplate{
-			"name/1": {
-				receiverConfig: receiverConfig{typeStr: configmodels.Type("name"), config: userConfigMap{"endpoint": "`endpoint`:6379"}, fullName: "name/1"},
-				Rule:           "type.pod",
-				rule:           newRuleOrPanic("type.pod"),
-			},
-		},
 	}
-	runner.On("start", receiverConfig{
-		fullName: "name/1",
-		typeStr:  "name",
-		config:   userConfigMap{endpointConfigKey: "localhost:6379"},
-	}, userConfigMap{}).Return(&componenttest.ExampleReceiverProducer{}, nil)
+	runner.On(
+		"start",
+		receiverConfig{
+			fullName: "name/1",
+			typeStr:  "name",
+			config:   userConfigMap{endpointConfigKey: "localhost:6379"},
+		},
+		userConfigMap{},
+		mock.IsType(&resourceEnhancer{}),
+	).Return(&componenttest.ExampleReceiverProducer{}, nil)
 	handler.OnAdd([]observer.Endpoint{
 		podEndpoint,
 	})

@@ -93,17 +93,23 @@ func (e *Endpoint) String() string {
 type Pod struct {
 	// Name of the pod.
 	Name string
+	// UID is the unique ID in the cluster for the pod.
+	UID string
 	// Labels is a map of user-specified metadata.
 	Labels map[string]string
 	// Annotations is a map of user-specified metadata.
 	Annotations map[string]string
+	// Namespace must be unique for pods with same name.
+	Namespace string
 }
 
 func (p *Pod) Env() EndpointEnv {
 	return map[string]interface{}{
+		"uid":         p.UID,
 		"name":        p.Name,
 		"labels":      p.Labels,
 		"annotations": p.Annotations,
+		"namespace":   p.Namespace,
 	}
 }
 
@@ -125,13 +131,9 @@ type Port struct {
 
 func (p *Port) Env() EndpointEnv {
 	return map[string]interface{}{
-		"name": p.Name,
-		"port": p.Port,
-		"pod": map[string]interface{}{
-			"name":        p.Pod.Name,
-			"labels":      p.Pod.Labels,
-			"annotations": p.Pod.Annotations,
-		},
+		"name":      p.Name,
+		"port":      p.Port,
+		"pod":       p.Pod.Env(),
 		"transport": p.Transport,
 	}
 }
@@ -142,10 +144,10 @@ func (p *Port) Type() EndpointType {
 
 // HostPort is an endpoint discovered on a host.
 type HostPort struct {
-	// Name of the process associated to Endpoint.  If host_observer
+	// ProcessName of the process associated to Endpoint.  If host_observer
 	// is unable to collect information about process using the
 	// Port, this value is an empty string.
-	Name string
+	ProcessName string
 	// Command used to invoke the process using the Endpoint.
 	Command string
 	// Port number of the endpoint.
@@ -158,11 +160,11 @@ type HostPort struct {
 
 func (h *HostPort) Env() EndpointEnv {
 	return map[string]interface{}{
-		"name":      h.Name,
-		"command":   h.Command,
-		"is_ipv6":   h.IsIPv6,
-		"port":      h.Port,
-		"transport": h.Transport,
+		"process_name": h.ProcessName,
+		"command":      h.Command,
+		"is_ipv6":      h.IsIPv6,
+		"port":         h.Port,
+		"transport":    h.Transport,
 	}
 }
 
