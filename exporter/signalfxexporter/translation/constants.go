@@ -602,6 +602,35 @@ translation_rules:
     memory.utilization: 100
     cpu.utilization: 100
 
+# Virtual memory metrics
+- action: split_metric
+  metric_name: system.paging.operations
+  dimension_key: direction
+  mapping:
+    page_in: system.paging.operations.page_in
+    page_out: system.paging.operations.page_out
+
+- action: split_metric
+  metric_name: system.paging.operations.page_in
+  dimension_key: type
+  mapping:
+    major: vmpage_io.swap.in
+    minor: vmpage_io.memory.in
+
+- action: split_metric
+  metric_name: system.paging.operations.page_out
+  dimension_key: type
+  mapping:
+    major: vmpage_io.swap.out
+    minor: vmpage_io.memory.out
+
+- action: split_metric
+  metric_name: system.paging.faults
+  dimension_key: type
+  mapping:
+    major: vmpage_faults.majflt
+    minor: vmpage_faults.minflt
+
 # remove redundant metrics
 - action: drop_metrics
   metric_names:
@@ -612,5 +641,7 @@ translation_rules:
     system.cpu.usage: true
     system.cpu.total: true
     system.cpu.delta: true
+    system.paging.operations.page_in: true
+    system.paging.operations.page_out: true
 `
 )

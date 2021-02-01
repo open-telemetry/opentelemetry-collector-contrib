@@ -73,6 +73,12 @@ exclude_metrics:
   - if_packets.rx
   - if_packets.tx
 
+  # Virtual memory metrics
+  - vmpage_io.memory.in
+  - vmpage_io.memory.out
+  - vmpage_faults.majflt
+  - vmpage_faults.minflt
+
   # k8s metrics
   # Derived from https://docs.signalfx.com/en/latest/integrations/agent/monitors/kubernetes-cluster.html.
   - kubernetes.cronjob.active
@@ -133,6 +139,14 @@ exclude_metrics:
   - system.network.packets
   - system.network.dropped
   - system.network.tcp_connections
+
+# Virtual memory metrics.
+- metric_names:
+  - system.paging.faults
+  - system.paging.usage
+- metric_name: system.paging.operations
+  dimensions:
+    type: [minor]
 
 # k8s metrics.
 - metric_names:
