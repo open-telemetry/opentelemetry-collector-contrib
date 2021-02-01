@@ -65,7 +65,6 @@ func TestRegisterPlugins(t *testing.T) {
 }
 
 func TestPluginRender(t *testing.T) {
-
 	t.Run("ErrorExecFailure", func(t *testing.T) {
 		plugin, err := NewPlugin("panicker", []byte(`pipeline:\n  {{ .panicker }}`))
 		require.NoError(t, err)
@@ -78,10 +77,6 @@ func TestPluginRender(t *testing.T) {
 		_, err = plugin.Render(params)
 		require.Contains(t, err.Error(), "failed to render")
 	})
-}
-
-func clearRegistry() {
-	operator.DefaultRegistry = operator.NewRegistry()
 }
 
 func TestPluginMetadata(t *testing.T) {

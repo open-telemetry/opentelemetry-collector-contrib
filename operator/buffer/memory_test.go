@@ -87,7 +87,7 @@ func TestMemoryBuffer(t *testing.T) {
 		readyDone := make(chan struct{})
 		go func() {
 			readyDone <- struct{}{}
-			readWaitN(t, b, 20, 0)
+			readWaitN(t, b, 20)
 			readyDone <- struct{}{}
 		}()
 		<-readyDone
@@ -103,7 +103,7 @@ func TestMemoryBuffer(t *testing.T) {
 		readyDone := make(chan struct{})
 		go func() {
 			readyDone <- struct{}{}
-			readWaitN(t, b, 15, 0)
+			readWaitN(t, b, 15)
 			readyDone <- struct{}{}
 		}()
 		<-readyDone
@@ -190,7 +190,7 @@ func TestMemoryBuffer(t *testing.T) {
 		c, n, err := b.Read(dst)
 		require.NoError(t, err)
 		require.Equal(t, 1, n)
-		c.MarkAllAsFlushed()
+		require.NoError(t, c.MarkAllAsFlushed())
 
 		// Now there should be space for another entry
 		err = b.Add(context.Background(), entry.New())
@@ -220,7 +220,7 @@ func TestMemoryBuffer(t *testing.T) {
 					readCount := (writes - reads) / 2
 					c := readN(t, b, readCount, reads)
 					if j%2 == 0 {
-						c.MarkAllAsFlushed()
+						require.NoError(t, c.MarkAllAsFlushed())
 					}
 					reads += readCount
 				}
@@ -278,7 +278,7 @@ func BenchmarkMemoryBuffer(b *testing.B) {
 			i += n
 			go func() {
 				time.Sleep(50 * time.Millisecond)
-				c.MarkAllAsFlushed()
+				require.NoError(b, c.MarkAllAsFlushed())
 			}()
 		}
 	}()

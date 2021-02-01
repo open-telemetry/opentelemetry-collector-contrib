@@ -33,10 +33,10 @@ var _ operator.Builder = (*Config)(nil)
 type Config struct {
 	helper.WriterConfig
 	Plugin     *Plugin                `json:"-" yaml:"-"`
-	Parameters map[string]interface{} `json:",squash" yaml:",squash"`
+	Parameters map[string]interface{} `json:",inline" yaml:",squash"`
 }
 
-// BuildMulti implements operator.MultiBuilder
+// Build implements operator.MultiBuilder
 func (c *Config) Build(bc operator.BuildContext) ([]operator.Operator, error) {
 	if bc.PluginDepth > 10 {
 		return nil, errors.NewError("reached max plugin depth", "ensure that there are no recursive dependencies in plugins")

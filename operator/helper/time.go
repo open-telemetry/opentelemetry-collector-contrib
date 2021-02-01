@@ -187,7 +187,7 @@ func (t *TimeParser) parseGotime(value interface{}) (time.Time, error) {
 
 	result, err := time.ParseInLocation(t.Layout, str, t.location)
 
-	// Depending on the timezone database, we may get a psuedo-matching timezone
+	// Depending on the timezone database, we may get a pseudo-matching timezone
 	// This is apparent when the zone is not "UTC", but the offset is still 0
 	zone, offset := result.Zone()
 	if offset != 0 || zone == "UTC" {

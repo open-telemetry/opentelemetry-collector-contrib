@@ -49,22 +49,21 @@ func readN(t testing.TB, buffer Buffer, n, start int) Clearer {
 	return f
 }
 
-func readWaitN(t testing.TB, buffer Buffer, n, start int) Clearer {
+func readWaitN(t testing.TB, buffer Buffer, n int) {
 	entries := make([]*entry.Entry, n)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
-	f, readCount, err := buffer.ReadWait(ctx, entries)
+	_, readCount, err := buffer.ReadWait(ctx, entries)
 	require.NoError(t, err)
 	require.Equal(t, n, readCount)
 	for i := 0; i < n; i++ {
-		require.Equal(t, intEntry(start+i), entries[i])
+		require.Equal(t, intEntry(i), entries[i])
 	}
-	return f
 }
 
 func flushN(t testing.TB, buffer Buffer, n, start int) {
 	f := readN(t, buffer, n, start)
-	f.MarkAllAsFlushed()
+	require.NoError(t, f.MarkAllAsFlushed())
 }
 
 func panicOnErr(err error) {

@@ -92,7 +92,7 @@ func TestPipeline(t *testing.T) {
 		err = pipeline.Start()
 		require.NoError(t, err)
 
-		pipeline.Stop()
+		require.NoError(t, pipeline.Stop())
 	})
 
 	t.Run("MultipleStop", func(t *testing.T) {
@@ -102,8 +102,8 @@ func TestPipeline(t *testing.T) {
 		err = pipeline.Start()
 		require.NoError(t, err)
 
-		pipeline.Stop()
-		pipeline.Stop()
+		require.NoError(t, pipeline.Stop())
+		require.NoError(t, pipeline.Stop())
 	})
 
 	t.Run("DuplicateNodeIDs", func(t *testing.T) {

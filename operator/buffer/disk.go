@@ -122,10 +122,10 @@ type DiskBuffer struct {
 // NewDiskBuffer creates a new DiskBuffer
 func NewDiskBuffer(maxDiskSize int64) *DiskBuffer {
 	return &DiskBuffer{
-		maxBytes:          int64(maxDiskSize),
+		maxBytes:          maxDiskSize,
 		entryAdded:        make(chan int64, 1),
 		copyBuffer:        make([]byte, 1<<16),
-		diskSizeSemaphore: semaphore.NewWeighted(int64(maxDiskSize)),
+		diskSizeSemaphore: semaphore.NewWeighted(maxDiskSize),
 	}
 }
 

@@ -74,7 +74,7 @@ func TestDiskBuffer(t *testing.T) {
 		readyDone := make(chan struct{})
 		go func() {
 			readyDone <- struct{}{}
-			readWaitN(t, b, 20, 0)
+			readWaitN(t, b, 20)
 			readyDone <- struct{}{}
 		}()
 		<-readyDone
@@ -90,7 +90,7 @@ func TestDiskBuffer(t *testing.T) {
 		readyDone := make(chan struct{})
 		go func() {
 			readyDone <- struct{}{}
-			readWaitN(t, b, 15, 0)
+			readWaitN(t, b, 15)
 			readyDone <- struct{}{}
 		}()
 		<-readyDone
@@ -209,7 +209,7 @@ func TestDiskBuffer(t *testing.T) {
 		c, n, err := b.Read(dst)
 		require.NoError(t, err)
 		require.Equal(t, 1, n)
-		c.MarkAllAsFlushed()
+		require.NoError(t, c.MarkAllAsFlushed())
 		require.NoError(t, b.Compact())
 
 		// Now there should be space for another entry
@@ -243,7 +243,7 @@ func TestDiskBuffer(t *testing.T) {
 					readCount := (writes - reads) / 2
 					c := readN(t, b, readCount, reads)
 					if j%2 == 0 {
-						c.MarkAllAsFlushed()
+						require.NoError(t, c.MarkAllAsFlushed())
 					}
 					reads += readCount
 				default:
@@ -298,7 +298,7 @@ func BenchmarkDiskBuffer(b *testing.B) {
 				cancel()
 				panicOnErr(err)
 				i += n
-				c.MarkAllAsFlushed()
+				require.NoError(b, c.MarkAllAsFlushed())
 			}
 		}()
 
@@ -336,7 +336,7 @@ func BenchmarkDiskBuffer(b *testing.B) {
 				cancel()
 				panicOnErr(err)
 				i += n
-				c.MarkAllAsFlushed()
+				require.NoError(b, c.MarkAllAsFlushed())
 			}
 		}()
 

@@ -119,7 +119,6 @@ func (p Parameter) validateEnumValue(value interface{}) error {
 }
 
 func (p Parameter) validateDefinition() error {
-
 	if err := p.validateType(); err != nil {
 		return err
 	}

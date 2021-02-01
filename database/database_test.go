@@ -84,7 +84,6 @@ func TestOpenDatabase(t *testing.T) {
 		require.Error(t, err)
 		require.Nil(t, db)
 	})
-
 }
 
 func TestStubDatabase(t *testing.T) {
