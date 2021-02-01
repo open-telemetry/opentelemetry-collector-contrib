@@ -218,7 +218,6 @@ func TestParserInvalidTimeValidSeverityParse(t *testing.T) {
 }
 
 func TestParserValidTimeInvalidSeverityParse(t *testing.T) {
-
 	// Hawaiian Standard Time
 	hst, err := time.LoadLocation("HST")
 	require.NoError(t, err)

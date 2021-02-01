@@ -53,6 +53,5 @@ func TestBuildContext(t *testing.T) {
 		bc2 := bc.WithDefaultOutputIDs([]string{"id1", "id2"})
 		require.Equal(t, []string{"id1", "id2"}, bc2.DefaultOutputIDs)
 		require.Equal(t, []string{"orig"}, bc.DefaultOutputIDs)
-
 	})
 }

@@ -34,6 +34,7 @@ func TestPersisterCache(t *testing.T) {
 func TestPersisterLoad(t *testing.T) {
 	tempDir := testutil.NewTempDir(t)
 	db, err := database.OpenDatabase(filepath.Join(tempDir, "test.db"))
+	require.NoError(t, err)
 	persister := NewScopedDBPersister(db, "test")
 	persister.Set("key", []byte("value"))
 

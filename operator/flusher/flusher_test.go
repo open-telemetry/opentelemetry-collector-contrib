@@ -26,7 +26,6 @@ import (
 )
 
 func TestFlusher(t *testing.T) {
-
 	// Override setting for test
 	maxElapsedTime = 5 * time.Second
 
@@ -56,7 +55,6 @@ func TestFlusher(t *testing.T) {
 }
 
 func TestMaxElapsedTime(t *testing.T) {
-
 	// Override setting for test
 	maxElapsedTime = 100 * time.Millisecond
 

@@ -13,3 +13,6 @@ linters:
     - unparam
     - whitespace
     - ineffassign
+linters-settings:
+  goconst:
+    min-occurrences: 5
