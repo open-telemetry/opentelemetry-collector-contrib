@@ -17,6 +17,7 @@ package dotnetdiagnosticsreceiver
 import (
 	"context"
 	"net"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -24,14 +25,13 @@ import (
 )
 
 type receiver struct {
-	logger       *zap.Logger
-	nextConsumer consumer.MetricsConsumer
-	blobDir      string
-	maxBlobFiles int
-	intervalSec  int
-	counters     []string
-	connect      connectionSupplier
-	ctx          context.Context
+	logger             *zap.Logger
+	nextConsumer       consumer.MetricsConsumer
+	blobDir            string
+	maxBlobFiles       int
+	counters           []string
+	collectionInterval time.Duration
+	connect            connectionSupplier
 }
 
 var _ = (component.MetricsReceiver)(nil)
@@ -44,20 +44,19 @@ func NewReceiver(
 	connect connectionSupplier,
 ) (component.MetricsReceiver, error) {
 	return &receiver{
-		logger:       logger,
-		nextConsumer: mc,
-		blobDir:      cfg.BlobDir,
-		maxBlobFiles: cfg.MaxBlobFiles,
-		counters:     cfg.Counters,
-		intervalSec:  cfg.IntervalSec,
-		connect:      connect,
+		logger:             logger,
+		nextConsumer:       mc,
+		blobDir:            cfg.BlobDir,
+		maxBlobFiles:       cfg.MaxBlobFiles,
+		counters:           cfg.Counters,
+		collectionInterval: cfg.CollectionInterval,
+		connect:            connect,
 	}, nil
 }
 
 type connectionSupplier func() (net.Conn, error)
 
 func (r *receiver) Start(ctx context.Context, host component.Host) error {
-	r.ctx = ctx
 	return nil
 }
 

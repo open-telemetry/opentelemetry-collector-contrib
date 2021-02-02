@@ -16,6 +16,7 @@ package dotnetdiagnosticsreceiver
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -39,8 +40,8 @@ func createDefaultConfig() configmodels.Receiver {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Counters:    []string{"System.Runtime"},
-		IntervalSec: 1,
+		Counters:           []string{"System.Runtime", "Microsoft.AspNetCore.Hosting"},
+		CollectionInterval: time.Second,
 	}
 }
 

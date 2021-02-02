@@ -14,7 +14,11 @@
 
 package dotnetdiagnosticsreceiver
 
-import "go.opentelemetry.io/collector/config/configmodels"
+import (
+	"time"
+
+	"go.opentelemetry.io/collector/config/configmodels"
+)
 
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
@@ -27,11 +31,10 @@ type Config struct {
 	MaxBlobFiles int `mapstructure:"max_blob_files"`
 	// The process ID of the dotnet process from which to collect diagnostics.
 	PID int `mapstructure:"pid"`
-	// The number of seconds between each send from the socket (or named pipe). This
-	// value is sent unchanged to the dotnet process at startup to tell it how often
-	// to send metrics. Corresponds to the "refresh-interval" option in the
-	// `dotnet-counters` tool. Defaults to 1.
-	IntervalSec int `mapstructure:"interval_sec"`
+	// The duration between collection of metrics. The duration value is converted
+	// to seconds and sent to the dotnet backend at receiver startup time.
+	// Defaults to 1 second.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 	// A list of counters for the dotnet process to send to the collector.
 	// Defaults to "System.Runtime". Available counters can be displayed
 	// by the `dotnet-counters` tool:

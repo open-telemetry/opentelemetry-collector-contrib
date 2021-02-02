@@ -17,6 +17,7 @@ package dotnetdiagnosticsreceiver
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,6 +42,6 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, 1234, cfg.PID)
 	assert.Equal(t, "mydir", cfg.BlobDir)
 	assert.Equal(t, 42, cfg.MaxBlobFiles)
-	assert.Equal(t, 2, cfg.IntervalSec)
+	assert.Equal(t, 2*time.Second, cfg.CollectionInterval)
 	assert.Equal(t, []string{"Foo", "Bar"}, cfg.Counters)
 }

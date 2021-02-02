@@ -3,7 +3,7 @@ receivers:
     pid: 1234
     blob_dir: "mydir"
     max_blob_files: 42
-    interval_sec: 2
+    collection_interval: 2s
     counters: [ "Foo", "Bar" ]
 
 processors:

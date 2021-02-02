@@ -31,6 +31,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := f.CreateDefaultConfig()
 	assert.NotNil(t, cfg)
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.Equal(
+		t,
+		[]string{"System.Runtime", "Microsoft.AspNetCore.Hosting"},
+		cfg.(*Config).Counters,
+	)
 }
 
 func TestCreateReceiver(t *testing.T) {
