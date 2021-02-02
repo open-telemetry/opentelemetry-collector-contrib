@@ -28,7 +28,7 @@ import (
 // Exporter implements an OpenTelemetry trace exporter that exports all spans to AWS Kinesis
 type Exporter struct {
 	awskinesis *awskinesis.Exporter
-	logger  *zap.Logger
+	logger     *zap.Logger
 }
 
 var _ component.TracesExporter = (*Exporter)(nil)
