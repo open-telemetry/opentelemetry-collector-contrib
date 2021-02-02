@@ -578,7 +578,7 @@ func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 	}
 	assertCwMeasurementEqual(t, expectedMeasurement, met.Measurements[0])
 
-	assert.Equal(t, int64(1), cwm[1].Fields["spanGaugeCounter"])
+	assert.Equal(t, float64(1), cwm[1].Fields["spanGaugeCounter"])
 	assert.Equal(t, float64(0), cwm[2].Fields["spanDoubleCounter"])
 	assert.Equal(t, 0.1, cwm[3].Fields["spanGaugeDoubleCounter"])
 	expectedCwStats := &CWMetricStats{
@@ -645,7 +645,7 @@ func TestTranslateOtToCWMetricWithoutInstrLibrary(t *testing.T) {
 	}
 	assertCwMeasurementEqual(t, expectedMeasurement, met.Measurements[0])
 
-	assert.Equal(t, int64(1), cwm[1].Fields["spanGaugeCounter"])
+	assert.Equal(t, float64(1), cwm[1].Fields["spanGaugeCounter"])
 	assert.Equal(t, float64(0), cwm[2].Fields["spanDoubleCounter"])
 	assert.Equal(t, 0.1, cwm[3].Fields["spanGaugeDoubleCounter"])
 	expectedCwStats := &CWMetricStats{
@@ -998,7 +998,7 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 	fields["spanCounter"] = 0
 
 	met := &CWMetrics{
-		Timestamp:    timestamp,
+		TimestampMs:  timestamp,
 		Fields:       fields,
 		Measurements: []CwMeasurement{cwMeasurement},
 	}
@@ -1016,7 +1016,7 @@ func TestTranslateCWMetricToEMFNoMeasurements(t *testing.T) {
 	fields["spanCounter"] = 0
 
 	met := &CWMetrics{
-		Timestamp:    timestamp,
+		TimestampMs:  timestamp,
 		Fields:       fields,
 		Measurements: nil,
 	}
@@ -1107,7 +1107,7 @@ func TestGetCWMetrics(t *testing.T) {
 					},
 					Fields: map[string]interface{}{
 						OTelLib:  instrumentationLibName,
-						"foo":    int64(1),
+						"foo":    float64(1),
 						"label1": "value1",
 						"label2": "value2",
 					},
@@ -1126,7 +1126,7 @@ func TestGetCWMetrics(t *testing.T) {
 					},
 					Fields: map[string]interface{}{
 						OTelLib:  instrumentationLibName,
-						"foo":    int64(3),
+						"foo":    float64(3),
 						"label2": "value2",
 					},
 				},
@@ -1647,6 +1647,14 @@ func TestGetCWMetrics(t *testing.T) {
 		},
 	}
 
+	metadata := CWMetricMetadata{
+		Namespace:                  "Namespace",
+		TimestampMs:                time.Now().UnixNano() / int64(time.Millisecond),
+		LogGroup:                   "log-group",
+		LogStream:                  "log-stream",
+		InstrumentationLibraryName: "cloudwatch-otel",
+	}
+
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			oc := consumerdata.MetricsData{
@@ -1669,7 +1677,7 @@ func TestGetCWMetrics(t *testing.T) {
 			assert.Equal(t, 1, metrics.Len())
 			metric := metrics.At(0)
 
-			cwMetrics := getCWMetrics(&metric, namespace, instrumentationLibName, config)
+			cwMetrics := getCWMetrics(&metric, metadata, instrumentationLibName, config)
 			assert.Equal(t, len(tc.expected), len(cwMetrics))
 
 			for i, expected := range tc.expected {
@@ -1696,7 +1704,7 @@ func TestGetCWMetrics(t *testing.T) {
 			logger:                zap.New(obs),
 		}
 
-		cwMetrics := getCWMetrics(&metric, namespace, instrumentationLibName, obsConfig)
+		cwMetrics := getCWMetrics(&metric, metadata, instrumentationLibName, obsConfig)
 		assert.Nil(t, cwMetrics)
 
 		// Test output warning logs
@@ -1715,7 +1723,7 @@ func TestGetCWMetrics(t *testing.T) {
 	})
 
 	t.Run("Nil metric", func(t *testing.T) {
-		cwMetrics := getCWMetrics(nil, namespace, instrumentationLibName, config)
+		cwMetrics := getCWMetrics(nil, metadata, instrumentationLibName, config)
 		assert.Nil(t, cwMetrics)
 	})
 }
@@ -1741,11 +1749,11 @@ func TestBuildCWMetric(t *testing.T) {
 
 	t.Run("Int gauge", func(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeIntGauge)
-		dp := pdata.NewIntDataPoint()
-		dp.LabelsMap().InitFromMap(map[string]string{
+		dp := DataPoint{}
+		dp.Value = int64(-17)
+		dp.Labels = map[string]string{
 			"label1": "value1",
-		})
-		dp.SetValue(int64(-17))
+		}
 
 		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, config)
 
@@ -1767,11 +1775,12 @@ func TestBuildCWMetric(t *testing.T) {
 
 	t.Run("Double gauge", func(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		dp := pdata.NewDoubleDataPoint()
-		dp.LabelsMap().InitFromMap(map[string]string{
+
+		dp := DataPoint{}
+		dp.Value = 0.3
+		dp.Labels = map[string]string{
 			"label1": "value1",
-		})
-		dp.SetValue(0.3)
+		}
 
 		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, config)
 
@@ -1794,11 +1803,12 @@ func TestBuildCWMetric(t *testing.T) {
 	t.Run("Int sum", func(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeIntSum)
 		metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		dp := pdata.NewIntDataPoint()
-		dp.LabelsMap().InitFromMap(map[string]string{
+
+		dp := DataPoint{}
+		dp.Value = float64(17)
+		dp.Labels = map[string]string{
 			"label1": "value1",
-		})
-		dp.SetValue(int64(-17))
+		}
 
 		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, config)
 
@@ -1812,7 +1822,7 @@ func TestBuildCWMetric(t *testing.T) {
 		assertCwMeasurementEqual(t, expectedMeasurement, cwMetric.Measurements[0])
 		expectedFields := map[string]interface{}{
 			OTelLib:  instrLibName,
-			"foo":    float64(0),
+			"foo":    float64(17),
 			"label1": "value1",
 		}
 		assert.Equal(t, expectedFields, cwMetric.Fields)
@@ -1821,11 +1831,12 @@ func TestBuildCWMetric(t *testing.T) {
 	t.Run("Double sum", func(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeDoubleSum)
 		metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		dp := pdata.NewDoubleDataPoint()
-		dp.LabelsMap().InitFromMap(map[string]string{
+
+		dp := DataPoint{}
+		dp.Value = 0.3
+		dp.Labels = map[string]string{
 			"label1": "value1",
-		})
-		dp.SetValue(0.3)
+		}
 
 		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, config)
 
@@ -1839,7 +1850,7 @@ func TestBuildCWMetric(t *testing.T) {
 		assertCwMeasurementEqual(t, expectedMeasurement, cwMetric.Measurements[0])
 		expectedFields := map[string]interface{}{
 			OTelLib:  instrLibName,
-			"foo":    float64(0),
+			"foo":    float64(0.3),
 			"label1": "value1",
 		}
 		assert.Equal(t, expectedFields, cwMetric.Fields)
@@ -1847,14 +1858,17 @@ func TestBuildCWMetric(t *testing.T) {
 
 	t.Run("Double histogram", func(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-		dp := pdata.NewDoubleHistogramDataPoint()
-		dp.LabelsMap().InitFromMap(map[string]string{
+
+		cWMetricStats := &CWMetricStats{
+			Count: uint64(17),
+			Sum:   17.13,
+		}
+
+		dp := DataPoint{}
+		dp.Value = cWMetricStats
+		dp.Labels = map[string]string{
 			"label1": "value1",
-		})
-		dp.SetCount(uint64(17))
-		dp.SetSum(17.13)
-		dp.SetBucketCounts([]uint64{1, 2, 3})
-		dp.SetExplicitBounds([]float64{1, 2, 3})
+		}
 
 		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, config)
 
@@ -1879,7 +1893,7 @@ func TestBuildCWMetric(t *testing.T) {
 
 	t.Run("Invalid datapoint type", func(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeIntGauge)
-		dp := pdata.NewIntHistogramDataPoint()
+		dp := DataPoint{}
 
 		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, config)
 		assert.Nil(t, cwMetric)
@@ -1949,9 +1963,10 @@ func TestBuildCWMetric(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			dp := pdata.NewIntDataPoint()
-			dp.LabelsMap().InitFromMap(tc.labels)
-			dp.SetValue(int64(-17))
+			dp := DataPoint{}
+			dp.Value = int64(-17)
+			dp.Labels = tc.labels
+
 			config = &Config{
 				Namespace:             namespace,
 				DimensionRollupOption: tc.dimensionRollupOption,
@@ -2272,9 +2287,9 @@ func TestBuildCWMetricWithMetricDeclarations(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			dp := pdata.NewIntDataPoint()
-			dp.LabelsMap().InitFromMap(tc.labels)
-			dp.SetValue(metricValue)
+			dp := DataPoint{}
+			dp.Labels = tc.labels
+			dp.Value = metricValue
 			config := &Config{
 				Namespace:             namespace,
 				DimensionRollupOption: tc.dimensionRollupOption,
@@ -2313,30 +2328,6 @@ func TestBuildCWMetricWithMetricDeclarations(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestCalculateRate(t *testing.T) {
-	prevValue := int64(0)
-	curValue := int64(10)
-	fields := make(map[string]interface{})
-	fields[OTellibDimensionKey] = "cloudwatch-otel"
-	fields["spanName"] = "test"
-	fields["spanCounter"] = prevValue
-	fields["type"] = "Int64"
-	prevTime := time.Now().UnixNano() / int64(time.Millisecond)
-	curTime := time.Unix(0, prevTime*int64(time.Millisecond)).Add(time.Second*10).UnixNano() / int64(time.Millisecond)
-	rate := calculateRate(fields, float64(prevValue), prevTime)
-	assert.Equal(t, float64(0), rate)
-	rate = calculateRate(fields, float64(curValue), curTime)
-	assert.Equal(t, float64(1), rate)
-
-	prevDoubleValue := 0.0
-	curDoubleValue := 5.0
-	fields["type"] = "Float64"
-	rate = calculateRate(fields, prevDoubleValue, prevTime)
-	assert.Equal(t, float64(0), rate)
-	rate = calculateRate(fields, curDoubleValue, curTime)
-	assert.Equal(t, 0.5, rate)
 }
 
 func TestDimensionRollup(t *testing.T) {
@@ -2446,31 +2437,6 @@ func TestDimensionRollup(t *testing.T) {
 	}
 }
 
-func TestNeedsCalculateRate(t *testing.T) {
-	metric := pdata.NewMetric()
-	metric.SetDataType(pdata.MetricDataTypeIntGauge)
-	assert.False(t, needsCalculateRate(&metric))
-	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	assert.False(t, needsCalculateRate(&metric))
-
-	metric.SetDataType(pdata.MetricDataTypeIntHistogram)
-	assert.False(t, needsCalculateRate(&metric))
-	metric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-	assert.False(t, needsCalculateRate(&metric))
-
-	metric.SetDataType(pdata.MetricDataTypeIntSum)
-	metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-	assert.True(t, needsCalculateRate(&metric))
-	metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-	assert.False(t, needsCalculateRate(&metric))
-
-	metric.SetDataType(pdata.MetricDataTypeDoubleSum)
-	metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-	assert.True(t, needsCalculateRate(&metric))
-	metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-	assert.False(t, needsCalculateRate(&metric))
-}
-
 func BenchmarkTranslateOtToCWMetricWithInstrLibrary(b *testing.B) {
 	md := createMetricTestData()
 	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
@@ -2542,7 +2508,7 @@ func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
 	fields["spanCounter"] = 0
 
 	met := &CWMetrics{
-		Timestamp:    timestamp,
+		TimestampMs:  timestamp,
 		Fields:       fields,
 		Measurements: []CwMeasurement{cwMeasurement},
 	}
