@@ -45,47 +45,14 @@ lint:
 	golangci-lint run ./...
 
 .PHONY: vet
-vet: check-missing-modules
+vet:
 	GOOS=darwin $(MAKE) for-all CMD="go vet ./..."
 	GOOS=linux $(MAKE) for-all CMD="go vet ./..."
 	GOOS=windows $(MAKE) for-all CMD="go vet ./..."
 
-.PHONY: check-missing-modules
-check-missing-modules:
-	@find ./operator/builtin -type f -name "go.mod" -exec dirname {} \; | cut -d'/' -f2- | while read mod ; do \
-		grep $$mod ./cmd/stanza/init_*.go > /dev/null ;\
-		if [ $$? -ne 0 ] ; then \
-			echo Stanza is not building with module $$mod ;\
-			exit 1 ;\
-		fi \
-	done
-
 .PHONY: generate
 generate:
 	go generate ./...
-
-.PHONY: build
-build:
-	(cd ./cmd/stanza && CGO_ENABLED=0 go build -o ../../artifacts/stanza_$(GOOS)_$(GOARCH)  .)
-
-.PHONY: install
-install:
-	(cd ./cmd/stanza && CGO_ENABLED=0 go install .)
-
-.PHONY: build-all
-build-all: build-darwin-amd64 build-linux-amd64 build-windows-amd64
-
-.PHONY: build-darwin-amd64
-build-darwin-amd64:
-	@GOOS=darwin GOARCH=amd64 $(MAKE) build
-
-.PHONY: build-linux-amd64
-build-linux-amd64:
-	@GOOS=linux GOARCH=amd64 $(MAKE) build
-
-.PHONY: build-windows-amd64
-build-windows-amd64:
-	@GOOS=windows GOARCH=amd64 $(MAKE) build
 
 .PHONY: for-all
 for-all:

@@ -15,7 +15,7 @@
 package helper
 
 import (
-	"github.com/opentelemetry/opentelemetry-log-collection/entry"
+	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 )
 
 // NewIdentifierConfig creates a new identifier config with default values

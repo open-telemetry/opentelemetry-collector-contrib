@@ -20,8 +20,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/entry"
-	"github.com/opentelemetry/opentelemetry-log-collection/errors"
+	"github.com/open-telemetry/opentelemetry-log-collection/entry"
+	"github.com/open-telemetry/opentelemetry-log-collection/errors"
 )
 
 // NewHostIdentifierConfig returns a HostIdentifierConfig with default values

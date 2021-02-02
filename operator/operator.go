@@ -19,7 +19,7 @@ package operator
 import (
 	"context"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/entry"
+	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"go.uber.org/zap"
 )
 

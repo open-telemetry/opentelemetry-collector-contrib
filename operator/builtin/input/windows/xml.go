@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/entry"
+	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 )
 
 // EventXML is the rendered xml of an event.

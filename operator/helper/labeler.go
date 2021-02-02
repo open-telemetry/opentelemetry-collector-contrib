@@ -15,7 +15,7 @@
 package helper
 
 import (
-	"github.com/opentelemetry/opentelemetry-log-collection/entry"
+	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 )
 
 // NewLabelerConfig creates a new labeler config with default values

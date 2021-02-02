@@ -17,11 +17,11 @@ package plugin
 import (
 	"testing"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/operator"
-	"github.com/opentelemetry/opentelemetry-log-collection/operator/builtin/transformer/noop"
-	"github.com/opentelemetry/opentelemetry-log-collection/operator/helper"
-	"github.com/opentelemetry/opentelemetry-log-collection/pipeline"
-	"github.com/opentelemetry/opentelemetry-log-collection/testutil"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/noop"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
+	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
+	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 	yaml "gopkg.in/yaml.v2"

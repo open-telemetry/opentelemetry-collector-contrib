@@ -21,8 +21,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/logger"
-	"github.com/opentelemetry/opentelemetry-log-collection/operator"
+	"github.com/open-telemetry/opentelemetry-log-collection/logger"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"go.etcd.io/bbolt"
 	"go.uber.org/zap/zaptest"
 )

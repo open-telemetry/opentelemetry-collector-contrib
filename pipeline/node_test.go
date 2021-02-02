@@ -17,9 +17,9 @@ package pipeline
 import (
 	"testing"
 
-	_ "github.com/opentelemetry/opentelemetry-log-collection/operator/builtin/input/generate"
-	_ "github.com/opentelemetry/opentelemetry-log-collection/operator/builtin/transformer/noop"
-	"github.com/opentelemetry/opentelemetry-log-collection/testutil"
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/generate"
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/noop"
+	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 	"github.com/stretchr/testify/require"
 )
 

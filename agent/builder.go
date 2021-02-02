@@ -17,10 +17,10 @@ package agent
 import (
 	"time"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/database"
-	"github.com/opentelemetry/opentelemetry-log-collection/errors"
-	"github.com/opentelemetry/opentelemetry-log-collection/operator"
-	"github.com/opentelemetry/opentelemetry-log-collection/plugin"
+	"github.com/open-telemetry/opentelemetry-log-collection/database"
+	"github.com/open-telemetry/opentelemetry-log-collection/errors"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
+	"github.com/open-telemetry/opentelemetry-log-collection/plugin"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

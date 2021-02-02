@@ -17,7 +17,7 @@ package plugin
 import (
 	"fmt"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/errors"
+	"github.com/open-telemetry/opentelemetry-log-collection/errors"
 )
 
 const (

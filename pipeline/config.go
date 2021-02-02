@@ -15,7 +15,7 @@
 package pipeline
 
 import (
-	"github.com/opentelemetry/opentelemetry-log-collection/operator"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 )
 
 // Config is the configuration of a pipeline.
