@@ -49,7 +49,7 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 			OverrideWithTaskLevelLimit(&taskMetrics, metadata)
 			acc.accumulate(convertToOTLPMetrics(TaskPrefix, taskMetrics, taskResource, timestamp))
 		} else {
-			acc.accumulate(covertResourceToRMS(containerResource))
+			acc.accumulate(convertResourceToRMS(containerResource))
 		}
 	}
 }
@@ -64,7 +64,7 @@ func isEmptyStats(stats *ContainerStats) bool {
 	return stats == nil || stats.ID == ""
 }
 
-func covertResourceToRMS(containerResource pdata.Resource) pdata.ResourceMetricsSlice {
+func convertResourceToRMS(containerResource pdata.Resource) pdata.ResourceMetricsSlice {
 	rms := pdata.NewResourceMetricsSlice()
 	rms.Resize(1)
 	rm := rms.At(0)
