@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kinesisexporter
+package awskinesisexporter
 
 import (
 	"path"
@@ -38,13 +38,13 @@ func TestDefaultConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters["kinesis"]
+	e := cfg.Exporters["awskinesis"]
 
 	assert.Equal(t, e,
 		&Config{
 			ExporterSettings: configmodels.ExporterSettings{
-				TypeVal: "kinesis",
-				NameVal: "kinesis",
+				TypeVal: "awskinesis",
+				NameVal: "awskinesis",
 			},
 			AWS: AWSConfig{
 				Region: "us-west-2",
@@ -79,17 +79,17 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters["kinesis"]
+	e := cfg.Exporters["awskinesis"]
 
 	assert.Equal(t, e,
 		&Config{
 			ExporterSettings: configmodels.ExporterSettings{
-				TypeVal: "kinesis",
-				NameVal: "kinesis",
+				TypeVal: "awskinesis",
+				NameVal: "awskinesis",
 			},
 			AWS: AWSConfig{
 				StreamName:      "test-stream",
-				KinesisEndpoint: "kinesis.mars-1.aws.galactic",
+				KinesisEndpoint: "awskinesis.mars-1.aws.galactic",
 				Region:          "mars-1",
 				Role:            "arn:test-role",
 			},

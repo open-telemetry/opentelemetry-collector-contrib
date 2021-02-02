@@ -2,7 +2,7 @@ receivers:
   examplereceiver:
 
 exporters:
-  kinesis:
+  awskinesis:
     queue_size: 1
     num_workers: 2
     flush_interval_seconds: 3
@@ -13,7 +13,7 @@ exporters:
         stream_name: test-stream
         region: mars-1
         role: arn:test-role
-        kinesis_endpoint: kinesis.mars-1.aws.galactic
+        awskinesis_endpoint: awskinesis.mars-1.aws.galactic
 
     kpl:
         aggregate_batch_count: 10
@@ -34,4 +34,4 @@ service:
     traces:
       receivers: [examplereceiver]
       processors: [exampleprocessor]
-      exporters: [kinesis]
+      exporters: [awskinesis]
