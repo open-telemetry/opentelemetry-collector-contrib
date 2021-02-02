@@ -1,0 +1,20 @@
+receivers:
+  dotnet_diagnostics:
+    pid: 1234
+    blob_dir: "mydir"
+    max_blob_files: 42
+    interval_sec: 2
+    counters: [ "Foo", "Bar" ]
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [ dotnet_diagnostics ]
+      processors: [ exampleprocessor ]
+      exporters: [ exampleexporter ]
