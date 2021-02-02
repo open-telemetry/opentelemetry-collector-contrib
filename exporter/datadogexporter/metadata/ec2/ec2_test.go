@@ -79,5 +79,5 @@ func TestHostInfoFromAttributes(t *testing.T) {
 
 	assert.Equal(t, hostInfo.InstanceID, testInstanceID)
 	assert.Equal(t, hostInfo.EC2Hostname, testIP)
-	assert.Equal(t, hostInfo.EC2Tags, []string{"tag1:val1", "tag2:val2"})
+	assert.ElementsMatch(t, hostInfo.EC2Tags, []string{"tag1:val1", "tag2:val2"})
 }
