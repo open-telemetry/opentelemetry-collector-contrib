@@ -32,7 +32,7 @@ type Config struct {
 	// to send metrics. Corresponds to the "refresh-interval" option in the
 	// `dotnet-counters` tool. Defaults to 1.
 	IntervalSec int `mapstructure:"interval_sec"`
-	// A list of counters sent to the dotnet process at startup time.
+	// A list of counters for the dotnet process to send to the collector.
 	// Defaults to "System.Runtime". Available counters can be displayed
 	// by the `dotnet-counters` tool:
 	// https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-counters
