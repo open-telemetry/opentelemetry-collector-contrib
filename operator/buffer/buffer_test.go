@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/operator/helper"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 	"github.com/stretchr/testify/require"
 	yaml "gopkg.in/yaml.v2"
 )

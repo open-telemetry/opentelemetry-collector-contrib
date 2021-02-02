@@ -19,10 +19,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/operator"
-	_ "github.com/opentelemetry/opentelemetry-log-collection/operator/builtin/transformer/noop"
-	"github.com/opentelemetry/opentelemetry-log-collection/pipeline"
-	"github.com/opentelemetry/opentelemetry-log-collection/testutil"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/noop"
+	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
+	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 	"github.com/stretchr/testify/require"
 )
 

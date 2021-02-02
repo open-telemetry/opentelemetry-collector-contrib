@@ -17,7 +17,7 @@ package helper
 import (
 	"sync"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/database"
+	"github.com/open-telemetry/opentelemetry-log-collection/database"
 	"go.etcd.io/bbolt"
 )
 

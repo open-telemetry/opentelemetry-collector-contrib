@@ -1,4 +1,4 @@
-module github.com/opentelemetry/opentelemetry-log-collection
+module github.com/open-telemetry/opentelemetry-log-collection
 
 go 1.14
 
@@ -11,6 +11,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/observiq/ctimefmt v1.0.0
+	github.com/observiq/go-syslog/v3 v3.0.2
 	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/stretchr/objx v0.1.1 // indirect
@@ -20,7 +21,7 @@ require (
 	golang.org/x/exp v0.0.0-20200224162631-6cc2880d07d6 // indirect
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
-	golang.org/x/sys v0.0.0-20201015000850-e3ed0017c211 // indirect
+	golang.org/x/sys v0.0.0-20201015000850-e3ed0017c211
 	golang.org/x/text v0.3.3
 	golang.org/x/tools v0.0.0-20200904185747-39188db58858 // indirect
 	gonum.org/v1/gonum v0.6.2

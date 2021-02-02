@@ -17,7 +17,7 @@ package logger
 import (
 	"sync"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/entry"
+	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 )
 
 // Receiver is a channel that receives internal stanza logs.

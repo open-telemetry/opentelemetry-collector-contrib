@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/database"
-	"github.com/opentelemetry/opentelemetry-log-collection/logger"
+	"github.com/open-telemetry/opentelemetry-log-collection/database"
+	"github.com/open-telemetry/opentelemetry-log-collection/logger"
 	"go.uber.org/zap"
 )
 

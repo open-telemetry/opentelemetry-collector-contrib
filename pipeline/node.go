@@ -17,7 +17,7 @@ package pipeline
 import (
 	"hash/fnv"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/operator"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 )
 
 // OperatorNode is a basic node that represents an operator in a pipeline.

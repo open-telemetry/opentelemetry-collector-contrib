@@ -23,7 +23,7 @@ var version = func() string {
 	}
 
 	for _, mod := range bi.Deps {
-		if mod.Path == "github.com/opentelemetry/opentelemetry-log-collection" {
+		if mod.Path == "github.com/open-telemetry/opentelemetry-log-collection" {
 			return mod.Version
 		}
 	}

@@ -25,9 +25,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/entry"
-	"github.com/opentelemetry/opentelemetry-log-collection/operator"
-	"github.com/opentelemetry/opentelemetry-log-collection/operator/helper"
+	"github.com/open-telemetry/opentelemetry-log-collection/entry"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 	"golang.org/x/sync/semaphore"
 )
 

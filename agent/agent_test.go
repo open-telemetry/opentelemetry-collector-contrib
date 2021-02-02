@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/testutil"
+	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )

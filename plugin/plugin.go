@@ -23,8 +23,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/errors"
-	"github.com/opentelemetry/opentelemetry-log-collection/operator"
+	"github.com/open-telemetry/opentelemetry-log-collection/errors"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	yaml "gopkg.in/yaml.v2"
 )
 

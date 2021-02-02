@@ -19,10 +19,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/errors"
-	"github.com/opentelemetry/opentelemetry-log-collection/operator"
-	"github.com/opentelemetry/opentelemetry-log-collection/operator/helper"
-	"github.com/opentelemetry/opentelemetry-log-collection/pipeline"
+	"github.com/open-telemetry/opentelemetry-log-collection/errors"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
+	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	yaml "gopkg.in/yaml.v2"
 )
 

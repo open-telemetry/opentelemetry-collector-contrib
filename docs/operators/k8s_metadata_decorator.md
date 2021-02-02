@@ -12,7 +12,7 @@ The `k8s_metadata_decorator` operator adds labels and annotations to the entry u
 | `pod_name_field`  | `pod_name`               | A [field](/docs/types/field.md) that contains the k8s pod name associated with the log entry                                                                                                                                             |
 | `cache_ttl`       | 10m                      | A [duration](/docs/types/duration.md) indicating the time it takes for a cached entry to expire                                                                                                                                          |
 | `timeout`         | 10s                      | A [duration](/docs/types/duration.md) indicating how long to wait for the API to respond before timing out                                                                                                                               |
-| `allow_proxy`     | false                    | Controls whether or not the agent will take into account [proxy](https://github.com/opentelemetry/opentelemetry-log-collection/blob/master/docs/proxy.md) configuration when communicating with the k8s metadata api |
+| `allow_proxy`     | false                    | Controls whether or not the agent will take into account [proxy](https://github.com/open-telemetry/opentelemetry-log-collection/blob/master/docs/proxy.md) configuration when communicating with the k8s metadata api |
 | `if`              |                          | An [expression](/docs/types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
 
 ### Example Configurations

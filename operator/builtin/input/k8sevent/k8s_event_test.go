@@ -19,9 +19,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/operator"
-	"github.com/opentelemetry/opentelemetry-log-collection/operator/helper"
-	"github.com/opentelemetry/opentelemetry-log-collection/testutil"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
+	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

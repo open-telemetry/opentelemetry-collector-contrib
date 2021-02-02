@@ -7,7 +7,7 @@ Clone this repo into your Go workspace:
 cd $GOPATH/src
 mkdir -p github.com/observiq && cd github.com/observiq
 git clone git@github.com:observiq/stanza.git
-cd $GOPATH/src/github.com/opentelemetry/opentelemetry-log-collection
+cd $GOPATH/src/github.com/open-telemetry/opentelemetry-log-collection
 ```
 
 ## Building

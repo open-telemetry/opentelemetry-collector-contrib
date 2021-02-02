@@ -18,8 +18,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/database"
-	"github.com/opentelemetry/opentelemetry-log-collection/testutil"
+	"github.com/open-telemetry/opentelemetry-log-collection/database"
+	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 	"github.com/stretchr/testify/require"
 )
 

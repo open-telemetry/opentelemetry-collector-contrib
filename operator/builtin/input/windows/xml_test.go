@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/entry"
+	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/stretchr/testify/require"
 )
 

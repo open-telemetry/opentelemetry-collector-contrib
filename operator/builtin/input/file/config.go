@@ -22,9 +22,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/opentelemetry/opentelemetry-log-collection/entry"
-	"github.com/opentelemetry/opentelemetry-log-collection/operator"
-	"github.com/opentelemetry/opentelemetry-log-collection/operator/helper"
+	"github.com/open-telemetry/opentelemetry-log-collection/entry"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/ianaindex"
 	"golang.org/x/text/encoding/unicode"
