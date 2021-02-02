@@ -31,7 +31,6 @@
         "CreatedAt": "2020-07-30T22:12:29.837074927Z",
         "StartedAt": "2020-07-30T22:12:31.138830877Z",
         "Type": "NORMAL",
-        "ExitCode": 2,
         "Networks": [
           {
             "NetworkMode": "bridge",
