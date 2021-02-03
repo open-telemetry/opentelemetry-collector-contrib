@@ -32,7 +32,7 @@ var (
 	minNumberOfSpans     = 2
 )
 
-func newSpanPropertiesFilter(operationNamePattern *string, minDuration *time.Duration, minNumberOfSpans *int) (policyEvaluator, error) {
+func newSpanPropertiesFilter(operationNamePattern *string, minDuration *time.Duration, minNumberOfSpans *int) policyEvaluator {
 	var operationRe *regexp.Regexp
 	if operationNamePattern != nil {
 		operationRe, _ = regexp.Compile(*operationNamePattern)
@@ -43,20 +43,19 @@ func newSpanPropertiesFilter(operationNamePattern *string, minDuration *time.Dur
 		minNumberOfSpans:  minNumberOfSpans,
 		minDuration:       minDuration,
 		maxSpansPerSecond: math.MaxInt64,
-	}, nil
+	}
 }
 
 func evaluate(t *testing.T, evaluator policyEvaluator, traces *TraceData, expectedDecision Decision) {
 	u, _ := uuid.NewRandom()
-	decision, err := evaluator.Evaluate(pdata.NewTraceID(u), traces)
-	assert.NoError(t, err)
+	decision := evaluator.Evaluate(pdata.NewTraceID(u), traces)
 	assert.Equal(t, expectedDecision, decision)
 }
 
 func TestPartialSpanPropertiesFilter(t *testing.T) {
-	opFilter, _ := newSpanPropertiesFilter(&operationNamePattern, nil, nil)
-	durationFilter, _ := newSpanPropertiesFilter(nil, &minDuration, nil)
-	spansFilter, _ := newSpanPropertiesFilter(nil, nil, &minNumberOfSpans)
+	opFilter := newSpanPropertiesFilter(&operationNamePattern, nil, nil)
+	durationFilter := newSpanPropertiesFilter(nil, &minDuration, nil)
+	spansFilter := newSpanPropertiesFilter(nil, nil, &minNumberOfSpans)
 
 	cases := []struct {
 		Desc      string
@@ -123,7 +122,7 @@ func TestSpanPropertiesFilter(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
 			// Regular match
-			filter, _ := newSpanPropertiesFilter(&operationNamePattern, &minDuration, &minNumberOfSpans)
+			filter := newSpanPropertiesFilter(&operationNamePattern, &minDuration, &minNumberOfSpans)
 			evaluate(t, filter, c.Trace, c.Decision)
 
 			// Invert match

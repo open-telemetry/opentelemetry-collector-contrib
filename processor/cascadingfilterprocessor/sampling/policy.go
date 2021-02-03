@@ -72,5 +72,5 @@ type PolicyEvaluator interface {
 	OnLateArrivingSpans(earlyDecision Decision, spans []*pdata.Span) error
 
 	// Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-	Evaluate(traceID pdata.TraceID, trace *TraceData) (Decision, error)
+	Evaluate(traceID pdata.TraceID, trace *TraceData) Decision
 }

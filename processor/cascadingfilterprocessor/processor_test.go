@@ -487,9 +487,9 @@ func (m *mockPolicyEvaluator) OnLateArrivingSpans(sampling.Decision, []*pdata.Sp
 	m.LateArrivingSpansCount++
 	return m.NextError
 }
-func (m *mockPolicyEvaluator) Evaluate(_ pdata.TraceID, _ *sampling.TraceData) (sampling.Decision, error) {
+func (m *mockPolicyEvaluator) Evaluate(_ pdata.TraceID, _ *sampling.TraceData) sampling.Decision {
 	m.EvaluationCount++
-	return m.NextDecision, m.NextError
+	return m.NextDecision
 }
 
 type manualTTicker struct {
