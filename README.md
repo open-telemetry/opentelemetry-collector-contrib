@@ -80,7 +80,6 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [Jay Camp](https://github.com/jrcamp), Splunk
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Red Hat
 - [Kevin Brockhoff](https://github.com/kbrockhoff), Daugherty Business Solutions
-- [Nail Islamov](https://github.com/nilebox), Google
 - [Owais Lone](https://github.com/owais), Splunk
 
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
