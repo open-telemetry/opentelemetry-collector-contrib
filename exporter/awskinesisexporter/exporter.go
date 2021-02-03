@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kinesisexporter
+package awskinesisexporter
 
 import (
 	"context"
 
-	kinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
+	awskinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -27,8 +27,8 @@ import (
 
 // Exporter implements an OpenTelemetry trace exporter that exports all spans to AWS Kinesis
 type Exporter struct {
-	kinesis *kinesis.Exporter
-	logger  *zap.Logger
+	awskinesis *awskinesis.Exporter
+	logger     *zap.Logger
 }
 
 var _ component.TracesExporter = (*Exporter)(nil)
@@ -43,7 +43,7 @@ func (e Exporter) Start(_ context.Context, _ component.Host) error {
 
 // Shutdown is invoked during exporter shutdown.
 func (e Exporter) Shutdown(context.Context) error {
-	e.kinesis.Flush()
+	e.awskinesis.Flush()
 	return nil
 }
 
@@ -61,9 +61,9 @@ func (e Exporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 			if span.Process == nil {
 				span.Process = pBatch.Process
 			}
-			err := e.kinesis.ExportSpan(span)
+			err := e.awskinesis.ExportSpan(span)
 			if err != nil {
-				e.logger.Error("error exporting span to kinesis", zap.Error(err))
+				e.logger.Error("error exporting span to awskinesis", zap.Error(err))
 				exportErr = err
 			}
 		}

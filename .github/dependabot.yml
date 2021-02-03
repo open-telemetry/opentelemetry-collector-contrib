@@ -55,7 +55,7 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/exporter/kinesisexporter"
+    directory: "/exporter/awskinesisexporter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

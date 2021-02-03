@@ -2,7 +2,7 @@ receivers:
   examplereceiver:
 
 exporters:
-  kinesis:
+  awskinesis:
 
 processors:
   exampleprocessor:
@@ -12,4 +12,4 @@ service:
     traces:
       receivers: [examplereceiver]
       processors: [exampleprocessor]
-      exporters: [kinesis]
+      exporters: [awskinesis]
