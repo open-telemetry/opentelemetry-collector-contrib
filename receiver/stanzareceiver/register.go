@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@ package stanzareceiver
 
 import (
 	// Register operators for stanza
-	_ "github.com/observiq/stanza/operator/builtin/input/file"
-	_ "github.com/observiq/stanza/operator/builtin/parser/json"
-	_ "github.com/observiq/stanza/operator/builtin/parser/regex"
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/file"
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/json"
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/regex"
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/severity"
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/time"
 )
