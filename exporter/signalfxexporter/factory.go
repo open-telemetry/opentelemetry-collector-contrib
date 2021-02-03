@@ -83,9 +83,7 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 
 	config := intoCfg.(*Config)
 
-	// custom unmarhalling is required to get []translation.Rule, the default
-	// unmarshaller only supports string slices. If translations_config is not
-	// set in the config, set it to the defaults and return.
+	// If translations_config is not set in the config, set it to the defaults and return.
 	if !componentViperSection.IsSet(translationRulesConfigKey) {
 		config.TranslationRules, err = loadDefaultTranslationRules()
 		return err
