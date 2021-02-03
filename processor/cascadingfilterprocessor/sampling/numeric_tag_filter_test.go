@@ -78,8 +78,7 @@ func TestNumericTagFilter(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
 			u, _ := uuid.NewRandom()
-			decision, err := filter.Evaluate(pdata.NewTraceID(u), c.Trace)
-			assert.NoError(t, err)
+			decision := filter.Evaluate(pdata.NewTraceID(u), c.Trace)
 			assert.Equal(t, decision, c.Decision)
 		})
 	}

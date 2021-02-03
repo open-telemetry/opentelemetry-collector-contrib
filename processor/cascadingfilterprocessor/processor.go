@@ -204,7 +204,7 @@ func (cfsp *cascadingFilterSpanProcessor) samplingPolicyOnTick() {
 		trace.DecisionTime = time.Now()
 		totalSpans += trace.SpanCount
 
-		provisionalDecision, _ := cfsp.makeProvisionalDecision(id, trace, &metrics)
+		provisionalDecision, _ := cfsp.makeProvisionalDecision(id, trace)
 		if provisionalDecision == sampling.Sampled {
 			trace.FinalDecision = cfsp.updateRate(currSecond, trace.SpanCount)
 			if trace.FinalDecision == sampling.Sampled {
@@ -341,62 +341,56 @@ func updateFilteringTag(traces pdata.Traces) {
 	}
 }
 
-func (cfsp *cascadingFilterSpanProcessor) makeProvisionalDecision(id pdata.TraceID, trace *sampling.TraceData, metrics *policyMetrics) (sampling.Decision, *Policy) {
+func (cfsp *cascadingFilterSpanProcessor) makeProvisionalDecision(id pdata.TraceID, trace *sampling.TraceData) (sampling.Decision, *Policy) {
 	provisionalDecision := sampling.Unspecified
 	var matchingPolicy *Policy = nil
 
 	for i, policy := range cfsp.policies {
 		policyEvaluateStartTime := time.Now()
-		decision, err := policy.Evaluator.Evaluate(id, trace)
+		decision := policy.Evaluator.Evaluate(id, trace)
 		stats.Record(
 			policy.ctx,
 			statDecisionLatencyMicroSec.M(int64(time.Since(policyEvaluateStartTime)/time.Microsecond)))
 
-		if err != nil {
-			trace.Decisions[i] = sampling.NotSampled
-			metrics.evaluateErrorCount++
-			cfsp.logger.Debug("Sampling policy error", zap.Error(err))
-		} else {
-			trace.Decisions[i] = decision
+		trace.Decisions[i] = decision
 
-			switch decision {
-			case sampling.Sampled:
-				// any single policy that decides to sample will cause the decision to be sampled
-				// the nextConsumer will get the context from the first matching policy
-				provisionalDecision = sampling.Sampled
-				if matchingPolicy == nil {
-					matchingPolicy = policy
-				}
-
-				if policy.probabilisticFilter {
-					trace.SelectedByProbabilisticFilter = true
-				}
-
-				_ = stats.RecordWithTags(
-					policy.ctx,
-					[]tag.Mutator{tag.Insert(tagPolicyDecisionKey, statusSampled)},
-					statPolicyDecision.M(int64(1)),
-				)
-			case sampling.NotSampled:
-				if provisionalDecision == sampling.Unspecified {
-					provisionalDecision = sampling.NotSampled
-				}
-				_ = stats.RecordWithTags(
-					policy.ctx,
-					[]tag.Mutator{tag.Insert(tagPolicyDecisionKey, statusNotSampled)},
-					statPolicyDecision.M(int64(1)),
-				)
-			case sampling.SecondChance:
-				if provisionalDecision != sampling.Sampled {
-					provisionalDecision = sampling.SecondChance
-				}
-
-				_ = stats.RecordWithTags(
-					policy.ctx,
-					[]tag.Mutator{tag.Insert(tagPolicyDecisionKey, statusSecondChance)},
-					statPolicyDecision.M(int64(1)),
-				)
+		switch decision {
+		case sampling.Sampled:
+			// any single policy that decides to sample will cause the decision to be sampled
+			// the nextConsumer will get the context from the first matching policy
+			provisionalDecision = sampling.Sampled
+			if matchingPolicy == nil {
+				matchingPolicy = policy
 			}
+
+			if policy.probabilisticFilter {
+				trace.SelectedByProbabilisticFilter = true
+			}
+
+			_ = stats.RecordWithTags(
+				policy.ctx,
+				[]tag.Mutator{tag.Insert(tagPolicyDecisionKey, statusSampled)},
+				statPolicyDecision.M(int64(1)),
+			)
+		case sampling.NotSampled:
+			if provisionalDecision == sampling.Unspecified {
+				provisionalDecision = sampling.NotSampled
+			}
+			_ = stats.RecordWithTags(
+				policy.ctx,
+				[]tag.Mutator{tag.Insert(tagPolicyDecisionKey, statusNotSampled)},
+				statPolicyDecision.M(int64(1)),
+			)
+		case sampling.SecondChance:
+			if provisionalDecision != sampling.Sampled {
+				provisionalDecision = sampling.SecondChance
+			}
+
+			_ = stats.RecordWithTags(
+				policy.ctx,
+				[]tag.Mutator{tag.Insert(tagPolicyDecisionKey, statusSecondChance)},
+				statPolicyDecision.M(int64(1)),
+			)
 		}
 	}
 

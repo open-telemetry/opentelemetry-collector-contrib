@@ -16,8 +16,12 @@ package observability
 
 import (
 	"context"
+	"sort"
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/metric/metricexport"
 )
@@ -52,6 +56,7 @@ func (e *exporter) ExportMetrics(ctx context.Context, data []*metricdata.Metric)
 	return nil
 }
 
+// TODO: FIXME: this is one flaky test
 func TestMetrics(t *testing.T) {
 	type testCase struct {
 		name       string
@@ -83,29 +88,28 @@ func TestMetrics(t *testing.T) {
 	}
 	go metricReader.ReadAndExport(e)
 
-	// TODO: FIXME: this is one flaky test
-	//var data []*metricdata.Metric
-	//select {
-	//case <-time.After(time.Second * 10):
-	//	t.Fatalf("timedout waiting for metrics to arrive")
-	//case data = <-e.ReturnAfter(len(tests)):
-	//}
-	//
-	//sort.Slice(tests, func(i, j int) bool {
-	//	return tests[i].name < tests[j].name
-	//})
-	//
-	//sort.Slice(data, func(i, j int) bool {
-	//	return data[i].Descriptor.Name < data[j].Descriptor.Name
-	//})
+	var data []*metricdata.Metric
+	select {
+	case <-time.After(time.Second * 10):
+		t.Fatalf("timedout waiting for metrics to arrive")
+	case data = <-e.ReturnAfter(len(tests)):
+	}
+
+	sort.Slice(tests, func(i, j int) bool {
+		return tests[i].name < tests[j].name
+	})
+
+	sort.Slice(data, func(i, j int) bool {
+		return data[i].Descriptor.Name < data[j].Descriptor.Name
+	})
 
 	// TODO: FIXME: this is one flaky test
-	//for i, tt := range tests {
-	//	require.Len(t, data, len(tests))
-	//	d := data[i]
-	//	assert.Equal(t, d.Descriptor.Name, tt.name)
-	//	require.Len(t, d.TimeSeries, 1)
-	//	require.Len(t, d.TimeSeries[0].Points, 1)
-	//	assert.Equal(t, d.TimeSeries[0].Points[0].Value, int64(1))
-	//}
+	for i, tt := range tests {
+		require.Len(t, data, len(tests))
+		d := data[i]
+		assert.Equal(t, d.Descriptor.Name, tt.name)
+		require.Len(t, d.TimeSeries, 1)
+		require.Len(t, d.TimeSeries[0].Points, 1)
+		assert.Equal(t, d.TimeSeries[0].Points[0].Value, int64(1))
+	}
 }

@@ -38,26 +38,22 @@ func TestRateLimiter(t *testing.T) {
 
 	// Trace span count greater than spans per second
 	trace.SpanCount = 10
-	decision, err := rateLimiter.Evaluate(traceID, trace)
-	assert.Nil(t, err)
+	decision := rateLimiter.Evaluate(traceID, trace)
 	assert.Equal(t, decision, NotSampled)
 
 	// Trace span count just above to spans per second
 	trace.SpanCount = 4
-	decision, err = rateLimiter.Evaluate(traceID, trace)
-	assert.Nil(t, err)
+	decision = rateLimiter.Evaluate(traceID, trace)
 	assert.Equal(t, decision, NotSampled)
 
 	// Trace span count equal spans per second
 	trace.SpanCount = 3
-	decision, err = rateLimiter.Evaluate(traceID, trace)
-	assert.Nil(t, err)
+	decision = rateLimiter.Evaluate(traceID, trace)
 	assert.Equal(t, decision, Sampled)
 
 	// Trace span count less than spans per second
 	trace.SpanCount = 0
-	decision, err = rateLimiter.Evaluate(traceID, trace)
-	assert.Nil(t, err)
+	decision = rateLimiter.Evaluate(traceID, trace)
 	assert.Equal(t, decision, Sampled)
 }
 

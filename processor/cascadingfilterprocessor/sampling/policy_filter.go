@@ -55,7 +55,7 @@ func checkIfStringAttrFound(attrs pdata.AttributeMap, filter *stringAttributeFil
 }
 
 // evaluateRules goes through the defined properties and checks if they are matched
-func (pe *policyEvaluator) evaluateRules(_ pdata.TraceID, trace *TraceData) (Decision, error) {
+func (pe *policyEvaluator) evaluateRules(_ pdata.TraceID, trace *TraceData) Decision {
 	trace.Lock()
 	batches := trace.ReceivedBatches
 	trace.Unlock()
@@ -157,15 +157,15 @@ func (pe *policyEvaluator) evaluateRules(_ pdata.TraceID, trace *TraceData) (Dec
 		conditionMet.numericAttr &&
 		conditionMet.stringAttr {
 		if pe.invertMatch {
-			return NotSampled, nil
+			return NotSampled
 		}
-		return Sampled, nil
+		return Sampled
 	}
 
 	if pe.invertMatch {
-		return Sampled, nil
+		return Sampled
 	}
-	return NotSampled, nil
+	return NotSampled
 }
 
 func (pe *policyEvaluator) shouldConsider(currSecond int64, trace *TraceData) bool {
@@ -205,21 +205,21 @@ func (pe *policyEvaluator) updateRate(currSecond int64, numSpans int64) Decision
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision. Also takes into account
 // the usage of sampling rate budget
-func (pe *policyEvaluator) Evaluate(traceID pdata.TraceID, trace *TraceData) (Decision, error) {
+func (pe *policyEvaluator) Evaluate(traceID pdata.TraceID, trace *TraceData) Decision {
 	currSecond := time.Now().Unix()
 
 	if !pe.shouldConsider(currSecond, trace) {
-		return NotSampled, nil
+		return NotSampled
 	}
 
-	decision, err := pe.evaluateRules(traceID, trace)
-	if decision != Sampled || err != nil {
-		return decision, err
+	decision := pe.evaluateRules(traceID, trace)
+	if decision != Sampled {
+		return decision
 	}
 
 	if pe.emitsSecondChance() {
-		return SecondChance, nil
+		return SecondChance
 	}
 
-	return pe.updateRate(currSecond, trace.SpanCount), nil
+	return pe.updateRate(currSecond, trace.SpanCount)
 }
