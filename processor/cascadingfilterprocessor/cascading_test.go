@@ -95,27 +95,24 @@ func createCascadingEvaluator(t *testing.T) *cascadingFilterSpanProcessor {
 	return cascading
 }
 
-var (
-	metrics = &policyMetrics{}
-)
-
 func TestSampling(t *testing.T) {
 	cascading := createCascadingEvaluator(t)
 
-	decision, _ := cascading.makeProvisionalDecision(pdata.NewTraceID([16]byte{0}), createTrace(cascading, 8, 1000000), metrics)
+	decision, policy := cascading.makeProvisionalDecision(pdata.NewTraceID([16]byte{0}), createTrace(cascading, 8, 1000000))
+	require.NotNil(t, policy)
 	require.Equal(t, sampling.Sampled, decision)
 
-	decision, _ = cascading.makeProvisionalDecision(pdata.NewTraceID([16]byte{1}), createTrace(cascading, 1000, 1000), metrics)
+	decision, _ = cascading.makeProvisionalDecision(pdata.NewTraceID([16]byte{1}), createTrace(cascading, 1000, 1000))
 	require.Equal(t, sampling.SecondChance, decision)
 }
 
 func TestSecondChanceEvaluation(t *testing.T) {
 	cascading := createCascadingEvaluator(t)
 
-	decision, _ := cascading.makeProvisionalDecision(pdata.NewTraceID([16]byte{0}), createTrace(cascading, 8, 1000), metrics)
+	decision, _ := cascading.makeProvisionalDecision(pdata.NewTraceID([16]byte{0}), createTrace(cascading, 8, 1000))
 	require.Equal(t, sampling.SecondChance, decision)
 
-	decision, _ = cascading.makeProvisionalDecision(pdata.NewTraceID([16]byte{1}), createTrace(cascading, 8, 1000), metrics)
+	decision, _ = cascading.makeProvisionalDecision(pdata.NewTraceID([16]byte{1}), createTrace(cascading, 8, 1000))
 	require.Equal(t, sampling.SecondChance, decision)
 
 	// TODO: This could me optimized to make a decision within cascadingfilter processor, as such span would never fit anyway
@@ -129,12 +126,12 @@ func TestProbabilisticFilter(t *testing.T) {
 	cascading := createCascadingEvaluator(t)
 
 	trace1 := createTrace(cascading, 8, 1000000)
-	decision, _ := cascading.makeProvisionalDecision(pdata.NewTraceID([16]byte{0}), trace1, metrics)
+	decision, _ := cascading.makeProvisionalDecision(pdata.NewTraceID([16]byte{0}), trace1)
 	require.Equal(t, sampling.Sampled, decision)
 	require.True(t, trace1.SelectedByProbabilisticFilter)
 
 	trace2 := createTrace(cascading, 800, 1000000)
-	decision, _ = cascading.makeProvisionalDecision(pdata.NewTraceID([16]byte{1}), trace2, metrics)
+	decision, _ = cascading.makeProvisionalDecision(pdata.NewTraceID([16]byte{1}), trace2)
 	require.Equal(t, sampling.SecondChance, decision)
 	require.False(t, trace2.SelectedByProbabilisticFilter)
 
