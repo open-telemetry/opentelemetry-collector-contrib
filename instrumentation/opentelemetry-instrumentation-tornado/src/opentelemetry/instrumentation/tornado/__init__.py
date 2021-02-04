@@ -35,18 +35,15 @@ Usage
     tornado.ioloop.IOLoop.current().start()
 """
 
-import inspect
-import typing
 from collections import namedtuple
-from functools import partial, wraps
+from functools import partial
 from logging import getLogger
 
 import tornado.web
 import wrapt
-from tornado.routing import Rule
 from wrapt import wrap_function_wrapper
 
-from opentelemetry import configuration, context, propagators, trace
+from opentelemetry import context, propagators, trace
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.tornado.version import __version__
 from opentelemetry.instrumentation.utils import (
@@ -57,6 +54,7 @@ from opentelemetry.instrumentation.utils import (
 from opentelemetry.trace.propagation.textmap import DictGetter
 from opentelemetry.trace.status import Status
 from opentelemetry.util import time_ns
+from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
 
 from .client import fetch_async  # pylint: disable=E0401
 
@@ -65,10 +63,9 @@ _TraceContext = namedtuple("TraceContext", ["activation", "span", "token"])
 _HANDLER_CONTEXT_KEY = "_otel_trace_context_key"
 _OTEL_PATCHED_KEY = "_otel_patched_key"
 
-cfg = configuration.Configuration()
-_excluded_urls = cfg._excluded_urls("tornado")
-_traced_attrs = cfg._traced_request_attrs("tornado")
 
+_excluded_urls = get_excluded_urls("TORNADO")
+_traced_request_attrs = get_traced_request_attrs("TORNADO")
 carrier_getter = DictGetter()
 
 
@@ -186,7 +183,9 @@ def _get_attributes_from_request(request):
     if request.remote_ip:
         attrs["net.peer.ip"] = request.remote_ip
 
-    return extract_attributes_from_object(request, _traced_attrs, attrs)
+    return extract_attributes_from_object(
+        request, _traced_request_attrs, attrs
+    )
 
 
 def _get_operation_name(handler, request):

@@ -13,7 +13,9 @@
 # limitations under the License.
 
 import grpc
-from tests.protobuf import test_server_pb2_grpc
+from tests.protobuf import (  # pylint: disable=no-name-in-module
+    test_server_pb2_grpc,
+)
 
 import opentelemetry.instrumentation.grpc
 from opentelemetry import trace

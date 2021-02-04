@@ -21,13 +21,13 @@ from django.conf.urls import url
 from django.test import Client
 from django.test.utils import setup_test_environment, teardown_test_environment
 
-from opentelemetry.configuration import Configuration
 from opentelemetry.instrumentation.django import DjangoInstrumentor
 from opentelemetry.sdk.util import get_dict_as_key
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.test.wsgitestutil import WsgiTestBase
 from opentelemetry.trace import SpanKind
 from opentelemetry.trace.status import StatusCode
+from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
 
 # pylint: disable=import-error
 from .views import (
@@ -64,7 +64,6 @@ class TestMiddleware(TestBase, WsgiTestBase):
         super().setUp()
         setup_test_environment()
         _django_instrumentor.instrument()
-        Configuration._reset()  # pylint: disable=protected-access
         self.env_patch = patch.dict(
             "os.environ",
             {
@@ -75,11 +74,11 @@ class TestMiddleware(TestBase, WsgiTestBase):
         self.env_patch.start()
         self.exclude_patch = patch(
             "opentelemetry.instrumentation.django.middleware._DjangoMiddleware._excluded_urls",
-            Configuration()._excluded_urls("django"),
+            get_excluded_urls("DJANGO"),
         )
         self.traced_patch = patch(
             "opentelemetry.instrumentation.django.middleware._DjangoMiddleware._traced_request_attrs",
-            Configuration()._traced_request_attrs("django"),
+            get_traced_request_attrs("DJANGO"),
         )
         self.exclude_patch.start()
         self.traced_patch.start()

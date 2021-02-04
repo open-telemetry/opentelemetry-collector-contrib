@@ -11,17 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Optional
 
 import fastapi
 from starlette.routing import Match
 
-from opentelemetry.configuration import Configuration
 from opentelemetry.instrumentation.asgi import OpenTelemetryMiddleware
-from opentelemetry.instrumentation.fastapi.version import __version__  # noqa
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
+from opentelemetry.util.http import get_excluded_urls
 
-_excluded_urls = Configuration()._excluded_urls("fastapi")
+_excluded_urls = get_excluded_urls("FASTAPI")
 
 
 class FastAPIInstrumentor(BaseInstrumentor):

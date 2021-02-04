@@ -22,6 +22,9 @@ SERVER_ID = 1
 
 
 class TestServer(test_server_pb2_grpc.GRPCTestServerServicer):
+    # pylint: disable=invalid-name
+    # pylint: disable=no-self-use
+
     def SimpleMethod(self, request, context):
         if request.request_data == "error":
             context.set_code(grpc.StatusCode.INVALID_ARGUMENT)

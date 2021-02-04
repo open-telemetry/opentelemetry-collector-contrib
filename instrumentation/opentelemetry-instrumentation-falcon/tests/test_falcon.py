@@ -16,10 +16,10 @@ from unittest.mock import Mock, patch
 
 from falcon import testing
 
-from opentelemetry.configuration import Configuration
 from opentelemetry.instrumentation.falcon import FalconInstrumentor
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.trace.status import StatusCode
+from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
 
 from .app import make_app
 
@@ -30,7 +30,6 @@ class TestFalconInstrumentation(TestBase):
         FalconInstrumentor().instrument()
         self.app = make_app()
         # pylint: disable=protected-access
-        Configuration()._reset()
         self.env_patch = patch.dict(
             "os.environ",
             {
@@ -41,7 +40,7 @@ class TestFalconInstrumentation(TestBase):
         self.env_patch.start()
         self.exclude_patch = patch(
             "opentelemetry.instrumentation.falcon._excluded_urls",
-            Configuration()._excluded_urls("falcon"),
+            get_excluded_urls("FALCON"),
         )
         middleware = self.app._middleware[0][  # pylint:disable=W0212
             0
@@ -49,7 +48,7 @@ class TestFalconInstrumentation(TestBase):
         self.traced_patch = patch.object(
             middleware,
             "_traced_request_attrs",
-            Configuration()._traced_request_attrs("falcon"),
+            get_traced_request_attrs("FALCON"),
         )
         self.exclude_patch.start()
         self.traced_patch.start()

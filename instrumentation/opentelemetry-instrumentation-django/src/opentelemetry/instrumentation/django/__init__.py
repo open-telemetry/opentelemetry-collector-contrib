@@ -13,10 +13,13 @@
 # limitations under the License.
 
 from logging import getLogger
+from os import environ
 
 from django.conf import settings
 
-from opentelemetry.configuration import Configuration
+from opentelemetry.instrumentation.django.environment_variables import (
+    OTEL_PYTHON_DJANGO_INSTRUMENT,
+)
 from opentelemetry.instrumentation.django.middleware import _DjangoMiddleware
 from opentelemetry.instrumentation.django.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
@@ -43,11 +46,7 @@ class DjangoInstrumentor(BaseInstrumentor, MetricMixin):
 
         # FIXME this is probably a pattern that will show up in the rest of the
         # ext. Find a better way of implementing this.
-        # FIXME Probably the evaluation of strings into boolean values can be
-        # built inside the Configuration class itself with the magic method
-        # __bool__
-
-        if Configuration().DJANGO_INSTRUMENT is False:
+        if environ.get(OTEL_PYTHON_DJANGO_INSTRUMENT) == "False":
             return
 
         # This can not be solved, but is an inherent problem of this approach:

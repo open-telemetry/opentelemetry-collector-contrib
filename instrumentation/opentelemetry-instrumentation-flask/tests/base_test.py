@@ -15,14 +15,8 @@
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 
-from opentelemetry.configuration import Configuration
-
 
 class InstrumentationTest:
-    def setUp(self):  # pylint: disable=invalid-name
-        super().setUp()  # pylint: disable=no-member
-        Configuration._reset()  # pylint: disable=protected-access
-
     @staticmethod
     def _hello_endpoint(helloid):
         if helloid == 500:

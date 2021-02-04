@@ -84,8 +84,6 @@ class BotoInstrumentor(BaseInstrumentor):
         # For exemple EC2 uses AWSQueryConnection and S3 uses
         # AWSAuthConnection
 
-        # FIXME should the tracer provider be accessed via Configuration
-        # instead?
         # pylint: disable=attribute-defined-outside-init
         self._tracer = get_tracer(
             __name__, __version__, kwargs.get("tracer_provider")

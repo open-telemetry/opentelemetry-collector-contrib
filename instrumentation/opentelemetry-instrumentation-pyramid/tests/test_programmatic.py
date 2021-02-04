@@ -17,10 +17,10 @@ from unittest.mock import Mock, patch
 from pyramid.config import Configurator
 
 from opentelemetry import trace
-from opentelemetry.configuration import Configuration
 from opentelemetry.instrumentation.pyramid import PyramidInstrumentor
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.test.wsgitestutil import WsgiTestBase
+from opentelemetry.util.http import get_excluded_urls
 
 # pylint: disable=import-error
 from .pyramid_base_test import InstrumentationTest
@@ -62,7 +62,7 @@ class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
         self.env_patch.start()
         self.exclude_patch = patch(
             "opentelemetry.instrumentation.pyramid.callbacks._excluded_urls",
-            Configuration()._excluded_urls("pyramid"),
+            get_excluded_urls("PYRAMID"),
         )
         self.exclude_patch.start()
 
