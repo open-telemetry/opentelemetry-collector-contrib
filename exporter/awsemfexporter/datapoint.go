@@ -17,9 +17,8 @@ package awsemfexporter
 import (
 	"time"
 
-	"go.opentelemetry.io/otel/label"
-
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/otel/label"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/mapwithexpiry"
