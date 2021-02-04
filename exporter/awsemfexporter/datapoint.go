@@ -28,11 +28,6 @@ import (
 const (
 	cleanInterval = 5 * time.Minute
 	minTimeDiff   = 50 * time.Millisecond // We assume 50 milli-seconds is the minimal gap between two collected data sample to be valid to calculate delta
-
-	namespaceKey  = "CloudWatchNamespace"
-	metricNameKey = "CloudWatchMetricName"
-	logGroupKey   = "CloudWatchLogGroup"
-	logStreamKey  = "CloudWatchLogStream"
 )
 
 var currentState = mapwithexpiry.NewMapWithExpiry(cleanInterval)
@@ -246,7 +241,7 @@ func getDataPoints(pmd *pdata.Metric, metadata CWMetricMetadata, logger *zap.Log
 		return
 	}
 
-	rateKeyParams := rateKeyParams{
+	rateKeys := rateKeyParams{
 		namespaceKey:  metadata.Namespace,
 		metricNameKey: pmd.Name(),
 		logGroupKey:   metadata.LogGroup,
@@ -260,7 +255,7 @@ func getDataPoints(pmd *pdata.Metric, metadata CWMetricMetadata, logger *zap.Log
 			metadata.InstrumentationLibraryName,
 			rateCalculationMetadata{
 				false,
-				rateKeyParams,
+				rateKeys,
 				metadata.TimestampMs,
 			},
 			metric.DataPoints(),
@@ -271,7 +266,7 @@ func getDataPoints(pmd *pdata.Metric, metadata CWMetricMetadata, logger *zap.Log
 			metadata.InstrumentationLibraryName,
 			rateCalculationMetadata{
 				false,
-				rateKeyParams,
+				rateKeys,
 				metadata.TimestampMs,
 			},
 			metric.DataPoints(),
@@ -282,7 +277,7 @@ func getDataPoints(pmd *pdata.Metric, metadata CWMetricMetadata, logger *zap.Log
 			metadata.InstrumentationLibraryName,
 			rateCalculationMetadata{
 				metric.AggregationTemporality() == pdata.AggregationTemporalityCumulative,
-				rateKeyParams,
+				rateKeys,
 				metadata.TimestampMs,
 			},
 			metric.DataPoints(),
@@ -293,7 +288,7 @@ func getDataPoints(pmd *pdata.Metric, metadata CWMetricMetadata, logger *zap.Log
 			metadata.InstrumentationLibraryName,
 			rateCalculationMetadata{
 				metric.AggregationTemporality() == pdata.AggregationTemporalityCumulative,
-				rateKeyParams,
+				rateKeys,
 				metadata.TimestampMs,
 			},
 			metric.DataPoints(),

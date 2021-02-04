@@ -245,7 +245,7 @@ func TestIntDataPointSliceAt(t *testing.T) {
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 	instrLibName := "cloudwatch-otel"
 	labels := map[string]string{"label1": "value1"}
-	rateKeyParams := rateKeyParams{
+	rateKeys := rateKeyParams{
 		namespaceKey:  "namespace",
 		metricNameKey: "foo",
 		logGroupKey:   "log-group",
@@ -281,7 +281,7 @@ func TestIntDataPointSliceAt(t *testing.T) {
 				instrLibName,
 				rateCalculationMetadata{
 					tc.needsCalculateRate,
-					rateKeyParams,
+					rateKeys,
 					timestamp,
 				},
 				testDPS,
@@ -305,7 +305,7 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 	instrLibName := "cloudwatch-otel"
 	labels := map[string]string{"label1": "value1"}
-	rateKeyParams := rateKeyParams{
+	rateKeys := rateKeyParams{
 		namespaceKey:  "namespace",
 		metricNameKey: "foo",
 		logGroupKey:   "log-group",
@@ -341,7 +341,7 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 				instrLibName,
 				rateCalculationMetadata{
 					tc.needsCalculateRate,
-					rateKeyParams,
+					rateKeys,
 					timestamp,
 				},
 				testDPS,
