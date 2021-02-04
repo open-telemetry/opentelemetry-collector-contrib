@@ -46,7 +46,7 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 			containerMetrics := convertContainerMetrics(stats, logger, containerMetadata)
 			acc.accumulate(convertToOTLPMetrics(ContainerPrefix, containerMetrics, containerResource, timestamp))
 			aggregateTaskMetrics(&taskMetrics, containerMetrics)
-			OverrideWithTaskLevelLimit(&taskMetrics, metadata)
+			overrideWithTaskLevelLimit(&taskMetrics, metadata)
 			acc.accumulate(convertToOTLPMetrics(TaskPrefix, taskMetrics, taskResource, timestamp))
 		} else {
 			acc.accumulate(convertResourceToRMS(containerResource))
@@ -88,7 +88,7 @@ func convertContainerMetrics(stats *ContainerStats, logger *zap.Logger, containe
 	return containerMetrics
 }
 
-func OverrideWithTaskLevelLimit(taskMetrics *ECSMetrics, metadata TaskMetadata) {
+func overrideWithTaskLevelLimit(taskMetrics *ECSMetrics, metadata TaskMetadata) {
 	// Overwrite Memory limit with task level limit
 	if metadata.Limits.Memory != nil {
 		taskMetrics.MemoryReserved = *metadata.Limits.Memory
