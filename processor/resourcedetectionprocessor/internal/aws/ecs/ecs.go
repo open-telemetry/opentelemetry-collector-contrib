@@ -67,6 +67,7 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	attr := res.Attributes()
 	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attr.InsertString("cloud.infrastructure_service", "ECS")
+	attr.InsertString("cloud.namespace", "ecs")
 	attr.InsertString("aws.ecs.task.arn", tmdeResp.TaskARN)
 	attr.InsertString("aws.ecs.task.family", tmdeResp.Family)
 
