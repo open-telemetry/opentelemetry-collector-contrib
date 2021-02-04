@@ -156,7 +156,7 @@ func TestTraceSourceProcessor(t *testing.T) {
 	test := newTraceData(k8sLabels)
 
 	ttn := &testTraceConsumer{}
-	rtp, _ := newSourceTraceProcessor(ttn, cfg)
+	rtp := newSourceTraceProcessor(ttn, cfg)
 	assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
 
 	rtp.ConsumeTraces(context.Background(), test)
@@ -177,7 +177,7 @@ func TestTraceSourceProcessorNewTaxonomy(t *testing.T) {
 	config.PodTemplateHashKey = "k8s.pod.labels.pod-template-hash"
 	config.ContainerKey = "k8s.container.name"
 
-	rtp, _ := newSourceTraceProcessor(ttn, config)
+	rtp := newSourceTraceProcessor(ttn, config)
 	rtp.ConsumeTraces(context.Background(), test)
 
 	assertTracesEqual(t, ttn.td, want)
@@ -188,7 +188,7 @@ func TestTraceSourceProcessorEmpty(t *testing.T) {
 	test := newTraceData(limitedLabels)
 
 	ttn := &testTraceConsumer{}
-	rtp, _ := newSourceTraceProcessor(ttn, cfg)
+	rtp := newSourceTraceProcessor(ttn, cfg)
 
 	rtp.ConsumeTraces(context.Background(), test)
 	assertTracesEqual(t, ttn.td, want)
@@ -199,7 +199,7 @@ func TestTraceSourceProcessorMetaAtSpan(t *testing.T) {
 	want := newTraceDataWithSpans(limitedLabelsWithMeta, mergedK8sLabels)
 
 	ttn := &testTraceConsumer{}
-	rtp, _ := newSourceTraceProcessor(ttn, cfg)
+	rtp := newSourceTraceProcessor(ttn, cfg)
 
 	rtp.ConsumeTraces(context.Background(), test)
 
@@ -223,7 +223,7 @@ func TestTraceSourceFilteringOutByRegex(t *testing.T) {
 		want.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(0)
 
 		ttn := &testTraceConsumer{}
-		rtp, _ := newSourceTraceProcessor(ttn, config)
+		rtp := newSourceTraceProcessor(ttn, config)
 
 		rtp.ConsumeTraces(context.Background(), test)
 
@@ -239,7 +239,7 @@ func TestTraceSourceFilteringOutByExclude(t *testing.T) {
 	want.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(0)
 
 	ttn := &testTraceConsumer{}
-	rtp, _ := newSourceTraceProcessor(ttn, cfg)
+	rtp := newSourceTraceProcessor(ttn, cfg)
 
 	rtp.ConsumeTraces(context.Background(), test)
 
@@ -256,7 +256,7 @@ func TestTraceSourceIncludePrecedence(t *testing.T) {
 	ttn := &testTraceConsumer{}
 	cfg1 := createConfig()
 	cfg1.ExcludePodRegex = ".*"
-	rtp, _ := newSourceTraceProcessor(ttn, cfg1)
+	rtp := newSourceTraceProcessor(ttn, cfg1)
 
 	rtp.ConsumeTraces(context.Background(), test)
 
@@ -275,7 +275,7 @@ func TestTraceSourceProcessorAnnotations(t *testing.T) {
 	want := newTraceData(mergedK8sLabelsWithMeta)
 
 	ttn := &testTraceConsumer{}
-	rtp, _ := newSourceTraceProcessor(ttn, cfg)
+	rtp := newSourceTraceProcessor(ttn, cfg)
 	assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
 
 	rtp.ConsumeTraces(context.Background(), test)
