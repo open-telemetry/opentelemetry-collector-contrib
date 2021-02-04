@@ -17,6 +17,8 @@ package awsemfexporter
 import (
 	"time"
 
+	"go.opentelemetry.io/otel/label"
+
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
@@ -24,8 +26,8 @@ import (
 )
 
 const (
-	CleanInterval = 5 * time.Minute
-	MinTimeDiff   = 50 * time.Millisecond // We assume 50 milli-seconds is the minimal gap between two collected data sample to be valid to calculate delta
+	cleanInterval = 5 * time.Minute
+	minTimeDiff   = 50 * time.Millisecond // We assume 50 milli-seconds is the minimal gap between two collected data sample to be valid to calculate delta
 
 	namespaceKey  = "CloudWatchNamespace"
 	metricNameKey = "CloudWatchMetricName"
@@ -33,7 +35,7 @@ const (
 	logStreamKey  = "CloudWatchLogStream"
 )
 
-var currentState = mapwithexpiry.NewMapWithExpiry(CleanInterval)
+var currentState = mapwithexpiry.NewMapWithExpiry(cleanInterval)
 
 // DataPoint represents a processed metric data point
 type DataPoint struct {
@@ -57,8 +59,16 @@ type DataPoints interface {
 // rateCalculationMetadata contains the metadata required to perform rate calculation
 type rateCalculationMetadata struct {
 	needsCalculateRate bool
-	rateKeyParams      map[string]string
+	rateKeyParams      rateKeyParams
 	timestampMs        int64
+}
+
+type rateKeyParams struct {
+	namespaceKey  string
+	metricNameKey string
+	logGroupKey   string
+	logStreamKey  string
+	labels        label.Distinct
 }
 
 // rateState stores a metric's value
@@ -96,13 +106,15 @@ type DoubleSummaryDataPointSlice struct {
 // At retrieves the IntDataPoint at the given index and performs rate calculation if necessary.
 func (dps IntDataPointSlice) At(i int) DataPoint {
 	metric := dps.IntDataPointSlice.At(i)
-	labels := createLabels(metric.LabelsMap())
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
+	labels := createLabels(metric.LabelsMap())
 
 	var metricVal float64
 	metricVal = float64(metric.Value())
 	if dps.needsCalculateRate {
-		rateKey := createMetricKey(labels, dps.rateKeyParams)
+		sortedLabels := getSortedLabels(metric.LabelsMap())
+		dps.rateKeyParams.labels = sortedLabels
+		rateKey := dps.rateKeyParams
 		rateTS := dps.timestampMs
 		if timestampMs > 0 {
 			// Use metric timestamp if available
@@ -127,7 +139,9 @@ func (dps DoubleDataPointSlice) At(i int) DataPoint {
 	var metricVal float64
 	metricVal = metric.Value()
 	if dps.needsCalculateRate {
-		rateKey := createMetricKey(labels, dps.rateKeyParams)
+		sortedLabels := getSortedLabels(metric.LabelsMap())
+		dps.rateKeyParams.labels = sortedLabels
+		rateKey := dps.rateKeyParams
 		rateTS := dps.timestampMs
 		if timestampMs > 0 {
 			// Use metric timestamp if available
@@ -181,8 +195,7 @@ func (dps DoubleSummaryDataPointSlice) At(i int) DataPoint {
 	}
 }
 
-// createLabels converts OTel StringMap labels to a map and optionally adds in the
-// OTel instrumentation library name
+// createLabels converts OTel StringMap labels to a map
 func createLabels(labelsMap pdata.StringMap) map[string]string {
 	labels := make(map[string]string, labelsMap.Len()+1)
 	labelsMap.ForEach(func(k, v string) {
@@ -192,8 +205,20 @@ func createLabels(labelsMap pdata.StringMap) map[string]string {
 	return labels
 }
 
+// getSortedLabels converts OTel StringMap labels to sorted labels as label.Distinct
+func getSortedLabels(labelsMap pdata.StringMap) label.Distinct {
+	var kvs []label.KeyValue
+	var sortable label.Sortable
+	labelsMap.ForEach(func(k, v string) {
+		kvs = append(kvs, label.String(k, v))
+	})
+	set := label.NewSetWithSortable(kvs, &sortable)
+
+	return set.Equivalent()
+}
+
 // calculateRate calculates the metric value's rate of change using valDelta / timeDelta.
-func calculateRate(metricKey string, val float64, timestampMs int64) float64 {
+func calculateRate(metricKey interface{}, val float64, timestampMs int64) float64 {
 	var metricRate float64
 	// get previous Metric content from map. Need to lock the map until set the new state
 	currentState.Lock()
@@ -202,7 +227,7 @@ func calculateRate(metricKey string, val float64, timestampMs int64) float64 {
 		deltaTime := timestampMs - prevStats.timestampMs
 
 		deltaVal := val - prevStats.value
-		if deltaTime > MinTimeDiff.Milliseconds() && deltaVal >= 0 {
+		if deltaTime > minTimeDiff.Milliseconds() && deltaVal >= 0 {
 			metricRate = deltaVal * 1e3 / float64(deltaTime)
 		}
 	}
@@ -221,7 +246,7 @@ func getDataPoints(pmd *pdata.Metric, metadata CWMetricMetadata, logger *zap.Log
 		return
 	}
 
-	rateKeyParams := map[string]string{
+	rateKeyParams := rateKeyParams{
 		namespaceKey:  metadata.Namespace,
 		metricNameKey: pmd.Name(),
 		logGroupKey:   metadata.LogGroup,

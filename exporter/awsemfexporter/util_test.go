@@ -15,12 +15,13 @@
 package awsemfexporter
 
 import (
+	"testing"
+
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/internaldata"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -255,65 +256,6 @@ func TestGetLogInfo(t *testing.T) {
 			logGroup, logStream := getLogInfo(&rm, tc.namespace, config)
 			assert.Equal(t, tc.logGroup, logGroup)
 			assert.Equal(t, tc.logStream, logStream)
-		})
-	}
-}
-
-func TestCreateMetricKey(t *testing.T) {
-	testCases := []struct {
-		testName    string
-		labels      map[string]string
-		params      map[string]string
-		expectedKey string
-	}{
-		{
-			"single label w/o params",
-			map[string]string{
-				"a": "A",
-			},
-			nil,
-			"a:A",
-		},
-		{
-			"single label w/ params",
-			map[string]string{
-				"a": "A",
-			},
-			map[string]string{
-				"param1": "foo",
-			},
-			"a:A,param1:foo",
-		},
-		{
-			"multiple labels w/o params",
-			map[string]string{
-				"b": "B",
-				"a": "A",
-				"c": "C",
-			},
-			nil,
-			"a:A,b:B,c:C",
-		},
-		{
-			"multiple labels w/ params",
-			map[string]string{
-				"b": "B",
-				"a": "A",
-				"c": "C",
-			},
-			map[string]string{
-				"param1": "foo",
-				"bar":    "car",
-				"apple":  "banana",
-			},
-			"a:A,apple:banana,b:B,bar:car,c:C,param1:foo",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.testName, func(t *testing.T) {
-			key := createMetricKey(tc.labels, tc.params)
-			assert.Equal(t, tc.expectedKey, key)
 		})
 	}
 }

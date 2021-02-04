@@ -245,11 +245,11 @@ func TestIntDataPointSliceAt(t *testing.T) {
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 	instrLibName := "cloudwatch-otel"
 	labels := map[string]string{"label1": "value1"}
-	rateKeyParams := map[string]string{
-		(namespaceKey):  "namespace",
-		(metricNameKey): "foo",
-		(logGroupKey):   "log-group",
-		(logStreamKey):  "log-stream",
+	rateKeyParams := rateKeyParams{
+		namespaceKey:  "namespace",
+		metricNameKey: "foo",
+		logGroupKey:   "log-group",
+		logStreamKey:  "log-stream",
 	}
 
 	testCases := []struct {
@@ -290,7 +290,7 @@ func TestIntDataPointSliceAt(t *testing.T) {
 			expectedDP := DataPoint{
 				Value: tc.value,
 				Labels: map[string]string{
-					"label1":              "value1",
+					"label1": "value1",
 				},
 			}
 
@@ -305,11 +305,11 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 	instrLibName := "cloudwatch-otel"
 	labels := map[string]string{"label1": "value1"}
-	rateKeyParams := map[string]string{
-		(namespaceKey):  "namespace",
-		(metricNameKey): "foo",
-		(logGroupKey):   "log-group",
-		(logStreamKey):  "log-stream",
+	rateKeyParams := rateKeyParams{
+		namespaceKey:  "namespace",
+		metricNameKey: "foo",
+		logGroupKey:   "log-group",
+		logStreamKey:  "log-stream",
 	}
 
 	testCases := []struct {
@@ -350,7 +350,7 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 			expectedDP := DataPoint{
 				Value: tc.value,
 				Labels: map[string]string{
-					"label1":              "value1",
+					"label1": "value1",
 				},
 			}
 
@@ -385,7 +385,7 @@ func TestDoubleHistogramDataPointSliceAt(t *testing.T) {
 			Count: 17,
 		},
 		Labels: map[string]string{
-			"label1":              "value1",
+			"label1": "value1",
 		},
 	}
 
@@ -425,7 +425,7 @@ func TestDoubleSummaryDataPointSliceAt(t *testing.T) {
 			Sum:   17.13,
 		},
 		Labels: map[string]string{
-			"label1":              "value1",
+			"label1": "value1",
 		},
 	}
 
@@ -502,11 +502,11 @@ func TestGetDataPoints(t *testing.T) {
 				metadata.InstrumentationLibraryName,
 				rateCalculationMetadata{
 					false,
-					map[string]string{
-						(namespaceKey):  metadata.Namespace,
-						(metricNameKey): "foo",
-						(logGroupKey):   metadata.LogGroup,
-						(logStreamKey):  metadata.LogStream,
+					rateKeyParams{
+						namespaceKey:  metadata.Namespace,
+						metricNameKey: "foo",
+						logGroupKey:   metadata.LogGroup,
+						logStreamKey:  metadata.LogStream,
 					},
 					metadata.TimestampMs,
 				},
@@ -520,11 +520,11 @@ func TestGetDataPoints(t *testing.T) {
 				metadata.InstrumentationLibraryName,
 				rateCalculationMetadata{
 					false,
-					map[string]string{
-						(namespaceKey):  metadata.Namespace,
-						(metricNameKey): "foo",
-						(logGroupKey):   metadata.LogGroup,
-						(logStreamKey):  metadata.LogStream,
+					rateKeyParams{
+						namespaceKey:  metadata.Namespace,
+						metricNameKey: "foo",
+						logGroupKey:   metadata.LogGroup,
+						logStreamKey:  metadata.LogStream,
 					},
 					metadata.TimestampMs,
 				},
@@ -538,11 +538,11 @@ func TestGetDataPoints(t *testing.T) {
 				metadata.InstrumentationLibraryName,
 				rateCalculationMetadata{
 					true,
-					map[string]string{
-						(namespaceKey):  metadata.Namespace,
-						(metricNameKey): "foo",
-						(logGroupKey):   metadata.LogGroup,
-						(logStreamKey):  metadata.LogStream,
+					rateKeyParams{
+						namespaceKey:  metadata.Namespace,
+						metricNameKey: "foo",
+						logGroupKey:   metadata.LogGroup,
+						logStreamKey:  metadata.LogStream,
 					},
 					metadata.TimestampMs,
 				},
@@ -556,11 +556,11 @@ func TestGetDataPoints(t *testing.T) {
 				metadata.InstrumentationLibraryName,
 				rateCalculationMetadata{
 					true,
-					map[string]string{
-						(namespaceKey):  metadata.Namespace,
-						(metricNameKey): "foo",
-						(logGroupKey):   metadata.LogGroup,
-						(logStreamKey):  metadata.LogStream,
+					rateKeyParams{
+						namespaceKey:  metadata.Namespace,
+						metricNameKey: "foo",
+						logGroupKey:   metadata.LogGroup,
+						logStreamKey:  metadata.LogStream,
 					},
 					metadata.TimestampMs,
 				},
@@ -705,4 +705,107 @@ func BenchmarkGetDataPoints(b *testing.B) {
 			getDataPoints(&metric, metadata, logger)
 		}
 	}
+}
+
+func TestGetSortedLabelsEquals(t *testing.T) {
+	labelMap1 := pdata.NewStringMap()
+	labelMap1.Insert("k1", "v1")
+	labelMap1.Insert("k2", "v2")
+
+	labelMap2 := pdata.NewStringMap()
+	labelMap2.Insert("k2", "v2")
+	labelMap2.Insert("k1", "v1")
+
+	sortedLabels1 := getSortedLabels(labelMap1)
+	sortedLabels2 := getSortedLabels(labelMap2)
+
+	rateKeyParams1 := rateKeyParams{
+		namespaceKey:  "namespace",
+		metricNameKey: "foo",
+		logGroupKey:   "log-group",
+		logStreamKey:  "log-stream",
+		labels:        sortedLabels1,
+	}
+	rateKeyParams2 := rateKeyParams{
+		namespaceKey:  "namespace",
+		metricNameKey: "foo",
+		logGroupKey:   "log-group",
+		logStreamKey:  "log-stream",
+		labels:        sortedLabels2,
+	}
+	assert.Equal(t, rateKeyParams1, rateKeyParams2)
+}
+
+func TestGetSortedLabelsNotEqual(t *testing.T) {
+	labelMap1 := pdata.NewStringMap()
+	labelMap1.Insert("k1", "v1")
+	labelMap1.Insert("k2", "v2")
+
+	labelMap2 := pdata.NewStringMap()
+	labelMap2.Insert("k2", "v2")
+	labelMap2.Insert("k1", "v3")
+
+	sortedLabels1 := getSortedLabels(labelMap1)
+	sortedLabels2 := getSortedLabels(labelMap2)
+
+	rateKeyParams1 := rateKeyParams{
+		namespaceKey:  "namespace",
+		metricNameKey: "foo",
+		logGroupKey:   "log-group",
+		logStreamKey:  "log-stream",
+		labels:        sortedLabels1,
+	}
+	rateKeyParams2 := rateKeyParams{
+		namespaceKey:  "namespace",
+		metricNameKey: "foo",
+		logGroupKey:   "log-group",
+		logStreamKey:  "log-stream",
+		labels:        sortedLabels2,
+	}
+	assert.NotEqual(t, rateKeyParams1, rateKeyParams2)
+}
+
+func TestGetSortedLabelsNotEqualOnPram(t *testing.T) {
+	labelMap1 := pdata.NewStringMap()
+	labelMap1.Insert("k1", "v1")
+	labelMap1.Insert("k2", "v2")
+
+	labelMap2 := pdata.NewStringMap()
+	labelMap2.Insert("k2", "v2")
+	labelMap2.Insert("k1", "v1")
+
+	sortedLabels1 := getSortedLabels(labelMap1)
+	sortedLabels2 := getSortedLabels(labelMap2)
+
+	rateKeyParams1 := rateKeyParams{
+		namespaceKey:  "namespaceA",
+		metricNameKey: "foo",
+		logGroupKey:   "log-group",
+		logStreamKey:  "log-stream",
+		labels:        sortedLabels1,
+	}
+	rateKeyParams2 := rateKeyParams{
+		namespaceKey:  "namespaceB",
+		metricNameKey: "foo",
+		logGroupKey:   "log-group",
+		logStreamKey:  "log-stream",
+		labels:        sortedLabels2,
+	}
+	assert.NotEqual(t, rateKeyParams1, rateKeyParams2)
+}
+
+func TestGetSortedLabelsNotEqualOnEmptyLabel(t *testing.T) {
+	rateKeyParams1 := rateKeyParams{
+		namespaceKey:  "namespaceA",
+		metricNameKey: "foo",
+		logGroupKey:   "log-group",
+		logStreamKey:  "log-stream",
+	}
+	rateKeyParams2 := rateKeyParams{
+		namespaceKey:  "namespaceA",
+		metricNameKey: "foo",
+		logGroupKey:   "log-group",
+		logStreamKey:  "log-stream",
+	}
+	assert.Equal(t, rateKeyParams1, rateKeyParams2)
 }

@@ -16,7 +16,6 @@ package awsemfexporter
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 
@@ -96,33 +95,6 @@ func getLogInfo(rm *pdata.ResourceMetrics, cWNamespace string, config *Config) (
 	}
 
 	return
-}
-
-// createMetricKey generates a hashed key from metric labels and additional parameters
-func createMetricKey(labels map[string]string, parameters map[string]string) string {
-	var sb strings.Builder
-	keys := make([]string, 0, len(labels)+len(parameters))
-	values := make(map[string]string, len(labels)+len(parameters))
-
-	for k, v := range labels {
-		keys = append(keys, k)
-		values[k] = v
-	}
-	for k, v := range parameters {
-		keys = append(keys, k)
-		values[k] = v
-	}
-
-	sort.Strings(keys)
-	for i, key := range keys {
-		keyValuePair := key + ":" + values[key]
-		sb.WriteString(keyValuePair)
-		if i < len(keys)-1 {
-			sb.WriteString(",")
-		}
-	}
-
-	return sb.String()
 }
 
 // unixNanoToMilliseconds converts a timestamp in nanoseconds to milliseconds.

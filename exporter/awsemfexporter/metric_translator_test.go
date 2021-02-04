@@ -543,7 +543,7 @@ func assertCwStatsEqual(t *testing.T, expected, actual *CWMetricStats) {
 func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 	config := &Config{
 		Namespace:             "",
-		DimensionRollupOption: ZeroAndSingleDimensionRollup,
+		DimensionRollupOption: zeroAndSingleDimensionRollup,
 		logger:                zap.NewNop(),
 	}
 	md := createMetricTestData()
@@ -564,10 +564,10 @@ func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 	expectedMeasurement := CwMeasurement{
 		Namespace: "myServiceNS/myServiceName",
 		Dimensions: [][]string{
-			{OTellibDimensionKey, "isItAnError", "spanName"},
-			{OTellibDimensionKey},
-			{OTellibDimensionKey, "spanName"},
-			{OTellibDimensionKey, "isItAnError"},
+			{oTellibDimensionKey, "isItAnError", "spanName"},
+			{oTellibDimensionKey},
+			{oTellibDimensionKey, "spanName"},
+			{oTellibDimensionKey, "isItAnError"},
 		},
 		Metrics: []map[string]string{
 			{
@@ -613,7 +613,7 @@ func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 func TestTranslateOtToCWMetricWithoutInstrLibrary(t *testing.T) {
 	config := &Config{
 		Namespace:             "",
-		DimensionRollupOption: ZeroAndSingleDimensionRollup,
+		DimensionRollupOption: zeroAndSingleDimensionRollup,
 		logger:                zap.NewNop(),
 	}
 	md := createMetricTestData()
@@ -625,7 +625,7 @@ func TestTranslateOtToCWMetricWithoutInstrLibrary(t *testing.T) {
 	assert.Equal(t, 1, len(cwm[0].Measurements))
 
 	met := cwm[0]
-	assert.NotContains(t, met.Fields, OTellibDimensionKey)
+	assert.NotContains(t, met.Fields, oTellibDimensionKey)
 	assert.Equal(t, met.Fields["spanCounter"], float64(0))
 
 	expectedMeasurement := CwMeasurement{
@@ -677,7 +677,7 @@ func TestTranslateOtToCWMetricWithoutInstrLibrary(t *testing.T) {
 func TestTranslateOtToCWMetricWithNameSpace(t *testing.T) {
 	config := &Config{
 		Namespace:             "",
-		DimensionRollupOption: ZeroAndSingleDimensionRollup,
+		DimensionRollupOption: zeroAndSingleDimensionRollup,
 	}
 	md := consumerdata.MetricsData{
 		Node: &commonpb.Node{
@@ -853,12 +853,12 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 			"has match w/ Zero + Single dim rollup",
 			[]string{"spanCounter"},
 			nil,
-			ZeroAndSingleDimensionRollup,
+			zeroAndSingleDimensionRollup,
 			[][]string{
 				{"spanName", "isItAnError"},
-				{"spanName", OTellibDimensionKey},
-				{OTellibDimensionKey, "isItAnError"},
-				{OTellibDimensionKey},
+				{"spanName", oTellibDimensionKey},
+				{oTellibDimensionKey, "isItAnError"},
+				{oTellibDimensionKey},
 			},
 			1,
 		},
@@ -869,7 +869,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 			"",
 			[][]string{
 				{"spanName", "isItAnError"},
-				{"spanName", OTellibDimensionKey},
+				{"spanName", oTellibDimensionKey},
 			},
 			1,
 		},
@@ -885,7 +885,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 			"",
 			[][]string{
 				{"spanName", "isItAnError"},
-				{"spanName", OTellibDimensionKey},
+				{"spanName", oTellibDimensionKey},
 			},
 			1,
 		},
@@ -906,11 +906,11 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 			"No match w/ rollup",
 			[]string{"invalid"},
 			nil,
-			ZeroAndSingleDimensionRollup,
+			zeroAndSingleDimensionRollup,
 			[][]string{
-				{OTellibDimensionKey, "spanName"},
-				{OTellibDimensionKey, "isItAnError"},
-				{OTellibDimensionKey},
+				{oTellibDimensionKey, "spanName"},
+				{oTellibDimensionKey, "isItAnError"},
+				{oTellibDimensionKey},
 			},
 			1,
 		},
@@ -927,7 +927,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 
 	for _, tc := range testCases {
 		m := MetricDeclaration{
-			Dimensions:          [][]string{{"isItAnError", "spanName"}, {"spanName", OTellibDimensionKey}},
+			Dimensions:          [][]string{{"isItAnError", "spanName"}, {"spanName", oTellibDimensionKey}},
 			MetricNameSelectors: tc.metricNameSelectors,
 			LabelMatchers:       tc.labelMatchers,
 		}
@@ -956,7 +956,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 	t.Run("No instrumentation library name w/ no dim rollup", func(t *testing.T) {
 		rm = internaldata.OCToMetrics(md).ResourceMetrics().At(0)
 		m := MetricDeclaration{
-			Dimensions:          [][]string{{"isItAnError", "spanName"}, {"spanName", OTellibDimensionKey}},
+			Dimensions:          [][]string{{"isItAnError", "spanName"}, {"spanName", oTellibDimensionKey}},
 			MetricNameSelectors: []string{"spanCounter"},
 		}
 		config := &Config{
@@ -985,7 +985,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 func TestTranslateCWMetricToEMF(t *testing.T) {
 	cwMeasurement := CwMeasurement{
 		Namespace:  "test-emf",
-		Dimensions: [][]string{{OTellibDimensionKey}, {OTellibDimensionKey, "spanName"}},
+		Dimensions: [][]string{{oTellibDimensionKey}, {oTellibDimensionKey, "spanName"}},
 		Metrics: []map[string]string{{
 			"Name": "spanCounter",
 			"Unit": "Count",
@@ -993,7 +993,7 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 	}
 	timestamp := int64(1596151098037)
 	fields := make(map[string]interface{})
-	fields[OTellibDimensionKey] = "cloudwatch-otel"
+	fields[oTellibDimensionKey] = "cloudwatch-otel"
 	fields["spanName"] = "test"
 	fields["spanCounter"] = 0
 
@@ -1011,7 +1011,7 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 func TestTranslateCWMetricToEMFNoMeasurements(t *testing.T) {
 	timestamp := int64(1596151098037)
 	fields := make(map[string]interface{})
-	fields[OTellibDimensionKey] = "cloudwatch-otel"
+	fields[oTellibDimensionKey] = "cloudwatch-otel"
 	fields["spanName"] = "test"
 	fields["spanCounter"] = 0
 
@@ -1039,7 +1039,7 @@ func TestTranslateCWMetricToEMFNoMeasurements(t *testing.T) {
 
 func TestGetCWMetrics(t *testing.T) {
 	namespace := "Namespace"
-	OTelLib := OTellibDimensionKey
+	OTelLib := oTellibDimensionKey
 	instrumentationLibName := "InstrLibName"
 	config := &Config{
 		Namespace:             "",
@@ -1731,7 +1731,7 @@ func TestGetCWMetrics(t *testing.T) {
 func TestBuildCWMetric(t *testing.T) {
 	namespace := "Namespace"
 	instrLibName := "InstrLibName"
-	OTelLib := OTellibDimensionKey
+	OTelLib := oTellibDimensionKey
 	config := &Config{
 		Namespace:             "",
 		DimensionRollupOption: "",
@@ -1917,7 +1917,7 @@ func TestBuildCWMetric(t *testing.T) {
 		{
 			"Single label w/ single rollup",
 			map[string]string{"a": "foo"},
-			SingleDimensionRollupOnly,
+			singleDimensionRollupOnly,
 			[][]string{
 				{"a", OTelLib},
 			},
@@ -1925,7 +1925,7 @@ func TestBuildCWMetric(t *testing.T) {
 		{
 			"Single label w/ zero + single rollup",
 			map[string]string{"a": "foo"},
-			ZeroAndSingleDimensionRollup,
+			zeroAndSingleDimensionRollup,
 			[][]string{
 				{"a", OTelLib},
 				{OTelLib},
@@ -1950,7 +1950,7 @@ func TestBuildCWMetric(t *testing.T) {
 				"b": "bar",
 				"c": "car",
 			},
-			ZeroAndSingleDimensionRollup,
+			zeroAndSingleDimensionRollup,
 			[][]string{
 				{"a", "b", "c", OTelLib},
 				{OTelLib, "a"},
@@ -1973,7 +1973,7 @@ func TestBuildCWMetric(t *testing.T) {
 			}
 
 			expectedFields := map[string]interface{}{
-				OTellibDimensionKey: OTelLib,
+				oTellibDimensionKey: OTelLib,
 				"foo":               int64(-17),
 			}
 			for k, v := range tc.labels {
@@ -1999,7 +1999,7 @@ func TestBuildCWMetric(t *testing.T) {
 
 func TestBuildCWMetricWithMetricDeclarations(t *testing.T) {
 	namespace := "Namespace"
-	OTelLib := OTellibDimensionKey
+	OTelLib := oTellibDimensionKey
 	instrumentationLibName := "cloudwatch-otel"
 	metricName := "metric1"
 	metricValue := int64(-17)
@@ -2046,7 +2046,7 @@ func TestBuildCWMetricWithMetricDeclarations(t *testing.T) {
 					MetricNameSelectors: []string{metricName},
 				},
 			},
-			SingleDimensionRollupOnly,
+			singleDimensionRollupOnly,
 			[][]string{{"a"}, {"a", OTelLib}},
 		},
 		{
@@ -2058,7 +2058,7 @@ func TestBuildCWMetricWithMetricDeclarations(t *testing.T) {
 					MetricNameSelectors: []string{metricName},
 				},
 			},
-			ZeroAndSingleDimensionRollup,
+			zeroAndSingleDimensionRollup,
 			[][]string{{"a"}, {"a", OTelLib}, {OTelLib}},
 		},
 		{
@@ -2094,7 +2094,7 @@ func TestBuildCWMetricWithMetricDeclarations(t *testing.T) {
 					MetricNameSelectors: []string{metricName},
 				},
 			},
-			ZeroAndSingleDimensionRollup,
+			zeroAndSingleDimensionRollup,
 			[][]string{
 				{"a"},
 				{OTelLib, "a"},
@@ -2135,7 +2135,7 @@ func TestBuildCWMetricWithMetricDeclarations(t *testing.T) {
 					MetricNameSelectors: []string{metricName},
 				},
 			},
-			ZeroAndSingleDimensionRollup,
+			zeroAndSingleDimensionRollup,
 			[][]string{
 				{"a", "b"},
 				{"b"},
@@ -2153,7 +2153,7 @@ func TestBuildCWMetricWithMetricDeclarations(t *testing.T) {
 					MetricNameSelectors: []string{metricName},
 				},
 			},
-			ZeroAndSingleDimensionRollup,
+			zeroAndSingleDimensionRollup,
 			[][]string{
 				{"b"},
 				{OTelLib, "a"},
@@ -2170,7 +2170,7 @@ func TestBuildCWMetricWithMetricDeclarations(t *testing.T) {
 					MetricNameSelectors: []string{metricName},
 				},
 			},
-			ZeroAndSingleDimensionRollup,
+			zeroAndSingleDimensionRollup,
 			[][]string{
 				{"a", "b"},
 				{"b"},
@@ -2223,7 +2223,7 @@ func TestBuildCWMetricWithMetricDeclarations(t *testing.T) {
 					MetricNameSelectors: []string{metricName},
 				},
 			},
-			ZeroAndSingleDimensionRollup,
+			zeroAndSingleDimensionRollup,
 			[][]string{
 				{"a", "b"},
 				{"b"},
@@ -2280,7 +2280,7 @@ func TestBuildCWMetricWithMetricDeclarations(t *testing.T) {
 					MetricNameSelectors: []string{metricName},
 				},
 			},
-			ZeroAndSingleDimensionRollup,
+			zeroAndSingleDimensionRollup,
 			nil,
 		},
 	}
@@ -2302,7 +2302,7 @@ func TestBuildCWMetricWithMetricDeclarations(t *testing.T) {
 			}
 
 			expectedFields := map[string]interface{}{
-				OTellibDimensionKey: instrumentationLibName,
+				oTellibDimensionKey: instrumentationLibName,
 				metricName:          metricValue,
 			}
 			for k, v := range tc.labels {
@@ -2354,7 +2354,7 @@ func TestDimensionRollup(t *testing.T) {
 		},
 		{
 			"single dim w/o instrumentation library name",
-			SingleDimensionRollupOnly,
+			singleDimensionRollupOnly,
 			[]string{"a", "b", "c"},
 			noInstrumentationLibraryName,
 			[][]string{
@@ -2365,32 +2365,32 @@ func TestDimensionRollup(t *testing.T) {
 		},
 		{
 			"single dim w/ instrumentation library name",
-			SingleDimensionRollupOnly,
+			singleDimensionRollupOnly,
 			[]string{"a", "b", "c"},
 			"cloudwatch-otel",
 			[][]string{
-				{OTellibDimensionKey, "a"},
-				{OTellibDimensionKey, "b"},
-				{OTellibDimensionKey, "c"},
+				{oTellibDimensionKey, "a"},
+				{oTellibDimensionKey, "b"},
+				{oTellibDimensionKey, "c"},
 			},
 		},
 		{
 			"single dim w/o instrumentation library name and only one label",
-			SingleDimensionRollupOnly,
+			singleDimensionRollupOnly,
 			[]string{"a"},
 			noInstrumentationLibraryName,
 			[][]string{{"a"}},
 		},
 		{
 			"single dim w/ instrumentation library name and only one label",
-			SingleDimensionRollupOnly,
+			singleDimensionRollupOnly,
 			[]string{"a"},
 			"cloudwatch-otel",
-			[][]string{{OTellibDimensionKey, "a"}},
+			[][]string{{oTellibDimensionKey, "a"}},
 		},
 		{
 			"zero + single dim w/o instrumentation library name",
-			ZeroAndSingleDimensionRollup,
+			zeroAndSingleDimensionRollup,
 			[]string{"a", "b", "c"},
 			noInstrumentationLibraryName,
 			[][]string{
@@ -2402,27 +2402,27 @@ func TestDimensionRollup(t *testing.T) {
 		},
 		{
 			"zero + single dim w/ instrumentation library name",
-			ZeroAndSingleDimensionRollup,
+			zeroAndSingleDimensionRollup,
 			[]string{"a", "b", "c", "A"},
 			"cloudwatch-otel",
 			[][]string{
-				{OTellibDimensionKey},
-				{OTellibDimensionKey, "a"},
-				{OTellibDimensionKey, "b"},
-				{OTellibDimensionKey, "c"},
-				{OTellibDimensionKey, "A"},
+				{oTellibDimensionKey},
+				{oTellibDimensionKey, "a"},
+				{oTellibDimensionKey, "b"},
+				{oTellibDimensionKey, "c"},
+				{oTellibDimensionKey, "A"},
 			},
 		},
 		{
 			"zero dim rollup w/o instrumentation library name and no labels",
-			ZeroAndSingleDimensionRollup,
+			zeroAndSingleDimensionRollup,
 			[]string{},
 			noInstrumentationLibraryName,
 			nil,
 		},
 		{
 			"zero dim rollup w/ instrumentation library name and no labels",
-			ZeroAndSingleDimensionRollup,
+			zeroAndSingleDimensionRollup,
 			[]string{},
 			"cloudwatch-otel",
 			nil,
@@ -2445,7 +2445,7 @@ func BenchmarkTranslateOtToCWMetricWithInstrLibrary(b *testing.B) {
 	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
 	config := &Config{
 		Namespace:             "",
-		DimensionRollupOption: ZeroAndSingleDimensionRollup,
+		DimensionRollupOption: zeroAndSingleDimensionRollup,
 	}
 
 	b.ResetTimer()
@@ -2459,7 +2459,7 @@ func BenchmarkTranslateOtToCWMetricWithoutInstrLibrary(b *testing.B) {
 	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
 	config := &Config{
 		Namespace:             "",
-		DimensionRollupOption: ZeroAndSingleDimensionRollup,
+		DimensionRollupOption: zeroAndSingleDimensionRollup,
 	}
 
 	b.ResetTimer()
@@ -2482,7 +2482,7 @@ func BenchmarkTranslateOtToCWMetricWithFiltering(b *testing.B) {
 	m.Init(logger)
 	config := &Config{
 		Namespace:             "",
-		DimensionRollupOption: ZeroAndSingleDimensionRollup,
+		DimensionRollupOption: zeroAndSingleDimensionRollup,
 		MetricDeclarations:    []*MetricDeclaration{&m},
 	}
 
@@ -2495,7 +2495,7 @@ func BenchmarkTranslateOtToCWMetricWithFiltering(b *testing.B) {
 func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
 	cwMeasurement := CwMeasurement{
 		Namespace:  "test-emf",
-		Dimensions: [][]string{{OTellibDimensionKey}, {OTellibDimensionKey, "spanName"}},
+		Dimensions: [][]string{{oTellibDimensionKey}, {oTellibDimensionKey, "spanName"}},
 		Metrics: []map[string]string{{
 			"Name": "spanCounter",
 			"Unit": "Count",
@@ -2503,7 +2503,7 @@ func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
 	}
 	timestamp := int64(1596151098037)
 	fields := make(map[string]interface{})
-	fields[OTellibDimensionKey] = "cloudwatch-otel"
+	fields[oTellibDimensionKey] = "cloudwatch-otel"
 	fields["spanName"] = "test"
 	fields["spanCounter"] = 0
 
@@ -2523,6 +2523,6 @@ func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
 func BenchmarkDimensionRollup(b *testing.B) {
 	dimensions := []string{"a", "b", "c"}
 	for n := 0; n < b.N; n++ {
-		dimensionRollup(ZeroAndSingleDimensionRollup, dimensions, "cloudwatch-otel")
+		dimensionRollup(zeroAndSingleDimensionRollup, dimensions, "cloudwatch-otel")
 	}
 }

@@ -24,7 +24,7 @@ import (
 
 const (
 	// OTel instrumentation lib name as dimension
-	OTellibDimensionKey          = "OTelLib"
+	oTellibDimensionKey          = "OTelLib"
 	defaultNamespace             = "default"
 	noInstrumentationLibraryName = "Undefined"
 
@@ -32,8 +32,8 @@ const (
 	maximumLogEventsPerPut = 10000
 
 	// DimensionRollupOptions
-	ZeroAndSingleDimensionRollup = "ZeroAndSingleDimensionRollup"
-	SingleDimensionRollupOnly    = "SingleDimensionRollupOnly"
+	zeroAndSingleDimensionRollup = "ZeroAndSingleDimensionRollup"
+	singleDimensionRollupOnly    = "SingleDimensionRollupOnly"
 )
 
 // CWMetrics defines
@@ -188,8 +188,8 @@ func buildCWMetric(dp DataPoint, pmd *pdata.Metric, namespace string, metricSlic
 
 	// Add OTel instrumentation lib name as an additional dimension if it is defined
 	if instrumentationLibName != noInstrumentationLibraryName {
-		labels[OTellibDimensionKey] = instrumentationLibName
-		fields[OTellibDimensionKey] = instrumentationLibName
+		labels[oTellibDimensionKey] = instrumentationLibName
+		fields[oTellibDimensionKey] = instrumentationLibName
 	}
 
 	// Create list of dimension sets
@@ -204,14 +204,14 @@ func buildCWMetric(dp DataPoint, pmd *pdata.Metric, namespace string, metricSlic
 		if instrumentationLibName != noInstrumentationLibraryName {
 			// If OTel instrumentation lib name is defined, add instrumentation lib
 			// name as a dimension
-			dims = append(dims, OTellibDimensionKey)
+			dims = append(dims, oTellibDimensionKey)
 		}
 
 		if len(rollupDimensionArray) > 0 {
 			// Perform de-duplication check for edge case with a single label and single roll-up
 			// is activated
-			if len(labelsSlice) > 1 || (dimensionRollupOption != SingleDimensionRollupOnly &&
-				dimensionRollupOption != ZeroAndSingleDimensionRollup) {
+			if len(labelsSlice) > 1 || (dimensionRollupOption != singleDimensionRollupOnly &&
+				dimensionRollupOption != zeroAndSingleDimensionRollup) {
 				dimensions = [][]string{dims}
 			}
 			dimensions = append(dimensions, rollupDimensionArray...)
@@ -245,7 +245,7 @@ func buildCWMetric(dp DataPoint, pmd *pdata.Metric, namespace string, metricSlic
 
 	cwMetric := &CWMetrics{
 		Measurements: cwMeasurements,
-		TimestampMs:    timestampMs,
+		TimestampMs:  timestampMs,
 		Fields:       fields,
 	}
 	return cwMetric
@@ -256,15 +256,15 @@ func dimensionRollup(dimensionRollupOption string, originalDimensionSlice []stri
 	var rollupDimensionArray [][]string
 	dimensionZero := make([]string, 0)
 	if instrumentationLibName != noInstrumentationLibraryName {
-		dimensionZero = append(dimensionZero, OTellibDimensionKey)
+		dimensionZero = append(dimensionZero, oTellibDimensionKey)
 	}
-	if dimensionRollupOption == ZeroAndSingleDimensionRollup {
+	if dimensionRollupOption == zeroAndSingleDimensionRollup {
 		//"Zero" dimension rollup
 		if len(originalDimensionSlice) > 0 {
 			rollupDimensionArray = append(rollupDimensionArray, dimensionZero)
 		}
 	}
-	if dimensionRollupOption == ZeroAndSingleDimensionRollup || dimensionRollupOption == SingleDimensionRollupOnly {
+	if dimensionRollupOption == zeroAndSingleDimensionRollup || dimensionRollupOption == singleDimensionRollupOnly {
 		//"One" dimension rollup
 		for _, dimensionKey := range originalDimensionSlice {
 			rollupDimensionArray = append(rollupDimensionArray, append(dimensionZero, dimensionKey))
@@ -273,4 +273,3 @@ func dimensionRollup(dimensionRollupOption string, originalDimensionSlice []stri
 
 	return rollupDimensionArray
 }
-
