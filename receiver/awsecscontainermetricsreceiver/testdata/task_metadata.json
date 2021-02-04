@@ -55,7 +55,6 @@
         },
         "DesiredStatus": "RUNNING",
         "KnownStatus": "RUNNING",
-        "ExitCode": 1,
         "Limits": {
           "CPU": 0,
           "Memory": 128
