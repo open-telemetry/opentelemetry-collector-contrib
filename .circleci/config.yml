@@ -238,7 +238,7 @@ workflows:
             - cross-compile
           filters:
             branches:
-              only: /master|release\/.+/
+              only: /main|release\/.+/
             tags:
               ignore: /.*/
       - integration-tests:
