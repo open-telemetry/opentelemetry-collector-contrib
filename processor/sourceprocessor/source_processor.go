@@ -123,7 +123,7 @@ func matchRegexMaybe(re *regexp.Regexp, atts pdata.AttributeMap, attributeName s
 	return false
 }
 
-func newSourceTraceProcessor(next consumer.TracesConsumer, cfg *Config) (*sourceTraceProcessor, error) {
+func newSourceTraceProcessor(next consumer.TracesConsumer, cfg *Config) *sourceTraceProcessor {
 	keys := sourceTraceKeys{
 		annotationPrefix:   cfg.AnnotationPrefix,
 		containerKey:       cfg.ContainerKey,
@@ -140,14 +140,14 @@ func newSourceTraceProcessor(next consumer.TracesConsumer, cfg *Config) (*source
 		collector:             cfg.Collector,
 		keys:                  keys,
 		source:                cfg.Source,
-		sourceHostFiller:      createSourceHostFiller(keys),
+		sourceHostFiller:      createSourceHostFiller(),
 		sourceCategoryFiller:  createSourceCategoryFiller(cfg, keys),
 		sourceNameFiller:      createSourceNameFiller(cfg, keys),
 		excludeNamespaceRegex: compileRegex(cfg.ExcludeNamespaceRegex),
 		excludeHostRegex:      compileRegex(cfg.ExcludeHostRegex),
 		excludeContainerRegex: compileRegex(cfg.ExcludeContainerRegex),
 		excludePodRegex:       compileRegex(cfg.ExcludePodRegex),
-	}, nil
+	}
 }
 
 func (stp *sourceTraceProcessor) fillOtherMeta(atts pdata.AttributeMap) {
@@ -296,7 +296,7 @@ func SafeEncodeString(s string) string {
 	return string(r)
 }
 
-func (stp *sourceTraceProcessor) enrichPodName(atts *pdata.AttributeMap) bool {
+func (stp *sourceTraceProcessor) enrichPodName(atts *pdata.AttributeMap) {
 	// This replicates sanitize_pod_name function
 	// Strip out dynamic bits from pod name.
 	// NOTE: Kubernetes deployments append a template hash.
@@ -306,17 +306,17 @@ func (stp *sourceTraceProcessor) enrichPodName(atts *pdata.AttributeMap) bool {
 	//   3) post-1.11: hash in pod_template_hash and pod_parts[-2]
 
 	if atts == nil {
-		return false
+		return
 	}
 	pod, found := atts.Get(stp.keys.podKey)
 	if !found {
-		return false
+		return
 	}
 
 	podParts := strings.Split(pod.StringVal(), "-")
 	if len(podParts) < 2 {
 		// This is unexpected, fallback
-		return false
+		return
 	}
 
 	podTemplateHashAttr, found := atts.Get(stp.keys.podTemplateHashKey)
@@ -325,11 +325,10 @@ func (stp *sourceTraceProcessor) enrichPodName(atts *pdata.AttributeMap) bool {
 		podTemplateHash := podTemplateHashAttr.StringVal()
 		if podTemplateHash == podParts[len(podParts)-2] || SafeEncodeString(podTemplateHash) == podParts[len(podParts)-2] {
 			atts.UpsertString(stp.keys.podNameKey, strings.Join(podParts[:len(podParts)-2], "-"))
-			return true
+			return
 		}
 	}
 	atts.UpsertString(stp.keys.podNameKey, strings.Join(podParts[:len(podParts)-1], "-"))
-	return true
 }
 
 func extractFormat(format string, name string, keys sourceTraceKeys) attributeFiller {
@@ -351,7 +350,7 @@ func extractFormat(format string, name string, keys sourceTraceKeys) attributeFi
 	}
 }
 
-func createSourceHostFiller(keys sourceTraceKeys) attributeFiller {
+func createSourceHostFiller() attributeFiller {
 	return attributeFiller{
 		name:            sourceHostKey,
 		compiledFormat:  "",
