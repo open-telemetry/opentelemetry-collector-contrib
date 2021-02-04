@@ -29,7 +29,9 @@ type Config struct {
 	// The maximum number of blob files to keep in the blob_dir, if specified. Defaults
 	// to 10 (most recent).
 	MaxBlobFiles int `mapstructure:"max_blob_files"`
-	// The process ID of the dotnet process from which to collect diagnostics.
+	// The process ID of the dotnet process from which to collect diagnostics. This
+	// receiver is intended to be used with an observer and receiver creator for
+	// process discovery.
 	PID int `mapstructure:"pid"`
 	// The duration between collection of metrics. The duration value is converted
 	// to seconds and sent to the dotnet backend at receiver startup time.
