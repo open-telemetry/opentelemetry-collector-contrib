@@ -34,34 +34,61 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 	taskResource := taskResource(metadata)
 
 	for _, containerMetadata := range metadata.Containers {
-		stats, ok := containerStatsMap[containerMetadata.DockerID]
-		if !ok || stats == nil {
-			continue
-		}
-
-		containerMetrics := getContainerMetrics(stats, logger)
-		if containerMetadata.Limits.Memory != nil {
-			containerMetrics.MemoryReserved = *containerMetadata.Limits.Memory
-		}
-
-		if containerMetadata.Limits.CPU != nil {
-			containerMetrics.CPUReserved = *containerMetadata.Limits.CPU
-		}
-
-		if containerMetrics.CPUReserved > 0 {
-			containerMetrics.CPUUtilized = (containerMetrics.CPUUtilized / containerMetrics.CPUReserved)
-		}
 
 		containerResource := containerResource(containerMetadata)
 		taskResource.Attributes().ForEach(func(k string, av pdata.AttributeValue) {
 			containerResource.Attributes().Upsert(k, av)
 		})
 
-		acc.accumulate(convertToOTLPMetrics(ContainerPrefix, containerMetrics, containerResource, timestamp))
+		stats, ok := containerStatsMap[containerMetadata.DockerID]
 
-		aggregateTaskMetrics(&taskMetrics, containerMetrics)
+		if ok && !isEmptyStats(stats) {
+			containerMetrics := convertContainerMetrics(stats, logger, containerMetadata)
+			acc.accumulate(convertToOTLPMetrics(ContainerPrefix, containerMetrics, containerResource, timestamp))
+			aggregateTaskMetrics(&taskMetrics, containerMetrics)
+			overrideWithTaskLevelLimit(&taskMetrics, metadata)
+			acc.accumulate(convertToOTLPMetrics(TaskPrefix, taskMetrics, taskResource, timestamp))
+		} else {
+			acc.accumulate(convertResourceToRMS(containerResource))
+		}
+	}
+}
+
+func (acc *metricDataAccumulator) accumulate(rms pdata.ResourceMetricsSlice) {
+	md := pdata.Metrics(rms)
+
+	acc.mds = append(acc.mds, md)
+}
+
+func isEmptyStats(stats *ContainerStats) bool {
+	return stats == nil || stats.ID == ""
+}
+
+func convertResourceToRMS(containerResource pdata.Resource) pdata.ResourceMetricsSlice {
+	rms := pdata.NewResourceMetricsSlice()
+	rms.Resize(1)
+	rm := rms.At(0)
+	containerResource.CopyTo(rm.Resource())
+	return rms
+}
+
+func convertContainerMetrics(stats *ContainerStats, logger *zap.Logger, containerMetadata ContainerMetadata) ECSMetrics {
+	containerMetrics := getContainerMetrics(stats, logger)
+	if containerMetadata.Limits.Memory != nil {
+		containerMetrics.MemoryReserved = *containerMetadata.Limits.Memory
 	}
 
+	if containerMetadata.Limits.CPU != nil {
+		containerMetrics.CPUReserved = *containerMetadata.Limits.CPU
+	}
+
+	if containerMetrics.CPUReserved > 0 {
+		containerMetrics.CPUUtilized = (containerMetrics.CPUUtilized / containerMetrics.CPUReserved)
+	}
+	return containerMetrics
+}
+
+func overrideWithTaskLevelLimit(taskMetrics *ECSMetrics, metadata TaskMetadata) {
 	// Overwrite Memory limit with task level limit
 	if metadata.Limits.Memory != nil {
 		taskMetrics.MemoryReserved = *metadata.Limits.Memory
@@ -81,12 +108,4 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 	if taskMetrics.CPUReserved > 0 {
 		taskMetrics.CPUUtilized = ((taskMetrics.CPUUsageInVCPU / taskMetrics.CPUReserved) * 100)
 	}
-
-	acc.accumulate(convertToOTLPMetrics(TaskPrefix, taskMetrics, taskResource, timestamp))
-}
-
-func (acc *metricDataAccumulator) accumulate(rms pdata.ResourceMetricsSlice) {
-	md := pdata.Metrics(rms)
-
-	acc.mds = append(acc.mds, md)
 }
