@@ -116,7 +116,7 @@ func (f *StanzaFileLogWriter) GenConfigYAMLStr() string {
 	// Note that this generates a receiver config for agent.
 	// We are testing stanza receiver here.
 	return fmt.Sprintf(`
-  stanza:
+  filelog:
     operators:
       - type: file_input
         include: [ %s ]
@@ -133,7 +133,7 @@ func (f *StanzaFileLogWriter) GenConfigYAMLStr() string {
 }
 
 func (f *StanzaFileLogWriter) ProtocolName() string {
-	return "stanza"
+	return "filelog"
 }
 
 func (f *StanzaFileLogWriter) GetEndpoint() string {

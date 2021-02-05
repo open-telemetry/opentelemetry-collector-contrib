@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stanzareceiver
+package filelogreceiver
 
 import (
 	"path"
@@ -21,9 +21,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 )
+
+func TestDefaultConfig(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	require.NotNil(t, cfg, "failed to create default config")
+	require.NoError(t, configcheck.ValidateConfig(cfg))
+}
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
@@ -41,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, len(cfg.Receivers), 1)
 
 	assert.Equal(t, cfg.Receivers["stanza"],
-		&Config{
+		&FileLogConfig{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "stanza",

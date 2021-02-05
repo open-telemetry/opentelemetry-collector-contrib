@@ -24,9 +24,11 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
+var testConverter = NewConverter("type", "1.2.3")
+
 func BenchmarkConvertSimple(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		convert(entry.New())
+		testConverter.Convert(entry.New())
 	}
 }
 
@@ -35,7 +37,7 @@ func BenchmarkConvertComplex(b *testing.B) {
 		b.StopTimer()
 		e := complexEntry()
 		b.StartTimer()
-		convert(e)
+		testConverter.Convert(e)
 	}
 }
 
@@ -80,7 +82,7 @@ func TestConvertMetadata(t *testing.T) {
 	e.AddLabel("one", "two")
 	e.Record = true
 
-	result := convert(e)
+	result := testConverter.Convert(e)
 
 	resourceLogs := result.ResourceLogs()
 	require.Equal(t, 1, resourceLogs.Len(), "expected 1 resource")
@@ -267,7 +269,7 @@ func recordToBody(record interface{}) pdata.AttributeValue {
 }
 
 func convertAndDrill(entry *entry.Entry) pdata.LogRecord {
-	return convert(entry).ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0)
+	return testConverter.Convert(entry).ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0)
 }
 
 func TestConvertSeverity(t *testing.T) {

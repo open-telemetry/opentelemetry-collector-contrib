@@ -21,7 +21,22 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-func convert(obsLog *entry.Entry) pdata.Logs {
+// Converter of stanza-style log entry to pdata.Logs
+type Converter struct {
+	typeStr string
+	verStr  string
+}
+
+// NewConverter creates a new converter
+func NewConverter(typeStr, verStr string) *Converter {
+	return &Converter{
+		typeStr: typeStr,
+		verStr:  verStr,
+	}
+}
+
+// Convert a stanza-style entry to a pdata.Logs
+func (c *Converter) Convert(obsLog *entry.Entry) pdata.Logs {
 	out := pdata.NewLogs()
 	logs := out.ResourceLogs()
 	logs.Resize(1)
@@ -39,8 +54,8 @@ func convert(obsLog *entry.Entry) pdata.Logs {
 	ills := rls.InstrumentationLibraryLogs().At(0)
 
 	il := ills.InstrumentationLibrary()
-	il.SetName(typeStr)
-	il.SetVersion(verStr)
+	il.SetName(c.typeStr)
+	il.SetVersion(c.verStr)
 
 	lr := pdata.NewLogRecord()
 	lr.SetTimestamp(pdata.TimestampUnixNano(obsLog.Timestamp.UnixNano()))

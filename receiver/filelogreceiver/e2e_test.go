@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stanzareceiver
+package filelogreceiver
 
 import (
 	"context"
@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/observiq/nanojack"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stanzareceiver"
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -56,6 +57,8 @@ func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
 	return func() bool { return sink.LogRecordsCount() == expected }
 }
 
+var testConverter = stanzareceiver.NewConverter(typeStr, verStr)
+
 func TestReadStaticFile(t *testing.T) {
 	t.Parallel()
 
@@ -79,13 +82,17 @@ func TestReadStaticFile(t *testing.T) {
 	e3.Set(entry.NewRecordField("msg"), "Some details...")
 	e3.AddLabel("file_name", "simple.log")
 
-	expectedLogs := []pdata.Logs{convert(e1), convert(e2), convert(e3)}
+	expectedLogs := []pdata.Logs{
+		testConverter.Convert(e1),
+		testConverter.Convert(e2),
+		testConverter.Convert(e3),
+	}
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
 	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
 
-	cfg := f.CreateDefaultConfig().(*Config)
+	cfg := f.CreateDefaultConfig().(*FileLogConfig)
 	cfg.Operators = unmarshalConfig(t, `
 - type: file_input
   include: [testdata/simple.log]
@@ -168,10 +175,10 @@ func (rt *rotationTest) Run(t *testing.T) {
 		e := entry.New()
 		e.Timestamp = expectedTimestamp
 		e.Set(entry.NewRecordField("msg"), msg)
-		expectedLogs[i] = convert(e)
+		expectedLogs[i] = testConverter.Convert(e)
 	}
 
-	cfg := f.CreateDefaultConfig().(*Config)
+	cfg := f.CreateDefaultConfig().(*FileLogConfig)
 	cfg.Operators = unmarshalConfig(t, fmt.Sprintf(`
   - type: file_input
     include: [%s/*]

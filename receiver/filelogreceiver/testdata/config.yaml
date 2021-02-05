@@ -1,5 +1,5 @@
 receivers:
-  stanza:
+  filelog:
     operators:
       - type: file_input
         include: [ receiver/stanzareceiver/testdata/simple.log ]
@@ -21,6 +21,6 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [stanza]
+      receivers: [filelog]
       processors: [exampleprocessor]
       exporters: [exampleexporter]
