@@ -47,6 +47,11 @@ class CarrierGetter(DictGetter):
                 else None.
         """
         headers = carrier.get("headers")
+        if not headers:
+            return None
+
+        # asgi header keys are in lower case
+        key = key.lower()
         decoded = [
             _value.decode("utf8")
             for (_key, _value) in headers

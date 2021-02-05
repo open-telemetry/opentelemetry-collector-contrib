@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove `component` span attribute in instrumentations. 
   `opentelemetry-instrumentation-aiopg`, `opentelemetry-instrumentation-dbapi` Remove unused `database_type` parameter from `trace_integration` function.
   ([#301](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/301))
+- `opentelemetry-instrumentation-asgi` Return header values using case insensitive keys
+  ([#308](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/308))
 
 ## [0.17b0](https://github.com/open-telemetry/opentelemetry-python-contrib/releases/tag/v0.17b0) - 2021-01-20
 
