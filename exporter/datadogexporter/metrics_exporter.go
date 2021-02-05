@@ -20,23 +20,24 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
 type metricsExporter struct {
-	logger  *zap.Logger
+	params  component.ExporterCreateParams
 	cfg     *config.Config
+	ctx     context.Context
 	client  *datadog.Client
 	prevPts *ttlmap.TTLMap
 }
 
-func newMetricsExporter(params component.ExporterCreateParams, cfg *config.Config) *metricsExporter {
+func newMetricsExporter(ctx context.Context, params component.ExporterCreateParams, cfg *config.Config) *metricsExporter {
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.ApplicationStartInfo)
 	client.HttpClient = utils.NewHTTPClient(10 * time.Second)
@@ -50,17 +51,27 @@ func newMetricsExporter(params component.ExporterCreateParams, cfg *config.Confi
 	prevPts := ttlmap.New(sweepInterval, cfg.Metrics.DeltaTTL)
 	prevPts.Start()
 
-	return &metricsExporter{params.Logger, cfg, client, prevPts}
+	return &metricsExporter{params, cfg, ctx, client, prevPts}
 }
 
 func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
+
+	// Start host metadata with resource attributes from
+	// the first payload.
+	if exp.cfg.SendMetadata {
+		once := exp.cfg.OnceMetadata()
+		once.Do(func() {
+			attrs := pdata.NewAttributeMap()
+			if md.ResourceMetrics().Len() > 0 {
+				attrs = md.ResourceMetrics().At(0).Resource().Attributes()
+			}
+			go metadata.Pusher(exp.ctx, exp.params, exp.cfg, attrs)
+		})
+	}
+
 	ms, droppedTimeSeries := mapMetrics(exp.cfg.Metrics, exp.prevPts, md)
 
-	// Append the default 'running' metric
-	pushTime := uint64(time.Now().UTC().UnixNano())
-	ms = append(ms, metrics.DefaultMetrics("metrics", pushTime)...)
-
-	metrics.ProcessMetrics(ms, exp.logger, exp.cfg)
+	metrics.ProcessMetrics(ms, exp.params.Logger, exp.cfg)
 
 	err := exp.client.PostMetrics(ms)
 	return droppedTimeSeries, err

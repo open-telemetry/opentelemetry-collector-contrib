@@ -33,12 +33,14 @@ func TestEndpointEnv(t *testing.T) {
 				Target: "192.68.73.2",
 				Details: &Pod{
 					Name: "pod_name",
+					UID:  "pod-uid",
 					Labels: map[string]string{
 						"label_key": "label_val",
 					},
 					Annotations: map[string]string{
 						"annotation_1": "value_1",
 					},
+					Namespace: "pod-namespace",
 				},
 			},
 			want: EndpointEnv{
@@ -55,6 +57,8 @@ func TestEndpointEnv(t *testing.T) {
 				"annotations": map[string]string{
 					"annotation_1": "value_1",
 				},
+				"uid":       "pod-uid",
+				"namespace": "pod-namespace",
 			},
 			wantErr: false,
 		},
@@ -73,6 +77,8 @@ func TestEndpointEnv(t *testing.T) {
 						Annotations: map[string]string{
 							"annotation_1": "value_1",
 						},
+						Namespace: "pod-namespace",
+						UID:       "pod-uid",
 					},
 					Port:      2379,
 					Transport: ProtocolTCP,
@@ -87,7 +93,7 @@ func TestEndpointEnv(t *testing.T) {
 				"endpoint": "192.68.73.2",
 				"name":     "port_name",
 				"port":     uint16(2379),
-				"pod": map[string]interface{}{
+				"pod": EndpointEnv{
 					"name": "pod_name",
 					"labels": map[string]string{
 						"label_key": "label_val",
@@ -95,6 +101,8 @@ func TestEndpointEnv(t *testing.T) {
 					"annotations": map[string]string{
 						"annotation_1": "value_1",
 					},
+					"uid":       "pod-uid",
+					"namespace": "pod-namespace",
 				},
 				"transport": ProtocolTCP,
 			},
@@ -106,11 +114,11 @@ func TestEndpointEnv(t *testing.T) {
 				ID:     EndpointID("port_id"),
 				Target: "127.0.0.1",
 				Details: &HostPort{
-					Name:      "process_name",
-					Command:   "./cmd --config config.yaml",
-					Port:      2379,
-					Transport: ProtocolUDP,
-					IsIPv6:    true,
+					ProcessName: "process_name",
+					Command:     "./cmd --config config.yaml",
+					Port:        2379,
+					Transport:   ProtocolUDP,
+					IsIPv6:      true,
 				},
 			},
 			want: EndpointEnv{
@@ -119,12 +127,12 @@ func TestEndpointEnv(t *testing.T) {
 					"pod":      false,
 					"port":     false,
 				},
-				"endpoint":  "127.0.0.1",
-				"name":      "process_name",
-				"command":   "./cmd --config config.yaml",
-				"is_ipv6":   true,
-				"port":      uint16(2379),
-				"transport": ProtocolUDP,
+				"endpoint":     "127.0.0.1",
+				"process_name": "process_name",
+				"command":      "./cmd --config config.yaml",
+				"is_ipv6":      true,
+				"port":         uint16(2379),
+				"transport":    ProtocolUDP,
 			},
 			wantErr: false,
 		},

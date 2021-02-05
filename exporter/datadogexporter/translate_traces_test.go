@@ -24,12 +24,15 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/stats"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"go.uber.org/zap"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
 )
 
@@ -128,16 +131,53 @@ func TestConvertToDatadogTd(t *testing.T) {
 	traces.ResourceSpans().Resize(1)
 	calculator := newSublayerCalculator()
 
-	outputTraces := convertToDatadogTd(traces, calculator, &config.Config{})
+	outputTraces, runningMetrics := convertToDatadogTd(traces, calculator, &config.Config{})
 	assert.Equal(t, 1, len(outputTraces))
+	assert.Equal(t, 1, len(runningMetrics))
 }
 
 func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 	traces := pdata.NewTraces()
 	calculator := newSublayerCalculator()
 
-	outputTraces := convertToDatadogTd(traces, calculator, &config.Config{})
+	outputTraces, runningMetrics := convertToDatadogTd(traces, calculator, &config.Config{})
 	assert.Equal(t, 0, len(outputTraces))
+	assert.Equal(t, 0, len(runningMetrics))
+}
+
+func TestRunningTraces(t *testing.T) {
+	td := pdata.NewTraces()
+
+	rts := td.ResourceSpans()
+	rts.Resize(4)
+
+	rt := rts.At(0)
+	resAttrs := rt.Resource().Attributes()
+	resAttrs.Insert(metadata.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-1"))
+
+	rt = rts.At(1)
+	resAttrs = rt.Resource().Attributes()
+	resAttrs.Insert(metadata.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-1"))
+
+	rt = rts.At(2)
+	resAttrs = rt.Resource().Attributes()
+	resAttrs.Insert(metadata.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-2"))
+
+	_, runningMetrics := convertToDatadogTd(td, newSublayerCalculator(), &config.Config{})
+
+	runningHostnames := []string{}
+	for _, metric := range runningMetrics {
+		require.Equal(t, *metric.Metric, "datadog_exporter.traces.running")
+		require.NotNil(t, metric.Host)
+		runningHostnames = append(runningHostnames, *metric.Host)
+	}
+
+	defaultHostname := *metadata.GetHost(zap.NewNop(), &config.Config{})
+
+	assert.ElementsMatch(t,
+		runningHostnames,
+		[]string{"resource-hostname-1", "resource-hostname-1", "resource-hostname-2", defaultHostname},
+	)
 }
 
 func TestObfuscation(t *testing.T) {
@@ -163,7 +203,7 @@ func TestObfuscation(t *testing.T) {
 	// of them is currently not supported.
 	span.Attributes().InsertString("testinfo?=123", "http.route")
 
-	outputTraces := convertToDatadogTd(traces, calculator, &config.Config{})
+	outputTraces, _ := convertToDatadogTd(traces, calculator, &config.Config{})
 	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
 
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)

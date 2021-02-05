@@ -64,3 +64,20 @@ func TestHostnameFromAttributes(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, hostname, testInstanceID)
 }
+
+func TestHostInfoFromAttributes(t *testing.T) {
+	attrs := testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
+		conventions.AttributeHostID:        testInstanceID,
+		conventions.AttributeHostName:      testIP,
+		"ec2.tag.tag1":                     "val1",
+		"ec2.tag.tag2":                     "val2",
+		"ignored":                          "ignored",
+	})
+
+	hostInfo := HostInfoFromAttributes(attrs)
+
+	assert.Equal(t, hostInfo.InstanceID, testInstanceID)
+	assert.Equal(t, hostInfo.EC2Hostname, testIP)
+	assert.ElementsMatch(t, hostInfo.EC2Tags, []string{"tag1:val1", "tag2:val2"})
+}

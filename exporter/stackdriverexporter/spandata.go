@@ -28,9 +28,9 @@ import (
 	apitrace "go.opentelemetry.io/otel/trace"
 )
 
-func pdataResourceSpansToOTSpanData(rs pdata.ResourceSpans) []*export.SpanData {
+func pdataResourceSpansToOTSpanData(rs pdata.ResourceSpans) []*export.SpanSnapshot {
 	resource := rs.Resource()
-	var sds []*export.SpanData
+	var sds []*export.SpanSnapshot
 	ilss := rs.InstrumentationLibrarySpans()
 	for i := 0; i < ilss.Len(); i++ {
 		ils := ilss.At(i)
@@ -48,7 +48,7 @@ func pdataSpanToOTSpanData(
 	span pdata.Span,
 	resource pdata.Resource,
 	il pdata.InstrumentationLibrary,
-) *export.SpanData {
+) *export.SpanSnapshot {
 	sc := apitrace.SpanContext{}
 	sc.TraceID = span.TraceID().Bytes()
 	sc.SpanID = span.SpanID().Bytes()
@@ -60,7 +60,7 @@ func pdataSpanToOTSpanData(
 		sdkresource.WithAttributes(pdataAttributesToOTAttributes(pdata.NewAttributeMap(), resource)...),
 	)
 
-	sd := &export.SpanData{
+	sd := &export.SpanSnapshot{
 		SpanContext:              sc,
 		ParentSpanID:             span.ParentSpanID().Bytes(),
 		SpanKind:                 pdataSpanKindToOTSpanKind(span.Kind()),

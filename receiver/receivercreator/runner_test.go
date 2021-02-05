@@ -25,7 +25,7 @@ import (
 )
 
 func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
-	run := &receiverRunner{params: component.ReceiverCreateParams{Logger: zap.NewNop()}, nextConsumer: &mockMetricsConsumer{}, idNamespace: "receiver_creator/1"}
+	run := &receiverRunner{params: component.ReceiverCreateParams{Logger: zap.NewNop()}, idNamespace: "receiver_creator/1"}
 	exampleFactory := &componenttest.ExampleReceiverFactory{}
 	template, err := newReceiverTemplate("examplereceiver/1", nil)
 	require.NoError(t, err)
@@ -42,10 +42,9 @@ func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
 
 	// Test that metric receiver can be created from loaded config.
 	t.Run("test create receiver from loaded config", func(t *testing.T) {
-		recvr, err := run.createRuntimeReceiver(exampleFactory, loadedConfig)
+		recvr, err := run.createRuntimeReceiver(exampleFactory, loadedConfig, nil)
 		require.NoError(t, err)
 		assert.NotNil(t, recvr)
-		exampleReceiver := recvr.(*componenttest.ExampleReceiverProducer)
-		assert.Equal(t, run.nextConsumer, exampleReceiver.MetricsConsumer)
+		assert.IsType(t, &componenttest.ExampleReceiverProducer{}, recvr)
 	})
 }

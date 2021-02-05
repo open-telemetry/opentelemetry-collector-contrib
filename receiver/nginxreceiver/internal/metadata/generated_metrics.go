@@ -24,33 +24,44 @@ import (
 // Type is the component type name.
 const Type configmodels.Type = "nginxreceiver"
 
-type metricIntf interface {
+// MetricIntf is an interface to generically interact with generated metric.
+type MetricIntf interface {
 	Name() string
 	New() pdata.Metric
+	Init(metric pdata.Metric)
 }
 
 // Intentionally not exposing this so that it is opaque and can change freely.
 type metricImpl struct {
-	name    string
-	newFunc func() pdata.Metric
+	name     string
+	initFunc func(pdata.Metric)
 }
 
+// Name returns the metric name.
 func (m *metricImpl) Name() string {
 	return m.name
 }
 
+// New creates a metric object preinitialized.
 func (m *metricImpl) New() pdata.Metric {
-	return m.newFunc()
+	metric := pdata.NewMetric()
+	m.Init(metric)
+	return metric
+}
+
+// Init initializes the provided metric object.
+func (m *metricImpl) Init(metric pdata.Metric) {
+	m.initFunc(metric)
 }
 
 type metricStruct struct {
-	NginxConnectionsAccepted metricIntf
-	NginxConnectionsActive   metricIntf
-	NginxConnectionsHandled  metricIntf
-	NginxConnectionsReading  metricIntf
-	NginxConnectionsWaiting  metricIntf
-	NginxConnectionsWriting  metricIntf
-	NginxRequests            metricIntf
+	NginxConnectionsAccepted MetricIntf
+	NginxConnectionsActive   MetricIntf
+	NginxConnectionsHandled  MetricIntf
+	NginxConnectionsReading  MetricIntf
+	NginxConnectionsWaiting  MetricIntf
+	NginxConnectionsWriting  MetricIntf
+	NginxRequests            MetricIntf
 }
 
 // Names returns a list of all the metric name strings.
@@ -66,7 +77,7 @@ func (m *metricStruct) Names() []string {
 	}
 }
 
-var metricsByName = map[string]metricIntf{
+var metricsByName = map[string]MetricIntf{
 	"nginx.connections_accepted": Metrics.NginxConnectionsAccepted,
 	"nginx.connections_active":   Metrics.NginxConnectionsActive,
 	"nginx.connections_handled":  Metrics.NginxConnectionsHandled,
@@ -76,7 +87,7 @@ var metricsByName = map[string]metricIntf{
 	"nginx.requests":             Metrics.NginxRequests,
 }
 
-func (m *metricStruct) ByName(n string) metricIntf {
+func (m *metricStruct) ByName(n string) MetricIntf {
 	return metricsByName[n]
 }
 
@@ -97,92 +108,71 @@ func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
 var Metrics = &metricStruct{
 	&metricImpl{
 		"nginx.connections_accepted",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("nginx.connections_accepted")
 			metric.SetDescription("The total number of accepted client connections")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			metric.IntSum().SetIsMonotonic(true)
 			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"nginx.connections_active",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("nginx.connections_active")
 			metric.SetDescription("The current number of open connections")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"nginx.connections_handled",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("nginx.connections_handled")
 			metric.SetDescription("The total number of handled connections. Generally, the parameter value is the same as nginx.connections_accepted unless some resource limits have been reached (for example, the worker_connections limit).")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			metric.IntSum().SetIsMonotonic(true)
 			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"nginx.connections_reading",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("nginx.connections_reading")
 			metric.SetDescription("The current number of connections where nginx is reading the request headerhe current number of open connections")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"nginx.connections_waiting",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("nginx.connections_waiting")
 			metric.SetDescription("The current number of idle client connections waiting for a request.")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"nginx.connections_writing",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("nginx.connections_writing")
 			metric.SetDescription("The current number of connections where nginx is writing the response back to the client.")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"nginx.requests",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("nginx.requests")
 			metric.SetDescription("Total number of requests made to the server since it started")
 			metric.SetUnit("requests")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			metric.IntSum().SetIsMonotonic(true)
 			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-
-			return metric
 		},
 	},
 }

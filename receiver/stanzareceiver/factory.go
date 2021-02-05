@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package stanzareceiver
 import (
 	"context"
 
-	stanza "github.com/observiq/stanza/agent"
+	stanza "github.com/open-telemetry/opentelemetry-log-collection/agent"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"

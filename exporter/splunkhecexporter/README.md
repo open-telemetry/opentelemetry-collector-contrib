@@ -25,7 +25,7 @@ The following configuration options can also be configured:
 
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
-[here](https://github.com/open-telemetry/opentelemetry-collector/blob/master/exporter/exporterhelper/README.md).
+[here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
 
 Example:
 
@@ -56,4 +56,4 @@ The full list of settings exposed for this exporter are documented [here](config
 with detailed sample configurations [here](testdata/config.yaml).
 
 This exporter also offers proxy support as documented
-[here](https://github.com/open-telemetry/opentelemetry-collector/tree/master/exporter#proxy-support).
+[here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
