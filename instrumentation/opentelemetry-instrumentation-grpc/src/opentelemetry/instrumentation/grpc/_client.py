@@ -102,8 +102,16 @@ class OpenTelemetryClientInterceptor(
         )
 
     def _start_span(self, method):
+        service, meth = method.lstrip("/").split("/", 1)
+        attributes = {
+            "rpc.system": "grpc",
+            "rpc.grpc.status_code": grpc.StatusCode.OK.value[0],
+            "rpc.method": meth,
+            "rpc.service": service,
+        }
+
         return self._tracer.start_as_current_span(
-            name=method, kind=trace.SpanKind.CLIENT
+            name=method, kind=trace.SpanKind.CLIENT, attributes=attributes
         )
 
     # pylint:disable=no-self-use
@@ -133,6 +141,7 @@ class OpenTelemetryClientInterceptor(
             self._metrics_recorder.record_bytes_in(
                 response.ByteSize(), client_info.full_method
             )
+
         return result
 
     def _start_guarded_span(self, *args, **kwargs):
@@ -175,11 +184,14 @@ class OpenTelemetryClientInterceptor(
 
                 try:
                     result = invoker(request, metadata)
-                except grpc.RpcError:
+                except grpc.RpcError as err:
                     guarded_span.generated_span.set_status(
                         Status(StatusCode.ERROR)
                     )
-                    raise
+                    guarded_span.generated_span.set_attribute(
+                        "rpc.grpc.status_code", err.code().value[0]
+                    )
+                    raise err
 
                 return self._trace_result(
                     guarded_span, rpc_info, result, client_info
@@ -230,9 +242,12 @@ class OpenTelemetryClientInterceptor(
                                 response.ByteSize(), client_info.full_method
                             )
                         yield response
-                except grpc.RpcError:
+                except grpc.RpcError as err:
                     span.set_status(Status(StatusCode.ERROR))
-                    raise
+                    span.set_attribute(
+                        "rpc.grpc.status_code", err.code().value[0]
+                    )
+                    raise err
 
     def intercept_stream(
         self, request_or_iterator, metadata, client_info, invoker
@@ -268,11 +283,14 @@ class OpenTelemetryClientInterceptor(
 
                 try:
                     result = invoker(request_or_iterator, metadata)
-                except grpc.RpcError:
+                except grpc.RpcError as err:
                     guarded_span.generated_span.set_status(
                         Status(StatusCode.ERROR)
                     )
-                    raise
+                    guarded_span.generated_span.set_attribute(
+                        "rpc.grpc.status_code", err.code().value[0],
+                    )
+                    raise err
 
                 return self._trace_result(
                     guarded_span, rpc_info, result, client_info

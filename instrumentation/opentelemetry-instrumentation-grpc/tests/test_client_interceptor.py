@@ -73,21 +73,21 @@ class TestClientProto(TestBase):
 
         self.assertIsNotNone(bytes_out)
         self.assertEqual(bytes_out.instrument.name, "grpcio/client/bytes_out")
-        self.assertEqual(bytes_out.labels, (("method", method),))
+        self.assertEqual(bytes_out.labels, (("rpc.method", method),))
 
         self.assertIsNotNone(bytes_in)
         self.assertEqual(bytes_in.instrument.name, "grpcio/client/bytes_in")
-        self.assertEqual(bytes_in.labels, (("method", method),))
+        self.assertEqual(bytes_in.labels, (("rpc.method", method),))
 
         self.assertIsNotNone(duration)
         self.assertEqual(duration.instrument.name, "grpcio/client/duration")
-        self.assertEqual(
-            duration.labels,
-            (
-                ("error", False),
-                ("method", method),
-                ("status_code", grpc.StatusCode.OK),
-            ),
+        self.assertSequenceEqual(
+            sorted(duration.labels),
+            [
+                ("rpc.grpc.status_code", grpc.StatusCode.OK.name),
+                ("rpc.method", method),
+                ("rpc.system", "grpc"),
+            ],
         )
 
         self.assertEqual(type(bytes_out.aggregator), SumAggregator)
@@ -116,6 +116,16 @@ class TestClientProto(TestBase):
 
         self._verify_success_records(8, 8, "/GRPCTestServer/SimpleMethod")
 
+        self.assert_span_has_attributes(
+            span,
+            {
+                "rpc.method": "SimpleMethod",
+                "rpc.service": "GRPCTestServer",
+                "rpc.system": "grpc",
+                "rpc.grpc.status_code": grpc.StatusCode.OK.value[0],
+            },
+        )
+
     def test_unary_stream(self):
         server_streaming_method(self._stub)
         spans = self.memory_exporter.get_finished_spans()
@@ -132,6 +142,16 @@ class TestClientProto(TestBase):
 
         self._verify_success_records(
             8, 40, "/GRPCTestServer/ServerStreamingMethod"
+        )
+
+        self.assert_span_has_attributes(
+            span,
+            {
+                "rpc.method": "ServerStreamingMethod",
+                "rpc.service": "GRPCTestServer",
+                "rpc.system": "grpc",
+                "rpc.grpc.status_code": grpc.StatusCode.OK.value[0],
+            },
         )
 
     def test_stream_unary(self):
@@ -152,6 +172,16 @@ class TestClientProto(TestBase):
             40, 8, "/GRPCTestServer/ClientStreamingMethod"
         )
 
+        self.assert_span_has_attributes(
+            span,
+            {
+                "rpc.method": "ClientStreamingMethod",
+                "rpc.service": "GRPCTestServer",
+                "rpc.system": "grpc",
+                "rpc.grpc.status_code": grpc.StatusCode.OK.value[0],
+            },
+        )
+
     def test_stream_stream(self):
         bidirectional_streaming_method(self._stub)
         spans = self.memory_exporter.get_finished_spans()
@@ -170,6 +200,16 @@ class TestClientProto(TestBase):
 
         self._verify_success_records(
             40, 40, "/GRPCTestServer/BidirectionalStreamingMethod"
+        )
+
+        self.assert_span_has_attributes(
+            span,
+            {
+                "rpc.method": "BidirectionalStreamingMethod",
+                "rpc.service": "GRPCTestServer",
+                "rpc.system": "grpc",
+                "rpc.grpc.status_code": grpc.StatusCode.OK.value[0],
+            },
         )
 
     def _verify_error_records(self, method):
@@ -195,21 +235,33 @@ class TestClientProto(TestBase):
         self.assertIsNotNone(duration)
 
         self.assertEqual(errors.instrument.name, "grpcio/client/errors")
-        self.assertEqual(
-            errors.labels,
-            (
-                ("method", method),
-                ("status_code", grpc.StatusCode.INVALID_ARGUMENT),
+        self.assertSequenceEqual(
+            sorted(errors.labels),
+            sorted(
+                (
+                    (
+                        "rpc.grpc.status_code",
+                        grpc.StatusCode.INVALID_ARGUMENT.name,
+                    ),
+                    ("rpc.method", method),
+                    ("rpc.system", "grpc"),
+                )
             ),
         )
         self.assertEqual(errors.aggregator.checkpoint, 1)
 
-        self.assertEqual(
-            duration.labels,
-            (
-                ("error", True),
-                ("method", method),
-                ("status_code", grpc.StatusCode.INVALID_ARGUMENT),
+        self.assertSequenceEqual(
+            sorted(duration.labels),
+            sorted(
+                (
+                    ("error", "true"),
+                    ("rpc.method", method),
+                    ("rpc.system", "grpc"),
+                    (
+                        "rpc.grpc.status_code",
+                        grpc.StatusCode.INVALID_ARGUMENT.name,
+                    ),
+                )
             ),
         )
 

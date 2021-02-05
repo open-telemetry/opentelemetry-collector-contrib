@@ -72,33 +72,32 @@ class TimedMetricRecorder:
 
     def record_bytes_in(self, bytes_in, method):
         if self._meter:
-            labels = {"method": method}
+            labels = {"rpc.method": method}
             self._bytes_in.add(bytes_in, labels)
 
     def record_bytes_out(self, bytes_out, method):
         if self._meter:
-            labels = {"method": method}
+            labels = {"rpc.method": method}
             self._bytes_out.add(bytes_out, labels)
 
     @contextmanager
     def record_latency(self, method):
         start_time = time()
         labels = {
-            "method": method,
-            "status_code": grpc.StatusCode.OK,  # pylint:disable=no-member
+            "rpc.method": method,
+            "rpc.system": "grpc",
+            "rpc.grpc.status_code": grpc.StatusCode.OK.name,
         }
         try:
             yield labels
         except grpc.RpcError as exc:  # pylint:disable=no-member
             if self._meter:
                 # pylint: disable=no-member
-                labels["status_code"] = exc.code()
+                labels["rpc.grpc.status_code"] = exc.code().name
                 self._error_count.add(1, labels)
-                labels["error"] = True
+                labels["error"] = "true"
             raise
         finally:
             if self._meter:
-                if "error" not in labels:
-                    labels["error"] = False
                 elapsed_time = (time() - start_time) * 1000
                 self._duration.record(elapsed_time, labels)

@@ -76,6 +76,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#246](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/246))
 - Update TraceState to adhere to specs
   ([#276](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/276))
+- `opentelemetry-instrumentation-grpc` Updated client attributes, added tests, fixed examples, docs
+  ([#269](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/269))
 
 ### Removed
 - Remove Configuration
