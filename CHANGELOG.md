@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+- Syslog operator RFC 3164 location parameter ([PR11](https://github.com/open-telemetry/opentelemetry-log-collection/pull/11))
+
+## [0.14.0] - 2020-02-02
+
+### Changed
+- Remove standalone agent functionality
+- Simplifies modules
+  - Combines `parser/syslog` and `input/windows` modules into the primary module
+  - Removes output operators that were previously separate modules
+  - Leaves `input/k8sevent` and `transformer/k8smetadata` as separate modules for now. These two have extensive dependencies and their usefulness in the collector needs to be discussed before merging or removing.
+
 ## [0.13.12] - 2020-01-26
 
 ### Changed
