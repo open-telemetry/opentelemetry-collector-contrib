@@ -25,12 +25,32 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func testLocations() (map[string]*time.Location, error) {
+	locations := map[string]string{
+		"utc":     "UTC",
+		"detroit": "America/Detroit",
+		"athens":  "Europe/Athens",
+	}
+
+	l := make(map[string]*time.Location)
+	for k, v := range locations {
+		var err error
+		if l[k], err = time.LoadLocation(v); err != nil {
+			return nil, err
+		}
+	}
+	return l, nil
+}
+
 func TestSyslogParser(t *testing.T) {
 	basicConfig := func() *SyslogParserConfig {
 		cfg := NewSyslogParserConfig("test_operator_id")
 		cfg.OutputIDs = []string{"fake"}
 		return cfg
 	}
+
+	location, err := testLocations()
+	require.NoError(t, err)
 
 	cases := []struct {
 		name                 string
@@ -46,10 +66,51 @@ func TestSyslogParser(t *testing.T) {
 			func() *SyslogParserConfig {
 				cfg := basicConfig()
 				cfg.Protocol = "rfc3164"
+				cfg.Location = location["utc"].String()
 				return cfg
 			}(),
 			"<34>Jan 12 06:30:00 1.2.3.4 apache_server: test message",
-			time.Date(time.Now().Year(), 1, 12, 6, 30, 0, 0, time.UTC),
+			time.Date(time.Now().Year(), 1, 12, 6, 30, 0, 0, location["utc"]),
+			map[string]interface{}{
+				"appname":  "apache_server",
+				"facility": 4,
+				"hostname": "1.2.3.4",
+				"message":  "test message",
+				"priority": 34,
+			},
+			entry.Critical,
+			"crit",
+		},
+		{
+			"RFC3164Detroit",
+			func() *SyslogParserConfig {
+				cfg := basicConfig()
+				cfg.Protocol = "rfc3164"
+				cfg.Location = location["detroit"].String()
+				return cfg
+			}(),
+			"<34>Jan 12 06:30:00 1.2.3.4 apache_server: test message",
+			time.Date(time.Now().Year(), 1, 12, 6, 30, 0, 0, location["detroit"]),
+			map[string]interface{}{
+				"appname":  "apache_server",
+				"facility": 4,
+				"hostname": "1.2.3.4",
+				"message":  "test message",
+				"priority": 34,
+			},
+			entry.Critical,
+			"crit",
+		},
+		{
+			"RFC3164Athens",
+			func() *SyslogParserConfig {
+				cfg := basicConfig()
+				cfg.Protocol = "rfc3164"
+				cfg.Location = location["athens"].String()
+				return cfg
+			}(),
+			"<34>Jan 12 06:30:00 1.2.3.4 apache_server: test message",
+			time.Date(time.Now().Year(), 1, 12, 6, 30, 0, 0, location["athens"]),
 			map[string]interface{}{
 				"appname":  "apache_server",
 				"facility": 4,
