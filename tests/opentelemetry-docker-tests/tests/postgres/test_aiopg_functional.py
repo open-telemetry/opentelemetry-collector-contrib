@@ -22,7 +22,7 @@ from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.aiopg import AiopgInstrumentor
 from opentelemetry.test.test_base import TestBase
 
-POSTGRES_HOST = os.getenv("POSTGRESQL_HOST", "localhost")
+POSTGRES_HOST = os.getenv("POSTGRESQL_HOST", "127.0.0.1")
 POSTGRES_PORT = int(os.getenv("POSTGRESQL_PORT", "5432"))
 POSTGRES_DB_NAME = os.getenv("POSTGRESQL_DB_NAME", "opentelemetry-tests")
 POSTGRES_PASSWORD = os.getenv("POSTGRESQL_PASSWORD", "testpassword")
