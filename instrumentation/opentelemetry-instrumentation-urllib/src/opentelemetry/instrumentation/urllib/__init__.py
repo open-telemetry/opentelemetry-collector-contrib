@@ -45,11 +45,6 @@ from urllib.request import (  # pylint: disable=no-name-in-module,import-error
 
 from opentelemetry import context, propagators
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
-from opentelemetry.instrumentation.metric import (
-    HTTPMetricRecorder,
-    HTTPMetricType,
-    MetricMixin,
-)
 from opentelemetry.instrumentation.urllib.version import (  # pylint: disable=no-name-in-module,import-error
     __version__,
 )
@@ -61,7 +56,7 @@ from opentelemetry.trace.status import Status, StatusCode
 _SUPPRESS_URLLIB_INSTRUMENTATION_KEY = "suppress_urllib_instrumentation"
 
 
-class URLLibInstrumentor(BaseInstrumentor, MetricMixin):
+class URLLibInstrumentor(BaseInstrumentor):
     """An instrumentor for urllib
     See `BaseInstrumentor`
     """
@@ -83,15 +78,6 @@ class URLLibInstrumentor(BaseInstrumentor, MetricMixin):
             tracer_provider=kwargs.get("tracer_provider"),
             span_callback=kwargs.get("span_callback"),
             name_callback=kwargs.get("name_callback"),
-        )
-
-        self.init_metrics(
-            __name__, __version__,
-        )
-
-        # pylint: disable=W0201
-        self.metric_recorder = HTTPMetricRecorder(
-            self.meter, HTTPMetricType.CLIENT
         )
 
     def _uninstrument(self, **kwargs):
@@ -150,8 +136,6 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
         if not span_name or not isinstance(span_name, str):
             span_name = get_default_span_name(method)
 
-        recorder = URLLibInstrumentor().metric_recorder
-
         labels = {
             "http.method": method,
             "http.url": url,
@@ -161,47 +145,40 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
             __name__, __version__, tracer_provider
         ).start_as_current_span(span_name, kind=SpanKind.CLIENT) as span:
             exception = None
-            with recorder.record_client_duration(labels):
+            if span.is_recording():
+                span.set_attribute("http.method", method)
+                span.set_attribute("http.url", url)
+
+            headers = get_or_create_headers()
+            propagators.inject(type(headers).__setitem__, headers)
+
+            token = context.attach(
+                context.set_value(_SUPPRESS_URLLIB_INSTRUMENTATION_KEY, True)
+            )
+            try:
+                result = call_wrapped()  # *** PROCEED
+            except Exception as exc:  # pylint: disable=W0703
+                exception = exc
+                result = getattr(exc, "file", None)
+            finally:
+                context.detach(token)
+
+            if result is not None:
+
+                code_ = result.getcode()
+                labels["http.status_code"] = str(code_)
+
                 if span.is_recording():
-                    span.set_attribute("http.method", method)
-                    span.set_attribute("http.url", url)
+                    span.set_attribute("http.status_code", code_)
+                    span.set_attribute("http.status_text", result.reason)
+                    span.set_status(Status(http_status_to_status_code(code_)))
 
-                headers = get_or_create_headers()
-                propagators.inject(type(headers).__setitem__, headers)
+                ver_ = str(getattr(result, "version", ""))
+                if ver_:
+                    labels["http.flavor"] = "{}.{}".format(ver_[:1], ver_[:-1])
 
-                token = context.attach(
-                    context.set_value(
-                        _SUPPRESS_URLLIB_INSTRUMENTATION_KEY, True
-                    )
-                )
-                try:
-                    result = call_wrapped()  # *** PROCEED
-                except Exception as exc:  # pylint: disable=W0703
-                    exception = exc
-                    result = getattr(exc, "file", None)
-                finally:
-                    context.detach(token)
-
-                if result is not None:
-
-                    code_ = result.getcode()
-                    labels["http.status_code"] = str(code_)
-
-                    if span.is_recording():
-                        span.set_attribute("http.status_code", code_)
-                        span.set_attribute("http.status_text", result.reason)
-                        span.set_status(
-                            Status(http_status_to_status_code(code_))
-                        )
-
-                    ver_ = str(getattr(result, "version", ""))
-                    if ver_:
-                        labels["http.flavor"] = "{}.{}".format(
-                            ver_[:1], ver_[:-1]
-                        )
-
-                if span_callback is not None:
-                    span_callback(span, result)
+            if span_callback is not None:
+                span_callback(span, result)
 
             if exception is not None:
                 raise exception.with_traceback(exception.__traceback__)

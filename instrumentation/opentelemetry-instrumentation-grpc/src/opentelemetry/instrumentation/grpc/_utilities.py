@@ -14,11 +14,6 @@
 
 """Internal utilities."""
 
-from contextlib import contextmanager
-from time import time
-
-import grpc
-
 
 class RpcInfo:
     def __init__(
@@ -36,68 +31,3 @@ class RpcInfo:
         self.request = request
         self.response = response
         self.error = error
-
-
-class TimedMetricRecorder:
-    def __init__(self, meter, span_kind):
-        self._meter = meter
-        service_name = "grpcio"
-        self._span_kind = span_kind
-
-        if self._meter:
-            self._duration = self._meter.create_valuerecorder(
-                name="{}/{}/duration".format(service_name, span_kind),
-                description="Duration of grpc requests to the server",
-                unit="ms",
-                value_type=float,
-            )
-            self._error_count = self._meter.create_counter(
-                name="{}/{}/errors".format(service_name, span_kind),
-                description="Number of errors that were returned from the server",
-                unit="1",
-                value_type=int,
-            )
-            self._bytes_in = self._meter.create_counter(
-                name="{}/{}/bytes_in".format(service_name, span_kind),
-                description="Number of bytes received from the server",
-                unit="by",
-                value_type=int,
-            )
-            self._bytes_out = self._meter.create_counter(
-                name="{}/{}/bytes_out".format(service_name, span_kind),
-                description="Number of bytes sent out through gRPC",
-                unit="by",
-                value_type=int,
-            )
-
-    def record_bytes_in(self, bytes_in, method):
-        if self._meter:
-            labels = {"rpc.method": method}
-            self._bytes_in.add(bytes_in, labels)
-
-    def record_bytes_out(self, bytes_out, method):
-        if self._meter:
-            labels = {"rpc.method": method}
-            self._bytes_out.add(bytes_out, labels)
-
-    @contextmanager
-    def record_latency(self, method):
-        start_time = time()
-        labels = {
-            "rpc.method": method,
-            "rpc.system": "grpc",
-            "rpc.grpc.status_code": grpc.StatusCode.OK.name,
-        }
-        try:
-            yield labels
-        except grpc.RpcError as exc:  # pylint:disable=no-member
-            if self._meter:
-                # pylint: disable=no-member
-                labels["rpc.grpc.status_code"] = exc.code().name
-                self._error_count.add(1, labels)
-                labels["error"] = "true"
-            raise
-        finally:
-            if self._meter:
-                elapsed_time = (time() - start_time) * 1000
-                self._duration.record(elapsed_time, labels)

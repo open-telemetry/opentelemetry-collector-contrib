@@ -23,16 +23,11 @@ from opentelemetry.instrumentation.django.environment_variables import (
 from opentelemetry.instrumentation.django.middleware import _DjangoMiddleware
 from opentelemetry.instrumentation.django.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
-from opentelemetry.instrumentation.metric import (
-    HTTPMetricRecorder,
-    HTTPMetricType,
-    MetricMixin,
-)
 
 _logger = getLogger(__name__)
 
 
-class DjangoInstrumentor(BaseInstrumentor, MetricMixin):
+class DjangoInstrumentor(BaseInstrumentor):
     """An instrumentor for Django
 
     See `BaseInstrumentor`
@@ -62,11 +57,6 @@ class DjangoInstrumentor(BaseInstrumentor, MetricMixin):
             settings_middleware = list(settings_middleware)
 
         settings_middleware.insert(0, self._opentelemetry_middleware)
-        self.init_metrics(
-            __name__, __version__,
-        )
-        metric_recorder = HTTPMetricRecorder(self.meter, HTTPMetricType.SERVER)
-        setattr(settings, "OTEL_METRIC_RECORDER", metric_recorder)
         setattr(settings, "MIDDLEWARE", settings_middleware)
 
     def _uninstrument(self, **kwargs):
