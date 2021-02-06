@@ -26,9 +26,11 @@ The following exporter configuration parameters are supported.
 | `dimension_rollup_option`| DimensionRollupOption is the option for metrics dimension rollup. Three options are available. |"ZeroAndSingleDimensionRollup" (Enable both zero dimension rollup and single dimension rollup)| 
 | `resource_to_telemetry_conversion` | "resource_to_telemetry_conversion" is the option for converting resource attributes to telemetry attributes. It has only one config onption- `enabled`. For metrics, if `enabled=true`, all the resource attributes will be converted to metric labels by default. See `Resource Attributes to Metric Labels` section below for examples. | `enabled=false` | 
 | [`metric_declarations`](#metric_declaration) | List of rules for filtering exported metrics and their dimensions. |    [ ]   |
+| [`metric_descriptors`](#metric_descriptor) | List of rules for inserting or updating metric descriptors.| [ ]|
 
 ### <metric_declaration>
 A metric_declaration section characterizes a rule to be used to set dimensions for exported metrics, filtered by the incoming metrics' labels and metric names.
+
 | Name              | Description                                                            | Default |
 | :---------------- | :--------------------------------------------------------------------- | ------- |
 | `dimensions`      | List of dimension sets to be exported.                                 |  [[ ]]   |
@@ -37,11 +39,21 @@ A metric_declaration section characterizes a rule to be used to set dimensions f
 
 #### <label_matcher>
 A label_matcher section defines a matching rule against the labels of the incoming metric. Only metrics that match the rules will be used by the surrounding `metric_declaration`.
+
 | Name              | Description                                                            | Default |
 | :---------------- | :--------------------------------------------------------------------- | ------- |
 | `label_names`     | List of label names to filter by. Their corresponding values are concatenated using the separator and matched against the configured regular expression.                             |         |
 | `separator`       | (Optional) separator placed between concatenated label values.         |   ";"   |
 | `regex`           | Regex string to be matched against concatenated label values.          |         |
+
+### <metric_descriptor>
+A metric descriptor section allows the schema of a metric to be overwritten before sending out to the CloudWatch backend service. Currently, we only support unit override.
+
+| Name              | Description                                                            | Default |
+| :---------------- | :--------------------------------------------------------------------- | ------- |
+| `metric_name`      | The name of the metric to be overwritten.                             |         |
+| `unit` | The overwritten value of unit. The [MetricDatum](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_MetricDatum.html) contains a ful list of supported unit values. |         |
+| `overwrite` | `true` if the schema should be overwritten with the given specification, otherwise it will only be configured if empty. |   false   |
 
 
 ## AWS Credential Configuration

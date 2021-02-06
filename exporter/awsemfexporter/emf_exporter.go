@@ -39,6 +39,8 @@ type emfExporter struct {
 	config                 configmodels.Exporter
 	logger                 *zap.Logger
 
+	metricTranslator metricTranslator
+
 	pusherMapLock sync.Mutex
 	retryCnt      int
 	collectorID   string
@@ -67,22 +69,12 @@ func New(
 	svcStructuredLog := NewCloudWatchLogsClient(logger, awsConfig, params.ApplicationStartInfo, session)
 	collectorIdentifier, _ := uuid.NewRandom()
 
-	// Initialize metric declarations and filter out invalid ones
-	emfConfig := config.(*Config)
-	var validDeclarations []*MetricDeclaration
-	for _, declaration := range emfConfig.MetricDeclarations {
-		err := declaration.Init(logger)
-		if err != nil {
-			logger.Warn("Dropped metric declaration. Error: " + err.Error() + ".")
-		} else {
-			validDeclarations = append(validDeclarations, declaration)
-		}
-	}
-	emfConfig.MetricDeclarations = validDeclarations
+	expConfig.Validate()
 
 	emfExporter := &emfExporter{
 		svcStructuredLog: svcStructuredLog,
 		config:           config,
+		metricTranslator: newMetricTranslator(*expConfig),
 		retryCnt:         *awsConfig.MaxRetries,
 		logger:           logger,
 		collectorID:      collectorIdentifier.String(),
@@ -125,14 +117,14 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (dr
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 		var droppedMetrics int
-		cwm, droppedMetrics = TranslateOtToCWMetric(&rm, expConfig)
+		cwm, droppedMetrics = emf.metricTranslator.translateOTelToCWMetric(&rm, expConfig)
 		totalDroppedMetrics = totalDroppedMetrics + droppedMetrics
 
 		if len(cwm) > 0 && len(cwm[0].Measurements) > 0 {
 			namespace = cwm[0].Measurements[0].Namespace
 		}
 
-		putLogEvents := TranslateCWMetricToEMF(cwm, expConfig.logger)
+		putLogEvents := translateCWMetricToEMF(cwm, expConfig.logger)
 
 		if namespace != "" {
 			logGroup = fmt.Sprintf("/metrics/%s", namespace)
