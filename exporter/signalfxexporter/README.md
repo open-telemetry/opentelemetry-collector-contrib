@@ -42,9 +42,9 @@ The following configuration options can also be configured:
   receiver](../../receiver/signalfxreceiver/README.md) to preserve datapoint
   origin.
 - `exclude_metrics`: List of metric filters that will determine metrics to be
-  excluded from sending to Signalfx backend. If `send_compatible_metrics`
-  or `translation_rules` options are enabled, the exclusion will be applied
-  on translated metrics. See [here](./testdata/config.yaml) for examples.
+  excluded from sending to Signalfx backend. If `translation_rules` options
+  are enabled, the exclusion will be applied on translated metrics.
+  See [here](./testdata/config.yaml) for examples.
 - `include_metrics`: List of filters to override exclusion of any metrics.
   This option can be used to included metrics that are otherwise dropped by
   default. See [here](./translation/default_metrics.go) for a list of metrics
@@ -62,13 +62,11 @@ The following configuration options can also be configured:
 - `headers` (no default): Headers to pass in the payload.
 - `log_dimension_updates` (default = `false`): Whether or not to log dimension
   updates.
-- `send_compatible_metrics` (default = `false`): Whether metrics must be
-  translated to a format backward-compatible with SignalFx naming conventions.
 - `timeout` (default = 5s): Amount of time to wait for a send operation to
   complete.
 - `translation_rules`: Set of rules on how to translate metrics to a SignalFx
   compatible format. Rules defined in `translation/constants.go` are used by
-  default. Applicable only when `send_compatible_metrics` set to `true`.
+  default. Set this option to `[]` to override the default behavior.
 - `sync_host_metadata`: Defines whether the exporter should scrape host metadata
   and send it as property updates to SignalFx backend. Disabled by default.
   IMPORTANT: Host metadata synchronization relies on `resourcedetection`
