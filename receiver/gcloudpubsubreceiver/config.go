@@ -34,4 +34,6 @@ type Config struct {
 	MetricsSubscription string `mapstructure:"metrics_subscription"`
 	TracesSubscription  string `mapstructure:"traces_subscription"`
 	LogsSubscription    string `mapstructure:"logs_subscription"`
+
+	ClientId string `mapstructure:"client_id"`
 }

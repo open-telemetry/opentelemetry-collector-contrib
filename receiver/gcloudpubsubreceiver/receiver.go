@@ -15,18 +15,20 @@
 package gcloudpubsubreceiver
 
 import (
+	pubsub "cloud.google.com/go/pubsub/apiv1"
 	"context"
 	"fmt"
-
-	"cloud.google.com/go/pubsub"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
+	pubsubpb "google.golang.org/genproto/googleapis/pubsub/v1"
 	"google.golang.org/grpc"
+	"sync"
 )
 
+// https://cloud.google.com/pubsub/docs/reference/rpc/google.pubsub.v1#streamingpullrequest
 type pubsubReceiver struct {
 	instanceName    string
 	logger          *zap.Logger
@@ -35,7 +37,10 @@ type pubsubReceiver struct {
 	logsConsumer    consumer.LogsConsumer
 	userAgent       string
 	config          *Config
-	client          *pubsub.Client
+	client          *pubsub.SubscriberClient
+
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
 }
 
 func (receiver *pubsubReceiver) generateClientOptions() ([]option.ClientOption, error) {
@@ -59,91 +64,121 @@ func (receiver *pubsubReceiver) generateClientOptions() ([]option.ClientOption, 
 }
 
 func (receiver *pubsubReceiver) Start(ctx context.Context, _ component.Host) error {
+	ctx, receiver.cancel = context.WithCancel(ctx)
+
 	if receiver.client == nil {
 		copts, _ := receiver.generateClientOptions()
-		client, _ := pubsub.NewClient(ctx, receiver.config.ProjectID, copts...)
+		client, err := pubsub.NewSubscriberClient(ctx, copts...)
+		if err != nil {
+			return fmt.Errorf("failed creating the gRPC client to Pubsub: %w", err)
+		}
+
 		receiver.client = client
 	}
+
 	if receiver.tracesConsumer != nil {
-		subscription := receiver.client.SubscriptionInProject(receiver.config.TracesSubscription, receiver.config.ProjectID)
-		if receiver.config.ValidateExistence {
-			tctx, cancel := context.WithTimeout(ctx, receiver.config.Timeout)
-			defer cancel()
-			exist, err := subscription.Exists(tctx)
-			if err != nil {
-				return err
-			}
-			if !exist {
-				return fmt.Errorf("trace subscription %s doesn't exist", subscription)
-			}
+		err := receiver.createTracesReceiverHandler(ctx)
+		if err != nil {
+			receiver.cancel()
+			return fmt.Errorf("failed to create TracesReceiverHandler: %w", err)
 		}
-		go subscription.Receive(ctx, createTracesReceiverHandler(receiver.tracesConsumer))
 	}
 	if receiver.metricsConsumer != nil {
-		subscription := receiver.client.SubscriptionInProject(receiver.config.MetricsSubscription, receiver.config.ProjectID)
-		if receiver.config.ValidateExistence {
-			tctx, cancel := context.WithTimeout(ctx, receiver.config.Timeout)
-			defer cancel()
-			exist, err := subscription.Exists(tctx)
-			if err != nil {
-				return err
-			}
-			if !exist {
-				return fmt.Errorf("metric subscription %s doesn't exist", subscription)
-			}
+		err := receiver.createMetricsReceiverHandler(ctx)
+		if err != nil {
+			receiver.cancel()
+			return fmt.Errorf("failed to create MetricsReceiverHandler: %w", err)
 		}
-		go subscription.Receive(ctx, createMetricReceiverHandler(receiver.metricsConsumer))
 	}
 	if receiver.logsConsumer != nil {
-		subscription := receiver.client.SubscriptionInProject(receiver.config.LogsSubscription, receiver.config.ProjectID)
-		if receiver.config.ValidateExistence {
-			tctx, cancel := context.WithTimeout(ctx, receiver.config.Timeout)
-			defer cancel()
-			exist, err := subscription.Exists(tctx)
-			if err != nil {
-				return err
-			}
-			if !exist {
-				return fmt.Errorf("log subscription %s doesn't exist", subscription)
-			}
+		err := receiver.createLogsReceiverHandler(ctx)
+		if err != nil {
+			receiver.cancel()
+			return fmt.Errorf("failed to create LogReceiverHandler: %w", err)
 		}
-		go subscription.Receive(ctx, createLogReceiverHandler(receiver.logsConsumer))
 	}
 	return nil
 }
 
 func (receiver *pubsubReceiver) Shutdown(_ context.Context) error {
-	if receiver.client != nil {
-		err := receiver.client.Close()
-		receiver.client = nil
-		return err
-	}
+	receiver.cancel()
+	receiver.logger.Info("Stopping Google Pubsub receiver")
+	receiver.wg.Wait()
+	receiver.logger.Info("Stopped Google Pubsub receiver")
 	return nil
 }
 
-func createTracesReceiverHandler(consumer consumer.TracesConsumer) func(context.Context, *pubsub.Message) {
-	return func(ctx context.Context, m *pubsub.Message) {
-		otlpData := pdata.NewTraces()
-		otlpData.FromOtlpProtoBytes(m.Data)
-		consumer.ConsumeTraces(ctx, otlpData)
-		m.Ack()
+func (receiver *pubsubReceiver) createTracesReceiverHandler(ctx context.Context) error {
+	handler := streamHandler{
+		receiver: receiver,
+		pushMessage: func(ctx context.Context, message *pubsubpb.ReceivedMessage) error {
+			otlpData := pdata.NewTraces()
+			err := otlpData.FromOtlpProtoBytes(message.Message.Data)
+			if err != nil {
+				return err
+			}
+			return receiver.tracesConsumer.ConsumeTraces(ctx, otlpData)
+		},
+		acks: make([]string, 0),
 	}
+	subscription := fmt.Sprintf("projects/%s/subscriptions/%s",
+		handler.receiver.config.ProjectID,
+		handler.receiver.config.TracesSubscription)
+	err := handler.initStream(ctx, subscription)
+	if err != nil {
+		return err
+	}
+	receiver.wg.Add(1)
+	go handler.recoverableStream(ctx, subscription)
+	return nil
 }
 
-func createMetricReceiverHandler(consumer consumer.MetricsConsumer) func(context.Context, *pubsub.Message) {
-	return func(ctx context.Context, m *pubsub.Message) {
-		otlpData := pdata.NewMetrics()
-		otlpData.FromOtlpProtoBytes(m.Data)
-		consumer.ConsumeMetrics(ctx, otlpData)
-		m.Ack()
+func (receiver *pubsubReceiver) createMetricsReceiverHandler(ctx context.Context) error {
+	handler := streamHandler{
+		receiver: receiver,
+		pushMessage: func(ctx context.Context, message *pubsubpb.ReceivedMessage) error {
+			otlpData := pdata.NewMetrics()
+			err := otlpData.FromOtlpProtoBytes(message.Message.Data)
+			if err != nil {
+				return err
+			}
+			return receiver.metricsConsumer.ConsumeMetrics(ctx, otlpData)
+		},
+		acks: make([]string, 0),
 	}
+	subscription := fmt.Sprintf("projects/%s/subscriptions/%s",
+		handler.receiver.config.ProjectID,
+		handler.receiver.config.MetricsSubscription)
+	err := handler.initStream(ctx, subscription)
+	if err != nil {
+		return err
+	}
+	receiver.wg.Add(1)
+	go handler.recoverableStream(ctx, subscription)
+	return nil
 }
 
-func createLogReceiverHandler(consumer consumer.LogsConsumer) func(context.Context, *pubsub.Message) {
-	return func(ctx context.Context, m *pubsub.Message) {
-		otlpData := pdata.NewLogs()
-		otlpData.FromOtlpProtoBytes(m.Data)
-		consumer.ConsumeLogs(ctx, otlpData)
-		m.Ack()
+func (receiver *pubsubReceiver) createLogsReceiverHandler(ctx context.Context) error {
+	handler := streamHandler{
+		receiver: receiver,
+		pushMessage: func(ctx context.Context, message *pubsubpb.ReceivedMessage) error {
+			otlpData := pdata.NewLogs()
+			err := otlpData.FromOtlpProtoBytes(message.Message.Data)
+			if err != nil {
+				return err
+			}
+			return receiver.logsConsumer.ConsumeLogs(ctx, otlpData)
+		},
+		acks: make([]string, 0),
 	}
+	subscription := fmt.Sprintf("projects/%s/subscriptions/%s",
+		handler.receiver.config.ProjectID,
+		handler.receiver.config.LogsSubscription)
+	err := handler.initStream(ctx, subscription)
+	if err != nil {
+		return err
+	}
+	receiver.wg.Add(1)
+	go handler.recoverableStream(ctx, subscription)
+	return nil
 }

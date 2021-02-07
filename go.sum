@@ -1384,6 +1384,7 @@ go.opencensus.io v0.22.6 h1:BdkrbWrzDlV9dnbzoP7sfN+dHheJ4J9JOaYxcUDL+ok=
 go.opencensus.io v0.22.6/go.mod h1:XItmlyltB5F7CS4xOC1DcqMoFqwtC6OG2xF7mCv7P7E=
 go.opentelemetry.io/collector v0.17.0 h1:Da/hGGexGLFjp444zMJ3y28y0R9Ll/kJTfNVpS2pliY=
 go.opentelemetry.io/collector v0.17.0/go.mod h1:h9AuSwXGdKT5M+avYsM8KGL7FiObqUL/1s+BBLpLB80=
+go.opentelemetry.io/collector v0.19.0/go.mod h1:KZcMoF4fYwruBKDP0e3Xi4fW6sYnia0xqw+WlVQzeuA=
 go.opentelemetry.io/collector v0.19.1-0.20210127225953-68c5961f7bc2 h1:XE4VegZBlHN+Jab2mITYwd+bJo2CHTmLG2MmL0FoSTU=
 go.opentelemetry.io/collector v0.19.1-0.20210127225953-68c5961f7bc2/go.mod h1:KZcMoF4fYwruBKDP0e3Xi4fW6sYnia0xqw+WlVQzeuA=
 go.opentelemetry.io/otel v0.16.0 h1:uIWEbdeb4vpKPGITLsRVUS44L5oDbDUCZxn8lkxhmgw=
