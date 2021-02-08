@@ -15,13 +15,14 @@
 package filelogreceiver
 
 import (
-	// Register input operator for filelog
-	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/file"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stanzareceiver"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+
+	// Register input operator for filelog
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/file"
 )
 
 const (
@@ -31,22 +32,27 @@ const (
 
 // NewFactory creates a factory for filelog receiver
 func NewFactory() component.ReceiverFactory {
-	return stanzareceiver.NewFactory(FileLogReceiverType{})
+	return stanzareceiver.NewFactory(ReceiverType{})
 }
 
-type FileLogReceiverType struct {
+// ReceiverType implments stanzareceiver.LogReceiverType
+// to create a file tailing receiver
+type ReceiverType struct {
 	stanzareceiver.LogReceiverType
 }
 
-func (f FileLogReceiverType) Type() configmodels.Type {
+// Type is the receiver type
+func (f ReceiverType) Type() configmodels.Type {
 	return configmodels.Type(typeStr)
 }
 
-func (f FileLogReceiverType) Version() string {
+// Version is the version of opentelemetry-log-collection
+func (f ReceiverType) Version() string {
 	return verStr
 }
 
-func (f FileLogReceiverType) CreateDefaultConfig() configmodels.Receiver {
+// CreateDefaultConfig creates a config with type and version
+func (f ReceiverType) CreateDefaultConfig() configmodels.Receiver {
 	return &FileLogConfig{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: configmodels.Type(typeStr),
@@ -55,7 +61,8 @@ func (f FileLogReceiverType) CreateDefaultConfig() configmodels.Receiver {
 	}
 }
 
-func (f FileLogReceiverType) Decode(cfg configmodels.Receiver) (pipeline.Config, error) {
+// Decode unmarshals configuration into a log parsing pipeline
+func (f ReceiverType) Decode(cfg configmodels.Receiver) (pipeline.Config, error) {
 	logConfig := cfg.(*FileLogConfig)
 	return stanzareceiver.DecodeOperators(logConfig.Operators)
 }
@@ -64,5 +71,4 @@ func (f FileLogReceiverType) Decode(cfg configmodels.Receiver) (pipeline.Config,
 type FileLogConfig struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 	Operators                     stanzareceiver.OperatorConfig `mapstructure:"operators"`
-	// TODO FileInputConfig file.InputConfig
 }

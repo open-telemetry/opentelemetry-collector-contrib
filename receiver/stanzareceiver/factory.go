@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
+// LogReceiverType is the interface used by stanza-based log receivers
 type LogReceiverType interface {
 	configmodels.Receiver
 	Version() string
@@ -57,10 +58,6 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 		converter := NewConverter(string(logReceiverType.Type()), logReceiverType.Version())
 		logAgent, err := agent.NewBuilder(params.Logger.Sugar()).
 			WithConfig(&agent.Config{Pipeline: pipeline}).
-			// TODO determine how best to configure and support
-			//      these options across multiple receivers
-			// WithPluginDir(logReceiverType.PluginDir).
-			// WithDatabaseFile(logReceiverType.OffsetsFile).
 			WithDefaultOutput(emitter).
 			Build()
 		if err != nil {

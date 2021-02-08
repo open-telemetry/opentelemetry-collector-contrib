@@ -24,6 +24,8 @@ import (
 // but this allows a temporary solution
 type OperatorConfig []map[string]interface{}
 
+// DecodeOperators is an unmarshaling workaround for stanza operators
+// This is needed only until stanza operators are migrated to mapstructure
 func DecodeOperators(cfg OperatorConfig) (pipeline.Config, error) {
 	yamlBytes, err := yaml.Marshal(cfg)
 	if err != nil {
