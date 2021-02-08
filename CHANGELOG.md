@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#308](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/308))
 - Remove metrics from all instrumentations
   ([#312](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/312))
+- `opentelemetry-instrumentation-boto` updated to set span attributes instead of overriding the resource.
+  ([#310](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/310))
 
 ## [0.17b0](https://github.com/open-telemetry/opentelemetry-python-contrib/releases/tag/v0.17b0) - 2021-01-20
 
