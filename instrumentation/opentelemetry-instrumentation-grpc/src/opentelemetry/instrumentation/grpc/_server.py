@@ -239,6 +239,15 @@ class OpenTelemetryServerInterceptor(grpc.ServerInterceptor):
         def telemetry_wrapper(behavior, request_streaming, response_streaming):
             def telemetry_interceptor(request_or_iterator, context):
 
+                # handle streaming responses specially
+                if response_streaming:
+                    return self._intercept_server_stream(
+                        behavior,
+                        handler_call_details,
+                        request_or_iterator,
+                        context,
+                    )
+
                 with self._set_remote_context(context):
                     with self._start_span(
                         handler_call_details, context
@@ -249,6 +258,7 @@ class OpenTelemetryServerInterceptor(grpc.ServerInterceptor):
                         # And now we run the actual RPC.
                         try:
                             return behavior(request_or_iterator, context)
+
                         except Exception as error:
                             # Bare exceptions are likely to be gRPC aborts, which
                             # we handle in our context wrapper.
@@ -263,3 +273,23 @@ class OpenTelemetryServerInterceptor(grpc.ServerInterceptor):
         return _wrap_rpc_behavior(
             continuation(handler_call_details), telemetry_wrapper
         )
+
+    # Handle streaming responses separately - we have to do this
+    # to return a *new* generator or various upstream things
+    # get confused, or we'll lose the consistent trace
+    def _intercept_server_stream(
+        self, behavior, handler_call_details, request_or_iterator, context
+    ):
+
+        with self._set_remote_context(context):
+            with self._start_span(handler_call_details, context) as span:
+                context = _OpenTelemetryServicerContext(context, span)
+
+                try:
+                    yield from behavior(request_or_iterator, context)
+
+                except Exception as error:
+                    # pylint:disable=unidiomatic-typecheck
+                    if type(error) != Exception:
+                        span.record_exception(error)
+                    raise error
