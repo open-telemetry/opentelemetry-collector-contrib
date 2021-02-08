@@ -24,9 +24,9 @@ import (
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -251,29 +251,32 @@ func newStackdriverMetricsExporter(cfg *Config, params component.ExporterCreateP
 
 // pushMetrics calls StackdriverExporter.PushMetricsProto on each element of the given metrics
 func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) (int, error) {
-	var errors []error
-	var totalDropped int
-
+	// PushMetricsProto doesn't bundle subsequent calls, so we need to
+	// combine the data here to avoid generating too many RPC calls.
 	mds := internaldata.MetricsToOC(m)
+	count := 0
 	for _, md := range mds {
-		if len(md.Metrics) == 0 {
+		count += len(md.Metrics)
+	}
+	metrics := make([]*metricspb.Metric, 0, count)
+	for _, md := range mds {
+		if md.Resource == nil {
+			metrics = append(metrics, md.Metrics...)
 			continue
 		}
-
-		points := numPoints(md)
-		dropped, err := me.mexporter.PushMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
-		recordPointCount(ctx, points-dropped, dropped, err)
-		totalDropped += dropped
-		if err != nil {
-			errors = append(errors, err)
+		for _, metric := range md.Metrics {
+			if metric.Resource == nil {
+				metric.Resource = md.Resource
+			}
+			metrics = append(metrics, metric)
 		}
 	}
-
-	if len(errors) > 0 {
-		return totalDropped, componenterror.CombineErrors(errors)
-	}
-
-	return totalDropped, nil
+	points := numPoints(metrics)
+	// The two nil args here are: node (which is ignored) and resource
+	// (which we just moved to individual metrics).
+	dropped, err := me.mexporter.PushMetricsProto(ctx, nil, nil, metrics)
+	recordPointCount(ctx, points-dropped, dropped, err)
+	return dropped, err
 }
 
 // pushTraces calls texporter.ExportSpan for each span in the given traces
@@ -295,9 +298,9 @@ func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) (int, 
 	return numSpans - len(spans), componenterror.CombineErrors(errs)
 }
 
-func numPoints(md consumerdata.MetricsData) int {
+func numPoints(metrics []*metricspb.Metric) int {
 	numPoints := 0
-	for _, metric := range md.Metrics {
+	for _, metric := range metrics {
 		tss := metric.GetTimeseries()
 		for _, ts := range tss {
 			numPoints += len(ts.GetPoints())

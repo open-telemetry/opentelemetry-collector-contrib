@@ -404,18 +404,8 @@ translation_rules:
     used: memory.used
 
 
-# Translations to derive disk.utilization.
-- action: copy_metrics
-  mapping:
-    system.filesystem.usage: df_complex.used
-  dimension_key: state
-  dimension_values:
-    used: true
-- action: split_metric
-  metric_name: df_complex.used
-  dimension_key: state
-  mapping:
-    used: df_complex.used
+# Translations to derive filesystem metrics
+## disk.total, required to compute disk.utilization
 - action: copy_metrics
   mapping:
     system.filesystem.usage: disk.total
@@ -425,33 +415,8 @@ translation_rules:
   without_dimensions:
     - state
 
-## disk.utilization
-- action: calculate_new_metric
-  metric_name: disk.utilization
-  operand1_metric: df_complex.used
-  operand2_metric: disk.total
-  operator: /
-- action: multiply_float
-  scale_factors_float:
-    disk.utilization: 100
 
-
-# Translations to derive disk.summary_utilization.
-- action: copy_metrics
-  mapping:
-    df_complex.used: df_complex.used_total
-- action: aggregate_metric
-  metric_name: df_complex.used_total
-  aggregation_method: avg
-  without_dimensions:
-    - mode
-    - mountpoint
-- action: aggregate_metric
-  metric_name: df_complex.used_total
-  aggregation_method: sum
-  without_dimensions:
-  - device
-  - type
+## disk.summary_total, required to compute disk.summary_utilization
 - action: copy_metrics
   mapping:
     system.filesystem.usage: disk.summary_total
@@ -469,7 +434,50 @@ translation_rules:
     - device
     - type
 
+
+## other filesystem metrics
+- action: split_metric
+  metric_name: system.filesystem.usage
+  dimension_key: state
+  mapping:
+    free: df_complex.free
+    reserved: df_complex.reserved
+    used: df_complex.used
+- action: split_metric
+  metric_name: system.filesystem.inodes.usage
+  dimension_key: state
+  mapping:
+    free: df_inodes.free
+    used: df_inodes.used
+
+
+## disk.utilization
+- action: calculate_new_metric
+  metric_name: disk.utilization
+  operand1_metric: df_complex.used
+  operand2_metric: disk.total
+  operator: /
+- action: multiply_float
+  scale_factors_float:
+    disk.utilization: 100
+
+
 ## disk.summary_utilization
+- action: copy_metrics
+  mapping:
+    df_complex.used: df_complex.used_total
+- action: aggregate_metric
+  metric_name: df_complex.used_total
+  aggregation_method: avg
+  without_dimensions:
+    - mode
+    - mountpoint
+- action: aggregate_metric
+  metric_name: df_complex.used_total
+  aggregation_method: sum
+  without_dimensions:
+  - device
+  - type
 - action: calculate_new_metric
   metric_name: disk.summary_utilization
   operand1_metric: df_complex.used_total
@@ -479,10 +487,11 @@ translation_rules:
   scale_factors_float:
     disk.summary_utilization: 100
 
+
 # convert disk I/O metrics
 - action: copy_metrics
   mapping:
-    system.disk.ops: disk.ops
+    system.disk.operations: disk.ops
 - action: aggregate_metric
   metric_name: disk.ops
   aggregation_method: sum
@@ -496,7 +505,7 @@ translation_rules:
   metric_names:
     system.disk.merged: true
     system.disk.io: true
-    system.disk.ops: true
+    system.disk.operations: true
     system.disk.time: true
   mapping:
     device: disk
@@ -513,7 +522,7 @@ translation_rules:
     read: disk_octets.read
     write: disk_octets.write
 - action: split_metric
-  metric_name: system.disk.ops
+  metric_name: system.disk.operations
   dimension_key: direction
   mapping:
     read: disk_ops.read
@@ -528,7 +537,9 @@ translation_rules:
   mapping:
     system.disk.pending_operations: disk_ops.pending
 
-# convert network I/O metrics
+
+# Translations to derive Network I/O metrics.
+## network.total.
 - action: copy_metrics
   mapping:
     system.network.io: network.total
@@ -542,6 +553,42 @@ translation_rules:
   without_dimensions:
   - direction
   - interface
+
+
+## other Network I/O metrics. Note that these translations depend on renaming dimension device to interface.
+- action: rename_dimension_keys
+  metric_names:
+    system.network.dropped: true
+    system.network.errors: true
+    system.network.io: true
+    system.network.packets: true
+  mapping:
+    device: interface
+- action: split_metric
+  metric_name: system.network.dropped
+  dimension_key: direction
+  mapping:
+    receive: if_dropped.rx
+    transmit: if_dropped.tx
+- action: split_metric
+  metric_name: system.network.errors
+  dimension_key: direction
+  mapping:
+    receive: if_errors.rx
+    transmit: if_errors.tx
+- action: split_metric
+  metric_name: system.network.io
+  dimension_key: direction
+  mapping:
+    receive: if_octets.rx
+    transmit: if_octets.tx
+- action: split_metric
+  metric_name: system.network.packets
+  dimension_key: direction
+  mapping:
+    receive: if_packets.rx
+    transmit: if_packets.tx
+
 
 # memory utilization
 - action: calculate_new_metric
@@ -558,7 +605,6 @@ translation_rules:
 # remove redundant metrics
 - action: drop_metrics
   metric_names:
-    df_complex.used: true
     df_complex.used_total: true
     disk.ops: true
     disk.summary_total: true

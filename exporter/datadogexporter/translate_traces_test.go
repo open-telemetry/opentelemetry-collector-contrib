@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
@@ -51,6 +52,7 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	spans.Resize(1)
 
 	span := spans.At(0)
+
 	traceID := pdata.NewTraceID(mockTraceID)
 	spanID := pdata.NewSpanID(mockSpanID)
 	parentSpanID := pdata.NewSpanID(mockParentSpanID)
@@ -280,6 +282,138 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 
 	assert.Contains(t, datadogPayload.Traces[0].Spans[0].Meta[tagContainersTags], "container_id:3249847017410247")
 	assert.Contains(t, datadogPayload.Traces[0].Spans[0].Meta[tagContainersTags], "pod_name:example-pod-name")
+}
+
+// Ensures that if more than one error event occurs in a span, the last one is used for translation
+func TestTracesTranslationErrorsFromEventsUsesLast(t *testing.T) {
+	hostname := "testhostname"
+	calculator := newSublayerCalculator()
+
+	// generate mock trace, span and parent span ids
+	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
+	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
+	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
+
+	// create mock resource span data
+	// toggle on errors and custom service naming to test edge case code paths
+	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeError, true)
+	span := rs.InstrumentationLibrarySpans().At(0).Spans().At(0)
+	events := span.Events()
+	events.Resize(4)
+
+	events.At(0).SetName("start")
+
+	events.At(1).SetName(conventions.AttributeExceptionEventName)
+	events.At(1).Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		conventions.AttributeExceptionType:       pdata.NewAttributeValueString("SomeOtherErr"),
+		conventions.AttributeExceptionStacktrace: pdata.NewAttributeValueString("SomeOtherErr at line 67\nthing at line 45"),
+		conventions.AttributeExceptionMessage:    pdata.NewAttributeValueString("SomeOtherErr error occurred"),
+	})
+
+	attribs := map[string]pdata.AttributeValue{
+		conventions.AttributeExceptionType:       pdata.NewAttributeValueString("HttpError"),
+		conventions.AttributeExceptionStacktrace: pdata.NewAttributeValueString("HttpError at line 67\nthing at line 45"),
+		conventions.AttributeExceptionMessage:    pdata.NewAttributeValueString("HttpError error occurred"),
+	}
+	events.At(2).SetName(conventions.AttributeExceptionEventName)
+	events.At(2).Attributes().InitFromMap(attribs)
+
+	events.At(3).SetName("end")
+	events.At(3).Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		"flag": pdata.NewAttributeValueBool(false),
+	})
+
+	// translate mocks to datadog traces
+	cfg := config.Config{
+		TagsConfig: config.TagsConfig{
+			Version: "v1",
+		},
+	}
+
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
+
+	// Ensure the error type is copied over from the last error event logged
+	assert.Equal(t, attribs[conventions.AttributeExceptionType].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorType])
+
+	// Ensure the stack trace is copied over from the last error event logged
+	assert.Equal(t, attribs[conventions.AttributeExceptionStacktrace].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorStack])
+
+	// Ensure the error message is copied over from the last error event logged
+	assert.Equal(t, attribs[conventions.AttributeExceptionMessage].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorMsg])
+}
+
+// Ensures that if the first or last event in the list is the error, that translation still behaves properly
+func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
+	hostname := "testhostname"
+	calculator := newSublayerCalculator()
+
+	// generate mock trace, span and parent span ids
+	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
+	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
+	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
+
+	// create mock resource span data
+	// toggle on errors and custom service naming to test edge case code paths
+	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeError, true)
+	span := rs.InstrumentationLibrarySpans().At(0).Spans().At(0)
+	events := span.Events()
+	events.Resize(3)
+
+	// Start with the error as the first element in the list...
+	attribs := map[string]pdata.AttributeValue{
+		conventions.AttributeExceptionType:       pdata.NewAttributeValueString("HttpError"),
+		conventions.AttributeExceptionStacktrace: pdata.NewAttributeValueString("HttpError at line 67\nthing at line 45"),
+		conventions.AttributeExceptionMessage:    pdata.NewAttributeValueString("HttpError error occurred"),
+	}
+	events.At(0).SetName(conventions.AttributeExceptionEventName)
+	events.At(0).Attributes().InitFromMap(attribs)
+
+	events.At(1).SetName("start")
+
+	events.At(2).SetName("end")
+	events.At(2).Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		"flag": pdata.NewAttributeValueBool(false),
+	})
+
+	// translate mocks to datadog traces
+	cfg := config.Config{
+		TagsConfig: config.TagsConfig{
+			Version: "v1",
+		},
+	}
+
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
+
+	// Ensure the error type is copied over
+	assert.Equal(t, attribs[conventions.AttributeExceptionType].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorType])
+
+	// Ensure the stack trace is copied over
+	assert.Equal(t, attribs[conventions.AttributeExceptionStacktrace].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorStack])
+
+	// Ensure the error message is copied over
+	assert.Equal(t, attribs[conventions.AttributeExceptionMessage].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorMsg])
+
+	// Now with the error event at the end of the list...
+	events.At(0).SetName("start")
+	// Reset the attributes
+	events.At(0).Attributes().InitFromMap(map[string]pdata.AttributeValue{})
+
+	events.At(1).SetName("end")
+	events.At(1).Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		"flag": pdata.NewAttributeValueBool(false),
+	})
+
+	events.At(2).SetName(conventions.AttributeExceptionEventName)
+	events.At(2).Attributes().InitFromMap(attribs)
+
+	// Ensure the error type is copied over
+	assert.Equal(t, attribs[conventions.AttributeExceptionType].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorType])
+
+	// Ensure the stack trace is copied over
+	assert.Equal(t, attribs[conventions.AttributeExceptionStacktrace].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorStack])
+
+	// Ensure the error message is copied over
+	assert.Equal(t, attribs[conventions.AttributeExceptionMessage].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorMsg])
 }
 
 func TestTracesTranslationOkStatus(t *testing.T) {

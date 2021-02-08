@@ -465,13 +465,19 @@ func getSpanErrorAndSetTags(s pdata.Span, tags map[string]string) int32 {
 	}
 
 	if isError == errorCode {
-		tags[ext.ErrorType] = "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10)
+		extractErrorTagsFromEvents(s, tags)
+		// If we weren't able to pull an error type or message, go ahead and set
+		// these to the old defaults
+		if _, ok := tags[ext.ErrorType]; !ok {
+			tags[ext.ErrorType] = "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10)
+		}
 
-		// try to add a message if possible
-		if status.Message() != "" {
-			tags[ext.ErrorMsg] = status.Message()
-		} else {
-			tags[ext.ErrorMsg] = "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10)
+		if _, ok := tags[ext.ErrorMsg]; !ok {
+			if status.Message() != "" {
+				tags[ext.ErrorMsg] = status.Message()
+			} else {
+				tags[ext.ErrorMsg] = "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10)
+			}
 		}
 	}
 
@@ -490,4 +496,37 @@ func getSpanErrorAndSetTags(s pdata.Span, tags map[string]string) int32 {
 	}
 
 	return isError
+}
+
+// Finds the last exception event in the span, and surfaces it to DataDog. DataDog spans only support a single
+// exception per span, but otel supports many exceptions as "Events" on a given span. The last exception was
+// chosen for now as most otel-instrumented libraries (http, pg, etc.) only capture a single exception (if any)
+// per span. If multiple exceptions are logged, it's my assumption that the last exception is most likely the
+// exception that escaped the scope of the span.
+//
+// TODO:
+//  Seems that the spec has an attribute that hasn't made it to the collector yet -- "exception.escaped".
+//  This seems optional (SHOULD vs. MUST be set), but it's likely that we want to bubble up the exception
+//  that escaped the scope of the span ("exception.escaped" == true) instead of the last exception event
+//  in the case that these events differ.
+//
+//  https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/exceptions.md#attributes
+func extractErrorTagsFromEvents(s pdata.Span, tags map[string]string) {
+	evts := s.Events()
+	for i := evts.Len() - 1; i >= 0; i-- {
+		evt := evts.At(i)
+		if evt.Name() == conventions.AttributeExceptionEventName {
+			attribs := evt.Attributes()
+			if errType, ok := attribs.Get(conventions.AttributeExceptionType); ok {
+				tags[ext.ErrorType] = errType.StringVal()
+			}
+			if errMsg, ok := attribs.Get(conventions.AttributeExceptionMessage); ok {
+				tags[ext.ErrorMsg] = errMsg.StringVal()
+			}
+			if errStack, ok := attribs.Get(conventions.AttributeExceptionStacktrace); ok {
+				tags[ext.ErrorStack] = errStack.StringVal()
+			}
+			return
+		}
+	}
 }
