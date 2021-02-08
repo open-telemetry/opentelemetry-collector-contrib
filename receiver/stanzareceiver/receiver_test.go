@@ -38,9 +38,13 @@ func TestStart(t *testing.T) {
 		Logger: zaptest.NewLogger(t),
 	}
 	mockConsumer := mockLogsConsumer{}
-	receiver, _ := createLogsReceiver(context.Background(), params, createDefaultConfig(), &mockConsumer)
 
-	err := receiver.Start(context.Background(), componenttest.NewNopHost())
+	factory := NewFactory(TestReceiverType{})
+
+	receiver, err := factory.CreateLogsReceiver(context.Background(), params, factory.CreateDefaultConfig(), &mockConsumer)
+	require.NoError(t, err, "receiver should successfully build")
+
+	err = receiver.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "receiver start failed")
 
 	obsReceiver := receiver.(*stanzareceiver)
@@ -55,10 +59,12 @@ func TestHandleStartError(t *testing.T) {
 	}
 	mockConsumer := mockLogsConsumer{}
 
-	cfg := createDefaultConfig().(*Config)
+	factory := NewFactory(TestReceiverType{})
+
+	cfg := factory.CreateDefaultConfig().(*TestConfig)
 	cfg.Operators = append(cfg.Operators, newUnstartableParams())
 
-	receiver, err := createLogsReceiver(context.Background(), params, cfg, &mockConsumer)
+	receiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, &mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
 	err = receiver.Start(context.Background(), componenttest.NewNopHost())
@@ -70,9 +76,12 @@ func TestHandleConsumeError(t *testing.T) {
 		Logger: zaptest.NewLogger(t),
 	}
 	mockConsumer := mockLogsRejecter{}
-	receiver, _ := createLogsReceiver(context.Background(), params, createDefaultConfig(), &mockConsumer)
+	factory := NewFactory(TestReceiverType{})
 
-	err := receiver.Start(context.Background(), componenttest.NewNopHost())
+	receiver, err := factory.CreateLogsReceiver(context.Background(), params, factory.CreateDefaultConfig(), &mockConsumer)
+	require.NoError(t, err, "receiver should successfully build")
+
+	err = receiver.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "receiver start failed")
 
 	obsReceiver := receiver.(*stanzareceiver)
@@ -115,11 +124,13 @@ func BenchmarkReadLine(b *testing.B) {
 		file.WriteString("testlog\n")
 	}
 
+	converter := NewConverter(mockType, mockVer)
+
 	// // Run the actual benchmark
 	b.ResetTimer()
 	require.NoError(b, pl.Start())
 	for i := 0; i < b.N; i++ {
-		convert(<-emitter.logChan)
+		converter.Convert(<-emitter.logChan)
 	}
 }
 
@@ -173,10 +184,12 @@ func BenchmarkParseAndMap(b *testing.B) {
 		file.WriteString(fmt.Sprintf("10.33.121.119 - - [11/Aug/2020:00:00:00 -0400] \"GET /index.html HTTP/1.1\" 404 %d\n", i%1000))
 	}
 
+	converter := NewConverter(mockType, mockVer)
+
 	// // Run the actual benchmark
 	b.ResetTimer()
 	require.NoError(b, pl.Start())
 	for i := 0; i < b.N; i++ {
-		convert(<-emitter.logChan)
+		converter.Convert(<-emitter.logChan)
 	}
 }

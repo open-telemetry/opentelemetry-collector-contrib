@@ -22,7 +22,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -58,28 +57,12 @@ func (f FileLogReceiverType) CreateDefaultConfig() configmodels.Receiver {
 
 func (f FileLogReceiverType) Decode(cfg configmodels.Receiver) (pipeline.Config, error) {
 	logConfig := cfg.(*FileLogConfig)
-
-	yamlBytes, err := yaml.Marshal(logConfig.Operators)
-	if err != nil {
-		return nil, err
-	}
-
-	var pipelineCfg pipeline.Config
-	if err := yaml.Unmarshal(yamlBytes, &pipelineCfg); err != nil {
-		return nil, err
-	}
-	return pipelineCfg, nil
+	return stanzareceiver.DecodeOperators(logConfig.Operators)
 }
 
-// FileLogConfig defines configuration for the stanza receiver
+// FileLogConfig defines configuration for the filelog receiver
 type FileLogConfig struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
-	Operators                     OperatorConfig `mapstructure:"operators"`
-	// OffsetsFile                   string         `mapstructure:"offsets_file"`
-	// PluginDir                     string         `mapstructure:"plugin_dir"`
+	Operators                     stanzareceiver.OperatorConfig `mapstructure:"operators"`
+	// TODO FileInputConfig file.InputConfig
 }
-
-// OperatorConfig is an alias that allows for unmarshaling outside of mapstructure
-// Stanza operators should be migrated to mapstructure for greater compatibility
-// but this allows a temporary solution
-type OperatorConfig []map[string]interface{}

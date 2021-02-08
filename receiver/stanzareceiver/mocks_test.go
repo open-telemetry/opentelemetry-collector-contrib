@@ -21,6 +21,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
+	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -84,4 +87,44 @@ type mockLogsRejecter struct {
 func (m *mockLogsRejecter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	m.rejected++
 	return fmt.Errorf("no")
+}
+
+// NewMockFactory creates a factory for filelog receiver
+func NewMockFactory() component.ReceiverFactory {
+	return NewFactory(TestReceiverType{})
+}
+
+const (
+	mockType = "mock"
+	mockVer  = "0.0.1"
+)
+
+type TestConfig struct {
+	configmodels.ReceiverSettings `mapstructure:",squash"`
+	Operators                     OperatorConfig `mapstructure:"operators"`
+}
+type TestReceiverType struct {
+	LogReceiverType
+}
+
+func (f TestReceiverType) Type() configmodels.Type {
+	return configmodels.Type(mockType)
+}
+
+func (f TestReceiverType) Version() string {
+	return mockVer
+}
+
+func (f TestReceiverType) CreateDefaultConfig() configmodels.Receiver {
+	return &TestConfig{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			TypeVal: configmodels.Type(mockType),
+			NameVal: mockVer,
+		},
+	}
+}
+
+func (f TestReceiverType) Decode(cfg configmodels.Receiver) (pipeline.Config, error) {
+	logConfig := cfg.(*TestConfig)
+	return DecodeOperators(logConfig.Operators)
 }

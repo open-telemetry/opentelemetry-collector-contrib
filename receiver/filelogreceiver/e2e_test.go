@@ -47,8 +47,8 @@ func (h *testHost) ReportFatalError(err error) {
 
 var _ component.Host = (*testHost)(nil)
 
-func unmarshalConfig(t *testing.T, pipelineYaml string) OperatorConfig {
-	var operatorCfg OperatorConfig
+func unmarshalConfig(t *testing.T, pipelineYaml string) stanzareceiver.OperatorConfig {
+	var operatorCfg stanzareceiver.OperatorConfig
 	require.NoError(t, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfg))
 	return operatorCfg
 }

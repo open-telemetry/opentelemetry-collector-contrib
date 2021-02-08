@@ -48,15 +48,9 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 1)
 
-	assert.Equal(t, cfg.Receivers["stanza"],
-		&FileLogConfig{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "stanza",
-			},
-			Operators: unmarshalConfig(t, `
+	operatorCfg := unmarshalConfig(t, `
 - type: file_input
-  include: [ receiver/stanzareceiver/testdata/simple.log ]
+  include: [ receiver/filelogreceiver/testdata/simple.log ]
   start_at: beginning
 - type: regex_parser
   regex: '^(?P<time>\d{4}-\d{2}-\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$'
@@ -64,6 +58,16 @@ func TestLoadConfig(t *testing.T) {
     parse_from: time
     layout: '%Y-%m-%d'
   severity:
-    parse_from: sev`),
-		})
+    parse_from: sev`)
+
+	assert.Equal(t,
+		&FileLogConfig{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: typeStr,
+				NameVal: "filelog",
+			},
+			Operators: operatorCfg,
+		},
+		cfg.Receivers["filelog"],
+	)
 }
