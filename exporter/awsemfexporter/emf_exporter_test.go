@@ -105,7 +105,7 @@ func TestConsumeMetrics(t *testing.T) {
 						Points: []*metricspb.Point{
 							{
 								Timestamp: &timestamp.Timestamp{
-									Seconds: 100,
+									Seconds: 0,
 								},
 								Value: &metricspb.Point_Int64Value{
 									Int64Value: 1,
@@ -166,7 +166,7 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 						Points: []*metricspb.Point{
 							{
 								Timestamp: &timestamp.Timestamp{
-									Seconds: 100,
+									Seconds: 0,
 								},
 								Value: &metricspb.Point_Int64Value{
 									Int64Value: 1,
@@ -235,7 +235,7 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 						Points: []*metricspb.Point{
 							{
 								Timestamp: &timestamp.Timestamp{
-									Seconds: 100,
+									Seconds: 0,
 								},
 								Value: &metricspb.Point_Int64Value{
 									Int64Value: 1,
@@ -304,7 +304,7 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 						Points: []*metricspb.Point{
 							{
 								Timestamp: &timestamp.Timestamp{
-									Seconds: 100,
+									Seconds: 0,
 								},
 								Value: &metricspb.Point_Int64Value{
 									Int64Value: 1,
@@ -373,7 +373,7 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 						Points: []*metricspb.Point{
 							{
 								Timestamp: &timestamp.Timestamp{
-									Seconds: 100,
+									Seconds: 0,
 								},
 								Value: &metricspb.Point_Int64Value{
 									Int64Value: 1,
