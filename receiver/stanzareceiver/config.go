@@ -19,13 +19,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// StanzaConfig defines a base configuration for stanza-based receivers
-type StanzaConfig struct {
-	Operators OperatorConfig
-	// OffsetsFile                   string         `mapstructure:"offsets_file"`
-	// PluginDir                     string         `mapstructure:"plugin_dir"`
-}
-
 // OperatorConfig is an alias that allows for unmarshaling outside of mapstructure
 // Stanza operators should will be migrated to mapstructure for greater compatibility
 // but this allows a temporary solution

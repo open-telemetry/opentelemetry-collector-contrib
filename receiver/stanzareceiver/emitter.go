@@ -48,7 +48,6 @@ func NewLogEmitter(logger *zap.SugaredLogger) *LogEmitter {
 func (e *LogEmitter) Process(ctx context.Context, ent *entry.Entry) error {
 	select {
 	case e.logChan <- ent:
-		e.Warnf("Processing: %v", ent)
 	case <-ctx.Done():
 	}
 	return nil
