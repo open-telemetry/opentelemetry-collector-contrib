@@ -15,14 +15,14 @@
 package filelogreceiver
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stanzareceiver"
 
+	// Register input operator for filelog
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/file"
 	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 
-	// Register input operator for filelog
-	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/file"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stanzareceiver"
 )
 
 const (
