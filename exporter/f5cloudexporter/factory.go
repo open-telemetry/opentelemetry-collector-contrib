@@ -59,7 +59,7 @@ func (f *f5cloudFactory) CreateMetricsExporter(
 		return nil, err
 	}
 
-	setVersionInUserAgent(cfg, params.ApplicationStartInfo.Version)
+	fillUserAgent(cfg, params.ApplicationStartInfo.Version)
 
 	return f.ExporterFactory.CreateMetricsExporter(ctx, params, &cfg.Config)
 }
@@ -75,7 +75,7 @@ func (f *f5cloudFactory) CreateTracesExporter(
 		return nil, err
 	}
 
-	setVersionInUserAgent(cfg, params.ApplicationStartInfo.Version)
+	fillUserAgent(cfg, params.ApplicationStartInfo.Version)
 
 	return f.ExporterFactory.CreateTracesExporter(ctx, params, &cfg.Config)
 }
@@ -91,7 +91,7 @@ func (f *f5cloudFactory) CreateLogsExporter(
 		return nil, err
 	}
 
-	setVersionInUserAgent(cfg, params.ApplicationStartInfo.Version)
+	fillUserAgent(cfg, params.ApplicationStartInfo.Version)
 
 	return f.ExporterFactory.CreateLogsExporter(ctx, params, &cfg.Config)
 }
@@ -132,6 +132,6 @@ func getTokenSourceFromConfig(config *Config) (oauth2.TokenSource, error) {
 	return ts, nil
 }
 
-func setVersionInUserAgent(cfg *Config, version string) {
+func fillUserAgent(cfg *Config, version string) {
 	cfg.Headers["User-Agent"] = strings.ReplaceAll(cfg.Headers["User-Agent"], "{{version}}", version)
 }
