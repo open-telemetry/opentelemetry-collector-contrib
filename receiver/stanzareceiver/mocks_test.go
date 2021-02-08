@@ -89,11 +89,6 @@ func (m *mockLogsRejecter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error
 	return fmt.Errorf("no")
 }
 
-// NewMockFactory creates a factory for filelog receiver
-func NewMockFactory() component.ReceiverFactory {
-	return NewFactory(TestReceiverType{})
-}
-
 const (
 	mockType = "mock"
 	mockVer  = "0.0.1"
