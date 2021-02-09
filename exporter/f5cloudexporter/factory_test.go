@@ -60,10 +60,17 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 		Audience:       "tests",
 	}
 
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	creationParams := component.ExporterCreateParams{
+		Logger: zap.NewNop(),
+		ApplicationStartInfo: component.ApplicationStartInfo{
+			Version: "0.0.0",
+		},
+	}
 	oexp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
+
+	require.Equal(t, "opentelemetry-collector-contrib 0.0.0", cfg.Headers["User-Agent"])
 }
 
 func TestFactory_CreateMetricsExporterInvalidConfig(t *testing.T) {
@@ -86,10 +93,17 @@ func TestFactory_CreateTraceExporter(t *testing.T) {
 		Audience:       "tests",
 	}
 
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	creationParams := component.ExporterCreateParams{
+		Logger: zap.NewNop(),
+		ApplicationStartInfo: component.ApplicationStartInfo{
+			Version: "0.0.0",
+		},
+	}
 	oexp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
+
+	require.Equal(t, "opentelemetry-collector-contrib 0.0.0", cfg.Headers["User-Agent"])
 }
 
 func Test_Factory_CreateTraceExporterInvalidConfig(t *testing.T) {
@@ -112,10 +126,17 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 		Audience:       "tests",
 	}
 
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	creationParams := component.ExporterCreateParams{
+		Logger: zap.NewNop(),
+		ApplicationStartInfo: component.ApplicationStartInfo{
+			Version: "0.0.0",
+		},
+	}
 	oexp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
+
+	require.Equal(t, "opentelemetry-collector-contrib 0.0.0", cfg.Headers["User-Agent"])
 }
 
 func TestFactory_CreateLogsExporterInvalidConfig(t *testing.T) {
