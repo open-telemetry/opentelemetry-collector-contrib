@@ -31,6 +31,8 @@ import (
 )
 
 func Test_Server_ListenAndServe(t *testing.T) {
+	t.Skip("Test is unstable, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1426")
+
 	tests := []struct {
 		name          string
 		buildServerFn func(addr string) (Server, error)
