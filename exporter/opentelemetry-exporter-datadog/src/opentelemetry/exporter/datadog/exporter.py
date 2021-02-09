@@ -259,10 +259,14 @@ def _get_origin(span):
 
 def _get_sampling_rate(span):
     ctx = span.get_span_context()
+    tracer_provider = trace_api.get_tracer_provider()
+    if not hasattr(tracer_provider, "sampler"):
+        return None
+    sampler = tracer_provider.sampler
     return (
-        span.sampler.rate
+        sampler.rate
         if ctx.trace_flags.sampled
-        and isinstance(span.sampler, sampling.TraceIdRatioBased)
+        and isinstance(sampler, sampling.TraceIdRatioBased)
         else None
     )
 

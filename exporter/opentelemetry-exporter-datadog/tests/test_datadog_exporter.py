@@ -580,11 +580,11 @@ class TestDatadogSpanExporter(unittest.TestCase):
             is_remote=False,
             trace_flags=trace_api.TraceFlags(trace_api.TraceFlags.SAMPLED),
         )
-        sampler = sampling.TraceIdRatioBased(0.5)
-
-        span = trace._Span(
-            name="sampled", context=context, parent=None, sampler=sampler
+        trace_api.get_tracer_provider().sampler = sampling.TraceIdRatioBased(
+            0.5
         )
+
+        span = trace._Span(name="sampled", context=context, parent=None)
         span.start()
         span.end()
 
