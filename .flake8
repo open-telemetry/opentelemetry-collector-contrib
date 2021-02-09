@@ -15,7 +15,6 @@ exclude =
   .venv*/
   venv*/
   target
-  reference/
   __pycache__
   exporter/opentelemetry-exporter-jaeger/src/opentelemetry/exporter/jaeger/gen/
   exporter/opentelemetry-exporter-jaeger/build/*

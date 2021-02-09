@@ -160,35 +160,3 @@ For a deeper discussion, see: https://github.com/open-telemetry/opentelemetry-sp
   as specified with the [napolean
   extension](http://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html#google-vs-numpy)
   extension in [Sphinx](http://www.sphinx-doc.org/en/master/index.html).
-
-## Porting reference/ddtrace/contrib to instrumentation
-
-The steps below describe suggested steps to port integrations from the reference directory containing the originally donated code to OpenTelemetry.
-
-1. Move the code into the instrumentation directory
-
-```
-mkdir -p instrumentation/opentelemetry-instrumentation-jinja2/src/opentelemetry/instrumentation/jinja2
-git mv reference/ddtrace/contrib/jinja2 instrumentation/opentelemetry-instrumentation-jinja2/src/opentelemetry/instrumentation/jinja2
-```
-
-2. Move the tests
-
-```
-git mv reference/tests/contrib/jinja2 instrumentation/opentelemetry-instrumentation-jinja2/tests
-```
-
-3. Add `README.rst`, `setup.cfg` and `setup.py` files and update them accordingly
-
-```bash
-cp _template/* instrumentation/opentelemetry-instrumentation-jinja2/
-```
-
-4. Add `version.py` file and update it accordingly
-
-```bash
-mv instrumentation/opentelemetry-instrumentation-jinja2/version.py instrumentation/opentelemetry-instrumentation-jinja2/src/opentelemetry/instrumentation/jinja2/version.py
-```
-
-5. Fix relative import paths to using ddtrace package instead of using relative paths
-6. Update the code and tests to use the OpenTelemetry API

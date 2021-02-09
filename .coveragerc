@@ -3,4 +3,3 @@ omit =
     */tests/*
     */setup.py
     */gen/*
-    reference/*

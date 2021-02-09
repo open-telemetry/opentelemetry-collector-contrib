@@ -1,2 +1,0 @@
-# Service info
-APP = 'vertica'
