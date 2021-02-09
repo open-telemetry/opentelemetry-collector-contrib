@@ -117,6 +117,8 @@ func (c *WatchClient) handlePodAdd(obj interface{}) {
 	} else {
 		c.logger.Error("object received was not of type api_v1.Pod", zap.Any("received", obj))
 	}
+	podTableSize := len(c.Pods)
+	observability.RecordPodTableSize(int64(podTableSize))
 }
 
 func (c *WatchClient) handlePodUpdate(old, new interface{}) {
@@ -127,6 +129,8 @@ func (c *WatchClient) handlePodUpdate(old, new interface{}) {
 	} else {
 		c.logger.Error("object received was not of type api_v1.Pod", zap.Any("received", new))
 	}
+	podTableSize := len(c.Pods)
+	observability.RecordPodTableSize(int64(podTableSize))
 }
 
 func (c *WatchClient) handlePodDelete(obj interface{}) {
@@ -136,6 +140,8 @@ func (c *WatchClient) handlePodDelete(obj interface{}) {
 	} else {
 		c.logger.Error("object received was not of type api_v1.Pod", zap.Any("received", obj))
 	}
+	podTableSize := len(c.Pods)
+	observability.RecordPodTableSize(int64(podTableSize))
 }
 
 func (c *WatchClient) deleteLoop(interval time.Duration, gracePeriod time.Duration) {
@@ -168,6 +174,8 @@ func (c *WatchClient) deleteLoop(interval time.Duration, gracePeriod time.Durati
 					}
 				}
 			}
+			podTableSize := len(c.Pods)
+			observability.RecordPodTableSize(int64(podTableSize))
 			c.m.Unlock()
 
 		case <-c.stopCh:
