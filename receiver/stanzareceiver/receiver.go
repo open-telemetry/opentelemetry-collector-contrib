@@ -33,11 +33,10 @@ type stanzareceiver struct {
 	wg        sync.WaitGroup
 	cancel    context.CancelFunc
 
-	agent     *stanza.LogAgent
-	emitter   *LogEmitter
-	converter *Converter
-	consumer  consumer.LogsConsumer
-	logger    *zap.Logger
+	agent    *stanza.LogAgent
+	emitter  *LogEmitter
+	consumer consumer.LogsConsumer
+	logger   *zap.Logger
 }
 
 // Ensure this receiver adheres to required interface
@@ -70,7 +69,7 @@ func (r *stanzareceiver) Start(ctx context.Context, host component.Host) error {
 					if !ok {
 						continue
 					}
-					if consumeErr := r.consumer.ConsumeLogs(ctx, r.converter.Convert(obsLog)); consumeErr != nil {
+					if consumeErr := r.consumer.ConsumeLogs(ctx, Convert(obsLog)); consumeErr != nil {
 						r.logger.Error("ConsumeLogs() error", zap.String("error", consumeErr.Error()))
 					}
 				}

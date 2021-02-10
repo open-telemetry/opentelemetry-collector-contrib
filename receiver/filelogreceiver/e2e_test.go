@@ -58,8 +58,6 @@ func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
 	return func() bool { return sink.LogRecordsCount() == expected }
 }
 
-var testConverter = stanzareceiver.NewConverter(typeStr, verStr)
-
 func TestReadStaticFile(t *testing.T) {
 	t.Parallel()
 
@@ -84,9 +82,9 @@ func TestReadStaticFile(t *testing.T) {
 	e3.AddLabel("file_name", "simple.log")
 
 	expectedLogs := []pdata.Logs{
-		testConverter.Convert(e1),
-		testConverter.Convert(e2),
-		testConverter.Convert(e3),
+		stanzareceiver.Convert(e1),
+		stanzareceiver.Convert(e2),
+		stanzareceiver.Convert(e3),
 	}
 
 	f := NewFactory()
@@ -176,7 +174,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 		e := entry.New()
 		e.Timestamp = expectedTimestamp
 		e.Set(entry.NewRecordField("msg"), msg)
-		expectedLogs[i] = testConverter.Convert(e)
+		expectedLogs[i] = stanzareceiver.Convert(e)
 	}
 
 	cfg := f.CreateDefaultConfig().(*FileLogConfig)

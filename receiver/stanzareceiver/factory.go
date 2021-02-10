@@ -55,7 +55,6 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 		}
 
 		emitter := NewLogEmitter(params.Logger.Sugar())
-		converter := NewConverter(string(logReceiverType.Type()), logReceiverType.Version())
 		logAgent, err := agent.NewBuilder(params.Logger.Sugar()).
 			WithConfig(&agent.Config{Pipeline: pipeline}).
 			WithDefaultOutput(emitter).
@@ -65,11 +64,10 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 		}
 
 		return &stanzareceiver{
-			agent:     logAgent,
-			emitter:   emitter,
-			converter: converter,
-			consumer:  nextConsumer,
-			logger:    params.Logger,
+			agent:    logAgent,
+			emitter:  emitter,
+			consumer: nextConsumer,
+			logger:   params.Logger,
 		}, nil
 	}
 }
