@@ -22,6 +22,8 @@ import (
 
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/valid"
 )
 
 var (
@@ -196,6 +198,10 @@ func (c *Config) Sanitize() error {
 
 	if c.OnlyMetadata && (!c.SendMetadata || !c.UseResourceMetadata) {
 		return errNoMetadata
+	}
+
+	if err := valid.Hostname(c.Hostname); c.Hostname != "" && err != nil {
+		return fmt.Errorf("hostname field is invalid: %s", err)
 	}
 
 	if c.API.Key == "" {

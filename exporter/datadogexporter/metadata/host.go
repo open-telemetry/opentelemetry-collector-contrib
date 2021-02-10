@@ -34,20 +34,17 @@ const (
 
 // GetHost gets the hostname according to configuration.
 // It checks in the following order
-// 1. Cache
-// 2. Configuration
+// 1. Configuration
+// 2. Cache
 // 3. EC2 instance metadata
 // 4. System
 func GetHost(logger *zap.Logger, cfg *config.Config) *string {
-	if cacheVal, ok := cache.Cache.Get(cache.CanonicalHostnameKey); ok {
-		return cacheVal.(*string)
+	if cfg.Hostname != "" {
+		return &cfg.Hostname
 	}
 
-	if err := valid.Hostname(cfg.Hostname); err == nil {
-		cache.Cache.Add(cache.CanonicalHostnameKey, &cfg.Hostname, cache.NoExpiration)
-		return &cfg.Hostname
-	} else if cfg.Hostname != "" {
-		logger.Error("Hostname set in configuration is invalid", zap.Error(err))
+	if cacheVal, ok := cache.Cache.Get(cache.CanonicalHostnameKey); ok {
+		return cacheVal.(*string)
 	}
 
 	ec2Info := ec2.GetHostInfo(logger)
