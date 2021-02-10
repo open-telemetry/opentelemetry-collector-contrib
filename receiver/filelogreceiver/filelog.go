@@ -25,10 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stanzareceiver"
 )
 
-const (
-	typeStr = "filelog"
-	verStr  = "0.14.0"
-)
+const typeStr = "filelog"
 
 // NewFactory creates a factory for filelog receiver
 func NewFactory() component.ReceiverFactory {
@@ -42,11 +39,6 @@ type ReceiverType struct{}
 // Type is the receiver type
 func (f ReceiverType) Type() configmodels.Type {
 	return configmodels.Type(typeStr)
-}
-
-// Version is the version of opentelemetry-log-collection
-func (f ReceiverType) Version() string {
-	return verStr
 }
 
 // CreateDefaultConfig creates a config with type and version
