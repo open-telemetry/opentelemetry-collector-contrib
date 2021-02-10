@@ -88,32 +88,23 @@ func (m *mockLogsRejecter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error
 	return fmt.Errorf("no")
 }
 
-const (
-	mockType = "mock"
-	mockVer  = "0.0.1"
-)
+const mockType = "mock"
 
 type TestConfig struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 	Operators                     OperatorConfig `mapstructure:"operators"`
 }
-type TestReceiverType struct {
-	LogReceiverType
-}
+type TestReceiverType struct{}
 
 func (f TestReceiverType) Type() configmodels.Type {
 	return configmodels.Type(mockType)
-}
-
-func (f TestReceiverType) Version() string {
-	return mockVer
 }
 
 func (f TestReceiverType) CreateDefaultConfig() configmodels.Receiver {
 	return &TestConfig{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: configmodels.Type(mockType),
-			NameVal: mockVer,
+			NameVal: mockType,
 		},
 	}
 }
