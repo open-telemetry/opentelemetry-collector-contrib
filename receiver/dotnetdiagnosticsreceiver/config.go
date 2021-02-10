@@ -15,31 +15,25 @@
 package dotnetdiagnosticsreceiver
 
 import (
-	"time"
-
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
-	// Optional directory name to save binary blobs read from the socket. This can
-	// be useful for troubleshooting/debugging. If left blank or unset, no blobs are
-	// saved.
-	BlobDir string `mapstructure:"blob_dir"`
-	// The maximum number of blob files to keep in the blob_dir, if specified. Defaults
-	// to 10 (most recent).
-	MaxBlobFiles int `mapstructure:"max_blob_files"`
+	// ScraperController's collection_interval is used to set the interval between
+	// metric collection. The interval is converted to seconds and sent to the
+	// dotnet backend at receiver startup time. The dotnet process then sends the
+	// receiver data at the specified interval. Defaults to 1 second.
+	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	// The process ID of the dotnet process from which to collect diagnostics. This
-	// receiver is intended to be used with an observer and receiver creator for
-	// process discovery.
+	// process ID is used to generate the file glob "dotnet-diagnostic-%d-*-socket"
+	// to locate a file in TMPDIR (or "/tmp" if unset). If the file is found, it is
+	// used as a Unix domain socket (on Linux/Mac) to communicate with the dotnet
+	// process. For ease of use, this receiver is intended to be used with an
+	// observer and receiver creator for process discovery and receiver creation.
 	PID int `mapstructure:"pid"`
-	// The duration between collection of metrics. The duration value is converted
-	// to seconds and sent to the dotnet backend at receiver startup time.
-	// Defaults to 1 second.
-	CollectionInterval time.Duration `mapstructure:"collection_interval"`
-	// A list of counters for the dotnet process to send to the collector.
-	// Defaults to "System.Runtime". Available counters can be displayed
-	// by the `dotnet-counters` tool:
+	// A list of counters for the dotnet process to send to the collector. Defaults
+	// to ["System.Runtime", "Microsoft.AspNetCore.Hosting"]. Available counters can
+	// be displayed by the `dotnet-counters` tool:
 	// https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-counters
 	Counters []string `mapstructure:"counters"`
 }

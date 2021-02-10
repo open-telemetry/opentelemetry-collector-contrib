@@ -1,8 +1,6 @@
 receivers:
   dotnet_diagnostics:
     pid: 1234
-    blob_dir: "mydir"
-    max_blob_files: 42
     collection_interval: 2s
     counters: [ "Foo", "Bar" ]
 

@@ -27,8 +27,6 @@ import (
 type receiver struct {
 	logger             *zap.Logger
 	nextConsumer       consumer.MetricsConsumer
-	blobDir            string
-	maxBlobFiles       int
 	counters           []string
 	collectionInterval time.Duration
 	connect            connectionSupplier
@@ -46,8 +44,6 @@ func NewReceiver(
 	return &receiver{
 		logger:             logger,
 		nextConsumer:       mc,
-		blobDir:            cfg.BlobDir,
-		maxBlobFiles:       cfg.MaxBlobFiles,
 		counters:           cfg.Counters,
 		collectionInterval: cfg.CollectionInterval,
 		connect:            connect,

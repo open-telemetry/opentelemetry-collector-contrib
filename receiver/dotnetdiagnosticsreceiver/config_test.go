@@ -40,8 +40,6 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	assert.Equal(t, 1234, cfg.PID)
-	assert.Equal(t, "mydir", cfg.BlobDir)
-	assert.Equal(t, 42, cfg.MaxBlobFiles)
 	assert.Equal(t, 2*time.Second, cfg.CollectionInterval)
 	assert.Equal(t, []string{"Foo", "Bar"}, cfg.Counters)
 }

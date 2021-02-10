@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const typeStr = "dotnet_diagnostics"
@@ -36,12 +37,14 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() configmodels.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: typeStr,
+				NameVal: typeStr,
+			},
+			CollectionInterval: time.Second,
 		},
-		Counters:           []string{"System.Runtime", "Microsoft.AspNetCore.Hosting"},
-		CollectionInterval: time.Second,
+		Counters: []string{"System.Runtime", "Microsoft.AspNetCore.Hosting"},
 	}
 }
 
