@@ -66,7 +66,9 @@ func TestLoadConfig(t *testing.T) {
 				ReadBufferSize:  123,
 				WriteBufferSize: 345,
 				Timeout:         time.Second * 10,
-				Headers:         map[string]string{},
+				Headers: map[string]string{
+					"User-Agent": "opentelemetry-collector-contrib {{version}}",
+				},
 			},
 		},
 		Source: "dev",

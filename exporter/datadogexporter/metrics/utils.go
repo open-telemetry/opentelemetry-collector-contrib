@@ -16,6 +16,7 @@ package metrics
 
 import (
 	"fmt"
+	"strings"
 
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
@@ -88,10 +89,27 @@ func addHostname(metrics []datadog.Metric, logger *zap.Logger, cfg *config.Confi
 	}
 }
 
-// addNamespace prepends all metric names with a given namespace
+// shouldPrepend decides if a given metric name should be prepended by `otel.`.
+// By default, this happens for
+// - hostmetrics receiver metrics (since they clash with Datadog Agent system check) and
+// - running metrics
+func shouldPrepend(name string) bool {
+	namespaces := [...]string{"datadog_exporter.", "system.", "process."}
+	for _, ns := range namespaces {
+		if strings.HasPrefix(name, ns) {
+			return true
+		}
+	}
+	return false
+}
+
+// addNamespace prepends some metric names with a given namespace.
+// This is used to namespace metrics that clash with the Datadog Agent
 func addNamespace(metrics []datadog.Metric, namespace string) {
 	for i := range metrics {
-		newName := namespace + "." + *metrics[i].Metric
-		metrics[i].Metric = &newName
+		if shouldPrepend(*metrics[i].Metric) {
+			newName := namespace + "." + *metrics[i].Metric
+			metrics[i].Metric = &newName
+		}
 	}
 }
