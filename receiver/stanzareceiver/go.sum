@@ -863,6 +863,7 @@ go.opentelemetry.io v0.1.0 h1:EANZoRCOP+A3faIlw/iN6YEWoYb1vleZRKm1EvH8T48=
 go.opentelemetry.io/collector v0.19.0 h1:OIL5jgqnRjDKmg6oNtQCULfQSSBlMF3ptToiOVRteNo=
 go.opentelemetry.io/collector v0.19.1-0.20210127225953-68c5961f7bc2 h1:XE4VegZBlHN+Jab2mITYwd+bJo2CHTmLG2MmL0FoSTU=
 go.opentelemetry.io/collector v0.19.1-0.20210127225953-68c5961f7bc2/go.mod h1:KZcMoF4fYwruBKDP0e3Xi4fW6sYnia0xqw+WlVQzeuA=
+go.opentelemetry.io/collector v0.20.0 h1:kU9va7JPcg95B0nRt0Z8m2UCSm2hhQ6ny8RCMsMg6VI=
 go.uber.org/atomic v1.3.2/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/atomic v1.4.0/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/atomic v1.5.0/go.mod h1:sABNBOSYdrvTF6hTgEIbc7YasKWGhgEQZyfxyTvoXHQ=

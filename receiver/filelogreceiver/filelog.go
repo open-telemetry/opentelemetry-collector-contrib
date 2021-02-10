@@ -35,11 +35,9 @@ func NewFactory() component.ReceiverFactory {
 	return stanzareceiver.NewFactory(ReceiverType{})
 }
 
-// ReceiverType implments stanzareceiver.LogReceiverType
+// ReceiverType implements stanzareceiver.LogReceiverType
 // to create a file tailing receiver
-type ReceiverType struct {
-	stanzareceiver.LogReceiverType
-}
+type ReceiverType struct{}
 
 // Type is the receiver type
 func (f ReceiverType) Type() configmodels.Type {

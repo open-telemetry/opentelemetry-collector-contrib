@@ -27,7 +27,7 @@ import (
 
 // LogReceiverType is the interface used by stanza-based log receivers
 type LogReceiverType interface {
-	configmodels.Receiver
+	Type() configmodels.Type
 	Version() string
 	CreateDefaultConfig() configmodels.Receiver
 	Decode(configmodels.Receiver) (pipeline.Config, error)
