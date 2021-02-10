@@ -127,6 +127,13 @@ func TestNoMetadata(t *testing.T) {
 	assert.Equal(t, err, errNoMetadata)
 }
 
+func TestInvalidHostname(t *testing.T) {
+	cfg := Config{TagsConfig: TagsConfig{Hostname: "invalid_host"}}
+
+	err := cfg.Sanitize()
+	require.Error(t, err)
+}
+
 func TestCensorAPIKey(t *testing.T) {
 	cfg := APIConfig{
 		Key: "ddog_32_characters_long_api_key1",

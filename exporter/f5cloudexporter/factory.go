@@ -17,6 +17,7 @@ package f5cloudexporter
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -58,6 +59,8 @@ func (f *f5cloudFactory) CreateMetricsExporter(
 		return nil, err
 	}
 
+	fillUserAgent(cfg, params.ApplicationStartInfo.Version)
+
 	return f.ExporterFactory.CreateMetricsExporter(ctx, params, &cfg.Config)
 }
 
@@ -71,6 +74,8 @@ func (f *f5cloudFactory) CreateTracesExporter(
 	if err := cfg.sanitize(); err != nil {
 		return nil, err
 	}
+
+	fillUserAgent(cfg, params.ApplicationStartInfo.Version)
 
 	return f.ExporterFactory.CreateTracesExporter(ctx, params, &cfg.Config)
 }
@@ -86,6 +91,8 @@ func (f *f5cloudFactory) CreateLogsExporter(
 		return nil, err
 	}
 
+	fillUserAgent(cfg, params.ApplicationStartInfo.Version)
+
 	return f.ExporterFactory.CreateLogsExporter(ctx, params, &cfg.Config)
 }
 
@@ -100,6 +107,8 @@ func (f *f5cloudFactory) CreateDefaultConfig() configmodels.Exporter {
 
 	cfg.TypeVal = typeStr
 	cfg.NameVal = typeStr
+
+	cfg.Headers["User-Agent"] = "opentelemetry-collector-contrib {{version}}"
 
 	cfg.HTTPClientSettings.CustomRoundTripper = func(next http.RoundTripper) (http.RoundTripper, error) {
 		ts, err := f.getTokenSource(cfg)
@@ -121,4 +130,8 @@ func getTokenSourceFromConfig(config *Config) (oauth2.TokenSource, error) {
 	}
 
 	return ts, nil
+}
+
+func fillUserAgent(cfg *Config, version string) {
+	cfg.Headers["User-Agent"] = strings.ReplaceAll(cfg.Headers["User-Agent"], "{{version}}", version)
 }

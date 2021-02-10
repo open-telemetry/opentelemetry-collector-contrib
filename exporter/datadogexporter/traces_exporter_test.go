@@ -65,7 +65,7 @@ func testTraceExporterHelper(td pdata.Traces, t *testing.T) []string {
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
 		TagsConfig: config.TagsConfig{
-			Hostname: "test_host",
+			Hostname: "test-host",
 			Env:      "test_env",
 			Tags:     []string{"key:val"},
 		},
