@@ -31,6 +31,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
@@ -150,7 +151,7 @@ func TestExporter_pushLogData(t *testing.T) {
 		config           *Config
 		genLogsFunc      func() pdata.Logs
 		numDroppedLogs   int
-		shouldErr        bool
+		errFunc          func(err error)
 	}{
 		{
 			name:             "happy path",
@@ -168,7 +169,10 @@ func TestExporter_pushLogData(t *testing.T) {
 			testServer:       true,
 			genLogsFunc:      genericGenLogsFunc,
 			numDroppedLogs:   10,
-			shouldErr:        true,
+			errFunc: func(err error) {
+				e := err.(consumererror.PartialError)
+				require.Equal(t, 10, e.GetLogs().LogRecordCount())
+			},
 		},
 		{
 			name:             "server unavailable",
@@ -178,7 +182,10 @@ func TestExporter_pushLogData(t *testing.T) {
 			testServer:       false,
 			genLogsFunc:      genericGenLogsFunc,
 			numDroppedLogs:   10,
-			shouldErr:        true,
+			errFunc: func(err error) {
+				e := err.(consumererror.PartialError)
+				require.Equal(t, 10, e.GetLogs().LogRecordCount())
+			},
 		},
 		{
 			name:             "with no matching attributes",
@@ -193,7 +200,10 @@ func TestExporter_pushLogData(t *testing.T) {
 					}))
 			},
 			numDroppedLogs: 10,
-			shouldErr:      false,
+			errFunc: func(err error) {
+				require.True(t, consumererror.IsPermanent(err))
+				require.Equal(t, "Permanent error: failed to transform logs into Loki log streams", err.Error())
+			},
 		},
 		{
 			name:             "with partial matching attributes",
@@ -210,18 +220,17 @@ func TestExporter_pushLogData(t *testing.T) {
 						conventions.AttributeK8sCluster:    pdata.NewAttributeValueString("local"),
 						"severity":                         pdata.NewAttributeValueString("debug"),
 					}))
-				matchingLogs.ResourceLogs().CopyTo(outLogs.ResourceLogs())
+				matchingLogs.ResourceLogs().MoveAndAppendTo(outLogs.ResourceLogs())
 
 				nonMatchingLogs := createLogData(5,
 					pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
 						"not.a.match": pdata.NewAttributeValueString("random"),
 					}))
-				nonMatchingLogs.ResourceLogs().CopyTo(outLogs.ResourceLogs())
+				nonMatchingLogs.ResourceLogs().MoveAndAppendTo(outLogs.ResourceLogs())
 
 				return outLogs
 			},
 			numDroppedLogs: 5,
-			shouldErr:      false,
 		},
 	}
 	for _, tt := range tests {
@@ -248,8 +257,8 @@ func TestExporter_pushLogData(t *testing.T) {
 
 			numDroppedLogs, err := exp.pushLogData(context.Background(), tt.genLogsFunc())
 
-			if tt.shouldErr {
-				assert.Error(t, err)
+			if tt.errFunc != nil {
+				tt.errFunc(err)
 				return
 			}
 

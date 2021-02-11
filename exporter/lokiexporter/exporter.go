@@ -61,18 +61,17 @@ func (l *lokiExporter) pushLogData(ctx context.Context, ld pdata.Logs) (numDropp
 
 	pushReq, numDroppedLogs := l.logDataToLoki(ld)
 	if len(pushReq.Streams) == 0 {
-		return numDroppedLogs, nil
+		return ld.LogRecordCount(), consumererror.Permanent(fmt.Errorf("failed to transform logs into Loki log streams"))
 	}
 
 	buf, err := encode(pushReq)
 	if err != nil {
-		numDroppedLogs += ld.LogRecordCount()
-		return numDroppedLogs, err
+		return ld.LogRecordCount(), consumererror.Permanent(err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", l.config.HTTPClientSettings.Endpoint, bytes.NewReader(buf))
 	if err != nil {
-		return numDroppedLogs, consumererror.Permanent(err)
+		return ld.LogRecordCount(), consumererror.Permanent(err)
 	}
 
 	for k, v := range l.config.HTTPClientSettings.Headers {
@@ -86,8 +85,7 @@ func (l *lokiExporter) pushLogData(ctx context.Context, ld pdata.Logs) (numDropp
 
 	resp, err := l.client.Do(req)
 	if err != nil {
-		numDroppedLogs += ld.LogRecordCount()
-		return numDroppedLogs, err
+		return ld.LogRecordCount(), consumererror.PartialLogsError(err, ld)
 	}
 
 	_, _ = io.Copy(ioutil.Discard, resp.Body)
@@ -95,8 +93,7 @@ func (l *lokiExporter) pushLogData(ctx context.Context, ld pdata.Logs) (numDropp
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
 		err = fmt.Errorf("HTTP %d %q", resp.StatusCode, http.StatusText(resp.StatusCode))
-		numDroppedLogs += ld.LogRecordCount()
-		return numDroppedLogs, err
+		return ld.LogRecordCount(), consumererror.PartialLogsError(err, ld)
 	}
 
 	return numDroppedLogs, nil
