@@ -6,6 +6,11 @@ processors:
   batch:
     send_batch_size: 50
     timeout: 5s
+  memory_limiter:
+    ballast_size_mib: 2000
+    check_interval: 1s
+    limit_percentage: 50
+    spike_limit_percentage: 30
 
 exporters:
   loki:
@@ -25,5 +30,5 @@ service:
   pipelines:
     logs:
       receivers: [ fluentforward ]
-      processors: [ batch ]
+      processors: [ memory_limiter, batch ]
       exporters: [ loki ]
