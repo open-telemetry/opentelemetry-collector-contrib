@@ -16,21 +16,12 @@ package stanzareceiver
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.uber.org/zap"
 )
-
-func TestDefaultConfig(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	require.NotNil(t, cfg, "failed to create default config")
-	require.NoError(t, configcheck.ValidateConfig(cfg))
-}
 
 func TestCreateReceiver(t *testing.T) {
 	params := component.ReceiverCreateParams{
@@ -38,28 +29,22 @@ func TestCreateReceiver(t *testing.T) {
 	}
 
 	t.Run("Success", func(t *testing.T) {
-		receiver, err := createLogsReceiver(context.Background(), params, createDefaultConfig(), &mockLogsConsumer{})
+		factory := NewFactory(TestReceiverType{})
+		receiver, err := factory.CreateLogsReceiver(context.Background(), params, factory.CreateDefaultConfig(), &mockLogsConsumer{})
 		require.NoError(t, err, "receiver creation failed")
 		require.NotNil(t, receiver, "receiver creation failed")
 	})
 
-	t.Run("IntoPipelineFailure", func(t *testing.T) {
-		badCfg := createDefaultConfig().(*Config)
+	t.Run("DecodeOperatorsFailure", func(t *testing.T) {
+		factory := NewFactory(TestReceiverType{})
+		badCfg := factory.CreateDefaultConfig().(*TestConfig)
 		badCfg.Operators = []map[string]interface{}{
 			{
 				"badparam": "badvalue",
 			},
 		}
-		receiver, err := createLogsReceiver(context.Background(), params, badCfg, &mockLogsConsumer{})
+		receiver, err := factory.CreateLogsReceiver(context.Background(), params, badCfg, &mockLogsConsumer{})
 		require.Error(t, err, "receiver creation should fail if operator configs aren't valid")
 		require.Nil(t, receiver, "receiver creation should fail if operator configs aren't valid")
-	})
-
-	t.Run("BuildFailure", func(t *testing.T) {
-		badCfg := createDefaultConfig().(*Config)
-		badCfg.OffsetsFile = os.Args[0] // current executable cannot be opened
-		receiver, err := createLogsReceiver(context.Background(), params, badCfg, &mockLogsConsumer{})
-		require.Error(t, err, "receiver creation should fail if offsets file is invalid")
-		require.Nil(t, receiver, "receiver creation should have failed due to invalid offsets file")
 	})
 }

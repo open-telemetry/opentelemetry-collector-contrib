@@ -15,8 +15,7 @@
 package stanzareceiver
 
 import (
-	// Register operators for stanza
-	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/file"
+	// Register parsers for stanza-based log receivers
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/json"
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/regex"
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/severity"

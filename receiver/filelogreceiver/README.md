@@ -1,3 +1,6 @@
+# README Status
+This readme is out of date and will be updated soon
+
 # Stanza Receiver
 
 Tails and parses logs from a wide variety of sources using the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library.
