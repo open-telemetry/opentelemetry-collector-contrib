@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stanzareceiver
+package filelogreceiver
 
 import (
 	"context"
@@ -32,6 +32,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap/zaptest"
 	"gopkg.in/yaml.v2"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stanzareceiver"
 )
 
 type testHost struct {
@@ -46,8 +48,8 @@ func (h *testHost) ReportFatalError(err error) {
 
 var _ component.Host = (*testHost)(nil)
 
-func unmarshalConfig(t *testing.T, pipelineYaml string) OperatorConfig {
-	var operatorCfg OperatorConfig
+func unmarshalConfig(t *testing.T, pipelineYaml string) stanzareceiver.OperatorConfig {
+	var operatorCfg stanzareceiver.OperatorConfig
 	require.NoError(t, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfg))
 	return operatorCfg
 }
@@ -79,13 +81,17 @@ func TestReadStaticFile(t *testing.T) {
 	e3.Set(entry.NewRecordField("msg"), "Some details...")
 	e3.AddLabel("file_name", "simple.log")
 
-	expectedLogs := []pdata.Logs{convert(e1), convert(e2), convert(e3)}
+	expectedLogs := []pdata.Logs{
+		stanzareceiver.Convert(e1),
+		stanzareceiver.Convert(e2),
+		stanzareceiver.Convert(e3),
+	}
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
 	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
 
-	cfg := f.CreateDefaultConfig().(*Config)
+	cfg := f.CreateDefaultConfig().(*FileLogConfig)
 	cfg.Operators = unmarshalConfig(t, `
 - type: file_input
   include: [testdata/simple.log]
@@ -168,10 +174,10 @@ func (rt *rotationTest) Run(t *testing.T) {
 		e := entry.New()
 		e.Timestamp = expectedTimestamp
 		e.Set(entry.NewRecordField("msg"), msg)
-		expectedLogs[i] = convert(e)
+		expectedLogs[i] = stanzareceiver.Convert(e)
 	}
 
-	cfg := f.CreateDefaultConfig().(*Config)
+	cfg := f.CreateDefaultConfig().(*FileLogConfig)
 	cfg.Operators = unmarshalConfig(t, fmt.Sprintf(`
   - type: file_input
     include: [%s/*]

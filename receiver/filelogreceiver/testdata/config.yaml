@@ -1,8 +1,8 @@
 receivers:
-  stanza:
+  filelog:
     operators:
       - type: file_input
-        include: [ receiver/stanzareceiver/testdata/simple.log ]
+        include: [ receiver/filelogreceiver/testdata/simple.log ]
         start_at: beginning
       - type: regex_parser
         regex: '^(?P<time>\d{4}-\d{2}-\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$'
@@ -21,6 +21,6 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [stanza]
+      receivers: [filelog]
       processors: [exampleprocessor]
       exporters: [exampleexporter]

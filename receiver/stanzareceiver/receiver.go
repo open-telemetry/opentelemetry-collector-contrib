@@ -69,7 +69,7 @@ func (r *stanzareceiver) Start(ctx context.Context, host component.Host) error {
 					if !ok {
 						continue
 					}
-					if consumeErr := r.consumer.ConsumeLogs(ctx, convert(obsLog)); consumeErr != nil {
+					if consumeErr := r.consumer.ConsumeLogs(ctx, Convert(obsLog)); consumeErr != nil {
 						r.logger.Error("ConsumeLogs() error", zap.String("error", consumeErr.Error()))
 					}
 				}

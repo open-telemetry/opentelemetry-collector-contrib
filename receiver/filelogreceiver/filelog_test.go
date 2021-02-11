@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stanzareceiver
+package filelogreceiver
 
 import (
 	"path"
@@ -21,9 +21,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 )
+
+func TestDefaultConfig(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	require.NotNil(t, cfg, "failed to create default config")
+	require.NoError(t, configcheck.ValidateConfig(cfg))
+}
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
@@ -40,15 +48,9 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 1)
 
-	assert.Equal(t, cfg.Receivers["stanza"],
-		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "stanza",
-			},
-			Operators: unmarshalConfig(t, `
+	operatorCfg := unmarshalConfig(t, `
 - type: file_input
-  include: [ receiver/stanzareceiver/testdata/simple.log ]
+  include: [ receiver/filelogreceiver/testdata/simple.log ]
   start_at: beginning
 - type: regex_parser
   regex: '^(?P<time>\d{4}-\d{2}-\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$'
@@ -56,6 +58,16 @@ func TestLoadConfig(t *testing.T) {
     parse_from: time
     layout: '%Y-%m-%d'
   severity:
-    parse_from: sev`),
-		})
+    parse_from: sev`)
+
+	assert.Equal(t,
+		&FileLogConfig{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: typeStr,
+				NameVal: "filelog",
+			},
+			Operators: operatorCfg,
+		},
+		cfg.Receivers["filelog"],
+	)
 }
