@@ -53,10 +53,3 @@ func (cfg BaseConfig) decodeParserConfigs() ([]operator.Config, error) {
 	}
 	return parserCfgs, nil
 }
-
-// UnmarshalOperatorConfig is provided primarily for testing
-func UnmarshalOperatorConfig(operatorYaml string) (map[string]interface{}, error) {
-	operatorCfg := map[string]interface{}{}
-	err := yaml.Unmarshal([]byte(operatorYaml), &operatorCfg)
-	return operatorCfg, err
-}
