@@ -218,7 +218,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, "web", datadogPayload.Traces[0].Spans[0].Type)
 
 	// ensure that span.meta and span.metrics pick up attibutes, instrumentation ibrary and resource attribs
-	assert.Equal(t, 9, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 10, len(datadogPayload.Traces[0].Spans[0].Meta))
 	assert.Equal(t, 1, len(datadogPayload.Traces[0].Spans[0].Metrics))
 
 	// ensure that span error is based on otlp span status
@@ -233,6 +233,13 @@ func TestBasicTracesTranslation(t *testing.T) {
 	// ensure a duration and start time are calculated
 	assert.NotNil(t, datadogPayload.Traces[0].Spans[0].Start)
 	assert.NotNil(t, datadogPayload.Traces[0].Spans[0].Duration)
+
+	// ensure that events tag is set if span events exist and contains structured json fields
+	assert.Contains(t, "start", datadogPayload.Traces[0].Spans[0].Meta["Events"])
+	assert.Contains(t, "end", datadogPayload.Traces[0].Spans[0].Meta["Events"])
+	assert.Contains(t, "attribute", datadogPayload.Traces[0].Spans[0].Meta["Events"])
+	assert.Contains(t, "name", datadogPayload.Traces[0].Spans[0].Meta["Events"])
+	assert.Contains(t, "timestamp", datadogPayload.Traces[0].Spans[0].Meta["Events"])
 }
 
 func TestTracesTranslationErrorsAndResource(t *testing.T) {
@@ -278,7 +285,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	// ensure that version gives resource service.version priority
 	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
 
-	assert.Equal(t, 17, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 18, len(datadogPayload.Traces[0].Spans[0].Meta))
 
 	assert.Contains(t, datadogPayload.Traces[0].Spans[0].Meta[tagContainersTags], "container_id:3249847017410247")
 	assert.Contains(t, datadogPayload.Traces[0].Spans[0].Meta[tagContainersTags], "pod_name:example-pod-name")
@@ -459,7 +466,7 @@ func TestTracesTranslationOkStatus(t *testing.T) {
 	// ensure that version gives resource service.version priority
 	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
 
-	assert.Equal(t, 17, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 18, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
 
 // ensure that the datadog span uses the configured unified service tags
@@ -504,7 +511,7 @@ func TestTracesTranslationConfig(t *testing.T) {
 	// ensure that version gives resource service.version priority
 	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
 
-	assert.Equal(t, 14, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 15, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
 
 // ensure that the translation returns early if no resource instrumentation library spans
