@@ -7,7 +7,7 @@ processors:
 exporters:
   elasticsearch:
   elasticsearch/customname:
-    urls: [https://elastic.example.com:9200]
+    endpoints: [https://elastic.example.com:9200]
     cloudid: TRNMxjXlNJEt
     timeout: 2m
     headers:

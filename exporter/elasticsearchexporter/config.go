@@ -17,6 +17,7 @@ package elasticsearchexporter
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -28,11 +29,11 @@ import (
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"`
 
-	// URLs holds the Elasticsearch URLs the exporter should send events to.
+	// Endpoints holds the Elasticsearch URLs the exporter should send events to.
 	//
 	// This setting is required if CloudID is not set and if the
 	// ELASTICSEARCH_URL environment variable is not set.
-	URLs []string `mapstructure:"urls"`
+	Endpoints []string `mapstructure:"endpoints"`
 
 	// CloudID holds the cloud ID to identify the Elastic Cloud cluster to send events to.
 	// https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html
@@ -193,15 +194,19 @@ var mappingModes = func() map[string]MappingMode {
 	return table
 }()
 
+const defaultElasticsearchEnvName = "ELASTICSEARCH_URL"
+
 // Validate validates the elasticsearch server configuration.
 func (cfg *Config) Validate() error {
-	if len(cfg.URLs) == 0 && cfg.CloudID == "" {
-		return errors.New("Elasticsearch URL or CloudID must be specified")
+	if len(cfg.Endpoints) == 0 && cfg.CloudID == "" {
+		if os.Getenv(defaultElasticsearchEnvName) == "" {
+			return errors.New("Elasticsearch endpoints or cloudid must be specified")
+		}
 	}
 
-	for _, url := range cfg.URLs {
-		if url == "" {
-			return errors.New("Elasticsearch URL must not be empty")
+	for _, endpoint := range cfg.Endpoints {
+		if endpoint == "" {
+			return errors.New("endpoints must not include empty entries")
 		}
 	}
 

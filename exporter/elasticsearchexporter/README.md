@@ -4,12 +4,12 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
 
 ## Configuration options
 
-- `urls`: List of Elasticsearch URLS. If urls and cloudid is missing the
+- `endpoints`: List of Elasticsearch URLs. If endpoints and cloudid is missing, the
   ELASTICSEARCH_URL environment variable will be used.
 - `cloudid` (optional):
   [ID](https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html) of the
   Elastic Cloud Cluster to publish events to. The `cloudid` can be used instead
-  of `urls`.
+  of `endpoints`.
 - `workers` (optional): Number of workers publishing bulk requests concurrently.
 - `index`: The
   [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
@@ -77,6 +77,6 @@ nodes will automatically be used for load balancing.
 ```yaml
 exporters:
   elasticsearch:
-    urls:
+    endpoints:
     - "https://localhost:9200"
 ```

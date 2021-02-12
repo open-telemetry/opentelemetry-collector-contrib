@@ -127,7 +127,7 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*elasticsearch7
 		Transport: transport,
 
 		// configure connection setup
-		Addresses: config.URLs,
+		Addresses: config.Endpoints,
 		CloudID:   config.CloudID,
 		Username:  config.Authentication.User,
 		Password:  config.Authentication.Password,
