@@ -106,17 +106,29 @@ func TestProcessMetrics(t *testing.T) {
 			0,
 			[]string{"key2:val2"},
 		),
+		NewGauge(
+			"system.cpu.time",
+			0,
+			0,
+			[]string{"key3:val3"},
+		),
 	}
 
 	ProcessMetrics(ms, logger, cfg)
 
 	assert.Equal(t, "test-host", *ms[0].Host)
-	assert.Equal(t, "otel.metric_name", *ms[0].Metric)
+	assert.Equal(t, "metric_name", *ms[0].Metric)
 	assert.ElementsMatch(t,
 		[]string{"key2:val2"},
 		ms[0].Tags,
 	)
 
+	assert.Equal(t, "test-host", *ms[1].Host)
+	assert.Equal(t, "otel.system.cpu.time", *ms[1].Metric)
+	assert.ElementsMatch(t,
+		[]string{"key3:val3"},
+		ms[1].Tags,
+	)
 }
 
 func TestAddHostname(t *testing.T) {
@@ -165,14 +177,25 @@ func TestAddHostname(t *testing.T) {
 	assert.Equal(t, "thathost", *ms[0].Host)
 }
 
+func TestShouldPrepend(t *testing.T) {
+	assert.True(t, shouldPrepend("system.memory.usage"))
+	assert.True(t, shouldPrepend("datadog_exporter.traces.running"))
+	assert.True(t, shouldPrepend("process.cpu.time"))
+	assert.False(t, shouldPrepend("processes.cpu.time"))
+	assert.False(t, shouldPrepend("systemd.metric.name"))
+	assert.False(t, shouldPrepend("random.metric.name"))
+}
+
 func TestAddNamespace(t *testing.T) {
 	ms := []datadog.Metric{
 		NewGauge("test.metric", 0, 1.0, []string{}),
-		NewGauge("test.metric2", 0, 2.0, []string{}),
+		NewGauge("system.cpu.time", 0, 2.0, []string{}),
+		NewGauge("process.memory.physical_usage", 0, 3.0, []string{}),
 	}
 
 	addNamespace(ms, "namespace")
 
-	assert.Equal(t, "namespace.test.metric", *ms[0].Metric)
-	assert.Equal(t, "namespace.test.metric2", *ms[1].Metric)
+	assert.Equal(t, "test.metric", *ms[0].Metric)
+	assert.Equal(t, "namespace.system.cpu.time", *ms[1].Metric)
+	assert.Equal(t, "namespace.process.memory.physical_usage", *ms[2].Metric)
 }

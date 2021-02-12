@@ -24,6 +24,9 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/translator/conventions"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
 // This file implements factory for receiver_creator. A receiver_creator can create other receivers at runtime.
@@ -46,6 +49,18 @@ func createDefaultConfig() configmodels.Receiver {
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
+		},
+		ResourceAttributes: resourceAttributes{
+			observer.PodType: map[string]string{
+				conventions.AttributeK8sPod:       "`name`",
+				conventions.AttributeK8sPodUID:    "`uid`",
+				conventions.AttributeK8sNamespace: "`namespace`",
+			},
+			observer.PortType: map[string]string{
+				conventions.AttributeK8sPod:       "`pod.name`",
+				conventions.AttributeK8sPodUID:    "`pod.uid`",
+				conventions.AttributeK8sNamespace: "`pod.namespace`",
+			},
 		},
 		receiverTemplates: map[string]receiverTemplate{},
 	}

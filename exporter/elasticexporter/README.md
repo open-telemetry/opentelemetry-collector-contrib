@@ -1,6 +1,6 @@
-# Elastic Exporter
+# Elastic Observability Exporter
 
-This exporter supports sending OpenTelemetry data to the [Elastic Stack](https://www.elastic.co/observability).
+This exporter supports sending OpenTelemetry data to [Elastic Observability](https://www.elastic.co/observability).
 
 Complete documentation is available on [Elastic.co](https://www.elastic.co/guide/en/apm/get-started/current/open-telemetry-elastic.html).
 

@@ -1,6 +1,6 @@
 package stanzareceiver
 
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,9 +18,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/observiq/stanza/entry"
-	"github.com/observiq/stanza/operator"
-	"github.com/observiq/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-log-collection/entry"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
+	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
+	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -84,4 +86,30 @@ type mockLogsRejecter struct {
 func (m *mockLogsRejecter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	m.rejected++
 	return fmt.Errorf("no")
+}
+
+const mockType = "mock"
+
+type TestConfig struct {
+	configmodels.ReceiverSettings `mapstructure:",squash"`
+	Operators                     OperatorConfig `mapstructure:"operators"`
+}
+type TestReceiverType struct{}
+
+func (f TestReceiverType) Type() configmodels.Type {
+	return configmodels.Type(mockType)
+}
+
+func (f TestReceiverType) CreateDefaultConfig() configmodels.Receiver {
+	return &TestConfig{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			TypeVal: configmodels.Type(mockType),
+			NameVal: mockType,
+		},
+	}
+}
+
+func (f TestReceiverType) Decode(cfg configmodels.Receiver) (pipeline.Config, error) {
+	logConfig := cfg.(*TestConfig)
+	return DecodeOperators(logConfig.Operators)
 }

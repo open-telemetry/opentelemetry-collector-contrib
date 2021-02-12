@@ -40,7 +40,12 @@ func TestHost(t *testing.T) {
 		TagsConfig: config.TagsConfig{Hostname: "test-host"},
 	})
 	assert.Equal(t, *host, "test-host")
-	cache.Cache.Delete(cache.CanonicalHostnameKey)
+
+	// config.Config.Hostname does not get stored in the cache
+	host = GetHost(logger, &config.Config{
+		TagsConfig: config.TagsConfig{Hostname: "test-host-2"},
+	})
+	assert.Equal(t, *host, "test-host-2")
 
 	host = GetHost(logger, &config.Config{})
 	osHostname, err := os.Hostname()
@@ -84,6 +89,16 @@ func TestHostnameFromAttributes(t *testing.T) {
 	// AWS cloud provider means relying on the EC2 function
 	attrs = testutils.NewAttributeMap(map[string]string{
 		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
+		conventions.AttributeHostID:        testHostID,
+		conventions.AttributeHostName:      testHostName,
+	})
+	hostname, ok = HostnameFromAttributes(attrs)
+	assert.True(t, ok)
+	assert.Equal(t, hostname, testHostName)
+
+	// GCP cloud provider means relying on the GCP function
+	attrs = testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP,
 		conventions.AttributeHostID:        testHostID,
 		conventions.AttributeHostName:      testHostName,
 	})

@@ -185,58 +185,6 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 	}
 }
 
-func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
-	config := &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		AccessToken:           "testToken",
-		Realm:                 "us1",
-		SendCompatibleMetrics: true,
-	}
-
-	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
-	assert.NoError(t, err)
-	assert.NotNil(t, te)
-
-	// Validate that default translation rules are loaded
-	// Expected values has to be updated once default config changed
-	assert.Equal(t, 60, len(config.TranslationRules))
-	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
-	assert.Equal(t, 33, len(config.TranslationRules[0].Mapping))
-}
-
-func TestCreateMetricsExporterWithSpecifiedTranslaitonRules(t *testing.T) {
-	config := &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		AccessToken:           "testToken",
-		Realm:                 "us1",
-		SendCompatibleMetrics: true,
-		TranslationRules: []translation.Rule{
-			{
-				Action: translation.ActionRenameDimensionKeys,
-				Mapping: map[string]string{
-					"old_dimension": "new_dimension",
-				},
-			},
-		},
-	}
-
-	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
-	assert.NoError(t, err)
-	assert.NotNil(t, te)
-
-	// Validate that specified translation rules are loaded instead of default ones
-	assert.Equal(t, 1, len(config.TranslationRules))
-	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
-	assert.Equal(t, 1, len(config.TranslationRules[0].Mapping))
-	assert.Equal(t, "new_dimension", config.TranslationRules[0].Mapping["old_dimension"])
-}
-
 func TestDefaultTranslationRules(t *testing.T) {
 	rules, err := loadDefaultTranslationRules()
 	require.NoError(t, err)
@@ -326,7 +274,7 @@ func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
 	require.NotNil(t, te)
 
 	// Validate that default excludes are always loaded.
-	assert.Equal(t, 8, len(config.ExcludeMetrics))
+	assert.Equal(t, 10, len(config.ExcludeMetrics))
 }
 
 func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
@@ -349,7 +297,7 @@ func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 	require.NotNil(t, te)
 
 	// Validate that default excludes are always loaded.
-	assert.Equal(t, 9, len(config.ExcludeMetrics))
+	assert.Equal(t, 11, len(config.ExcludeMetrics))
 }
 
 func testMetricsData() pdata.ResourceMetrics {

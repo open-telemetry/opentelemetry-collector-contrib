@@ -2,6 +2,41 @@
 
 ## Unreleased
 
+## v0.20.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.20.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.20.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+
+- `spanmetrics` processor to aggregate Request, Error and Duration (R.E.D) metrics from span data
+- `awsxray` receiver to accept spans in the X-Ray Segment format
+- `groupbyattrs` processor to group the records by provided attributes
+
+## 🛑 Breaking changes 🛑
+
+- Rename `kinesis` exporter to `awskinesis` (#2234)
+- `signalfx` exporter: Remove `send_compatible_metrics` option, use `translation_rules` instead (#2267)
+- `datadog` exporter: Remove default prefix from user metrics (#2308)
+
+## 💡 Enhancements 💡
+
+- `signalfx` exporter: Add k8s metrics to default excludes (#2167)
+- `stackdriver` exporter: Reduce QPS (#2191)
+- `datadog` exporter:
+  - Translate otel exceptions to DataDog errors (#2195)
+  - Use resource attributes for metadata and generated metrics (#2023)
+- `sapm` exporter: Enable queuing by default (#1224)
+- `dynatrace` exporter: Allow underscores anywhere in metric or dimension names (#2219)
+- `awsecscontainermetrics` receiver: Handle stopped container's metadata (#2229)
+- `awsemf` exporter: Enhance metrics batching in AWS EMF logs (#2271)
+- `f5cloud` exporter: Add User-Agent header with version to requests (#2292)
+
+## 🧰 Bug fixes 🧰
+
+- `signalfx` exporter: Reinstate network/filesystem translation rules (#2171)
+
 ## v0.19.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.19.0 (Beta) 🎉
@@ -11,7 +46,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 ## 🚀 New components 🚀
 
 - `f5cloud` exporter to export metric, trace, and log data to F5 Cloud
-- `jmx` receiver to report metrics from a target MBean server in conjunction with the [JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/master/contrib/jmx-metrics/README.md)
+- `jmx` receiver to report metrics from a target MBean server in conjunction with the [JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/main/contrib/jmx-metrics/README.md)
 
 ## 🛑 Breaking changes 🛑
 
@@ -186,7 +221,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 - Move signalfx correlation code out of `sapm` to `signalfxcorrelation` exporter (#1376)
 - Move Splunk specific utils outside of common (#1306)
 - `stackdriver` exporter:
-    - Config options `metric_prefix` & `skip_create_metric_descriptor` are now nested under `metric`, see [README](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/master/exporter/stackdriverexporter/README.md).
+    - Config options `metric_prefix` & `skip_create_metric_descriptor` are now nested under `metric`, see [README](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/stackdriverexporter/README.md).
     - Trace status codes no longer reflect gRPC codes as per spec changes: open-telemetry/opentelemetry-specification#1067
 - `datadog` exporter: Remove option to change the namespace prefix (#1483)
 

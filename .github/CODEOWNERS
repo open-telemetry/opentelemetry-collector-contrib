@@ -26,7 +26,7 @@ exporter/elasticexporter/                  @open-telemetry/collector-contrib-app
 exporter/f5cloudexporter/                  @open-telemetry/collector-contrib-approvers @gramidt
 exporter/honeycombexporter/                @open-telemetry/collector-contrib-approvers @paulosman @lizthegrey @MikeGoldsmith
 exporter/jaegerthrifthttpexporter/         @open-telemetry/collector-contrib-approvers @jpkrohling @pavolloffay
-exporter/kinesisexporter/                  @open-telemetry/collector-contrib-approvers @owais
+exporter/awskinesisexporter/                  @open-telemetry/collector-contrib-approvers @owais
 exporter/loadbalancingexporter/            @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logzioexporter/                   @open-telemetry/collector-contrib-approvers @yyyogev
 exporter/lokiexporter/                     @open-telemetry/collector-contrib-approvers @gramidt

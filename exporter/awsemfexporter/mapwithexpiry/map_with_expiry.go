@@ -28,11 +28,11 @@ type mapEntry struct {
 type MapWithExpiry struct {
 	lock    *sync.Mutex
 	ttl     time.Duration
-	entries map[string]*mapEntry
+	entries map[interface{}]*mapEntry
 }
 
 func NewMapWithExpiry(ttl time.Duration) *MapWithExpiry {
-	return &MapWithExpiry{lock: &sync.Mutex{}, ttl: ttl, entries: make(map[string]*mapEntry)}
+	return &MapWithExpiry{lock: &sync.Mutex{}, ttl: ttl, entries: make(map[interface{}]*mapEntry)}
 }
 
 func (m *MapWithExpiry) CleanUp(now time.Time) {
@@ -43,7 +43,7 @@ func (m *MapWithExpiry) CleanUp(now time.Time) {
 	}
 }
 
-func (m *MapWithExpiry) Get(key string) (interface{}, bool) {
+func (m *MapWithExpiry) Get(key interface{}) (interface{}, bool) {
 	res, ok := m.entries[key]
 	if ok {
 		return res.content, true
@@ -51,7 +51,7 @@ func (m *MapWithExpiry) Get(key string) (interface{}, bool) {
 	return nil, false
 }
 
-func (m *MapWithExpiry) Set(key string, content interface{}) {
+func (m *MapWithExpiry) Set(key interface{}, content interface{}) {
 	m.entries[key] = &mapEntry{content: content, creation: time.Now()}
 }
 

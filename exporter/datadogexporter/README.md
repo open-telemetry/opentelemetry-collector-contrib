@@ -23,12 +23,12 @@ datadog:
 The hostname, environment, service and version can be set in the configuration for unified service tagging.
 The exporter will try to retrieve a hostname following the OpenTelemetry semantic conventions if there is one available.
 
-See the sample configuration file under the `example` folder for other available options.
+See the sample configuration files under the `example` folder for other available options, as well as an example K8s Manifest.
 
 ## Trace exporter
 ### **Important Pipeline Setup Details** 
 
-This exporter assumes a pipeline using the datadog exporter also includes a [batch processor](https://github.com/open-telemetry/opentelemetry-collector/tree/master/processor/batchprocessor) configured with the following: 
+This exporter assumes a pipeline using the datadog exporter also includes a [batch processor](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor) configured with the following: 
   - a `timeout` setting of `10s`(10 seconds). 
 
 Please make sure to include this processor in your pipeline. An example pipeline can be found below.

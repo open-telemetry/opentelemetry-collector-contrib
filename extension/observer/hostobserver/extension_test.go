@@ -119,7 +119,7 @@ func TestHostObserver(t *testing.T) {
 
 				details, ok := actualEndpoint.Details.(*observer.HostPort)
 				assert.True(t, ok, "failed to get Endpoint.Details")
-				assert.Equal(t, filepath.Base(exe), details.Name)
+				assert.Equal(t, filepath.Base(exe), details.ProcessName)
 				assert.Equal(t, tt.protocol, details.Transport)
 				assert.Equal(t, isIPv6, details.IsIPv6)
 
@@ -464,10 +464,10 @@ func TestCollectEndpoints(t *testing.T) {
 					ID:     observer.EndpointID("()123.345.567.789-80-TCP"),
 					Target: "123.345.567.789:80",
 					Details: &observer.HostPort{
-						Name:      "",
-						Port:      80,
-						Transport: observer.ProtocolTCP,
-						IsIPv6:    false,
+						ProcessName: "",
+						Port:        80,
+						Transport:   observer.ProtocolTCP,
+						IsIPv6:      false,
 					},
 				},
 			},

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -27,9 +28,11 @@ import (
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
+	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
 )
 
@@ -54,7 +57,7 @@ const (
 )
 
 // converts Traces into an array of datadog trace payloads grouped by env
-func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *config.Config) []*pb.TracePayload {
+func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *config.Config) ([]*pb.TracePayload, []datadog.Metric) {
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
 	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
@@ -63,6 +66,8 @@ func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *co
 
 	var traces []*pb.TracePayload
 
+	var runningMetrics []datadog.Metric
+	pushTime := time.Now().UTC().UnixNano()
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
 		// TODO pass logger here once traces code stabilizes
@@ -74,9 +79,13 @@ func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *co
 
 		payload := resourceSpansToDatadogSpans(rs, calculator, hostname, cfg)
 		traces = append(traces, &payload)
+
+		ms := metrics.DefaultMetrics("traces", uint64(pushTime))
+		ms[0].Host = &hostname
+		runningMetrics = append(runningMetrics, ms...)
 	}
 
-	return traces
+	return traces, runningMetrics
 }
 
 func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePayload {
@@ -127,7 +136,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 	resourceServiceName, datadogTags := resourceToDatadogServiceNameAndAttributeMap(resource)
 
 	// specification states that the resource level deployment.environment should be used for passing env, so defer to that
-	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/deployment_environment.md#deployment
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/deployment_environment.md#deployment
 	if resourceEnv, ok := datadogTags[conventions.AttributeDeploymentEnvironment]; ok {
 		payload.Env = resourceEnv
 	}

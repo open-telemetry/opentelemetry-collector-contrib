@@ -23,6 +23,37 @@ import (
 )
 
 func TestContainerResource(t *testing.T) {
+	cm := ContainerMetadata{
+		ContainerName: "container-1",
+		DockerID:      "001",
+		DockerName:    "docker-container-1",
+		Image:         "nginx:v1.0",
+		ImageID:       "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
+		CreatedAt:     "2020-07-30T22:12:29.837074927Z",
+		StartedAt:     "2020-07-30T22:12:31.153459485Z",
+		KnownStatus:   "RUNNING",
+	}
+
+	r := containerResource(cm)
+	require.NotNil(t, r)
+	attrMap := r.Attributes()
+	require.EqualValues(t, 9, attrMap.Len())
+	expected := map[string]string{
+		conventions.AttributeContainerName:  "container-1",
+		conventions.AttributeContainerID:    "001",
+		AttributeECSDockerName:              "docker-container-1",
+		conventions.AttributeContainerImage: "nginx:v1.0",
+		AttributeContainerImageID:           "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
+		conventions.AttributeContainerTag:   "v1.0",
+		AttributeContainerCreatedAt:         "2020-07-30T22:12:29.837074927Z",
+		AttributeContainerStartedAt:         "2020-07-30T22:12:31.153459485Z",
+		AttributeContainerKnownStatus:       "RUNNING",
+	}
+
+	verifyAttributeMap(t, expected, attrMap)
+}
+
+func TestContainerResourceForStoppedContainer(t *testing.T) {
 	var exitCode int64 = 2
 	cm := ContainerMetadata{
 		ContainerName: "container-1",
@@ -33,7 +64,7 @@ func TestContainerResource(t *testing.T) {
 		CreatedAt:     "2020-07-30T22:12:29.837074927Z",
 		StartedAt:     "2020-07-30T22:12:31.153459485Z",
 		FinishedAt:    "2020-07-31T22:12:29.837074927Z",
-		KnownStatus:   "RUNNING",
+		KnownStatus:   "STOPPED",
 		ExitCode:      &exitCode,
 	}
 
@@ -54,7 +85,7 @@ func TestContainerResource(t *testing.T) {
 		AttributeContainerCreatedAt:         "2020-07-30T22:12:29.837074927Z",
 		AttributeContainerStartedAt:         "2020-07-30T22:12:31.153459485Z",
 		AttributeContainerFinishedAt:        "2020-07-31T22:12:29.837074927Z",
-		AttributeContainerKnownStatus:       "RUNNING",
+		AttributeContainerKnownStatus:       "STOPPED",
 	}
 
 	verifyAttributeMap(t, expected, attrMap)

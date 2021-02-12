@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,31 +15,26 @@
 package stanzareceiver
 
 import (
-	"github.com/observiq/stanza/pipeline"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	"gopkg.in/yaml.v2"
 )
 
-// Config defines configuration for the stanza receiver
-type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
-	OffsetsFile                   string         `mapstructure:"offsets_file"`
-	PluginDir                     string         `mapstructure:"plugin_dir"`
-	Operators                     OperatorConfig `mapstructure:"operators"`
-}
-
+// OperatorConfig is an alias that allows for unmarshaling outside of mapstructure
+// Stanza operators should will be migrated to mapstructure for greater compatibility
+// but this allows a temporary solution
 type OperatorConfig []map[string]interface{}
 
-func (r OperatorConfig) IntoPipelineConfig() (pipeline.Config, error) {
-	yamlBytes, err := yaml.Marshal(r)
+// DecodeOperators is an unmarshaling workaround for stanza operators
+// This is needed only until stanza operators are migrated to mapstructure
+func DecodeOperators(cfg OperatorConfig) (pipeline.Config, error) {
+	yamlBytes, err := yaml.Marshal(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	var cfg pipeline.Config
-	if err := yaml.Unmarshal(yamlBytes, &cfg); err != nil {
+	var pipelineCfg pipeline.Config
+	if err := yaml.Unmarshal(yamlBytes, &pipelineCfg); err != nil {
 		return nil, err
 	}
-
-	return cfg, nil
+	return pipelineCfg, nil
 }

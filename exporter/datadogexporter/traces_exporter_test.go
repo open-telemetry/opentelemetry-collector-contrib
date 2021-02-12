@@ -34,6 +34,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/testutils"
 )
 
@@ -64,7 +65,7 @@ func testTraceExporterHelper(td pdata.Traces, t *testing.T) []string {
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
 		TagsConfig: config.TagsConfig{
-			Hostname: "test_host",
+			Hostname: "test-host",
 			Env:      "test_env",
 			Tags:     []string{"key:val"},
 		},
@@ -160,19 +161,12 @@ func TestNewTraceExporter(t *testing.T) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
 	// The client should have been created correctly
-	exp := newTraceExporter(params, cfg)
+	exp := newTraceExporter(context.Background(), params, cfg)
 	assert.NotNil(t, exp)
 }
 
 func TestPushTraceData(t *testing.T) {
-	metricsServer := testutils.DatadogServerMock()
-	defer metricsServer.Close()
-
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		assert.Equal(t, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", req.Header.Get("DD-Api-Key"))
-		rw.WriteHeader(http.StatusAccepted)
-	}))
-
+	server := testutils.DatadogServerMock()
 	defer server.Close()
 	cfg := &config.Config{
 		API: config.APIConfig{
@@ -184,32 +178,28 @@ func TestPushTraceData(t *testing.T) {
 			Tags:     []string{"key:val"},
 		},
 		Metrics: config.MetricsConfig{
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: metricsServer.URL,
-			},
+			TCPAddr: confignet.TCPAddr{Endpoint: server.URL},
 		},
 		Traces: config.TracesConfig{
 			SampleRate: 1,
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: server.URL,
-			},
+			TCPAddr:    confignet.TCPAddr{Endpoint: server.URL},
 		},
+		SendMetadata:        true,
+		UseResourceMetadata: true,
 	}
 
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp := newTraceExporter(params, cfg)
-	tracesLength, err := exp.pushTraceData(context.Background(), func() pdata.Traces {
-		traces := pdata.NewTraces()
-		resourceSpans := traces.ResourceSpans()
-		resourceSpans.Resize(1)
-		resourceSpans.At(0).InstrumentationLibrarySpans().Resize(1)
-		resourceSpans.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-		return traces
-	}())
+	exp := newTraceExporter(context.Background(), params, cfg)
 
+	tracesLength, err := exp.pushTraceData(context.Background(), testutils.TestTraces.Clone())
 	assert.NoError(t, err)
 	assert.Equal(t, 1, tracesLength)
 
+	body := <-server.MetadataChan
+	var recvMetadata metadata.HostMetadata
+	err = json.Unmarshal(body, &recvMetadata)
+	require.NoError(t, err)
+	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
 }
 
 func TestTraceAndStatsExporter(t *testing.T) {

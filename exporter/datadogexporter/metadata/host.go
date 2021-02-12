@@ -21,6 +21,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/valid"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils/cache"
@@ -33,20 +34,17 @@ const (
 
 // GetHost gets the hostname according to configuration.
 // It checks in the following order
-// 1. Cache
-// 2. Configuration
+// 1. Configuration
+// 2. Cache
 // 3. EC2 instance metadata
 // 4. System
 func GetHost(logger *zap.Logger, cfg *config.Config) *string {
-	if cacheVal, ok := cache.Cache.Get(cache.CanonicalHostnameKey); ok {
-		return cacheVal.(*string)
+	if cfg.Hostname != "" {
+		return &cfg.Hostname
 	}
 
-	if err := valid.Hostname(cfg.Hostname); err == nil {
-		cache.Cache.Add(cache.CanonicalHostnameKey, &cfg.Hostname, cache.NoExpiration)
-		return &cfg.Hostname
-	} else if cfg.Hostname != "" {
-		logger.Error("Hostname set in configuration is invalid", zap.Error(err))
+	if cacheVal, ok := cache.Cache.Get(cache.CanonicalHostnameKey); ok {
+		return cacheVal.(*string)
 	}
 
 	ec2Info := ec2.GetHostInfo(logger)
@@ -72,9 +70,10 @@ func GetHost(logger *zap.Logger, cfg *config.Config) *string {
 //
 //   1. a custom Datadog hostname provided by the "datadog.host.name" attribute
 //   2. the Kubernetes node name (and cluster name if available),
-//   3. the container ID,
-//   4. the cloud provider host ID and
-//   5. the host.name attribute.
+//   3. cloud provider specific hostname for AWS or GCP
+//   4. the container ID,
+//   5. the cloud provider host ID and
+//   6. the host.name attribute.
 //
 //  It returns a boolean value indicated if any name was found
 func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
@@ -100,6 +99,8 @@ func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
 	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
 	if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS {
 		return ec2.HostnameFromAttributes(attrs)
+	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP {
+		return gcp.HostnameFromAttributes(attrs)
 	}
 
 	// host id from cloud provider

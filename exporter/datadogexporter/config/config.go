@@ -22,11 +22,13 @@ import (
 
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/valid"
 )
 
 var (
 	errUnsetAPIKey = errors.New("api.key is not set")
-	errNoMetadata  = errors.New("only_metadata can't be enabled when send_metadata is disabled")
+	errNoMetadata  = errors.New("only_metadata can't be enabled when send_metadata or use_resource_metadata is disabled")
 )
 
 const (
@@ -166,10 +168,19 @@ type Config struct {
 	// OnlyMetadata defines whether to only send metadata
 	// This is useful for agent-collector setups, so that
 	// metadata about a host is sent to the backend even
-	// when telemetry data is reported via a different host
+	// when telemetry data is reported via a different host.
 	//
 	// This flag is incompatible with disabling `send_metadata`
+	// or `use_resource_metadata`.
 	OnlyMetadata bool `mapstructure:"only_metadata"`
+
+	// UseResourceMetadata defines whether to use resource attributes
+	// for completing host metadata (such as the hostname or host tags).
+	//
+	// By default this is true: the first resource attribute getting to
+	// the exporter will be used for host metadata.
+	// Disable this in the Collector if you are using an agent-collector setup.
+	UseResourceMetadata bool `mapstructure:"use_resource_metadata"`
 
 	// onceMetadata ensures only one exporter (metrics/traces) sends host metadata
 	onceMetadata sync.Once
@@ -185,8 +196,12 @@ func (c *Config) Sanitize() error {
 		c.TagsConfig.Env = "none"
 	}
 
-	if c.OnlyMetadata && !c.SendMetadata {
+	if c.OnlyMetadata && (!c.SendMetadata || !c.UseResourceMetadata) {
 		return errNoMetadata
+	}
+
+	if err := valid.Hostname(c.Hostname); c.Hostname != "" && err != nil {
+		return fmt.Errorf("hostname field is invalid: %s", err)
 	}
 
 	if c.API.Key == "" {

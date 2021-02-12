@@ -34,8 +34,10 @@ func TestEndpointsAdded(t *testing.T) {
 			ID:     "test-1/pod-2-UID",
 			Target: "1.2.3.4",
 			Details: &observer.Pod{
-				Name:   "pod-2",
-				Labels: map[string]string{"env": "prod"},
+				Name:      "pod-2",
+				Namespace: "default",
+				UID:       "pod-2-UID",
+				Labels:    map[string]string{"env": "prod"},
 			},
 		}, {
 			ID:     "test-1/pod-2-UID/https(443)",
@@ -43,8 +45,10 @@ func TestEndpointsAdded(t *testing.T) {
 			Details: &observer.Port{
 				Name: "https",
 				Pod: observer.Pod{
-					Name:   "pod-2",
-					Labels: map[string]string{"env": "prod"},
+					Namespace: "default",
+					UID:       "pod-2-UID",
+					Name:      "pod-2",
+					Labels:    map[string]string{"env": "prod"},
 				},
 				Port:      443,
 				Transport: observer.ProtocolTCP,
@@ -66,8 +70,10 @@ func TestEndpointsRemoved(t *testing.T) {
 			ID:     "test-1/pod-2-UID",
 			Target: "1.2.3.4",
 			Details: &observer.Pod{
-				Name:   "pod-2",
-				Labels: map[string]string{"env": "prod"},
+				Name:      "pod-2",
+				Namespace: "default",
+				UID:       "pod-2-UID",
+				Labels:    map[string]string{"env": "prod"},
 			},
 		}, {
 			ID:     "test-1/pod-2-UID/https(443)",
@@ -75,8 +81,10 @@ func TestEndpointsRemoved(t *testing.T) {
 			Details: &observer.Port{
 				Name: "https",
 				Pod: observer.Pod{
-					Name:   "pod-2",
-					Labels: map[string]string{"env": "prod"},
+					Name:      "pod-2",
+					Namespace: "default",
+					UID:       "pod-2-UID",
+					Labels:    map[string]string{"env": "prod"},
 				},
 				Port:      443,
 				Transport: observer.ProtocolTCP,
@@ -121,15 +129,19 @@ func TestEndpointsChanged(t *testing.T) {
 			ID:     "test-1/pod-2-UID",
 			Target: "1.2.3.4",
 			Details: &observer.Pod{
-				Name:   "pod-2",
-				Labels: map[string]string{"env": "prod", "updated-label": "true"}}},
+				Name:      "pod-2",
+				Namespace: "default",
+				UID:       "pod-2-UID",
+				Labels:    map[string]string{"env": "prod", "updated-label": "true"}}},
 		{
 			ID:     "test-1/pod-2-UID/https(443)",
 			Target: "1.2.3.4:443",
 			Details: &observer.Port{
 				Name: "https", Pod: observer.Pod{
-					Name:   "pod-2",
-					Labels: map[string]string{"env": "prod", "updated-label": "true"}},
+					Name:      "pod-2",
+					Namespace: "default",
+					UID:       "pod-2-UID",
+					Labels:    map[string]string{"env": "prod", "updated-label": "true"}},
 				Port:      443,
 				Transport: observer.ProtocolTCP}},
 	}, sink.changed)

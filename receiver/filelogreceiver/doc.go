@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,4 +14,4 @@
 
 // Package stanzareceiver implements a receiver that can be used by the
 // Opentelemetry collector to receive logs using the stanza log agent
-package stanzareceiver
+package filelogreceiver

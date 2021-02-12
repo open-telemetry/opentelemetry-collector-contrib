@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,14 +19,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/observiq/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func BenchmarkConvertSimple(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		convert(entry.New())
+		Convert(entry.New())
 	}
 }
 
@@ -35,7 +35,7 @@ func BenchmarkConvertComplex(b *testing.B) {
 		b.StopTimer()
 		e := complexEntry()
 		b.StartTimer()
-		convert(e)
+		Convert(e)
 	}
 }
 
@@ -80,7 +80,7 @@ func TestConvertMetadata(t *testing.T) {
 	e.AddLabel("one", "two")
 	e.Record = true
 
-	result := convert(e)
+	result := Convert(e)
 
 	resourceLogs := result.ResourceLogs()
 	require.Equal(t, 1, resourceLogs.Len(), "expected 1 resource")
@@ -267,7 +267,7 @@ func recordToBody(record interface{}) pdata.AttributeValue {
 }
 
 func convertAndDrill(entry *entry.Entry) pdata.LogRecord {
-	return convert(entry).ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0)
+	return Convert(entry).ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0)
 }
 
 func TestConvertSeverity(t *testing.T) {

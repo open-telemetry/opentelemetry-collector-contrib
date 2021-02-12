@@ -27,37 +27,37 @@ import (
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
-// TODO: Extract common bits from StanzaFileLogWriter and NewFluentBitFileLogWriter
+// TODO: Extract common bits from FileLogWriter and NewFluentBitFileLogWriter
 // and generalize as FileLogWriter.
 
-type StanzaFileLogWriter struct {
+type FileLogWriter struct {
 	testbed.DataSenderBase
 	file *os.File
 }
 
-// Ensure StanzaFileLogWriter implements LogDataSender.
-var _ testbed.LogDataSender = (*StanzaFileLogWriter)(nil)
+// Ensure FileLogWriter implements LogDataSender.
+var _ testbed.LogDataSender = (*FileLogWriter)(nil)
 
-// NewStanzaFileLogWriter creates a new data sender that will write log entries to a
+// NewFileLogWriter creates a new data sender that will write log entries to a
 // file, to be tailed by FluentBit and sent to the collector.
-func NewStanzaFileLogWriter() *StanzaFileLogWriter {
+func NewFileLogWriter() *FileLogWriter {
 	file, err := ioutil.TempFile("", "perf-logs.log")
 	if err != nil {
 		panic("failed to create temp file")
 	}
 
-	f := &StanzaFileLogWriter{
+	f := &FileLogWriter{
 		file: file,
 	}
 
 	return f
 }
 
-func (f *StanzaFileLogWriter) Start() error {
+func (f *FileLogWriter) Start() error {
 	return nil
 }
 
-func (f *StanzaFileLogWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) error {
+func (f *FileLogWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		for j := 0; j < logs.ResourceLogs().At(i).InstrumentationLibraryLogs().Len(); j++ {
 			ills := logs.ResourceLogs().At(i).InstrumentationLibraryLogs().At(j)
@@ -72,7 +72,7 @@ func (f *StanzaFileLogWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) er
 	return nil
 }
 
-func (f *StanzaFileLogWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
+func (f *FileLogWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
 	sb := strings.Builder{}
 
 	// Timestamp
@@ -108,15 +108,15 @@ func (f *StanzaFileLogWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
 	return []byte(sb.String())
 }
 
-func (f *StanzaFileLogWriter) Flush() {
+func (f *FileLogWriter) Flush() {
 	_ = f.file.Sync()
 }
 
-func (f *StanzaFileLogWriter) GenConfigYAMLStr() string {
+func (f *FileLogWriter) GenConfigYAMLStr() string {
 	// Note that this generates a receiver config for agent.
 	// We are testing stanza receiver here.
 	return fmt.Sprintf(`
-  stanza:
+  filelog:
     operators:
       - type: file_input
         include: [ %s ]
@@ -132,10 +132,10 @@ func (f *StanzaFileLogWriter) GenConfigYAMLStr() string {
 		f.file.Name())
 }
 
-func (f *StanzaFileLogWriter) ProtocolName() string {
-	return "stanza"
+func (f *FileLogWriter) ProtocolName() string {
+	return "filelog"
 }
 
-func (f *StanzaFileLogWriter) GetEndpoint() string {
+func (f *FileLogWriter) GetEndpoint() string {
 	return ""
 }

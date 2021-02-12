@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"sync"
 
-	stanza "github.com/observiq/stanza/agent"
+	stanza "github.com/open-telemetry/opentelemetry-log-collection/agent"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
@@ -69,7 +69,7 @@ func (r *stanzareceiver) Start(ctx context.Context, host component.Host) error {
 					if !ok {
 						continue
 					}
-					if consumeErr := r.consumer.ConsumeLogs(ctx, convert(obsLog)); consumeErr != nil {
+					if consumeErr := r.consumer.ConsumeLogs(ctx, Convert(obsLog)); consumeErr != nil {
 						r.logger.Error("ConsumeLogs() error", zap.String("error", consumeErr.Error()))
 					}
 				}

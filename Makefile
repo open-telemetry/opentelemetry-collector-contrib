@@ -3,7 +3,7 @@ include ./Makefile.Common
 RUN_CONFIG=local/config.yaml
 CMD?=
 STATIC_CHECK=staticcheck
-OTEL_VERSION=master
+OTEL_VERSION=main
 
 BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/version
 GIT_SHA=$(shell git rev-parse --short HEAD)
@@ -32,7 +32,7 @@ e2e-test: otelcontribcol otelcontribcol-unstable
 	$(MAKE) -C testbed run-tests
 	$(MAKE) -C testbed run-tests TESTS_DIR=tests_unstable_exe
 
-.PHONY: test-with-cover
+.PHONY: unit-tests-with-cover
 unit-tests-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
 	@internal/buildscripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector-contrib/,./,$(ALL_PKGS))

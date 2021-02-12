@@ -14,6 +14,7 @@
 package ec2
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
@@ -23,11 +24,15 @@ import (
 	"go.uber.org/zap"
 )
 
-var defaultPrefixes = [3]string{"ip-", "domu", "ec2amaz-"}
+var (
+	defaultPrefixes = [3]string{"ip-", "domu", "ec2amaz-"}
+	ec2TagPrefix    = "ec2.tag."
+)
 
 type HostInfo struct {
 	InstanceID  string
 	EC2Hostname string
+	EC2Tags     []string
 }
 
 // isDefaultHostname checks if a hostname is an EC2 default
@@ -94,4 +99,27 @@ func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
 	}
 
 	return "", false
+}
+
+// HostInfoFromAttributes gets EC2 host info from attributes following
+// OpenTelemetry semantic conventions
+func HostInfoFromAttributes(attrs pdata.AttributeMap) (hostInfo *HostInfo) {
+	hostInfo = &HostInfo{}
+
+	if hostID, ok := attrs.Get(conventions.AttributeHostID); ok {
+		hostInfo.InstanceID = hostID.StringVal()
+	}
+
+	if hostName, ok := attrs.Get(conventions.AttributeHostName); ok {
+		hostInfo.EC2Hostname = hostName.StringVal()
+	}
+
+	attrs.ForEach(func(k string, v pdata.AttributeValue) {
+		if strings.HasPrefix(k, ec2TagPrefix) {
+			tag := fmt.Sprintf("%s:%s", strings.TrimPrefix(k, ec2TagPrefix), v.StringVal())
+			hostInfo.EC2Tags = append(hostInfo.EC2Tags, tag)
+		}
+	})
+
+	return
 }
