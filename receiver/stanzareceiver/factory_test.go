@@ -38,7 +38,7 @@ func TestCreateReceiver(t *testing.T) {
 	t.Run("DecodeOperatorsFailure", func(t *testing.T) {
 		factory := NewFactory(TestReceiverType{})
 		badCfg := factory.CreateDefaultConfig().(*TestConfig)
-		badCfg.Operators = []map[string]interface{}{
+		badCfg.Parsers = []map[string]interface{}{
 			{
 				"badparam": "badvalue",
 			},
