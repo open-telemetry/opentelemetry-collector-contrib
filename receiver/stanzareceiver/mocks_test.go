@@ -125,7 +125,7 @@ func (f TestReceiverType) DecodeInputConfig(cfg configmodels.Receiver) (*operato
 		return &operator.Config{Builder: noop.NewNoopOperatorConfig("nop")}, nil
 	}
 
-	// Allow tests to explicity prompt a failure
+	// Allow tests to explicitly prompt a failure
 	if testConfig.Input["type"] == "unknown" {
 		return nil, fmt.Errorf("Unknown input type")
 	}
