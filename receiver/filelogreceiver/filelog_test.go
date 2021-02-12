@@ -62,7 +62,24 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 1)
 
-	assert.Equal(t, testdataConfigYamlAsMap, cfg.Receivers["filelog"])
+	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers["filelog"])
+}
+
+func TestCreateWithInvalidInputConfig(t *testing.T) {
+	t.Parallel()
+
+	cfg := testdataConfigYamlAsMap()
+	cfg.Input["include"] = "not an array"
+
+	_, err := NewFactory().CreateLogsReceiver(
+		context.Background(),
+		component.ReceiverCreateParams{
+			Logger: zaptest.NewLogger(t),
+		},
+		cfg,
+		new(consumertest.LogsSink),
+	)
+	require.Error(t, err, "receiver creation should fail if given invalid input config")
 }
 
 func TestReadStaticFile(t *testing.T) {
@@ -98,7 +115,7 @@ func TestReadStaticFile(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
 
-	rcvr, err := f.CreateLogsReceiver(context.Background(), params, testdataConfigYamlAsMap, sink)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), params, testdataConfigYamlAsMap(), sink)
 	require.NoError(t, err, "failed to create receiver")
 
 	dir, err := os.Getwd()
@@ -234,33 +251,35 @@ func (h *testHost) ReportFatalError(err error) {
 	h.t.Fatalf("receiver reported a fatal error: %v", err)
 }
 
-var testdataConfigYamlAsMap = &FileLogConfig{
-	BaseConfig: stanzareceiver.BaseConfig{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: "filelog",
-			NameVal: "filelog",
-		},
-		Parsers: stanzareceiver.ParserConfigs{
-			map[string]interface{}{
-				"type":  "regex_parser",
-				"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
-				"severity": map[interface{}]interface{}{
-					"parse_from": "sev",
-				},
-				"timestamp": map[interface{}]interface{}{
-					"layout":     "%Y-%m-%d",
-					"parse_from": "time",
+func testdataConfigYamlAsMap() *FileLogConfig {
+	return &FileLogConfig{
+		BaseConfig: stanzareceiver.BaseConfig{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: "filelog",
+				NameVal: "filelog",
+			},
+			Parsers: stanzareceiver.ParserConfigs{
+				map[string]interface{}{
+					"type":  "regex_parser",
+					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
+					"severity": map[interface{}]interface{}{
+						"parse_from": "sev",
+					},
+					"timestamp": map[interface{}]interface{}{
+						"layout":     "%Y-%m-%d",
+						"parse_from": "time",
+					},
 				},
 			},
 		},
-	},
-	Input: stanzareceiver.InputConfig{
-		"type": "file_input",
-		"include": []interface{}{
-			"testdata/simple.log",
+		Input: stanzareceiver.InputConfig{
+			"type": "file_input",
+			"include": []interface{}{
+				"testdata/simple.log",
+			},
+			"start_at": "beginning",
 		},
-		"start_at": "beginning",
-	},
+	}
 }
 
 func testdataRotateTestYamlAsMap(tempDir string) *FileLogConfig {

@@ -30,7 +30,13 @@ func TestCreateReceiver(t *testing.T) {
 
 	t.Run("Success", func(t *testing.T) {
 		factory := NewFactory(TestReceiverType{})
-		receiver, err := factory.CreateLogsReceiver(context.Background(), params, factory.CreateDefaultConfig(), &mockLogsConsumer{})
+		cfg := factory.CreateDefaultConfig().(*TestConfig)
+		cfg.Parsers = []map[string]interface{}{
+			{
+				"type": "json_parser",
+			},
+		}
+		receiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, &mockLogsConsumer{})
 		require.NoError(t, err, "receiver creation failed")
 		require.NotNil(t, receiver, "receiver creation failed")
 	})
@@ -46,7 +52,7 @@ func TestCreateReceiver(t *testing.T) {
 		require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
 	})
 
-	t.Run("DecodeParserConfigsFailure", func(t *testing.T) {
+	t.Run("DecodeParserConfigsFailureMissingFields", func(t *testing.T) {
 		factory := NewFactory(TestReceiverType{})
 		badCfg := factory.CreateDefaultConfig().(*TestConfig)
 		badCfg.Parsers = []map[string]interface{}{
