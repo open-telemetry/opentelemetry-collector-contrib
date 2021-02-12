@@ -21,7 +21,7 @@ from opentelemetry.context import Context, attach, detach, set_value
 from opentelemetry.sdk.trace import Span, SpanProcessor
 from opentelemetry.sdk.trace.export import SpanExporter
 from opentelemetry.trace import INVALID_TRACE_ID
-from opentelemetry.util import time_ns
+from opentelemetry.util.providers import time_ns
 
 logger = logging.getLogger(__name__)
 

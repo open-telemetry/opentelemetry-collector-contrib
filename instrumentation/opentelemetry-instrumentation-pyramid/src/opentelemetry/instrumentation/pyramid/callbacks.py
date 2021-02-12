@@ -8,8 +8,8 @@ from pyramid.tweens import EXCVIEW
 import opentelemetry.instrumentation.wsgi as otel_wsgi
 from opentelemetry import context, propagators, trace
 from opentelemetry.instrumentation.pyramid.version import __version__
-from opentelemetry.util import time_ns
 from opentelemetry.util.http import get_excluded_urls
+from opentelemetry.util.providers import time_ns
 
 TWEEN_NAME = "opentelemetry.instrumentation.pyramid.trace_tween_factory"
 SETTING_TRACE_ENABLED = "opentelemetry-pyramid.trace_enabled"

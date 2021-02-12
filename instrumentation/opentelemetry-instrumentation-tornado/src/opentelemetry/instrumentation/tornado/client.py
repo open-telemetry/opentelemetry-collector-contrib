@@ -5,7 +5,7 @@ from tornado.httpclient import HTTPError, HTTPRequest
 from opentelemetry import propagators, trace
 from opentelemetry.instrumentation.utils import http_status_to_status_code
 from opentelemetry.trace.status import Status
-from opentelemetry.util import time_ns
+from opentelemetry.util.providers import time_ns
 
 
 def _normalize_request(args, kwargs):

@@ -57,8 +57,8 @@ from opentelemetry.instrumentation.utils import (
     http_status_to_status_code,
 )
 from opentelemetry.trace.status import Status
-from opentelemetry.util import time_ns
 from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
+from opentelemetry.util.providers import time_ns
 
 _logger = getLogger(__name__)
 

@@ -55,8 +55,8 @@ import opentelemetry.instrumentation.wsgi as otel_wsgi
 from opentelemetry import context, propagators, trace
 from opentelemetry.instrumentation.flask.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
-from opentelemetry.util import time_ns
 from opentelemetry.util.http import get_excluded_urls
+from opentelemetry.util.providers import time_ns
 
 _logger = getLogger(__name__)
 
