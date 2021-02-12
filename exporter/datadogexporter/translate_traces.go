@@ -49,7 +49,7 @@ const (
 	grpcPath            string = "grpc.path"
 	eventsTag           string = "events"
 	eventNameTag        string = "name"
-	eventAttrTag        string = "attribute"
+	eventAttrTag        string = "attributes"
 	eventTimeTag        string = "time"
 	// tagContainersTags specifies the name of the tag which holds key/value
 	// pairs representing information about the container (Docker, EC2, etc).
