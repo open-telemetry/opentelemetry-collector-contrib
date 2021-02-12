@@ -92,7 +92,7 @@ const testType = "test"
 
 type TestConfig struct {
 	BaseConfig `mapstructure:",squash"`
-	Input      InputConfig `mapstructure:"operators"`
+	Input      InputConfig `mapstructure:",remain"`
 }
 type TestReceiverType struct{}
 
@@ -119,8 +119,15 @@ func (f TestReceiverType) BaseConfig(cfg configmodels.Receiver) BaseConfig {
 
 func (f TestReceiverType) DecodeInputConfig(cfg configmodels.Receiver) (*operator.Config, error) {
 	testConfig := cfg.(*TestConfig)
+
+	// Allow tests to run without implementing input config
 	if testConfig.Input["type"] == nil {
 		return &operator.Config{Builder: noop.NewNoopOperatorConfig("nop")}, nil
+	}
+
+	// Allow tests to explicity prompt a failure
+	if testConfig.Input["type"] == "unknown" {
+		return nil, fmt.Errorf("Unknown input type")
 	}
 	return &operator.Config{Builder: NewUnstartableConfig()}, nil
 }
