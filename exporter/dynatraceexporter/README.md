@@ -22,6 +22,10 @@ dynatrace:
   endpoint: https://abc12345.live.dynatrace.com/api/v2/metrics/ingest
  ```
 
+### Metric Batching
+
+Dynatrace recommends the use of the batch processor with a maximum batch size of 1000 metrics and a timeout between 10 and 60 seconds. Batches with more than 1000 metrics may be throttled by Dynatrace.
+
 Full example:
 
  ```yaml
@@ -37,6 +41,9 @@ receivers:
 
 processors:
   batch:
+    # Batch size must be less than or equal to 1000
+    send_batch_max_size: 1000
+    timeout: 30s
 
 exporters:
   dynatrace:
@@ -85,7 +92,7 @@ exporters:
       - header1: value1
     read_buffer_size: 4000
     write_buffer_size: 4000
-    timeout: 10s
+    timeout: 30s
     insecure_skip_verify: false
     retry_on_failure:
       enabled: true
