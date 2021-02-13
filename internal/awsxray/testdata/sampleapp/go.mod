@@ -4,5 +4,5 @@ go 1.14
 
 require (
 	github.com/aws/aws-sdk-go v1.37.8
-	github.com/aws/aws-xray-sdk-go v1.2.0
+	github.com/aws/aws-xray-sdk-go v1.3.0
 )
