@@ -16,18 +16,20 @@ package lokiexporter
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 )
 
-func TestCreateDefaultConfig(t *testing.T) {
+func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
@@ -41,16 +43,72 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, 5*time.Second, ocfg.RetrySettings.InitialInterval, "default retry InitialInterval")
 	assert.Equal(t, 30*time.Second, ocfg.RetrySettings.MaxInterval, "default retry MaxInterval")
 	assert.Equal(t, true, ocfg.QueueSettings.Enabled, "default sending queue is enabled")
+	assert.Equal(t, "", ocfg.TenantID)
+	assert.Equal(t, map[string]string{}, ocfg.Labels.Attributes)
 }
 
-func TestCreateLogExporter(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
-	cfg.AttributesForLabels = []string{"app", "level"}
+func TestFactory_CreateLogExporter(t *testing.T) {
+	tests := []struct {
+		name         string
+		config       Config
+		shouldError  bool
+		errorMessage string
+	}{
+		{
+			name: "with valid config",
+			config: Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "http://" + testutil.GetAvailableLocalAddress(t),
+				},
+				Labels: LabelsConfig{
+					Attributes: testValidAttributesWithMapping,
+				},
+			},
+			shouldError: false,
+		},
+		{
+			name: "with invalid config",
+			config: Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "",
+				},
+			},
+			shouldError: true,
+		},
+		{
+			name: "with forced bad configuration (for coverage)",
+			config: Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "",
+					CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
+						return nil, fmt.Errorf("this causes newExporter(...) to error")
+					},
+				},
+			},
+			shouldError: true,
+		},
+	}
 
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
-	require.Nil(t, err)
-	require.NotNil(t, exp)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactory()
+			creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+			exp, err := factory.CreateLogsExporter(context.Background(), creationParams, &tt.config)
+			if (err != nil) != tt.shouldError {
+				t.Errorf("CreateLogsExporter() error = %v, shouldError %v", err, tt.shouldError)
+				return
+			}
+
+			if tt.shouldError {
+				assert.Error(t, err)
+				if len(tt.errorMessage) != 0 {
+					assert.Equal(t, tt.errorMessage, err.Error())
+				}
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.NotNil(t, exp)
+		})
+	}
 }
