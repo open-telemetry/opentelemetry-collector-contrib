@@ -8,17 +8,20 @@ Supported pipeline types: logs
 
 The following settings are required:
 
-- `endpoint` (no default): The target URL to send Loki log streams to (
-  e.g.: https://loki.example.com:3100/loki/api/v1/push).
-
-
-- `attributes_for_labels` (no default): List of allowed attributes to be added as labels to Loki log 
-  streams. This is a safety net to help prevent accidentally adding dynamic labels that may significantly increase 
-  cardinality, thus having a performance impact on your Loki instance. See the 
+- `endpoint` (no default): The target URL to send Loki log streams to (e.g.: http://loki:3100/loki/api/v1/push).
+  
+- `labels.attributes` (no default): Map of attributes names to valid Loki label names (must match "^[a-zA-Z_][a-zA-Z0-9_]*$") 
+  allowed to be added as labels to Loki log streams. Logs that do not have at least one of these attributes will be dropped. 
+  This is a safety net to help prevent accidentally adding dynamic labels that may significantly increase cardinality, 
+  thus having a performance impact on your Loki instance. See the 
   [Loki label best practices](https://grafana.com/docs/loki/latest/best-practices/current-best-practices/) page for 
   additional details on the types of labels you may want to associate with log streams.
 
 The following settings can be optionally configured:
+
+- `tenant_id` (no default): The tenant ID used to identify the tenant the logs are associated to. This will set the 
+  "X-Scope-OrgID" header used by Loki. If left unset, this header will not be added.
+
 
 - `insecure` (default = false): When set to true disables verifying the server's certificate chain and host name. The
   connection is still encrypted but server identity is not verified.
@@ -35,20 +38,24 @@ The following settings can be optionally configured:
 - `write_buffer_size` (default = 512 * 1024): WriteBufferSize for HTTP client.
 
 
-- `headers` (no default): Name/value pairs added to the HTTP request headers. Loki by default uses the "X-Scope-OrgID"
-  header to identify the tenant the log is associated to.
+- `headers` (no default): Name/value pairs added to the HTTP request headers.
 
 Example:
 
 ```yaml
 loki:
-  endpoint: https://loki.example.com:3100/loki/api/v1/push
-  attributes_for_labels:
-    - container.name
-    - k8s.cluster.name
-    - severity
+  endpoint: http://loki:3100/loki/api/v1/push
+  tenant_id: "example"
+  labels:
+    attributes:
+      # Allowing 'container.name' attribute and transform it to 'container_name', which is a valid Loki label name.
+      container.name: "container_name"
+      # Allowing 'k8s.cluster.name' attribute and transform it to 'k8s_cluster_name', which is a valid Loki label name.
+      k8s.cluster.name: "k8s_cluster_name"
+      # Allowing 'severity' attribute and not providing a mapping, since the attribute name is a valid Loki label name.
+      severity: ""
   headers:
-    "X-Scope-OrgID": "example"
+    "X-Custom-Header": "loki_rocks"
 ```
 
 The full list of settings exposed for this exporter are documented [here](./config.go) with detailed sample

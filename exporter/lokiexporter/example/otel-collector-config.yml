@@ -1,0 +1,34 @@
+receivers:
+  fluentforward:
+    endpoint: 0.0.0.0:24224
+
+processors:
+  batch:
+    send_batch_size: 50
+    timeout: 5s
+  memory_limiter:
+    ballast_size_mib: 2000
+    check_interval: 1s
+    limit_percentage: 50
+    spike_limit_percentage: 30
+
+exporters:
+  loki:
+    endpoint: "http://loki:3100/loki/api/v1/push"
+    labels:
+      attributes:
+        container_name: ""
+        source: ""
+
+extensions:
+  health_check:
+  pprof:
+  zpages:
+
+service:
+  extensions: [pprof, zpages, health_check]
+  pipelines:
+    logs:
+      receivers: [ fluentforward ]
+      processors: [ memory_limiter, batch ]
+      exporters: [ loki ]

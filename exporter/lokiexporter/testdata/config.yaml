@@ -7,12 +7,15 @@ processors:
 exporters:
   loki:
     endpoint: "https://loki:3100/loki/api/v1/push"
-    attributes_for_labels:
-      - container.name
-      - k8s.cluster.name
-      - severity
+    tenant_id: "example"
+    labels:
+      attributes:
+        container.name: "container_name"
+        k8s.cluster.name: "k8s_cluster_name"
+        severity: "severity"
   loki/allsettings:
     endpoint: "https://loki:3100/loki/api/v1/push"
+    tenant_id: "example"
     insecure: true
     ca_file: /var/lib/mycert.pem
     cert_file: certfile
@@ -30,11 +33,12 @@ exporters:
       max_interval: 60s
       max_elapsed_time: 10m
     headers:
-      "X-Scope-OrgID": "example"
-    attributes_for_labels:
-      - container.name
-      - k8s.cluster.name
-      - severity
+      "X-Custom-Header": "loki_rocks"
+    labels:
+      attributes:
+        container.name: "container_name"
+        k8s.cluster.name: "k8s_cluster_name"
+        severity: "severity"
 service:
   pipelines:
     metrics:
