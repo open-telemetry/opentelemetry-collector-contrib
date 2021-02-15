@@ -51,11 +51,9 @@ func createDefaultConfig() *FileLogConfig {
 				TypeVal: configmodels.Type(typeStr),
 				NameVal: typeStr,
 			},
-			Parsers: stanzareceiver.ParserConfigs{},
+			Operators: stanzareceiver.OperatorConfigs{},
 		},
-		Input: stanzareceiver.InputConfig{
-			"type": "file_input",
-		},
+		Input: stanzareceiver.InputConfig{},
 	}
 }
 

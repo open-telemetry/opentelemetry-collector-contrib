@@ -55,12 +55,12 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 		}
 
 		baseCfg := logReceiverType.BaseConfig(cfg)
-		parserCfgs, err := baseCfg.decodeParserConfigs()
+		operatorCfgs, err := baseCfg.decodeOperatorConfigs()
 		if err != nil {
 			return nil, err
 		}
 
-		pipeline := append([]operator.Config{*inputCfg}, parserCfgs...)
+		pipeline := append([]operator.Config{*inputCfg}, operatorCfgs...)
 
 		emitter := NewLogEmitter(params.Logger.Sugar())
 		logAgent, err := agent.NewBuilder(params.Logger.Sugar()).

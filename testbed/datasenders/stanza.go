@@ -119,7 +119,7 @@ func (f *FileLogWriter) GenConfigYAMLStr() string {
   filelog:
     include: [ %s ]
     start_at: beginning
-    parsers:
+    operators:
       - type: regex_parser
         regex: '^(?P<time>\d{4}-\d{2}-\d{2}) (?P<sev>[A-Z0-9]*) (?P<msg>.*)$'
         timestamp:

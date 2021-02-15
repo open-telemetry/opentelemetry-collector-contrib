@@ -23,33 +23,33 @@ import (
 // BaseConfig is the common configuration of a stanza-based receiver
 type BaseConfig struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
-	Parsers                       ParserConfigs `mapstructure:"parsers"`
+	Operators                     OperatorConfigs `mapstructure:"operators"`
 }
 
-// ParserConfigs is an alias that allows for unmarshaling outside of mapstructure
+// OperatorConfigs is an alias that allows for unmarshaling outside of mapstructure
 // Stanza operators should will be migrated to mapstructure for greater compatibility
 // but this allows a temporary solution
-type ParserConfigs []map[string]interface{}
+type OperatorConfigs []map[string]interface{}
 
 // InputConfig is an alias that allows unmarshaling outside of mapstructure
 // This is meant to be used only for the input operator
 type InputConfig map[string]interface{}
 
-// decodeParserConfigs is an unmarshaling workaround for stanza operators
+// decodeOperatorConfigs is an unmarshaling workaround for stanza operators
 // This is needed only until stanza operators are migrated to mapstructure
-func (cfg BaseConfig) decodeParserConfigs() ([]operator.Config, error) {
-	if len(cfg.Parsers) == 0 {
+func (cfg BaseConfig) decodeOperatorConfigs() ([]operator.Config, error) {
+	if len(cfg.Operators) == 0 {
 		return []operator.Config{}, nil
 	}
 
-	yamlBytes, err := yaml.Marshal(cfg.Parsers)
+	yamlBytes, err := yaml.Marshal(cfg.Operators)
 	if err != nil {
 		return nil, err
 	}
 
-	parserCfgs := []operator.Config{}
-	if err := yaml.Unmarshal(yamlBytes, &parserCfgs); err != nil {
+	operatorCfgs := []operator.Config{}
+	if err := yaml.Unmarshal(yamlBytes, &operatorCfgs); err != nil {
 		return nil, err
 	}
-	return parserCfgs, nil
+	return operatorCfgs, nil
 }

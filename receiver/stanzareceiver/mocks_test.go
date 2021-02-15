@@ -107,7 +107,7 @@ func (f TestReceiverType) CreateDefaultConfig() configmodels.Receiver {
 				TypeVal: configmodels.Type(testType),
 				NameVal: testType,
 			},
-			Parsers: ParserConfigs{},
+			Operators: OperatorConfigs{},
 		},
 		Input: InputConfig{},
 	}

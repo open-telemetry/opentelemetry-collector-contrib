@@ -31,7 +31,7 @@ func TestCreateReceiver(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		factory := NewFactory(TestReceiverType{})
 		cfg := factory.CreateDefaultConfig().(*TestConfig)
-		cfg.Parsers = []map[string]interface{}{
+		cfg.Operators = []map[string]interface{}{
 			{
 				"type": "json_parser",
 			},
@@ -52,10 +52,10 @@ func TestCreateReceiver(t *testing.T) {
 		require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
 	})
 
-	t.Run("DecodeParserConfigsFailureMissingFields", func(t *testing.T) {
+	t.Run("DecodeOperatorConfigsFailureMissingFields", func(t *testing.T) {
 		factory := NewFactory(TestReceiverType{})
 		badCfg := factory.CreateDefaultConfig().(*TestConfig)
-		badCfg.Parsers = []map[string]interface{}{
+		badCfg.Operators = []map[string]interface{}{
 			{
 				"badparam": "badvalue",
 			},

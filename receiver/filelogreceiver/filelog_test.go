@@ -258,7 +258,7 @@ func testdataConfigYamlAsMap() *FileLogConfig {
 				TypeVal: "filelog",
 				NameVal: "filelog",
 			},
-			Parsers: stanzareceiver.ParserConfigs{
+			Operators: stanzareceiver.OperatorConfigs{
 				map[string]interface{}{
 					"type":  "regex_parser",
 					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
@@ -273,7 +273,6 @@ func testdataConfigYamlAsMap() *FileLogConfig {
 			},
 		},
 		Input: stanzareceiver.InputConfig{
-			"type": "file_input",
 			"include": []interface{}{
 				"testdata/simple.log",
 			},
@@ -289,7 +288,7 @@ func testdataRotateTestYamlAsMap(tempDir string) *FileLogConfig {
 				TypeVal: "filelog",
 				NameVal: "filelog",
 			},
-			Parsers: stanzareceiver.ParserConfigs{
+			Operators: stanzareceiver.OperatorConfigs{
 				map[string]interface{}{
 					"type":  "regex_parser",
 					"regex": "^(?P<ts>\\d{4}-\\d{2}-\\d{2}) (?P<msg>[^\n]+)",
