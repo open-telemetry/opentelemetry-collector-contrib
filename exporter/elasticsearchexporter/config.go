@@ -167,6 +167,12 @@ const (
 	MappingECS
 )
 
+var (
+	errConfigNoEndpoint    = errors.New("endpoints or cloudid must be specified")
+	errConfigEmptyEndpoint = errors.New("endpoints must not include empty entries")
+	errConfigNoIndex       = errors.New("index must be specified")
+)
+
 func (m MappingMode) String() string {
 	switch m {
 	case MappingNone:
@@ -200,18 +206,18 @@ const defaultElasticsearchEnvName = "ELASTICSEARCH_URL"
 func (cfg *Config) Validate() error {
 	if len(cfg.Endpoints) == 0 && cfg.CloudID == "" {
 		if os.Getenv(defaultElasticsearchEnvName) == "" {
-			return errors.New("endpoints or cloudid must be specified")
+			return errConfigNoEndpoint
 		}
 	}
 
 	for _, endpoint := range cfg.Endpoints {
 		if endpoint == "" {
-			return errors.New("endpoints must not include empty entries")
+			return errConfigEmptyEndpoint
 		}
 	}
 
 	if cfg.Index == "" {
-		return errors.New("index must be specified")
+		return errConfigNoIndex
 	}
 
 	if _, ok := mappingModes[cfg.Mapping.Mode]; !ok {

@@ -15,10 +15,14 @@
 package elasticsearchexporter
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
+	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -28,4 +32,30 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
-// TODO: add more tests once exporter is functional
+func TestFactory_CreateLogsExporter(t *testing.T) {
+	factory := NewFactory()
+	cfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoints = []string{"test:9200"}
+	})
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exporter)
+	exporter.Shutdown(context.TODO())
+}
+
+func TestFactory_CreateMetricsExporter_Fail(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	_, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	require.Error(t, err, "expected an error when creating a traces exporter")
+}
+
+func TestFactory_CreateTracesExporter_Fail(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	_, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	require.Error(t, err, "expected an error when creating a traces exporter")
+}

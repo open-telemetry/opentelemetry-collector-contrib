@@ -80,3 +80,11 @@ func TestLoadConfig(t *testing.T) {
 		},
 	})
 }
+
+func withDefaultConfig(fn func(*Config)) *Config {
+	cfg := createDefaultConfig().(*Config)
+	if fn != nil {
+		fn(cfg)
+	}
+	return cfg
+}
