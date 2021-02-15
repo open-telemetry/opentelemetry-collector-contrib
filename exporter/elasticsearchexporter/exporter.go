@@ -103,16 +103,13 @@ func (*clientLogger) ResponseBodyEnabled() bool {
 	return false
 }
 
-func newElasticsearchClient(logger *zap.Logger, config *Config) (*elasticsearch7.Client, error) {
+func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurrent, error) {
 	tlsCfg, err := config.TLSClientSetting.LoadTLSConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	transport, err := newElasticsearchTransport(config, tlsCfg)
-	if err != nil {
-		return nil, err
-	}
+	transport := newTransport(config, tlsCfg)
 
 	var headers http.Header
 	for k, v := range config.Headers {
@@ -123,7 +120,7 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*elasticsearch7
 	//  - try to parse address and validate scheme (address must be a valid URL)
 	//  - check if cloud ID is valid
 
-	return elasticsearch7.NewClient(elasticsearch7.Config{
+	return elasticsearch7.NewClient(esConfigCurrent{
 		Transport: transport,
 
 		// configure connection setup
@@ -152,7 +149,7 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*elasticsearch7
 	})
 }
 
-func newElasticsearchTransport(config *Config, tlsCfg *tls.Config) (*http.Transport, error) {
+func newTransport(config *Config, tlsCfg *tls.Config) *http.Transport {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	if tlsCfg != nil {
 		transport.TLSClientConfig = tlsCfg
@@ -164,7 +161,7 @@ func newElasticsearchTransport(config *Config, tlsCfg *tls.Config) (*http.Transp
 		transport.WriteBufferSize = config.WriteBufferSize
 	}
 
-	return transport, nil
+	return transport
 }
 
 func newBulkIndexer(client *elasticsearch7.Client, config *Config) (esBulkIndexerCurrent, error) {

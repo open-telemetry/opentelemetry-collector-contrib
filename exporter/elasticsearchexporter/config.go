@@ -99,7 +99,7 @@ type AuthenticationSettings struct {
 }
 
 // DiscoverySettings defines Elasticsearch node discovery related settings.
-// The exporter will check Elasticsearch regularily for available nodes
+// The exporter will check Elasticsearch regularly for available nodes
 // and updates the list of hosts if discovery is enabled. Newly discovered
 // nodes will automatically be used for load balancing.
 //
