@@ -200,7 +200,7 @@ const defaultElasticsearchEnvName = "ELASTICSEARCH_URL"
 func (cfg *Config) Validate() error {
 	if len(cfg.Endpoints) == 0 && cfg.CloudID == "" {
 		if os.Getenv(defaultElasticsearchEnvName) == "" {
-			return errors.New("Elasticsearch endpoints or cloudid must be specified")
+			return errors.New("endpoints or cloudid must be specified")
 		}
 	}
 
@@ -211,7 +211,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.Index == "" {
-		return errors.New("Elasticsearch Index must be specified")
+		return errors.New("index must be specified")
 	}
 
 	if _, ok := mappingModes[cfg.Mapping.Mode]; !ok {

@@ -27,8 +27,6 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "elasticsearch"
-
-	mappingFieldName = "mapping"
 )
 
 // NewFactory creates a factory for Elastic exporter.
