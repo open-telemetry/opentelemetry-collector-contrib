@@ -114,7 +114,10 @@ func TestExporter_New(t *testing.T) {
 
 			exporter, err := newExporter(zap.NewNop(), test.config)
 			if exporter != nil {
-				defer exporter.Shutdown(context.TODO())
+				defer func() {
+					err := exporter.Shutdown(context.TODO())
+					require.NoError(t, err)
+				}()
 			}
 
 			test.want(t, exporter, err)

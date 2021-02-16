@@ -41,7 +41,9 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
-	exporter.Shutdown(context.TODO())
+
+	err = exporter.Shutdown(context.TODO())
+	require.NoError(t, err)
 }
 
 func TestFactory_CreateMetricsExporter_Fail(t *testing.T) {
