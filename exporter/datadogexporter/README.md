@@ -2,6 +2,11 @@
 
 This exporter sends metric and trace data to [Datadog](https://datadoghq.com).
 
+> Please review the Collector's [security
+> documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
+> which contains recommendations on securing sensitive information such as the
+> API key required by this exporter.
+
 ## Configuration
 
 The only required setting is a [Datadog API key](https://app.datadoghq.com/account/settings#api).
