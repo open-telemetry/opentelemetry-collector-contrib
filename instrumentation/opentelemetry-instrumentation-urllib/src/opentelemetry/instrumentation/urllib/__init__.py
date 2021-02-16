@@ -43,14 +43,15 @@ from urllib.request import (  # pylint: disable=no-name-in-module,import-error
     Request,
 )
 
-from opentelemetry import context, propagators
+from opentelemetry import context
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.urllib.version import (  # pylint: disable=no-name-in-module,import-error
     __version__,
 )
 from opentelemetry.instrumentation.utils import http_status_to_status_code
+from opentelemetry.propagate import inject
 from opentelemetry.trace import SpanKind, get_tracer
-from opentelemetry.trace.status import Status, StatusCode
+from opentelemetry.trace.status import Status
 
 # A key to a context variable to avoid creating duplicate spans when instrumenting
 _SUPPRESS_URLLIB_INSTRUMENTATION_KEY = "suppress_urllib_instrumentation"
@@ -150,7 +151,7 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
                 span.set_attribute("http.url", url)
 
             headers = get_or_create_headers()
-            propagators.inject(type(headers).__setitem__, headers)
+            inject(type(headers).__setitem__, headers)
 
             token = context.attach(
                 context.set_value(_SUPPRESS_URLLIB_INSTRUMENTATION_KEY, True)

@@ -46,17 +46,13 @@ environment variable or by passing the prefix as an argument to the instrumentor
     ElasticsearchInstrumentor("my-custom-prefix").instrument()
 """
 
-import functools
-import types
 from logging import getLogger
 from os import environ
 
 import elasticsearch
 import elasticsearch.exceptions
-from wrapt import ObjectProxy
 from wrapt import wrap_function_wrapper as _wrap
 
-from opentelemetry import context, propagators, trace
 from opentelemetry.instrumentation.elasticsearch.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import unwrap

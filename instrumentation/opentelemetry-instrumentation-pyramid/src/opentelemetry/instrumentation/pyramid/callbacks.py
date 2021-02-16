@@ -6,8 +6,9 @@ from pyramid.settings import asbool
 from pyramid.tweens import EXCVIEW
 
 import opentelemetry.instrumentation.wsgi as otel_wsgi
-from opentelemetry import context, propagators, trace
+from opentelemetry import context, trace
 from opentelemetry.instrumentation.pyramid.version import __version__
+from opentelemetry.propagate import extract
 from opentelemetry.util.http import get_excluded_urls
 from opentelemetry.util.providers import time_ns
 
@@ -63,9 +64,7 @@ def _before_traversal(event):
 
     start_time = request_environ.get(_ENVIRON_STARTTIME_KEY)
 
-    token = context.attach(
-        propagators.extract(otel_wsgi.carrier_getter, request_environ)
-    )
+    token = context.attach(extract(otel_wsgi.carrier_getter, request_environ))
     tracer = trace.get_tracer(__name__, __version__)
 
     if request.matched_route:

@@ -58,9 +58,10 @@ import functools
 import typing
 import wsgiref.util as wsgiref_util
 
-from opentelemetry import context, propagators, trace
+from opentelemetry import context, trace
 from opentelemetry.instrumentation.utils import http_status_to_status_code
 from opentelemetry.instrumentation.wsgi.version import __version__
+from opentelemetry.propagate import extract
 from opentelemetry.trace.propagation.textmap import DictGetter
 from opentelemetry.trace.status import Status, StatusCode
 
@@ -207,7 +208,7 @@ class OpenTelemetryMiddleware:
             start_response: The WSGI start_response callable.
         """
 
-        token = context.attach(propagators.extract(carrier_getter, environ))
+        token = context.attach(extract(carrier_getter, environ))
         span_name = self.name_callback(environ)
 
         span = self.tracer.start_span(

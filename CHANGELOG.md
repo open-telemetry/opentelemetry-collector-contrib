@@ -6,7 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python-contrib/compare/v0.17b0...HEAD)
 
-### Changed
+### Added
+- `opentelemetry-propagator-ot-trace` Add OT Trace Propagator
+  ([#302](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/302))
+
+### Removed
 - Remove `component` span attribute in instrumentations. 
   `opentelemetry-instrumentation-aiopg`, `opentelemetry-instrumentation-dbapi` Remove unused `database_type` parameter from `trace_integration` function.
   ([#301](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/301))

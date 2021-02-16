@@ -2,8 +2,9 @@ import functools
 
 from tornado.httpclient import HTTPError, HTTPRequest
 
-from opentelemetry import propagators, trace
+from opentelemetry import trace
 from opentelemetry.instrumentation.utils import http_status_to_status_code
+from opentelemetry.propagate import inject
 from opentelemetry.trace.status import Status
 from opentelemetry.util.providers import time_ns
 
@@ -50,7 +51,7 @@ def fetch_async(tracer, func, _, args, kwargs):
             span.set_attribute(key, value)
 
     with tracer.use_span(span):
-        propagators.inject(type(request.headers).__setitem__, request.headers)
+        inject(type(request.headers).__setitem__, request.headers)
         future = func(*args, **kwargs)
         future.add_done_callback(
             functools.partial(_finish_tracing_callback, span=span)

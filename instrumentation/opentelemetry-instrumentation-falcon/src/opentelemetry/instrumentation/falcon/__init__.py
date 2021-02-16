@@ -49,13 +49,14 @@ from sys import exc_info
 import falcon
 
 import opentelemetry.instrumentation.wsgi as otel_wsgi
-from opentelemetry import context, propagators, trace
+from opentelemetry import context, trace
 from opentelemetry.instrumentation.falcon.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import (
     extract_attributes_from_object,
     http_status_to_status_code,
 )
+from opentelemetry.propagate import extract
 from opentelemetry.trace.status import Status
 from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
 from opentelemetry.util.providers import time_ns
@@ -108,9 +109,7 @@ class _InstrumentedFalconAPI(falcon.API):
 
         start_time = time_ns()
 
-        token = context.attach(
-            propagators.extract(otel_wsgi.carrier_getter, env)
-        )
+        token = context.attach(extract(otel_wsgi.carrier_getter, env))
         span = self._tracer.start_span(
             otel_wsgi.get_default_span_name(env),
             kind=trace.SpanKind.SERVER,

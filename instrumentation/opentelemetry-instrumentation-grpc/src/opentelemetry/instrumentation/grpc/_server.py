@@ -26,8 +26,9 @@ from contextlib import contextmanager
 
 import grpc
 
-from opentelemetry import propagators, trace
+from opentelemetry import trace
 from opentelemetry.context import attach, detach
+from opentelemetry.propagate import extract
 from opentelemetry.trace.propagation.textmap import DictGetter
 from opentelemetry.trace.status import Status, StatusCode
 
@@ -181,7 +182,7 @@ class OpenTelemetryServerInterceptor(grpc.ServerInterceptor):
         metadata = servicer_context.invocation_metadata()
         if metadata:
             md_dict = {md.key: md.value for md in metadata}
-            ctx = propagators.extract(self._carrier_getter, md_dict)
+            ctx = extract(self._carrier_getter, md_dict)
             token = attach(ctx)
             try:
                 yield

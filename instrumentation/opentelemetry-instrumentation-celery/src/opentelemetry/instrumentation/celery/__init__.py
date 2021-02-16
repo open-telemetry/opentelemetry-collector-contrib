@@ -52,15 +52,15 @@ API
 """
 
 import logging
-import signal
 from collections.abc import Iterable
 
 from celery import signals  # pylint: disable=no-name-in-module
 
-from opentelemetry import propagators, trace
+from opentelemetry import trace
 from opentelemetry.instrumentation.celery import utils
 from opentelemetry.instrumentation.celery.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
+from opentelemetry.propagate import extract, inject
 from opentelemetry.trace.propagation.textmap import DictGetter
 from opentelemetry.trace.status import Status, StatusCode
 
@@ -128,7 +128,7 @@ class CeleryInstrumentor(BaseInstrumentor):
             return
 
         request = task.request
-        tracectx = propagators.extract(carrier_getter, request) or None
+        tracectx = extract(carrier_getter, request) or None
 
         logger.debug("prerun signal start task_id=%s", task_id)
 
@@ -192,7 +192,7 @@ class CeleryInstrumentor(BaseInstrumentor):
 
         headers = kwargs.get("headers")
         if headers:
-            propagators.inject(type(headers).__setitem__, headers)
+            inject(type(headers).__setitem__, headers)
 
     @staticmethod
     def _trace_after_publish(*args, **kwargs):

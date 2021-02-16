@@ -25,9 +25,10 @@ from typing import Tuple
 
 from asgiref.compatibility import guarantee_single_callable
 
-from opentelemetry import context, propagators, trace
+from opentelemetry import context, trace
 from opentelemetry.instrumentation.asgi.version import __version__  # noqa
 from opentelemetry.instrumentation.utils import http_status_to_status_code
+from opentelemetry.propagate import extract
 from opentelemetry.trace.propagation.textmap import DictGetter
 from opentelemetry.trace.status import Status, StatusCode
 
@@ -185,7 +186,7 @@ class OpenTelemetryMiddleware:
         if self.excluded_urls and self.excluded_urls.url_disabled(url):
             return await self.app(scope, receive, send)
 
-        token = context.attach(propagators.extract(carrier_getter, scope))
+        token = context.attach(extract(carrier_getter, scope))
         span_name, additional_attributes = self.span_details_callback(scope)
 
         try:

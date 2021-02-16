@@ -34,7 +34,8 @@ a distributed trace.
 
 .. code:: python
 
-    from opentelemetry import propagators, trace
+    from opentelemetry.propagate import set_global_textmap
+    from opentelemetry import trace
     from opentelemetry.exporter.datadog import DatadogExportSpanProcessor, DatadogSpanExporter
     from opentelemetry.exporter.datadog.propagator import DatadogFormat
     from opentelemetry.sdk.trace import TracerProvider
@@ -50,7 +51,7 @@ a distributed trace.
     trace.get_tracer_provider().add_span_processor(span_processor)
 
     # Optional: use Datadog format for propagation in distributed traces
-    propagators.set_global_textmap(DatadogFormat())
+    set_global_textmap(DatadogFormat())
 
     with tracer.start_as_current_span("foo"):
         print("Hello world!")

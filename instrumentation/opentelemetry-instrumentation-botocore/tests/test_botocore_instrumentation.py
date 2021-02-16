@@ -28,10 +28,10 @@ from moto import (  # pylint: disable=import-error
     mock_xray,
 )
 
-from opentelemetry import propagators
 from opentelemetry import trace as trace_api
 from opentelemetry.context import attach, detach, set_value
 from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
+from opentelemetry.propagate import get_global_textmap, set_global_textmap
 from opentelemetry.test.mock_textmap import MockTextMapPropagator
 from opentelemetry.test.test_base import TestBase
 
@@ -381,14 +381,14 @@ class TestBotocoreInstrumentor(TestBase):
     @mock_ec2
     def test_propagator_injects_into_request(self):
         headers = {}
-        previous_propagator = propagators.get_global_textmap()
+        previous_propagator = get_global_textmap()
 
         def check_headers(**kwargs):
             nonlocal headers
             headers = kwargs["request"].headers
 
         try:
-            propagators.set_global_textmap(MockTextMapPropagator())
+            set_global_textmap(MockTextMapPropagator())
 
             ec2 = self.session.create_client("ec2", region_name="us-west-2")
             ec2.meta.events.register_first(
@@ -424,7 +424,7 @@ class TestBotocoreInstrumentor(TestBase):
             )
 
         finally:
-            propagators.set_global_textmap(previous_propagator)
+            set_global_textmap(previous_propagator)
 
     @mock_xray
     def test_suppress_instrumentation_xray_client(self):

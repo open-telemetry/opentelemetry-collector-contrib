@@ -24,9 +24,10 @@ from typing import MutableMapping
 
 import grpc
 
-from opentelemetry import propagators, trace
+from opentelemetry import trace
 from opentelemetry.instrumentation.grpc import grpcext
 from opentelemetry.instrumentation.grpc._utilities import RpcInfo
+from opentelemetry.propagate import inject
 from opentelemetry.trace.status import Status, StatusCode
 
 
@@ -59,7 +60,7 @@ def _inject_span_context(metadata: MutableMapping[str, str]) -> None:
         metadata[key] = value
 
     # Inject current active span from the context
-    propagators.inject(append_metadata, metadata)
+    inject(append_metadata, metadata)
 
 
 def _make_future_done_callback(span, rpc_info):

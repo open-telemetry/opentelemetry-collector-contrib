@@ -23,7 +23,7 @@ from opentelemetry.instrumentation.wsgi import (
     carrier_getter,
     collect_request_attributes,
 )
-from opentelemetry.propagators import extract
+from opentelemetry.propagate import extract
 from opentelemetry.trace import SpanKind, get_tracer
 from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
 
