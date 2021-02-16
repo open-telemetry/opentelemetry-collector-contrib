@@ -63,7 +63,7 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
 
 ### Node Discovery
 
-The Elasticsearch Exporter will check Elasticsearch regularily for available
+The Elasticsearch Exporter will check Elasticsearch regularly for available
 nodes and updates the list of hosts if discovery is enabled. Newly discovered
 nodes will automatically be used for load balancing.
 
