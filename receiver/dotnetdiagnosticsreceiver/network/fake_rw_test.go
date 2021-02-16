@@ -15,6 +15,7 @@
 package network
 
 import (
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -66,4 +67,37 @@ func TestNewDefaultFakeRW(t *testing.T) {
 	_, err := rw.Read(p)
 	require.NoError(t, err)
 	require.Equal(t, "magic", string(p))
+}
+
+func TestBlobReader(t *testing.T) {
+	data, err := ReadBlobData(path.Join("..", "testdata"), 2)
+	require.NoError(t, err)
+	r := NewBlobReader(data)
+	p := make([]byte, 6)
+	_, err = r.Read(p)
+	require.NoError(t, err)
+	assert.Equal(t, "DOTNET", string(p))
+	_, _ = r.Write([]byte("GOLANG"))
+	assert.Equal(t, "GOLANG", string(r.WriteBuf))
+	r.SetReadError(0)
+	_, err = r.Read(p)
+	require.Error(t, err)
+}
+
+func TestBlobReader_MultiChunkRead(t *testing.T) {
+	data, err := ReadBlobData(path.Join("..", "testdata"), 2)
+	require.NoError(t, err)
+	r := NewBlobReader(data)
+	bigSlice := make([]byte, len(data[0])+len(data[1]))
+	_, err = r.Read(bigSlice)
+	require.NoError(t, err)
+	go func() {
+		_, err = r.Read(bigSlice)
+	}()
+	<-r.Done()
+}
+
+func TestReadBlobData_ReadErr(t *testing.T) {
+	_, err := ReadBlobData(path.Join("foo", "bar"), 2)
+	require.Error(t, err)
 }
