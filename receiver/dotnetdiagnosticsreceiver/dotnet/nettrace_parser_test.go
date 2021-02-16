@@ -31,7 +31,7 @@ func TestParseNettrace(t *testing.T) {
 			2: []byte(nettraceSerialization),
 		},
 	}
-	r := network.NewMultiReader(rw)
+	r := network.NewMultiReader(rw, &network.NopBlobWriter{})
 	err := parseNettrace(r)
 	require.NoError(t, err)
 }
@@ -43,7 +43,7 @@ func TestParseNettrace_BadHeaderName(t *testing.T) {
 			0: []byte("nettrace"),
 		},
 	}
-	r := network.NewMultiReader(rw)
+	r := network.NewMultiReader(rw, &network.NopBlobWriter{})
 	err := parseNettrace(r)
 	require.EqualError(t, err, `header name: expected "Nettrace" got "nettrace"`)
 }
@@ -58,7 +58,7 @@ func TestParseNettrace_BadSerializationName(t *testing.T) {
 			2: []byte(serType),
 		},
 	}
-	r := network.NewMultiReader(rw)
+	r := network.NewMultiReader(rw, &network.NopBlobWriter{})
 	err := parseNettrace(r)
 	require.EqualError(t, err, `serialization type: expected "!FastSerialization.1" got "foo"`)
 }
@@ -74,6 +74,6 @@ func testParseNettraceReadErr(i int) error {
 	rw := &network.FakeRW{
 		ReadErrIdx: i,
 	}
-	r := network.NewMultiReader(rw)
+	r := network.NewMultiReader(rw, &network.NopBlobWriter{})
 	return parseNettrace(r)
 }

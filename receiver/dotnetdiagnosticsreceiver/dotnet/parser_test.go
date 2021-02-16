@@ -36,7 +36,12 @@ func TestParser(t *testing.T) {
 			8: []byte(fastSerialization),
 		},
 	}
-	p := NewParser(rw, zap.NewNop())
+	p := NewParser(
+		rw,
+		func(metrics []Metric) {},
+		&network.NopBlobWriter{},
+		zap.NewNop(),
+	)
 	err := p.ParseIPC()
 	require.NoError(t, err)
 	err = p.ParseNettrace()
@@ -47,7 +52,7 @@ func TestParser_TestData(t *testing.T) {
 	data, err := network.ReadBlobData(path.Join("..", "testdata"), 16)
 	require.NoError(t, err)
 	rw := network.NewBlobReader(data)
-	parser := NewParser(rw, zap.NewNop())
+	parser := NewParser(rw, func([]Metric) {}, &network.NopBlobWriter{}, zap.NewNop())
 	err = parser.ParseIPC()
 	require.NoError(t, err)
 	err = parser.ParseNettrace()
@@ -85,7 +90,7 @@ func testParseBlockError(t *testing.T, data [][]byte, offset, errIdx int) {
 
 func testParseBlock(t *testing.T, data [][]byte, offset, errIdx int) error {
 	rw := network.NewBlobReader(data)
-	reader := network.NewMultiReader(rw)
+	reader := network.NewMultiReader(rw, &network.NopBlobWriter{})
 	err := reader.Seek(offset)
 	require.NoError(t, err)
 	rw.SetReadError(errIdx)

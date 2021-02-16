@@ -28,7 +28,7 @@ func TestParseSerializationType(t *testing.T) {
 	data, err := network.ReadBlobData(path.Join("..", "testdata"), 1)
 	require.NoError(t, err)
 	rw := network.NewBlobReader(data)
-	reader := network.NewMultiReader(rw)
+	reader := network.NewMultiReader(rw, &network.NopBlobWriter{})
 	err = reader.Seek(61)
 	require.NoError(t, err)
 	st, err := parseSerializationType(reader)
@@ -48,7 +48,7 @@ func TestParseSerializationType_Error(t *testing.T) {
 
 func testParseSerializationTypeErr(t *testing.T, data [][]byte, i int) {
 	rw := network.NewBlobReader(data)
-	reader := network.NewMultiReader(rw)
+	reader := network.NewMultiReader(rw, &network.NopBlobWriter{})
 	// metadata block is 61 bytes in
 	err := reader.Seek(61)
 	require.NoError(t, err)

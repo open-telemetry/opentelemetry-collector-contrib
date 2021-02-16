@@ -27,14 +27,15 @@ import (
 // Parser encapsulates all of the functionality to parse an IPC stream.
 type Parser struct {
 	r      network.MultiReader
+	mc     func([]Metric)
 	logger *zap.Logger
 }
 
 // NewParser accepts an io.Reader and logger returns a Parser for processing an
 // IPC stream.
-func NewParser(rdr io.Reader, logger *zap.Logger) *Parser {
-	r := network.NewMultiReader(rdr)
-	return &Parser{r: r, logger: logger}
+func NewParser(rdr io.Reader, mc func([]Metric), bw network.BlobWriter, logger *zap.Logger) *Parser {
+	r := network.NewMultiReader(rdr, bw)
+	return &Parser{r: r, mc: mc, logger: logger}
 }
 
 // ParseIPC parses the IPC response from the initial request to a dotnet process.
@@ -58,6 +59,8 @@ func (p *Parser) ParseAll(ctx context.Context) error {
 			return nil
 		default:
 			err = p.parseBlock(fms)
+			// flush regardless of error
+			p.r.Flush()
 			if err != nil {
 				return err
 			}

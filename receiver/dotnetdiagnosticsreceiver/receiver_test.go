@@ -43,6 +43,7 @@ func TestReceiver(t *testing.T) {
 		nil,
 		1,
 		zap.NewNop(),
+		&network.NopBlobWriter{},
 	)
 	require.NoError(t, err)
 	err = r.Start(ctx, componenttest.NewNopHost())
@@ -77,6 +78,7 @@ func testErrOnReceiverStart(t *testing.T, connect func() (io.ReadWriter, error),
 		nil,
 		1,
 		zap.NewNop(),
+		&network.NopBlobWriter{},
 	)
 	require.NoError(t, err)
 	err = r.Start(ctx, componenttest.NewNopHost())
@@ -103,6 +105,7 @@ func testReceiverReadErr(i int) error {
 		nil,
 		1,
 		zap.NewNop(),
+		&network.NopBlobWriter{},
 	)
 	return r.Start(ctx, componenttest.NewNopHost())
 }

@@ -36,4 +36,7 @@ type Config struct {
 	// be displayed by the `dotnet-counters` tool:
 	// https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-counters
 	Counters []string `mapstructure:"counters"`
+
+	BlobDir      string `mapstructure:"blob_dir"`
+	MaxBlobFiles int    `mapstructure:"max_blob_files"`
 }
