@@ -6,6 +6,11 @@ This enables Dynatrace to receive metrics collected by the OpenTelemetry Collect
 
 The requests sent to Dynatrace are authenticated using an API token mechanism documented [here](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/).
 
+> Please review the Collector's [security
+> documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
+> which contains recommendations on securing sensitive information such as the
+> API key required by this exporter.
+
 ## Configuration
 
 A Dynatrace API Token and metrics ingest endpoint are required.
