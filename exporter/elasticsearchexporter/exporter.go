@@ -22,10 +22,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/cenkalti/backoff"
 	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
 	esutil7 "github.com/elastic/go-elasticsearch/v7/esutil"
-
-	"github.com/cenkalti/backoff"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
