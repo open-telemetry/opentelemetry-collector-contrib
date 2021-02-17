@@ -134,7 +134,7 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 		RetryOnStatus:        retryOnStatus,
 		DisableRetry:         false,
 		EnableRetryOnTimeout: true,
-		MaxRetries:           config.Retry.Max,
+		MaxRetries:           config.Retry.MaxRequests,
 		RetryBackoff:         createElasticsearchBackoffFunc(&config.Retry),
 
 		// configure sniffing
@@ -166,7 +166,7 @@ func newTransport(config *Config, tlsCfg *tls.Config) *http.Transport {
 func newBulkIndexer(client *elasticsearch7.Client, config *Config) (esBulkIndexerCurrent, error) {
 	// TODO: add debug logger
 	return esutil7.NewBulkIndexer(esutil7.BulkIndexerConfig{
-		NumWorkers:    config.Workers,
+		NumWorkers:    config.NumWorkers,
 		FlushBytes:    config.Flush.Bytes,
 		FlushInterval: config.Flush.Interval,
 		Client:        client,

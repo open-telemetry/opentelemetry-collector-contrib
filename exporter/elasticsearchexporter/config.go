@@ -41,8 +41,8 @@ type Config struct {
 	// This setting is required if no URL is configured.
 	CloudID string `mapstructure:"cloudid"`
 
-	// Workers configures the number of workers publishing bulk requests.
-	Workers int `mapstructure:"workers"`
+	// NumWorkers configures the number of workers publishing bulk requests.
+	NumWorkers int `mapstructure:"num_workers"`
 
 	// Index configures the index, index alias, or data stream name events should be indexed in.
 	//
@@ -134,8 +134,8 @@ type RetrySettings struct {
 	// Enabled allows users to disable retry without having to comment out all settings.
 	Enabled bool `mapstructure:"enabled"`
 
-	// Max configures how often an HTTP request is retried before it is assumed to be failed.
-	Max int `mapstructure:"max"`
+	// MaxRequests configures how often an HTTP request is retried before it is assumed to be failed.
+	MaxRequests int `mapstructure:"max_requests"`
 
 	// InitialInterval configures the initial waiting time if a request failed.
 	InitialInterval time.Duration `mapstructure:"initial_interval"`

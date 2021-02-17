@@ -10,7 +10,7 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
   [ID](https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html) of the
   Elastic Cloud Cluster to publish events to. The `cloudid` can be used instead
   of `endpoints`.
-- `workers` (optional): Number of workers publishing bulk requests concurrently.
+- `nuym_workers` (optional): Number of workers publishing bulk requests concurrently.
 - `index`: The
   [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
   or [datastream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
@@ -23,7 +23,7 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
 - `retry`: Event retry settings
   - `enabled` (default=true): Enable/Disable event retry on error. Retry
     support is enabled by default.
-  - `max` (default=3): Number of HTTP retry attempts.
+  - `max_requests` (default=3): Number of HTTP request retries.
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
 - `mapping`: Events are encoded to JSON. The `mapping` allows users to

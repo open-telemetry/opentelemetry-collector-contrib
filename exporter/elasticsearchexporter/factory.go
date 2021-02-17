@@ -50,7 +50,7 @@ func createDefaultConfig() configmodels.Exporter {
 		Index: "logs-generic-default",
 		Retry: RetrySettings{
 			Enabled:         true,
-			Max:             3,
+			MaxRequests:     3,
 			InitialInterval: 100 * time.Millisecond,
 			MaxInterval:     1 * time.Minute,
 		},

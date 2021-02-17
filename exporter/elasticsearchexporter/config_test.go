@@ -69,7 +69,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		Retry: RetrySettings{
 			Enabled:         true,
-			Max:             5,
+			MaxRequests:             5,
 			InitialInterval: 100 * time.Millisecond,
 			MaxInterval:     1 * time.Minute,
 		},
