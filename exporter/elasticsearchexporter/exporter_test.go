@@ -62,7 +62,7 @@ func TestExporter_New(t *testing.T) {
 		"create from default config with ELASTICSEARCH_URL environment variable": {
 			config: withDefaultConfig(nil),
 			want:   success,
-			env:    map[string]string{"ELASTICSEARCH_URL": "localhost:9200"},
+			env:    map[string]string{defaultElasticsearchEnvName: "localhost:9200"},
 		},
 		"create from default with endpoints": {
 			config: withDefaultConfig(func(cfg *Config) {
@@ -95,7 +95,7 @@ func TestExporter_New(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			env := test.env
 			if len(env) == 0 {
-				env = map[string]string{"ELASTICSEARCH_URL": ""}
+				env = map[string]string{defaultElasticsearchEnvName: ""}
 			}
 
 			oldEnv := make(map[string]string, len(env))
