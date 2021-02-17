@@ -53,7 +53,7 @@ func TestLog10kDPS(t *testing.T) {
 			},
 		},
 		{
-			name:     "Stanza",
+			name:     "filelog",
 			sender:   datasenders.NewFileLogWriter(),
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{

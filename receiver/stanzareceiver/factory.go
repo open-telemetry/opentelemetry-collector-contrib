@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/agent"
-	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
@@ -29,7 +29,8 @@ import (
 type LogReceiverType interface {
 	Type() configmodels.Type
 	CreateDefaultConfig() configmodels.Receiver
-	Decode(configmodels.Receiver) (pipeline.Config, error)
+	BaseConfig(configmodels.Receiver) BaseConfig
+	DecodeInputConfig(configmodels.Receiver) (*operator.Config, error)
 }
 
 // NewFactory creates a factory for a Stanza-based receiver
@@ -48,10 +49,18 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 		cfg configmodels.Receiver,
 		nextConsumer consumer.LogsConsumer,
 	) (component.LogsReceiver, error) {
-		pipeline, err := logReceiverType.Decode(cfg)
+		inputCfg, err := logReceiverType.DecodeInputConfig(cfg)
 		if err != nil {
 			return nil, err
 		}
+
+		baseCfg := logReceiverType.BaseConfig(cfg)
+		operatorCfgs, err := baseCfg.decodeOperatorConfigs()
+		if err != nil {
+			return nil, err
+		}
+
+		pipeline := append([]operator.Config{*inputCfg}, operatorCfgs...)
 
 		emitter := NewLogEmitter(params.Logger.Sugar())
 		logAgent, err := agent.NewBuilder(params.Logger.Sugar()).

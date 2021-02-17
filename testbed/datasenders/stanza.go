@@ -117,10 +117,9 @@ func (f *FileLogWriter) GenConfigYAMLStr() string {
 	// We are testing stanza receiver here.
 	return fmt.Sprintf(`
   filelog:
+    include: [ %s ]
+    start_at: beginning
     operators:
-      - type: file_input
-        include: [ %s ]
-        start_at: beginning
       - type: regex_parser
         regex: '^(?P<time>\d{4}-\d{2}-\d{2}) (?P<sev>[A-Z0-9]*) (?P<msg>.*)$'
         timestamp:
@@ -128,8 +127,7 @@ func (f *FileLogWriter) GenConfigYAMLStr() string {
           layout: '%%Y-%%m-%%d'
         severity:
           parse_from: sev
-`,
-		f.file.Name())
+`, f.file.Name())
 }
 
 func (f *FileLogWriter) ProtocolName() string {

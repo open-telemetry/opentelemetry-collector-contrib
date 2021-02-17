@@ -20,8 +20,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/noop"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
-	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
@@ -88,28 +88,46 @@ func (m *mockLogsRejecter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error
 	return fmt.Errorf("no")
 }
 
-const mockType = "mock"
+const testType = "test"
 
 type TestConfig struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
-	Operators                     OperatorConfig `mapstructure:"operators"`
+	BaseConfig `mapstructure:",squash"`
+	Input      InputConfig `mapstructure:",remain"`
 }
 type TestReceiverType struct{}
 
 func (f TestReceiverType) Type() configmodels.Type {
-	return configmodels.Type(mockType)
+	return configmodels.Type(testType)
 }
 
 func (f TestReceiverType) CreateDefaultConfig() configmodels.Receiver {
 	return &TestConfig{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: configmodels.Type(mockType),
-			NameVal: mockType,
+		BaseConfig: BaseConfig{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: configmodels.Type(testType),
+				NameVal: testType,
+			},
+			Operators: OperatorConfigs{},
 		},
+		Input: InputConfig{},
 	}
 }
 
-func (f TestReceiverType) Decode(cfg configmodels.Receiver) (pipeline.Config, error) {
-	logConfig := cfg.(*TestConfig)
-	return DecodeOperators(logConfig.Operators)
+func (f TestReceiverType) BaseConfig(cfg configmodels.Receiver) BaseConfig {
+	return cfg.(*TestConfig).BaseConfig
+}
+
+func (f TestReceiverType) DecodeInputConfig(cfg configmodels.Receiver) (*operator.Config, error) {
+	testConfig := cfg.(*TestConfig)
+
+	// Allow tests to run without implementing input config
+	if testConfig.Input["type"] == nil {
+		return &operator.Config{Builder: noop.NewNoopOperatorConfig("nop")}, nil
+	}
+
+	// Allow tests to explicitly prompt a failure
+	if testConfig.Input["type"] == "unknown" {
+		return nil, fmt.Errorf("Unknown input type")
+	}
+	return &operator.Config{Builder: NewUnstartableConfig()}, nil
 }
