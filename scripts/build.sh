@@ -16,7 +16,7 @@ DISTDIR=dist
   mkdir -p $DISTDIR
   rm -rf $DISTDIR/*
 
- for d in exporter/*/ instrumentation/*/ sdk-extension/*/ ; do
+ for d in exporter/*/ instrumentation/*/ sdk-extension/*/ util/*/ ; do
    (
      echo "building $d"
      cd "$d"
