@@ -17,7 +17,7 @@ package metadata
 // MetadataExporter provides an interface to implement
 // ConsumeMetadata in Exporters that support metadata.
 // Type, functionality, and interface not guaranteed to be stable or permanent.
-type MetadataExporter interface {
+type MetadataExporter interface { //nolint
 	// ConsumeMetadata will be invoked every time there's an
 	// update to a resource that results in one or more MetadataUpdate.
 	ConsumeMetadata(metadata []*MetadataUpdate) error
@@ -43,7 +43,7 @@ type ResourceID string
 // Apart from Kubernetes labels, the other metadata collected by this
 // receiver are also handled in the same manner.
 // Type, functionality, and fields not guaranteed to be stable or permanent.
-type MetadataDelta struct {
+type MetadataDelta struct { //nolint
 	// MetadataToAdd contains key-value pairs that are newly added to
 	// the resource description in the current revision.
 	MetadataToAdd map[string]string
@@ -58,7 +58,7 @@ type MetadataDelta struct {
 // MetadataUpdate provides a delta view of metadata on a resource between
 // two revisions of a resource.
 // Type, functionality, and fields not guaranteed to be stable or permanent.
-type MetadataUpdate struct {
+type MetadataUpdate struct { //nolint
 	// ResourceIDKey is the label key of UID label for the resource.
 	ResourceIDKey string
 	// ResourceID is the Kubernetes UID of the resource. In case of
