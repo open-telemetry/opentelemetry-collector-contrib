@@ -82,7 +82,7 @@ func TestExporter_New(t *testing.T) {
 			}),
 			want: failWithMessage("cannot parse CloudID"),
 		},
-		"fail it endpoint and cloudid are set": {
+		"fail if endpoint and cloudid are set": {
 			config: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoints = []string{"test:9200"}
 				cfg.CloudID = "foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY="
