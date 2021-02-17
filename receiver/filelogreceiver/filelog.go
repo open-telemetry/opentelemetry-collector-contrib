@@ -71,11 +71,7 @@ type FileLogConfig struct {
 // DecodeInputConfig unmarshals the input operator
 func (f ReceiverType) DecodeInputConfig(cfg configmodels.Receiver) (*operator.Config, error) {
 	logConfig := cfg.(*FileLogConfig)
-	yamlBytes, err := yaml.Marshal(logConfig.Input)
-	if err != nil {
-		return nil, err
-	}
-
+	yamlBytes, _ := yaml.Marshal(logConfig.Input)
 	inputCfg := file.NewInputConfig("file_input")
 	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
 		return nil, err
