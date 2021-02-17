@@ -48,16 +48,23 @@ func createDefaultConfig() configmodels.Exporter {
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			WriteBufferSize: 512 * 1024,
 		},
-		RetrySettings:       exporterhelper.DefaultRetrySettings(),
-		QueueSettings:       exporterhelper.DefaultQueueSettings(),
-		AttributesForLabels: []string{},
+		RetrySettings: exporterhelper.DefaultRetrySettings(),
+		QueueSettings: exporterhelper.DefaultQueueSettings(),
+		TenantID:      "",
+		Labels: LabelsConfig{
+			Attributes: map[string]string{},
+		},
 	}
 }
 
 func createLogsExporter(_ context.Context, params component.ExporterCreateParams, config configmodels.Exporter) (component.LogsExporter, error) {
 	expCfg := config.(*Config)
 
-	exp, err := newExporter(expCfg)
+	if err := expCfg.validate(); err != nil {
+		return nil, err
+	}
+
+	exp, err := newExporter(expCfg, params.Logger)
 	if err != nil {
 		return nil, err
 	}

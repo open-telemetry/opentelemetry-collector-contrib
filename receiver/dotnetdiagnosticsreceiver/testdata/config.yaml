@@ -1,0 +1,18 @@
+receivers:
+  dotnet_diagnostics:
+    pid: 1234
+    collection_interval: 2s
+    counters: [ "Foo", "Bar" ]
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [ dotnet_diagnostics ]
+      processors: [ exampleprocessor ]
+      exporters: [ exampleexporter ]
