@@ -1,0 +1,62 @@
+version: "3"
+
+networks:
+  loki:
+
+services:
+  otel-collector:
+#    build:
+#      context: ../../..
+#      dockerfile: exporter/lokiexporter/example/Dockerfile
+    image: otelcontribcol:latest
+    container_name: otel
+    command: ["--config=/etc/otel-collector-config.yml"]
+    volumes:
+      - ./otel-collector-config.yml:/etc/otel-collector-config.yml
+    ports:
+      - "1888:1888"   # pprof extension
+      - "8888:8888"   # Prometheus metrics exposed by the collector
+      - "13133:13133" # health_check extension
+      - "55680:55679" # zpages extension
+      - "24224:24224" # fluentforwarder
+      - "24224:24224/udp" # fluentforwarder
+    depends_on:
+      - loki
+    networks:
+      - loki
+
+  loki:
+    image: grafana/loki:2.1.0
+    container_name: loki
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - 3100:3100
+    networks:
+      - loki
+
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - ./grafana.ini:/etc/grafana/grafana.ini
+      - ./datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
+    ports:
+      - "3000:3000"
+    networks:
+      - loki
+
+  # Log generator
+  flog:
+    image: mingrammer/flog:0.4.3
+    # Output 1 log per second in JSON format
+    command: ["--format=json", "--loop", "--delay=1s", "--number=1"]
+    networks:
+      - loki
+    depends_on:
+      - otel-collector
+    logging:
+      driver: fluentd
+      options:
+        # Allow time for otel-collector to spin up, then forward fluentd logs to the fluentforwarder receiver.
+        fluentd-async-connect: "true"
+        # Use nanosecond precision
+        fluentd-sub-second-precision: "true"

@@ -6,6 +6,11 @@ and some useful related utilities can be found [here](https://github.com/signalf
 
 Supported pipeline types: traces
 
+> Please review the Collector's [security
+> documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
+> which contains recommendations on securing sensitive information such as the
+> API key required by this exporter.
+
 ## Configuration
 
 The following configuration options are required:
