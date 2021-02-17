@@ -15,26 +15,37 @@
 package stanzareceiver
 
 import (
-	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
+	"go.opentelemetry.io/collector/config/configmodels"
 	"gopkg.in/yaml.v2"
 )
 
-// OperatorConfig is an alias that allows for unmarshaling outside of mapstructure
+// BaseConfig is the common configuration of a stanza-based receiver
+type BaseConfig struct {
+	configmodels.ReceiverSettings `mapstructure:",squash"`
+	Operators                     OperatorConfigs `mapstructure:"operators"`
+}
+
+// OperatorConfigs is an alias that allows for unmarshaling outside of mapstructure
 // Stanza operators should will be migrated to mapstructure for greater compatibility
 // but this allows a temporary solution
-type OperatorConfig []map[string]interface{}
+type OperatorConfigs []map[string]interface{}
 
-// DecodeOperators is an unmarshaling workaround for stanza operators
+// InputConfig is an alias that allows unmarshaling outside of mapstructure
+// This is meant to be used only for the input operator
+type InputConfig map[string]interface{}
+
+// decodeOperatorConfigs is an unmarshaling workaround for stanza operators
 // This is needed only until stanza operators are migrated to mapstructure
-func DecodeOperators(cfg OperatorConfig) (pipeline.Config, error) {
-	yamlBytes, err := yaml.Marshal(cfg)
-	if err != nil {
-		return nil, err
+func (cfg BaseConfig) decodeOperatorConfigs() ([]operator.Config, error) {
+	if len(cfg.Operators) == 0 {
+		return []operator.Config{}, nil
 	}
 
-	var pipelineCfg pipeline.Config
-	if err := yaml.Unmarshal(yamlBytes, &pipelineCfg); err != nil {
+	yamlBytes, _ := yaml.Marshal(cfg.Operators)
+	operatorCfgs := []operator.Config{}
+	if err := yaml.Unmarshal(yamlBytes, &operatorCfgs); err != nil {
 		return nil, err
 	}
-	return pipelineCfg, nil
+	return operatorCfgs, nil
 }

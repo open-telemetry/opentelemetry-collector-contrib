@@ -44,10 +44,9 @@ It can also be easily configured to tail and parse any structured or unstructure
 Receiver Configuration
 ```yaml
 receivers:
-  stanza:
-    operators:
-      - type: file_input
-        include: [ /var/log/myservice/*.json ]
+  filelog:
+    include: [ /var/log/myservice/*.json ]
+    parsers:    
       - type: json_parser
         timestamp:
           parse_from: time

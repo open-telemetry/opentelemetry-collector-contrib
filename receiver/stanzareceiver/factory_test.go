@@ -30,12 +30,29 @@ func TestCreateReceiver(t *testing.T) {
 
 	t.Run("Success", func(t *testing.T) {
 		factory := NewFactory(TestReceiverType{})
-		receiver, err := factory.CreateLogsReceiver(context.Background(), params, factory.CreateDefaultConfig(), &mockLogsConsumer{})
+		cfg := factory.CreateDefaultConfig().(*TestConfig)
+		cfg.Operators = []map[string]interface{}{
+			{
+				"type": "json_parser",
+			},
+		}
+		receiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, &mockLogsConsumer{})
 		require.NoError(t, err, "receiver creation failed")
 		require.NotNil(t, receiver, "receiver creation failed")
 	})
 
-	t.Run("DecodeOperatorsFailure", func(t *testing.T) {
+	t.Run("DecodeInputConfigFailure", func(t *testing.T) {
+		factory := NewFactory(TestReceiverType{})
+		badCfg := factory.CreateDefaultConfig().(*TestConfig)
+		badCfg.Input = map[string]interface{}{
+			"type": "unknown",
+		}
+		receiver, err := factory.CreateLogsReceiver(context.Background(), params, badCfg, &mockLogsConsumer{})
+		require.Error(t, err, "receiver creation should fail if input config isn't valid")
+		require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
+	})
+
+	t.Run("DecodeOperatorConfigsFailureMissingFields", func(t *testing.T) {
 		factory := NewFactory(TestReceiverType{})
 		badCfg := factory.CreateDefaultConfig().(*TestConfig)
 		badCfg.Operators = []map[string]interface{}{
@@ -44,7 +61,7 @@ func TestCreateReceiver(t *testing.T) {
 			},
 		}
 		receiver, err := factory.CreateLogsReceiver(context.Background(), params, badCfg, &mockLogsConsumer{})
-		require.Error(t, err, "receiver creation should fail if operator configs aren't valid")
-		require.Nil(t, receiver, "receiver creation should fail if operator configs aren't valid")
+		require.Error(t, err, "receiver creation should fail if parser configs aren't valid")
+		require.Nil(t, receiver, "receiver creation should fail if parser configs aren't valid")
 	})
 }
