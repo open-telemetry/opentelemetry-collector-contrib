@@ -67,10 +67,21 @@ func Test_getGenericMetadata(t *testing.T) {
 	}, rm.metadata)
 }
 
-func TestGetPropertiesDelta(t *testing.T) {
+func metadataMap(mdata map[string]string) map[metadata.ResourceID]*KubernetesMetadata {
+	rid := metadata.ResourceID("resource_id")
+	return map[metadata.ResourceID]*KubernetesMetadata{
+		rid: {
+			resourceIDKey: "resource_id",
+			resourceID:    rid,
+			metadata:      mdata,
+		},
+	}
+}
+
+func TestGetMetadataUpdate(t *testing.T) {
 	type args struct {
-		oldProps map[string]string
-		newProps map[string]string
+		oldMdata map[metadata.ResourceID]*KubernetesMetadata
+		newMdata map[metadata.ResourceID]*KubernetesMetadata
 	}
 	tests := []struct {
 		name          string
@@ -80,10 +91,10 @@ func TestGetPropertiesDelta(t *testing.T) {
 		{
 			"Add to new",
 			args{
-				oldProps: map[string]string{},
-				newProps: map[string]string{
+				oldMdata: metadataMap(map[string]string{}),
+				newMdata: metadataMap(map[string]string{
 					"foo": "bar",
-				},
+				}),
 			},
 			&metadata.MetadataDelta{
 				MetadataToAdd: map[string]string{
@@ -96,13 +107,13 @@ func TestGetPropertiesDelta(t *testing.T) {
 		{
 			"Add to existing",
 			args{
-				oldProps: map[string]string{
+				oldMdata: metadataMap(map[string]string{
 					"oldfoo": "bar",
-				},
-				newProps: map[string]string{
+				}),
+				newMdata: metadataMap(map[string]string{
 					"oldfoo": "bar",
 					"foo":    "bar",
-				},
+				}),
 			},
 			&metadata.MetadataDelta{
 				MetadataToAdd: map[string]string{
@@ -115,12 +126,12 @@ func TestGetPropertiesDelta(t *testing.T) {
 		{
 			"Modify existing",
 			args{
-				oldProps: map[string]string{
+				oldMdata: metadataMap(map[string]string{
 					"foo": "bar",
-				},
-				newProps: map[string]string{
+				}),
+				newMdata: metadataMap(map[string]string{
 					"foo": "newbar",
-				},
+				}),
 			},
 			&metadata.MetadataDelta{
 				MetadataToAdd:    map[string]string{},
@@ -133,13 +144,13 @@ func TestGetPropertiesDelta(t *testing.T) {
 		{
 			"Remove existing",
 			args{
-				oldProps: map[string]string{
+				oldMdata: metadataMap(map[string]string{
 					"foo":  "bar",
 					"foo1": "bar1",
-				},
-				newProps: map[string]string{
+				}),
+				newMdata: metadataMap(map[string]string{
 					"foo1": "bar1",
-				},
+				}),
 			},
 			&metadata.MetadataDelta{
 				MetadataToAdd: map[string]string{},
@@ -152,19 +163,19 @@ func TestGetPropertiesDelta(t *testing.T) {
 		{
 			"Properties with empty values",
 			args{
-				oldProps: map[string]string{
+				oldMdata: metadataMap(map[string]string{
 					"foo":         "bar",
 					"foo2":        "bar2",
 					"service_abc": "",
 					"admin":       "",
 					"test":        "",
-				},
-				newProps: map[string]string{
+				}),
+				newMdata: metadataMap(map[string]string{
 					"foo":         "bar2",
 					"foo1":        "bar1",
 					"service_def": "",
 					"test":        "",
-				},
+				}),
 			},
 			&metadata.MetadataDelta{
 				MetadataToAdd: map[string]string{
@@ -184,22 +195,43 @@ func TestGetPropertiesDelta(t *testing.T) {
 		{
 			"No update",
 			args{
-				oldProps: map[string]string{
+				oldMdata: metadataMap(map[string]string{
 					"foo":  "bar",
 					"foo1": "bar1",
-				},
-				newProps: map[string]string{
+				}),
+				newMdata: metadataMap(map[string]string{
 					"foo":  "bar",
 					"foo1": "bar1",
-				},
+				}),
 			},
 			nil,
+		},
+		{
+			"New metadata",
+			args{
+				oldMdata: map[metadata.ResourceID]*KubernetesMetadata{},
+				newMdata: metadataMap(map[string]string{
+					"foo": "bar",
+				}),
+			},
+			&metadata.MetadataDelta{
+				MetadataToAdd: map[string]string{
+					"foo": "bar",
+				},
+				MetadataToRemove: nil,
+				MetadataToUpdate: nil,
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			delta := getMetadataDelta(tt.args.oldProps, tt.args.newProps)
-			require.Equal(t, tt.metadataDelta, delta)
+			delta := GetMetadataUpdate(tt.args.oldMdata, tt.args.newMdata)
+			if tt.metadataDelta != nil {
+				require.Equal(t, 1, len(delta))
+				require.Equal(t, *tt.metadataDelta, delta[0].MetadataDelta)
+			} else {
+				require.Zero(t, len(delta))
+			}
 		})
 	}
 }
