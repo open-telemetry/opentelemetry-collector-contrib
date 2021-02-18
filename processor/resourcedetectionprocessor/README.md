@@ -78,10 +78,20 @@ ec2:
     * service.instance.id
     * service.version
     
+* Azure: Queries the [Azure Instance Metadata Service](https://aka.ms/azureimds) to retrieve the following resource attributes:
+
+    * cloud.provider (azure)
+    * cloud.region
+    * cloud.account.id (subscription ID)
+    * host.id (virtual machine ID)
+    * host.name
+    * azure.vm.size (virtual machine size)
+    * azure.resourcegroup.name (resource group name)
+
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system",  "gce", "ec2", "ecs", "elastic_beanstalk"
+# a list of resource detectors to run, valid options are: "env", "system",  "gce", "ec2", "ecs", "elastic_beanstalk", "azure"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
