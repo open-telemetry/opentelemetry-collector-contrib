@@ -57,10 +57,10 @@ func TestConfig(t *testing.T) {
 		requestRundown:         false,
 		providers:              []provider{p},
 	}
-	payload, l, err := config.serialize(&bytes.Buffer{})
+	payload, err := config.serialize(&bytes.Buffer{})
 	require.NoError(t, err)
 	assert.NotNil(t, payload)
-	assert.Equal(t, 115, l)
+	assert.Equal(t, 115, len(payload))
 }
 
 func TestRequestHeader_Serialize(t *testing.T) {
@@ -77,9 +77,9 @@ func TestRequestHeader_Serialize(t *testing.T) {
 func TestSessionCfg(t *testing.T) {
 	req := newConfigRequest(42, "foo")
 	buf := &bytes.Buffer{}
-	_, n, err := req.serialize(buf)
+	payload, err := req.serialize(buf)
 	require.NoError(t, err)
-	require.Equal(t, 95, n)
+	require.Equal(t, 95, len(payload))
 }
 
 func TestRequestWriter_Send(t *testing.T) {

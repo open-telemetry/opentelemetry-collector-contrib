@@ -54,7 +54,7 @@ const collectTracing2CommandID = 3
 
 func (w *RequestWriter) createRequest() ([]byte, error) {
 	cfgReq := newConfigRequest(w.intervalSec, w.names...)
-	payload, payloadSize, err := cfgReq.serialize(w.buf)
+	payload, err := cfgReq.serialize(w.buf)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func (w *RequestWriter) createRequest() ([]byte, error) {
 		commandSet: eventPipeCommand,
 		commandID:  collectTracing2CommandID,
 	}
-	hdrBytes, err := hdr.serialize(w.buf, payloadSize)
+	hdrBytes, err := hdr.serialize(w.buf, len(payload))
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,9 @@ func (h requestHeader) serialize(buf network.ByteBuffer, payloadSize int) ([]byt
 		return nil, err
 	}
 
-	return buf.Bytes(), nil
+	out := make([]byte, buf.Len())
+	copy(out, buf.Bytes())
+	return out, nil
 }
 
 // configRequest
@@ -123,36 +125,39 @@ func newConfigRequest(intervalSec int, names ...string) configRequest {
 	}
 }
 
-func (c configRequest) serialize(buf network.ByteBuffer) ([]byte, int, error) {
+func (c configRequest) serialize(buf network.ByteBuffer) ([]byte, error) {
 	buf.Reset()
 	err := binary.Write(buf, network.ByteOrder, c.circularBufferSizeInMB)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	err = binary.Write(buf, network.ByteOrder, c.format)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	err = binary.Write(buf, network.ByteOrder, c.requestRundown)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	size := int32(len(c.providers))
 	err = binary.Write(buf, network.ByteOrder, size)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	for _, p := range c.providers {
 		err = p.serialize(buf)
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 	}
-	return buf.Bytes(), buf.Len(), nil
+
+	out := make([]byte, buf.Len())
+	copy(out, buf.Bytes())
+	return out, nil
 }
 
 // provider
