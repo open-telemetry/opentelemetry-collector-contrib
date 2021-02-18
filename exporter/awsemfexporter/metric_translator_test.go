@@ -540,7 +540,7 @@ func assertCwStatsEqual(t *testing.T, expected, actual *CWMetricStats) {
 	assert.Equal(t, expected.Sum, actual.Sum)
 }
 
-func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
+func TestTranslateOTelToCWMetricWithInstrLibrary(t *testing.T) {
 	config := &Config{
 		Namespace:             "",
 		DimensionRollupOption: zeroAndSingleDimensionRollup,
@@ -551,7 +551,7 @@ func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 	ilms := rm.InstrumentationLibraryMetrics()
 	ilm := ilms.At(0)
 	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
-	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, config)
+	cwm, totalDroppedMetrics := translateOTelToCWMetric(&rm, config)
 	assert.Equal(t, 0, totalDroppedMetrics)
 	assert.NotNil(t, cwm)
 	assert.Equal(t, 6, len(cwm))
@@ -600,7 +600,7 @@ func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 	ilms = rm.InstrumentationLibraryMetrics()
 	ilm = ilms.At(0)
 	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
-	cwm, totalDroppedMetrics = TranslateOtToCWMetric(&rm, config)
+	cwm, totalDroppedMetrics = translateOTelToCWMetric(&rm, config)
 	assert.Equal(t, 0, totalDroppedMetrics)
 	assert.NotNil(t, cwm)
 	assert.Equal(t, 6, len(cwm))
@@ -610,7 +610,7 @@ func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 	assert.True(t, 0.1-cwm[2].Fields["spanDoubleCounter"].(float64) < 0.001)
 }
 
-func TestTranslateOtToCWMetricWithoutInstrLibrary(t *testing.T) {
+func TestTranslateOTelToCWMetricWithoutInstrLibrary(t *testing.T) {
 	config := &Config{
 		Namespace:             "",
 		DimensionRollupOption: zeroAndSingleDimensionRollup,
@@ -618,7 +618,7 @@ func TestTranslateOtToCWMetricWithoutInstrLibrary(t *testing.T) {
 	}
 	md := createMetricTestData()
 	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
-	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, config)
+	cwm, totalDroppedMetrics := translateOTelToCWMetric(&rm, config)
 	assert.Equal(t, 0, totalDroppedMetrics)
 	assert.NotNil(t, cwm)
 	assert.Equal(t, 6, len(cwm))
@@ -664,7 +664,7 @@ func TestTranslateOtToCWMetricWithoutInstrLibrary(t *testing.T) {
 	time.Sleep(5 * time.Second)
 	md = createMetricTestDataSecondBatch()
 	rm = internaldata.OCToMetrics(md).ResourceMetrics().At(0)
-	cwm, totalDroppedMetrics = TranslateOtToCWMetric(&rm, config)
+	cwm, totalDroppedMetrics = translateOTelToCWMetric(&rm, config)
 	assert.Equal(t, 0, totalDroppedMetrics)
 	assert.NotNil(t, cwm)
 	assert.Equal(t, 6, len(cwm))
@@ -674,7 +674,7 @@ func TestTranslateOtToCWMetricWithoutInstrLibrary(t *testing.T) {
 	assert.True(t, 0.1-cwm[2].Fields["spanDoubleCounter"].(float64) < 0.001)
 }
 
-func TestTranslateOtToCWMetricWithNameSpace(t *testing.T) {
+func TestTranslateOTelToCWMetricWithNamespace(t *testing.T) {
 	config := &Config{
 		Namespace:             "",
 		DimensionRollupOption: zeroAndSingleDimensionRollup,
@@ -691,7 +691,7 @@ func TestTranslateOtToCWMetricWithNameSpace(t *testing.T) {
 		Metrics: []*metricspb.Metric{},
 	}
 	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
-	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, config)
+	cwm, totalDroppedMetrics := translateOTelToCWMetric(&rm, config)
 	assert.Equal(t, 0, totalDroppedMetrics)
 	assert.Nil(t, cwm)
 	assert.Equal(t, 0, len(cwm))
@@ -783,7 +783,7 @@ func TestTranslateOtToCWMetricWithNameSpace(t *testing.T) {
 		},
 	}
 	rm = internaldata.OCToMetrics(md).ResourceMetrics().At(0)
-	cwm, totalDroppedMetrics = TranslateOtToCWMetric(&rm, config)
+	cwm, totalDroppedMetrics = translateOTelToCWMetric(&rm, config)
 	assert.Equal(t, 0, totalDroppedMetrics)
 	assert.NotNil(t, cwm)
 	assert.Equal(t, 1, len(cwm))
@@ -792,7 +792,48 @@ func TestTranslateOtToCWMetricWithNameSpace(t *testing.T) {
 	assert.Equal(t, "myServiceNS", met.Measurements[0].Namespace)
 }
 
-func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
+func TestTranslateUnit(t *testing.T) {
+	metric := pdata.NewMetric()
+	metric.SetName("writeIfNotExist")
+
+	translator := &metricTranslator{
+		metricDescriptor: map[string]MetricDescriptor{
+			"writeIfNotExist": {
+				metricName: "writeIfNotExist",
+				unit:       "Count",
+				overwrite:  false,
+			},
+			"forceOverwrite": {
+				metricName: "forceOverwrite",
+				unit:       "Count",
+				overwrite:  true,
+			},
+		},
+	}
+
+	translateUnitCases := map[string]string{
+		"Count": "Count",
+		"ms":    "Milliseconds",
+		"s":     "Seconds",
+		"us":    "Microseconds",
+		"By":    "Bytes",
+		"Bi":    "Bits",
+	}
+	for input, output := range translateUnitCases {
+		t.Run(input, func(tt *testing.T) {
+			metric.SetUnit(input)
+
+			v := translator.translateUnit(&metric)
+			assert.Equal(t, output, v)
+		})
+	}
+
+	metric.SetName("forceOverwrite")
+	v := translator.translateUnit(&metric)
+	assert.Equal(t, "Count", v)
+}
+
+func TestTranslateOTelToCWMetricWithFiltering(t *testing.T) {
 	md := consumerdata.MetricsData{
 		Node: &commonpb.Node{
 			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
@@ -939,7 +980,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			err := m.Init(logger)
 			assert.Nil(t, err)
-			cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, config)
+			cwm, totalDroppedMetrics := translateOTelToCWMetric(&rm, config)
 			assert.Equal(t, 0, totalDroppedMetrics)
 			assert.Equal(t, 1, len(cwm))
 			assert.NotNil(t, cwm)
@@ -966,7 +1007,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 		}
 		err := m.Init(logger)
 		assert.Nil(t, err)
-		cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, config)
+		cwm, totalDroppedMetrics := translateOTelToCWMetric(&rm, config)
 		assert.Equal(t, 0, totalDroppedMetrics)
 		assert.Equal(t, 1, len(cwm))
 		assert.NotNil(t, cwm)
@@ -1003,7 +1044,7 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 		Measurements: []CwMeasurement{cwMeasurement},
 	}
 	logger := zap.NewNop()
-	inputLogEvent := TranslateCWMetricToEMF([]*CWMetrics{met}, logger)
+	inputLogEvent := translateCWMetricToEMF([]*CWMetrics{met}, logger)
 
 	assert.Equal(t, readFromFile("testdata/testTranslateCWMetricToEMF.json"), *inputLogEvent[0].InputLogEvent.Message, "Expect to be equal")
 }
@@ -1022,7 +1063,7 @@ func TestTranslateCWMetricToEMFNoMeasurements(t *testing.T) {
 	}
 	obs, logs := observer.New(zap.DebugLevel)
 	logger := zap.New(obs)
-	inputLogEvent := TranslateCWMetricToEMF([]*CWMetrics{met}, logger)
+	inputLogEvent := translateCWMetricToEMF([]*CWMetrics{met}, logger)
 	expected := "{\"OTelLib\":\"cloudwatch-otel\",\"spanCounter\":0,\"spanName\":\"test\"}"
 
 	assert.Equal(t, expected, *inputLogEvent[0].InputLogEvent.Message)
@@ -1044,6 +1085,13 @@ func TestGetCWMetrics(t *testing.T) {
 	config := &Config{
 		Namespace:             "",
 		DimensionRollupOption: "",
+		MetricDescriptors: []MetricDescriptor{
+			{
+				metricName: "foo",
+				unit:       "Count",
+				overwrite:  false,
+			},
+		},
 	}
 
 	testCases := []struct {
@@ -1655,6 +1703,8 @@ func TestGetCWMetrics(t *testing.T) {
 		InstrumentationLibraryName: "cloudwatch-otel",
 	}
 
+	translator := newMetricTranslator(*config)
+
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			oc := consumerdata.MetricsData{
@@ -1677,7 +1727,7 @@ func TestGetCWMetrics(t *testing.T) {
 			assert.Equal(t, 1, metrics.Len())
 			metric := metrics.At(0)
 
-			cwMetrics := getCWMetrics(&metric, metadata, instrumentationLibName, config)
+			cwMetrics := translator.getCWMetrics(&metric, metadata, instrumentationLibName, config)
 			assert.Equal(t, len(tc.expected), len(cwMetrics))
 
 			for i, expected := range tc.expected {
@@ -1704,7 +1754,7 @@ func TestGetCWMetrics(t *testing.T) {
 			logger:                zap.New(obs),
 		}
 
-		cwMetrics := getCWMetrics(&metric, metadata, instrumentationLibName, obsConfig)
+		cwMetrics := translator.getCWMetrics(&metric, metadata, instrumentationLibName, obsConfig)
 		assert.Nil(t, cwMetrics)
 
 		// Test output warning logs
@@ -1723,7 +1773,7 @@ func TestGetCWMetrics(t *testing.T) {
 	})
 
 	t.Run("Nil metric", func(t *testing.T) {
-		cwMetrics := getCWMetrics(nil, metadata, instrumentationLibName, config)
+		cwMetrics := translator.getCWMetrics(nil, metadata, instrumentationLibName, config)
 		assert.Nil(t, cwMetrics)
 	})
 }
@@ -2437,7 +2487,7 @@ func TestDimensionRollup(t *testing.T) {
 	}
 }
 
-func BenchmarkTranslateOtToCWMetricWithInstrLibrary(b *testing.B) {
+func BenchmarkTranslateOTelToCWMetricWithInstrLibrary(b *testing.B) {
 	md := createMetricTestData()
 	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
 	ilms := rm.InstrumentationLibraryMetrics()
@@ -2450,11 +2500,11 @@ func BenchmarkTranslateOtToCWMetricWithInstrLibrary(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		TranslateOtToCWMetric(&rm, config)
+		translateOTelToCWMetric(&rm, config)
 	}
 }
 
-func BenchmarkTranslateOtToCWMetricWithoutInstrLibrary(b *testing.B) {
+func BenchmarkTranslateOTelToCWMetricWithoutInstrLibrary(b *testing.B) {
 	md := createMetricTestData()
 	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
 	config := &Config{
@@ -2464,11 +2514,11 @@ func BenchmarkTranslateOtToCWMetricWithoutInstrLibrary(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		TranslateOtToCWMetric(&rm, config)
+		translateOTelToCWMetric(&rm, config)
 	}
 }
 
-func BenchmarkTranslateOtToCWMetricWithFiltering(b *testing.B) {
+func BenchmarkTranslateOTelToCWMetricWithFiltering(b *testing.B) {
 	md := createMetricTestData()
 	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
 	ilms := rm.InstrumentationLibraryMetrics()
@@ -2488,8 +2538,13 @@ func BenchmarkTranslateOtToCWMetricWithFiltering(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		TranslateOtToCWMetric(&rm, config)
+		translateOTelToCWMetric(&rm, config)
 	}
+}
+
+func translateOTelToCWMetric(rm *pdata.ResourceMetrics, config *Config) ([]*CWMetrics, int) {
+	translator := newMetricTranslator(*config)
+	return translator.translateOTelToCWMetric(rm, config)
 }
 
 func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
@@ -2516,7 +2571,7 @@ func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		TranslateCWMetricToEMF([]*CWMetrics{met}, logger)
+		translateCWMetricToEMF([]*CWMetrics{met}, logger)
 	}
 }
 

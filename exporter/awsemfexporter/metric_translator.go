@@ -67,8 +67,22 @@ type CWMetricMetadata struct {
 	InstrumentationLibraryName string
 }
 
-// TranslateOtToCWMetric converts OT metrics to CloudWatch Metric format
-func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, config *Config) ([]*CWMetrics, int) {
+type metricTranslator struct {
+	metricDescriptor map[string]MetricDescriptor
+}
+
+func newMetricTranslator(config Config) metricTranslator {
+	mt := map[string]MetricDescriptor{}
+	for _, descriptor := range config.MetricDescriptors {
+		mt[descriptor.metricName] = descriptor
+	}
+	return metricTranslator{
+		metricDescriptor: mt,
+	}
+}
+
+// translateOTelToCWMetric converts OT metrics to CloudWatch Metric format
+func (mt metricTranslator) translateOTelToCWMetric(rm *pdata.ResourceMetrics, config *Config) ([]*CWMetrics, int) {
 	var cwMetricList []*CWMetrics
 	var instrumentationLibName string
 
@@ -95,15 +109,15 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, config *Config) ([]*CWMetr
 				LogStream:                  logStream,
 				InstrumentationLibraryName: instrumentationLibName,
 			}
-			cwMetrics := getCWMetrics(&metric, metadata, instrumentationLibName, config)
+			cwMetrics := mt.getCWMetrics(&metric, metadata, instrumentationLibName, config)
 			cwMetricList = append(cwMetricList, cwMetrics...)
 		}
 	}
 	return cwMetricList, 0
 }
 
-// TranslateCWMetricToEMF converts CloudWatch Metric format to EMF.
-func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics, logger *zap.Logger) []*LogEvent {
+// translateCWMetricToEMF converts CloudWatch Metric format to EMF.
+func translateCWMetricToEMF(cwMetricLists []*CWMetrics, logger *zap.Logger) []*LogEvent {
 	// convert CWMetric into map format for compatible with PLE input
 	ples := make([]*LogEvent, 0, maximumLogEventsPerPut)
 	for _, met := range cwMetricLists {
@@ -137,7 +151,7 @@ func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics, logger *zap.Logger) []*L
 }
 
 // getCWMetrics translates OTLP Metric to a list of CW Metrics
-func getCWMetrics(metric *pdata.Metric, metadata CWMetricMetadata, instrumentationLibName string, config *Config) (cwMetrics []*CWMetrics) {
+func (mt metricTranslator) getCWMetrics(metric *pdata.Metric, metadata CWMetricMetadata, instrumentationLibName string, config *Config) (cwMetrics []*CWMetrics) {
 	if metric == nil {
 		return
 	}
@@ -150,7 +164,7 @@ func getCWMetrics(metric *pdata.Metric, metadata CWMetricMetadata, instrumentati
 	// metric measure data from OT
 	metricMeasure := make(map[string]string)
 	metricMeasure["Name"] = metric.Name()
-	metricMeasure["Unit"] = metric.Unit()
+	metricMeasure["Unit"] = mt.translateUnit(metric)
 	// metric measure slice could include multiple metric measures
 	metricSlice := []map[string]string{metricMeasure}
 
@@ -162,6 +176,28 @@ func getCWMetrics(metric *pdata.Metric, metadata CWMetricMetadata, instrumentati
 		}
 	}
 	return
+}
+
+func (mt metricTranslator) translateUnit(metric *pdata.Metric) string {
+	unit := metric.Unit()
+	if descriptor, exists := mt.metricDescriptor[metric.Name()]; exists {
+		if unit == "" || descriptor.overwrite {
+			return descriptor.unit
+		}
+	}
+	switch unit {
+	case "ms":
+		unit = "Milliseconds"
+	case "s":
+		unit = "Seconds"
+	case "us":
+		unit = "Microseconds"
+	case "By":
+		unit = "Bytes"
+	case "Bi":
+		unit = "Bits"
+	}
+	return unit
 }
 
 // buildCWMetric builds CWMetric from DataPoint
