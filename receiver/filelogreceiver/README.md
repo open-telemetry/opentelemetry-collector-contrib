@@ -1,23 +1,17 @@
 # README Status
 This readme is out of date and will be updated soon
 
-# Stanza Receiver
+# Filelog Receiver
 
-Tails and parses logs from a wide variety of sources using the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library.
+Tails and parses logs from a wide files using the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library.
 
 Supported pipeline types: logs
 
 > :construction: This receiver is in alpha and configuration fields are subject to change.
 
-## Input Sources
-
-Stanza supports pre-defined log sources for dozens of [specific technologies](https://github.com/observIQ/stanza-plugins/tree/master/plugins).
-
-It can also be easily configured to tail and parse any structured or unstructured log file, Windows Event Log, and journald. It can also receive arbitrary logs via TCP and UDP.
-
 ## Required Parameters
 
-- `operators` is an array of [operators](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/README.md#what-operators-are-available). Each operator performs a simple responsibility, such as reading from a file, or parsing JSON. Chain together operators to process logs into a desired format.
+- `operators` is an array of [operators](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/README.md#what-operators-are-available). Each operator performs a simple responsibility, such as parsing a timestamp or JSON. Chain together operators to process logs into a desired format.
 
 ## Optional Parameters
 
@@ -46,7 +40,7 @@ Receiver Configuration
 receivers:
   filelog:
     include: [ /var/log/myservice/*.json ]
-    parsers:    
+    operators:    
       - type: json_parser
         timestamp:
           parse_from: time
