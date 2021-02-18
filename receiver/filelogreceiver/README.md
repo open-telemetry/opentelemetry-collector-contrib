@@ -15,7 +15,7 @@ Supported pipeline types: logs
 | `include`              | required         | A list of file glob patterns that match the file paths to be read                                                  |
 | `exclude`              | []               | A list of file glob patterns to exclude from reading                                                               |
 | `start_at`             | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`                            |
-| `write_to`             | $                | The record [field](/docs/types/field.md) written to when creating a new log entry                                  |
+| `write_to`             | $record          | The record [field](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/types/field.md) written to when creating a new log entry                                  |
 | `multiline`            |                  | A `multiline` configuration block. See below for more details                                                      |
 | `encoding`             | `nop`            | The encoding of the file being read. See the list of supported encodings below for available options               |
 | `include_file_name`    | `true`           | Whether to add the file name as the label `file_name`                                                              |
@@ -37,6 +37,7 @@ Each operator performs a simple responsibility, such as parsing a timestamp or J
 - Every operator has a `type`.
 - Every operator can be given a unique `id`. If you use the same type of operator more than once in a pipeline, you must specify an `id`. Otherwise, the `id` defaults to the value of `type`.
 - Operators will output to the next operator in the pipeline. The last operator in the pipeline will emit from the receiver. Optionally, the `output` parameter can be used to specify the `id` of another operator to which logs will be passed directly.
+- Only parsers and general purpose operators should be used.
 
 ### Multiline configuration
 
