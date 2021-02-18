@@ -21,17 +21,17 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"gopkg.in/yaml.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stanzareceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 )
 
 const typeStr = "filelog"
 
 // NewFactory creates a factory for filelog receiver
 func NewFactory() component.ReceiverFactory {
-	return stanzareceiver.NewFactory(ReceiverType{})
+	return stanza.NewFactory(ReceiverType{})
 }
 
-// ReceiverType implements stanzareceiver.LogReceiverType
+// ReceiverType implements stanza.LogReceiverType
 // to create a file tailing receiver
 type ReceiverType struct{}
 
@@ -46,26 +46,26 @@ func (f ReceiverType) CreateDefaultConfig() configmodels.Receiver {
 }
 func createDefaultConfig() *FileLogConfig {
 	return &FileLogConfig{
-		BaseConfig: stanzareceiver.BaseConfig{
+		BaseConfig: stanza.BaseConfig{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: configmodels.Type(typeStr),
 				NameVal: typeStr,
 			},
-			Operators: stanzareceiver.OperatorConfigs{},
+			Operators: stanza.OperatorConfigs{},
 		},
-		Input: stanzareceiver.InputConfig{},
+		Input: stanza.InputConfig{},
 	}
 }
 
 // BaseConfig gets the base config from config, for now
-func (f ReceiverType) BaseConfig(cfg configmodels.Receiver) stanzareceiver.BaseConfig {
+func (f ReceiverType) BaseConfig(cfg configmodels.Receiver) stanza.BaseConfig {
 	return cfg.(*FileLogConfig).BaseConfig
 }
 
 // FileLogConfig defines configuration for the filelog receiver
 type FileLogConfig struct {
-	stanzareceiver.BaseConfig `mapstructure:",squash"`
-	Input                     stanzareceiver.InputConfig `mapstructure:",remain"`
+	stanza.BaseConfig `mapstructure:",squash"`
+	Input             stanza.InputConfig `mapstructure:",remain"`
 }
 
 // DecodeInputConfig unmarshals the input operator

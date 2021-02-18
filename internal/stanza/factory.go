@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stanzareceiver
+package stanza
 
 import (
 	"context"
@@ -71,7 +71,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 			return nil, err
 		}
 
-		return &stanzareceiver{
+		return &receiver{
 			agent:    logAgent,
 			emitter:  emitter,
 			consumer: nextConsumer,

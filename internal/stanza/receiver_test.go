@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stanzareceiver
+package stanza
 
 import (
 	"context"
@@ -41,15 +41,15 @@ func TestStart(t *testing.T) {
 
 	factory := NewFactory(TestReceiverType{})
 
-	receiver, err := factory.CreateLogsReceiver(context.Background(), params, factory.CreateDefaultConfig(), &mockConsumer)
+	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), params, factory.CreateDefaultConfig(), &mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
-	err = receiver.Start(context.Background(), componenttest.NewNopHost())
+	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "receiver start failed")
 
-	obsReceiver := receiver.(*stanzareceiver)
-	obsReceiver.emitter.logChan <- entry.New()
-	receiver.Shutdown(context.Background())
+	stanzaReceiver := logsReceiver.(*receiver)
+	stanzaReceiver.emitter.logChan <- entry.New()
+	logsReceiver.Shutdown(context.Background())
 	require.Equal(t, 1, mockConsumer.received, "one log entry expected")
 }
 
@@ -78,15 +78,15 @@ func TestHandleConsumeError(t *testing.T) {
 	mockConsumer := mockLogsRejecter{}
 	factory := NewFactory(TestReceiverType{})
 
-	receiver, err := factory.CreateLogsReceiver(context.Background(), params, factory.CreateDefaultConfig(), &mockConsumer)
+	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), params, factory.CreateDefaultConfig(), &mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
-	err = receiver.Start(context.Background(), componenttest.NewNopHost())
+	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "receiver start failed")
 
-	obsReceiver := receiver.(*stanzareceiver)
-	obsReceiver.emitter.logChan <- entry.New()
-	receiver.Shutdown(context.Background())
+	stanzaReceiver := logsReceiver.(*receiver)
+	stanzaReceiver.emitter.logChan <- entry.New()
+	logsReceiver.Shutdown(context.Background())
 	require.Equal(t, 1, mockConsumer.rejected, "one log entry expected")
 }
 
