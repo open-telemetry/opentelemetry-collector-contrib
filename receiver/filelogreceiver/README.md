@@ -3,7 +3,7 @@ This readme is out of date and will be updated soon
 
 # Filelog Receiver
 
-Tails and parses logs from a wide files using the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library.
+Tails and parses logs from files using the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library.
 
 Supported pipeline types: logs
 
