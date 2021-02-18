@@ -178,7 +178,7 @@ func TestSendLogs(t *testing.T) {
 
 	test.s.logBuffer = exampleTwoLogs()
 
-	_, err := test.s.sendLogs(context.Background(), fields{"key1": "value", "key2": "value2"})
+	_, err := test.s.sendLogs(context.Background(), fieldsFromMap(map[string]string{"key1": "value", "key2": "value2"}))
 	assert.NoError(t, err)
 }
 
@@ -198,7 +198,7 @@ func TestSendLogsMultitype(t *testing.T) {
 
 	test.s.logBuffer = exampleMultitypeLogs()
 
-	_, err := test.s.sendLogs(context.Background(), fields{"key1": "value", "key2": "value2"})
+	_, err := test.s.sendLogs(context.Background(), fieldsFromMap(map[string]string{"key1": "value", "key2": "value2"}))
 	assert.NoError(t, err)
 }
 
@@ -217,7 +217,7 @@ func TestSendLogsSplit(t *testing.T) {
 	test.s.config.MaxRequestBodySize = 10
 	test.s.logBuffer = exampleTwoLogs()
 
-	_, err := test.s.sendLogs(context.Background(), fields{})
+	_, err := test.s.sendLogs(context.Background(), newFields())
 	assert.NoError(t, err)
 }
 func TestSendLogsSplitFailedOne(t *testing.T) {
@@ -238,7 +238,7 @@ func TestSendLogsSplitFailedOne(t *testing.T) {
 	test.s.config.LogFormat = TextFormat
 	test.s.logBuffer = exampleTwoLogs()
 
-	dropped, err := test.s.sendLogs(context.Background(), fields{})
+	dropped, err := test.s.sendLogs(context.Background(), newFields())
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 	assert.Equal(t, test.s.logBuffer[0:1], dropped)
 }
@@ -263,7 +263,7 @@ func TestSendLogsSplitFailedAll(t *testing.T) {
 	test.s.config.LogFormat = TextFormat
 	test.s.logBuffer = exampleTwoLogs()
 
-	dropped, err := test.s.sendLogs(context.Background(), fields{})
+	dropped, err := test.s.sendLogs(context.Background(), newFields())
 	assert.EqualError(
 		t,
 		err,
@@ -288,7 +288,7 @@ func TestSendLogsJson(t *testing.T) {
 	test.s.config.LogFormat = JSONFormat
 	test.s.logBuffer = exampleTwoLogs()
 
-	_, err := test.s.sendLogs(context.Background(), fields{"key": "value"})
+	_, err := test.s.sendLogs(context.Background(), fieldsFromMap(map[string]string{"key": "value"}))
 	assert.NoError(t, err)
 }
 
@@ -308,7 +308,7 @@ func TestSendLogsJsonMultitype(t *testing.T) {
 	test.s.config.LogFormat = JSONFormat
 	test.s.logBuffer = exampleMultitypeLogs()
 
-	_, err := test.s.sendLogs(context.Background(), fields{"key": "value"})
+	_, err := test.s.sendLogs(context.Background(), fieldsFromMap(map[string]string{"key": "value"}))
 	assert.NoError(t, err)
 }
 
@@ -328,7 +328,7 @@ func TestSendLogsJsonSplit(t *testing.T) {
 	test.s.config.MaxRequestBodySize = 10
 	test.s.logBuffer = exampleTwoLogs()
 
-	_, err := test.s.sendLogs(context.Background(), fields{})
+	_, err := test.s.sendLogs(context.Background(), newFields())
 	assert.NoError(t, err)
 }
 
@@ -350,7 +350,7 @@ func TestSendLogsJsonSplitFailedOne(t *testing.T) {
 	test.s.config.MaxRequestBodySize = 10
 	test.s.logBuffer = exampleTwoLogs()
 
-	dropped, err := test.s.sendLogs(context.Background(), fields{})
+	dropped, err := test.s.sendLogs(context.Background(), newFields())
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 	assert.Equal(t, test.s.logBuffer[0:1], dropped)
 }
@@ -375,7 +375,7 @@ func TestSendLogsJsonSplitFailedAll(t *testing.T) {
 	test.s.config.MaxRequestBodySize = 10
 	test.s.logBuffer = exampleTwoLogs()
 
-	dropped, err := test.s.sendLogs(context.Background(), fields{})
+	dropped, err := test.s.sendLogs(context.Background(), newFields())
 	assert.EqualError(
 		t,
 		err,
@@ -394,7 +394,7 @@ func TestSendLogsUnexpectedFormat(t *testing.T) {
 	logs := exampleTwoLogs()
 	test.s.logBuffer = logs
 
-	dropped, err := test.s.sendLogs(context.Background(), fields{})
+	dropped, err := test.s.sendLogs(context.Background(), newFields())
 	assert.Error(t, err)
 	assert.Equal(t, logs, dropped)
 }
@@ -410,7 +410,7 @@ func TestOverrideSourceName(t *testing.T) {
 	test.s.sources.name = getTestSourceFormat(t, "Test source name/%{key1}")
 	test.s.logBuffer = exampleLog()
 
-	_, err := test.s.sendLogs(context.Background(), fields{"key1": "test_name"})
+	_, err := test.s.sendLogs(context.Background(), fieldsFromMap(map[string]string{"key1": "test_name"}))
 	assert.NoError(t, err)
 }
 
@@ -425,7 +425,7 @@ func TestOverrideSourceCategory(t *testing.T) {
 	test.s.sources.category = getTestSourceFormat(t, "Test source category/%{key1}")
 	test.s.logBuffer = exampleLog()
 
-	_, err := test.s.sendLogs(context.Background(), fields{"key1": "test_name"})
+	_, err := test.s.sendLogs(context.Background(), fieldsFromMap(map[string]string{"key1": "test_name"}))
 	assert.NoError(t, err)
 }
 
@@ -440,7 +440,7 @@ func TestOverrideSourceHost(t *testing.T) {
 	test.s.sources.host = getTestSourceFormat(t, "Test source host/%{key1}")
 	test.s.logBuffer = exampleLog()
 
-	_, err := test.s.sendLogs(context.Background(), fields{"key1": "test_name"})
+	_, err := test.s.sendLogs(context.Background(), fieldsFromMap(map[string]string{"key1": "test_name"}))
 	assert.NoError(t, err)
 }
 
@@ -451,13 +451,13 @@ func TestLogsBuffer(t *testing.T) {
 	assert.Equal(t, test.s.countLogs(), 0)
 	logs := exampleTwoLogs()
 
-	droppedLogs, err := test.s.batchLog(context.Background(), logs[0], fields{})
+	droppedLogs, err := test.s.batchLog(context.Background(), logs[0], newFields())
 	require.NoError(t, err)
 	assert.Nil(t, droppedLogs)
 	assert.Equal(t, 1, test.s.countLogs())
 	assert.Equal(t, []pdata.LogRecord{logs[0]}, test.s.logBuffer)
 
-	droppedLogs, err = test.s.batchLog(context.Background(), logs[1], fields{})
+	droppedLogs, err = test.s.batchLog(context.Background(), logs[1], newFields())
 	require.NoError(t, err)
 	assert.Nil(t, droppedLogs)
 	assert.Equal(t, 2, test.s.countLogs())
@@ -475,7 +475,7 @@ func TestInvalidEndpoint(t *testing.T) {
 	test.s.config.HTTPClientSettings.Endpoint = ":"
 	test.s.logBuffer = exampleLog()
 
-	_, err := test.s.sendLogs(context.Background(), fields{})
+	_, err := test.s.sendLogs(context.Background(), newFields())
 	assert.EqualError(t, err, `parse ":": missing protocol scheme`)
 }
 
@@ -486,7 +486,7 @@ func TestInvalidPostRequest(t *testing.T) {
 	test.s.config.HTTPClientSettings.Endpoint = ""
 	test.s.logBuffer = exampleLog()
 
-	_, err := test.s.sendLogs(context.Background(), fields{})
+	_, err := test.s.sendLogs(context.Background(), newFields())
 	assert.EqualError(t, err, `Post "": unsupported protocol scheme ""`)
 }
 
@@ -498,11 +498,11 @@ func TestLogsBufferOverflow(t *testing.T) {
 	log := exampleLog()
 
 	for test.s.countLogs() < maxBufferSize-1 {
-		_, err := test.s.batchLog(context.Background(), log[0], fields{})
+		_, err := test.s.batchLog(context.Background(), log[0], newFields())
 		require.NoError(t, err)
 	}
 
-	_, err := test.s.batchLog(context.Background(), log[0], fields{})
+	_, err := test.s.batchLog(context.Background(), log[0], newFields())
 	assert.EqualError(t, err, `parse ":": missing protocol scheme`)
 	assert.Equal(t, 0, test.s.countLogs())
 }
@@ -513,7 +513,7 @@ func TestInvalidMetricFormat(t *testing.T) {
 
 	test.s.config.MetricFormat = "invalid"
 
-	err := test.s.send(context.Background(), MetricsPipeline, strings.NewReader(""), fields{})
+	err := test.s.send(context.Background(), MetricsPipeline, strings.NewReader(""), newFields())
 	assert.EqualError(t, err, `unsupported metrics format: invalid`)
 }
 
@@ -521,7 +521,7 @@ func TestInvalidPipeline(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	err := test.s.send(context.Background(), "invalidPipeline", strings.NewReader(""), fields{})
+	err := test.s.send(context.Background(), "invalidPipeline", strings.NewReader(""), newFields())
 	assert.EqualError(t, err, `unexpected pipeline`)
 }
 
@@ -545,7 +545,7 @@ func TestSendCompressGzip(t *testing.T) {
 	test.s.compressor = c
 	reader := strings.NewReader("Some example log")
 
-	err = test.s.send(context.Background(), LogsPipeline, reader, fields{})
+	err = test.s.send(context.Background(), LogsPipeline, reader, newFields())
 	require.NoError(t, err)
 }
 
@@ -569,7 +569,7 @@ func TestSendCompressDeflate(t *testing.T) {
 	test.s.compressor = c
 	reader := strings.NewReader("Some example log")
 
-	err = test.s.send(context.Background(), LogsPipeline, reader, fields{})
+	err = test.s.send(context.Background(), LogsPipeline, reader, newFields())
 	require.NoError(t, err)
 }
 
@@ -580,7 +580,7 @@ func TestCompressionError(t *testing.T) {
 	test.s.compressor = getTestCompressor(errors.New("read error"), nil)
 	reader := strings.NewReader("Some example log")
 
-	err := test.s.send(context.Background(), LogsPipeline, reader, fields{})
+	err := test.s.send(context.Background(), LogsPipeline, reader, newFields())
 	assert.EqualError(t, err, "read error")
 }
 
@@ -591,7 +591,7 @@ func TestInvalidContentEncoding(t *testing.T) {
 	test.s.config.CompressEncoding = "test"
 	reader := strings.NewReader("Some example log")
 
-	err := test.s.send(context.Background(), LogsPipeline, reader, fields{})
+	err := test.s.send(context.Background(), LogsPipeline, reader, newFields())
 	assert.EqualError(t, err, "invalid content encoding: test")
 }
 
@@ -608,13 +608,17 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 		},
 	})
 	defer func() { test.srv.Close() }()
+	flds := fieldsFromMap(map[string]string{
+		"key1": "value",
+		"key2": "value2",
+	})
 
 	test.s.config.MetricFormat = PrometheusFormat
 	test.s.metricBuffer = []metricPair{
 		exampleIntMetric(),
 		exampleIntGaugeMetric(),
 	}
-	_, err := test.s.sendMetrics(context.Background(), fields{"key1": "value", "key2": "value2"})
+	_, err := test.s.sendMetrics(context.Background(), flds)
 	assert.NoError(t, err)
 }
 
@@ -640,7 +644,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 		exampleIntGaugeMetric(),
 	}
 
-	_, err := test.s.sendMetrics(context.Background(), fields{})
+	_, err := test.s.sendMetrics(context.Background(), newFields())
 	assert.NoError(t, err)
 }
 
@@ -668,7 +672,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 		exampleIntGaugeMetric(),
 	}
 
-	dropped, err := test.s.sendMetrics(context.Background(), fields{})
+	dropped, err := test.s.sendMetrics(context.Background(), newFields())
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 	assert.Equal(t, test.s.metricBuffer[0:1], dropped)
 }
@@ -699,7 +703,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 		exampleIntGaugeMetric(),
 	}
 
-	dropped, err := test.s.sendMetrics(context.Background(), fields{})
+	dropped, err := test.s.sendMetrics(context.Background(), newFields())
 	assert.EqualError(
 		t,
 		err,
@@ -720,7 +724,7 @@ func TestSendMetricsUnexpectedFormat(t *testing.T) {
 	}
 	test.s.metricBuffer = metrics
 
-	dropped, err := test.s.sendMetrics(context.Background(), fields{})
+	dropped, err := test.s.sendMetrics(context.Background(), newFields())
 	assert.EqualError(t, err, "unexpected metric format: invalid")
 	assert.Equal(t, dropped, metrics)
 }
@@ -735,13 +739,13 @@ func TestMetricsBuffer(t *testing.T) {
 		exampleIntGaugeMetric(),
 	}
 
-	droppedMetrics, err := test.s.batchMetric(context.Background(), metrics[0], fields{})
+	droppedMetrics, err := test.s.batchMetric(context.Background(), metrics[0], newFields())
 	require.NoError(t, err)
 	assert.Nil(t, droppedMetrics)
 	assert.Equal(t, 1, test.s.countMetrics())
 	assert.Equal(t, metrics[0:1], test.s.metricBuffer)
 
-	droppedMetrics, err = test.s.batchMetric(context.Background(), metrics[1], fields{})
+	droppedMetrics, err = test.s.batchMetric(context.Background(), metrics[1], newFields())
 	require.NoError(t, err)
 	assert.Nil(t, droppedMetrics)
 	assert.Equal(t, 2, test.s.countMetrics())
@@ -763,11 +767,11 @@ func TestMetricsBufferOverflow(t *testing.T) {
 	metric := exampleIntMetric()
 
 	for test.s.countMetrics() < maxBufferSize-1 {
-		_, err := test.s.batchMetric(context.Background(), metric, fields{})
+		_, err := test.s.batchMetric(context.Background(), metric, newFields())
 		require.NoError(t, err)
 	}
 
-	_, err := test.s.batchMetric(context.Background(), metric, fields{})
+	_, err := test.s.batchMetric(context.Background(), metric, newFields())
 	assert.EqualError(t, err, `parse ":": missing protocol scheme`)
 	assert.Equal(t, 0, test.s.countMetrics())
 }

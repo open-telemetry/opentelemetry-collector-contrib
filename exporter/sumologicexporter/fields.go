@@ -18,27 +18,27 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"go.opentelemetry.io/collector/consumer/pdata"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 // fields represents metadata
-type fields map[string]string
+type fields struct {
+	orig pdata.AttributeMap
+}
+
+func newFields() fields {
+	return fields{orig: pdata.NewAttributeMap()}
+}
 
 // string returns fields as ordered key=value string with `, ` as separator
 func (f fields) string() string {
-	rv := make([]string, 0, len(f))
-	for k, v := range f {
-		rv = append(rv, fmt.Sprintf("%s=%s", k, v))
-	}
-	sort.Strings(rv)
+	returnValue := make([]string, 0, f.orig.Len())
+	f.orig.ForEach(func(k string, v pdata.AttributeValue) {
+		returnValue = append(returnValue, fmt.Sprintf("%s=%s", k, tracetranslator.AttributeValueToString(v, false)))
+	})
+	sort.Strings(returnValue)
 
-	return strings.Join(rv, ", ")
-}
-
-func (f fields) asInterfaceMap() map[string]interface{} {
-	rv := make(map[string]interface{}, len(f))
-
-	for k, v := range f {
-		rv[k] = v
-	}
-	return rv
+	return strings.Join(returnValue, ", ")
 }

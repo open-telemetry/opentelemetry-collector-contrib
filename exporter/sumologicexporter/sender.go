@@ -165,18 +165,10 @@ func (s *sender) logToText(record pdata.LogRecord) string {
 
 // logToJSON converts LogRecord to a json line, returns it and error eventually
 func (s *sender) logToJSON(record pdata.LogRecord) (string, error) {
-	data := s.filter.filterOut(record.Attributes()).asInterfaceMap()
-	body := record.Body()
-	switch body.Type() {
-	case pdata.AttributeValueMAP:
-		data[logKey] = tracetranslator.AttributeMapToMap(body.MapVal())
-	case pdata.AttributeValueARRAY:
-		data[logKey] = tracetranslator.AttributeArrayToSlice(body.ArrayVal())
-	default:
-		data[logKey] = tracetranslator.AttributeValueToString(body, false)
-	}
+	data := s.filter.filterOut(record.Attributes())
+	data.orig.Upsert(logKey, record.Body())
 
-	nextLine, err := json.Marshal(data)
+	nextLine, err := json.Marshal(tracetranslator.AttributeMapToMap(data.orig))
 	if err != nil {
 		return "", err
 	}

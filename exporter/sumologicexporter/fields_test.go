@@ -22,11 +22,11 @@ import (
 
 func TestFieldsAsString(t *testing.T) {
 	expected := "key1=value1, key2=value2, key3=value3"
-	flds := fields{
+	flds := fieldsFromMap(map[string]string{
 		"key1": "value1",
 		"key3": "value3",
 		"key2": "value2",
-	}
+	})
 
 	assert.Equal(t, expected, flds.string())
 }
