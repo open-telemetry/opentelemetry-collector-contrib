@@ -45,8 +45,8 @@ processors:
 extensions:
   health_check: {}
 exporters:
-  zipkin:
-    endpoint: ENDPOINT_URL
+  otlphttp:
+    traces_endpoint: ENDPOINT_URL
   ## Following generates verbose logs with span content, useful to verify what
   ## metadata is being tagged. To enable, uncomment and add "logging" to exporters below.
   ## There are two levels that could be used: `debug` and `info` with the former
@@ -59,4 +59,4 @@ service:
     traces:
       receivers: [jaeger, opencensus, otlp, zipkin]
       processors: [memory_limiter, batch]
-      exporters: [zipkin]
+      exporters: [otlphttp]
