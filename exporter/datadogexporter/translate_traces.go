@@ -222,7 +222,7 @@ func spanToDatadogSpan(s pdata.Span,
 		tags[tracetranslator.TagW3CTraceState] = string(s.TraceState())
 	}
 
-	// get tracestate as just a general tag
+	// get events as just a general tag
 	if s.Events().Len() > 0 {
 		tags[eventsTag] = eventsToString(s.Events())
 	}
