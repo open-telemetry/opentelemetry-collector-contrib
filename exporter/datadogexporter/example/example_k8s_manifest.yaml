@@ -122,7 +122,7 @@ spec:
               fieldRef:
                 fieldPath: status.podIP
             # This is picked up by the resource detector
-          - name: OTEL_RESOURCE
+          - name: OTEL_RESOURCE_ATTRIBUTES
             value: "k8s.pod.ip=$(POD_IP)"
         volumeMounts:
         - name: otel-agent-config-vol

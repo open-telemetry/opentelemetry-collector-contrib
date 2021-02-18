@@ -52,6 +52,16 @@ func TestDetectFalse(t *testing.T) {
 	assert.True(t, internal.IsEmptyResource(res))
 }
 
+func TestDetectDeprecatedEnv(t *testing.T) {
+	os.Setenv(envVar, "")
+	os.Setenv(deprecatedEnvVar, "key=value")
+
+	detector := &Detector{}
+	res, err := detector.Detect(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, internal.NewResource(map[string]interface{}{"key": "value"}), res)
+}
+
 func TestDetectError(t *testing.T) {
 	os.Setenv(envVar, "key=value,key")
 
