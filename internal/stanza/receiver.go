@@ -12,38 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stanzareceiver
+package stanza
 
 import (
 	"context"
 	"fmt"
 	"sync"
 
-	stanza "github.com/open-telemetry/opentelemetry-log-collection/agent"
+	"github.com/open-telemetry/opentelemetry-log-collection/agent"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 )
 
-type stanzareceiver struct {
+type receiver struct {
 	sync.Mutex
 	startOnce sync.Once
 	stopOnce  sync.Once
 	wg        sync.WaitGroup
 	cancel    context.CancelFunc
 
-	agent    *stanza.LogAgent
+	agent    *agent.LogAgent
 	emitter  *LogEmitter
 	consumer consumer.LogsConsumer
 	logger   *zap.Logger
 }
 
 // Ensure this receiver adheres to required interface
-var _ component.LogsReceiver = (*stanzareceiver)(nil)
+var _ component.LogsReceiver = (*receiver)(nil)
 
 // Start tells the receiver to start
-func (r *stanzareceiver) Start(ctx context.Context, host component.Host) error {
+func (r *receiver) Start(ctx context.Context, host component.Host) error {
 	r.Lock()
 	defer r.Unlock()
 	err := componenterror.ErrAlreadyStarted
@@ -81,7 +81,7 @@ func (r *stanzareceiver) Start(ctx context.Context, host component.Host) error {
 }
 
 // Shutdown is invoked during service shutdown
-func (r *stanzareceiver) Shutdown(context.Context) error {
+func (r *receiver) Shutdown(context.Context) error {
 	r.Lock()
 	defer r.Unlock()
 

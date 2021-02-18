@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stanzareceiver
+module github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza
 
 go 1.14
 
