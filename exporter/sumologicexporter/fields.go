@@ -33,3 +33,12 @@ func (f fields) string() string {
 
 	return strings.Join(rv, ", ")
 }
+
+func (f fields) asInterfaceMap() map[string]interface{} {
+	rv := make(map[string]interface{}, len(f))
+
+	for k, v := range f {
+		rv[k] = v
+	}
+	return rv
+}
