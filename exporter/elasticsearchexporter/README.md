@@ -10,7 +10,7 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
   [ID](https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html) of the
   Elastic Cloud Cluster to publish events to. The `cloudid` can be used instead
   of `endpoints`.
-- `nuym_workers` (optional): Number of workers publishing bulk requests concurrently.
+- `num_workers` (optional): Number of workers publishing bulk requests concurrently.
 - `index`: The
   [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
   or [datastream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
