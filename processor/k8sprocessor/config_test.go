@@ -100,7 +100,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				{
 					From: "labels",
-					Name: "host.hostname",
+					Name: "host.name",
 				},
 				{
 					From: "connection",

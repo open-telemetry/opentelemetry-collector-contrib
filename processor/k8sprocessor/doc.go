@@ -32,7 +32,7 @@
 //  - from: labels
 //    name: k8s.pod.ip
 //  - from: labels
-//    name: host.hostname
+//    name: host.name
 //  - from: connection
 //    name: ip
 //  - from: labels
