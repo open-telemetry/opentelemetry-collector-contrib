@@ -1,0 +1,19 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  uptrace:
+    dsn: "https://api.uptrace.dev@example.com/1"
+
+  uptrace/customname:
+    dsn: "https://key@example.com/1"
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [uptrace]
