@@ -145,20 +145,15 @@ func TestMetricDataToLogService(t *testing.T) {
 
 	for _, log := range gotLogs {
 		pairs := make([]logKeyValuePair, 0, len(log.Contents))
-		//fmt.Println(log.GetTime())
 		for _, content := range log.Contents {
 			pairs = append(pairs, logKeyValuePair{
 				Key:   content.GetKey(),
 				Value: content.GetValue(),
 			})
-			//fmt.Printf("%s : %s\n", content.GetKey(), content.GetValue())
 		}
 		gotLogPairs = append(gotLogPairs, pairs)
 
-		//fmt.Println("#################")
 	}
-	//str, _ := json.Marshal(gotLogPairs)
-	//fmt.Println(string(str))
 
 	wantLogs := make([][]logKeyValuePair, 0, len(gotLogs))
 
