@@ -7,7 +7,7 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.22.6
-	go.opentelemetry.io/collector v0.20.1-0.20210218001603-48151d869607
+	go.opentelemetry.io/collector v0.20.1-0.20210222012639-f480d17e10a7
 	go.uber.org/zap v1.16.0
 	google.golang.org/grpc/examples v0.0.0-20200728194956-1c32b02682df // indirect
 	google.golang.org/protobuf v1.25.0

@@ -27,7 +27,6 @@ import (
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -145,18 +144,15 @@ func TestTransformSpan(t *testing.T) {
 			name: "error code",
 			spanFunc: func() pdata.Span {
 				// There is no setter method for a Status so convert instead.
-				return internaldata.OCToTraceData(
-					consumerdata.TraceData{
-						Spans: []*tracepb.Span{
-							{
-								TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-								SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 3},
-								Name:    &tracepb.TruncatableString{Value: "error code"},
-								Status:  &tracepb.Status{Code: 1},
-							},
+				return internaldata.OCToTraces(
+					nil, nil, []*tracepb.Span{
+						{
+							TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+							SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 3},
+							Name:    &tracepb.TruncatableString{Value: "error code"},
+							Status:  &tracepb.Status{Code: 1},
 						},
-					},
-				).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+					}).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 			},
 			want: telemetry.Span{
 				ID:      "0000000000000003",
@@ -172,18 +168,15 @@ func TestTransformSpan(t *testing.T) {
 			name: "error message",
 			spanFunc: func() pdata.Span {
 				// There is no setter method for a Status so convert instead.
-				return internaldata.OCToTraceData(
-					consumerdata.TraceData{
-						Spans: []*tracepb.Span{
-							{
-								TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-								SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 3},
-								Name:    &tracepb.TruncatableString{Value: "error message"},
-								Status:  &tracepb.Status{Code: 1, Message: "error message"},
-							},
+				return internaldata.OCToTraces(
+					nil, nil, []*tracepb.Span{
+						{
+							TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+							SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 3},
+							Name:    &tracepb.TruncatableString{Value: "error message"},
+							Status:  &tracepb.Status{Code: 1, Message: "error message"},
 						},
-					},
-				).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+					}).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 			},
 			want: telemetry.Span{
 				ID:      "0000000000000003",
@@ -200,42 +193,39 @@ func TestTransformSpan(t *testing.T) {
 			name: "attributes",
 			spanFunc: func() pdata.Span {
 				// There is no setter method for Attributes so convert instead.
-				return internaldata.OCToTraceData(
-					consumerdata.TraceData{
-						Spans: []*tracepb.Span{
-							{
-								TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-								SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 4},
-								Name:    &tracepb.TruncatableString{Value: "attrs"},
-								Status:  &tracepb.Status{},
-								Attributes: &tracepb.Span_Attributes{
-									AttributeMap: map[string]*tracepb.AttributeValue{
-										"prod": {
-											Value: &tracepb.AttributeValue_BoolValue{
-												BoolValue: true,
-											},
+				return internaldata.OCToTraces(
+					nil, nil, []*tracepb.Span{
+						{
+							TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+							SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 4},
+							Name:    &tracepb.TruncatableString{Value: "attrs"},
+							Status:  &tracepb.Status{},
+							Attributes: &tracepb.Span_Attributes{
+								AttributeMap: map[string]*tracepb.AttributeValue{
+									"prod": {
+										Value: &tracepb.AttributeValue_BoolValue{
+											BoolValue: true,
 										},
-										"weight": {
-											Value: &tracepb.AttributeValue_IntValue{
-												IntValue: 10,
-											},
+									},
+									"weight": {
+										Value: &tracepb.AttributeValue_IntValue{
+											IntValue: 10,
 										},
-										"score": {
-											Value: &tracepb.AttributeValue_DoubleValue{
-												DoubleValue: 99.8,
-											},
+									},
+									"score": {
+										Value: &tracepb.AttributeValue_DoubleValue{
+											DoubleValue: 99.8,
 										},
-										"user": {
-											Value: &tracepb.AttributeValue_StringValue{
-												StringValue: &tracepb.TruncatableString{Value: "alice"},
-											},
+									},
+									"user": {
+										Value: &tracepb.AttributeValue_StringValue{
+											StringValue: &tracepb.TruncatableString{Value: "alice"},
 										},
 									},
 								},
 							},
 						},
-					},
-				).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+					}).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 			},
 			want: telemetry.Span{
 				ID:      "0000000000000004",

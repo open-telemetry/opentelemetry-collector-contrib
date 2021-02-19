@@ -22,7 +22,6 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -41,8 +40,16 @@ const (
 	messageEventUncompressedSizeKey = "message.uncompressed_size"
 )
 
+// traceData helper struct for conversion.
+// TODO: Remove this when exporter translates directly to pdata.
+type traceData struct {
+	Node     *commonpb.Node
+	Resource *resourcepb.Resource
+	Spans    []*tracepb.Span
+}
+
 // oCProtoToJaegerThrift translates OpenCensus trace data into the Jaeger Thrift format.
-func oCProtoToJaegerThrift(td consumerdata.TraceData) (*jaeger.Batch, error) {
+func oCProtoToJaegerThrift(td traceData) (*jaeger.Batch, error) {
 	jSpans, err := ocSpansToJaegerSpans(td.Spans)
 	if err != nil {
 		return nil, err
