@@ -113,14 +113,10 @@ func TestLogsDataToLogService(t *testing.T) {
 				Key:   content.GetKey(),
 				Value: content.GetValue(),
 			})
-			//fmt.Printf("%s : %s\n", content.GetKey(), content.GetValue())
 		}
 		gotLogPairs = append(gotLogPairs, pairs)
 
-		//fmt.Println("#################")
 	}
-	//str, _ := json.Marshal(gotLogPairs)
-	//fmt.Println(string(str))
 
 	wantLogs := make([][]logKeyValuePair, 0, validLogCount)
 	resultLogFile := "./testdata/logservice_log_data.json"

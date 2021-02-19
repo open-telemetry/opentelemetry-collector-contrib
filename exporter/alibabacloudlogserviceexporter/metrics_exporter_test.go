@@ -50,7 +50,6 @@ func TestNewMetricsExporter(t *testing.T) {
 			metricstestutil.Gauge("gauge_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
 		},
 	}))
-	// a
 	assert.NoError(t, err)
 }
 
