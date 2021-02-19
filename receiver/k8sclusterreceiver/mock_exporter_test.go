@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 type MockExporter struct {
@@ -48,7 +48,7 @@ func (m mockExporterWithK8sMetadata) Shutdown(context.Context) error {
 	return nil
 }
 
-func (m mockExporterWithK8sMetadata) ConsumeMetadata([]*metrics.MetadataUpdate) error {
+func (m mockExporterWithK8sMetadata) ConsumeMetadata([]*metadata.MetadataUpdate) error {
 	consumeMetadataInvocation()
 	return nil
 }

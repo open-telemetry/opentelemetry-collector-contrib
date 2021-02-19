@@ -30,8 +30,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
+	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
@@ -140,7 +140,7 @@ func phaseToInt(phase corev1.PodPhase) int32 {
 }
 
 // getMetadataForPod returns all metadata associated with the pod.
-func getMetadataForPod(pod *corev1.Pod, mc *metadataStore, logger *zap.Logger) map[metrics.ResourceID]*KubernetesMetadata {
+func getMetadataForPod(pod *corev1.Pod, mc *metadataStore, logger *zap.Logger) map[metadataPkg.ResourceID]*KubernetesMetadata {
 	metadata := util.MergeStringMaps(map[string]string{}, pod.Labels)
 
 	metadata[podCreationTime] = pod.CreationTimestamp.Format(time.RFC3339)
@@ -175,8 +175,8 @@ func getMetadataForPod(pod *corev1.Pod, mc *metadataStore, logger *zap.Logger) m
 		)
 	}
 
-	podID := metrics.ResourceID(pod.UID)
-	return mergeKubernetesMetadataMaps(map[metrics.ResourceID]*KubernetesMetadata{
+	podID := metadataPkg.ResourceID(pod.UID)
+	return mergeKubernetesMetadataMaps(map[metadataPkg.ResourceID]*KubernetesMetadata{
 		podID: {
 			resourceIDKey: conventions.AttributeK8sPodUID,
 			resourceID:    podID,
@@ -275,8 +275,8 @@ func getWorkloadProperties(ref *v1.OwnerReference, labelKey string) map[string]s
 	}
 }
 
-func getPodContainerProperties(pod *corev1.Pod) map[metrics.ResourceID]*KubernetesMetadata {
-	km := map[metrics.ResourceID]*KubernetesMetadata{}
+func getPodContainerProperties(pod *corev1.Pod) map[metadataPkg.ResourceID]*KubernetesMetadata {
+	km := map[metadataPkg.ResourceID]*KubernetesMetadata{}
 	for _, cs := range pod.Status.ContainerStatuses {
 		// Skip if container id returned is empty.
 		if cs.ContainerID == "" {

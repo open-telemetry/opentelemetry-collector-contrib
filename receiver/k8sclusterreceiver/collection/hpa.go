@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	"k8s.io/api/autoscaling/v2beta1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
@@ -100,8 +100,8 @@ func getResourceForHPA(hpa *v2beta1.HorizontalPodAutoscaler) *resourcepb.Resourc
 	}
 }
 
-func getMetadataForHPA(hpa *v2beta1.HorizontalPodAutoscaler) map[metrics.ResourceID]*KubernetesMetadata {
-	return map[metrics.ResourceID]*KubernetesMetadata{
-		metrics.ResourceID(hpa.UID): getGenericMetadata(&hpa.ObjectMeta, "HPA"),
+func getMetadataForHPA(hpa *v2beta1.HorizontalPodAutoscaler) map[metadata.ResourceID]*KubernetesMetadata {
+	return map[metadata.ResourceID]*KubernetesMetadata{
+		metadata.ResourceID(hpa.UID): getGenericMetadata(&hpa.ObjectMeta, "HPA"),
 	}
 }

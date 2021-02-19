@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 func TestGetDimensionUpdateFromMetadata(t *testing.T) {
@@ -33,7 +33,7 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 		},
 	}, 1)
 	type args struct {
-		metadata         metrics.MetadataUpdate
+		metadata         metadata.MetadataUpdate
 		metricTranslator *translation.MetricTranslator
 	}
 	tests := []struct {
@@ -44,10 +44,10 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 		{
 			"Test tags update",
 			args{
-				metadata: metrics.MetadataUpdate{
+				metadata: metadata.MetadataUpdate{
 					ResourceIDKey: "name",
 					ResourceID:    "val",
-					MetadataDelta: metrics.MetadataDelta{
+					MetadataDelta: metadata.MetadataDelta{
 						MetadataToAdd: map[string]string{
 							"tag1": "",
 						},
@@ -72,10 +72,10 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 		{
 			"Test properties update",
 			args{
-				metadata: metrics.MetadataUpdate{
+				metadata: metadata.MetadataUpdate{
 					ResourceIDKey: "name",
 					ResourceID:    "val",
-					MetadataDelta: metrics.MetadataDelta{
+					MetadataDelta: metadata.MetadataDelta{
 						MetadataToAdd: map[string]string{
 							"property1": "value1",
 						},
@@ -105,10 +105,10 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 		{
 			"Test with unsupported characters",
 			args{
-				metadata: metrics.MetadataUpdate{
+				metadata: metadata.MetadataUpdate{
 					ResourceIDKey: "name",
 					ResourceID:    "val",
-					MetadataDelta: metrics.MetadataDelta{
+					MetadataDelta: metadata.MetadataDelta{
 						MetadataToAdd: map[string]string{
 							"prope/rty1": "value1",
 							"ta.g1":      "",
@@ -143,10 +143,10 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 		{
 			"Test dimensions translation",
 			args{
-				metadata: metrics.MetadataUpdate{
+				metadata: metadata.MetadataUpdate{
 					ResourceIDKey: "name",
 					ResourceID:    "val",
-					MetadataDelta: metrics.MetadataDelta{
+					MetadataDelta: metadata.MetadataDelta{
 						MetadataToAdd: map[string]string{
 							"prope/rty1": "value1",
 							"ta.g1":      "",

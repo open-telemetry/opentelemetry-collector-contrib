@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	batchv1 "k8s.io/api/batch/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
@@ -113,8 +113,8 @@ func getResourceForJob(j *batchv1.Job) *resourcepb.Resource {
 	}
 }
 
-func getMetadataForJob(j *batchv1.Job) map[metrics.ResourceID]*KubernetesMetadata {
-	return map[metrics.ResourceID]*KubernetesMetadata{
-		metrics.ResourceID(j.UID): getGenericMetadata(&j.ObjectMeta, k8sKindJob),
+func getMetadataForJob(j *batchv1.Job) map[metadata.ResourceID]*KubernetesMetadata {
+	return map[metadata.ResourceID]*KubernetesMetadata{
+		metadata.ResourceID(j.UID): getGenericMetadata(&j.ObjectMeta, k8sKindJob),
 	}
 }
