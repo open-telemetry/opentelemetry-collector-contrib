@@ -26,11 +26,9 @@ import (
 )
 
 const (
-	k8sIPLabelName     string = "k8s.pod.ip"
-	k8sPodUIDLabelName string = "k8s.pod.uid"
-	podUIDLabelName    string = "pod_uid"
-	clientIPLabelName  string = "ip"
-	hostnameLabelName  string = "host.hostname"
+	k8sIPLabelName    string = "k8s.pod.ip"
+	podUIDLabelName   string = "pod_uid"
+	clientIPLabelName string = "ip"
 )
 
 type kubernetesprocessor struct {

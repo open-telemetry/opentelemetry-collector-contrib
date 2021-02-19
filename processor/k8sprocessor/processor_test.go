@@ -736,7 +736,7 @@ func TestMetricsProcessorHostname(t *testing.T) {
 	kp.podAssociations = []kube.Association{
 		{
 			From: "labels",
-			Name: "host.hostname",
+			Name: "host.name",
 		},
 	}
 
