@@ -1,19 +1,22 @@
 ## Fields
 
-_Fields_ are the primary way to tell stanza which values of an entry to use in its operators.
-Most often, these will be things like fields to parse for a parser operator, or the field to write a new value to.
+A _Field_ is a reference to a value in a log [entry](/docs/types/field.md). 
 
-Fields are `.`-delimited strings which allow you to select labels or records on the entry. Fields can currently be used to select labels, values on a record, or resource values. To select a label, prefix your field with `$label` such as with `$label.my_label`. For values on the record, use the prefix `$record` such as `$record.my_value`. For resource values, use the prefix `$resource`.
+Many [operators](/docs/operators/README.md) use fields in their configurations. For example, parsers use fields to specify which value to parse and where to write a new value.
 
-If a key contains a dot in it, a field can alternatively use bracket syntax for traversing through a map. For example, to select the key `k8s.cluster.name` on the entry's record, you can use the field `$record["k8s.cluster.name"]`.
+Fields are `.`-delimited strings which allow you to select labels or records on the entry. 
+
+Fields can be used to select record, resource, or label values. For values on the record, use the prefix `$record` such as `$record.my_value`. To select a label, prefix your field with `$label` such as with `$label.my_label`. For resource values, use the prefix `$resource`.
+
+If a field contains a dot in it, a field can alternatively use bracket syntax for traversing through a map. For example, to select the key `k8s.cluster.name` on the entry's record, you can use the field `$record["k8s.cluster.name"]`.
 
 Record fields can be nested arbitrarily deeply, such as `$record.my_value.my_nested_value`.
 
-If a field does not start with either `$label` or `$record`, `$record` is assumed. For example, `my_value` is equivalent to `$record.my_value`.
+If a field does not start with `$resource`, `$label`, or `$record`, then `$record` is assumed. For example, `my_value` is equivalent to `$record.my_value`.
 
 ## Examples
 
-Using fields with the restructure operator.
+#### Using fields with the restructure operator.
 
 Config:
 ```yaml
@@ -69,3 +72,34 @@ Config:
 </td>
 </tr>
 </table>
+
+
+#### Using fields to refer to various values
+
+Given the following entry, we can use fields as follows:
+
+```json
+{
+  "resource": {
+    "uuid": "11112222-3333-4444-5555-666677778888",
+  },
+  "labels": {
+    "env": "prod",
+  },
+  "record": {
+    "message": "Something happened.",
+    "details": {
+      "count": 100,
+      "reason": "event",
+    },
+  },
+}
+```
+
+| Field                  | Refers to Value                           |
+| ---                    | ---                                       |
+| $record.message        | `"Something happened."`                   |
+| message                | `"Something happened."`                   |
+| $record.details.count  | `100`                                     |
+| $labels.env            | `"prod"`                                  |
+| $resource.uuid         | `"11112222-3333-4444-5555-666677778888"`  |
