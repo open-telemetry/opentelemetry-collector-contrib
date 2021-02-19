@@ -29,15 +29,18 @@ import (
 // RequestWriter submits the initial request to the dotnet diagnostics backend,
 // after which it starts sending us metrics at the specified interval.
 // ByteBuffer is swappable for testing.
+// For docs on the protocol, see
+// https://github.com/Microsoft/perfview/blob/main/src/TraceEvent/EventPipe/EventPipeFormat.md
 type RequestWriter struct {
 	buf         network.ByteBuffer
 	w           io.Writer
 	intervalSec int
-	names       []string
+	// providerNames (aka event sources) indicate which counter groups to get metrics for. e.g. "System.Runtime"
+	providerNames []string
 }
 
-func NewRequestWriter(buf network.ByteBuffer, w io.Writer, intervalSec int, names ...string) *RequestWriter {
-	return &RequestWriter{buf: buf, w: w, intervalSec: intervalSec, names: names}
+func NewRequestWriter(buf network.ByteBuffer, w io.Writer, intervalSec int, providerNames ...string) *RequestWriter {
+	return &RequestWriter{buf: buf, w: w, intervalSec: intervalSec, providerNames: providerNames}
 }
 
 func (w *RequestWriter) SendRequest() error {
@@ -49,11 +52,16 @@ func (w *RequestWriter) SendRequest() error {
 	return err
 }
 
+// Corresponds to DiagnosticsServerCommandSet.EventPipe
+// https://github.com/dotnet/diagnostics/blob/master/src/Microsoft.Diagnostics.NETCore.Client/DiagnosticsIpc/IpcCommands.cs
 const eventPipeCommand = 2
+
+// Corresponds to EventPipeCommandId.CollectTracing2
+// https://github.com/dotnet/diagnostics/blob/master/src/Microsoft.Diagnostics.NETCore.Client/DiagnosticsIpc/IpcCommands.cs
 const collectTracing2CommandID = 3
 
 func (w *RequestWriter) createRequest() ([]byte, error) {
-	cfgReq := newConfigRequest(w.intervalSec, w.names...)
+	cfgReq := newConfigRequest(w.intervalSec, w.providerNames...)
 	payload, err := cfgReq.serialize(w.buf)
 	if err != nil {
 		return nil, err
@@ -116,12 +124,12 @@ type serializationFormat uint32
 
 const netTrace = 1
 
-func newConfigRequest(intervalSec int, names ...string) configRequest {
+func newConfigRequest(intervalSec int, providerNames ...string) configRequest {
 	return configRequest{
 		circularBufferSizeInMB: 10,
 		format:                 netTrace,
 		requestRundown:         false,
-		providers:              createProviders(intervalSec, names...),
+		providers:              createProviders(intervalSec, providerNames...),
 	}
 }
 

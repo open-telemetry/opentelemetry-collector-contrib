@@ -40,6 +40,11 @@ func Connect(pid int, dial DialFunc, glob GlobFunc) (net.Conn, error) {
 	return dial("unix", sf)
 }
 
+// socketFile returns the path to a file on a Linux or macOS host that conforms
+// to the naming convention for a Unix domain socket file given a process ID.
+// This file is used as a Unix domain socket endpoint to communicate with the
+// dotnet process. For more information, please see the README for this
+// receiver.
 func socketFile(pid int, tempdir string, glob GlobFunc) (string, error) {
 	f := fullGlob(pid, tempdir)
 	matches, err := glob(f)
@@ -60,6 +65,9 @@ func fullGlob(pid int, tempdir string) string {
 	return path.Join(tempdir, globPattern(pid))
 }
 
+// globPattern generates a glob pattern that conforms to the .NET diagnostics
+// naming convention for a Unix domain socket file for a given process ID. For
+// more information, please see the README for this receiver.
 func globPattern(pid int) string {
 	return fmt.Sprintf("dotnet-diagnostic-%d-*-socket", pid)
 }
