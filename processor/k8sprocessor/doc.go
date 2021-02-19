@@ -21,7 +21,8 @@
 // It represents a list of rules that are executed in order until the first one is able to do the match.
 // Each rule is specified as a pair of from (representing the rule type) and name (representing the extracted key name).
 // Following rule types are available:
-//   from: "labels" - takes the attribute from resource attributes (the value can contain either IP address or Pod UID)
+//   from: "labels" - defines attribute label that will be used to associate Pod Metadata with resource
+//     (the value can contain either IP address or Pod UID)
 //   from: "connection" - takes the IP attribute from connection context (if available) and automatically
 //     associates it with "k8s.pod.ip" attribute
 // Pod association configuration.
@@ -36,6 +37,8 @@
 //    name: ip
 //  - from: labels
 //    name: pod_uid
+//
+// If Pod association rules are not configured resources are associated with metadata only by IP Address.
 //
 // RBAC
 //

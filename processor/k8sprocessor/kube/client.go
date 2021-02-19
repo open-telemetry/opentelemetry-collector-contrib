@@ -306,13 +306,7 @@ func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
 	c.m.RUnlock()
 
 	if ok && p.Name == pod.Name {
-		c.deleteMut.Lock()
-		c.deleteQueue = append(c.deleteQueue, deleteRequest{
-			id:   pod.Status.PodIP,
-			name: pod.Name,
-			ts:   time.Now(),
-		})
-		c.deleteMut.Unlock()
+		c.appendDeleteQueue(pod.Status.PodIP, pod.Name)
 	}
 
 	c.m.RLock()
@@ -320,14 +314,18 @@ func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
 	c.m.RUnlock()
 
 	if ok && p.Name == pod.Name {
-		c.deleteMut.Lock()
-		c.deleteQueue = append(c.deleteQueue, deleteRequest{
-			id:   string(pod.UID),
-			name: pod.Name,
-			ts:   time.Now(),
-		})
-		c.deleteMut.Unlock()
+		c.appendDeleteQueue(string(pod.UID), pod.Name)
 	}
+}
+
+func (c *WatchClient) appendDeleteQueue(podID, podName string) {
+	c.deleteMut.Lock()
+	c.deleteQueue = append(c.deleteQueue, deleteRequest{
+		id:   podID,
+		name: podName,
+		ts:   time.Now(),
+	})
+	c.deleteMut.Unlock()
 }
 
 func (c *WatchClient) shouldIgnorePod(pod *api_v1.Pod) bool {

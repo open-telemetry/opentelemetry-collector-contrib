@@ -103,11 +103,11 @@ func (kp *kubernetesprocessor) ProcessLogs(ctx context.Context, ld pdata.Logs) (
 
 func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pdata.Resource) {
 
-	podAttributes := k8sPodAssociationFromAttributes(ctx, resource.Attributes(), kp.podAssociations)
-	if len(podAttributes) == 0 {
+	podIdentifiers := k8sPodAssociationFromAttributes(ctx, resource.Attributes(), kp.podAssociations)
+	if len(podIdentifiers) == 0 {
 		return
 	}
-	for k, v := range podAttributes {
+	for k, v := range podIdentifiers {
 		if !kp.passthroughMode {
 			attrsToAdd := kp.getAttributesForPod(v)
 			for key, val := range attrsToAdd {
