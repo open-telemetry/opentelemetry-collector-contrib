@@ -15,274 +15,169 @@
 package alibabacloudlogserviceexporter
 
 import (
-	"fmt"
 	"reflect"
 	"sort"
 	"testing"
-	"time"
 
-	sls "github.com/aliyun/aliyun-log-go-sdk"
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/testutil/metricstestutil"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
 
 func TestMetricDataToLogService(t *testing.T) {
 	logger := zap.NewNop()
 
-	keys := []string{"k0", "k1"}
-	values := []string{"v0", "v1"}
+	md := pdata.NewMetrics()
+	md.ResourceMetrics().Resize(2)
+	rm := md.ResourceMetrics().At(0)
 
-	unixSecs := int64(1574092046)
-	unixNSecs := int64(11 * time.Millisecond)
-	tsUnix := time.Unix(unixSecs, unixNSecs)
+	rm.Resource().Attributes().InsertString("labelB", "valueB")
+	rm.Resource().Attributes().InsertString("labelA", "valueA")
+	rm.Resource().Attributes().InsertString("a", "b")
+	ilms := rm.InstrumentationLibraryMetrics()
+	ilms.Resize(2)
+	ilm := ilms.At(0)
 
-	doubleVal := 1234.5678
-	doublePt := metricstestutil.Double(tsUnix, doubleVal)
-	int64Val := int64(123)
-	int64Pt := &metricspb.Point{
-		Timestamp: metricstestutil.Timestamp(tsUnix),
-		Value:     &metricspb.Point_Int64Value{Int64Value: int64Val},
+	metrics := ilm.Metrics()
+	metrics.Resize(10)
+
+	badNameMetric := metrics.At(0)
+	badNameMetric.SetName("")
+
+	noneMetric := metrics.At(1)
+	noneMetric.SetName("none")
+
+	intGaugeMetric := metrics.At(2)
+	intGaugeMetric.SetDataType(pdata.MetricDataTypeIntGauge)
+	intGaugeMetric.SetName("int_gauge")
+	intGauge := intGaugeMetric.IntGauge()
+	intGaugeDataPoints := intGauge.DataPoints()
+	intGaugeDataPoints.Resize(1)
+	intGaugeDataPoint := intGaugeDataPoints.At(0)
+	intGaugeDataPoint.LabelsMap().Insert("innerLabel", "innerValue")
+	intGaugeDataPoint.SetValue(10)
+	intGaugeDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+
+	doubleGaugeMetric := metrics.At(3)
+	doubleGaugeMetric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+	doubleGaugeMetric.SetName("double_gauge")
+	doubleGauge := doubleGaugeMetric.DoubleGauge()
+	doubleGaugeDataPoints := doubleGauge.DataPoints()
+	doubleGaugeDataPoints.Resize(1)
+	doubleGaugeDataPoint := doubleGaugeDataPoints.At(0)
+	doubleGaugeDataPoint.LabelsMap().Insert("innerLabel", "innerValue")
+	doubleGaugeDataPoint.SetValue(10.1)
+	doubleGaugeDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+
+	intSumMetric := metrics.At(4)
+	intSumMetric.SetDataType(pdata.MetricDataTypeIntSum)
+	intSumMetric.SetName("int_sum")
+	intSum := intSumMetric.IntSum()
+	intSumDataPoints := intSum.DataPoints()
+	intSumDataPoints.Resize(1)
+	intSumDataPoint := intSumDataPoints.At(0)
+	intSumDataPoint.LabelsMap().Insert("innerLabel", "innerValue")
+	intSumDataPoint.SetValue(11)
+	intSumDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+
+	doubleSumMetric := metrics.At(5)
+	doubleSumMetric.SetDataType(pdata.MetricDataTypeDoubleSum)
+	doubleSumMetric.SetName("double_sum")
+	doubleSum := doubleSumMetric.DoubleSum()
+	doubleSumDataPoints := doubleSum.DataPoints()
+	doubleSumDataPoints.Resize(1)
+	doubleSumDataPoint := doubleSumDataPoints.At(0)
+	doubleSumDataPoint.LabelsMap().Insert("innerLabel", "innerValue")
+	doubleSumDataPoint.SetValue(10.1)
+	doubleSumDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+
+	intHistogramMetric := metrics.At(6)
+	intHistogramMetric.SetDataType(pdata.MetricDataTypeIntHistogram)
+	intHistogramMetric.SetName("double_histogram")
+	intHistogram := intHistogramMetric.IntHistogram()
+	intHistogramDataPoints := intHistogram.DataPoints()
+	intHistogramDataPoints.Resize(1)
+	intHistogramDataPoint := intHistogramDataPoints.At(0)
+	intHistogramDataPoint.LabelsMap().Insert("innerLabel", "innerValue")
+	intHistogramDataPoint.SetCount(2)
+	intHistogramDataPoint.SetSum(19)
+	intHistogramDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+	intHistogramDataPoint.SetBucketCounts([]uint64{1, 2, 3})
+	intHistogramDataPoint.SetExplicitBounds([]float64{1, 2})
+
+	doubleHistogramMetric := metrics.At(7)
+	doubleHistogramMetric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
+	doubleHistogramMetric.SetName("double_$histogram")
+	doubleHistogram := doubleHistogramMetric.DoubleHistogram()
+	doubleHistogramDataPoints := doubleHistogram.DataPoints()
+	doubleHistogramDataPoints.Resize(1)
+	doubleHistogramDataPoint := doubleHistogramDataPoints.At(0)
+	doubleHistogramDataPoint.LabelsMap().Insert("innerLabel", "innerValue")
+	doubleHistogramDataPoint.SetCount(2)
+	doubleHistogramDataPoint.SetSum(10.1)
+	doubleHistogramDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+	doubleHistogramDataPoint.SetBucketCounts([]uint64{1, 2, 3})
+	doubleHistogramDataPoint.SetExplicitBounds([]float64{1, 2})
+
+	doubleSummaryMetric := metrics.At(8)
+	doubleSummaryMetric.SetDataType(pdata.MetricDataTypeDoubleSummary)
+	doubleSummaryMetric.SetName("double-summary")
+	doubleSummary := doubleSummaryMetric.DoubleSummary()
+	doubleSummaryDataPoints := doubleSummary.DataPoints()
+	doubleSummaryDataPoints.Resize(1)
+	doubleSummaryDataPoint := doubleSummaryDataPoints.At(0)
+	doubleSummaryDataPoint.SetCount(2)
+	doubleSummaryDataPoint.SetSum(10.1)
+	doubleSummaryDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+	doubleSummaryDataPoint.LabelsMap().Insert("innerLabel", "innerValue")
+	quantileVal := pdata.NewValueAtQuantile()
+	quantileVal.SetValue(10.2)
+	quantileVal.SetQuantile(0.9)
+	quantileVal2 := pdata.NewValueAtQuantile()
+	quantileVal2.SetValue(10.5)
+	quantileVal2.SetQuantile(0.95)
+	doubleSummaryDataPoint.QuantileValues().Append(quantileVal)
+	doubleSummaryDataPoint.QuantileValues().Append(quantileVal2)
+
+	gotLogs, gotNumDroppedTimeSeries := metricsDataToLogServiceData(logger, md)
+	assert.Equal(t, gotNumDroppedTimeSeries, 0)
+	gotLogPairs := make([][]logKeyValuePair, 0, len(gotLogs))
+
+	for _, log := range gotLogs {
+		pairs := make([]logKeyValuePair, 0, len(log.Contents))
+		for _, content := range log.Contents {
+			pairs = append(pairs, logKeyValuePair{
+				Key:   content.GetKey(),
+				Value: content.GetValue(),
+			})
+		}
+		gotLogPairs = append(gotLogPairs, pairs)
+
 	}
 
-	distributionBounds := []float64{1, 2, 4}
-	distributionCounts := []int64{4, 2, 3, 7}
-	distributionTimeSeries := metricstestutil.Timeseries(
-		tsUnix,
-		values,
-		metricstestutil.DistPt(tsUnix, distributionBounds, distributionCounts))
+	wantLogs := make([][]logKeyValuePair, 0, len(gotLogs))
 
-	summaryTimeSeries := metricstestutil.Timeseries(
-		tsUnix,
-		values,
-		metricstestutil.SummPt(
-			tsUnix,
-			11,
-			111,
-			[]float64{90, 95, 99, 99.9},
-			[]float64{100, 6, 4, 1}))
-
-	tests := []struct {
-		name                     string
-		metricsDataFn            func() consumerdata.MetricsData
-		wantNumDroppedTimeseries int
-	}{
-		{
-			name: "nil_node_nil_resources_nil_metric",
-			metricsDataFn: func() consumerdata.MetricsData {
-				return consumerdata.MetricsData{
-					Metrics: []*metricspb.Metric{
-						nil,
-					},
-				}
-			},
-		},
-		{
-			name: "nil_node_nil_resources_no_dims",
-			metricsDataFn: func() consumerdata.MetricsData {
-				return consumerdata.MetricsData{
-					Metrics: []*metricspb.Metric{
-						metricstestutil.Gauge("gauge_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
-						metricstestutil.GaugeInt("gauge_int_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
-						metricstestutil.Cumulative("cumulative_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
-						metricstestutil.CumulativeInt("cumulative_int_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
-					},
-				}
-			},
-		},
-		{
-			name: "nil_node_and_resources_with_dims",
-			metricsDataFn: func() consumerdata.MetricsData {
-				return consumerdata.MetricsData{
-					Metrics: []*metricspb.Metric{
-						metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
-						metricstestutil.GaugeInt("gauge_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
-						metricstestutil.Cumulative("cumulative_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
-						metricstestutil.CumulativeInt("cumulative_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
-					},
-				}
-			},
-		},
-		{
-			name: "with_node_resources_dims",
-			metricsDataFn: func() consumerdata.MetricsData {
-				return consumerdata.MetricsData{
-					Node: &commonpb.Node{
-						Attributes: map[string]string{
-							"k/n0": "vn0",
-							"k/n1": "vn1",
-						},
-						Identifier: &commonpb.ProcessIdentifier{
-							HostName: "host",
-							Pid:      123,
-						},
-					},
-					Resource: &resourcepb.Resource{
-						Labels: map[string]string{
-							"k/r0": "vr0",
-							"k/r1": "vr1",
-						},
-						Type: "service",
-					},
-					Metrics: []*metricspb.Metric{
-						metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
-						metricstestutil.GaugeInt("gauge_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
-					},
-				}
-			},
-		},
-		{
-			name: "distributions",
-			metricsDataFn: func() consumerdata.MetricsData {
-				return consumerdata.MetricsData{
-					Metrics: []*metricspb.Metric{
-						metricstestutil.GaugeDist("gauge_distrib", keys, distributionTimeSeries),
-						metricstestutil.CumulativeDist("cumulative_distrib", keys, distributionTimeSeries),
-					},
-				}
-			},
-		},
-		{
-			name: "summary",
-			metricsDataFn: func() consumerdata.MetricsData {
-				return consumerdata.MetricsData{
-					Metrics: []*metricspb.Metric{
-						metricstestutil.Summary("summary", keys, summaryTimeSeries),
-					},
-				}
-			},
-		},
+	if err := loadFromJSON("./testdata/logservice_metric_data.json", &wantLogs); err != nil {
+		t.Errorf("Failed load log key value pairs from file, error: %v", err)
+		return
 	}
-	for i, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotLogs, gotNumDroppedTimeSeries := metricsDataToLogServiceData(logger, tt.metricsDataFn())
-			if i == 0 {
-				assert.Equal(t, len(gotLogs), 0)
-				return
-			}
-			if gotNumDroppedTimeSeries != tt.wantNumDroppedTimeseries {
-				t.Errorf("Converting metrics data to LogSerive data failed, (got : %d, want : %d)\n", gotNumDroppedTimeSeries, tt.wantNumDroppedTimeseries)
-				return
-			}
-			gotLogPairs := make([][]logKeyValuePair, 0, len(gotLogs))
-
-			for _, log := range gotLogs {
-				pairs := make([]logKeyValuePair, 0, len(log.Contents))
-				//fmt.Println(log.GetTime())
-				for _, content := range log.Contents {
-					pairs = append(pairs, logKeyValuePair{
-						Key:   content.GetKey(),
-						Value: content.GetValue(),
-					})
-					//fmt.Printf("%s : %s\n", content.GetKey(), content.GetValue())
-				}
-				gotLogPairs = append(gotLogPairs, pairs)
-
-				//fmt.Println("#################")
-			}
-			//str, _ := json.Marshal(gotLogPairs)
-			//fmt.Println(string(str))
-
-			resultLogFile := fmt.Sprintf("./testdata/logservice_metric_data_%02d.json", i)
-
-			wantLogs := make([][]logKeyValuePair, 0, gotNumDroppedTimeSeries)
-
-			if err := loadFromJSON(resultLogFile, &wantLogs); err != nil {
-				t.Errorf("Failed load log key value pairs from %q: %v", resultLogFile, err)
-				return
-			}
-			for j := 0; j < gotNumDroppedTimeSeries; j++ {
-				sort.Sort(logKeyValuePairs(gotLogPairs[j]))
-				sort.Sort(logKeyValuePairs(wantLogs[j]))
-				if !reflect.DeepEqual(gotLogPairs[j], wantLogs[j]) {
-					t.Errorf("Unsuccessful conversion %d \nGot:\n\t%v\nWant:\n\t%v", i, gotLogPairs, wantLogs)
-				}
-			}
-		})
+	assert.Equal(t, len(wantLogs), len(gotLogs))
+	for j := 0; j < len(gotLogs); j++ {
+		sort.Sort(logKeyValuePairs(gotLogPairs[j]))
+		sort.Sort(logKeyValuePairs(wantLogs[j]))
+		if !reflect.DeepEqual(gotLogPairs[j], wantLogs[j]) {
+			t.Errorf("Unsuccessful conversion \nGot:\n\t%v\nWant:\n\t%v", gotLogPairs, wantLogs)
+		}
 	}
-}
-
-func TestInvalidMetric(t *testing.T) {
-	logger := zap.NewNop()
-
-	unixSecs := int64(1574092046)
-	unixNSecs := int64(11 * time.Millisecond)
-	tsUnix := time.Unix(unixSecs, unixNSecs)
-
-	doubleVal := 1234.5678
-	doublePt := metricstestutil.Double(tsUnix, doubleVal)
-	metricData := &consumerdata.MetricsData{
-		Metrics: []*metricspb.Metric{
-			metricstestutil.Gauge("gauge_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
-		},
-	}
-	// invalid timestamp
-	rawTS := metricData.Metrics[0].Timeseries[0].Points[0].Timestamp
-	metricData.Metrics[0].Timeseries[0].Points[0].Timestamp = nil
-	gotLogs, gotNumDroppedTimeSeries := metricsDataToLogServiceData(logger, *metricData)
-	metricData.Metrics[0].Timeseries[0].Points[0].Timestamp = rawTS
-	assert.Equal(t, gotNumDroppedTimeSeries, 1)
-	assert.Equal(t, len(gotLogs), 0)
-
-	// invalid distribution
-	rawValue := metricData.Metrics[0].Timeseries[0].Points[0].Value
-	metricData.Metrics[0].Timeseries[0].Points[0].Value = &metricspb.Point_DistributionValue{
-		DistributionValue: &metricspb.DistributionValue{},
-	}
-	gotLogs, gotNumDroppedTimeSeries = metricsDataToLogServiceData(logger, *metricData)
-	metricData.Metrics[0].Timeseries[0].Points[0].Value = rawValue
-	assert.Equal(t, gotNumDroppedTimeSeries, 1)
-	assert.Equal(t, len(gotLogs), 2)
-
-	// invalid summary
-	rawValue = metricData.Metrics[0].Timeseries[0].Points[0].Value
-	metricData.Metrics[0].Timeseries[0].Points[0].Value = &metricspb.Point_SummaryValue{
-		SummaryValue: &metricspb.SummaryValue{},
-	}
-	gotLogs, gotNumDroppedTimeSeries = metricsDataToLogServiceData(logger, *metricData)
-	metricData.Metrics[0].Timeseries[0].Points[0].Value = rawValue
-	assert.Equal(t, gotNumDroppedTimeSeries, 1)
-	assert.Equal(t, len(gotLogs), 2)
-
-	// invalid value type
-	rawValue = metricData.Metrics[0].Timeseries[0].Points[0].Value
-	metricData.Metrics[0].Timeseries[0].Points[0].Value = nil
-	gotLogs, gotNumDroppedTimeSeries = metricsDataToLogServiceData(logger, *metricData)
-	metricData.Metrics[0].Timeseries[0].Points[0].Value = rawValue
-	assert.Equal(t, gotNumDroppedTimeSeries, 1)
-	assert.Equal(t, len(gotLogs), 0)
 }
 
 func TestMetricCornerCases(t *testing.T) {
 	assert.Equal(t, min(1, 2), 1)
 	assert.Equal(t, min(2, 1), 1)
 	assert.Equal(t, min(1, 1), 1)
-
-	nameContent := &sls.LogContent{
-		Key:   proto.String(metricNameKey),
-		Value: proto.String("test_name"),
-	}
-	labelsContent := &sls.LogContent{
-		Key:   proto.String(labelsKey),
-		Value: proto.String("test_labels"),
-	}
-	timeNanoContent := &sls.LogContent{
-		Key:   proto.String(timeNanoKey),
-		Value: proto.String("123"),
-	}
-	distributionValue := &metricspb.DistributionValue{}
-	logs, err := appendDistributionValues(nil, KeyValues{}, 1, nameContent, labelsContent, timeNanoContent, distributionValue)
-	assert.Error(t, err)
-	assert.Equal(t, len(logs), 2)
-
-	summaryValue := &metricspb.SummaryValue{}
-	logs, err = appendSummaryValues(nil, KeyValues{}, 1, nameContent, labelsContent, timeNanoContent, summaryValue)
-	assert.Error(t, err)
-	assert.Equal(t, len(logs), 2)
-
+	var label KeyValues
+	label.AppendMap(map[string]string{
+		"a": "b",
+	})
+	assert.Equal(t, label.String(), "a#$#b")
 }
