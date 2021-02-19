@@ -70,7 +70,7 @@ service:
 
 ### Span Events
 
-*Please Note:* Currently Span Events are extracted and added to Spans as Json on the Datadog Span Tag `events`.
+*Please Note:* Currently [Span Events](https://github.com/open-telemetry/opentelemetry-specification/blob/11cc73939a32e3a2e6f11bdeab843c61cf8594e9/specification/trace/api.md#add-events) are extracted and added to Spans as Json on the Datadog Span Tag `events`.
 
 ## Metric exporter
 
