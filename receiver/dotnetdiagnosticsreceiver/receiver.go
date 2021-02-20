@@ -15,7 +15,6 @@
 package dotnetdiagnosticsreceiver
 
 import (
-	"bytes"
 	"context"
 	"io"
 
