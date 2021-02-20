@@ -64,6 +64,9 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 	c, err := newCompressor(NoCompression)
 	require.NoError(t, err)
 
+	pf, err := newPrometheusFormatter()
+	require.NoError(t, err)
+
 	return &senderTest{
 		srv: testServer,
 		exp: exp,
@@ -79,6 +82,7 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 				name:     getTestSourceFormat(t, "source_name"),
 			},
 			c,
+			pf,
 		),
 	}
 }
@@ -126,7 +130,7 @@ func exampleTwoDifferentLogs() []pdata.LogRecord {
 	return buffer
 }
 
-func TestSend(t *testing.T) {
+func TestSendLogs(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
@@ -138,13 +142,13 @@ func TestSend(t *testing.T) {
 	})
 	defer func() { test.srv.Close() }()
 
-	test.s.buffer = exampleTwoLogs()
+	test.s.logBuffer = exampleTwoLogs()
 
 	_, err := test.s.sendLogs(context.Background(), fields{"key1": "value", "key2": "value2"})
 	assert.NoError(t, err)
 }
 
-func TestSendSplit(t *testing.T) {
+func TestSendLogsSplit(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
@@ -157,12 +161,12 @@ func TestSendSplit(t *testing.T) {
 	})
 	defer func() { test.srv.Close() }()
 	test.s.config.MaxRequestBodySize = 10
-	test.s.buffer = exampleTwoLogs()
+	test.s.logBuffer = exampleTwoLogs()
 
 	_, err := test.s.sendLogs(context.Background(), fields{})
 	assert.NoError(t, err)
 }
-func TestSendSplitFailedOne(t *testing.T) {
+func TestSendLogsSplitFailedOne(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(500)
@@ -178,14 +182,14 @@ func TestSendSplitFailedOne(t *testing.T) {
 	defer func() { test.srv.Close() }()
 	test.s.config.MaxRequestBodySize = 10
 	test.s.config.LogFormat = TextFormat
-	test.s.buffer = exampleTwoLogs()
+	test.s.logBuffer = exampleTwoLogs()
 
 	dropped, err := test.s.sendLogs(context.Background(), fields{})
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
-	assert.Equal(t, test.s.buffer[0:1], dropped)
+	assert.Equal(t, test.s.logBuffer[0:1], dropped)
 }
 
-func TestSendSplitFailedAll(t *testing.T) {
+func TestSendLogsSplitFailedAll(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(500)
@@ -203,7 +207,7 @@ func TestSendSplitFailedAll(t *testing.T) {
 	defer func() { test.srv.Close() }()
 	test.s.config.MaxRequestBodySize = 10
 	test.s.config.LogFormat = TextFormat
-	test.s.buffer = exampleTwoLogs()
+	test.s.logBuffer = exampleTwoLogs()
 
 	dropped, err := test.s.sendLogs(context.Background(), fields{})
 	assert.EqualError(
@@ -211,10 +215,10 @@ func TestSendSplitFailedAll(t *testing.T) {
 		err,
 		"[error during sending data: 500 Internal Server Error; error during sending data: 404 Not Found]",
 	)
-	assert.Equal(t, test.s.buffer[0:2], dropped)
+	assert.Equal(t, test.s.logBuffer[0:2], dropped)
 }
 
-func TestSendJson(t *testing.T) {
+func TestSendLogsJson(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
@@ -228,13 +232,13 @@ func TestSendJson(t *testing.T) {
 	})
 	defer func() { test.srv.Close() }()
 	test.s.config.LogFormat = JSONFormat
-	test.s.buffer = exampleTwoLogs()
+	test.s.logBuffer = exampleTwoLogs()
 
 	_, err := test.s.sendLogs(context.Background(), fields{"key": "value"})
 	assert.NoError(t, err)
 }
 
-func TestSendJsonSplit(t *testing.T) {
+func TestSendLogsJsonSplit(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
@@ -248,13 +252,13 @@ func TestSendJsonSplit(t *testing.T) {
 	defer func() { test.srv.Close() }()
 	test.s.config.LogFormat = JSONFormat
 	test.s.config.MaxRequestBodySize = 10
-	test.s.buffer = exampleTwoLogs()
+	test.s.logBuffer = exampleTwoLogs()
 
 	_, err := test.s.sendLogs(context.Background(), fields{})
 	assert.NoError(t, err)
 }
 
-func TestSendJsonSplitFailedOne(t *testing.T) {
+func TestSendLogsJsonSplitFailedOne(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(500)
@@ -270,14 +274,14 @@ func TestSendJsonSplitFailedOne(t *testing.T) {
 	defer func() { test.srv.Close() }()
 	test.s.config.LogFormat = JSONFormat
 	test.s.config.MaxRequestBodySize = 10
-	test.s.buffer = exampleTwoLogs()
+	test.s.logBuffer = exampleTwoLogs()
 
 	dropped, err := test.s.sendLogs(context.Background(), fields{})
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
-	assert.Equal(t, test.s.buffer[0:1], dropped)
+	assert.Equal(t, test.s.logBuffer[0:1], dropped)
 }
 
-func TestSendJsonSplitFailedAll(t *testing.T) {
+func TestSendLogsJsonSplitFailedAll(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(500)
@@ -295,7 +299,7 @@ func TestSendJsonSplitFailedAll(t *testing.T) {
 	defer func() { test.srv.Close() }()
 	test.s.config.LogFormat = JSONFormat
 	test.s.config.MaxRequestBodySize = 10
-	test.s.buffer = exampleTwoLogs()
+	test.s.logBuffer = exampleTwoLogs()
 
 	dropped, err := test.s.sendLogs(context.Background(), fields{})
 	assert.EqualError(
@@ -303,20 +307,22 @@ func TestSendJsonSplitFailedAll(t *testing.T) {
 		err,
 		"[error during sending data: 500 Internal Server Error; error during sending data: 404 Not Found]",
 	)
-	assert.Equal(t, test.s.buffer[0:2], dropped)
+	assert.Equal(t, test.s.logBuffer[0:2], dropped)
 }
 
-func TestSendUnexpectedFormat(t *testing.T) {
+func TestSendLogsUnexpectedFormat(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
 		},
 	})
 	defer func() { test.srv.Close() }()
 	test.s.config.LogFormat = "dummy"
-	test.s.buffer = exampleTwoLogs()
+	logs := exampleTwoLogs()
+	test.s.logBuffer = logs
 
-	_, err := test.s.sendLogs(context.Background(), fields{})
+	dropped, err := test.s.sendLogs(context.Background(), fields{})
 	assert.Error(t, err)
+	assert.Equal(t, logs, dropped)
 }
 
 func TestOverrideSourceName(t *testing.T) {
@@ -328,7 +334,7 @@ func TestOverrideSourceName(t *testing.T) {
 	defer func() { test.srv.Close() }()
 
 	test.s.sources.name = getTestSourceFormat(t, "Test source name/%{key1}")
-	test.s.buffer = exampleLog()
+	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), fields{"key1": "test_name"})
 	assert.NoError(t, err)
@@ -343,7 +349,7 @@ func TestOverrideSourceCategory(t *testing.T) {
 	defer func() { test.srv.Close() }()
 
 	test.s.sources.category = getTestSourceFormat(t, "Test source category/%{key1}")
-	test.s.buffer = exampleLog()
+	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), fields{"key1": "test_name"})
 	assert.NoError(t, err)
@@ -358,34 +364,34 @@ func TestOverrideSourceHost(t *testing.T) {
 	defer func() { test.srv.Close() }()
 
 	test.s.sources.host = getTestSourceFormat(t, "Test source host/%{key1}")
-	test.s.buffer = exampleLog()
+	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), fields{"key1": "test_name"})
 	assert.NoError(t, err)
 }
 
-func TestBuffer(t *testing.T) {
+func TestLogsBuffer(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	assert.Equal(t, test.s.count(), 0)
+	assert.Equal(t, test.s.countLogs(), 0)
 	logs := exampleTwoLogs()
 
-	droppedLogs, err := test.s.batch(context.Background(), logs[0], fields{})
+	droppedLogs, err := test.s.batchLog(context.Background(), logs[0], fields{})
 	require.NoError(t, err)
 	assert.Nil(t, droppedLogs)
-	assert.Equal(t, 1, test.s.count())
-	assert.Equal(t, []pdata.LogRecord{logs[0]}, test.s.buffer)
+	assert.Equal(t, 1, test.s.countLogs())
+	assert.Equal(t, []pdata.LogRecord{logs[0]}, test.s.logBuffer)
 
-	droppedLogs, err = test.s.batch(context.Background(), logs[1], fields{})
+	droppedLogs, err = test.s.batchLog(context.Background(), logs[1], fields{})
 	require.NoError(t, err)
 	assert.Nil(t, droppedLogs)
-	assert.Equal(t, 2, test.s.count())
-	assert.Equal(t, logs, test.s.buffer)
+	assert.Equal(t, 2, test.s.countLogs())
+	assert.Equal(t, logs, test.s.logBuffer)
 
-	test.s.cleanBuffer()
-	assert.Equal(t, 0, test.s.count())
-	assert.Equal(t, []pdata.LogRecord{}, test.s.buffer)
+	test.s.cleanLogsBuffer()
+	assert.Equal(t, 0, test.s.countLogs())
+	assert.Equal(t, []pdata.LogRecord{}, test.s.logBuffer)
 }
 
 func TestInvalidEndpoint(t *testing.T) {
@@ -393,7 +399,7 @@ func TestInvalidEndpoint(t *testing.T) {
 	defer func() { test.srv.Close() }()
 
 	test.s.config.HTTPClientSettings.Endpoint = ":"
-	test.s.buffer = exampleLog()
+	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), fields{})
 	assert.EqualError(t, err, `parse ":": missing protocol scheme`)
@@ -404,35 +410,37 @@ func TestInvalidPostRequest(t *testing.T) {
 	defer func() { test.srv.Close() }()
 
 	test.s.config.HTTPClientSettings.Endpoint = ""
-	test.s.buffer = exampleLog()
+	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), fields{})
 	assert.EqualError(t, err, `Post "": unsupported protocol scheme ""`)
 }
 
-func TestBufferOverflow(t *testing.T) {
+func TestLogsBufferOverflow(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
 	test.s.config.HTTPClientSettings.Endpoint = ":"
 	log := exampleLog()
 
-	for test.s.count() < maxBufferSize-1 {
-		_, err := test.s.batch(context.Background(), log[0], fields{})
+	for test.s.countLogs() < maxBufferSize-1 {
+		_, err := test.s.batchLog(context.Background(), log[0], fields{})
 		require.NoError(t, err)
 	}
 
-	_, err := test.s.batch(context.Background(), log[0], fields{})
+	_, err := test.s.batchLog(context.Background(), log[0], fields{})
 	assert.EqualError(t, err, `parse ":": missing protocol scheme`)
-	assert.Equal(t, 0, test.s.count())
+	assert.Equal(t, 0, test.s.countLogs())
 }
 
-func TestMetricsPipeline(t *testing.T) {
+func TestInvalidMetricFormat(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
+	test.s.config.MetricFormat = "invalid"
+
 	err := test.s.send(context.Background(), MetricsPipeline, strings.NewReader(""), fields{})
-	assert.EqualError(t, err, `current sender version doesn't support metrics`)
+	assert.EqualError(t, err, `unsupported metrics format: invalid`)
 }
 
 func TestInvalidPipeline(t *testing.T) {
@@ -511,4 +519,181 @@ func TestInvalidContentEncoding(t *testing.T) {
 
 	err := test.s.send(context.Background(), LogsPipeline, reader, fields{})
 	assert.EqualError(t, err, "invalid content encoding: test")
+}
+
+func TestSendMetrics(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
+		func(w http.ResponseWriter, req *http.Request) {
+			body := extractBody(t, req)
+			expected := `test_metric_data{test="test_value",test2="second_value"} 14500 1605534165000
+gauge_metric_name{foo="bar",remote_name="156920",url="http://example_url"} 124 1608124661166
+gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1608124662166`
+			assert.Equal(t, expected, body)
+			assert.Equal(t, "otelcol", req.Header.Get("X-Sumo-Client"))
+			assert.Equal(t, "application/vnd.sumologic.prometheus", req.Header.Get("Content-Type"))
+		},
+	})
+	defer func() { test.srv.Close() }()
+
+	test.s.config.MetricFormat = PrometheusFormat
+	test.s.metricBuffer = []metricPair{
+		exampleIntMetric(),
+		exampleIntGaugeMetric(),
+	}
+	_, err := test.s.sendMetrics(context.Background(), fields{"key1": "value", "key2": "value2"})
+	assert.NoError(t, err)
+}
+
+func TestSendMetricsSplit(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
+		func(w http.ResponseWriter, req *http.Request) {
+			body := extractBody(t, req)
+			expected := `test_metric_data{test="test_value",test2="second_value"} 14500 1605534165000`
+			assert.Equal(t, expected, body)
+		},
+		func(w http.ResponseWriter, req *http.Request) {
+			body := extractBody(t, req)
+			expected := `gauge_metric_name{foo="bar",remote_name="156920",url="http://example_url"} 124 1608124661166
+gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1608124662166`
+			assert.Equal(t, expected, body)
+		},
+	})
+	defer func() { test.srv.Close() }()
+	test.s.config.MaxRequestBodySize = 10
+	test.s.config.MetricFormat = PrometheusFormat
+	test.s.metricBuffer = []metricPair{
+		exampleIntMetric(),
+		exampleIntGaugeMetric(),
+	}
+
+	_, err := test.s.sendMetrics(context.Background(), fields{})
+	assert.NoError(t, err)
+}
+
+func TestSendMetricsSplitFailedOne(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
+		func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(500)
+
+			body := extractBody(t, req)
+			expected := `test_metric_data{test="test_value",test2="second_value"} 14500 1605534165000`
+			assert.Equal(t, expected, body)
+		},
+		func(w http.ResponseWriter, req *http.Request) {
+			body := extractBody(t, req)
+			expected := `gauge_metric_name{foo="bar",remote_name="156920",url="http://example_url"} 124 1608124661166
+gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1608124662166`
+			assert.Equal(t, expected, body)
+		},
+	})
+	defer func() { test.srv.Close() }()
+	test.s.config.MaxRequestBodySize = 10
+	test.s.config.MetricFormat = PrometheusFormat
+	test.s.metricBuffer = []metricPair{
+		exampleIntMetric(),
+		exampleIntGaugeMetric(),
+	}
+
+	dropped, err := test.s.sendMetrics(context.Background(), fields{})
+	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
+	assert.Equal(t, test.s.metricBuffer[0:1], dropped)
+}
+
+func TestSendMetricsSplitFailedAll(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
+		func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(500)
+
+			body := extractBody(t, req)
+			expected := `test_metric_data{test="test_value",test2="second_value"} 14500 1605534165000`
+			assert.Equal(t, expected, body)
+		},
+		func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(404)
+
+			body := extractBody(t, req)
+			expected := `gauge_metric_name{foo="bar",remote_name="156920",url="http://example_url"} 124 1608124661166
+gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1608124662166`
+			assert.Equal(t, expected, body)
+		},
+	})
+	defer func() { test.srv.Close() }()
+	test.s.config.MaxRequestBodySize = 10
+	test.s.config.MetricFormat = PrometheusFormat
+	test.s.metricBuffer = []metricPair{
+		exampleIntMetric(),
+		exampleIntGaugeMetric(),
+	}
+
+	dropped, err := test.s.sendMetrics(context.Background(), fields{})
+	assert.EqualError(
+		t,
+		err,
+		"[error during sending data: 500 Internal Server Error; error during sending data: 404 Not Found]",
+	)
+	assert.Equal(t, test.s.metricBuffer[0:2], dropped)
+}
+
+func TestSendMetricsUnexpectedFormat(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
+		func(w http.ResponseWriter, req *http.Request) {
+		},
+	})
+	defer func() { test.srv.Close() }()
+	test.s.config.MetricFormat = "invalid"
+	metrics := []metricPair{
+		exampleIntMetric(),
+	}
+	test.s.metricBuffer = metrics
+
+	dropped, err := test.s.sendMetrics(context.Background(), fields{})
+	assert.EqualError(t, err, "unexpected metric format: invalid")
+	assert.Equal(t, dropped, metrics)
+}
+
+func TestMetricsBuffer(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
+	defer func() { test.srv.Close() }()
+
+	assert.Equal(t, test.s.countMetrics(), 0)
+	metrics := []metricPair{
+		exampleIntMetric(),
+		exampleIntGaugeMetric(),
+	}
+
+	droppedMetrics, err := test.s.batchMetric(context.Background(), metrics[0], fields{})
+	require.NoError(t, err)
+	assert.Nil(t, droppedMetrics)
+	assert.Equal(t, 1, test.s.countMetrics())
+	assert.Equal(t, metrics[0:1], test.s.metricBuffer)
+
+	droppedMetrics, err = test.s.batchMetric(context.Background(), metrics[1], fields{})
+	require.NoError(t, err)
+	assert.Nil(t, droppedMetrics)
+	assert.Equal(t, 2, test.s.countMetrics())
+	assert.Equal(t, metrics, test.s.metricBuffer)
+
+	test.s.cleanMetricBuffer()
+	assert.Equal(t, 0, test.s.countMetrics())
+	assert.Equal(t, []metricPair{}, test.s.metricBuffer)
+}
+
+func TestMetricsBufferOverflow(t *testing.T) {
+	t.Skip("Skip test due to prometheus format complexity. Execution can take over 30s")
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
+	defer func() { test.srv.Close() }()
+
+	test.s.config.HTTPClientSettings.Endpoint = ":"
+	test.s.config.MetricFormat = PrometheusFormat
+	test.s.config.MaxRequestBodySize = 1024 * 1024 * 1024 * 1024
+	metric := exampleIntMetric()
+
+	for test.s.countMetrics() < maxBufferSize-1 {
+		_, err := test.s.batchMetric(context.Background(), metric, fields{})
+		require.NoError(t, err)
+	}
+
+	_, err := test.s.batchMetric(context.Background(), metric, fields{})
+	assert.EqualError(t, err, `parse ":": missing protocol scheme`)
+	assert.Equal(t, 0, test.s.countMetrics())
 }

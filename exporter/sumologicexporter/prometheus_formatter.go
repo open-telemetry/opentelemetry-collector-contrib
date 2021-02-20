@@ -42,16 +42,16 @@ const (
 	prometheusInfValue    string = "+Inf"
 )
 
-func newPrometheusFormatter() prometheusFormatter {
+func newPrometheusFormatter() (prometheusFormatter, error) {
 	sanitNameRegex, err := regexp.Compile(`[^0-9a-zA-Z]`)
 	if err != nil {
-		return prometheusFormatter{}
+		return prometheusFormatter{}, err
 	}
 
 	return prometheusFormatter{
 		sanitNameRegex: sanitNameRegex,
 		replacer:       strings.NewReplacer(`\`, `\\`, `"`, `\"`),
-	}
+	}, nil
 }
 
 // PrometheusLabels returns all attributes as sanitized prometheus labels string
