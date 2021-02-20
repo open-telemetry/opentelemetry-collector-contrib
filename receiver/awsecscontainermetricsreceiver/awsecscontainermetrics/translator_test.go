@@ -59,3 +59,11 @@ func TestIntSum(t *testing.T) {
 	m := intSum("cpu_utilized", "Count", intValue, timestamp)
 	require.NotNil(t, m)
 }
+
+func TestConvertStoppedContainerDataToOTMetrics(t *testing.T) {
+	timestamp := pdata.TimeToUnixNano(time.Now())
+	resource := pdata.NewResource()
+	duration := 1200000000.32132
+	rms := convertStoppedContainerDataToOTMetrics("container.", resource, timestamp, duration)
+	require.EqualValues(t, 1, rms.At(0).InstrumentationLibraryMetrics().Len())
+}

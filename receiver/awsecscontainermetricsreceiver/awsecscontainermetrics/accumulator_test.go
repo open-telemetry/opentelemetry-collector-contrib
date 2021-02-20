@@ -16,6 +16,7 @@ package awsecscontainermetrics
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -221,4 +222,24 @@ func TestIsEmptyStats(t *testing.T) {
 	require.EqualValues(t, true, isEmptyStats(cstats["001"]))
 	cstats = map[string]*ContainerStats{"001": {}}
 	require.EqualValues(t, true, isEmptyStats(cstats["001"]))
+}
+
+func TestCalculateTime(t *testing.T) {
+	logger := zap.NewNop()
+	startTime := "2020-10-02T00:15:07.620912337Z"
+	endTime := "2020-10-03T15:14:06.620913372Z"
+	result, _ := calculateTime(startTime, endTime, logger)
+	require.EqualValues(t, 140339.000001035, result)
+	startTime = "2020-10-0200:15"
+	endTime = "2020-10-02T15:14:06.620913372Z"
+	result, error := calculateTime(startTime, endTime, logger)
+	_, expectedError := time.Parse("2020-10-02T00:15:07", "2020-10-0200:15")
+	require.EqualValues(t, 0, result)
+	require.Error(t, expectedError, error)
+	startTime = "2020-10-02T00:15:07.620912337Z"
+	endTime = "2020-02T15:2091337Z"
+	result, error = calculateTime(startTime, endTime, logger)
+	_, expectedError = time.Parse("2020-10-02T00:15:07", "2020-02T15:2091337")
+	require.EqualValues(t, 0, result)
+	require.Error(t, expectedError, error)
 }

@@ -74,6 +74,8 @@ const (
 	AttributeStorageRead  = "storage.read_bytes"
 	AttributeStorageWrite = "storage.write_bytes"
 
+	AttributeDuration = "duration"
+
 	UnitBytes       = "Bytes"
 	UnitMegaBytes   = "Megabytes"
 	UnitNanoSecond  = "Nanoseconds"
@@ -81,4 +83,5 @@ const (
 	UnitCount       = "Count"
 	UnitVCpu        = "vCPU"
 	UnitPercent     = "Percent"
+	UnitSecond      = "Second"
 )

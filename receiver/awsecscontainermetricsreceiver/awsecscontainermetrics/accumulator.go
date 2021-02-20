@@ -15,6 +15,7 @@
 package awsecscontainermetrics
 
 import (
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -46,12 +47,18 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 			containerMetrics := convertContainerMetrics(stats, logger, containerMetadata)
 			acc.accumulate(convertToOTLPMetrics(ContainerPrefix, containerMetrics, containerResource, timestamp))
 			aggregateTaskMetrics(&taskMetrics, containerMetrics)
-			overrideWithTaskLevelLimit(&taskMetrics, metadata)
-			acc.accumulate(convertToOTLPMetrics(TaskPrefix, taskMetrics, taskResource, timestamp))
+		} else if containerMetadata.FinishedAt != "" && containerMetadata.StartedAt != "" {
+			duration, err := calculateTime(containerMetadata.StartedAt, containerMetadata.FinishedAt, logger)
+			if err != nil {
+				logger.Warn("Error time format error found for this container:" + containerMetadata.ContainerName)
+			}
+			acc.accumulate(convertStoppedContainerDataToOTMetrics(ContainerPrefix, containerResource, timestamp, duration))
 		} else {
-			acc.accumulate(convertResourceToRMS(containerResource))
+			logger.Warn("Missing stats data for this docker id :" + containerMetadata.DockerID)
 		}
 	}
+	overrideWithTaskLevelLimit(&taskMetrics, metadata)
+	acc.accumulate(convertToOTLPMetrics(TaskPrefix, taskMetrics, taskResource, timestamp))
 }
 
 func (acc *metricDataAccumulator) accumulate(rms pdata.ResourceMetricsSlice) {
@@ -62,14 +69,6 @@ func (acc *metricDataAccumulator) accumulate(rms pdata.ResourceMetricsSlice) {
 
 func isEmptyStats(stats *ContainerStats) bool {
 	return stats == nil || stats.ID == ""
-}
-
-func convertResourceToRMS(containerResource pdata.Resource) pdata.ResourceMetricsSlice {
-	rms := pdata.NewResourceMetricsSlice()
-	rms.Resize(1)
-	rm := rms.At(0)
-	containerResource.CopyTo(rm.Resource())
-	return rms
 }
 
 func convertContainerMetrics(stats *ContainerStats, logger *zap.Logger, containerMetadata ContainerMetadata) ECSMetrics {
@@ -108,4 +107,22 @@ func overrideWithTaskLevelLimit(taskMetrics *ECSMetrics, metadata TaskMetadata) 
 	if taskMetrics.CPUReserved > 0 {
 		taskMetrics.CPUUtilized = ((taskMetrics.CPUUsageInVCPU / taskMetrics.CPUReserved) * 100)
 	}
+}
+
+func calculateTime(startTime, endTime string, logger *zap.Logger) (float64, error) {
+	const layout = "2006-01-02T15:04:05"
+	startTime = strings.Trim(startTime, "Z")
+	endTime = strings.Trim(endTime, "Z")
+	start, err1 := time.Parse(layout, startTime)
+	if err1 != nil {
+		logger.Warn("Error found for the format of the stopped container start time :" + startTime)
+		return 0, err1
+	}
+	end, err := time.Parse(layout, endTime)
+	if err != nil {
+		logger.Warn("Error found for the format of the stopped container end time :" + endTime)
+		return 0, err
+	}
+	duration := end.Sub(start)
+	return duration.Seconds(), nil
 }
