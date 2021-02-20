@@ -124,8 +124,8 @@ if "class_references" in mcfg:
 
 if "anys" in mcfg:
     anys = getlistcfg(mcfg["anys"])
-    for any in anys:
-        nitpick_ignore.append(("any", any,))
+    for _any in anys:
+        nitpick_ignore.append(("any", _any,))
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
