@@ -43,7 +43,7 @@ type Config struct {
 	LogFormat LogFormatType `mapstructure:"log_format"`
 
 	// Metrics related configuration
-	// The format of metrics you will be sending, either graphite or carbon2 or prometheus (Default is carbon2)
+	// The format of metrics you will be sending, either graphite or carbon2 or prometheus (Default is prometheus)
 	MetricFormat MetricFormatType `mapstructure:"metric_format"`
 
 	// List of regexes for attributes which should be send as metadata
@@ -114,7 +114,7 @@ const (
 	// DefaultLogFormat defines default LogFormat
 	DefaultLogFormat LogFormatType = JSONFormat
 	// DefaultMetricFormat defines default MetricFormat
-	DefaultMetricFormat MetricFormatType = Carbon2Format
+	DefaultMetricFormat MetricFormatType = PrometheusFormat
 	// DefaultSourceCategory defines default SourceCategory
 	DefaultSourceCategory string = ""
 	// DefaultSourceName defines default SourceName
