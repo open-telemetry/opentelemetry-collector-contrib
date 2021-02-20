@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/golang/snappy"
-	"github.com/grafana/loki/pkg/logproto"
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,6 +34,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/logproto"
 )
 
 const (
