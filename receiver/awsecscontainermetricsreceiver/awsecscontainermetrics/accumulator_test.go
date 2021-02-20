@@ -118,9 +118,11 @@ func TestGetMetricsDataMissingContainerStats(t *testing.T) {
 	require.Less(t, 0, len(acc.mds))
 }
 
-func TestGetMetricsDataNilContainerStats(t *testing.T) {
+func TestGetMetricsDataForStoppedContainer(t *testing.T) {
 	cstats = map[string]*ContainerStats{"001": nil}
-
+	tm.Containers = []ContainerMetadata{
+		{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", CreatedAt: "2020-07-30T22:12:29.842610987Z", StartedAt: "2020-07-30T22:12:31.842610987Z", FinishedAt: "2020-07-31T22:10:29.842610987Z", KnownStatus: "STOPPED", Limits: Limit{CPU: &f, Memory: &v}},
+	}
 	acc.getMetricsData(cstats, tm, logger)
 	require.Less(t, 0, len(acc.mds))
 }
@@ -221,4 +223,15 @@ func TestIsEmptyStats(t *testing.T) {
 	require.EqualValues(t, true, isEmptyStats(cstats["001"]))
 	cstats = map[string]*ContainerStats{"001": {}}
 	require.EqualValues(t, true, isEmptyStats(cstats["001"]))
+}
+
+func TestCalculateTime(t *testing.T) {
+	startTime := "2020-10-02T00:15:07.620912337Z"
+	endTime := "2020-10-03T15:14:06.620913372Z"
+	result, _ := calculateTime(startTime, endTime)
+	require.EqualValues(t, 140339.000001035, result)
+	startTime = "2010-10-02T00:15:07.620912337Z"
+	endTime = "2020-10-03T15:14:06.620913372Z"
+	result, _ = calculateTime(startTime, endTime)
+	require.EqualValues(t, 3.15759539000001e+08, result)
 }

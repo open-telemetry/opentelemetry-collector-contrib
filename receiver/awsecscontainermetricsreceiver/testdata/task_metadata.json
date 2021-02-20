@@ -85,13 +85,15 @@
           "com.amazonaws.ecs.task-definition-version": "1"
         },
         "DesiredStatus": "RUNNING",
-        "KnownStatus": "RUNNING",
+        "KnownStatus": "STOPPED",
         "Limits": {
           "CPU": 0,
           "Memory": 128
         },
         "CreatedAt": "2020-07-30T22:12:29.842610987Z",
         "StartedAt": "2020-07-30T22:12:30.95668701Z",
+        "FinishedAt": "2020-08-30T20:11:29.358701Z",
+        "ExitCode": 2,
         "Type": "NORMAL",
         "Networks": [
           {
