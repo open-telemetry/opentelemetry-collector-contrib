@@ -15,7 +15,6 @@
 package dotnetdiagnosticsreceiver
 
 import (
-	"bytes"
 	"context"
 	"io"
 
@@ -61,7 +60,7 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	w := dotnet.NewRequestWriter(&bytes.Buffer{}, conn, r.intervalSec, r.counters...)
+	w := dotnet.NewRequestWriter(conn, r.intervalSec, r.counters...)
 	err = w.SendRequest()
 	if err != nil {
 		return err

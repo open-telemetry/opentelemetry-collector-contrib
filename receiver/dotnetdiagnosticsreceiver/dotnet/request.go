@@ -15,6 +15,7 @@
 package dotnet
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -32,51 +33,40 @@ import (
 // For docs on the protocol, see
 // https://github.com/Microsoft/perfview/blob/main/src/TraceEvent/EventPipe/EventPipeFormat.md
 type RequestWriter struct {
-	buf         network.ByteBuffer
 	w           io.Writer
 	intervalSec int
 	// providerNames (aka event sources) indicate which counter groups to get metrics for. e.g. "System.Runtime"
 	providerNames []string
 }
 
-func NewRequestWriter(buf network.ByteBuffer, w io.Writer, intervalSec int, providerNames ...string) *RequestWriter {
-	return &RequestWriter{buf: buf, w: w, intervalSec: intervalSec, providerNames: providerNames}
+func NewRequestWriter(w io.Writer, intervalSec int, providerNames ...string) *RequestWriter {
+	return &RequestWriter{w: w, intervalSec: intervalSec, providerNames: providerNames}
 }
 
 func (w *RequestWriter) SendRequest() error {
-	req, err := w.createRequest()
-	if err != nil {
-		return err
-	}
-	_, err = w.w.Write(req)
+	req := w.createRequest()
+	_, err := w.w.Write(req)
 	return err
 }
 
-// Corresponds to DiagnosticsServerCommandSet.EventPipe
+// The following constants come from:
 // https://github.com/dotnet/diagnostics/blob/master/src/Microsoft.Diagnostics.NETCore.Client/DiagnosticsIpc/IpcCommands.cs
+
+// Corresponds to DiagnosticsServerCommandSet.EventPipe
 const eventPipeCommand = 2
 
 // Corresponds to EventPipeCommandId.CollectTracing2
-// https://github.com/dotnet/diagnostics/blob/master/src/Microsoft.Diagnostics.NETCore.Client/DiagnosticsIpc/IpcCommands.cs
 const collectTracing2CommandID = 3
 
-func (w *RequestWriter) createRequest() ([]byte, error) {
+func (w *RequestWriter) createRequest() []byte {
 	cfgReq := newConfigRequest(w.intervalSec, w.providerNames...)
-	payload, err := cfgReq.serialize(w.buf)
-	if err != nil {
-		return nil, err
-	}
-
+	payload := cfgReq.serialize()
 	hdr := &requestHeader{
 		commandSet: eventPipeCommand,
 		commandID:  collectTracing2CommandID,
 	}
-	hdrBytes, err := hdr.serialize(w.buf, len(payload))
-	if err != nil {
-		return nil, err
-	}
-
-	return append(hdrBytes, payload...), nil
+	hdrBytes := hdr.serialize(len(payload))
+	return append(hdrBytes, payload...)
 }
 
 // requestHeader
@@ -88,28 +78,13 @@ type requestHeader struct {
 const magic = "DOTNET_IPC_V1"
 const requestHeaderSize = 20
 
-func (h requestHeader) serialize(buf network.ByteBuffer, payloadSize int) ([]byte, error) {
-	buf.Reset()
-
-	_, err := buf.Write([]byte(magic + "\000"))
-	if err != nil {
-		return nil, err
-	}
-
+func (h requestHeader) serialize(payloadSize int) []byte {
+	buf := &bytes.Buffer{}
+	_, _ = buf.Write([]byte(magic + "\000"))
 	totSize := uint16(requestHeaderSize + payloadSize)
-	err = binary.Write(buf, network.ByteOrder, totSize)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = buf.Write([]byte{h.commandSet, h.commandID, 0, 0})
-	if err != nil {
-		return nil, err
-	}
-
-	out := make([]byte, buf.Len())
-	copy(out, buf.Bytes())
-	return out, nil
+	_ = binary.Write(buf, network.ByteOrder, totSize)
+	_, _ = buf.Write([]byte{h.commandSet, h.commandID, 0, 0})
+	return buf.Bytes()
 }
 
 // configRequest
@@ -133,39 +108,17 @@ func newConfigRequest(intervalSec int, providerNames ...string) configRequest {
 	}
 }
 
-func (c configRequest) serialize(buf network.ByteBuffer) ([]byte, error) {
-	buf.Reset()
-	err := binary.Write(buf, network.ByteOrder, c.circularBufferSizeInMB)
-	if err != nil {
-		return nil, err
-	}
-
-	err = binary.Write(buf, network.ByteOrder, c.format)
-	if err != nil {
-		return nil, err
-	}
-
-	err = binary.Write(buf, network.ByteOrder, c.requestRundown)
-	if err != nil {
-		return nil, err
-	}
-
+func (c configRequest) serialize() []byte {
+	buf := &bytes.Buffer{}
+	_ = binary.Write(buf, network.ByteOrder, c.circularBufferSizeInMB)
+	_ = binary.Write(buf, network.ByteOrder, c.format)
+	_ = binary.Write(buf, network.ByteOrder, c.requestRundown)
 	size := int32(len(c.providers))
-	err = binary.Write(buf, network.ByteOrder, size)
-	if err != nil {
-		return nil, err
-	}
-
+	_ = binary.Write(buf, network.ByteOrder, size)
 	for _, p := range c.providers {
-		err = p.serialize(buf)
-		if err != nil {
-			return nil, err
-		}
+		p.serialize(buf)
 	}
-
-	out := make([]byte, buf.Len())
-	copy(out, buf.Bytes())
-	return out, nil
+	return buf.Bytes()
 }
 
 // provider
@@ -183,6 +136,7 @@ func createProviders(intervalSec int, names ...string) (ps []provider) {
 	return
 }
 
+// from https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.tracing.eventlevel
 const verboseEventLevel = 5
 
 func createProvider(name string, intervalSec int) provider {
@@ -195,28 +149,11 @@ func createProvider(name string, intervalSec int) provider {
 	}
 }
 
-func (p provider) serialize(buf network.ByteBuffer) error {
-	err := binary.Write(buf, network.ByteOrder, p.keywords)
-	if err != nil {
-		return err
-	}
-
-	err = binary.Write(buf, network.ByteOrder, p.eventLevel)
-	if err != nil {
-		return err
-	}
-
-	err = network.WriteUTF16String(buf, p.name)
-	if err != nil {
-		return err
-	}
-
-	err = network.WriteUTF16String(buf, p.args.String())
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (p provider) serialize(buf *bytes.Buffer) {
+	_ = binary.Write(buf, network.ByteOrder, p.keywords)
+	_ = binary.Write(buf, network.ByteOrder, p.eventLevel)
+	network.WriteUTF16String(buf, p.name)
+	network.WriteUTF16String(buf, p.args.String())
 }
 
 // providerArgs

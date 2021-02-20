@@ -15,35 +15,16 @@
 package network
 
 import (
+	"bytes"
 	"encoding/binary"
-	"io"
 	"unicode/utf16"
 )
 
 var ByteOrder = binary.LittleEndian
 
-// ByteBuffer is an interface extracted from bytes.Buffer so that it can be
-// swapped for testing.
-type ByteBuffer interface {
-	io.Writer
-	io.ByteWriter
-	Bytes() []byte
-	Len() int
-	Reset()
-}
-
-func WriteUTF16String(buf ByteBuffer, s string) error {
+func WriteUTF16String(buf *bytes.Buffer, s string) {
 	encoded := utf16.Encode([]rune(s))
-	err := binary.Write(buf, ByteOrder, int32(len(encoded)+1))
-	if err != nil {
-		return err
-	}
-
-	err = binary.Write(buf, ByteOrder, encoded)
-	if err != nil {
-		return err
-	}
-
-	_, err = buf.Write([]byte{0, 0})
-	return err
+	_ = binary.Write(buf, ByteOrder, int32(len(encoded)+1))
+	_ = binary.Write(buf, ByteOrder, encoded)
+	_, _ = buf.Write([]byte{0, 0})
 }
