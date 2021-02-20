@@ -16,7 +16,7 @@ package translation
 
 const (
 	// DefaultTranslationRulesYaml defines default translation rules that will be applied to metrics if
-	// config.SendCompatibleMetrics set to true and config.TranslationRules not specified explicitly.
+	// config.TranslationRules not specified explicitly.
 	// Keep it in YAML format to be able to easily copy and paste it in config if modifications needed.
 	DefaultTranslationRulesYaml = `
 translation_rules:
@@ -63,7 +63,6 @@ translation_rules:
 
 - action: rename_metrics
   mapping:
-
     # kubeletstats receiver metrics
     container.cpu.time: container_cpu_utilization
     container.filesystem.available: container_fs_available_bytes
@@ -241,13 +240,13 @@ translation_rules:
 - action: split_metric
   metric_name: k8s.pod.network.io
   dimension_key: direction
-  mapping: 
+  mapping:
     receive: pod_network_receive_bytes_total
     transmit: pod_network_transmit_bytes_total
 - action: split_metric
   metric_name: k8s.pod.network.errors
   dimension_key: direction
-  mapping: 
+  mapping:
     receive: pod_network_receive_errors_total
     transmit: pod_network_transmit_errors_total
 
@@ -466,18 +465,21 @@ translation_rules:
 - action: copy_metrics
   mapping:
     df_complex.used: df_complex.used_total
+
 - action: aggregate_metric
   metric_name: df_complex.used_total
   aggregation_method: avg
   without_dimensions:
     - mode
     - mountpoint
+
 - action: aggregate_metric
   metric_name: df_complex.used_total
   aggregation_method: sum
   without_dimensions:
   - device
   - type
+
 - action: calculate_new_metric
   metric_name: disk.summary_utilization
   operand1_metric: df_complex.used_total
@@ -496,8 +498,8 @@ translation_rules:
   metric_name: disk.ops
   aggregation_method: sum
   without_dimensions:
-   - direction
-   - device
+    - direction
+    - device
 - action: delta_metric
   mapping:
     disk.ops: disk_ops.total
