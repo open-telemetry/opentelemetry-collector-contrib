@@ -44,15 +44,21 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 		stats, ok := containerStatsMap[containerMetadata.DockerID]
 
 		if ok && !isEmptyStats(stats) {
+
 			containerMetrics := convertContainerMetrics(stats, logger, containerMetadata)
 			acc.accumulate(convertToOTLPMetrics(ContainerPrefix, containerMetrics, containerResource, timestamp))
 			aggregateTaskMetrics(&taskMetrics, containerMetrics)
+
 		} else if containerMetadata.FinishedAt != "" && containerMetadata.StartedAt != "" {
+
 			duration, err := calculateTime(containerMetadata.StartedAt, containerMetadata.FinishedAt)
+
 			if err != nil {
 				logger.Warn("Error time format error found for this container:" + containerMetadata.ContainerName)
 			}
+
 			acc.accumulate(convertStoppedContainerDataToOTMetrics(ContainerPrefix, containerResource, timestamp, duration))
+
 		} else {
 			logger.Warn("Missing stats data for this docker id :" + containerMetadata.DockerID)
 		}
