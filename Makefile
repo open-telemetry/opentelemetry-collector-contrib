@@ -148,6 +148,20 @@ docker-component: check-component
 	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
 	rm ./cmd/$(COMPONENT)/$(COMPONENT)
 
+DOCKER_BUILDX_PLATFORMS := linux/amd64,linux/arm64
+.PHONY: docker-cross-build-component # Not intended to be used directly
+docker-cross-build-component: check-component
+	PLATFORMS='$(shell echo $(DOCKER_BUILDX_PLATFORMS) | sed "s/,/ /g")'; \
+	for platform in $${PLATFORMS}; do \
+		IFS='/' osAndArch=($$platform); \
+		GOOS=$${osAndArch[0]}; \
+		GOARCH=$${osAndArch[1]}; \
+		GOOS=$${osAndArch[0]} GOARCH=$${osAndArch[1]} $(MAKE) $(COMPONENT); \
+		cp ./bin/$(COMPONENT)_$${GOOS}_$${GOARCH} ./cmd/$(COMPONENT)/; \
+		docker build -t $(COMPONENT):$${GOARCH} ./cmd/$(COMPONENT)/ --build-arg=TARGETOS=$${GOOS} --build-arg=TARGETARCH=$${GOARCH}; \
+		rm ./cmd/$(COMPONENT)/$(COMPONENT)_$${GOOS}_$${GOARCH} ; \
+  	done
+
 .PHONY: check-component
 check-component:
 ifndef COMPONENT
@@ -157,6 +171,10 @@ endif
 .PHONY: docker-otelcontribcol
 docker-otelcontribcol:
 	COMPONENT=otelcontribcol $(MAKE) docker-component
+
+.PHONY: docker-cross-build-otelcontribcol
+docker-cross-build-otelcontribcol:
+	COMPONENT=otelcontribcol $(MAKE) docker-cross-build-component
 
 .PHONY: generate
 generate:
