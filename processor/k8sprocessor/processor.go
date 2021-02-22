@@ -27,7 +27,6 @@ import (
 
 const (
 	k8sIPLabelName    string = "k8s.pod.ip"
-	podUIDLabelName   string = "pod_uid"
 	clientIPLabelName string = "ip"
 )
 

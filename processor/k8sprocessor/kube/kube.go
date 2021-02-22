@@ -71,9 +71,11 @@ type Pod struct {
 }
 
 type deleteRequest struct {
-	id   string
-	name string
-	ts   time.Time
+	// id is identifier (IP address or Pod UID) of pod to remove from pods map
+	id string
+	// name contains name of pod to remove from pods map
+	podName string
+	ts      time.Time
 }
 
 // Filters is used to instruct the client on how to filter out k8s pods.

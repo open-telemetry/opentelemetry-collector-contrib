@@ -38,7 +38,7 @@
 //  - from: labels
 //    name: pod_uid
 //
-// If Pod association rules are not configured resources are associated with metadata only by IP Address.
+// If Pod association rules are not configured resources are associated with metadata only by connection's IP Address.
 //
 // RBAC
 //

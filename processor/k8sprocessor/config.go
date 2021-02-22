@@ -40,6 +40,8 @@ type Config struct {
 	// pods by labels, fields, namespaces, nodes, etc.
 	Filter FilterConfig `mapstructure:"filter"`
 
+	// Association section allows to define rules for tagging spans, metrics,
+	// and logs with Pod metadata.
 	Association []PodAssociationConfig `mapstructure:"pod_association"`
 }
 
@@ -176,8 +178,8 @@ type FieldFilterConfig struct {
 	Op string `mapstructure:"op"`
 }
 
-// PodAssociationConfig allows specifying rules for associating resources
-// with pod metadata
+// PodAssociationConfig contain single rule how to associate Pod metadata
+// with logs, spans and metrics
 type PodAssociationConfig struct {
 	// From represents the source of the association.
 	// Allowed values are connection and labels

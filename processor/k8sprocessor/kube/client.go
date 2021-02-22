@@ -45,6 +45,8 @@ type WatchClient struct {
 	deleteQueue     []deleteRequest
 	stopCh          chan struct{}
 
+	// A map containing Pod related data, used to associate them with resources.
+	// Key can be either an IP address or Pod UID
 	Pods         map[string]*Pod
 	Rules        ExtractionRules
 	Filters      Filters
@@ -169,7 +171,7 @@ func (c *WatchClient) deleteLoop(interval time.Duration, gracePeriod time.Durati
 				if p, ok := c.Pods[d.id]; ok {
 					// Sanity check: make sure we are deleting the same pod
 					// and the underlying state (ip<>pod mapping) has not changed.
-					if p.Name == d.name {
+					if p.Name == d.podName {
 						delete(c.Pods, d.id)
 					}
 				}
@@ -269,8 +271,6 @@ func (c *WatchClient) extractField(v string, r FieldExtractionRule) string {
 }
 
 func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
-	c.m.Lock()
-	defer c.m.Unlock()
 	newPod := &Pod{
 		Name:      pod.Name,
 		Address:   pod.Status.PodIP,
@@ -283,6 +283,10 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	} else {
 		newPod.Attributes = c.extractPodAttributes(pod)
 	}
+
+	c.m.Lock()
+	defer c.m.Unlock()
+
 	if pod.UID != "" {
 		c.Pods[string(pod.UID)] = newPod
 	}
@@ -321,9 +325,9 @@ func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
 func (c *WatchClient) appendDeleteQueue(podID, podName string) {
 	c.deleteMut.Lock()
 	c.deleteQueue = append(c.deleteQueue, deleteRequest{
-		id:   podID,
-		name: podName,
-		ts:   time.Now(),
+		id:      podID,
+		podName: podName,
+		ts:      time.Now(),
 	})
 	c.deleteMut.Unlock()
 }

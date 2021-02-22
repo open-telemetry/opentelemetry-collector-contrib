@@ -97,6 +97,7 @@ func RecordIPLookupMiss() {
 	stats.Record(context.Background(), mIPLookupMiss.M(int64(1)))
 }
 
+// RecordPodTableSize store size of pod table field in WatchClient
 func RecordPodTableSize(podTableSize int64) {
 	stats.Record(context.Background(), mPodTableSize.M(podTableSize))
 }

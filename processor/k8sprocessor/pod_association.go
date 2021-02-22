@@ -25,66 +25,50 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
-// k8sPodAssociationFromAttributes extracts IP and pod UID from attributes
+// k8sPodAssociationFromAttributes extracts IP and pod UID from attributes based on association config.
+// It returns a map containing specified labels as a keys and IP Address and/or Pod UID
 func k8sPodAssociationFromAttributes(ctx context.Context, attrs pdata.AttributeMap, associations []kube.Association) map[string]string {
-	var podIP, clientIP, contextIP string
 	podAssociation := make(map[string]string)
-
-	podIP = stringAttributeFromMap(attrs, k8sIPLabelName)
-	clientIP = stringAttributeFromMap(attrs, clientIPLabelName)
+	var clientIP string
 	if c, ok := client.FromContext(ctx); ok {
-		contextIP = c.IP
+		clientIP = c.IP
 	}
-
 	// If pod association is not set
 	if len(associations) == 0 {
+		var podIP, labelIP string
+		podIP = stringAttributeFromMap(attrs, k8sIPLabelName)
+		labelIP = stringAttributeFromMap(attrs, clientIPLabelName)
+
 		if podIP != "" {
 			podAssociation[k8sIPLabelName] = podIP
+		} else if labelIP != "" {
+			podAssociation[k8sIPLabelName] = labelIP
 		} else if clientIP != "" {
 			podAssociation[k8sIPLabelName] = clientIP
-		} else if contextIP != "" {
-			podAssociation[k8sIPLabelName] = contextIP
 		}
 		return podAssociation
-
 	}
 
 	for _, asso := range associations {
-		if asso.Name == podUIDLabelName {
-			uid := stringAttributeFromMap(attrs, asso.Name)
-			if uid != "" {
-				podAssociation[conventions.AttributeK8sPodUID] = uid
-			}
-		}
-		if _, ok := podAssociation[k8sIPLabelName]; !ok {
-			if asso.Name == k8sIPLabelName && podIP != "" {
-				podAssociation[k8sIPLabelName] = podIP
+		// If association configured to take IP address from connection
+		if asso.From == "connection" && clientIP != "" {
+			podAssociation[k8sIPLabelName] = clientIP
+		} else if asso.From == "labels" { // If association configured by labels
+			// Special case for host.name label
+			if asso.Name == conventions.AttributeHostName {
+				hostname := stringAttributeFromMap(attrs, conventions.AttributeHostName)
+				if net.ParseIP(hostname) != nil {
+					podAssociation[k8sIPLabelName] = hostname
+				}
 				continue
 			}
-			if asso.Name == "ip" {
-				switch asso.From {
-				case "labels":
-					if clientIP != "" {
-						podAssociation[k8sIPLabelName] = clientIP
-					}
-				case "connection":
-					if contextIP != "" {
-						podAssociation[k8sIPLabelName] = contextIP
-					}
-				default:
-					continue
-				}
+			// Extract values based od configured labels.
+			attributeValue := stringAttributeFromMap(attrs, asso.Name)
+			if attributeValue != "" {
+				podAssociation[asso.Name] = attributeValue
 			}
-		}
-		if asso.Name == conventions.AttributeHostName {
-			hostname := stringAttributeFromMap(attrs, conventions.AttributeHostName)
-			if net.ParseIP(hostname) != nil {
-				podAssociation[k8sIPLabelName] = hostname
-			}
-
 		}
 	}
-
 	return podAssociation
 }
 

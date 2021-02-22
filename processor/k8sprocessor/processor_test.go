@@ -296,14 +296,6 @@ func TestIPDetectionFromContext(t *testing.T) {
 	m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil)
 
 	ctx := client.NewContext(context.Background(), &client.Client{IP: "1.1.1.1"})
-	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
-		kp.podAssociations = []kube.Association{
-			{
-				From: "connection",
-				Name: "ip",
-			},
-		}
-	})
 	m.testConsume(
 		ctx,
 		generateTraces(),
@@ -347,12 +339,6 @@ func TestProcessorNoAttrs(t *testing.T) {
 
 	// pod doesn't have attrs to add
 	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
-		kp.podAssociations = []kube.Association{
-			{
-				From: "connection",
-				Name: "ip",
-			},
-		}
 		kp.kc.(*fakeClient).Pods["1.1.1.1"] = &kube.Pod{Name: "PodA"}
 	})
 
@@ -371,12 +357,6 @@ func TestProcessorNoAttrs(t *testing.T) {
 
 	// attrs should be added now
 	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
-		kp.podAssociations = []kube.Association{
-			{
-				From: "connection",
-				Name: "ip",
-			},
-		}
 		kp.kc.(*fakeClient).Pods["1.1.1.1"] = &kube.Pod{
 			Name: "PodA",
 			Attributes: map[string]string{
@@ -509,27 +489,33 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 	)
 
 	type testCase struct {
-		name, resourceIP, resourceK8SIP, contextIP, out string
+		name, contextIP, labelName, labelValue, outLabel, outValue string
 	}
 
 	testCases := []testCase{
 		{
-			name:          "k8sIP",
-			resourceIP:    "1.1.1.1",
-			resourceK8SIP: "2.2.2.2",
-			contextIP:     "3.3.3.3",
-			out:           "2.2.2.2",
+			name:       "k8sIP",
+			contextIP:  "",
+			labelName:  "k8s.pod.ip",
+			labelValue: "1.1.1.1",
+			outLabel:   "k8s.pod.ip",
+			outValue:   "1.1.1.1",
 		},
 		{
-			name:       "clientIP",
-			resourceIP: "1.1.1.1",
-			contextIP:  "3.3.3.3",
-			out:        "1.1.1.1",
+			name:       "client IP",
+			contextIP:  "",
+			labelName:  "ip",
+			labelValue: "2.2.2.2",
+			outLabel:   "ip",
+			outValue:   "2.2.2.2",
 		},
 		{
-			name:      "contextIP",
-			contextIP: "3.3.3.3",
-			out:       "3.3.3.3",
+			name:       "Hostname",
+			contextIP:  "",
+			labelName:  "host.name",
+			labelValue: "1.1.1.1",
+			outLabel:   "k8s.pod.ip",
+			outValue:   "1.1.1.1",
 		},
 	}
 	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
@@ -543,8 +529,8 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 				Name: "ip",
 			},
 			{
-				From: "connection",
-				Name: "ip",
+				From: "labels",
+				Name: "host.name",
 			},
 		}
 	})
@@ -563,22 +549,18 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 			resources := []pdata.Resource{
 				traces.ResourceSpans().At(0).Resource(),
 				metrics.ResourceMetrics().At(0).Resource(),
+				logs.ResourceLogs().At(0).Resource(),
 			}
 
 			for _, res := range resources {
-				if tc.resourceK8SIP != "" {
-					res.Attributes().InsertString(k8sIPLabelName, tc.resourceK8SIP)
-				}
-				if tc.resourceIP != "" {
-					res.Attributes().InsertString(clientIPLabelName, tc.resourceIP)
-				}
+				res.Attributes().InsertString(tc.labelName, tc.labelValue)
 			}
 
 			m.testConsume(ctx, traces, metrics, logs, nil)
 			m.assertBatchesLen(i + 1)
 			m.assertResource(i, func(res pdata.Resource) {
 				require.Greater(t, res.Attributes().Len(), 0)
-				assertResourceHasStringAttribute(t, res, "k8s.pod.ip", tc.out)
+				assertResourceHasStringAttribute(t, res, tc.outLabel, tc.outValue)
 			})
 		})
 	}
@@ -617,7 +599,7 @@ func TestPodUID(t *testing.T) {
 	m.assertResourceObjectLen(0)
 	m.assertResource(0, func(r pdata.Resource) {
 		require.Greater(t, r.Attributes().Len(), 0)
-		assertResourceHasStringAttribute(t, r, "k8s.pod.uid", "ef10d10b-2da5-4030-812e-5f45c1531227")
+		assertResourceHasStringAttribute(t, r, "pod_uid", "ef10d10b-2da5-4030-812e-5f45c1531227")
 	})
 }
 

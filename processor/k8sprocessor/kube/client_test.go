@@ -242,7 +242,7 @@ func TestPodDelete(t *testing.T) {
 	assert.Equal(t, len(c.deleteQueue), 1)
 	deleteRequest := c.deleteQueue[0]
 	assert.Equal(t, deleteRequest.id, "1.1.1.1")
-	assert.Equal(t, deleteRequest.name, "podB")
+	assert.Equal(t, deleteRequest.podName, "podB")
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
 
@@ -256,12 +256,12 @@ func TestPodDelete(t *testing.T) {
 	assert.Equal(t, len(c.deleteQueue), 3)
 	deleteRequest = c.deleteQueue[1]
 	assert.Equal(t, deleteRequest.id, "2.2.2.2")
-	assert.Equal(t, deleteRequest.name, "podC")
+	assert.Equal(t, deleteRequest.podName, "podC")
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
 	deleteRequest = c.deleteQueue[2]
 	assert.Equal(t, deleteRequest.id, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
-	assert.Equal(t, deleteRequest.name, "podC")
+	assert.Equal(t, deleteRequest.podName, "podC")
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
 }
