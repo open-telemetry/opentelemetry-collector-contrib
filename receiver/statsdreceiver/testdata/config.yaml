@@ -4,6 +4,7 @@ receivers:
     endpoint: "localhost:12345"
     transport: "custom_transport"
     aggregation_interval: 70s
+    enable_metric_type: false
 
 processors:
   exampleprocessor:

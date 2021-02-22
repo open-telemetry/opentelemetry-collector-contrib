@@ -75,7 +75,17 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				42,
 				0,
 				false,
-				"c", 1, 0, nil, nil),
+				"c", 1, 0, []*metricspb.LabelKey{
+					{
+						Key: "metric_type",
+					},
+				},
+				[]*metricspb.LabelValue{
+					{
+						Value:    "counter",
+						HasValue: true,
+					},
+				}),
 		},
 		{
 			name:  "invalid  counter metric value",
@@ -88,7 +98,7 @@ func Test_ParseMessageToMetric(t *testing.T) {
 			err:   errors.New("unsupported metric type: unhandled_type"),
 		},
 		{
-			name:  "counter metric with sample rate and tag",
+			name:  "counter metric with sample rate and tag", ///
 			input: "test.metric:42|c|@0.1|#key:value",
 			wantMetric: testStatsDMetric(
 				"42",
@@ -102,16 +112,23 @@ func Test_ParseMessageToMetric(t *testing.T) {
 					{
 						Key: "key",
 					},
+					{
+						Key: "metric_type",
+					},
 				},
 				[]*metricspb.LabelValue{
 					{
 						Value:    "value",
 						HasValue: true,
 					},
+					{
+						Value:    "counter",
+						HasValue: true,
+					},
 				}),
 		},
 		{
-			name:  "counter metric with sample rate(not divisible) and tag",
+			name:  "counter metric with sample rate(not divisible) and tag", ///
 			input: "test.metric:42|c|@0.8|#key:value",
 			wantMetric: testStatsDMetric(
 				"42",
@@ -125,10 +142,17 @@ func Test_ParseMessageToMetric(t *testing.T) {
 					{
 						Key: "key",
 					},
+					{
+						Key: "metric_type",
+					},
 				},
 				[]*metricspb.LabelValue{
 					{
 						Value:    "value",
+						HasValue: true,
+					},
+					{
+						Value:    "counter",
 						HasValue: true,
 					},
 				}),
@@ -151,6 +175,9 @@ func Test_ParseMessageToMetric(t *testing.T) {
 					{
 						Key: "key2",
 					},
+					{
+						Key: "metric_type",
+					},
 				},
 				[]*metricspb.LabelValue{
 					{
@@ -159,6 +186,10 @@ func Test_ParseMessageToMetric(t *testing.T) {
 					},
 					{
 						Value:    "value2",
+						HasValue: true,
+					},
+					{
+						Value:    "counter",
 						HasValue: true,
 					},
 				}),
@@ -171,7 +202,17 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				0,
 				42,
 				false,
-				"g", 2, 0, nil, nil),
+				"g", 2, 0, []*metricspb.LabelKey{
+					{
+						Key: "metric_type",
+					},
+				},
+				[]*metricspb.LabelValue{
+					{
+						Value:    "gauge",
+						HasValue: true,
+					},
+				}),
 		},
 		{
 			name:  "int gauge",
@@ -181,7 +222,17 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				0,
 				42,
 				false,
-				"g", 2, 0, nil, nil),
+				"g", 2, 0, []*metricspb.LabelKey{
+					{
+						Key: "metric_type",
+					},
+				},
+				[]*metricspb.LabelValue{
+					{
+						Value:    "gauge",
+						HasValue: true,
+					},
+				}),
 		},
 		{
 			name:  "invalid gauge metric value",
@@ -203,10 +254,17 @@ func Test_ParseMessageToMetric(t *testing.T) {
 					{
 						Key: "key",
 					},
+					{
+						Key: "metric_type",
+					},
 				},
 				[]*metricspb.LabelValue{
 					{
 						Value:    "value",
+						HasValue: true,
+					},
+					{
+						Value:    "gauge",
 						HasValue: true,
 					},
 				}),
@@ -229,6 +287,9 @@ func Test_ParseMessageToMetric(t *testing.T) {
 					{
 						Key: "key2",
 					},
+					{
+						Key: "metric_type",
+					},
 				},
 				[]*metricspb.LabelValue{
 					{
@@ -237,6 +298,10 @@ func Test_ParseMessageToMetric(t *testing.T) {
 					},
 					{
 						Value:    "value2",
+						HasValue: true,
+					},
+					{
+						Value:    "gauge",
 						HasValue: true,
 					},
 				}),
@@ -249,7 +314,17 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				0,
 				42,
 				true,
-				"g", 2, 0, nil, nil),
+				"g", 2, 0, []*metricspb.LabelKey{
+					{
+						Key: "metric_type",
+					},
+				},
+				[]*metricspb.LabelValue{
+					{
+						Value:    "gauge",
+						HasValue: true,
+					},
+				}),
 		},
 		{
 			name:  "double gauge minus",
@@ -259,7 +334,17 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				0,
 				-42,
 				true,
-				"g", 2, 0, nil, nil),
+				"g", 2, 0, []*metricspb.LabelKey{
+					{
+						Key: "metric_type",
+					},
+				},
+				[]*metricspb.LabelValue{
+					{
+						Value:    "gauge",
+						HasValue: true,
+					},
+				}),
 		},
 		{
 			name:  "int gauge plus",
@@ -269,7 +354,17 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				0,
 				42,
 				true,
-				"g", 2, 0, nil, nil),
+				"g", 2, 0, []*metricspb.LabelKey{
+					{
+						Key: "metric_type",
+					},
+				},
+				[]*metricspb.LabelValue{
+					{
+						Value:    "gauge",
+						HasValue: true,
+					},
+				}),
 		},
 		{
 			name:  "int gauge minus",
@@ -279,14 +374,24 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				0,
 				-42,
 				true,
-				"g", 2, 0, nil, nil),
+				"g", 2, 0, []*metricspb.LabelKey{
+					{
+						Key: "metric_type",
+					},
+				},
+				[]*metricspb.LabelValue{
+					{
+						Value:    "gauge",
+						HasValue: true,
+					},
+				}),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			got, err := parseMessageToMetric(tt.input)
+			got, err := parseMessageToMetric(tt.input, true)
 
 			if tt.err != nil {
 				assert.Equal(t, tt.err, err)
@@ -400,16 +505,23 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 			},
 			expectedGauges: map[statsDMetricdescription]*metricspb.Metric{
 				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric1",
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): testMetric("statsdTestMetric1",
 					metricspb.MetricDescriptor_GAUGE_DOUBLE,
 					[]*metricspb.LabelKey{
 						{
 							Key: "mykey",
 						},
+						{
+							Key: "metric_type",
+						},
 					},
 					[]*metricspb.LabelValue{
 						{
 							Value:    "myvalue",
+							HasValue: true,
+						},
+						{
+							Value:    "gauge",
 							HasValue: true,
 						},
 					},
@@ -422,16 +534,23 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						},
 					}),
 				testDescription("statsdTestMetric2", "g",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric2",
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): testMetric("statsdTestMetric2",
 					metricspb.MetricDescriptor_GAUGE_DOUBLE,
 					[]*metricspb.LabelKey{
 						{
 							Key: "mykey",
 						},
+						{
+							Key: "metric_type",
+						},
 					},
 					[]*metricspb.LabelValue{
 						{
 							Value:    "myvalue",
+							HasValue: true,
+						},
+						{
+							Value:    "gauge",
 							HasValue: true,
 						},
 					},
@@ -462,16 +581,23 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 			},
 			expectedGauges: map[statsDMetricdescription]*metricspb.Metric{
 				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric1",
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): testMetric("statsdTestMetric1",
 					metricspb.MetricDescriptor_GAUGE_DOUBLE,
 					[]*metricspb.LabelKey{
 						{
 							Key: "mykey",
 						},
+						{
+							Key: "metric_type",
+						},
 					},
 					[]*metricspb.LabelValue{
 						{
 							Value:    "myvalue",
+							HasValue: true,
+						},
+						{
+							Value:    "gauge",
 							HasValue: true,
 						},
 					},
@@ -484,16 +610,23 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						},
 					}),
 				testDescription("statsdTestMetric2", "g",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric2",
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): testMetric("statsdTestMetric2",
 					metricspb.MetricDescriptor_GAUGE_DOUBLE,
 					[]*metricspb.LabelKey{
 						{
 							Key: "mykey",
 						},
+						{
+							Key: "metric_type",
+						},
 					},
 					[]*metricspb.LabelValue{
 						{
 							Value:    "myvalue",
+							HasValue: true,
+						},
+						{
+							Value:    "gauge",
 							HasValue: true,
 						},
 					},
@@ -524,16 +657,23 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 			},
 			expectedGauges: map[statsDMetricdescription]*metricspb.Metric{
 				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric1",
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): testMetric("statsdTestMetric1",
 					metricspb.MetricDescriptor_GAUGE_DOUBLE,
 					[]*metricspb.LabelKey{
 						{
 							Key: "mykey",
 						},
+						{
+							Key: "metric_type",
+						},
 					},
 					[]*metricspb.LabelValue{
 						{
 							Value:    "myvalue",
+							HasValue: true,
+						},
+						{
+							Value:    "gauge",
 							HasValue: true,
 						},
 					},
@@ -546,16 +686,23 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						},
 					}),
 				testDescription("statsdTestMetric2", "g",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric2",
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): testMetric("statsdTestMetric2",
 					metricspb.MetricDescriptor_GAUGE_DOUBLE,
 					[]*metricspb.LabelKey{
 						{
 							Key: "mykey",
 						},
+						{
+							Key: "metric_type",
+						},
 					},
 					[]*metricspb.LabelValue{
 						{
 							Value:    "myvalue",
+							HasValue: true,
+						},
+						{
+							Value:    "gauge",
 							HasValue: true,
 						},
 					},
@@ -581,16 +728,23 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 			expectedGauges: map[statsDMetricdescription]*metricspb.Metric{},
 			expectedCounters: map[statsDMetricdescription]*metricspb.Metric{
 				testDescription("statsdTestMetric1", "c",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric1",
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): testMetric("statsdTestMetric1",
 					metricspb.MetricDescriptor_GAUGE_INT64,
 					[]*metricspb.LabelKey{
 						{
 							Key: "mykey",
 						},
+						{
+							Key: "metric_type",
+						},
 					},
 					[]*metricspb.LabelValue{
 						{
 							Value:    "myvalue",
+							HasValue: true,
+						},
+						{
+							Value:    "counter",
 							HasValue: true,
 						},
 					},
@@ -603,16 +757,23 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						},
 					}),
 				testDescription("statsdTestMetric2", "c",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric2",
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): testMetric("statsdTestMetric2",
 					metricspb.MetricDescriptor_GAUGE_INT64,
 					[]*metricspb.LabelKey{
 						{
 							Key: "mykey",
 						},
+						{
+							Key: "metric_type",
+						},
 					},
 					[]*metricspb.LabelValue{
 						{
 							Value:    "myvalue",
+							HasValue: true,
+						},
+						{
+							Value:    "counter",
 							HasValue: true,
 						},
 					},
@@ -641,16 +802,23 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 			},
 			expectedGauges: map[statsDMetricdescription]*metricspb.Metric{
 				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric1",
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): testMetric("statsdTestMetric1",
 					metricspb.MetricDescriptor_GAUGE_DOUBLE,
 					[]*metricspb.LabelKey{
 						{
 							Key: "mykey",
 						},
+						{
+							Key: "metric_type",
+						},
 					},
 					[]*metricspb.LabelValue{
 						{
 							Value:    "myvalue",
+							HasValue: true,
+						},
+						{
+							Value:    "gauge",
 							HasValue: true,
 						},
 					},
@@ -665,16 +833,23 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 			},
 			expectedCounters: map[statsDMetricdescription]*metricspb.Metric{
 				testDescription("statsdTestMetric1", "c",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric1",
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): testMetric("statsdTestMetric1",
 					metricspb.MetricDescriptor_GAUGE_INT64,
 					[]*metricspb.LabelKey{
 						{
 							Key: "mykey",
 						},
+						{
+							Key: "metric_type",
+						},
 					},
 					[]*metricspb.LabelValue{
 						{
 							Value:    "myvalue",
+							HasValue: true,
+						},
+						{
+							Value:    "counter",
 							HasValue: true,
 						},
 					},
@@ -687,16 +862,23 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						},
 					}),
 				testDescription("statsdTestMetric2", "c",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric2",
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): testMetric("statsdTestMetric2",
 					metricspb.MetricDescriptor_GAUGE_INT64,
 					[]*metricspb.LabelKey{
 						{
 							Key: "mykey",
 						},
+						{
+							Key: "metric_type",
+						},
 					},
 					[]*metricspb.LabelValue{
 						{
 							Value:    "myvalue",
+							HasValue: true,
+						},
+						{
+							Value:    "counter",
 							HasValue: true,
 						},
 					},
@@ -726,16 +908,23 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 			},
 			expectedGauges: map[statsDMetricdescription]*metricspb.Metric{
 				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric1",
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): testMetric("statsdTestMetric1",
 					metricspb.MetricDescriptor_GAUGE_DOUBLE,
 					[]*metricspb.LabelKey{
 						{
 							Key: "mykey",
 						},
+						{
+							Key: "metric_type",
+						},
 					},
 					[]*metricspb.LabelValue{
 						{
 							Value:    "myvalue",
+							HasValue: true,
+						},
+						{
+							Value:    "gauge",
 							HasValue: true,
 						},
 					},
@@ -748,16 +937,23 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						},
 					}),
 				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey"}, []string{"myvalue1"}): testMetric("statsdTestMetric1",
+					[]string{"mykey", "metric_type"}, []string{"myvalue1", "gauge"}): testMetric("statsdTestMetric1",
 					metricspb.MetricDescriptor_GAUGE_DOUBLE,
 					[]*metricspb.LabelKey{
 						{
 							Key: "mykey",
 						},
+						{
+							Key: "metric_type",
+						},
 					},
 					[]*metricspb.LabelValue{
 						{
 							Value:    "myvalue1",
+							HasValue: true,
+						},
+						{
+							Value:    "gauge",
 							HasValue: true,
 						},
 					},
@@ -772,16 +968,23 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 			},
 			expectedCounters: map[statsDMetricdescription]*metricspb.Metric{
 				testDescription("statsdTestMetric1", "c",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric1",
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): testMetric("statsdTestMetric1",
 					metricspb.MetricDescriptor_GAUGE_INT64,
 					[]*metricspb.LabelKey{
 						{
 							Key: "mykey",
 						},
+						{
+							Key: "metric_type",
+						},
 					},
 					[]*metricspb.LabelValue{
 						{
 							Value:    "myvalue",
+							HasValue: true,
+						},
+						{
+							Value:    "counter",
 							HasValue: true,
 						},
 					},
@@ -794,16 +997,23 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 						},
 					}),
 				testDescription("statsdTestMetric2", "c",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric2",
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): testMetric("statsdTestMetric2",
 					metricspb.MetricDescriptor_GAUGE_INT64,
 					[]*metricspb.LabelKey{
 						{
 							Key: "mykey",
 						},
+						{
+							Key: "metric_type",
+						},
 					},
 					[]*metricspb.LabelValue{
 						{
 							Value:    "myvalue",
+							HasValue: true,
+						},
+						{
+							Value:    "counter",
 							HasValue: true,
 						},
 					},
@@ -824,7 +1034,7 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 			p := &StatsDParser{}
 			p.Initialize()
 			for _, line := range tt.input {
-				err = p.Aggregate(line)
+				err = p.Aggregate(line, true)
 			}
 			if tt.err != nil {
 				assert.Equal(t, tt.err, err)
@@ -920,7 +1130,7 @@ func TestStatsDParser_GetMetrics(t *testing.T) {
 	p := &StatsDParser{}
 	p.Initialize()
 	p.gauges[testDescription("statsdTestMetric1", "g",
-		[]string{"mykey"}, []string{"myvalue"})] = testMetric("testGauge1",
+		[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"})] = testMetric("testGauge1",
 		metricspb.MetricDescriptor_GAUGE_DOUBLE,
 		nil,
 		nil,
@@ -946,7 +1156,7 @@ func TestStatsDParser_GetMetrics(t *testing.T) {
 			},
 		})
 	p.counters[testDescription("statsdTestMetric1", "g",
-		[]string{"mykey"}, []string{"myvalue"})] = testMetric("testCounter1",
+		[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"})] = testMetric("testCounter1",
 		metricspb.MetricDescriptor_GAUGE_INT64,
 		nil,
 		nil,

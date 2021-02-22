@@ -117,7 +117,7 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 						r.Flush(ctx, metrics, r.nextConsumer)
 					}
 				case rawMetric := <-transferChan:
-					r.parser.Aggregate(rawMetric)
+					r.parser.Aggregate(rawMetric, r.config.EnableMetricType)
 				case <-ctx.Done():
 					ticker.Stop()
 					return
