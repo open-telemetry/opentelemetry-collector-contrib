@@ -26,7 +26,7 @@ import (
 	"time"
 )
 
-type documentAction struct {
+type itemRequest struct {
 	Action   json.RawMessage
 	Document json.RawMessage
 }
@@ -41,7 +41,7 @@ type bulkResult struct {
 	Items     []itemResponse `json:"items"`
 }
 
-type bulkHandler func([]documentAction) ([]itemResponse, error)
+type bulkHandler func([]itemRequest) ([]itemResponse, error)
 
 type httpTestError struct {
 	status  int
@@ -77,7 +77,7 @@ func (e *httpTestError) Message() string {
 type bulkRecorder struct {
 	mu         sync.Mutex
 	cond       *sync.Cond
-	recordings [][]documentAction
+	recordings [][]itemRequest
 }
 
 func newBulkRecorder() *bulkRecorder {
@@ -86,7 +86,7 @@ func newBulkRecorder() *bulkRecorder {
 	return r
 }
 
-func (r *bulkRecorder) Record(bulk []documentAction) {
+func (r *bulkRecorder) Record(bulk []itemRequest) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.recordings = append(r.recordings, bulk)
@@ -101,13 +101,13 @@ func (r *bulkRecorder) WaitItems(n int) {
 	}
 }
 
-func (r *bulkRecorder) Requests() [][]documentAction {
+func (r *bulkRecorder) Requests() [][]itemRequest {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return r.recordings
 }
 
-func (r *bulkRecorder) Items() (docs []documentAction) {
+func (r *bulkRecorder) Items() (docs []itemRequest) {
 	for _, rec := range r.Requests() {
 		docs = append(docs, rec...)
 	}
@@ -131,7 +131,7 @@ func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/_bulk", handleErr(func(w http.ResponseWriter, req *http.Request) error {
 		tsStart := time.Now()
-		var items []documentAction
+		var items []itemRequest
 
 		dec := json.NewDecoder(req.Body)
 		for dec.More() {
@@ -146,7 +146,7 @@ func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
 				return &httpTestError{status: http.StatusBadRequest, cause: err}
 			}
 
-			items = append(items, documentAction{Action: action, Document: doc})
+			items = append(items, itemRequest{Action: action, Document: doc})
 		}
 
 		resp, err := bulkHandler(items)
@@ -186,11 +186,11 @@ func (item *itemResponse) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func itemsAllOK(docs []documentAction) ([]itemResponse, error) {
+func itemsAllOK(docs []itemRequest) ([]itemResponse, error) {
 	return itemsReportStatus(docs, http.StatusOK)
 }
 
-func itemsReportStatus(docs []documentAction, status int) ([]itemResponse, error) {
+func itemsReportStatus(docs []itemRequest, status int) ([]itemResponse, error) {
 	responses := make([]itemResponse, len(docs))
 	for i := range docs {
 		responses[i].Status = status

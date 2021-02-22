@@ -134,7 +134,7 @@ func TestExporter_New(t *testing.T) {
 func TestExporter_PushEvent(t *testing.T) {
 	t.Run("publish with success", func(t *testing.T) {
 		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []documentAction) ([]itemResponse, error) {
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 			return itemsAllOK(docs)
 		})
@@ -149,7 +149,7 @@ func TestExporter_PushEvent(t *testing.T) {
 	t.Run("retry http request", func(t *testing.T) {
 		failures := 0
 		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []documentAction) ([]itemResponse, error) {
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			if failures == 0 {
 				failures++
 				return nil, &httpTestError{message: "oops"}
@@ -167,7 +167,7 @@ func TestExporter_PushEvent(t *testing.T) {
 
 	t.Run("no http request retry", func(t *testing.T) {
 		var attempts int64
-		server := newESTestServer(t, func(docs []documentAction) ([]itemResponse, error) {
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			atomic.AddInt64(&attempts, 1)
 			return nil, &httpTestError{message: "oops"}
 		})
@@ -186,7 +186,7 @@ func TestExporter_PushEvent(t *testing.T) {
 
 	t.Run("do not retry invalid reuqest", func(t *testing.T) {
 		var attempts int64
-		server := newESTestServer(t, func(docs []documentAction) ([]itemResponse, error) {
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			atomic.AddInt64(&attempts, 1)
 			return nil, &httpTestError{message: "oops", status: http.StatusBadRequest}
 		})
@@ -201,7 +201,7 @@ func TestExporter_PushEvent(t *testing.T) {
 	t.Run("retry single item", func(t *testing.T) {
 		var attempts int
 		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []documentAction) ([]itemResponse, error) {
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			attempts++
 
 			if attempts == 1 {
@@ -220,7 +220,7 @@ func TestExporter_PushEvent(t *testing.T) {
 
 	t.Run("disable retry single item", func(t *testing.T) {
 		var attempts int64
-		server := newESTestServer(t, func(docs []documentAction) ([]itemResponse, error) {
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			atomic.AddInt64(&attempts, 1)
 			return itemsReportStatus(docs, http.StatusTooManyRequests)
 		})
@@ -238,7 +238,7 @@ func TestExporter_PushEvent(t *testing.T) {
 
 	t.Run("do not retry bad item", func(t *testing.T) {
 		var attempts int64
-		server := newESTestServer(t, func(docs []documentAction) ([]itemResponse, error) {
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			atomic.AddInt64(&attempts, 1)
 			return itemsReportStatus(docs, http.StatusBadRequest)
 		})
@@ -257,7 +257,7 @@ func TestExporter_PushEvent(t *testing.T) {
 
 		const retryIdx = 1
 
-		server := newESTestServer(t, func(docs []documentAction) ([]itemResponse, error) {
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			resp := make([]itemResponse, len(docs))
 			for i, doc := range docs {
 				resp[i].Status = http.StatusOK
