@@ -33,7 +33,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -42,6 +41,14 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
+
+// traceData helper struct for conversion.
+// TODO: Remove this when exporter translates directly to pdata.
+type traceData struct {
+	Node     *commonpb.Node
+	Resource *resourcepb.Resource
+	Spans    []*tracepb.Span
+}
 
 type honeycombData struct {
 	Data map[string]interface{} `json:"data"`
@@ -103,7 +110,7 @@ func baseConfig() *Config {
 }
 
 func TestExporter(t *testing.T) {
-	td := consumerdata.TraceData{
+	td := traceData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test_service"},
 			Attributes: map[string]string{
@@ -200,7 +207,7 @@ func TestExporter(t *testing.T) {
 			},
 		},
 	}
-	got := testTraceExporter(internaldata.OCToTraceData(td), t, baseConfig())
+	got := testTraceExporter(internaldata.OCToTraces(td.Node, td.Resource, td.Spans), t, baseConfig())
 	want := []honeycombData{
 		{
 			Data: map[string]interface{}{
@@ -366,7 +373,7 @@ func createSpan() pdata.Span {
 }
 
 func TestSampleRateAttribute(t *testing.T) {
-	td := consumerdata.TraceData{
+	td := traceData{
 		Node: nil,
 		Spans: []*tracepb.Span{
 			{
@@ -428,7 +435,7 @@ func TestSampleRateAttribute(t *testing.T) {
 	cfg := baseConfig()
 	cfg.SampleRateAttribute = "hc.sample.rate"
 
-	got := testTraceExporter(internaldata.OCToTraceData(td), t, cfg)
+	got := testTraceExporter(internaldata.OCToTraces(td.Node, td.Resource, td.Spans), t, cfg)
 
 	want := []honeycombData{
 		{
@@ -479,7 +486,7 @@ func TestSampleRateAttribute(t *testing.T) {
 }
 
 func TestEmptyNode(t *testing.T) {
-	td := consumerdata.TraceData{
+	td := traceData{
 		Node: nil,
 		Spans: []*tracepb.Span{
 			{
@@ -492,7 +499,7 @@ func TestEmptyNode(t *testing.T) {
 		},
 	}
 
-	got := testTraceExporter(internaldata.OCToTraceData(td), t, baseConfig())
+	got := testTraceExporter(internaldata.OCToTraces(td.Node, td.Resource, td.Spans), t, baseConfig())
 
 	want := []honeycombData{
 		{
@@ -591,7 +598,7 @@ func TestNode(t *testing.T) {
 
 	for _, test := range testcases {
 		t.Run(test.name, func(t *testing.T) {
-			td := consumerdata.TraceData{
+			td := traceData{
 				Node: &commonpb.Node{
 					ServiceInfo: &commonpb.ServiceInfo{Name: "test_service"},
 					Identifier:  test.identifier,
@@ -613,7 +620,7 @@ func TestNode(t *testing.T) {
 				},
 			}
 
-			got := testTraceExporter(internaldata.OCToTraceData(td), t, baseConfig())
+			got := testTraceExporter(internaldata.OCToTraces(td.Node, td.Resource, td.Spans), t, baseConfig())
 
 			want := []honeycombData{
 				{
