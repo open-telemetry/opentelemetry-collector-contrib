@@ -496,13 +496,14 @@ func TestLogsBufferOverflow(t *testing.T) {
 
 	test.s.config.HTTPClientSettings.Endpoint = ":"
 	log := exampleLog()
+	flds := newFields(pdata.NewAttributeMap())
 
 	for test.s.countLogs() < maxBufferSize-1 {
-		_, err := test.s.batchLog(context.Background(), log[0], newFields(pdata.NewAttributeMap()))
+		_, err := test.s.batchLog(context.Background(), log[0], flds)
 		require.NoError(t, err)
 	}
 
-	_, err := test.s.batchLog(context.Background(), log[0], newFields(pdata.NewAttributeMap()))
+	_, err := test.s.batchLog(context.Background(), log[0], flds)
 	assert.EqualError(t, err, `parse ":": missing protocol scheme`)
 	assert.Equal(t, 0, test.s.countLogs())
 }
@@ -765,13 +766,14 @@ func TestMetricsBufferOverflow(t *testing.T) {
 	test.s.config.MetricFormat = PrometheusFormat
 	test.s.config.MaxRequestBodySize = 1024 * 1024 * 1024 * 1024
 	metric := exampleIntMetric()
+	flds := newFields(pdata.NewAttributeMap())
 
 	for test.s.countMetrics() < maxBufferSize-1 {
-		_, err := test.s.batchMetric(context.Background(), metric, newFields(pdata.NewAttributeMap()))
+		_, err := test.s.batchMetric(context.Background(), metric, flds)
 		require.NoError(t, err)
 	}
 
-	_, err := test.s.batchMetric(context.Background(), metric, newFields(pdata.NewAttributeMap()))
+	_, err := test.s.batchMetric(context.Background(), metric, flds)
 	assert.EqualError(t, err, `parse ":": missing protocol scheme`)
 	assert.Equal(t, 0, test.s.countMetrics())
 }
