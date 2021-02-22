@@ -50,38 +50,32 @@ func TestReceiver(t *testing.T) {
 }
 
 func TestReceiver_ConnectError(t *testing.T) {
-	ctx := context.Background()
-	r, err := NewReceiver(
-		ctx,
-		consumertest.NewMetricsNop(),
-		func() (io.ReadWriter, error) {
-			return nil, errors.New("")
-		},
-		nil,
-		1,
-		zap.NewNop(),
-	)
-	require.NoError(t, err)
-	err = r.Start(ctx, componenttest.NewNopHost())
-	require.Error(t, err)
+	connect := func() (io.ReadWriter, error) {
+		return nil, errors.New("foo")
+	}
+	testErrOnReceiverStart(t, connect, "foo")
 }
 
 func TestReceiver_WriteRequestError(t *testing.T) {
+	connect := func() (io.ReadWriter, error) {
+		return &fakeRW{}, nil
+	}
+	testErrOnReceiverStart(t, connect, "")
+}
+
+func testErrOnReceiverStart(t *testing.T, connect func() (io.ReadWriter, error), errStr string) {
 	ctx := context.Background()
-	rw := &fakeRW{}
 	r, err := NewReceiver(
 		ctx,
 		consumertest.NewMetricsNop(),
-		func() (io.ReadWriter, error) {
-			return rw, nil
-		},
+		connect,
 		nil,
 		1,
 		zap.NewNop(),
 	)
 	require.NoError(t, err)
 	err = r.Start(ctx, componenttest.NewNopHost())
-	require.Error(t, err)
+	require.Error(t, err, errStr)
 }
 
 type fakeRW struct {

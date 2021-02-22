@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"testing"
+	"unicode/utf16"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,11 +28,16 @@ func TestWriteUTF16String(t *testing.T) {
 	buf := &bytes.Buffer{}
 	const msg = "hello"
 	WriteUTF16String(buf, msg)
-	p := buf.Bytes()
-	buf.Reset()
-	var size int32
-	err := binary.Read(bytes.NewBuffer(p[:4]), ByteOrder, &size)
+	var msgLen int32
+	err := binary.Read(buf, ByteOrder, &msgLen)
 	require.NoError(t, err)
-	assert.Equal(t, len(msg)+1, int(size))
-	assert.Equal(t, 4+2*(len(msg)+1), len(p))
+	assert.Equal(t, len(msg)+1, int(msgLen))
+	var p []uint16
+	for i := 0; i < len(msg); i++ {
+		var v uint16
+		err := binary.Read(buf, ByteOrder, &v)
+		require.NoError(t, err)
+		p = append(p, v)
+	}
+	require.Equal(t, msg, string(utf16.Decode(p)))
 }

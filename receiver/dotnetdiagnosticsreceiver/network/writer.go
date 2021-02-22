@@ -22,6 +22,8 @@ import (
 
 var ByteOrder = binary.LittleEndian
 
+// Writes a length-prefixed, zero-terminated utf16 string to the passed-in
+// buffer
 func WriteUTF16String(buf *bytes.Buffer, s string) {
 	encoded := utf16.Encode([]rune(s))
 	_ = binary.Write(buf, ByteOrder, int32(len(encoded)+1))

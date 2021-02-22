@@ -29,10 +29,7 @@ type GlobFunc func(pattern string) (matches []string, err error)
 // Mac/Linux, this is a Unix domain socket. Windows (TBD) will use a named pipe.
 // DialFunc and GlobFunc are swappable for testing.
 func Connect(pid int, dial DialFunc, glob GlobFunc) (net.Conn, error) {
-	tmpdir := os.Getenv("TMPDIR")
-	if tmpdir == "" {
-		tmpdir = "/tmp"
-	}
+	tmpdir := os.TempDir()
 	sf, err := socketFile(pid, tmpdir, glob)
 	if err != nil {
 		return nil, err

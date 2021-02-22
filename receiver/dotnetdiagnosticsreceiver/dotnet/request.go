@@ -80,6 +80,7 @@ const requestHeaderSize = 20
 
 func (h requestHeader) serialize(payloadSize int) []byte {
 	buf := &bytes.Buffer{}
+	// no need to handle errors because Write always returns a nil error
 	_, _ = buf.Write([]byte(magic + "\000"))
 	totSize := uint16(requestHeaderSize + payloadSize)
 	_ = binary.Write(buf, network.ByteOrder, totSize)
