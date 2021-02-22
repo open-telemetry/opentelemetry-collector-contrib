@@ -16,12 +16,19 @@ package elasticsearchexporter
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"net/http"
 	"os"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 )
 
 func TestExporter_New(t *testing.T) {
@@ -56,11 +63,11 @@ func TestExporter_New(t *testing.T) {
 		env    map[string]string
 	}{
 		"no endpoint": {
-			config: withDefaultConfig(nil),
+			config: withDefaultConfig(),
 			want:   failWith(errConfigNoEndpoint),
 		},
 		"create from default config with ELASTICSEARCH_URL environment variable": {
-			config: withDefaultConfig(nil),
+			config: withDefaultConfig(),
 			want:   success,
 			env:    map[string]string{defaultElasticsearchEnvName: "localhost:9200"},
 		},
@@ -122,4 +129,188 @@ func TestExporter_New(t *testing.T) {
 			test.want(t, exporter, err)
 		})
 	}
+}
+
+func TestExporter_PushEvent(t *testing.T) {
+	t.Run("publish with success", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []documentAction) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestExporter(t, server.URL)
+		mustSend(t, exporter, `{"message": "test1"}`)
+		mustSend(t, exporter, `{"message": "test2"}`)
+
+		rec.WaitItems(2)
+	})
+
+	t.Run("retry http request", func(t *testing.T) {
+		failures := 0
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []documentAction) ([]itemResponse, error) {
+			if failures == 0 {
+				failures++
+				return nil, &httpTestError{message: "oops"}
+			}
+
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestExporter(t, server.URL)
+		mustSend(t, exporter, `{"message": "test1"}`)
+
+		rec.WaitItems(1)
+	})
+
+	t.Run("no http request retry", func(t *testing.T) {
+		var attempts int64
+		server := newESTestServer(t, func(docs []documentAction) ([]itemResponse, error) {
+			atomic.AddInt64(&attempts, 1)
+			return nil, &httpTestError{message: "oops"}
+		})
+
+		exporter := newTestExporter(t, server.URL, func(cfg *Config) {
+			cfg.Retry.MaxRequests = 1
+			cfg.Retry.InitialInterval = 1 * time.Millisecond
+			cfg.Retry.MaxInterval = 10 * time.Millisecond
+		})
+
+		mustSend(t, exporter, `{"message": "test1"}`)
+
+		time.Sleep(200 * time.Millisecond)
+		assert.Equal(t, int64(1), atomic.LoadInt64(&attempts))
+	})
+
+	t.Run("do not retry invalid reuqest", func(t *testing.T) {
+		var attempts int64
+		server := newESTestServer(t, func(docs []documentAction) ([]itemResponse, error) {
+			atomic.AddInt64(&attempts, 1)
+			return nil, &httpTestError{message: "oops", status: http.StatusBadRequest}
+		})
+
+		exporter := newTestExporter(t, server.URL)
+		mustSend(t, exporter, `{"message": "test1"}`)
+
+		time.Sleep(200 * time.Millisecond)
+		assert.Equal(t, int64(1), atomic.LoadInt64(&attempts))
+	})
+
+	t.Run("retry single item", func(t *testing.T) {
+		var attempts int
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []documentAction) ([]itemResponse, error) {
+			attempts++
+
+			if attempts == 1 {
+				return itemsReportStatus(docs, http.StatusTooManyRequests)
+			}
+
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestExporter(t, server.URL)
+		mustSend(t, exporter, `{"message": "test1"}`)
+
+		rec.WaitItems(1)
+	})
+
+	t.Run("disable retry single item", func(t *testing.T) {
+		var attempts int64
+		server := newESTestServer(t, func(docs []documentAction) ([]itemResponse, error) {
+			atomic.AddInt64(&attempts, 1)
+			return itemsReportStatus(docs, http.StatusTooManyRequests)
+		})
+
+		exporter := newTestExporter(t, server.URL, func(cfg *Config) {
+			cfg.Retry.MaxRequests = 1
+			cfg.Retry.InitialInterval = 1 * time.Millisecond
+			cfg.Retry.MaxInterval = 10 * time.Millisecond
+		})
+		mustSend(t, exporter, `{"message": "test1"}`)
+
+		time.Sleep(200 * time.Millisecond)
+		assert.Equal(t, int64(1), atomic.LoadInt64(&attempts))
+	})
+
+	t.Run("do not retry bad item", func(t *testing.T) {
+		var attempts int64
+		server := newESTestServer(t, func(docs []documentAction) ([]itemResponse, error) {
+			atomic.AddInt64(&attempts, 1)
+			return itemsReportStatus(docs, http.StatusBadRequest)
+		})
+
+		exporter := newTestExporter(t, server.URL)
+		mustSend(t, exporter, `{"message": "test1"}`)
+
+		time.Sleep(200 * time.Millisecond)
+		assert.Equal(t, int64(1), atomic.LoadInt64(&attempts))
+	})
+
+	t.Run("only retry failed items", func(t *testing.T) {
+		var attempts [3]int
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		const retryIdx = 1
+
+		server := newESTestServer(t, func(docs []documentAction) ([]itemResponse, error) {
+			resp := make([]itemResponse, len(docs))
+			for i, doc := range docs {
+				resp[i].Status = http.StatusOK
+
+				var idxInfo struct{ Idx int }
+				if err := json.Unmarshal(doc.Document, &idxInfo); err != nil {
+					panic(err)
+				}
+
+				if idxInfo.Idx == retryIdx {
+					if attempts[retryIdx] == 0 {
+						resp[i].Status = http.StatusTooManyRequests
+					} else {
+						defer wg.Done()
+					}
+				}
+				attempts[idxInfo.Idx]++
+			}
+			return resp, nil
+		})
+
+		exporter := newTestExporter(t, server.URL, func(cfg *Config) {
+			cfg.Flush.Interval = 50 * time.Millisecond
+			cfg.Retry.InitialInterval = 1 * time.Millisecond
+			cfg.Retry.MaxInterval = 10 * time.Millisecond
+		})
+		mustSend(t, exporter, `{"message": "test1", "idx": 0}`)
+		mustSend(t, exporter, `{"message": "test2", "idx": 1}`)
+		mustSend(t, exporter, `{"message": "test3", "idx": 2}`)
+
+		wg.Wait() // <- this blocks forever if the event is not retried
+
+		assert.Equal(t, [3]int{1, 2, 1}, attempts)
+	})
+}
+
+func newTestExporter(t *testing.T, url string, fns ...func(*Config)) *elasticsearchExporter {
+	var configMods []func(*Config)
+	configMods = append(configMods, func(cfg *Config) {
+		cfg.Endpoints = []string{url}
+		cfg.NumWorkers = 1
+		cfg.Flush.Interval = 10 * time.Millisecond
+	})
+	configMods = append(configMods, fns...)
+
+	exporter, err := newExporter(zaptest.NewLogger(t), withDefaultConfig(configMods...))
+	require.NoError(t, err)
+
+	t.Cleanup(func() { exporter.Shutdown(context.TODO()) })
+	return exporter
+}
+
+func mustSend(t *testing.T, exporter *elasticsearchExporter, contents string) {
+	err := exporter.pushEvent(context.TODO(), []byte(contents))
+	require.NoError(t, err)
 }
