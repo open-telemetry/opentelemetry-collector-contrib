@@ -4,23 +4,23 @@
 package logproto
 
 import (
-	bytes "bytes"
-	context "context"
+	"bytes"
+	"context"
 	encoding_binary "encoding/binary"
-	fmt "fmt"
-	io "io"
-	math "math"
-	reflect "reflect"
-	strconv "strconv"
-	strings "strings"
-	time "time"
+	"fmt"
+	"io"
+	"math"
+	"reflect"
+	"strconv"
+	"strings"
+	"time"
 
 	_ "github.com/gogo/protobuf/gogoproto"
-	proto "github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 	_ "github.com/gogo/protobuf/types"
 	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
-	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -2492,7 +2492,7 @@ func (this *SeriesIdentifier) GoString() string {
 	s := make([]string, 0, 5)
 	s = append(s, "&logproto.SeriesIdentifier{")
 	keysForLabels := make([]string, 0, len(this.Labels))
-	for k, _ := range this.Labels {
+	for k := range this.Labels {
 		keysForLabels = append(keysForLabels, k)
 	}
 	github_com_gogo_protobuf_sortkeys.Strings(keysForLabels)
@@ -3760,7 +3760,7 @@ func (m *SeriesIdentifier) MarshalTo(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	if len(m.Labels) > 0 {
-		for k, _ := range m.Labels {
+		for k := range m.Labels {
 			dAtA[i] = 0xa
 			i++
 			v := m.Labels[k]
@@ -4712,7 +4712,7 @@ func (this *SeriesIdentifier) String() string {
 		return "nil"
 	}
 	keysForLabels := make([]string, 0, len(this.Labels))
-	for k, _ := range this.Labels {
+	for k := range this.Labels {
 		keysForLabels = append(keysForLabels, k)
 	}
 	github_com_gogo_protobuf_sortkeys.Strings(keysForLabels)

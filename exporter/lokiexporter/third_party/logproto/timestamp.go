@@ -16,8 +16,8 @@ package logproto
 
 import (
 	"errors"
-	strconv "strconv"
-	time "time"
+	"strconv"
+	"time"
 
 	"github.com/gogo/protobuf/types"
 )

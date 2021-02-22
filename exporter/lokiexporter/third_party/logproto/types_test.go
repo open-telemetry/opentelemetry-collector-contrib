@@ -16,7 +16,7 @@ package logproto
 
 import (
 	"testing"
-	time "time"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
