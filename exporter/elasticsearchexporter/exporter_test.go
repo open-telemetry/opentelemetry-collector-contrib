@@ -184,7 +184,7 @@ func TestExporter_PushEvent(t *testing.T) {
 		assert.Equal(t, int64(1), atomic.LoadInt64(&attempts))
 	})
 
-	t.Run("do not retry invalid reuqest", func(t *testing.T) {
+	t.Run("do not retry invalid request", func(t *testing.T) {
 		var attempts int64
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			atomic.AddInt64(&attempts, 1)
