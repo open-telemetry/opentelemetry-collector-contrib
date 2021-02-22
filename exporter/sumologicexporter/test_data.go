@@ -273,9 +273,9 @@ func metricPairToMetrics(mp []metricPair) pdata.Metrics {
 }
 
 func fieldsFromMap(s map[string]string) fields {
-	am := pdata.NewAttributeMap()
+	attrMap := pdata.NewAttributeMap()
 	for k, v := range s {
-		am.InsertString(k, v)
+		attrMap.InsertString(k, v)
 	}
-	return fields{orig: am}
+	return newFields(attrMap)
 }

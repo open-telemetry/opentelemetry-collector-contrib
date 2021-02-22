@@ -25,20 +25,36 @@ import (
 
 // fields represents metadata
 type fields struct {
-	orig pdata.AttributeMap
+	orig     pdata.AttributeMap
+	replacer *strings.Replacer
 }
 
-func newFields() fields {
-	return fields{orig: pdata.NewAttributeMap()}
+func newFields(attrMap pdata.AttributeMap) fields {
+	return fields{
+		orig:     attrMap,
+		replacer: strings.NewReplacer(",", "_", "=", "_", "\n", "_"),
+	}
 }
 
 // string returns fields as ordered key=value string with `, ` as separator
 func (f fields) string() string {
 	returnValue := make([]string, 0, f.orig.Len())
 	f.orig.ForEach(func(k string, v pdata.AttributeValue) {
-		returnValue = append(returnValue, fmt.Sprintf("%s=%s", k, tracetranslator.AttributeValueToString(v, false)))
+		returnValue = append(
+			returnValue,
+			fmt.Sprintf(
+				"%s=%s",
+				f.sanitizeField(k),
+				f.sanitizeField(tracetranslator.AttributeValueToString(v, false)),
+			),
+		)
 	})
 	sort.Strings(returnValue)
 
 	return strings.Join(returnValue, ", ")
+}
+
+// sanitizeFields sanitize field (key or value) to be correctly parsed by sumologic receiver
+func (f fields) sanitizeField(fld string) string {
+	return f.replacer.Replace(fld)
 }

@@ -40,7 +40,8 @@ func TestGetMetadata(t *testing.T) {
 		"key2": "value2",
 		"key3": "value3",
 	})
-	assert.Equal(t, expected, metadata)
+	// Use string() because object comparison has not been reliable
+	assert.Equal(t, expected.string(), metadata.string())
 }
 
 func TestFilterOutMetadata(t *testing.T) {
@@ -60,5 +61,6 @@ func TestFilterOutMetadata(t *testing.T) {
 		"additional_key2": "value2",
 		"additional_key3": "value3",
 	})
-	assert.Equal(t, expected, data)
+	// Use string() because object comparison has not been reliable
+	assert.Equal(t, expected.string(), data.string())
 }

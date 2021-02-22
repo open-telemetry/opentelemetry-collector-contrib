@@ -54,7 +54,7 @@ func (f *filter) filterIn(attributes pdata.AttributeMap) fields {
 		}
 	})
 	returnValue.Sort()
-	return fields{orig: returnValue}
+	return newFields(returnValue)
 }
 
 // filterOut returns fields which don't match any of the filter regexes
@@ -70,5 +70,5 @@ func (f *filter) filterOut(attributes pdata.AttributeMap) fields {
 		returnValue.Insert(k, v)
 	})
 	returnValue.Sort()
-	return fields{orig: returnValue}
+	return newFields(returnValue)
 }
