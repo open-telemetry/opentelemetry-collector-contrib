@@ -9,8 +9,9 @@ require (
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.22.6
 	go.opentelemetry.io/collector v0.20.1-0.20210222012639-f480d17e10a7
-	go.opentelemetry.io/otel v0.16.0
+	go.opentelemetry.io/otel v0.17.0
 	go.opentelemetry.io/otel/sdk v0.16.0
+	go.opentelemetry.io/otel/trace v0.17.0
 	go.uber.org/zap v1.16.0
 	google.golang.org/api v0.40.0
 	google.golang.org/genproto v0.0.0-20201214200347-8c77b98c765d
