@@ -76,12 +76,14 @@ type requestHeader struct {
 }
 
 const magic = "DOTNET_IPC_V1"
+const magicTerminated = magic + "\000"
+
 const requestHeaderSize = 20
 
 func (h requestHeader) serialize(payloadSize int) []byte {
 	buf := &bytes.Buffer{}
 	// no need to handle errors because Write always returns a nil error
-	_, _ = buf.Write([]byte(magic + "\000"))
+	_, _ = buf.Write([]byte(magicTerminated))
 	totSize := uint16(requestHeaderSize + payloadSize)
 	_ = binary.Write(buf, network.ByteOrder, totSize)
 	_, _ = buf.Write([]byte{h.commandSet, h.commandID, 0, 0})

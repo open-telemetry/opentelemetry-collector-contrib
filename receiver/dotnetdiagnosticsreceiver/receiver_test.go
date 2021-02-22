@@ -20,15 +20,18 @@ import (
 	"io"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/network"
 )
 
 func TestReceiver(t *testing.T) {
+	rw := fakeRW()
 	ctx := context.Background()
-	rw := &fakeRW{writeErrOn: -1}
 	r, err := NewReceiver(
 		ctx,
 		consumertest.NewMetricsNop(),
@@ -45,7 +48,7 @@ func TestReceiver(t *testing.T) {
 	err = r.Shutdown(ctx)
 	require.NoError(t, err)
 	const magic = "DOTNET_IPC_V1"
-	magicBytes := rw.writeBuf[:len(magic)]
+	magicBytes := rw.Writes[:len(magic)]
 	require.Equal(t, magic, string(magicBytes))
 }
 
@@ -58,7 +61,7 @@ func TestReceiver_ConnectError(t *testing.T) {
 
 func TestReceiver_WriteRequestError(t *testing.T) {
 	connect := func() (io.ReadWriter, error) {
-		return &fakeRW{}, nil
+		return &network.FakeRW{}, nil
 	}
 	testErrOnReceiverStart(t, connect, "")
 }
@@ -78,25 +81,35 @@ func testErrOnReceiverStart(t *testing.T, connect func() (io.ReadWriter, error),
 	require.Error(t, err, errStr)
 }
 
-type fakeRW struct {
-	writeErrOn int
-	writeBuf   []byte
-	writeCount int
+func TestRecevier_ReadErr(t *testing.T) {
+	err := testReceiverReadErr(3)
+	assert.Error(t, err)
+	err = testReceiverReadErr(6)
+	assert.Error(t, err)
 }
 
-var _ io.ReadWriter = (*fakeRW)(nil)
-
-func (rw *fakeRW) Write(p []byte) (n int, err error) {
-	defer func() {
-		rw.writeCount++
-	}()
-	if rw.writeCount == rw.writeErrOn {
-		return 0, errors.New("")
-	}
-	rw.writeBuf = append(rw.writeBuf, p...)
-	return len(p), nil
+func testReceiverReadErr(i int) error {
+	rw := fakeRW()
+	rw.ReadErrIdx = i
+	ctx := context.Background()
+	r, _ := NewReceiver(
+		ctx,
+		consumertest.NewMetricsNop(),
+		func() (io.ReadWriter, error) {
+			return rw, nil
+		},
+		nil,
+		1,
+		zap.NewNop(),
+	)
+	return r.Start(ctx, componenttest.NewNopHost())
 }
 
-func (rw *fakeRW) Read(p []byte) (n int, err error) {
-	return len(p), nil
+func fakeRW() *network.FakeRW {
+	rw := network.NewDefaultFakeRW(
+		"DOTNET_IPC_V1\000",
+		"Nettrace",
+		"!FastSerialization.1",
+	)
+	return rw
 }
