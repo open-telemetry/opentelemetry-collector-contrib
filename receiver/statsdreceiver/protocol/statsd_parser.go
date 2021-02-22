@@ -35,6 +35,8 @@ func getSupportedTypes() []string {
 	return []string{"c", "g"}
 }
 
+const TagMetricType = "metric_type"
+
 // StatsDParser supports the Parse method for parsing StatsD messages with Tags.
 type StatsDParser struct {
 	gauges   map[statsDMetricdescription]*metricspb.Metric
@@ -89,8 +91,8 @@ var timeNowFunc = func() int64 {
 }
 
 //aggregate for each metric line
-func (p *StatsDParser) Aggregate(line string) error {
-	parsedMetric, err := parseMessageToMetric(line)
+func (p *StatsDParser) Aggregate(line string, enableMetricType bool) error {
+	parsedMetric, err := parseMessageToMetric(line, enableMetricType)
 	if err != nil {
 		return err
 	}
@@ -128,7 +130,7 @@ func (p *StatsDParser) Aggregate(line string) error {
 	return nil
 }
 
-func parseMessageToMetric(line string) (statsDMetric, error) {
+func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, error) {
 	result := statsDMetric{}
 
 	parts := strings.Split(line, "|")
@@ -159,6 +161,12 @@ func parseMessageToMetric(line string) (statsDMetric, error) {
 	}
 
 	additionalParts := parts[2:]
+
+	var kvs []label.KeyValue
+	var sortable label.Sortable
+	result.labelKeys = make([]*metricspb.LabelKey, 0)
+	result.labelValues = make([]*metricspb.LabelValue, 0)
+
 	for _, part := range additionalParts {
 		// TODO: Sample rate doesn't currently have a place to go in the protocol
 		if strings.HasPrefix(part, "@") {
@@ -175,11 +183,6 @@ func parseMessageToMetric(line string) (statsDMetric, error) {
 
 			tagSets := strings.Split(tagsStr, ",")
 
-			result.labelKeys = make([]*metricspb.LabelKey, 0, len(tagSets))
-			result.labelValues = make([]*metricspb.LabelValue, 0, len(tagSets))
-
-			var kvs []label.KeyValue
-			var sortable label.Sortable
 			for _, tagSet := range tagSets {
 				tagParts := strings.Split(tagSet, ":")
 				if len(tagParts) != 2 {
@@ -192,13 +195,11 @@ func parseMessageToMetric(line string) (statsDMetric, error) {
 				})
 				kvs = append(kvs, label.String(tagParts[0], tagParts[1]))
 			}
-			set := label.NewSetWithSortable(kvs, &sortable)
-			result.description.labels = set.Equivalent()
+
 		} else {
 			return result, fmt.Errorf("unrecognized message part: %s", part)
 		}
 	}
-
 	switch result.description.statsdMetricType {
 	case "g":
 		f, err := strconv.ParseFloat(result.value, 64)
@@ -218,6 +219,25 @@ func parseMessageToMetric(line string) (statsDMetric, error) {
 		}
 		result.intvalue = i
 		result.metricType = metricspb.MetricDescriptor_GAUGE_INT64
+	}
+
+	// add metric_type dimension for all metrics
+	if enableMetricType == true {
+		var metricType = ""
+		switch result.description.statsdMetricType {
+		case "g":
+			metricType = "gauge"
+		case "c":
+			metricType = "counter"
+		}
+		result.labelKeys = append(result.labelKeys, &metricspb.LabelKey{Key: TagMetricType})
+		result.labelValues = append(result.labelValues, &metricspb.LabelValue{
+			Value:    metricType,
+			HasValue: true,
+		})
+		kvs = append(kvs, label.String(TagMetricType, metricType))
+		set := label.NewSetWithSortable(kvs, &sortable)
+		result.description.labels = set.Equivalent()
 	}
 
 	return result, nil

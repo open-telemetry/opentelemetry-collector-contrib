@@ -22,5 +22,5 @@ import (
 type Parser interface {
 	Initialize() error
 	GetMetrics() []*metricspb.Metric
-	Aggregate(line string) error
+	Aggregate(line string, enableMetricType bool) error
 }
