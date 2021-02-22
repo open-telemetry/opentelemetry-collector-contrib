@@ -16,6 +16,7 @@ package awsemfexporter
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -94,6 +95,58 @@ func getLogInfo(rm *pdata.ResourceMetrics, cWNamespace string, config *Config) (
 	}
 
 	return
+}
+
+// dedupDimensions removes duplicated dimension sets from the given dimensions.
+// Prerequisite: each dimension set is already sorted
+func dedupDimensions(dimensions [][]string) (deduped [][]string) {
+	seen := make(map[string]bool)
+	for _, dimSet := range dimensions {
+		key := strings.Join(dimSet, ",")
+		// Only add dimension set if not a duplicate
+		if _, ok := seen[key]; !ok {
+			deduped = append(deduped, dimSet)
+			seen[key] = true
+		}
+	}
+	return
+}
+
+// dimensionRollup creates rolled-up dimensions from the metric's label set.
+// The returned dimensions are sorted in alphabetical order within each dimension set
+func dimensionRollup(dimensionRollupOption string, labels map[string]string) [][]string {
+	var rollupDimensionArray [][]string
+	dimensionZero := make([]string, 0)
+
+	instrLibName, hasOTelKey := labels[oTellibDimensionKey]
+	if hasOTelKey {
+		// If OTel key exists in labels, add it as a zero dimension but remove it
+		// temporarily from labels as it is not an original label
+		dimensionZero = []string{oTellibDimensionKey}
+		delete(labels, oTellibDimensionKey)
+	}
+
+	if dimensionRollupOption == zeroAndSingleDimensionRollup {
+		//"Zero" dimension rollup
+		if len(labels) > 0 {
+			rollupDimensionArray = append(rollupDimensionArray, dimensionZero)
+		}
+	}
+	if dimensionRollupOption == zeroAndSingleDimensionRollup || dimensionRollupOption == singleDimensionRollupOnly {
+		//"One" dimension rollup
+		for labelName := range labels {
+			dimSet := append(dimensionZero, labelName)
+			sort.Strings(dimSet)
+			rollupDimensionArray = append(rollupDimensionArray, dimSet)
+		}
+	}
+
+	// Add back OTel key to labels if it was removed
+	if hasOTelKey {
+		labels[oTellibDimensionKey] = instrLibName
+	}
+
+	return rollupDimensionArray
 }
 
 // unixNanoToMilliseconds converts a timestamp in nanoseconds to milliseconds.
