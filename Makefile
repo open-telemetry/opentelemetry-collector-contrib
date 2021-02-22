@@ -144,24 +144,25 @@ run:
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
 	GOOS=linux GOARCH=amd64 $(MAKE) $(COMPONENT)
-	cp ./bin/$(COMPONENT)_linux_amd64 ./cmd/$(COMPONENT)/$(COMPONENT)
-	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
-	rm ./cmd/$(COMPONENT)/$(COMPONENT)
+	cp ./bin/$(COMPONENT)_linux_amd64 ./cmd/$(COMPONENT)
+	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/ --build-arg=TARGETOS=linux --build-arg=TARGETARCH=amd64
+	rm ./cmd/$(COMPONENT)/$(COMPONENT)_linux_amd64
 
 # Requires Docker buildx = v0.5.1 https://github.com/docker/buildx
-DOCKER_BUILDX_PLATFORMS := linux/amd64,linux/arm64
+export DOCKER_BUILDX_PLATFORMS ?= linux/amd64,linux/arm64
 .PHONY: docker-cross-build-component # Not intended to be used directly
 docker-cross-build-component: check-component
-	PLATFORMS='$(shell echo $(DOCKER_BUILDX_PLATFORMS) | sed "s/,/ /g")'; \
+	PLATFORMS='$(shell echo ${DOCKER_BUILDX_PLATFORMS} | sed "s/,/ /g")'; \
 	for platform in $${PLATFORMS}; do \
 		IFS='/' osAndArch=($$platform); \
 		GOOS=$${osAndArch[0]}; \
 		GOARCH=$${osAndArch[1]}; \
 		GOOS=$${osAndArch[0]} GOARCH=$${osAndArch[1]} $(MAKE) $(COMPONENT); \
 		cp ./bin/$(COMPONENT)_$${GOOS}_$${GOARCH} ./cmd/$(COMPONENT)/; \
-		docker build -t $(COMPONENT):$${GOARCH} ./cmd/$(COMPONENT)/ --build-arg=TARGETOS=$${GOOS} --build-arg=TARGETARCH=$${GOARCH}; \
-		rm ./cmd/$(COMPONENT)/$(COMPONENT)_$${GOOS}_$${GOARCH} ; \
   	done
+	docker buildx rm $(COMPONENT)
+	docker buildx create --use --name $(COMPONENT)
+	docker buildx build --platform ${DOCKER_BUILDX_PLATFORMS} -t $(COMPONENT) ./cmd/$(COMPONENT)
 
 .PHONY: check-component
 check-component:
