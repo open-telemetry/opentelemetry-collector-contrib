@@ -51,7 +51,7 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 
 		} else if containerMetadata.FinishedAt != "" && containerMetadata.StartedAt != "" {
 
-			duration, err := calculateTime(containerMetadata.StartedAt, containerMetadata.FinishedAt)
+			duration, err := calculateDuration(containerMetadata.StartedAt, containerMetadata.FinishedAt)
 
 			if err != nil {
 				logger.Warn("Error time format error found for this container:" + containerMetadata.ContainerName)
@@ -115,13 +115,13 @@ func overrideWithTaskLevelLimit(taskMetrics *ECSMetrics, metadata TaskMetadata) 
 	}
 }
 
-func calculateTime(startTime, endTime string) (float64, error) {
+func calculateDuration(startTime, endTime string) (float64, error) {
 	const layout = "2006-01-02T15:04:05"
 	startTime = strings.Trim(startTime, "Z")
 	endTime = strings.Trim(endTime, "Z")
-	start, err1 := time.Parse(layout, startTime)
-	if err1 != nil {
-		return 0, err1
+	start, err := time.Parse(layout, startTime)
+	if err != nil {
+		return 0, err
 	}
 	end, err := time.Parse(layout, endTime)
 	if err != nil {

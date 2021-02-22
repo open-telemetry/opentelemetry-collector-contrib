@@ -83,5 +83,5 @@ const (
 	UnitCount       = "Count"
 	UnitVCpu        = "vCPU"
 	UnitPercent     = "Percent"
-	UnitSecond      = "Second"
+	UnitSecond      = "Seconds"
 )

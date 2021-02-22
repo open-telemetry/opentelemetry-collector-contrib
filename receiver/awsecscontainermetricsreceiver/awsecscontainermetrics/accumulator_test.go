@@ -225,13 +225,13 @@ func TestIsEmptyStats(t *testing.T) {
 	require.EqualValues(t, true, isEmptyStats(cstats["001"]))
 }
 
-func TestCalculateTime(t *testing.T) {
+func TestCalculateDuration(t *testing.T) {
 	startTime := "2020-10-02T00:15:07.620912337Z"
 	endTime := "2020-10-03T15:14:06.620913372Z"
-	result, _ := calculateTime(startTime, endTime)
+	result, _ := calculateDuration(startTime, endTime)
 	require.EqualValues(t, 140339.000001035, result)
 	startTime = "2010-10-02T00:15:07.620912337Z"
 	endTime = "2020-10-03T15:14:06.620913372Z"
-	result, _ = calculateTime(startTime, endTime)
+	result, _ = calculateDuration(startTime, endTime)
 	require.EqualValues(t, 3.15759539000001e+08, result)
 }
