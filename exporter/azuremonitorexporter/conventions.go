@@ -27,10 +27,9 @@ import (
 
 const (
 	// TODO replace with convention.* values once/if available
-	attributeRPCGRPCStatusCode        string = "rpc.grpc.status_code"
-	attributeOtelStatusCode           string = "otel.status_code"
-	attributeOtelStatusDeprecatedCode string = "otel.status_deprecatedcode"
-	attributeOtelStatusDescription    string = "otel.status_description"
+	attributeRPCGRPCStatusCode     string = "rpc.grpc.status_code"
+	attributeOtelStatusCode        string = "otel.status_code"
+	attributeOtelStatusDescription string = "otel.status_description"
 )
 
 // NetworkAttributes is the set of known network attributes
