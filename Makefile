@@ -148,6 +148,7 @@ docker-component: check-component
 	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
 	rm ./cmd/$(COMPONENT)/$(COMPONENT)
 
+# Requires Docker buildx = v0.5.1 https://github.com/docker/buildx
 DOCKER_BUILDX_PLATFORMS := linux/amd64,linux/arm64
 .PHONY: docker-cross-build-component # Not intended to be used directly
 docker-cross-build-component: check-component
