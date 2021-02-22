@@ -6,5 +6,5 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/googleapis/gnostic v0.5.1 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
-	k8s.io/client-go v0.20.2
+	k8s.io/client-go v0.20.4
 )
