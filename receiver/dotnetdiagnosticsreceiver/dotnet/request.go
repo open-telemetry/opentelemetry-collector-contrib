@@ -31,7 +31,7 @@ import (
 // after which it starts sending us metrics at the specified interval.
 // ByteBuffer is swappable for testing.
 // For docs on the protocol, see
-// https://github.com/Microsoft/perfview/blob/main/src/TraceEvent/EventPipe/EventPipeFormat.md
+// https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
 type RequestWriter struct {
 	w           io.Writer
 	intervalSec int

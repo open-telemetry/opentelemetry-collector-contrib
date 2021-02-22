@@ -103,3 +103,9 @@ macOS. Windows is not yet supported.
 #### Current Status
 
 This receiver is _beta_. It has been tested on macOS and Linux with .NET v3.1.
+
+#### External Resources
+
+https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
+
+https://github.com/Microsoft/perfview/blob/main/src/TraceEvent/EventPipe/EventPipeFormat.md
