@@ -62,6 +62,7 @@ type rateKeyParams struct {
 	metricNameKey string
 	logGroupKey   string
 	logStreamKey  string
+	timestampKey  string
 	labels        label.Distinct
 }
 
@@ -101,12 +102,12 @@ type DoubleSummaryDataPointSlice struct {
 func (dps IntDataPointSlice) At(i int) DataPoint {
 	metric := dps.IntDataPointSlice.At(i)
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
-	labels := createLabels(metric.LabelsMap())
+	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
 
 	var metricVal float64
 	metricVal = float64(metric.Value())
 	if dps.needsCalculateRate {
-		sortedLabels := getSortedLabels(metric.LabelsMap())
+		sortedLabels := getSortedLabels(labels)
 		dps.rateKeyParams.labels = sortedLabels
 		rateKey := dps.rateKeyParams
 		rateTS := dps.timestampMs
@@ -127,13 +128,13 @@ func (dps IntDataPointSlice) At(i int) DataPoint {
 // At retrieves the DoubleDataPoint at the given index and performs rate calculation if necessary.
 func (dps DoubleDataPointSlice) At(i int) DataPoint {
 	metric := dps.DoubleDataPointSlice.At(i)
-	labels := createLabels(metric.LabelsMap())
+	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
 	var metricVal float64
 	metricVal = metric.Value()
 	if dps.needsCalculateRate {
-		sortedLabels := getSortedLabels(metric.LabelsMap())
+		sortedLabels := getSortedLabels(labels)
 		dps.rateKeyParams.labels = sortedLabels
 		rateKey := dps.rateKeyParams
 		rateTS := dps.timestampMs
@@ -154,7 +155,7 @@ func (dps DoubleDataPointSlice) At(i int) DataPoint {
 // At retrieves the DoubleHistogramDataPoint at the given index.
 func (dps DoubleHistogramDataPointSlice) At(i int) DataPoint {
 	metric := dps.DoubleHistogramDataPointSlice.At(i)
-	labels := createLabels(metric.LabelsMap())
+	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
 	timestamp := unixNanoToMilliseconds(metric.Timestamp())
 
 	return DataPoint{
@@ -170,7 +171,7 @@ func (dps DoubleHistogramDataPointSlice) At(i int) DataPoint {
 // At retrieves the DoubleSummaryDataPoint at the given index.
 func (dps DoubleSummaryDataPointSlice) At(i int) DataPoint {
 	metric := dps.DoubleSummaryDataPointSlice.At(i)
-	labels := createLabels(metric.LabelsMap())
+	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
 	metricVal := &CWMetricStats{
@@ -190,22 +191,28 @@ func (dps DoubleSummaryDataPointSlice) At(i int) DataPoint {
 }
 
 // createLabels converts OTel StringMap labels to a map
-func createLabels(labelsMap pdata.StringMap) map[string]string {
+// and optionally adds in the OTel instrumentation library name
+func createLabels(labelsMap pdata.StringMap, instrLibName string) map[string]string {
 	labels := make(map[string]string, labelsMap.Len()+1)
 	labelsMap.ForEach(func(k, v string) {
 		labels[k] = v
 	})
 
+	// Add OTel instrumentation lib name as an additional label if it is defined
+	if instrLibName != noInstrumentationLibraryName {
+		labels[oTellibDimensionKey] = instrLibName
+	}
+
 	return labels
 }
 
 // getSortedLabels converts OTel StringMap labels to sorted labels as label.Distinct
-func getSortedLabels(labelsMap pdata.StringMap) label.Distinct {
+func getSortedLabels(labels map[string]string) label.Distinct {
 	var kvs []label.KeyValue
 	var sortable label.Sortable
-	labelsMap.ForEach(func(k, v string) {
+	for k, v := range labels {
 		kvs = append(kvs, label.String(k, v))
-	})
+	}
 	set := label.NewSetWithSortable(kvs, &sortable)
 
 	return set.Equivalent()
