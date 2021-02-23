@@ -16,7 +16,8 @@ package dotnetdiagnosticsreceiver
 
 import (
 	"context"
-	"net"
+	"errors"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -27,20 +28,75 @@ import (
 
 func TestReceiver(t *testing.T) {
 	ctx := context.Background()
+	rw := &fakeRW{writeErrOn: -1}
 	r, err := NewReceiver(
 		ctx,
-		zap.NewNop(),
-		createDefaultConfig().(*Config),
 		consumertest.NewMetricsNop(),
-		fakeConnect,
+		func() (io.ReadWriter, error) {
+			return rw, nil
+		},
+		nil,
+		1,
+		zap.NewNop(),
 	)
 	require.NoError(t, err)
 	err = r.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
 	err = r.Shutdown(ctx)
 	require.NoError(t, err)
+	const magic = "DOTNET_IPC_V1"
+	magicBytes := rw.writeBuf[:len(magic)]
+	require.Equal(t, magic, string(magicBytes))
 }
 
-func fakeConnect() (net.Conn, error) {
-	return nil, nil
+func TestReceiver_ConnectError(t *testing.T) {
+	connect := func() (io.ReadWriter, error) {
+		return nil, errors.New("foo")
+	}
+	testErrOnReceiverStart(t, connect, "foo")
+}
+
+func TestReceiver_WriteRequestError(t *testing.T) {
+	connect := func() (io.ReadWriter, error) {
+		return &fakeRW{}, nil
+	}
+	testErrOnReceiverStart(t, connect, "")
+}
+
+func testErrOnReceiverStart(t *testing.T, connect func() (io.ReadWriter, error), errStr string) {
+	ctx := context.Background()
+	r, err := NewReceiver(
+		ctx,
+		consumertest.NewMetricsNop(),
+		connect,
+		nil,
+		1,
+		zap.NewNop(),
+	)
+	require.NoError(t, err)
+	err = r.Start(ctx, componenttest.NewNopHost())
+	require.Error(t, err, errStr)
+}
+
+type fakeRW struct {
+	writeErrOn int
+	writeBuf   []byte
+	writeCount int
+}
+
+var _ io.ReadWriter = (*fakeRW)(nil)
+
+func (rw *fakeRW) Write(p []byte) (n int, err error) {
+	defer func() {
+		rw.writeCount++
+	}()
+	if rw.writeCount == rw.writeErrOn {
+		return 0, errors.New("")
+	}
+	rw.writeBuf = append(rw.writeBuf, p...)
+	return len(p), nil
+}
+
+func (rw *fakeRW) Read(p []byte) (n int, err error) {
+	return len(p), nil
 }

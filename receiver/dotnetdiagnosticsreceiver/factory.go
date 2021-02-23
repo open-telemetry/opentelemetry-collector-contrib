@@ -16,6 +16,10 @@ package dotnetdiagnosticsreceiver
 
 import (
 	"context"
+	"io"
+	"math"
+	"net"
+	"path/filepath"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -23,6 +27,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/network"
 )
 
 const typeStr = "dotnet_diagnostics"
@@ -55,5 +61,19 @@ func createMetricsReceiver(
 	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
 	cfg := baseConfig.(*Config)
-	return NewReceiver(ctx, params.Logger, cfg, consumer, nil)
+	sec := int(math.Round(cfg.CollectionInterval.Seconds()))
+	return NewReceiver(
+		ctx,
+		consumer,
+		mkConnectionSupplier(cfg.PID, net.Dial, filepath.Glob),
+		cfg.Counters,
+		sec,
+		params.Logger,
+	)
+}
+
+func mkConnectionSupplier(pid int, df network.DialFunc, gf network.GlobFunc) connectionSupplier {
+	return func() (io.ReadWriter, error) {
+		return network.Connect(pid, df, gf)
+	}
 }
