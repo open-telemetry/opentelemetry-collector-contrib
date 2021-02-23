@@ -17,8 +17,6 @@ package network
 import (
 	"errors"
 	"net"
-	"os"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,16 +29,6 @@ func TestConnect(t *testing.T) {
 	}, testMatcher)
 	assert.NoError(t, err)
 	assert.Nil(t, conn)
-}
-
-func TestConnect_UnsetTMPDIR(t *testing.T) {
-	err := os.Setenv("TMPDIR", "")
-	require.NoError(t, err)
-	_, err = Connect(0, func(network, address string) (net.Conn, error) {
-		assert.True(t, strings.HasPrefix(address, "/tmp/"))
-		return nil, nil
-	}, testMatcher)
-	require.NoError(t, err)
 }
 
 func TestConnect_SocketFileErr(t *testing.T) {
