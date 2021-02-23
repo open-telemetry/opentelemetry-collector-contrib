@@ -193,7 +193,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.NoError(t, err)
 	data := testMetricsData()
 
-	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil)
+	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "")
 	require.NoError(t, err)
 	translated := c.MetricDataToSignalFxV2(data)
 	require.NotNil(t, translated)
@@ -829,7 +829,7 @@ func TestDefaultExcludes_translated(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	setDefaultExcludes(cfg)
 
-	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics)
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "")
 	require.NoError(t, err)
 
 	var metrics []map[string]string
@@ -847,7 +847,7 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	setDefaultExcludes(cfg)
 
-	converter, err := translation.NewMetricsConverter(zap.NewNop(), nil, cfg.ExcludeMetrics, cfg.IncludeMetrics)
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), nil, cfg.ExcludeMetrics, cfg.IncludeMetrics, "")
 	require.NoError(t, err)
 
 	var metrics []map[string]string
