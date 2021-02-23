@@ -60,17 +60,12 @@ var podsSuccessfulMetric = &metricspb.MetricDescriptor{
 }
 
 func getMetricsForJob(j *batchv1.Job) []*resourceMetrics {
-	metrics := []*metricspb.Metric{
+	metrics := make([]*metricspb.Metric, 0, 5)
+	metrics = append(metrics, []*metricspb.Metric{
 		{
 			MetricDescriptor: podsActiveMetric,
 			Timeseries: []*metricspb.TimeSeries{
 				utils.GetInt64TimeSeries(int64(j.Status.Active)),
-			},
-		},
-		{
-			MetricDescriptor: podsDesiredCompletedMetric,
-			Timeseries: []*metricspb.TimeSeries{
-				utils.GetInt64TimeSeries(int64(*j.Spec.Completions)),
 			},
 		},
 		{
@@ -80,17 +75,27 @@ func getMetricsForJob(j *batchv1.Job) []*resourceMetrics {
 			},
 		},
 		{
-			MetricDescriptor: podsMaxParallelMetric,
-			Timeseries: []*metricspb.TimeSeries{
-				utils.GetInt64TimeSeries(int64(*j.Spec.Parallelism)),
-			},
-		},
-		{
 			MetricDescriptor: podsSuccessfulMetric,
 			Timeseries: []*metricspb.TimeSeries{
 				utils.GetInt64TimeSeries(int64(j.Status.Succeeded)),
 			},
 		},
+	}...)
+
+	if j.Spec.Completions != nil {
+		metrics = append(metrics, &metricspb.Metric{
+			MetricDescriptor: podsDesiredCompletedMetric,
+			Timeseries: []*metricspb.TimeSeries{
+				utils.GetInt64TimeSeries(int64(*j.Spec.Completions)),
+			}})
+	}
+
+	if j.Spec.Parallelism != nil {
+		metrics = append(metrics, &metricspb.Metric{
+			MetricDescriptor: podsMaxParallelMetric,
+			Timeseries: []*metricspb.TimeSeries{
+				utils.GetInt64TimeSeries(int64(*j.Spec.Parallelism)),
+			}})
 	}
 
 	return []*resourceMetrics{
