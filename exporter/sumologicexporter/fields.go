@@ -18,18 +18,43 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"go.opentelemetry.io/collector/consumer/pdata"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 // fields represents metadata
-type fields map[string]string
+type fields struct {
+	orig     pdata.AttributeMap
+	replacer *strings.Replacer
+}
+
+func newFields(attrMap pdata.AttributeMap) fields {
+	return fields{
+		orig:     attrMap,
+		replacer: strings.NewReplacer(",", "_", "=", "_", "\n", "_"),
+	}
+}
 
 // string returns fields as ordered key=value string with `, ` as separator
 func (f fields) string() string {
-	rv := make([]string, 0, len(f))
-	for k, v := range f {
-		rv = append(rv, fmt.Sprintf("%s=%s", k, v))
-	}
-	sort.Strings(rv)
+	returnValue := make([]string, 0, f.orig.Len())
+	f.orig.ForEach(func(k string, v pdata.AttributeValue) {
+		returnValue = append(
+			returnValue,
+			fmt.Sprintf(
+				"%s=%s",
+				f.sanitizeField(k),
+				f.sanitizeField(tracetranslator.AttributeValueToString(v, false)),
+			),
+		)
+	})
+	sort.Strings(returnValue)
 
-	return strings.Join(rv, ", ")
+	return strings.Join(returnValue, ", ")
+}
+
+// sanitizeFields sanitize field (key or value) to be correctly parsed by sumologic receiver
+func (f fields) sanitizeField(fld string) string {
+	return f.replacer.Replace(fld)
 }

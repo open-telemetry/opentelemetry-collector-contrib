@@ -141,8 +141,8 @@ func newMetricsExporter(
 // so they can be handled by OTC retry mechanism
 func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) (int, error) {
 	var (
-		currentMetadata  fields
-		previousMetadata fields
+		currentMetadata  fields = newFields(pdata.NewAttributeMap())
+		previousMetadata fields = newFields(pdata.NewAttributeMap())
 		errs             []error
 		droppedRecords   []pdata.LogRecord
 		err              error
@@ -236,8 +236,8 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) (i
 // so they can be handle by the OTC retry mechanism
 func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
 	var (
-		currentMetadata  fields
-		previousMetadata fields
+		currentMetadata  fields = newFields(pdata.NewAttributeMap())
+		previousMetadata fields = newFields(pdata.NewAttributeMap())
 		errs             []error
 		droppedRecords   []metricPair
 		attributes       pdata.AttributeMap

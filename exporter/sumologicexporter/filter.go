@@ -18,7 +18,6 @@ import (
 	"regexp"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 type filter struct {
@@ -44,22 +43,23 @@ func newFilter(flds []string) (filter, error) {
 
 // filterIn returns fields which match at least one of the filter regexes
 func (f *filter) filterIn(attributes pdata.AttributeMap) fields {
-	returnValue := make(fields)
+	returnValue := pdata.NewAttributeMap()
 
 	attributes.ForEach(func(k string, v pdata.AttributeValue) {
 		for _, regex := range f.regexes {
 			if regex.MatchString(k) {
-				returnValue[k] = tracetranslator.AttributeValueToString(v, false)
+				returnValue.Insert(k, v)
 				return
 			}
 		}
 	})
-	return returnValue
+	returnValue.Sort()
+	return newFields(returnValue)
 }
 
 // filterOut returns fields which don't match any of the filter regexes
 func (f *filter) filterOut(attributes pdata.AttributeMap) fields {
-	returnValue := make(fields)
+	returnValue := pdata.NewAttributeMap()
 
 	attributes.ForEach(func(k string, v pdata.AttributeValue) {
 		for _, regex := range f.regexes {
@@ -67,7 +67,8 @@ func (f *filter) filterOut(attributes pdata.AttributeMap) fields {
 				return
 			}
 		}
-		returnValue[k] = tracetranslator.AttributeValueToString(v, false)
+		returnValue.Insert(k, v)
 	})
-	return returnValue
+	returnValue.Sort()
+	return newFields(returnValue)
 }
