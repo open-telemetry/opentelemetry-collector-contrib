@@ -26,6 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 type appendResponse struct {
@@ -159,15 +160,15 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, body io.Reader
 
 // logToText converts LogRecord to a plain text line, returns it and error eventually
 func (s *sender) logToText(record pdata.LogRecord) string {
-	return record.Body().StringVal()
+	return tracetranslator.AttributeValueToString(record.Body(), false)
 }
 
 // logToJSON converts LogRecord to a json line, returns it and error eventually
 func (s *sender) logToJSON(record pdata.LogRecord) (string, error) {
 	data := s.filter.filterOut(record.Attributes())
-	data[logKey] = record.Body().StringVal()
+	data.orig.Upsert(logKey, record.Body())
 
-	nextLine, err := json.Marshal(data)
+	nextLine, err := json.Marshal(tracetranslator.AttributeMapToMap(data.orig))
 	if err != nil {
 		return "", err
 	}
