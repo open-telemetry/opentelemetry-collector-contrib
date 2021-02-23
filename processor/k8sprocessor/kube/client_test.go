@@ -241,7 +241,7 @@ func TestPodDelete(t *testing.T) {
 	assert.Equal(t, len(c.Pods), 3)
 	assert.Equal(t, len(c.deleteQueue), 1)
 	deleteRequest := c.deleteQueue[0]
-	assert.Equal(t, deleteRequest.id, "1.1.1.1")
+	assert.Equal(t, deleteRequest.id, PodIdentifier("1.1.1.1"))
 	assert.Equal(t, deleteRequest.podName, "podB")
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
@@ -255,12 +255,12 @@ func TestPodDelete(t *testing.T) {
 	assert.Equal(t, len(c.Pods), 3)
 	assert.Equal(t, len(c.deleteQueue), 3)
 	deleteRequest = c.deleteQueue[1]
-	assert.Equal(t, deleteRequest.id, "2.2.2.2")
+	assert.Equal(t, deleteRequest.id, PodIdentifier("2.2.2.2"))
 	assert.Equal(t, deleteRequest.podName, "podC")
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
 	deleteRequest = c.deleteQueue[2]
-	assert.Equal(t, deleteRequest.id, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+	assert.Equal(t, deleteRequest.id, PodIdentifier("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"))
 	assert.Equal(t, deleteRequest.podName, "podC")
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
@@ -323,8 +323,8 @@ func TestGetIgnoredPod(t *testing.T) {
 	pod := &api_v1.Pod{}
 	pod.Status.PodIP = "1.1.1.1"
 	c.handlePodAdd(pod)
-	c.Pods[pod.Status.PodIP].Ignore = true
-	got, ok := c.GetPod(pod.Status.PodIP)
+	c.Pods[PodIdentifier(pod.Status.PodIP)].Ignore = true
+	got, ok := c.GetPod(PodIdentifier(pod.Status.PodIP))
 	assert.Nil(t, got)
 	assert.False(t, ok)
 }
@@ -432,7 +432,7 @@ func TestExtractionRules(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			c.Rules = tc.rules
 			c.handlePodAdd(pod)
-			p, ok := c.GetPod(pod.Status.PodIP)
+			p, ok := c.GetPod(PodIdentifier(pod.Status.PodIP))
 			require.True(t, ok)
 
 			assert.Equal(t, len(tc.attributes), len(p.Attributes))

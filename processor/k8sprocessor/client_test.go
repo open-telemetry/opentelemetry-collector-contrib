@@ -27,7 +27,7 @@ import (
 
 // fakeClient is used as a replacement for WatchClient in test cases.
 type fakeClient struct {
-	Pods         map[string]*kube.Pod
+	Pods         map[kube.PodIdentifier]*kube.Pod
 	Rules        kube.ExtractionRules
 	Filters      kube.Filters
 	Associations []kube.Association
@@ -46,7 +46,7 @@ func newFakeClient(_ *zap.Logger, apiCfg k8sconfig.APIConfig, rules kube.Extract
 
 	ls, fs := selectors()
 	return &fakeClient{
-		Pods:         map[string]*kube.Pod{},
+		Pods:         map[kube.PodIdentifier]*kube.Pod{},
 		Rules:        rules,
 		Filters:      filters,
 		Associations: associations,
@@ -57,7 +57,7 @@ func newFakeClient(_ *zap.Logger, apiCfg k8sconfig.APIConfig, rules kube.Extract
 
 // GetPod looks up FakeClient.Pods map by the provided string,
 // which might represent either IP address or Pod UID.
-func (f *fakeClient) GetPod(identifier string) (*kube.Pod, bool) {
+func (f *fakeClient) GetPod(identifier kube.PodIdentifier) (*kube.Pod, bool) {
 	p, ok := f.Pods[identifier]
 	return p, ok
 }

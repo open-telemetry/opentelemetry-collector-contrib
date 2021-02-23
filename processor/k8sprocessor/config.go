@@ -185,7 +185,7 @@ type PodAssociationConfig struct {
 	// Allowed values are "connection" and "labels".
 	From string `mapstructure:"from"`
 
-	// Name represents the name of the association.
-	// e.g. ip, pod_uid
+	// Name represents extracted key name.
+	// e.g. ip, pod_uid, k8s.pod.ip
 	Name string `mapstructure:"name"`
 }

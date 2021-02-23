@@ -34,6 +34,9 @@ const (
 	tagStartTime = "k8s.pod.startTime"
 )
 
+// PodIdentifier is a custom type to represent IP Address or Pod UID
+type PodIdentifier string
+
 var (
 	// TODO: move these to config with default values
 	podNameIgnorePatterns = []*regexp.Regexp{
@@ -46,7 +49,7 @@ var (
 
 // Client defines the main interface that allows querying pods by metadata.
 type Client interface {
-	GetPod(string) (*Pod, bool)
+	GetPod(PodIdentifier) (*Pod, bool)
 	Start()
 	Stop()
 }
@@ -72,7 +75,7 @@ type Pod struct {
 
 type deleteRequest struct {
 	// id is identifier (IP address or Pod UID) of pod to remove from pods map
-	id string
+	id PodIdentifier
 	// name contains name of pod to remove from pods map
 	podName string
 	ts      time.Time

@@ -631,7 +631,7 @@ func TestProcessorAddLabels(t *testing.T) {
 
 	for ip, attrs := range tests {
 		m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
-			kp.kc.(*fakeClient).Pods[ip] = &kube.Pod{Attributes: attrs}
+			kp.kc.(*fakeClient).Pods[kube.PodIdentifier(ip)] = &kube.Pod{Attributes: attrs}
 		})
 	}
 
@@ -705,6 +705,76 @@ func TestProcessorPicksUpPassthoughPodIp(t *testing.T) {
 }
 
 func TestMetricsProcessorHostname(t *testing.T) {
+	next := new(consumertest.MetricsSink)
+	var kp *kubernetesprocessor
+	p, err := newMetricsProcessor(
+		NewFactory().CreateDefaultConfig(),
+		next,
+		WithExtractMetadata(metadataPodName),
+		withExtractKubernetesProcessorInto(&kp),
+	)
+	require.NoError(t, err)
+	kc := kp.kc.(*fakeClient)
+
+	// invalid ip should not be used to lookup k8s pod
+	kc.Pods["invalid-ip"] = &kube.Pod{
+		Name: "PodA",
+		Attributes: map[string]string{
+			"k":  "v",
+			"1":  "2",
+			"aa": "b",
+		},
+	}
+	kc.Pods["3.3.3.3"] = &kube.Pod{
+		Name: "PodA",
+		Attributes: map[string]string{
+			"kk": "vv",
+		},
+	}
+
+	type testCase struct {
+		name, hostname string
+		expectedAttrs  map[string]string
+	}
+
+	testCases := []testCase{
+		{
+			name:     "invalid IP in hostname",
+			hostname: "invalid-ip",
+			expectedAttrs: map[string]string{
+				conventions.AttributeHostName: "invalid-ip",
+			},
+		},
+		{
+			name:     "valid IP in hostname",
+			hostname: "3.3.3.3",
+			expectedAttrs: map[string]string{
+				conventions.AttributeHostName: "3.3.3.3",
+				k8sIPLabelName:                "3.3.3.3",
+				"kk":                          "vv",
+			},
+		},
+	}
+
+	for i, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			metrics := generateMetrics(withHostname(tc.hostname))
+			assert.NoError(t, p.ConsumeMetrics(context.Background(), metrics))
+			require.Len(t, next.AllMetrics(), i+1)
+
+			md := next.AllMetrics()[i]
+			require.Equal(t, 1, md.ResourceMetrics().Len())
+			res := md.ResourceMetrics().At(0).Resource()
+			assert.Equal(t, len(tc.expectedAttrs), res.Attributes().Len())
+			for k, v := range tc.expectedAttrs {
+				assertResourceHasStringAttribute(t, res, k, v)
+			}
+		})
+	}
+
+}
+
+func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 	next := new(consumertest.MetricsSink)
 	var kp *kubernetesprocessor
 	p, err := newMetricsProcessor(

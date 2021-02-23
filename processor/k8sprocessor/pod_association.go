@@ -25,51 +25,53 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
-// k8sPodAssociationFromAttributes extracts IP and pod UID from attributes based on association config.
-// It returns a map containing specified labels as a keys and IP Address and/or Pod UID
-func k8sPodAssociationFromAttributes(ctx context.Context, attrs pdata.AttributeMap, associations []kube.Association) map[string]string {
-	podAssociation := make(map[string]string)
-	var clientIP string
+// extractPodIds extracts IP and pod UID from attributes or request context.
+// It returns a value pair containing configured label and IP Address and/or Pod UID
+func extractPodIds(ctx context.Context, attrs pdata.AttributeMap, associations []kube.Association) (string, kube.PodIdentifier) {
+	hostname := stringAttributeFromMap(attrs, conventions.AttributeHostName)
+	var connectionIP kube.PodIdentifier
 	if c, ok := client.FromContext(ctx); ok {
-		clientIP = c.IP
+		connectionIP = kube.PodIdentifier(c.IP)
 	}
 	// If pod association is not set
 	if len(associations) == 0 {
-		var podIP, labelIP string
-		podIP = stringAttributeFromMap(attrs, k8sIPLabelName)
-		labelIP = stringAttributeFromMap(attrs, clientIPLabelName)
+		var podIP, labelIP kube.PodIdentifier
+		podIP = kube.PodIdentifier(stringAttributeFromMap(attrs, k8sIPLabelName))
+		labelIP = kube.PodIdentifier(stringAttributeFromMap(attrs, clientIPLabelName))
 
 		if podIP != "" {
-			podAssociation[k8sIPLabelName] = podIP
+			return k8sIPLabelName, podIP
 		} else if labelIP != "" {
-			podAssociation[k8sIPLabelName] = labelIP
-		} else if clientIP != "" {
-			podAssociation[k8sIPLabelName] = clientIP
+			return k8sIPLabelName, labelIP
+		} else if connectionIP != "" {
+			return k8sIPLabelName, connectionIP
+		} else if net.ParseIP(hostname) != nil {
+			return k8sIPLabelName, kube.PodIdentifier(hostname)
 		}
-		return podAssociation
+		return "", kube.PodIdentifier("")
 	}
 
 	for _, asso := range associations {
 		// If association configured to take IP address from connection
-		if asso.From == "connection" && clientIP != "" {
-			podAssociation[k8sIPLabelName] = clientIP
+		if asso.From == "connection" && connectionIP != "" {
+			return k8sIPLabelName, connectionIP
 		} else if asso.From == "labels" { // If association configured by labels
-			// Special case for host.name label
+			// In k8s environment, host.name label set to a pod IP address.
+			// If the value doesn't represent an IP address, we skip it.
 			if asso.Name == conventions.AttributeHostName {
-				hostname := stringAttributeFromMap(attrs, conventions.AttributeHostName)
 				if net.ParseIP(hostname) != nil {
-					podAssociation[k8sIPLabelName] = hostname
+					return k8sIPLabelName, kube.PodIdentifier(hostname)
 				}
-				continue
-			}
-			// Extract values based od configured labels.
-			attributeValue := stringAttributeFromMap(attrs, asso.Name)
-			if attributeValue != "" {
-				podAssociation[asso.Name] = attributeValue
+			} else {
+				// Extract values based od configured labels.
+				attributeValue := stringAttributeFromMap(attrs, asso.Name)
+				if attributeValue != "" {
+					return asso.Name, kube.PodIdentifier(attributeValue)
+				}
 			}
 		}
 	}
-	return podAssociation
+	return "", kube.PodIdentifier("")
 }
 
 func stringAttributeFromMap(attrs pdata.AttributeMap, key string) string {

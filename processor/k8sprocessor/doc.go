@@ -17,7 +17,7 @@
 // The processor automatically discovers k8s resources (pods), extracts metadata from them and adds the
 // extracted metadata to the relevant spans, metrics and logs. The processor uses the kubernetes API to discover all pods
 // running in a cluster, keeps a record of their IP addresses, pod UIDs and interesting metadata.
-// The rules for associating the source record with specific Pod Metadata are configured via "pod_association" key.
+// The rules for associating the data passing through the processor (spans, metrics and logs) with specific Pod Metadata are configured via "pod_association" key.
 // It represents a list of rules that are executed in the specified order until the first one is able to do the match.
 // Each rule is specified as a pair of from (representing the rule type) and name (representing the extracted key name).
 // Following rule types are available:
