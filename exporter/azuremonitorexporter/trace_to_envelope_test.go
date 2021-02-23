@@ -417,22 +417,6 @@ func TestRPCClientSpanToRemoteDependencyData(t *testing.T) {
 
 	assert.Equal(t, "8", data.ResultCode)
 	assert.Equal(t, span.Status().Code().String(), data.Properties[attributeOtelStatusCode])
-	assert.Equal(t, pdata.DeprecatedStatusCodeUnknownError.String(), data.Properties[attributeOtelStatusDeprecatedCode])
-	assert.Equal(t, span.Status().Message(), data.Properties[attributeOtelStatusDescription])
-
-	// test RPC error using the legacy Deprecated status code
-	span.Status().SetCode(pdata.StatusCodeUnset)
-	spanAttributes.Delete(attributeRPCGRPCStatusCode)
-
-	span.Status().SetDeprecatedCode(8)
-	span.Status().SetMessage("Resource exhausted")
-
-	envelope, _ = spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
-	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
-
-	assert.Equal(t, "8", data.ResultCode)
-	assert.Equal(t, pdata.StatusCodeUnset.String(), data.Properties[attributeOtelStatusCode])
-	assert.Equal(t, pdata.DeprecatedStatusCodeResourceExhausted.String(), data.Properties[attributeOtelStatusDeprecatedCode])
 	assert.Equal(t, span.Status().Message(), data.Properties[attributeOtelStatusDescription])
 }
 
