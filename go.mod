@@ -59,7 +59,7 @@ require (
 	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.20.1-0.20210222012639-f480d17e10a7
-	golang.org/x/sys v0.0.0-20210104204734-6f8348627aad
+	golang.org/x/sys v0.0.0-20210220050731-9a76102bfb43
 )
 
 // Replace references to modules that are in this repository with their relateive paths
