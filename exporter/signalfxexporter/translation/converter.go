@@ -48,9 +48,10 @@ var (
 // MetricsConverter converts MetricsData to sfxpb DataPoints. It holds an optional
 // MetricTranslator to translate SFx metrics using translation rules.
 type MetricsConverter struct {
-	logger           *zap.Logger
-	metricTranslator *MetricTranslator
-	filterSet        *dpfilters.FilterSet
+	logger                  *zap.Logger
+	metricTranslator        *MetricTranslator
+	filterSet               *dpfilters.FilterSet
+	nonAlphanumericDimChars string
 }
 
 // NewMetricsConverter creates a MetricsConverter from the passed in logger and
@@ -60,12 +61,13 @@ func NewMetricsConverter(
 	logger *zap.Logger,
 	t *MetricTranslator,
 	excludes []dpfilters.MetricFilter,
-	includes []dpfilters.MetricFilter) (*MetricsConverter, error) {
+	includes []dpfilters.MetricFilter,
+	nonAlphanumericDimChars string) (*MetricsConverter, error) {
 	fs, err := dpfilters.NewFilterSet(excludes, includes)
 	if err != nil {
 		return nil, err
 	}
-	return &MetricsConverter{logger: logger, metricTranslator: t, filterSet: fs}, nil
+	return &MetricsConverter{logger: logger, metricTranslator: t, filterSet: fs, nonAlphanumericDimChars: nonAlphanumericDimChars}, nil
 }
 
 // MetricDataToSignalFxV2 converts the passed in MetricsData to SFx datapoints,
@@ -83,7 +85,7 @@ func (c *MetricsConverter) MetricDataToSignalFxV2(rm pdata.ResourceMetrics) []*s
 			sfxDatapoints = append(sfxDatapoints, dps...)
 		}
 	}
-	sanitizeDataPointDimensions(sfxDatapoints)
+	c.sanitizeDataPointDimensions(sfxDatapoints)
 	return sfxDatapoints
 }
 
@@ -348,17 +350,17 @@ func convertDoubleHistogram(histDPs pdata.DoubleHistogramDataPointSlice, basePoi
 
 // sanitizeDataPointLabels replaces all characters unsupported by SignalFx backend
 // in metric label keys and with "_"
-func sanitizeDataPointDimensions(dps []*sfxpb.DataPoint) {
+func (c *MetricsConverter) sanitizeDataPointDimensions(dps []*sfxpb.DataPoint) {
 	for _, dp := range dps {
 		for _, d := range dp.Dimensions {
-			d.Key = filterKeyChars(d.Key)
+			d.Key = filterKeyChars(d.Key, c.nonAlphanumericDimChars)
 		}
 	}
 }
 
-func filterKeyChars(str string) string {
+func filterKeyChars(str string, nonAlphanumericDimChars string) string {
 	filterMap := func(r rune) rune {
-		if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' || r == '-' {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) || strings.ContainsRune(nonAlphanumericDimChars, r) {
 			return r
 		}
 		return '_'

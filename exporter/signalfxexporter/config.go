@@ -98,6 +98,10 @@ type Config struct {
 
 	// Correlation configuration for syncing traces service and environment to metrics.
 	Correlation *correlation.Config `mapstructure:"correlation"`
+
+	// NonAlphanumericDimensionChars is a list of allowable characters, in addition to alphanumeric ones,
+	// to be used in a dimension key.
+	NonAlphanumericDimensionChars string `mapstructure:"nonalphanumeric_dimension_chars"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
