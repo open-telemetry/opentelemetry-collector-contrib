@@ -19,6 +19,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter v0.0.0-00010101000000-000000000000
@@ -58,8 +59,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.0.0-00010101000000-000000000000
 	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.20.1-0.20210218001603-48151d869607
-	golang.org/x/sys v0.0.0-20210104204734-6f8348627aad
+	go.opentelemetry.io/collector v0.20.1-0.20210222231653-a04feee5a0cb
+	golang.org/x/sys v0.0.0-20210220050731-9a76102bfb43
 )
 
 // Replace references to modules that are in this repository with their relateive paths
@@ -72,6 +73,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splun
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ./internal/k8sconfig
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray => ./internal/awsxray
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza => ./internal/stanza
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter => ./exporter/alibabacloudlogserviceexporter
 
@@ -103,6 +106,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awski
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter => ./exporter/logzioexporter
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter => ./exporter/lokiexporter
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter => ./exporter/sapmexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter => ./exporter/sentryexporter
@@ -128,6 +133,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/obse
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr => ./pkg/batchperresourceattr
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpertrace => ./pkg/batchpertrace
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ./pkg/experimentalmetricmetadata
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver => ./receiver/awsecscontainermetricsreceiver
 
@@ -166,8 +173,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver => ./receiver/jmxreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver => ./receiver/zookeeperreceiver
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stanzareceiver => ./receiver/stanzareceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver => ./receiver/filelogreceiver
 

@@ -32,7 +32,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 // TODO: Find a place for this to be shared.
@@ -49,17 +49,17 @@ type baseLogsExporter struct {
 
 type signalfMetadataExporter struct {
 	component.MetricsExporter
-	pushMetadata func(metadata []*metrics.MetadataUpdate) error
+	pushMetadata func(metadata []*metadata.MetadataUpdate) error
 }
 
-func (sme *signalfMetadataExporter) ConsumeMetadata(metadata []*metrics.MetadataUpdate) error {
+func (sme *signalfMetadataExporter) ConsumeMetadata(metadata []*metadata.MetadataUpdate) error {
 	return sme.pushMetadata(metadata)
 }
 
 type signalfxExporter struct {
 	logger             *zap.Logger
 	pushMetricsData    func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
-	pushMetadata       func(metadata []*metrics.MetadataUpdate) error
+	pushMetadata       func(metadata []*metadata.MetadataUpdate) error
 	pushLogsData       func(ctx context.Context, ld pdata.Logs) (droppedLogRecords int, err error)
 	hostMetadataSyncer *hostmetadata.Syncer
 }
@@ -90,7 +90,7 @@ func newSignalFxExporter(
 
 	headers := buildHeaders(config)
 
-	converter, err := translation.NewMetricsConverter(logger, options.metricTranslator, config.ExcludeMetrics, config.IncludeMetrics)
+	converter, err := translation.NewMetricsConverter(logger, options.metricTranslator, config.ExcludeMetrics, config.IncludeMetrics, config.NonAlphanumericDimensionChars)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metric converter: %v", err)
 	}

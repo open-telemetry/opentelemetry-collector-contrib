@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	appsv1 "k8s.io/api/apps/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 func getMetricsForReplicaSet(rs *appsv1.ReplicaSet) []*resourceMetrics {
@@ -52,8 +52,8 @@ func getResourceForReplicaSet(rs *appsv1.ReplicaSet) *resourcepb.Resource {
 	}
 }
 
-func getMetadataForReplicaSet(rs *appsv1.ReplicaSet) map[metrics.ResourceID]*KubernetesMetadata {
-	return map[metrics.ResourceID]*KubernetesMetadata{
-		metrics.ResourceID(rs.UID): getGenericMetadata(&rs.ObjectMeta, k8sKindReplicaSet),
+func getMetadataForReplicaSet(rs *appsv1.ReplicaSet) map[metadata.ResourceID]*KubernetesMetadata {
+	return map[metadata.ResourceID]*KubernetesMetadata{
+		metadata.ResourceID(rs.UID): getGenericMetadata(&rs.ObjectMeta, k8sKindReplicaSet),
 	}
 }

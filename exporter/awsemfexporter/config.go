@@ -20,6 +20,12 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	// EMFSupportedUnits contains the unit collection supported by CloudWatch backend service.
+	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_MetricDatum.html
+	EMFSupportedUnits = newEMFSupportedUnits()
+)
+
 // Config defines configuration for AWS EMF exporter.
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
@@ -55,8 +61,11 @@ type Config struct {
 	// "SingleDimensionRollupOnly" - Enable single dimension rollup
 	// "NoDimensionRollup" - No dimension rollup (only keep original metrics which contain all dimensions)
 	DimensionRollupOption string `mapstructure:"dimension_rollup_option"`
-	// MetricDeclarations is a list of rules to be used to set dimensions for exported metrics.
+	// MetricDeclarations is the list of rules to be used to set dimensions for exported metrics.
 	MetricDeclarations []*MetricDeclaration `mapstructure:"metric_declarations"`
+
+	// MetricDescriptors is the list of override metric descriptors that are sent to the CloudWatch
+	MetricDescriptors []MetricDescriptor `mapstructure:"metric_descriptors"`
 
 	// ResourceToTelemetrySettings is the option for converting resource attrihutes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
@@ -65,4 +74,53 @@ type Config struct {
 
 	// logger is the Logger used for writing error/warning logs
 	logger *zap.Logger
+}
+
+type MetricDescriptor struct {
+	// metricName is the name of the metric
+	metricName string `mapstructure:"metric_name"`
+	// unit defines the override value of metric descriptor `unit`
+	unit string `mapstructure:"unit"`
+	// overwrite set to true means the existing metric descriptor will be overwritten or a new metric descriptor will be created; false means
+	// the descriptor will only be configured if empty.
+	overwrite bool `mapstructure:"overwrite"`
+}
+
+// Validate filters out invalid metricDeclarations and metricDescriptors
+func (config *Config) Validate() {
+	validDeclarations := []*MetricDeclaration{}
+	for _, declaration := range config.MetricDeclarations {
+		err := declaration.Init(config.logger)
+		if err != nil {
+			config.logger.Warn("Dropped metric declaration.", zap.Error(err))
+		} else {
+			validDeclarations = append(validDeclarations, declaration)
+		}
+	}
+	config.MetricDeclarations = validDeclarations
+
+	validDescriptors := []MetricDescriptor{}
+	for _, descriptor := range config.MetricDescriptors {
+		if descriptor.metricName == "" {
+			continue
+		}
+		if _, ok := EMFSupportedUnits[descriptor.unit]; ok {
+			validDescriptors = append(validDescriptors, descriptor)
+		} else {
+			config.logger.Warn("Dropped unsupported metric desctriptor.", zap.String("unit", descriptor.unit))
+		}
+	}
+	config.MetricDescriptors = validDescriptors
+}
+
+func newEMFSupportedUnits() map[string]interface{} {
+	unitIndexer := map[string]interface{}{}
+	for _, unit := range []string{"Seconds", "Microseconds", "Milliseconds", "Bytes", "Kilobytes", "Megabytes",
+		"Gigabytes", "Terabytes", "Bits", "Kilobits", "Megabits", "Gigabits", "Terabits",
+		"Percent", "Count", "Bytes/Second", "Kilobytes/Second", "Megabytes/Second",
+		"Gigabytes/Second", "Terabytes/Second", "Bits/Second", "Kilobits/Second",
+		"Megabits/Second", "Gigabits/Second", "Terabits/Second", "Count/Second", "None"} {
+		unitIndexer[unit] = nil
+	}
+	return unitIndexer
 }

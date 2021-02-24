@@ -38,7 +38,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stanzareceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -106,9 +106,9 @@ func TestReadStaticFile(t *testing.T) {
 	e3.AddLabel("file_name", "simple.log")
 
 	expectedLogs := []pdata.Logs{
-		stanzareceiver.Convert(e1),
-		stanzareceiver.Convert(e2),
-		stanzareceiver.Convert(e3),
+		stanza.Convert(e1),
+		stanza.Convert(e2),
+		stanza.Convert(e3),
 	}
 
 	f := NewFactory()
@@ -190,7 +190,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 		e := entry.New()
 		e.Timestamp = expectedTimestamp
 		e.Set(entry.NewRecordField("msg"), msg)
-		expectedLogs[i] = stanzareceiver.Convert(e)
+		expectedLogs[i] = stanza.Convert(e)
 	}
 
 	rcvr, err := f.CreateLogsReceiver(context.Background(), params, testdataRotateTestYamlAsMap(tempDir), sink)
@@ -253,12 +253,12 @@ func (h *testHost) ReportFatalError(err error) {
 
 func testdataConfigYamlAsMap() *FileLogConfig {
 	return &FileLogConfig{
-		BaseConfig: stanzareceiver.BaseConfig{
+		BaseConfig: stanza.BaseConfig{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: "filelog",
 				NameVal: "filelog",
 			},
-			Operators: stanzareceiver.OperatorConfigs{
+			Operators: stanza.OperatorConfigs{
 				map[string]interface{}{
 					"type":  "regex_parser",
 					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
@@ -272,7 +272,7 @@ func testdataConfigYamlAsMap() *FileLogConfig {
 				},
 			},
 		},
-		Input: stanzareceiver.InputConfig{
+		Input: stanza.InputConfig{
 			"include": []interface{}{
 				"testdata/simple.log",
 			},
@@ -283,12 +283,12 @@ func testdataConfigYamlAsMap() *FileLogConfig {
 
 func testdataRotateTestYamlAsMap(tempDir string) *FileLogConfig {
 	return &FileLogConfig{
-		BaseConfig: stanzareceiver.BaseConfig{
+		BaseConfig: stanza.BaseConfig{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: "filelog",
 				NameVal: "filelog",
 			},
-			Operators: stanzareceiver.OperatorConfigs{
+			Operators: stanza.OperatorConfigs{
 				map[string]interface{}{
 					"type":  "regex_parser",
 					"regex": "^(?P<ts>\\d{4}-\\d{2}-\\d{2}) (?P<msg>[^\n]+)",
@@ -299,7 +299,7 @@ func testdataRotateTestYamlAsMap(tempDir string) *FileLogConfig {
 				},
 			},
 		},
-		Input: stanzareceiver.InputConfig{
+		Input: stanza.InputConfig{
 			"type": "file_input",
 			"include": []interface{}{
 				fmt.Sprintf("%s/*", tempDir),

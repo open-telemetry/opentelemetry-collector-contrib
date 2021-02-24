@@ -16,9 +16,11 @@ package dotnetdiagnosticsreceiver
 
 import (
 	"context"
+	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -38,11 +40,22 @@ func TestCreateDefaultConfig(t *testing.T) {
 	)
 }
 
-func TestCreateReceiver(t *testing.T) {
+func TestNewFactory(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig()
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	r, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewMetricsNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
+}
+
+func TestMkConnectionSupplier(t *testing.T) {
+	connect := mkConnectionSupplier(0, func(network, address string) (net.Conn, error) {
+		return nil, nil
+	}, func(pattern string) (matches []string, err error) {
+		return []string{""}, nil
+	})
+	readWriter, err := connect()
+	require.NoError(t, err)
+	require.Nil(t, readWriter)
 }

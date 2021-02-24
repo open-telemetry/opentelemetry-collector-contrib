@@ -15,6 +15,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/exporter/awskinesisexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/exporter/awsprometheusremotewriteexporter"
     schedule:
       interval: "weekly"
@@ -43,6 +47,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/exporter/elasticsearchexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/exporter/f5cloudexporter"
     schedule:
       interval: "weekly"
@@ -52,10 +60,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/exporter/jaegerthrifthttpexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/awskinesisexporter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -99,6 +103,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/exporter/uptraceexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/extension/httpforwarder"
     schedule:
       interval: "weekly"
@@ -139,6 +147,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/internal/stanza"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/internal/tools"
     schedule:
       interval: "weekly"
@@ -148,6 +160,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/pkg/batchpertrace"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/experimentalmetricmetadata"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -203,6 +219,14 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/dotnetdiagnosticsreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/filelogreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/jmxreceiver"
     schedule:
       interval: "weekly"
@@ -248,10 +272,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/splunkhecreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/stanzareceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

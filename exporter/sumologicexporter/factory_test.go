@@ -45,7 +45,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		CompressEncoding:   "gzip",
 		MaxRequestBodySize: 1_048_576,
 		LogFormat:          "json",
-		MetricFormat:       "carbon2",
+		MetricFormat:       "prometheus",
 		SourceCategory:     "",
 		SourceName:         "",
 		SourceHost:         "",

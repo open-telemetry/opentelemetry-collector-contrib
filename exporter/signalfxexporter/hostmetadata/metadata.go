@@ -21,8 +21,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 // Syncer is a config structure for host metadata syncer.
@@ -72,7 +72,7 @@ func (s *Syncer) syncOnResource(res pdata.Resource) {
 	}
 
 	metadataUpdate := s.prepareMetadataUpdate(props, hostID)
-	err := s.dimClient.PushMetadata([]*metrics.MetadataUpdate{metadataUpdate})
+	err := s.dimClient.PushMetadata([]*metadata.MetadataUpdate{metadataUpdate})
 	if err != nil {
 		s.logger.Error("Failed to push host metadata update", zap.Error(err))
 		return
@@ -81,11 +81,11 @@ func (s *Syncer) syncOnResource(res pdata.Resource) {
 	s.logger.Info("Host metadata synchronized")
 }
 
-func (s *Syncer) prepareMetadataUpdate(props map[string]string, hostID splunk.HostID) *metrics.MetadataUpdate {
-	return &metrics.MetadataUpdate{
+func (s *Syncer) prepareMetadataUpdate(props map[string]string, hostID splunk.HostID) *metadata.MetadataUpdate {
+	return &metadata.MetadataUpdate{
 		ResourceIDKey: string(hostID.Key),
-		ResourceID:    metrics.ResourceID(hostID.ID),
-		MetadataDelta: metrics.MetadataDelta{
+		ResourceID:    metadata.ResourceID(hostID.ID),
+		MetadataDelta: metadata.MetadataDelta{
 			MetadataToUpdate: props,
 		},
 	}

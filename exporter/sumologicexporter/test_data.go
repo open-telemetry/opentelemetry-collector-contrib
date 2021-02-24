@@ -259,3 +259,23 @@ func exampleDoubleHistogramMetric() metricPair {
 
 	return metric
 }
+
+func metricPairToMetrics(mp []metricPair) pdata.Metrics {
+	metrics := pdata.NewMetrics()
+	metrics.ResourceMetrics().Resize(len(mp))
+	for num, record := range mp {
+		record.attributes.CopyTo(metrics.ResourceMetrics().At(num).Resource().Attributes())
+		metrics.ResourceMetrics().At(num).InstrumentationLibraryMetrics().Resize(1)
+		metrics.ResourceMetrics().At(num).InstrumentationLibraryMetrics().At(0).Metrics().Append(record.metric)
+	}
+
+	return metrics
+}
+
+func fieldsFromMap(s map[string]string) fields {
+	attrMap := pdata.NewAttributeMap()
+	for k, v := range s {
+		attrMap.InsertString(k, v)
+	}
+	return newFields(attrMap)
+}

@@ -79,8 +79,10 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 	_ context.Context,
 	td pdata.Traces,
 ) (droppedSpans int, err error) {
-	octds := internaldata.TraceDataToOC(td)
-	for _, octd := range octds {
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		var octd traceData
+		octd.Node, octd.Resource, octd.Spans = internaldata.ResourceSpansToOC(rss.At(i))
 
 		tBatch, err := oCProtoToJaegerThrift(octd)
 		if err != nil {

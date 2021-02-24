@@ -63,7 +63,6 @@ func TestNewLogsExporter(t *testing.T) {
 
 	// This will put trace data to send buffer and return success.
 	err = got.ConsumeLogs(context.Background(), createSimpleLogData(3))
-	// a
 	assert.NoError(t, err)
 	time.Sleep(time.Second * 4)
 }

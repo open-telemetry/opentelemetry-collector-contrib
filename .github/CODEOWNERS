@@ -45,6 +45,7 @@ extension/observer/                        @open-telemetry/collector-contrib-app
 internal/awsxray/                          @open-telemetry/collector-contrib-approvers @anuraaga @mxiamxia
 internal/k8sconfig/                        @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
 internal/splunk/                           @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
+internal/stanza/                           @open-telemetry/collector-contrib-approvers @djaglowski
 
 pkg/batchpertrace/                         @open-telemetry/collector-contrib-approvers @jpkrohling
 
@@ -71,7 +72,7 @@ receiver/sapmreceiver/                     @open-telemetry/collector-contrib-app
 receiver/signalfxreceiver/                 @open-telemetry/collector-contrib-approvers @pjanotti @asuresh4
 receiver/simpleprometheusreceiver/         @open-telemetry/collector-contrib-approvers @asuresh4
 receiver/splunkhecreceiver/                @open-telemetry/collector-contrib-approvers @atoulme @keitwb
-receiver/stanzareceiver/                   @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/filelogreceiver/                  @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/statsdreceiver/                   @open-telemetry/collector-contrib-approvers @keitwb @jmacd
 receiver/wavefrontreceiver/                @open-telemetry/collector-contrib-approvers @pjanotti
 receiver/windowsperfcountersreceiver/      @open-telemetry/collector-contrib-approvers @dashpole

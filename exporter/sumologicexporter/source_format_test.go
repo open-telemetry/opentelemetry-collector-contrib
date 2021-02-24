@@ -80,7 +80,10 @@ func TestNewSourceFormats(t *testing.T) {
 }
 
 func TestFormat(t *testing.T) {
-	f := fields{"key_1": "value_1", "key_2.subkey": "value_2"}
+	f := fieldsFromMap(map[string]string{
+		"key_1":        "value_1",
+		"key_2.subkey": "value_2",
+	})
 	s := getTestSourceFormat(t, "%{key_1}/%{key_2.subkey}")
 	expected := "value_1/value_2"
 
@@ -89,8 +92,9 @@ func TestFormat(t *testing.T) {
 }
 
 func TestFormatNonExistingKey(t *testing.T) {
-	f := fields{"key_2": "value_2"}
+	f := fieldsFromMap(map[string]string{"key_2": "value_2"})
 	s := getTestSourceFormat(t, "%{key_1}/%{key_2}")
+
 	expected := "/value_2"
 
 	result := s.format(f)

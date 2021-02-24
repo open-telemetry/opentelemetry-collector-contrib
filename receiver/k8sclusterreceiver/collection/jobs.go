@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	batchv1 "k8s.io/api/batch/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
@@ -60,17 +60,12 @@ var podsSuccessfulMetric = &metricspb.MetricDescriptor{
 }
 
 func getMetricsForJob(j *batchv1.Job) []*resourceMetrics {
-	metrics := []*metricspb.Metric{
+	metrics := make([]*metricspb.Metric, 0, 5)
+	metrics = append(metrics, []*metricspb.Metric{
 		{
 			MetricDescriptor: podsActiveMetric,
 			Timeseries: []*metricspb.TimeSeries{
 				utils.GetInt64TimeSeries(int64(j.Status.Active)),
-			},
-		},
-		{
-			MetricDescriptor: podsDesiredCompletedMetric,
-			Timeseries: []*metricspb.TimeSeries{
-				utils.GetInt64TimeSeries(int64(*j.Spec.Completions)),
 			},
 		},
 		{
@@ -80,17 +75,27 @@ func getMetricsForJob(j *batchv1.Job) []*resourceMetrics {
 			},
 		},
 		{
-			MetricDescriptor: podsMaxParallelMetric,
-			Timeseries: []*metricspb.TimeSeries{
-				utils.GetInt64TimeSeries(int64(*j.Spec.Parallelism)),
-			},
-		},
-		{
 			MetricDescriptor: podsSuccessfulMetric,
 			Timeseries: []*metricspb.TimeSeries{
 				utils.GetInt64TimeSeries(int64(j.Status.Succeeded)),
 			},
 		},
+	}...)
+
+	if j.Spec.Completions != nil {
+		metrics = append(metrics, &metricspb.Metric{
+			MetricDescriptor: podsDesiredCompletedMetric,
+			Timeseries: []*metricspb.TimeSeries{
+				utils.GetInt64TimeSeries(int64(*j.Spec.Completions)),
+			}})
+	}
+
+	if j.Spec.Parallelism != nil {
+		metrics = append(metrics, &metricspb.Metric{
+			MetricDescriptor: podsMaxParallelMetric,
+			Timeseries: []*metricspb.TimeSeries{
+				utils.GetInt64TimeSeries(int64(*j.Spec.Parallelism)),
+			}})
 	}
 
 	return []*resourceMetrics{
@@ -113,8 +118,8 @@ func getResourceForJob(j *batchv1.Job) *resourcepb.Resource {
 	}
 }
 
-func getMetadataForJob(j *batchv1.Job) map[metrics.ResourceID]*KubernetesMetadata {
-	return map[metrics.ResourceID]*KubernetesMetadata{
-		metrics.ResourceID(j.UID): getGenericMetadata(&j.ObjectMeta, k8sKindJob),
+func getMetadataForJob(j *batchv1.Job) map[metadata.ResourceID]*KubernetesMetadata {
+	return map[metadata.ResourceID]*KubernetesMetadata{
+		metadata.ResourceID(j.UID): getGenericMetadata(&j.ObjectMeta, k8sKindJob),
 	}
 }

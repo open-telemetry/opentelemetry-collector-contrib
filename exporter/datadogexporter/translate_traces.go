@@ -16,6 +16,7 @@ package datadogexporter
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -46,6 +47,10 @@ const (
 	webKind             string = "web"
 	customKind          string = "custom"
 	grpcPath            string = "grpc.path"
+	eventsTag           string = "events"
+	eventNameTag        string = "name"
+	eventAttrTag        string = "attributes"
+	eventTimeTag        string = "time"
 	// tagContainersTags specifies the name of the tag which holds key/value
 	// pairs representing information about the container (Docker, EC2, etc).
 	tagContainersTags = "_dd.tags.container"
@@ -215,6 +220,11 @@ func spanToDatadogSpan(s pdata.Span,
 	// get tracestate as just a general tag
 	if len(s.TraceState()) > 0 {
 		tags[tracetranslator.TagW3CTraceState] = string(s.TraceState())
+	}
+
+	// get events as just a general tag
+	if s.Events().Len() > 0 {
+		tags[eventsTag] = eventsToString(s.Events())
 	}
 
 	// get start/end time to calc duration
@@ -538,4 +548,28 @@ func extractErrorTagsFromEvents(s pdata.Span, tags map[string]string) {
 			return
 		}
 	}
+}
+
+// Convert Span Events to a string so that they can be appended to the span as a tag.
+// Span events are probably better served as Structured Logs sent to the logs API
+// with the trace id and span id added for log/trace correlation. However this would
+// mean a separate API intake endpoint and also Logs and Traces may not be enabled for
+// a user, so for now just surfacing this information as a string is better than not
+// including it at all. The tradeoff is that this increases the size of the span and the
+// span may have a tag that exceeds max size allowed in backend/ui/etc.
+//
+// TODO: Expose configuration option for collecting Span Events as Logs within Datadog
+// and add forwarding to Logs API intake.
+func eventsToString(evts pdata.SpanEventSlice) string {
+	eventArray := make([]map[string]interface{}, 0, evts.Len())
+	for i := 0; i < evts.Len(); i++ {
+		spanEvent := evts.At(i)
+		event := map[string]interface{}{}
+		event[eventNameTag] = spanEvent.Name()
+		event[eventTimeTag] = spanEvent.Timestamp()
+		event[eventAttrTag] = tracetranslator.AttributeMapToMap(spanEvent.Attributes())
+		eventArray = append(eventArray, event)
+	}
+	eventArrayBytes, _ := json.Marshal(&eventArray)
+	return string(eventArrayBytes)
 }

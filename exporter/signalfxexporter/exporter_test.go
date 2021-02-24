@@ -42,8 +42,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 func TestNew(t *testing.T) {
@@ -194,7 +194,7 @@ func TestConsumeMetrics(t *testing.T) {
 			serverURL, err := url.Parse(server.URL)
 			assert.NoError(t, err)
 
-			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil)
+			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "")
 			require.NoError(t, err)
 			require.NotNil(t, c)
 			dpClient := &sfxDPClient{
@@ -756,7 +756,7 @@ func generateLargeEventBatch() pdata.Logs {
 
 func TestConsumeMetadata(t *testing.T) {
 	type args struct {
-		metadata []*metrics.MetadataUpdate
+		metadata []*metadata.MetadataUpdate
 	}
 	type fields struct {
 		payLoad map[string]interface{}
@@ -781,11 +781,11 @@ func TestConsumeMetadata(t *testing.T) {
 				},
 			},
 			args{
-				[]*metrics.MetadataUpdate{
+				[]*metadata.MetadataUpdate{
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
-						MetadataDelta: metrics.MetadataDelta{
+						MetadataDelta: metadata.MetadataDelta{
 							MetadataToAdd: map[string]string{
 								"prop.erty1": "val1",
 							},
@@ -815,11 +815,11 @@ func TestConsumeMetadata(t *testing.T) {
 				},
 			},
 			args{
-				[]*metrics.MetadataUpdate{
+				[]*metadata.MetadataUpdate{
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
-						MetadataDelta: metrics.MetadataDelta{
+						MetadataDelta: metadata.MetadataDelta{
 							MetadataToAdd: map[string]string{
 								"tag.1": "",
 							},
@@ -850,11 +850,11 @@ func TestConsumeMetadata(t *testing.T) {
 				},
 			},
 			args{
-				[]*metrics.MetadataUpdate{
+				[]*metadata.MetadataUpdate{
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
-						MetadataDelta: metrics.MetadataDelta{
+						MetadataDelta: metadata.MetadataDelta{
 							MetadataToAdd: map[string]string{
 								"tag.1":     "",
 								"property1": "val1",
@@ -871,7 +871,7 @@ func TestConsumeMetadata(t *testing.T) {
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
-						MetadataDelta: metrics.MetadataDelta{
+						MetadataDelta: metadata.MetadataDelta{
 							MetadataToAdd: map[string]string{
 								"tag/2": "",
 							},
@@ -888,7 +888,7 @@ func TestConsumeMetadata(t *testing.T) {
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
-						MetadataDelta: metrics.MetadataDelta{
+						MetadataDelta: metadata.MetadataDelta{
 							MetadataToAdd: map[string]string{},
 							MetadataToRemove: map[string]string{
 								"property3": "val33",
@@ -974,7 +974,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 	serverURL, err := url.Parse(server.URL)
 	assert.NoError(b, err)
 
-	c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil)
+	c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "")
 	require.NoError(b, err)
 	require.NotNil(b, c)
 	dpClient := &sfxDPClient{
@@ -998,7 +998,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 	}
 }
 
-// Test to ensure SignalFx exporter implements metrics.MetadataExporter in k8s_cluster receiver.
+// Test to ensure SignalFx exporter implements metadata.MetadataExporter in k8s_cluster receiver.
 func TestSignalFxExporterConsumeMetadata(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig()
@@ -1008,7 +1008,7 @@ func TestSignalFxExporterConsumeMetadata(t *testing.T) {
 	exp, err := f.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, rCfg)
 	require.NoError(t, err)
 
-	kme, ok := exp.(metrics.MetadataExporter)
-	require.True(t, ok, "SignalFx exporter does not implement metrics.MetadataExporter")
+	kme, ok := exp.(metadata.MetadataExporter)
+	require.True(t, ok, "SignalFx exporter does not implement metadata.MetadataExporter")
 	require.NotNil(t, kme)
 }

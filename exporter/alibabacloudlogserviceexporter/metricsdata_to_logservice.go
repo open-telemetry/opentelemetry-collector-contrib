@@ -15,26 +15,22 @@
 package alibabacloudlogserviceexporter
 
 import (
-	"fmt"
 	"sort"
 	"strconv"
 	"strings"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/gogo/protobuf/proto"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 )
 
 const (
-	hostnameKey     = "hostname"
-	pidKey          = "pid"
-	resourceTypeKey = "resource_type"
-	metricNameKey   = "__name__"
-	labelsKey       = "__labels__"
-	timeNanoKey     = "__time_nano__"
-	valueKey        = "__value__"
+	metricNameKey = "__name__"
+	labelsKey     = "__labels__"
+	timeNanoKey   = "__time_nano__"
+	valueKey      = "__value__"
 	// same with : https://github.com/prometheus/common/blob/b5fe7d854c42dc7842e48d1ca58f60feae09d77b/expfmt/text_create.go#L445
 	infinityBoundValue = "+Inf"
 	bucketLabelKey     = "le"
@@ -106,14 +102,55 @@ func (kv *KeyValues) labelToStringBuilder(sb *strings.Builder) {
 	}
 }
 
-func newMetricLog(nsec int64,
-	nameContent *sls.LogContent,
-	labelContent *sls.LogContent,
-	timeNanoContent *sls.LogContent,
-	valueContent *sls.LogContent) *sls.Log {
+func formatMetricName(name string) string {
+	var newName []byte
+	for i := 0; i < len(name); i++ {
+		b := name[i]
+		if (b >= 'a' && b <= 'z') ||
+			(b >= 'A' && b <= 'Z') ||
+			(b >= '0' && b <= '9') ||
+			b == '_' ||
+			b == ':' {
+			continue
+		} else {
+			if newName == nil {
+				newName = []byte(name)
+			}
+			newName[i] = '_'
+		}
+	}
+	if newName == nil {
+		return name
+	}
+	return string(newName)
+}
+
+func newMetricLogFromRaw(
+	name string,
+	labels KeyValues,
+	nsec int64,
+	value float64) *sls.Log {
+	labels.Sort()
 	return &sls.Log{
-		Time:     proto.Uint32(uint32(nsec / 1e9)),
-		Contents: []*sls.LogContent{nameContent, labelContent, timeNanoContent, valueContent},
+		Time: proto.Uint32(uint32(nsec / 1e9)),
+		Contents: []*sls.LogContent{
+			{
+				Key:   proto.String(metricNameKey),
+				Value: proto.String(formatMetricName(name)),
+			},
+			{
+				Key:   proto.String(labelsKey),
+				Value: proto.String(labels.String()),
+			},
+			{
+				Key:   proto.String(timeNanoKey),
+				Value: proto.String(strconv.FormatInt(nsec, 10)),
+			},
+			{
+				Key:   proto.String(valueKey),
+				Value: proto.String(strconv.FormatFloat(value, 'g', -1, 64)),
+			},
+		},
 	}
 }
 
@@ -124,300 +161,217 @@ func min(l, r int) int {
 	return r
 }
 
-func appendDistributionValues(
-	logs []*sls.Log,
-	labels KeyValues,
-	nsec int64,
-	nameContent *sls.LogContent,
-	labelContent *sls.LogContent,
-	timeNanoContent *sls.LogContent,
-	distributionValue *metricspb.DistributionValue,
-) ([]*sls.Log, error) {
-
-	// Translating distribution values per symmetrical recommendations to Prometheus:
-
-	// 1. The total count gets converted to a cumulative counter called
-	// <basename>_count.
-	// 2. The total sum gets converted to a cumulative counter called <basename>_sum
-	count := distributionValue.GetCount()
-	sum := distributionValue.GetSum()
-	logs = appendTotalAndSum(
-		logs,
-		nsec,
-		nameContent,
-		labelContent,
-		timeNanoContent,
-		count,
-		sum)
-
-	// 3. Each histogram bucket is converted to a cumulative counter called
-	// <basename>_bucket and will include a dimension called upper_bound that
-	// specifies the maximum value in that bucket. This metric specifies the
-	// number of events with a value that is less than or equal to the upper
-	// bound.
-	metricNameContent := &sls.LogContent{
-		Key:   proto.String(metricNameKey),
-		Value: proto.String(nameContent.GetValue() + "_bucket"),
-	}
-	explicitBuckets := distributionValue.BucketOptions.GetExplicit()
-	if explicitBuckets == nil {
-		return logs, fmt.Errorf("unknown bucket options type for metric %s", nameContent.GetValue())
-	}
-	bounds := explicitBuckets.Bounds
-	boundsStr := make([]string, len(bounds)+1)
-	for i := 0; i < len(bounds); i++ {
-		boundsStr[i] = strconv.FormatFloat(bounds[i], 'g', -1, 64)
-	}
-	boundsStr[len(boundsStr)-1] = infinityBoundValue
-
-	bucketCount := min(len(boundsStr), len(distributionValue.Buckets))
-
-	bucketLabels := labels.Clone()
-	bucketLabels.Append(bucketLabelKey, "")
-	bucketLabels.Sort()
-	for i := 0; i < bucketCount; i++ {
-		bucket := distributionValue.Buckets[i]
-		bucketLabels.Replace(bucketLabelKey, boundsStr[i])
-
-		logs = append(
-			logs,
-			newMetricLog(nsec,
-				metricNameContent,
-				&sls.LogContent{
-					Key:   proto.String(labelsKey),
-					Value: proto.String(bucketLabels.String()),
-				},
-				timeNanoContent,
-				&sls.LogContent{
-					Key:   proto.String(valueKey),
-					Value: proto.String(strconv.FormatInt(bucket.Count, 10)),
-				},
-			))
-	}
-	return logs, nil
+func resourceToMetricLabels(labels *KeyValues, resource pdata.Resource) {
+	attrs := resource.Attributes()
+	attrs.ForEach(func(k string, v pdata.AttributeValue) {
+		labels.keyValues = append(labels.keyValues, KeyValue{
+			Key:   k,
+			Value: tracetranslator.AttributeValueToString(v, false),
+		})
+	})
 }
 
-func appendSummaryValues(
-	logs []*sls.Log,
-	labels KeyValues,
-	nsec int64,
-	nameContent *sls.LogContent,
-	labelContent *sls.LogContent,
-	timeNanoContent *sls.LogContent,
-	summaryValue *metricspb.SummaryValue,
-) ([]*sls.Log, error) {
-
-	// Translating summary values per symmetrical recommendations to Prometheus:
-
-	// 1. The total count gets converted to a cumulative counter called
-	// <basename>_count.
-	// 2. The total sum gets converted to a cumulative counter called <basename>_sum
-	count := summaryValue.GetCount().GetValue()
-	sum := summaryValue.GetSum().GetValue()
-	logs = appendTotalAndSum(
-		logs,
-		nsec,
-		nameContent,
-		labelContent,
-		timeNanoContent,
-		count,
-		sum)
-
-	// 3. Each quantile value is converted to a gauge called <basename>
-	// and will include a dimension called quantile that specifies the quantile.
-	percentiles := summaryValue.GetSnapshot().GetPercentileValues()
-	if percentiles == nil {
-		return logs, fmt.Errorf(
-			"unknown percentiles values for summary metric %q",
-			nameContent.GetValue())
+func intMetricsToLogs(name string, data pdata.IntDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
+	for i := 0; i < data.Len(); i++ {
+		dataPoint := data.At(i)
+		labelsMap := dataPoint.LabelsMap()
+		labels := defaultLabels.Clone()
+		labelsMap.ForEach(func(k string, v string) {
+			labels.Append(k, v)
+		})
+		logs = append(logs, newMetricLogFromRaw(name,
+			labels,
+			int64(dataPoint.Timestamp()),
+			float64(dataPoint.Value())))
 	}
-	// Adding the "quantile" dimension.
-	bucketLabels := labels.Clone()
-	bucketLabels.Append(summaryLabelKey, "")
-	bucketLabels.Sort()
-
-	for _, quantile := range percentiles {
-
-		bucketLabels.Replace(summaryLabelKey, strconv.FormatFloat(quantile.Percentile, 'g', -1, 64))
-
-		logs = append(
-			logs,
-			newMetricLog(nsec,
-				nameContent,
-				&sls.LogContent{
-					Key:   proto.String(labelsKey),
-					Value: proto.String(bucketLabels.String()),
-				},
-				timeNanoContent,
-				&sls.LogContent{
-					Key:   proto.String(valueKey),
-					Value: proto.String(strconv.FormatFloat(quantile.Value, 'g', -1, 64)),
-				},
-			))
-	}
-
-	return logs, nil
+	return logs
 }
 
-func appendTotalAndSum(
-	logs []*sls.Log,
-	nsec int64,
-	nameContent *sls.LogContent,
-	labelContent *sls.LogContent,
-	timeNanoContent *sls.LogContent,
-	count int64,
-	sum float64,
-) []*sls.Log {
+func doubleMetricsToLogs(name string, data pdata.DoubleDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
+	for i := 0; i < data.Len(); i++ {
+		dataPoint := data.At(i)
+		labelsMap := dataPoint.LabelsMap()
+		labels := defaultLabels.Clone()
+		labelsMap.ForEach(func(k string, v string) {
+			labels.Append(k, v)
+		})
+		logs = append(logs, newMetricLogFromRaw(name,
+			labels,
+			int64(dataPoint.Timestamp()),
+			dataPoint.Value()))
+	}
+	return logs
+}
 
-	logs = append(
-		logs,
-		newMetricLog(
-			nsec,
-			&sls.LogContent{
-				Key:   proto.String(metricNameKey),
-				Value: proto.String(nameContent.GetValue() + "_count"),
-			},
-			labelContent,
-			timeNanoContent,
-			&sls.LogContent{
-				Key:   proto.String(valueKey),
-				Value: proto.String(strconv.FormatInt(count, 10)),
-			}),
-		newMetricLog(
-			nsec,
-			&sls.LogContent{
-				Key:   proto.String(metricNameKey),
-				Value: proto.String(nameContent.GetValue() + "_sum"),
-			},
-			labelContent,
-			timeNanoContent,
-			&sls.LogContent{
-				Key:   proto.String(valueKey),
-				Value: proto.String(strconv.FormatFloat(sum, 'g', -1, 64)),
-			}))
+func intHistogramMetricsToLogs(name string, data pdata.IntHistogramDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
+	for i := 0; i < data.Len(); i++ {
+		dataPoint := data.At(i)
+		labelsMap := dataPoint.LabelsMap()
+		labels := defaultLabels.Clone()
+		labelsMap.ForEach(func(k string, v string) {
+			labels.Append(k, v)
+		})
+		logs = append(logs, newMetricLogFromRaw(name+"_sum",
+			labels,
+			int64(dataPoint.Timestamp()),
+			float64(dataPoint.Sum())))
+		logs = append(logs, newMetricLogFromRaw(name+"_count",
+			labels,
+			int64(dataPoint.Timestamp()),
+			float64(dataPoint.Count())))
 
+		bounds := dataPoint.ExplicitBounds()
+		boundsStr := make([]string, len(bounds)+1)
+		for i := 0; i < len(bounds); i++ {
+			boundsStr[i] = strconv.FormatFloat(bounds[i], 'g', -1, 64)
+		}
+		boundsStr[len(boundsStr)-1] = infinityBoundValue
+
+		bucketCount := min(len(boundsStr), len(dataPoint.BucketCounts()))
+
+		bucketLabels := labels.Clone()
+		bucketLabels.Append(bucketLabelKey, "")
+		bucketLabels.Sort()
+		for i := 0; i < bucketCount; i++ {
+			bucket := dataPoint.BucketCounts()[i]
+			bucketLabels.Replace(bucketLabelKey, boundsStr[i])
+
+			logs = append(
+				logs,
+				newMetricLogFromRaw(
+					name+"_bucket",
+					bucketLabels,
+					int64(dataPoint.Timestamp()),
+					float64(bucket),
+				))
+		}
+
+	}
+	return logs
+}
+
+func doubleHistogramMetricsToLogs(name string, data pdata.DoubleHistogramDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
+	for i := 0; i < data.Len(); i++ {
+		dataPoint := data.At(i)
+		labelsMap := dataPoint.LabelsMap()
+		labels := defaultLabels.Clone()
+		labelsMap.ForEach(func(k string, v string) {
+			labels.Append(k, v)
+		})
+		logs = append(logs, newMetricLogFromRaw(name+"_sum",
+			labels,
+			int64(dataPoint.Timestamp()),
+			dataPoint.Sum()))
+		logs = append(logs, newMetricLogFromRaw(name+"_count",
+			labels,
+			int64(dataPoint.Timestamp()),
+			float64(dataPoint.Count())))
+
+		bounds := dataPoint.ExplicitBounds()
+		boundsStr := make([]string, len(bounds)+1)
+		for i := 0; i < len(bounds); i++ {
+			boundsStr[i] = strconv.FormatFloat(bounds[i], 'g', -1, 64)
+		}
+		boundsStr[len(boundsStr)-1] = infinityBoundValue
+
+		bucketCount := min(len(boundsStr), len(dataPoint.BucketCounts()))
+
+		bucketLabels := labels.Clone()
+		bucketLabels.Append(bucketLabelKey, "")
+		bucketLabels.Sort()
+		for i := 0; i < bucketCount; i++ {
+			bucket := dataPoint.BucketCounts()[i]
+			bucketLabels.Replace(bucketLabelKey, boundsStr[i])
+
+			logs = append(
+				logs,
+				newMetricLogFromRaw(
+					name+"_bucket",
+					bucketLabels,
+					int64(dataPoint.Timestamp()),
+					float64(bucket),
+				))
+		}
+
+	}
+	return logs
+}
+
+func doubleSummaryMetricsToLogs(name string, data pdata.DoubleSummaryDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
+	for i := 0; i < data.Len(); i++ {
+		dataPoint := data.At(i)
+		labelsMap := dataPoint.LabelsMap()
+		labels := defaultLabels.Clone()
+		labelsMap.ForEach(func(k string, v string) {
+			labels.Append(k, v)
+		})
+		logs = append(logs, newMetricLogFromRaw(name+"_sum",
+			labels,
+			int64(dataPoint.Timestamp()),
+			dataPoint.Sum()))
+		logs = append(logs, newMetricLogFromRaw(name+"_count",
+			labels,
+			int64(dataPoint.Timestamp()),
+			float64(dataPoint.Count())))
+
+		// Adding the "quantile" dimension.
+		summaryLabels := labels.Clone()
+		summaryLabels.Append(summaryLabelKey, "")
+		summaryLabels.Sort()
+
+		values := dataPoint.QuantileValues()
+		for i := 0; i < values.Len(); i++ {
+			value := values.At(i)
+			summaryLabels.Replace(summaryLabelKey, strconv.FormatFloat(value.Quantile(), 'g', -1, 64))
+			logs = append(logs, newMetricLogFromRaw(name,
+				summaryLabels,
+				int64(dataPoint.Timestamp()),
+				value.Value()))
+		}
+	}
+	return logs
+}
+
+func metricDataToLogServiceData(md pdata.Metric, defaultLabels KeyValues) (logs []*sls.Log) {
+	switch md.DataType() {
+	case pdata.MetricDataTypeNone:
+		break
+	case pdata.MetricDataTypeIntGauge:
+		return intMetricsToLogs(md.Name(), md.IntGauge().DataPoints(), defaultLabels)
+	case pdata.MetricDataTypeDoubleGauge:
+		return doubleMetricsToLogs(md.Name(), md.DoubleGauge().DataPoints(), defaultLabels)
+	case pdata.MetricDataTypeIntSum:
+		return intMetricsToLogs(md.Name(), md.IntSum().DataPoints(), defaultLabels)
+	case pdata.MetricDataTypeDoubleSum:
+		return doubleMetricsToLogs(md.Name(), md.DoubleSum().DataPoints(), defaultLabels)
+	case pdata.MetricDataTypeIntHistogram:
+		return intHistogramMetricsToLogs(md.Name(), md.IntHistogram().DataPoints(), defaultLabels)
+	case pdata.MetricDataTypeDoubleHistogram:
+		return doubleHistogramMetricsToLogs(md.Name(), md.DoubleHistogram().DataPoints(), defaultLabels)
+	case pdata.MetricDataTypeDoubleSummary:
+		return doubleSummaryMetricsToLogs(md.Name(), md.DoubleSummary().DataPoints(), defaultLabels)
+	}
 	return logs
 }
 
 func metricsDataToLogServiceData(
-	logger *zap.Logger,
-	md consumerdata.MetricsData,
+	_ *zap.Logger,
+	md pdata.Metrics,
 ) (logs []*sls.Log, numDroppedTimeSeries int) {
 
-	var defaultLabels KeyValues
-	var err error
-	// Labels from Node and Resource.
-	// TODO: Options to add lib, service name, etc as dimensions?
-	//  Q.: what about resource type?
-
-	if hostname := md.Node.GetIdentifier().GetHostName(); hostname != "" {
-		defaultLabels.Append(hostnameKey, hostname)
-	}
-	if pid := int(md.Node.GetIdentifier().GetPid()); pid != 0 {
-		defaultLabels.Append(pidKey, strconv.Itoa(pid))
-	}
-	defaultLabels.AppendMap(md.Node.GetAttributes())
-
-	if resType := md.Resource.GetType(); resType != "" {
-		defaultLabels.Append(resourceTypeKey, resType)
-	}
-	defaultLabels.AppendMap(md.Resource.GetLabels())
-
-	for _, metric := range md.Metrics {
-		if metric == nil || metric.MetricDescriptor == nil {
-			logger.Warn("Received nil metrics data or nil descriptor for metrics")
-			numDroppedTimeSeries += len(metric.GetTimeseries())
-			continue
-		}
-
-		// Build the fixed parts for this metrics from the descriptor.
-		descriptor := metric.MetricDescriptor
-		metricNameContent := &sls.LogContent{
-			Key:   proto.String(metricNameKey),
-			Value: proto.String(descriptor.Name),
-		}
-
-		for _, series := range metric.Timeseries {
-			labels := defaultLabels.Clone()
-			labelCount := min(len(descriptor.LabelKeys), len(series.LabelValues))
-			for i := 0; i < labelCount; i++ {
-				labels.Append(descriptor.LabelKeys[i].GetKey(), series.LabelValues[i].GetValue())
-			}
-			labels.Sort()
-
-			labelsContent := &sls.LogContent{
-				Key:   proto.String(labelsKey),
-				Value: proto.String(labels.String()),
-			}
-
-			for _, dp := range series.Points {
-
-				var nsec int64
-				if dp.Timestamp != nil {
-					nsec = dp.Timestamp.Seconds*1e9 + int64(dp.Timestamp.Nanos)
-				} else {
-					numDroppedTimeSeries++
-					continue
-				}
-
-				timeContent := &sls.LogContent{
-					Key:   proto.String(timeNanoKey),
-					Value: proto.String(strconv.FormatInt(nsec, 10)),
-				}
-
-				switch pv := dp.Value.(type) {
-				case *metricspb.Point_Int64Value:
-					valueContent := &sls.LogContent{
-						Key:   proto.String(valueKey),
-						Value: proto.String(strconv.FormatInt(pv.Int64Value, 10)),
-					}
-					logs = append(logs, newMetricLog(nsec, metricNameContent, labelsContent, timeContent, valueContent))
-				case *metricspb.Point_DoubleValue:
-					valueContent := &sls.LogContent{
-						Key:   proto.String(valueKey),
-						Value: proto.String(strconv.FormatFloat(pv.DoubleValue, 'g', -1, 64)),
-					}
-					logs = append(logs, newMetricLog(nsec, metricNameContent, labelsContent, timeContent, valueContent))
-
-				case *metricspb.Point_DistributionValue:
-					logs, err = appendDistributionValues(
-						logs,
-						labels,
-						nsec,
-						metricNameContent,
-						labelsContent,
-						timeContent,
-						pv.DistributionValue)
-					if err != nil {
-						numDroppedTimeSeries++
-						logger.Warn(
-							"Timeseries for distribution metric dropped",
-							zap.Error(err),
-							zap.String("Metric", descriptor.Name))
-					}
-				case *metricspb.Point_SummaryValue:
-					logs, err = appendSummaryValues(
-						logs,
-						labels,
-						nsec,
-						metricNameContent,
-						labelsContent,
-						timeContent,
-						pv.SummaryValue)
-					if err != nil {
-						numDroppedTimeSeries++
-						logger.Warn(
-							"Timeseries for summary metric dropped",
-							zap.Error(err),
-							zap.String("Metric", descriptor.Name))
-					}
-				default:
-					numDroppedTimeSeries++
-					logger.Warn(
-						"Timeseries dropped to unexpected metric type",
-						zap.String("Metric", descriptor.Name))
-				}
-
+	resMetrics := md.ResourceMetrics()
+	for i := 0; i < resMetrics.Len(); i++ {
+		resMetricSlice := resMetrics.At(i)
+		var defaultLabels KeyValues
+		resourceToMetricLabels(&defaultLabels, resMetricSlice.Resource())
+		insMetricSlice := resMetricSlice.InstrumentationLibraryMetrics()
+		for j := 0; j < insMetricSlice.Len(); j++ {
+			insMetrics := insMetricSlice.At(j)
+			// ignore insMetrics.InstrumentationLibrary()
+			metricSlice := insMetrics.Metrics()
+			for k := 0; k < metricSlice.Len(); k++ {
+				oneMetric := metricSlice.At(k)
+				logs = append(logs, metricDataToLogServiceData(oneMetric, defaultLabels)...)
 			}
 		}
 	}
