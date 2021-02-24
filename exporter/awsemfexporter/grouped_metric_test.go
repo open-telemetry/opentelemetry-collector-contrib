@@ -32,18 +32,18 @@ import (
 )
 
 func TestAddToGroupedMetric(t *testing.T) {
-	rateMetricCalculator = newFloat64RateCalculator()
-
 	namespace := "namespace"
 	instrumentationLibName := "cloudwatch-otel"
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 	logger := zap.NewNop()
 
 	metadata := CWMetricMetadata{
-		Namespace:                  namespace,
-		TimestampMs:                timestamp,
-		LogGroup:                   logGroup,
-		LogStream:                  logStreamName,
+		GroupedMetricMetadata: GroupedMetricMetadata{
+			Namespace:   namespace,
+			TimestampMs: timestamp,
+			LogGroup:    logGroup,
+			LogStream:   logStreamName,
+		},
 		InstrumentationLibraryName: instrumentationLibName,
 	}
 
@@ -77,7 +77,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			generateTestIntSum("foo"),
 			map[string]*MetricInfo{
 				"foo": {
-					Value: float64(0),
+					Value: float64(1),
 					Unit:  "Count",
 				},
 			},
@@ -87,7 +87,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			generateTestDoubleSum("foo"),
 			map[string]*MetricInfo{
 				"foo": {
-					Value: float64(0),
+					Value: float64(0.1),
 					Unit:  "Count",
 				},
 			},
@@ -124,6 +124,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
+			setupDataPointCache()
+
 			groupedMetrics := make(map[interface{}]*GroupedMetric)
 			oc := internaldata.MetricsData{
 				Node: &commonpb.Node{},
@@ -291,19 +293,23 @@ func TestAddToGroupedMetric(t *testing.T) {
 		metric := ilms.At(0).Metrics().At(0)
 
 		metricMetadata1 := CWMetricMetadata{
-			Namespace:                  namespace,
-			TimestampMs:                timestamp,
-			LogGroup:                   "log-group-1",
-			LogStream:                  logStreamName,
+			GroupedMetricMetadata: GroupedMetricMetadata{
+				Namespace:   namespace,
+				TimestampMs: timestamp,
+				LogGroup:    "log-group-1",
+				LogStream:   logStreamName,
+			},
 			InstrumentationLibraryName: instrumentationLibName,
 		}
 		addToGroupedMetric(&metric, groupedMetrics, metricMetadata1, logger, nil)
 
 		metricMetadata2 := CWMetricMetadata{
-			Namespace:                  namespace,
-			TimestampMs:                timestamp,
-			LogGroup:                   "log-group-2",
-			LogStream:                  logStreamName,
+			GroupedMetricMetadata: GroupedMetricMetadata{
+				Namespace:   namespace,
+				TimestampMs: timestamp,
+				LogGroup:    "log-group-2",
+				LogStream:   logStreamName,
+			},
 			InstrumentationLibraryName: instrumentationLibName,
 		}
 		addToGroupedMetric(&metric, groupedMetrics, metricMetadata2, logger, nil)
@@ -438,10 +444,12 @@ func BenchmarkAddToGroupedMetric(b *testing.B) {
 	numMetrics := metrics.Len()
 
 	metadata := CWMetricMetadata{
-		Namespace:                  "Namespace",
-		TimestampMs:                int64(1596151098037),
-		LogGroup:                   "log-group",
-		LogStream:                  "log-stream",
+		GroupedMetricMetadata: GroupedMetricMetadata{
+			Namespace:   "Namespace",
+			TimestampMs: int64(1596151098037),
+			LogGroup:    "log-group",
+			LogStream:   "log-stream",
+		},
 		InstrumentationLibraryName: "cloudwatch-otel",
 	}
 

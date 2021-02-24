@@ -408,11 +408,11 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 
 	counterMetrics := map[string]*MetricInfo{
 		"spanCounter": {
-			Value: float64(0),
+			Value: float64(1),
 			Unit:  "Count",
 		},
 		"spanDoubleCounter": {
-			Value: float64(0),
+			Value: float64(0.1),
 			Unit:  "Count",
 		},
 		"spanGaugeCounter": {
@@ -568,8 +568,10 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					},
 				},
 				Metadata: CWMetricMetadata{
-					Namespace:   namespace,
-					TimestampMs: timestamp,
+					GroupedMetricMetadata: GroupedMetricMetadata{
+						Namespace:   namespace,
+						TimestampMs: timestamp,
+					},
 				},
 			},
 			nil,
@@ -606,8 +608,10 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					},
 				},
 				Metadata: CWMetricMetadata{
-					Namespace:   namespace,
-					TimestampMs: timestamp,
+					GroupedMetricMetadata: GroupedMetricMetadata{
+						Namespace:   namespace,
+						TimestampMs: timestamp,
+					},
 				},
 			},
 			[]*MetricDeclaration{
@@ -658,8 +662,10 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					},
 				},
 				Metadata: CWMetricMetadata{
-					Namespace:   namespace,
-					TimestampMs: timestamp,
+					GroupedMetricMetadata: GroupedMetricMetadata{
+						Namespace:   namespace,
+						TimestampMs: timestamp,
+					},
 				},
 			},
 			nil,
@@ -716,8 +722,10 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					},
 				},
 				Metadata: CWMetricMetadata{
-					Namespace:   namespace,
-					TimestampMs: timestamp,
+					GroupedMetricMetadata: GroupedMetricMetadata{
+						Namespace:   namespace,
+						TimestampMs: timestamp,
+					},
 				},
 			},
 			[]*MetricDeclaration{
@@ -777,8 +785,10 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 				},
 				Metrics: nil,
 				Metadata: CWMetricMetadata{
-					Namespace:   namespace,
-					TimestampMs: timestamp,
+					GroupedMetricMetadata: GroupedMetricMetadata{
+						Namespace:   namespace,
+						TimestampMs: timestamp,
+					},
 				},
 			},
 			nil,
@@ -809,8 +819,10 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					},
 				},
 				Metadata: CWMetricMetadata{
-					Namespace:      namespace,
-					TimestampMs:    timestamp,
+					GroupedMetricMetadata: GroupedMetricMetadata{
+						Namespace:   namespace,
+						TimestampMs: timestamp,
+					},
 					receiver:       prometheusReceiver,
 					metricDataType: pdata.MetricDataTypeDoubleGauge,
 				},
@@ -881,8 +893,10 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 					},
 				},
 				Metadata: CWMetricMetadata{
-					Namespace:   namespace,
-					TimestampMs: timestamp,
+					GroupedMetricMetadata: GroupedMetricMetadata{
+						Namespace:   namespace,
+						TimestampMs: timestamp,
+					},
 				},
 			},
 			CWMeasurement{
@@ -919,8 +933,10 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 					},
 				},
 				Metadata: CWMetricMetadata{
-					Namespace:   namespace,
-					TimestampMs: timestamp,
+					GroupedMetricMetadata: GroupedMetricMetadata{
+						Namespace:   namespace,
+						TimestampMs: timestamp,
+					},
 				},
 			},
 			CWMeasurement{
@@ -956,8 +972,10 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 					},
 				},
 				Metadata: CWMetricMetadata{
-					Namespace:   namespace,
-					TimestampMs: timestamp,
+					GroupedMetricMetadata: GroupedMetricMetadata{
+						Namespace:   namespace,
+						TimestampMs: timestamp,
+					},
 				},
 			},
 			CWMeasurement{
@@ -994,8 +1012,10 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 					},
 				},
 				Metadata: CWMetricMetadata{
-					Namespace:   namespace,
-					TimestampMs: timestamp,
+					GroupedMetricMetadata: GroupedMetricMetadata{
+						Namespace:   namespace,
+						TimestampMs: timestamp,
+					},
 				},
 			},
 			CWMeasurement{
@@ -1031,8 +1051,10 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 				},
 				Metrics: nil,
 				Metadata: CWMetricMetadata{
-					Namespace:   namespace,
-					TimestampMs: timestamp,
+					GroupedMetricMetadata: GroupedMetricMetadata{
+						Namespace:   namespace,
+						TimestampMs: timestamp,
+					},
 				},
 			},
 			CWMeasurement{
@@ -1192,8 +1214,10 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 					},
 				},
 				Metadata: CWMetricMetadata{
-					Namespace:   namespace,
-					TimestampMs: timestamp,
+					GroupedMetricMetadata: GroupedMetricMetadata{
+						Namespace:   namespace,
+						TimestampMs: timestamp,
+					},
 				},
 			}
 			config := &Config{
@@ -1444,8 +1468,10 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 				Labels:  labels,
 				Metrics: metrics,
 				Metadata: CWMetricMetadata{
-					Namespace:   namespace,
-					TimestampMs: timestamp,
+					GroupedMetricMetadata: GroupedMetricMetadata{
+						Namespace:   namespace,
+						TimestampMs: timestamp,
+					},
 				},
 			}
 			config := &Config{
@@ -1470,8 +1496,10 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 			Labels:  labels,
 			Metrics: metrics,
 			Metadata: CWMetricMetadata{
-				Namespace:   namespace,
-				TimestampMs: timestamp,
+				GroupedMetricMetadata: GroupedMetricMetadata{
+					Namespace:   namespace,
+					TimestampMs: timestamp,
+				},
 			},
 		}
 		metricDeclarations := []*MetricDeclaration{
@@ -1549,8 +1577,10 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 			Labels:  labels,
 			Metrics: metrics,
 			Metadata: CWMetricMetadata{
-				Namespace:   namespace,
-				TimestampMs: timestamp,
+				GroupedMetricMetadata: GroupedMetricMetadata{
+					Namespace:   namespace,
+					TimestampMs: timestamp,
+				},
 			},
 		}
 		metricDeclarations := []*MetricDeclaration{
@@ -1956,8 +1986,10 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 					},
 				},
 				Metadata: CWMetricMetadata{
-					Namespace:   namespace,
-					TimestampMs: timestamp,
+					GroupedMetricMetadata: GroupedMetricMetadata{
+						Namespace:   namespace,
+						TimestampMs: timestamp,
+					},
 				},
 			}
 			for _, decl := range tc.metricDeclarations {
@@ -2055,8 +2087,10 @@ func BenchmarkTranslateGroupedMetricToCWMetric(b *testing.B) {
 			},
 		},
 		Metadata: CWMetricMetadata{
-			Namespace:   "Namespace",
-			TimestampMs: int64(1596151098037),
+			GroupedMetricMetadata: GroupedMetricMetadata{
+				Namespace:   "Namespace",
+				TimestampMs: int64(1596151098037),
+			},
 		},
 	}
 	config := &Config{
@@ -2088,8 +2122,10 @@ func BenchmarkTranslateGroupedMetricToCWMetricWithFiltering(b *testing.B) {
 			},
 		},
 		Metadata: CWMetricMetadata{
-			Namespace:   "Namespace",
-			TimestampMs: int64(1596151098037),
+			GroupedMetricMetadata: GroupedMetricMetadata{
+				Namespace:   "Namespace",
+				TimestampMs: int64(1596151098037),
+			},
 		},
 	}
 	m := &MetricDeclaration{
