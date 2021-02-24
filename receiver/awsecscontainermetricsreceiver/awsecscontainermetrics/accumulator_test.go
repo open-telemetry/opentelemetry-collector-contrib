@@ -127,6 +127,15 @@ func TestGetMetricsDataForStoppedContainer(t *testing.T) {
 	require.Less(t, 0, len(acc.mds))
 }
 
+func TestWrongFormatTimeDataForStoppedContainer(t *testing.T) {
+	cstats = map[string]*ContainerStats{"001": nil}
+	tm.Containers = []ContainerMetadata{
+		{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", CreatedAt: "2020-07-30T22:12:29.842610987Z", StartedAt: "2020-07-30T22:12:31.842610987Z", FinishedAt: "2020-07-31 22:10:29", KnownStatus: "STOPPED", Limits: Limit{CPU: &f, Memory: &v}},
+	}
+	acc.getMetricsData(cstats, tm, logger)
+	require.Less(t, 0, len(acc.mds))
+}
+
 func TestGetMetricsDataMissingContainerLimit(t *testing.T) {
 	tm.Containers = []ContainerMetadata{
 		{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1"},

@@ -59,8 +59,6 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 
 			acc.accumulate(convertStoppedContainerDataToOTMetrics(ContainerPrefix, containerResource, timestamp, duration))
 
-		} else {
-			logger.Warn("Missing stats data for this docker id :" + containerMetadata.DockerID)
 		}
 	}
 	overrideWithTaskLevelLimit(&taskMetrics, metadata)
