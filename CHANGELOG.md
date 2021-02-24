@@ -3,6 +3,33 @@
 ## Unreleased
 - `signalfx` exporter: **breaking change** - Allow periods to be sent in dimension keys (#2456). Existing users who do not want to change this functionality can set `nonalphanumeric_dimension_chars` to `_-`
 
+## v0.21.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.21.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.21.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+
+- `loki` exporter to export data via HTTP to Loki
+
+## 💡 Enhancements 💡
+
+- `awsemf` exporter:
+  - Support unit customization before sending logs to AWS CloudWatch (#2318)
+  - Group exported metrics by labels (#2317)
+- `datadog` exporter: Add basic span events support (#2338)
+- `alibabacloudlogservice` exporter: Support new metrics interface (#2280)
+- `sumologic` exporter:
+  - Enable metrics pipeline (#2117)
+  - Add support for all types of log body (#2380)
+- `signalfx` exporter: Add `nonalphanumeric_dimension_chars` config option (#2442)
+
+## 🧰 Bug fixes 🧰
+
+- `resourcedetection` processor: Fix resource attribute environment variable (#2378)
+- `k8scluster` receiver: Fix nil pointer bug (#2450)
+
 ## v0.20.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.20.0 (Beta) 🎉
