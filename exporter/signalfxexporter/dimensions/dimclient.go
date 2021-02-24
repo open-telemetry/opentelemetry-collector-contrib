@@ -243,6 +243,7 @@ func (dc *DimensionClient) handleDimensionUpdate(dimUpdate *DimensionUpdate) err
 					zap.Error(err),
 					zap.String("URL", req.URL.String()),
 					zap.String("dimensionUpdate", dimUpdate.String()),
+					zap.Int("statusCode", statusCode),
 				)
 
 				// Don't retry if it is a 4xx error (except 404) since these
@@ -258,6 +259,7 @@ func (dc *DimensionClient) handleDimensionUpdate(dimUpdate *DimensionUpdate) err
 				zap.Error(err),
 				zap.String("URL", req.URL.String()),
 				zap.String("dimensionUpdate", dimUpdate.String()),
+				zap.Int("statusCode", statusCode),
 			)
 			atomic.AddInt64(&dc.TotalRetriedUpdates, int64(1))
 			// The retry is meant to provide some measure of robustness against
@@ -270,6 +272,7 @@ func (dc *DimensionClient) handleDimensionUpdate(dimUpdate *DimensionUpdate) err
 					zap.Error(err),
 					zap.String("URL", req.URL.String()),
 					zap.String("dimensionUpdate", dimUpdate.String()),
+					zap.Int("statusCode", statusCode),
 				)
 			}
 		})))
