@@ -511,30 +511,6 @@ translation_rules:
     system.disk.time: true
   mapping:
     device: disk
-- action: split_metric
-  metric_name: system.disk.merged
-  dimension_key: direction
-  mapping:
-    read: disk_merged.read
-    write: disk_merged.write
-- action: split_metric
-  metric_name: system.disk.io
-  dimension_key: direction
-  mapping:
-    read: disk_octets.read
-    write: disk_octets.write
-- action: split_metric
-  metric_name: system.disk.operations
-  dimension_key: direction
-  mapping:
-    read: disk_ops.read
-    write: disk_ops.write
-- action: split_metric
-  metric_name: system.disk.time
-  dimension_key: direction
-  mapping:
-    read: disk_time.read
-    write: disk_time.write
 - action: delta_metric
   mapping:
     system.disk.pending_operations: disk_ops.pending
@@ -566,30 +542,6 @@ translation_rules:
     system.network.packets: true
   mapping:
     device: interface
-- action: split_metric
-  metric_name: system.network.dropped
-  dimension_key: direction
-  mapping:
-    receive: if_dropped.rx
-    transmit: if_dropped.tx
-- action: split_metric
-  metric_name: system.network.errors
-  dimension_key: direction
-  mapping:
-    receive: if_errors.rx
-    transmit: if_errors.tx
-- action: split_metric
-  metric_name: system.network.io
-  dimension_key: direction
-  mapping:
-    receive: if_octets.rx
-    transmit: if_octets.tx
-- action: split_metric
-  metric_name: system.network.packets
-  dimension_key: direction
-  mapping:
-    receive: if_packets.rx
-    transmit: if_packets.tx
 
 
 # memory utilization
