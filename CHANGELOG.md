@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- `signalfx` exporter: **breaking change** - Allow periods to be sent in dimension keys (#2456). Existing users who do not want to change this functionality can set `nonalphanumeric_dimension_chars` to `_-`
 
 ## v0.20.0
 
