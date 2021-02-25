@@ -376,13 +376,16 @@ func Test_exporter_send_NotFound(t *testing.T) {
 }
 
 func Test_exporter_send_chunking(t *testing.T) {
+	sentChunks := 0
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		body, _ := json.Marshal(metricsResponse{
 			Ok:      0,
-			Invalid: 10,
+			Invalid: 1,
 		})
 		w.Write(body)
+		sentChunks++
 	}))
 	defer ts.Close()
 
@@ -400,9 +403,12 @@ func Test_exporter_send_chunking(t *testing.T) {
 		batch[i] = fmt.Sprintf("%d", i)
 	}
 
-	invalid, err := e.send(context.Background(), []string{""})
-	if invalid != 10 {
-		t.Errorf("Expected 10 lines to be reported invalid")
+	invalid, err := e.send(context.Background(), batch)
+	if sentChunks != 2 {
+		t.Errorf("Expected batch to be sent in 2 chunks")
+	}
+	if invalid != 2 {
+		t.Errorf("Expected 2 lines to be reported invalid")
 		return
 	}
 	if consumererror.IsPermanent(err) {

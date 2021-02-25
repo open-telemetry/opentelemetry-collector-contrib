@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -125,12 +126,15 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) ([]string, int) {
 	return lines, dropped
 }
 
+var lastLog int64 = 0
+
 // send sends a serialized metric batch to Dynatrace.
 // Returns the number of lines rejected by Dynatrace.
 // An error indicates all lines were dropped regardless of the returned number.
 func (e *exporter) send(ctx context.Context, lines []string) (int, error) {
-	if len(lines) > 1000 {
-		e.logger.Warn("Batch too large. Sending in chunks of 1000 metrics. If any chunk fails, previous chunks in the batch could be retried by the batch processor. Please set send_batch_max_size to 1000 or less.")
+	if now := time.Now().Unix(); len(lines) > 1000 && now-lastLog > 60 {
+		e.logger.Warn("Batch too large. Sending in chunks of 1000 metrics. If any chunk fails, previous chunks in the batch could be retried by the batch processor. Please set send_batch_max_size to 1000 or less. Suppressing this log for 60 seconds.")
+		lastLog = time.Now().Unix()
 	}
 
 	rejected := 0
