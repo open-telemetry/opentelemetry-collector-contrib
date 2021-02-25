@@ -24,18 +24,34 @@ import (
 // MultiReader provides an abstraction to make reading from the diagnostics
 // stream easier for callers.
 type MultiReader interface {
-	Pos() int
-	Align() error
-	Seek(i int) error
-	ReadUTF16() (string, error)
+	// ReadByte reads and returns a single byte from the stream
 	ReadByte() (byte, error)
-	AssertNextByteEquals(byte) error
-	ReadCompressedUInt64() (uint64, error)
-	ReadCompressedInt64() (int64, error)
-	ReadCompressedUInt32() (uint32, error)
+	// ReadCompressedInt32 reads a compressed int32 from the stream
 	ReadCompressedInt32() (int32, error)
+	// ReadCompressedUInt32 reads a compressed uint32 from the stream
+	ReadCompressedUInt32() (uint32, error)
+	// ReadCompressedInt64 reads a compressed int64 from the stream
+	ReadCompressedInt64() (int64, error)
+	// ReadCompressedUInt64 reads a compressed uint64 from the stream
+	ReadCompressedUInt64() (uint64, error)
+	// Read reads bytes from the underlying stream into the passed in reference
 	Read(interface{}) error
+	// ReadUTF16 reads and returns a zero-terminated UTF16 string from the stream
+	ReadUTF16() (string, error)
+	// ReadASCII reads an ASCII string of the given length from the underlying stream
 	ReadASCII(int) (string, error)
+	// AssertNextByteEquals reads the next byte and returns an error if it doesn't
+	// equal the passed in byte
+	AssertNextByteEquals(byte) error
+	// Seek moves the current position forward by reading and throwing away the
+	// specified number of bytes
+	Seek(i int) error
+	// Align moves the current position forward for 4-byte alignment
+	// https://github.com/Microsoft/perfview/blob/main/src/TraceEvent/EventPipe/EventPipeFormat.md
+	Align() error
+	// Pos returns the position (byte offset) from the underlying PositionalReader
+	Pos() int
+	// Reset resets the underlying PositionalReader
 	Reset()
 }
 
@@ -52,36 +68,6 @@ func NewMultiReader(r io.Reader) MultiReader {
 
 var _ MultiReader = (*mReader)(nil)
 
-// Align moves the current position forward for 4-byte alignment
-// https://github.com/Microsoft/perfview/blob/main/src/TraceEvent/EventPipe/EventPipeFormat.md
-func (r *mReader) Align() error {
-	mod := r.Pos() % 4
-	if mod > 0 {
-		err := r.Seek(4 - mod)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// ReadUTF16 reads and returns a zero-terminated UTF16 string from the stream
-func (r *mReader) ReadUTF16() (s string, err error) {
-	var a []uint16
-	for {
-		var c uint16
-		err = r.Read(&c)
-		if err != nil {
-			return "", err
-		}
-		if c == 0 {
-			break
-		}
-		a = append(a, c)
-	}
-	return string(utf16.Decode(a)), nil
-}
-
 var singleByte = make([]byte, 1)
 
 // ReadByte reads and returns a single byte from the stream
@@ -91,19 +77,6 @@ func (r *mReader) ReadByte() (byte, error) {
 		return 0, err
 	}
 	return singleByte[0], nil
-}
-
-// AssertNextByteEquals returns an error if the next byte doesn't equal the
-// passed in byte
-func (r *mReader) AssertNextByteEquals(b byte) error {
-	found, err := r.ReadByte()
-	if err != nil {
-		return err
-	}
-	if found != b {
-		return errors.New("next byte assertion failed")
-	}
-	return nil
 }
 
 // From https://github.com/Microsoft/perfview/blob/master/src/TraceEvent/EventPipe/EventPipeFormat.md
@@ -169,14 +142,49 @@ func (r *mReader) ReadCompressedUInt64() (out uint64, err error) {
 	return out, nil
 }
 
-// Reset resets the underlying PositionalReader
-func (r *mReader) Reset() {
-	r.pr.Reset()
+// Read reads bytes from the underlying stream into v
+func (r *mReader) Read(v interface{}) error {
+	return binary.Read(r.pr, ByteOrder, v)
 }
 
-// Pos returns the position (byte offset) from the underlying PositionalReader
-func (r *mReader) Pos() int {
-	return r.pr.Position()
+// ReadUTF16 reads and returns a zero-terminated UTF16 string from the stream
+func (r *mReader) ReadUTF16() (s string, err error) {
+	var a []uint16
+	for {
+		var c uint16
+		err = r.Read(&c)
+		if err != nil {
+			return "", err
+		}
+		if c == 0 {
+			break
+		}
+		a = append(a, c)
+	}
+	return string(utf16.Decode(a)), nil
+}
+
+// ReadASCII reads an ASCII string of the given length from the underlying stream
+func (r *mReader) ReadASCII(strlen int) (string, error) {
+	b := make([]byte, strlen)
+	_, err := r.pr.Read(b)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+// AssertNextByteEquals reads the next byte and returns an error if it doesn't
+// equal the passed in byte
+func (r *mReader) AssertNextByteEquals(b byte) error {
+	found, err := r.ReadByte()
+	if err != nil {
+		return err
+	}
+	if found != b {
+		return errors.New("next byte assertion failed")
+	}
+	return nil
 }
 
 // Seek moves the current position forward by reading and throwing away the
@@ -189,19 +197,27 @@ func (r *mReader) Seek(i int) error {
 	return nil
 }
 
-// Read reads bytes from the underlying stream into v
-func (r *mReader) Read(v interface{}) error {
-	return binary.Read(r.pr, ByteOrder, v)
+// Align moves the current position forward for 4-byte alignment
+// https://github.com/Microsoft/perfview/blob/main/src/TraceEvent/EventPipe/EventPipeFormat.md
+func (r *mReader) Align() error {
+	mod := r.Pos() % 4
+	if mod > 0 {
+		err := r.Seek(4 - mod)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-// ReadASCII reads an ASCII string of the given length from the underlying stream
-func (r *mReader) ReadASCII(strlen int) (string, error) {
-	b := make([]byte, strlen)
-	_, err := r.pr.Read(b)
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
+// Pos returns the position (byte offset) from the underlying PositionalReader
+func (r *mReader) Pos() int {
+	return r.pr.Position()
+}
+
+// Reset resets the underlying PositionalReader
+func (r *mReader) Reset() {
+	r.pr.Reset()
 }
 
 // PositionalReader is an interface extracted from posReader so it can be
