@@ -77,7 +77,7 @@ var (
 )
 
 func (t *traceTransformer) Span(span pdata.Span) (telemetry.Span, error) {
-	startTime := pdata.UnixNanoToTime(span.StartTime())
+	startTime := span.StartTime().AsTime()
 	sp := telemetry.Span{
 		// HexString validates the IDs, it will be an empty string if invalid.
 		ID:         span.SpanID().HexString(),
@@ -85,7 +85,7 @@ func (t *traceTransformer) Span(span pdata.Span) (telemetry.Span, error) {
 		ParentID:   span.ParentSpanID().HexString(),
 		Name:       span.Name(),
 		Timestamp:  startTime,
-		Duration:   pdata.UnixNanoToTime(span.EndTime()).Sub(startTime),
+		Duration:   span.EndTime().AsTime().Sub(startTime),
 		Attributes: t.SpanAttributes(span),
 		Events:     t.SpanEvents(span),
 	}
@@ -165,7 +165,7 @@ func (t *traceTransformer) SpanEvents(span pdata.Span) []telemetry.Event {
 		event := span.Events().At(i)
 		events[i] = telemetry.Event{
 			EventType:  event.Name(),
-			Timestamp:  pdata.UnixNanoToTime(event.Timestamp()),
+			Timestamp:  event.Timestamp().AsTime(),
 			Attributes: tracetranslator.AttributeMapToMap(event.Attributes()),
 		}
 	}

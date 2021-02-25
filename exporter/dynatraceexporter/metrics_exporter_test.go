@@ -70,7 +70,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intGaugeDataPoints.Resize(1)
 	intGaugeDataPoint := intGaugeDataPoints.At(0)
 	intGaugeDataPoint.SetValue(10)
-	intGaugeDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+	intGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	intSumMetric := metrics.At(3)
 	intSumMetric.SetDataType(pdata.MetricDataTypeIntSum)
@@ -80,7 +80,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intSumDataPoints.Resize(1)
 	intSumDataPoint := intSumDataPoints.At(0)
 	intSumDataPoint.SetValue(10)
-	intSumDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+	intSumDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	intHistogramMetric := metrics.At(4)
 	intHistogramMetric.SetDataType(pdata.MetricDataTypeIntHistogram)
@@ -91,7 +91,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intHistogramDataPoint := intHistogramDataPoints.At(0)
 	intHistogramDataPoint.SetCount(2)
 	intHistogramDataPoint.SetSum(19)
-	intHistogramDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+	intHistogramDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	doubleGaugeMetric := metrics.At(5)
 	doubleGaugeMetric.SetDataType(pdata.MetricDataTypeDoubleGauge)
@@ -101,7 +101,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleGaugeDataPoints.Resize(1)
 	doubleGaugeDataPoint := doubleGaugeDataPoints.At(0)
 	doubleGaugeDataPoint.SetValue(10.1)
-	doubleGaugeDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+	doubleGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	doubleSumMetric := metrics.At(6)
 	doubleSumMetric.SetDataType(pdata.MetricDataTypeDoubleSum)
@@ -111,7 +111,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleSumDataPoints.Resize(1)
 	doubleSumDataPoint := doubleSumDataPoints.At(0)
 	doubleSumDataPoint.SetValue(10.1)
-	doubleSumDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+	doubleSumDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	doubleHistogramMetric := metrics.At(7)
 	doubleHistogramMetric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
@@ -123,7 +123,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleHistogramDataPoint := doubleHistogramDataPoints.At(0)
 	doubleHistogramDataPoint.SetCount(2)
 	doubleHistogramDataPoint.SetSum(10.1)
-	doubleHistogramDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+	doubleHistogramDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	type fields struct {
 		logger *zap.Logger
@@ -243,7 +243,7 @@ func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 	intGaugeDataPoints.Resize(1)
 	intGaugeDataPoint := intGaugeDataPoints.At(0)
 	intGaugeDataPoint.SetValue(10)
-	intGaugeDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+	intGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	e := &exporter{
 		logger: zap.NewNop(),
@@ -399,7 +399,7 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 	intGaugeDataPoints.Resize(1)
 	intGaugeDataPoint := intGaugeDataPoints.At(0)
 	intGaugeDataPoint.SetValue(10)
-	intGaugeDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+	intGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	type fields struct {
 		logger *zap.Logger

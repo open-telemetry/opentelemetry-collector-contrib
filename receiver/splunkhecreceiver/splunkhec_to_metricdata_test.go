@@ -79,7 +79,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				metricPt.IntGauge().DataPoints().Resize(1)
 				intPt := metricPt.IntGauge().DataPoints().At(0)
 				intPt.SetValue(14)
-				intPt.SetTimestamp(pdata.TimestampUnixNano(nanos))
+				intPt.SetTimestamp(pdata.Timestamp(nanos))
 				intPt.LabelsMap().Insert("k0", "v0")
 				intPt.LabelsMap().Insert("k1", "v1")
 				intPt.LabelsMap().Insert("k2", "v2")
@@ -90,7 +90,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				metricPt2.IntGauge().DataPoints().Resize(1)
 				intPt2 := metricPt2.IntGauge().DataPoints().At(0)
 				intPt2.SetValue(15)
-				intPt2.SetTimestamp(pdata.TimestampUnixNano(nanos))
+				intPt2.SetTimestamp(pdata.Timestamp(nanos))
 				intPt2.LabelsMap().Insert("k0", "v0")
 				intPt2.LabelsMap().Insert("k1", "v1")
 				intPt2.LabelsMap().Insert("k2", "v2")
@@ -115,7 +115,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				metricPt.DoubleGauge().DataPoints().Resize(1)
 				doublePt := metricPt.DoubleGauge().DataPoints().At(0)
 				doublePt.SetValue(13.13)
-				doublePt.SetTimestamp(pdata.TimestampUnixNano(nanos))
+				doublePt.SetTimestamp(pdata.Timestamp(nanos))
 				doublePt.LabelsMap().Insert("k0", "v0")
 				doublePt.LabelsMap().Insert("k1", "v1")
 				doublePt.LabelsMap().Insert("k2", "v2")
@@ -159,7 +159,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				doublePt.LabelsMap().Insert("k0", "v0")
 				doublePt.LabelsMap().Insert("k1", "v1")
 				doublePt.LabelsMap().Insert("k2", "v2")
-				doublePt.SetTimestamp(pdata.TimestampUnixNano(nanos))
+				doublePt.SetTimestamp(pdata.Timestamp(nanos))
 				return md
 			}(),
 		},
@@ -183,7 +183,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				doublePt.LabelsMap().Insert("k0", "v0")
 				doublePt.LabelsMap().Insert("k1", "v1")
 				doublePt.LabelsMap().Insert("k2", "v2")
-				doublePt.SetTimestamp(pdata.TimestampUnixNano(nanos))
+				doublePt.SetTimestamp(pdata.Timestamp(nanos))
 				return md
 			}(),
 		},
@@ -207,7 +207,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				doublePt.LabelsMap().Insert("k0", "v0")
 				doublePt.LabelsMap().Insert("k1", "v1")
 				doublePt.LabelsMap().Insert("k2", "v2")
-				doublePt.SetTimestamp(pdata.TimestampUnixNano(nanos))
+				doublePt.SetTimestamp(pdata.Timestamp(nanos))
 				return md
 			}(),
 		},
@@ -304,7 +304,7 @@ func buildDefaultMetricsData(time int64) pdata.Metrics {
 	intPt.LabelsMap().Insert("k0", "v0")
 	intPt.LabelsMap().Insert("k1", "v1")
 	intPt.LabelsMap().Insert("k2", "v2")
-	intPt.SetTimestamp(pdata.TimestampUnixNano(time))
+	intPt.SetTimestamp(pdata.Timestamp(time))
 	return metrics
 }
 

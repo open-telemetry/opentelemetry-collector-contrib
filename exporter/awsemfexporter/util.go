@@ -150,6 +150,6 @@ func dimensionRollup(dimensionRollupOption string, labels map[string]string) [][
 }
 
 // unixNanoToMilliseconds converts a timestamp in nanoseconds to milliseconds.
-func unixNanoToMilliseconds(timestamp pdata.TimestampUnixNano) int64 {
+func unixNanoToMilliseconds(timestamp pdata.Timestamp) int64 {
 	return int64(uint64(timestamp) / uint64(time.Millisecond))
 }

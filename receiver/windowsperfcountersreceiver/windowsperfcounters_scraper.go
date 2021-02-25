@@ -106,7 +106,7 @@ func (s *scraper) shutdown(context.Context) error {
 func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	now := pdata.TimestampUnixNano(uint64(time.Now().UnixNano()))
+	now := pdata.TimestampFromTime(time.Now())
 
 	var errors []error
 
@@ -127,7 +127,7 @@ func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 	return metrics, componenterror.CombineErrors(errors)
 }
 
-func initializeDoubleGaugeMetric(metric pdata.Metric, now pdata.TimestampUnixNano, name string, counterValues []win_perf_counters.CounterValue) {
+func initializeDoubleGaugeMetric(metric pdata.Metric, now pdata.Timestamp, name string, counterValues []win_perf_counters.CounterValue) {
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
 
@@ -139,7 +139,7 @@ func initializeDoubleGaugeMetric(metric pdata.Metric, now pdata.TimestampUnixNan
 	}
 }
 
-func initializeDoubleDataPoint(dataPoint pdata.DoubleDataPoint, now pdata.TimestampUnixNano, instanceLabel string, value float64) {
+func initializeDoubleDataPoint(dataPoint pdata.DoubleDataPoint, now pdata.Timestamp, instanceLabel string, value float64) {
 	if instanceLabel != "" {
 		labelsMap := dataPoint.LabelsMap()
 		labelsMap.Insert(instanceLabelName, instanceLabel)

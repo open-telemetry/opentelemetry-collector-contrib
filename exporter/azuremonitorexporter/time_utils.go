@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-func toTime(t pdata.TimestampUnixNano) time.Time {
+func toTime(t pdata.Timestamp) time.Time {
 	return time.Unix(0, int64(t))
 }
 

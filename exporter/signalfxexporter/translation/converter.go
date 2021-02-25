@@ -407,7 +407,7 @@ func resourceToDimensions(res pdata.Resource) []*sfxpb.Dimension {
 	return dims
 }
 
-func timestampToSignalFx(ts pdata.TimestampUnixNano) int64 {
+func timestampToSignalFx(ts pdata.Timestamp) int64 {
 	// Convert nanosecs to millisecs.
 	return int64(ts) / 1e6
 }

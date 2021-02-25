@@ -58,7 +58,7 @@ func createLogData(numberOfLogs int, attributes pdata.AttributeMap) pdata.Logs {
 	ill := rl.InstrumentationLibraryLogs().At(0)
 
 	for i := 0; i < numberOfLogs; i++ {
-		ts := pdata.TimestampUnixNano(int64(i) * time.Millisecond.Nanoseconds())
+		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := pdata.NewLogRecord()
 		logRecord.Body().SetStringVal("mylog")
 		attributes.ForEach(func(k string, v pdata.AttributeValue) {
@@ -295,7 +295,7 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		rl.InstrumentationLibraryLogs().Resize(1)
 		ill := rl.InstrumentationLibraryLogs().At(0)
 
-		ts := pdata.TimestampUnixNano(int64(1) * time.Millisecond.Nanoseconds())
+		ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
 		lr := pdata.NewLogRecord()
 		lr.Body().SetStringVal("log message")
 		lr.Attributes().InsertString("not.in.config", "not allowed")
@@ -315,7 +315,7 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		rl.InstrumentationLibraryLogs().Resize(1)
 		ill := rl.InstrumentationLibraryLogs().At(0)
 
-		ts := pdata.TimestampUnixNano(int64(1) * time.Millisecond.Nanoseconds())
+		ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
 		lr := pdata.NewLogRecord()
 		lr.Body().SetStringVal("log message")
 		lr.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
@@ -337,7 +337,7 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		rl.InstrumentationLibraryLogs().Resize(1)
 		ill := rl.InstrumentationLibraryLogs().At(0)
 
-		ts := pdata.TimestampUnixNano(int64(1) * time.Millisecond.Nanoseconds())
+		ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
 		lr1 := pdata.NewLogRecord()
 		lr1.Body().SetStringVal("log message 1")
 		lr1.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
@@ -368,7 +368,7 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		rl.InstrumentationLibraryLogs().Resize(1)
 		ill := rl.InstrumentationLibraryLogs().At(0)
 
-		ts := pdata.TimestampUnixNano(int64(1) * time.Millisecond.Nanoseconds())
+		ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
 		lr1 := pdata.NewLogRecord()
 		lr1.Body().SetStringVal("log message 1")
 		lr1.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer1")
@@ -467,7 +467,7 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 }
 
 func TestExporter_convertLogToLokiEntry(t *testing.T) {
-	ts := pdata.TimestampUnixNano(int64(1) * time.Millisecond.Nanoseconds())
+	ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
 	lr := pdata.NewLogRecord()
 	lr.Body().SetStringVal("log message")
 	lr.SetTimestamp(ts)

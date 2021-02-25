@@ -108,7 +108,7 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 	return md, numDroppedTimeSeries
 }
 
-func convertString(logger *zap.Logger, metricName string, s string, numDroppedTimeSeries *int, pointTimestamp pdata.TimestampUnixNano, metric pdata.Metric, populateLabels func(pdata.StringMap)) {
+func convertString(logger *zap.Logger, metricName string, s string, numDroppedTimeSeries *int, pointTimestamp pdata.Timestamp, metric pdata.Metric, populateLabels func(pdata.StringMap)) {
 	// best effort, cast to string and turn into a number
 	dbl, err := strconv.ParseFloat(s, 64)
 	if err != nil {
@@ -120,7 +120,7 @@ func convertString(logger *zap.Logger, metricName string, s string, numDroppedTi
 	}
 }
 
-func addIntGauge(ts pdata.TimestampUnixNano, value int64, metric pdata.Metric, populateLabels func(pdata.StringMap)) {
+func addIntGauge(ts pdata.Timestamp, value int64, metric pdata.Metric, populateLabels func(pdata.StringMap)) {
 	metric.SetDataType(pdata.MetricDataTypeIntGauge)
 	metric.IntGauge().DataPoints().Resize(1)
 	intPt := metric.IntGauge().DataPoints().At(0)
@@ -129,7 +129,7 @@ func addIntGauge(ts pdata.TimestampUnixNano, value int64, metric pdata.Metric, p
 	populateLabels(intPt.LabelsMap())
 }
 
-func addDoubleGauge(ts pdata.TimestampUnixNano, value float64, metric pdata.Metric, populateLabels func(pdata.StringMap)) {
+func addDoubleGauge(ts pdata.Timestamp, value float64, metric pdata.Metric, populateLabels func(pdata.StringMap)) {
 	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
 	metric.DoubleGauge().DataPoints().Resize(1)
 	doublePt := metric.DoubleGauge().DataPoints().At(0)
@@ -138,12 +138,12 @@ func addDoubleGauge(ts pdata.TimestampUnixNano, value float64, metric pdata.Metr
 	populateLabels(doublePt.LabelsMap())
 }
 
-func convertTimestamp(sec *float64) pdata.TimestampUnixNano {
+func convertTimestamp(sec *float64) pdata.Timestamp {
 	if sec == nil {
 		return 0
 	}
 
-	return pdata.TimestampUnixNano(*sec * 1e9)
+	return pdata.Timestamp(*sec * 1e9)
 }
 
 // Extract dimensions from the Splunk event fields to populate metric data point labels.

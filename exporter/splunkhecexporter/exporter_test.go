@@ -200,7 +200,7 @@ func generateLargeLogsBatch() pdata.Logs {
 	rl.InstrumentationLibraryLogs().Resize(1)
 	ill := rl.InstrumentationLibraryLogs().At(0)
 	ill.Logs().Resize(65000)
-	ts := pdata.TimestampUnixNano(123)
+	ts := pdata.Timestamp(123)
 	for i := 0; i < 65000; i++ {
 		logRecord := ill.Logs().At(i)
 		logRecord.Body().SetStringVal("mylog")

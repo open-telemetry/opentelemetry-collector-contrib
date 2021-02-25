@@ -28,7 +28,7 @@ import (
 
 func Test_logDataToSplunk(t *testing.T) {
 	logger := zap.NewNop()
-	ts := pdata.TimestampUnixNano(123)
+	ts := pdata.Timestamp(123)
 
 	tests := []struct {
 		name             string
@@ -278,7 +278,7 @@ func makeLog(record pdata.LogRecord) pdata.Logs {
 
 func commonLogSplunkEvent(
 	event interface{},
-	ts pdata.TimestampUnixNano,
+	ts pdata.Timestamp,
 	fields map[string]interface{},
 	host string,
 	source string,
