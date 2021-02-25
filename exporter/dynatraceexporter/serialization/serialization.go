@@ -105,7 +105,7 @@ func SerializeIntHistogramMetrics(name string, data pdata.IntHistogramDataPointS
 	return output
 }
 
-func serializeLine(name, tagline, valueline string, timestamp pdata.TimestampUnixNano) string {
+func serializeLine(name, tagline, valueline string, timestamp pdata.Timestamp) string {
 	// {metric_name} {tags} {value_line} {timestamp}
 	output := name
 

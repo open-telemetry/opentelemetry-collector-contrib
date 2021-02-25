@@ -113,7 +113,7 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 	return dropped, nil
 }
 
-func asTime(in pdata.TimestampUnixNano) model.Time {
+func asTime(in pdata.Timestamp) model.Time {
 	return model.Time(time.Unix(0, int64(in)))
 }
 

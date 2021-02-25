@@ -28,7 +28,7 @@ import (
 
 func Test_traceDataToSplunk(t *testing.T) {
 	logger := zap.NewNop()
-	ts := pdata.TimestampUnixNano(123)
+	ts := pdata.Timestamp(123)
 
 	tests := []struct {
 		name                string
@@ -97,7 +97,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 	}
 }
 
-func makeSpan(name string, ts *pdata.TimestampUnixNano) pdata.Span {
+func makeSpan(name string, ts *pdata.Timestamp) pdata.Span {
 	span := pdata.NewSpan()
 	span.Attributes().InsertString("foo", "bar")
 	span.SetName(name)
@@ -134,7 +134,7 @@ func makeSpan(name string, ts *pdata.TimestampUnixNano) pdata.Span {
 
 func commonSplunkEvent(
 	name string,
-	ts pdata.TimestampUnixNano,
+	ts pdata.Timestamp,
 ) *splunk.Event {
 	return &splunk.Event{
 		Time:       timestampToSecondsWithMillisecondPrecision(ts),

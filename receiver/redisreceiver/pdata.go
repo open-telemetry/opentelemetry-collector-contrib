@@ -92,14 +92,14 @@ func buildKeyspaceTTLMetric(k *keyspace, t *timeBundle) pdata.Metric {
 func newIntMetric(m *redisMetric, pt pdata.IntDataPoint, t *timeBundle) pdata.Metric {
 	pdm := redisMetricToPDM(m)
 
-	pt.SetTimestamp(pdata.TimestampUnixNano(t.current.UnixNano()))
+	pt.SetTimestamp(pdata.TimestampFromTime(t.current))
 	pt.LabelsMap().InitFromMap(m.labels)
 
 	var points pdata.IntDataPointSlice
 	if m.pdType == pdata.MetricDataTypeIntGauge {
 		points = pdm.IntGauge().DataPoints()
 	} else if m.pdType == pdata.MetricDataTypeIntSum {
-		pt.SetStartTime(pdata.TimestampUnixNano(t.serverStart.UnixNano()))
+		pt.SetStartTime(pdata.TimestampFromTime(t.serverStart))
 		sum := pdm.IntSum()
 		sum.SetIsMonotonic(m.isMonotonic)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
@@ -113,14 +113,14 @@ func newIntMetric(m *redisMetric, pt pdata.IntDataPoint, t *timeBundle) pdata.Me
 func newDoubleMetric(m *redisMetric, pt pdata.DoubleDataPoint, t *timeBundle) pdata.Metric {
 	pdm := redisMetricToPDM(m)
 
-	pt.SetTimestamp(pdata.TimestampUnixNano(t.current.UnixNano()))
+	pt.SetTimestamp(pdata.TimestampFromTime(t.current))
 	pt.LabelsMap().InitFromMap(m.labels)
 
 	var points pdata.DoubleDataPointSlice
 	if m.pdType == pdata.MetricDataTypeDoubleGauge {
 		points = pdm.DoubleGauge().DataPoints()
 	} else if m.pdType == pdata.MetricDataTypeDoubleSum {
-		pt.SetStartTime(pdata.TimestampUnixNano(t.serverStart.UnixNano()))
+		pt.SetStartTime(pdata.TimestampFromTime(t.serverStart))
 		sum := pdm.DoubleSum()
 		sum.SetIsMonotonic(m.isMonotonic)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)

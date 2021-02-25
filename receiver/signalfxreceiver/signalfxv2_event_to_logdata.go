@@ -35,7 +35,7 @@ func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs pdata.LogSlice) {
 
 		// SignalFx timestamps are in millis so convert to nanos by multiplying
 		// by 1 million.
-		lr.SetTimestamp(pdata.TimestampUnixNano(event.Timestamp * 1e6))
+		lr.SetTimestamp(pdata.Timestamp(event.Timestamp * 1e6))
 
 		attrs := lr.Attributes()
 		attrs.InitEmptyWithCapacity(1 + len(event.Dimensions) + len(event.Properties))

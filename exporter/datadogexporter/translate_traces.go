@@ -67,7 +67,7 @@ func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *co
 	var traces []*pb.TracePayload
 
 	var runningMetrics []datadog.Metric
-	pushTime := time.Now().UTC().UnixNano()
+	pushTime := pdata.TimestampFromTime(time.Now())
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
 		// TODO pass logger here once traces code stabilizes

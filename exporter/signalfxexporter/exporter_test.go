@@ -493,7 +493,7 @@ func makeSampleResourceLogs() pdata.Logs {
 	l := logSlice.At(0)
 
 	l.SetName("shutdown")
-	l.SetTimestamp(pdata.TimestampUnixNano(1000))
+	l.SetTimestamp(pdata.Timestamp(1000))
 	attrs := l.Attributes()
 
 	attrs.InitFromMap(map[string]pdata.AttributeValue{
@@ -721,7 +721,7 @@ func generateLargeDPBatch() pdata.Metrics {
 		m.SetDataType(pdata.MetricDataTypeIntGauge)
 
 		dp := pdata.NewIntDataPoint()
-		dp.SetTimestamp(pdata.TimestampUnixNano(ts.UnixNano()))
+		dp.SetTimestamp(pdata.TimestampFromTime(ts))
 		dp.LabelsMap().InitFromMap(map[string]string{
 			"k0": "v0",
 			"k1": "v1",
@@ -748,7 +748,7 @@ func generateLargeEventBatch() pdata.Logs {
 		lr.SetName("test_" + strconv.Itoa(i))
 		lr.Attributes().InsertString("k0", "k1")
 		lr.Attributes().InsertNull("com.splunk.signalfx.event_category")
-		lr.SetTimestamp(pdata.TimestampUnixNano(ts.UnixNano()))
+		lr.SetTimestamp(pdata.TimestampFromTime(ts))
 	}
 
 	return out
