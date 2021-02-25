@@ -44,7 +44,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
-	ts := pdata.TimestampUnixNano(time.Unix(unixSecs, unixNSecs).UnixNano())
+	ts := pdata.TimestampFromTime(time.Unix(unixSecs, unixNSecs))
 	tsMSecs := unixSecs*1e3 + unixNSecs/1e6
 
 	doubleVal := 1234.5678

@@ -86,6 +86,7 @@ func TestTransformSpan(t *testing.T) {
 			want: telemetry.Span{
 				ID:         "0000000000000001",
 				Name:       "invalid TraceID",
+				Timestamp:  time.Unix(0, 0).UTC(),
 				Attributes: withDefaults(nil),
 			},
 		},
@@ -101,6 +102,7 @@ func TestTransformSpan(t *testing.T) {
 			want: telemetry.Span{
 				TraceID:    "01010101010101010101010101010101",
 				Name:       "invalid SpanID",
+				Timestamp:  time.Unix(0, 0).UTC(),
 				Attributes: withDefaults(nil),
 			},
 		},
@@ -117,6 +119,7 @@ func TestTransformSpan(t *testing.T) {
 				ID:         "0000000000000001",
 				TraceID:    "01010101010101010101010101010101",
 				Name:       "root",
+				Timestamp:  time.Unix(0, 0).UTC(),
 				Attributes: withDefaults(nil),
 				Events:     nil,
 			},
@@ -136,6 +139,7 @@ func TestTransformSpan(t *testing.T) {
 				TraceID:    "01010101010101010101010101010101",
 				Name:       "client",
 				ParentID:   "0000000000000001",
+				Timestamp:  time.Unix(0, 0).UTC(),
 				Attributes: withDefaults(nil),
 				Events:     nil,
 			},
@@ -155,9 +159,10 @@ func TestTransformSpan(t *testing.T) {
 					}).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 			},
 			want: telemetry.Span{
-				ID:      "0000000000000003",
-				TraceID: "01010101010101010101010101010101",
-				Name:    "error code",
+				ID:        "0000000000000003",
+				TraceID:   "01010101010101010101010101010101",
+				Name:      "error code",
+				Timestamp: time.Unix(0, 0).UTC(),
 				Attributes: withDefaults(map[string]interface{}{
 					statusCodeKey: "ERROR",
 				}),
@@ -179,9 +184,10 @@ func TestTransformSpan(t *testing.T) {
 					}).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 			},
 			want: telemetry.Span{
-				ID:      "0000000000000003",
-				TraceID: "01010101010101010101010101010101",
-				Name:    "error message",
+				ID:        "0000000000000003",
+				TraceID:   "01010101010101010101010101010101",
+				Name:      "error message",
+				Timestamp: time.Unix(0, 0).UTC(),
 				Attributes: withDefaults(map[string]interface{}{
 					statusCodeKey:        "ERROR",
 					statusDescriptionKey: "error message",
@@ -228,9 +234,10 @@ func TestTransformSpan(t *testing.T) {
 					}).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 			},
 			want: telemetry.Span{
-				ID:      "0000000000000004",
-				TraceID: "01010101010101010101010101010101",
-				Name:    "attrs",
+				ID:        "0000000000000004",
+				TraceID:   "01010101010101010101010101010101",
+				Name:      "attrs",
+				Timestamp: time.Unix(0, 0).UTC(),
 				Attributes: withDefaults(map[string]interface{}{
 					"prod":   true,
 					"weight": int64(10),
@@ -247,8 +254,8 @@ func TestTransformSpan(t *testing.T) {
 				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 5}))
 				s.SetName("with time")
-				s.SetStartTime(pdata.TimeToUnixNano(now))
-				s.SetEndTime(pdata.TimeToUnixNano(now.Add(time.Second * 5)))
+				s.SetStartTime(pdata.TimestampFromTime(now))
+				s.SetEndTime(pdata.TimestampFromTime(now.Add(time.Second * 5)))
 				return s
 			},
 			want: telemetry.Span{
@@ -272,9 +279,10 @@ func TestTransformSpan(t *testing.T) {
 				return s
 			},
 			want: telemetry.Span{
-				ID:      "0000000000000006",
-				TraceID: "01010101010101010101010101010101",
-				Name:    "span kind server",
+				ID:        "0000000000000006",
+				TraceID:   "01010101010101010101010101010101",
+				Name:      "span kind server",
+				Timestamp: time.Unix(0, 0).UTC(),
 				Attributes: withDefaults(map[string]interface{}{
 					spanKindKey: "server",
 				}),
@@ -293,7 +301,7 @@ func TestTransformSpan(t *testing.T) {
 				ev.Resize(1)
 				event := ev.At(0)
 				event.SetName("this is the event name")
-				event.SetTimestamp(pdata.TimeToUnixNano(now))
+				event.SetTimestamp(pdata.TimestampFromTime(now))
 				s.Events().Append(event)
 				return s
 			},
@@ -301,6 +309,7 @@ func TestTransformSpan(t *testing.T) {
 				ID:         "0000000000000007",
 				TraceID:    "01010101010101010101010101010101",
 				Name:       "with events",
+				Timestamp:  time.Unix(0, 0).UTC(),
 				Attributes: withDefaults(nil),
 				Events: []telemetry.Event{
 					{

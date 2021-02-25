@@ -123,12 +123,12 @@ func TestMetricDimensionsToMapKey(t *testing.T) {
 }
 
 func TestMapIntMetrics(t *testing.T) {
-	ts := time.Now().UnixNano()
+	ts := pdata.TimestampFromTime(time.Now())
 	slice := pdata.NewIntDataPointSlice()
 	slice.Resize(1)
 	point := slice.At(0)
 	point.SetValue(17)
-	point.SetTimestamp(pdata.TimestampUnixNano(ts))
+	point.SetTimestamp(ts)
 
 	assert.ElementsMatch(t,
 		mapIntMetrics("int64.test", slice, []string{}),
@@ -143,12 +143,12 @@ func TestMapIntMetrics(t *testing.T) {
 }
 
 func TestMapDoubleMetrics(t *testing.T) {
-	ts := time.Now().UnixNano()
+	ts := pdata.TimestampFromTime(time.Now())
 	slice := pdata.NewDoubleDataPointSlice()
 	slice.Resize(1)
 	point := slice.At(0)
 	point.SetValue(math.Pi)
-	point.SetTimestamp(pdata.TimestampUnixNano(ts))
+	point.SetTimestamp(ts)
 
 	assert.ElementsMatch(t,
 		mapDoubleMetrics("float64.test", slice, []string{}),
@@ -168,8 +168,8 @@ func newTTLMap() *ttlmap.TTLMap {
 	return ttlmap.New(1800, 3600)
 }
 
-func seconds(i int) pdata.TimestampUnixNano {
-	return pdata.TimeToUnixNano(time.Unix(int64(i), 0))
+func seconds(i int) pdata.Timestamp {
+	return pdata.TimestampFromTime(time.Unix(int64(i), 0))
 }
 
 func TestMapIntMonotonicMetrics(t *testing.T) {
@@ -416,14 +416,14 @@ func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
 }
 
 func TestMapIntHistogramMetrics(t *testing.T) {
-	ts := time.Now().UnixNano()
+	ts := pdata.TimestampFromTime(time.Now())
 	slice := pdata.NewIntHistogramDataPointSlice()
 	slice.Resize(1)
 	point := slice.At(0)
 	point.SetCount(20)
 	point.SetSum(200)
 	point.SetBucketCounts([]uint64{2, 18})
-	point.SetTimestamp(pdata.TimestampUnixNano(ts))
+	point.SetTimestamp(ts)
 
 	noBuckets := []datadog.Metric{
 		metrics.NewGauge("intHist.test.count", uint64(ts), 20, []string{}),
@@ -468,14 +468,14 @@ func TestMapIntHistogramMetrics(t *testing.T) {
 }
 
 func TestMapDoubleHistogramMetrics(t *testing.T) {
-	ts := time.Now().UnixNano()
+	ts := pdata.TimestampFromTime(time.Now())
 	slice := pdata.NewDoubleHistogramDataPointSlice()
 	slice.Resize(1)
 	point := slice.At(0)
 	point.SetCount(20)
 	point.SetSum(math.Pi)
 	point.SetBucketCounts([]uint64{2, 18})
-	point.SetTimestamp(pdata.TimestampUnixNano(ts))
+	point.SetTimestamp(ts)
 
 	noBuckets := []datadog.Metric{
 		metrics.NewGauge("doubleHist.test.count", uint64(ts), 20, []string{}),

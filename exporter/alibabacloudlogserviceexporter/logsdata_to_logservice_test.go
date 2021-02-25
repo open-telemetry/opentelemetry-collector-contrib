@@ -58,7 +58,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 	ill.InstrumentationLibrary().SetVersion("v0.1.0")
 
 	for i := 0; i < numberOfLogs; i++ {
-		ts := pdata.TimestampUnixNano(int64(i) * time.Millisecond.Nanoseconds())
+		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := pdata.NewLogRecord()
 		switch i {
 		case 0:
