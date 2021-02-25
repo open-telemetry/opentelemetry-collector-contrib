@@ -33,6 +33,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/serialization"
 )
 
+// The maximum number of metrics that may be sent in a single request to the Dynatrace API
+const maxChunkSize = 1000
+
 // NewExporter exports to a Dynatrace Metrics v2 API
 func newMetricsExporter(params component.ExporterCreateParams, cfg *config.Config) (*exporter, error) {
 	client, err := cfg.HTTPClientSettings.ToClient()
@@ -132,14 +135,14 @@ var lastLog int64 = 0
 // Returns the number of lines rejected by Dynatrace.
 // An error indicates all lines were dropped regardless of the returned number.
 func (e *exporter) send(ctx context.Context, lines []string) (int, error) {
-	if now := time.Now().Unix(); len(lines) > 1000 && now-lastLog > 60 {
-		e.logger.Warn("Batch too large. Sending in chunks of 1000 metrics. If any chunk fails, previous chunks in the batch could be retried by the batch processor. Please set send_batch_max_size to 1000 or less. Suppressing this log for 60 seconds.")
+	if now := time.Now().Unix(); len(lines) > maxChunkSize && now-lastLog > 60 {
+		e.logger.Sugar().Warnf("Batch too large. Sending in chunks of %[1]s metrics. If any chunk fails, previous chunks in the batch could be retried by the batch processor. Please set send_batch_max_size to %[1]s or less. Suppressing this log for 60 seconds.", maxChunkSize)
 		lastLog = time.Now().Unix()
 	}
 
 	rejected := 0
-	for i := 0; i < len(lines); i += 1000 {
-		end := i + 1000
+	for i := 0; i < len(lines); i += maxChunkSize {
+		end := i + maxChunkSize
 
 		if end > len(lines) {
 			end = len(lines)
