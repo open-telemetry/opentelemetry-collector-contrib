@@ -40,7 +40,7 @@ func Convert(obsLog *entry.Entry) pdata.Logs {
 	ills := rls.InstrumentationLibraryLogs().At(0)
 
 	lr := pdata.NewLogRecord()
-	lr.SetTimestamp(pdata.TimestampUnixNano(obsLog.Timestamp.UnixNano()))
+	lr.SetTimestamp(pdata.TimestampFromTime(obsLog.Timestamp))
 
 	sevText, sevNum := convertSeverity(obsLog.Severity)
 	lr.SetSeverityText(sevText)

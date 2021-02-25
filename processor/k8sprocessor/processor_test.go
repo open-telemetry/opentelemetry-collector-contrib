@@ -217,7 +217,7 @@ func TestProcessorBadConfig(t *testing.T) {
 }
 
 func TestProcessorBadClientProvider(t *testing.T) {
-	clientProvider := func(_ *zap.Logger, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ kube.APIClientsetProvider, _ kube.InformerProvider) (kube.Client, error) {
+	clientProvider := func(_ *zap.Logger, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ []kube.Association, _ kube.APIClientsetProvider, _ kube.InformerProvider) (kube.Client, error) {
 		return nil, fmt.Errorf("bad client error")
 	}
 
@@ -283,6 +283,12 @@ func withPassthroughIP(passthroughIP string) generateResourceFunc {
 func withHostname(hostname string) generateResourceFunc {
 	return func(res pdata.Resource) {
 		res.Attributes().InsertString(conventions.AttributeHostName, hostname)
+	}
+}
+
+func withPodUID(uid string) generateResourceFunc {
+	return func(res pdata.Resource) {
+		res.Attributes().InsertString("k8s.pod.uid", uid)
 	}
 }
 
@@ -408,7 +414,7 @@ func TestNoIP(t *testing.T) {
 	})
 }
 
-func TestIPSource(t *testing.T) {
+func TestIPSourceWithoutPodAssociation(t *testing.T) {
 	m := newMultiTest(
 		t,
 		NewFactory().CreateDefaultConfig(),
@@ -475,6 +481,128 @@ func TestIPSource(t *testing.T) {
 	}
 }
 
+func TestIPSourceWithPodAssociation(t *testing.T) {
+	m := newMultiTest(
+		t,
+		NewFactory().CreateDefaultConfig(),
+		nil,
+	)
+
+	type testCase struct {
+		name, contextIP, labelName, labelValue, outLabel, outValue string
+	}
+
+	testCases := []testCase{
+		{
+			name:       "k8sIP",
+			contextIP:  "",
+			labelName:  "k8s.pod.ip",
+			labelValue: "1.1.1.1",
+			outLabel:   "k8s.pod.ip",
+			outValue:   "1.1.1.1",
+		},
+		{
+			name:       "client IP",
+			contextIP:  "",
+			labelName:  "ip",
+			labelValue: "2.2.2.2",
+			outLabel:   "ip",
+			outValue:   "2.2.2.2",
+		},
+		{
+			name:       "Hostname",
+			contextIP:  "",
+			labelName:  "host.name",
+			labelValue: "1.1.1.1",
+			outLabel:   "k8s.pod.ip",
+			outValue:   "1.1.1.1",
+		},
+	}
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		kp.podAssociations = []kube.Association{
+			{
+				From: "resource_attribute",
+				Name: "k8s.pod.ip",
+			},
+			{
+				From: "resource_attribute",
+				Name: "ip",
+			},
+			{
+				From: "resource_attribute",
+				Name: "host.name",
+			},
+		}
+	})
+
+	for i, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			if tc.contextIP != "" {
+				ctx = client.NewContext(context.Background(), &client.Client{IP: tc.contextIP})
+			}
+
+			traces := generateTraces()
+			metrics := generateMetrics()
+			logs := generateLogs()
+
+			resources := []pdata.Resource{
+				traces.ResourceSpans().At(0).Resource(),
+				metrics.ResourceMetrics().At(0).Resource(),
+				logs.ResourceLogs().At(0).Resource(),
+			}
+
+			for _, res := range resources {
+				res.Attributes().InsertString(tc.labelName, tc.labelValue)
+			}
+
+			m.testConsume(ctx, traces, metrics, logs, nil)
+			m.assertBatchesLen(i + 1)
+			m.assertResource(i, func(res pdata.Resource) {
+				require.Greater(t, res.Attributes().Len(), 0)
+				assertResourceHasStringAttribute(t, res, tc.outLabel, tc.outValue)
+			})
+		})
+	}
+}
+
+func TestPodUID(t *testing.T) {
+	m := newMultiTest(
+		t,
+		NewFactory().CreateDefaultConfig(),
+		nil,
+	)
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		kp.podAssociations = []kube.Association{
+			{
+				From: "resource_attribute",
+				Name: "k8s.pod.uid",
+			},
+		}
+		kp.kc.(*fakeClient).Pods["ef10d10b-2da5-4030-812e-5f45c1531227"] = &kube.Pod{
+			Name: "PodA",
+			Attributes: map[string]string{
+				"k":  "v",
+				"1":  "2",
+				"aa": "b",
+			},
+		}
+	})
+
+	m.testConsume(context.Background(),
+		generateTraces(withPodUID("ef10d10b-2da5-4030-812e-5f45c1531227")),
+		generateMetrics(withPodUID("ef10d10b-2da5-4030-812e-5f45c1531227")),
+		generateLogs(withPodUID("ef10d10b-2da5-4030-812e-5f45c1531227")),
+		nil)
+
+	m.assertBatchesLen(1)
+	m.assertResourceObjectLen(0)
+	m.assertResource(0, func(r pdata.Resource) {
+		require.Greater(t, r.Attributes().Len(), 0)
+		assertResourceHasStringAttribute(t, r, "k8s.pod.uid", "ef10d10b-2da5-4030-812e-5f45c1531227")
+	})
+}
+
 func TestProcessorAddLabels(t *testing.T) {
 	m := newMultiTest(
 		t,
@@ -492,9 +620,18 @@ func TestProcessorAddLabels(t *testing.T) {
 			"pod": "test-12",
 		},
 	}
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		kp.podAssociations = []kube.Association{
+			{
+				From: "connection",
+				Name: "ip",
+			},
+		}
+	})
+
 	for ip, attrs := range tests {
 		m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
-			kp.kc.(*fakeClient).Pods[ip] = &kube.Pod{Attributes: attrs}
+			kp.kc.(*fakeClient).Pods[kube.PodIdentifier(ip)] = &kube.Pod{Attributes: attrs}
 		})
 	}
 
@@ -532,6 +669,12 @@ func TestProcessorPicksUpPassthoughPodIp(t *testing.T) {
 	)
 
 	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		kp.podAssociations = []kube.Association{
+			{
+				From: "resource_attribute",
+				Name: "k8s.pod.ip",
+			},
+		}
 		kp.kc.(*fakeClient).Pods["2.2.2.2"] = &kube.Pod{
 			Name: "PodA",
 			Attributes: map[string]string{
@@ -572,6 +715,82 @@ func TestMetricsProcessorHostname(t *testing.T) {
 	)
 	require.NoError(t, err)
 	kc := kp.kc.(*fakeClient)
+
+	// invalid ip should not be used to lookup k8s pod
+	kc.Pods["invalid-ip"] = &kube.Pod{
+		Name: "PodA",
+		Attributes: map[string]string{
+			"k":  "v",
+			"1":  "2",
+			"aa": "b",
+		},
+	}
+	kc.Pods["3.3.3.3"] = &kube.Pod{
+		Name: "PodA",
+		Attributes: map[string]string{
+			"kk": "vv",
+		},
+	}
+
+	type testCase struct {
+		name, hostname string
+		expectedAttrs  map[string]string
+	}
+
+	testCases := []testCase{
+		{
+			name:     "invalid IP in hostname",
+			hostname: "invalid-ip",
+			expectedAttrs: map[string]string{
+				conventions.AttributeHostName: "invalid-ip",
+			},
+		},
+		{
+			name:     "valid IP in hostname",
+			hostname: "3.3.3.3",
+			expectedAttrs: map[string]string{
+				conventions.AttributeHostName: "3.3.3.3",
+				k8sIPLabelName:                "3.3.3.3",
+				"kk":                          "vv",
+			},
+		},
+	}
+
+	for i, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			metrics := generateMetrics(withHostname(tc.hostname))
+			assert.NoError(t, p.ConsumeMetrics(context.Background(), metrics))
+			require.Len(t, next.AllMetrics(), i+1)
+
+			md := next.AllMetrics()[i]
+			require.Equal(t, 1, md.ResourceMetrics().Len())
+			res := md.ResourceMetrics().At(0).Resource()
+			assert.Equal(t, len(tc.expectedAttrs), res.Attributes().Len())
+			for k, v := range tc.expectedAttrs {
+				assertResourceHasStringAttribute(t, res, k, v)
+			}
+		})
+	}
+
+}
+
+func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
+	next := new(consumertest.MetricsSink)
+	var kp *kubernetesprocessor
+	p, err := newMetricsProcessor(
+		NewFactory().CreateDefaultConfig(),
+		next,
+		WithExtractMetadata(metadataPodName),
+		withExtractKubernetesProcessorInto(&kp),
+	)
+	require.NoError(t, err)
+	kc := kp.kc.(*fakeClient)
+	kp.podAssociations = []kube.Association{
+		{
+			From: "resource_attribute",
+			Name: "host.name",
+		},
+	}
 
 	// invalid ip should not be used to lookup k8s pod
 	kc.Pods["invalid-ip"] = &kube.Pod{

@@ -169,7 +169,7 @@ func createLogsSlice(nanoseconds int) pdata.ResourceLogsSlice {
 	logRecord := ill.Logs().At(0)
 	logRecord.SetName("mysourcetype")
 	logRecord.Body().SetStringVal("value")
-	logRecord.SetTimestamp(pdata.TimestampUnixNano(nanoseconds))
+	logRecord.SetTimestamp(pdata.Timestamp(nanoseconds))
 	logRecord.Attributes().InsertString("host.name", "localhost")
 	logRecord.Attributes().InsertString("service.name", "mysource")
 	logRecord.Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")

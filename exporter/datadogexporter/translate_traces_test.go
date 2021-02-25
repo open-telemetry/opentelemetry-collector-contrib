@@ -40,9 +40,9 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	// The goal of this test is to ensure that each span in
 	// pdata.ResourceSpans is transformed to its *trace.SpanData correctly!
 
-	pdataEndTime := pdata.TimestampUnixNano(endTime.UnixNano())
+	pdataEndTime := pdata.TimestampFromTime(endTime)
 	startTime := endTime.Add(-90 * time.Second)
-	pdataStartTime := pdata.TimestampUnixNano(startTime.UnixNano())
+	pdataStartTime := pdata.TimestampFromTime(startTime)
 
 	rs := pdata.NewResourceSpans()
 	ilss := rs.InstrumentationLibrarySpans()
@@ -274,8 +274,8 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.NotNil(t, datadogPayload.Traces[0].Spans[0].Start)
 	assert.NotNil(t, datadogPayload.Traces[0].Spans[0].Duration)
 
-	pdataMockEndTime := pdata.TimestampUnixNano(mockEndTime.UnixNano())
-	pdataMockStartTime := pdata.TimestampUnixNano(mockEndTime.Add(-90 * time.Second).UnixNano())
+	pdataMockEndTime := pdata.TimestampFromTime(mockEndTime)
+	pdataMockStartTime := pdata.TimestampFromTime(mockEndTime.Add(-90 * time.Second))
 	mockEventsString := fmt.Sprintf("[{\"attributes\":{},\"name\":\"start\",\"time\":%d},{\"attributes\":{\"flag\":false},\"name\":\"end\",\"time\":%d}]", pdataMockStartTime, pdataMockEndTime)
 
 	// ensure that events tag is set if span events exist and contains structured json fields

@@ -114,7 +114,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
-	ts := pdata.TimestampUnixNano(time.Unix(unixSecs, unixNSecs).UnixNano())
+	ts := pdata.TimestampFromTime(time.Unix(unixSecs, unixNSecs))
 
 	doubleVal := 1234.5678
 	doublePt := pdata.NewDoubleDataPoint()
@@ -585,7 +585,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 
 	dps.Resize(1)
 	dp := dps.At(0)
-	dp.SetTimestamp(pdata.TimestampUnixNano(msec * 1e6))
+	dp.SetTimestamp(pdata.Timestamp(msec * 1e6))
 	dp.SetValue(13)
 
 	dp.LabelsMap().InitFromMap(map[string]string{

@@ -57,6 +57,7 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj interfac
 	got := c.Pods["1.1.1.1"]
 	assert.Equal(t, got.Address, "1.1.1.1")
 	assert.Equal(t, got.Name, "podA")
+	assert.Equal(t, got.PodUID, "")
 
 	pod = &api_v1.Pod{}
 	pod.Name = "podB"
@@ -66,15 +67,32 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj interfac
 	got = c.Pods["1.1.1.1"]
 	assert.Equal(t, got.Address, "1.1.1.1")
 	assert.Equal(t, got.Name, "podB")
+	assert.Equal(t, got.PodUID, "")
+
+	pod = &api_v1.Pod{}
+	pod.Name = "podC"
+	pod.Status.PodIP = "2.2.2.2"
+	pod.UID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+	handler(pod)
+	assert.Equal(t, len(c.Pods), 3)
+	got = c.Pods["2.2.2.2"]
+	assert.Equal(t, got.Address, "2.2.2.2")
+	assert.Equal(t, got.Name, "podC")
+	assert.Equal(t, got.PodUID, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+	got = c.Pods["aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"]
+	assert.Equal(t, got.Address, "2.2.2.2")
+	assert.Equal(t, got.Name, "podC")
+	assert.Equal(t, got.PodUID, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+
 }
 
 func TestDefaultClientset(t *testing.T) {
-	c, err := New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, nil, nil)
+	c, err := New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, nil, nil)
 	assert.Error(t, err)
 	assert.Equal(t, "invalid authType for kubernetes: ", err.Error())
 	assert.Nil(t, c)
 
-	c, err = New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, newFakeAPIClientset, nil)
+	c, err = New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, newFakeAPIClientset, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, c)
 }
@@ -85,6 +103,7 @@ func TestBadFilters(t *testing.T) {
 		k8sconfig.APIConfig{},
 		ExtractionRules{},
 		Filters{Fields: []FieldFilter{{Op: selection.Exists}}},
+		[]Association{},
 		newFakeAPIClientset,
 		NewFakeInformer,
 	)
@@ -122,7 +141,7 @@ func TestConstructorErrors(t *testing.T) {
 			gotAPIConfig = c
 			return nil, fmt.Errorf("error creating k8s client")
 		}
-		c, err := New(zap.NewNop(), apiCfg, er, ff, clientProvider, NewFakeInformer)
+		c, err := New(zap.NewNop(), apiCfg, er, ff, []Association{}, clientProvider, NewFakeInformer)
 		assert.Nil(t, c)
 		assert.Error(t, err)
 		assert.Equal(t, err.Error(), "error creating k8s client")
@@ -189,7 +208,7 @@ func TestPodUpdate(t *testing.T) {
 func TestPodDelete(t *testing.T) {
 	c, _ := newTestClient(t)
 	podAddAndUpdateTest(t, c, c.handlePodAdd)
-	assert.Equal(t, len(c.Pods), 1)
+	assert.Equal(t, len(c.Pods), 3)
 	assert.Equal(t, c.Pods["1.1.1.1"].Address, "1.1.1.1")
 
 	// delete empty IP pod
@@ -199,7 +218,7 @@ func TestPodDelete(t *testing.T) {
 	pod := &api_v1.Pod{}
 	pod.Status.PodIP = "9.9.9.9"
 	c.handlePodDelete(pod)
-	assert.Equal(t, len(c.Pods), 1)
+	assert.Equal(t, len(c.Pods), 3)
 	got := c.Pods["1.1.1.1"]
 	assert.Equal(t, got.Address, "1.1.1.1")
 	assert.Equal(t, len(c.deleteQueue), 0)
@@ -209,7 +228,7 @@ func TestPodDelete(t *testing.T) {
 	pod.Status.PodIP = "1.1.1.1"
 	c.handlePodDelete(pod)
 	got = c.Pods["1.1.1.1"]
-	assert.Equal(t, len(c.Pods), 1)
+	assert.Equal(t, len(c.Pods), 3)
 	assert.Equal(t, got.Address, "1.1.1.1")
 	assert.Equal(t, len(c.deleteQueue), 0)
 
@@ -219,11 +238,30 @@ func TestPodDelete(t *testing.T) {
 	pod.Status.PodIP = "1.1.1.1"
 	tsBeforeDelete := time.Now()
 	c.handlePodDelete(pod)
-	assert.Equal(t, len(c.Pods), 1)
+	assert.Equal(t, len(c.Pods), 3)
 	assert.Equal(t, len(c.deleteQueue), 1)
 	deleteRequest := c.deleteQueue[0]
-	assert.Equal(t, deleteRequest.ip, "1.1.1.1")
-	assert.Equal(t, deleteRequest.name, "podB")
+	assert.Equal(t, deleteRequest.id, PodIdentifier("1.1.1.1"))
+	assert.Equal(t, deleteRequest.podName, "podB")
+	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
+	assert.False(t, deleteRequest.ts.After(time.Now()))
+
+	pod = &api_v1.Pod{}
+	pod.Name = "podC"
+	pod.Status.PodIP = "2.2.2.2"
+	pod.UID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+	tsBeforeDelete = time.Now()
+	c.handlePodDelete(pod)
+	assert.Equal(t, len(c.Pods), 3)
+	assert.Equal(t, len(c.deleteQueue), 3)
+	deleteRequest = c.deleteQueue[1]
+	assert.Equal(t, deleteRequest.id, PodIdentifier("2.2.2.2"))
+	assert.Equal(t, deleteRequest.podName, "podC")
+	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
+	assert.False(t, deleteRequest.ts.After(time.Now()))
+	deleteRequest = c.deleteQueue[2]
+	assert.Equal(t, deleteRequest.id, PodIdentifier("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"))
+	assert.Equal(t, deleteRequest.podName, "podC")
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
 }
@@ -231,7 +269,7 @@ func TestPodDelete(t *testing.T) {
 func TestDeleteQueue(t *testing.T) {
 	c, _ := newTestClient(t)
 	podAddAndUpdateTest(t, c, c.handlePodAdd)
-	assert.Equal(t, len(c.Pods), 1)
+	assert.Equal(t, len(c.Pods), 3)
 	assert.Equal(t, c.Pods["1.1.1.1"].Address, "1.1.1.1")
 
 	// delete pod
@@ -239,7 +277,7 @@ func TestDeleteQueue(t *testing.T) {
 	pod.Name = "podB"
 	pod.Status.PodIP = "1.1.1.1"
 	c.handlePodDelete(pod)
-	assert.Equal(t, len(c.Pods), 1)
+	assert.Equal(t, len(c.Pods), 3)
 	assert.Equal(t, len(c.deleteQueue), 1)
 }
 
@@ -285,8 +323,8 @@ func TestGetIgnoredPod(t *testing.T) {
 	pod := &api_v1.Pod{}
 	pod.Status.PodIP = "1.1.1.1"
 	c.handlePodAdd(pod)
-	c.Pods[pod.Status.PodIP].Ignore = true
-	got, ok := c.GetPodByIP(pod.Status.PodIP)
+	c.Pods[PodIdentifier(pod.Status.PodIP)].Ignore = true
+	got, ok := c.GetPod(PodIdentifier(pod.Status.PodIP))
 	assert.Nil(t, got)
 	assert.False(t, ok)
 }
@@ -394,7 +432,7 @@ func TestExtractionRules(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			c.Rules = tc.rules
 			c.handlePodAdd(pod)
-			p, ok := c.GetPodByIP(pod.Status.PodIP)
+			p, ok := c.GetPod(PodIdentifier(pod.Status.PodIP))
 			require.True(t, ok)
 
 			assert.Equal(t, len(tc.attributes), len(p.Attributes))
@@ -637,7 +675,7 @@ func Test_selectorsFromFilters(t *testing.T) {
 func newTestClientWithRulesAndFilters(t *testing.T, e ExtractionRules, f Filters) (*WatchClient, *observer.ObservedLogs) {
 	observedLogger, logs := observer.New(zapcore.WarnLevel)
 	logger := zap.New(observedLogger)
-	c, err := New(logger, k8sconfig.APIConfig{}, e, f, newFakeAPIClientset, NewFakeInformer)
+	c, err := New(logger, k8sconfig.APIConfig{}, e, f, []Association{}, newFakeAPIClientset, NewFakeInformer)
 	require.NoError(t, err)
 	return c.(*WatchClient), logs
 }

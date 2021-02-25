@@ -74,8 +74,8 @@ func TestEncodeSpan(t *testing.T) {
 
 	for _, span := range []pdata.Span{rootSpan, clientSpan, serverSpan} {
 		span.SetTraceID(pdata.NewTraceID(traceID))
-		span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
-		span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+		span.SetStartTime(pdata.TimestampFromTime(startTime))
+		span.SetEndTime(pdata.TimestampFromTime(endTime))
 	}
 
 	for _, span := range []pdata.Span{rootSpan, clientSpan, serverSpan} {
