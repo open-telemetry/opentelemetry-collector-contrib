@@ -41,8 +41,8 @@ type esBulkIndexerResponseItem = esutil7.BulkIndexerResponseItem
 type elasticsearchExporter struct {
 	logger *zap.Logger
 
-	index      string
-	maxRetries int
+	index       string
+	maxAttempts int
 
 	client      *esClientCurrent
 	bulkIndexer esBulkIndexerCurrent
@@ -67,9 +67,9 @@ func newExporter(logger *zap.Logger, cfg *Config) (*elasticsearchExporter, error
 		return nil, err
 	}
 
-	eventRetries := 0
+	maxAttempts := 1
 	if cfg.Retry.Enabled {
-		eventRetries = cfg.Retry.MaxRequests
+		maxAttempts = cfg.Retry.MaxRequests
 	}
 
 	return &elasticsearchExporter{
@@ -77,8 +77,8 @@ func newExporter(logger *zap.Logger, cfg *Config) (*elasticsearchExporter, error
 		client:      client,
 		bulkIndexer: bulkIndexer,
 
-		index:      cfg.Index,
-		maxRetries: eventRetries,
+		index:       cfg.Index,
+		maxAttempts: maxAttempts,
 	}, nil
 }
 
@@ -99,7 +99,7 @@ func (e *elasticsearchExporter) pushEvent(ctx context.Context, document []byte) 
 	// selective ACKing in the bulk response.
 	item.OnFailure = func(ctx context.Context, item esBulkIndexerItem, resp esBulkIndexerResponseItem, err error) {
 		switch {
-		case e.maxRetries < 0 || attempts < e.maxRetries && shouldRetryEvent(resp.Status):
+		case attempts < e.maxAttempts && shouldRetryEvent(resp.Status):
 			e.logger.Debug("Retrying to index event",
 				zap.Int("attempt", attempts),
 				zap.Int("status", resp.Status),
@@ -182,9 +182,19 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 	//  - try to parse address and validate scheme (address must be a valid URL)
 	//  - check if cloud ID is valid
 
-	maxAttempts := config.Retry.MaxRequests
-	if maxAttempts < 1 {
-		maxAttempts = 1
+	// maxRetries configures the maximum number of event publishing attempts,
+	// including the first send and additional retries.
+	// Issue: https://github.com/elastic/go-elasticsearch/issues/232
+	//
+	// The elasticsearch7.Client retry requires the count to be >= 1, otherwise
+	// it defaults to 3. Internally the Clients starts the number of send attempts with 1.
+	// When maxRetries is 1, retries are disabled, meaning that the event is
+	// dropped if the first HTTP request failed.
+	//
+	// Once the issue is resolved we want `maxRetries = config.Retry.MaxRequests - 1`.
+	maxRetries := config.Retry.MaxRequests
+	if maxRetries < 1 || !config.Retry.Enabled {
+		maxRetries = 1
 	}
 
 	return elasticsearch7.NewClient(esConfigCurrent{
@@ -201,8 +211,8 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 		// configure retry behavior
 		RetryOnStatus:        retryOnStatus,
 		DisableRetry:         !config.Retry.Enabled,
-		EnableRetryOnTimeout: !config.Retry.Enabled,
-		MaxRetries:           maxAttempts,
+		EnableRetryOnTimeout: config.Retry.Enabled,
+		MaxRetries:           maxRetries,
 		RetryBackoff:         createElasticsearchBackoffFunc(&config.Retry),
 
 		// configure sniffing

@@ -165,23 +165,55 @@ func TestExporter_PushEvent(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
-	t.Run("no http request retry", func(t *testing.T) {
-		var attempts int64
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			atomic.AddInt64(&attempts, 1)
-			return nil, &httpTestError{message: "oops"}
-		})
+	t.Run("no retry", func(t *testing.T) {
+		configurations := map[string]func(string) *Config{
+			"max_requests limited": withTestExporterConfig(func(cfg *Config) {
+				cfg.Retry.MaxRequests = 1
+				cfg.Retry.InitialInterval = 1 * time.Millisecond
+				cfg.Retry.MaxInterval = 10 * time.Millisecond
+			}),
+			"retry.enabled is false": withTestExporterConfig(func(cfg *Config) {
+				cfg.Retry.Enabled = false
+				cfg.Retry.MaxRequests = 10
+				cfg.Retry.InitialInterval = 1 * time.Millisecond
+				cfg.Retry.MaxInterval = 10 * time.Millisecond
+			}),
+		}
 
-		exporter := newTestExporter(t, server.URL, func(cfg *Config) {
-			cfg.Retry.MaxRequests = 1
-			cfg.Retry.InitialInterval = 1 * time.Millisecond
-			cfg.Retry.MaxInterval = 10 * time.Millisecond
-		})
+		handlers := map[string]func(*int64) bulkHandler{
+			"fail http request": func(attempts *int64) bulkHandler {
+				return func([]itemRequest) ([]itemResponse, error) {
+					atomic.AddInt64(attempts, 1)
+					return nil, &httpTestError{message: "oops"}
+				}
+			},
+			"fail item": func(attempts *int64) bulkHandler {
+				return func(docs []itemRequest) ([]itemResponse, error) {
+					atomic.AddInt64(attempts, 1)
+					return itemsReportStatus(docs, http.StatusTooManyRequests)
+				}
+			},
+		}
 
-		mustSend(t, exporter, `{"message": "test1"}`)
+		for name, handler := range handlers {
+			t.Run(name, func(t *testing.T) {
+				t.Parallel()
+				for name, configurer := range configurations {
+					t.Run(name, func(t *testing.T) {
+						t.Parallel()
+						var attempts int64
+						server := newESTestServer(t, handler(&attempts))
 
-		time.Sleep(200 * time.Millisecond)
-		assert.Equal(t, int64(1), atomic.LoadInt64(&attempts))
+						testConfig := configurer(server.URL)
+						exporter := newTestExporter(t, server.URL, func(cfg *Config) { *cfg = *testConfig })
+						mustSend(t, exporter, `{"message": "test1"}`)
+
+						time.Sleep(200 * time.Millisecond)
+						assert.Equal(t, int64(1), atomic.LoadInt64(&attempts))
+					})
+				}
+			})
+		}
 	})
 
 	t.Run("do not retry invalid request", func(t *testing.T) {
@@ -216,24 +248,6 @@ func TestExporter_PushEvent(t *testing.T) {
 		mustSend(t, exporter, `{"message": "test1"}`)
 
 		rec.WaitItems(1)
-	})
-
-	t.Run("disable retry single item", func(t *testing.T) {
-		var attempts int64
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			atomic.AddInt64(&attempts, 1)
-			return itemsReportStatus(docs, http.StatusTooManyRequests)
-		})
-
-		exporter := newTestExporter(t, server.URL, func(cfg *Config) {
-			cfg.Retry.MaxRequests = 1
-			cfg.Retry.InitialInterval = 1 * time.Millisecond
-			cfg.Retry.MaxInterval = 10 * time.Millisecond
-		})
-		mustSend(t, exporter, `{"message": "test1"}`)
-
-		time.Sleep(200 * time.Millisecond)
-		assert.Equal(t, int64(1), atomic.LoadInt64(&attempts))
 	})
 
 	t.Run("do not retry bad item", func(t *testing.T) {
@@ -295,19 +309,24 @@ func TestExporter_PushEvent(t *testing.T) {
 }
 
 func newTestExporter(t *testing.T, url string, fns ...func(*Config)) *elasticsearchExporter {
-	var configMods []func(*Config)
-	configMods = append(configMods, func(cfg *Config) {
-		cfg.Endpoints = []string{url}
-		cfg.NumWorkers = 1
-		cfg.Flush.Interval = 10 * time.Millisecond
-	})
-	configMods = append(configMods, fns...)
-
-	exporter, err := newExporter(zaptest.NewLogger(t), withDefaultConfig(configMods...))
+	exporter, err := newExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(url))
 	require.NoError(t, err)
 
 	t.Cleanup(func() { exporter.Shutdown(context.TODO()) })
 	return exporter
+}
+
+func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
+	return func(url string) *Config {
+		var configMods []func(*Config)
+		configMods = append(configMods, func(cfg *Config) {
+			cfg.Endpoints = []string{url}
+			cfg.NumWorkers = 1
+			cfg.Flush.Interval = 10 * time.Millisecond
+		})
+		configMods = append(configMods, fns...)
+		return withDefaultConfig(configMods...)
+	}
 }
 
 func mustSend(t *testing.T, exporter *elasticsearchExporter, contents string) {
