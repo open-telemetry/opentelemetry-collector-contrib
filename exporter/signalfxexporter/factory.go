@@ -68,7 +68,7 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 		DeltaTranslationTTL:           3600,
 		Correlation:                   correlation.DefaultConfig(),
-		NonAlphanumericDimensionChars: "_-",
+		NonAlphanumericDimensionChars: "_-.",
 	}
 }
 

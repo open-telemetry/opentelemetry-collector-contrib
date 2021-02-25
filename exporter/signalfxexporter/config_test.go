@@ -160,7 +160,7 @@ func TestLoadConfig(t *testing.T) {
 				"host.name": "host",
 			},
 		},
-		NonAlphanumericDimensionChars: "_-",
+		NonAlphanumericDimensionChars: "_-.",
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
