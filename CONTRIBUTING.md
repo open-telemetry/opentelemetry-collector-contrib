@@ -46,6 +46,8 @@ contributors.
   needed.
 - Add a `replace` directive at the root `go.mod` file so your component is
   included in the build of the contrib executable.
+- Once a new component has been added to the executable, please add the 
+  component to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
 
 ## General Recommendations
 Below are some recommendations that apply to typical components. These are not
