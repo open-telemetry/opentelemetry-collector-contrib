@@ -234,3 +234,18 @@ func WithFilterFields(filters ...FieldFilterConfig) Option {
 		return nil
 	}
 }
+
+// WithExtractPodAssociations allows specifying options to associate pod metadata with incoming resource
+func WithExtractPodAssociations(podAssociations ...PodAssociationConfig) Option {
+	return func(p *kubernetesprocessor) error {
+		associations := make([]kube.Association, 0, len(podAssociations))
+		for _, association := range podAssociations {
+			associations = append(associations, kube.Association{
+				From: association.From,
+				Name: association.Name,
+			})
+		}
+		p.podAssociations = associations
+		return nil
+	}
+}

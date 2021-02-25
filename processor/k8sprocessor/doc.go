@@ -15,13 +15,30 @@
 // Package k8sprocessor allow automatic tagging of spans, metrics and logs with k8s metadata.
 //
 // The processor automatically discovers k8s resources (pods), extracts metadata from them and adds the
-// extracted metadata to the relevant spans, metrics and logs. The processor use the kubernetes API to discover all pods
-// running in a cluster, keeps a record of their IP addresses and interesting metadata. Upon receiving telemetry data,
-// the processor looks for presence of well-known resource attributes which might contain IP address ("ip",
-// "k8s.pod.ip" for logs, metrics or traces and "host.name" for metrics). If this field is not available, or it
-// does not contain a valid IP address, the processor tries to identify the source IP address of the service
-// that sent the telemetry data.
-// If a match is found, the cached metadata is added to the data as resource attributes.
+// extracted metadata to the relevant spans, metrics and logs. The processor uses the kubernetes API to discover all pods
+// running in a cluster, keeps a record of their IP addresses, pod UIDs and interesting metadata.
+// The rules for associating the data passing through the processor (spans, metrics and logs) with specific Pod Metadata are configured via "pod_association" key.
+// It represents a list of rules that are executed in the specified order until the first one is able to do the match.
+// Each rule is specified as a pair of from (representing the rule type) and name (representing the extracted key name).
+// Following rule types are available:
+//   from: "resource_attribute" - allows to specify the attribute name to lookup up in the list of attributes of the received Resource. The specified attribute, if it is present, identifies the Pod that is represented by the Resource.
+//     (the value can contain either IP address or Pod UID)
+//   from: "connection" - takes the IP attribute from connection context (if available) and automatically
+//     associates it with "k8s.pod.ip" attribute
+// Pod association configuration.
+// pod_association:
+//  - from: resource_attribute
+//    name: ip
+//  - from: resource_attribute
+//    name: k8s.pod.ip
+//  - from: resource_attribute
+//    name: host.name
+//  - from: connection
+//    name: ip
+//  - from: resource_attribute
+//    name: k8s.pod.uid
+//
+// If Pod association rules are not configured resources are associated with metadata only by connection's IP Address.
 //
 // RBAC
 //

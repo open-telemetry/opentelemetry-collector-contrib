@@ -27,11 +27,12 @@ import (
 
 // fakeClient is used as a replacement for WatchClient in test cases.
 type fakeClient struct {
-	Pods     map[string]*kube.Pod
-	Rules    kube.ExtractionRules
-	Filters  kube.Filters
-	Informer cache.SharedInformer
-	StopCh   chan struct{}
+	Pods         map[kube.PodIdentifier]*kube.Pod
+	Rules        kube.ExtractionRules
+	Filters      kube.Filters
+	Associations []kube.Association
+	Informer     cache.SharedInformer
+	StopCh       chan struct{}
 }
 
 func selectors() (labels.Selector, fields.Selector) {
@@ -40,22 +41,24 @@ func selectors() (labels.Selector, fields.Selector) {
 }
 
 // newFakeClient instantiates a new FakeClient object and satisfies the ClientProvider type
-func newFakeClient(_ *zap.Logger, apiCfg k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, _ kube.APIClientsetProvider, _ kube.InformerProvider) (kube.Client, error) {
+func newFakeClient(_ *zap.Logger, apiCfg k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, _ kube.APIClientsetProvider, _ kube.InformerProvider) (kube.Client, error) {
 	cs := fake.NewSimpleClientset()
 
 	ls, fs := selectors()
 	return &fakeClient{
-		Pods:     map[string]*kube.Pod{},
-		Rules:    rules,
-		Filters:  filters,
-		Informer: kube.NewFakeInformer(cs, "", ls, fs),
-		StopCh:   make(chan struct{}),
+		Pods:         map[kube.PodIdentifier]*kube.Pod{},
+		Rules:        rules,
+		Filters:      filters,
+		Associations: associations,
+		Informer:     kube.NewFakeInformer(cs, "", ls, fs),
+		StopCh:       make(chan struct{}),
 	}, nil
 }
 
-// GetPodByIP looks up FakeClient.Pods map by the provided string.
-func (f *fakeClient) GetPodByIP(ip string) (*kube.Pod, bool) {
-	p, ok := f.Pods[ip]
+// GetPod looks up FakeClient.Pods map by the provided string,
+// which might represent either IP address or Pod UID.
+func (f *fakeClient) GetPod(identifier kube.PodIdentifier) (*kube.Pod, bool) {
+	p, ok := f.Pods[identifier]
 	return p, ok
 }
 
