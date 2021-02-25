@@ -17,6 +17,7 @@ package dynatraceexporter
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -281,7 +282,7 @@ func Test_exporter_send_BadRequest(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	invalid, err := e.send(context.Background(), []string{})
+	invalid, err := e.send(context.Background(), []string{""})
 	if invalid != 10 {
 		t.Errorf("Expected 10 lines to be reported invalid")
 		return
@@ -310,7 +311,7 @@ func Test_exporter_send_Unauthorized(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	_, err := e.send(context.Background(), []string{})
+	_, err := e.send(context.Background(), []string{""})
 	if !consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to be permanent %v", err)
 		return
@@ -335,7 +336,7 @@ func Test_exporter_send_TooLarge(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	_, err := e.send(context.Background(), []string{})
+	_, err := e.send(context.Background(), []string{""})
 	if !consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to be permanent %v", err)
 		return
@@ -363,13 +364,59 @@ func Test_exporter_send_NotFound(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	_, err := e.send(context.Background(), []string{})
+	_, err := e.send(context.Background(), []string{""})
 	if !consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to be permanent %v", err)
 		return
 	}
 	if !e.isDisabled {
 		t.Error("Expected exporter to be disabled")
+		return
+	}
+}
+
+func Test_exporter_send_chunking(t *testing.T) {
+	sentChunks := 0
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		body, _ := json.Marshal(metricsResponse{
+			Ok:      0,
+			Invalid: 1,
+		})
+		w.Write(body)
+		sentChunks++
+	}))
+	defer ts.Close()
+
+	e := &exporter{
+		logger: zap.NewNop(),
+		cfg: &config.Config{
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+		},
+		client: ts.Client(),
+	}
+
+	batch := make([]string, 1001)
+
+	for i := 0; i < 1001; i++ {
+		batch[i] = fmt.Sprintf("%d", i)
+	}
+
+	invalid, err := e.send(context.Background(), batch)
+	if sentChunks != 2 {
+		t.Errorf("Expected batch to be sent in 2 chunks")
+	}
+	if invalid != 2 {
+		t.Errorf("Expected 2 lines to be reported invalid")
+		return
+	}
+	if consumererror.IsPermanent(err) {
+		t.Errorf("Expected error to not be permanent %v", err)
+		return
+	}
+	if e.isDisabled {
+		t.Error("Expected exporter to not be disabled")
 		return
 	}
 }

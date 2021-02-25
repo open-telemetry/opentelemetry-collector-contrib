@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -31,6 +32,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/serialization"
 )
+
+// The maximum number of metrics that may be sent in a single request to the Dynatrace API
+const maxChunkSize = 1000
 
 // NewExporter exports to a Dynatrace Metrics v2 API
 func newMetricsExporter(params component.ExporterCreateParams, cfg *config.Config) (*exporter, error) {
@@ -125,10 +129,39 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) ([]string, int) {
 	return lines, dropped
 }
 
+var lastLog int64 = 0
+
 // send sends a serialized metric batch to Dynatrace.
 // Returns the number of lines rejected by Dynatrace.
 // An error indicates all lines were dropped regardless of the returned number.
 func (e *exporter) send(ctx context.Context, lines []string) (int, error) {
+	if now := time.Now().Unix(); len(lines) > maxChunkSize && now-lastLog > 60 {
+		e.logger.Warn(fmt.Sprintf("Batch too large. Sending in chunks of %[1]d metrics. If any chunk fails, previous chunks in the batch could be retried by the batch processor. Please set send_batch_max_size to %[1]d or less. Suppressing this log for 60 seconds.", maxChunkSize))
+		lastLog = time.Now().Unix()
+	}
+
+	rejected := 0
+	for i := 0; i < len(lines); i += maxChunkSize {
+		end := i + maxChunkSize
+
+		if end > len(lines) {
+			end = len(lines)
+		}
+
+		batchRejected, err := e.sendBatch(ctx, lines[i:end])
+		rejected += batchRejected
+		if err != nil {
+			return rejected, err
+		}
+	}
+
+	return rejected, nil
+}
+
+// send sends a serialized metric batch to Dynatrace.
+// Returns the number of lines rejected by Dynatrace.
+// An error indicates all lines were dropped regardless of the returned number.
+func (e *exporter) sendBatch(ctx context.Context, lines []string) (int, error) {
 	message := strings.Join(lines, "\n")
 	e.logger.Debug("Sending lines to Dynatrace\n" + message)
 	req, err := http.NewRequestWithContext(ctx, "POST", e.cfg.Endpoint, bytes.NewBufferString(message))
