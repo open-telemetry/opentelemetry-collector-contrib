@@ -16,13 +16,11 @@ package datadogexporter
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/config/configdefs"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/obfuscate"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
-	"github.com/DataDog/datadog-agent/pkg/trace/exportable/stats"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
@@ -33,28 +31,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
 )
 
-// sublayerCalculator is thread safe wrapper of a sublayer
-// calculator. Each trace exporter has a single sublayer
-// calculator that is reused by each push
-type sublayerCalculator struct {
-	sc    *stats.SublayerCalculator
-	mutex sync.Mutex
-}
-
-// ComputeSublayers computes the sublayers of a trace
-func (s *sublayerCalculator) computeSublayers(trace pb.Trace) []stats.SublayerValue {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	return s.sc.ComputeSublayers(trace)
-}
-
 type traceExporter struct {
 	params         component.ExporterCreateParams
 	cfg            *config.Config
 	ctx            context.Context
 	edgeConnection TraceEdgeConnection
 	obfuscator     *obfuscate.Obfuscator
-	calculator     *sublayerCalculator
 	client         *datadog.Client
 }
 
@@ -85,14 +67,12 @@ func newTraceExporter(ctx context.Context, params component.ExporterCreateParams
 	// https://github.com/DataDog/datadog-serverless-functions/blob/11f170eac105d66be30f18eda09eca791bc0d31b/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L43
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
 
-	calculator := &sublayerCalculator{sc: stats.NewSublayerCalculator()}
 	exporter := &traceExporter{
 		params:         params,
 		cfg:            cfg,
 		ctx:            ctx,
 		edgeConnection: createTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key, params.ApplicationStartInfo),
 		obfuscator:     obfuscator,
-		calculator:     calculator,
 		client:         client,
 	}
 
@@ -131,7 +111,7 @@ func (exp *traceExporter) pushTraceData(
 	// convert traces to datadog traces and group trace payloads by env
 	// we largely apply the same logic as the serverless implementation, simplified a bit
 	// https://github.com/DataDog/datadog-serverless-functions/blob/f5c3aedfec5ba223b11b76a4239fcbf35ec7d045/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L61-L83
-	ddTraces, ms := convertToDatadogTd(td, exp.calculator, exp.cfg)
+	ddTraces, ms := convertToDatadogTd(td, exp.cfg)
 
 	// group the traces by env to reduce the number of flushes
 	aggregatedTraces := aggregateTracePayloadsByEnv(ddTraces)
@@ -163,7 +143,7 @@ func (exp *traceExporter) pushWithRetry(ctx context.Context, ddTracePayload *pb.
 	}
 
 	// this is for generating metrics like hits, errors, and latency, it uses a separate endpoint than Traces
-	stats := computeAPMStats(ddTracePayload, exp.calculator, pushTime)
+	stats := computeAPMStats(ddTracePayload, pushTime)
 	errStats := exp.edgeConnection.SendStats(context.Background(), stats, maxRetries)
 
 	if errStats != nil {

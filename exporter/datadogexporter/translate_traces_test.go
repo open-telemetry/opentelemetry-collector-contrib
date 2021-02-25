@@ -121,25 +121,19 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	return rs
 }
 
-func newSublayerCalculator() *sublayerCalculator {
-	return &sublayerCalculator{sc: stats.NewSublayerCalculator()}
-}
-
 func TestConvertToDatadogTd(t *testing.T) {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
-	calculator := newSublayerCalculator()
 
-	outputTraces, runningMetrics := convertToDatadogTd(traces, calculator, &config.Config{})
+	outputTraces, runningMetrics := convertToDatadogTd(traces, &config.Config{})
 	assert.Equal(t, 1, len(outputTraces))
 	assert.Equal(t, 1, len(runningMetrics))
 }
 
 func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 	traces := pdata.NewTraces()
-	calculator := newSublayerCalculator()
 
-	outputTraces, runningMetrics := convertToDatadogTd(traces, calculator, &config.Config{})
+	outputTraces, runningMetrics := convertToDatadogTd(traces, &config.Config{})
 	assert.Equal(t, 0, len(outputTraces))
 	assert.Equal(t, 0, len(runningMetrics))
 }
@@ -162,7 +156,7 @@ func TestRunningTraces(t *testing.T) {
 	resAttrs = rt.Resource().Attributes()
 	resAttrs.Insert(metadata.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-2"))
 
-	_, runningMetrics := convertToDatadogTd(td, newSublayerCalculator(), &config.Config{})
+	_, runningMetrics := convertToDatadogTd(td, &config.Config{})
 
 	runningHostnames := []string{}
 	for _, metric := range runningMetrics {
@@ -180,7 +174,6 @@ func TestRunningTraces(t *testing.T) {
 }
 
 func TestObfuscation(t *testing.T) {
-	calculator := newSublayerCalculator()
 
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
@@ -202,7 +195,7 @@ func TestObfuscation(t *testing.T) {
 	// of them is currently not supported.
 	span.Attributes().InsertString("testinfo?=123", "http.route")
 
-	outputTraces, _ := convertToDatadogTd(traces, calculator, &config.Config{})
+	outputTraces, _ := convertToDatadogTd(traces, &config.Config{})
 	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
 
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
@@ -214,7 +207,6 @@ func TestObfuscation(t *testing.T) {
 
 func TestBasicTracesTranslation(t *testing.T) {
 	hostname := "testhostname"
-	calculator := newSublayerCalculator()
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -227,7 +219,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeUnset, false, mockEndTime)
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{})
+	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &config.Config{})
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -259,7 +251,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 
 	// ensure that span.meta and span.metrics pick up attibutes, instrumentation ibrary and resource attribs
 	assert.Equal(t, 10, len(datadogPayload.Traces[0].Spans[0].Meta))
-	assert.Equal(t, 1, len(datadogPayload.Traces[0].Spans[0].Metrics))
+	assert.Equal(t, 0, len(datadogPayload.Traces[0].Spans[0].Metrics))
 
 	// ensure that span error is based on otlp span status
 	assert.Equal(t, int32(0), datadogPayload.Traces[0].Spans[0].Error)
@@ -284,7 +276,6 @@ func TestBasicTracesTranslation(t *testing.T) {
 
 func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	hostname := "testhostname"
-	calculator := newSublayerCalculator()
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -304,7 +295,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 		},
 	}
 
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
+	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &cfg)
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -336,7 +327,6 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 // Ensures that if more than one error event occurs in a span, the last one is used for translation
 func TestTracesTranslationErrorsFromEventsUsesLast(t *testing.T) {
 	hostname := "testhostname"
-	calculator := newSublayerCalculator()
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -381,7 +371,7 @@ func TestTracesTranslationErrorsFromEventsUsesLast(t *testing.T) {
 		},
 	}
 
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
+	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &cfg)
 
 	// Ensure the error type is copied over from the last error event logged
 	assert.Equal(t, attribs[conventions.AttributeExceptionType].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorType])
@@ -396,7 +386,6 @@ func TestTracesTranslationErrorsFromEventsUsesLast(t *testing.T) {
 // Ensures that if the first or last event in the list is the error, that translation still behaves properly
 func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 	hostname := "testhostname"
-	calculator := newSublayerCalculator()
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -435,7 +424,7 @@ func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 		},
 	}
 
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
+	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &cfg)
 
 	// Ensure the error type is copied over
 	assert.Equal(t, attribs[conventions.AttributeExceptionType].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorType])
@@ -471,7 +460,6 @@ func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 
 func TestTracesTranslationOkStatus(t *testing.T) {
 	hostname := "testhostname"
-	calculator := newSublayerCalculator()
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -491,7 +479,7 @@ func TestTracesTranslationOkStatus(t *testing.T) {
 		},
 	}
 
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
+	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &cfg)
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -520,7 +508,6 @@ func TestTracesTranslationOkStatus(t *testing.T) {
 // ensure that the datadog span uses the configured unified service tags
 func TestTracesTranslationConfig(t *testing.T) {
 	hostname := "testhostname"
-	calculator := newSublayerCalculator()
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -541,7 +528,7 @@ func TestTracesTranslationConfig(t *testing.T) {
 	}
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
+	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &cfg)
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -567,7 +554,6 @@ func TestTracesTranslationConfig(t *testing.T) {
 // ensure that the translation returns early if no resource instrumentation library spans
 func TestTracesTranslationNoIls(t *testing.T) {
 	hostname := "testhostname"
-	calculator := newSublayerCalculator()
 
 	rs := pdata.NewResourceSpans()
 
@@ -579,7 +565,7 @@ func TestTracesTranslationNoIls(t *testing.T) {
 	}
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
+	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &cfg)
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -591,7 +577,6 @@ func TestTracesTranslationNoIls(t *testing.T) {
 // ensure that the translation returns early if no resource instrumentation library spans
 func TestTracesTranslationInvalidService(t *testing.T) {
 	hostname := "testhostname"
-	calculator := newSublayerCalculator()
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -629,9 +614,9 @@ func TestTracesTranslationInvalidService(t *testing.T) {
 	}
 
 	// translate mocks to datadog traces
-	datadogPayloadInvalidService := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfgInvalidService)
-	datadogPayloadEmptyService := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfgEmptyService)
-	datadogPayloadStartWithInvalidService := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfgStartWithInvalidService)
+	datadogPayloadInvalidService := resourceSpansToDatadogSpans(rs, hostname, &cfgInvalidService)
+	datadogPayloadEmptyService := resourceSpansToDatadogSpans(rs, hostname, &cfgEmptyService)
+	datadogPayloadStartWithInvalidService := resourceSpansToDatadogSpans(rs, hostname, &cfgStartWithInvalidService)
 
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayloadInvalidService)
@@ -952,7 +937,6 @@ func TestTracePayloadAggr(t *testing.T) {
 // ensure that stats payloads get tagged with version tag
 func TestStatsAggregations(t *testing.T) {
 	hostname := "testhostname"
-	calculator := newSublayerCalculator()
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -968,9 +952,9 @@ func TestStatsAggregations(t *testing.T) {
 	// translate mocks to datadog traces
 	cfg := config.Config{}
 
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg)
+	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &cfg)
 
-	statsOutput := computeAPMStats(&datadogPayload, calculator, time.Now().UTC().UnixNano())
+	statsOutput := computeAPMStats(&datadogPayload, time.Now().UTC().UnixNano())
 
 	var statsVersionTag stats.Tag
 
