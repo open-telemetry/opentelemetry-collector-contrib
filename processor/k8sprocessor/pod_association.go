@@ -26,8 +26,9 @@ import (
 )
 
 // extractPodIds extracts IP and pod UID from attributes or request context.
-// It returns a value pair containing configured label and IP Address and/or Pod UID
-func extractPodIds(ctx context.Context, attrs pdata.AttributeMap, associations []kube.Association) (string, kube.PodIdentifier) {
+// It returns a value pair containing configured label and IP Address and/or Pod UID.
+// If empty value in return it means that attributes does not contains configured label to match resources for Pod.
+func extractPodID(ctx context.Context, attrs pdata.AttributeMap, associations []kube.Association) (podIdentifierKey string, podIdentifierValue kube.PodIdentifier) {
 	hostname := stringAttributeFromMap(attrs, conventions.AttributeHostName)
 	var connectionIP kube.PodIdentifier
 	if c, ok := client.FromContext(ctx); ok {
@@ -38,35 +39,46 @@ func extractPodIds(ctx context.Context, attrs pdata.AttributeMap, associations [
 		var podIP, labelIP kube.PodIdentifier
 		podIP = kube.PodIdentifier(stringAttributeFromMap(attrs, k8sIPLabelName))
 		labelIP = kube.PodIdentifier(stringAttributeFromMap(attrs, clientIPLabelName))
-
+		podIdentifierKey = k8sIPLabelName
 		if podIP != "" {
-			return k8sIPLabelName, podIP
+			podIdentifierValue = podIP
+			return
 		} else if labelIP != "" {
-			return k8sIPLabelName, labelIP
+			podIdentifierValue = labelIP
+			return
 		} else if connectionIP != "" {
-			return k8sIPLabelName, connectionIP
+			podIdentifierValue = connectionIP
+			return
 		} else if net.ParseIP(hostname) != nil {
-			return k8sIPLabelName, kube.PodIdentifier(hostname)
+			podIdentifierValue = kube.PodIdentifier(hostname)
+			return
 		}
-		return "", kube.PodIdentifier("")
+		podIdentifierKey = ""
+		return
 	}
 
 	for _, asso := range associations {
 		// If association configured to take IP address from connection
 		if asso.From == "connection" && connectionIP != "" {
-			return k8sIPLabelName, connectionIP
-		} else if asso.From == "labels" { // If association configured by labels
+			podIdentifierKey = k8sIPLabelName
+			podIdentifierValue = connectionIP
+			return
+		} else if asso.From == "resource_attribute" { // If association configured by resource_attribute
 			// In k8s environment, host.name label set to a pod IP address.
 			// If the value doesn't represent an IP address, we skip it.
 			if asso.Name == conventions.AttributeHostName {
 				if net.ParseIP(hostname) != nil {
-					return k8sIPLabelName, kube.PodIdentifier(hostname)
+					podIdentifierKey = k8sIPLabelName
+					podIdentifierValue = kube.PodIdentifier(hostname)
+					return
 				}
 			} else {
-				// Extract values based od configured labels.
+				// Extract values based on configured resource_attribute.
 				attributeValue := stringAttributeFromMap(attrs, asso.Name)
 				if attributeValue != "" {
-					return asso.Name, kube.PodIdentifier(attributeValue)
+					podIdentifierKey = asso.Name
+					podIdentifierValue = kube.PodIdentifier(attributeValue)
+					return
 				}
 			}
 		}

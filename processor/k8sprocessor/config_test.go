@@ -91,15 +91,15 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Association: []PodAssociationConfig{
 				{
-					From: "labels",
+					From: "resource_attribute",
 					Name: "ip",
 				},
 				{
-					From: "labels",
+					From: "resource_attribute",
 					Name: "k8s.pod.ip",
 				},
 				{
-					From: "labels",
+					From: "resource_attribute",
 					Name: "host.name",
 				},
 				{
@@ -107,8 +107,8 @@ func TestLoadConfig(t *testing.T) {
 					Name: "ip",
 				},
 				{
-					From: "labels",
-					Name: "pod_uid",
+					From: "resource_attribute",
+					Name: "k8s.pod.uid",
 				},
 			},
 		})

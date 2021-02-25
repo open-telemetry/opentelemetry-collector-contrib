@@ -27,16 +27,16 @@
 //     associates it with "k8s.pod.ip" attribute
 // Pod association configuration.
 // pod_association:
-//  - from: labels
+//  - from: resource_attribute
 //    name: ip
-//  - from: labels
+//  - from: resource_attribute
 //    name: k8s.pod.ip
-//  - from: labels
+//  - from: resource_attribute
 //    name: host.name
 //  - from: connection
 //    name: ip
-//  - from: labels
-//    name: pod_uid
+//  - from: resource_attribute
+//    name: k8s.pod.uid
 //
 // If Pod association rules are not configured resources are associated with metadata only by connection's IP Address.
 //

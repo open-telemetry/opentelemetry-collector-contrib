@@ -288,7 +288,7 @@ func withHostname(hostname string) generateResourceFunc {
 
 func withPodUID(uid string) generateResourceFunc {
 	return func(res pdata.Resource) {
-		res.Attributes().InsertString("pod_uid", uid)
+		res.Attributes().InsertString("k8s.pod.uid", uid)
 	}
 }
 
@@ -521,15 +521,15 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
 		kp.podAssociations = []kube.Association{
 			{
-				From: "labels",
+				From: "resource_attribute",
 				Name: "k8s.pod.ip",
 			},
 			{
-				From: "labels",
+				From: "resource_attribute",
 				Name: "ip",
 			},
 			{
-				From: "labels",
+				From: "resource_attribute",
 				Name: "host.name",
 			},
 		}
@@ -575,8 +575,8 @@ func TestPodUID(t *testing.T) {
 	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
 		kp.podAssociations = []kube.Association{
 			{
-				From: "labels",
-				Name: "pod_uid",
+				From: "resource_attribute",
+				Name: "k8s.pod.uid",
 			},
 		}
 		kp.kc.(*fakeClient).Pods["ef10d10b-2da5-4030-812e-5f45c1531227"] = &kube.Pod{
@@ -599,7 +599,7 @@ func TestPodUID(t *testing.T) {
 	m.assertResourceObjectLen(0)
 	m.assertResource(0, func(r pdata.Resource) {
 		require.Greater(t, r.Attributes().Len(), 0)
-		assertResourceHasStringAttribute(t, r, "pod_uid", "ef10d10b-2da5-4030-812e-5f45c1531227")
+		assertResourceHasStringAttribute(t, r, "k8s.pod.uid", "ef10d10b-2da5-4030-812e-5f45c1531227")
 	})
 }
 
@@ -671,7 +671,7 @@ func TestProcessorPicksUpPassthoughPodIp(t *testing.T) {
 	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
 		kp.podAssociations = []kube.Association{
 			{
-				From: "labels",
+				From: "resource_attribute",
 				Name: "k8s.pod.ip",
 			},
 		}
@@ -787,7 +787,7 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 	kc := kp.kc.(*fakeClient)
 	kp.podAssociations = []kube.Association{
 		{
-			From: "labels",
+			From: "resource_attribute",
 			Name: "host.name",
 		},
 	}
