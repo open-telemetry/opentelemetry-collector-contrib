@@ -2,8 +2,8 @@
 
 **Status: beta**
 
-The `ecsobserver` uses the ECS/EC2 API to discover prometheus scrape target from all running tasks and filter them based
-on service names, task definitions and container labels.
+The `ecsobserver` uses the ECS/EC2 API to discover prometheus scrape targets from all running tasks and filter them
+based on service names, task definitions and container labels.
 
 ## Config
 
@@ -54,20 +54,20 @@ service:
   extensions: [ ecs_observer ]
 ```
 
-| Name             |           | Description                                                                                      |
-|------------------|-----------|--------------------------------------------------------------------------------------------------|
-| cluster_name     | Mandatory | target ECS cluster name for service discovery                                                    |
-| cluster_region   | Mandatory | target ECS cluster's AWS region name                                                             |
-| refresh_interval | Optional  | how often to look for changes in endpoints (default: 10s)                                        |
-| result_file      | Optional  | path of YAML file for the scrape target results. When enabled, the observer always returns empty |
-| services         | Optional  | list of service name patterns [detail](#ecs-service-name-based-filter-configuration)             |
-| task_definitions | Optional  | list of task definition arn patterns [detail](#ecs-task-definition-based-filter-configuration)   |
-| docker_labels    | Optional  | list of docker labels [detail](#docker-label-based-filter-configuration)                         |
+| Name             |           | Description                                                                                                         |
+|------------------|-----------|---------------------------------------------------------------------------------------------------------------------|
+| cluster_name     | Mandatory | target ECS cluster name for service discovery                                                                       |
+| cluster_region   | Mandatory | target ECS cluster's AWS region name                                                                                |
+| refresh_interval | Optional  | how often to look for changes in endpoints (default: 10s)                                                           |
+| result_file      | Mandatory | path of YAML file to write scrape target results. NOTE: the observer always returns empty in initial implementation |
+| services         | Optional  | list of service name patterns [detail](#ecs-service-name-based-filter-configuration)                                |
+| task_definitions | Optional  | list of task definition arn patterns [detail](#ecs-task-definition-based-filter-configuration)                      |
+| docker_labels    | Optional  | list of docker labels [detail](#docker-label-based-filter-configuration)                                            |
 
 ### Output configuration
 
 `result_file` specifies where to write the discovered targets. It MUST match the files defined in `file_sd_configs` for
-prometheus receiver.
+prometheus receiver. See [output format](#output-format) for the detailed format.
 
 ### Filters configuration
 
@@ -90,7 +90,7 @@ ecs_observer:
       job_name: guilty-spark
   task_definitions:
     - arn_pattern: '*memcached.*'
-    - arn_pattern: '^proxy-.*$`
+    - arn_pattern: '^proxy-.*$'
       metrics_ports:
         - 9113
         - 9090
@@ -129,10 +129,14 @@ Specify label keys to look up value
 
 ### Authentication
 
-Currently, only [ECS task role](https://docs.aws.amazon.com/AmazonECS/latest/userguide/task-iam-roles.html) is
-supported. You need to deploy the collector as an ECS task/service with
+It uses the default credential chain, on ECS it is advised to
+use  [ECS task role](https://docs.aws.amazon.com/AmazonECS/latest/userguide/task-iam-roles.html). You need to deploy the
+collector as an ECS task/service with
 the [following permissions](https://docs.amazonaws.cn/en_us/AmazonCloudWatch/latest/monitoring/ContainerInsights-Prometheus-install-ECS.html#ContainerInsights-Prometheus-Setup-ECS-IAM)
 .
+
+**EC2** access is required for getting private IP for ECS EC2. However, EC2 permission can be removed if you are only
+using Fargate because task ip comes from awsvpc instead of host.
 
 ```text
 ec2:DescribeInstances
@@ -148,6 +152,7 @@ ecs:DescribeTaskDefinition
 
 - [Discovery](#discovery-mechanism)
 - [Notify receiver](#notify-prometheus-receiver-of-discovered-targets)
+- [Output format](#output-format)
 
 ### Discovery mechanism
 
@@ -242,23 +247,119 @@ Because both the collector and prometheus is written in Go, we can call `discove
 config for prometheus (like other in tree plugins like kubernetes). The drawback is the configuration is now under
 prometheus instead of extension and can cause confusion.
 
+## Output Format
+
+The format is based
+on [cloudwatch agent](https://github.com/aws/amazon-cloudwatch-agent/tree/master/internal/ecsservicediscovery#example-result)
+, [ec2 sd](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#ec2_sd_config)
+and [kubernetes sd](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#kubernetes_sd_config).
+Task and labels from task definition are always included. EC2 info is only included when task is running on ECS EC2 (
+i.e. not on [Fargate](https://aws.amazon.com/fargate/)).
+
+Unlike cloudwatch agent, all the [additional labels](#additional-labels) starts with `__meta_ecs_` prefix. If they are
+not renamed during [relabel](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#relabel_config),
+they will all get dropped in prometheus receiver and won't pass down along the pipeline.
+
+The number of dimensions supported by [AWS EMF exporter](../../../exporter/awsemfexporter) is limited by its backend.
+The labels can be modified/filtered at different stages, prometheus receiver
+relabel, [Metrics Transform Processor](../../../processor/metricstransformprocessor)
+and [EMF exporter Metric Declaration](../../../exporter/awsemfexporter/README.md#metric_declaration)
+
+### Essential Labels
+
+Required for prometheus to scrape the target.
+
+| Label Name          | Source                       | Type   | Description                                                               |
+|---------------------|------------------------------|--------|---------------------------------------------------------------------------|
+| `__address__`       | ECS Task and TaskDefinition  | string | `host:port` `host` is private ip from ECS Task, `port` is the mapped port |
+| ` __metrics_path__` | ECS TaskDefinition or Config | string | Default is `/metrics`, changes based on config/label                      |
+| `job`               | ECS TaskDefinition or Config | string | Name for scrape job                                                       |
+
+### Additional Labels
+
+Additional information from ECS and EC2.
+
+| Label Name                                   | Source             | Type   | Description                                                                                                                                                                                                   |
+|----------------------------------------------|--------------------|--------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `__meta_ecs_task_definition_family`          | ECS TaskDefinition | string | Name for registered task definition                                                                                                                                                                           |
+| `__meta_ecs_task_definition_revision`        | ECS TaskDefinition | int    | Version of the task definition being used to run the task                                                                                                                                                     |
+| `__meta_ecs_task_launch_type`                | ECS Task           | string | `EC2` or `FARGATE`                                                                                                                                                                                            |
+| `__meta_ecs_task_group`                      | ECS Task           | string | [Task Group](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-placement-constraints.html#task-groups) is `service:my-service-name` or specified when launching task directly                  |
+| `__meta_ecs_task_tag_<tagkey>`               | ECS Task           | string | Tags specified in [CreateService](https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_CreateService.html) and [RunTask](https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_RunTask.html) |
+| `__meta_ecs_task_container_name`             | ECS Task           | string | Name of container                                                                                                                                                                                             |
+| `__meta_ecs_task_container_label_<labelkey>` | ECS TaskDefinition | string | Docker label specified in task definition                                                                                                                                                                     |
+| `__meta_ecs_task_health_status`              | ECS Task           | string | `HEALTHY` or `UNHEALTHY`. `UNKNOWN` if not configured                                                                                                                                                         |
+| `__meta_ecs_ec2_instance_id`                 | EC2                | string | EC2 instance id for `EC2` launch type                                                                                                                                                                         |
+| `__meta_ecs_ec2_instance_type`               | EC2                | string | EC2 instance type e.g. `t3.medium`, `m6g.xlarge`                                                                                                                                                              |
+| `__meta_ecs_ec2_tag_<tagkey>`                | EC2                | string | Tags specified when creating the EC2 instance                                                                                                                                                                 |
+| `__meta_ecs_ec2_vpc_id`                      | EC2                | string | ID of VPC e.g. `vpc-abcdefeg`                                                                                                                                                                                 |
+| `__meta_ecs_ec2_private_ip`                  | EC2                | string | Private IP                                                                                                                                                                                                    |
+| `__meta_ecs_ec2_public_ip`                   | EC2                | string | Public IP, if available                                                                                                                                                                                       |
+
+### Serialization
+
+- Labels, all the label value are encoded as string. (e.g. strconv.Itoa(123)).
+- Go struct, all the non string types are converted. labels and tags are passed as `map[string]string`
+  instead of `[]KeyValue`
+- Prometheus target, each `taget`
+
+```go
+// PrometheusECSTarget contains address and labels extracted from a running ECS task 
+// and its underlying EC2 instance (if available).
+// 
+// For serialization
+// - FromLabels and ToLabels converts it between map[string]string.
+// - FromTargetYAML and ToTargetYAML converts it between prometheus file discovery format in YAML. 
+// - FromTargetJSON and ToTargetJSON converts it between prometheus file discovery format in JSON. 
+type PrometheusECSTarget struct {
+	Address                string            `json:"address"`
+	MetricsPath            string            `json:"metrics_path"`
+	Job                    string            `json:"job"`
+	TaskDefinitionFamily   string            `json:"task_definition_family"`
+	TaskDefinitionRevision int               `json:"task_definition_revision"`
+	TaskLaunchType         string            `json:"task_launch_type"`
+	TaskGroup              string            `json:"task_group"`
+	TaskTags               map[string]string `json:"task_tags"`
+	ContainerName          string            `json:"container_name"`
+	ContainerLabels        map[string]string `json:"container_labels"`
+	HealthStatus           string            `json:"health_status"`
+	EC2InstanceId          string            `json:"ec2_instance_id"`
+	EC2InstanceType        string            `json:"ec2_instance_type"`
+	EC2Tags                map[string]string `json:"ec2_tags"`
+	EC2VPCId               string            `json:"ec2_vpc_id"`
+	EC2PrivateIP           string            `json:"ec2_private_ip"`
+	EC2PublicIP            string            `json:"ec2_public_ip"`
+}
+```
+
+### Delta
+
+Delta is **not** supported because there is no watch API in ECS (unlike k8s, see [known issues](#known-issues)). The
+output always contains all the targets. Caller/Consumer need to implement their own logic to calculate the targets diff
+if they only want to process new targets.
+
 ## Known issues
 
 - There is no list watch API in ECS (unlike k8s), and we fetch ALL the tasks and filter it locally. If the poll interval
-  is too short or there are multiple instances doing discovery, you may hit the (undocumented) API rate limit.
+  is too short or there are multiple instances doing discovery, you may hit the (undocumented) API rate limit. In memory
+  caching is implemented to reduce calls for task definition and ec2.
 - A single collector may not be able to handle a large cluster, you can use `hashmod`
   in [relabel_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#relabel_config) to do
-  static sharding. However, it may trigger the rate limit on AWS API as each shard is fetching ALL the tasks during
-  discovery regardless of mod factor.
+  static sharding. However, too many collectors may trigger the rate limit on AWS API as each shard is fetching ALL the
+  tasks during discovery regardless of number of shards.
 
 ## Implementation
 
 The implementation has two parts, core ecs service discovery logic and adapter for notifying discovery results.
 
+### Packages
+
 - `extension/observer/ecsobserver` adapter to implement the observer interface
 - `internal/awsecs` polling AWS ECS and EC2 API and filter based on config
 - `internal/awsconfig` the shared aws specific config (e.g. init sdk client), which eventually should be shared by every
   package that calls AWS API (e.g. emf, xray).
+
+### Flow
 
 The pseudo code showing the overall flow.
 
@@ -288,43 +389,69 @@ NewECSSD() {
 }
 ```
 
-### Output format
+### Metrics
 
-In cloudwatch agent's implementation, `__meta__` label is not used and all the ECS and EC2 information are attached as
-normal label. TODO(pingleig): maybe we should change this behaviour to align with other service discovery
-implementations.
+Following metrics are logged at debug level. TODO(pingleig): Is there a way for otel plugins to export custom metrics to
+otel's own /metrics.
 
-```yaml
-- targets:
-    - 10.6.1.95:32785
-  labels:
-    __metrics_path__: /metrics
-    ECS_PROMETHEUS_EXPORTER_PORT_SUBSET_B: "9406"
-    ECS_PROMETHEUS_JOB_NAME: demo-jar-ec2-bridge-subset-b-dynamic
-    ECS_PROMETHEUS_METRICS_PATH: /metrics
-    InstanceType: t3.medium
-    LaunchType: EC2
-    SubnetId: subnet-0347624eeea6c5969
-    TaskDefinitionFamily: demo-jar-ec2-bridge-dynamic-port-subset-b
-    TaskGroup: family:demo-jar-ec2-bridge-dynamic-port-subset-b
-    TaskRevision: "7"
-    VpcId: vpc-033b021cd7ecbcedb
-    container_name: demo-jar-ec2-bridge-dynamic-port-subset-b
-    job: task_def_2
-- targets:
-    - 10.6.1.95:32783
-  labels:
-    __metrics_path__: /metrics
-    ECS_PROMETHEUS_EXPORTER_PORT_SUBSET_B: "9406"
-    ECS_PROMETHEUS_JOB_NAME: demo-jar-ec2-bridge-subset-b-dynamic
-    ECS_PROMETHEUS_METRICS_PATH: /metrics
-    InstanceType: t3.medium
-    LaunchType: EC2
-    SubnetId: subnet-0347624eeea6c5969
-    TaskDefinitionFamily: demo-jar-ec2-bridge-dynamic-port-subset-b
-    TaskGroup: family:demo-jar-ec2-bridge-dynamic-port-subset-b
-    TaskRevision: "7"
-    VpcId: vpc-033b021cd7ecbcedb
-    container_name: demo-jar-ec2-bridge-dynamic-port-subset-b
-    job: task_def_2
+| Name                                 | Type | Description                                                                                                                                                    |
+|--------------------------------------|------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `discoverd_targets`                  | int  | Number of targets exported                                                                                                                                     |
+| `discoverd_taskss`                   | int  | Number of tasks that contains scrape target, should be smaller than targets unless each task only contains one target                                          |
+| `ignored_tasks`                      | int  | Tasks ignored by filter, `discoverd_tasks` and  `ignored_tasks` should add up to `api_ecs_list_task_results`, one exception is API paging failed in the middle |
+| `targets_matched_by_service`         | int  | ECS Service name based filter                                                                                                                                  |
+| `targets_matched_by_task_definition` | int  | ECS TaskDefinition based filter                                                                                                                                |
+| `targets_matched_by_docker_label`    | int  | ECS DockerLabel based filter                                                                                                                                   |
+| `target_error_noip`                  | int  | Export failures because private ip not found                                                                                                                   |
+| `api_ecs_list_task_results`          | int  | Total number of tasks returned from ECS ListTask API                                                                                                           |
+| `api_ecs_list_service_results`       | int  | Total number of services returned from ECS ListService API                                                                                                     |
+| `api_error_auth`                     | int  | Total number of error triggered by permission                                                                                                                  |
+| `api_error_rate_limit`               | int  | Total number of error triggered by rate limit                                                                                                                  |
+| `cache_size_container_instances`     | int  | Cached ECS ContainerInstance                                                                                                                                   |
+| `cache_hit_container_instance`       | int  | Cache hit during the latest polling                                                                                                                            |
+| `cache_size_ec2_instance`            | int  | Cached EC2 Instance                                                                                                                                            |
+| `cache_hit_ec2_instance`             | int  | Cache hit during the latest polling                                                                                                                            |
+
+### Error Handling
+
+- Auth error will be logged, but the extension will not fail as the IAM role can be updated and take effect without
+  restarting the ECS task.
+- If errors happen in the middle (e.g. rate limit), the discovery result will be merged with previous success runs to
+  avoid discarding active targets, though it may keep some stale targets as well.
+
+### Unit Test
+
+A mock ECS and EC2 server will be implemented in `internal/awsecs`. The rough implementation will be like the following:
+
+```go
+type ECSServiceMock struct {
+	definitions map[string]*ecs.TaskDefinition
+	tasks       map[string]*ecs.Task
+	services    map[string]*ecs.Service
+	taskToEC2   map[string]*ec2.Instance
+}
+
+// RunOnEC2 registers the task definition and instance.
+// It creates a task and sets it to running.
+// The returned task pointer can be modified directly and will be reflected in mocked AWS API call results.
+func (e *ECSServiceMock) RunOnEC2(def *ecs.TaskDefinition, instance *ec2.Instance) *ecs.Task {
+	panic("impl")
+}
+
+// RunOnFargate is similar to RunOnEC2 except instance is not needed as fargate is 'serverless'.
+// A unique private ip will be generated to simulate awsvpc.
+func (e *ECSServiceMock) RunOnFargate(def *ecs.TaskDefinition) *ecs.Task {
+	panic("impl")
+}
 ```
+
+### Integration Test
+
+Will be implemented in [AOT Testing Framework](https://github.com/aws-observability/aws-otel-test-framework) to run
+against actual ECS service on both EC2 and Fargate.
+
+## Changelog
+
+- 2021-02-24 Updated doc by @pingleig
+- 2020-12-29 Initial implementation by [Raphael](https://github.com/theRoughCode)
+  in [#1920](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/1920)
