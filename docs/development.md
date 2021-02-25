@@ -10,16 +10,6 @@ git clone git@github.com:observiq/stanza.git
 cd $GOPATH/src/github.com/open-telemetry/opentelemetry-log-collection
 ```
 
-## Building
-
-To build the agent for another OS, run one of the following: 
-```
-make build // local OS
-make build-windows-amd64
-make build-linux-amd64
-make build-darwin-amd64
-```
-
 ## Running Tests
 
 Tests can be run with `make test`.
