@@ -45,9 +45,12 @@ type WatchClient struct {
 	deleteQueue     []deleteRequest
 	stopCh          chan struct{}
 
-	Pods    map[string]*Pod
-	Rules   ExtractionRules
-	Filters Filters
+	// A map containing Pod related data, used to associate them with resources.
+	// Key can be either an IP address or Pod UID
+	Pods         map[PodIdentifier]*Pod
+	Rules        ExtractionRules
+	Filters      Filters
+	Associations []Association
 }
 
 // Extract deployment name from the pod name. Pod name is created using
@@ -55,11 +58,18 @@ type WatchClient struct {
 var dRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]*-[0-9a-zA-Z]*$`)
 
 // New initializes a new k8s Client.
-func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, newClientSet APIClientsetProvider, newInformer InformerProvider) (Client, error) {
-	c := &WatchClient{logger: logger, Rules: rules, Filters: filters, deploymentRegex: dRegex, stopCh: make(chan struct{})}
+func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, newClientSet APIClientsetProvider, newInformer InformerProvider) (Client, error) {
+	c := &WatchClient{
+		logger:          logger,
+		Rules:           rules,
+		Filters:         filters,
+		Associations:    associations,
+		deploymentRegex: dRegex,
+		stopCh:          make(chan struct{}),
+	}
 	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
 
-	c.Pods = map[string]*Pod{}
+	c.Pods = map[PodIdentifier]*Pod{}
 	if newClientSet == nil {
 		newClientSet = k8sconfig.MakeClient
 	}
@@ -109,6 +119,8 @@ func (c *WatchClient) handlePodAdd(obj interface{}) {
 	} else {
 		c.logger.Error("object received was not of type api_v1.Pod", zap.Any("received", obj))
 	}
+	podTableSize := len(c.Pods)
+	observability.RecordPodTableSize(int64(podTableSize))
 }
 
 func (c *WatchClient) handlePodUpdate(old, new interface{}) {
@@ -119,6 +131,8 @@ func (c *WatchClient) handlePodUpdate(old, new interface{}) {
 	} else {
 		c.logger.Error("object received was not of type api_v1.Pod", zap.Any("received", new))
 	}
+	podTableSize := len(c.Pods)
+	observability.RecordPodTableSize(int64(podTableSize))
 }
 
 func (c *WatchClient) handlePodDelete(obj interface{}) {
@@ -128,6 +142,8 @@ func (c *WatchClient) handlePodDelete(obj interface{}) {
 	} else {
 		c.logger.Error("object received was not of type api_v1.Pod", zap.Any("received", obj))
 	}
+	podTableSize := len(c.Pods)
+	observability.RecordPodTableSize(int64(podTableSize))
 }
 
 func (c *WatchClient) deleteLoop(interval time.Duration, gracePeriod time.Duration) {
@@ -152,14 +168,16 @@ func (c *WatchClient) deleteLoop(interval time.Duration, gracePeriod time.Durati
 
 			c.m.Lock()
 			for _, d := range toDelete {
-				if p, ok := c.Pods[d.ip]; ok {
+				if p, ok := c.Pods[d.id]; ok {
 					// Sanity check: make sure we are deleting the same pod
 					// and the underlying state (ip<>pod mapping) has not changed.
-					if p.Name == d.name {
-						delete(c.Pods, d.ip)
+					if p.Name == d.podName {
+						delete(c.Pods, d.id)
 					}
 				}
 			}
+			podTableSize := len(c.Pods)
+			observability.RecordPodTableSize(int64(podTableSize))
 			c.m.Unlock()
 
 		case <-c.stopCh:
@@ -168,10 +186,10 @@ func (c *WatchClient) deleteLoop(interval time.Duration, gracePeriod time.Durati
 	}
 }
 
-// GetPodByIP takes an IP address and returns the pod the IP address is associated with.
-func (c *WatchClient) GetPodByIP(ip string) (*Pod, bool) {
+// GetPod takes an IP address or Pod UID and returns the pod the identifier is associated with.
+func (c *WatchClient) GetPod(identifier PodIdentifier) (*Pod, bool) {
 	c.m.RLock()
-	pod, ok := c.Pods[ip]
+	pod, ok := c.Pods[identifier]
 	c.m.RUnlock()
 	if ok {
 		if pod.Ignore {
@@ -253,24 +271,10 @@ func (c *WatchClient) extractField(v string, r FieldExtractionRule) string {
 }
 
 func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
-	if pod.Status.PodIP == "" {
-		return
-	}
-
-	c.m.Lock()
-	defer c.m.Unlock()
-	// compare initial scheduled timestamp for existing pod and new pod with same IP
-	// and only replace old pod if scheduled time of new pod is newer? This should fix
-	// the case where scheduler has assigned the same IP to a new pod but update event for
-	// the old pod came in later
-	if p, ok := c.Pods[pod.Status.PodIP]; ok {
-		if p.StartTime != nil && pod.Status.StartTime.Before(p.StartTime) {
-			return
-		}
-	}
 	newPod := &Pod{
 		Name:      pod.Name,
 		Address:   pod.Status.PodIP,
+		PodUID:    string(pod.UID),
 		StartTime: pod.Status.StartTime,
 	}
 
@@ -279,26 +283,53 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	} else {
 		newPod.Attributes = c.extractPodAttributes(pod)
 	}
-	c.Pods[pod.Status.PodIP] = newPod
+
+	c.m.Lock()
+	defer c.m.Unlock()
+
+	if pod.UID != "" {
+		c.Pods[PodIdentifier(pod.UID)] = newPod
+	}
+	if pod.Status.PodIP != "" {
+		// compare initial scheduled timestamp for existing pod and new pod with same IP
+		// and only replace old pod if scheduled time of new pod is newer? This should fix
+		// the case where scheduler has assigned the same IP to a new pod but update event for
+		// the old pod came in later.
+		if p, ok := c.Pods[PodIdentifier(pod.Status.PodIP)]; ok {
+			if p.StartTime != nil && pod.Status.StartTime.Before(p.StartTime) {
+				return
+			}
+		}
+		c.Pods[PodIdentifier(pod.Status.PodIP)] = newPod
+	}
 }
 
 func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
-	if pod.Status.PodIP == "" {
-		return
-	}
 	c.m.RLock()
-	p, ok := c.GetPodByIP(pod.Status.PodIP)
+	p, ok := c.GetPod(PodIdentifier(pod.Status.PodIP))
 	c.m.RUnlock()
 
 	if ok && p.Name == pod.Name {
-		c.deleteMut.Lock()
-		c.deleteQueue = append(c.deleteQueue, deleteRequest{
-			ip:   pod.Status.PodIP,
-			name: pod.Name,
-			ts:   time.Now(),
-		})
-		c.deleteMut.Unlock()
+		c.appendDeleteQueue(PodIdentifier(pod.Status.PodIP), pod.Name)
 	}
+
+	c.m.RLock()
+	p, ok = c.GetPod(PodIdentifier(pod.UID))
+	c.m.RUnlock()
+
+	if ok && p.Name == pod.Name {
+		c.appendDeleteQueue(PodIdentifier(pod.UID), pod.Name)
+	}
+}
+
+func (c *WatchClient) appendDeleteQueue(podID PodIdentifier, podName string) {
+	c.deleteMut.Lock()
+	c.deleteQueue = append(c.deleteQueue, deleteRequest{
+		id:      podID,
+		podName: podName,
+		ts:      time.Now(),
+	})
+	c.deleteMut.Unlock()
 }
 
 func (c *WatchClient) shouldIgnorePod(pod *api_v1.Pod) bool {
