@@ -472,11 +472,11 @@ func TestClientErrors(t *testing.T) {
 func TestConsumerErrors(t *testing.T) {
 	tests := []struct {
 		name    string
-		fail    bool
+		err     error
 		numLogs int
 	}{
-		{"no error", false, 0},
-		{"consume error", true, 1},
+		{"no error", nil, 0},
+		{"consume error", errors.New("failed"), 1},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -485,13 +485,9 @@ func TestConsumerErrors(t *testing.T) {
 				extraMetadataLabels:   nil,
 				metricGroupsToCollect: allMetricGroups,
 			}
-			sink := new(consumertest.MetricsSink)
-			if test.fail {
-				sink.SetConsumeError(errors.New("failed"))
-			}
 			r := newRunnable(
 				context.Background(),
-				sink,
+				consumertest.NewMetricsErr(test.err),
 				&fakeRestClient{},
 				zap.New(core),
 				options,

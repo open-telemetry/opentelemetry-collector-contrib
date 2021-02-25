@@ -336,9 +336,7 @@ func Test_consumer_err(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 	config.initialize()
-	sink := new(consumertest.LogsSink)
-	sink.SetConsumeError(errors.New("bad consumer"))
-	rcv, err := NewLogsReceiver(zap.NewNop(), *config, sink)
+	rcv, err := NewLogsReceiver(zap.NewNop(), *config, consumertest.NewLogsErr(errors.New("bad consumer")))
 	assert.NoError(t, err)
 
 	r := rcv.(*splunkReceiver)
@@ -366,9 +364,7 @@ func Test_consumer_err_metrics(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint\
 	config.initialize()
-	sink := new(consumertest.MetricsSink)
-	sink.SetConsumeError(errors.New("bad consumer"))
-	rcv, err := NewMetricsReceiver(zap.NewNop(), *config, sink)
+	rcv, err := NewMetricsReceiver(zap.NewNop(), *config, consumertest.NewMetricsErr(errors.New("bad consumer")))
 	assert.NoError(t, err)
 
 	r := rcv.(*splunkReceiver)
