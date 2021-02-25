@@ -40,6 +40,13 @@ func TestSerializeIntDataPoints(t *testing.T) {
 	labelIntPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 	labelIntPoint.LabelsMap().Insert("labelKey", "labelValue")
 
+	emptyLabelIntSlice := pdata.NewIntDataPointSlice()
+	emptyLabelIntSlice.Resize(1)
+	emptyLabelIntPoint := emptyLabelIntSlice.At(0)
+	emptyLabelIntPoint.SetValue(13)
+	emptyLabelIntPoint.SetTimestamp(pdata.Timestamp(100_000_000))
+	emptyLabelIntPoint.LabelsMap().Insert("emptyLabelKey", "")
+
 	tests := []struct {
 		name string
 		args args
@@ -71,6 +78,15 @@ func TestSerializeIntDataPoints(t *testing.T) {
 				tags: []string{},
 			},
 			want: "my_int_gauge_with_labels,labelkey=\"labelValue\" 13 100",
+		},
+		{
+			name: "Serialize integer data points with empty label",
+			args: args{
+				name: "my_int_gauge_with_empty_labels",
+				data: emptyLabelIntSlice,
+				tags: []string{},
+			},
+			want: "my_int_gauge_with_empty_labels,emptylabelkey=\"\" 13 100",
 		},
 	}
 	for _, tt := range tests {
