@@ -371,16 +371,16 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 	expectedSpanIds := make(map[int][]pdata.SpanID)
 	expectedSpanIds[0] = []pdata.SpanID{
-		pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(1))),
+		tracetranslator.UInt64ToSpanID(uint64(1)),
 	}
 	expectedSpanIds[1] = []pdata.SpanID{
-		pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(2))),
-		pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(3))),
+		tracetranslator.UInt64ToSpanID(uint64(2)),
+		tracetranslator.UInt64ToSpanID(uint64(3)),
 	}
 	expectedSpanIds[2] = []pdata.SpanID{
-		pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(4))),
-		pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(5))),
-		pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(6))),
+		tracetranslator.UInt64ToSpanID(uint64(4)),
+		tracetranslator.UInt64ToSpanID(uint64(5)),
+		tracetranslator.UInt64ToSpanID(uint64(6)),
 	}
 
 	receivedTraces := msp.AllTraces()
@@ -394,8 +394,8 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 		// might have received out of order, sort for comparison
 		sort.Slice(got, func(i, j int) bool {
-			a := tracetranslator.BytesToInt64SpanID(got[i].Bytes())
-			b := tracetranslator.BytesToInt64SpanID(got[j].Bytes())
+			a := tracetranslator.SpanIDToUInt64(got[i])
+			b := tracetranslator.SpanIDToUInt64(got[j])
 			return a < b
 		})
 
