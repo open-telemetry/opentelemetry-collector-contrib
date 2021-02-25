@@ -129,6 +129,32 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) ([]string, int) {
 // Returns the number of lines rejected by Dynatrace.
 // An error indicates all lines were dropped regardless of the returned number.
 func (e *exporter) send(ctx context.Context, lines []string) (int, error) {
+	if len(lines) > 1000 {
+		e.logger.Warn("Batch too large. Sending in chunks of 1000 metrics. If any chunk fails, previous chunks in the batch could be retried by the batch processor. Please set send_batch_max_size to 1000 or less.")
+	}
+
+	rejected := 0
+	for i := 0; i < len(lines); i += 1000 {
+		end := i + 1000
+
+		if end > len(lines) {
+			end = len(lines)
+		}
+
+		batchRejected, err := e.sendBatch(ctx, lines[i:end])
+		rejected += batchRejected
+		if err != nil {
+			return rejected, err
+		}
+	}
+
+	return rejected, nil
+}
+
+// send sends a serialized metric batch to Dynatrace.
+// Returns the number of lines rejected by Dynatrace.
+// An error indicates all lines were dropped regardless of the returned number.
+func (e *exporter) sendBatch(ctx context.Context, lines []string) (int, error) {
 	message := strings.Join(lines, "\n")
 	e.logger.Debug("Sending lines to Dynatrace\n" + message)
 	req, err := http.NewRequestWithContext(ctx, "POST", e.cfg.Endpoint, bytes.NewBufferString(message))
