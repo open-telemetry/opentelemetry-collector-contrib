@@ -136,7 +136,7 @@ var lastLog int64 = 0
 // An error indicates all lines were dropped regardless of the returned number.
 func (e *exporter) send(ctx context.Context, lines []string) (int, error) {
 	if now := time.Now().Unix(); len(lines) > maxChunkSize && now-lastLog > 60 {
-		e.logger.Sugar().Warnf("Batch too large. Sending in chunks of %[1]s metrics. If any chunk fails, previous chunks in the batch could be retried by the batch processor. Please set send_batch_max_size to %[1]s or less. Suppressing this log for 60 seconds.", maxChunkSize)
+		e.logger.Warn(fmt.Sprintf("Batch too large. Sending in chunks of %[1]d metrics. If any chunk fails, previous chunks in the batch could be retried by the batch processor. Please set send_batch_max_size to %[1]d or less. Suppressing this log for 60 seconds.", maxChunkSize))
 		lastLog = time.Now().Unix()
 	}
 
