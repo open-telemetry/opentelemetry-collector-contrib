@@ -61,7 +61,7 @@ func TestIntSum(t *testing.T) {
 }
 
 func TestConvertStoppedContainerDataToOTMetrics(t *testing.T) {
-	timestamp := pdata.TimeToUnixNano(time.Now())
+	timestamp := pdata.TimestampFromTime(time.Now())
 	resource := pdata.NewResource()
 	duration := 1200000000.32132
 	rms := convertStoppedContainerDataToOTMetrics("container.", resource, timestamp, duration)
