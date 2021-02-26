@@ -53,14 +53,10 @@ func TestTraceDataToLogService(t *testing.T) {
 				Key:   content.GetKey(),
 				Value: content.GetValue(),
 			})
-			fmt.Printf("%s : %s\n", content.GetKey(), content.GetValue())
 		}
 		gotLogPairs = append(gotLogPairs, pairs)
 
-		fmt.Println("#################")
 	}
-	str, _ := json.Marshal(gotLogPairs)
-	fmt.Println(string(str))
 
 	wantLogs := make([][]logKeyValuePair, 0, len(gotLogs))
 	resultLogFile := "./testdata/logservice_trace_data.json"
@@ -129,8 +125,8 @@ func fillHTTPClientSpan(span pdata.Span) {
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindCLIENT)
-	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
-	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+	span.SetStartTime(pdata.TimestampFromTime(startTime))
+	span.SetEndTime(pdata.TimestampFromTime(endTime))
 	span.SetTraceState("x:y")
 
 	span.Events().Resize(1)
@@ -165,8 +161,8 @@ func fillHTTPServerSpan(span pdata.Span) {
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindSERVER)
-	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
-	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+	span.SetStartTime(pdata.TimestampFromTime(startTime))
+	span.SetEndTime(pdata.TimestampFromTime(endTime))
 
 	status := span.Status()
 	status.SetCode(2)

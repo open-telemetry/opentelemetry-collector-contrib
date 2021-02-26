@@ -104,7 +104,7 @@ func convertAttributeValue(value pdata.AttributeValue, logger *zap.Logger) inter
 }
 
 // nanoTimestampToEpochMilliseconds transforms nanoseconds into <sec>.<ms>. For example, 1433188255.500 indicates 1433188255 seconds and 500 milliseconds after epoch.
-func nanoTimestampToEpochMilliseconds(ts pdata.TimestampUnixNano) *float64 {
+func nanoTimestampToEpochMilliseconds(ts pdata.Timestamp) *float64 {
 	duration := time.Duration(ts)
 	if duration == 0 {
 		// some telemetry sources send data with timestamps set to 0 by design, as their original target destinations

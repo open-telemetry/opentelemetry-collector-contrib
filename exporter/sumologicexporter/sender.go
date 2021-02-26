@@ -26,6 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 type appendResponse struct {
@@ -42,18 +43,34 @@ type metricPair struct {
 }
 
 type sender struct {
-	buffer     []pdata.LogRecord
-	config     *Config
-	client     *http.Client
-	filter     filter
-	sources    sourceFormats
-	compressor compressor
+	logBuffer           []pdata.LogRecord
+	metricBuffer        []metricPair
+	config              *Config
+	client              *http.Client
+	filter              filter
+	sources             sourceFormats
+	compressor          compressor
+	prometheusFormatter prometheusFormatter
 }
 
 const (
 	logKey string = "log"
-	// maxBufferSize defines size of the buffer (maximum number of pdata.LogRecord entries)
+	// maxBufferSize defines size of the logBuffer (maximum number of pdata.LogRecord entries)
 	maxBufferSize int = 1024 * 1024
+
+	headerContentType     string = "Content-Type"
+	headerContentEncoding string = "Content-Encoding"
+	headerClient          string = "X-Sumo-Client"
+	headerHost            string = "X-Sumo-Host"
+	headerName            string = "X-Sumo-Name"
+	headerCategory        string = "X-Sumo-Category"
+	headerFields          string = "X-Sumo-Fields"
+
+	contentTypeLogs       string = "application/x-www-form-urlencoded"
+	contentTypePrometheus string = "application/vnd.sumologic.prometheus"
+
+	contentEncodingGzip    string = "gzip"
+	contentEncodingDeflate string = "deflate"
 )
 
 func newAppendResponse() appendResponse {
@@ -68,13 +85,15 @@ func newSender(
 	f filter,
 	s sourceFormats,
 	c compressor,
+	pf prometheusFormatter,
 ) *sender {
 	return &sender{
-		config:     cfg,
-		client:     cl,
-		filter:     f,
-		sources:    s,
-		compressor: c,
+		config:              cfg,
+		client:              cl,
+		filter:              f,
+		sources:             s,
+		compressor:          c,
+		prometheusFormatter: pf,
 	}
 }
 
@@ -92,35 +111,39 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, body io.Reader
 	// Add headers
 	switch s.config.CompressEncoding {
 	case GZIPCompression:
-		req.Header.Set("Content-Encoding", "gzip")
+		req.Header.Set(headerContentEncoding, contentEncodingGzip)
 	case DeflateCompression:
-		req.Header.Set("Content-Encoding", "deflate")
+		req.Header.Set(headerContentEncoding, contentEncodingDeflate)
 	case NoCompression:
 	default:
 		return fmt.Errorf("invalid content encoding: %s", s.config.CompressEncoding)
 	}
 
-	req.Header.Add("X-Sumo-Client", s.config.Client)
+	req.Header.Add(headerClient, s.config.Client)
 
 	if s.sources.host.isSet() {
-		req.Header.Add("X-Sumo-Host", s.sources.host.format(flds))
+		req.Header.Add(headerHost, s.sources.host.format(flds))
 	}
 
 	if s.sources.name.isSet() {
-		req.Header.Add("X-Sumo-Name", s.sources.name.format(flds))
+		req.Header.Add(headerName, s.sources.name.format(flds))
 	}
 
 	if s.sources.category.isSet() {
-		req.Header.Add("X-Sumo-Category", s.sources.category.format(flds))
+		req.Header.Add(headerCategory, s.sources.category.format(flds))
 	}
 
 	switch pipeline {
 	case LogsPipeline:
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-		req.Header.Add("X-Sumo-Fields", flds.string())
+		req.Header.Add(headerContentType, contentTypeLogs)
+		req.Header.Add(headerFields, flds.string())
 	case MetricsPipeline:
-		// ToDo: Implement metrics pipeline
-		return errors.New("current sender version doesn't support metrics")
+		switch s.config.MetricFormat {
+		case PrometheusFormat:
+			req.Header.Add(headerContentType, contentTypePrometheus)
+		default:
+			return fmt.Errorf("unsupported metrics format: %s", s.config.MetricFormat)
+		}
 	default:
 		return errors.New("unexpected pipeline")
 	}
@@ -137,15 +160,15 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, body io.Reader
 
 // logToText converts LogRecord to a plain text line, returns it and error eventually
 func (s *sender) logToText(record pdata.LogRecord) string {
-	return record.Body().StringVal()
+	return tracetranslator.AttributeValueToString(record.Body(), false)
 }
 
 // logToJSON converts LogRecord to a json line, returns it and error eventually
 func (s *sender) logToJSON(record pdata.LogRecord) (string, error) {
 	data := s.filter.filterOut(record.Attributes())
-	data[logKey] = record.Body().StringVal()
+	data.orig.Upsert(logKey, record.Body())
 
-	nextLine, err := json.Marshal(data)
+	nextLine, err := json.Marshal(tracetranslator.AttributeMapToMap(data.orig))
 	if err != nil {
 		return "", err
 	}
@@ -153,7 +176,7 @@ func (s *sender) logToJSON(record pdata.LogRecord) (string, error) {
 	return bytes.NewBuffer(nextLine).String(), nil
 }
 
-// sendLogs sends log records from the buffer formatted according
+// sendLogs sends log records from the logBuffer formatted according
 // to configured LogFormat and as the result of execution
 // returns array of records which has not been sent correctly and error
 func (s *sender) sendLogs(ctx context.Context, flds fields) ([]pdata.LogRecord, error) {
@@ -164,7 +187,7 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]pdata.LogRecord, 
 		currentRecords []pdata.LogRecord
 	)
 
-	for _, record := range s.buffer {
+	for _, record := range s.logBuffer {
 		var formattedLine string
 		var err error
 
@@ -206,9 +229,73 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]pdata.LogRecord, 
 		}
 	}
 
-	if err := s.send(ctx, LogsPipeline, strings.NewReader(body.String()), flds); err != nil {
-		errs = append(errs, err)
-		droppedRecords = append(droppedRecords, currentRecords...)
+	if body.Len() > 0 {
+		if err := s.send(ctx, LogsPipeline, strings.NewReader(body.String()), flds); err != nil {
+			errs = append(errs, err)
+			droppedRecords = append(droppedRecords, currentRecords...)
+		}
+	}
+
+	if len(errs) > 0 {
+		return droppedRecords, componenterror.CombineErrors(errs)
+	}
+	return droppedRecords, nil
+}
+
+// sendMetrics sends metrics in right format basing on the s.config.MetricFormat
+func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, error) {
+	var (
+		body           strings.Builder
+		errs           []error
+		droppedRecords []metricPair
+		currentRecords []metricPair
+	)
+
+	for _, record := range s.metricBuffer {
+		var formattedLine string
+		var err error
+
+		switch s.config.MetricFormat {
+		case PrometheusFormat:
+			formattedLine = s.prometheusFormatter.metric2String(record)
+		default:
+			err = fmt.Errorf("unexpected metric format: %s", s.config.MetricFormat)
+		}
+
+		if err != nil {
+			droppedRecords = append(droppedRecords, record)
+			errs = append(errs, err)
+			continue
+		}
+
+		ar, err := s.appendAndSend(ctx, formattedLine, MetricsPipeline, &body, flds)
+		if err != nil {
+			errs = append(errs, err)
+			if ar.sent {
+				droppedRecords = append(droppedRecords, currentRecords...)
+			}
+
+			if !ar.appended {
+				droppedRecords = append(droppedRecords, record)
+			}
+		}
+
+		// If data was sent, cleanup the currentTimeSeries counter
+		if ar.sent {
+			currentRecords = currentRecords[:0]
+		}
+
+		// If log has been appended to body, increment the currentTimeSeries
+		if ar.appended {
+			currentRecords = append(currentRecords, record)
+		}
+	}
+
+	if body.Len() > 0 {
+		if err := s.send(ctx, MetricsPipeline, strings.NewReader(body.String()), flds); err != nil {
+			errs = append(errs, err)
+			droppedRecords = append(droppedRecords, currentRecords...)
+		}
 	}
 
 	if len(errs) > 0 {
@@ -218,7 +305,7 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]pdata.LogRecord, 
 }
 
 // appendAndSend appends line to the request body that will be sent and sends
-// the accumulated data if the internal buffer has been filled (with maxBufferSize elements).
+// the accumulated data if the internal logBuffer has been filled (with maxBufferSize elements).
 // It returns appendResponse
 func (s *sender) appendAndSend(
 	ctx context.Context,
@@ -260,26 +347,50 @@ func (s *sender) appendAndSend(
 	return ar, nil
 }
 
-// cleanBuffer zeroes buffer
-func (s *sender) cleanBuffer() {
-	s.buffer = (s.buffer)[:0]
+// cleanLogsBuffer zeroes logBuffer
+func (s *sender) cleanLogsBuffer() {
+	s.logBuffer = (s.logBuffer)[:0]
 }
 
-// batch adds log to the buffer and flushes them if buffer is full to avoid overflow
+// batchLog adds log to the logBuffer and flushes them if logBuffer is full to avoid overflow
 // returns list of log records which were not sent successfully
-func (s *sender) batch(ctx context.Context, log pdata.LogRecord, metadata fields) ([]pdata.LogRecord, error) {
-	s.buffer = append(s.buffer, log)
+func (s *sender) batchLog(ctx context.Context, log pdata.LogRecord, metadata fields) ([]pdata.LogRecord, error) {
+	s.logBuffer = append(s.logBuffer, log)
 
-	if s.count() >= maxBufferSize {
+	if s.countLogs() >= maxBufferSize {
 		dropped, err := s.sendLogs(ctx, metadata)
-		s.cleanBuffer()
+		s.cleanLogsBuffer()
 		return dropped, err
 	}
 
 	return nil, nil
 }
 
-// count returns number of logs in buffer
-func (s *sender) count() int {
-	return len(s.buffer)
+// countLogs returns number of logs in logBuffer
+func (s *sender) countLogs() int {
+	return len(s.logBuffer)
+}
+
+// cleanMetricBuffer zeroes metricBuffer
+func (s *sender) cleanMetricBuffer() {
+	s.metricBuffer = (s.metricBuffer)[:0]
+}
+
+// batchMetric adds metric to the metricBuffer and flushes them if metricBuffer is full to avoid overflow
+// returns list of metric records which were not sent successfully
+func (s *sender) batchMetric(ctx context.Context, metric metricPair, metadata fields) ([]metricPair, error) {
+	s.metricBuffer = append(s.metricBuffer, metric)
+
+	if s.countMetrics() >= maxBufferSize {
+		dropped, err := s.sendMetrics(ctx, metadata)
+		s.cleanMetricBuffer()
+		return dropped, err
+	}
+
+	return nil, nil
+}
+
+// countMetrics returns number of metrics in metricBuffer
+func (s *sender) countMetrics() int {
+	return len(s.metricBuffer)
 }

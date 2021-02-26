@@ -16,7 +16,7 @@ package translation
 
 const (
 	// DefaultTranslationRulesYaml defines default translation rules that will be applied to metrics if
-	// config.SendCompatibleMetrics set to true and config.TranslationRules not specified explicitly.
+	// config.TranslationRules not specified explicitly.
 	// Keep it in YAML format to be able to easily copy and paste it in config if modifications needed.
 	DefaultTranslationRulesYaml = `
 translation_rules:
@@ -63,7 +63,6 @@ translation_rules:
 
 - action: rename_metrics
   mapping:
-
     # kubeletstats receiver metrics
     container.cpu.time: container_cpu_utilization
     container.filesystem.available: container_fs_available_bytes
@@ -241,13 +240,13 @@ translation_rules:
 - action: split_metric
   metric_name: k8s.pod.network.io
   dimension_key: direction
-  mapping: 
+  mapping:
     receive: pod_network_receive_bytes_total
     transmit: pod_network_transmit_bytes_total
 - action: split_metric
   metric_name: k8s.pod.network.errors
   dimension_key: direction
-  mapping: 
+  mapping:
     receive: pod_network_receive_errors_total
     transmit: pod_network_transmit_errors_total
 
@@ -466,18 +465,21 @@ translation_rules:
 - action: copy_metrics
   mapping:
     df_complex.used: df_complex.used_total
+
 - action: aggregate_metric
   metric_name: df_complex.used_total
   aggregation_method: avg
   without_dimensions:
     - mode
     - mountpoint
+
 - action: aggregate_metric
   metric_name: df_complex.used_total
   aggregation_method: sum
   without_dimensions:
   - device
   - type
+
 - action: calculate_new_metric
   metric_name: disk.summary_utilization
   operand1_metric: df_complex.used_total
@@ -496,8 +498,8 @@ translation_rules:
   metric_name: disk.ops
   aggregation_method: sum
   without_dimensions:
-   - direction
-   - device
+    - direction
+    - device
 - action: delta_metric
   mapping:
     disk.ops: disk_ops.total
@@ -509,30 +511,6 @@ translation_rules:
     system.disk.time: true
   mapping:
     device: disk
-- action: split_metric
-  metric_name: system.disk.merged
-  dimension_key: direction
-  mapping:
-    read: disk_merged.read
-    write: disk_merged.write
-- action: split_metric
-  metric_name: system.disk.io
-  dimension_key: direction
-  mapping:
-    read: disk_octets.read
-    write: disk_octets.write
-- action: split_metric
-  metric_name: system.disk.operations
-  dimension_key: direction
-  mapping:
-    read: disk_ops.read
-    write: disk_ops.write
-- action: split_metric
-  metric_name: system.disk.time
-  dimension_key: direction
-  mapping:
-    read: disk_time.read
-    write: disk_time.write
 - action: delta_metric
   mapping:
     system.disk.pending_operations: disk_ops.pending
@@ -564,30 +542,6 @@ translation_rules:
     system.network.packets: true
   mapping:
     device: interface
-- action: split_metric
-  metric_name: system.network.dropped
-  dimension_key: direction
-  mapping:
-    receive: if_dropped.rx
-    transmit: if_dropped.tx
-- action: split_metric
-  metric_name: system.network.errors
-  dimension_key: direction
-  mapping:
-    receive: if_errors.rx
-    transmit: if_errors.tx
-- action: split_metric
-  metric_name: system.network.io
-  dimension_key: direction
-  mapping:
-    receive: if_octets.rx
-    transmit: if_octets.tx
-- action: split_metric
-  metric_name: system.network.packets
-  dimension_key: direction
-  mapping:
-    receive: if_packets.rx
-    transmit: if_packets.tx
 
 
 # memory utilization

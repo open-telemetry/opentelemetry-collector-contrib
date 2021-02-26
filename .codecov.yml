@@ -3,7 +3,7 @@ codecov:
     require_ci_to_pass: yes
     # wait for unit and integration test builds.
     after_n_builds: 2
-  strict_yaml_branch: master  # only use the latest copy on master branch
+  strict_yaml_branch: main  # only use the latest copy on main branch
 
 coverage:
   precision: 2
@@ -18,3 +18,6 @@ coverage:
       default:
         enabled: yes
         target: 95%
+
+ignore:
+  - "*/**/third_party/**/*" # Ignore all 'third_party' directories and files within those directories recursively.

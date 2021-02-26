@@ -58,7 +58,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 	ill.InstrumentationLibrary().SetVersion("v0.1.0")
 
 	for i := 0; i < numberOfLogs; i++ {
-		ts := pdata.TimestampUnixNano(int64(i) * time.Millisecond.Nanoseconds())
+		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := pdata.NewLogRecord()
 		switch i {
 		case 0:
@@ -113,14 +113,10 @@ func TestLogsDataToLogService(t *testing.T) {
 				Key:   content.GetKey(),
 				Value: content.GetValue(),
 			})
-			//fmt.Printf("%s : %s\n", content.GetKey(), content.GetValue())
 		}
 		gotLogPairs = append(gotLogPairs, pairs)
 
-		//fmt.Println("#################")
 	}
-	//str, _ := json.Marshal(gotLogPairs)
-	//fmt.Println(string(str))
 
 	wantLogs := make([][]logKeyValuePair, 0, validLogCount)
 	resultLogFile := "./testdata/logservice_log_data.json"

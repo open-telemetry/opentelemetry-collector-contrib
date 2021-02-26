@@ -77,15 +77,15 @@ func runMock(ptrace pdata.Traces) (*Mock, error) {
 	return m, nil
 }
 
-func testTraceData(t *testing.T, expected []Span, td consumerdata.TraceData) {
-	m, err := runMock(internaldata.OCToTraceData(td))
+func testTraceData(t *testing.T, expected []Span, resource *resourcepb.Resource, spans []*tracepb.Span) {
+	m, err := runMock(internaldata.OCToTraces(nil, resource, spans))
 	require.NoError(t, err)
 	assert.Equal(t, expected, m.Spans())
 }
 
 func TestExportTracePartialData(t *testing.T) {
-	ptrace := internaldata.OCToTraceData(consumerdata.TraceData{
-		Spans: []*tracepb.Span{
+	ptrace := internaldata.OCToTraces(nil, nil,
+		[]*tracepb.Span{
 			{
 				SpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
 				Name:   &tracepb.TruncatableString{Value: "no trace id"},
@@ -94,8 +94,7 @@ func TestExportTracePartialData(t *testing.T) {
 				TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 				Name:    &tracepb.TruncatableString{Value: "no span id"},
 			},
-		},
-	})
+		})
 
 	_, err := runMock(ptrace)
 	require.Error(t, err)
@@ -104,13 +103,11 @@ func TestExportTracePartialData(t *testing.T) {
 }
 
 func TestExportTraceDataMinimum(t *testing.T) {
-	td := consumerdata.TraceData{
-		Spans: []*tracepb.Span{
-			{
-				TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-				SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 1},
-				Name:    &tracepb.TruncatableString{Value: "root"},
-			},
+	spans := []*tracepb.Span{
+		{
+			TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+			SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 1},
+			Name:    &tracepb.TruncatableString{Value: "root"},
 		},
 	}
 
@@ -126,38 +123,37 @@ func TestExportTraceDataMinimum(t *testing.T) {
 		},
 	}
 
-	testTraceData(t, expected, td)
+	testTraceData(t, expected, nil, spans)
 }
 
 func TestExportTraceDataFullTrace(t *testing.T) {
-	td := consumerdata.TraceData{
-		Resource: &resourcepb.Resource{
-			Labels: map[string]string{
-				serviceNameKey: "test-service",
-				"resource":     "R1",
-			},
+	resource := &resourcepb.Resource{
+		Labels: map[string]string{
+			serviceNameKey: "test-service",
+			"resource":     "R1",
 		},
-		Spans: []*tracepb.Span{
-			{
-				TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-				SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 1},
-				Name:    &tracepb.TruncatableString{Value: "root"},
-				Status:  &tracepb.Status{},
-			},
-			{
-				TraceId:      []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-				SpanId:       []byte{0, 0, 0, 0, 0, 0, 0, 2},
-				ParentSpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
-				Name:         &tracepb.TruncatableString{Value: "client"},
-				Status:       &tracepb.Status{},
-			},
-			{
-				TraceId:      []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-				SpanId:       []byte{0, 0, 0, 0, 0, 0, 0, 3},
-				ParentSpanId: []byte{0, 0, 0, 0, 0, 0, 0, 2},
-				Name:         &tracepb.TruncatableString{Value: "server"},
-				Status:       &tracepb.Status{},
-			},
+	}
+
+	spans := []*tracepb.Span{
+		{
+			TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+			SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 1},
+			Name:    &tracepb.TruncatableString{Value: "root"},
+			Status:  &tracepb.Status{},
+		},
+		{
+			TraceId:      []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+			SpanId:       []byte{0, 0, 0, 0, 0, 0, 0, 2},
+			ParentSpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
+			Name:         &tracepb.TruncatableString{Value: "client"},
+			Status:       &tracepb.Status{},
+		},
+		{
+			TraceId:      []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+			SpanId:       []byte{0, 0, 0, 0, 0, 0, 0, 3},
+			ParentSpanId: []byte{0, 0, 0, 0, 0, 0, 0, 2},
+			Name:         &tracepb.TruncatableString{Value: "server"},
+			Status:       &tracepb.Status{},
 		},
 	}
 
@@ -199,7 +195,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 		},
 	}
 
-	testTraceData(t, expected, td)
+	testTraceData(t, expected, resource, spans)
 }
 
 func testExportMetricData(t *testing.T, expected []Metric, md consumerdata.MetricsData) {

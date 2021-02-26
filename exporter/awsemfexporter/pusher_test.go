@@ -79,7 +79,7 @@ func TestLogEventBatch_sortLogEvents(t *testing.T) {
 		logEvent := NewLogEvent(
 			int64(timestamp),
 			fmt.Sprintf("message%v", timestamp))
-		fmt.Printf("logEvents[%d].Timetsmap=%d.\n", i, timestamp)
+		fmt.Printf("logEvents[%d].Timestamp=%d.\n", i, timestamp)
 		logEventBatch.PutLogEventsInput.LogEvents = append(logEventBatch.PutLogEventsInput.LogEvents, logEvent.InputLogEvent)
 	}
 

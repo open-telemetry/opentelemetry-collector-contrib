@@ -27,7 +27,6 @@ import (
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -87,6 +86,7 @@ func TestTransformSpan(t *testing.T) {
 			want: telemetry.Span{
 				ID:         "0000000000000001",
 				Name:       "invalid TraceID",
+				Timestamp:  time.Unix(0, 0).UTC(),
 				Attributes: withDefaults(nil),
 			},
 		},
@@ -102,6 +102,7 @@ func TestTransformSpan(t *testing.T) {
 			want: telemetry.Span{
 				TraceID:    "01010101010101010101010101010101",
 				Name:       "invalid SpanID",
+				Timestamp:  time.Unix(0, 0).UTC(),
 				Attributes: withDefaults(nil),
 			},
 		},
@@ -118,6 +119,7 @@ func TestTransformSpan(t *testing.T) {
 				ID:         "0000000000000001",
 				TraceID:    "01010101010101010101010101010101",
 				Name:       "root",
+				Timestamp:  time.Unix(0, 0).UTC(),
 				Attributes: withDefaults(nil),
 				Events:     nil,
 			},
@@ -137,6 +139,7 @@ func TestTransformSpan(t *testing.T) {
 				TraceID:    "01010101010101010101010101010101",
 				Name:       "client",
 				ParentID:   "0000000000000001",
+				Timestamp:  time.Unix(0, 0).UTC(),
 				Attributes: withDefaults(nil),
 				Events:     nil,
 			},
@@ -145,23 +148,21 @@ func TestTransformSpan(t *testing.T) {
 			name: "error code",
 			spanFunc: func() pdata.Span {
 				// There is no setter method for a Status so convert instead.
-				return internaldata.OCToTraceData(
-					consumerdata.TraceData{
-						Spans: []*tracepb.Span{
-							{
-								TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-								SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 3},
-								Name:    &tracepb.TruncatableString{Value: "error code"},
-								Status:  &tracepb.Status{Code: 1},
-							},
+				return internaldata.OCToTraces(
+					nil, nil, []*tracepb.Span{
+						{
+							TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+							SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 3},
+							Name:    &tracepb.TruncatableString{Value: "error code"},
+							Status:  &tracepb.Status{Code: 1},
 						},
-					},
-				).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+					}).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 			},
 			want: telemetry.Span{
-				ID:      "0000000000000003",
-				TraceID: "01010101010101010101010101010101",
-				Name:    "error code",
+				ID:        "0000000000000003",
+				TraceID:   "01010101010101010101010101010101",
+				Name:      "error code",
+				Timestamp: time.Unix(0, 0).UTC(),
 				Attributes: withDefaults(map[string]interface{}{
 					statusCodeKey: "ERROR",
 				}),
@@ -172,23 +173,21 @@ func TestTransformSpan(t *testing.T) {
 			name: "error message",
 			spanFunc: func() pdata.Span {
 				// There is no setter method for a Status so convert instead.
-				return internaldata.OCToTraceData(
-					consumerdata.TraceData{
-						Spans: []*tracepb.Span{
-							{
-								TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-								SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 3},
-								Name:    &tracepb.TruncatableString{Value: "error message"},
-								Status:  &tracepb.Status{Code: 1, Message: "error message"},
-							},
+				return internaldata.OCToTraces(
+					nil, nil, []*tracepb.Span{
+						{
+							TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+							SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 3},
+							Name:    &tracepb.TruncatableString{Value: "error message"},
+							Status:  &tracepb.Status{Code: 1, Message: "error message"},
 						},
-					},
-				).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+					}).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 			},
 			want: telemetry.Span{
-				ID:      "0000000000000003",
-				TraceID: "01010101010101010101010101010101",
-				Name:    "error message",
+				ID:        "0000000000000003",
+				TraceID:   "01010101010101010101010101010101",
+				Name:      "error message",
+				Timestamp: time.Unix(0, 0).UTC(),
 				Attributes: withDefaults(map[string]interface{}{
 					statusCodeKey:        "ERROR",
 					statusDescriptionKey: "error message",
@@ -200,47 +199,45 @@ func TestTransformSpan(t *testing.T) {
 			name: "attributes",
 			spanFunc: func() pdata.Span {
 				// There is no setter method for Attributes so convert instead.
-				return internaldata.OCToTraceData(
-					consumerdata.TraceData{
-						Spans: []*tracepb.Span{
-							{
-								TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-								SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 4},
-								Name:    &tracepb.TruncatableString{Value: "attrs"},
-								Status:  &tracepb.Status{},
-								Attributes: &tracepb.Span_Attributes{
-									AttributeMap: map[string]*tracepb.AttributeValue{
-										"prod": {
-											Value: &tracepb.AttributeValue_BoolValue{
-												BoolValue: true,
-											},
+				return internaldata.OCToTraces(
+					nil, nil, []*tracepb.Span{
+						{
+							TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+							SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 4},
+							Name:    &tracepb.TruncatableString{Value: "attrs"},
+							Status:  &tracepb.Status{},
+							Attributes: &tracepb.Span_Attributes{
+								AttributeMap: map[string]*tracepb.AttributeValue{
+									"prod": {
+										Value: &tracepb.AttributeValue_BoolValue{
+											BoolValue: true,
 										},
-										"weight": {
-											Value: &tracepb.AttributeValue_IntValue{
-												IntValue: 10,
-											},
+									},
+									"weight": {
+										Value: &tracepb.AttributeValue_IntValue{
+											IntValue: 10,
 										},
-										"score": {
-											Value: &tracepb.AttributeValue_DoubleValue{
-												DoubleValue: 99.8,
-											},
+									},
+									"score": {
+										Value: &tracepb.AttributeValue_DoubleValue{
+											DoubleValue: 99.8,
 										},
-										"user": {
-											Value: &tracepb.AttributeValue_StringValue{
-												StringValue: &tracepb.TruncatableString{Value: "alice"},
-											},
+									},
+									"user": {
+										Value: &tracepb.AttributeValue_StringValue{
+											StringValue: &tracepb.TruncatableString{Value: "alice"},
 										},
 									},
 								},
 							},
 						},
-					},
-				).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+					}).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 			},
 			want: telemetry.Span{
-				ID:      "0000000000000004",
-				TraceID: "01010101010101010101010101010101",
-				Name:    "attrs",
+				ID:        "0000000000000004",
+				TraceID:   "01010101010101010101010101010101",
+				Name:      "attrs",
+				Timestamp: time.Unix(0, 0).UTC(),
 				Attributes: withDefaults(map[string]interface{}{
 					"prod":   true,
 					"weight": int64(10),
@@ -257,8 +254,8 @@ func TestTransformSpan(t *testing.T) {
 				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 5}))
 				s.SetName("with time")
-				s.SetStartTime(pdata.TimeToUnixNano(now))
-				s.SetEndTime(pdata.TimeToUnixNano(now.Add(time.Second * 5)))
+				s.SetStartTime(pdata.TimestampFromTime(now))
+				s.SetEndTime(pdata.TimestampFromTime(now.Add(time.Second * 5)))
 				return s
 			},
 			want: telemetry.Span{
@@ -282,9 +279,10 @@ func TestTransformSpan(t *testing.T) {
 				return s
 			},
 			want: telemetry.Span{
-				ID:      "0000000000000006",
-				TraceID: "01010101010101010101010101010101",
-				Name:    "span kind server",
+				ID:        "0000000000000006",
+				TraceID:   "01010101010101010101010101010101",
+				Name:      "span kind server",
+				Timestamp: time.Unix(0, 0).UTC(),
 				Attributes: withDefaults(map[string]interface{}{
 					spanKindKey: "server",
 				}),
@@ -303,7 +301,7 @@ func TestTransformSpan(t *testing.T) {
 				ev.Resize(1)
 				event := ev.At(0)
 				event.SetName("this is the event name")
-				event.SetTimestamp(pdata.TimeToUnixNano(now))
+				event.SetTimestamp(pdata.TimestampFromTime(now))
 				s.Events().Append(event)
 				return s
 			},
@@ -311,6 +309,7 @@ func TestTransformSpan(t *testing.T) {
 				ID:         "0000000000000007",
 				TraceID:    "01010101010101010101010101010101",
 				Name:       "with events",
+				Timestamp:  time.Unix(0, 0).UTC(),
 				Attributes: withDefaults(nil),
 				Events: []telemetry.Event{
 					{

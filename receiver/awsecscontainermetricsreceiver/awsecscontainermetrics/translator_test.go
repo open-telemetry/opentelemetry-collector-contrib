@@ -22,7 +22,7 @@ import (
 )
 
 func TestConvertToOTMetrics(t *testing.T) {
-	timestamp := pdata.TimeToUnixNano(time.Now())
+	timestamp := pdata.TimestampFromTime(time.Now())
 	m := ECSMetrics{}
 
 	m.MemoryUsage = 100
@@ -38,14 +38,14 @@ func TestConvertToOTMetrics(t *testing.T) {
 
 func TestIntGauge(t *testing.T) {
 	intValue := int64(100)
-	timestamp := pdata.TimeToUnixNano(time.Now())
+	timestamp := pdata.TimestampFromTime(time.Now())
 
 	ilm := intGauge("cpu_utilized", "Count", intValue, timestamp)
 	require.NotNil(t, ilm)
 }
 
 func TestDoubleGauge(t *testing.T) {
-	timestamp := pdata.TimeToUnixNano(time.Now())
+	timestamp := pdata.TimestampFromTime(time.Now())
 	floatValue := 100.01
 
 	m := doubleGauge("cpu_utilized", "Count", floatValue, timestamp)
@@ -53,7 +53,7 @@ func TestDoubleGauge(t *testing.T) {
 }
 
 func TestIntSum(t *testing.T) {
-	timestamp := pdata.TimeToUnixNano(time.Now())
+	timestamp := pdata.TimestampFromTime(time.Now())
 	intValue := int64(100)
 
 	m := intSum("cpu_utilized", "Count", intValue, timestamp)

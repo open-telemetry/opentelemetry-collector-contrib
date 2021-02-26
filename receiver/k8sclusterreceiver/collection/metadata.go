@@ -21,8 +21,8 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
+	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 const (
@@ -37,7 +37,7 @@ type KubernetesMetadata struct {
 	resourceIDKey string
 	// resourceID is the Kubernetes UID of the resource. In case of
 	// containers, this value is the container id.
-	resourceID metrics.ResourceID
+	resourceID metadataPkg.ResourceID
 	// metadata is a set of key-value pairs that describe a resource.
 	metadata map[string]string
 }
@@ -60,7 +60,7 @@ func getGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetad
 
 	return &KubernetesMetadata{
 		resourceIDKey: getResourceIDKey(rType),
-		resourceID:    metrics.ResourceID(om.UID),
+		resourceID:    metadataPkg.ResourceID(om.UID),
 		metadata:      metadata,
 	}
 }
@@ -71,8 +71,8 @@ func getResourceIDKey(rType string) string {
 
 // mergeKubernetesMetadataMaps merges maps of string (resource id) to
 // KubernetesMetadata into a single map.
-func mergeKubernetesMetadataMaps(maps ...map[metrics.ResourceID]*KubernetesMetadata) map[metrics.ResourceID]*KubernetesMetadata {
-	out := map[metrics.ResourceID]*KubernetesMetadata{}
+func mergeKubernetesMetadataMaps(maps ...map[metadataPkg.ResourceID]*KubernetesMetadata) map[metadataPkg.ResourceID]*KubernetesMetadata {
+	out := map[metadataPkg.ResourceID]*KubernetesMetadata{}
 	for _, m := range maps {
 		for id, km := range m {
 			out[id] = km
@@ -84,15 +84,15 @@ func mergeKubernetesMetadataMaps(maps ...map[metrics.ResourceID]*KubernetesMetad
 
 // GetMetadataUpdate processes metadata updates and returns
 // a map of a delta of metadata mapped to each resource.
-func GetMetadataUpdate(old, new map[metrics.ResourceID]*KubernetesMetadata) []*metrics.MetadataUpdate {
-	var out []*metrics.MetadataUpdate
+func GetMetadataUpdate(old, new map[metadataPkg.ResourceID]*KubernetesMetadata) []*metadataPkg.MetadataUpdate {
+	var out []*metadataPkg.MetadataUpdate
 
 	for id, oldMetadata := range old {
 		// if an object with the same id has a previous revision, take a delta
 		// of the metadata.
 		if newMetadata, ok := new[id]; ok {
 			if metadataDelta := getMetadataDelta(oldMetadata.metadata, newMetadata.metadata); metadataDelta != nil {
-				out = append(out, &metrics.MetadataUpdate{
+				out = append(out, &metadataPkg.MetadataUpdate{
 					ResourceIDKey: oldMetadata.resourceIDKey,
 					ResourceID:    id,
 					MetadataDelta: *metadataDelta,
@@ -106,10 +106,10 @@ func GetMetadataUpdate(old, new map[metrics.ResourceID]*KubernetesMetadata) []*m
 	for id, km := range new {
 		// if an id is seen for the first time, all metadata need to be added.
 		if _, ok := old[id]; !ok {
-			out = append(out, &metrics.MetadataUpdate{
+			out = append(out, &metadataPkg.MetadataUpdate{
 				ResourceIDKey: km.resourceIDKey,
 				ResourceID:    id,
-				MetadataDelta: metrics.MetadataDelta{MetadataToAdd: km.metadata},
+				MetadataDelta: metadataPkg.MetadataDelta{MetadataToAdd: km.metadata},
 			})
 		}
 	}
@@ -120,7 +120,7 @@ func GetMetadataUpdate(old, new map[metrics.ResourceID]*KubernetesMetadata) []*m
 // getMetadataDelta returns MetadataDelta between two sets for properties.
 // If the delta between old (oldProps) and new (newProps) revisions of a
 // resource end up being empty, nil is returned.
-func getMetadataDelta(oldProps, newProps map[string]string) *metrics.MetadataDelta {
+func getMetadataDelta(oldProps, newProps map[string]string) *metadataPkg.MetadataDelta {
 
 	toAdd, toRemove, toUpdate := map[string]string{}, map[string]string{}, map[string]string{}
 
@@ -145,7 +145,7 @@ func getMetadataDelta(oldProps, newProps map[string]string) *metrics.MetadataDel
 	}
 
 	if len(toAdd) > 0 || len(toRemove) > 0 || len(toUpdate) > 0 {
-		return &metrics.MetadataDelta{
+		return &metadataPkg.MetadataDelta{
 			MetadataToAdd:    toAdd,
 			MetadataToRemove: toRemove,
 			MetadataToUpdate: toUpdate,

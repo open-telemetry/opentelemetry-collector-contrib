@@ -30,8 +30,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/testutils"
 )
 
@@ -211,145 +210,6 @@ func TestPhaseToInt(t *testing.T) {
 	}
 }
 
-var commonPodMetadata = map[string]string{
-	"foo":                    "bar",
-	"foo1":                   "",
-	"pod.creation_timestamp": "0001-01-01T00:00:00Z",
-}
-
-var allPodMetadata = func(metadata map[string]string) map[string]string {
-	out := util.MergeStringMaps(metadata, commonPodMetadata)
-	return out
-}
-
-func TestDataCollectorSyncMetadata(t *testing.T) {
-	tests := []struct {
-		name          string
-		metadataStore *metadataStore
-		resource      interface{}
-		want          map[metrics.ResourceID]*KubernetesMetadata
-	}{
-		{
-			name:          "Pod and container metadata simple case",
-			metadataStore: &metadataStore{},
-			resource: newPodWithContainer(
-				"0",
-				podSpecWithContainer("container-name"),
-				podStatusWithContainer("container-name", "container-id"),
-			),
-			want: map[metrics.ResourceID]*KubernetesMetadata{
-				metrics.ResourceID("test-pod-0-uid"): {
-					resourceIDKey: "k8s.pod.uid",
-					resourceID:    "test-pod-0-uid",
-					metadata:      commonPodMetadata,
-				},
-				metrics.ResourceID("container-id"): {
-					resourceIDKey: "container.id",
-					resourceID:    "container-id",
-					metadata: map[string]string{
-						"container.status": "running",
-					},
-				},
-			},
-		},
-		{
-			name:          "Empty container id skips container resource",
-			metadataStore: &metadataStore{},
-			resource: newPodWithContainer(
-				"0",
-				podSpecWithContainer("container-name"),
-				podStatusWithContainer("container-name", ""),
-			),
-			want: map[metrics.ResourceID]*KubernetesMetadata{
-				metrics.ResourceID("test-pod-0-uid"): {
-					resourceIDKey: "k8s.pod.uid",
-					resourceID:    "test-pod-0-uid",
-					metadata:      commonPodMetadata,
-				},
-			},
-		},
-		{
-			name:          "Pod with Owner Reference",
-			metadataStore: &metadataStore{},
-			resource: withOwnerReferences([]v1.OwnerReference{
-				{
-					Kind: "StatefulSet",
-					Name: "test-statefulset-0",
-					UID:  "test-statefulset-0-uid",
-				},
-			}, newPodWithContainer("0", &corev1.PodSpec{}, &corev1.PodStatus{})),
-			want: map[metrics.ResourceID]*KubernetesMetadata{
-				metrics.ResourceID("test-pod-0-uid"): {
-					resourceIDKey: "k8s.pod.uid",
-					resourceID:    "test-pod-0-uid",
-					metadata: allPodMetadata(map[string]string{
-						"k8s.workload.kind": "StatefulSet",
-						"k8s.workload.name": "test-statefulset-0",
-						"statefulset":       "test-statefulset-0",
-						"statefulset_uid":   "test-statefulset-0-uid",
-					}),
-				},
-			},
-		},
-		{
-			name: "Pod with Service metadata",
-			metadataStore: &metadataStore{
-				services: &testutils.MockStore{
-					Cache: map[string]interface{}{
-						"test-namespace/test-service": &corev1.Service{
-							ObjectMeta: v1.ObjectMeta{
-								Name:      "test-service",
-								Namespace: "test-namespace",
-								UID:       "test-service-uid",
-							},
-							Spec: corev1.ServiceSpec{
-								Selector: map[string]string{
-									"k8s-app": "my-app",
-								},
-							},
-						},
-					},
-				},
-			},
-			resource: podWithAdditionalLabels(
-				map[string]string{"k8s-app": "my-app"},
-				newPodWithContainer("0", &corev1.PodSpec{}, &corev1.PodStatus{}),
-			),
-			want: map[metrics.ResourceID]*KubernetesMetadata{
-				metrics.ResourceID("test-pod-0-uid"): {
-					resourceIDKey: "k8s.pod.uid",
-					resourceID:    "test-pod-0-uid",
-					metadata: allPodMetadata(map[string]string{
-						"kubernetes_service_test-service": "",
-						"k8s-app":                         "my-app",
-					}),
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		observedLogger, _ := observer.New(zapcore.WarnLevel)
-		logger := zap.New(observedLogger)
-		t.Run(tt.name, func(t *testing.T) {
-			dc := &DataCollector{
-				logger:                 logger,
-				metadataStore:          tt.metadataStore,
-				nodeConditionsToReport: []string{},
-			}
-
-			actual := dc.SyncMetadata(tt.resource)
-			require.Equal(t, len(tt.want), len(actual))
-
-			for key, item := range tt.want {
-				got, exists := actual[key]
-				require.True(t, exists)
-				require.Equal(t, *item, *got)
-			}
-		})
-	}
-}
-
 func TestDataCollectorSyncMetadataForPodWorkloads(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -433,7 +293,7 @@ func TestDataCollectorSyncMetadataForPodWorkloads(t *testing.T) {
 type testCase struct {
 	metadataStore *metadataStore
 	resource      interface{}
-	want          map[metrics.ResourceID]*KubernetesMetadata
+	want          map[metadata.ResourceID]*KubernetesMetadata
 	logMessage    string
 }
 
@@ -456,17 +316,17 @@ func testCaseForPodWorkload(to testCaseOptions) testCase {
 	return out
 }
 
-func expectedKubernetesMetadata(to testCaseOptions) map[metrics.ResourceID]*KubernetesMetadata {
+func expectedKubernetesMetadata(to testCaseOptions) map[metadata.ResourceID]*KubernetesMetadata {
 	podUIDLabel := "test-pod-0-uid"
 	kindLower := strings.ToLower(to.kind)
 	kindObjName := fmt.Sprintf("test-%s-0", kindLower)
 	kindObjUID := fmt.Sprintf("test-%s-0-uid", kindLower)
 	kindNameLabel := fmt.Sprintf("k8s.%s.name", kindLower)
 
-	out := map[metrics.ResourceID]*KubernetesMetadata{
-		metrics.ResourceID(podUIDLabel): {
+	out := map[metadata.ResourceID]*KubernetesMetadata{
+		metadata.ResourceID(podUIDLabel): {
 			resourceIDKey: "k8s.pod.uid",
-			resourceID:    metrics.ResourceID(podUIDLabel),
+			resourceID:    metadata.ResourceID(podUIDLabel),
 			metadata: map[string]string{
 				kindLower:          kindObjName,
 				kindLower + "_uid": kindObjUID,
@@ -478,26 +338,26 @@ func expectedKubernetesMetadata(to testCaseOptions) map[metrics.ResourceID]*Kube
 
 	// Add metadata gathered from informer caches to expected metadata.
 	if !withoutInfoFromCache {
-		out[metrics.ResourceID(podUIDLabel)].metadata["k8s.workload.kind"] = to.kind
-		out[metrics.ResourceID(podUIDLabel)].metadata["k8s.workload.name"] = kindObjName
-		out[metrics.ResourceID(podUIDLabel)].metadata[kindNameLabel] = kindObjName
+		out[metadata.ResourceID(podUIDLabel)].metadata["k8s.workload.kind"] = to.kind
+		out[metadata.ResourceID(podUIDLabel)].metadata["k8s.workload.name"] = kindObjName
+		out[metadata.ResourceID(podUIDLabel)].metadata[kindNameLabel] = kindObjName
 	}
 
 	// If the Pod's Owner Kind is not the actual owner (CronJobs -> Jobs and Deployments -> ReplicaSets),
 	// add metadata additional metadata to expected values.
 	if to.withParentOR {
-		delete(out[metrics.ResourceID(podUIDLabel)].metadata, kindNameLabel)
+		delete(out[metadata.ResourceID(podUIDLabel)].metadata, kindNameLabel)
 		switch to.kind {
 		case "Job":
-			out[metrics.ResourceID(podUIDLabel)].metadata["cronjob_uid"] = "test-cronjob-0-uid"
-			out[metrics.ResourceID(podUIDLabel)].metadata["k8s.cronjob.name"] = "test-cronjob-0"
-			out[metrics.ResourceID(podUIDLabel)].metadata["k8s.workload.name"] = "test-cronjob-0"
-			out[metrics.ResourceID(podUIDLabel)].metadata["k8s.workload.kind"] = "CronJob"
+			out[metadata.ResourceID(podUIDLabel)].metadata["cronjob_uid"] = "test-cronjob-0-uid"
+			out[metadata.ResourceID(podUIDLabel)].metadata["k8s.cronjob.name"] = "test-cronjob-0"
+			out[metadata.ResourceID(podUIDLabel)].metadata["k8s.workload.name"] = "test-cronjob-0"
+			out[metadata.ResourceID(podUIDLabel)].metadata["k8s.workload.kind"] = "CronJob"
 		case "ReplicaSet":
-			out[metrics.ResourceID(podUIDLabel)].metadata["deployment_uid"] = "test-deployment-0-uid"
-			out[metrics.ResourceID(podUIDLabel)].metadata["k8s.deployment.name"] = "test-deployment-0"
-			out[metrics.ResourceID(podUIDLabel)].metadata["k8s.workload.name"] = "test-deployment-0"
-			out[metrics.ResourceID(podUIDLabel)].metadata["k8s.workload.kind"] = "Deployment"
+			out[metadata.ResourceID(podUIDLabel)].metadata["deployment_uid"] = "test-deployment-0-uid"
+			out[metadata.ResourceID(podUIDLabel)].metadata["k8s.deployment.name"] = "test-deployment-0"
+			out[metadata.ResourceID(podUIDLabel)].metadata["k8s.workload.name"] = "test-deployment-0"
+			out[metadata.ResourceID(podUIDLabel)].metadata["k8s.workload.kind"] = "Deployment"
 		}
 	}
 	return out

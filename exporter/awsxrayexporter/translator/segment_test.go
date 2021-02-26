@@ -141,8 +141,8 @@ func TestSpanNoParentId(t *testing.T) {
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(pdata.InvalidSpanID())
 	span.SetKind(pdata.SpanKindPRODUCER)
-	span.SetStartTime(pdata.TimestampUnixNano(time.Now().UnixNano()))
-	span.SetEndTime(pdata.TimestampUnixNano(time.Now().Add(10).UnixNano()))
+	span.SetStartTime(pdata.TimestampFromTime(time.Now()))
+	span.SetEndTime(pdata.TimestampFromTime(time.Now().Add(10)))
 	resource := pdata.NewResource()
 	segment, _ := MakeSegment(span, resource, nil, false)
 
@@ -156,8 +156,8 @@ func TestSpanWithNoStatus(t *testing.T) {
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
 	span.SetKind(pdata.SpanKindSERVER)
-	span.SetStartTime(pdata.TimestampUnixNano(time.Now().UnixNano()))
-	span.SetEndTime(pdata.TimestampUnixNano(time.Now().Add(10).UnixNano()))
+	span.SetStartTime(pdata.TimestampFromTime(time.Now()))
+	span.SetEndTime(pdata.TimestampFromTime(time.Now().Add(10)))
 
 	resource := pdata.NewResource()
 	segment, _ := MakeSegment(span, resource, nil, false)
@@ -640,8 +640,8 @@ func constructClientSpan(parentSpanID pdata.SpanID, name string, code pdata.Stat
 	span.SetParentSpanID(parentSpanID)
 	span.SetName(name)
 	span.SetKind(pdata.SpanKindCLIENT)
-	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
-	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+	span.SetStartTime(pdata.TimestampFromTime(startTime))
+	span.SetEndTime(pdata.TimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(code)
@@ -667,8 +667,8 @@ func constructServerSpan(parentSpanID pdata.SpanID, name string, code pdata.Stat
 	span.SetParentSpanID(parentSpanID)
 	span.SetName(name)
 	span.SetKind(pdata.SpanKindSERVER)
-	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
-	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+	span.SetStartTime(pdata.TimestampFromTime(startTime))
+	span.SetEndTime(pdata.TimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(code)
@@ -734,7 +734,7 @@ func constructDefaultResource() pdata.Resource {
 	return resource
 }
 
-func constructTimedEventsWithReceivedMessageEvent(tm pdata.TimestampUnixNano) pdata.SpanEventSlice {
+func constructTimedEventsWithReceivedMessageEvent(tm pdata.Timestamp) pdata.SpanEventSlice {
 	eventAttr := pdata.NewAttributeMap()
 	eventAttr.InsertString(semconventions.AttributeMessageType, "RECEIVED")
 	eventAttr.InsertInt(semconventions.AttributeMessageID, 1)
@@ -752,7 +752,7 @@ func constructTimedEventsWithReceivedMessageEvent(tm pdata.TimestampUnixNano) pd
 	return events
 }
 
-func constructTimedEventsWithSentMessageEvent(tm pdata.TimestampUnixNano) pdata.SpanEventSlice {
+func constructTimedEventsWithSentMessageEvent(tm pdata.Timestamp) pdata.SpanEventSlice {
 	eventAttr := pdata.NewAttributeMap()
 	eventAttr.InsertString(semconventions.AttributeMessageType, "SENT")
 	eventAttr.InsertInt(semconventions.AttributeMessageID, 1)

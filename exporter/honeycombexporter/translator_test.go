@@ -63,18 +63,18 @@ func TestSpanAttributesToMap(t *testing.T) {
 
 func TestTimestampToTime(t *testing.T) {
 	var t1 time.Time
-	emptyTime := timestampToTime(pdata.TimestampUnixNano(0))
+	emptyTime := timestampToTime(pdata.Timestamp(0))
 	if t1 != emptyTime {
 		t.Errorf("Expected %+v, Got: %+v\n", t1, emptyTime)
 	}
 
 	t2 := time.Now()
 	seconds := t2.UnixNano() / 1000000000
-	nowTime := timestampToTime(pdata.TimestampToUnixNano(
-		&timestamppb.Timestamp{
+	nowTime := timestampToTime(pdata.TimestampFromTime(
+		(&timestamppb.Timestamp{
 			Seconds: seconds,
 			Nanos:   int32(t2.UnixNano() - (seconds * 1000000000)),
-		}))
+		}).AsTime()))
 
 	if !t2.Equal(nowTime) {
 		t.Errorf("Expected %+v, Got %+v\n", t2, nowTime)

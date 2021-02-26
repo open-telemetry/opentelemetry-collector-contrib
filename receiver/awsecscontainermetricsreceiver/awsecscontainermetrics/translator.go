@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-func convertToOTLPMetrics(prefix string, m ECSMetrics, r pdata.Resource, timestamp pdata.TimestampUnixNano) pdata.ResourceMetricsSlice {
+func convertToOTLPMetrics(prefix string, m ECSMetrics, r pdata.Resource, timestamp pdata.Timestamp) pdata.ResourceMetricsSlice {
 	rms := pdata.NewResourceMetricsSlice()
 	rms.Resize(1)
 	rm := rms.At(0)
@@ -61,7 +61,7 @@ func convertToOTLPMetrics(prefix string, m ECSMetrics, r pdata.Resource, timesta
 	return rms
 }
 
-func convertStoppedContainerDataToOTMetrics(prefix string, containerResource pdata.Resource, timestamp pdata.TimestampUnixNano, duration float64) pdata.ResourceMetricsSlice {
+func convertStoppedContainerDataToOTMetrics(prefix string, containerResource pdata.Resource, timestamp pdata.Timestamp, duration float64) pdata.ResourceMetricsSlice {
 	rms := pdata.NewResourceMetricsSlice()
 	rms.Resize(1)
 	rm := rms.At(0)
@@ -75,7 +75,8 @@ func convertStoppedContainerDataToOTMetrics(prefix string, containerResource pda
 	return rms
 }
 
-func intGauge(metricName string, unit string, value int64, ts pdata.TimestampUnixNano) pdata.InstrumentationLibraryMetrics {
+func intGauge(metricName string, unit string, value int64, ts pdata.Timestamp) pdata.InstrumentationLibraryMetrics {
+
 	ilm := pdata.NewInstrumentationLibraryMetrics()
 
 	metric := initMetric(ilm, metricName, unit)
@@ -88,7 +89,7 @@ func intGauge(metricName string, unit string, value int64, ts pdata.TimestampUni
 	return ilm
 }
 
-func intSum(metricName string, unit string, value int64, ts pdata.TimestampUnixNano) pdata.InstrumentationLibraryMetrics {
+func intSum(metricName string, unit string, value int64, ts pdata.Timestamp) pdata.InstrumentationLibraryMetrics {
 	ilm := pdata.NewInstrumentationLibraryMetrics()
 
 	metric := initMetric(ilm, metricName, unit)
@@ -102,7 +103,7 @@ func intSum(metricName string, unit string, value int64, ts pdata.TimestampUnixN
 	return ilm
 }
 
-func doubleGauge(metricName string, unit string, value float64, ts pdata.TimestampUnixNano) pdata.InstrumentationLibraryMetrics {
+func doubleGauge(metricName string, unit string, value float64, ts pdata.Timestamp) pdata.InstrumentationLibraryMetrics {
 	ilm := pdata.NewInstrumentationLibraryMetrics()
 
 	metric := initMetric(ilm, metricName, unit)
@@ -119,7 +120,7 @@ func doubleGauge(metricName string, unit string, value float64, ts pdata.Timesta
 	return ilm
 }
 
-func updateIntDataPoint(dataPoints pdata.IntDataPointSlice, value int64, ts pdata.TimestampUnixNano) {
+func updateIntDataPoint(dataPoints pdata.IntDataPointSlice, value int64, ts pdata.Timestamp) {
 	dataPoints.Resize(1)
 	dataPoint := dataPoints.At(0)
 	dataPoint.SetValue(value)

@@ -30,6 +30,6 @@ func addEndTime(endTime *float64, span *pdata.Span) {
 	}
 }
 
-func floatSecToNanoEpoch(epochSec *float64) pdata.TimestampUnixNano {
-	return pdata.TimestampUnixNano((*epochSec) * float64(time.Second))
+func floatSecToNanoEpoch(epochSec *float64) pdata.Timestamp {
+	return pdata.Timestamp((*epochSec) * float64(time.Second))
 }

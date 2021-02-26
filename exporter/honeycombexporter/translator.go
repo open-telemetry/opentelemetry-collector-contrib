@@ -42,7 +42,7 @@ func spanAttributesToMap(spanAttrs pdata.AttributeMap) map[string]interface{} {
 }
 
 // timestampToTime converts a protobuf timestamp into a time.Time.
-func timestampToTime(ts pdata.TimestampUnixNano) (t time.Time) {
+func timestampToTime(ts pdata.Timestamp) (t time.Time) {
 	if ts == 0 {
 		return
 	}

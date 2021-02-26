@@ -88,8 +88,7 @@ type Config struct {
 
 	// ExcludeMetrics defines dpfilter.MetricFilters that will determine metrics to be
 	// excluded from sending to SignalFx backend. If translations enabled with
-	// SendCompatibleMetrics or TranslationRules options, the exclusion will be applied
-	// on translated metrics.
+	// TranslationRules options, the exclusion will be applie on translated metrics.
 	ExcludeMetrics []dpfilters.MetricFilter `mapstructure:"exclude_metrics"`
 
 	// IncludeMetrics defines dpfilter.MetricFilters to override exclusion any of metric.
@@ -99,6 +98,10 @@ type Config struct {
 
 	// Correlation configuration for syncing traces service and environment to metrics.
 	Correlation *correlation.Config `mapstructure:"correlation"`
+
+	// NonAlphanumericDimensionChars is a list of allowable characters, in addition to alphanumeric ones,
+	// to be used in a dimension key.
+	NonAlphanumericDimensionChars string `mapstructure:"nonalphanumeric_dimension_chars"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {

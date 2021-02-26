@@ -2586,7 +2586,7 @@ func testConverter(t *testing.T, mapping map[string]string) *MetricsConverter {
 	tr, err := NewMetricTranslator(rules, 1)
 	require.NoError(t, err)
 
-	c, err := NewMetricsConverter(zap.NewNop(), tr, nil, nil)
+	c, err := NewMetricsConverter(zap.NewNop(), tr, nil, nil, "")
 	require.NoError(t, err)
 	return c
 }
@@ -2656,7 +2656,7 @@ func dblTS(lbl0 string, lbl1 string, secondsDelta int64, v float64, valueDelta f
 		"state": lbl1,
 	})
 	const startTime = 1600000000
-	out.SetTimestamp(pdata.TimestampUnixNano(time.Duration(startTime+secondsDelta) * time.Second))
+	out.SetTimestamp(pdata.Timestamp(time.Duration(startTime+secondsDelta) * time.Second))
 	out.SetValue(v + valueDelta)
 	return out
 }
@@ -2668,7 +2668,7 @@ func intTS(lbl0 string, lbl1 string, secondsDelta int64, v int64, valueDelta int
 		"state": lbl1,
 	})
 	const startTime = 1600000000
-	out.SetTimestamp(pdata.TimestampUnixNano(time.Duration(startTime+secondsDelta) * time.Second))
+	out.SetTimestamp(pdata.Timestamp(time.Duration(startTime+secondsDelta) * time.Second))
 	out.SetValue(v + valueDelta)
 	return out
 }

@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 // TODO: Consider moving some of these constants to
@@ -158,8 +158,8 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 }
 
 // SyncMetadata updates the metric store with latest metrics from the kubernetes object
-func (dc *DataCollector) SyncMetadata(obj interface{}) map[metrics.ResourceID]*KubernetesMetadata {
-	km := map[metrics.ResourceID]*KubernetesMetadata{}
+func (dc *DataCollector) SyncMetadata(obj interface{}) map[metadata.ResourceID]*KubernetesMetadata {
+	km := map[metadata.ResourceID]*KubernetesMetadata{}
 	switch o := obj.(type) {
 	case *corev1.Pod:
 		km = getMetadataForPod(o, dc.metadataStore, dc.logger)
