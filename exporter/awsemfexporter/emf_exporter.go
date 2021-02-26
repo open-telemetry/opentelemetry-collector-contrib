@@ -108,6 +108,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (dr
 	groupedMetrics := make(map[interface{}]*GroupedMetric)
 	expConfig := emf.config.(*Config)
 	defaultLogStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
+	runInLambda := expConfig.RunInLambda
 
 	rms := md.ResourceMetrics()
 
@@ -120,23 +121,28 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (dr
 		cWMetric := translateGroupedMetricToCWMetric(groupedMetric, expConfig)
 		putLogEvent := translateCWMetricToEMF(cWMetric)
 
-		logGroup := groupedMetric.Metadata.LogGroup
-		logStream := groupedMetric.Metadata.LogStream
-		if logStream == "" {
-			logStream = defaultLogStream
-		}
-
-		pusher := emf.getPusher(logGroup, logStream)
-		if pusher != nil {
-			returnError := pusher.AddLogEntry(putLogEvent)
-			if returnError != nil {
-				err = wrapErrorIfBadRequest(&returnError)
-				return
+		// If RUN_IN_LAMBDA, send EMF log into stdout, which will then be redirected to CWLogs by Lambda
+		if runInLambda {
+			fmt.Println(*putLogEvent.InputLogEvent.Message)
+		} else {
+			logGroup := groupedMetric.Metadata.LogGroup
+			logStream := groupedMetric.Metadata.LogStream
+			if logStream == "" {
+				logStream = defaultLogStream
 			}
-			returnError = pusher.ForceFlush()
-			if returnError != nil {
-				err = wrapErrorIfBadRequest(&returnError)
-				return
+
+			pusher := emf.getPusher(logGroup, logStream)
+			if pusher != nil {
+				returnError := pusher.AddLogEntry(putLogEvent)
+				if returnError != nil {
+					err = wrapErrorIfBadRequest(&returnError)
+					return
+				}
+				returnError = pusher.ForceFlush()
+				if returnError != nil {
+					err = wrapErrorIfBadRequest(&returnError)
+					return
+				}
 			}
 		}
 	}

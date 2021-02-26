@@ -67,6 +67,9 @@ type Config struct {
 	// MetricDescriptors is the list of override metric descriptors that are sent to the CloudWatch
 	MetricDescriptors []MetricDescriptor `mapstructure:"metric_descriptors"`
 
+	// RunInLambda is an option to support AWS Lambda. (In Lambda, the EMF output will be directed to stdout)
+	RunInLambda bool `mapstructure:"run_in_lambda"`
+
 	// ResourceToTelemetrySettings is the option for converting resource attrihutes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
 	// If enabled, all the resource attributes will be converted to metric labels by default.

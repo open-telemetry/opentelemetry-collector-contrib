@@ -54,6 +54,7 @@ func createDefaultConfig() configmodels.Exporter {
 		RoleARN:               "",
 		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
 		MetricDeclarations:    make([]*MetricDeclaration, 0),
+		RunInLambda:           false,
 		logger:                nil,
 	}
 }
