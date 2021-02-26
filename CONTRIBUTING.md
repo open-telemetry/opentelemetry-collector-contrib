@@ -6,7 +6,7 @@ information on this and other language SIGs.
 
 See the [public meeting notes](https://docs.google.com/document/d/1CIMGoIOZ-c3-igzbd6_Pnxx1SjAkjwqoYSUWxPY8XIs/edit)
 for a summary description of past meetings. To request edit access, join the
-meeting or get in touch on [Gitter](https://gitter.im/open-telemetry/opentelemetry-python).
+meeting or get in touch on [Slack](https://cloud-native.slack.com/archives/C01PD4HUVBL).
 
 See to the [community membership document](https://github.com/open-telemetry/community/blob/main/community-membership.md)
 on how to become a [**Member**](https://github.com/open-telemetry/community/blob/main/community-membership.md#member),
@@ -16,9 +16,9 @@ and [**Maintainer**](https://github.com/open-telemetry/community/blob/main/commu
 ## Find a Buddy and get Started Quickly!
 
 If you are looking for someone to help you find a starting point and be a resource for your first contribution, join our
-Gitter and find a buddy!
+Slack and find a buddy!
 
-1. Join [Gitter.im](https://gitter.im) and join our [chat room](https://gitter.im/open-telemetry/opentelemetry-python).
+1. Join [Slack](https://slack.cncf.io/) and join our [chat room](https://cloud-native.slack.com/archives/C01PD4HUVBL).
 2. Post in the room with an introduction to yourself, what area you are interested in (check issues marked "Help Wanted"),
 and say you are looking for a buddy. We will match you with someone who has experience in that area.
 

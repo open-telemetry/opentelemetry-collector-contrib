@@ -4,9 +4,9 @@ OpenTelemetry-Python-Contrib
 Complimentary instrumentation and vendor-specific packages for use with the
 Python `OpenTelemetry <https://opentelemetry.io/>`_ client.
 
-.. image:: https://img.shields.io/gitter/room/opentelemetry/opentelemetry-python
-   :target: https://gitter.im/open-telemetry/opentelemetry-python
-   :alt: Gitter Chat
+.. image:: https://img.shields.io/badge/slack-chat-green.svg
+   :target: https://cloud-native.slack.com/archives/C01PD4HUVBL
+   :alt: Slack Chat
 
 
 **Please note** that this library is currently in _beta_, and shouldn't
