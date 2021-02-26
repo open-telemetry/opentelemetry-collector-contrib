@@ -39,16 +39,16 @@ Install the OpenTelemetry SDK package.
 
     pip install opentelemetry-sdk
 
-Next, use the provided `AwsXRayIdsGenerator` to initialize the `TracerProvider`.
+Next, use the provided `AwsXRayIdGenerator` to initialize the `TracerProvider`.
 
 .. code-block:: python
 
     import opentelemetry.trace as trace
-    from opentelemetry.sdk.extension.aws.trace import AwsXRayIdsGenerator
+    from opentelemetry.sdk.extension.aws.trace import AwsXRayIdGenerator
     from opentelemetry.sdk.trace import TracerProvider
 
     trace.set_tracer_provider(
-        TracerProvider(ids_generator=AwsXRayIdsGenerator())
+        TracerProvider(id_generator=AwsXRayIdGenerator())
     )
 
 API
@@ -59,13 +59,10 @@ API
 import random
 import time
 
-from opentelemetry.sdk.trace.ids_generator import (
-    IdsGenerator,
-    RandomIdsGenerator,
-)
+from opentelemetry.sdk.trace.id_generator import IdGenerator, RandomIdGenerator
 
 
-class AwsXRayIdsGenerator(IdsGenerator):
+class AwsXRayIdGenerator(IdGenerator):
     """Generates tracing IDs compatible with the AWS X-Ray tracing service. In
     the X-Ray system, the first 32 bits of the `TraceId` are the Unix epoch time
     in seconds. Since spans (AWS calls them segments) with an embedded timestamp
@@ -75,10 +72,10 @@ class AwsXRayIdsGenerator(IdsGenerator):
     See: https://docs.aws.amazon.com/xray/latest/devguide/xray-api-sendingdata.html#xray-api-traceids
     """
 
-    random_ids_generator = RandomIdsGenerator()
+    random_id_generator = RandomIdGenerator()
 
     def generate_span_id(self) -> int:
-        return self.random_ids_generator.generate_span_id()
+        return self.random_id_generator.generate_span_id()
 
     @staticmethod
     def generate_trace_id() -> int:

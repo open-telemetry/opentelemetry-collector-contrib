@@ -30,16 +30,16 @@ Install the OpenTelemetry SDK package.
 
     pip install opentelemetry-sdk
 
-Next, use the provided `AwsXRayIdsGenerator` to initialize the `TracerProvider`.
+Next, use the provided `AwsXRayIdGenerator` to initialize the `TracerProvider`.
 
 .. code-block:: python
 
     import opentelemetry.trace as trace
-    from opentelemetry.sdk.extension.aws.trace import AwsXRayIdsGenerator
+    from opentelemetry.sdk.extension.aws.trace import AwsXRayIdGenerator
     from opentelemetry.sdk.trace import TracerProvider
 
     trace.set_tracer_provider(
-        TracerProvider(ids_generator=AwsXRayIdsGenerator())
+        TracerProvider(id_generator=AwsXRayIdGenerator())
     )
 
 

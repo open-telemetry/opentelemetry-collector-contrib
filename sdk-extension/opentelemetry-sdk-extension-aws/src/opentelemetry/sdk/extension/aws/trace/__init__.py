@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from opentelemetry.sdk.extension.aws.trace.aws_xray_ids_generator import (
-    AwsXRayIdsGenerator,
+from opentelemetry.sdk.extension.aws.trace.aws_xray_id_generator import (
+    AwsXRayIdGenerator,
 )
 
-__all__ = ["AwsXRayIdsGenerator"]
+__all__ = ["AwsXRayIdGenerator"]
