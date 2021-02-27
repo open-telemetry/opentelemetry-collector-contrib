@@ -222,6 +222,7 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 	}
 
 	// add metric_type dimension for all metrics
+
 	if enableMetricType {
 		var metricType = ""
 		switch result.description.statsdMetricType {
