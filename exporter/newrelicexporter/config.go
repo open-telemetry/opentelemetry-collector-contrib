@@ -25,8 +25,11 @@ import (
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
-	// APIKey is the required authentication credentials for New Relic APIs.
+	// APIKey is the required authentication credentials for New Relic APIs. This field specifies the default key.
 	APIKey string `mapstructure:"apikey"`
+
+	// APIKeyHeader may be specified to instruct the exporter to extract the API key from the request context.
+	APIKeyHeader string `mapstructure:"api_key_header"`
 
 	// Timeout is the total amount of time spent attempting a request,
 	// including retries, before abandoning and dropping data. Default is 15

@@ -446,3 +446,40 @@ func TestExportMetricDataFull(t *testing.T) {
 
 	testExportMetricData(t, expected, md)
 }
+
+func TestHandleResponseError(t *testing.T) {
+	logger, _ := zap.NewDevelopmentConfig().Build()
+	e := exporter{logger: logger}
+
+	// Simple mappings
+	expectedErr := status.Errorf(codes.InvalidArgument, http.StatusText(http.StatusBadRequest))
+	assert.Equal(t, expectedErr, e.handleResponseError(responseOf(http.StatusBadRequest, http.StatusText(http.StatusBadRequest))))
+
+	expectedErr = status.Errorf(codes.Unauthenticated, http.StatusText(http.StatusForbidden))
+	assert.Equal(t, expectedErr, e.handleResponseError(responseOf(http.StatusForbidden, http.StatusText(http.StatusForbidden))))
+
+	// Default mapping
+	expectedErr = status.Errorf(codes.DataLoss, http.StatusText(http.StatusInternalServerError))
+	assert.Equal(t, expectedErr, e.handleResponseError(responseOf(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))))
+
+	// Unavailable w/ bad Retry-After header
+	response := responseOf(http.StatusTooManyRequests, http.StatusText(http.StatusTooManyRequests))
+	response.Header.Add("Retry-After", "foo")
+	expectedErr = status.Errorf(codes.Unavailable, http.StatusText(http.StatusTooManyRequests))
+	assert.Equal(t, expectedErr, e.handleResponseError(response))
+
+	// Unavailable w/ good Retry-After header
+	response = responseOf(http.StatusTooManyRequests, http.StatusText(http.StatusTooManyRequests))
+	response.Header.Add("Retry-After", "10")
+	message := &errdetails.RetryInfo{RetryDelay: &duration.Duration{Seconds: 10}}
+	s, _ := status.New(codes.Unavailable, response.Status).WithDetails(message)
+	assert.Equal(t, s.Err(), e.handleResponseError(response))
+}
+
+func responseOf(statusCode int, statusText string) *http.Response {
+	return &http.Response{
+		StatusCode: statusCode,
+		Status:     statusText,
+		Header:     http.Header{},
+	}
+}
