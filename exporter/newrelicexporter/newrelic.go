@@ -20,11 +20,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
-	"strconv"
 	"strings"
 
-	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/cumulative"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -33,10 +30,7 @@ import (
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 )
 
 const (
@@ -188,74 +182,26 @@ func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, erro
 	// Execute the http request and handle the response
 	response, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return 0, e.handleHTTPError(err)
+		e.logger.Error("Error making HTTP request.", zap.Error(err))
+		return 0, &urlError{Err: err}
 	}
 	defer response.Body.Close()
 	io.Copy(ioutil.Discard, response.Body)
 
-	if response.StatusCode == http.StatusAccepted || response.StatusCode == http.StatusOK {
-		return td.SpanCount() - goodSpans, componenterror.CombineErrors(errs)
-	}
-	return 0, e.handleResponseError(response)
-}
-
-func (e exporter) handleHTTPError(err error) error {
-	e.logger.Error("Error making HTTP request.", zap.Error(err))
-	urlError := err.(*url.Error)
-	// If error is temporary, return retryable DataLoss code
-	if urlError.Temporary() {
-		return status.Errorf(codes.DataLoss, urlError.Error())
-	}
-	// Else, return non-retryable Internal code
-	return status.Errorf(codes.Internal, urlError.Error())
-}
-
-// Explicit mapping for the error status codes describe by the trace API:
-// https://docs.newrelic.com/docs/understand-dependencies/distributed-tracing/trace-api/trace-api-general-requirements-limits#response-validation
-var httpGrpcMapping = map[int]codes.Code{
-	http.StatusBadRequest:                  codes.InvalidArgument,
-	http.StatusForbidden:                   codes.Unauthenticated,
-	http.StatusNotFound:                    codes.NotFound,
-	http.StatusMethodNotAllowed:            codes.InvalidArgument,
-	http.StatusRequestTimeout:              codes.DeadlineExceeded,
-	http.StatusLengthRequired:              codes.InvalidArgument,
-	http.StatusRequestEntityTooLarge:       codes.InvalidArgument,
-	http.StatusRequestURITooLong:           codes.InvalidArgument,
-	http.StatusUnsupportedMediaType:        codes.InvalidArgument,
-	http.StatusTooManyRequests:             codes.Unavailable,
-	http.StatusRequestHeaderFieldsTooLarge: codes.InvalidArgument,
-	http.StatusInternalServerError:         codes.DataLoss,
-}
-
-func (e exporter) handleResponseError(response *http.Response) error {
-	// Log the error at an appropriate level based on the status code
-	if response.StatusCode >= 500 {
-		e.logger.Error("Error on HTTP response.", zap.String("Status", response.Status))
-	} else {
-		e.logger.Debug("Error on HTTP response.", zap.String("Status", response.Status))
-	}
-
-	mapEntry, ok := httpGrpcMapping[response.StatusCode]
-	// If no explicit mapping exists, return retryable DataLoss code
-	if !ok {
-		return status.Errorf(codes.DataLoss, response.Status)
-	}
-	// The OTLP spec uses the Unavailable code to signal backpressure to the client
-	// If the http status maps to Unavailable, attempt to extract and communicate retry info to the client
-	if mapEntry == codes.Unavailable {
-		retryAfter := response.Header.Get("Retry-After")
-		retrySeconds, err := strconv.ParseInt(retryAfter, 10, 64)
-		if err == nil {
-			message := &errdetails.RetryInfo{RetryDelay: &duration.Duration{Seconds: retrySeconds}}
-			status, statusErr := status.New(codes.Unavailable, response.Status).WithDetails(message)
-			if statusErr == nil {
-				return status.Err()
-			}
+	// Check if the http payload has been accepted, if not record an error
+	if response.StatusCode != http.StatusAccepted {
+		// Log the error at an appropriate level based on the status code
+		if response.StatusCode >= 500 {
+			e.logger.Error("Error on HTTP response.", zap.String("Status", response.Status))
+		} else {
+			e.logger.Debug("Error on HTTP response.", zap.String("Status", response.Status))
 		}
+
+		return 0, &httpError{Response: response}
 	}
 
-	// Generate an error with the mapped code, and a message containing the server's response status string
-	return status.Errorf(mapEntry, response.Status)
+	return td.SpanCount() - goodSpans, componenterror.CombineErrors(errs)
+
 }
 
 func (e exporter) pushMetricData(ctx context.Context, md pdata.Metrics) (int, error) {
