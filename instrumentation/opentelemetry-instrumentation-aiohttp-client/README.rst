@@ -30,7 +30,7 @@ Example
    from opentelemetry import trace
    from opentelemetry.exporter import jaeger
    from opentelemetry.sdk.trace import TracerProvider
-   from opentelemetry.sdk.trace.export import BatchExportSpanProcessor
+   from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 
    _JAEGER_EXPORTER = jaeger.JaegerSpanExporter(
@@ -40,7 +40,7 @@ Example
    )
 
    _TRACE_PROVIDER = TracerProvider()
-   _TRACE_PROVIDER.add_span_processor(BatchExportSpanProcessor(_JAEGER_EXPORTER))
+   _TRACE_PROVIDER.add_span_processor(BatchSpanProcessor(_JAEGER_EXPORTER))
    trace.set_tracer_provider(_TRACE_PROVIDER)
 
    AioHttpClientInstrumentor().instrument()

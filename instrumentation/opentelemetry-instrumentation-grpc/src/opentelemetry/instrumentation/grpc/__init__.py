@@ -30,7 +30,7 @@ Usage Client
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import (
         ConsoleSpanExporter,
-        SimpleExportSpanProcessor,
+        SimpleSpanProcessor,
     )
 
     try:
@@ -40,7 +40,7 @@ Usage Client
 
     trace.set_tracer_provider(TracerProvider())
     trace.get_tracer_provider().add_span_processor(
-        SimpleExportSpanProcessor(ConsoleSpanExporter())
+        SimpleSpanProcessor(ConsoleSpanExporter())
     )
 
     instrumentor = GrpcInstrumentorClient().instrument()
@@ -72,7 +72,7 @@ Usage Server
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import (
         ConsoleSpanExporter,
-        SimpleExportSpanProcessor,
+        SimpleSpanProcessor,
     )
 
     try:
@@ -82,7 +82,7 @@ Usage Server
 
     trace.set_tracer_provider(TracerProvider())
     trace.get_tracer_provider().add_span_processor(
-        SimpleExportSpanProcessor(ConsoleSpanExporter())
+        SimpleSpanProcessor(ConsoleSpanExporter())
     )
 
     grpc_server_instrumentor = GrpcInstrumentorServer()

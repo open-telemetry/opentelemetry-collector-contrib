@@ -76,7 +76,7 @@ def tracer_provider(memory_exporter):
 
     tracer_provider = TracerProvider()
 
-    span_processor = export.SimpleExportSpanProcessor(memory_exporter)
+    span_processor = export.SimpleSpanProcessor(memory_exporter)
     tracer_provider.add_span_processor(span_processor)
 
     trace_api.set_tracer_provider(tracer_provider)

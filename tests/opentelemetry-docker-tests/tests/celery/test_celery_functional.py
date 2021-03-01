@@ -520,7 +520,7 @@ def test_custom_tracer_provider(celery_app, memory_exporter):
 
     resource = resources.Resource.create({})
     tracer_provider = TracerProvider(resource=resource)
-    span_processor = export.SimpleExportSpanProcessor(memory_exporter)
+    span_processor = export.SimpleSpanProcessor(memory_exporter)
     tracer_provider.add_span_processor(span_processor)
 
     trace_api.set_tracer_provider(tracer_provider)
