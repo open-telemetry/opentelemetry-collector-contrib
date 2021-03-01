@@ -8,6 +8,7 @@ The `tcp_input` operator listens for logs on one or more TCP connections. The op
 | ---               | ---              | ---                                                                               |
 | `id`              | `tcp_input`      | A unique identifier for the operator                                              |
 | `output`          | Next in pipeline | The connected operator(s) that will receive all outbound entries                  |
+| `max_buffer_size` | `1024kib`        | Maximum size of buffer that may be allocated while reading TCP input              |
 | `listen_address`  | required         | A listen address of the form `<ip>:<port>`                                        |
 | `tls`             |                  | An optional `TLS` configuration (see the TLS configuration section)               |
 | `write_to`        | $                | The record [field](/docs/types/field.md) written to when creating a new log entry |
