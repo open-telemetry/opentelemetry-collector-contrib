@@ -121,7 +121,11 @@ func (c *client) sendSplunkEvents(ctx context.Context, splunkEvents []*splunk.Ev
 		return consumererror.Permanent(err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", c.url.String(), body)
+	return c.postEvents(ctx, body, compressed)
+}
+
+func (c *client) postEvents(ctx context.Context, events io.Reader, compressed bool) error {
+	req, err := http.NewRequestWithContext(ctx, "POST", c.url.String(), events)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
@@ -157,14 +161,46 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (numDroppedLogs
 	c.wg.Add(1)
 	defer c.wg.Done()
 
-	splunkEvents := logDataToSplunk(c.logger, ld, c.config)
-	if len(splunkEvents) == 0 {
-		return 0, nil
-	}
+	gwriter := c.zippers.Get().(*gzip.Writer)
+	defer c.zippers.Put(gwriter)
 
-	err = c.sendSplunkEvents(ctx, splunkEvents)
-	if err != nil {
-		return ld.LogRecordCount(), err
+	gzipBuf := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLength))
+	gwriter.Reset(gzipBuf)
+	defer gwriter.Close()
+
+	ldWrapper := logDataWrapper{&ld}
+	eventsCh, cancel := ldWrapper.eventsInChunks(c.logger, c.config)
+	defer cancel()
+
+	for events := range eventsCh {
+		if events.err != nil {
+			return ldWrapper.processErr(events.index, events.err)
+		}
+
+		if events.buf.Len() == 0 {
+			continue
+		}
+
+		// Not compressing if compression disabled or payload fit into a single ethernet frame.
+		if events.buf.Len() <= 1500 || c.config.DisableCompression {
+			if err = c.postEvents(ctx, events.buf, false); err != nil {
+				return ldWrapper.processErr(events.index, err)
+			}
+			continue
+		}
+
+		if _, err = gwriter.Write(events.buf.Bytes()); err != nil {
+			return ldWrapper.processErr(events.index, consumererror.Permanent(err))
+		}
+
+		gwriter.Flush()
+
+		if err = c.postEvents(ctx, gzipBuf, true); err != nil {
+			return ldWrapper.processErr(events.index, err)
+		}
+
+		gzipBuf.Reset()
+		gwriter.Reset(gzipBuf)
 	}
 
 	return 0, nil

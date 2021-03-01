@@ -15,8 +15,13 @@
 package splunkhecexporter
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
@@ -24,20 +29,142 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-func logDataToSplunk(logger *zap.Logger, ld pdata.Logs, config *Config) []*splunk.Event {
-	var splunkEvents []*splunk.Event
-	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
-		ills := rls.At(i).InstrumentationLibraryLogs()
-		for j := 0; j < ills.Len(); j++ {
-			logs := ills.At(j).Logs()
-			for k := 0; k < logs.Len(); k++ {
-				splunkEvents = append(splunkEvents, mapLogRecordToSplunkEvent(logs.At(k), config, logger))
+// eventsBuf is a buffer of JSON encoded Splunk events.
+// The events are created from LogRecord(s) where one event maps to one LogRecord.
+type eventsBuf struct {
+	buf *bytes.Buffer
+	// index is the eventIndex of the 1st event in buf.
+	index *eventIndex
+	err   error
+}
+
+// The index of an event composed of indices of the event's LogRecord.
+type eventIndex struct {
+	// Index of the LogRecord slice element from which the event is created.
+	log int
+	// Index of the InstrumentationLibraryLogs slice element parent of the LogRecord.
+	lib int
+	// Index of the ResourceLogs slice element parent of the InstrumentationLibraryLogs.
+	src int
+}
+
+type logDataWrapper struct {
+	*pdata.Logs
+}
+
+func (ld *logDataWrapper) eventsInChunks(logger *zap.Logger, config *Config) (chan *eventsBuf, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
+	eventsCh := make(chan *eventsBuf)
+
+	go func() {
+		defer close(eventsCh)
+
+		// event buffers a single event.
+		event := new(bytes.Buffer)
+		encoder := json.NewEncoder(event)
+
+		// events buffers events up to the max content length.
+		events := &eventsBuf{buf: new(bytes.Buffer)}
+
+		rl := ld.ResourceLogs()
+		for i := 0; i < rl.Len(); i++ {
+			ill := rl.At(i).InstrumentationLibraryLogs()
+			for j := 0; j < ill.Len(); j++ {
+				l := ill.At(j).Logs()
+				for k := 0; k < l.Len(); k++ {
+					select {
+					case <-ctx.Done():
+						return
+					default:
+						if err := encoder.Encode(mapLogRecordToSplunkEvent(l.At(k), config, logger)); err != nil {
+							eventsCh <- &eventsBuf{buf: nil, index: nil, err: consumererror.Permanent(err)}
+							return
+						}
+						event.WriteString("\r\n\r\n")
+
+						// The size of an event must be less than or equal to max content length.
+						if config.MaxContentLength > 0 && event.Len() > config.MaxContentLength {
+							err := fmt.Errorf("found a log event bigger than max content length (event: %d bytes, max: %d bytes)", config.MaxContentLength, event.Len())
+							eventsCh <- &eventsBuf{buf: nil, index: nil, err: consumererror.Permanent(err)}
+							return
+						}
+
+						// Moving the event to events.buf if length will be <= max content length.
+						// Max content length <= 0 is interpreted as unbound.
+						if events.buf.Len()+event.Len() <= config.MaxContentLength || config.MaxContentLength <= 0 {
+							// WriteTo() empties and resets buffer event.
+							if _, err := event.WriteTo(events.buf); err != nil {
+								eventsCh <- &eventsBuf{buf: nil, index: nil, err: consumererror.Permanent(err)}
+								return
+							}
+
+							// Setting events index using the log record indices of the 1st event.
+							if events.index == nil {
+								events.index = &eventIndex{src: i, lib: j, log: k}
+							}
+
+							continue
+						}
+
+						eventsCh <- events
+
+						// Creating a new events buffer.
+						events = &eventsBuf{buf: new(bytes.Buffer)}
+						// Setting events index using the log record indices of any current leftover event.
+						if event.Len() != 0 {
+							events.index = &eventIndex{src: i, lib: j, log: k}
+						}
+					}
+				}
+			}
+		}
+
+		// Writing any leftover event to eventsBuf buffer `events.buf`.
+		if _, err := event.WriteTo(events.buf); err != nil {
+			eventsCh <- &eventsBuf{buf: nil, index: nil, err: consumererror.Permanent(err)}
+			return
+		}
+
+		eventsCh <- events
+
+	}()
+	return eventsCh, cancel
+}
+
+func (ld *logDataWrapper) countLogs(start *eventIndex) int {
+	count, orig := 0, *ld.InternalRep().Orig
+	for i := start.src; i < len(orig); i++ {
+		for j, iLLogs := range orig[i].InstrumentationLibraryLogs {
+			switch {
+			case i == start.src && j < start.lib:
+				continue
+			default:
+				count += len(iLLogs.Logs)
 			}
 		}
 	}
+	return count - start.log
+}
 
-	return splunkEvents
+func (ld *logDataWrapper) trimLeft(end *eventIndex) *pdata.Logs {
+	clone := ld.Clone()
+	orig := *clone.InternalRep().Orig
+	orig = orig[end.src:]
+	orig[end.src].InstrumentationLibraryLogs = orig[end.src].InstrumentationLibraryLogs[end.lib:]
+	orig[end.src].InstrumentationLibraryLogs[end.lib].Logs = orig[end.src].InstrumentationLibraryLogs[end.lib].Logs[end.log:]
+	return &clone
+}
+
+func (ld *logDataWrapper) processErr(index *eventIndex, err error) (int, error) {
+	if consumererror.IsPermanent(err) {
+		return ld.countLogs(index), err
+	}
+
+	if _, ok := err.(consumererror.PartialError); ok {
+		failedLogs := ld.trimLeft(index)
+		return failedLogs.LogRecordCount(), consumererror.PartialLogsError(err, *failedLogs)
+	}
+	return ld.LogRecordCount(), err
 }
 
 func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {

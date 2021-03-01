@@ -60,6 +60,9 @@ type Config struct {
 
 	// insecure_skip_verify skips checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
+
+	// MaxContentLength is the Splunk HEC endpoint content length limit. Defaults to 1Mib, the current limit.
+	MaxContentLength int `mapstructure:"max_content_length"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
