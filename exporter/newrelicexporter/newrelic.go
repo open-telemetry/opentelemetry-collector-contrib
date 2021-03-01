@@ -101,11 +101,11 @@ func newTraceExporter(l *zap.Logger, c configmodels.Exporter) (*exporter, error)
 
 	if nrConfig.SpansURLOverride != "" {
 		spansURL, err := url.Parse(nrConfig.SpansURLOverride)
-		if (err != nil) {
+		if err != nil {
 			return nil, err
 		}
 		options = append(options, telemetry.WithEndpoint(spansURL.Host))
-		if (strings.ToLower(spansURL.Scheme) == "http") {
+		if strings.ToLower(spansURL.Scheme) == "http" {
 			options = append(options, telemetry.WithInsecure())
 		}
 	}
