@@ -158,6 +158,7 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 	}
 
 	result.description.statsdMetricType = parts[1]
+	
 	if !contains(getSupportedTypes(), result.description.statsdMetricType) {
 		return result, fmt.Errorf("unsupported metric type: %s", result.description.statsdMetricType)
 	}
