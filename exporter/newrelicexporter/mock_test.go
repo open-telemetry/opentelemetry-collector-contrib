@@ -98,7 +98,7 @@ func (c *Mock) Server() *httptest.Server {
 			return
 		}
 
-		w.WriteHeader(200)
+		w.WriteHeader(202)
 	}))
 }
 
