@@ -10,7 +10,7 @@ require (
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/collector v0.21.1-0.20210225192722-e6319ac4c6fc
 	go.opentelemetry.io/otel v0.17.0
-	go.opentelemetry.io/otel/sdk v0.16.0
+	go.opentelemetry.io/otel/sdk v0.17.0
 	go.opentelemetry.io/otel/trace v0.17.0
 	go.uber.org/zap v1.16.0
 	google.golang.org/api v0.40.0
