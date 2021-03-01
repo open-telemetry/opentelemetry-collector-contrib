@@ -20,6 +20,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/newrelic/newrelic-telemetry-sdk-go/cumulative"
@@ -98,9 +99,15 @@ func newTraceExporter(l *zap.Logger, c configmodels.Exporter) (*exporter, error)
 		options = append(options, telemetry.WithNoDefaultKey())
 	}
 
-	// TODO: Need to make sure this supports a URL with a scheme and path
 	if nrConfig.SpansURLOverride != "" {
-		options = append(options, telemetry.WithEndpoint(nrConfig.SpansURLOverride))
+		spansURL, err := url.Parse(nrConfig.SpansURLOverride)
+		if (err != nil) {
+			return nil, err
+		}
+		options = append(options, telemetry.WithEndpoint(spansURL.Host))
+		if (strings.ToLower(spansURL.Scheme) == "http") {
+			options = append(options, telemetry.WithInsecure())
+		}
 	}
 	s, err := telemetry.NewSpanRequestFactory(options...)
 	if nil != err {
