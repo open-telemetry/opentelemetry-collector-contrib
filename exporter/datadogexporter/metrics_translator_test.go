@@ -579,7 +579,7 @@ func createTestMetrics() pdata.Metrics {
 	ilms.Resize(1)
 
 	metricsArray := ilms.At(0).Metrics()
-	metricsArray.Resize(7) // first one is TypeNone to test that it's ignored
+	metricsArray.Resize(9) // first one is TypeNone to test that it's ignored
 
 	// IntGauge
 	met := metricsArray.At(1)
@@ -591,7 +591,7 @@ func createTestMetrics() pdata.Metrics {
 	dpInt.SetTimestamp(seconds(0))
 	dpInt.SetValue(1)
 
-	//DoubleGauge
+	// DoubleGauge
 	met = metricsArray.At(2)
 	met.SetName("double.gauge")
 	met.SetDataType(pdata.MetricDataTypeDoubleGauge)
@@ -601,7 +601,7 @@ func createTestMetrics() pdata.Metrics {
 	dpDouble.SetTimestamp(seconds(0))
 	dpDouble.SetValue(math.Pi)
 
-	//IntSum
+	// IntSum
 	met = metricsArray.At(3)
 	met.SetName("int.sum")
 	met.SetDataType(pdata.MetricDataTypeIntSum)
@@ -611,7 +611,7 @@ func createTestMetrics() pdata.Metrics {
 	dpInt.SetTimestamp(seconds(0))
 	dpInt.SetValue(2)
 
-	//IntSum
+	// DoubleSum
 	met = metricsArray.At(4)
 	met.SetName("double.sum")
 	met.SetDataType(pdata.MetricDataTypeDoubleSum)
@@ -621,6 +621,7 @@ func createTestMetrics() pdata.Metrics {
 	dpDouble.SetTimestamp(seconds(0))
 	dpDouble.SetValue(math.E)
 
+	// IntHistogram
 	met = metricsArray.At(5)
 	met.SetName("int.histogram")
 	met.SetDataType(pdata.MetricDataTypeIntHistogram)
@@ -632,6 +633,7 @@ func createTestMetrics() pdata.Metrics {
 	dpIntHist.SetBucketCounts([]uint64{2, 18})
 	dpIntHist.SetTimestamp(seconds(0))
 
+	// DoubleHistogram
 	met = metricsArray.At(6)
 	met.SetName("double.histogram")
 	met.SetDataType(pdata.MetricDataTypeDoubleHistogram)
@@ -642,6 +644,36 @@ func createTestMetrics() pdata.Metrics {
 	dpDoubleHist.SetSum(math.Phi)
 	dpDoubleHist.SetBucketCounts([]uint64{2, 18})
 	dpDoubleHist.SetTimestamp(seconds(0))
+
+	// Int Sum (cumulative)
+	met = metricsArray.At(7)
+	met.SetName("int.cumulative.sum")
+	met.SetDataType(pdata.MetricDataTypeIntSum)
+	met.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	met.IntSum().SetIsMonotonic(true)
+	dpsInt = met.IntSum().DataPoints()
+	dpsInt.Resize(2)
+	dpInt = dpsInt.At(0)
+	dpInt.SetTimestamp(seconds(0))
+	dpInt.SetValue(4)
+	dpInt = dpsInt.At(1)
+	dpInt.SetTimestamp(seconds(2))
+	dpInt.SetValue(7)
+
+	// Double Sum (cumulative)
+	met = metricsArray.At(8)
+	met.SetName("double.cumulative.sum")
+	met.SetDataType(pdata.MetricDataTypeDoubleSum)
+	met.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	met.DoubleSum().SetIsMonotonic(true)
+	dpsDouble = met.DoubleSum().DataPoints()
+	dpsDouble.Resize(2)
+	dpDouble = dpsDouble.At(0)
+	dpDouble.SetTimestamp(seconds(0))
+	dpDouble.SetValue(4)
+	dpDouble = dpsDouble.At(1)
+	dpDouble.SetTimestamp(seconds(2))
+	dpDouble.SetValue(4 + math.Pi)
 
 	return md
 }
@@ -657,7 +689,13 @@ func removeRunningMetrics(series []datadog.Metric) []datadog.Metric {
 }
 
 func testGauge(name string, val float64) datadog.Metric {
-	m := metrics.NewGauge(name, uint64(0), val, []string{})
+	m := metrics.NewGauge(name, 0, val, []string{})
+	m.SetHost(testHostname)
+	return m
+}
+
+func testCount(name string, val float64) datadog.Metric {
+	m := metrics.NewCount(name, 2*1e9, val, []string{})
 	m.SetHost(testHostname)
 	return m
 }
@@ -677,5 +715,7 @@ func TestMapMetrics(t *testing.T) {
 		testGauge("int.histogram.count", 20),
 		testGauge("double.histogram.sum", math.Phi),
 		testGauge("double.histogram.count", 20),
+		testCount("int.cumulative.sum", 3),
+		testCount("double.cumulative.sum", math.Pi),
 	})
 }
