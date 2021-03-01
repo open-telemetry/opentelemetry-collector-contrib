@@ -10,7 +10,7 @@ from opentelemetry import context, trace
 from opentelemetry.instrumentation.pyramid.version import __version__
 from opentelemetry.propagate import extract
 from opentelemetry.util.http import get_excluded_urls
-from opentelemetry.util.providers import time_ns
+from opentelemetry.util.time import time_ns
 
 TWEEN_NAME = "opentelemetry.instrumentation.pyramid.trace_tween_factory"
 SETTING_TRACE_ENABLED = "opentelemetry-pyramid.trace_enabled"

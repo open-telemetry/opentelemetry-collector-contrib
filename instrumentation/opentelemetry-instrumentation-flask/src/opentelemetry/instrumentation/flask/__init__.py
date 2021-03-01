@@ -57,7 +57,7 @@ from opentelemetry.instrumentation.flask.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.propagate import extract
 from opentelemetry.util.http import get_excluded_urls
-from opentelemetry.util.providers import time_ns
+from opentelemetry.util.time import time_ns
 
 _logger = getLogger(__name__)
 
