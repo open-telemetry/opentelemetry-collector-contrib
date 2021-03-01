@@ -1,7 +1,6 @@
 package syslogreceiver
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/syslog"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/tcp"
@@ -10,8 +9,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"gopkg.in/yaml.v2"
-)
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+)
 
 const typeStr = "syslog"
 
@@ -31,7 +31,7 @@ func (f ReceiverType) Type() configmodels.Type {
 
 // CreateDefaultConfig creates a config with type and version
 func (f ReceiverType) CreateDefaultConfig() configmodels.Receiver {
-	 return &SysLogConfig{
+	return &SysLogConfig{
 		BaseConfig: stanza.BaseConfig{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: configmodels.Type(typeStr),
@@ -53,7 +53,6 @@ type SysLogConfig struct {
 	stanza.BaseConfig `mapstructure:",squash"`
 	Input             stanza.InputConfig `mapstructure:",remain"`
 }
-
 
 // DecodeInputConfig unmarshals the input operator
 func (f ReceiverType) DecodeInputConfig(cfg configmodels.Receiver) (*operator.Config, error) {

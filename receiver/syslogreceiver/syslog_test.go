@@ -3,7 +3,11 @@ package syslogreceiver
 import (
 	"context"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"net"
+	"path"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -12,10 +16,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap/zaptest"
-	"net"
-	"path"
-	"testing"
-	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 )
 
 func TestSyslogWithTcp(t *testing.T) {
