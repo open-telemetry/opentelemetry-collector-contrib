@@ -1,13 +1,14 @@
 package newrelicexporter
 
 import (
+	"net/http"
+	"net/url"
+	"strconv"
+
 	"github.com/golang/protobuf/ptypes/duration"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	grpcStatus "google.golang.org/grpc/status"
-	"net/http"
-	"net/url"
-	"strconv"
 )
 
 type urlError struct {

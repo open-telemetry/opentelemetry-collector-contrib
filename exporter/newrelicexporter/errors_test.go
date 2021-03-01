@@ -16,14 +16,15 @@ package newrelicexporter
 
 import (
 	"errors"
+	"net/http"
+	"net/url"
+	"testing"
+
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"net/http"
-	"net/url"
-	"testing"
 )
 
 func TestHttpError_GRPCStatus(t *testing.T) {
