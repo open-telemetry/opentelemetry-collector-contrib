@@ -15,19 +15,25 @@ The following configuration options are supported:
 * `timeout` (Optional): Amount of time spent attempting a request before abandoning and dropping data. Default is 15 seconds.
 * `common_attributes` (Optional): Attributes to apply to all metrics sent.
 * `metrics_url_override` (Optional): Overrides the endpoint to send metrics.
+  The endpoint defaults to New Relic's US data centers. For other use cases
+  refer to
+  [OpenTelemetry: Advanced configuration](https://docs.newrelic.com/docs/integrations/open-source-telemetry-integrations/opentelemetry/opentelemetry-advanced-configuration#h2-change-endpoints).
 * `spans_url_override` (Optional): Overrides the endpoint to send spans.
+  The endpoint defaults to New Relic's US data centers. For other use cases
+  refer to
+  [OpenTelemetry: Advanced configuration](https://docs.newrelic.com/docs/integrations/open-source-telemetry-integrations/opentelemetry/opentelemetry-advanced-configuration#h2-change-endpoints).
 
 Example:
 
 ```yaml
 exporters:
-    newrelic:
-        apikey: super-secret-api-key
-        timeout: 30s
-        common_attributes:
-          server: prod-server-01
-          ready_to_rock: true
-          volume: 11
+  newrelic:
+    apikey: super-secret-api-key
+    timeout: 30s
+    common_attributes:
+      server: prod-server-01
+      ready_to_rock: true
+      volume: 11
 ```
 
 
