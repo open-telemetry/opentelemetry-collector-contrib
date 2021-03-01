@@ -122,7 +122,7 @@ func newTraceExporter(l *zap.Logger, c configmodels.Exporter) (*exporter, error)
 }
 
 func (e *exporter) extractInsertKeyFromHeader(ctx context.Context) string {
-	if "" == e.apiKeyHeader {
+	if e.apiKeyHeader == "" {
 		return ""
 	}
 
@@ -176,7 +176,7 @@ func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, erro
 	var req *http.Request
 	var err error
 
-	if "" != insertKey {
+	if insertKey != "" {
 		req, err = e.spanRequestFactory.BuildRequest(batches, telemetry.WithInsertKey(insertKey))
 	} else {
 		req, err = e.spanRequestFactory.BuildRequest(batches)
