@@ -194,6 +194,101 @@ func tlsTCPInputTest(input []byte, expected []string) func(t *testing.T) {
 	}
 }
 
+func TestBuild(t *testing.T) {
+	cases := []struct {
+		name           string
+		inputRecord    TCPInputConfig
+		expectErr      bool
+	}{
+		{
+			"default-auto-address",
+			TCPInputConfig{
+				ListenAddress: ":0",
+			},
+			false,
+		},
+		{
+			"default-fixed-address",
+			TCPInputConfig{
+				ListenAddress: "10.0.0.1:0",
+			},
+			false,
+		},
+		{
+			"default-fixed-address-port",
+			TCPInputConfig{
+				ListenAddress: "10.0.0.1:9000",
+			},
+			false,
+		},
+		{
+			"buffer-size-valid-default",
+			TCPInputConfig{
+				MaxBufferSize: 0,
+				ListenAddress: "10.0.0.1:9000",
+			},
+			false,
+		},
+		{
+			"buffer-size-valid-min",
+			TCPInputConfig{
+				MaxBufferSize: 65536,
+				ListenAddress: "10.0.0.1:9000",
+			},
+			false,
+		},
+		{
+			"buffer-size-negative",
+			TCPInputConfig{
+				MaxBufferSize: -1,
+				ListenAddress: "10.0.0.1:9000",
+			},
+			true,
+		},
+		{
+			"tls-disabled-with-keypair-set",
+			TCPInputConfig{
+				MaxBufferSize: 65536,
+				ListenAddress: "10.0.0.1:9000",
+				TLS: TLSConfig{
+					Enable: false,
+					Certificate: "/tmp/cert",
+					PrivateKey: "/tmp/key",
+				},
+			},
+			false,
+		},
+		{
+			"tls-enabled-with-no-such-file-error",
+			TCPInputConfig{
+				MaxBufferSize: 65536,
+				ListenAddress: "10.0.0.1:9000",
+				TLS: TLSConfig{
+					Enable: true,
+					Certificate: "/tmp/cert/missing",
+					PrivateKey: "/tmp/key/missing",
+				},
+			},
+			true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := NewTCPInputConfig("test_id")
+			cfg.ListenAddress = tc.inputRecord.ListenAddress
+			cfg.MaxBufferSize = tc.inputRecord.MaxBufferSize
+			cfg.TLS = tc.inputRecord.TLS
+			_, err := cfg.Build(testutil.NewBuildContext(t))
+			if tc.expectErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestTcpInput(t *testing.T) {
 	t.Run("Simple", tcpInputTest([]byte("message\n"), []string{"message"}))
 	t.Run("CarriageReturn", tcpInputTest([]byte("message\r\n"), []string{"message"}))

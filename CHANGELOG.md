@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Added TLS support to `tcp_input` operator
+- Added optional `max_buffer_size` parameter to `tcp_input` operator
 
 ## [0.15.0] - 2020-02-25
 
