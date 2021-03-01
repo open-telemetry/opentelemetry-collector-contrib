@@ -7,3 +7,4 @@ local/*
 artifacts/*
 .vscode/*
 gen/
+.idea/*

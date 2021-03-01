@@ -103,10 +103,7 @@ type SyslogParser struct {
 
 // Process will parse an entry field as syslog.
 func (s *SyslogParser) Process(ctx context.Context, entry *entry.Entry) error {
-	if err := s.ParserOperator.ProcessWith(ctx, entry, s.parse); err != nil {
-		return err
-	}
-	return promoteSeverity(entry)
+	return s.ParserOperator.ProcessWithCallback(ctx, entry, s.parse, promoteSeverity)
 }
 
 // parse will parse a value as syslog.

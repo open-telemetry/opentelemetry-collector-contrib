@@ -65,16 +65,15 @@ func SyslogInputTest(t *testing.T, cfg *SyslogInputConfig, tc syslog.Case) {
 	conn.Close()
 	require.NoError(t, err)
 
+	defer p.Stop()
 	select {
 	case e := <-fake.Received:
 		// close pipeline to avoid data race
-		p.Stop()
 		require.Equal(t, tc.ExpectedRecord, e.Record)
 		require.Equal(t, tc.ExpectedTimestamp, e.Timestamp)
 		require.Equal(t, tc.ExpectedSeverity, e.Severity)
 		require.Equal(t, tc.ExpectedSeverityText, e.SeverityText)
 	case <-time.After(time.Second):
-		p.Stop()
 		require.FailNow(t, "Timed out waiting for entry to be processed")
 	}
 }
