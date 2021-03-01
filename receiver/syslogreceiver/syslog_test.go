@@ -35,10 +35,12 @@ func TestSyslogWithTcp(t *testing.T) {
 	for i := 0; i < numLogs; i++ {
 		msg := fmt.Sprintf("<86>1 2021-02-28T00:0%d:02.003Z 192.168.1.1 SecureAuth0 23108 ID52020 [SecureAuth@27389] test msg %d\n", i, i)
 		_, err = conn.Write([]byte(msg))
+		require.NoError(t, err)
 	}
 	conn.Close()
 
 	require.Eventually(t, expectNLogs(sink, numLogs), 2*time.Second, time.Millisecond)
+	require.NoError(t, rcvr.Shutdown(context.Background()))
 	for i := 0; i < numLogs; i++ {
 		origs := *(sink.AllLogs()[i].InternalRep().Orig)
 		log := origs[0].InstrumentationLibraryLogs[0].GetLogs()[0]
@@ -52,7 +54,6 @@ func TestSyslogWithTcp(t *testing.T) {
 		}
 		require.Equal(t, msg, fmt.Sprintf("test msg %d", i))
 	}
-	require.NoError(t, rcvr.Shutdown(context.Background()))
 
 }
 
