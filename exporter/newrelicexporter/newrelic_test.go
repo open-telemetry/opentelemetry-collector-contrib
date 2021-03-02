@@ -16,6 +16,7 @@ package newrelicexporter
 
 import (
 	"context"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -62,7 +63,8 @@ func runMock(ptrace pdata.Traces) (*Mock, error) {
 
 	f := NewFactory()
 	c := f.CreateDefaultConfig().(*Config)
-	c.APIKey, c.SpansURLOverride = "1", srv.URL
+	u, _ := url.Parse(srv.URL)
+	c.APIKey, c.SpansInsecure, c.SpansHostOverride = "1", true, u.Host
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exp, err := f.CreateTracesExporter(context.Background(), params, c)
 	if err != nil {
@@ -208,7 +210,8 @@ func testExportMetricData(t *testing.T, expected []Metric, md consumerdata.Metri
 
 	f := NewFactory()
 	c := f.CreateDefaultConfig().(*Config)
-	c.APIKey, c.MetricsURLOverride = "1", srv.URL
+	u, _ := url.Parse(srv.URL)
+	c.APIKey, c.MetricsInsecure, c.MetricsHostOverride = "1", true, u.Host
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exp, err := f.CreateMetricsExporter(context.Background(), params, c)
 	require.NoError(t, err)

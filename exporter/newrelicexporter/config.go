@@ -40,11 +40,17 @@ type Config struct {
 	// sent to New Relic.
 	CommonAttributes map[string]interface{} `mapstructure:"common_attributes"`
 
-	// MetricsURLOverride overrides the metrics endpoint.
-	MetricsURLOverride string `mapstructure:"metrics_url_override"`
+	// MetricsHostOverride overrides the metrics endpoint.
+	MetricsHostOverride string `mapstructure:"metrics_host_override"`
 
-	// SpansURLOverride overrides the spans endpoint.
-	SpansURLOverride string `mapstructure:"spans_url_override"`
+	// MetricsInsecure disables TLS on the metrics endpoint.
+	MetricsInsecure bool `mapstructure:"metrics_insecure"`
+
+	// SpansHostOverride overrides the spans endpoint.
+	SpansHostOverride string `mapstructure:"spans_host_override"`
+
+	// SpansInsecure disables TLS on the spans endpoint.
+	SpansInsecure bool `mapstructure:"spans_insecure"`
 }
 
 // HarvestOption sets all relevant Config values when instantiating a New
@@ -56,6 +62,11 @@ func (c Config) HarvestOption(cfg *telemetry.Config) {
 	cfg.CommonAttributes = c.CommonAttributes
 	cfg.Product = product
 	cfg.ProductVersion = version
-	cfg.MetricsURLOverride = c.MetricsURLOverride
-	cfg.SpansURLOverride = c.SpansURLOverride
+	var prefix string
+	if c.MetricsInsecure {
+		prefix = "http://"
+	} else {
+		prefix = "https://"
+	}
+	cfg.MetricsURLOverride = prefix + c.MetricsHostOverride
 }
