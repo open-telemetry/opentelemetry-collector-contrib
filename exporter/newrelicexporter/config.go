@@ -43,14 +43,14 @@ type Config struct {
 	// MetricsHostOverride overrides the metrics endpoint.
 	MetricsHostOverride string `mapstructure:"metrics_host_override"`
 
-	// MetricsInsecure disables TLS on the metrics endpoint.
-	MetricsInsecure bool `mapstructure:"metrics_insecure"`
-
 	// SpansHostOverride overrides the spans endpoint.
 	SpansHostOverride string `mapstructure:"spans_host_override"`
 
+	// MetricsInsecure disables TLS on the metrics endpoint.
+	metricsInsecure bool
+
 	// SpansInsecure disables TLS on the spans endpoint.
-	SpansInsecure bool `mapstructure:"spans_insecure"`
+	spansInsecure bool
 }
 
 // HarvestOption sets all relevant Config values when instantiating a New
@@ -63,7 +63,7 @@ func (c Config) HarvestOption(cfg *telemetry.Config) {
 	cfg.Product = product
 	cfg.ProductVersion = version
 	var prefix string
-	if c.MetricsInsecure {
+	if c.metricsInsecure {
 		prefix = "http://"
 	} else {
 		prefix = "https://"

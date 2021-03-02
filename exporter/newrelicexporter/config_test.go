@@ -59,9 +59,9 @@ func TestLoadConfig(t *testing.T) {
 			"weight": 3,
 		},
 		MetricsHostOverride: "alt.metrics.newrelic.com",
-		MetricsInsecure:     true,
 		SpansHostOverride:   "alt.spans.newrelic.com",
-		SpansInsecure:       true,
+		metricsInsecure:     false,
+		spansInsecure:       false,
 	})
 
 	nrConfig := new(telemetry.Config)
@@ -75,7 +75,7 @@ func TestLoadConfig(t *testing.T) {
 			"prod":   true,
 			"weight": 3,
 		},
-		MetricsURLOverride: "http://alt.metrics.newrelic.com",
+		MetricsURLOverride: "https://alt.metrics.newrelic.com",
 		Product:            product,
 		ProductVersion:     version,
 	})

@@ -64,7 +64,7 @@ func runMock(ptrace pdata.Traces) (*Mock, error) {
 	f := NewFactory()
 	c := f.CreateDefaultConfig().(*Config)
 	u, _ := url.Parse(srv.URL)
-	c.APIKey, c.SpansInsecure, c.SpansHostOverride = "1", true, u.Host
+	c.APIKey, c.spansInsecure, c.SpansHostOverride = "1", true, u.Host
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exp, err := f.CreateTracesExporter(context.Background(), params, c)
 	if err != nil {
@@ -211,7 +211,7 @@ func testExportMetricData(t *testing.T, expected []Metric, md consumerdata.Metri
 	f := NewFactory()
 	c := f.CreateDefaultConfig().(*Config)
 	u, _ := url.Parse(srv.URL)
-	c.APIKey, c.MetricsInsecure, c.MetricsHostOverride = "1", true, u.Host
+	c.APIKey, c.metricsInsecure, c.MetricsHostOverride = "1", true, u.Host
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exp, err := f.CreateMetricsExporter(context.Background(), params, c)
 	require.NoError(t, err)

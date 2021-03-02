@@ -102,7 +102,7 @@ func newTraceExporter(l *zap.Logger, c configmodels.Exporter) (*exporter, error)
 		options = append(options, telemetry.WithEndpoint(nrConfig.SpansHostOverride))
 	}
 
-	if nrConfig.SpansInsecure {
+	if nrConfig.spansInsecure {
 		options = append(options, telemetry.WithInsecure())
 	}
 	s, err := telemetry.NewSpanRequestFactory(options...)
