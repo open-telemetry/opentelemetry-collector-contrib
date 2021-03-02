@@ -66,6 +66,18 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
+	p := dotnet.NewParser(conn, r.logger)
+
+	err = p.ParseIPC()
+	if err != nil {
+		return err
+	}
+
+	err = p.ParseNettrace()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

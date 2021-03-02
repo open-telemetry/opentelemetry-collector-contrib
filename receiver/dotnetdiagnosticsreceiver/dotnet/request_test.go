@@ -16,11 +16,12 @@ package dotnet
 
 import (
 	"bytes"
-	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/network"
 )
 
 func TestProviderArgs(t *testing.T) {
@@ -75,25 +76,9 @@ func TestSessionCfg(t *testing.T) {
 }
 
 func TestRequestWriter_Send(t *testing.T) {
-	rw := &fakeRW{}
+	rw := &network.FakeRW{WriteErrIdx: -1}
 	w := NewRequestWriter(rw, 0, "")
 	err := w.SendRequest()
 	require.NoError(t, err)
-	require.Equal(t, 107, len(rw.writeBuf))
-}
-
-// fakeRW
-type fakeRW struct {
-	writeBuf []byte
-}
-
-var _ io.ReadWriter = (*fakeRW)(nil)
-
-func (rw *fakeRW) Write(p []byte) (n int, err error) {
-	rw.writeBuf = append(rw.writeBuf, p...)
-	return len(p), nil
-}
-
-func (rw *fakeRW) Read(p []byte) (n int, err error) {
-	return len(p), nil
+	require.Equal(t, 107, len(rw.Writes))
 }

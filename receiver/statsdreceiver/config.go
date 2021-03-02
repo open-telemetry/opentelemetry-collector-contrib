@@ -26,4 +26,5 @@ type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 	NetAddr                       confignet.NetAddr `mapstructure:",squash"`
 	AggregationInterval           time.Duration     `mapstructure:"aggregation_interval"`
+	EnableMetricType              bool              `mapstructure:"enable_metric_type"`
 }
