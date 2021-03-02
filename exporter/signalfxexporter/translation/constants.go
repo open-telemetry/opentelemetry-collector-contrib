@@ -49,18 +49,6 @@ translation_rules:
     k8s.statefulset.uid: kubernetes_uid
     host.name: host
 
-    # properties
-    cronjob_uid: cronJob_uid
-    cronjob: cronJob
-    daemonset_uid: daemonSet_uid
-    daemonset: daemonSet
-    k8s.workload.kind: kubernetes_workload
-    k8s.workload.name: kubernetes_workload_name
-    replicaset_uid: replicaSet_uid
-    replicaset: replicaSet
-    statefulset_uid: statefulSet_uid
-    statefulset: statefulSet
-
 - action: rename_metrics
   mapping:
     # kubeletstats receiver metrics
