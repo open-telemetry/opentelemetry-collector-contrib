@@ -16,7 +16,6 @@ package newrelicexporter
 
 import (
 	"context"
-	"os"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -29,20 +28,10 @@ const typeStr = "newrelic"
 
 // NewFactory creates a factory for New Relic exporter.
 func NewFactory() component.ExporterFactory {
-	// The environment variable NEW_RELIC_NO_METRIC_SUPPORT is experimental.
-	// It may be removed in a future version.
-	if os.Getenv("NEW_RELIC_NO_METRIC_SUPPORT") == "1" {
-		return exporterhelper.NewFactory(
-			typeStr,
-			createDefaultConfig,
-			exporterhelper.WithTraces(createTraceExporter))
-	}
-
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter),
-		exporterhelper.WithMetrics(createMetricsExporter))
+		exporterhelper.WithTraces(createTraceExporter))
 }
 
 func createDefaultConfig() configmodels.Exporter {
