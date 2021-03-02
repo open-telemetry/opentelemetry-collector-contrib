@@ -31,6 +31,7 @@ const (
 	defaultBindEndpoint        = "localhost:8125"
 	defaultTransport           = "udp"
 	defaultAggregationInterval = 60 * time.Second
+	defaultEnableMetricType    = false
 )
 
 // NewFactory creates a factory for the StatsD receiver.
@@ -53,6 +54,7 @@ func createDefaultConfig() configmodels.Receiver {
 			Transport: defaultTransport,
 		},
 		AggregationInterval: defaultAggregationInterval,
+		EnableMetricType:    defaultEnableMetricType,
 	}
 }
 
