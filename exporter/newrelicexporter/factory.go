@@ -58,7 +58,10 @@ func createTraceExporter(
 
 	// The logger is only used in a disabled queuedRetrySender, which noisily logs at
 	// the error level when it is disabled and errors occur.
-	return exporterhelper.NewTraceExporter(cfg, zap.NewNop(), exp.pushTraceData)
+	return exporterhelper.NewTraceExporter(cfg, zap.NewNop(), exp.pushTraceData,
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: cfg.(*Config).Timeout}),
+		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
+		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}))
 }
 
 // CreateMetricsExporter creates a New Relic metrics exporter for this configuration.
@@ -72,5 +75,5 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporter(cfg, params.Logger, exp.pushMetricData, exporterhelper.WithShutdown(exp.Shutdown))
+	return exporterhelper.NewMetricsExporter(cfg, zap.NewNop(), exp.pushMetricData, exporterhelper.WithShutdown(exp.Shutdown))
 }
