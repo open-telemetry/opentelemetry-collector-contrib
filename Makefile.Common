@@ -24,7 +24,6 @@ GOARCH=$(shell go env GOARCH)
 ADDLICENCESE= addlicense
 MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
-STATICCHECK=staticcheck
 LINT=golangci-lint
 IMPI=impi
 # BUILD_TYPE should be one of (dev, release).
@@ -93,25 +92,13 @@ checklicense:
 			echo "Check License finished successfully"; \
 		fi
 
-.PHONY: lint-static-check
-lint-static-check:
-	@STATIC_CHECK_OUT=`$(STATICCHECK) ./... 2>&1`; \
-		if [ "$$STATIC_CHECK_OUT" ]; then \
-			echo "$(STATICCHECK) FAILED => static check errors:\n"; \
-			echo "$$STATIC_CHECK_OUT\n"; \
-			exit 1; \
-		else \
-			echo "Static check finished successfully"; \
-		fi
-
-
 .PHONY: fmt
 fmt:
 	gofmt  -w -s ./
 	goimports -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
 .PHONY: lint
-lint: lint-static-check
+lint:
 	$(LINT) run --allow-parallel-runners
 
 .PHONY: misspell
