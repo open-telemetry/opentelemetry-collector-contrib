@@ -17,8 +17,11 @@
 package elasticsearchexporter
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
+	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -32,15 +35,22 @@ import (
 type esClientCurrent = elasticsearch7.Client
 type esConfigCurrent = elasticsearch7.Config
 type esBulkIndexerCurrent = esutil7.BulkIndexer
+type esBulkIndexerItem = esutil7.BulkIndexerItem
+type esBulkIndexerResponseItem = esutil7.BulkIndexerResponseItem
 
 type elasticsearchExporter struct {
 	logger *zap.Logger
+
+	index       string
+	maxAttempts int
 
 	client      *esClientCurrent
 	bulkIndexer esBulkIndexerCurrent
 }
 
-var retryOnStatus = []int{502, 503, 504, 429}
+var retryOnStatus = []int{500, 502, 503, 504, 429}
+
+const createAction = "create"
 
 func newExporter(logger *zap.Logger, cfg *Config) (*elasticsearchExporter, error) {
 	if err := cfg.Validate(); err != nil {
@@ -52,15 +62,23 @@ func newExporter(logger *zap.Logger, cfg *Config) (*elasticsearchExporter, error
 		return nil, err
 	}
 
-	bulkIndexer, err := newBulkIndexer(client, cfg)
+	bulkIndexer, err := newBulkIndexer(logger, client, cfg)
 	if err != nil {
 		return nil, err
+	}
+
+	maxAttempts := 1
+	if cfg.Retry.Enabled {
+		maxAttempts = cfg.Retry.MaxRequests
 	}
 
 	return &elasticsearchExporter{
 		logger:      logger,
 		client:      client,
 		bulkIndexer: bulkIndexer,
+
+		index:       cfg.Index,
+		maxAttempts: maxAttempts,
 	}, nil
 }
 
@@ -72,17 +90,62 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld pdata.Logs)
 	panic("TODO")
 }
 
+func (e *elasticsearchExporter) pushEvent(ctx context.Context, document []byte) error {
+	attempts := 1
+	body := bytes.NewReader(document)
+	item := esBulkIndexerItem{Action: createAction, Index: e.index, Body: body}
+
+	// Setup error handler. The handler handles the per item response status based on the
+	// selective ACKing in the bulk response.
+	item.OnFailure = func(ctx context.Context, item esBulkIndexerItem, resp esBulkIndexerResponseItem, err error) {
+		switch {
+		case attempts < e.maxAttempts && shouldRetryEvent(resp.Status):
+			e.logger.Debug("Retrying to index event",
+				zap.Int("attempt", attempts),
+				zap.Int("status", resp.Status),
+				zap.NamedError("reason", err))
+
+			attempts++
+			body.Seek(0, io.SeekStart)
+			e.bulkIndexer.Add(ctx, item)
+
+		case resp.Status == 0 && err != nil:
+			// Encoding error. We didn't even attempt to send the event
+			e.logger.Error("Drop event: failed to add event to the bulk request buffer.",
+				zap.NamedError("reason", err))
+
+		case err != nil:
+			e.logger.Error("Drop event: failed to index event",
+				zap.Int("attempt", attempts),
+				zap.Int("status", resp.Status),
+				zap.NamedError("reason", err))
+
+		default:
+			e.logger.Error(fmt.Sprintf("Drop event: failed to index event: %#v", resp.Error),
+				zap.Int("attempt", attempts),
+				zap.Int("status", resp.Status))
+		}
+	}
+
+	return e.bulkIndexer.Add(ctx, item)
+}
+
 // clientLogger implements the estransport.Logger interface
 // that is required by the Elasticsearch client for logging.
 type clientLogger zap.Logger
 
 // LogRoundTrip should not modify the request or response, except for consuming and closing the body.
 // Implementations have to check for nil values in request and response.
-func (cl *clientLogger) LogRoundTrip(_ *http.Request, resp *http.Response, err error, _ time.Time, dur time.Duration) error {
+func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, err error, _ time.Time, dur time.Duration) error {
 	zl := (*zap.Logger)(cl)
 	switch {
 	case err == nil && resp != nil:
-		zl.Debug("Request roundtrip completed.", zap.Duration("duration", dur), zap.String("status", resp.Status))
+		zl.Debug("Request roundtrip completed.",
+			zap.String("path", requ.URL.Path),
+			zap.String("method", requ.Method),
+			zap.Duration("duration", dur),
+			zap.String("status", resp.Status))
+
 	case err != nil:
 		zl.Error("Request failed.", zap.NamedError("reason", err))
 	}
@@ -119,6 +182,21 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 	//  - try to parse address and validate scheme (address must be a valid URL)
 	//  - check if cloud ID is valid
 
+	// maxRetries configures the maximum number of event publishing attempts,
+	// including the first send and additional retries.
+	// Issue: https://github.com/elastic/go-elasticsearch/issues/232
+	//
+	// The elasticsearch7.Client retry requires the count to be >= 1, otherwise
+	// it defaults to 3. Internally the Clients starts the number of send attempts with 1.
+	// When maxRetries is 1, retries are disabled, meaning that the event is
+	// dropped if the first HTTP request failed.
+	//
+	// Once the issue is resolved we want `maxRetries = config.Retry.MaxRequests - 1`.
+	maxRetries := config.Retry.MaxRequests
+	if maxRetries < 1 || !config.Retry.Enabled {
+		maxRetries = 1
+	}
+
 	return elasticsearch7.NewClient(esConfigCurrent{
 		Transport: transport,
 
@@ -132,9 +210,9 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 
 		// configure retry behavior
 		RetryOnStatus:        retryOnStatus,
-		DisableRetry:         false,
-		EnableRetryOnTimeout: true,
-		MaxRetries:           config.Retry.MaxRequests,
+		DisableRetry:         !config.Retry.Enabled,
+		EnableRetryOnTimeout: config.Retry.Enabled,
+		MaxRetries:           maxRetries,
 		RetryBackoff:         createElasticsearchBackoffFunc(&config.Retry),
 
 		// configure sniffing
@@ -163,16 +241,19 @@ func newTransport(config *Config, tlsCfg *tls.Config) *http.Transport {
 	return transport
 }
 
-func newBulkIndexer(client *elasticsearch7.Client, config *Config) (esBulkIndexerCurrent, error) {
+func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *Config) (esBulkIndexerCurrent, error) {
 	// TODO: add debug logger
 	return esutil7.NewBulkIndexer(esutil7.BulkIndexerConfig{
 		NumWorkers:    config.NumWorkers,
 		FlushBytes:    config.Flush.Bytes,
 		FlushInterval: config.Flush.Interval,
 		Client:        client,
-		Index:         config.Index,
 		Pipeline:      config.Pipeline,
 		Timeout:       config.Timeout,
+
+		OnError: func(_ context.Context, err error) {
+			logger.Error(fmt.Sprintf("Bulk indexer error: %v", err))
+		},
 	})
 }
 
@@ -197,4 +278,13 @@ func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Durati
 
 		return expBackoff.NextBackOff()
 	}
+}
+
+func shouldRetryEvent(status int) bool {
+	for _, retryable := range retryOnStatus {
+		if status == retryable {
+			return true
+		}
+	}
+	return false
 }
