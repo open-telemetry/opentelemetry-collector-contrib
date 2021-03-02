@@ -1,4 +1,4 @@
-// Copyright -c Google LLC
+// Copyright 2021 OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import (
 )
 
 func TestSyslogWithTcp(t *testing.T) {
-	numLogs := 2
+	numLogs := 1
 
 	f := NewFactory()
 	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
