@@ -35,19 +35,32 @@ import (
 )
 
 func TestSyslogWithTcp(t *testing.T) {
-	numLogs := 1
+	testSyslog(t, testdataConfigYamlAsMap())
+}
+
+func TestSyslogWithUdp(t *testing.T) {
+	testSyslog(t, testdataUDPConfig())
+}
+
+func testSyslog(t *testing.T, cfg *SysLogConfig) {
+	numLogs := 5
 
 	f := NewFactory()
 	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
 	sink := new(consumertest.LogsSink)
-	cfg := testdataConfigYamlAsMap()
 	rcvr, err := f.CreateLogsReceiver(context.Background(), params, cfg, sink)
 	require.NoError(t, err)
 	require.NoError(t, rcvr.Start(context.Background(), &testHost{t: t}))
 
-	conn, err := net.Dial("tcp", "0.0.0.0:29018")
+	var conn net.Conn
+	if cfg.Input["tcp"] != nil {
+		conn, err = net.Dial("tcp", "0.0.0.0:29018")
+		require.NoError(t, err)
+	} else {
+		conn, err = net.Dial("udp", "0.0.0.0:29018")
+		require.NoError(t, err)
+	}
 
-	require.NoError(t, err)
 	for i := 0; i < numLogs; i++ {
 		msg := fmt.Sprintf("<86>1 2021-02-28T00:0%d:02.003Z 192.168.1.1 SecureAuth0 23108 ID52020 [SecureAuth@27389] test msg %d\n", i, i)
 		_, err = conn.Write([]byte(msg))
@@ -70,7 +83,6 @@ func TestSyslogWithTcp(t *testing.T) {
 		}
 		require.Equal(t, msg, fmt.Sprintf("test msg %d", i))
 	}
-
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -101,6 +113,26 @@ func testdataConfigYamlAsMap() *SysLogConfig {
 		},
 		Input: stanza.InputConfig{
 			"tcp": map[string]interface{}{
+				"listen_address": "0.0.0.0:29018",
+			},
+			"syslog": map[string]interface{}{
+				"protocol": "rfc5424",
+			},
+		},
+	}
+}
+
+func testdataUDPConfig() *SysLogConfig {
+	return &SysLogConfig{
+		BaseConfig: stanza.BaseConfig{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: "syslog",
+				NameVal: "syslog",
+			},
+			Operators: stanza.OperatorConfigs{},
+		},
+		Input: stanza.InputConfig{
+			"udp": map[string]interface{}{
 				"listen_address": "0.0.0.0:29018",
 			},
 			"syslog": map[string]interface{}{
