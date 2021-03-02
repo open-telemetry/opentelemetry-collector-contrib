@@ -30,22 +30,22 @@ import (
 )
 
 // eventsBuf is a buffer of JSON encoded Splunk events.
-// The events are created from LogRecord(s) where one event maps to one LogRecord.
+// The events are created from LogRecord(s) where one event is created from one LogRecord.
 type eventsBuf struct {
 	buf *bytes.Buffer
-	// index is the eventIndex of the 1st event in buf.
-	index *eventIndex
+	// The logIndex of the LogRecord of 1st event in buf.
+	index *logIndex
 	err   error
 }
 
-// The index of an event composed of indices of the event's LogRecord.
-type eventIndex struct {
-	// Index of the LogRecord slice element from which the event is created.
-	log int
-	// Index of the InstrumentationLibraryLogs slice element parent of the LogRecord.
-	lib int
-	// Index of the ResourceLogs slice element parent of the InstrumentationLibraryLogs.
-	src int
+// Composite index of a log record.
+type logIndex struct {
+	// Index of a LogRecord slice element.
+	record int
+	// Index of the InstrumentationLibraryLogs slice element parent to the LogRecord.
+	library int
+	// Index of the ResourceLogs slice element parent to the InstrumentationLibraryLogs.
+	resource int
 }
 
 type logDataWrapper struct {
@@ -100,7 +100,7 @@ func (ld *logDataWrapper) eventsInChunks(logger *zap.Logger, config *Config) (ch
 
 							// Setting events index using the log record indices of the 1st event.
 							if events.index == nil {
-								events.index = &eventIndex{src: i, lib: j, log: k}
+								events.index = &logIndex{resource: i, library: j, record: k}
 							}
 
 							continue
@@ -112,7 +112,7 @@ func (ld *logDataWrapper) eventsInChunks(logger *zap.Logger, config *Config) (ch
 						events = &eventsBuf{buf: new(bytes.Buffer)}
 						// Setting events index using the log record indices of any current leftover event.
 						if event.Len() != 0 {
-							events.index = &eventIndex{src: i, lib: j, log: k}
+							events.index = &logIndex{resource: i, library: j, record: k}
 						}
 					}
 				}
@@ -128,43 +128,42 @@ func (ld *logDataWrapper) eventsInChunks(logger *zap.Logger, config *Config) (ch
 		eventsCh <- events
 
 	}()
+
 	return eventsCh, cancel
 }
 
-func (ld *logDataWrapper) countLogs(start *eventIndex) int {
+func (ld *logDataWrapper) numLogs(from *logIndex) int {
 	count, orig := 0, *ld.InternalRep().Orig
-	for i := start.src; i < len(orig); i++ {
-		for j, iLLogs := range orig[i].InstrumentationLibraryLogs {
+
+	// Validating logIndex. Invalid index will cause out of range panic.
+	_ = orig[from.resource].InstrumentationLibraryLogs[from.library].Logs[from.record]
+
+	for i := from.resource; i < len(orig); i++ {
+		for j, library := range orig[i].InstrumentationLibraryLogs {
 			switch {
-			case i == start.src && j < start.lib:
+			case i == from.resource && j < from.library:
 				continue
 			default:
-				count += len(iLLogs.Logs)
+				count += len(library.Logs)
 			}
 		}
 	}
-	return count - start.log
+
+	return count - from.record
 }
 
-func (ld *logDataWrapper) trimLeft(end *eventIndex) *pdata.Logs {
-	clone := ld.Clone()
-	orig := *clone.InternalRep().Orig
-	orig = orig[end.src:]
-	orig[end.src].InstrumentationLibraryLogs = orig[end.src].InstrumentationLibraryLogs[end.lib:]
-	orig[end.src].InstrumentationLibraryLogs[end.lib].Logs = orig[end.src].InstrumentationLibraryLogs[end.lib].Logs[end.log:]
-	return &clone
-}
+func (ld *logDataWrapper) subLogs(from *logIndex) *pdata.Logs {
+	clone := ld.Clone().InternalRep()
 
-func (ld *logDataWrapper) processErr(index *eventIndex, err error) (int, error) {
-	if consumererror.IsPermanent(err) {
-		return ld.countLogs(index), err
-	}
+	subset := *clone.Orig
+	subset = subset[from.resource:]
+	subset[0].InstrumentationLibraryLogs = subset[0].InstrumentationLibraryLogs[from.library:]
+	subset[0].InstrumentationLibraryLogs[0].Logs = subset[0].InstrumentationLibraryLogs[0].Logs[from.record:]
 
-	if _, ok := err.(consumererror.PartialError); ok {
-		failedLogs := ld.trimLeft(index)
-		return failedLogs.LogRecordCount(), consumererror.PartialLogsError(err, *failedLogs)
-	}
-	return ld.LogRecordCount(), err
+	clone.Orig = &subset
+	subsetLogs := pdata.LogsFromInternalRep(clone)
+
+	return &subsetLogs
 }
 
 func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {

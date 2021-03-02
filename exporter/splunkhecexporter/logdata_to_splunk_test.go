@@ -139,29 +139,28 @@ func Test_logDataToSplunk(t *testing.T) {
 				commonLogSplunkEvent(float64(42), ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
 			},
 		},
-		// TODO: int64 body gets unmarshalled to float64 because splunk.Event.Event is of type interface{}
-		//{
-		//	name: "with int body",
-		//	logDataFn: func() pdata.Logs {
-		//		logRecord := pdata.NewLogRecord()
-		//		logRecord.Body().SetIntVal(42)
-		//		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
-		//		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-		//		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-		//		logRecord.Attributes().InsertString("custom", "custom")
-		//		logRecord.SetTimestamp(ts)
-		//		return makeLog(logRecord)
-		//	},
-		//	configDataFn: func() *Config {
-		//		return &Config{
-		//			Source:     "source",
-		//			SourceType: "sourcetype",
-		//		}
-		//	},
-		//	wantSplunkEvents: []*splunk.Event{
-		//		commonLogSplunkEvent(int64(42), ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
-		//	},
-		//},
+		{
+			name: "with int body",
+			logDataFn: func() pdata.Logs {
+				logRecord := pdata.NewLogRecord()
+				logRecord.Body().SetIntVal(42)
+				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
+				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
+				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().InsertString("custom", "custom")
+				logRecord.SetTimestamp(ts)
+				return makeLog(logRecord)
+			},
+			configDataFn: func() *Config {
+				return &Config{
+					Source:     "source",
+					SourceType: "sourcetype",
+				}
+			},
+			wantSplunkEvents: []*splunk.Event{
+				commonLogSplunkEvent(int64(42), ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
+			},
+		},
 		{
 			name: "with bool body",
 			logDataFn: func() pdata.Logs {
@@ -269,15 +268,22 @@ func Test_logDataToSplunk(t *testing.T) {
 
 			require.Equal(t, len(tt.wantSplunkEvents), len(events))
 
-			var gotEvent splunk.Event
-			var gotEvents []*splunk.Event
+			var got splunk.Event
+			var gots []*splunk.Event
 
 			for i, event := range events {
-				json.Unmarshal(event, &gotEvent)
-				assert.EqualValues(t, tt.wantSplunkEvents[i], &gotEvent)
-				gotEvents = append(gotEvents, &gotEvent)
+				json.Unmarshal(event, &got)
+				want := tt.wantSplunkEvents[i]
+				// float64 back to int64. int64 unmarshalled to float64 because Event is interface{}.
+				if _, ok := want.Event.(int64); ok {
+					if g, ok := got.Event.(float64); ok {
+						got.Event = int64(g)
+					}
+				}
+				assert.EqualValues(t, tt.wantSplunkEvents[i], &got)
+				gots = append(gots, &got)
 			}
-			assert.Equal(t, tt.wantSplunkEvents, gotEvents)
+			assert.Equal(t, tt.wantSplunkEvents, gots)
 		})
 	}
 }
@@ -311,8 +317,6 @@ func commonLogSplunkEvent(
 }
 
 func Test_nilLogs(t *testing.T) {
-	//events := logDataToSplunk(zap.NewNop(), pdata.NewLogs(), &Config{})
-	//assert.Equal(t, 0, len(events))
 	logs := pdata.NewLogs()
 	ldWrap := logDataWrapper{&logs}
 	eventsCh, cancel := ldWrap.eventsInChunks(zap.NewNop(), &Config{})
@@ -325,7 +329,6 @@ func Test_nilResourceLogs(t *testing.T) {
 	logs := pdata.NewLogs()
 	logs.ResourceLogs().Resize(1)
 	ldWrap := logDataWrapper{&logs}
-	//events := logDataToSplunk(zap.NewNop(), logs, &Config{})
 	eventsCh, cancel := ldWrap.eventsInChunks(zap.NewNop(), &Config{})
 	defer cancel()
 	events := <-eventsCh
@@ -333,12 +336,6 @@ func Test_nilResourceLogs(t *testing.T) {
 }
 
 func Test_nilInstrumentationLogs(t *testing.T) {
-	//logs := pdata.NewLogs()
-	//logs.ResourceLogs().Resize(1)
-	//resourceLog := logs.ResourceLogs().At(0)
-	//resourceLog.InstrumentationLibraryLogs().Resize(1)
-	//events := logDataToSplunk(zap.NewNop(), logs, &Config{})
-	//assert.Equal(t, 0, len(events))
 	logs := pdata.NewLogs()
 	logs.ResourceLogs().Resize(1)
 	resourceLog := logs.ResourceLogs().At(0)
@@ -357,4 +354,108 @@ func Test_nanoTimestampToEpochMilliseconds(t *testing.T) {
 	assert.Equal(t, 1.002, *splunkTs)
 	splunkTs = nanoTimestampToEpochMilliseconds(0)
 	assert.True(t, nil == splunkTs)
+}
+
+func Test_numLogs(t *testing.T) {
+	logs := logDataWrapper{&[]pdata.Logs{pdata.NewLogs()}[0]}
+	logs.ResourceLogs().Resize(2)
+
+	rl0 := logs.ResourceLogs().At(0)
+	rl0.InstrumentationLibraryLogs().Resize(2)
+	rl0.InstrumentationLibraryLogs().At(0).Logs().Append(pdata.NewLogRecord())
+	rl0.InstrumentationLibraryLogs().At(1).Logs().Append(pdata.NewLogRecord())
+	rl0.InstrumentationLibraryLogs().At(1).Logs().Append(pdata.NewLogRecord())
+
+	rl1 := logs.ResourceLogs().At(1)
+	rl1.InstrumentationLibraryLogs().Resize(3)
+	rl1.InstrumentationLibraryLogs().At(0).Logs().Append(pdata.NewLogRecord())
+	rl1.InstrumentationLibraryLogs().At(1).Logs().Append(pdata.NewLogRecord())
+	rl1.InstrumentationLibraryLogs().At(2).Logs().Append(pdata.NewLogRecord())
+
+	// Indices of LogRecord(s) created.
+	//     0            1      <- ResourceLogs parent index
+	//    / \         / | \
+	//   0   1      0  1  2    <- InstrumentationLibraryLogs parent index
+	//  /   / \    /  /  /
+	// 0   0   1  0  0  0      <- LogRecord index
+
+	_0_0_0 := &logIndex{resource: 0, library: 0, record: 0}
+	got := logs.numLogs(_0_0_0)
+	assert.Equal(t, 6, got)
+
+	_0_1_1 := &logIndex{resource: 0, library: 1, record: 1}
+	got = logs.numLogs(_0_1_1)
+	assert.Equal(t, 4, got)
+}
+
+func Test_subLogs(t *testing.T) {
+	logs := logDataWrapper{&[]pdata.Logs{pdata.NewLogs()}[0]}
+	logs.ResourceLogs().Resize(2)
+
+	rl0 := logs.ResourceLogs().At(0)
+	rl0.InstrumentationLibraryLogs().Resize(2)
+
+	log := pdata.NewLogRecord()
+	log.SetName("(0, 0, 0)")
+	rl0.InstrumentationLibraryLogs().At(0).Logs().Append(log)
+
+	log = pdata.NewLogRecord()
+	log.SetName("(0, 1, 0)")
+	rl0.InstrumentationLibraryLogs().At(1).Logs().Append(log)
+
+	log = pdata.NewLogRecord()
+	log.SetName("(0, 1, 1)")
+	rl0.InstrumentationLibraryLogs().At(1).Logs().Append(log)
+
+	rl1 := logs.ResourceLogs().At(1)
+	rl1.InstrumentationLibraryLogs().Resize(3)
+
+	log = pdata.NewLogRecord()
+	log.SetName("(1, 0, 0)")
+	rl1.InstrumentationLibraryLogs().At(0).Logs().Append(log)
+
+	log = pdata.NewLogRecord()
+	log.SetName("(1, 1, 0)")
+	rl1.InstrumentationLibraryLogs().At(1).Logs().Append(log)
+
+	log = pdata.NewLogRecord()
+	log.SetName("(1, 2, 0)")
+	rl1.InstrumentationLibraryLogs().At(2).Logs().Append(log)
+
+	// Indices of LogRecord(s) created.
+	//     0            1      <- ResourceLogs parent index
+	//    / \         / | \
+	//   0   1      0  1  2    <- InstrumentationLibraryLogs parent index
+	//  /   / \    /  /  /
+	// 0   0   1  0  0  0      <- LogRecord index
+
+	// Logs subset from leftmost index.
+	_0_0_0 := &logIndex{resource: 0, library: 0, record: 0}
+	got := logDataWrapper{logs.subLogs(_0_0_0)}
+
+	assert.Equal(t, 6, got.numLogs(_0_0_0))
+	orig := *got.InternalRep().Orig
+	assert.Equal(t, "(0, 0, 0)", orig[0].InstrumentationLibraryLogs[0].Logs[0].Name)
+	assert.Equal(t, "(0, 1, 0)", orig[0].InstrumentationLibraryLogs[1].Logs[0].Name)
+	assert.Equal(t, "(0, 1, 1)", orig[0].InstrumentationLibraryLogs[1].Logs[1].Name)
+	assert.Equal(t, "(1, 0, 0)", orig[1].InstrumentationLibraryLogs[0].Logs[0].Name)
+	assert.Equal(t, "(1, 1, 0)", orig[1].InstrumentationLibraryLogs[1].Logs[0].Name)
+	assert.Equal(t, "(1, 2, 0)", orig[1].InstrumentationLibraryLogs[2].Logs[0].Name)
+
+	// Logs subset from rightmost index.
+	_1_2_0 := &logIndex{resource: 1, library: 2, record: 0}
+	got = logDataWrapper{logs.subLogs(_1_2_0)}
+
+	assert.Equal(t, 1, got.numLogs(_0_0_0))
+	orig = *got.InternalRep().Orig
+	assert.Equal(t, "(1, 2, 0)", orig[0].InstrumentationLibraryLogs[0].Logs[0].Name)
+
+	// Logs subset from an in-between index.
+	_1_1_0 := &logIndex{resource: 1, library: 1, record: 0}
+	got = logDataWrapper{logs.subLogs(_1_1_0)}
+
+	assert.Equal(t, 2, got.numLogs(_0_0_0))
+	orig = *got.InternalRep().Orig
+	assert.Equal(t, "(1, 1, 0)", orig[0].InstrumentationLibraryLogs[0].Logs[0].Name)
+	assert.Equal(t, "(1, 2, 0)", orig[0].InstrumentationLibraryLogs[1].Logs[0].Name)
 }
