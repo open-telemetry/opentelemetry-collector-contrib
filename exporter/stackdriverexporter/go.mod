@@ -8,7 +8,7 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.21.1-0.20210225192722-e6319ac4c6fc
+	go.opentelemetry.io/collector v0.21.1-0.20210302184358-0961efb54f1f
 	go.opentelemetry.io/otel v0.17.0
 	go.opentelemetry.io/otel/sdk v0.16.0
 	go.opentelemetry.io/otel/trace v0.17.0

@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/fatih/color v1.10.0 // indirect
+	github.com/moby/sys/mount v0.2.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter v0.0.0-00010101000000-000000000000
@@ -59,7 +60,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.0.0-00010101000000-000000000000
 	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.21.1-0.20210225192722-e6319ac4c6fc
+	go.opentelemetry.io/collector v0.21.1-0.20210302184358-0961efb54f1f
 	golang.org/x/sys v0.0.0-20210220050731-9a76102bfb43
 )
 
