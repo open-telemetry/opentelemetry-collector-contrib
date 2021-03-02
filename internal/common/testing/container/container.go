@@ -124,7 +124,7 @@ func (c *Containers) createContainer(image string, env []string) container.Conta
 		Env:    env,
 	}, &container.HostConfig{
 		PublishAllPorts: true,
-	}, &network.NetworkingConfig{}, "")
+	}, &network.NetworkingConfig{}, nil, "")
 	if err != nil {
 		c.t.Fatalf("failed creating container with image %v: %v", image, err)
 	}
