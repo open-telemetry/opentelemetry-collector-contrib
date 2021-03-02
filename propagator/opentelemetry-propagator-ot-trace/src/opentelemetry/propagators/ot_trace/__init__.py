@@ -20,7 +20,7 @@ from opentelemetry.context import Context
 from opentelemetry.trace import (
     INVALID_SPAN_ID,
     INVALID_TRACE_ID,
-    DefaultSpan,
+    NonRecordingSpan,
     SpanContext,
     TraceFlags,
     get_current_span,
@@ -76,7 +76,7 @@ class OTTracePropagator(TextMapPropagator):
             and _valid_extract_spanid.fullmatch(spanid) is not None
         ):
             context = set_span_in_context(
-                DefaultSpan(
+                NonRecordingSpan(
                     SpanContext(
                         trace_id=int(traceid, 16),
                         span_id=int(spanid, 16),

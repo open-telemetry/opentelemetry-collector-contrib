@@ -73,7 +73,9 @@ class DatadogFormat(TextMapPropagator):
             trace_state=trace.TraceState([(constants.DD_ORIGIN, origin)]),
         )
 
-        return set_span_in_context(trace.DefaultSpan(span_context), context)
+        return set_span_in_context(
+            trace.NonRecordingSpan(span_context), context
+        )
 
     def inject(
         self,

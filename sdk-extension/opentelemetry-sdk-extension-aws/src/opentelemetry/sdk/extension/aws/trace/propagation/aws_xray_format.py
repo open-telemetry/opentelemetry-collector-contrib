@@ -151,7 +151,7 @@ class AwsXRayFormat(TextMapPropagator):
             )
 
         return trace.set_span_in_context(
-            trace.DefaultSpan(span_context), context=context
+            trace.NonRecordingSpan(span_context), context=context
         )
 
     @staticmethod

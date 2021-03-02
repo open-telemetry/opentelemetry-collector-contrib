@@ -56,7 +56,7 @@ def build_test_current_context(
     trace_state=DEFAULT_TRACE_STATE,
 ):
     return set_span_in_context(
-        trace_api.DefaultSpan(
+        trace_api.NonRecordingSpan(
             build_test_span_context(
                 trace_id, span_id, is_remote, trace_flags, trace_state
             )
