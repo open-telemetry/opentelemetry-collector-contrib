@@ -10,5 +10,5 @@ require (
 	github.com/pavius/impi v0.0.3
 	github.com/tcnksm/ghr v0.13.0
 	go.opentelemetry.io/collector/cmd/issuegenerator v0.21.0
-	go.opentelemetry.io/collector/cmd/mdatagen v0.20.0
+	go.opentelemetry.io/collector/cmd/mdatagen v0.21.0
 )
