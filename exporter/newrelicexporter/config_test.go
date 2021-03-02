@@ -59,9 +59,9 @@ func TestLoadConfig(t *testing.T) {
 			"weight": 3,
 		},
 		MetricsHostOverride: "alt.metrics.newrelic.com",
-		MetricsInsecure: true,
+		MetricsInsecure:     true,
 		SpansHostOverride:   "alt.spans.newrelic.com",
-		SpansInsecure: true,
+		SpansInsecure:       true,
 	})
 
 	nrConfig := new(telemetry.Config)
