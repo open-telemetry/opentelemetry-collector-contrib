@@ -25,6 +25,8 @@ translation_rules:
   mapping:
 
     # dimensions
+    k8s.cronjob.name: kubernetes_name
+    k8s.cronjob.uid: kubernetes_uid
     container.image.name: container_image
     k8s.container.name: container_spec_name
     k8s.cluster.name: kubernetes_cluster
@@ -34,6 +36,8 @@ translation_rules:
     k8s.deployment.uid: kubernetes_uid
     k8s.hpa.name: kubernetes_name
     k8s.hpa.uid: kubernetes_uid
+    k8s.job.name: kubernetes_name
+    k8s.job.uid: kubernetes_uid
     k8s.namespace.name: kubernetes_namespace
     k8s.node.name: kubernetes_node
     k8s.node.uid: kubernetes_node_uid
