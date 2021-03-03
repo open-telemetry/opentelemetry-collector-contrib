@@ -8,6 +8,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 	"net"
 	"testing"
 	"time"
@@ -54,7 +55,6 @@ func SyslogInputTest(t *testing.T, cfg *SyslogInputConfig, tc syslog.Case) {
 		require.NoError(t, err)
 	}
 
-
 	switch tc.InputRecord.(type) {
 	case string:
 		_, err = conn.Write([]byte(tc.InputRecord.(string)))
@@ -80,18 +80,46 @@ func SyslogInputTest(t *testing.T, cfg *SyslogInputConfig, tc syslog.Case) {
 
 func NewSyslogInputConfigWithTcp(syslogCfg *syslog.SyslogParserConfig) *SyslogInputConfig {
 	cfg := NewSyslogInputConfig("test_syslog")
+	cfg.SyslogParserConfig = *syslogCfg
 	cfg.Tcp = tcp.NewTCPInputConfig("test_syslog_tcp")
 	cfg.Tcp.ListenAddress = ":14201"
 	cfg.OutputIDs = []string{"fake"}
-	cfg.Syslog = syslogCfg
 	return cfg
 }
 
 func NewSyslogInputConfigWithUdp(syslogCfg *syslog.SyslogParserConfig) *SyslogInputConfig {
 	cfg := NewSyslogInputConfig("test_syslog")
+	cfg.SyslogParserConfig = *syslogCfg
 	cfg.Udp = udp.NewUDPInputConfig("test_syslog_udp")
 	cfg.Udp.ListenAddress = ":12032"
 	cfg.OutputIDs = []string{"fake"}
-	cfg.Syslog = syslogCfg
 	return cfg
+}
+
+func TestConfigYamlUnmarshal(t *testing.T) {
+	base := `type: syslog_input
+protocol: rfc5424
+udp:
+  listen_address: localhost:1234
+`
+	var cfg SyslogInputConfig
+	err := yaml.Unmarshal([]byte(base), &cfg)
+	require.NoError(t, err)
+	require.Equal(t, "rfc5424", cfg.Protocol)
+	require.Equal(t, "localhost:1234", cfg.Udp.ListenAddress)
+
+
+	base = `type: syslog_input
+protocol: rfc5424
+tcp:
+  listen_address: localhost:1234
+  tls:
+    enable: true
+`
+	err = yaml.Unmarshal([]byte(base), &cfg)
+	require.NoError(t, err)
+	require.Equal(t, "rfc5424", cfg.Protocol)
+	require.Equal(t, "localhost:1234", cfg.Tcp.ListenAddress)
+	require.Equal(t, true, cfg.Tcp.TLS.Enable)
+
 }
