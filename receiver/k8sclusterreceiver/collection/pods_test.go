@@ -322,14 +322,15 @@ func expectedKubernetesMetadata(to testCaseOptions) map[metadata.ResourceID]*Kub
 	kindObjName := fmt.Sprintf("test-%s-0", kindLower)
 	kindObjUID := fmt.Sprintf("test-%s-0-uid", kindLower)
 	kindNameLabel := fmt.Sprintf("k8s.%s.name", kindLower)
+	kindUIDLabel := fmt.Sprintf("k8s.%s.uid", kindLower)
 
 	out := map[metadata.ResourceID]*KubernetesMetadata{
 		metadata.ResourceID(podUIDLabel): {
 			resourceIDKey: "k8s.pod.uid",
 			resourceID:    metadata.ResourceID(podUIDLabel),
 			metadata: map[string]string{
-				kindLower:          kindObjName,
-				kindLower + "_uid": kindObjUID,
+				kindNameLabel: kindObjName,
+				kindUIDLabel:  kindObjUID,
 			},
 		},
 	}
@@ -340,21 +341,19 @@ func expectedKubernetesMetadata(to testCaseOptions) map[metadata.ResourceID]*Kub
 	if !withoutInfoFromCache {
 		out[metadata.ResourceID(podUIDLabel)].metadata["k8s.workload.kind"] = to.kind
 		out[metadata.ResourceID(podUIDLabel)].metadata["k8s.workload.name"] = kindObjName
-		out[metadata.ResourceID(podUIDLabel)].metadata[kindNameLabel] = kindObjName
 	}
 
 	// If the Pod's Owner Kind is not the actual owner (CronJobs -> Jobs and Deployments -> ReplicaSets),
 	// add metadata additional metadata to expected values.
 	if to.withParentOR {
-		delete(out[metadata.ResourceID(podUIDLabel)].metadata, kindNameLabel)
 		switch to.kind {
 		case "Job":
-			out[metadata.ResourceID(podUIDLabel)].metadata["cronjob_uid"] = "test-cronjob-0-uid"
+			out[metadata.ResourceID(podUIDLabel)].metadata["k8s.cronjob.uid"] = "test-cronjob-0-uid"
 			out[metadata.ResourceID(podUIDLabel)].metadata["k8s.cronjob.name"] = "test-cronjob-0"
 			out[metadata.ResourceID(podUIDLabel)].metadata["k8s.workload.name"] = "test-cronjob-0"
 			out[metadata.ResourceID(podUIDLabel)].metadata["k8s.workload.kind"] = "CronJob"
 		case "ReplicaSet":
-			out[metadata.ResourceID(podUIDLabel)].metadata["deployment_uid"] = "test-deployment-0-uid"
+			out[metadata.ResourceID(podUIDLabel)].metadata["k8s.deployment.uid"] = "test-deployment-0-uid"
 			out[metadata.ResourceID(podUIDLabel)].metadata["k8s.deployment.name"] = "test-deployment-0"
 			out[metadata.ResourceID(podUIDLabel)].metadata["k8s.workload.name"] = "test-deployment-0"
 			out[metadata.ResourceID(podUIDLabel)].metadata["k8s.workload.kind"] = "Deployment"
