@@ -17,13 +17,13 @@ import typing
 from opentelemetry import trace
 from opentelemetry.context import Context
 from opentelemetry.exporter.datadog import constants
-from opentelemetry.trace import get_current_span, set_span_in_context
-from opentelemetry.trace.propagation.textmap import (
+from opentelemetry.propagators.textmap import (
     Getter,
     Setter,
     TextMapPropagator,
     TextMapPropagatorT,
 )
+from opentelemetry.trace import get_current_span, set_span_in_context
 
 
 class DatadogFormat(TextMapPropagator):
@@ -111,7 +111,7 @@ class DatadogFormat(TextMapPropagator):
         """Returns a set with the fields set in `inject`.
 
         See
-        `opentelemetry.trace.propagation.textmap.TextMapPropagator.fields`
+        `opentelemetry.propagators.textmap.TextMapPropagator.fields`
         """
         return {
             self.TRACE_ID_KEY,

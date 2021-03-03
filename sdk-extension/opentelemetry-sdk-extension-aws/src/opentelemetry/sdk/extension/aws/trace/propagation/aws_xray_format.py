@@ -53,7 +53,7 @@ import typing
 
 import opentelemetry.trace as trace
 from opentelemetry.context import Context
-from opentelemetry.trace.propagation.textmap import (
+from opentelemetry.propagators.textmap import (
     Getter,
     Setter,
     TextMapPropagator,
@@ -316,7 +316,7 @@ class AwsXRayFormat(TextMapPropagator):
         """Returns a set with the fields set in `inject`.
 
         See
-        `opentelemetry.trace.propagation.textmap.TextMapPropagator.fields`
+        `opentelemetry.propagators.textmap.TextMapPropagator.fields`
         """
 
         return {TRACE_HEADER_KEY}

@@ -22,6 +22,7 @@ from opentelemetry.propagators.ot_trace import (
     OT_TRACE_ID_HEADER,
     OTTracePropagator,
 )
+from opentelemetry.propagators.textmap import DictGetter
 from opentelemetry.sdk.trace import _Span
 from opentelemetry.trace import (
     INVALID_SPAN_CONTEXT,
@@ -32,7 +33,6 @@ from opentelemetry.trace import (
     set_span_in_context,
 )
 from opentelemetry.trace.propagation import get_current_span
-from opentelemetry.trace.propagation.textmap import DictGetter
 
 carrier_getter = DictGetter()
 

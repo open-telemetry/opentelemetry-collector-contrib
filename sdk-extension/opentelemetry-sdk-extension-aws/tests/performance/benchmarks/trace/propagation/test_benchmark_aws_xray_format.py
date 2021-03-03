@@ -14,11 +14,11 @@
 
 from requests.structures import CaseInsensitiveDict
 
+from opentelemetry.propagators.textmap import DictGetter
 from opentelemetry.sdk.extension.aws.trace.propagation.aws_xray_format import (
     TRACE_HEADER_KEY,
     AwsXRayFormat,
 )
-from opentelemetry.trace.propagation.textmap import DictGetter
 
 XRAY_PROPAGATOR = AwsXRayFormat()
 

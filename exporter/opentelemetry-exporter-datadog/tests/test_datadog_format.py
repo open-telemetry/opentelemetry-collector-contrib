@@ -17,10 +17,10 @@ from unittest.mock import Mock, patch
 
 from opentelemetry import trace as trace_api
 from opentelemetry.exporter.datadog import constants, propagator
+from opentelemetry.propagators.textmap import DictGetter
 from opentelemetry.sdk import trace
 from opentelemetry.sdk.trace.id_generator import RandomIdGenerator
 from opentelemetry.trace import get_current_span, set_span_in_context
-from opentelemetry.trace.propagation.textmap import DictGetter
 
 FORMAT = propagator.DatadogFormat()
 
