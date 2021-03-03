@@ -6,27 +6,62 @@ Supported pipeline types: logs
 
 > :construction: This receiver is in alpha and configuration fields are subject to change.
 
-## Required Parameters
+## Configuration
 
-- `operators` is an array of [operators](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/README.md#what-operators-are-available). Each operator performs a simple responsibility, such as parsing a timestamp or JSON. Chain together operators to process logs into a desired format.
+| Field      | Default          | Description                                                  |
+| ---------- | ---------------- | ------------------------------------------------------------ |
+| `id`       | `syslog_input`   | A unique identifier for the operator                         |
+| `udp`      |`nil`                | Defined udp_input operator. (see the UDP configuration section)  |
+| `tcp`      | `nil`               | Defined tcp_input operator. (see the TCP configuration section)  |
+| `protocol`    | required         | The protocol to parse the syslog messages as. Options are `rfc3164` and `rfc5424`                                                                                                                                                        |
+| `location`    | `UTC`            | The geographic location (timezone) to use when parsing the timestamp (Syslog RFC 3164 only). The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`. |
+| `timestamp`   | `nil`            | An optional [timestamp](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/types/timestamp.md) block which will parse a timestamp field before passing the entry to the output operator                                                                                               |
+| `severity`    | `nil`            | An optional [severity](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/docs/types/severity.md) block which will parse a severity field before passing the entry to the output operator
+| `labels`   | {}               | A map of `key: value` labels to add to the entry's labels    |
+| `resource` | {}               | A map of `key: value` labels to add to the entry's resource  |
 
-## Optional Parameters
+### UDP Configuration
 
-- `plugin_dir` is the path to a directory which contains `stanza` [plugins](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/plugins.md#using-plugins). Plugins are parameterized pipelines that are designed for specific use cases.
-- `offsets_file` is the path to a file that `stanza` will use to remember where it left off when reading from files or other persistent input sources. If specified, `stanza` will create and manage this file.
+| Field             | Default          | Description                                                                       |
+| ---               | ---              | ---                                                                               |
+| `listen_address`  | required         | A listen address of the form `<ip>:<port>`                                        |
 
-## Operator Basics
+### TCP Configuration
 
-- Every operator has a `type`.
-- Every operator can be given a unique `id`. If you use the same type of operator more than once in a pipeline, you must specify an `id`. Otherwise, the `id` defaults to the value of `type`.
-- Operators will output to the next operator in the pipeline. The last operator in the pipeline will emit from the receiver. Optionally, the `output` parameter can be used to specify the `id` of another operator to which logs will be passed directly.
+| Field             | Default          | Description                                                                       |
+| ---               | ---              | ---                                                                               |
+| `max_buffer_size` | `1024kib`        | Maximum size of buffer that may be allocated while reading TCP input              |
+| `listen_address`  | required         | A listen address of the form `<ip>:<port>`                                        |
+| `tls`             |                  | An optional `TLS` configuration (see the TLS configuration section)               |
 
-Receiver Configuration
+#### TLS Configuration
+
+The `tcp_input` operator supports TLS, disabled by default.
+
+| Field             | Default          | Description                               |
+| ---               | ---              | ---                                       |
+| `enable`          | `false`          | Boolean value to enable or disable TLS    |
+| `certificate`     |                  | File path for the X509 certificate chain  |
+| `private_key`     |                  | File path for the X509 private key        |
+
+
+
+## Example Configurations
+
+TCP Configuration:
+
 ```yaml
-receivers:
-  syslog:
-    tcp:
-      listen_address: "0.0.0.0:54526"
-    syslog:
-      protocol: rfc5424
+- type: syslog_input
+  protocol: rfc5424
+  tcp:
+    listen_adress: "0.0.0.0:54526"
+```
+
+UDP Configuration:
+```yaml
+- type: syslog_input
+  udp:
+    listen_adress: "0.0.0.0:54526"
+  protocol: rfc3164
+  location: UTC
 ```
