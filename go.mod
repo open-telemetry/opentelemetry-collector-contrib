@@ -57,6 +57,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/telegrafreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.0.0-00010101000000-000000000000
@@ -64,6 +65,8 @@ require (
 	go.opentelemetry.io/collector v0.23.1-0.20210324183556-8da7dcc70543
 	golang.org/x/sys v0.0.0-20210315160823-c6e025ad8005
 )
+
+replace github.com/influxdata/telegraf => github.com/sumologic/telegraf v1.17.3-sumo
 
 // Replace references to modules that are in this repository with their relateive paths
 // so that we always build with current (latest) version of the source code.
@@ -185,6 +188,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filel
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver => ./receiver/syslogreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver => ./receiver/memcachedreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/telegrafreceiver => ./receiver/telegrafreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor => ./processor/groupbyattrsprocessor
 
