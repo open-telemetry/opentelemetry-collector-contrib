@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -53,18 +54,42 @@ func TestLogWriter(t *testing.T) {
 	assert.Len(t, messages, 2)
 }
 
-func runMock(ptrace pdata.Traces) (*Mock, error) {
-	ctx, cancel := context.WithCancel(context.Background())
+type mockConfig struct {
+	useAPIKeyHeader bool
+	serverURL       string
+	statusCode      int
+}
+
+func runMock(initialContext context.Context, ptrace pdata.Traces, cfg mockConfig) (*Mock, error) {
+	ctx, cancel := context.WithCancel(initialContext)
 	defer cancel()
 
-	m := &Mock{make([]Data, 0, 1)}
+	m := &Mock{
+		Data:       make([]Data, 0, 1),
+		StatusCode: 202,
+	}
+
+	if cfg.statusCode > 0 {
+		m.StatusCode = cfg.statusCode
+	}
+
 	srv := m.Server()
 	defer srv.Close()
 
 	f := NewFactory()
 	c := f.CreateDefaultConfig().(*Config)
-	u, _ := url.Parse(srv.URL)
-	c.APIKey, c.spansInsecure, c.SpansHostOverride = "1", true, u.Host
+	urlString := srv.URL
+	if cfg.serverURL != "" {
+		urlString = srv.URL
+	}
+	u, _ := url.Parse(urlString)
+
+	if cfg.useAPIKeyHeader {
+		c.APIKeyHeader = "x-nr-key"
+	} else {
+		c.APIKey = "1"
+	}
+	c.spansInsecure, c.SpansHostOverride = true, u.Host
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exp, err := f.CreateTracesExporter(context.Background(), params, c)
 	if err != nil {
@@ -79,10 +104,81 @@ func runMock(ptrace pdata.Traces) (*Mock, error) {
 	return m, nil
 }
 
-func testTraceData(t *testing.T, expected []Span, resource *resourcepb.Resource, spans []*tracepb.Span) {
-	m, err := runMock(internaldata.OCToTraces(nil, resource, spans))
+func testTraceData(t *testing.T, expected []Span, resource *resourcepb.Resource, spans []*tracepb.Span, useAPIKeyHeader bool) {
+	ctx := context.Background()
+	if useAPIKeyHeader {
+		ctx = metadata.NewIncomingContext(ctx, metadata.MD{"x-nr-key": []string{"a1b2c3d4"}})
+	}
+
+	m, err := runMock(ctx, internaldata.OCToTraces(nil, resource, spans), mockConfig{useAPIKeyHeader: useAPIKeyHeader})
 	require.NoError(t, err)
 	assert.Equal(t, expected, m.Spans())
+}
+
+func TestExportTraceWithBadURL(t *testing.T) {
+	ptrace := internaldata.OCToTraces(nil, nil,
+		[]*tracepb.Span{
+			{
+				SpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
+				Name:   &tracepb.TruncatableString{Value: "a"},
+			},
+		})
+
+	_, err := runMock(context.Background(), ptrace, mockConfig{serverURL: "badurl"})
+	require.Error(t, err)
+}
+
+func TestExportTraceWithErrorStatusCode(t *testing.T) {
+	ptrace := internaldata.OCToTraces(nil, nil,
+		[]*tracepb.Span{
+			{
+				SpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
+				Name:   &tracepb.TruncatableString{Value: "a"},
+			},
+		})
+
+	_, err := runMock(context.Background(), ptrace, mockConfig{statusCode: 500})
+	require.Error(t, err)
+}
+
+func TestExportTraceWithNot202StatusCode(t *testing.T) {
+	ptrace := internaldata.OCToTraces(nil, nil,
+		[]*tracepb.Span{
+			{
+				SpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
+				Name:   &tracepb.TruncatableString{Value: "a"},
+			},
+		})
+
+	_, err := runMock(context.Background(), ptrace, mockConfig{statusCode: 403})
+	require.Error(t, err)
+}
+
+func TestExportTraceWithInvalidMetadata(t *testing.T) {
+	ptrace := internaldata.OCToTraces(nil, nil,
+		[]*tracepb.Span{
+			{
+				SpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
+				Name:   &tracepb.TruncatableString{Value: "a"},
+			},
+		})
+
+	_, err := runMock(context.Background(), ptrace, mockConfig{useAPIKeyHeader: true})
+	require.Error(t, err)
+}
+
+func TestExportTraceWithNoAPIKeyInMetadata(t *testing.T) {
+	ptrace := internaldata.OCToTraces(nil, nil,
+		[]*tracepb.Span{
+			{
+				SpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
+				Name:   &tracepb.TruncatableString{Value: "a"},
+			},
+		})
+
+	ctx := metadata.NewIncomingContext(context.Background(), metadata.MD{})
+	_, err := runMock(ctx, ptrace, mockConfig{useAPIKeyHeader: true})
+	require.Error(t, err)
 }
 
 func TestExportTracePartialData(t *testing.T) {
@@ -98,7 +194,7 @@ func TestExportTracePartialData(t *testing.T) {
 			},
 		})
 
-	_, err := runMock(ptrace)
+	_, err := runMock(context.Background(), ptrace, mockConfig{useAPIKeyHeader: false})
 	require.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), errInvalidSpanID.Error()))
 	assert.True(t, strings.Contains(err.Error(), errInvalidTraceID.Error()))
@@ -125,7 +221,8 @@ func TestExportTraceDataMinimum(t *testing.T) {
 		},
 	}
 
-	testTraceData(t, expected, nil, spans)
+	testTraceData(t, expected, nil, spans, false)
+	testTraceData(t, expected, nil, spans, true)
 }
 
 func TestExportTraceDataFullTrace(t *testing.T) {
@@ -197,14 +294,18 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 		},
 	}
 
-	testTraceData(t, expected, resource, spans)
+	testTraceData(t, expected, resource, spans, false)
+	testTraceData(t, expected, resource, spans, true)
 }
 
 func testExportMetricData(t *testing.T, expected []Metric, md consumerdata.MetricsData) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	m := &Mock{make([]Data, 0, 3)}
+	m := &Mock{
+		Data:       make([]Data, 0, 3),
+		StatusCode: 202,
+	}
 	srv := m.Server()
 	defer srv.Close()
 
