@@ -18,23 +18,26 @@ func NewSyslogInputConfig(operatorID string) *SyslogInputConfig {
 	}
 }
 
-type SyslogInputConfig struct {
+type BaseSyslogInputConfig struct {
 	helper.InputConfig `yaml:",inline"`
-	Tcp                *tcp.TCPInputConfig        `json:"tcp" yaml:"tcp"`
-	Udp                *udp.UDPInputConfig        `json:"udp" yaml:"udp"`
-	Syslog             *syslog.SyslogParserConfig `json:"syslog" yaml:"syslog"`
+	Tcp                *tcp.TCPInputConfig `json:"tcp" yaml:"tcp"`
+	Udp                *udp.UDPInputConfig `json:"udp" yaml:"udp"`
+}
+
+type SyslogInputConfig struct {
+	syslog.SyslogParserConfig `yaml:"-"`
+	helper.InputConfig        `yaml:",inline"`
+	Tcp                       *tcp.TCPInputConfig `json:"tcp" yaml:"tcp"`
+	Udp                       *udp.UDPInputConfig `json:"udp" yaml:"udp"`
 }
 
 func (c SyslogInputConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
-	if c.Syslog == nil {
-		return nil, fmt.Errorf("need syslog config")
-	}
 	if c.Tcp == nil && c.Udp == nil {
 		return nil, fmt.Errorf("need tcp config or udp config")
 	}
 
-	c.Syslog.OutputIDs = c.OutputIDs
-	ops, err := c.Syslog.Build(context)
+	c.SyslogParserConfig.OutputIDs = c.OutputIDs
+	ops, err := c.SyslogParserConfig.Build(context)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve syslog config: %s", err)
 	}
@@ -58,4 +61,26 @@ func (c SyslogInputConfig) Build(context operator.BuildContext) ([]operator.Oper
 	}
 
 	return ops, nil
+}
+
+func (c *SyslogInputConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	parserCfg := syslog.NewSyslogParserConfig("syslog_parser")
+
+	err := unmarshal(parserCfg)
+	if err != nil {
+		return err
+	}
+	c.SyslogParserConfig = *parserCfg
+
+	base := &BaseSyslogInputConfig{
+	}
+	err =  unmarshal(base)
+	if err != nil {
+		return err
+	}
+
+	c.InputConfig = base.InputConfig
+	c.Tcp= base.Tcp
+	c.Udp = base.Udp
+	return nil
 }
