@@ -18,7 +18,7 @@ extensions:
     cluster_name: 'Cluster-1'
     cluster_region: 'us-west-2'
     result_file: '/etc/ecs_sd_targets.yaml'
-    sevice:
+    services:
       - name_pattern: '^retail-.*$'
     docker_labels:
       - port_label: 'ECS_PROMETHEUS_EXPORTER_PORT'
@@ -111,6 +111,14 @@ ecs_observer:
 
 #### ECS Task Definition based filter Configuration
 
+| Name                   |           | Description                                                                                        |
+|------------------------|-----------|----------------------------------------------------------------------------------------------------|
+| arn_pattern            | Mandatory | Regex pattern to match against ECS task definition ARN                                             |
+| metrics_ports          | Mandatory | container ports separated by semicolon. Only containers that expose these ports will be discovered |
+| container_name_pattern | Optional  | ECS task container name regex pattern                                                              |
+
+#### Docker Label based filter Configuration
+
 Specify label keys to look up value
 
 | Name               |           | Description                                                                     |
@@ -118,14 +126,6 @@ Specify label keys to look up value
 | port_label         | Mandatory | container's docker label name that specifies the metrics port                   |
 | metrics_path_label | Optional  | container's docker label name that specifies the metrics path. (Default: "")    |
 | job_name_label     | Optional  | container's docker label name that specifies the scrape job name. (Default: "") |
-
-#### Docker Label based filter Configuration
-
-| Name                   |           | Description                                                                                        |
-|------------------------|-----------|----------------------------------------------------------------------------------------------------|
-| arn_pattern            | Mandatory | Regex pattern to match against ECS task definition ARN                                             |
-| metrics_ports          | Mandatory | container ports separated by semicolon. Only containers that expose these ports will be discovered |
-| container_name_pattern | Optional  | ECS task container name regex pattern                                                              |
 
 ### Authentication
 
@@ -394,23 +394,23 @@ NewECSSD() {
 Following metrics are logged at debug level. TODO(pingleig): Is there a way for otel plugins to export custom metrics to
 otel's own /metrics.
 
-| Name                                 | Type | Description                                                                                                                                                    |
-|--------------------------------------|------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `discoverd_targets`                  | int  | Number of targets exported                                                                                                                                     |
-| `discoverd_taskss`                   | int  | Number of tasks that contains scrape target, should be smaller than targets unless each task only contains one target                                          |
-| `ignored_tasks`                      | int  | Tasks ignored by filter, `discoverd_tasks` and  `ignored_tasks` should add up to `api_ecs_list_task_results`, one exception is API paging failed in the middle |
-| `targets_matched_by_service`         | int  | ECS Service name based filter                                                                                                                                  |
-| `targets_matched_by_task_definition` | int  | ECS TaskDefinition based filter                                                                                                                                |
-| `targets_matched_by_docker_label`    | int  | ECS DockerLabel based filter                                                                                                                                   |
-| `target_error_noip`                  | int  | Export failures because private ip not found                                                                                                                   |
-| `api_ecs_list_task_results`          | int  | Total number of tasks returned from ECS ListTask API                                                                                                           |
-| `api_ecs_list_service_results`       | int  | Total number of services returned from ECS ListService API                                                                                                     |
-| `api_error_auth`                     | int  | Total number of error triggered by permission                                                                                                                  |
-| `api_error_rate_limit`               | int  | Total number of error triggered by rate limit                                                                                                                  |
-| `cache_size_container_instances`     | int  | Cached ECS ContainerInstance                                                                                                                                   |
-| `cache_hit_container_instance`       | int  | Cache hit during the latest polling                                                                                                                            |
-| `cache_size_ec2_instance`            | int  | Cached EC2 Instance                                                                                                                                            |
-| `cache_hit_ec2_instance`             | int  | Cache hit during the latest polling                                                                                                                            |
+| Name                                 | Type | Description                                                                                                                                                     |
+|--------------------------------------|------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `discovered_targets`                 | int  | Number of targets exported                                                                                                                                      |
+| `discovered_taskss`                  | int  | Number of tasks that contains scrape target, should be smaller than targets unless each task only contains one target                                           |
+| `ignored_tasks`                      | int  | Tasks ignored by filter, `discovered_tasks` and  `ignored_tasks` should add up to `api_ecs_list_task_results`, one exception is API paging failed in the middle |
+| `targets_matched_by_service`         | int  | ECS Service name based filter                                                                                                                                   |
+| `targets_matched_by_task_definition` | int  | ECS TaskDefinition based filter                                                                                                                                 |
+| `targets_matched_by_docker_label`    | int  | ECS DockerLabel based filter                                                                                                                                    |
+| `target_error_noip`                  | int  | Export failures because private ip not found                                                                                                                    |
+| `api_ecs_list_task_results`          | int  | Total number of tasks returned from ECS ListTask API                                                                                                            |
+| `api_ecs_list_service_results`       | int  | Total number of services returned from ECS ListService API                                                                                                      |
+| `api_error_auth`                     | int  | Total number of error triggered by permission                                                                                                                   |
+| `api_error_rate_limit`               | int  | Total number of error triggered by rate limit                                                                                                                   |
+| `cache_size_container_instances`     | int  | Cached ECS ContainerInstance                                                                                                                                    |
+| `cache_hit_container_instance`       | int  | Cache hit during the latest polling                                                                                                                             |
+| `cache_size_ec2_instance`            | int  | Cached EC2 Instance                                                                                                                                             |
+| `cache_hit_ec2_instance`             | int  | Cache hit during the latest polling                                                                                                                             |
 
 ### Error Handling
 
