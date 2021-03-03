@@ -86,8 +86,6 @@ func (f ReceiverType) DecodeInputConfig(cfg configmodels.Receiver) (*operator.Co
 		inputCfg.Udp = udp.NewUDPInputConfig("udp_input")
 	}
 
-	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
-		return nil, err
-	}
+	_ = yaml.Unmarshal(yamlBytes, &inputCfg)
 	return &operator.Config{Builder: inputCfg}, nil
 }

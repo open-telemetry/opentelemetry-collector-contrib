@@ -98,7 +98,6 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	assert.Equal(t, len(cfg.Receivers), 1)
-
 	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers["syslog"])
 }
 
