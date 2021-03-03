@@ -2,7 +2,6 @@ include ./Makefile.Common
 
 RUN_CONFIG=local/config.yaml
 CMD?=
-STATIC_CHECK=staticcheck
 OTEL_VERSION=main
 
 BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/version
@@ -133,7 +132,6 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/jstemmer/go-junit-report
 	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
 	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
-	cd $(TOOLS_MOD_DIR) && go install honnef.co/go/tools/cmd/staticcheck
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/collector/cmd/mdatagen
 	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/collector/cmd/issuegenerator
 
