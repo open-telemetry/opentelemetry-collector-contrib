@@ -176,42 +176,27 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 			},
 		},
 		{
-			"Test with special characters in k8s labels",
+			"Test with k8s service properties",
 			args{
 				metadata: metadata.MetadataUpdate{
 					ResourceIDKey: "name",
 					ResourceID:    "val",
 					MetadataDelta: metadata.MetadataDelta{
 						MetadataToAdd: map[string]string{
-							"k8s.label.prope/rty1": "value1",
-							"k8s.label.ta.g1":      "",
-							"k8s.service.ta.g5":    "",
+							"k8s.service.ta.g5": "",
 						},
 						MetadataToRemove: map[string]string{
-							"k8s.label.prope.rty2": "value2",
-							"k8s.label.ta/g2":      "",
-							"k8s.service.ta.g6":    "",
-						},
-						MetadataToUpdate: map[string]string{
-							"k8s.label.prope_rty3": "value33",
-							"k8s.label.prope.rty4": "",
+							"k8s.service.ta.g6": "",
 						},
 					},
 				},
 				metricTranslator: nil,
 			},
 			&DimensionUpdate{
-				Name:  "name",
-				Value: "val",
-				Properties: getMapToPointers(map[string]string{
-					"prope_rty1": "value1",
-					"prope_rty2": "",
-					"prope_rty3": "value33",
-					"prope_rty4": "",
-				}),
+				Name:       "name",
+				Value:      "val",
+				Properties: map[string]*string{},
 				Tags: map[string]bool{
-					"ta_g1":                    true,
-					"ta_g2":                    false,
 					"kubernetes_service_ta.g5": true,
 					"kubernetes_service_ta.g6": false,
 				},

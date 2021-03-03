@@ -30,10 +30,6 @@ type MetadataUpdateClient interface {
 	PushMetadata([]*metadata.MetadataUpdate) error
 }
 
-var k8sLabelNameSanitizer = strings.NewReplacer(
-	".", "_",
-	"/", "_")
-
 func getDimensionUpdateFromMetadata(
 	metadata metadata.MetadataUpdate,
 	metricTranslator *translation.MetricTranslator,
@@ -56,18 +52,12 @@ func translateDimension(metricTranslator *translation.MetricTranslator, dim stri
 }
 
 const (
-	oTelK8sLabelPrefix   = "k8s.label."
 	oTelK8sServicePrefix = "k8s.service."
 	sfxK8sServicePrefix  = "kubernetes_service_"
 )
 
-// sanitizeProperty processes any property key or tag to ensure conformity with SFx values.
-// Currently this method only replaces "." and "/" in kubernetes labels with "_". This is done to
-// ensure compatibility with properties sent by kubernetes-cluster monitor in the SignalFx Agent.
 func sanitizeProperty(property string) string {
-	if strings.HasPrefix(property, oTelK8sLabelPrefix) {
-		return k8sLabelNameSanitizer.Replace(strings.TrimPrefix(property, oTelK8sLabelPrefix))
-	} else if strings.HasPrefix(property, oTelK8sServicePrefix) {
+	if strings.HasPrefix(property, oTelK8sServicePrefix) {
 		return strings.Replace(property, oTelK8sServicePrefix, sfxK8sServicePrefix, 1)
 	}
 	return property
