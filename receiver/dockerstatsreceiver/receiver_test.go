@@ -87,10 +87,7 @@ func TestErrorsInStart(t *testing.T) {
 	received, err := host.WaitForFatalError(500 * time.Millisecond)
 	require.True(t, received)
 	require.Error(t, err)
-	assert.Equal(
-		t, "Cannot connect to the Docker daemon at unix:///not/a/thing.sock. Is the docker daemon running?",
-		err.Error(),
-	)
+	assert.Contains(t, err.Error(), "context deadline exceeded")
 
 	require.Nil(t, receiver.Shutdown(context.Background()))
 }
