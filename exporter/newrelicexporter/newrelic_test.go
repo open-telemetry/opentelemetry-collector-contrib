@@ -80,7 +80,7 @@ func runMock(initialContext context.Context, ptrace pdata.Traces, cfg mockConfig
 	c := f.CreateDefaultConfig().(*Config)
 	urlString := srv.URL
 	if cfg.serverURL != "" {
-		urlString = srv.URL
+		urlString = cfg.serverURL
 	}
 	u, _ := url.Parse(urlString)
 
@@ -124,7 +124,7 @@ func TestExportTraceWithBadURL(t *testing.T) {
 			},
 		})
 
-	_, err := runMock(context.Background(), ptrace, mockConfig{serverURL: "badurl"})
+	_, err := runMock(context.Background(), ptrace, mockConfig{serverURL: "http://badurl"})
 	require.Error(t, err)
 }
 
