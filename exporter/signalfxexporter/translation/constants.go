@@ -250,7 +250,7 @@ translation_rules:
     receive: pod_network_receive_errors_total
     transmit: pod_network_transmit_errors_total
 
-# compute cpu utilization
+# compute cpu utilization metrics: cpu.utilization_per_core (excluded by default) and cpu.utilization
 - action: delta_metric
   mapping:
     system.cpu.time: system.cpu.delta
@@ -271,7 +271,6 @@ translation_rules:
   aggregation_method: sum
   without_dimensions:
   - state
-  - cpu
 - action: copy_metrics
   mapping:
     system.cpu.delta: system.cpu.total
@@ -280,12 +279,19 @@ translation_rules:
   aggregation_method: sum
   without_dimensions:
   - state
-  - cpu
 - action: calculate_new_metric
-  metric_name: cpu.utilization
+  metric_name: cpu.utilization_per_core
   operand1_metric: system.cpu.usage
   operand2_metric: system.cpu.total
   operator: /
+- action: copy_metrics
+  mapping:
+    cpu.utilization_per_core: cpu.utilization
+- action: aggregate_metric
+  metric_name: cpu.utilization
+  aggregation_method: avg
+  without_dimensions:
+  - cpu
 
 # convert cpu metrics
 - action: split_metric

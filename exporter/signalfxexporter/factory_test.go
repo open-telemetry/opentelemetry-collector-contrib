@@ -843,7 +843,12 @@ func TestDefaultExcludes_translated(t *testing.T) {
 	rms := getResourceMetrics(metrics)
 	require.Equal(t, 62, rms.InstrumentationLibraryMetrics().At(0).Metrics().Len())
 	dps := converter.MetricDataToSignalFxV2(rms)
-	require.Equal(t, 0, len(dps))
+
+	// the default cpu.utilization metric is added after applying the default translations
+	// (because cpu.utilization_per_core is supplied) and should not be excluded
+	require.Equal(t, 1, len(dps))
+	require.Equal(t, "cpu.utilization", dps[0].Metric)
+
 }
 
 func TestDefaultExcludes_not_translated(t *testing.T) {
