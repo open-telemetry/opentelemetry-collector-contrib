@@ -20,7 +20,6 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -121,7 +120,7 @@ func TestGetNamespace(t *testing.T) {
 	defaultMetric := createMetricTestData()
 	testCases := []struct {
 		testName        string
-		metric          consumerdata.MetricsData
+		metric          internaldata.MetricsData
 		configNamespace string
 		namespace       string
 	}{
@@ -139,7 +138,7 @@ func TestGetNamespace(t *testing.T) {
 		},
 		{
 			"empty namespace, no service namespace",
-			consumerdata.MetricsData{
+			internaldata.MetricsData{
 				Resource: &resourcepb.Resource{
 					Labels: map[string]string{
 						conventions.AttributeServiceName: "myServiceName",
@@ -151,7 +150,7 @@ func TestGetNamespace(t *testing.T) {
 		},
 		{
 			"empty namespace, no service name",
-			consumerdata.MetricsData{
+			internaldata.MetricsData{
 				Resource: &resourcepb.Resource{
 					Labels: map[string]string{
 						conventions.AttributeServiceNamespace: "myServiceNS",
@@ -174,7 +173,7 @@ func TestGetNamespace(t *testing.T) {
 }
 
 func TestGetLogInfo(t *testing.T) {
-	metric := consumerdata.MetricsData{
+	metric := internaldata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
 			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},

@@ -22,7 +22,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -111,7 +110,7 @@ func (r *Receiver) Setup() error {
 }
 
 type result struct {
-	md  *consumerdata.MetricsData
+	md  *internaldata.MetricsData
 	err error
 }
 
