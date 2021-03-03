@@ -561,3 +561,161 @@ func TestRunningMetrics(t *testing.T) {
 	)
 
 }
+
+const (
+	testHostname = "res-hostname"
+)
+
+func createTestMetrics() pdata.Metrics {
+	md := pdata.NewMetrics()
+	rms := md.ResourceMetrics()
+	rms.Resize(1)
+
+	rm := rms.At(0)
+
+	attrs := rm.Resource().Attributes()
+	attrs.InsertString(metadata.AttributeDatadogHostname, testHostname)
+	ilms := rm.InstrumentationLibraryMetrics()
+	ilms.Resize(1)
+
+	metricsArray := ilms.At(0).Metrics()
+	metricsArray.Resize(9) // first one is TypeNone to test that it's ignored
+
+	// IntGauge
+	met := metricsArray.At(1)
+	met.SetName("int.gauge")
+	met.SetDataType(pdata.MetricDataTypeIntGauge)
+	dpsInt := met.IntGauge().DataPoints()
+	dpsInt.Resize(1)
+	dpInt := dpsInt.At(0)
+	dpInt.SetTimestamp(seconds(0))
+	dpInt.SetValue(1)
+
+	// DoubleGauge
+	met = metricsArray.At(2)
+	met.SetName("double.gauge")
+	met.SetDataType(pdata.MetricDataTypeDoubleGauge)
+	dpsDouble := met.DoubleGauge().DataPoints()
+	dpsDouble.Resize(1)
+	dpDouble := dpsDouble.At(0)
+	dpDouble.SetTimestamp(seconds(0))
+	dpDouble.SetValue(math.Pi)
+
+	// IntSum
+	met = metricsArray.At(3)
+	met.SetName("int.sum")
+	met.SetDataType(pdata.MetricDataTypeIntSum)
+	dpsInt = met.IntSum().DataPoints()
+	dpsInt.Resize(1)
+	dpInt = dpsInt.At(0)
+	dpInt.SetTimestamp(seconds(0))
+	dpInt.SetValue(2)
+
+	// DoubleSum
+	met = metricsArray.At(4)
+	met.SetName("double.sum")
+	met.SetDataType(pdata.MetricDataTypeDoubleSum)
+	dpsDouble = met.DoubleSum().DataPoints()
+	dpsDouble.Resize(1)
+	dpDouble = dpsDouble.At(0)
+	dpDouble.SetTimestamp(seconds(0))
+	dpDouble.SetValue(math.E)
+
+	// IntHistogram
+	met = metricsArray.At(5)
+	met.SetName("int.histogram")
+	met.SetDataType(pdata.MetricDataTypeIntHistogram)
+	dpsIntHist := met.IntHistogram().DataPoints()
+	dpsIntHist.Resize(1)
+	dpIntHist := dpsIntHist.At(0)
+	dpIntHist.SetCount(20)
+	dpIntHist.SetSum(100)
+	dpIntHist.SetBucketCounts([]uint64{2, 18})
+	dpIntHist.SetTimestamp(seconds(0))
+
+	// DoubleHistogram
+	met = metricsArray.At(6)
+	met.SetName("double.histogram")
+	met.SetDataType(pdata.MetricDataTypeDoubleHistogram)
+	dpsDoubleHist := met.DoubleHistogram().DataPoints()
+	dpsDoubleHist.Resize(1)
+	dpDoubleHist := dpsDoubleHist.At(0)
+	dpDoubleHist.SetCount(20)
+	dpDoubleHist.SetSum(math.Phi)
+	dpDoubleHist.SetBucketCounts([]uint64{2, 18})
+	dpDoubleHist.SetTimestamp(seconds(0))
+
+	// Int Sum (cumulative)
+	met = metricsArray.At(7)
+	met.SetName("int.cumulative.sum")
+	met.SetDataType(pdata.MetricDataTypeIntSum)
+	met.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	met.IntSum().SetIsMonotonic(true)
+	dpsInt = met.IntSum().DataPoints()
+	dpsInt.Resize(2)
+	dpInt = dpsInt.At(0)
+	dpInt.SetTimestamp(seconds(0))
+	dpInt.SetValue(4)
+	dpInt = dpsInt.At(1)
+	dpInt.SetTimestamp(seconds(2))
+	dpInt.SetValue(7)
+
+	// Double Sum (cumulative)
+	met = metricsArray.At(8)
+	met.SetName("double.cumulative.sum")
+	met.SetDataType(pdata.MetricDataTypeDoubleSum)
+	met.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	met.DoubleSum().SetIsMonotonic(true)
+	dpsDouble = met.DoubleSum().DataPoints()
+	dpsDouble.Resize(2)
+	dpDouble = dpsDouble.At(0)
+	dpDouble.SetTimestamp(seconds(0))
+	dpDouble.SetValue(4)
+	dpDouble = dpsDouble.At(1)
+	dpDouble.SetTimestamp(seconds(2))
+	dpDouble.SetValue(4 + math.Pi)
+
+	return md
+}
+
+func removeRunningMetrics(series []datadog.Metric) []datadog.Metric {
+	filtered := []datadog.Metric{}
+	for _, m := range series {
+		if m.GetMetric() != "datadog_exporter.metrics.running" {
+			filtered = append(filtered, m)
+		}
+	}
+	return filtered
+}
+
+func testGauge(name string, val float64) datadog.Metric {
+	m := metrics.NewGauge(name, 0, val, []string{})
+	m.SetHost(testHostname)
+	return m
+}
+
+func testCount(name string, val float64) datadog.Metric {
+	m := metrics.NewCount(name, 2*1e9, val, []string{})
+	m.SetHost(testHostname)
+	return m
+}
+
+func TestMapMetrics(t *testing.T) {
+	md := createTestMetrics()
+	cfg := config.MetricsConfig{SendMonotonic: true}
+	series, dropped := mapMetrics(cfg, newTTLMap(), md)
+	assert.Equal(t, dropped, 0)
+	filtered := removeRunningMetrics(series)
+	assert.ElementsMatch(t, filtered, []datadog.Metric{
+		testGauge("int.gauge", 1),
+		testGauge("double.gauge", math.Pi),
+		testGauge("int.sum", 2),
+		testGauge("double.sum", math.E),
+		testGauge("int.histogram.sum", 100),
+		testGauge("int.histogram.count", 20),
+		testGauge("double.histogram.sum", math.Phi),
+		testGauge("double.histogram.count", 20),
+		testCount("int.cumulative.sum", 3),
+		testCount("double.cumulative.sum", math.Pi),
+	})
+}
