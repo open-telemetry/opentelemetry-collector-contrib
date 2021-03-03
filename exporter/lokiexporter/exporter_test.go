@@ -476,7 +476,7 @@ func TestExporter_convertLogToLokiEntry(t *testing.T) {
 
 	expEntry := &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
-		Line:      "log message",
+		Line:      "{\"_otel_raw_log\":\"log message\"}",
 	}
 	require.NotNil(t, entry)
 	require.Equal(t, expEntry, entry)

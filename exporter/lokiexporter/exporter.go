@@ -198,8 +198,8 @@ func convertLogToLokiEntry(lr pdata.LogRecord) *logproto.Entry {
 	if lr.SeverityText() != "" {
 		mapObject["_otel_raw_log"] = lr.Body().StringVal()
 	}
-	json_struct, _ := json.Marshal(mapObject)
-	log := string(json_struct)
+	jsonStruct, _ := json.Marshal(mapObject)
+	log := string(jsonStruct)
 
 	return &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
