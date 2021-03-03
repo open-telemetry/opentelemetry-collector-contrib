@@ -25,11 +25,8 @@ import (
 func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 	translator, _ := translation.NewMetricTranslator([]translation.Rule{
 		{
-			Action: translation.ActionRenameDimensionKeys,
-			Mapping: map[string]string{
-				"prope/rty1": "rty1",
-				"prope_rty2": "rty2",
-				"prope.rty3": "rty3"},
+			Action:  translation.ActionRenameDimensionKeys,
+			Mapping: map[string]string{"name": "translated_name"},
 		},
 	}, 1)
 	type args struct {
@@ -103,7 +100,7 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 			},
 		},
 		{
-			"Test with unsupported characters",
+			"Test with special characters",
 			args{
 				metadata: metadata.MetadataUpdate{
 					ResourceIDKey: "name",
@@ -129,14 +126,14 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 				Name:  "name",
 				Value: "val",
 				Properties: getMapToPointers(map[string]string{
-					"prope_rty1": "value1",
-					"prope_rty2": "",
+					"prope/rty1": "value1",
+					"prope.rty2": "",
 					"prope_rty3": "value33",
-					"prope_rty4": "",
+					"prope.rty4": "",
 				}),
 				Tags: map[string]bool{
-					"ta_g1": true,
-					"ta_g2": false,
+					"ta.g1": true,
+					"ta/g2": false,
 				},
 			},
 		},
@@ -164,17 +161,44 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 				metricTranslator: translator,
 			},
 			&DimensionUpdate{
-				Name:  "name",
+				Name:  "translated_name",
 				Value: "val",
 				Properties: getMapToPointers(map[string]string{
-					"rty1":       "value1",
-					"rty2":       "",
-					"rty3":       "value33",
-					"prope_rty4": "",
+					"prope/rty1": "value1",
+					"prope_rty2": "",
+					"prope.rty3": "value33",
+					"prope.rty4": "",
 				}),
 				Tags: map[string]bool{
-					"ta_g1": true,
-					"ta_g2": false,
+					"ta.g1": true,
+					"ta/g2": false,
+				},
+			},
+		},
+		{
+			"Test with k8s service properties",
+			args{
+				metadata: metadata.MetadataUpdate{
+					ResourceIDKey: "name",
+					ResourceID:    "val",
+					MetadataDelta: metadata.MetadataDelta{
+						MetadataToAdd: map[string]string{
+							"k8s.service.ta.g5": "",
+						},
+						MetadataToRemove: map[string]string{
+							"k8s.service.ta.g6": "",
+						},
+					},
+				},
+				metricTranslator: nil,
+			},
+			&DimensionUpdate{
+				Name:       "name",
+				Value:      "val",
+				Properties: map[string]*string{},
+				Tags: map[string]bool{
+					"kubernetes_service_ta.g5": true,
+					"kubernetes_service_ta.g6": false,
 				},
 			},
 		},
