@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"sync"
 	"time"
+	"encoding/json"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
@@ -31,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
+	translator "go.opentelemetry.io/collector/translator/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
 )
@@ -186,8 +188,21 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap) 
 }
 
 func convertLogToLokiEntry(lr pdata.LogRecord) *logproto.Entry {
+	mapObject := translator.AttributeMapToMap(lr.Attributes())
+	if lr.Name() != "" {
+		mapObject["_otel_shortname"] = lr.Name()
+	}
+	if lr.SeverityText() != "" {
+		mapObject["_otel_severity"] = lr.SeverityText()
+	}
+	if lr.SeverityText() != "" {
+		mapObject["_otel_raw_log"] = lr.Body().StringVal()
+	}
+	json_struct, _ := json.Marshal(mapObject)
+	log := string(json_struct)
+
 	return &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
-		Line:      lr.Body().StringVal(),
+		Line:      log,
 	}
 }
