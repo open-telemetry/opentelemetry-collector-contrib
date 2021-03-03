@@ -199,8 +199,14 @@ func TestTranslation(t *testing.T) {
 					*subseg7318.Name)
 				childSpan7318Attrs[conventions.AttributeHTTPStatusCode] = pdata.NewAttributeValueInt(
 					*subseg7318.HTTP.Response.Status)
-				childSpan7318Attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueInt(
-					*subseg7318.HTTP.Response.ContentLength)
+				switch subseg7318.HTTP.Response.ContentLength.(type) {
+				case int:
+					contentLength := subseg7318.HTTP.Response.ContentLength.(int64)
+					childSpan7318Attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueInt(contentLength)
+				case string:
+					contentLength := subseg7318.HTTP.Response.ContentLength.(string)
+					childSpan7318Attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueString(contentLength)
+				}
 				childSpan7318Attrs[awsxray.AWSOperationAttribute] = pdata.NewAttributeValueString(
 					*subseg7318.AWS.Operation)
 				childSpan7318Attrs[awsxray.AWSRegionAttribute] = pdata.NewAttributeValueString(
@@ -405,8 +411,14 @@ func TestTranslation(t *testing.T) {
 					*subseg7163.Name)
 				childSpan7163Attrs[conventions.AttributeHTTPStatusCode] = pdata.NewAttributeValueInt(
 					*subseg7163.HTTP.Response.Status)
-				childSpan7163Attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueInt(
-					*subseg7163.HTTP.Response.ContentLength)
+				switch subseg7163.HTTP.Response.ContentLength.(type) {
+				case int:
+					contentLength := subseg7163.HTTP.Response.ContentLength.(int64)
+					childSpan7163Attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueInt(contentLength)
+				case string:
+					contentLength := subseg7163.HTTP.Response.ContentLength.(string)
+					childSpan7163Attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueString(contentLength)
+				}
 				childSpan7163Attrs[awsxray.AWSOperationAttribute] = pdata.NewAttributeValueString(
 					*subseg7163.AWS.Operation)
 				childSpan7163Attrs[awsxray.AWSRegionAttribute] = pdata.NewAttributeValueString(
@@ -718,8 +730,65 @@ func TestTranslation(t *testing.T) {
 					*seg.HTTP.Response.Status)
 				attrs[conventions.AttributeHTTPURL] = pdata.NewAttributeValueString(
 					*seg.HTTP.Request.URL)
-				attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueInt(
-					*seg.HTTP.Response.ContentLength)
+				switch seg.HTTP.Response.ContentLength.(type) {
+				case int:
+					contentLength := seg.HTTP.Response.ContentLength.(int64)
+					attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueInt(contentLength)
+				case string:
+					contentLength := seg.HTTP.Response.ContentLength.(string)
+					attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueString(contentLength)
+				}
+				attrs[awsxray.AWSXRayTracedAttribute] = pdata.NewAttributeValueBool(true)
+				res := perSpanProperties{
+					traceID:      *seg.TraceID,
+					spanID:       *seg.ID,
+					parentSpanID: seg.ParentID,
+					name:         *seg.Name,
+					startTimeSec: *seg.StartTime,
+					endTimeSec:   seg.EndTime,
+					spanKind:     pdata.SpanKindCLIENT,
+					spanStatus: spanSt{
+						code: pdata.StatusCodeUnset,
+					},
+					attrs: attrs,
+				}
+				return []perSpanProperties{res}
+			},
+			verification: func(testCase string,
+				_ *awsxray.Segment,
+				expectedRs *pdata.ResourceSpans, actualTraces *pdata.Traces, err error) {
+				assert.NoError(t, err, testCase+": translation should've succeeded")
+				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
+					testCase+": one segment should translate to 1 ResourceSpans")
+
+				actualRs := actualTraces.ResourceSpans().At(0)
+				compare2ResourceSpans(t, testCase, expectedRs, &actualRs)
+			},
+		},
+		{
+			testCase:   "TranslateIndepSubsegmentForContentLengthString",
+			samplePath: path.Join("../../../../internal/awsxray", "testdata", "indepSubsegmentWithContentLengthString.txt"),
+			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
+				attrs := make(map[string]pdata.AttributeValue)
+				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("unknown")
+				return attrs
+			},
+			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
+				attrs := make(map[string]pdata.AttributeValue)
+				attrs[conventions.AttributeHTTPMethod] = pdata.NewAttributeValueString(
+					*seg.HTTP.Request.Method)
+				attrs[conventions.AttributeHTTPStatusCode] = pdata.NewAttributeValueInt(
+					*seg.HTTP.Response.Status)
+				attrs[conventions.AttributeHTTPURL] = pdata.NewAttributeValueString(
+					*seg.HTTP.Request.URL)
+				switch seg.HTTP.Response.ContentLength.(type) {
+				case int:
+					contentLength := seg.HTTP.Response.ContentLength.(int64)
+					attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueInt(contentLength)
+				case string:
+					contentLength := seg.HTTP.Response.ContentLength.(string)
+					attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueString(contentLength)
+				}
 				attrs[awsxray.AWSXRayTracedAttribute] = pdata.NewAttributeValueBool(true)
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,

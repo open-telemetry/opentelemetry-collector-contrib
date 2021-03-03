@@ -233,8 +233,8 @@ type RequestData struct {
 
 // ResponseData provides the shape for unmarshalling the response field.
 type ResponseData struct {
-	Status        *int64 `json:"status,omitempty"`
-	ContentLength *int64 `json:"content_length,omitempty"`
+	Status        *int64      `json:"status,omitempty"`
+	ContentLength interface{} `json:"content_length,omitempty"`
 }
 
 // ECSData provides the shape for unmarshalling the ecs field.
