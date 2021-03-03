@@ -74,7 +74,7 @@ func SplitLogs(batch pdata.Logs) []pdata.Logs {
 		rs := batch.ResourceLogs().At(i)
 
 		for j := 0; j < rs.InstrumentationLibraryLogs().Len(); j++ {
-			// the batches for this ILS
+			// the batches for this ILL
 			batches := map[[16]byte]pdata.ResourceLogs{}
 
 			ill := rs.InstrumentationLibraryLogs().At(j)
@@ -86,13 +86,13 @@ func SplitLogs(batch pdata.Logs) []pdata.Logs {
 				// and add the singleTraceBatch to the result list
 				if _, ok := batches[key]; !ok {
 					newRL := pdata.NewResourceLogs()
-					// currently, the ResourceSpans implementation has only a Resource and an ILS. We'll copy the Resource
-					// and set our own ILS
+					// currently, the ResourceLogs implementation has only a Resource and an ILL. We'll copy the Resource
+					// and set our own ILL
 					rs.Resource().CopyTo(newRL.Resource())
 
 					newILL := pdata.NewInstrumentationLibraryLogs()
 					// currently, the ILL implementation has only an InstrumentationLibrary and logs. We'll copy the library
-					// and set our own spans
+					// and set our own logs
 					ill.InstrumentationLibrary().CopyTo(newILL.InstrumentationLibrary())
 					newRL.InstrumentationLibraryLogs().Append(newILL)
 					batches[key] = newRL

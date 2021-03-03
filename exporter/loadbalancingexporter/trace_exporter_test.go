@@ -36,7 +36,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestNewExporterNoResolver(t *testing.T) {
+func TestNewTracesExporterNoResolver(t *testing.T) {
 	// prepare
 	config := &Config{}
 	params := component.ExporterCreateParams{
@@ -44,14 +44,14 @@ func TestNewExporterNoResolver(t *testing.T) {
 	}
 
 	// test
-	p, err := newExporter(params, config)
+	p, err := newTracesExporter(params, config)
 
 	// verify
 	require.Nil(t, p)
 	require.Equal(t, errNoResolver, err)
 }
 
-func TestNewExporterInvalidStaticResolver(t *testing.T) {
+func TestNewTracesExporterInvalidStaticResolver(t *testing.T) {
 	// prepare
 	config := &Config{
 		Resolver: ResolverSettings{
@@ -63,14 +63,14 @@ func TestNewExporterInvalidStaticResolver(t *testing.T) {
 	}
 
 	// test
-	p, err := newExporter(params, config)
+	p, err := newTracesExporter(params, config)
 
 	// verify
 	require.Nil(t, p)
 	require.Equal(t, errNoEndpoints, err)
 }
 
-func TestNewExporterInvalidDNSResolver(t *testing.T) {
+func TestNewTracesExporterInvalidDNSResolver(t *testing.T) {
 	// prepare
 	config := &Config{
 		Resolver: ResolverSettings{
@@ -84,7 +84,7 @@ func TestNewExporterInvalidDNSResolver(t *testing.T) {
 	}
 
 	// test
-	p, err := newExporter(params, config)
+	p, err := newTracesExporter(params, config)
 
 	// verify
 	require.Nil(t, p)
@@ -97,7 +97,7 @@ func TestExporterCapabilities(t *testing.T) {
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
-	p, err := newExporter(params, config)
+	p, err := newTracesExporter(params, config)
 
 	// test
 	caps := p.GetCapabilities()
@@ -114,7 +114,7 @@ func TestStart(t *testing.T) {
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
-	p, err := newExporter(params, config)
+	p, err := newTracesExporter(params, config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 	p.res = &mockResolver{}
@@ -131,7 +131,7 @@ func TestWithDNSResolver(t *testing.T) {
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
-	p, err := newExporter(params, &Config{
+	p, err := newTracesExporter(params, &Config{
 		Resolver: ResolverSettings{
 			DNS: &DNSResolver{
 				Hostname: "service-1",
@@ -155,7 +155,7 @@ func TestMultipleResolvers(t *testing.T) {
 	}
 
 	// test
-	p, err := newExporter(params, &Config{
+	p, err := newTracesExporter(params, &Config{
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{
 				Hostnames: []string{"endpoint-1", "endpoint-2"},
@@ -177,7 +177,7 @@ func TestStartFailureStaticResolver(t *testing.T) {
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
-	p, err := newExporter(params, config)
+	p, err := newTracesExporter(params, config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -201,7 +201,7 @@ func TestShutdown(t *testing.T) {
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
-	p, err := newExporter(params, config)
+	p, err := newTracesExporter(params, config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -218,7 +218,7 @@ func TestConsumeTraces(t *testing.T) {
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
-	p, err := newExporter(params, config)
+	p, err := newTracesExporter(params, config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -248,7 +248,7 @@ func TestOnBackendChanges(t *testing.T) {
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
-	p, err := newExporter(params, config)
+	p, err := newTracesExporter(params, config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -270,7 +270,7 @@ func TestRemoveExtraExporters(t *testing.T) {
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
-	p, err := newExporter(params, config)
+	p, err := newTracesExporter(params, config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -292,7 +292,7 @@ func TestAddMissingExporters(t *testing.T) {
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
-	p, err := newExporter(params, config)
+	p, err := newTracesExporter(params, config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -323,7 +323,7 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
-	p, err := newExporter(params, config)
+	p, err := newTracesExporter(params, config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -402,7 +402,7 @@ func TestBuildExporterConfig(t *testing.T) {
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
-	e, err := newExporter(params, cfg.Exporters["loadbalancing"])
+	e, err := newTracesExporter(params, cfg.Exporters["loadbalancing"])
 	require.NotNil(t, e)
 	require.NoError(t, err)
 
@@ -427,7 +427,7 @@ func TestBatchWithTwoTraces(t *testing.T) {
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
-	p, err := newExporter(params, config)
+	p, err := newTracesExporter(params, config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -463,7 +463,7 @@ func TestFailedExporterInRing(t *testing.T) {
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
-	p, err := newExporter(params, config)
+	p, err := newTracesExporter(params, config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -573,7 +573,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 		},
 	}
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	p, err := newExporter(params, config)
+	p, err := newTracesExporter(params, config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
