@@ -73,19 +73,19 @@ func (f ReceiverType) DecodeInputConfig(cfg configmodels.Receiver) (*operator.Co
 	logConfig := cfg.(*SysLogConfig)
 	yamlBytes, _ := yaml.Marshal(logConfig.Input)
 	inputCfg := syslog.NewSyslogInputConfig("syslog_input")
+	inputCfg.SyslogParserConfig = *syslogparser.NewSyslogParserConfig("syslog_parser")
+
 	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
 		return nil, err
 	}
-	if inputCfg.Syslog != nil {
-		inputCfg.Syslog = syslogparser.NewSyslogParserConfig("syslog_parser")
-	}
+
+	//
 	if inputCfg.Tcp != nil {
-		inputCfg.Tcp = tcp.NewTCPInputConfig("tcp_input")
+		inputCfg.Tcp.InputConfig = tcp.NewTCPInputConfig("tcp_input").InputConfig
 	}
 	if inputCfg.Udp != nil {
-		inputCfg.Udp = udp.NewUDPInputConfig("udp_input")
+		inputCfg.Udp.InputConfig = udp.NewUDPInputConfig("udp_input").InputConfig
 	}
 
-	_ = yaml.Unmarshal(yamlBytes, &inputCfg)
 	return &operator.Config{Builder: inputCfg}, nil
 }

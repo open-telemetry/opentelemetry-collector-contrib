@@ -2,8 +2,7 @@ receivers:
   syslog:
     tcp:
       listen_address: "0.0.0.0:29018"
-    syslog:
-      protocol: rfc5424
+    protocol: rfc5424
 
 processors:
   exampleprocessor:

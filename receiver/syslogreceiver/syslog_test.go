@@ -114,9 +114,7 @@ func testdataConfigYamlAsMap() *SysLogConfig {
 			"tcp": map[string]interface{}{
 				"listen_address": "0.0.0.0:29018",
 			},
-			"syslog": map[string]interface{}{
-				"protocol": "rfc5424",
-			},
+			"protocol": "rfc5424",
 		},
 	}
 }
@@ -134,9 +132,7 @@ func testdataUDPConfig() *SysLogConfig {
 			"udp": map[string]interface{}{
 				"listen_address": "0.0.0.0:29018",
 			},
-			"syslog": map[string]interface{}{
-				"protocol": "rfc5424",
-			},
+			"protocol": "rfc5424",
 		},
 	}
 }
