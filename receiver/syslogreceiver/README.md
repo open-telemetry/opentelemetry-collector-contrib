@@ -54,14 +54,14 @@ TCP Configuration:
 - type: syslog_input
   protocol: rfc5424
   tcp:
-    listen_adress: "0.0.0.0:54526"
+    listen_address: "0.0.0.0:54526"
 ```
 
 UDP Configuration:
 ```yaml
 - type: syslog_input
   udp:
-    listen_adress: "0.0.0.0:54526"
+    listen_address: "0.0.0.0:54526"
   protocol: rfc3164
   location: UTC
 ```
