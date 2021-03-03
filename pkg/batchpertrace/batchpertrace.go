@@ -16,8 +16,8 @@ package batchpertrace
 
 import "go.opentelemetry.io/collector/consumer/pdata"
 
-// Split returns one pdata.Traces for each trace in the given pdata.Traces input. Each of the resulting pdata.Traces contains exactly one trace.
-func Split(batch pdata.Traces) []pdata.Traces {
+// SplitTraces returns one pdata.Traces for each trace in the given pdata.Traces input. Each of the resulting pdata.Traces contains exactly one trace.
+func SplitTraces(batch pdata.Traces) []pdata.Traces {
 	// for each span in the resource spans, we group them into batches of rs/ils/traceID.
 	// if the same traceID exists in different ils, they land in different batches.
 	var result []pdata.Traces

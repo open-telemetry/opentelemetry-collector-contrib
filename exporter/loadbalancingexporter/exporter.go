@@ -191,7 +191,7 @@ func (e *exporterImp) Shutdown(context.Context) error {
 
 func (e *exporterImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	var errors []error
-	batches := batchpertrace.Split(td)
+	batches := batchpertrace.SplitTraces(td)
 	for _, batch := range batches {
 		if err := e.consumeTrace(ctx, batch); err != nil {
 			errors = append(errors, err)

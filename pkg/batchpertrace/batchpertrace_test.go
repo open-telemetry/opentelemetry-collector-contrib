@@ -41,7 +41,7 @@ func TestSplitDifferentTracesIntoDifferentBatches(t *testing.T) {
 	secondSpan.SetTraceID(pdata.NewTraceID([16]byte{2, 3, 4, 5}))
 
 	// test
-	out := Split(inBatch)
+	out := SplitTraces(inBatch)
 
 	// verify
 	assert.Len(t, out, 2)
