@@ -30,5 +30,4 @@ import (
 	_ "github.com/tcnksm/ghr"
 	_ "go.opentelemetry.io/collector/cmd/issuegenerator"
 	_ "go.opentelemetry.io/collector/cmd/mdatagen"
-	_ "honnef.co/go/tools/cmd/staticcheck"
 )
