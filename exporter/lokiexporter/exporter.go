@@ -195,7 +195,7 @@ func convertLogToLokiEntry(lr pdata.LogRecord) *logproto.Entry {
 	if lr.SeverityText() != "" {
 		mapObject["_otel_severity"] = lr.SeverityText()
 	}
-	if lr.SeverityText() != "" {
+	if lr.Body().StringVal() != "" {
 		mapObject["_otel_raw_log"] = lr.Body().StringVal()
 	}
 	jsonStruct, _ := json.Marshal(mapObject)
