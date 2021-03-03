@@ -38,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestNew(t *testing.T) {
@@ -299,7 +300,7 @@ func generateLargeBatch() pdata.Metrics {
 					time.Now(),
 					[]string{"v0", "v1"},
 					&metricspb.Point{
-						Timestamp: metricstestutil.Timestamp(ts),
+						Timestamp: timestamppb.New(ts),
 						Value:     &metricspb.Point_Int64Value{Int64Value: int64(i)},
 					},
 				),
