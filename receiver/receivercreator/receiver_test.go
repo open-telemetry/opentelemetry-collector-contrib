@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -112,7 +111,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	// Test that we can send metrics.
 	for _, receiver := range dyn.observerHandler.receiversByEndpointID.Values() {
 		example := receiver.(*componenttest.ExampleReceiverProducer)
-		md := internaldata.OCToMetrics(consumerdata.MetricsData{
+		md := internaldata.OCToMetrics(internaldata.MetricsData{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "dynamictest"},
 				LibraryInfo: &commonpb.LibraryInfo{},

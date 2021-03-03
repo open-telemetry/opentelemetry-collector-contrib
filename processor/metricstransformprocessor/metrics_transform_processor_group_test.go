@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -38,8 +37,8 @@ import (
 type metricsGroupingTest struct {
 	name       string // test name
 	transforms []internalTransform
-	in         consumerdata.MetricsData
-	out        []consumerdata.MetricsData
+	in         internaldata.MetricsData
+	out        []internaldata.MetricsData
 }
 
 var (
@@ -53,7 +52,7 @@ var (
 					GroupResourceLabels: map[string]string{"resource.type": "foo"},
 				},
 			},
-			in: consumerdata.MetricsData{
+			in: internaldata.MetricsData{
 				Resource: &resourcepb.Resource{
 					Labels: map[string]string{
 						"original": "label",
@@ -66,7 +65,7 @@ var (
 						setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
 				},
 			},
-			out: []consumerdata.MetricsData{
+			out: []internaldata.MetricsData{
 				{
 					Resource: &resourcepb.Resource{
 						Labels: map[string]string{
@@ -106,7 +105,7 @@ var (
 					GroupResourceLabels: map[string]string{"resource.type": "k8s.pod"},
 				},
 			},
-			in: consumerdata.MetricsData{
+			in: internaldata.MetricsData{
 				Metrics: []*metricspb.Metric{
 					metricBuilder().setName("container.cpu.utilization").
 						setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
@@ -118,7 +117,7 @@ var (
 						setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
 				},
 			},
-			out: []consumerdata.MetricsData{
+			out: []internaldata.MetricsData{
 				{
 					Resource: &resourcepb.Resource{
 						Labels: map[string]string{
@@ -150,7 +149,7 @@ var (
 	}
 )
 
-func sortResourceMetricsByResourceType(l []consumerdata.MetricsData) {
+func sortResourceMetricsByResourceType(l []internaldata.MetricsData) {
 	sort.Slice(l, func(i, j int) bool {
 		return strings.Compare(
 			l[i].Resource.GetLabels()["resource.type"],

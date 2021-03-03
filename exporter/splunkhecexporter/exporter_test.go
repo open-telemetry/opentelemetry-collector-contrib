@@ -32,7 +32,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
@@ -59,7 +58,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestConsumeMetricsData(t *testing.T) {
-	smallBatch := consumerdata.MetricsData{
+	smallBatch := internaldata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test_splunk"},
 		},
@@ -76,7 +75,7 @@ func TestConsumeMetricsData(t *testing.T) {
 	}
 	tests := []struct {
 		name                 string
-		md                   consumerdata.MetricsData
+		md                   internaldata.MetricsData
 		reqTestFunc          func(t *testing.T, r *http.Request)
 		httpResponseCode     int
 		numDroppedTimeSeries int
@@ -164,8 +163,8 @@ func TestConsumeMetricsData(t *testing.T) {
 	}
 }
 
-func generateLargeBatch() consumerdata.MetricsData {
-	md := consumerdata.MetricsData{
+func generateLargeBatch() internaldata.MetricsData {
+	md := internaldata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test_splunkhec"},
 		},

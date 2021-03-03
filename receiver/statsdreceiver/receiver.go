@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
@@ -143,7 +142,7 @@ func (r *statsdReceiver) Shutdown(context.Context) error {
 }
 
 func (r *statsdReceiver) Flush(ctx context.Context, metrics []*metricspb.Metric, nextConsumer consumer.MetricsConsumer) error {
-	md := consumerdata.MetricsData{
+	md := internaldata.MetricsData{
 		Metrics: metrics,
 	}
 	error := nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))

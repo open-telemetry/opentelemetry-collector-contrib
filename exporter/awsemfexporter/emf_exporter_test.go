@@ -29,7 +29,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -75,7 +74,7 @@ func TestConsumeMetrics(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
-	mdata := consumerdata.MetricsData{
+	mdata := internaldata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
 			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
@@ -136,7 +135,7 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
-	mdata := consumerdata.MetricsData{
+	mdata := internaldata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
 			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
@@ -203,7 +202,7 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
-	mdata := consumerdata.MetricsData{
+	mdata := internaldata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
 			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
@@ -272,7 +271,7 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
-	mdata := consumerdata.MetricsData{
+	mdata := internaldata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
 			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
@@ -341,7 +340,7 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
-	mdata := consumerdata.MetricsData{
+	mdata := internaldata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
 			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
@@ -420,7 +419,7 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	exp.(*emfExporter).groupStreamToPusherMap = map[string]map[string]Pusher{}
 	exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"] = streamToPusherMap
 
-	mdata := consumerdata.MetricsData{
+	mdata := internaldata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
 			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},

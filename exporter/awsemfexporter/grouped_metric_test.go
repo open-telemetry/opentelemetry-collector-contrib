@@ -22,7 +22,6 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -124,7 +123,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			groupedMetrics := make(map[interface{}]*GroupedMetric)
-			oc := consumerdata.MetricsData{
+			oc := internaldata.MetricsData{
 				Node: &commonpb.Node{},
 				Resource: &resourcepb.Resource{
 					Labels: map[string]string{
@@ -163,7 +162,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 	t.Run("Add multiple different metrics", func(t *testing.T) {
 		groupedMetrics := make(map[interface{}]*GroupedMetric)
-		oc := consumerdata.MetricsData{
+		oc := internaldata.MetricsData{
 			Node: &commonpb.Node{},
 			Resource: &resourcepb.Resource{
 				Labels: map[string]string{
@@ -212,7 +211,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 	t.Run("Add multiple metrics w/ different timestamps", func(t *testing.T) {
 		groupedMetrics := make(map[interface{}]*GroupedMetric)
-		oc := consumerdata.MetricsData{
+		oc := internaldata.MetricsData{
 			Node: &commonpb.Node{},
 			Resource: &resourcepb.Resource{
 				Labels: map[string]string{
@@ -280,7 +279,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 	t.Run("Add same metric but different log group", func(t *testing.T) {
 		groupedMetrics := make(map[interface{}]*GroupedMetric)
-		oc := consumerdata.MetricsData{
+		oc := internaldata.MetricsData{
 			Metrics: []*metricspb.Metric{
 				generateTestIntGauge("int-gauge"),
 			},
@@ -337,7 +336,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 	t.Run("Duplicate metric names", func(t *testing.T) {
 		groupedMetrics := make(map[interface{}]*GroupedMetric)
-		oc := consumerdata.MetricsData{
+		oc := internaldata.MetricsData{
 			Resource: &resourcepb.Resource{
 				Labels: map[string]string{
 					conventions.AttributeServiceName:      "myServiceName",
@@ -422,7 +421,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 }
 
 func BenchmarkAddToGroupedMetric(b *testing.B) {
-	oc := consumerdata.MetricsData{
+	oc := internaldata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			generateTestIntGauge("int-gauge"),
 			generateTestDoubleGauge("double-gauge"),

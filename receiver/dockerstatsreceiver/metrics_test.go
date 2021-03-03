@@ -25,7 +25,7 @@ import (
 	dtypes "github.com/docker/docker/api/types"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 type Metric struct {
@@ -46,9 +46,9 @@ func metricsData(
 	ts *timestamp.Timestamp,
 	resourceLabels map[string]string,
 	metrics ...Metric,
-) *consumerdata.MetricsData {
+) *internaldata.MetricsData {
 	rlabels := mergeMaps(defaultLabels(), resourceLabels)
-	md := &consumerdata.MetricsData{
+	md := &internaldata.MetricsData{
 		Resource: &resourcepb.Resource{
 			Type:   "container",
 			Labels: rlabels,
@@ -193,7 +193,7 @@ func assertMetricsDataEqual(
 	t *testing.T,
 	expected []Metric,
 	labels map[string]string,
-	actual *consumerdata.MetricsData,
+	actual *internaldata.MetricsData,
 ) {
 	// Timestamps are generated per ContainerStatsToMetrics call so should be conserved
 	ts := actual.Metrics[0].Timeseries[0].Points[0].Timestamp

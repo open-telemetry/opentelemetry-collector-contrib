@@ -21,14 +21,14 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 // GenerateDummyMetrics generates two dummy metrics
 // TODO: Remove once this is replaced with actuall metrics generation code
-func GenerateDummyMetrics() consumerdata.MetricsData {
-	md := consumerdata.MetricsData{}
+func GenerateDummyMetrics() internaldata.MetricsData {
+	md := internaldata.MetricsData{}
 
 	for i := 0; i < 2; i++ {
 		md.Metrics = append(md.Metrics, createGaugeIntMetric(i))
