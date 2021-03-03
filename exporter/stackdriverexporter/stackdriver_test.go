@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -258,7 +257,7 @@ func TestStackdriverMetricExport(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { require.NoError(t, sde.Shutdown(context.Background())) }()
 
-	md := consumerdata.MetricsData{
+	md := internaldata.MetricsData{
 		Resource: &resourcepb.Resource{
 			Type: "test",
 			Labels: map[string]string{

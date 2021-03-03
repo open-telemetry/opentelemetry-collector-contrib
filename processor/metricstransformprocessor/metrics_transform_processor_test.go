@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -56,7 +55,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			ctx := context.Background()
 
 			// construct metrics data to feed into the processor
-			md := consumerdata.MetricsData{Metrics: test.in}
+			md := internaldata.MetricsData{Metrics: test.in}
 
 			// process
 			cErr := mtp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(md))
@@ -171,7 +170,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 	for i := 0; i < metricCount; i++ {
 		in[i] = metricBuilder().setName("metric1").build()
 	}
-	md := consumerdata.MetricsData{Metrics: in}
+	md := internaldata.MetricsData{Metrics: in}
 
 	p := newMetricsTransformProcessor(nil, transforms)
 	mtp, _ := processorhelper.NewMetricsProcessor(&Config{}, consumertest.NewMetricsNop(), p)

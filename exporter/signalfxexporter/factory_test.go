@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -305,7 +304,7 @@ func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 }
 
 func testMetricsData() pdata.ResourceMetrics {
-	md := consumerdata.MetricsData{
+	md := internaldata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
@@ -747,7 +746,7 @@ func testMetricsData() pdata.ResourceMetrics {
 			},
 		},
 	}
-	return internaldata.OCSliceToMetrics([]consumerdata.MetricsData{md}).ResourceMetrics().At(0)
+	return internaldata.OCSliceToMetrics([]internaldata.MetricsData{md}).ResourceMetrics().At(0)
 }
 
 func TestDefaultDiskTranslations(t *testing.T) {

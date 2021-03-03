@@ -27,7 +27,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 )
@@ -135,7 +134,7 @@ func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	defaultAttrs := cdr.defaultAttributes(r)
 
-	md := consumerdata.MetricsData{}
+	md := internaldata.MetricsData{}
 	ctx := context.Background()
 	for _, record := range records {
 		md.Metrics, err = record.appendToMetrics(md.Metrics, defaultAttrs)
