@@ -30,42 +30,45 @@ type MetadataUpdateClient interface {
 	PushMetadata([]*metadata.MetadataUpdate) error
 }
 
-var propNameSanitizer = strings.NewReplacer(
-	".", "_",
-	"/", "_")
-
 func getDimensionUpdateFromMetadata(
 	metadata metadata.MetadataUpdate,
 	metricTranslator *translation.MetricTranslator,
 ) *DimensionUpdate {
-
-	translateDimension := func(dim string) string {
-		res := dim
-		if metricTranslator != nil {
-			res = metricTranslator.TranslateDimension(res)
-		}
-		return propNameSanitizer.Replace(res)
-	}
-
-	properties, tags := getPropertiesAndTags(metadata, translateDimension)
+	properties, tags := getPropertiesAndTags(metadata)
 
 	return &DimensionUpdate{
-		Name:       translateDimension(metadata.ResourceIDKey),
+		Name:       translateDimension(metricTranslator, metadata.ResourceIDKey),
 		Value:      string(metadata.ResourceID),
 		Properties: properties,
 		Tags:       tags,
 	}
 }
 
-func getPropertiesAndTags(
-	kmu metadata.MetadataUpdate,
-	translate func(string) string,
-) (map[string]*string, map[string]bool) {
+func translateDimension(metricTranslator *translation.MetricTranslator, dim string) string {
+	if metricTranslator != nil {
+		return metricTranslator.TranslateDimension(dim)
+	}
+	return dim
+}
+
+const (
+	oTelK8sServicePrefix = "k8s.service."
+	sfxK8sServicePrefix  = "kubernetes_service_"
+)
+
+func sanitizeProperty(property string) string {
+	if strings.HasPrefix(property, oTelK8sServicePrefix) {
+		return strings.Replace(property, oTelK8sServicePrefix, sfxK8sServicePrefix, 1)
+	}
+	return property
+}
+
+func getPropertiesAndTags(kmu metadata.MetadataUpdate) (map[string]*string, map[string]bool) {
 	properties := map[string]*string{}
 	tags := map[string]bool{}
 
 	for label, val := range kmu.MetadataToAdd {
-		key := translate(label)
+		key := sanitizeProperty(label)
 		if key == "" {
 			continue
 		}
@@ -79,7 +82,7 @@ func getPropertiesAndTags(
 	}
 
 	for label, val := range kmu.MetadataToRemove {
-		key := translate(label)
+		key := sanitizeProperty(label)
 		if key == "" {
 			continue
 		}
@@ -92,7 +95,7 @@ func getPropertiesAndTags(
 	}
 
 	for label, val := range kmu.MetadataToUpdate {
-		key := translate(label)
+		key := sanitizeProperty(label)
 		if key == "" {
 			continue
 		}

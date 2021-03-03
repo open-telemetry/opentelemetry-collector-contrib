@@ -771,9 +771,9 @@ func TestConsumeMetadata(t *testing.T) {
 			fields{
 				map[string]interface{}{
 					"customProperties": map[string]interface{}{
-						"prop_erty1": "val1",
+						"prop.erty1": "val1",
 						"property2":  nil,
-						"prop_erty3": "val33",
+						"prop.erty3": "val33",
 						"property4":  nil,
 					},
 					"tags":         nil,
@@ -807,10 +807,10 @@ func TestConsumeMetadata(t *testing.T) {
 				map[string]interface{}{
 					"customProperties": map[string]interface{}{},
 					"tags": []interface{}{
-						"tag_1",
+						"tag.1",
 					},
 					"tagsToRemove": []interface{}{
-						"tag_2",
+						"tag/2",
 					},
 				},
 			},
@@ -842,10 +842,10 @@ func TestConsumeMetadata(t *testing.T) {
 						"property3": nil,
 					},
 					"tags": []interface{}{
-						"tag_2",
+						"tag/2",
 					},
 					"tagsToRemove": []interface{}{
-						"tag_1",
+						"tag.1",
 					},
 				},
 			},
@@ -909,7 +909,7 @@ func TestConsumeMetadata(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				b, err := ioutil.ReadAll(r.Body)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				p := map[string]interface{}{
 					"customProperties": map[string]*string{},
@@ -918,9 +918,9 @@ func TestConsumeMetadata(t *testing.T) {
 				}
 
 				err = json.Unmarshal(b, &p)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
-				require.Equal(t, tt.fields.payLoad, p)
+				assert.Equal(t, tt.fields.payLoad, p)
 				wg.Done()
 			}))
 			defer server.Close()
