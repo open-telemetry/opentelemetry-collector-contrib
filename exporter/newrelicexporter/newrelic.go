@@ -17,10 +17,12 @@ package newrelicexporter
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc/status"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/newrelic/newrelic-telemetry-sdk-go/cumulative"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
@@ -138,11 +140,24 @@ func (e *exporter) extractInsertKeyFromHeader(ctx context.Context) string {
 	return values[0]
 }
 
-func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, error) {
+func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (droppedSpans int, grpcErr error) {
 	var (
 		errs      []error
 		goodSpans int
+		details traceDetails
 	)
+
+	startTime := time.Now()
+	details = traceDetails{ctx: ctx, resourceSpanCount: td.ResourceSpans().Len()}
+	defer func() {
+		details.processDuration = time.Now().Sub(startTime)
+		details.responseCode = status.Code(grpcErr)
+		details.traceSpanCount = goodSpans
+		err := recordPushTraceData(details)
+		if err != nil {
+			e.logger.Error("An error occurred recording metrics.", zap.Error(err));
+		}
+	}()
 
 	var batch telemetry.SpanBatch
 
@@ -183,11 +198,14 @@ func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, erro
 	}
 
 	// Execute the http request and handle the response
+	externalStart := time.Now()
 	response, err := http.DefaultClient.Do(req)
+	details.externalDuration = time.Now().Sub(externalStart)
 	if err != nil {
 		e.logger.Error("Error making HTTP request.", zap.Error(err))
 		return 0, &urlError{Err: err}
 	}
+	details.traceHTTPStatusCode = response.StatusCode
 	defer response.Body.Close()
 	io.Copy(ioutil.Discard, response.Body)
 

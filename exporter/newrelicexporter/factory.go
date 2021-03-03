@@ -16,6 +16,7 @@ package newrelicexporter
 
 import (
 	"context"
+	"go.opencensus.io/stats/view"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -28,6 +29,8 @@ const typeStr = "newrelic"
 
 // NewFactory creates a factory for New Relic exporter.
 func NewFactory() component.ExporterFactory {
+	view.Register(MetricViews()...)
+
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
