@@ -63,3 +63,51 @@ func Split(batch pdata.Traces) []pdata.Traces {
 
 	return result
 }
+
+// SplitLogs returns one pdata.Logs for each trace in the given pdata.Logs input. Each of the resulting pdata.Logs contains exactly one trace.
+func SplitLogs(batch pdata.Logs) []pdata.Logs {
+	// for each log in the resource logs, we group them into batches of rl/ill/traceID.
+	// if the same traceID exists in different ill, they land in different batches.
+	var result []pdata.Logs
+
+	for i := 0; i < batch.ResourceLogs().Len(); i++ {
+		rs := batch.ResourceLogs().At(i)
+
+		for j := 0; j < rs.InstrumentationLibraryLogs().Len(); j++ {
+			// the batches for this ILS
+			batches := map[[16]byte]pdata.ResourceLogs{}
+
+			ill := rs.InstrumentationLibraryLogs().At(j)
+			for k := 0; k < ill.Logs().Len(); k++ {
+				log := ill.Logs().At(k)
+				key := log.TraceID().Bytes()
+
+				// for the first traceID in the ILL, initialize the map entry
+				// and add the singleTraceBatch to the result list
+				if _, ok := batches[key]; !ok {
+					newRL := pdata.NewResourceLogs()
+					// currently, the ResourceSpans implementation has only a Resource and an ILS. We'll copy the Resource
+					// and set our own ILS
+					rs.Resource().CopyTo(newRL.Resource())
+
+					newILL := pdata.NewInstrumentationLibraryLogs()
+					// currently, the ILL implementation has only an InstrumentationLibrary and logs. We'll copy the library
+					// and set our own spans
+					ill.InstrumentationLibrary().CopyTo(newILL.InstrumentationLibrary())
+					newRL.InstrumentationLibraryLogs().Append(newILL)
+					batches[key] = newRL
+
+					trace := pdata.NewLogs()
+					trace.ResourceLogs().Append(newRL)
+
+					result = append(result, trace)
+				}
+
+				// there is only one instrumentation library per batch
+				batches[key].InstrumentationLibraryLogs().At(0).Logs().Append(log)
+			}
+		}
+	}
+
+	return result
+}

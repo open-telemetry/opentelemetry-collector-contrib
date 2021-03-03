@@ -56,3 +56,39 @@ func TestSplitDifferentTracesIntoDifferentBatches(t *testing.T) {
 	assert.Equal(t, library.Name(), secondOutILS.InstrumentationLibrary().Name())
 	assert.Equal(t, secondSpan.Name(), secondOutILS.Spans().At(0).Name())
 }
+
+func TestSplitDifferentLogsIntoDifferentBatches(t *testing.T) {
+	// we have 1 ResourceSpans with 1 ILS and two traceIDs, resulting in two batches
+	inBatch := pdata.NewLogs()
+	inBatch.ResourceLogs().Resize(1)
+	rl := inBatch.ResourceLogs().At(0)
+	rl.InstrumentationLibraryLogs().Resize(1)
+
+	// the first ILS has two spans
+	ill := rl.InstrumentationLibraryLogs().At(0)
+	library := ill.InstrumentationLibrary()
+	library.SetName("first-library")
+	ill.Logs().Resize(2)
+	firstLog := ill.Logs().At(0)
+	firstLog.SetName("first-batch-first-log")
+	firstLog.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
+	secondLog := ill.Logs().At(1)
+	secondLog.SetName("first-batch-second-log")
+	secondLog.SetTraceID(pdata.NewTraceID([16]byte{2, 3, 4, 5}))
+
+	// test
+	out := SplitLogs(inBatch)
+
+	// verify
+	assert.Len(t, out, 2)
+
+	// first batch
+	firstOutILL := out[0].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0)
+	assert.Equal(t, library.Name(), firstOutILL.InstrumentationLibrary().Name())
+	assert.Equal(t, firstLog.Name(), firstOutILL.Logs().At(0).Name())
+
+	// second batch
+	secondOutILL := out[1].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0)
+	assert.Equal(t, library.Name(), secondOutILL.InstrumentationLibrary().Name())
+	assert.Equal(t, secondLog.Name(), secondOutILL.Logs().At(0).Name())
+}
