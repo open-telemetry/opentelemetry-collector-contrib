@@ -18,12 +18,8 @@ package main
 
 import (
 	"go.opentelemetry.io/collector/component"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 )
 
 func extraReceivers() []component.ReceiverFactory {
-	return []component.ReceiverFactory{
-		filelogreceiver.NewFactory(),
-	}
+	return []component.ReceiverFactory{}
 }

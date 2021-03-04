@@ -57,6 +57,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
@@ -101,6 +102,7 @@ func components() (component.Factories, error) {
 		carbonreceiver.NewFactory(),
 		collectdreceiver.NewFactory(),
 		dockerstatsreceiver.NewFactory(),
+		filelogreceiver.NewFactory(),
 		jmxreceiver.NewFactory(),
 		k8sclusterreceiver.NewFactory(),
 		kubeletstatsreceiver.NewFactory(),
