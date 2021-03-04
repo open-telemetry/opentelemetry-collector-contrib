@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 )
 
 const typeStr = "newrelic"
@@ -50,12 +51,17 @@ func createTraceExporter(
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.TracesExporter, error) {
-	exp, err := newExporter(params.Logger, cfg)
+	exp, err := newTraceExporter(params.Logger, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewTraceExporter(cfg, params.Logger, exp.pushTraceData, exporterhelper.WithShutdown(exp.Shutdown))
+	// The logger is only used in a disabled queuedRetrySender, which noisily logs at
+	// the error level when it is disabled and errors occur.
+	return exporterhelper.NewTraceExporter(cfg, zap.NewNop(), exp.pushTraceData,
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: cfg.(*Config).Timeout}),
+		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
+		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}))
 }
 
 // CreateMetricsExporter creates a New Relic metrics exporter for this configuration.
@@ -64,7 +70,7 @@ func createMetricsExporter(
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.MetricsExporter, error) {
-	exp, err := newExporter(params.Logger, cfg)
+	exp, err := newMetricsExporter(params.Logger, cfg)
 	if err != nil {
 		return nil, err
 	}

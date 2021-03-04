@@ -53,7 +53,8 @@ type Metric struct {
 
 // Mock caches decompressed request bodies
 type Mock struct {
-	Data []Data
+	Data       []Data
+	StatusCode int
 }
 
 func (c *Mock) Spans() []Span {
@@ -98,7 +99,7 @@ func (c *Mock) Server() *httptest.Server {
 			return
 		}
 
-		w.WriteHeader(200)
+		w.WriteHeader(c.StatusCode)
 	}))
 }
 
