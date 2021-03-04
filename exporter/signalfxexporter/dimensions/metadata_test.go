@@ -18,6 +18,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
@@ -205,7 +208,16 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := getDimensionUpdateFromMetadata(tt.args.metadata, tt.args.metricTranslator)
+
+			converter, err := translation.NewMetricsConverter(
+				zap.NewNop(),
+				tt.args.metricTranslator,
+				nil,
+				nil,
+				"-_.",
+			)
+			require.NoError(t, err)
+			got := getDimensionUpdateFromMetadata(tt.args.metadata, *converter)
 			if !reflect.DeepEqual(*got, *tt.want) {
 				t.Errorf("getDimensionUpdateFromMetadata() = %v, want %v", *got, *tt.want)
 			}
