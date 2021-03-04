@@ -52,8 +52,7 @@ type logDataWrapper struct {
 	*pdata.Logs
 }
 
-func (ld *logDataWrapper) chunkEvents(logger *zap.Logger, config *Config) (chan *eventsChunk, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(context.Background())
+func (ld *logDataWrapper) chunkEvents(ctx context.Context, logger *zap.Logger, config *Config) chan *eventsChunk {
 	chunkCh := make(chan *eventsChunk)
 
 	go func() {
@@ -72,62 +71,73 @@ func (ld *logDataWrapper) chunkEvents(logger *zap.Logger, config *Config) (chan 
 			for j := 0; j < ill.Len(); j++ {
 				l := ill.At(j).Logs()
 				for k := 0; k < l.Len(); k++ {
+					if err := encoder.Encode(mapLogRecordToSplunkEvent(l.At(k), config, logger)); err != nil {
+						select {
+						case <-ctx.Done():
+						case chunkCh <- &eventsChunk{buf: nil, index: nil, err: consumererror.Permanent(err)}:
+						}
+						return
+					}
+					event.WriteString("\r\n\r\n")
+
+				addToChunk:
+					// The size of an event must be less than or equal to max content length.
+					if config.MaxContentLength > 0 && event.Len() > config.MaxContentLength {
+						select {
+						case <-ctx.Done():
+						case chunkCh <- &eventsChunk{
+							buf:   nil,
+							index: nil,
+							err:   consumererror.Permanent(fmt.Errorf("log event bytes exceed max content length configured (log: %d, max: %d)", event.Len(), config.MaxContentLength))}:
+						}
+						return
+					}
+
+					// Moving the event to chunk.buf if length will be <= max content length.
+					// Max content length <= 0 is interpreted as unbound.
+					if chunk.buf.Len()+event.Len() <= config.MaxContentLength || config.MaxContentLength <= 0 {
+						// WriteTo() empties and resets buffer event.
+						if _, err := event.WriteTo(chunk.buf); err != nil {
+							select {
+							case <-ctx.Done():
+							case chunkCh <- &eventsChunk{buf: nil, index: nil, err: consumererror.Permanent(err)}:
+							}
+							return
+						}
+
+						// Setting chunk index using the log logsIdx indices of the 1st event.
+						if chunk.index == nil {
+							chunk.index = &logIndex{origIdx: i, instIdx: j, logsIdx: k}
+						}
+
+						continue
+					}
+
 					select {
 					case <-ctx.Done():
 						return
-					default:
-						if err := encoder.Encode(mapLogRecordToSplunkEvent(l.At(k), config, logger)); err != nil {
-							chunkCh <- &eventsChunk{buf: nil, index: nil, err: consumererror.Permanent(err)}
-							return
-						}
-						event.WriteString("\r\n\r\n")
+					case chunkCh <- chunk:
+					}
 
-					addToChunk:
-						// The size of an event must be less than or equal to max content length.
-						if config.MaxContentLength > 0 && event.Len() > config.MaxContentLength {
-							chunkCh <- &eventsChunk{
-								buf:   nil,
-								index: nil,
-								err:   consumererror.Permanent(fmt.Errorf("log event bytes exceed max content length configured (log: %d, max: %d)", event.Len(), config.MaxContentLength)),
-							}
-							return
-						}
+					// Creating a new events buffer.
+					chunk = &eventsChunk{buf: new(bytes.Buffer)}
 
-						// Moving the event to chunk.buf if length will be <= max content length.
-						// Max content length <= 0 is interpreted as unbound.
-						if chunk.buf.Len()+event.Len() <= config.MaxContentLength || config.MaxContentLength <= 0 {
-							// WriteTo() empties and resets buffer event.
-							if _, err := event.WriteTo(chunk.buf); err != nil {
-								chunkCh <- &eventsChunk{buf: nil, index: nil, err: consumererror.Permanent(err)}
-								return
-							}
-
-							// Setting chunk index using the log logsIdx indices of the 1st event.
-							if chunk.index == nil {
-								chunk.index = &logIndex{origIdx: i, instIdx: j, logsIdx: k}
-							}
-
-							continue
-						}
-
-						chunkCh <- chunk
-
-						// Creating a new events buffer.
-						chunk = &eventsChunk{buf: new(bytes.Buffer)}
-
-						// Adding remaining event to the new chunk
-						if event.Len() != 0 {
-							goto addToChunk
-						}
+					// Adding remaining event to the new chunk
+					if event.Len() != 0 {
+						goto addToChunk
 					}
 				}
 			}
 		}
 
-		chunkCh <- chunk
+		select {
+		case <-ctx.Done():
+			return
+		case chunkCh <- chunk:
+		}
 	}()
 
-	return chunkCh, cancel
+	return chunkCh
 }
 
 func (ld *logDataWrapper) numLogs(from *logIndex) int {

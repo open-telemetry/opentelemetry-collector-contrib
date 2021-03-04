@@ -16,6 +16,7 @@ package splunkhecexporter
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"math"
 	"testing"
@@ -262,10 +263,12 @@ func Test_chunkEvents(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			logs := logDataWrapper{&[]pdata.Logs{tt.logDataFn()}[0]}
 
-			eventsCh, cancel := logs.chunkEvents(logger, tt.configDataFn())
+			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			events := bytes.Split(bytes.TrimSpace((<-eventsCh).buf.Bytes()), []byte("\r\n\r\n"))
+			chunkCh := logs.chunkEvents(ctx, logger, tt.configDataFn())
+
+			events := bytes.Split(bytes.TrimSpace((<-chunkCh).buf.Bytes()), []byte("\r\n\r\n"))
 
 			require.Equal(t, len(tt.wantSplunkEvents), len(events))
 
@@ -303,8 +306,10 @@ func Test_chunkEvents_MaxContentLength_AllEventsInChunk(t *testing.T) {
 	chunkLength := len(events) * max
 	config := Config{MaxContentLength: chunkLength}
 
-	chunkCh, cancel := logs.chunkEvents(zap.NewNop(), &config)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	chunkCh := logs.chunkEvents(ctx, zap.NewNop(), &config)
 
 	numChunks := 0
 
@@ -331,8 +336,10 @@ func Test_chunkEvents_MaxContentLength_0(t *testing.T) {
 	chunkLength := 0
 	config := Config{MaxContentLength: chunkLength}
 
-	chunkCh, cancel := logs.chunkEvents(zap.NewNop(), &config)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	chunkCh := logs.chunkEvents(ctx, zap.NewNop(), &config)
 
 	numChunks := 0
 
@@ -359,8 +366,10 @@ func Test_chunkEvents_MaxContentLength_Negative(t *testing.T) {
 	chunkLength := -3
 	config := Config{MaxContentLength: chunkLength}
 
-	chunkCh, cancel := logs.chunkEvents(zap.NewNop(), &config)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	chunkCh := logs.chunkEvents(ctx, zap.NewNop(), &config)
 
 	numChunks := 0
 
@@ -382,8 +391,10 @@ func Test_chunkEvents_MaxContentLength_Small(t *testing.T) {
 	chunkLength := min - 1
 	config := Config{MaxContentLength: chunkLength}
 
-	chunkCh, cancel := logs.chunkEvents(zap.NewNop(), &config)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	chunkCh := logs.chunkEvents(ctx, zap.NewNop(), &config)
 
 	numChunks := 0
 
@@ -402,18 +413,22 @@ func Test_chunkEvents_MaxContentLength_Small(t *testing.T) {
 func Test_chunkEvents_MaxContentLength_1EventPerChunk(t *testing.T) {
 	logs := testLogs()
 
-	min, max, events := jsonEncodeEventsBytes(logs, &Config{})
+	minLength, maxLength, events := jsonEncodeEventsBytes(logs, &Config{})
 
 	numEvents := len(events)
 
-	// Chunk max content length = max and this condition results in 1 event per chunk.
-	assert.True(t, min >= max/2)
+	assert.True(t, numEvents > 1, "More than 1 event required")
 
-	chunkLength := max
+	assert.True(t, minLength >= maxLength/2, "Smallest event >= half largest event required")
+
+	// Setting chunk length to have 1 event per chunk.
+	chunkLength := maxLength
 	config := Config{MaxContentLength: chunkLength}
 
-	chunkCh, cancel := logs.chunkEvents(zap.NewNop(), &config)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	chunkCh := logs.chunkEvents(ctx, zap.NewNop(), &config)
 
 	numChunks := 0
 
@@ -423,8 +438,40 @@ func Test_chunkEvents_MaxContentLength_1EventPerChunk(t *testing.T) {
 		numChunks++
 	}
 
-	// 1 event per chunk.
+	// Number of chunks should equal number of events.
 	assert.Equal(t, numEvents, numChunks)
+}
+
+func Test_chunkEvents_Cancel(t *testing.T) {
+	logs := testLogs()
+
+	min, max, events := jsonEncodeEventsBytes(logs, &Config{})
+
+	assert.True(t, len(events) > 1, "More than 1 event required")
+
+	assert.True(t, min >= max/2, "Smallest event >= half largest event required")
+
+	// Setting chunk length to have as many chunks as there are events.
+	chunkLength := max
+	config := Config{MaxContentLength: chunkLength}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	chunkCh := logs.chunkEvents(ctx, zap.NewNop(), &config)
+
+	_, ok := <-chunkCh
+
+	assert.True(t, ok, "Chunk channel open before cancel")
+
+	cancel()
+
+	// chan chuckCh maybe selected over cancel's Done chan when read immediately.
+	// Reading chuckCh more than once guarantees the selection of Done chan.
+	<-chunkCh
+	_, ok = <-chunkCh
+
+	assert.True(t, !ok, "Chunk channel closed after cancel")
+
 }
 
 func Test_chunkEvents_MaxContentLength_2EventsPerChunk(t *testing.T) {
@@ -440,8 +487,11 @@ func Test_chunkEvents_MaxContentLength_2EventsPerChunk(t *testing.T) {
 	chunkLength := 2 * max
 	config := Config{MaxContentLength: chunkLength}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	// Config max content length equal to the length of the largest event.
-	chunkCh, cancel := logs.chunkEvents(zap.NewNop(), &config)
+	chunkCh := logs.chunkEvents(ctx, zap.NewNop(), &config)
 	defer cancel()
 
 	numChunks := 0
@@ -466,18 +516,19 @@ func Test_chunkEvents_JSONEncodeError(t *testing.T) {
 
 	// JSON Encoding +Inf should trigger unsupported value error
 	config := &Config{}
-	eventsCh, cancel := logs.chunkEvents(zap.NewNop(), config)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	chunkCh := logs.chunkEvents(ctx, zap.NewNop(), config)
 
-	// event should contain an unsupported value error triggered by JSON Encoding +Inf
-	event := <-eventsCh
+	// chunk should contain an unsupported value error triggered by JSON Encoding +Inf
+	chunk := <-chunkCh
 
-	assert.Nil(t, event.buf)
-	assert.Nil(t, event.index)
-	assert.Contains(t, event.err.Error(), "json: unsupported value: +Inf")
+	assert.Nil(t, chunk.buf)
+	assert.Nil(t, chunk.index)
+	assert.Contains(t, chunk.err.Error(), "json: unsupported value: +Inf")
 
 	// the error should cause the channel to be closed.
-	_, ok := <-eventsCh
+	_, ok := <-chunkCh
 	assert.True(t, !ok, "Events channel should be closed on error")
 }
 
@@ -510,34 +561,34 @@ func commonLogSplunkEvent(
 }
 
 func Test_nilLogs(t *testing.T) {
-	logs := pdata.NewLogs()
-	ldWrap := logDataWrapper{&logs}
-	eventsCh, cancel := ldWrap.chunkEvents(zap.NewNop(), &Config{})
+	logs := logDataWrapper{&[]pdata.Logs{pdata.NewLogs()}[0]}
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	events := <-eventsCh
-	assert.Equal(t, 0, events.buf.Len())
+	chunkCh := logs.chunkEvents(ctx, zap.NewNop(), &Config{})
+	chunk := <-chunkCh
+	assert.Equal(t, 0, chunk.buf.Len())
 }
 
 func Test_nilResourceLogs(t *testing.T) {
-	logs := pdata.NewLogs()
+	logs := logDataWrapper{&[]pdata.Logs{pdata.NewLogs()}[0]}
 	logs.ResourceLogs().Resize(1)
-	ldWrap := logDataWrapper{&logs}
-	eventsCh, cancel := ldWrap.chunkEvents(zap.NewNop(), &Config{})
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	events := <-eventsCh
-	assert.Equal(t, 0, events.buf.Len())
+	chunkCh := logs.chunkEvents(ctx, zap.NewNop(), &Config{})
+	chunk := <-chunkCh
+	assert.Equal(t, 0, chunk.buf.Len())
 }
 
 func Test_nilInstrumentationLogs(t *testing.T) {
-	logs := pdata.NewLogs()
+	logs := logDataWrapper{&[]pdata.Logs{pdata.NewLogs()}[0]}
 	logs.ResourceLogs().Resize(1)
 	resourceLog := logs.ResourceLogs().At(0)
 	resourceLog.InstrumentationLibraryLogs().Resize(1)
-	ldWrap := logDataWrapper{&logs}
-	eventsCh, cancel := ldWrap.chunkEvents(zap.NewNop(), &Config{})
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	events := <-eventsCh
-	assert.Equal(t, 0, events.buf.Len())
+	chunkCh := logs.chunkEvents(ctx, zap.NewNop(), &Config{})
+	chunk := <-chunkCh
+	assert.Equal(t, 0, chunk.buf.Len())
 }
 
 func Test_nanoTimestampToEpochMilliseconds(t *testing.T) {

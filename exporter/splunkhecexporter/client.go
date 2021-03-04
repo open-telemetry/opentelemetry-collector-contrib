@@ -169,8 +169,11 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (numDroppedLogs
 	defer gzipWriter.Close()
 
 	logs := logDataWrapper{&ld}
-	chunkCh, cancel := logs.chunkEvents(c.logger, c.config)
+
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	chunkCh := logs.chunkEvents(ctx, c.logger, c.config)
 
 	for chunk := range chunkCh {
 		if chunk.err != nil {
