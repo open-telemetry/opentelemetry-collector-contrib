@@ -31,6 +31,7 @@ type receiver struct {
 	counters     []string
 	intervalSec  int
 	logger       *zap.Logger
+	cancel       context.CancelFunc
 }
 
 type connectionSupplier func() (io.ReadWriter, error)
@@ -78,9 +79,19 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
+	go func() {
+		ctx, r.cancel = context.WithCancel(context.Background())
+		err = p.ParseAll(ctx)
+		if err != nil {
+			r.logger.Error("parseAll error", zap.Error(err))
+		}
+	}()
 	return nil
 }
 
 func (r *receiver) Shutdown(context.Context) error {
+	if r.cancel != nil {
+		r.cancel()
+	}
 	return nil
 }

@@ -30,7 +30,9 @@ import (
 )
 
 func TestReceiver(t *testing.T) {
-	rw := fakeRW()
+	data, err := network.ReadBlobData("testdata", 16)
+	require.NoError(t, err)
+	rw := network.NewBlobReader(data)
 	ctx := context.Background()
 	r, err := NewReceiver(
 		ctx,
@@ -45,11 +47,11 @@ func TestReceiver(t *testing.T) {
 	require.NoError(t, err)
 	err = r.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
+
+	<-rw.Done()
+
 	err = r.Shutdown(ctx)
 	require.NoError(t, err)
-	const magic = "DOTNET_IPC_V1"
-	magicBytes := rw.Writes[:len(magic)]
-	require.Equal(t, magic, string(magicBytes))
 }
 
 func TestReceiver_ConnectError(t *testing.T) {

@@ -17,7 +17,6 @@ package network
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"testing"
 	"unicode/utf16"
 
@@ -26,8 +25,13 @@ import (
 )
 
 func TestMReader_Read(t *testing.T) {
-	fr := newFakeReader([]byte{42}, -1)
-	multi := NewMultiReader(fr)
+	r := &FakeRW{
+		ReadErrIdx: -1,
+		Responses: map[int][]byte{
+			0: {42},
+		},
+	}
+	multi := NewMultiReader(r)
 	var b byte
 	err := multi.Read(&b)
 	require.NoError(t, err)
@@ -35,8 +39,13 @@ func TestMReader_Read(t *testing.T) {
 }
 
 func TestMReader_Align(t *testing.T) {
-	fr := newFakeReader(make([]byte, 4), -1)
-	multi := NewMultiReader(fr)
+	r := &FakeRW{
+		ReadErrIdx: -1,
+		Responses: map[int][]byte{
+			0: make([]byte, 4),
+		},
+	}
+	multi := NewMultiReader(r)
 	var b byte
 	err := multi.Read(&b)
 	require.NoError(t, err)
@@ -51,19 +60,33 @@ func TestMReader_Align(t *testing.T) {
 }
 
 func TestMReader_AlignErr(t *testing.T) {
-	fr := newFakeReader(make([]byte, 1), 1)
-	multi := NewMultiReader(fr)
+	r := &FakeRW{
+		ReadErrIdx: 1,
+		Responses: map[int][]byte{
+			0: make([]byte, 1),
+		},
+	}
+	multi := NewMultiReader(r)
 	_, _ = multi.ReadByte()
 	err := multi.Align()
 	require.Error(t, err)
 }
 
 func TestMReader_UTF16(t *testing.T) {
-	fr := newFakeReader(strToUTF16Bytes("hello\000"), -1)
-	multi := NewMultiReader(fr)
+	p := strToUTF16Bytes("x\000")
+	r := &FakeRW{
+		ReadErrIdx: -1,
+		Responses: map[int][]byte{
+			0: {p[0]},
+			1: {p[1]},
+			2: {p[2]},
+			3: {p[3]},
+		},
+	}
+	multi := NewMultiReader(r)
 	utfRead, err := multi.ReadUTF16()
 	require.NoError(t, err)
-	assert.Equal(t, "hello", utfRead)
+	assert.Equal(t, "x", utfRead)
 }
 
 func strToUTF16Bytes(msg string) []byte {
@@ -76,115 +99,158 @@ func strToUTF16Bytes(msg string) []byte {
 }
 
 func TestMReader_UTF16Err(t *testing.T) {
-	fr := newFakeReader(nil, 0)
-	multi := NewMultiReader(fr)
+	multi := NewMultiReader(&FakeRW{})
 	_, err := multi.ReadUTF16()
 	require.Error(t, err)
 }
 
 func TestMReader_ReadByte(t *testing.T) {
-	fr := newFakeReader([]byte{111}, -1)
-	multi := NewMultiReader(fr)
+	r := &FakeRW{
+		ReadErrIdx: -1,
+		Responses: map[int][]byte{
+			0: {111},
+		},
+	}
+	multi := NewMultiReader(r)
 	b, err := multi.ReadByte()
 	require.NoError(t, err)
 	assert.Equal(t, byte(111), b)
 }
 
 func TestMReader_ReadByteErr(t *testing.T) {
-	fr := newFakeReader(nil, 0)
-	multi := NewMultiReader(fr)
+	multi := NewMultiReader(&FakeRW{})
 	_, err := multi.ReadByte()
 	require.Error(t, err)
 }
 
 func TestMReader_AssertNextByteEquals(t *testing.T) {
-	fr := newFakeReader([]byte{111}, -1)
-	multi := NewMultiReader(fr)
+	r := &FakeRW{
+		ReadErrIdx: -1,
+		Responses: map[int][]byte{
+			0: {111},
+		},
+	}
+	multi := NewMultiReader(r)
 	err := multi.AssertNextByteEquals(111)
 	require.NoError(t, err)
 }
 
 func TestMReader_AssertNextByteEquals_ReadErr(t *testing.T) {
-	fr := newFakeReader(nil, 0)
-	multi := NewMultiReader(fr)
+	multi := NewMultiReader(&FakeRW{})
 	err := multi.AssertNextByteEquals(111)
 	require.Error(t, err)
 }
 
 func TestMReader_AssertNextByteEquals_MismatchErr(t *testing.T) {
-	fr := newFakeReader([]byte{111}, -1)
-	multi := NewMultiReader(fr)
+	r := &FakeRW{
+		ReadErrIdx: -1,
+		Responses: map[int][]byte{
+			0: {111},
+		},
+	}
+	multi := NewMultiReader(r)
 	err := multi.AssertNextByteEquals(222)
 	require.Error(t, err, "next byte assertion failed")
 }
 
 func TestMReader_CompressedInt32_Simple(t *testing.T) {
-	fr := newFakeReader([]byte{42 | 0x80}, -1)
-	multi := NewMultiReader(fr)
+	r := &FakeRW{
+		ReadErrIdx: -1,
+		Responses: map[int][]byte{
+			0: {42 | 0x80},
+		},
+	}
+	multi := NewMultiReader(r)
 	i, err := multi.ReadCompressedInt32()
 	require.NoError(t, err)
 	require.Equal(t, int32(42), i)
 }
 
 func TestMReader_CompressedInt32_MultiByte(t *testing.T) {
-	fr := newFakeReader([]byte{1 | 0x80, 1}, -1)
-	multi := NewMultiReader(fr)
+	r := &FakeRW{
+		ReadErrIdx: -1,
+		Responses: map[int][]byte{
+			0: {1 | 0x80},
+			1: {1},
+		},
+	}
+	multi := NewMultiReader(r)
 	i, err := multi.ReadCompressedInt32()
 	require.NoError(t, err)
 	require.Equal(t, int32(0x81), i)
 }
 
 func TestMReader_CompressedInt32_LengthErr(t *testing.T) {
-	fr := newFakeReader([]byte{0x80, 0x80, 0x80, 0x80, 0x80, 0x80}, -1)
-	multi := NewMultiReader(fr)
+	r := &FakeRW{
+		ReadErrIdx: -1,
+		Responses:  mkMap(6, 0x80),
+	}
+	multi := NewMultiReader(r)
 	_, err := multi.ReadCompressedInt32()
 	require.Error(t, err, "CompressedInt32 is too long")
 }
 
 func TestMReader_CompressedInt32_ReadErr(t *testing.T) {
-	fr := newFakeReader(nil, 0)
-	multi := NewMultiReader(fr)
+	r := &FakeRW{
+		ReadErrIdx: 0,
+	}
+	multi := NewMultiReader(r)
 	_, err := multi.ReadCompressedInt32()
 	require.Error(t, err)
 }
 
 func TestMReader_CompressedInt64_Simple(t *testing.T) {
-	fr := newFakeReader([]byte{42 | 0x80}, -1)
-	multi := NewMultiReader(fr)
+	r := &FakeRW{
+		ReadErrIdx: -1,
+		Responses: map[int][]byte{
+			0: {42 | 0x80},
+		},
+	}
+	multi := NewMultiReader(r)
 	i, err := multi.ReadCompressedInt64()
 	require.NoError(t, err)
 	require.Equal(t, int64(42), i)
 }
 
 func TestMReader_CompressedInt64_MultiByte(t *testing.T) {
-	fr := newFakeReader([]byte{1 | 0x80, 1}, -1)
-	multi := NewMultiReader(fr)
+	r := &FakeRW{
+		ReadErrIdx: -1,
+		Responses: map[int][]byte{
+			0: {1 | 0x80},
+			1: {1},
+		},
+	}
+	multi := NewMultiReader(r)
 	i, err := multi.ReadCompressedInt64()
 	require.NoError(t, err)
 	require.Equal(t, int64(0x81), i)
 }
 
 func TestMReader_CompressedInt64_LengthErr(t *testing.T) {
-	p := make([]byte, 11)
-	for i := range p {
-		p[i] = 0x80
+	r := &FakeRW{
+		ReadErrIdx: -1,
+		Responses:  mkMap(11, 0x80),
 	}
-	fr := newFakeReader(p, -1)
-	multi := NewMultiReader(fr)
+	multi := NewMultiReader(r)
 	_, err := multi.ReadCompressedInt64()
 	require.Error(t, err, "CompressedInt64 is too long")
 }
 
 func TestMReader_CompressedInt64_ReadErr(t *testing.T) {
-	fr := newFakeReader(nil, 0)
-	multi := NewMultiReader(fr)
+	r := &FakeRW{
+		ReadErrIdx: 0,
+	}
+	multi := NewMultiReader(r)
 	_, err := multi.ReadCompressedInt64()
 	require.Error(t, err)
 }
 
 func TestMReader_SeekReset(t *testing.T) {
-	fr := newFakeReader(make([]byte, 6), -1)
-	multi := NewMultiReader(fr)
+	r := &FakeRW{
+		ReadErrIdx: -1,
+		Responses:  mkMap(6, 0),
+	}
+	multi := NewMultiReader(r)
 	_, err := multi.ReadByte()
 	require.NoError(t, err)
 	multi.Reset()
@@ -197,50 +263,41 @@ func TestMReader_SeekReset(t *testing.T) {
 }
 
 func TestMReader_Seek_ReadErr(t *testing.T) {
-	fr := newFakeReader(nil, 0)
-	multi := NewMultiReader(fr)
+	r := &FakeRW{ReadErrIdx: 0}
+	multi := NewMultiReader(r)
 	err := multi.Seek(1)
 	require.Error(t, err)
 }
 
 func TestMReader_ReadASCII(t *testing.T) {
-	fr := newFakeReader([]byte("hello"), -1)
-	multi := NewMultiReader(fr)
-	msg, err := multi.ReadASCII(5)
+	r := &FakeRW{
+		ReadErrIdx: -1,
+		Responses: map[int][]byte{
+			0: []byte("abc"),
+		},
+	}
+	multi := NewMultiReader(r)
+	msg, err := multi.ReadASCII(3)
 	require.NoError(t, err)
-	assert.Equal(t, "hello", msg)
+	assert.Equal(t, "abc", msg)
 }
 
 func TestMReader_ReadASCIIErr(t *testing.T) {
-	fr := newFakeReader([]byte("hello"), 0)
-	multi := NewMultiReader(fr)
-	_, err := multi.ReadASCII(5)
+	r := &FakeRW{
+		ReadErrIdx: 0,
+		Responses: map[int][]byte{
+			0: []byte("abc"),
+		},
+	}
+	multi := NewMultiReader(r)
+	_, err := multi.ReadASCII(3)
 	require.Error(t, err)
 }
 
-// fakeReader
-type fakeReader struct {
-	source     []byte
-	pos        int
-	readCount  int
-	failOnRead int
-}
-
-func newFakeReader(source []byte, failOnRead int) *fakeReader {
-	return &fakeReader{
-		source:     source,
-		failOnRead: failOnRead,
+func mkMap(size int, v byte) map[int][]byte {
+	responses := map[int][]byte{}
+	for i := 0; i < size; i++ {
+		responses[i] = []byte{v}
 	}
-}
-
-func (r *fakeReader) Read(p []byte) (n int, err error) {
-	defer func() {
-		r.readCount++
-	}()
-	if r.readCount == r.failOnRead {
-		return 0, errors.New("")
-	}
-	copy(p, r.source[r.pos:])
-	r.pos += len(p)
-	return len(p), nil
+	return responses
 }
