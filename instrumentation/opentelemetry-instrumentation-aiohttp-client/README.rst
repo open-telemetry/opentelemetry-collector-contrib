@@ -33,7 +33,7 @@ Example
    from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 
-   _JAEGER_EXPORTER = jaeger.JaegerSpanExporter(
+   _JAEGER_EXPORTER = jaeger.JaegerExporter(
       service_name="example-xxx",
       agent_host_name="localhost",
       agent_port=6831,
