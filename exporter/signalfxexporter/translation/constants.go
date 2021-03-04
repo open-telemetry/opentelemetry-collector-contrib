@@ -515,7 +515,8 @@ translation_rules:
 
 
 # Translations to derive Network I/O metrics.
-## network.total.
+
+## Calculate network.total.
 - action: copy_metrics
   mapping:
     system.network.io: network.total
@@ -528,10 +529,9 @@ translation_rules:
   aggregation_method: sum
   without_dimensions:
   - direction
-  - interface
+  - device
 
-
-## other Network I/O metrics. Note that these translations depend on renaming dimension device to interface.
+## Rename dimension device to interface.
 - action: rename_dimension_keys
   metric_names:
     system.network.dropped: true
