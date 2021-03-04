@@ -114,7 +114,8 @@ func (ld *logDataWrapper) chunkEvents(logger *zap.Logger, config *Config) (chan 
 
 						// Creating a new events buffer.
 						chunk = &eventsChunk{buf: new(bytes.Buffer)}
-						// Setting chunk index using the log logsIdx indices of any current leftover event.
+
+						// Adding remaining event to the new chunk
 						if event.Len() != 0 {
 							goto addToChunk
 						}
