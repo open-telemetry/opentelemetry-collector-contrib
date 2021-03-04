@@ -31,7 +31,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpertrace"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
 var _ component.TracesExporter = (*traceExporterImp)(nil)
@@ -191,7 +191,7 @@ func (e *traceExporterImp) Shutdown(context.Context) error {
 
 func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	var errors []error
-	batches := batchpertrace.SplitTraces(td)
+	batches := batchpersignal.SplitTraces(td)
 	for _, batch := range batches {
 		if err := e.consumeTrace(ctx, batch); err != nil {
 			errors = append(errors, err)
