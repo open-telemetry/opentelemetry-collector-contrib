@@ -26,15 +26,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
 )
 
-var contribPerfResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
-
-// TestMain is used to initiate setup, execution and tear down of testbed.
-func TestMain(m *testing.M) {
-	// These tests are using the unstable executable.
-	testbed.GlobalConfig.DefaultAgentExeRelativeFile = "../../bin/otelcontribcol_unstable_{{.GOOS}}_{{.GOARCH}}"
-	testbed.DoTestMain(m, contribPerfResultsSummary)
-}
-
 func TestLog10kDPS(t *testing.T) {
 	tests := []struct {
 		name         string
