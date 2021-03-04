@@ -17,6 +17,7 @@ package splunkhecexporter
 import (
 	"bytes"
 	"encoding/json"
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,7 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-func Test_logDataToSplunk(t *testing.T) {
+func Test_chunkEvents(t *testing.T) {
 	logger := zap.NewNop()
 	ts := pdata.TimestampUnixNano(123)
 
@@ -256,15 +257,15 @@ func Test_logDataToSplunk(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logs := tt.logDataFn()
-			logsWrapper := logDataWrapper{&logs}
+			logs := logDataWrapper{&[]pdata.Logs{tt.logDataFn()}[0]}
 
-			ch, cancel := logsWrapper.eventsInChunks(logger, tt.configDataFn())
+			eventsCh, cancel := logs.chunkEvents(logger, tt.configDataFn())
 			defer cancel()
 
-			events := bytes.Split(bytes.TrimSpace((<-ch).buf.Bytes()), []byte("\r\n\r\n"))
+			events := bytes.Split(bytes.TrimSpace((<-eventsCh).buf.Bytes()), []byte("\r\n\r\n"))
 
 			require.Equal(t, len(tt.wantSplunkEvents), len(events))
 
@@ -286,6 +287,198 @@ func Test_logDataToSplunk(t *testing.T) {
 			assert.Equal(t, tt.wantSplunkEvents, gots)
 		})
 	}
+}
+
+func Test_chunkEvents_MaxContentLength_AllEventsInChunk(t *testing.T) {
+	logs := testLogs()
+
+	_, max, events := jsonEncodeEventsBytes(logs, &Config{})
+
+	eventsLength := 0
+	for _, event := range events {
+		eventsLength += len(event)
+	}
+
+	// Chunk max content length to fit all events in 1 chunk.
+	chunkLength := len(events) * max
+	config := Config{MaxContentLength: chunkLength}
+
+	chunkCh, cancel := logs.chunkEvents(zap.NewNop(), &config)
+	defer cancel()
+
+	numChunks := 0
+
+	for chunk := range chunkCh {
+		assert.Nil(t, chunk.err)
+		assert.Len(t, chunk.buf.Bytes(), eventsLength)
+		numChunks++
+	}
+
+	assert.Equal(t, 1, numChunks)
+}
+
+func Test_chunkEvents_MaxContentLength_0(t *testing.T) {
+	logs := testLogs()
+
+	_, _, events := jsonEncodeEventsBytes(logs, &Config{})
+
+	eventsLength := 0
+	for _, event := range events {
+		eventsLength += len(event)
+	}
+
+	// Chunk max content length 0 is interpreted as unlimited length.
+	chunkLength := 0
+	config := Config{MaxContentLength: chunkLength}
+
+	chunkCh, cancel := logs.chunkEvents(zap.NewNop(), &config)
+	defer cancel()
+
+	numChunks := 0
+
+	for chunk := range chunkCh {
+		assert.Nil(t, chunk.err)
+		assert.Len(t, chunk.buf.Bytes(), eventsLength)
+		numChunks++
+	}
+
+	assert.Equal(t, 1, numChunks)
+}
+
+func Test_chunkEvents_MaxContentLength_Negative(t *testing.T) {
+	logs := testLogs()
+
+	_, _, events := jsonEncodeEventsBytes(logs, &Config{})
+
+	eventsLength := 0
+	for _, event := range events {
+		eventsLength += len(event)
+	}
+
+	// Negative max content length is interpreted as unlimited length.
+	chunkLength := -3
+	config := Config{MaxContentLength: chunkLength}
+
+	chunkCh, cancel := logs.chunkEvents(zap.NewNop(), &config)
+	defer cancel()
+
+	numChunks := 0
+
+	for chunk := range chunkCh {
+		assert.Nil(t, chunk.err)
+		assert.Len(t, chunk.buf.Bytes(), eventsLength)
+		numChunks++
+	}
+
+	assert.Equal(t, 1, numChunks)
+}
+
+func Test_chunkEvents_MaxContentLength_Small(t *testing.T) {
+	logs := testLogs()
+
+	min, _, _ := jsonEncodeEventsBytes(logs, &Config{})
+
+	// Chunk max content length less than all events.
+	chunkLength := min - 1
+	config := Config{MaxContentLength: chunkLength}
+
+	chunkCh, cancel := logs.chunkEvents(zap.NewNop(), &config)
+	defer cancel()
+
+	numChunks := 0
+
+	for chunk := range chunkCh {
+		if chunk.err == nil {
+			numChunks++
+		}
+		assert.Nil(t, chunk.buf)
+		assert.Nil(t, chunk.index)
+		assert.Contains(t, chunk.err.Error(), "log event bytes exceed max content length configured")
+	}
+
+	assert.Equal(t, 0, numChunks)
+}
+
+func Test_chunkEvents_MaxContentLength_1EventPerChunk(t *testing.T) {
+	logs := testLogs()
+
+	min, max, events := jsonEncodeEventsBytes(logs, &Config{})
+
+	numEvents := len(events)
+
+	// Chunk max content length = max and this condition results in 1 event per chunk.
+	assert.True(t, min >= max/2)
+
+	chunkLength := max
+	config := Config{MaxContentLength: chunkLength}
+
+	chunkCh, cancel := logs.chunkEvents(zap.NewNop(), &config)
+	defer cancel()
+
+	numChunks := 0
+
+	for chunk := range chunkCh {
+		assert.Nil(t, chunk.err)
+		assert.Len(t, chunk.buf.Bytes(), len(events[numChunks]))
+		numChunks++
+	}
+
+	// 1 event per chunk.
+	assert.Equal(t, numEvents, numChunks)
+}
+
+func Test_chunkEvents_MaxContentLength_2EventsPerChunk(t *testing.T) {
+	logs := testLogs()
+
+	min, max, events := jsonEncodeEventsBytes(logs, &Config{})
+
+	numEvents := len(events)
+
+	// Chunk max content length = 2 * max and this condition results in 2 event per chunk.
+	assert.True(t, min >= max/2)
+
+	chunkLength := 2 * max
+	config := Config{MaxContentLength: chunkLength}
+
+	// Config max content length equal to the length of the largest event.
+	chunkCh, cancel := logs.chunkEvents(zap.NewNop(), &config)
+	defer cancel()
+
+	numChunks := 0
+
+	for chunk := range chunkCh {
+		assert.Nil(t, chunk.err)
+		numChunks++
+	}
+
+	// 2 events per chunk.
+	assert.Equal(t, numEvents, 2*numChunks)
+}
+
+func Test_chunkEvents_JSONEncodeError(t *testing.T) {
+	logs := testLogs()
+
+	// Setting a log logsIdx body to +Inf
+	logs.ResourceLogs().At(0).
+		InstrumentationLibraryLogs().At(0).
+		Logs().At(0).
+		Body().SetDoubleVal(math.Inf(1))
+
+	// JSON Encoding +Inf should trigger unsupported value error
+	config := &Config{}
+	eventsCh, cancel := logs.chunkEvents(zap.NewNop(), config)
+	defer cancel()
+
+	// event should contain an unsupported value error triggered by JSON Encoding +Inf
+	event := <-eventsCh
+
+	assert.Nil(t, event.buf)
+	assert.Nil(t, event.index)
+	assert.Contains(t, event.err.Error(), "json: unsupported value: +Inf")
+
+	// the error should cause the channel to be closed.
+	_, ok := <-eventsCh
+	assert.True(t, !ok, "Events channel should be closed on error")
 }
 
 func makeLog(record pdata.LogRecord) pdata.Logs {
@@ -319,7 +512,7 @@ func commonLogSplunkEvent(
 func Test_nilLogs(t *testing.T) {
 	logs := pdata.NewLogs()
 	ldWrap := logDataWrapper{&logs}
-	eventsCh, cancel := ldWrap.eventsInChunks(zap.NewNop(), &Config{})
+	eventsCh, cancel := ldWrap.chunkEvents(zap.NewNop(), &Config{})
 	defer cancel()
 	events := <-eventsCh
 	assert.Equal(t, 0, events.buf.Len())
@@ -329,7 +522,7 @@ func Test_nilResourceLogs(t *testing.T) {
 	logs := pdata.NewLogs()
 	logs.ResourceLogs().Resize(1)
 	ldWrap := logDataWrapper{&logs}
-	eventsCh, cancel := ldWrap.eventsInChunks(zap.NewNop(), &Config{})
+	eventsCh, cancel := ldWrap.chunkEvents(zap.NewNop(), &Config{})
 	defer cancel()
 	events := <-eventsCh
 	assert.Equal(t, 0, events.buf.Len())
@@ -341,7 +534,7 @@ func Test_nilInstrumentationLogs(t *testing.T) {
 	resourceLog := logs.ResourceLogs().At(0)
 	resourceLog.InstrumentationLibraryLogs().Resize(1)
 	ldWrap := logDataWrapper{&logs}
-	eventsCh, cancel := ldWrap.eventsInChunks(zap.NewNop(), &Config{})
+	eventsCh, cancel := ldWrap.chunkEvents(zap.NewNop(), &Config{})
 	defer cancel()
 	events := <-eventsCh
 	assert.Equal(t, 0, events.buf.Len())
@@ -357,38 +550,77 @@ func Test_nanoTimestampToEpochMilliseconds(t *testing.T) {
 }
 
 func Test_numLogs(t *testing.T) {
-	logs := logDataWrapper{&[]pdata.Logs{pdata.NewLogs()}[0]}
-	logs.ResourceLogs().Resize(2)
+	// See nested structure of logs in testLogs() comments.
+	logs := testLogs()
 
-	rl0 := logs.ResourceLogs().At(0)
-	rl0.InstrumentationLibraryLogs().Resize(2)
-	rl0.InstrumentationLibraryLogs().At(0).Logs().Append(pdata.NewLogRecord())
-	rl0.InstrumentationLibraryLogs().At(1).Logs().Append(pdata.NewLogRecord())
-	rl0.InstrumentationLibraryLogs().At(1).Logs().Append(pdata.NewLogRecord())
-
-	rl1 := logs.ResourceLogs().At(1)
-	rl1.InstrumentationLibraryLogs().Resize(3)
-	rl1.InstrumentationLibraryLogs().At(0).Logs().Append(pdata.NewLogRecord())
-	rl1.InstrumentationLibraryLogs().At(1).Logs().Append(pdata.NewLogRecord())
-	rl1.InstrumentationLibraryLogs().At(2).Logs().Append(pdata.NewLogRecord())
-
-	// Indices of LogRecord(s) created.
-	//     0            1      <- ResourceLogs parent index
-	//    / \         / | \
-	//   0   1      0  1  2    <- InstrumentationLibraryLogs parent index
-	//  /   / \    /  /  /
-	// 0   0   1  0  0  0      <- LogRecord index
-
-	_0_0_0 := &logIndex{resource: 0, library: 0, record: 0}
+	_0_0_0 := &logIndex{origIdx: 0, instIdx: 0, logsIdx: 0}
 	got := logs.numLogs(_0_0_0)
+
 	assert.Equal(t, 6, got)
 
-	_0_1_1 := &logIndex{resource: 0, library: 1, record: 1}
+	_0_1_1 := &logIndex{origIdx: 0, instIdx: 1, logsIdx: 1}
 	got = logs.numLogs(_0_1_1)
+
 	assert.Equal(t, 4, got)
 }
 
 func Test_subLogs(t *testing.T) {
+	// See nested structure of logs in testLogs() comments.
+	logs := testLogs()
+
+	// Logs subset from leftmost index.
+	_0_0_0 := &logIndex{origIdx: 0, instIdx: 0, logsIdx: 0}
+	got := logDataWrapper{logs.subLogs(_0_0_0)}
+
+	assert.Equal(t, 6, got.numLogs(_0_0_0))
+
+	orig := *got.InternalRep().Orig
+
+	assert.Equal(t, "(0, 0, 0)", orig[0].InstrumentationLibraryLogs[0].Logs[0].Name)
+	assert.Equal(t, "(0, 1, 0)", orig[0].InstrumentationLibraryLogs[1].Logs[0].Name)
+	assert.Equal(t, "(0, 1, 1)", orig[0].InstrumentationLibraryLogs[1].Logs[1].Name)
+	assert.Equal(t, "(1, 0, 0)", orig[1].InstrumentationLibraryLogs[0].Logs[0].Name)
+	assert.Equal(t, "(1, 1, 0)", orig[1].InstrumentationLibraryLogs[1].Logs[0].Name)
+	assert.Equal(t, "(1, 2, 0)", orig[1].InstrumentationLibraryLogs[2].Logs[0].Name)
+
+	// Logs subset from rightmost index.
+	_1_2_0 := &logIndex{origIdx: 1, instIdx: 2, logsIdx: 0}
+	got = logDataWrapper{logs.subLogs(_1_2_0)}
+
+	assert.Equal(t, 1, got.numLogs(_0_0_0))
+
+	orig = *got.InternalRep().Orig
+
+	assert.Equal(t, "(1, 2, 0)", orig[0].InstrumentationLibraryLogs[0].Logs[0].Name)
+
+	// Logs subset from an in-between index.
+	_1_1_0 := &logIndex{origIdx: 1, instIdx: 1, logsIdx: 0}
+	got = logDataWrapper{logs.subLogs(_1_1_0)}
+
+	assert.Equal(t, 2, got.numLogs(_0_0_0))
+
+	orig = *got.InternalRep().Orig
+
+	assert.Equal(t, "(1, 1, 0)", orig[0].InstrumentationLibraryLogs[0].Logs[0].Name)
+	assert.Equal(t, "(1, 2, 0)", orig[0].InstrumentationLibraryLogs[1].Logs[0].Name)
+}
+
+// Creates pdata.Logs for testing.
+//
+// Structure of the pdata.Logs created showing indices:
+//
+//     0            1      <- orig index
+//    / \         / | \
+//   0   1      0  1  2    <- InstrumentationLibraryLogs index
+//  /   / \    /  /  /
+// 0   0   1  0  0  0      <- Logs index
+//
+// The log records are named in the pattern:
+// (<orig index>, <InstrumentationLibraryLogs index>, <Logs index>)
+//
+// The log records are about the same size and some test depend this fact.
+//
+func testLogs() *logDataWrapper {
 	logs := logDataWrapper{&[]pdata.Logs{pdata.NewLogs()}[0]}
 	logs.ResourceLogs().Resize(2)
 
@@ -422,40 +654,38 @@ func Test_subLogs(t *testing.T) {
 	log.SetName("(1, 2, 0)")
 	rl1.InstrumentationLibraryLogs().At(2).Logs().Append(log)
 
-	// Indices of LogRecord(s) created.
-	//     0            1      <- ResourceLogs parent index
-	//    / \         / | \
-	//   0   1      0  1  2    <- InstrumentationLibraryLogs parent index
-	//  /   / \    /  /  /
-	// 0   0   1  0  0  0      <- LogRecord index
+	return &logs
+}
 
-	// Logs subset from leftmost index.
-	_0_0_0 := &logIndex{resource: 0, library: 0, record: 0}
-	got := logDataWrapper{logs.subLogs(_0_0_0)}
+func jsonEncodeEventsBytes(logs *logDataWrapper, config *Config) (int, int, [][]byte) {
+	events := make([][]byte, 0)
+	// min, max number of bytes of smallest, largest events.
+	var min, max int
 
-	assert.Equal(t, 6, got.numLogs(_0_0_0))
-	orig := *got.InternalRep().Orig
-	assert.Equal(t, "(0, 0, 0)", orig[0].InstrumentationLibraryLogs[0].Logs[0].Name)
-	assert.Equal(t, "(0, 1, 0)", orig[0].InstrumentationLibraryLogs[1].Logs[0].Name)
-	assert.Equal(t, "(0, 1, 1)", orig[0].InstrumentationLibraryLogs[1].Logs[1].Name)
-	assert.Equal(t, "(1, 0, 0)", orig[1].InstrumentationLibraryLogs[0].Logs[0].Name)
-	assert.Equal(t, "(1, 1, 0)", orig[1].InstrumentationLibraryLogs[1].Logs[0].Name)
-	assert.Equal(t, "(1, 2, 0)", orig[1].InstrumentationLibraryLogs[2].Logs[0].Name)
+	event := new(bytes.Buffer)
+	encoder := json.NewEncoder(event)
 
-	// Logs subset from rightmost index.
-	_1_2_0 := &logIndex{resource: 1, library: 2, record: 0}
-	got = logDataWrapper{logs.subLogs(_1_2_0)}
-
-	assert.Equal(t, 1, got.numLogs(_0_0_0))
-	orig = *got.InternalRep().Orig
-	assert.Equal(t, "(1, 2, 0)", orig[0].InstrumentationLibraryLogs[0].Logs[0].Name)
-
-	// Logs subset from an in-between index.
-	_1_1_0 := &logIndex{resource: 1, library: 1, record: 0}
-	got = logDataWrapper{logs.subLogs(_1_1_0)}
-
-	assert.Equal(t, 2, got.numLogs(_0_0_0))
-	orig = *got.InternalRep().Orig
-	assert.Equal(t, "(1, 1, 0)", orig[0].InstrumentationLibraryLogs[0].Logs[0].Name)
-	assert.Equal(t, "(1, 2, 0)", orig[0].InstrumentationLibraryLogs[1].Logs[0].Name)
+	rl := logs.ResourceLogs()
+	for i := 0; i < rl.Len(); i++ {
+		ill := rl.At(i).InstrumentationLibraryLogs()
+		for j := 0; j < ill.Len(); j++ {
+			l := ill.At(j).Logs()
+			for k := 0; k < l.Len(); k++ {
+				if err := encoder.Encode(mapLogRecordToSplunkEvent(l.At(k), config, zap.NewNop())); err == nil {
+					event.WriteString("\r\n\r\n")
+					dst := make([]byte, len(event.Bytes()))
+					copy(dst, event.Bytes())
+					events = append(events, dst)
+					if event.Len() < min || min == 0 {
+						min = event.Len()
+					}
+					if event.Len() > max {
+						max = event.Len()
+					}
+					event.Reset()
+				}
+			}
+		}
+	}
+	return min, max, events
 }

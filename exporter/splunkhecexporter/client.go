@@ -169,34 +169,34 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (numDroppedLogs
 	defer gzipWriter.Close()
 
 	logs := logDataWrapper{&ld}
-	eventsCh, cancel := logs.eventsInChunks(c.logger, c.config)
+	chunkCh, cancel := logs.chunkEvents(c.logger, c.config)
 	defer cancel()
 
-	for events := range eventsCh {
-		if events.err != nil {
-			return logs.numLogs(events.index), events.err
+	for chunk := range chunkCh {
+		if chunk.err != nil {
+			return logs.numLogs(chunk.index), chunk.err
 		}
 
-		if events.buf.Len() == 0 {
+		if chunk.buf.Len() == 0 {
 			continue
 		}
 
 		// Not compressing if compression disabled or payload fit into a single ethernet frame.
-		if events.buf.Len() <= 1500 || c.config.DisableCompression {
-			if err = c.postEvents(ctx, events.buf, false); err != nil {
-				return logs.numLogs(events.index), consumererror.PartialLogsError(err, *logs.subLogs(events.index))
+		if chunk.buf.Len() <= 1500 || c.config.DisableCompression {
+			if err = c.postEvents(ctx, chunk.buf, false); err != nil {
+				return logs.numLogs(chunk.index), consumererror.PartialLogsError(err, *logs.subLogs(chunk.index))
 			}
 			continue
 		}
 
-		if _, err = gzipWriter.Write(events.buf.Bytes()); err != nil {
-			return logs.numLogs(events.index), consumererror.Permanent(err)
+		if _, err = gzipWriter.Write(chunk.buf.Bytes()); err != nil {
+			return logs.numLogs(chunk.index), consumererror.Permanent(err)
 		}
 
 		gzipWriter.Flush()
 
 		if err = c.postEvents(ctx, gzipBuf, true); err != nil {
-			return logs.numLogs(events.index), consumererror.PartialLogsError(err, *logs.subLogs(events.index))
+			return logs.numLogs(chunk.index), consumererror.PartialLogsError(err, *logs.subLogs(chunk.index))
 		}
 
 		gzipBuf.Reset()
