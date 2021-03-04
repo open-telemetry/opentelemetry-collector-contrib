@@ -16,8 +16,9 @@
 package batchpertrace
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 	"go.opentelemetry.io/collector/consumer/pdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
 // Split returns one pdata.Traces for each trace in the given pdata.Traces input. Each of the resulting pdata.Traces contains exactly one trace.
