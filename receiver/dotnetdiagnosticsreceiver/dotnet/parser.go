@@ -78,7 +78,7 @@ func (p *Parser) parseBlock(fms fieldMetadataMap) error {
 		return err
 	}
 
-	p.logger.Info("parsing block", zap.String("serialization type", st.name))
+	p.logger.Debug("parsing block", zap.String("serialization type", st.name))
 
 	switch st.name {
 	case "Trace":

@@ -22,7 +22,7 @@ import (
 // results are currently not used, but parsing this message is necessary for byte
 // alignment to process subsequent messages.
 // https://github.com/Microsoft/perfview/blob/main/src/TraceEvent/EventPipe/EventPipeFormat.md#the-first-object-the-trace-object
-func parseTraceMessage(w network.MultiReader) (err error) {
+func parseTraceMessage(r network.MultiReader) (err error) {
 	type eventSource struct {
 		syncTimeQPC             int64
 		qpcFreq                 int64
@@ -35,37 +35,38 @@ func parseTraceMessage(w network.MultiReader) (err error) {
 	es := eventSource{}
 
 	// skip date
-	err = w.Seek(16)
+	const dateSize = 16
+	err = r.Seek(dateSize)
 	if err != nil {
 		return
 	}
 
-	err = w.Read(&es.syncTimeQPC)
+	err = r.Read(&es.syncTimeQPC)
 	if err != nil {
 		return
 	}
 
-	err = w.Read(&es.qpcFreq)
+	err = r.Read(&es.qpcFreq)
 	if err != nil {
 		return
 	}
 
-	err = w.Read(&es.pointerSize)
+	err = r.Read(&es.pointerSize)
 	if err != nil {
 		return
 	}
 
-	err = w.Read(&es.processID)
+	err = r.Read(&es.processID)
 	if err != nil {
 		return
 	}
 
-	err = w.Read(&es.numProcessors)
+	err = r.Read(&es.numProcessors)
 	if err != nil {
 		return
 	}
 
-	err = w.Read(&es.expectedCPUSamplingRate)
+	err = r.Read(&es.expectedCPUSamplingRate)
 
 	return
 }

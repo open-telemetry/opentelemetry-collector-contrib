@@ -178,6 +178,7 @@ func parseFields(r network.MultiReader) (fields []field, err error) {
 	return
 }
 
+// from https://docs.microsoft.com/en-us/dotnet/api/system.typecode
 const (
 	typeCodeObject = 1
 	typeCodeInt32  = 9

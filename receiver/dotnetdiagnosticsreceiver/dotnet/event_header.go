@@ -27,9 +27,10 @@ type eventHeader struct {
 	timestampDelta    int64
 }
 
-// compressed header flags
 type headerFlags byte
 
+// from CompressedHeaderFlags enum in EventPipeEventSource.cs
+// https://github.com/microsoft/perfview/blob/main/src/TraceEvent/EventPipe/EventPipeEventSource.cs#L1382
 const (
 	headerFlagMetadataID               headerFlags = 1 << 0
 	headerFlagCaptureThreadAndSequence headerFlags = 1 << 1

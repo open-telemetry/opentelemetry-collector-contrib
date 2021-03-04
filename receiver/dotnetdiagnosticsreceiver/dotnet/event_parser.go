@@ -19,9 +19,10 @@ import (
 )
 
 // parseEventBlock parses an event block and returns a Metric slice containing
-// the raw representation of the metrics extracted from the event messages.
-// All of the previous parsing is for correct operation of the functionality
-// contained in this file.
+// the raw representation of the metrics extracted from the event messages. It
+// uses the structure and names of the passed-in fieldMetadataMap (from
+// parseMetadataBlock) and the values extracted from the stream to build the
+// Metrics and their key-value pairs.
 // https://github.com/Microsoft/perfview/blob/main/src/TraceEvent/EventPipe/EventPipeFormat.md#the-eventblock-object
 func parseEventBlock(r network.MultiReader, fm fieldMetadataMap) (metrics []Metric, err error) {
 	var offset int32
@@ -64,7 +65,7 @@ func parseEventBlock(r network.MultiReader, fm fieldMetadataMap) (metrics []Metr
 		}
 
 		m := Metric{}
-		// here we correlate the metadata extracted from previous messages to the events
+		// here we correlate the metadata extracted from parseMetadataBlock to the events
 		// contained in this message
 		err = parseFieldValues(fm[int(header.metadataID)].fields, r, m)
 		if err != nil {
