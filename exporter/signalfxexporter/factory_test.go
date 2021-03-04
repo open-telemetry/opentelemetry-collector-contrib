@@ -576,7 +576,7 @@ func testMetricsData() pdata.ResourceMetrics {
 					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 					LabelKeys: []*metricspb.LabelKey{
 						{Key: "direction"},
-						{Key: "interface"},
+						{Key: "device"},
 						{Key: "host"},
 						{Key: "kubernetes_node"},
 						{Key: "kubernetes_cluster"},
