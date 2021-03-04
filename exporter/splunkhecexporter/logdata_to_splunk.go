@@ -71,10 +71,14 @@ func (ld *logDataWrapper) chunkEvents(ctx context.Context, logger *zap.Logger, c
 			for j := 0; j < ill.Len(); j++ {
 				l := ill.At(j).Logs()
 				for k := 0; k < l.Len(); k++ {
+					if chunk.index == nil {
+						chunk.index = &logIndex{origIdx: i, instIdx: j, logsIdx: k}
+					}
+
 					if err := encoder.Encode(mapLogRecordToSplunkEvent(l.At(k), config, logger)); err != nil {
 						select {
 						case <-ctx.Done():
-						case chunkCh <- &eventsChunk{buf: nil, index: nil, err: consumererror.Permanent(err)}:
+						case chunkCh <- &eventsChunk{buf: nil, index: chunk.index, err: consumererror.Permanent(err)}:
 						}
 						return
 					}
@@ -87,7 +91,7 @@ func (ld *logDataWrapper) chunkEvents(ctx context.Context, logger *zap.Logger, c
 						case <-ctx.Done():
 						case chunkCh <- &eventsChunk{
 							buf:   nil,
-							index: nil,
+							index: chunk.index,
 							err:   consumererror.Permanent(fmt.Errorf("log event bytes exceed max content length configured (log: %d, max: %d)", event.Len(), config.MaxContentLength))}:
 						}
 						return
@@ -100,16 +104,10 @@ func (ld *logDataWrapper) chunkEvents(ctx context.Context, logger *zap.Logger, c
 						if _, err := event.WriteTo(chunk.buf); err != nil {
 							select {
 							case <-ctx.Done():
-							case chunkCh <- &eventsChunk{buf: nil, index: nil, err: consumererror.Permanent(err)}:
+							case chunkCh <- &eventsChunk{buf: nil, index: chunk.index, err: consumererror.Permanent(err)}:
 							}
 							return
 						}
-
-						// Setting chunk index using the log logsIdx indices of the 1st event.
-						if chunk.index == nil {
-							chunk.index = &logIndex{origIdx: i, instIdx: j, logsIdx: k}
-						}
-
 						continue
 					}
 
@@ -124,6 +122,7 @@ func (ld *logDataWrapper) chunkEvents(ctx context.Context, logger *zap.Logger, c
 
 					// Adding remaining event to the new chunk
 					if event.Len() != 0 {
+						chunk.index = &logIndex{origIdx: i, instIdx: j, logsIdx: k}
 						goto addToChunk
 					}
 				}

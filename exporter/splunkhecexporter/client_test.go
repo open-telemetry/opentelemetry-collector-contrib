@@ -26,6 +26,8 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/collector/consumer/consumererror"
+
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -446,4 +448,46 @@ func TestInvalidURLClient(t *testing.T) {
 	}
 	err := c.sendSplunkEvents(context.Background(), []*splunk.Event{})
 	assert.EqualError(t, err, "Permanent error: parse \"//in%20va%20lid\": invalid URL escape \"%20\"")
+}
+
+func Test_pushLogData_InvalidLog(t *testing.T) {
+	c := client{
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: &Config{},
+	}
+
+	logs := pdata.NewLogs()
+	logs.ResourceLogs().Resize(1)
+	logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
+
+	log := pdata.NewLogRecord()
+	// Invalid log value
+	log.Body().SetDoubleVal(math.Inf(1))
+	logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().Append(log)
+
+	numDroppedLogs, err := c.pushLogData(context.Background(), logs)
+
+	assert.Contains(t, err.Error(), "json: unsupported value: +Inf")
+	assert.Equal(t, 1, numDroppedLogs)
+}
+
+func Test_pushLogData_PostError(t *testing.T) {
+	c := client{
+		url: &url.URL{Host: "in va lid"},
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: &Config{DisableCompression: false},
+	}
+
+	numLogs := 1500
+	logs := createLogData(numLogs)
+
+	numDroppedLogs, err := c.pushLogData(context.Background(), logs)
+	if assert.Error(t, err) {
+		assert.IsType(t, consumererror.PartialError{}, err)
+		assert.Equal(t, numLogs, numDroppedLogs)
+	}
 }
