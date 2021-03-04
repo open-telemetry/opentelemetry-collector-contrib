@@ -199,14 +199,9 @@ func TestTranslation(t *testing.T) {
 					*subseg7318.Name)
 				childSpan7318Attrs[conventions.AttributeHTTPStatusCode] = pdata.NewAttributeValueInt(
 					*subseg7318.HTTP.Response.Status)
-				switch subseg7318.HTTP.Response.ContentLength.(type) {
-				case int:
-					contentLength := subseg7318.HTTP.Response.ContentLength.(int64)
-					childSpan7318Attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueInt(contentLength)
-				case string:
-					contentLength := subseg7318.HTTP.Response.ContentLength.(string)
-					childSpan7318Attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueString(contentLength)
-				}
+
+				contentLength := subseg7318.HTTP.Response.ContentLength.(float64)
+				childSpan7318Attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueInt(int64(contentLength))
 				childSpan7318Attrs[awsxray.AWSOperationAttribute] = pdata.NewAttributeValueString(
 					*subseg7318.AWS.Operation)
 				childSpan7318Attrs[awsxray.AWSRegionAttribute] = pdata.NewAttributeValueString(
@@ -411,14 +406,8 @@ func TestTranslation(t *testing.T) {
 					*subseg7163.Name)
 				childSpan7163Attrs[conventions.AttributeHTTPStatusCode] = pdata.NewAttributeValueInt(
 					*subseg7163.HTTP.Response.Status)
-				switch subseg7163.HTTP.Response.ContentLength.(type) {
-				case int:
-					contentLength := subseg7163.HTTP.Response.ContentLength.(int64)
-					childSpan7163Attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueInt(contentLength)
-				case string:
-					contentLength := subseg7163.HTTP.Response.ContentLength.(string)
-					childSpan7163Attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueString(contentLength)
-				}
+				contentLength = subseg7163.HTTP.Response.ContentLength.(float64)
+				childSpan7163Attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueInt(int64(contentLength))
 				childSpan7163Attrs[awsxray.AWSOperationAttribute] = pdata.NewAttributeValueString(
 					*subseg7163.AWS.Operation)
 				childSpan7163Attrs[awsxray.AWSRegionAttribute] = pdata.NewAttributeValueString(
@@ -730,14 +719,8 @@ func TestTranslation(t *testing.T) {
 					*seg.HTTP.Response.Status)
 				attrs[conventions.AttributeHTTPURL] = pdata.NewAttributeValueString(
 					*seg.HTTP.Request.URL)
-				switch seg.HTTP.Response.ContentLength.(type) {
-				case int:
-					contentLength := seg.HTTP.Response.ContentLength.(int64)
-					attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueInt(contentLength)
-				case string:
-					contentLength := seg.HTTP.Response.ContentLength.(string)
-					attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueString(contentLength)
-				}
+				contentLength := seg.HTTP.Response.ContentLength.(float64)
+				attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueInt(int64(contentLength))
 				attrs[awsxray.AWSXRayTracedAttribute] = pdata.NewAttributeValueBool(true)
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -781,14 +764,10 @@ func TestTranslation(t *testing.T) {
 					*seg.HTTP.Response.Status)
 				attrs[conventions.AttributeHTTPURL] = pdata.NewAttributeValueString(
 					*seg.HTTP.Request.URL)
-				switch seg.HTTP.Response.ContentLength.(type) {
-				case int:
-					contentLength := seg.HTTP.Response.ContentLength.(int64)
-					attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueInt(contentLength)
-				case string:
-					contentLength := seg.HTTP.Response.ContentLength.(string)
-					attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueString(contentLength)
-				}
+
+				contentLength := seg.HTTP.Response.ContentLength.(string)
+				attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueString(contentLength)
+
 				attrs[awsxray.AWSXRayTracedAttribute] = pdata.NewAttributeValueBool(true)
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
