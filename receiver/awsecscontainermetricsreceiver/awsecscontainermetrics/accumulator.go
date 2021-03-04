@@ -15,7 +15,6 @@
 package awsecscontainermetrics
 
 import (
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -114,14 +113,11 @@ func overrideWithTaskLevelLimit(taskMetrics *ECSMetrics, metadata TaskMetadata) 
 }
 
 func calculateDuration(startTime, endTime string) (float64, error) {
-	const layout = "2006-01-02T15:04:05"
-	startTime = strings.Trim(startTime, "Z")
-	endTime = strings.Trim(endTime, "Z")
-	start, err := time.Parse(layout, startTime)
+	start, err := time.Parse(time.RFC3339Nano, startTime)
 	if err != nil {
 		return 0, err
 	}
-	end, err := time.Parse(layout, endTime)
+	end, err := time.Parse(time.RFC3339Nano, endTime)
 	if err != nil {
 		return 0, err
 	}
