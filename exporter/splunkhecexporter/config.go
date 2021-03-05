@@ -60,6 +60,12 @@ type Config struct {
 
 	// insecure_skip_verify skips checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
+
+	// Optional custom authentication header. Defaults to Authorization.
+	AuthHeader string `mapstructure:"auth_header"`
+
+	// Optional custom authentication token. Defaults to "Splunk <hec_token>".
+	AuthToken string `mapstructure:"auth_token"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {

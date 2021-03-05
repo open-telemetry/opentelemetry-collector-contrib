@@ -29,6 +29,7 @@ const (
 	typeStr            = "splunk_hec"
 	defaultMaxIdleCons = 100
 	defaultHTTPTimeout = 10 * time.Second
+	defaultAuthHeader  = "Authorization"
 )
 
 // NewFactory creates a factory for Splunk HEC exporter.
@@ -54,6 +55,7 @@ func createDefaultConfig() configmodels.Exporter {
 		QueueSettings:      exporterhelper.DefaultQueueSettings(),
 		DisableCompression: false,
 		MaxConnections:     defaultMaxIdleCons,
+		AuthHeader:         defaultAuthHeader,
 	}
 }
 

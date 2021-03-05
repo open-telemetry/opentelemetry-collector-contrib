@@ -22,6 +22,8 @@ The following configuration options can also be configured:
 - `disable_compression` (default: false): Whether to disable gzip compression over HTTP.
 - `timeout` (default: 10s): HTTP timeout when sending data.
 - `insecure_skip_verify` (default: false): Whether to skip checking the certificate of the HEC endpoint when sending data over HTTPS.
+- `auth_header` (default: Authorization): Optional custom authentication header.
+- `auth_token` (default: Splunk \<hec_token\>) Optional custom authentication token. Replaces `token` value.
 
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
@@ -50,6 +52,10 @@ exporters:
     timeout: 10s
     # Whether to skip checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
     insecure_skip_verify: false
+    # Optional custom authentication header.
+    auth_header: "X-Auth-Token"
+    # Optional custom authentication token. Replaces `token` value.
+    auth_token: "Basic dXNlcm5hbWU6cGFzc3dvcmQ="
 ```
 
 The full list of settings exposed for this exporter are documented [here](config.go)

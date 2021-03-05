@@ -80,6 +80,10 @@ func createExporter(
 }
 
 func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) *client {
+	if config.AuthToken == "" {
+		config.AuthToken = splunk.HECTokenHeader + " " + config.Token
+	}
+
 	return &client{
 		url: options.url,
 		client: &http.Client{
@@ -104,10 +108,10 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) *
 			return gzip.NewWriter(nil)
 		}},
 		headers: map[string]string{
-			"Connection":    "keep-alive",
-			"Content-Type":  "application/json",
-			"User-Agent":    "OpenTelemetry-Collector Splunk Exporter/v0.0.1",
-			"Authorization": splunk.HECTokenHeader + " " + config.Token,
+			"Connection":      "keep-alive",
+			"Content-Type":    "application/json",
+			"User-Agent":      "OpenTelemetry-Collector Splunk Exporter/v0.0.1",
+			config.AuthHeader: config.AuthToken,
 		},
 		config: config,
 	}
