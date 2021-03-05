@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
@@ -77,7 +77,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 
 	// log a warning if some counters cannot be loaded, but do not crash the app
 	if len(errors) > 0 {
-		s.logger.Warn("some performance counters could not be initialized", zap.Error(componenterror.CombineErrors(errors)))
+		s.logger.Warn("some performance counters could not be initialized", zap.Error(consumererror.CombineErrors(errors)))
 	}
 
 	return nil
@@ -100,7 +100,7 @@ func (s *scraper) shutdown(context.Context) error {
 		}
 	}
 
-	return componenterror.CombineErrors(errors)
+	return consumererror.CombineErrors(errors)
 }
 
 func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
@@ -124,7 +124,7 @@ func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 	}
 	metrics.Resize(len(s.counters) - len(errors))
 
-	return metrics, componenterror.CombineErrors(errors)
+	return metrics, consumererror.CombineErrors(errors)
 }
 
 func initializeDoubleGaugeMetric(metric pdata.Metric, now pdata.Timestamp, name string, counterValues []win_perf_counters.CounterValue) {

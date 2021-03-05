@@ -20,7 +20,7 @@ import (
 
 	"github.com/honeycombio/libhoney-go"
 	"github.com/honeycombio/libhoney-go/transmission"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
@@ -174,7 +174,7 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) 
 		}
 	}
 
-	return td.SpanCount() - goodSpans, componenterror.CombineErrors(errs)
+	return td.SpanCount() - goodSpans, consumererror.CombineErrors(errs)
 }
 
 func getSpanKind(kind pdata.SpanKind) string {

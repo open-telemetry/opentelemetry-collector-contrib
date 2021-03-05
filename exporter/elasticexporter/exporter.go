@@ -27,8 +27,8 @@ import (
 	"go.elastic.co/apm/transport"
 	"go.elastic.co/fastjson"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -56,7 +56,7 @@ func newElasticTraceExporter(
 			}
 			dropped += n
 		}
-		return dropped, componenterror.CombineErrors(errs)
+		return dropped, consumererror.CombineErrors(errs)
 	})
 }
 
@@ -80,7 +80,7 @@ func newElasticMetricsExporter(
 			}
 			dropped += n
 		}
-		return dropped, componenterror.CombineErrors(errs)
+		return dropped, consumererror.CombineErrors(errs)
 	})
 }
 
@@ -153,7 +153,7 @@ func (e *elasticExporter) ExportResourceSpans(ctx context.Context, rs pdata.Reso
 	if err := e.sendEvents(ctx, &w); err != nil {
 		return count, err
 	}
-	return len(errs), componenterror.CombineErrors(errs)
+	return len(errs), consumererror.CombineErrors(errs)
 }
 
 // ExportResourceMetrics exports OTLP metrics to Elastic APM Server,
@@ -179,7 +179,7 @@ func (e *elasticExporter) ExportResourceMetrics(ctx context.Context, rm pdata.Re
 	if err := e.sendEvents(ctx, &w); err != nil {
 		return totalDropped, err
 	}
-	return totalDropped, componenterror.CombineErrors(errs)
+	return totalDropped, consumererror.CombineErrors(errs)
 }
 
 func (e *elasticExporter) sendEvents(ctx context.Context, w *fastjson.Writer) error {

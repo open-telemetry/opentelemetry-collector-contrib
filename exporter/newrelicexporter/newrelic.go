@@ -24,8 +24,8 @@ import (
 
 	"github.com/newrelic/newrelic-telemetry-sdk-go/cumulative"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -203,7 +203,7 @@ func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, erro
 		return 0, &httpError{Response: response}
 	}
 
-	return td.SpanCount() - goodSpans, componenterror.CombineErrors(errs)
+	return td.SpanCount() - goodSpans, consumererror.CombineErrors(errs)
 
 }
 
@@ -240,7 +240,7 @@ func (e exporter) pushMetricData(ctx context.Context, md pdata.Metrics) (int, er
 
 	e.harvester.HarvestNow(ctx)
 
-	return md.MetricCount() - goodMetrics, componenterror.CombineErrors(errs)
+	return md.MetricCount() - goodMetrics, consumererror.CombineErrors(errs)
 }
 
 func (e exporter) Shutdown(ctx context.Context) error {
