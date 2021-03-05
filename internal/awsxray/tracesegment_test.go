@@ -135,7 +135,7 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 					HTTP: &HTTPData{
 						Response: &ResponseData{
 							Status:        aws.Int64(200),
-							ContentLength: aws.Int64(713),
+							ContentLength: *aws.Float64(713),
 						},
 					},
 					AWS: &AWSData{
@@ -320,7 +320,7 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 					HTTP: &HTTPData{
 						Response: &ResponseData{
 							Status:        aws.Int64(400),
-							ContentLength: aws.Int64(112),
+							ContentLength: *aws.Float64(112),
 						},
 					},
 					AWS: &AWSData{
