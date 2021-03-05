@@ -57,6 +57,7 @@ func TestLoadConfig(t *testing.T) {
 			InstrumentationKey: "abcdefg",
 			MaxBatchSize:       100,
 			MaxBatchInterval:   10 * time.Second,
+			ShutdownTimeout:    3 * time.Second,
 		},
 		exporter)
 }

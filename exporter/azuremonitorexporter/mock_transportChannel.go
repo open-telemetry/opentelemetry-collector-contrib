@@ -17,6 +17,8 @@
 package azuremonitorexporter
 
 import (
+	"time"
+
 	contracts "github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -29,4 +31,10 @@ type mockTransportChannel struct {
 // Send provides a mock function with given fields: _a0
 func (_m *mockTransportChannel) Send(_a0 *contracts.Envelope) {
 	_m.Called(_a0)
+}
+
+func (_m *mockTransportChannel) Close(timeout ...time.Duration) <-chan struct{} {
+	end := make(chan struct{}, 1)
+	end <- struct{}{}
+	return end
 }

@@ -59,6 +59,7 @@ func createDefaultConfig() configmodels.Exporter {
 		Endpoint:         defaultEndpoint,
 		MaxBatchSize:     1024,
 		MaxBatchInterval: 10 * time.Second,
+		ShutdownTimeout:  5 * time.Second,
 	}
 }
 

@@ -16,6 +16,7 @@ package azuremonitorexporter
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	mock "github.com/stretchr/testify/mock"
@@ -105,6 +106,12 @@ func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 0)
 }
 
+func TestExporterShutdownCorrectly(t *testing.T) {
+	mockTransportChannel := getMockTransportChannel()
+	exporter := getExporter(defaultConfig, mockTransportChannel)
+	exporter.Shutdown(context.Background())
+}
+
 func getMockTransportChannel() *mockTransportChannel {
 	transportChannelMock := mockTransportChannel{}
 	transportChannelMock.On("Send", mock.Anything)
@@ -116,5 +123,6 @@ func getExporter(config *Config, transportChannel transportChannel) *traceExport
 		config,
 		transportChannel,
 		zap.NewNop(),
+		time.Second,
 	}
 }

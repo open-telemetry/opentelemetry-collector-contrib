@@ -16,6 +16,7 @@ package azuremonitorexporter
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -28,6 +29,7 @@ type traceExporter struct {
 	config           *Config
 	transportChannel transportChannel
 	logger           *zap.Logger
+	shutdownTimeout  time.Duration
 }
 
 type traceVisitor struct {
@@ -69,6 +71,11 @@ func (exporter *traceExporter) onTraceData(context context.Context, traceData pd
 	return (spanCount - visitor.processed), visitor.err
 }
 
+func (exporter *traceExporter) Shutdown(context.Context) error {
+	<-exporter.transportChannel.Close(exporter.shutdownTimeout)
+	return nil
+}
+
 // Returns a new instance of the trace exporter
 func newTraceExporter(config *Config, transportChannel transportChannel, logger *zap.Logger) (component.TracesExporter, error) {
 
@@ -76,7 +83,8 @@ func newTraceExporter(config *Config, transportChannel transportChannel, logger 
 		config:           config,
 		transportChannel: transportChannel,
 		logger:           logger,
+		shutdownTimeout:  config.ShutdownTimeout,
 	}
 
-	return exporterhelper.NewTraceExporter(config, logger, exporter.onTraceData)
+	return exporterhelper.NewTraceExporter(config, logger, exporter.onTraceData, exporterhelper.WithShutdown(exporter.Shutdown))
 }

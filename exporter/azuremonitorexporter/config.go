@@ -28,4 +28,5 @@ type Config struct {
 	InstrumentationKey            string        `mapstructure:"instrumentation_key"`
 	MaxBatchSize                  int           `mapstructure:"maxbatchsize"`
 	MaxBatchInterval              time.Duration `mapstructure:"maxbatchinterval"`
+	ShutdownTimeout               time.Duration `mapstructure:"shutdown_timeout"`
 }

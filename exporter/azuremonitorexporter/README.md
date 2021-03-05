@@ -13,6 +13,7 @@ The following settings can be optionally configured:
 - `endpoint` (default = "https://dc.services.visualstudio.com/v2/track"): The endpoint URL where data will be submitted.
 - `maxbatchsize` (default = 1024): The maximum number of telemetry items that can be submitted in each request. If this many items are buffered, the buffer will be flushed before `maxbatchinterval` expires.
 - `maxbatchinterval` (default = 10s): The maximum time to wait before sending a batch of telemetry.
+- `shutdown_timeout` (default = 5s): The maximum time to wait to flush any remaining telemetry before giving up and shutting down.
 
 Example:
 
