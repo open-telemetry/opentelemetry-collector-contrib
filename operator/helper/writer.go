@@ -32,8 +32,8 @@ func NewWriterConfig(operatorID, operatorType string) WriterConfig {
 
 // WriterConfig is the configuration of a writer operator.
 type WriterConfig struct {
-	BasicConfig `yaml:",inline"`
-	OutputIDs   OutputIDs `json:"output" yaml:"output"`
+	BasicConfig `mapstructure:",squash" yaml:",inline"`
+	OutputIDs   OutputIDs `mapstructure:"output" json:"output" yaml:"output"`
 }
 
 // Build will build a writer operator from the config.

@@ -35,10 +35,10 @@ func NewInputConfig(operatorID, operatorType string) InputConfig {
 
 // InputConfig provides a basic implementation of an input operator config.
 type InputConfig struct {
-	LabelerConfig    `yaml:",inline"`
-	IdentifierConfig `yaml:",inline"`
-	WriterConfig     `yaml:",inline"`
-	WriteTo          entry.Field `json:"write_to" yaml:"write_to"`
+	LabelerConfig    `mapstructure:",squash" yaml:",inline"`
+	IdentifierConfig `mapstructure:",squash" yaml:",inline"`
+	WriterConfig     `mapstructure:",squash" yaml:",inline"`
+	WriteTo          entry.Field `mapstructure:"write_to" json:"write_to" yaml:"write_to"`
 }
 
 // Build will build a base producer.
