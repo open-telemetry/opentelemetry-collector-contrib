@@ -43,6 +43,12 @@ func TestConfig(t *testing.T) {
 			defaultCfg(),
 		},
 		{
+
+			"extra_field",
+			false,
+			defaultCfg(),
+		},
+		{
 			"id_custom",
 			false,
 			NewInputConfig("test_id"),
@@ -84,6 +90,11 @@ func TestConfig(t *testing.T) {
 			}(),
 		},
 		{
+			"include_invalid",
+			true,
+			nil,
+		},
+		{
 			"exclude_one",
 			false,
 			func() *InputConfig {
@@ -122,6 +133,11 @@ func TestConfig(t *testing.T) {
 				cfg.Exclude = append(cfg.Exclude, "a.log", "b.log")
 				return cfg
 			}(),
+		},
+		{
+			"exclude_invalid",
+			true,
+			nil,
 		},
 		{
 			"poll_interval_no_units",
@@ -204,28 +220,277 @@ func TestConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
+		{
+			"fingerprint_size_float",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.FingerprintSize = helper.ByteSize(1100)
+				return cfg
+			}(),
+		},
+		{
+			"include_file_name_lower",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.Include = append(cfg.Include, "one.log")
+				cfg.IncludeFileName = true
+				return cfg
+			}(),
+		},
+		{
+			"include_file_name_upper",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.Include = append(cfg.Include, "one.log")
+				cfg.IncludeFileName = true
+				return cfg
+			}(),
+		},
+		{
+			"include_file_name_on",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.Include = append(cfg.Include, "one.log")
+				cfg.IncludeFileName = true
+				return cfg
+			}(),
+		},
+		{
+			"include_file_name_yes",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.Include = append(cfg.Include, "one.log")
+				cfg.IncludeFileName = true
+				return cfg
+			}(),
+		},
+		{
+			"include_file_path_lower",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.Include = append(cfg.Include, "one.log")
+				cfg.IncludeFilePath = true
+				return cfg
+			}(),
+		},
+		{
+			"include_file_path_upper",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.Include = append(cfg.Include, "one.log")
+				cfg.IncludeFilePath = true
+				return cfg
+			}(),
+		},
+		{
+			"include_file_path_on",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.Include = append(cfg.Include, "one.log")
+				cfg.IncludeFilePath = true
+				return cfg
+			}(),
+		},
+		{
+			"include_file_path_yes",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.Include = append(cfg.Include, "one.log")
+				cfg.IncludeFilePath = true
+				return cfg
+			}(),
+		},
+		{
+			"include_file_path_off",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.Include = append(cfg.Include, "one.log")
+				cfg.IncludeFilePath = false
+				return cfg
+			}(),
+		},
+		{
+			"include_file_path_no",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.Include = append(cfg.Include, "one.log")
+				cfg.IncludeFilePath = false
+				return cfg
+			}(),
+		},
+		{
+			"include_file_path_nonbool",
+			true,
+			nil,
+		},
+		{
+			"multiline_line_start_string",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				var newMulti *MultilineConfig
+				newMulti = new(MultilineConfig)
+				newMulti.LineStartPattern = "Start"
+				cfg.Multiline = newMulti
+				return cfg
+			}(),
+		},
+		{
+			"multiline_line_start_special",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				var newMulti *MultilineConfig
+				newMulti = new(MultilineConfig)
+				newMulti.LineStartPattern = "%"
+				cfg.Multiline = newMulti
+				return cfg
+			}(),
+		},
+		{
+			"multiline_line_end_string",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				var newMulti *MultilineConfig
+				newMulti = new(MultilineConfig)
+				newMulti.LineEndPattern = "Start"
+				cfg.Multiline = newMulti
+				return cfg
+			}(),
+		},
+		{
+			"multiline_line_end_special",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				var newMulti *MultilineConfig
+				newMulti = new(MultilineConfig)
+				newMulti.LineEndPattern = "%"
+				cfg.Multiline = newMulti
+				return cfg
+			}(),
+		},
+		{
+			"multiline_random",
+			true,
+			nil,
+		},
+		{
+			"start_at_string",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.StartAt = "beginning"
+				return cfg
+			}(),
+		},
+		{
+			"max_concurrent_large",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.MaxConcurrentFiles = 9223372036854775807
+				return cfg
+			}(),
+		},
+		{
+			"max_log_size_mib_lower",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.MaxLogSize = helper.ByteSize(1048576)
+				return cfg
+			}(),
+		},
+		{
+			"max_log_size_mib_upper",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.MaxLogSize = helper.ByteSize(1048576)
+				return cfg
+			}(),
+		},
+		{
+			"max_log_size_mb_upper",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.MaxLogSize = helper.ByteSize(1048576)
+				return cfg
+			}(),
+		},
+		{
+			"max_log_size_mb_lower",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.MaxLogSize = helper.ByteSize(1048576)
+				return cfg
+			}(),
+		},
+		{
+			"max_log_size_invalid_unit",
+			true,
+			nil,
+		},
+		{
+			"encoding_lower",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.Encoding = "utf-16le"
+				return cfg
+			}(),
+		},
+		{
+			"encoding_upper",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.Encoding = "UTF-16lE"
+				return cfg
+			}(),
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfgFromYaml, err := configFromFileViaYaml(path.Join(".", "testdata", fmt.Sprintf("%s.yaml", tc.name)))
-			require.NoError(t, err)
-			require.Equal(t, tc.expect, cfgFromYaml)
-			cfgFromMapstructure, err := configFromFileViaMapstructure(path.Join(".", "testdata", fmt.Sprintf("%s.yaml", tc.name)))
-			require.NoError(t, err)
-			require.Equal(t, tc.expect, cfgFromMapstructure)
+			cfgFromYaml, yamlErr := configFromFileViaYaml(t, path.Join(".", "testdata", fmt.Sprintf("%s.yaml", tc.name)))
+			cfgFromMapstructure, mapErr := configFromFileViaMapstructure(path.Join(".", "testdata", fmt.Sprintf("%s.yaml", tc.name)))
+			if tc.expectErr {
+				require.Error(t, yamlErr)
+				require.Error(t, mapErr)
+			} else {
+				require.NoError(t, yamlErr)
+				require.Equal(t, tc.expect, cfgFromYaml)
+				require.NoError(t, mapErr)
+				require.Equal(t, tc.expect, cfgFromMapstructure)
+			}
 		})
 	}
 }
 
-func configFromFileViaYaml(file string) (*InputConfig, error) {
+func configFromFileViaYaml(t *testing.T, file string) (*InputConfig, error) {
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("could not find config file: %s", err)
 	}
 
-	config := NewInputConfig("file_input")
-	if err := yaml.UnmarshalStrict(bytes, config); err != nil {
+	config := defaultCfg()
+	if err := yaml.Unmarshal(bytes, config); err != nil {
 		return nil, fmt.Errorf("failed to read config file as yaml: %s", err)
 	}
 
@@ -280,10 +545,8 @@ func TestMapStructureDecodeConfigWithHook(t *testing.T) {
 		"id":       "config_test",
 		"type":     "file_input",
 		"write_to": "$",
-		"labels": map[string]interface{}{
-		},
-		"resource": map[string]interface{}{
-		},
+		"labels":   map[string]interface{}{},
+		"resource": map[string]interface{}{},
 
 		"include":       expect.Include,
 		"exclude":       expect.Exclude,
@@ -317,12 +580,10 @@ func TestMapStructureDecodeConfig(t *testing.T) {
 		"id":       "config_test",
 		"type":     "file_input",
 		"write_to": entry.NewRecordField([]string{}...),
-		"labels": map[string]interface{}{
-		},
-		"resource": map[string]interface{}{
-		},
-		"include": expect.Include,
-		"exclude": expect.Exclude,
+		"labels":   map[string]interface{}{},
+		"resource": map[string]interface{}{},
+		"include":  expect.Include,
+		"exclude":  expect.Exclude,
 		"poll_interval": map[string]interface{}{
 			"Duration": 200 * 1000 * 1000,
 		},
