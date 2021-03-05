@@ -488,7 +488,25 @@ translation_rules:
     disk.summary_utilization: 100
 
 
-# convert disk I/O metrics
+# Translations to derive disk I/O metrics.
+
+## Calculate extra system.disk.operations.total and system.disk.io.total metrics summing up read/write ops/IO across all devices.
+- action: copy_metrics
+  mapping:
+    system.disk.operations: system.disk.operations.total
+    system.disk.io: system.disk.io.total
+- action: aggregate_metric
+  metric_name: system.disk.operations.total
+  aggregation_method: sum
+  without_dimensions:
+    - device
+- action: aggregate_metric
+  metric_name: system.disk.io.total
+  aggregation_method: sum
+  without_dimensions:
+    - device
+
+## Calculate an extra disk_ops.total metric as number all all read and write operations happened since the last report.
 - action: copy_metrics
   mapping:
     system.disk.operations: disk.ops
@@ -501,6 +519,7 @@ translation_rules:
 - action: delta_metric
   mapping:
     disk.ops: disk_ops.total
+
 - action: rename_dimension_keys
   metric_names:
     system.disk.merged: true
