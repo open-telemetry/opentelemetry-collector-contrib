@@ -588,7 +588,7 @@ func ptToFloatVal(pt *sfxpb.DataPoint) *float64 {
 	return &f
 }
 
-func (mp *MetricTranslator) TranslateDimension(orig string) string {
+func (mp *MetricTranslator) translateDimension(orig string) string {
 	if translated, ok := mp.dimensionsMap[orig]; ok {
 		return translated
 	}

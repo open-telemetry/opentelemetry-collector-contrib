@@ -32,23 +32,15 @@ type MetadataUpdateClient interface {
 
 func getDimensionUpdateFromMetadata(
 	metadata metadata.MetadataUpdate,
-	metricTranslator *translation.MetricTranslator,
-) *DimensionUpdate {
+	metricsConverter translation.MetricsConverter) *DimensionUpdate {
 	properties, tags := getPropertiesAndTags(metadata)
 
 	return &DimensionUpdate{
-		Name:       translateDimension(metricTranslator, metadata.ResourceIDKey),
+		Name:       metricsConverter.ConvertDimension(metadata.ResourceIDKey),
 		Value:      string(metadata.ResourceID),
 		Properties: properties,
 		Tags:       tags,
 	}
-}
-
-func translateDimension(metricTranslator *translation.MetricTranslator, dim string) string {
-	if metricTranslator != nil {
-		return metricTranslator.TranslateDimension(dim)
-	}
-	return dim
 }
 
 const (
@@ -116,7 +108,7 @@ func getPropertiesAndTags(kmu metadata.MetadataUpdate) (map[string]*string, map[
 func (dc *DimensionClient) PushMetadata(metadata []*metadata.MetadataUpdate) error {
 	var errs []error
 	for _, m := range metadata {
-		dimensionUpdate := getDimensionUpdateFromMetadata(*m, dc.metricTranslator)
+		dimensionUpdate := getDimensionUpdateFromMetadata(*m, dc.metricsConverter)
 
 		if dimensionUpdate.Name == "" || dimensionUpdate.Value == "" {
 			atomic.AddInt64(&dc.TotalInvalidDimensions, int64(1))
