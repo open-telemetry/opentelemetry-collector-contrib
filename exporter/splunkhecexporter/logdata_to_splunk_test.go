@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"math"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -465,9 +466,9 @@ func Test_chunkEvents_Cancel(t *testing.T) {
 
 	cancel()
 
-	// chan chuckCh maybe selected over cancel's Done chan when read immediately.
-	// Reading chuckCh more than once guarantees the selection of Done chan.
-	<-chunkCh
+	// Giving time for chunkCh to close.
+	time.Sleep(time.Millisecond)
+
 	_, ok = <-chunkCh
 
 	assert.True(t, !ok, "Chunk channel closed after cancel")
@@ -515,10 +516,10 @@ func Test_chunkEvents_JSONEncodeError(t *testing.T) {
 		Body().SetDoubleVal(math.Inf(1))
 
 	// JSON Encoding +Inf should trigger unsupported value error
-	config := &Config{}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	chunkCh := logs.chunkEvents(ctx, zap.NewNop(), config)
+
+	chunkCh := logs.chunkEvents(ctx, zap.NewNop(), &Config{})
 
 	// chunk should contain an unsupported value error triggered by JSON Encoding +Inf
 	chunk := <-chunkCh
@@ -530,6 +531,31 @@ func Test_chunkEvents_JSONEncodeError(t *testing.T) {
 	// the error should cause the channel to be closed.
 	_, ok := <-chunkCh
 	assert.True(t, !ok, "Events channel should be closed on error")
+}
+
+func Test_chunkEvents_JSONEncodeError_Cancel(t *testing.T) {
+	logs := testLogs()
+
+	// Setting a log logsIdx body to +Inf
+	logs.ResourceLogs().At(0).
+		InstrumentationLibraryLogs().At(0).
+		Logs().At(0).
+		Body().SetDoubleVal(math.Inf(1))
+
+	// JSON Encoding +Inf should trigger unsupported value error
+	ctx, cancel := context.WithCancel(context.Background())
+
+	chunkCh := logs.chunkEvents(ctx, zap.NewNop(), &Config{})
+
+	cancel()
+
+	// Giving time for chunkCh to close.
+	time.Sleep(time.Millisecond)
+
+	chunk, ok := <-chunkCh
+
+	assert.Nil(t, chunk)
+	assert.True(t, !ok, "Cancel should close events channel")
 }
 
 func makeLog(record pdata.LogRecord) pdata.Logs {
