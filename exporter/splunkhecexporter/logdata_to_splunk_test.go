@@ -404,7 +404,6 @@ func Test_chunkEvents_MaxContentLength_Small(t *testing.T) {
 			numChunks++
 		}
 		assert.Nil(t, chunk.buf)
-		assert.Nil(t, chunk.index)
 		assert.Contains(t, chunk.err.Error(), "log event bytes exceed max content length configured")
 	}
 
@@ -525,7 +524,6 @@ func Test_chunkEvents_JSONEncodeError(t *testing.T) {
 	chunk := <-chunkCh
 
 	assert.Nil(t, chunk.buf)
-	assert.Nil(t, chunk.index)
 	assert.Contains(t, chunk.err.Error(), "json: unsupported value: +Inf")
 
 	// the error should cause the channel to be closed.
