@@ -236,6 +236,27 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Equal(t, "disk", dps[3].Dimensions[2].Key)
 	require.Equal(t, "sda2", dps[3].Dimensions[2].Value)
 
+	// system.network.operations.total new metric calculation
+	dps, ok = metrics["system.disk.operations.total"]
+	require.True(t, ok, "system.network.operations.total metrics not found")
+	require.Equal(t, 4, len(dps))
+	require.Equal(t, 2, len(dps[0].Dimensions))
+
+	// system.network.io.total new metric calculation
+	dps, ok = metrics["system.disk.io.total"]
+	require.True(t, ok, "system.network.io.total metrics not found")
+	require.Equal(t, 2, len(dps))
+	require.Equal(t, 2, len(dps[0].Dimensions))
+	for _, dp := range dps {
+		require.Equal(t, "direction", dp.Dimensions[1].Key)
+		switch dp.Dimensions[1].Value {
+		case "write":
+			require.Equal(t, int64(11e9), *dp.Value.IntValue)
+		case "read":
+			require.Equal(t, int64(3e9), *dp.Value.IntValue)
+		}
+	}
+
 	// disk_ops.total gauge from system.disk.operations cumulative, where is disk_ops.total
 	// is the cumulative across devices and directions.
 	dps, ok = metrics["disk_ops.total"]
@@ -380,6 +401,104 @@ func testMetricsData() pdata.ResourceMetrics {
 							},
 							Value: &metricspb.Point_Int64Value{
 								Int64Value: 6e9,
+							},
+						}},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "system.disk.io",
+					Description: "Disk I/O.",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "host"},
+						{Key: "direction"},
+						{Key: "device"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "read",
+							HasValue: true,
+						}, {
+							Value:    "sda1",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 1e9,
+							},
+						}},
+					},
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "read",
+							HasValue: true,
+						}, {
+							Value:    "sda2",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 2e9,
+							},
+						}},
+					},
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "write",
+							HasValue: true,
+						}, {
+							Value:    "sda1",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 3e9,
+							},
+						}},
+					},
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "write",
+							HasValue: true,
+						}, {
+							Value:    "sda2",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 8e9,
 							},
 						}},
 					},
