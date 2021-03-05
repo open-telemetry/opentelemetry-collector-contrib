@@ -246,6 +246,21 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Equal(t, "host", dps[0].Dimensions[0].Key)
 	require.Equal(t, "host0", dps[0].Dimensions[0].Value)
 
+	// system.network.io.total new metric calculation
+	dps, ok = metrics["system.network.io.total"]
+	require.True(t, ok, "system.network.io.total metrics not found")
+	require.Equal(t, 2, len(dps))
+	require.Equal(t, 4, len(dps[0].Dimensions))
+
+	// system.network.packets.total new metric calculation
+	dps, ok = metrics["system.network.packets.total"]
+	require.True(t, ok, "system.network.packets.total metrics not found")
+	require.Equal(t, 1, len(dps))
+	require.Equal(t, 4, len(dps[0].Dimensions))
+	require.Equal(t, int64(350), *dps[0].Value.IntValue)
+	require.Equal(t, "direction", dps[0].Dimensions[0].Key)
+	require.Equal(t, "receive", dps[0].Dimensions[0].Value)
+
 	// network.total new metric calculation
 	dps, ok = metrics["network.total"]
 	require.True(t, ok, "network.total metrics not found")
@@ -634,6 +649,76 @@ func testMetricsData() pdata.ResourceMetrics {
 							},
 							Value: &metricspb.Point_Int64Value{
 								Int64Value: 6e9,
+							},
+						}},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "system.network.packets",
+					Description: "The number of packets transferred",
+					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "direction"},
+						{Key: "device"},
+						{Key: "host"},
+						{Key: "kubernetes_node"},
+						{Key: "kubernetes_cluster"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "receive",
+							HasValue: true,
+						}, {
+							Value:    "eth0",
+							HasValue: true,
+						}, {
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "node0",
+							HasValue: true,
+						}, {
+							Value:    "cluster0",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 200,
+							},
+						}},
+					},
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "receive",
+							HasValue: true,
+						}, {
+							Value:    "eth1",
+							HasValue: true,
+						}, {
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "node0",
+							HasValue: true,
+						}, {
+							Value:    "cluster0",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 150,
 							},
 						}},
 					},

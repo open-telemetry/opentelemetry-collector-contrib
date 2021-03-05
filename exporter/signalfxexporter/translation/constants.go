@@ -516,7 +516,23 @@ translation_rules:
 
 # Translations to derive Network I/O metrics.
 
-## Calculate network.total.
+## Calculate extra network I/O metrics system.network.packets.total and system.network.io.total.
+- action: copy_metrics
+  mapping:
+    system.network.packets: system.network.packets.total
+    system.network.io: system.network.io.total
+- action: aggregate_metric
+  metric_name: system.network.packets.total
+  aggregation_method: sum
+  without_dimensions:
+  - device
+- action: aggregate_metric
+  metric_name: system.network.io.total
+  aggregation_method: sum
+  without_dimensions:
+  - device
+
+## Calculate extra network.total metric.
 - action: copy_metrics
   mapping:
     system.network.io: network.total
