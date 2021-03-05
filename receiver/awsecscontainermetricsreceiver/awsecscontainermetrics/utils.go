@@ -23,6 +23,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // GenerateDummyMetrics generates two dummy metrics
@@ -46,7 +47,7 @@ func createGaugeIntMetric(i int) *metricspb.Metric {
 			time.Now(),
 			[]string{"label_value_0", "label_value_1"},
 			&metricspb.Point{
-				Timestamp: metricstestutil.Timestamp(ts),
+				Timestamp: timestamppb.New(ts),
 				Value:     &metricspb.Point_Int64Value{Int64Value: int64(i)},
 			},
 		),

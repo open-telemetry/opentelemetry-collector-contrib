@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func Test_sanitizeTagKey(t *testing.T) {
@@ -154,7 +155,7 @@ func Test_metricDataToPlaintext(t *testing.T) {
 	int64Val := int64(123)
 	expectedInt64ValStr := "123"
 	int64Pt := &metricspb.Point{
-		Timestamp: metricstestutil.Timestamp(tsUnix),
+		Timestamp: timestamppb.New(tsUnix),
 		Value:     &metricspb.Point_Int64Value{Int64Value: int64Val},
 	}
 
