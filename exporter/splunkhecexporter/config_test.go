@@ -64,6 +64,7 @@ func TestLoadConfig(t *testing.T) {
 		SourceType:     "otel",
 		Index:          "metrics",
 		MaxConnections: 100,
+		AuthHeader:     "Authorization",
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: 10 * time.Second,
 		},
