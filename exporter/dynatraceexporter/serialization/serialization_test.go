@@ -28,10 +28,13 @@ func TestSerializeIntDataPoints(t *testing.T) {
 	}
 
 	intSlice := pdata.NewIntDataPointSlice()
-	intSlice.Resize(1)
+	intSlice.Resize(2)
 	intPoint := intSlice.At(0)
 	intPoint.SetValue(13)
 	intPoint.SetTimestamp(pdata.Timestamp(100_000_000))
+	intPoint1 := intSlice.At(1)
+	intPoint1.SetValue(13)
+	intPoint1.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	labelIntSlice := pdata.NewIntDataPointSlice()
 	labelIntSlice.Resize(1)
@@ -59,7 +62,7 @@ func TestSerializeIntDataPoints(t *testing.T) {
 				data: intSlice,
 				tags: []string{},
 			},
-			want: []string{"my_int_gauge 13 100"},
+			want: []string{"my_int_gauge 13 100", "my_int_gauge 13 100"},
 		},
 		{
 			name: "Serialize integer data points with tags",
@@ -68,7 +71,7 @@ func TestSerializeIntDataPoints(t *testing.T) {
 				data: intSlice,
 				tags: []string{"test_key=testval"},
 			},
-			want: []string{"my_int_gauge_with_tags,test_key=testval 13 100"},
+			want: []string{"my_int_gauge_with_tags,test_key=testval 13 100", "my_int_gauge_with_tags,test_key=testval 13 100"},
 		},
 		{
 			name: "Serialize integer data points with labels",
@@ -226,7 +229,7 @@ func TestSerializeDoubleHistogramMetrics(t *testing.T) {
 				data: zeroDoubleHistogramSlice,
 				tags: []string{},
 			},
-			want: []string{""},
+			want: []string{},
 		},
 	}
 	for _, tt := range tests {
@@ -305,7 +308,7 @@ func TestSerializeIntHistogramMetrics(t *testing.T) {
 				data: zeroIntHistogramSlice,
 				tags: []string{},
 			},
-			want: []string{""},
+			want: []string{},
 		},
 	}
 	for _, tt := range tests {
