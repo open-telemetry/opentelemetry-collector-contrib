@@ -55,26 +55,26 @@ func NewInputConfig(operatorID string) *InputConfig {
 
 // InputConfig is the configuration of a file input operator
 type InputConfig struct {
-	helper.InputConfig `yaml:",inline"`
+	helper.InputConfig `mapstructure:",squash" yaml:",inline"`
 
-	Include []string `json:"include,omitempty" yaml:"include,omitempty"`
-	Exclude []string `json:"exclude,omitempty" yaml:"exclude,omitempty"`
+	Include []string `mapstructure:"include,omitempty" json:"include,omitempty" yaml:"include,omitempty"`
+	Exclude []string `mapstructure:"exclude,omitempty" json:"exclude,omitempty" yaml:"exclude,omitempty"`
 
-	PollInterval       helper.Duration  `json:"poll_interval,omitempty"        yaml:"poll_interval,omitempty"`
-	Multiline          *MultilineConfig `json:"multiline,omitempty"            yaml:"multiline,omitempty"`
-	IncludeFileName    bool             `json:"include_file_name,omitempty"    yaml:"include_file_name,omitempty"`
-	IncludeFilePath    bool             `json:"include_file_path,omitempty"    yaml:"include_file_path,omitempty"`
-	StartAt            string           `json:"start_at,omitempty"             yaml:"start_at,omitempty"`
-	FingerprintSize    helper.ByteSize  `json:"fingerprint_size,omitempty"     yaml:"fingerprint_size,omitempty"`
-	MaxLogSize         helper.ByteSize  `json:"max_log_size,omitempty"         yaml:"max_log_size,omitempty"`
-	MaxConcurrentFiles int              `json:"max_concurrent_files,omitempty" yaml:"max_concurrent_files,omitempty"`
-	Encoding           string           `json:"encoding,omitempty"             yaml:"encoding,omitempty"`
+	PollInterval       helper.Duration  `mapstructure:"poll_interval,omitempty"         json:"poll_interval,omitempty"        yaml:"poll_interval,omitempty"`
+	Multiline          *MultilineConfig `mapstructure:"multiline,omitempty"             json:"multiline,omitempty"            yaml:"multiline,omitempty"`
+	IncludeFileName    bool             `mapstructure:"include_file_name,omitempty"     json:"include_file_name,omitempty"    yaml:"include_file_name,omitempty"`
+	IncludeFilePath    bool             `mapstructure:"include_file_path,omitempty"     json:"include_file_path,omitempty"    yaml:"include_file_path,omitempty"`
+	StartAt            string           `mapstructure:"start_at,omitempty"              json:"start_at,omitempty"             yaml:"start_at,omitempty"`
+	FingerprintSize    helper.ByteSize  `mapstructure:"fingerprint_size,omitempty"      json:"fingerprint_size,omitempty"     yaml:"fingerprint_size,omitempty"`
+	MaxLogSize         helper.ByteSize  `mapstructure:"max_log_size,omitempty"          json:"max_log_size,omitempty"         yaml:"max_log_size,omitempty"`
+	MaxConcurrentFiles int              `mapstructure:"max_concurrent_files,omitempty"  json:"max_concurrent_files,omitempty" yaml:"max_concurrent_files,omitempty"`
+	Encoding           string           `mapstructure:"encoding,omitempty"              json:"encoding,omitempty"             yaml:"encoding,omitempty"`
 }
 
 // MultilineConfig is the configuration a multiline operation
 type MultilineConfig struct {
-	LineStartPattern string `json:"line_start_pattern" yaml:"line_start_pattern"`
-	LineEndPattern   string `json:"line_end_pattern"   yaml:"line_end_pattern"`
+	LineStartPattern string `mapstructure:"line_start_pattern"  json:"line_start_pattern" yaml:"line_start_pattern"`
+	LineEndPattern   string `mapstructure:"line_end_pattern"    json:"line_end_pattern"   yaml:"line_end_pattern"`
 }
 
 // Build will build a file input operator from the supplied configuration

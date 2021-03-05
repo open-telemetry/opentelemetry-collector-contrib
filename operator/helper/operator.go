@@ -30,8 +30,8 @@ func NewBasicConfig(operatorID, operatorType string) BasicConfig {
 
 // BasicConfig provides a basic implemention for an operator config.
 type BasicConfig struct {
-	OperatorID   string `json:"id"   yaml:"id"`
-	OperatorType string `json:"type" yaml:"type"`
+	OperatorID   string `mapstructure:"id"   json:"id"   yaml:"id"`
+	OperatorType string `mapstructure:"type" json:"type" yaml:"type"`
 }
 
 // ID will return the operator id.

@@ -27,7 +27,7 @@ func NewLabelerConfig() LabelerConfig {
 
 // LabelerConfig is the configuration of a labeler
 type LabelerConfig struct {
-	Labels map[string]ExprStringConfig `json:"labels" yaml:"labels"`
+	Labels map[string]ExprStringConfig `mapstructure:"labels" json:"labels" yaml:"labels"`
 }
 
 // Build will build a labeler from the supplied configuration
