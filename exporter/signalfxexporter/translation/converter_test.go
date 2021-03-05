@@ -912,3 +912,61 @@ func TestNewMetricsConverter(t *testing.T) {
 		})
 	}
 }
+
+func TestMetricsConverter_ConvertDimension(t *testing.T) {
+	type fields struct {
+		metricTranslator        *MetricTranslator
+		nonAlphanumericDimChars string
+	}
+	type args struct {
+		dim string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   string
+	}{
+		{
+			name: "No translations",
+			fields: fields{
+				metricTranslator:        nil,
+				nonAlphanumericDimChars: "_-",
+			},
+			args: args{
+				dim: "d.i.m",
+			},
+			want: "d_i_m",
+		},
+		{
+			name: "With translations",
+			fields: fields{
+				metricTranslator: func() *MetricTranslator {
+					t, _ := NewMetricTranslator([]Rule{
+						{
+							Action: ActionRenameDimensionKeys,
+							Mapping: map[string]string{
+								"d.i.m": "di.m",
+							},
+						},
+					}, 0)
+					return t
+				}(),
+				nonAlphanumericDimChars: "_-",
+			},
+			args: args{
+				dim: "d.i.m",
+			},
+			want: "di_m",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, err := NewMetricsConverter(zap.NewNop(), tt.fields.metricTranslator, nil, nil, tt.fields.nonAlphanumericDimChars)
+			require.NoError(t, err)
+			if got := c.ConvertDimension(tt.args.dim); got != tt.want {
+				t.Errorf("ConvertDimension() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
