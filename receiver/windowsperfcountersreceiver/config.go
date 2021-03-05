@@ -17,7 +17,7 @@ package windowsperfcountersreceiver
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
@@ -71,5 +71,5 @@ func (c *Config) validate() error {
 		errors = append(errors, fmt.Errorf("must specify object name for all perf counters"))
 	}
 
-	return componenterror.CombineErrors(errors)
+	return consumererror.CombineErrors(errors)
 }

@@ -24,7 +24,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/cumulative"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -220,7 +220,7 @@ func (t *metricTransformer) Metric(metric *metricspb.Metric) ([]telemetry.Metric
 			}
 		}
 	}
-	return metrics, componenterror.CombineErrors(errs)
+	return metrics, consumererror.CombineErrors(errs)
 }
 
 func (t *metricTransformer) MetricAttributes(metric *metricspb.Metric) map[string]interface{} {

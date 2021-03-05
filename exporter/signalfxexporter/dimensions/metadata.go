@@ -19,7 +19,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
@@ -120,5 +120,5 @@ func (dc *DimensionClient) PushMetadata(metadata []*metadata.MetadataUpdate) err
 		}
 	}
 
-	return componenterror.CombineErrors(errs)
+	return consumererror.CombineErrors(errs)
 }

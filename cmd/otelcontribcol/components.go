@@ -16,7 +16,7 @@ package main
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
@@ -179,5 +179,5 @@ func components() (component.Factories, error) {
 		errs = append(errs, err)
 	}
 
-	return factories, componenterror.CombineErrors(errs)
+	return factories, consumererror.CombineErrors(errs)
 }

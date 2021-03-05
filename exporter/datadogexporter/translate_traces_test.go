@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 
@@ -252,7 +251,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, "End-To-End Here", datadogPayload.Traces[0].Spans[0].Resource)
 
 	// ensure that span.name defaults to string representing instrumentation library if present
-	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", datadogPayload.Traces[0].Spans[0].Meta[tracetranslator.TagInstrumentationName], strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), datadogPayload.Traces[0].Spans[0].Name)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", datadogPayload.Traces[0].Spans[0].Meta[conventions.InstrumentationLibraryName], strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), datadogPayload.Traces[0].Spans[0].Name)
 
 	// ensure that span.type is based on otlp span.kind
 	assert.Equal(t, "web", datadogPayload.Traces[0].Spans[0].Type)
@@ -789,7 +788,7 @@ func TestSpanNameTranslation(t *testing.T) {
 	span.SetKind(pdata.SpanKindSERVER)
 
 	ddIlTags := map[string]string{
-		fmt.Sprintf(tracetranslator.TagInstrumentationName): "il_name",
+		fmt.Sprintf(conventions.InstrumentationLibraryName): "il_name",
 	}
 
 	ddNoIlTags := map[string]string{
@@ -876,7 +875,7 @@ func TestILTagsExctraction(t *testing.T) {
 
 	extractInstrumentationLibraryTags(il, tags)
 
-	assert.Equal(t, "", tags[tracetranslator.TagInstrumentationName])
+	assert.Equal(t, "", tags[conventions.InstrumentationLibraryName])
 
 }
 
