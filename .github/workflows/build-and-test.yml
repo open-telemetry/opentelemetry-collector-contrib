@@ -30,10 +30,8 @@ jobs:
         run: make install-tools
       - name: Add Permissions to Tool Binaries
         run: chmod -R +x ~/go/bin
-      - name: Vet
-        run: make vet
-      - name: Lint
-        run: make lint
+      - name: Check
+        run: make ci-check
 
   test-linux:
     runs-on: ubuntu-latest
