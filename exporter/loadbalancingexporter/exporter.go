@@ -25,8 +25,8 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.uber.org/zap"
@@ -198,7 +198,7 @@ func (e *exporterImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error 
 		}
 	}
 
-	return componenterror.CombineErrors(errors)
+	return consumererror.CombineErrors(errors)
 }
 
 func (e *exporterImp) consumeTrace(ctx context.Context, td pdata.Traces) error {

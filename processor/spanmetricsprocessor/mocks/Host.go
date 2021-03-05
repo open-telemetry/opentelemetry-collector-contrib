@@ -44,15 +44,15 @@ func (_m *Host) GetExporters() map[configmodels.DataType]map[configmodels.Export
 }
 
 // GetExtensions provides a mock function with given fields:
-func (_m *Host) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
+func (_m *Host) GetExtensions() map[configmodels.Extension]component.Extension {
 	ret := _m.Called()
 
-	var r0 map[configmodels.Extension]component.ServiceExtension
-	if rf, ok := ret.Get(0).(func() map[configmodels.Extension]component.ServiceExtension); ok {
+	var r0 map[configmodels.Extension]component.Extension
+	if rf, ok := ret.Get(0).(func() map[configmodels.Extension]component.Extension); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[configmodels.Extension]component.ServiceExtension)
+			r0 = ret.Get(0).(map[configmodels.Extension]component.Extension)
 		}
 	}
 

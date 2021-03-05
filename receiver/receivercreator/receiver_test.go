@@ -70,7 +70,7 @@ func (m *mockObserver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-var _ component.ServiceExtension = (*mockObserver)(nil)
+var _ component.Extension = (*mockObserver)(nil)
 
 func (m *mockObserver) ListAndWatch(notify observer.Notify) {
 	notify.OnAdd([]observer.Endpoint{portEndpoint})
@@ -80,7 +80,7 @@ var _ observer.Observable = (*mockObserver)(nil)
 
 func TestMockedEndToEnd(t *testing.T) {
 	host, cfg := exampleCreatorFactory(t)
-	host.extensions = map[configmodels.Extension]component.ServiceExtension{
+	host.extensions = map[configmodels.Extension]component.Extension{
 		&configmodels.ExtensionSettings{
 			TypeVal: "mock_observer",
 			NameVal: "mock_observer",

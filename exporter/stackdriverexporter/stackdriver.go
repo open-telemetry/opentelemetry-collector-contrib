@@ -26,7 +26,7 @@ import (
 	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -295,7 +295,7 @@ func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) (int, 
 	if err != nil {
 		errs = append(errs, err)
 	}
-	return numSpans - len(spans), componenterror.CombineErrors(errs)
+	return numSpans - len(spans), consumererror.CombineErrors(errs)
 }
 
 func numPoints(metrics []*metricspb.Metric) int {
