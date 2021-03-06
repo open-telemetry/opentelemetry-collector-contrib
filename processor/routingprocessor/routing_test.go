@@ -138,6 +138,7 @@ func TestRegisterExportersForValidRoute(t *testing.T) {
 	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), creationParams, otlpConfig)
 	require.NoError(t, err)
 	host := &mockHost{
+		Host: componenttest.NewNopHost(),
 		GetExportersFunc: func() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
 			return map[configmodels.DataType]map[configmodels.Exporter]component.Exporter{
 				configmodels.TracesDataType: {
@@ -166,7 +167,9 @@ func TestErrorRequestedExporterNotFoundForRoute(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	host := &mockHost{}
+	host := &mockHost{
+		Host: componenttest.NewNopHost(),
+	}
 
 	// test
 	err = exp.Start(context.Background(), host)
@@ -203,6 +206,7 @@ func TestErrorRequestedExporterNotFoundForDefaultRoute(t *testing.T) {
 	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), creationParams, otlpConfig)
 	require.NoError(t, err)
 	host := &mockHost{
+		Host: componenttest.NewNopHost(),
 		GetExportersFunc: func() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
 			return map[configmodels.DataType]map[configmodels.Exporter]component.Exporter{
 				configmodels.TracesDataType: {
@@ -240,6 +244,7 @@ func TestInvalidExporter(t *testing.T) {
 		},
 	}
 	host := &mockHost{
+		Host: componenttest.NewNopHost(),
 		GetExportersFunc: func() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
 			return map[configmodels.DataType]map[configmodels.Exporter]component.Exporter{
 				configmodels.TracesDataType: {
@@ -419,7 +424,7 @@ func TestProcessorCapabilities(t *testing.T) {
 }
 
 type mockHost struct {
-	componenttest.NopHost
+	component.Host
 	GetExportersFunc func() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter
 }
 
@@ -427,7 +432,7 @@ func (m *mockHost) GetExporters() map[configmodels.DataType]map[configmodels.Exp
 	if m.GetExportersFunc != nil {
 		return m.GetExportersFunc()
 	}
-	return m.NopHost.GetExporters()
+	return m.Host.GetExporters()
 }
 
 type mockComponent struct{}

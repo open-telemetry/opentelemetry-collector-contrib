@@ -96,7 +96,7 @@ func (n nopHostWithExporters) GetFactory(component.Kind, configmodels.Type) comp
 	return nil
 }
 
-func (n nopHostWithExporters) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
+func (n nopHostWithExporters) GetExtensions() map[configmodels.Extension]component.Extension {
 	return nil
 }
 

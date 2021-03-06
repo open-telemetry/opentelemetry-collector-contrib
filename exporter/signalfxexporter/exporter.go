@@ -125,7 +125,7 @@ func newSignalFxExporter(
 			// buffer a fixed number of updates. Might also be a good candidate
 			// to make configurable.
 			PropertiesMaxBuffered: 10000,
-			MetricTranslator:      options.metricTranslator,
+			MetricsConverter:      *converter,
 		})
 	dimClient.Start()
 

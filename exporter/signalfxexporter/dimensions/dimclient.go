@@ -72,7 +72,7 @@ type DimensionClient struct {
 	TotalSuccessfulUpdates       int64
 	logUpdates                   bool
 	logger                       *zap.Logger
-	metricTranslator             *translation.MetricTranslator
+	metricsConverter             translation.MetricsConverter
 }
 
 type queuedDimension struct {
@@ -87,12 +87,11 @@ type DimensionClientOptions struct {
 	Logger                *zap.Logger
 	SendDelay             int
 	PropertiesMaxBuffered int
-	MetricTranslator      *translation.MetricTranslator
+	MetricsConverter      translation.MetricsConverter
 }
 
 // NewDimensionClient returns a new client
 func NewDimensionClient(ctx context.Context, options DimensionClientOptions) *DimensionClient {
-
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 		Transport: &http.Transport{
@@ -122,7 +121,7 @@ func NewDimensionClient(ctx context.Context, options DimensionClientOptions) *Di
 		now:              time.Now,
 		logger:           options.Logger,
 		logUpdates:       options.LogUpdates,
-		metricTranslator: options.MetricTranslator,
+		metricsConverter: options.MetricsConverter,
 	}
 }
 

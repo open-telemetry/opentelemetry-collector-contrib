@@ -284,7 +284,8 @@ func TestSpanWithNotEnoughHTTPRequestURLAttributes(t *testing.T) {
 	assert.Equal(t, "192.168.15.32", *httpData.Request.ClientIP)
 	assert.Equal(t, "GET", *httpData.Request.Method)
 	assert.Equal(t, "PostmanRuntime/7.21.0", *httpData.Request.UserAgent)
-	assert.Equal(t, int64(12452), *httpData.Response.ContentLength)
+	contentLength := *httpData.Response.ContentLength.(*int64)
+	assert.Equal(t, int64(12452), contentLength)
 	assert.Equal(t, int64(200), *httpData.Response.Status)
 	assert.NotNil(t, filtered)
 }

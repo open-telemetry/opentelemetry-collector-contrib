@@ -411,3 +411,11 @@ func timestampToSignalFx(ts pdata.Timestamp) int64 {
 	// Convert nanosecs to millisecs.
 	return int64(ts) / 1e6
 }
+
+func (c *MetricsConverter) ConvertDimension(dim string) string {
+	res := dim
+	if c.metricTranslator != nil {
+		res = c.metricTranslator.translateDimension(dim)
+	}
+	return filterKeyChars(res, c.nonAlphanumericDimChars)
+}

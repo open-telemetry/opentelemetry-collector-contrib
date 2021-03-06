@@ -17,8 +17,8 @@ package batchperresourceattr
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -66,7 +66,7 @@ func (bt *batchTraces) ConsumeTraces(ctx context.Context, td pdata.Traces) error
 			errs = append(errs, err)
 		}
 	}
-	return componenterror.CombineErrors(errs)
+	return consumererror.CombineErrors(errs)
 }
 
 type batchMetrics struct {
@@ -113,7 +113,7 @@ func (bt *batchMetrics) ConsumeMetrics(ctx context.Context, td pdata.Metrics) er
 			errs = append(errs, err)
 		}
 	}
-	return componenterror.CombineErrors(errs)
+	return consumererror.CombineErrors(errs)
 }
 
 type batchLogs struct {
@@ -160,5 +160,5 @@ func (bt *batchLogs) ConsumeLogs(ctx context.Context, td pdata.Logs) error {
 			errs = append(errs, err)
 		}
 	}
-	return componenterror.CombineErrors(errs)
+	return consumererror.CombineErrors(errs)
 }

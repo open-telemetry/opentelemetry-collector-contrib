@@ -1923,14 +1923,14 @@ func TestTestTranslateDimension(t *testing.T) {
 	}, 1)
 	require.NoError(t, err)
 
-	assert.Equal(t, "new_dimension", mt.TranslateDimension("old_dimension"))
-	assert.Equal(t, "new.dimension", mt.TranslateDimension("old.dimension"))
-	assert.Equal(t, "another_dimension", mt.TranslateDimension("another_dimension"))
+	assert.Equal(t, "new_dimension", mt.translateDimension("old_dimension"))
+	assert.Equal(t, "new.dimension", mt.translateDimension("old.dimension"))
+	assert.Equal(t, "another_dimension", mt.translateDimension("another_dimension"))
 
 	// Test no rename_dimension_keys translation rule
 	mt, err = NewMetricTranslator([]Rule{}, 1)
 	require.NoError(t, err)
-	assert.Equal(t, "old_dimension", mt.TranslateDimension("old_dimension"))
+	assert.Equal(t, "old_dimension", mt.translateDimension("old_dimension"))
 }
 
 func TestNewCalculateNewMetricErrors(t *testing.T) {

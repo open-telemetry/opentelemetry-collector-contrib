@@ -27,9 +27,9 @@ import (
 )
 
 type mockHostFactories struct {
-	componenttest.NopHost
+	component.Host
 	factories  component.Factories
-	extensions map[configmodels.Extension]component.ServiceExtension
+	extensions map[configmodels.Extension]component.Extension
 }
 
 // GetFactory of the specified kind. Returns the factory for a component type.
@@ -47,7 +47,7 @@ func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType confi
 	return nil
 }
 
-func (mh *mockHostFactories) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
+func (mh *mockHostFactories) GetExtensions() map[configmodels.Extension]component.Extension {
 	return mh.extensions
 }
 
@@ -66,7 +66,7 @@ func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *configmodels.Conf
 
 	assert.Equal(t, len(cfg.Receivers), 2)
 
-	return &mockHostFactories{factories: factories}, cfg
+	return &mockHostFactories{Host: componenttest.NewNopHost(), factories: factories}, cfg
 }
 
 func TestLoadConfig(t *testing.T) {

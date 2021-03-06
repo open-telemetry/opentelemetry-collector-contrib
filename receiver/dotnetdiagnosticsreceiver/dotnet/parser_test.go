@@ -15,6 +15,7 @@
 package dotnet
 
 import (
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -40,4 +41,61 @@ func TestParser(t *testing.T) {
 	require.NoError(t, err)
 	err = p.ParseNettrace()
 	require.NoError(t, err)
+}
+
+func TestParser_TestData(t *testing.T) {
+	data, err := network.ReadBlobData(path.Join("..", "testdata"), 16)
+	require.NoError(t, err)
+	rw := network.NewBlobReader(data)
+	parser := NewParser(rw, zap.NewNop())
+	err = parser.ParseIPC()
+	require.NoError(t, err)
+	err = parser.ParseNettrace()
+	require.NoError(t, err)
+	msgs := fieldMetadataMap{}
+	for i := 0; i < 16; i++ {
+		err = parser.parseBlock(msgs)
+		require.NoError(t, err)
+	}
+}
+
+func TestParser_TestData_Errors(t *testing.T) {
+	data, err := network.ReadBlobData(path.Join("..", "testdata"), 16)
+	require.NoError(t, err)
+	// beginPrivateObject
+	testParseBlockError(t, data, 60, 0)
+	// parseSerializationType
+	testParseBlockError(t, data, 60, 1)
+	// parseTraceMessage
+	testParseBlockError(t, data, 60, 8)
+	// parseMetadataBlock
+	testParseBlockError(t, data, 130, 8)
+	// parseStackBlock
+	testParseBlockError(t, data, 946, 8)
+	// parseEventBlock
+	testParseBlockError(t, data, 1105, 8)
+	// parseSPBlock
+	testParseBlockError(t, data, 36847, 8)
+}
+
+func testParseBlockError(t *testing.T, data [][]byte, offset, errIdx int) {
+	err := testParseBlock(t, data, offset, errIdx)
+	require.Error(t, err)
+}
+
+func testParseBlock(t *testing.T, data [][]byte, offset, errIdx int) error {
+	rw := network.NewBlobReader(data)
+	reader := network.NewMultiReader(rw)
+	err := reader.Seek(offset)
+	require.NoError(t, err)
+	rw.SetReadError(errIdx)
+	msgs := fieldMetadataMap{}
+	parser := &Parser{r: reader, logger: zap.NewNop()}
+	for i := 0; i < 16; i++ {
+		err := parser.parseBlock(msgs)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

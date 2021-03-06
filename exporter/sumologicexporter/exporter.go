@@ -21,7 +21,6 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -225,7 +224,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) (i
 			logs.Append(log)
 		}
 
-		return len(droppedRecords), consumererror.PartialLogsError(componenterror.CombineErrors(errs), droppedLogs)
+		return len(droppedRecords), consumererror.PartialLogsError(consumererror.CombineErrors(errs), droppedLogs)
 	}
 
 	return 0, nil
@@ -317,7 +316,7 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metri
 			ilms.At(0).Metrics().Append(record.metric)
 		}
 
-		return len(droppedRecords), consumererror.PartialMetricsError(componenterror.CombineErrors(errs), droppedMetrics)
+		return len(droppedRecords), consumererror.PartialMetricsError(consumererror.CombineErrors(errs), droppedMetrics)
 	}
 
 	return 0, nil
