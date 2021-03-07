@@ -1,6 +1,6 @@
-module github.com/gramidt/opentelemetry-collector-contrib/exporter/f5cloudexporter
+module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter
 
-go 1.15
+go 1.14
 
 require (
 	github.com/stretchr/testify v1.7.0
