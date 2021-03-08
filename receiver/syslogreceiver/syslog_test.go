@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
@@ -135,6 +136,32 @@ func testdataUDPConfig() *SysLogConfig {
 			"protocol": "rfc5424",
 		},
 	}
+}
+
+func TestDecodeInputConfigFailure(t *testing.T) {
+	params := component.ReceiverCreateParams{
+		Logger: zap.NewNop(),
+	}
+	sink := new(consumertest.LogsSink)
+	factory := NewFactory()
+	badCfg := &SysLogConfig{
+		BaseConfig: stanza.BaseConfig{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: "syslog",
+				NameVal: "syslog",
+			},
+			Operators: stanza.OperatorConfigs{},
+		},
+		Input: stanza.InputConfig{
+			"tcp": map[string]interface{}{
+				"max_buffer_size": "0.1.0.1-",
+			},
+			"protocol": "rfc5424",
+		},
+	}
+	receiver, err := factory.CreateLogsReceiver(context.Background(), params, badCfg, sink)
+	require.Error(t, err, "receiver creation should fail if input config isn't valid")
+	require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
 }
 
 func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
