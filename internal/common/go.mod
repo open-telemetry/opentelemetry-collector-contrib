@@ -7,7 +7,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.0
 	github.com/containerd/containerd v1.3.6 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
-	github.com/docker/docker v20.10.4+incompatible
+	github.com/docker/docker v20.10.5+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
