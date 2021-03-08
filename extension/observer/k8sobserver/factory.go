@@ -63,7 +63,7 @@ func (f *Factory) CreateExtension(
 	ctx context.Context,
 	params component.ExtensionCreateParams,
 	cfg configmodels.Extension,
-) (component.ServiceExtension, error) {
+) (component.Extension, error) {
 	config := cfg.(*Config)
 
 	clientset, err := f.createK8sClientset(config.APIConfig)

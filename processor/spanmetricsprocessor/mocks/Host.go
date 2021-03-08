@@ -28,15 +28,15 @@ type Host struct {
 }
 
 // GetExporters provides a mock function with given fields:
-func (_m *Host) GetExporters() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
+func (_m *Host) GetExporters() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter {
 	ret := _m.Called()
 
-	var r0 map[configmodels.DataType]map[configmodels.Exporter]component.Exporter
-	if rf, ok := ret.Get(0).(func() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter); ok {
+	var r0 map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter
+	if rf, ok := ret.Get(0).(func() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[configmodels.DataType]map[configmodels.Exporter]component.Exporter)
+			r0 = ret.Get(0).(map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter)
 		}
 	}
 
@@ -44,15 +44,15 @@ func (_m *Host) GetExporters() map[configmodels.DataType]map[configmodels.Export
 }
 
 // GetExtensions provides a mock function with given fields:
-func (_m *Host) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
+func (_m *Host) GetExtensions() map[configmodels.NamedEntity]component.Extension {
 	ret := _m.Called()
 
-	var r0 map[configmodels.Extension]component.ServiceExtension
-	if rf, ok := ret.Get(0).(func() map[configmodels.Extension]component.ServiceExtension); ok {
+	var r0 map[configmodels.NamedEntity]component.Extension
+	if rf, ok := ret.Get(0).(func() map[configmodels.NamedEntity]component.Extension); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[configmodels.Extension]component.ServiceExtension)
+			r0 = ret.Get(0).(map[configmodels.NamedEntity]component.Extension)
 		}
 	}
 

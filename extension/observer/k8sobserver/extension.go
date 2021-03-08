@@ -42,7 +42,7 @@ func (k *k8sObserver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-var _ (component.ServiceExtension) = (*k8sObserver)(nil)
+var _ (component.Extension) = (*k8sObserver)(nil)
 
 // ListAndWatch notifies watcher with the current state and sends subsequent state changes.
 func (k *k8sObserver) ListAndWatch(listener observer.Notify) {
@@ -50,7 +50,7 @@ func (k *k8sObserver) ListAndWatch(listener observer.Notify) {
 }
 
 // newObserver creates a new k8s observer extension.
-func newObserver(logger *zap.Logger, config *Config, listWatch cache.ListerWatcher) (component.ServiceExtension, error) {
+func newObserver(logger *zap.Logger, config *Config, listWatch cache.ListerWatcher) (component.Extension, error) {
 	informer := cache.NewSharedInformer(listWatch, &v1.Pod{}, 0)
 	return &k8sObserver{logger: logger, informer: informer, stop: make(chan struct{}), config: config}, nil
 }

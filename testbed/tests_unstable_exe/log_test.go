@@ -21,65 +21,14 @@ import (
 	"testing"
 
 	"go.opentelemetry.io/collector/testbed/testbed"
-	scenarios "go.opentelemetry.io/collector/testbed/tests"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
 )
 
 var contribPerfResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
 
 // TestMain is used to initiate setup, execution and tear down of testbed.
 func TestMain(m *testing.M) {
-	// These tests are using the unstable executable.
-	testbed.GlobalConfig.DefaultAgentExeRelativeFile = "../../bin/otelcontribcol_unstable_{{.GOOS}}_{{.GOARCH}}"
+	testbed.GlobalConfig.DefaultAgentExeRelativeFile = "../../bin/otelcontribcol_{{.GOOS}}_{{.GOARCH}}"
 	testbed.DoTestMain(m, contribPerfResultsSummary)
 }
 
-func TestLog10kDPS(t *testing.T) {
-	tests := []struct {
-		name         string
-		sender       testbed.DataSender
-		receiver     testbed.DataReceiver
-		resourceSpec testbed.ResourceSpec
-		extensions   map[string]string
-	}{
-		{
-			name:     "OTLP",
-			sender:   testbed.NewOTLPLogsDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 20,
-				ExpectedMaxRAM: 80,
-			},
-		},
-		{
-			name:     "filelog",
-			sender:   datasenders.NewFileLogWriter(),
-			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 50,
-				ExpectedMaxRAM: 150,
-			},
-		},
-	}
-
-	processors := map[string]string{
-		"batch": `
-  batch:
-`,
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			scenarios.Scenario10kItemsPerSecond(
-				t,
-				test.sender,
-				test.receiver,
-				test.resourceSpec,
-				contribPerfResultsSummary,
-				processors,
-				test.extensions,
-			)
-		})
-	}
-}
+// This file is left with no tests as a placeholder for future unstable exe tests
