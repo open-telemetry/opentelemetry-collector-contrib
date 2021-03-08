@@ -353,6 +353,40 @@ func Test_chunkEvents_MaxContentLength_0(t *testing.T) {
 	assert.Equal(t, 1, numChunks)
 }
 
+func Test_chunkEvents_MaxContentLength_0_Cancel(t *testing.T) {
+	logs := testLogs()
+
+	_, _, events := jsonEncodeEventsBytes(logs, &Config{})
+
+	eventsLength := 0
+	for _, event := range events {
+		eventsLength += len(event)
+	}
+
+	// Chunk max content length 0 is interpreted as unlimited length.
+	chunkLength := 0
+	config := Config{MaxContentLength: chunkLength}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	chunkCh := logs.chunkEvents(ctx, zap.NewNop(), &config)
+
+	cancel()
+
+	// Giving time for chunkCh to close.
+	time.Sleep(time.Millisecond)
+
+	numChunks := 0
+
+	for chunk := range chunkCh {
+		assert.Nil(t, chunk.buf)
+		assert.Nil(t, chunk.err)
+		numChunks++
+	}
+
+	assert.Equal(t, 0, numChunks)
+}
+
 func Test_chunkEvents_MaxContentLength_Negative(t *testing.T) {
 	logs := testLogs()
 
@@ -383,12 +417,12 @@ func Test_chunkEvents_MaxContentLength_Negative(t *testing.T) {
 	assert.Equal(t, 1, numChunks)
 }
 
-func Test_chunkEvents_MaxContentLength_Small(t *testing.T) {
+func Test_chunkEvents_MaxContentLength_Small_Error(t *testing.T) {
 	logs := testLogs()
 
 	min, _, _ := jsonEncodeEventsBytes(logs, &Config{})
 
-	// Chunk max content length less than all events.
+	// Configuring max content length to be smaller than event lengths.
 	chunkLength := min - 1
 	config := Config{MaxContentLength: chunkLength}
 
@@ -405,6 +439,37 @@ func Test_chunkEvents_MaxContentLength_Small(t *testing.T) {
 		}
 		assert.Nil(t, chunk.buf)
 		assert.Contains(t, chunk.err.Error(), "log event bytes exceed max content length configured")
+	}
+
+	assert.Equal(t, 0, numChunks)
+}
+
+func Test_chunkEvents_MaxContentLength_Small_Error_Cancel(t *testing.T) {
+	logs := testLogs()
+
+	min, _, _ := jsonEncodeEventsBytes(logs, &Config{})
+
+	// Configuring max content length to be smaller than event lengths.
+	chunkLength := min - 1
+	config := Config{MaxContentLength: chunkLength}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	chunkCh := logs.chunkEvents(ctx, zap.NewNop(), &config)
+
+	cancel()
+
+	// Giving time for chunkCh to close.
+	time.Sleep(time.Millisecond)
+
+	numChunks := 0
+
+	for chunk := range chunkCh {
+		if chunk.err == nil {
+			numChunks++
+		}
+		assert.Nil(t, chunk.buf)
+		assert.Nil(t, chunk.err)
 	}
 
 	assert.Equal(t, 0, numChunks)
@@ -442,7 +507,7 @@ func Test_chunkEvents_MaxContentLength_1EventPerChunk(t *testing.T) {
 	assert.Equal(t, numEvents, numChunks)
 }
 
-func Test_chunkEvents_Cancel(t *testing.T) {
+func Test_chunkEvents_MaxContentLength_1EventPerChunk_Cancel(t *testing.T) {
 	logs := testLogs()
 
 	min, max, events := jsonEncodeEventsBytes(logs, &Config{})
