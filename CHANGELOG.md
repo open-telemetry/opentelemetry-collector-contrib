@@ -4,10 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+
+## [0.16.0] - 2020-03-08
 
 ### Changed
-- Rename `entry.Label` to `entry.Attribute`
+- `syslog_input` config embeds `syslog_parser` at the top level, rather than under a `syslog` key ([PR43](https://github.com/open-telemetry/opentelemetry-log-collection/pull/43))
+- Rename `entry.Label` to `entry.Attribute` ([PR51](https://github.com/open-telemetry/opentelemetry-log-collection/pull/51))
+
+### Removed
+- Several unused packages, including `flusher`, `buffer`, `k8smetadata`, `hostmetadata`, and `ratelimit` ([PR53](https://github.com/open-telemetry/opentelemetry-log-collection/pull/53))
 
 ## [0.15.1] - 2020-03-01
 
