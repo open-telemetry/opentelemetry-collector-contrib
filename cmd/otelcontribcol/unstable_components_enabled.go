@@ -19,11 +19,11 @@ package main
 import (
 	"go.opentelemetry.io/collector/component"
 
-  "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 )
 
 func extraReceivers() []component.ReceiverFactory {
 	return []component.ReceiverFactory{
 		syslogreceiver.NewFactory(),
 	}
-)
+}
