@@ -270,3 +270,49 @@ func NewKubernetesCRIContainerdWriter() *FileLogK8sWriter {
           - remove: uid
   `)
 }
+
+// NewKubernetesCRIContainerdNoAttributesOpsWriter returns FileLogK8sWriter with configuration
+// to parse only CRI-Containerd kubernetes logs without reformatting attributes
+func NewKubernetesCRIContainerdNoAttributesOpsWriter() *FileLogK8sWriter {
+	return NewFileLogK8sWriter(`
+  filelog:
+    include: [ %s ]
+    start_at: beginning
+    include_file_path: true
+    include_file_name: false
+    operators:
+      # Parse CRI-Containerd format
+      - type: regex_parser
+        id: parser-containerd
+        regex: '^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
+        output: extract_metadata_from_filepath
+        timestamp:
+          parse_from: time
+          layout: '%%Y-%%m-%%dT%%H:%%M:%%S.%%LZ'
+      # Extract metadata from file path
+      - type: regex_parser
+        id: extract_metadata_from_filepath
+        regex: '^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]{36})\/(?P<container_name>[^\._]+)\/(?P<run_id>\d+)\.log$'
+        parse_from: $$attributes.file_path
+  `)
+}
+
+// NewCRIContainerdWriter returns FileLogK8sWriter with configuration
+// to parse only CRI-Containerd logs (no extracting metadata from filename)
+func NewCRIContainerdWriter() *FileLogK8sWriter {
+	return NewFileLogK8sWriter(`
+  filelog:
+    include: [ %s ]
+    start_at: beginning
+    include_file_path: true
+    include_file_name: false
+    operators:
+      # Parse CRI-Containerd format
+      - type: regex_parser
+        id: parser-containerd
+        regex: '^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
+        timestamp:
+          parse_from: time
+          layout: '%%Y-%%m-%%dT%%H:%%M:%%S.%%LZ'
+  `)
+}

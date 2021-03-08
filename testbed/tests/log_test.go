@@ -70,6 +70,24 @@ func TestLog10kDPS(t *testing.T) {
 				ExpectedMaxRAM: 150,
 			},
 		},
+		{
+			name:     "k8s CRI-Containerd no attr ops",
+			sender:   datasenders.NewKubernetesCRIContainerdNoAttributesOpsWriter(),
+			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 100,
+				ExpectedMaxRAM: 150,
+			},
+		},
+		{
+			name:     "CRI-Containerd",
+			sender:   datasenders.NewCRIContainerdWriter(),
+			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 100,
+				ExpectedMaxRAM: 150,
+			},
+		},
 	}
 
 	processors := map[string]string{
