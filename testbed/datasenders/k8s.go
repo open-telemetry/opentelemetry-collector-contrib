@@ -153,9 +153,9 @@ func (f *FileLogK8sWriter) GetEndpoint() string {
 	return ""
 }
 
-// NewFileLogContainerdWriter returns FileLogK8sWriter with configuration,
-// to recognize and parse kubernetes containerd logs
-func NewFileLogContainerdWriter() *FileLogK8sWriter {
+// NewKubernetesContainerWriter returns FileLogK8sWriter with configuration
+// to recognize and parse kubernetes container logs
+func NewKubernetesContainerWriter() *FileLogK8sWriter {
 	return NewFileLogK8sWriter(`
   filelog:
     include: [ %s ]

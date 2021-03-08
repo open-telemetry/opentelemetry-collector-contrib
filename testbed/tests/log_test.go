@@ -54,7 +54,7 @@ func TestLog10kDPS(t *testing.T) {
 		},
 		{
 			name:     "kubernetes containers",
-			sender:   datasenders.NewFileLogContainerdWriter(),
+			sender:   datasenders.NewKubernetesContainerWriter(),
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 100,
