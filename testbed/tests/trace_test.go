@@ -48,7 +48,7 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 20,
-				ExpectedMaxRAM: 90,
+				ExpectedMaxRAM: 110,
 			},
 		},
 		{
@@ -57,7 +57,7 @@ func TestTrace10kSPS(t *testing.T) {
 			datareceivers.NewSapmDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 40,
-				ExpectedMaxRAM: 105,
+				ExpectedMaxRAM: 125,
 			},
 		},
 	}

@@ -40,7 +40,7 @@ func TestLog10kDPS(t *testing.T) {
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 26,
-				ExpectedMaxRAM: 82,
+				ExpectedMaxRAM: 122,
 			},
 		},
 		{
@@ -49,7 +49,7 @@ func TestLog10kDPS(t *testing.T) {
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 30,
-				ExpectedMaxRAM: 85,
+				ExpectedMaxRAM: 125,
 			},
 		},
 		{
@@ -58,7 +58,7 @@ func TestLog10kDPS(t *testing.T) {
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 100,
-				ExpectedMaxRAM: 150,
+				ExpectedMaxRAM: 170,
 			},
 		},
 		{
@@ -67,7 +67,7 @@ func TestLog10kDPS(t *testing.T) {
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 100,
-				ExpectedMaxRAM: 150,
+				ExpectedMaxRAM: 170,
 			},
 		},
 		{
@@ -76,7 +76,7 @@ func TestLog10kDPS(t *testing.T) {
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 100,
-				ExpectedMaxRAM: 150,
+				ExpectedMaxRAM: 170,
 			},
 		},
 		{
@@ -85,7 +85,7 @@ func TestLog10kDPS(t *testing.T) {
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 100,
-				ExpectedMaxRAM: 150,
+				ExpectedMaxRAM: 170,
 			},
 		},
 	}
