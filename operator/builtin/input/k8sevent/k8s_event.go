@@ -289,7 +289,7 @@ func (k *K8sEvents) consumeWatchEvents(ctx context.Context, events <-chan watch.
 				entry.Timestamp = typedEvent.FirstTimestamp.Time
 			}
 
-			entry.AddLabel("event_type", string(event.Type))
+			entry.AddAttribute("event_type", string(event.Type))
 			k.populateResource(typedEvent, entry)
 			k.Write(ctx, entry)
 		case <-ctx.Done():

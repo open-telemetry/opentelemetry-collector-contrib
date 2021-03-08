@@ -30,7 +30,7 @@ func MockHostIdentifierConfig(includeIP, includeHostname bool, ip, hostname stri
 	}
 }
 
-func TestHostLabeler(t *testing.T) {
+func TestHostAttributer(t *testing.T) {
 	cases := []struct {
 		name             string
 		config           HostIdentifierConfig

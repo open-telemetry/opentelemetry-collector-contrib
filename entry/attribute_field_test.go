@@ -20,10 +20,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLabelFieldGet(t *testing.T) {
+func TestAttributeFieldGet(t *testing.T) {
 	cases := []struct {
 		name       string
-		labels     map[string]string
+		attributes map[string]string
 		field      Field
 		expected   interface{}
 		expectedOK bool
@@ -33,7 +33,7 @@ func TestLabelFieldGet(t *testing.T) {
 			map[string]string{
 				"test": "val",
 			},
-			NewLabelField("test"),
+			NewAttributeField("test"),
 			"val",
 			true,
 		},
@@ -42,14 +42,14 @@ func TestLabelFieldGet(t *testing.T) {
 			map[string]string{
 				"test": "val",
 			},
-			NewLabelField("nonexistent"),
+			NewAttributeField("nonexistent"),
 			"",
 			false,
 		},
 		{
 			"NilMap",
 			nil,
-			NewLabelField("nonexistent"),
+			NewAttributeField("nonexistent"),
 			"",
 			false,
 		},
@@ -58,7 +58,7 @@ func TestLabelFieldGet(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			entry := New()
-			entry.Labels = tc.labels
+			entry.Attributes = tc.attributes
 			val, ok := entry.Get(tc.field)
 			require.Equal(t, tc.expectedOK, ok)
 			require.Equal(t, tc.expected, val)
@@ -66,21 +66,21 @@ func TestLabelFieldGet(t *testing.T) {
 	}
 }
 
-func TestLabelFieldDelete(t *testing.T) {
+func TestAttributeFieldDelete(t *testing.T) {
 	cases := []struct {
-		name           string
-		labels         map[string]string
-		field          Field
-		expected       interface{}
-		expectedOK     bool
-		expectedLabels map[string]string
+		name               string
+		attributes         map[string]string
+		field              Field
+		expected           interface{}
+		expectedOK         bool
+		expectedAttributes map[string]string
 	}{
 		{
 			"Simple",
 			map[string]string{
 				"test": "val",
 			},
-			NewLabelField("test"),
+			NewAttributeField("test"),
 			"val",
 			true,
 			map[string]string{},
@@ -90,7 +90,7 @@ func TestLabelFieldDelete(t *testing.T) {
 			map[string]string{
 				"test": "val",
 			},
-			NewLabelField("nonexistent"),
+			NewAttributeField("nonexistent"),
 			"",
 			false,
 			map[string]string{
@@ -100,7 +100,7 @@ func TestLabelFieldDelete(t *testing.T) {
 		{
 			"NilMap",
 			nil,
-			NewLabelField("nonexistent"),
+			NewAttributeField("nonexistent"),
 			"",
 			false,
 			nil,
@@ -110,7 +110,7 @@ func TestLabelFieldDelete(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			entry := New()
-			entry.Labels = tc.labels
+			entry.Attributes = tc.attributes
 			val, ok := entry.Delete(tc.field)
 			require.Equal(t, tc.expectedOK, ok)
 			require.Equal(t, tc.expected, val)
@@ -118,10 +118,10 @@ func TestLabelFieldDelete(t *testing.T) {
 	}
 }
 
-func TestLabelFieldSet(t *testing.T) {
+func TestAttributeFieldSet(t *testing.T) {
 	cases := []struct {
 		name        string
-		labels      map[string]string
+		attributes  map[string]string
 		field       Field
 		val         interface{}
 		expected    map[string]string
@@ -130,7 +130,7 @@ func TestLabelFieldSet(t *testing.T) {
 		{
 			"Simple",
 			map[string]string{},
-			NewLabelField("test"),
+			NewAttributeField("test"),
 			"val",
 			map[string]string{
 				"test": "val",
@@ -142,7 +142,7 @@ func TestLabelFieldSet(t *testing.T) {
 			map[string]string{
 				"test": "original",
 			},
-			NewLabelField("test"),
+			NewAttributeField("test"),
 			"val",
 			map[string]string{
 				"test": "val",
@@ -152,7 +152,7 @@ func TestLabelFieldSet(t *testing.T) {
 		{
 			"NilMap",
 			nil,
-			NewLabelField("test"),
+			NewAttributeField("test"),
 			"val",
 			map[string]string{
 				"test": "val",
@@ -162,7 +162,7 @@ func TestLabelFieldSet(t *testing.T) {
 		{
 			"NonString",
 			map[string]string{},
-			NewLabelField("test"),
+			NewAttributeField("test"),
 			123,
 			map[string]string{
 				"test": "val",
@@ -174,33 +174,33 @@ func TestLabelFieldSet(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			entry := New()
-			entry.Labels = tc.labels
+			entry.Attributes = tc.attributes
 			err := entry.Set(tc.field, tc.val)
 			if tc.expectedErr {
 				require.Error(t, err)
 				return
 			}
 
-			require.Equal(t, tc.expected, entry.Labels)
+			require.Equal(t, tc.expected, entry.Attributes)
 		})
 	}
 }
 
-func TestLabelFieldString(t *testing.T) {
+func TestAttributeFieldString(t *testing.T) {
 	cases := []struct {
 		name     string
-		field    LabelField
+		field    AttributeField
 		expected string
 	}{
 		{
 			"Simple",
-			LabelField{"foo"},
-			"$labels.foo",
+			AttributeField{"foo"},
+			"$attributes.foo",
 		},
 		{
 			"Empty",
-			LabelField{""},
-			"$labels.",
+			AttributeField{""},
+			"$attributes.",
 		},
 	}
 

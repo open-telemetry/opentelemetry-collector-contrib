@@ -8,7 +8,7 @@ pipeline:
     start_at: beginning
     include:
       - ./access.log
-    labels:
+    attributes:
       log_type: tomcat
 
   # Parse the logs into labeled fields

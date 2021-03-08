@@ -22,21 +22,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLabeler(t *testing.T) {
+func TestAttributer(t *testing.T) {
 	os.Setenv("TEST_METADATA_PLUGIN_ENV", "foo")
 	defer os.Unsetenv("TEST_METADATA_PLUGIN_ENV")
 
 	cases := []struct {
 		name     string
-		config   LabelerConfig
+		config   AttributerConfig
 		input    *entry.Entry
 		expected *entry.Entry
 	}{
 		{
-			"AddLabelLiteral",
-			func() LabelerConfig {
-				cfg := NewLabelerConfig()
-				cfg.Labels = map[string]ExprStringConfig{
+			"AddAttributeLiteral",
+			func() AttributerConfig {
+				cfg := NewAttributerConfig()
+				cfg.Attributes = map[string]ExprStringConfig{
 					"label1": "value1",
 				}
 				return cfg
@@ -44,17 +44,17 @@ func TestLabeler(t *testing.T) {
 			entry.New(),
 			func() *entry.Entry {
 				e := entry.New()
-				e.Labels = map[string]string{
+				e.Attributes = map[string]string{
 					"label1": "value1",
 				}
 				return e
 			}(),
 		},
 		{
-			"AddLabelExpr",
-			func() LabelerConfig {
-				cfg := NewLabelerConfig()
-				cfg.Labels = map[string]ExprStringConfig{
+			"AddAttributeExpr",
+			func() AttributerConfig {
+				cfg := NewAttributerConfig()
+				cfg.Attributes = map[string]ExprStringConfig{
 					"label1": `EXPR("start" + "end")`,
 				}
 				return cfg
@@ -62,17 +62,17 @@ func TestLabeler(t *testing.T) {
 			entry.New(),
 			func() *entry.Entry {
 				e := entry.New()
-				e.Labels = map[string]string{
+				e.Attributes = map[string]string{
 					"label1": "startend",
 				}
 				return e
 			}(),
 		},
 		{
-			"AddLabelEnv",
-			func() LabelerConfig {
-				cfg := NewLabelerConfig()
-				cfg.Labels = map[string]ExprStringConfig{
+			"AddAttributeEnv",
+			func() AttributerConfig {
+				cfg := NewAttributerConfig()
+				cfg.Attributes = map[string]ExprStringConfig{
 					"label1": `EXPR(env("TEST_METADATA_PLUGIN_ENV"))`,
 				}
 				return cfg
@@ -80,7 +80,7 @@ func TestLabeler(t *testing.T) {
 			entry.New(),
 			func() *entry.Entry {
 				e := entry.New()
-				e.Labels = map[string]string{
+				e.Attributes = map[string]string{
 					"label1": "foo",
 				}
 				return e
@@ -90,12 +90,12 @@ func TestLabeler(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			labeler, err := tc.config.Build()
+			attributer, err := tc.config.Build()
 			require.NoError(t, err)
 
-			err = labeler.Label(tc.input)
+			err = attributer.Attribute(tc.input)
 			require.NoError(t, err)
-			require.Equal(t, tc.expected.Labels, tc.input.Labels)
+			require.Equal(t, tc.expected.Attributes, tc.input.Attributes)
 		})
 	}
 }

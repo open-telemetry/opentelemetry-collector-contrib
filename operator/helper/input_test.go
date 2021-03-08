@@ -110,8 +110,8 @@ func TestInputOperatorNewEntry(t *testing.T) {
 	require.NoError(t, err)
 
 	input := InputOperator{
-		Labeler: Labeler{
-			labels: map[string]*ExprString{
+		Attributer: Attributer{
+			attributes: map[string]*ExprString{
 				"test-label": labelExpr,
 			},
 		},
@@ -137,7 +137,7 @@ func TestInputOperatorNewEntry(t *testing.T) {
 	require.True(t, exists)
 	require.Equal(t, "test", value)
 
-	labelValue, exists := entry.Labels["test-label"]
+	labelValue, exists := entry.Attributes["test-label"]
 	require.True(t, exists)
 	require.Equal(t, "test", labelValue)
 

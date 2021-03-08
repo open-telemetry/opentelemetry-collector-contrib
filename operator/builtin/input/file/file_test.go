@@ -140,7 +140,7 @@ func TestBuild(t *testing.T) {
 				require.Equal(t, f.OutputOperators[0], fakeOutput)
 				require.Equal(t, f.Include, []string{"/var/log/testpath.*"})
 				require.Equal(t, f.FilePathField, entry.NewNilField())
-				require.Equal(t, f.FileNameField, entry.NewLabelField("file_name"))
+				require.Equal(t, f.FileNameField, entry.NewAttributeField("file_name"))
 				require.Equal(t, f.PollInterval, 10*time.Millisecond)
 			},
 		},
@@ -293,8 +293,8 @@ func TestAddFileFields(t *testing.T) {
 	defer operator.Stop()
 
 	e := waitForOne(t, logReceived)
-	require.Equal(t, filepath.Base(temp.Name()), e.Labels["file_name"])
-	require.Equal(t, temp.Name(), e.Labels["file_path"])
+	require.Equal(t, filepath.Base(temp.Name()), e.Attributes["file_name"])
+	require.Equal(t, temp.Name(), e.Attributes["file_path"])
 }
 
 // ReadExistingLogs tests that, when starting from beginning, we

@@ -4,9 +4,9 @@ A _Field_ is a reference to a value in a log [entry](/docs/types/field.md).
 
 Many [operators](/docs/operators/README.md) use fields in their configurations. For example, parsers use fields to specify which value to parse and where to write a new value.
 
-Fields are `.`-delimited strings which allow you to select labels or records on the entry. 
+Fields are `.`-delimited strings which allow you to select attributes or records on the entry. 
 
-Fields can be used to select record, resource, or label values. For values on the record, use the prefix `$record` such as `$record.my_value`. To select a label, prefix your field with `$label` such as with `$label.my_label`. For resource values, use the prefix `$resource`.
+Fields can be used to select record, resource, or label values. For values on the record, use the prefix `$record` such as `$record.my_value`. To select a label, prefix your field with `$label` such as with `$label.my_attribute`. For resource values, use the prefix `$resource`.
 
 If a field contains a dot in it, a field can alternatively use bracket syntax for traversing through a map. For example, to select the key `k8s.cluster.name` on the entry's record, you can use the field `$record["k8s.cluster.name"]`.
 
@@ -27,8 +27,8 @@ Config:
         value: "value3"
     - remove: "$record.key2.nested_key1"
     - add:
-        field: "$labels.my_label"
-        value: "my_label_value"
+        field: "$attributes.my_attribute"
+        value: "my_attribute_value"
 ```
 
 <table>
@@ -39,7 +39,7 @@ Config:
 ```json
 {
   "timestamp": "",
-  "labels": {},
+  "attributes": {},
   "record": {
     "key1": "value1",
     "key2": {
@@ -56,8 +56,8 @@ Config:
 ```json
 {
   "timestamp": "",
-  "labels": {
-    "my_label": "my_label_value"
+  "attributes": {
+    "my_attribute": "my_attribute_value"
   },
   "record": {
     "key1": "value1",
@@ -83,7 +83,7 @@ Given the following entry, we can use fields as follows:
   "resource": {
     "uuid": "11112222-3333-4444-5555-666677778888",
   },
-  "labels": {
+  "attributes": {
     "env": "prod",
   },
   "record": {
@@ -101,5 +101,5 @@ Given the following entry, we can use fields as follows:
 | $record.message        | `"Something happened."`                   |
 | message                | `"Something happened."`                   |
 | $record.details.count  | `100`                                     |
-| $labels.env            | `"prod"`                                  |
+| $attributes.env        | `"prod"`                                  |
 | $resource.uuid         | `"11112222-3333-4444-5555-666677778888"`  |
