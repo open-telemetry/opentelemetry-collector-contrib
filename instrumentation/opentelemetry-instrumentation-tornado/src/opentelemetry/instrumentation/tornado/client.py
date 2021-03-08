@@ -64,7 +64,7 @@ def fetch_async(tracer, func, _, args, kwargs):
         for key, value in attributes.items():
             span.set_attribute(key, value)
 
-    with tracer.use_span(span):
+    with trace.use_span(span):
         inject(type(request.headers).__setitem__, request.headers)
         future = func(*args, **kwargs)
         future.add_done_callback(

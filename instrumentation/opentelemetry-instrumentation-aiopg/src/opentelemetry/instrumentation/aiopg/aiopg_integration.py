@@ -8,7 +8,6 @@ from opentelemetry.instrumentation.dbapi import (
     DatabaseApiIntegration,
 )
 from opentelemetry.trace import SpanKind
-from opentelemetry.trace.status import Status, StatusCode
 
 
 # pylint: disable=abstract-method
@@ -117,13 +116,7 @@ class AsyncCursorTracer(CursorTracer):
             name, kind=SpanKind.CLIENT
         ) as span:
             self._populate_span(span, cursor, *args)
-            try:
-                result = await query_method(*args, **kwargs)
-                return result
-            except Exception as ex:  # pylint: disable=broad-except
-                if span.is_recording():
-                    span.set_status(Status(StatusCode.ERROR, str(ex)))
-                raise ex
+            return await query_method(*args, **kwargs)
 
 
 def get_traced_cursor_proxy(cursor, db_api_integration, *args, **kwargs):

@@ -42,8 +42,6 @@ class TestRedis(TestBase):
         mock_span = mock.Mock()
         mock_span.is_recording.return_value = False
         mock_tracer.start_span.return_value = mock_span
-        mock_tracer.use_span.return_value.__enter__ = mock_span
-        mock_tracer.use_span.return_value.__exit__ = True
         with mock.patch("opentelemetry.trace.get_tracer") as tracer:
             with mock.patch.object(redis_client, "connection"):
                 tracer.return_value = mock_tracer

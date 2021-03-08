@@ -137,8 +137,8 @@ class CeleryInstrumentor(BaseInstrumentor):
             operation_name, context=tracectx, kind=trace.SpanKind.CONSUMER
         )
 
-        activation = self._tracer.use_span(span, end_on_exit=True)
-        activation.__enter__()
+        activation = trace.use_span(span, end_on_exit=True)
+        activation.__enter__()  # pylint: disable=E1101
         utils.attach_span(task, task_id, (span, activation))
 
     @staticmethod
@@ -186,8 +186,9 @@ class CeleryInstrumentor(BaseInstrumentor):
             span.set_attribute(_TASK_NAME_KEY, task.name)
             utils.set_attributes_from_context(span, kwargs)
 
-        activation = self._tracer.use_span(span, end_on_exit=True)
-        activation.__enter__()
+        activation = trace.use_span(span, end_on_exit=True)
+        activation.__enter__()  # pylint: disable=E1101
+
         utils.attach_span(task, task_id, (span, activation), is_publish=True)
 
         headers = kwargs.get("headers")
@@ -208,7 +209,7 @@ class CeleryInstrumentor(BaseInstrumentor):
             logger.warning("no existing span found for task_id=%s", task_id)
             return
 
-        activation.__exit__(None, None, None)
+        activation.__exit__(None, None, None)  # pylint: disable=E1101
         utils.detach_span(task, task_id, is_publish=True)
 
     @staticmethod

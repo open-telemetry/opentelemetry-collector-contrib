@@ -98,7 +98,7 @@ class EngineTracer:
             self._operation_name(db_name, statement),
             kind=trace.SpanKind.CLIENT,
         )
-        with self.tracer.use_span(self.current_span, end_on_exit=False):
+        with trace.use_span(self.current_span, end_on_exit=False):
             if self.current_span.is_recording():
                 self.current_span.set_attribute(_STMT, statement)
                 self.current_span.set_attribute("db.system", self.vendor)

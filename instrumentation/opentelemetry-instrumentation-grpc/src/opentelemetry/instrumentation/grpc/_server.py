@@ -191,7 +191,9 @@ class OpenTelemetryServerInterceptor(grpc.ServerInterceptor):
         else:
             yield
 
-    def _start_span(self, handler_call_details, context):
+    def _start_span(
+        self, handler_call_details, context, set_status_on_exception=False
+    ):
 
         # standard attributes
         attributes = {
@@ -234,6 +236,7 @@ class OpenTelemetryServerInterceptor(grpc.ServerInterceptor):
             name=handler_call_details.method,
             kind=trace.SpanKind.SERVER,
             attributes=attributes,
+            set_status_on_exception=set_status_on_exception,
         )
 
     def intercept_service(self, continuation, handler_call_details):
@@ -251,7 +254,9 @@ class OpenTelemetryServerInterceptor(grpc.ServerInterceptor):
 
                 with self._set_remote_context(context):
                     with self._start_span(
-                        handler_call_details, context
+                        handler_call_details,
+                        context,
+                        set_status_on_exception=False,
                     ) as span:
                         # wrap the context
                         context = _OpenTelemetryServicerContext(context, span)
@@ -283,7 +288,9 @@ class OpenTelemetryServerInterceptor(grpc.ServerInterceptor):
     ):
 
         with self._set_remote_context(context):
-            with self._start_span(handler_call_details, context) as span:
+            with self._start_span(
+                handler_call_details, context, set_status_on_exception=False
+            ) as span:
                 context = _OpenTelemetryServicerContext(context, span)
 
                 try:

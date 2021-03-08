@@ -138,8 +138,8 @@ def _wrapped_before_request(name_callback):
             for key, value in attributes.items():
                 span.set_attribute(key, value)
 
-        activation = tracer.use_span(span, end_on_exit=True)
-        activation.__enter__()
+        activation = trace.use_span(span, end_on_exit=True)
+        activation.__enter__()  # pylint: disable=E1101
         flask_request_environ[_ENVIRON_ACTIVATION_KEY] = activation
         flask_request_environ[_ENVIRON_SPAN_KEY] = span
         flask_request_environ[_ENVIRON_TOKEN] = token
@@ -148,6 +148,7 @@ def _wrapped_before_request(name_callback):
 
 
 def _teardown_request(exc):
+    # pylint: disable=E1101
     if _excluded_urls.url_disabled(flask.request.url):
         return
 

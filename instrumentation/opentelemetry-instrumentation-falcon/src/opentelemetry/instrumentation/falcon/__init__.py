@@ -104,6 +104,7 @@ class _InstrumentedFalconAPI(falcon.API):
         super().__init__(*args, **kwargs)
 
     def __call__(self, env, start_response):
+        # pylint: disable=E1101
         if _excluded_urls.url_disabled(env.get("PATH_INFO", "/")):
             return super().__call__(env, start_response)
 
@@ -120,7 +121,7 @@ class _InstrumentedFalconAPI(falcon.API):
             for key, value in attributes.items():
                 span.set_attribute(key, value)
 
-        activation = self._tracer.use_span(span, end_on_exit=True)
+        activation = trace.use_span(span, end_on_exit=True)
         activation.__enter__()
         env[_ENVIRON_SPAN_KEY] = span
         env[_ENVIRON_ACTIVATION_KEY] = activation

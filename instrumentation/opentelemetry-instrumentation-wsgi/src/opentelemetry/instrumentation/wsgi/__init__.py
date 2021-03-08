@@ -218,7 +218,7 @@ class OpenTelemetryMiddleware:
         )
 
         try:
-            with self.tracer.use_span(span):
+            with trace.use_span(span):
                 start_response = self._create_start_response(
                     span, start_response
                 )
@@ -239,7 +239,7 @@ class OpenTelemetryMiddleware:
 # behavior as little as possible).
 def _end_span_after_iterating(iterable, span, tracer, token):
     try:
-        with tracer.use_span(span):
+        with trace.use_span(span):
             for yielded in iterable:
                 yield yielded
     finally:

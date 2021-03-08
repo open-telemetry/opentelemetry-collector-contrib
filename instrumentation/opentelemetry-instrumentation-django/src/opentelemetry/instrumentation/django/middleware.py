@@ -24,7 +24,7 @@ from opentelemetry.instrumentation.wsgi import (
     collect_request_attributes,
 )
 from opentelemetry.propagate import extract
-from opentelemetry.trace import SpanKind, get_tracer
+from opentelemetry.trace import SpanKind, get_tracer, use_span
 from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
 
 try:
@@ -118,8 +118,8 @@ class _DjangoMiddleware(MiddlewareMixin):
             for key, value in attributes.items():
                 span.set_attribute(key, value)
 
-        activation = tracer.use_span(span, end_on_exit=True)
-        activation.__enter__()
+        activation = use_span(span, end_on_exit=True)
+        activation.__enter__()  # pylint: disable=E1101
 
         request.META[self._environ_activation_key] = activation
         request.META[self._environ_span_key] = span

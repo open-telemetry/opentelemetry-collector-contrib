@@ -23,6 +23,7 @@ from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search
 
 import opentelemetry.instrumentation.elasticsearch
+from opentelemetry import trace
 from opentelemetry.instrumentation.elasticsearch import (
     ElasticsearchInstrumentor,
 )
@@ -94,8 +95,6 @@ class TestElasticsearchIntegration(TestBase):
         mock_span = mock.Mock()
         mock_span.is_recording.return_value = False
         mock_tracer.start_span.return_value = mock_span
-        mock_tracer.use_span.return_value.__enter__ = mock_span
-        mock_tracer.use_span.return_value.__exit__ = mock_span
         with mock.patch("opentelemetry.trace.get_tracer") as tracer:
             tracer.return_value = mock_tracer
             Elasticsearch()
@@ -174,7 +173,9 @@ class TestElasticsearchIntegration(TestBase):
         span = spans[0]
         self.assertFalse(span.status.is_ok)
         self.assertEqual(span.status.status_code, code)
-        self.assertEqual(span.status.description, str(exc))
+        self.assertEqual(
+            span.status.description, "{}: {}".format(type(exc).__name__, exc)
+        )
 
     def test_parent(self, request_mock):
         request_mock.return_value = (1, {}, {})
@@ -201,7 +202,7 @@ class TestElasticsearchIntegration(TestBase):
         # 2. Trace something from thread-2, make thread-1 join before finishing.
         # 3. Check the spans got different parents, and are in the expected order.
         def target1(parent_span):
-            with self.tracer.use_span(parent_span):
+            with trace.use_span(parent_span):
                 es.get(index="test-index", doc_type="tweet", id=1)
                 ev.set()
                 ev.wait()

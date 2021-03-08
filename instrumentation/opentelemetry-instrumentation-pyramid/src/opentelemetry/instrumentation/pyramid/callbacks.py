@@ -83,8 +83,8 @@ def _before_traversal(event):
         for key, value in attributes.items():
             span.set_attribute(key, value)
 
-    activation = tracer.use_span(span, end_on_exit=True)
-    activation.__enter__()
+    activation = trace.use_span(span, end_on_exit=True)
+    activation.__enter__()  # pylint: disable=E1101
     request_environ[_ENVIRON_ACTIVATION_KEY] = activation
     request_environ[_ENVIRON_SPAN_KEY] = span
     request_environ[_ENVIRON_TOKEN] = token
@@ -105,6 +105,7 @@ def trace_tween_factory(handler, registry):
 
     # make a request tracing function
     def trace_tween(request):
+        # pylint: disable=E1101
         if _excluded_urls.url_disabled(request.url):
             request.environ[_ENVIRON_ENABLED_KEY] = False
             # short-circuit when we don't want to trace anything

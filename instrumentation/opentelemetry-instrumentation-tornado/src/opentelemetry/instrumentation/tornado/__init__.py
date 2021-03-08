@@ -208,8 +208,8 @@ def _start_span(tracer, handler, start_time) -> _TraceContext:
         for key, value in attributes.items():
             span.set_attribute(key, value)
 
-    activation = tracer.use_span(span, end_on_exit=True)
-    activation.__enter__()
+    activation = trace.use_span(span, end_on_exit=True)
+    activation.__enter__()  # pylint: disable=E1101
     ctx = _TraceContext(activation, span, token)
     setattr(handler, _HANDLER_CONTEXT_KEY, ctx)
     return ctx
@@ -249,6 +249,6 @@ def _finish_span(tracer, handler, error=None):
             )
         )
 
-    ctx.activation.__exit__(*finish_args)
+    ctx.activation.__exit__(*finish_args)  # pylint: disable=E1101
     context.detach(ctx.token)
     delattr(handler, _HANDLER_CONTEXT_KEY)

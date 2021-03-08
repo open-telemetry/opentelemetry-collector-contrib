@@ -289,8 +289,6 @@ class TestAiopgIntegration(TestBase):
         mock_span = mock.Mock()
         mock_span.is_recording.return_value = False
         mock_tracer.start_span.return_value = mock_span
-        mock_tracer.use_span.return_value.__enter__ = mock_span
-        mock_tracer.use_span.return_value.__exit__ = True
         db_integration = AiopgIntegration(
             mock_tracer, "testcomponent", connection_attributes
         )
@@ -322,7 +320,7 @@ class TestAiopgIntegration(TestBase):
         self.assertIs(
             span.status.status_code, trace_api.status.StatusCode.ERROR
         )
-        self.assertEqual(span.status.description, "Test Exception")
+        self.assertEqual(span.status.description, "Exception: Test Exception")
 
     def test_executemany(self):
         db_integration = AiopgIntegration(self.tracer, "testcomponent")
