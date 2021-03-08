@@ -17,6 +17,20 @@ This directory is mounted to standard location (`/var/log/pods`).
 
 `otel-collector-config` is a configuration to autodetect and parse logs for all of three mentioned formats
 
+## Performance Tests
+
+There are multiple tests for various configurations in [`testbed`](../../testbed/tests/log_test.go).
+Following table shows result of example run:
+
+Test                                    |Result|Duration|CPU Avg%|CPU Max%|RAM Avg MiB|RAM Max MiB|Sent Items|Received Items|
+----------------------------------------|------|-------:|-------:|-------:|----------:|----------:|---------:|-------------:|
+Log10kDPS/OTLP                          |PASS  |     15s|    15.2|    15.7|         69|         73|    149900|        149900|
+Log10kDPS/filelog                       |PASS  |     15s|    16.5|    18.0|         61|         74|    150000|        150000|
+Log10kDPS/kubernetes_containers         |PASS  |     15s|    42.3|    44.0|         66|         80|    150000|        150000|
+Log10kDPS/k8s_CRI-Containerd            |PASS  |     15s|    36.7|    38.0|         64|         78|    150000|        150000|
+Log10kDPS/k8s_CRI-Containerd_no_attr_ops|PASS  |     15s|    28.9|    29.7|         64|         77|    150000|        150000|
+Log10kDPS/CRI-Containerd                |PASS  |     15s|    19.0|    21.0|         63|         77|    150000|        150000|
+
 ## ToDo
 
 To cover kubernetes system logs, logs from journald should be supported as well.
