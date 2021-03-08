@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/system"
@@ -66,6 +67,22 @@ func GetHost(logger *zap.Logger, cfg *config.Config) *string {
 	return &hostname
 }
 
+func getClusterName(attrs pdata.AttributeMap) (string, bool) {
+	if k8sClusterName, ok := attrs.Get(conventions.AttributeK8sCluster); ok {
+		return k8sClusterName.StringVal(), true
+	}
+
+	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
+	if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure {
+		// On Azure, use the resource group name as the cluster name
+		if resourceGroup, ok := attrs.Get(azure.AttributeResourceGroupName); ok {
+			return resourceGroup.StringVal(), true
+		}
+	}
+
+	return "", false
+}
+
 // HostnameFromAttributes tries to get a valid hostname from attributes by checking, in order:
 //
 //   1. a custom Datadog hostname provided by the "datadog.host.name" attribute
@@ -84,8 +101,8 @@ func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
 
 	// Kubernetes: node-cluster if cluster name is available, else node
 	if k8sNodeName, ok := attrs.Get(AttributeK8sNodeName); ok {
-		if k8sClusterName, ok := attrs.Get(conventions.AttributeK8sCluster); ok {
-			return k8sNodeName.StringVal() + "-" + k8sClusterName.StringVal(), true
+		if k8sClusterName, ok := getClusterName(attrs); ok {
+			return k8sNodeName.StringVal() + "-" + k8sClusterName, true
 		}
 		return k8sNodeName.StringVal(), true
 	}
@@ -101,6 +118,8 @@ func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
 		return ec2.HostnameFromAttributes(attrs)
 	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP {
 		return gcp.HostnameFromAttributes(attrs)
+	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure {
+		return azure.HostnameFromAttributes(attrs)
 	}
 
 	// host id from cloud provider
