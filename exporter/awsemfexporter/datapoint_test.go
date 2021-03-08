@@ -23,7 +23,6 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -622,7 +621,7 @@ func TestGetDataPoints(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		oc := consumerdata.MetricsData{
+		oc := internaldata.MetricsData{
 			Metrics: []*metricspb.Metric{tc.metric},
 		}
 
@@ -710,7 +709,7 @@ func TestGetDataPoints(t *testing.T) {
 }
 
 func BenchmarkGetDataPoints(b *testing.B) {
-	oc := consumerdata.MetricsData{
+	oc := internaldata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			generateTestIntGauge("int-gauge"),
 			generateTestDoubleGauge("double-gauge"),

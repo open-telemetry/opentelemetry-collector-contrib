@@ -24,7 +24,7 @@ import (
 	"net/http"
 	"strings"
 
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -237,7 +237,7 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]pdata.LogRecord, 
 	}
 
 	if len(errs) > 0 {
-		return droppedRecords, componenterror.CombineErrors(errs)
+		return droppedRecords, consumererror.CombineErrors(errs)
 	}
 	return droppedRecords, nil
 }
@@ -299,7 +299,7 @@ func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, er
 	}
 
 	if len(errs) > 0 {
-		return droppedRecords, componenterror.CombineErrors(errs)
+		return droppedRecords, consumererror.CombineErrors(errs)
 	}
 	return droppedRecords, nil
 }
@@ -342,7 +342,7 @@ func (s *sender) appendAndSend(
 	}
 
 	if len(errors) > 0 {
-		return ar, componenterror.CombineErrors(errors)
+		return ar, consumererror.CombineErrors(errors)
 	}
 	return ar, nil
 }

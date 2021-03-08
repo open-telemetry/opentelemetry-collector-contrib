@@ -15,6 +15,8 @@
 package dotnet
 
 import (
+	"context"
+	"errors"
 	"io"
 
 	"go.uber.org/zap"
@@ -43,4 +45,72 @@ func (p *Parser) ParseIPC() error {
 // ParseNettrace parses the nettrace magic message.
 func (p *Parser) ParseNettrace() error {
 	return parseNettrace(p.r)
+}
+
+// ParseAll parses all of the blocks until an error occurs or the context is
+// cancelled.
+func (p *Parser) ParseAll(ctx context.Context) error {
+	var err error
+	fms := fieldMetadataMap{}
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			err = p.parseBlock(fms)
+			if err != nil {
+				return err
+			}
+		}
+	}
+}
+
+// parseBlock parses a serialization type and block, bookended by a begin and
+// end object tag.
+func (p *Parser) parseBlock(fms fieldMetadataMap) error {
+	err := beginPrivateObject(p.r)
+	if err != nil {
+		return err
+	}
+
+	st, err := parseSerializationType(p.r)
+	if err != nil {
+		return err
+	}
+
+	p.logger.Debug("parsing block", zap.String("serialization type", st.name))
+
+	switch st.name {
+	case "Trace":
+		err = parseTraceMessage(p.r)
+		if err != nil {
+			return err
+		}
+	case "MetadataBlock":
+		err = parseMetadataBlock(p.r, fms)
+		if err != nil {
+			return err
+		}
+	case "StackBlock":
+		err = parseStackBlock(p.r)
+		if err != nil {
+			return err
+		}
+	case "EventBlock":
+		_, err = parseEventBlock(p.r, fms)
+		if err != nil {
+			return err
+		}
+	case "SPBlock":
+		err = parseSPBlock(p.r)
+		if err != nil {
+			return err
+		}
+		// reset the byte counter to prevent overflow
+		defer p.r.Reset()
+	default:
+		return errors.New("unknown serialization type: " + st.name)
+	}
+
+	return endObject(p.r)
 }

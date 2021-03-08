@@ -34,7 +34,7 @@ type httpForwarder struct {
 	config     *Config
 }
 
-var _ component.ServiceExtension = (*httpForwarder)(nil)
+var _ component.Extension = (*httpForwarder)(nil)
 
 func (h *httpForwarder) Start(_ context.Context, host component.Host) error {
 	listener, err := h.config.Ingress.ToListener()
@@ -107,7 +107,7 @@ func addViaHeader(header http.Header, protocol string, host string) {
 	header.Add("Via", fmt.Sprintf("%s %s", protocol, host))
 }
 
-func newHTTPForwarder(config *Config, logger *zap.Logger) (component.ServiceExtension, error) {
+func newHTTPForwarder(config *Config, logger *zap.Logger) (component.Extension, error) {
 	if config.Egress.Endpoint == "" {
 		return nil, errors.New("'egress.endpoint' config option cannot be empty")
 	}

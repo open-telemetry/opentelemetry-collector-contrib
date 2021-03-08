@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -71,7 +70,7 @@ func (m *mockObserver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-var _ component.ServiceExtension = (*mockObserver)(nil)
+var _ component.Extension = (*mockObserver)(nil)
 
 func (m *mockObserver) ListAndWatch(notify observer.Notify) {
 	notify.OnAdd([]observer.Endpoint{portEndpoint})
@@ -81,7 +80,7 @@ var _ observer.Observable = (*mockObserver)(nil)
 
 func TestMockedEndToEnd(t *testing.T) {
 	host, cfg := exampleCreatorFactory(t)
-	host.extensions = map[configmodels.Extension]component.ServiceExtension{
+	host.extensions = map[configmodels.Extension]component.Extension{
 		&configmodels.ExtensionSettings{
 			TypeVal: "mock_observer",
 			NameVal: "mock_observer",
@@ -112,7 +111,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	// Test that we can send metrics.
 	for _, receiver := range dyn.observerHandler.receiversByEndpointID.Values() {
 		example := receiver.(*componenttest.ExampleReceiverProducer)
-		md := internaldata.OCToMetrics(consumerdata.MetricsData{
+		md := internaldata.OCToMetrics(internaldata.MetricsData{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "dynamictest"},
 				LibraryInfo: &commonpb.LibraryInfo{},

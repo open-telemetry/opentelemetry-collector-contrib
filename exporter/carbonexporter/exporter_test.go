@@ -33,12 +33,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestNew(t *testing.T) {
@@ -83,7 +83,7 @@ func TestNew(t *testing.T) {
 
 func TestConsumeMetricsData(t *testing.T) {
 	t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/396")
-	smallBatch := internaldata.OCToMetrics(consumerdata.MetricsData{
+	smallBatch := internaldata.OCToMetrics(internaldata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			metricstestutil.Gauge(
 				"test_gauge",
@@ -283,7 +283,7 @@ func Test_connPool_Concurrency(t *testing.T) {
 }
 
 func generateLargeBatch() pdata.Metrics {
-	md := consumerdata.MetricsData{
+	md := internaldata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test_carbon"},
 		},
@@ -300,7 +300,7 @@ func generateLargeBatch() pdata.Metrics {
 					time.Now(),
 					[]string{"v0", "v1"},
 					&metricspb.Point{
-						Timestamp: metricstestutil.Timestamp(ts),
+						Timestamp: timestamppb.New(ts),
 						Value:     &metricspb.Point_Int64Value{Int64Value: int64(i)},
 					},
 				),

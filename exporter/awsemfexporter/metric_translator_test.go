@@ -26,7 +26,6 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -44,8 +43,8 @@ func readFromFile(filename string) string {
 	return str
 }
 
-func createMetricTestData() consumerdata.MetricsData {
-	return consumerdata.MetricsData{
+func createMetricTestData() internaldata.MetricsData {
+	return internaldata.MetricsData{
 		Node: &commonpb.Node{
 			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
 		},
@@ -503,7 +502,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	}
 
 	t.Run("No metrics", func(t *testing.T) {
-		md = consumerdata.MetricsData{
+		md = internaldata.MetricsData{
 			Node: &commonpb.Node{
 				LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
 			},

@@ -11,14 +11,16 @@ This exporter supports sending trace and metric data to [New Relic](https://newr
 
 The following configuration options are supported:
 
-* `apikey` (Required): Your New Relic [Insights Insert API Key](https://docs.newrelic.com/docs/insights/insights-data-sources/custom-data/send-custom-events-event-api#register).
+* One or both of the following are required:
+  * `apikey`: Your New Relic [Insights Insert API Key](https://docs.newrelic.com/docs/insights/insights-data-sources/custom-data/send-custom-events-event-api#register).
+  * `api_key_header`: Request header to read New Relic [Insights Insert API Key](https://docs.newrelic.com/docs/insights/insights-data-sources/custom-data/send-custom-events-event-api#register) from.
 * `timeout` (Optional): Amount of time spent attempting a request before abandoning and dropping data. Default is 15 seconds.
 * `common_attributes` (Optional): Attributes to apply to all metrics sent.
-* `metrics_url_override` (Optional): Overrides the endpoint to send metrics.
+* `metrics_host_override` (Optional): Overrides the endpoint to send metrics.
   The endpoint defaults to New Relic's US data centers. For other use cases
   refer to
   [OpenTelemetry: Advanced configuration](https://docs.newrelic.com/docs/integrations/open-source-telemetry-integrations/opentelemetry/opentelemetry-advanced-configuration#h2-change-endpoints).
-* `spans_url_override` (Optional): Overrides the endpoint to send spans.
+* `spans_host_override` (Optional): Overrides the endpoint to send spans.
   The endpoint defaults to New Relic's US data centers. For other use cases
   refer to
   [OpenTelemetry: Advanced configuration](https://docs.newrelic.com/docs/integrations/open-source-telemetry-integrations/opentelemetry/opentelemetry-advanced-configuration#h2-change-endpoints).

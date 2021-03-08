@@ -23,6 +23,10 @@ processors:
     detectors: [env, system]
     timeout: 2s
     override: false
+  resourcedetection/azure:
+    detectors: [env, azure]
+    timeout: 2s
+    override: false
 
 exporters:
   exampleexporter:
@@ -37,4 +41,5 @@ service:
       # - resourcedetection/gce
       # - resourcedetection/ec2
       # - resourcedetection/ecs
+      # - resourcedetection/azure
       exporters: [exampleexporter]

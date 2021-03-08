@@ -21,7 +21,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -208,7 +208,7 @@ func TestMetadataErrorCases(t *testing.T) {
 			observedLogger, logs := observer.New(zapcore.WarnLevel)
 			logger := zap.New(observedLogger)
 
-			var mds []consumerdata.MetricsData
+			var mds []internaldata.MetricsData
 			tt.metadata.DetailedPVCLabelsSetter = tt.detailedPVCLabelsSetterOverride
 			acc := metricDataAccumulator{
 				m:                     mds,

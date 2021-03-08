@@ -19,8 +19,8 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
@@ -43,7 +43,7 @@ var ValidMetricGroups = map[MetricGroup]bool{
 }
 
 type metricDataAccumulator struct {
-	m                     []consumerdata.MetricsData
+	m                     []internaldata.MetricsData
 	metadata              Metadata
 	logger                *zap.Logger
 	metricGroupsToCollect map[MetricGroup]bool
@@ -151,7 +151,7 @@ func (a *metricDataAccumulator) accumulate(
 			}
 		}
 	}
-	a.m = append(a.m, consumerdata.MetricsData{
+	a.m = append(a.m, internaldata.MetricsData{
 		Resource: r,
 		Metrics:  resourceMetrics,
 	})

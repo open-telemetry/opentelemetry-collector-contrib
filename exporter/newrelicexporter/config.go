@@ -25,8 +25,11 @@ import (
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
-	// APIKey is the required authentication credentials for New Relic APIs.
+	// APIKey is the required authentication credentials for New Relic APIs. This field specifies the default key.
 	APIKey string `mapstructure:"apikey"`
+
+	// APIKeyHeader may be specified to instruct the exporter to extract the API key from the request context.
+	APIKeyHeader string `mapstructure:"api_key_header"`
 
 	// Timeout is the total amount of time spent attempting a request,
 	// including retries, before abandoning and dropping data. Default is 15
@@ -37,11 +40,17 @@ type Config struct {
 	// sent to New Relic.
 	CommonAttributes map[string]interface{} `mapstructure:"common_attributes"`
 
-	// MetricsURLOverride overrides the metrics endpoint.
-	MetricsURLOverride string `mapstructure:"metrics_url_override"`
+	// MetricsHostOverride overrides the metrics endpoint.
+	MetricsHostOverride string `mapstructure:"metrics_host_override"`
 
-	// SpansURLOverride overrides the spans endpoint.
-	SpansURLOverride string `mapstructure:"spans_url_override"`
+	// SpansHostOverride overrides the spans endpoint.
+	SpansHostOverride string `mapstructure:"spans_host_override"`
+
+	// MetricsInsecure disables TLS on the metrics endpoint.
+	metricsInsecure bool
+
+	// SpansInsecure disables TLS on the spans endpoint.
+	spansInsecure bool
 }
 
 // HarvestOption sets all relevant Config values when instantiating a New
@@ -53,6 +62,11 @@ func (c Config) HarvestOption(cfg *telemetry.Config) {
 	cfg.CommonAttributes = c.CommonAttributes
 	cfg.Product = product
 	cfg.ProductVersion = version
-	cfg.MetricsURLOverride = c.MetricsURLOverride
-	cfg.SpansURLOverride = c.SpansURLOverride
+	var prefix string
+	if c.metricsInsecure {
+		prefix = "http://"
+	} else {
+		prefix = "https://"
+	}
+	cfg.MetricsURLOverride = prefix + c.MetricsHostOverride
 }

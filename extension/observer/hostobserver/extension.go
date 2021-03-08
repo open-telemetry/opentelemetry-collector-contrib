@@ -42,9 +42,9 @@ type endpointsLister struct {
 	collectProcessDetails func(proc *process.Process) (*processDetails, error)
 }
 
-var _ component.ServiceExtension = (*hostObserver)(nil)
+var _ component.Extension = (*hostObserver)(nil)
 
-func newObserver(logger *zap.Logger, config *Config) (component.ServiceExtension, error) {
+func newObserver(logger *zap.Logger, config *Config) (component.Extension, error) {
 	h := &hostObserver{
 		EndpointsWatcher: observer.EndpointsWatcher{
 			RefreshInterval: config.RefreshInterval,

@@ -25,6 +25,8 @@ translation_rules:
   mapping:
 
     # dimensions
+    k8s.cronjob.name: kubernetes_name
+    k8s.cronjob.uid: kubernetes_uid
     container.image.name: container_image
     k8s.container.name: container_spec_name
     k8s.cluster.name: kubernetes_cluster
@@ -34,6 +36,8 @@ translation_rules:
     k8s.deployment.uid: kubernetes_uid
     k8s.hpa.name: kubernetes_name
     k8s.hpa.uid: kubernetes_uid
+    k8s.job.name: kubernetes_name
+    k8s.job.uid: kubernetes_uid
     k8s.namespace.name: kubernetes_namespace
     k8s.node.name: kubernetes_node
     k8s.node.uid: kubernetes_node_uid
@@ -48,18 +52,6 @@ translation_rules:
     k8s.statefulset.name: kubernetes_name
     k8s.statefulset.uid: kubernetes_uid
     host.name: host
-
-    # properties
-    cronjob_uid: cronJob_uid
-    cronjob: cronJob
-    daemonset_uid: daemonSet_uid
-    daemonset: daemonSet
-    k8s.workload.kind: kubernetes_workload
-    k8s.workload.name: kubernetes_workload_name
-    replicaset_uid: replicaSet_uid
-    replicaset: replicaSet
-    statefulset_uid: statefulSet_uid
-    statefulset: statefulSet
 
 - action: rename_metrics
   mapping:
@@ -250,7 +242,7 @@ translation_rules:
     receive: pod_network_receive_errors_total
     transmit: pod_network_transmit_errors_total
 
-# compute cpu utilization
+# compute cpu utilization metrics: cpu.utilization_per_core (excluded by default) and cpu.utilization
 - action: delta_metric
   mapping:
     system.cpu.time: system.cpu.delta
@@ -271,7 +263,6 @@ translation_rules:
   aggregation_method: sum
   without_dimensions:
   - state
-  - cpu
 - action: copy_metrics
   mapping:
     system.cpu.delta: system.cpu.total
@@ -280,12 +271,19 @@ translation_rules:
   aggregation_method: sum
   without_dimensions:
   - state
-  - cpu
 - action: calculate_new_metric
-  metric_name: cpu.utilization
+  metric_name: cpu.utilization_per_core
   operand1_metric: system.cpu.usage
   operand2_metric: system.cpu.total
   operator: /
+- action: copy_metrics
+  mapping:
+    cpu.utilization_per_core: cpu.utilization
+- action: aggregate_metric
+  metric_name: cpu.utilization
+  aggregation_method: avg
+  without_dimensions:
+  - cpu
 
 # convert cpu metrics
 - action: split_metric
@@ -490,7 +488,25 @@ translation_rules:
     disk.summary_utilization: 100
 
 
-# convert disk I/O metrics
+# Translations to derive disk I/O metrics.
+
+## Calculate extra system.disk.operations.total and system.disk.io.total metrics summing up read/write ops/IO across all devices.
+- action: copy_metrics
+  mapping:
+    system.disk.operations: system.disk.operations.total
+    system.disk.io: system.disk.io.total
+- action: aggregate_metric
+  metric_name: system.disk.operations.total
+  aggregation_method: sum
+  without_dimensions:
+    - device
+- action: aggregate_metric
+  metric_name: system.disk.io.total
+  aggregation_method: sum
+  without_dimensions:
+    - device
+
+## Calculate an extra disk_ops.total metric as number all all read and write operations happened since the last report.
 - action: copy_metrics
   mapping:
     system.disk.operations: disk.ops
@@ -503,6 +519,7 @@ translation_rules:
 - action: delta_metric
   mapping:
     disk.ops: disk_ops.total
+
 - action: rename_dimension_keys
   metric_names:
     system.disk.merged: true
@@ -517,7 +534,24 @@ translation_rules:
 
 
 # Translations to derive Network I/O metrics.
-## network.total.
+
+## Calculate extra network I/O metrics system.network.packets.total and system.network.io.total.
+- action: copy_metrics
+  mapping:
+    system.network.packets: system.network.packets.total
+    system.network.io: system.network.io.total
+- action: aggregate_metric
+  metric_name: system.network.packets.total
+  aggregation_method: sum
+  without_dimensions:
+  - device
+- action: aggregate_metric
+  metric_name: system.network.io.total
+  aggregation_method: sum
+  without_dimensions:
+  - device
+
+## Calculate extra network.total metric.
 - action: copy_metrics
   mapping:
     system.network.io: network.total
@@ -530,10 +564,9 @@ translation_rules:
   aggregation_method: sum
   without_dimensions:
   - direction
-  - interface
+  - device
 
-
-## other Network I/O metrics. Note that these translations depend on renaming dimension device to interface.
+## Rename dimension device to interface.
 - action: rename_dimension_keys
   metric_names:
     system.network.dropped: true

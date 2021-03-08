@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -755,6 +756,15 @@ func generateLargeEventBatch() pdata.Logs {
 }
 
 func TestConsumeMetadata(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	converter, err := translation.NewMetricsConverter(
+		zap.NewNop(),
+		nil,
+		cfg.ExcludeMetrics,
+		cfg.IncludeMetrics,
+		cfg.NonAlphanumericDimensionChars,
+	)
+	require.NoError(t, err)
 	type args struct {
 		metadata []*metadata.MetadataUpdate
 	}
@@ -762,25 +772,27 @@ func TestConsumeMetadata(t *testing.T) {
 		payLoad map[string]interface{}
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
+		name                   string
+		fields                 fields
+		args                   args
+		expectedDimensionKey   string
+		expectedDimensionValue string
 	}{
 		{
-			"Test property updates",
-			fields{
+			name: "Test property updates",
+			fields: fields{
 				map[string]interface{}{
 					"customProperties": map[string]interface{}{
-						"prop_erty1": "val1",
+						"prop.erty1": "val1",
 						"property2":  nil,
-						"prop_erty3": "val33",
+						"prop.erty3": "val33",
 						"property4":  nil,
 					},
 					"tags":         nil,
 					"tagsToRemove": nil,
 				},
 			},
-			args{
+			args: args{
 				[]*metadata.MetadataUpdate{
 					{
 						ResourceIDKey: "key",
@@ -800,21 +812,23 @@ func TestConsumeMetadata(t *testing.T) {
 					},
 				},
 			},
+			expectedDimensionKey:   "key",
+			expectedDimensionValue: "id",
 		},
 		{
-			"Test tag updates",
-			fields{
+			name: "Test tag updates",
+			fields: fields{
 				map[string]interface{}{
 					"customProperties": map[string]interface{}{},
 					"tags": []interface{}{
-						"tag_1",
+						"tag.1",
 					},
 					"tagsToRemove": []interface{}{
-						"tag_2",
+						"tag/2",
 					},
 				},
 			},
-			args{
+			args: args{
 				[]*metadata.MetadataUpdate{
 					{
 						ResourceIDKey: "key",
@@ -831,10 +845,12 @@ func TestConsumeMetadata(t *testing.T) {
 					},
 				},
 			},
+			expectedDimensionKey:   "key",
+			expectedDimensionValue: "id",
 		},
 		{
-			"Test quick successive updates",
-			fields{
+			name: "Test quick successive updates",
+			fields: fields{
 				map[string]interface{}{
 					"customProperties": map[string]interface{}{
 						"property1": nil,
@@ -842,14 +858,14 @@ func TestConsumeMetadata(t *testing.T) {
 						"property3": nil,
 					},
 					"tags": []interface{}{
-						"tag_2",
+						"tag/2",
 					},
 					"tagsToRemove": []interface{}{
-						"tag_1",
+						"tag.1",
 					},
 				},
 			},
-			args{
+			args: args{
 				[]*metadata.MetadataUpdate{
 					{
 						ResourceIDKey: "key",
@@ -898,6 +914,45 @@ func TestConsumeMetadata(t *testing.T) {
 					},
 				},
 			},
+			expectedDimensionKey:   "key",
+			expectedDimensionValue: "id",
+		},
+		{
+			name: "Test updates on dimensions with nonalphanumeric characters (other than the default allow list)",
+			fields: fields{
+				map[string]interface{}{
+					"customProperties": map[string]interface{}{
+						"prop.erty1": "val1",
+						"property2":  nil,
+						"prop.erty3": "val33",
+						"property4":  nil,
+					},
+					"tags":         nil,
+					"tagsToRemove": nil,
+				},
+			},
+			args: args{
+				[]*metadata.MetadataUpdate{
+					{
+						ResourceIDKey: "k!e=y",
+						ResourceID:    "id",
+						MetadataDelta: metadata.MetadataDelta{
+							MetadataToAdd: map[string]string{
+								"prop.erty1": "val1",
+							},
+							MetadataToRemove: map[string]string{
+								"property2": "val2",
+							},
+							MetadataToUpdate: map[string]string{
+								"prop.erty3": "val33",
+								"property4":  "",
+							},
+						},
+					},
+				},
+			},
+			expectedDimensionKey:   "k_e_y",
+			expectedDimensionValue: "id",
 		},
 	}
 	for _, tt := range tests {
@@ -909,7 +964,12 @@ func TestConsumeMetadata(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				b, err := ioutil.ReadAll(r.Body)
-				require.NoError(t, err)
+				assert.NoError(t, err)
+
+				// Test metadata updates are sent onto the right dimensions.
+				dimPair := strings.Split(r.RequestURI, "/")[3:5]
+				assert.Equal(t, tt.expectedDimensionKey, dimPair[0])
+				assert.Equal(t, tt.expectedDimensionValue, dimPair[1])
 
 				p := map[string]interface{}{
 					"customProperties": map[string]*string{},
@@ -918,9 +978,9 @@ func TestConsumeMetadata(t *testing.T) {
 				}
 
 				err = json.Unmarshal(b, &p)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
-				require.Equal(t, tt.fields.payLoad, p)
+				assert.Equal(t, tt.fields.payLoad, p)
 				wg.Done()
 			}))
 			defer server.Close()
@@ -939,6 +999,7 @@ func TestConsumeMetadata(t *testing.T) {
 					Logger:                logger,
 					SendDelay:             1,
 					PropertiesMaxBuffered: 10,
+					MetricsConverter:      *converter,
 				})
 			dimClient.Start()
 

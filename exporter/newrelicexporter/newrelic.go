@@ -18,15 +18,19 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"net/http"
+	"strings"
 
 	"github.com/newrelic/newrelic-telemetry-sdk-go/cumulative"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"google.golang.org/grpc/metadata"
 )
 
 const (
@@ -50,11 +54,14 @@ func (w logWriter) Write(p []byte) (n int, err error) {
 
 // exporter exporters OpenTelemetry Collector data to New Relic.
 type exporter struct {
-	deltaCalculator *cumulative.DeltaCalculator
-	harvester       *telemetry.Harvester
+	deltaCalculator    *cumulative.DeltaCalculator
+	harvester          *telemetry.Harvester
+	spanRequestFactory telemetry.RequestFactory
+	apiKeyHeader       string
+	logger             *zap.Logger
 }
 
-func newExporter(l *zap.Logger, c configmodels.Exporter) (*exporter, error) {
+func newMetricsExporter(l *zap.Logger, c configmodels.Exporter) (*exporter, error) {
 	nrConfig, ok := c.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config: %#v", c)
@@ -78,11 +85,66 @@ func newExporter(l *zap.Logger, c configmodels.Exporter) (*exporter, error) {
 	}, nil
 }
 
+func newTraceExporter(l *zap.Logger, c configmodels.Exporter) (*exporter, error) {
+	nrConfig, ok := c.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("invalid config: %#v", c)
+	}
+
+	options := []telemetry.ClientOption{telemetry.WithUserAgent(product + "/" + version)}
+	if nrConfig.APIKey != "" {
+		options = append(options, telemetry.WithInsertKey(nrConfig.APIKey))
+	} else if nrConfig.APIKeyHeader != "" {
+		options = append(options, telemetry.WithNoDefaultKey())
+	}
+
+	if nrConfig.SpansHostOverride != "" {
+		options = append(options, telemetry.WithEndpoint(nrConfig.SpansHostOverride))
+	}
+
+	if nrConfig.spansInsecure {
+		options = append(options, telemetry.WithInsecure())
+	}
+	s, err := telemetry.NewSpanRequestFactory(options...)
+	if nil != err {
+		return nil, err
+	}
+
+	return &exporter{
+		spanRequestFactory: s,
+		apiKeyHeader:       strings.ToLower(nrConfig.APIKeyHeader),
+		logger:             l,
+	}, nil
+}
+
+func (e *exporter) extractInsertKeyFromHeader(ctx context.Context) string {
+	if e.apiKeyHeader == "" {
+		return ""
+	}
+
+	// right now, we only support looking up attributes from requests that have gone through the gRPC server
+	// in that case, it will add the HTTP headers as context metadata
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return ""
+	}
+
+	// we have gRPC metadata in the context but does it have our key?
+	values, ok := md[e.apiKeyHeader]
+	if !ok {
+		return ""
+	}
+
+	return values[0]
+}
+
 func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, error) {
 	var (
 		errs      []error
 		goodSpans int
 	)
+
+	var batch telemetry.SpanBatch
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
@@ -90,6 +152,7 @@ func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, erro
 		for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
 			ispans := rspans.InstrumentationLibrarySpans().At(j)
 			transform := newTraceTransformer(resource, ispans.InstrumentationLibrary())
+			spans := make([]telemetry.Span, 0, ispans.Spans().Len())
 			for k := 0; k < ispans.Spans().Len(); k++ {
 				span := ispans.Spans().At(k)
 				nrSpan, err := transform.Span(span)
@@ -98,18 +161,50 @@ func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, erro
 					continue
 				}
 
-				if err := e.harvester.RecordSpan(nrSpan); err != nil {
-					errs = append(errs, err)
-					continue
-				}
+				spans = append(spans, nrSpan)
 				goodSpans++
 			}
+			batch.Spans = append(batch.Spans, spans...)
 		}
 	}
+	batches := []telemetry.PayloadEntry{&batch}
+	insertKey := e.extractInsertKeyFromHeader(ctx)
+	var req *http.Request
+	var err error
 
-	e.harvester.HarvestNow(ctx)
+	if insertKey != "" {
+		req, err = e.spanRequestFactory.BuildRequest(batches, telemetry.WithInsertKey(insertKey))
+	} else {
+		req, err = e.spanRequestFactory.BuildRequest(batches)
+	}
+	if err != nil {
+		e.logger.Error("Failed to build batch", zap.Error(err))
+		return 0, err
+	}
 
-	return td.SpanCount() - goodSpans, componenterror.CombineErrors(errs)
+	// Execute the http request and handle the response
+	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+		e.logger.Error("Error making HTTP request.", zap.Error(err))
+		return 0, &urlError{Err: err}
+	}
+	defer response.Body.Close()
+	io.Copy(ioutil.Discard, response.Body)
+
+	// Check if the http payload has been accepted, if not record an error
+	if response.StatusCode != http.StatusAccepted {
+		// Log the error at an appropriate level based on the status code
+		if response.StatusCode >= 500 {
+			e.logger.Error("Error on HTTP response.", zap.String("Status", response.Status))
+		} else {
+			e.logger.Debug("Error on HTTP response.", zap.String("Status", response.Status))
+		}
+
+		return 0, &httpError{Response: response}
+	}
+
+	return td.SpanCount() - goodSpans, consumererror.CombineErrors(errs)
+
 }
 
 func (e exporter) pushMetricData(ctx context.Context, md pdata.Metrics) (int, error) {
@@ -145,7 +240,7 @@ func (e exporter) pushMetricData(ctx context.Context, md pdata.Metrics) (int, er
 
 	e.harvester.HarvestNow(ctx)
 
-	return md.MetricCount() - goodMetrics, componenterror.CombineErrors(errs)
+	return md.MetricCount() - goodMetrics, consumererror.CombineErrors(errs)
 }
 
 func (e exporter) Shutdown(ctx context.Context) error {
