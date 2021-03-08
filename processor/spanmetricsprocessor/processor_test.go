@@ -87,7 +87,7 @@ func TestProcessorStart(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
-			exporters := map[configmodels.DataType]map[configmodels.Exporter]component.Exporter{
+			exporters := map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter{
 				configmodels.MetricsDataType: {
 					otlpConfig: tc.exporter,
 				},

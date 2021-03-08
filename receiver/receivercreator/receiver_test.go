@@ -80,7 +80,7 @@ var _ observer.Observable = (*mockObserver)(nil)
 
 func TestMockedEndToEnd(t *testing.T) {
 	host, cfg := exampleCreatorFactory(t)
-	host.extensions = map[configmodels.Extension]component.Extension{
+	host.extensions = map[configmodels.NamedEntity]component.Extension{
 		&configmodels.ExtensionSettings{
 			TypeVal: "mock_observer",
 			NameVal: "mock_observer",
