@@ -96,12 +96,12 @@ func (n nopHostWithExporters) GetFactory(component.Kind, configmodels.Type) comp
 	return nil
 }
 
-func (n nopHostWithExporters) GetExtensions() map[configmodels.Extension]component.Extension {
+func (n nopHostWithExporters) GetExtensions() map[configmodels.NamedEntity]component.Extension {
 	return nil
 }
 
-func (n nopHostWithExporters) GetExporters() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
-	return map[configmodels.DataType]map[configmodels.Exporter]component.Exporter{
+func (n nopHostWithExporters) GetExporters() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter {
+	return map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter{
 		configmodels.MetricsDataType: {
 			&configmodels.ExporterSettings{TypeVal: "exampleexporter", NameVal: "exampleexporter/withoutmetadata"}: MockExporter{},
 			&configmodels.ExporterSettings{TypeVal: "exampleexporter", NameVal: "exampleexporter/withmetadata"}:    mockExporterWithK8sMetadata{},
