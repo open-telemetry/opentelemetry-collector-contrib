@@ -15,8 +15,6 @@
 package stackdriverexporter
 
 import (
-	"time"
-
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"google.golang.org/api/option"
@@ -30,26 +28,20 @@ type Config struct {
 	Endpoint                      string                   `mapstructure:"endpoint"`
 	// Only has effect if Endpoint is not ""
 	UseInsecure bool `mapstructure:"use_insecure"`
+
 	// Timeout for all API calls. If not set, defaults to 12 seconds.
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	ResourceMappings               []ResourceMapping        `mapstructure:"resource_mappings"`
+	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+
+	ResourceMappings []ResourceMapping `mapstructure:"resource_mappings"`
 	// GetClientOptions returns additional options to be passed
 	// to the underlying Google Cloud API client.
 	// Must be set programmatically (no support via declarative config).
 	// Optional.
 	GetClientOptions func() []option.ClientOption
 
-	TraceConfig  TraceConfig  `mapstructure:"trace"`
 	MetricConfig MetricConfig `mapstructure:"metric"`
-	NumOfWorkers int          `mapstructure:"number_of_workers"`
-}
-
-type TraceConfig struct {
-	BundleDelayThreshold time.Duration `mapstructure:"bundle_delay_threshold"`
-	BundleCountThreshold int           `mapstructure:"bundle_count_threshold"`
-	BundleByteThreshold  int           `mapstructure:"bundle_byte_threshold"`
-	BundleByteLimit      int           `mapstructure:"bundle_byte_limit"`
-	BufferMaxBytes       int           `mapstructure:"buffer_max_bytes"`
 }
 
 type MetricConfig struct {

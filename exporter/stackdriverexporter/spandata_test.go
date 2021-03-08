@@ -101,7 +101,7 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 		Name:         "End-To-End Here",
 		StartTime:    startTime,
 		EndTime:      endTime,
-		MessageEvents: []trace.Event{
+		MessageEvents: []apitrace.Event{
 			{
 				Time:       startTime,
 				Name:       "start",

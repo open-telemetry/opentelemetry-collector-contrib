@@ -157,12 +157,12 @@ func pdataLinksToOTLinks(links pdata.SpanLinkSlice) []apitrace.Link {
 	return otLinks
 }
 
-func pdataEventsToOTMessageEvents(events pdata.SpanEventSlice) []export.Event {
+func pdataEventsToOTMessageEvents(events pdata.SpanEventSlice) []apitrace.Event {
 	size := events.Len()
-	otEvents := make([]export.Event, 0, size)
+	otEvents := make([]apitrace.Event, 0, size)
 	for i := 0; i < size; i++ {
 		event := events.At(i)
-		otEvents = append(otEvents, export.Event{
+		otEvents = append(otEvents, apitrace.Event{
 			Name:       event.Name(),
 			Attributes: pdataAttributesToOTAttributes(event.Attributes(), pdata.NewResource()),
 			Time:       time.Unix(0, int64(event.Timestamp())),
