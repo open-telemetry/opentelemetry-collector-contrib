@@ -29,7 +29,7 @@ import (
 type mockHostFactories struct {
 	component.Host
 	factories  component.Factories
-	extensions map[configmodels.Extension]component.Extension
+	extensions map[configmodels.NamedEntity]component.Extension
 }
 
 // GetFactory of the specified kind. Returns the factory for a component type.
@@ -47,7 +47,7 @@ func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType confi
 	return nil
 }
 
-func (mh *mockHostFactories) GetExtensions() map[configmodels.Extension]component.Extension {
+func (mh *mockHostFactories) GetExtensions() map[configmodels.NamedEntity]component.Extension {
 	return mh.extensions
 }
 
