@@ -17,6 +17,7 @@ package network
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"unicode/utf16"
 )
@@ -53,6 +54,8 @@ type MultiReader interface {
 	Pos() int
 	// Reset resets the underlying PositionalReader
 	Reset()
+	// Flush flushes the underlying BlobWriter
+	Flush()
 }
 
 // mReader is an implementation of MultiReader. It wraps a PositionalReader,
@@ -61,8 +64,8 @@ type mReader struct {
 	pr PositionalReader
 }
 
-func NewMultiReader(r io.Reader) MultiReader {
-	pr := NewPositionalReader(r)
+func NewMultiReader(r io.Reader, bw BlobWriter) MultiReader {
+	pr := NewPositionalReader(r, bw)
 	return &mReader{pr: pr}
 }
 
@@ -182,7 +185,7 @@ func (r *mReader) AssertNextByteEquals(b byte) error {
 		return err
 	}
 	if found != b {
-		return errors.New("next byte assertion failed")
+		return fmt.Errorf("next byte assertion failed, expected %d, got %d", b, found)
 	}
 	return nil
 }
@@ -220,12 +223,18 @@ func (r *mReader) Reset() {
 	r.pr.Reset()
 }
 
+// Flush flushes the underlying BlobWriter
+func (r *mReader) Flush() {
+	r.pr.Flush()
+}
+
 // PositionalReader is an interface extracted from posReader so it can be
 // swapped for testing. It implements io.Reader, can return the number of bytes
 // read, and can reset the current position.
 type PositionalReader interface {
 	Read(p []byte) (n int, err error)
 	Position() int
+	Flush()
 	Reset()
 }
 
@@ -234,18 +243,20 @@ type PositionalReader interface {
 type posReader struct {
 	r   io.Reader
 	pos int
+	w   BlobWriter
 }
 
 // NewPositionalReader creates a PositionalReader, wrapping the passed-in
 // io.Reader, and keeping track of the number of bytes read.
-func NewPositionalReader(r io.Reader) PositionalReader {
-	return &posReader{r: r}
+func NewPositionalReader(r io.Reader, w BlobWriter) PositionalReader {
+	return &posReader{r: r, w: w}
 }
 
 // Read implements io.Reader incrementing the current position by the number of
 // bytes read.
 func (r *posReader) Read(p []byte) (n int, err error) {
 	n, err = r.r.Read(p)
+	r.w.append(p, n)
 	r.pos += n
 	return n, err
 }
@@ -260,4 +271,8 @@ func (r *posReader) Position() int {
 // long-running usage.
 func (r *posReader) Reset() {
 	r.pos = r.pos % 4
+}
+
+func (r *posReader) Flush() {
+	r.w.flush()
 }

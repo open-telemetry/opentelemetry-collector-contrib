@@ -36,4 +36,16 @@ type Config struct {
 	// be displayed by the `dotnet-counters` tool:
 	// https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-counters
 	Counters []string `mapstructure:"counters"`
+
+	// BlobDir takes an optional directory name where stream data can be written for
+	// offline analysis and troubleshooting. If BlobDir is empty, no stream data is
+	// written. If it has a value, MaxBlobFiles also needs to be set, and stream
+	// data will be written to disk at the specified location using the naming
+	// convention `msg.%d.bin` as each message is received, where %d is the current
+	// message number.
+	BlobDir string `mapstructure:"blob_dir"`
+	// MaxBlobFiles indicates the maximum number of files kept in BlobDir. When a
+	// file is written, the oldest one will be deleted if necessary to keep the
+	// number of files in BlobDir at the specified maximum.
+	MaxBlobFiles int `mapstructure:"max_blob_files"`
 }

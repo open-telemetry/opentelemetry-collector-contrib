@@ -27,7 +27,7 @@ func TestParseSPBlock(t *testing.T) {
 	data, err := network.ReadBlobData(path.Join("..", "testdata"), 16)
 	require.NoError(t, err)
 	rw := network.NewBlobReader(data)
-	reader := network.NewMultiReader(rw)
+	reader := network.NewMultiReader(rw, &network.NopBlobWriter{})
 	err = reader.Seek(36870)
 	require.NoError(t, err)
 	err = parseSPBlock(reader)
@@ -44,10 +44,10 @@ func TestParseSPBlock_Errors(t *testing.T) {
 
 func testParseSPBlockError(t *testing.T, data [][]byte, i int) {
 	rw := network.NewBlobReader(data)
-	reader := network.NewMultiReader(rw)
+	reader := network.NewMultiReader(rw, &network.NopBlobWriter{})
 	err := reader.Seek(36870)
 	require.NoError(t, err)
-	rw.SetReadError(i)
+	rw.ErrOnRead(i)
 	err = parseSPBlock(reader)
 	require.Error(t, err)
 }

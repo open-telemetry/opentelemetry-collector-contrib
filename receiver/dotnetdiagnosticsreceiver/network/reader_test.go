@@ -31,11 +31,12 @@ func TestMReader_Read(t *testing.T) {
 			0: {42},
 		},
 	}
-	multi := NewMultiReader(r)
+	multi := NewMultiReader(r, &NopBlobWriter{})
 	var b byte
 	err := multi.Read(&b)
 	require.NoError(t, err)
 	assert.Equal(t, byte(42), b)
+	multi.Flush()
 }
 
 func TestMReader_Align(t *testing.T) {
@@ -45,7 +46,7 @@ func TestMReader_Align(t *testing.T) {
 			0: make([]byte, 4),
 		},
 	}
-	multi := NewMultiReader(r)
+	multi := NewMultiReader(r, &NopBlobWriter{})
 	var b byte
 	err := multi.Read(&b)
 	require.NoError(t, err)
@@ -66,7 +67,7 @@ func TestMReader_AlignErr(t *testing.T) {
 			0: make([]byte, 1),
 		},
 	}
-	multi := NewMultiReader(r)
+	multi := NewMultiReader(r, &NopBlobWriter{})
 	_, _ = multi.ReadByte()
 	err := multi.Align()
 	require.Error(t, err)
@@ -83,7 +84,7 @@ func TestMReader_UTF16(t *testing.T) {
 			3: {p[3]},
 		},
 	}
-	multi := NewMultiReader(r)
+	multi := NewMultiReader(r, &NopBlobWriter{})
 	utfRead, err := multi.ReadUTF16()
 	require.NoError(t, err)
 	assert.Equal(t, "x", utfRead)
@@ -99,7 +100,7 @@ func strToUTF16Bytes(msg string) []byte {
 }
 
 func TestMReader_UTF16Err(t *testing.T) {
-	multi := NewMultiReader(&FakeRW{})
+	multi := NewMultiReader(&FakeRW{}, &NopBlobWriter{})
 	_, err := multi.ReadUTF16()
 	require.Error(t, err)
 }
@@ -111,14 +112,14 @@ func TestMReader_ReadByte(t *testing.T) {
 			0: {111},
 		},
 	}
-	multi := NewMultiReader(r)
+	multi := NewMultiReader(r, &NopBlobWriter{})
 	b, err := multi.ReadByte()
 	require.NoError(t, err)
 	assert.Equal(t, byte(111), b)
 }
 
 func TestMReader_ReadByteErr(t *testing.T) {
-	multi := NewMultiReader(&FakeRW{})
+	multi := NewMultiReader(&FakeRW{}, &NopBlobWriter{})
 	_, err := multi.ReadByte()
 	require.Error(t, err)
 }
@@ -130,13 +131,13 @@ func TestMReader_AssertNextByteEquals(t *testing.T) {
 			0: {111},
 		},
 	}
-	multi := NewMultiReader(r)
+	multi := NewMultiReader(r, &NopBlobWriter{})
 	err := multi.AssertNextByteEquals(111)
 	require.NoError(t, err)
 }
 
 func TestMReader_AssertNextByteEquals_ReadErr(t *testing.T) {
-	multi := NewMultiReader(&FakeRW{})
+	multi := NewMultiReader(&FakeRW{}, &NopBlobWriter{})
 	err := multi.AssertNextByteEquals(111)
 	require.Error(t, err)
 }
@@ -148,7 +149,7 @@ func TestMReader_AssertNextByteEquals_MismatchErr(t *testing.T) {
 			0: {111},
 		},
 	}
-	multi := NewMultiReader(r)
+	multi := NewMultiReader(r, &NopBlobWriter{})
 	err := multi.AssertNextByteEquals(222)
 	require.Error(t, err, "next byte assertion failed")
 }
@@ -160,7 +161,7 @@ func TestMReader_CompressedInt32_Simple(t *testing.T) {
 			0: {42 | 0x80},
 		},
 	}
-	multi := NewMultiReader(r)
+	multi := NewMultiReader(r, &NopBlobWriter{})
 	i, err := multi.ReadCompressedInt32()
 	require.NoError(t, err)
 	require.Equal(t, int32(42), i)
@@ -174,7 +175,7 @@ func TestMReader_CompressedInt32_MultiByte(t *testing.T) {
 			1: {1},
 		},
 	}
-	multi := NewMultiReader(r)
+	multi := NewMultiReader(r, &NopBlobWriter{})
 	i, err := multi.ReadCompressedInt32()
 	require.NoError(t, err)
 	require.Equal(t, int32(0x81), i)
@@ -185,7 +186,7 @@ func TestMReader_CompressedInt32_LengthErr(t *testing.T) {
 		ReadErrIdx: -1,
 		Responses:  mkMap(6, 0x80),
 	}
-	multi := NewMultiReader(r)
+	multi := NewMultiReader(r, &NopBlobWriter{})
 	_, err := multi.ReadCompressedInt32()
 	require.Error(t, err, "CompressedInt32 is too long")
 }
@@ -194,7 +195,7 @@ func TestMReader_CompressedInt32_ReadErr(t *testing.T) {
 	r := &FakeRW{
 		ReadErrIdx: 0,
 	}
-	multi := NewMultiReader(r)
+	multi := NewMultiReader(r, &NopBlobWriter{})
 	_, err := multi.ReadCompressedInt32()
 	require.Error(t, err)
 }
@@ -206,7 +207,7 @@ func TestMReader_CompressedInt64_Simple(t *testing.T) {
 			0: {42 | 0x80},
 		},
 	}
-	multi := NewMultiReader(r)
+	multi := NewMultiReader(r, &NopBlobWriter{})
 	i, err := multi.ReadCompressedInt64()
 	require.NoError(t, err)
 	require.Equal(t, int64(42), i)
@@ -220,7 +221,7 @@ func TestMReader_CompressedInt64_MultiByte(t *testing.T) {
 			1: {1},
 		},
 	}
-	multi := NewMultiReader(r)
+	multi := NewMultiReader(r, &NopBlobWriter{})
 	i, err := multi.ReadCompressedInt64()
 	require.NoError(t, err)
 	require.Equal(t, int64(0x81), i)
@@ -231,7 +232,7 @@ func TestMReader_CompressedInt64_LengthErr(t *testing.T) {
 		ReadErrIdx: -1,
 		Responses:  mkMap(11, 0x80),
 	}
-	multi := NewMultiReader(r)
+	multi := NewMultiReader(r, &NopBlobWriter{})
 	_, err := multi.ReadCompressedInt64()
 	require.Error(t, err, "CompressedInt64 is too long")
 }
@@ -240,7 +241,7 @@ func TestMReader_CompressedInt64_ReadErr(t *testing.T) {
 	r := &FakeRW{
 		ReadErrIdx: 0,
 	}
-	multi := NewMultiReader(r)
+	multi := NewMultiReader(r, &NopBlobWriter{})
 	_, err := multi.ReadCompressedInt64()
 	require.Error(t, err)
 }
@@ -250,7 +251,7 @@ func TestMReader_SeekReset(t *testing.T) {
 		ReadErrIdx: -1,
 		Responses:  mkMap(6, 0),
 	}
-	multi := NewMultiReader(r)
+	multi := NewMultiReader(r, &NopBlobWriter{})
 	_, err := multi.ReadByte()
 	require.NoError(t, err)
 	multi.Reset()
@@ -264,7 +265,7 @@ func TestMReader_SeekReset(t *testing.T) {
 
 func TestMReader_Seek_ReadErr(t *testing.T) {
 	r := &FakeRW{ReadErrIdx: 0}
-	multi := NewMultiReader(r)
+	multi := NewMultiReader(r, &NopBlobWriter{})
 	err := multi.Seek(1)
 	require.Error(t, err)
 }
@@ -276,7 +277,7 @@ func TestMReader_ReadASCII(t *testing.T) {
 			0: []byte("abc"),
 		},
 	}
-	multi := NewMultiReader(r)
+	multi := NewMultiReader(r, &NopBlobWriter{})
 	msg, err := multi.ReadASCII(3)
 	require.NoError(t, err)
 	assert.Equal(t, "abc", msg)
@@ -289,7 +290,7 @@ func TestMReader_ReadASCIIErr(t *testing.T) {
 			0: []byte("abc"),
 		},
 	}
-	multi := NewMultiReader(r)
+	multi := NewMultiReader(r, &NopBlobWriter{})
 	_, err := multi.ReadASCII(3)
 	require.Error(t, err)
 }
