@@ -50,7 +50,7 @@ func (c HostMetadataConfig) Build(context operator.BuildContext) ([]operator.Ope
 
 	hostIdentifier, err := c.HostIdentifierConfig.Build()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to build host labeler")
+		return nil, errors.Wrap(err, "failed to build host attributer")
 	}
 
 	op := &HostMetadata{

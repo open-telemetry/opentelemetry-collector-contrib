@@ -10,8 +10,8 @@ The `udp_input` operator listens for logs from UDP packets.
 | `output`          | Next in pipeline | The connected operator(s) that will receive all outbound entries                  |
 | `listen_address`  | required         | A listen address of the form `<ip>:<port>`                                        |
 | `write_to`        | $                | The record [field](/docs/types/field.md) written to when creating a new log entry |
-| `labels`          | {}               | A map of `key: value` labels to add to the entry's labels                         |
-| `resource`        | {}               | A map of `key: value` labels to add to the entry's resource                       |
+| `attributes`      | {}               | A map of `key: value` pairs to add to the entry's attributes                         |
+| `resource`        | {}               | A map of `key: value` pairs to add to the entry's resource                       |
 
 ### Example Configurations
 

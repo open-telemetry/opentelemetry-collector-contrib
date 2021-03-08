@@ -18,11 +18,11 @@ An entry that does not match any of the routes is dropped and not processed furt
 
 #### Route configuration
 
-| Field    | Default  | Description                                                                                                           |
-| ---      | ---      | ---                                                                                                                   |
-| `output` | required | The connected operator(s) that will receive all outbound entries for this route                                       |
-| `expr`   | required | An [expression](/docs/types/expression.md) that returns a boolean. The record of the routed entry is available as `$` |
-| `labels` | {}       | A map of `key: value` labels to add to an entry that matches the route                                                |
+| Field        | Default  | Description                                                                                                           |
+| ---          | ---      | ---                                                                                                                   |
+| `output`     | required | The connected operator(s) that will receive all outbound entries for this route                                       |
+| `expr`       | required | An [expression](/docs/types/expression.md) that returns a boolean. The record of the routed entry is available as `$` |
+| `attributes` | {}       | A map of `key: value` pairs to add to an entry that matches the route                                                |
 
 
 ### Examples

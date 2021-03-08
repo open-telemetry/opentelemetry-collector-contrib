@@ -15,7 +15,7 @@ The `host_metadata` operator adds hostname and ip to the resource of incoming en
 
 ### Example Configurations
 
-#### Add static tags and labels
+#### Add static attributes
 
 Configuration:
 ```yaml

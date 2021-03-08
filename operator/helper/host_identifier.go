@@ -42,7 +42,7 @@ type HostIdentifierConfig struct {
 	getIP           func() (string, error)
 }
 
-// Build will build a host labeler from the supplied configuration
+// Build will build a host attributer from the supplied configuration
 func (c HostIdentifierConfig) Build() (HostIdentifier, error) {
 	identifier := HostIdentifier{
 		includeHostname: c.IncludeHostname,

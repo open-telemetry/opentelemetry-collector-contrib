@@ -9,7 +9,7 @@ Entry is the base representation of log data as it moves through a pipeline. All
 | `severity`       | The [severity](/docs/types/field.md) of the log.                                                                               |
 | `severity_text`  | The original text that was interpreted as a [severity](/docs/types/field.md).                                                  |
 | `resource`       | A map of key/value pairs that describe the resource from which the log originated.                                             |
-| `labels`         | A map of key/value pairs that provide additional context to the log. This value is often used by a consumer to filter logs.    |
+| `attributes`     | A map of key/value pairs that provide additional context to the log. This value is often used by a consumer to filter logs.    |
 | `record`         | The contents of the log. This value is often modified and restructured in the pipeline. It may be a string, number, or object. |
 
 
@@ -20,7 +20,7 @@ Represented in `json` format, an entry may look like the following:
   "resource": {
     "uuid": "11112222-3333-4444-5555-666677778888",
   },
-  "labels": {
+  "attributes": {
     "env": "prod",
   },
   "record": {

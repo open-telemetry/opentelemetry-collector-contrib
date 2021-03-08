@@ -181,14 +181,14 @@ func TestFieldMarshalYAML(t *testing.T) {
 			"$record['test1']['test.2']\n",
 		},
 		{
-			"LabelField",
-			NewLabelField("test1"),
-			"$labels.test1\n",
+			"AttributeField",
+			NewAttributeField("test1"),
+			"$attributes.test1\n",
 		},
 		{
-			"LabelFieldWithDots",
-			NewLabelField("test.1"),
-			"$labels['test.1']\n",
+			"AttributeFieldWithDots",
+			NewAttributeField("test.1"),
+			"$attributes['test.1']\n",
 		},
 		{
 			"ResourceField",

@@ -45,7 +45,7 @@ type Entry struct {
 	Timestamp    time.Time         `json:"timestamp"               yaml:"timestamp"`
 	Severity     Severity          `json:"severity"                yaml:"severity"`
 	SeverityText string            `json:"severity_text,omitempty" yaml:"severity_text,omitempty"`
-	Labels       map[string]string `json:"labels,omitempty"        yaml:"labels,omitempty"`
+	Attributes   map[string]string `json:"attributes,omitempty"    yaml:"attributes,omitempty"`
 	Resource     map[string]string `json:"resource,omitempty"      yaml:"resource,omitempty"`
 	Record       interface{}       `json:"record"                  yaml:"record"`
 }
@@ -57,12 +57,12 @@ func New() *Entry {
 	}
 }
 
-// AddLabel will add a key/value pair to the entry's labels.
-func (entry *Entry) AddLabel(key, value string) {
-	if entry.Labels == nil {
-		entry.Labels = make(map[string]string)
+// AddAttribute will add a key/value pair to the entry's attributes.
+func (entry *Entry) AddAttribute(key, value string) {
+	if entry.Attributes == nil {
+		entry.Attributes = make(map[string]string)
 	}
-	entry.Labels[key] = value
+	entry.Attributes[key] = value
 }
 
 // AddResourceKey wil add a key/value pair to the entry's resource.
@@ -193,7 +193,7 @@ func (entry *Entry) Copy() *Entry {
 		Timestamp:    entry.Timestamp,
 		Severity:     entry.Severity,
 		SeverityText: entry.SeverityText,
-		Labels:       copyStringMap(entry.Labels),
+		Attributes:   copyStringMap(entry.Attributes),
 		Resource:     copyStringMap(entry.Resource),
 		Record:       copyValue(entry.Record),
 	}

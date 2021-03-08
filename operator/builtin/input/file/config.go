@@ -140,12 +140,12 @@ func (c InputConfig) Build(context operator.BuildContext) ([]operator.Operator, 
 
 	fileNameField := entry.NewNilField()
 	if c.IncludeFileName {
-		fileNameField = entry.NewLabelField("file_name")
+		fileNameField = entry.NewAttributeField("file_name")
 	}
 
 	filePathField := entry.NewNilField()
 	if c.IncludeFilePath {
-		filePathField = entry.NewLabelField("file_path")
+		filePathField = entry.NewAttributeField("file_path")
 	}
 
 	op := &InputOperator{

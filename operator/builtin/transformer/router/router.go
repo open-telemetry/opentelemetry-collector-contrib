@@ -46,9 +46,9 @@ type RouterOperatorConfig struct {
 
 // RouterOperatorRouteConfig is the configuration of a route on a router operator
 type RouterOperatorRouteConfig struct {
-	helper.LabelerConfig `yaml:",inline"`
-	Expression           string           `json:"expr"   yaml:"expr"`
-	OutputIDs            helper.OutputIDs `json:"output" yaml:"output"`
+	helper.AttributerConfig `yaml:",inline"`
+	Expression              string           `json:"expr"   yaml:"expr"`
+	OutputIDs               helper.OutputIDs `json:"output" yaml:"output"`
 }
 
 // Build will build a router operator from the supplied configuration
@@ -73,13 +73,13 @@ func (c RouterOperatorConfig) Build(bc operator.BuildContext) ([]operator.Operat
 			return nil, fmt.Errorf("failed to compile expression '%s': %w", routeConfig.Expression, err)
 		}
 
-		labeler, err := routeConfig.LabelerConfig.Build()
+		attributer, err := routeConfig.AttributerConfig.Build()
 		if err != nil {
-			return nil, fmt.Errorf("failed to build labeler for route '%s': %w", routeConfig.Expression, err)
+			return nil, fmt.Errorf("failed to build attributer for route '%s': %w", routeConfig.Expression, err)
 		}
 
 		route := RouterOperatorRoute{
-			Labeler:    labeler,
+			Attributer: attributer,
 			Expression: compiled,
 			OutputIDs:  routeConfig.OutputIDs.WithNamespace(bc),
 		}
@@ -102,7 +102,7 @@ type RouterOperator struct {
 
 // RouterOperatorRoute is a route on a router operator
 type RouterOperatorRoute struct {
-	helper.Labeler
+	helper.Attributer
 	Expression      *vm.Program
 	OutputIDs       helper.OutputIDs
 	OutputOperators []operator.Operator
@@ -127,7 +127,7 @@ func (p *RouterOperator) Process(ctx context.Context, entry *entry.Entry) error 
 
 		// we compile the expression with "AsBool", so this should be safe
 		if matches.(bool) {
-			if err := route.Label(entry); err != nil {
+			if err := route.Attribute(entry); err != nil {
 				p.Errorf("Failed to label entry: %s", err)
 				return err
 			}

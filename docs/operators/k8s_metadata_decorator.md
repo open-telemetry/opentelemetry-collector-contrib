@@ -1,6 +1,6 @@
 ## `k8s_metadata_decorator` operator
 
-The `k8s_metadata_decorator` operator adds labels and annotations to the entry using data from the Kubernetes metadata API.
+The `k8s_metadata_decorator` operator adds attributes to the entry using data from the Kubernetes metadata API.
 
 ### Configuration Fields
 
@@ -18,7 +18,7 @@ The `k8s_metadata_decorator` operator adds labels and annotations to the entry u
 ### Example Configurations
 
 
-#### Add labels and annotations to a log entry
+#### Add attributes to a log entry
 
 Configuration:
 ```yaml
@@ -46,7 +46,7 @@ Configuration:
 ```json
 {
   "timestamp": "",
-  "labels": {
+  "attributes": {
     "k8s_ns_annotation/addonmanager.kubernetes.io/mode": "Reconcile",
     "k8s_ns_annotation/control-plane": "true",
     "k8s_ns_annotation/kubernetes.io/cluster-service": "true",

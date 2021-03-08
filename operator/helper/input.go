@@ -26,7 +26,7 @@ import (
 // NewInputConfig creates a new input config with default values.
 func NewInputConfig(operatorID, operatorType string) InputConfig {
 	return InputConfig{
-		LabelerConfig:    NewLabelerConfig(),
+		AttributerConfig: NewAttributerConfig(),
 		IdentifierConfig: NewIdentifierConfig(),
 		WriterConfig:     NewWriterConfig(operatorID, operatorType),
 		WriteTo:          entry.NewRecordField(),
@@ -35,7 +35,7 @@ func NewInputConfig(operatorID, operatorType string) InputConfig {
 
 // InputConfig provides a basic implementation of an input operator config.
 type InputConfig struct {
-	LabelerConfig    `mapstructure:",squash" yaml:",inline"`
+	AttributerConfig `mapstructure:",squash" yaml:",inline"`
 	IdentifierConfig `mapstructure:",squash" yaml:",inline"`
 	WriterConfig     `mapstructure:",squash" yaml:",inline"`
 	WriteTo          entry.Field `mapstructure:"write_to" json:"write_to" yaml:"write_to"`
@@ -48,7 +48,7 @@ func (c InputConfig) Build(context operator.BuildContext) (InputOperator, error)
 		return InputOperator{}, errors.WithDetails(err, "operator_id", c.ID())
 	}
 
-	labeler, err := c.LabelerConfig.Build()
+	attributer, err := c.AttributerConfig.Build()
 	if err != nil {
 		return InputOperator{}, errors.WithDetails(err, "operator_id", c.ID())
 	}
@@ -59,7 +59,7 @@ func (c InputConfig) Build(context operator.BuildContext) (InputOperator, error)
 	}
 
 	inputOperator := InputOperator{
-		Labeler:        labeler,
+		Attributer:     attributer,
 		Identifier:     identifier,
 		WriterOperator: writerOperator,
 		WriteTo:        c.WriteTo,
@@ -70,21 +70,21 @@ func (c InputConfig) Build(context operator.BuildContext) (InputOperator, error)
 
 // InputOperator provides a basic implementation of an input operator.
 type InputOperator struct {
-	Labeler
+	Attributer
 	Identifier
 	WriterOperator
 	WriteTo entry.Field
 }
 
-// NewEntry will create a new entry using the `write_to`, `labels`, and `resource` configuration.
+// NewEntry will create a new entry using the `write_to`, `attributes`, and `resource` configuration.
 func (i *InputOperator) NewEntry(value interface{}) (*entry.Entry, error) {
 	entry := entry.New()
 	if err := entry.Set(i.WriteTo, value); err != nil {
 		return nil, errors.Wrap(err, "add record to entry")
 	}
 
-	if err := i.Label(entry); err != nil {
-		return nil, errors.Wrap(err, "add labels to entry")
+	if err := i.Attribute(entry); err != nil {
+		return nil, errors.Wrap(err, "add attributes to entry")
 	}
 
 	if err := i.Identify(entry); err != nil {

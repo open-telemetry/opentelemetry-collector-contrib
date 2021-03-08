@@ -25,7 +25,7 @@ The `filter` operator filters incoming entries that match an expression.
 
 ```yaml
 - type: filter
-  expr: '$labels.env == "production"'
+  expr: '$attributes.env == "production"'
   output: my_output
 ```
 
