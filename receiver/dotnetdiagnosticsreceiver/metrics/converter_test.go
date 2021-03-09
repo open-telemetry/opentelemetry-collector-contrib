@@ -48,8 +48,8 @@ func TestSumMetricToPdata(t *testing.T) {
 	assert.Equal(t, 262672.0, pts.At(0).Value())
 }
 
-func testMetricConversion(t *testing.T, jsonFile int, expectedName string, expectedUnits string) pdata.Metric {
-	rm := readTestdataJSON(jsonFile)
+func testMetricConversion(t *testing.T, metricFile int, expectedName string, expectedUnits string) pdata.Metric {
+	rm := readTestdataMetric(metricFile)
 	pdms := rawMetricsToPdata([]dotnet.Metric{rm})
 	rms := pdms.ResourceMetrics()
 	assert.Equal(t, 1, rms.Len())
@@ -63,8 +63,8 @@ func testMetricConversion(t *testing.T, jsonFile int, expectedName string, expec
 	return pdm
 }
 
-func readTestdataJSON(i int) dotnet.Metric {
-	bytes, err := ioutil.ReadFile(testdataJSONFname(i))
+func readTestdataMetric(i int) dotnet.Metric {
+	bytes, err := ioutil.ReadFile(testdataMetricFname(i))
 	if err != nil {
 		panic(err)
 	}
@@ -76,6 +76,6 @@ func readTestdataJSON(i int) dotnet.Metric {
 	return m
 }
 
-func testdataJSONFname(i int) string {
-	return fmt.Sprintf("../testdata/%d.json", i)
+func testdataMetricFname(i int) string {
+	return fmt.Sprintf("../testdata/metric.%d.json", i)
 }
