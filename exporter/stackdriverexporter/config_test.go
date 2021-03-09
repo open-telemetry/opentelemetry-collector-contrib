@@ -78,13 +78,16 @@ func TestLoadConfig(t *testing.T) {
 					TargetType: "target-resource2",
 				},
 			},
-			NumOfWorkers: 3,
-			TraceConfig: TraceConfig{
-				BundleDelayThreshold: 2 * time.Second,
-				BundleCountThreshold: 50,
-				BundleByteThreshold:  15000,
-				BundleByteLimit:      0,
-				BufferMaxBytes:       8000000,
+			RetrySettings: exporterhelper.RetrySettings{
+				Enabled:         true,
+				InitialInterval: 10 * time.Second,
+				MaxInterval:     1 * time.Minute,
+				MaxElapsedTime:  10 * time.Minute,
+			},
+			QueueSettings: exporterhelper.QueueSettings{
+				Enabled:      true,
+				NumConsumers: 2,
+				QueueSize:    10,
 			},
 			MetricConfig: MetricConfig{
 				Prefix:                     "prefix",
