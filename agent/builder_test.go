@@ -28,14 +28,15 @@ func TestBuildAgentSuccess(t *testing.T) {
 	mockCfg := Config{}
 	mockLogger := zap.NewNop().Sugar()
 	mockPluginDir := "/some/path/plugins"
-	mockDatabaseFile := ""
+	mockDatabaseFile := filepath.Join(testutil.NewTempDir(t), "test.db")
+	mockNamespace := "mynamespace"
 	mockOutput := testutil.NewFakeOutput(t)
 
 	agent, err := NewBuilder(mockLogger).
 		WithConfig(&mockCfg).
 		WithPluginDir(mockPluginDir).
-		WithDatabaseFile(mockDatabaseFile).
 		WithDefaultOutput(mockOutput).
+		WithDatabaseFile(mockDatabaseFile, mockNamespace).
 		Build()
 	require.NoError(t, err)
 	require.Equal(t, mockLogger, agent.SugaredLogger)
@@ -51,29 +52,45 @@ func TestBuildAgentFailureOnDatabase(t *testing.T) {
 	mockLogger := zap.NewNop().Sugar()
 	mockPluginDir := "/some/path/plugins"
 	mockDatabaseFile := invalidDatabaseFile
+	mockNamespace := "mynamespace"
 	mockOutput := testutil.NewFakeOutput(t)
 
 	agent, err := NewBuilder(mockLogger).
 		WithConfig(&mockCfg).
 		WithPluginDir(mockPluginDir).
-		WithDatabaseFile(mockDatabaseFile).
+		WithDatabaseFile(mockDatabaseFile, mockNamespace).
 		WithDefaultOutput(mockOutput).
 		Build()
 	require.Error(t, err)
 	require.Nil(t, agent)
 }
 
-func TestBuildAgentFailureOnPluginRegistry(t *testing.T) {
+func TestBuildAgentFailureOnNamespace(t *testing.T) {
 	mockCfg := Config{}
 	mockLogger := zap.NewNop().Sugar()
-	mockPluginDir := "[]"
-	mockDatabaseFile := ""
+	mockPluginDir := "/some/path/plugins"
+	mockDatabaseFile := filepath.Join(testutil.NewTempDir(t), "test.db")
+	mockNamespace := ""
 	mockOutput := testutil.NewFakeOutput(t)
 
 	_, err := NewBuilder(mockLogger).
 		WithConfig(&mockCfg).
 		WithPluginDir(mockPluginDir).
-		WithDatabaseFile(mockDatabaseFile).
+		WithDatabaseFile(mockDatabaseFile, mockNamespace).
+		WithDefaultOutput(mockOutput).
+		Build()
+	require.Error(t, err)
+}
+
+func TestBuildAgentFailureOnPluginRegistry(t *testing.T) {
+	mockCfg := Config{}
+	mockLogger := zap.NewNop().Sugar()
+	mockPluginDir := "[]"
+	mockOutput := testutil.NewFakeOutput(t)
+
+	_, err := NewBuilder(mockLogger).
+		WithConfig(&mockCfg).
+		WithPluginDir(mockPluginDir).
 		WithDefaultOutput(mockOutput).
 		Build()
 	require.NoError(t, err)
@@ -82,12 +99,10 @@ func TestBuildAgentFailureOnPluginRegistry(t *testing.T) {
 func TestBuildAgentFailureNoConfigOrGlobs(t *testing.T) {
 	mockLogger := zap.NewNop().Sugar()
 	mockPluginDir := "/some/plugin/path"
-	mockDatabaseFile := ""
 	mockOutput := testutil.NewFakeOutput(t)
 
 	agent, err := NewBuilder(mockLogger).
 		WithPluginDir(mockPluginDir).
-		WithDatabaseFile(mockDatabaseFile).
 		WithDefaultOutput(mockOutput).
 		Build()
 	require.Error(t, err)
@@ -99,14 +114,12 @@ func TestBuildAgentFailureWithBothConfigAndGlobs(t *testing.T) {
 	mockCfg := Config{}
 	mockLogger := zap.NewNop().Sugar()
 	mockPluginDir := "/some/plugin/path"
-	mockDatabaseFile := ""
 	mockOutput := testutil.NewFakeOutput(t)
 
 	agent, err := NewBuilder(mockLogger).
 		WithConfig(&mockCfg).
 		WithConfigFiles([]string{"test"}).
 		WithPluginDir(mockPluginDir).
-		WithDatabaseFile(mockDatabaseFile).
 		WithDefaultOutput(mockOutput).
 		Build()
 	require.Error(t, err)
@@ -117,13 +130,11 @@ func TestBuildAgentFailureWithBothConfigAndGlobs(t *testing.T) {
 func TestBuildAgentFailureNonexistGlobs(t *testing.T) {
 	mockLogger := zap.NewNop().Sugar()
 	mockPluginDir := "/some/plugin/path"
-	mockDatabaseFile := ""
 	mockOutput := testutil.NewFakeOutput(t)
 
 	agent, err := NewBuilder(mockLogger).
 		WithConfigFiles([]string{"/tmp/nonexist"}).
 		WithPluginDir(mockPluginDir).
-		WithDatabaseFile(mockDatabaseFile).
 		WithDefaultOutput(mockOutput).
 		Build()
 	require.Error(t, err)
