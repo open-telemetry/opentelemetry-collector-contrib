@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/mapwithexpiry"
@@ -63,7 +63,7 @@ type rateKeyParams struct {
 	logGroupKey   string
 	logStreamKey  string
 	timestampKey  string
-	labels        label.Distinct
+	labels        attribute.Distinct
 }
 
 // rateState stores a metric's value
@@ -206,14 +206,14 @@ func createLabels(labelsMap pdata.StringMap, instrLibName string) map[string]str
 	return labels
 }
 
-// getSortedLabels converts OTel StringMap labels to sorted labels as label.Distinct
-func getSortedLabels(labels map[string]string) label.Distinct {
-	var kvs []label.KeyValue
-	var sortable label.Sortable
+// getSortedLabels converts OTel StringMap labels to sorted labels as attribute.Distinct
+func getSortedLabels(labels map[string]string) attribute.Distinct {
+	var kvs []attribute.KeyValue
+	var sortable attribute.Sortable
 	for k, v := range labels {
-		kvs = append(kvs, label.String(k, v))
+		kvs = append(kvs, attribute.String(k, v))
 	}
-	set := label.NewSetWithSortable(kvs, &sortable)
+	set := attribute.NewSetWithSortable(kvs, &sortable)
 
 	return set.Equivalent()
 }
