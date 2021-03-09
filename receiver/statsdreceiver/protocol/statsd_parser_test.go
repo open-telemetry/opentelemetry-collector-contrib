@@ -20,7 +20,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -684,14 +684,14 @@ func testStatsDMetric(value string, intValue int64,
 	sampleRate float64, labelKeys []*metricspb.LabelKey,
 	labelValue []*metricspb.LabelValue) statsDMetric {
 	if len(labelKeys) > 0 {
-		var kvs []label.KeyValue
-		var sortable label.Sortable
+		var kvs []attribute.KeyValue
+		var sortable attribute.Sortable
 		for n, k := range labelKeys {
 			if labelValue[n].HasValue {
-				kvs = append(kvs, label.String(k.Key, labelValue[n].Value))
+				kvs = append(kvs, attribute.String(k.Key, labelValue[n].Value))
 			}
 		}
-		set := label.NewSetWithSortable(kvs, &sortable)
+		set := attribute.NewSetWithSortable(kvs, &sortable)
 		return statsDMetric{
 			description: statsDMetricdescription{
 				name:             "test.metric",
@@ -727,12 +727,12 @@ func testStatsDMetric(value string, intValue int64,
 }
 
 func testDescription(name string, statsdMetricType string, keys []string, values []string) statsDMetricdescription {
-	var kvs []label.KeyValue
-	var sortable label.Sortable
+	var kvs []attribute.KeyValue
+	var sortable attribute.Sortable
 	for n, k := range keys {
-		kvs = append(kvs, label.String(k, values[n]))
+		kvs = append(kvs, attribute.String(k, values[n]))
 	}
-	set := label.NewSetWithSortable(kvs, &sortable)
+	set := attribute.NewSetWithSortable(kvs, &sortable)
 	return statsDMetricdescription{
 		name:             name,
 		statsdMetricType: statsdMetricType,
@@ -1863,7 +1863,7 @@ func Test_contains(t *testing.T) {
 func TestStatsDParser_Initialize(t *testing.T) {
 	p := &StatsDParser{}
 	p.Initialize(true)
-	labels := label.Distinct{}
+	labels := attribute.Distinct{}
 	teststatsdDMetricdescription := statsDMetricdescription{
 		name:             "test",
 		statsdMetricType: "g",

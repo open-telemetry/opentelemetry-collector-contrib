@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
@@ -45,7 +45,7 @@ func TestMapLabelValue(t *testing.T) {
 
 	value, ok := mapLabelValue(m)
 	require.True(t, ok)
-	require.Equal(t, label.STRING, value.Type())
+	require.Equal(t, attribute.STRING, value.Type())
 	require.Equal(t, `{"array":[true,false],"bool":true,"double":0.123,"int":123,"map":{},"null":null,"string":"bar"}`, value.AsString())
 
 	e := &traceExporter{
@@ -81,7 +81,7 @@ func TestArrayLabelValue(t *testing.T) {
 	arr.Append(mapVal)
 	value, ok := arrayLabelValue(arr)
 	require.True(t, ok)
-	require.Equal(t, label.STRING, value.Type())
+	require.Equal(t, attribute.STRING, value.Type())
 
 	type Test struct {
 		val pdata.AttributeValue
@@ -99,7 +99,7 @@ func TestArrayLabelValue(t *testing.T) {
 
 		value, ok := arrayLabelValue(arr)
 		require.True(t, ok)
-		require.Equal(t, label.ARRAY, value.Type())
+		require.Equal(t, attribute.ARRAY, value.Type())
 
 		arr.Append(pdata.NewAttributeValueNull())
 		_, ok = arrayLabelValue(arr)
