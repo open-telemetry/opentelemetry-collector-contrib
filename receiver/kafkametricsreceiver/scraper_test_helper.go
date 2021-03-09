@@ -26,35 +26,32 @@ const (
 var newSaramaClient = sarama.NewClient
 
 func mockNewSaramaClient([]string, *sarama.Config) (sarama.Client, error) {
-	return getMockClient(), nil
+	return newMockClient(), nil
 }
 
 type mockSaramaClient struct {
 	mock.Mock
 	sarama.Client
 
-	close  func() error
-	closed func() bool
+	close  error
+	closed bool
 }
 
 func (s *mockSaramaClient) Closed() bool {
 	s.Called()
-	return s.closed()
+	return s.closed
 }
 
 func (s *mockSaramaClient) Close() error {
 	s.Called()
-	return s.close()
+	return s.close
 }
 
-func getMockClient() *mockSaramaClient {
+func newMockClient() *mockSaramaClient {
 	client := new(mockSaramaClient)
-	client.close = func() error {
-		return nil
-	}
-	client.closed = func() bool {
-		return false
-	}
+	client.close = nil
+
+	client.closed = false
 
 	return client
 }

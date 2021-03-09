@@ -25,13 +25,9 @@ import (
 )
 
 func TestBrokerShutdown(t *testing.T) {
-	client := getMockClient()
-	client.closed = func() bool {
-		return false
-	}
-	client.close = func() error {
-		return nil
-	}
+	client := newMockClient()
+	client.closed = false
+	client.close = nil
 	client.Mock.
 		On("Close").Return(nil).
 		On("Closed").Return(false)
@@ -45,10 +41,8 @@ func TestBrokerShutdown(t *testing.T) {
 }
 
 func TestBrokerShutdown_closed(t *testing.T) {
-	client := getMockClient()
-	client.closed = func() bool {
-		return true
-	}
+	client := newMockClient()
+	client.closed = true
 	client.Mock.
 		On("Closed").Return(true)
 	scraper := brokerScraper{
@@ -84,7 +78,7 @@ func TestBrokerScraper_createBrokerScraper_handles_client_error(t *testing.T) {
 }
 
 func TestBrokerScraper_scrape(t *testing.T) {
-	client := getMockClient()
+	client := newMockClient()
 	r := sarama.NewBroker(testBroker)
 	testBrokers := make([]*sarama.Broker, 1)
 	testBrokers[0] = r
