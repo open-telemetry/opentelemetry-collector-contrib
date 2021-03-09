@@ -164,7 +164,7 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (numDroppedLogs
 	gzipWriter := c.zippers.Get().(*gzip.Writer)
 	defer c.zippers.Put(gzipWriter)
 
-	gzipBuf := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLength))
+	gzipBuf := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthLogs))
 	gzipWriter.Reset(gzipBuf)
 	defer gzipWriter.Close()
 

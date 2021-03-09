@@ -86,20 +86,20 @@ func (ld *logDataWrapper) chunkEvents(ctx context.Context, logger *zap.Logger, c
 
 				addToChunk:
 					// The size of an event must be less than or equal to max content length.
-					if config.MaxContentLength > 0 && event.Len() > config.MaxContentLength {
+					if config.MaxContentLengthLogs > 0 && event.Len() > config.MaxContentLengthLogs {
 						select {
 						case <-ctx.Done():
 						case chunkCh <- &eventsChunk{
 							buf:   nil,
 							index: chunk.index,
-							err:   consumererror.Permanent(fmt.Errorf("log event bytes exceed max content length configured (log: %d, max: %d)", event.Len(), config.MaxContentLength))}:
+							err:   consumererror.Permanent(fmt.Errorf("log event bytes exceed max content length configured (log: %d, max: %d)", event.Len(), config.MaxContentLengthLogs))}:
 						}
 						return
 					}
 
 					// Moving the event to chunk.buf if length will be <= max content length.
 					// Max content length <= 0 is interpreted as unbound.
-					if chunk.buf.Len()+event.Len() <= config.MaxContentLength || config.MaxContentLength <= 0 {
+					if chunk.buf.Len()+event.Len() <= config.MaxContentLengthLogs || config.MaxContentLengthLogs <= 0 {
 						// WriteTo() empties and resets buffer event.
 						if _, err := event.WriteTo(chunk.buf); err != nil {
 							select {

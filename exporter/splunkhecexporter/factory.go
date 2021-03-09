@@ -26,10 +26,10 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr                 = "splunk_hec"
-	defaultMaxIdleCons      = 100
-	defaultHTTPTimeout      = 10 * time.Second
-	defaultMaxContentLength = 1024 * 1024
+	typeStr                     = "splunk_hec"
+	defaultMaxIdleCons          = 100
+	defaultHTTPTimeout          = 10 * time.Second
+	defaultMaxContentLengthLogs = 1024 * 1024
 )
 
 // NewFactory creates a factory for Splunk HEC exporter.
@@ -51,11 +51,11 @@ func createDefaultConfig() configmodels.Exporter {
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: defaultHTTPTimeout,
 		},
-		RetrySettings:      exporterhelper.DefaultRetrySettings(),
-		QueueSettings:      exporterhelper.DefaultQueueSettings(),
-		DisableCompression: false,
-		MaxConnections:     defaultMaxIdleCons,
-		MaxContentLength:   defaultMaxContentLength,
+		RetrySettings:        exporterhelper.DefaultRetrySettings(),
+		QueueSettings:        exporterhelper.DefaultQueueSettings(),
+		DisableCompression:   false,
+		MaxConnections:       defaultMaxIdleCons,
+		MaxContentLengthLogs: defaultMaxContentLengthLogs,
 	}
 }
 

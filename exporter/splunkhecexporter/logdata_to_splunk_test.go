@@ -305,7 +305,7 @@ func Test_chunkEvents_MaxContentLength_AllEventsInChunk(t *testing.T) {
 
 	// Chunk max content length to fit all events in 1 chunk.
 	chunkLength := len(events) * max
-	config := Config{MaxContentLength: chunkLength}
+	config := Config{MaxContentLengthLogs: chunkLength}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -315,7 +315,7 @@ func Test_chunkEvents_MaxContentLength_AllEventsInChunk(t *testing.T) {
 	numChunks := 0
 
 	for chunk := range chunkCh {
-		assert.Nil(t, chunk.err)
+		assert.NoError(t, chunk.err)
 		assert.Len(t, chunk.buf.Bytes(), eventsLength)
 		numChunks++
 	}
@@ -335,7 +335,7 @@ func Test_chunkEvents_MaxContentLength_0(t *testing.T) {
 
 	// Chunk max content length 0 is interpreted as unlimited length.
 	chunkLength := 0
-	config := Config{MaxContentLength: chunkLength}
+	config := Config{MaxContentLengthLogs: chunkLength}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -345,7 +345,7 @@ func Test_chunkEvents_MaxContentLength_0(t *testing.T) {
 	numChunks := 0
 
 	for chunk := range chunkCh {
-		assert.Nil(t, chunk.err)
+		assert.NoError(t, chunk.err)
 		assert.Len(t, chunk.buf.Bytes(), eventsLength)
 		numChunks++
 	}
@@ -365,7 +365,7 @@ func Test_chunkEvents_MaxContentLength_0_Cancel(t *testing.T) {
 
 	// Chunk max content length 0 is interpreted as unlimited length.
 	chunkLength := 0
-	config := Config{MaxContentLength: chunkLength}
+	config := Config{MaxContentLengthLogs: chunkLength}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -380,7 +380,7 @@ func Test_chunkEvents_MaxContentLength_0_Cancel(t *testing.T) {
 
 	for chunk := range chunkCh {
 		assert.Nil(t, chunk.buf)
-		assert.Nil(t, chunk.err)
+		assert.NoError(t, chunk.err)
 		numChunks++
 	}
 
@@ -399,7 +399,7 @@ func Test_chunkEvents_MaxContentLength_Negative(t *testing.T) {
 
 	// Negative max content length is interpreted as unlimited length.
 	chunkLength := -3
-	config := Config{MaxContentLength: chunkLength}
+	config := Config{MaxContentLengthLogs: chunkLength}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -409,7 +409,7 @@ func Test_chunkEvents_MaxContentLength_Negative(t *testing.T) {
 	numChunks := 0
 
 	for chunk := range chunkCh {
-		assert.Nil(t, chunk.err)
+		assert.NoError(t, chunk.err)
 		assert.Len(t, chunk.buf.Bytes(), eventsLength)
 		numChunks++
 	}
@@ -424,7 +424,7 @@ func Test_chunkEvents_MaxContentLength_Small_Error(t *testing.T) {
 
 	// Configuring max content length to be smaller than event lengths.
 	chunkLength := min - 1
-	config := Config{MaxContentLength: chunkLength}
+	config := Config{MaxContentLengthLogs: chunkLength}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -451,7 +451,7 @@ func Test_chunkEvents_MaxContentLength_Small_Error_Cancel(t *testing.T) {
 
 	// Configuring max content length to be smaller than event lengths.
 	chunkLength := min - 1
-	config := Config{MaxContentLength: chunkLength}
+	config := Config{MaxContentLengthLogs: chunkLength}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -469,7 +469,7 @@ func Test_chunkEvents_MaxContentLength_Small_Error_Cancel(t *testing.T) {
 			numChunks++
 		}
 		assert.Nil(t, chunk.buf)
-		assert.Nil(t, chunk.err)
+		assert.NoError(t, chunk.err)
 	}
 
 	assert.Equal(t, 0, numChunks)
@@ -482,13 +482,13 @@ func Test_chunkEvents_MaxContentLength_1EventPerChunk(t *testing.T) {
 
 	numEvents := len(events)
 
-	assert.True(t, numEvents > 1, "More than 1 event required")
+	require.True(t, numEvents > 1, "More than 1 event required")
 
-	assert.True(t, minLength >= maxLength/2, "Smallest event >= half largest event required")
+	require.True(t, minLength >= maxLength/2, "Smallest event >= half largest event required")
 
 	// Setting chunk length to have 1 event per chunk.
 	chunkLength := maxLength
-	config := Config{MaxContentLength: chunkLength}
+	config := Config{MaxContentLengthLogs: chunkLength}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -498,7 +498,7 @@ func Test_chunkEvents_MaxContentLength_1EventPerChunk(t *testing.T) {
 	numChunks := 0
 
 	for chunk := range chunkCh {
-		assert.Nil(t, chunk.err)
+		assert.NoError(t, chunk.err)
 		assert.Len(t, chunk.buf.Bytes(), len(events[numChunks]))
 		numChunks++
 	}
@@ -512,13 +512,13 @@ func Test_chunkEvents_MaxContentLength_1EventPerChunk_Cancel(t *testing.T) {
 
 	min, max, events := jsonEncodeEventsBytes(logs, &Config{})
 
-	assert.True(t, len(events) > 1, "More than 1 event required")
+	require.True(t, len(events) > 1, "More than 1 event required")
 
-	assert.True(t, min >= max/2, "Smallest event >= half largest event required")
+	require.True(t, min >= max/2, "Smallest event >= half largest event required")
 
 	// Setting chunk length to have as many chunks as there are events.
 	chunkLength := max
-	config := Config{MaxContentLength: chunkLength}
+	config := Config{MaxContentLengthLogs: chunkLength}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -526,7 +526,7 @@ func Test_chunkEvents_MaxContentLength_1EventPerChunk_Cancel(t *testing.T) {
 
 	_, ok := <-chunkCh
 
-	assert.True(t, ok, "Chunk channel open before cancel")
+	require.True(t, ok, "Chunk channel open before cancel")
 
 	cancel()
 
@@ -547,10 +547,10 @@ func Test_chunkEvents_MaxContentLength_2EventsPerChunk(t *testing.T) {
 	numEvents := len(events)
 
 	// Chunk max content length = 2 * max and this condition results in 2 event per chunk.
-	assert.True(t, min >= max/2)
+	require.True(t, min >= max/2)
 
 	chunkLength := 2 * max
-	config := Config{MaxContentLength: chunkLength}
+	config := Config{MaxContentLengthLogs: chunkLength}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -562,7 +562,7 @@ func Test_chunkEvents_MaxContentLength_2EventsPerChunk(t *testing.T) {
 	numChunks := 0
 
 	for chunk := range chunkCh {
-		assert.Nil(t, chunk.err)
+		assert.NoError(t, chunk.err)
 		numChunks++
 	}
 
