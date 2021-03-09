@@ -66,6 +66,8 @@ func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *co
 
 	var traces []*pb.TracePayload
 
+	spanMap := make(map[string]bool)
+
 	var runningMetrics []datadog.Metric
 	pushTime := pdata.TimestampFromTime(time.Now())
 	for i := 0; i < resourceSpans.Len(); i++ {
@@ -77,7 +79,7 @@ func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *co
 			hostname = resHostname
 		}
 
-		payload := resourceSpansToDatadogSpans(rs, calculator, hostname, cfg)
+		payload := resourceSpansToDatadogSpans(rs, calculator, hostname, cfg, spanMap)
 		traces = append(traces, &payload)
 
 		ms := metrics.DefaultMetrics("traces", uint64(pushTime))
@@ -115,7 +117,7 @@ func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePa
 }
 
 // converts a Trace's resource spans into a trace payload
-func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCalculator, hostname string, cfg *config.Config) pb.TracePayload {
+func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCalculator, hostname string, cfg *config.Config, spanMap map[string]bool) pb.TracePayload {
 	// get env tag
 	env := cfg.Env
 
@@ -148,7 +150,18 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 		extractInstrumentationLibraryTags(ils.InstrumentationLibrary(), datadogTags)
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
-			span := spanToDatadogSpan(spans.At(j), resourceServiceName, datadogTags, cfg)
+			otelSpan := spans.At(j)
+
+			// TODO: until zipkin duplicate span ids are clarified, drop duplicate spans.
+			// Update this behavior when the behavior is finalized by spec
+			// https://github.com/open-telemetry/opentelemetry-specification/issues/1007
+			if duplicateSpanID := spanMap[otelSpan.SpanID().HexString()]; duplicateSpanID {
+				continue
+			} else {
+				spanMap[otelSpan.SpanID().HexString()] = true
+			}
+
+			span := spanToDatadogSpan(otelSpan, resourceServiceName, datadogTags, cfg)
 			var apiTrace *pb.APITrace
 			var ok bool
 
@@ -191,7 +204,6 @@ func spanToDatadogSpan(s pdata.Span,
 	datadogTags map[string]string,
 	cfg *config.Config,
 ) *pb.Span {
-
 	tags := aggregateSpanTags(s, datadogTags)
 
 	// otel specification resource service.name takes precedence
