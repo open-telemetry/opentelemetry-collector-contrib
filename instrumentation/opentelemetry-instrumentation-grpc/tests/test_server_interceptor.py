@@ -28,7 +28,7 @@ from opentelemetry.instrumentation.grpc import (
 )
 from opentelemetry.sdk import trace as trace_sdk
 from opentelemetry.test.test_base import TestBase
-from opentelemetry.trace.status import StatusCode
+from opentelemetry.trace import StatusCode
 
 from .protobuf.test_server_pb2 import Request, Response
 from .protobuf.test_server_pb2_grpc import (

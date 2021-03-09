@@ -65,5 +65,5 @@ class SQLAlchemyInstrumentTestCase(TestBase):
         span = traces[0]
         # check subset of span fields
         self.assertEqual(span.name, "SELECT opentelemetry-tests")
-        self.assertIs(span.status.status_code, trace.status.StatusCode.UNSET)
+        self.assertIs(span.status.status_code, trace.StatusCode.UNSET)
         self.assertGreater((span.end_time - span.start_time), 0)

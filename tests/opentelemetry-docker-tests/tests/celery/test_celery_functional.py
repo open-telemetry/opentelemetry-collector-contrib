@@ -22,7 +22,7 @@ from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.celery import CeleryInstrumentor
 from opentelemetry.sdk import resources
 from opentelemetry.sdk.trace import TracerProvider, export
-from opentelemetry.trace.status import StatusCode
+from opentelemetry.trace import StatusCode
 
 # set a high timeout for async executions due to issues in CI
 ASYNC_GET_TIMEOUT = 120

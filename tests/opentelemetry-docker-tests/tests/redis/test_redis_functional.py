@@ -36,7 +36,7 @@ class TestRedisInstrument(TestBase):
     def _check_span(self, span, name):
         self.assertEqual(span.attributes["service"], self.test_service)
         self.assertEqual(span.name, name)
-        self.assertIs(span.status.status_code, trace.status.StatusCode.UNSET)
+        self.assertIs(span.status.status_code, trace.StatusCode.UNSET)
         self.assertEqual(span.attributes.get("db.name"), 0)
         self.assertEqual(span.attributes["net.peer.name"], "localhost")
         self.assertEqual(span.attributes["net.peer.ip"], 6379)
@@ -130,7 +130,7 @@ class TestRedisDBIndexInstrument(TestBase):
 
     def _check_span(self, span, name):
         self.assertEqual(span.name, name)
-        self.assertIs(span.status.status_code, trace.status.StatusCode.UNSET)
+        self.assertIs(span.status.status_code, trace.StatusCode.UNSET)
         self.assertEqual(span.attributes["net.peer.name"], "localhost")
         self.assertEqual(span.attributes["net.peer.ip"], 6379)
         self.assertEqual(span.attributes["db.redis.database_index"], 10)

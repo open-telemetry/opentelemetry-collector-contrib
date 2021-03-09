@@ -114,7 +114,7 @@ class SQLAlchemyTestMixin(TestBase):
             name = "{0} {1}".format(name, self.SQL_DB)
         self.assertEqual(span.name, name)
         self.assertEqual(span.attributes.get(_DB), self.SQL_DB)
-        self.assertIs(span.status.status_code, trace.status.StatusCode.UNSET)
+        self.assertIs(span.status.status_code, trace.StatusCode.UNSET)
         self.assertGreater((span.end_time - span.start_time), 0)
 
     def test_orm_insert(self):

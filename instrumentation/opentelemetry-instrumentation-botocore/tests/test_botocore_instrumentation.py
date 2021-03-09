@@ -136,7 +136,7 @@ class TestBotocoreInstrumentor(TestBase):
             },
         )
         self.assertIs(
-            span.status.status_code, trace_api.status.StatusCode.ERROR,
+            span.status.status_code, trace_api.StatusCode.ERROR,
         )
 
     # Comment test for issue 1088

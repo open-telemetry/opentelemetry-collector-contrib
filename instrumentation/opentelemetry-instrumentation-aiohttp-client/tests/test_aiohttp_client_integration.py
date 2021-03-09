@@ -31,7 +31,7 @@ from opentelemetry.instrumentation.aiohttp_client import (
     AioHttpClientInstrumentor,
 )
 from opentelemetry.test.test_base import TestBase
-from opentelemetry.trace.status import StatusCode
+from opentelemetry.trace import StatusCode
 
 
 def run_with_test_server(

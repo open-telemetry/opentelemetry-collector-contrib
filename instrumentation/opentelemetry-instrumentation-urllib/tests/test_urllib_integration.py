@@ -32,7 +32,7 @@ from opentelemetry.propagate import get_global_textmap, set_global_textmap
 from opentelemetry.sdk import resources
 from opentelemetry.test.mock_textmap import MockTextMapPropagator
 from opentelemetry.test.test_base import TestBase
-from opentelemetry.trace.status import StatusCode
+from opentelemetry.trace import StatusCode
 
 
 class RequestsIntegrationTestBase(abc.ABC):
@@ -111,7 +111,7 @@ class RequestsIntegrationTestBase(abc.ABC):
             },
         )
 
-        self.assertIs(span.status.status_code, trace.status.StatusCode.UNSET)
+        self.assertIs(span.status.status_code, trace.StatusCode.UNSET)
 
         self.check_span_instrumentation_info(
             span, opentelemetry.instrumentation.urllib
@@ -161,7 +161,7 @@ class RequestsIntegrationTestBase(abc.ABC):
         self.assertEqual(span.attributes.get("http.status_text"), "Not Found")
 
         self.assertIs(
-            span.status.status_code, trace.status.StatusCode.ERROR,
+            span.status.status_code, trace.StatusCode.ERROR,
         )
 
     def test_uninstrument(self):
