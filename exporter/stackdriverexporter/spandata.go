@@ -20,8 +20,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/label"
 	export "go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
@@ -117,19 +117,19 @@ func pdataStatusCodeToOTCode(c pdata.StatusCode) codes.Code {
 	}
 }
 
-func pdataAttributesToOTAttributes(attrs pdata.AttributeMap, resource pdata.Resource) []label.KeyValue {
-	otAttrs := make([]label.KeyValue, 0, attrs.Len())
+func pdataAttributesToOTAttributes(attrs pdata.AttributeMap, resource pdata.Resource) []attribute.KeyValue {
+	otAttrs := make([]attribute.KeyValue, 0, attrs.Len())
 	appendAttrs := func(m pdata.AttributeMap) {
 		m.ForEach(func(k string, v pdata.AttributeValue) {
 			switch v.Type() {
 			case pdata.AttributeValueSTRING:
-				otAttrs = append(otAttrs, label.String(k, v.StringVal()))
+				otAttrs = append(otAttrs, attribute.String(k, v.StringVal()))
 			case pdata.AttributeValueBOOL:
-				otAttrs = append(otAttrs, label.Bool(k, v.BoolVal()))
+				otAttrs = append(otAttrs, attribute.Bool(k, v.BoolVal()))
 			case pdata.AttributeValueINT:
-				otAttrs = append(otAttrs, label.Int64(k, v.IntVal()))
+				otAttrs = append(otAttrs, attribute.Int64(k, v.IntVal()))
 			case pdata.AttributeValueDOUBLE:
-				otAttrs = append(otAttrs, label.Float64(k, v.DoubleVal()))
+				otAttrs = append(otAttrs, attribute.Float64(k, v.DoubleVal()))
 			// pdata Array, and Map cannot be converted to value.Value
 			default:
 				return
@@ -157,12 +157,12 @@ func pdataLinksToOTLinks(links pdata.SpanLinkSlice) []apitrace.Link {
 	return otLinks
 }
 
-func pdataEventsToOTMessageEvents(events pdata.SpanEventSlice) []export.Event {
+func pdataEventsToOTMessageEvents(events pdata.SpanEventSlice) []apitrace.Event {
 	size := events.Len()
-	otEvents := make([]export.Event, 0, size)
+	otEvents := make([]apitrace.Event, 0, size)
 	for i := 0; i < size; i++ {
 		event := events.At(i)
-		otEvents = append(otEvents, export.Event{
+		otEvents = append(otEvents, apitrace.Event{
 			Name:       event.Name(),
 			Attributes: pdataAttributesToOTAttributes(event.Attributes(), pdata.NewResource()),
 			Time:       time.Unix(0, int64(event.Timestamp())),

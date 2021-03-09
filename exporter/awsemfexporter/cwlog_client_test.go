@@ -32,14 +32,14 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewAlwaysPassMockLogClient() LogClient {
+func NewAlwaysPassMockLogClient(putLogEventsFunc func(args mock.Arguments)) LogClient {
 	logger := zap.NewNop()
 	svc := new(mockCloudWatchLogsClient)
 
 	svc.On("PutLogEvents", mock.Anything).Return(
 		&cloudwatchlogs.PutLogEventsOutput{
 			NextSequenceToken: &expectedNextSequenceToken},
-		nil)
+		nil).Run(putLogEventsFunc)
 
 	svc.On("CreateLogGroup", mock.Anything).Return(new(cloudwatchlogs.CreateLogGroupOutput), nil)
 

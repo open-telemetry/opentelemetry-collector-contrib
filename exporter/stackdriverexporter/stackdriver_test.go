@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -71,69 +72,15 @@ func TestStackdriverTraceExport(t *testing.T) {
 			},
 		},
 		{
-			name: "Standard_WithBundling",
+			name: "Standard_WithoutSendingQueue",
 			cfg: &Config{
 				ProjectID:   "idk",
 				Endpoint:    "127.0.0.1:8080",
 				UseInsecure: true,
-				TraceConfig: TraceConfig{
-					BundleDelayThreshold: time.Nanosecond,
-					BundleCountThreshold: 1,
-					BundleByteThreshold:  1,
-					BundleByteLimit:      1e9,
-					BufferMaxBytes:       1e9,
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled: false,
 				},
 			},
-		},
-		{
-			name: "Err_InvalidBundleDelayThreshold",
-			cfg: &Config{
-				ProjectID:   "idk",
-				Endpoint:    "127.0.0.1:8080",
-				UseInsecure: true,
-				TraceConfig: TraceConfig{BundleDelayThreshold: -1},
-			},
-			expectedErr: "invalid value for: BundleDelayThreshold",
-		},
-		{
-			name: "Err_InvalidBundleCountThreshold",
-			cfg: &Config{
-				ProjectID:   "idk",
-				Endpoint:    "127.0.0.1:8080",
-				UseInsecure: true,
-				TraceConfig: TraceConfig{BundleCountThreshold: -1},
-			},
-			expectedErr: "invalid value for: BundleCountThreshold",
-		},
-		{
-			name: "Err_InvalidBundleByteThreshold",
-			cfg: &Config{
-				ProjectID:   "idk",
-				Endpoint:    "127.0.0.1:8080",
-				UseInsecure: true,
-				TraceConfig: TraceConfig{BundleByteThreshold: -1},
-			},
-			expectedErr: "invalid value for: BundleByteThreshold",
-		},
-		{
-			name: "Err_InvalidBundleByteLimit",
-			cfg: &Config{
-				ProjectID:   "idk",
-				Endpoint:    "127.0.0.1:8080",
-				UseInsecure: true,
-				TraceConfig: TraceConfig{BundleByteLimit: -1},
-			},
-			expectedErr: "invalid value for: BundleByteLimit",
-		},
-		{
-			name: "Err_InvalidBufferMaxBytes",
-			cfg: &Config{
-				ProjectID:   "idk",
-				Endpoint:    "127.0.0.1:8080",
-				UseInsecure: true,
-				TraceConfig: TraceConfig{BufferMaxBytes: -1},
-			},
-			expectedErr: "invalid value for: BufferMaxBytes",
 		},
 	}
 

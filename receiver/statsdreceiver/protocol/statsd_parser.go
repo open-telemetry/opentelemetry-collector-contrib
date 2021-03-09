@@ -22,7 +22,7 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -60,7 +60,7 @@ type statsDMetric struct {
 type statsDMetricdescription struct {
 	name             string
 	statsdMetricType string
-	labels           label.Distinct
+	labels           attribute.Distinct
 }
 
 func (p *StatsDParser) Initialize(enableMetricType bool) error {
@@ -164,8 +164,8 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 
 	additionalParts := parts[2:]
 
-	var kvs []label.KeyValue
-	var sortable label.Sortable
+	var kvs []attribute.KeyValue
+	var sortable attribute.Sortable
 
 	for _, part := range additionalParts {
 		// TODO: Sample rate doesn't currently have a place to go in the protocol
@@ -193,7 +193,7 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 					Value:    tagParts[1],
 					HasValue: true,
 				})
-				kvs = append(kvs, label.String(tagParts[0], tagParts[1]))
+				kvs = append(kvs, attribute.String(tagParts[0], tagParts[1]))
 			}
 
 		} else {
@@ -236,11 +236,11 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 			Value:    metricType,
 			HasValue: true,
 		})
-		kvs = append(kvs, label.String(TagMetricType, metricType))
+		kvs = append(kvs, attribute.String(TagMetricType, metricType))
 	}
 
 	if len(kvs) != 0 {
-		set := label.NewSetWithSortable(kvs, &sortable)
+		set := attribute.NewSetWithSortable(kvs, &sortable)
 		result.description.labels = set.Equivalent()
 	}
 
