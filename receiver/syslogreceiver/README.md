@@ -17,7 +17,7 @@ Supported pipeline types: logs
 | `location`    | `UTC`            | The geographic location (timezone) to use when parsing the timestamp (Syslog RFC 3164 only). The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`. |
 | `timestamp`   | `nil`            | An optional [timestamp](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/types/timestamp.md) block which will parse a timestamp field before passing the entry to the output operator                                                                                               |
 | `severity`    | `nil`            | An optional [severity](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/docs/types/severity.md) block which will parse a severity field before passing the entry to the output operator
-| `labels`   | {}               | A map of `key: value` labels to add to the entry's labels    |
+| `attributes`   | {}               | A map of `key: value` labels to add to the entry's attributes    |
 | `resource` | {}               | A map of `key: value` labels to add to the entry's resource  |
 
 ### UDP Configuration
