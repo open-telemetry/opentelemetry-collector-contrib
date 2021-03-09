@@ -20,7 +20,7 @@ import (
 
 	"github.com/uptrace/uptrace-go/spanexp"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
@@ -58,24 +58,24 @@ func (e *traceExporter) keyValueSlice(attrs pdata.AttributeMap) spanexp.KeyValue
 	attrs.ForEach(func(key string, value pdata.AttributeValue) {
 		switch value.Type() {
 		case pdata.AttributeValueSTRING:
-			out = append(out, label.String(key, value.StringVal()))
+			out = append(out, attribute.String(key, value.StringVal()))
 		case pdata.AttributeValueBOOL:
-			out = append(out, label.Bool(key, value.BoolVal()))
+			out = append(out, attribute.Bool(key, value.BoolVal()))
 		case pdata.AttributeValueINT:
-			out = append(out, label.Int64(key, value.IntVal()))
+			out = append(out, attribute.Int64(key, value.IntVal()))
 		case pdata.AttributeValueDOUBLE:
-			out = append(out, label.Float64(key, value.DoubleVal()))
+			out = append(out, attribute.Float64(key, value.DoubleVal()))
 		case pdata.AttributeValueMAP:
 			if value, ok := mapLabelValue(value.MapVal()); ok {
-				out = append(out, label.KeyValue{
-					Key:   label.Key(key),
+				out = append(out, attribute.KeyValue{
+					Key:   attribute.Key(key),
 					Value: value,
 				})
 			}
 		case pdata.AttributeValueARRAY:
 			if value, ok := arrayLabelValue(value.ArrayVal()); ok {
-				out = append(out, label.KeyValue{
-					Key:   label.Key(key),
+				out = append(out, attribute.KeyValue{
+					Key:   attribute.Key(key),
 					Value: value,
 				})
 			}
@@ -126,7 +126,7 @@ func (e *traceExporter) uptraceLinks(links pdata.SpanLinkSlice) []spanexp.Link {
 
 //------------------------------------------------------------------------------
 
-func mapLabelValue(m pdata.AttributeMap) (label.Value, bool) {
+func mapLabelValue(m pdata.AttributeMap) (attribute.Value, bool) {
 	out := make(map[string]interface{}, m.Len())
 	m.ForEach(func(key string, val pdata.AttributeValue) {
 		out[key] = attrAsInterface(val)
@@ -134,9 +134,9 @@ func mapLabelValue(m pdata.AttributeMap) (label.Value, bool) {
 	return jsonLabelValue(out)
 }
 
-func arrayLabelValue(arr pdata.AnyValueArray) (label.Value, bool) {
+func arrayLabelValue(arr pdata.AnyValueArray) (attribute.Value, bool) {
 	if arr.Len() == 0 {
-		return label.Value{}, false
+		return attribute.Value{}, false
 	}
 
 	switch arrType := arr.At(0).Type(); arrType {
@@ -145,48 +145,48 @@ func arrayLabelValue(arr pdata.AnyValueArray) (label.Value, bool) {
 		for i := 0; i < arr.Len(); i++ {
 			val := arr.At(i)
 			if val.Type() != arrType {
-				return label.Value{}, false
+				return attribute.Value{}, false
 			}
 			out = append(out, val.StringVal())
 		}
-		return label.ArrayValue(out), true
+		return attribute.ArrayValue(out), true
 
 	case pdata.AttributeValueBOOL:
 		out := make([]bool, 0, arr.Len())
 		for i := 0; i < arr.Len(); i++ {
 			val := arr.At(i)
 			if val.Type() != arrType {
-				return label.Value{}, false
+				return attribute.Value{}, false
 			}
 			out = append(out, val.BoolVal())
 		}
-		return label.ArrayValue(out), true
+		return attribute.ArrayValue(out), true
 
 	case pdata.AttributeValueINT:
 		out := make([]int64, 0, arr.Len())
 		for i := 0; i < arr.Len(); i++ {
 			val := arr.At(i)
 			if val.Type() != arrType {
-				return label.Value{}, false
+				return attribute.Value{}, false
 			}
 			out = append(out, val.IntVal())
 		}
-		return label.ArrayValue(out), true
+		return attribute.ArrayValue(out), true
 
 	case pdata.AttributeValueDOUBLE:
 		out := make([]float64, 0, arr.Len())
 		for i := 0; i < arr.Len(); i++ {
 			val := arr.At(i)
 			if val.Type() != arrType {
-				return label.Value{}, false
+				return attribute.Value{}, false
 			}
 			out = append(out, val.DoubleVal())
 		}
-		return label.ArrayValue(out), true
+		return attribute.ArrayValue(out), true
 
 	case pdata.AttributeValueNULL:
 		// Ignore. Uptrace does not support nulls.
-		return label.Value{}, false
+		return attribute.Value{}, false
 	}
 
 	out := make([]interface{}, arr.Len())
@@ -196,11 +196,11 @@ func arrayLabelValue(arr pdata.AnyValueArray) (label.Value, bool) {
 	return jsonLabelValue(out)
 }
 
-func jsonLabelValue(v interface{}) (label.Value, bool) {
+func jsonLabelValue(v interface{}) (attribute.Value, bool) {
 	if b, err := json.Marshal(v); err == nil {
-		return label.StringValue(string(b)), true
+		return attribute.StringValue(string(b)), true
 	}
-	return label.Value{}, false
+	return attribute.Value{}, false
 }
 
 func attrAsInterface(val pdata.AttributeValue) interface{} {
