@@ -172,7 +172,7 @@ func (rw *resourceWatcher) waitForInitialInformerSync() {
 }
 
 func (rw *resourceWatcher) setupMetadataExporters(
-	exporters map[configmodels.Exporter]component.Exporter,
+	exporters map[configmodels.NamedEntity]component.Exporter,
 	metadataExportersFromConfig []string,
 ) error {
 
@@ -202,7 +202,7 @@ func (rw *resourceWatcher) setupMetadataExporters(
 }
 
 func validateMetadataExporters(metadataExporters map[string]bool,
-	exporters map[configmodels.Exporter]component.Exporter) error {
+	exporters map[configmodels.NamedEntity]component.Exporter) error {
 
 	configuredExporters := map[string]bool{}
 	for cfg := range exporters {
