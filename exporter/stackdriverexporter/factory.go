@@ -56,6 +56,8 @@ func createDefaultConfig() configmodels.Exporter {
 			NameVal: typeStr,
 		},
 		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
+		RetrySettings:   exporterhelper.DefaultRetrySettings(),
+		QueueSettings:   exporterhelper.DefaultQueueSettings(),
 		UserAgent:       "opentelemetry-collector-contrib {{version}}",
 	}
 }
