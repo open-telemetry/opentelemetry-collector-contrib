@@ -16,6 +16,7 @@ package metrics
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
@@ -26,18 +27,19 @@ import (
 // Sender wraps a consumer.MetricsConsumer, and has a Send method which
 // conforms to dotnet.MetricsConsumer so it can be passed into a Parser.
 type Sender struct {
-	next   consumer.MetricsConsumer
-	logger *zap.Logger
+	next      consumer.MetricsConsumer
+	startTime time.Time
+	logger    *zap.Logger
 }
 
-func NewSender(next consumer.MetricsConsumer, logger *zap.Logger) *Sender {
-	return &Sender{next: next, logger: logger}
+func NewSender(next consumer.MetricsConsumer, startTime time.Time, logger *zap.Logger) *Sender {
+	return &Sender{next: next, startTime: startTime, logger: logger}
 }
 
 // Send accepts a slice of dotnet.Metrics, converts them to pdata.Metrics, and
 // sends them to the next pdata consumer. Conforms to dotnet.MetricsConsumer.
 func (s Sender) Send(rawMetrics []dotnet.Metric) {
-	pdm := rawMetricsToPdata(rawMetrics)
+	pdm := rawMetricsToPdata(rawMetrics, s.startTime, time.Now())
 	err := s.next.ConsumeMetrics(context.Background(), pdm)
 	if err != nil {
 		s.logger.Error(err.Error())

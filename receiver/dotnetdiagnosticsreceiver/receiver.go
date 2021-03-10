@@ -17,6 +17,7 @@ package dotnetdiagnosticsreceiver
 import (
 	"context"
 	"io"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -78,7 +79,7 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	sender := metrics.NewSender(r.nextConsumer, r.logger)
+	sender := metrics.NewSender(r.nextConsumer, time.Now(), r.logger)
 	p := dotnet.NewParser(conn, sender.Send, r.bw, r.logger)
 
 	err = p.ParseIPC()

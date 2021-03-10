@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -33,7 +34,10 @@ func TestMeanMetricToPdata(t *testing.T) {
 	pdm := testMetricConversion(t, jsonFile, expectedName, expectedUnits)
 	pts := pdm.DoubleGauge().DataPoints()
 	assert.Equal(t, 1, pts.Len())
-	assert.Equal(t, 0.5, pts.At(0).Value())
+	pt := pts.At(0)
+	assert.EqualValues(t, 0, pt.StartTime())
+	assert.Equal(t, pdata.TimestampFromTime(time.Unix(111, 0)), pt.Timestamp())
+	assert.Equal(t, 0.5, pt.Value())
 }
 
 func TestSumMetricToPdata(t *testing.T) {
@@ -45,12 +49,15 @@ func TestSumMetricToPdata(t *testing.T) {
 	assert.False(t, sum.IsMonotonic())
 	pts := sum.DataPoints()
 	assert.Equal(t, 1, pts.Len())
-	assert.Equal(t, 262672.0, pts.At(0).Value())
+	pt := pts.At(0)
+	assert.Equal(t, pdata.TimestampFromTime(time.Unix(42, 0)), pt.StartTime())
+	assert.Equal(t, pdata.TimestampFromTime(time.Unix(111, 0)), pt.Timestamp())
+	assert.Equal(t, 262672.0, pt.Value())
 }
 
 func testMetricConversion(t *testing.T, metricFile int, expectedName string, expectedUnits string) pdata.Metric {
 	rm := readTestdataMetric(metricFile)
-	pdms := rawMetricsToPdata([]dotnet.Metric{rm})
+	pdms := rawMetricsToPdata([]dotnet.Metric{rm}, time.Unix(42, 0), time.Unix(111, 0))
 	rms := pdms.ResourceMetrics()
 	assert.Equal(t, 1, rms.Len())
 	ilms := rms.At(0).InstrumentationLibraryMetrics()

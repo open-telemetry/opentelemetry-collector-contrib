@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -28,7 +29,7 @@ import (
 
 func TestSendError(t *testing.T) {
 	observedLogger, logs := observer.New(zapcore.WarnLevel)
-	s := NewSender(errConsumer{}, zap.New(observedLogger))
+	s := NewSender(errConsumer{}, time.Time{}, zap.New(observedLogger))
 	s.Send(nil)
 	require.Equal(t, 1, logs.Len())
 }
