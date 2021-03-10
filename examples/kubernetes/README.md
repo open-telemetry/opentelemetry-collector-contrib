@@ -4,12 +4,18 @@ This demo is a sample app to build the collector and exercise its kubernetes log
 
 ## Build and Run
 
+### Kubernetes
+
+Switch to this directory and run following command: `kubectl apply -n <namespace> -f otel-collector.yaml`
+
+### Docker Compose
+
 Two steps are required to build and run the demo:
 
 1. Build latest docker image in main repository directory `make docker-otelcontribcol`
 1. Switch to this directory and run `docker-compose up`
 
-## Description
+#### Description
 
 `varlogpods` contains example log files placed in kubernetes-like directory structure.
 Each of the directory has different formatted logs in one of three formats (either `CRI-O`, `CRI-Containerd` or `Docker`).
