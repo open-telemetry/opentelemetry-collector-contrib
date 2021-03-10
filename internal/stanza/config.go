@@ -15,6 +15,8 @@
 package stanza
 
 import (
+	"time"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"go.opentelemetry.io/collector/config"
 	"gopkg.in/yaml.v2"
@@ -24,12 +26,24 @@ import (
 type BaseConfig struct {
 	config.ReceiverSettings `mapstructure:",squash"`
 	Operators               OperatorConfigs `mapstructure:"operators"`
+	Converter               ConverterConfig `mapstructure:"converter"`
 }
 
 // OperatorConfigs is an alias that allows for unmarshaling outside of mapstructure
 // Stanza operators should will be migrated to mapstructure for greater compatibility
 // but this allows a temporary solution
 type OperatorConfigs []map[string]interface{}
+
+// ConverterConfig controls how the internal entry.Entry to pdata.Logs converter
+// works.
+type ConverterConfig struct {
+	// MaxFlushCount defines the maximum number of entries that can be
+	// accumulated before flushing them for further processing.
+	MaxFlushCount uint `mapstructure:"max_flush_count"`
+	// FlushInterval defines how often to flush the converted and accumulated
+	// log entries.
+	FlushInterval time.Duration `mapstructure:"flush_interval"`
+}
 
 // InputConfig is an alias that allows unmarshaling outside of mapstructure
 // This is meant to be used only for the input operator
