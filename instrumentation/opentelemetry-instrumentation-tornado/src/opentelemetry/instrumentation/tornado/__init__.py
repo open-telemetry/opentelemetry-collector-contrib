@@ -35,6 +35,7 @@ Usage
     tornado.ioloop.IOLoop.current().start()
 """
 
+
 from collections import namedtuple
 from functools import partial
 from logging import getLogger
@@ -54,8 +55,8 @@ from opentelemetry.instrumentation.utils import (
 from opentelemetry.propagate import extract
 from opentelemetry.propagators.textmap import DictGetter
 from opentelemetry.trace.status import Status
+from opentelemetry.util._time import _time_ns
 from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
-from opentelemetry.util.time import time_ns
 
 from .client import fetch_async  # pylint: disable=E0401
 
@@ -148,7 +149,7 @@ def _wrap(cls, method_name, wrapper):
 
 
 def _prepare(tracer, func, handler, args, kwargs):
-    start_time = time_ns()
+    start_time = _time_ns()
     request = handler.request
     if _excluded_urls.url_disabled(request.uri):
         return func(*args, **kwargs)
@@ -225,7 +226,7 @@ def _finish_span(tracer, handler, error=None):
         if isinstance(error, tornado.web.HTTPError):
             status_code = error.status_code
             if not ctx and status_code == 404:
-                ctx = _start_span(tracer, handler, time_ns())
+                ctx = _start_span(tracer, handler, _time_ns())
         if status_code != 404:
             finish_args = (
                 type(error),
