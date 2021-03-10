@@ -33,10 +33,11 @@ type receiver struct {
 	wg        sync.WaitGroup
 	cancel    context.CancelFunc
 
-	agent    *agent.LogAgent
-	emitter  *LogEmitter
-	consumer consumer.Logs
-	logger   *zap.Logger
+	agent     *agent.LogAgent
+	emitter   *LogEmitter
+	consumer  consumer.Logs
+	converter *Converter
+	logger    *zap.Logger
 }
 
 // Ensure this receiver adheres to required interface
@@ -58,23 +59,55 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 			return
 		}
 
+		r.converter.Start()
+
 		r.wg.Add(1)
-		go func() {
+		go func(ctx context.Context) {
 			defer r.wg.Done()
+
+			// Don't create done channel on every iteration.
+			doneChan := ctx.Done()
 			for {
 				select {
-				case <-rctx.Done():
+				case <-doneChan:
+					r.logger.Debug("Receive loop stopped")
 					return
-				case obsLog, ok := <-r.emitter.logChan:
+
+				case e, ok := <-r.emitter.logChan:
 					if !ok {
 						continue
 					}
-					if consumeErr := r.consumer.ConsumeLogs(ctx, Convert(obsLog)); consumeErr != nil {
-						r.logger.Error("ConsumeLogs() error", zap.String("error", consumeErr.Error()))
+
+					r.converter.Batch(e)
+				}
+			}
+		}(rctx)
+
+		r.wg.Add(1)
+		go func(ctx context.Context) {
+			defer r.wg.Done()
+
+			// Don't create done channel on every iteration.
+			doneChan := ctx.Done()
+			pLogsChan := r.converter.OutChannel()
+
+			for {
+				select {
+				case <-doneChan:
+					r.logger.Debug("Flush loop stopped")
+					return
+
+				case pLogs, ok := <-pLogsChan:
+					if !ok {
+						r.logger.Debug("Converter channel got closed")
+						continue
+					}
+					if cErr := r.consumer.ConsumeLogs(ctx, pLogs); cErr != nil {
+						r.logger.Error("ConsumeLogs() failed", zap.Error(cErr))
 					}
 				}
 			}
-		}()
+		}(rctx)
 	})
 
 	return err
@@ -89,6 +122,7 @@ func (r *receiver) Shutdown(context.Context) error {
 	r.stopOnce.Do(func() {
 		r.logger.Info("Stopping stanza receiver")
 		err = r.agent.Stop()
+		r.converter.Stop()
 		r.cancel()
 		r.wg.Wait()
 	})

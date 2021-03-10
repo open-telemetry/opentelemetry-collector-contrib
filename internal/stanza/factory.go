@@ -71,11 +71,23 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 			return nil, err
 		}
 
+		opts := []ConverterOption{
+			WithLogger(params.Logger),
+		}
+		if baseCfg.Converter.MaxFlushCount > 0 {
+			opts = append(opts, WithMaxFlushCount(baseCfg.Converter.MaxFlushCount))
+		}
+		if baseCfg.Converter.FlushInterval > 0 {
+			opts = append(opts, WithFlushInterval(baseCfg.Converter.FlushInterval))
+		}
+		converter := NewConverter(opts...)
+
 		return &receiver{
-			agent:    logAgent,
-			emitter:  emitter,
-			consumer: nextConsumer,
-			logger:   params.Logger,
+			agent:     logAgent,
+			emitter:   emitter,
+			consumer:  nextConsumer,
+			logger:    params.Logger,
+			converter: converter,
 		}, nil
 	}
 }

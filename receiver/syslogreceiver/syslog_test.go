@@ -68,13 +68,17 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 		_, err = conn.Write([]byte(msg))
 		require.NoError(t, err)
 	}
-	conn.Close()
+	require.NoError(t, conn.Close())
 
 	require.Eventually(t, expectNLogs(sink, numLogs), 2*time.Second, time.Millisecond)
 	require.NoError(t, rcvr.Shutdown(context.Background()))
+	require.Len(t, sink.AllLogs(), 1)
+
+	resourceLogs := sink.AllLogs()[0].ResourceLogs().At(0)
+	logs := resourceLogs.InstrumentationLibraryLogs().At(0).Logs()
+
 	for i := 0; i < numLogs; i++ {
-		logs := sink.AllLogs()[i]
-		log := logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0)
+		log := logs.At(i)
 
 		require.Equal(t, log.Timestamp(), pdata.Timestamp(1614470402003000000+i*60*1000*1000*1000))
 		msg, ok := log.Body().MapVal().Get("message")
@@ -107,6 +111,9 @@ func testdataConfigYamlAsMap() *SysLogConfig {
 				NameVal: "syslog",
 			},
 			Operators: stanza.OperatorConfigs{},
+			Converter: stanza.ConverterConfig{
+				FlushInterval: 100 * time.Millisecond,
+			},
 		},
 		Input: stanza.InputConfig{
 			"tcp": map[string]interface{}{
@@ -125,6 +132,9 @@ func testdataUDPConfig() *SysLogConfig {
 				NameVal: "syslog",
 			},
 			Operators: stanza.OperatorConfigs{},
+			Converter: stanza.ConverterConfig{
+				FlushInterval: 100 * time.Millisecond,
+			},
 		},
 		Input: stanza.InputConfig{
 			"udp": map[string]interface{}{
