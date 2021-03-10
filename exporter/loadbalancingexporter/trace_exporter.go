@@ -31,10 +31,10 @@ import (
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpertrace"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
-var _ component.TracesExporter = (*exporterImp)(nil)
+var _ component.TracesExporter = (*traceExporterImp)(nil)
 
 const (
 	defaultPort = "55680"
@@ -46,7 +46,7 @@ var (
 	errNoTracesInBatch           = errors.New("no traces were found in the batch")
 )
 
-type exporterImp struct {
+type traceExporterImp struct {
 	logger *zap.Logger
 	config Config
 	host   component.Host
@@ -64,7 +64,7 @@ type exporterImp struct {
 }
 
 // Crete new exporter
-func newExporter(params component.ExporterCreateParams, cfg configmodels.Exporter) (*exporterImp, error) {
+func newTracesExporter(params component.ExporterCreateParams, cfg configmodels.Exporter) (*traceExporterImp, error) {
 	oCfg := cfg.(*Config)
 
 	tmplParams := component.ExporterCreateParams{
@@ -98,7 +98,7 @@ func newExporter(params component.ExporterCreateParams, cfg configmodels.Exporte
 		return nil, errNoResolver
 	}
 
-	return &exporterImp{
+	return &traceExporterImp{
 		logger: params.Logger,
 		config: *oCfg,
 
@@ -110,7 +110,7 @@ func newExporter(params component.ExporterCreateParams, cfg configmodels.Exporte
 	}, nil
 }
 
-func (e *exporterImp) Start(ctx context.Context, host component.Host) error {
+func (e *traceExporterImp) Start(ctx context.Context, host component.Host) error {
 	e.res.onChange(e.onBackendChanges)
 	e.host = host
 	if err := e.res.start(ctx); err != nil {
@@ -120,7 +120,7 @@ func (e *exporterImp) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (e *exporterImp) onBackendChanges(resolved []string) {
+func (e *traceExporterImp) onBackendChanges(resolved []string) {
 	newRing := newHashRing(resolved)
 
 	if !newRing.equal(e.ring) {
@@ -138,7 +138,7 @@ func (e *exporterImp) onBackendChanges(resolved []string) {
 	}
 }
 
-func (e *exporterImp) addMissingExporters(ctx context.Context, endpoints []string) {
+func (e *traceExporterImp) addMissingExporters(ctx context.Context, endpoints []string) {
 	for _, endpoint := range endpoints {
 		endpoint = endpointWithPort(endpoint)
 
@@ -158,13 +158,13 @@ func (e *exporterImp) addMissingExporters(ctx context.Context, endpoints []strin
 	}
 }
 
-func (e *exporterImp) buildExporterConfig(endpoint string) otlpexporter.Config {
+func (e *traceExporterImp) buildExporterConfig(endpoint string) otlpexporter.Config {
 	oCfg := e.config.Protocol.OTLP
 	oCfg.Endpoint = endpoint
 	return oCfg
 }
 
-func (e *exporterImp) removeExtraExporters(ctx context.Context, endpoints []string) {
+func (e *traceExporterImp) removeExtraExporters(ctx context.Context, endpoints []string) {
 	for existing := range e.exporters {
 		if !endpointFound(existing, endpoints) {
 			e.exporters[existing].Shutdown(ctx)
@@ -183,15 +183,15 @@ func endpointFound(endpoint string, endpoints []string) bool {
 	return false
 }
 
-func (e *exporterImp) Shutdown(context.Context) error {
+func (e *traceExporterImp) Shutdown(context.Context) error {
 	e.stopped = true
 	e.shutdownWg.Wait()
 	return nil
 }
 
-func (e *exporterImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	var errors []error
-	batches := batchpertrace.Split(td)
+	batches := batchpersignal.SplitTraces(td)
 	for _, batch := range batches {
 		if err := e.consumeTrace(ctx, batch); err != nil {
 			errors = append(errors, err)
@@ -201,7 +201,7 @@ func (e *exporterImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error 
 	return consumererror.CombineErrors(errors)
 }
 
-func (e *exporterImp) consumeTrace(ctx context.Context, td pdata.Traces) error {
+func (e *traceExporterImp) consumeTrace(ctx context.Context, td pdata.Traces) error {
 	traceID := traceIDFromTraces(td)
 	if traceID == pdata.InvalidTraceID() {
 		return errNoTracesInBatch
@@ -235,7 +235,7 @@ func (e *exporterImp) consumeTrace(ctx context.Context, td pdata.Traces) error {
 	return err
 }
 
-func (e *exporterImp) GetCapabilities() component.ProcessorCapabilities {
+func (e *traceExporterImp) GetCapabilities() component.ProcessorCapabilities {
 	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
