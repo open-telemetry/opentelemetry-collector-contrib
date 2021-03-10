@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `opentelemetry-propagator-ot-trace` Add OT Trace Propagator
   ([#302](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/302))
+- `opentelemetry-instrumentation-logging` Added logging instrumentation to enable log - trace correlation.
+  ([#345](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/345))
 
 ### Removed
 - Remove `component` span attribute in instrumentations. 
