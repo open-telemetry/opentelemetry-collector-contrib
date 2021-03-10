@@ -61,7 +61,7 @@ func createMetricsReceiver(
 	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
 	cfg := baseConfig.(*Config)
-	bw := network.NewBlobWriter(cfg.BlobDir, cfg.MaxBlobFiles, params.Logger)
+	bw := network.NewBlobWriter(cfg.LocalDebugDir, cfg.MaxLocalDebugFiles, params.Logger)
 	sec := int(math.Round(cfg.CollectionInterval.Seconds()))
 	return NewReceiver(
 		ctx,
