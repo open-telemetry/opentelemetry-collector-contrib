@@ -34,6 +34,9 @@ const (
 	// NewNameFieldName is the mapstructure field name for NewName field
 	NewNameFieldName = "new_name"
 
+	// AttributeNameFieldName is the mapstructure field name for AttributeName
+	AttributeNameFieldName = "attribute_name"
+
 	// GroupResouceLabelsFieldName is the mapstructure field name for GroupResouceLabels field
 	GroupResouceLabelsFieldName = "group_resource_labels"
 
@@ -136,6 +139,9 @@ type Operation struct {
 	// NewValue is used to set a new label value either when the operation is `AggregatedValues` or `AddLabel`.
 	NewValue string `mapstructure:"new_value"`
 
+	// AttributeName is used as the source resource attribute when the operation is `CopyResourceAttribute`.
+	AttributeName string `mapstructure:"attribute_name"`
+
 	// ValueActions is a list of renaming actions for label values.
 	ValueActions []ValueAction `mapstructure:"value_actions"`
 
@@ -191,6 +197,9 @@ const (
 	// UpdateLabel applies name changes to label and/or label values.
 	UpdateLabel OperationAction = "update_label"
 
+	// CopyResourceAttribute takes the value of a resource attribute and adds it as a label
+	CopyResourceAttribute OperationAction = "copy_resource_attribute"
+
 	// DeleteLabelValue deletes a label value by also removing all the points associated with this label value
 	DeleteLabelValue OperationAction = "delete_label_value"
 
@@ -206,7 +215,7 @@ const (
 	AggregateLabelValues OperationAction = "aggregate_label_values"
 )
 
-var OperationActions = []OperationAction{AddLabel, UpdateLabel, DeleteLabelValue, ToggleScalarDataType, AggregateLabels, AggregateLabelValues}
+var OperationActions = []OperationAction{AddLabel, UpdateLabel, CopyResourceAttribute, DeleteLabelValue, ToggleScalarDataType, AggregateLabels, AggregateLabelValues}
 
 func (oa OperationAction) isValid() bool {
 	for _, operationAction := range OperationActions {

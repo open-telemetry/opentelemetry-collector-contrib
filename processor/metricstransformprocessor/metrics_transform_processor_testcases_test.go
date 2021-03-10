@@ -18,11 +18,13 @@ import (
 	"regexp"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 )
 
 type metricsTransformTest struct {
 	name       string // test name
 	transforms []internalTransform
+	resource   *v1.Resource
 	in         []*metricspb.Metric
 	out        []*metricspb.Metric
 }
@@ -192,6 +194,74 @@ var (
 					addInt64Point(0, 3, 2).
 					addTimeseries(1, []string{"label1-value2"}).
 					addInt64Point(1, 3, 2).
+					build(),
+			},
+		},
+		{
+			name: "metric_copy_resource_attribute_from_resource",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action:        CopyResourceAttribute,
+								AttributeName: "rsrc-attr1",
+							},
+						},
+					},
+				},
+			},
+			resource: &v1.Resource{
+				Type: "opencensus.proto.resource.v1.Resource",
+				Labels: map[string]string{
+					"rsrc-attr1": "rsrc-value1",
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
+					addTimeseries(1, nil).
+					addInt64Point(0, 3, 2).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setLabels([]string{"rsrc-attr1"}).
+					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
+					addTimeseries(1, []string{"rsrc-value1"}).
+					addInt64Point(0, 3, 2).
+					build(),
+			},
+		},
+		{
+			name: "metric_copy_resource_attribute_from_metric_no_resource",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action:        CopyResourceAttribute,
+								AttributeName: "rsrc-attr1",
+							},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
+					addTimeseries(1, nil).
+					addInt64Point(0, 3, 2).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
+					addTimeseries(1, nil).
+					addInt64Point(0, 3, 2).
 					build(),
 			},
 		},

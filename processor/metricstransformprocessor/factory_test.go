@@ -119,6 +119,11 @@ func TestCreateProcessors(t *testing.T) {
 			succeed:      false,
 			errorMessage: fmt.Sprintf("%q must be in %q", SubmatchCaseFieldName, SubmatchCases),
 		},
+		{
+			configName:   "config_invalid_attribute_name.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("operation %v: missing required field %q while %q is %v", 1, AttributeNameFieldName, ActionFieldName, CopyResourceAttribute),
+		},
 	}
 
 	for _, test := range tests {

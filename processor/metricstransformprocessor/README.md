@@ -15,12 +15,13 @@ not suitable for aggregating metrics from multiple sources (e.g. multiple nodes
 or clients).
 
 | Operation                     | Example (based on metric `system.cpu.usage`)                                                    |
-|-------------------------------|-------------------------------------------------------------------------------------------------|
+| ----------------------------- | ----------------------------------------------------------------------------------------------- |
 | Rename metrics                | Rename to `system.cpu.usage_time`                                                               |
 | Add labels                    | Add new label `identifier` with value `1` to all points                                         |
 | Rename label keys             | Rename label `state` to `cpu_state`                                                             |
 | Rename label values           | For label `state`, rename value `idle` to `-`                                                   |
 | Delete data points            | Delete all points where label `state` has value `idle`                                          |
+| Copy labels from resources    | Copy resource attributes to metric labels                                                       |
 | Toggle data type              | Change from `int` data points to `double` data points                                           |
 | Aggregate across label sets   | Retain only the label `state`, average all points with the same value for this label            |
 | Aggregate across label values | For label `state`, sum points where the value is `user` or `system` into `used = user + system` |
@@ -83,6 +84,8 @@ transforms:
         aggregated_values: [values...]
         # new_value specifies the updated name of the label value; if action is add_label or aggregate_label_values, new_value is required
         new_value: <new_value>
+        # attribute_name specifies the resource attribute name used as a source if op is `copy_resource_attribute`
+        attribute_name: <resource_attribute>
         # label_value specifies the label value for which points should be deleted; if action is delete_label_value, label_value is required
         label_value: <label_value>
         # label_set contains a list of labels that will remain after aggregation; if action is aggregate_labels, label_set is required
@@ -195,6 +198,16 @@ operation:
   - action: delete_label_value
     label: state
     label_value: idle
+```
+
+### Copy a resource attribute
+```yaml
+# Apply resource attribute 'host.name' as a metric label
+include: host.name
+action: update
+operation:
+  - action: copy_resource_attribute
+    attribute_name: host.name
 ```
 
 ### Toggle datatype

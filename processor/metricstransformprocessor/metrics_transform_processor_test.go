@@ -55,7 +55,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			ctx := context.Background()
 
 			// construct metrics data to feed into the processor
-			md := internaldata.MetricsData{Metrics: test.in}
+			md := internaldata.MetricsData{Metrics: test.in, Resource: test.resource}
 
 			// process
 			cErr := mtp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(md))

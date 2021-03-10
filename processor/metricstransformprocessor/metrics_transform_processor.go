@@ -180,7 +180,7 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 					data.Metrics = append(data.Metrics, match.metric)
 				}
 
-				mtp.update(match, transform)
+				mtp.update(match, transform, data.Resource)
 
 				if transform.NewName != "" {
 					if transform.Action == Update {
@@ -340,7 +340,7 @@ func (mtp *metricsTransformProcessor) removeMatchedMetricsAndAppendCombined(metr
 }
 
 // update updates the metric content based on operations indicated in transform.
-func (mtp *metricsTransformProcessor) update(match *match, transform internalTransform) {
+func (mtp *metricsTransformProcessor) update(match *match, transform internalTransform, resource *resourcepb.Resource) {
 	if transform.NewName != "" {
 		if match.pattern == nil {
 			match.metric.MetricDescriptor.Name = transform.NewName
@@ -361,6 +361,8 @@ func (mtp *metricsTransformProcessor) update(match *match, transform internalTra
 			mtp.ToggleScalarDataType(match.metric)
 		case AddLabel:
 			mtp.addLabelOp(match.metric, op)
+		case CopyResourceAttribute:
+			mtp.copyResourceAttributeOp(match.metric, op, resource)
 		case DeleteLabelValue:
 			mtp.deleteLabelValueOp(match.metric, op)
 		}
