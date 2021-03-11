@@ -44,11 +44,7 @@ func TestEndpointEnv(t *testing.T) {
 				},
 			},
 			want: EndpointEnv{
-				"type": map[string]bool{
-					"pod":      true,
-					"hostport": false,
-					"port":     false,
-				},
+				"type": "pod",
 				"endpoint": "192.68.73.2",
 				"name":     "pod_name",
 				"labels": map[string]string{
