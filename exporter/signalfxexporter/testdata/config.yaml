@@ -28,6 +28,22 @@ exporters:
     - action: rename_dimension_keys
       mapping:
         k8s.cluster.name: kubernetes_cluster
+    - action: drop_dimensions
+      without_dimension_pairs:
+        foo:
+        foo1: [bar]
+    - action: drop_dimensions
+      metric_name: metric
+      without_dimension_pairs:
+        foo:
+        foo1: [bar]
+    - action: drop_dimensions
+      metric_names:
+        metric1: true
+        metric2: true
+      without_dimension_pairs:
+        foo:
+        foo1: [bar]
     exclude_metrics:
       - metric_name: metric1
       - metric_names: [metric2, metric3]

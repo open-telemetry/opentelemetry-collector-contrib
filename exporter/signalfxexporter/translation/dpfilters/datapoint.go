@@ -21,16 +21,16 @@ import (
 )
 
 type dataPointFilter struct {
-	metricFilter     *stringFilter
+	metricFilter     *StringFilter
 	dimensionsFilter *dimensionsFilter
 }
 
 // newDataPointFilter returns a new dataPointFilter filter with the given configuration.
 func newDataPointFilter(metricNames []string, dimSet map[string][]string) (*dataPointFilter, error) {
-	var metricFilter *stringFilter
+	var metricFilter *StringFilter
 	if len(metricNames) > 0 {
 		var err error
-		metricFilter, err = newStringFilter(metricNames)
+		metricFilter, err = NewStringFilter(metricNames)
 		if err != nil {
 			return nil, err
 		}
