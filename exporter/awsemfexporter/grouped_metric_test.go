@@ -32,6 +32,8 @@ import (
 )
 
 func TestAddToGroupedMetric(t *testing.T) {
+	rateMetricCalculator = newFloat64RateCalculator()
+
 	namespace := "namespace"
 	instrumentationLibName := "cloudwatch-otel"
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
