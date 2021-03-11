@@ -15,28 +15,14 @@
 package splunkhecexporter
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
-	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
-
-// eventsChunk buffers JSON encoded Splunk events.
-// The events are created from LogRecord(s) where one event is created from one LogRecord.
-type eventsChunk struct {
-	buf *bytes.Buffer
-	// The logIndex of the LogRecord of 1st event in buf.
-	index *logIndex
-	err   error
-}
 
 // Composite index of a log record in pdata.Logs.
 type logIndex struct {
@@ -48,129 +34,8 @@ type logIndex struct {
 	logsIdx int
 }
 
-type logDataWrapper struct {
-	*pdata.Logs
-}
-
-func (ld *logDataWrapper) chunkEvents(ctx context.Context, logger *zap.Logger, config *Config) chan *eventsChunk {
-	chunkCh := make(chan *eventsChunk)
-
-	go func() {
-		defer close(chunkCh)
-
-		// event buffers a single event.
-		event := new(bytes.Buffer)
-		encoder := json.NewEncoder(event)
-
-		// chunk buffers events up to the max content length.
-		chunk := &eventsChunk{buf: new(bytes.Buffer)}
-
-		rl := ld.ResourceLogs()
-		for i := 0; i < rl.Len(); i++ {
-			ill := rl.At(i).InstrumentationLibraryLogs()
-			for j := 0; j < ill.Len(); j++ {
-				l := ill.At(j).Logs()
-				for k := 0; k < l.Len(); k++ {
-					if chunk.index == nil {
-						chunk.index = &logIndex{origIdx: i, instIdx: j, logsIdx: k}
-					}
-
-					if err := encoder.Encode(mapLogRecordToSplunkEvent(l.At(k), config, logger)); err != nil {
-						select {
-						case <-ctx.Done():
-						case chunkCh <- &eventsChunk{buf: nil, index: chunk.index, err: consumererror.Permanent(err)}:
-						}
-						return
-					}
-					event.WriteString("\r\n\r\n")
-
-				addToChunk:
-					// The size of an event must be less than or equal to max content length.
-					if config.MaxContentLengthLogs > 0 && event.Len() > config.MaxContentLengthLogs {
-						select {
-						case <-ctx.Done():
-						case chunkCh <- &eventsChunk{
-							buf:   nil,
-							index: chunk.index,
-							err:   consumererror.Permanent(fmt.Errorf("log event bytes exceed max content length configured (log: %d, max: %d)", event.Len(), config.MaxContentLengthLogs))}:
-						}
-						return
-					}
-
-					// Moving the event to chunk.buf if length will be <= max content length.
-					// Max content length <= 0 is interpreted as unbound.
-					if chunk.buf.Len()+event.Len() <= config.MaxContentLengthLogs || config.MaxContentLengthLogs <= 0 {
-						// WriteTo() empties and resets buffer event.
-						if _, err := event.WriteTo(chunk.buf); err != nil {
-							select {
-							case <-ctx.Done():
-							case chunkCh <- &eventsChunk{buf: nil, index: chunk.index, err: consumererror.Permanent(err)}:
-							}
-							return
-						}
-						continue
-					}
-
-					select {
-					case <-ctx.Done():
-						return
-					case chunkCh <- chunk:
-					}
-
-					// Creating a new events buffer.
-					chunk = &eventsChunk{buf: new(bytes.Buffer)}
-
-					// Adding remaining event to the new chunk
-					if event.Len() != 0 {
-						chunk.index = &logIndex{origIdx: i, instIdx: j, logsIdx: k}
-						goto addToChunk
-					}
-				}
-			}
-		}
-
-		select {
-		case <-ctx.Done():
-			return
-		case chunkCh <- chunk:
-		}
-	}()
-
-	return chunkCh
-}
-
-func (ld *logDataWrapper) numLogs(from *logIndex) int {
-	count, orig := 0, *ld.InternalRep().Orig
-
-	// Validating logIndex. Invalid index will cause out of range panic.
-	_ = orig[from.origIdx].InstrumentationLibraryLogs[from.instIdx].Logs[from.logsIdx]
-
-	for i := from.origIdx; i < len(orig); i++ {
-		for j, library := range orig[i].InstrumentationLibraryLogs {
-			switch {
-			case i == from.origIdx && j < from.instIdx:
-				continue
-			default:
-				count += len(library.Logs)
-			}
-		}
-	}
-
-	return count - from.logsIdx
-}
-
-func (ld *logDataWrapper) subLogs(from *logIndex) *pdata.Logs {
-	clone := ld.Clone().InternalRep()
-
-	subset := *clone.Orig
-	subset = subset[from.origIdx:]
-	subset[0].InstrumentationLibraryLogs = subset[0].InstrumentationLibraryLogs[from.instIdx:]
-	subset[0].InstrumentationLibraryLogs[0].Logs = subset[0].InstrumentationLibraryLogs[0].Logs[from.logsIdx:]
-
-	clone.Orig = &subset
-	subsetLogs := pdata.LogsFromInternalRep(clone)
-
-	return &subsetLogs
+func (i *logIndex) zero() bool {
+	return i.origIdx == 0 && i.instIdx == 0 && i.logsIdx == 0
 }
 
 func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {

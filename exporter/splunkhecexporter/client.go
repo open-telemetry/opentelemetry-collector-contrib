@@ -157,6 +157,72 @@ func (c *client) postEvents(ctx context.Context, events io.Reader, compressed bo
 	return nil
 }
 
+func subLog(ld pdata.Logs, logIdx logIndex) pdata.Logs {
+	if logIdx.zero() {
+		return ld
+	}
+	clone := ld.Clone().InternalRep()
+
+	subset := *clone.Orig
+	subset = subset[logIdx.origIdx:]
+	subset[0].InstrumentationLibraryLogs = subset[0].InstrumentationLibraryLogs[logIdx.instIdx:]
+	subset[0].InstrumentationLibraryLogs[0].Logs = subset[0].InstrumentationLibraryLogs[0].Logs[logIdx.logsIdx:]
+
+	clone.Orig = &subset
+	return pdata.LogsFromInternalRep(clone)
+}
+
+func (c *client) chunk(ctx context.Context, ld pdata.Logs, max int, send func(ctx context.Context, buf *bytes.Buffer) error) (numDroppedLogs int, err error) {
+	// Provide 5000 overflow because it overruns the max content length then trims it block. Hopefully will prevent
+	// extra allocation.
+	buf := bytes.NewBuffer(make([]byte, 0, max+5_000))
+	encoder := json.NewEncoder(buf)
+	checkPoint := 0
+	var logIdx logIndex
+
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		ills := rls.At(i).InstrumentationLibraryLogs()
+		for j := 0; j < ills.Len(); j++ {
+			logs := ills.At(j).Logs()
+			for k := 0; k < logs.Len(); k++ {
+				event := mapLogRecordToSplunkEvent(logs.At(k), c.config, c.logger)
+				if err := encoder.Encode(event); err != nil {
+					numDroppedLogs++
+					continue
+				}
+
+				buf.WriteString("\r\n\r\n")
+
+				if buf.Len() >= max {
+					// May want to check if checkPoint == 0 ?
+					buf.Truncate(checkPoint)
+					if err := send(ctx, buf); err != nil {
+						return numDroppedLogs, consumererror.PartialLogsError(err, subLog(ld, logIdx))
+					}
+					logIdx = logIndex{
+						origIdx: i,
+						instIdx: j,
+						logsIdx: k,
+					}
+					buf.Reset()
+					checkPoint = 0
+				}
+
+				checkPoint = buf.Len()
+			}
+		}
+	}
+
+	if buf.Len() > 0 {
+		if err := send(ctx, buf); err != nil {
+			return numDroppedLogs, consumererror.PartialLogsError(err, subLog(ld, logIdx))
+		}
+	}
+
+	return numDroppedLogs, nil
+}
+
 func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (numDroppedLogs int, err error) {
 	c.wg.Add(1)
 	defer c.wg.Done()
@@ -168,45 +234,39 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (numDroppedLogs
 	gzipWriter.Reset(gzipBuf)
 	defer gzipWriter.Close()
 
-	logs := logDataWrapper{&ld}
+	// Callback when each chunk is to be sent.
+	sendBatch := func(ctx context.Context, buf *bytes.Buffer) error {
+		compression := false
+		var reader io.Reader
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+		if buf.Len() < 1500 || c.config.DisableCompression {
+			compression = false
+			reader = buf
+		} else {
+			compression = true
 
-	chunkCh := logs.chunkEvents(ctx, c.logger, c.config)
+			gzipBuf.Reset()
+			gzipWriter.Reset(gzipBuf)
 
-	for chunk := range chunkCh {
-		if chunk.err != nil {
-			return logs.numLogs(chunk.index), chunk.err
-		}
-
-		if chunk.buf.Len() == 0 {
-			continue
-		}
-
-		// Not compressing if compression disabled or payload fit into a single ethernet frame.
-		if chunk.buf.Len() <= 1500 || c.config.DisableCompression {
-			if err = c.postEvents(ctx, chunk.buf, false); err != nil {
-				return logs.numLogs(chunk.index), consumererror.PartialLogsError(err, *logs.subLogs(chunk.index))
+			if _, err := io.Copy(gzipWriter, buf); err != nil {
+				return err
 			}
-			continue
+
+			if err := gzipWriter.Flush(); err != nil {
+				return err
+			}
+
+			reader = gzipBuf
 		}
 
-		if _, err = gzipWriter.Write(chunk.buf.Bytes()); err != nil {
-			return logs.numLogs(chunk.index), consumererror.Permanent(err)
+		if err = c.postEvents(ctx, reader, compression); err != nil {
+			return err
 		}
 
-		gzipWriter.Flush()
-
-		if err = c.postEvents(ctx, gzipBuf, true); err != nil {
-			return logs.numLogs(chunk.index), consumererror.PartialLogsError(err, *logs.subLogs(chunk.index))
-		}
-
-		gzipBuf.Reset()
-		gzipWriter.Reset(gzipBuf)
+		return nil
 	}
 
-	return 0, nil
+	return c.chunk(ctx, ld, c.config.MaxContentLengthLogs, sendBatch)
 }
 
 func encodeBodyEvents(zippers *sync.Pool, evs []*splunk.Event, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
