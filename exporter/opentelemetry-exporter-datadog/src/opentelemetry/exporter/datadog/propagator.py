@@ -27,8 +27,7 @@ from opentelemetry.trace import get_current_span, set_span_in_context
 
 
 class DatadogFormat(TextMapPropagator):
-    """Propagator for the Datadog HTTP header format.
-    """
+    """Propagator for the Datadog HTTP header format."""
 
     TRACE_ID_KEY = "x-datadog-trace-id"
     PARENT_ID_KEY = "x-datadog-parent-id"
@@ -65,12 +64,15 @@ class DatadogFormat(TextMapPropagator):
         if trace_id is None or span_id is None:
             return set_span_in_context(trace.INVALID_SPAN, context)
 
+        trace_state = []
+        if origin is not None:
+            trace_state.append((constants.DD_ORIGIN, origin))
         span_context = trace.SpanContext(
             trace_id=int(trace_id),
             span_id=int(span_id),
             is_remote=True,
             trace_flags=trace_flags,
-            trace_state=trace.TraceState([(constants.DD_ORIGIN, origin)]),
+            trace_state=trace.TraceState(trace_state),
         )
 
         return set_span_in_context(
