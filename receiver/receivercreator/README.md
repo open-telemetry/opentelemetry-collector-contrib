@@ -62,7 +62,7 @@ This setting controls what resource attributes are set on metrics emitted from t
 
 Note that the backticks below are not typos--they indicate the value is set dynamically.
 
-`type.pod`
+`type`
 
 | Resource Attribute | Default       |
 |--------------------|---------------|
@@ -94,7 +94,7 @@ targeting it will have different variables available.
 
 | Variable    | Description                       |
 |-------------|-----------------------------------|
-| type.pod    | `true`                            |
+| type        | `pod`                            |
 | name        | name of the pod                   |
 | namespace   | namespace of the pod              |
 | uid         | unique id of the pod              |
@@ -141,7 +141,7 @@ receivers:
     receivers:
       prometheus_simple:
         # Configure prometheus scraping if standard prometheus annotations are set on the pod.
-        rule: type.pod && annotations["prometheus.io/scrape"] == "true"
+        rule: type == "pod" && annotations["prometheus.io/scrape"] == "true"
         config:
           metrics_path: '`"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/metrics"`'
           endpoint: '`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090`'

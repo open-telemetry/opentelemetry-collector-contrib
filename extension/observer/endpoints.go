@@ -74,6 +74,11 @@ func (e *Endpoint) Env() (EndpointEnv, error) {
 	env := e.Details.Env()
 	env["endpoint"] = e.Target
 
+	if e.Details.Type() == PodType {
+		env["type"] = string(e.Details.Type())
+		return env, nil
+	}
+
 	// Populate type field for evaluating rules with `type.port && ...`.
 	// Use string instead of EndpointType for rule evaluation.
 	types := map[string]bool{}
@@ -82,6 +87,7 @@ func (e *Endpoint) Env() (EndpointEnv, error) {
 	}
 	types[string(e.Details.Type())] = true
 	env["type"] = types
+
 	return env, nil
 }
 
