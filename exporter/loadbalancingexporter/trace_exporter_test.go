@@ -27,9 +27,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -223,7 +225,7 @@ func TestConsumeTraces(t *testing.T) {
 	require.NoError(t, err)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	p.exporters["endpoint-1"] = &componenttest.ExampleExporterConsumer{}
+	p.exporters["endpoint-1"] = newNopMockTracesExporter()
 	p.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(ctx context.Context) ([]string, error) {
@@ -274,8 +276,8 @@ func TestRemoveExtraExporters(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	p.exporters["endpoint-1"] = &componenttest.ExampleExporterConsumer{}
-	p.exporters["endpoint-2"] = &componenttest.ExampleExporterConsumer{}
+	p.exporters["endpoint-1"] = newNopMockTracesExporter()
+	p.exporters["endpoint-2"] = newNopMockTracesExporter()
 	resolved := []string{"endpoint-1"}
 
 	// test
@@ -303,10 +305,10 @@ func TestAddMissingExporters(t *testing.T) {
 		_ component.ExporterCreateParams,
 		_ configmodels.Exporter,
 	) (component.TracesExporter, error) {
-		return &componenttest.ExampleExporterConsumer{}, nil
+		return newNopMockTracesExporter(), nil
 	}))
 
-	p.exporters["endpoint-1:55680"] = &componenttest.ExampleExporterConsumer{}
+	p.exporters["endpoint-1:55680"] = newNopMockTracesExporter()
 	resolved := []string{"endpoint-1", "endpoint-2"}
 
 	// test
@@ -338,7 +340,7 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 		return nil, expectedErr
 	}))
 
-	p.exporters["endpoint-1"] = &componenttest.ExampleExporterConsumer{}
+	p.exporters["endpoint-1"] = newNopMockTracesExporter()
 	resolved := []string{"endpoint-1", "endpoint-2"}
 
 	// test
@@ -389,7 +391,7 @@ func TestEndpointWithPort(t *testing.T) {
 
 func TestBuildExporterConfig(t *testing.T) {
 	// prepare
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	factories.Exporters[typeStr] = NewFactory()
@@ -434,8 +436,8 @@ func TestBatchWithTwoTraces(t *testing.T) {
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	sink := &componenttest.ExampleExporterConsumer{}
-	p.exporters["endpoint-1"] = sink
+	sink := new(consumertest.TracesSink)
+	p.exporters["endpoint-1"] = newMockTracesExporter(sink.ConsumeTraces)
 
 	first := simpleTraces()
 	second := simpleTraceWithID(pdata.NewTraceID([16]byte{2, 3, 4, 5}))
@@ -448,7 +450,7 @@ func TestBatchWithTwoTraces(t *testing.T) {
 
 	// verify
 	assert.NoError(t, err)
-	assert.Len(t, sink.Traces, 2)
+	assert.Len(t, sink.AllTraces(), 2)
 }
 
 func TestFailedExporterInRing(t *testing.T) {
@@ -581,20 +583,20 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 
 	var counter1, counter2 int64
 	defaultExporters := map[string]component.TracesExporter{
-		"127.0.0.1": &mockTracesExporter{
-			ConsumeTracesFn: func(ctx context.Context, td pdata.Traces) error {
+		"127.0.0.1": newMockTracesExporter(
+			func(ctx context.Context, td pdata.Traces) error {
 				atomic.AddInt64(&counter1, 1)
 				// simulate an unreachable backend
 				time.Sleep(10 * time.Second)
 				return nil
 			},
-		},
-		"127.0.0.2": &mockTracesExporter{
-			ConsumeTracesFn: func(ctx context.Context, td pdata.Traces) error {
+		),
+		"127.0.0.2": newMockTracesExporter(
+			func(ctx context.Context, td pdata.Traces) error {
 				atomic.AddInt64(&counter2, 1)
 				return nil
 			},
-		},
+		),
 	}
 
 	// test
@@ -678,9 +680,24 @@ func simpleConfig() *Config {
 }
 
 type mockTracesExporter struct {
+	component.Component
 	ConsumeTracesFn func(ctx context.Context, td pdata.Traces) error
-	StartFn         func(ctx context.Context, host component.Host) error
-	ShutdownFn      func(ctx context.Context) error
+}
+
+func newMockTracesExporter(consumeTracesFn func(ctx context.Context, td pdata.Traces) error) component.TracesExporter {
+	return &mockTracesExporter{
+		Component:       componenthelper.NewComponent(componenthelper.DefaultComponentSettings()),
+		ConsumeTracesFn: consumeTracesFn,
+	}
+}
+
+func newNopMockTracesExporter() component.TracesExporter {
+	return &mockTracesExporter{
+		Component: componenthelper.NewComponent(componenthelper.DefaultComponentSettings()),
+		ConsumeTracesFn: func(ctx context.Context, td pdata.Traces) error {
+			return nil
+		},
+	}
 }
 
 func (e *mockTracesExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
@@ -688,18 +705,4 @@ func (e *mockTracesExporter) ConsumeTraces(ctx context.Context, td pdata.Traces)
 		return nil
 	}
 	return e.ConsumeTracesFn(ctx, td)
-}
-
-func (e *mockTracesExporter) Start(ctx context.Context, host component.Host) error {
-	if e.StartFn == nil {
-		return nil
-	}
-	return e.StartFn(ctx, host)
-}
-
-func (e *mockTracesExporter) Shutdown(ctx context.Context) error {
-	if e.ShutdownFn == nil {
-		return nil
-	}
-	return e.ShutdownFn(ctx)
 }

@@ -7,14 +7,14 @@ receivers:
     enable_metric_type: false
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     metrics:
      receivers: [statsd]
-     processors: [exampleprocessor]
-     exporters: [exampleexporter]
+     processors: [nop]
+     exporters: [nop]

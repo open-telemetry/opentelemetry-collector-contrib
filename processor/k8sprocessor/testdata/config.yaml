@@ -1,5 +1,5 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
   k8s_tagger:
@@ -60,11 +60,11 @@ processors:
         name: k8s.pod.uid
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors: [k8s_tagger]
-      exporters: [exampleexporter]
+      exporters: [nop]

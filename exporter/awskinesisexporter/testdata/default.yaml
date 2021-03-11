@@ -1,15 +1,15 @@
 receivers:
-  examplereceiver:
+  nop:
 
 exporters:
   awskinesis:
 
 processors:
-  exampleprocessor:
+  nop:
 
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
+      receivers: [nop]
+      processors: [nop]
       exporters: [awskinesis]
