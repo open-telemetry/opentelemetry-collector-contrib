@@ -35,7 +35,8 @@ import (
 var _ component.TracesExporter = (*traceExporterImp)(nil)
 
 var (
-	errNoTracesInBatch = errors.New("no traces were found in the batch")
+	errNoTracesInBatch        = errors.New("no traces were found in the batch")
+	errUnexpectedExporterType = errors.New("unexpected exporter type")
 )
 
 type traceExporterImp struct {
@@ -108,13 +109,19 @@ func (e *traceExporterImp) consumeTrace(ctx context.Context, td pdata.Traces) er
 		return errNoTracesInBatch
 	}
 
-	exp, endpoint, err := e.loadBalancer.Exporter(traceID)
+	endpoint := e.loadBalancer.Endpoint(traceID)
+	exp, err := e.loadBalancer.Exporter(endpoint)
 	if err != nil {
 		return err
 	}
 
+	te, ok := exp.(component.TracesExporter)
+	if !ok {
+		return errUnexpectedExporterType
+	}
+
 	start := time.Now()
-	err = exp.(component.TracesExporter).ConsumeTraces(ctx, td)
+	err = te.ConsumeTraces(ctx, td)
 	duration := time.Since(start)
 	ctx, _ = tag.New(ctx, tag.Upsert(tag.MustNewKey("endpoint"), endpoint))
 

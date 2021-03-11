@@ -267,7 +267,7 @@ func TestAddMissingExporters(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	p.exporters["endpoint-1:55680"] = &componenttest.ExampleExporterConsumer{}
+	p.exporters["endpoint-1:4317"] = &componenttest.ExampleExporterConsumer{}
 	resolved := []string{"endpoint-1", "endpoint-2"}
 
 	// test
@@ -275,7 +275,7 @@ func TestAddMissingExporters(t *testing.T) {
 
 	// verify
 	assert.Len(t, p.exporters, 2)
-	assert.Contains(t, p.exporters, "endpoint-2:55680")
+	assert.Contains(t, p.exporters, "endpoint-2:4317")
 }
 
 func TestFailedToAddMissingExporters(t *testing.T) {
@@ -346,7 +346,7 @@ func TestEndpointWithPort(t *testing.T) {
 	}{
 		{
 			"endpoint-1",
-			"endpoint-1:55680",
+			"endpoint-1:4317",
 		},
 		{
 			"endpoint-1:55690",
@@ -390,7 +390,7 @@ func TestFailedExporterInRing(t *testing.T) {
 
 	// test
 	// this trace ID will reach the endpoint-2 -- see the consistent hashing tests for more info
-	_, _, err = p.Exporter(pdata.NewTraceID([16]byte{128, 128, 0, 0}))
+	_, err = p.Exporter(p.Endpoint(pdata.NewTraceID([16]byte{128, 128, 0, 0})))
 
 	// verify
 	assert.Error(t, err)

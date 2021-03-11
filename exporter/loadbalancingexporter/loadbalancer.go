@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	defaultPort = "55680"
+	defaultPort = "4317"
 )
 
 var (
@@ -42,7 +42,8 @@ type componentFactory func(ctx context.Context, endpoint string) (component.Expo
 
 type loadBalancer interface {
 	component.Component
-	Exporter(traceID pdata.TraceID) (component.Exporter, string, error)
+	Endpoint(traceID pdata.TraceID) string
+	Exporter(endpoint string) (component.Exporter, error)
 }
 
 type loadBalancerImp struct {
@@ -176,18 +177,24 @@ func (lb *loadBalancerImp) Shutdown(context.Context) error {
 	return nil
 }
 
-func (lb *loadBalancerImp) Exporter(traceID pdata.TraceID) (component.Exporter, string, error) {
+func (lb *loadBalancerImp) Endpoint(traceID pdata.TraceID) string {
+	lb.updateLock.RLock()
+	defer lb.updateLock.RUnlock()
+
+	return lb.ring.endpointFor(traceID)
+}
+
+func (lb *loadBalancerImp) Exporter(endpoint string) (component.Exporter, error) {
 	// NOTE: make rolling updates of next tier of collectors work. currently this may cause
 	// data loss because the latest batches sent to outdated backend will never find their way out.
 	// for details: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1690
 	lb.updateLock.RLock()
-	endpoint := lb.ring.endpointFor(traceID)
 	exp, found := lb.exporters[endpoint]
 	lb.updateLock.RUnlock()
 	if !found {
 		// something is really wrong... how come we couldn't find the exporter??
-		return nil, endpoint, fmt.Errorf("couldn't find the exporter for the endpoint %q", endpoint)
+		return nil, fmt.Errorf("couldn't find the exporter for the endpoint %q", endpoint)
 	}
 
-	return exp, endpoint, nil
+	return exp, nil
 }
