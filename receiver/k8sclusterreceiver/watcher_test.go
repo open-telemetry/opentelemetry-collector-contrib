@@ -42,9 +42,9 @@ func TestSetupMetadataExporters(t *testing.T) {
 			fields{},
 			args{
 				exporters: map[configmodels.NamedEntity]component.Exporter{
-					&configmodels.ExporterSettings{TypeVal: "exampleexporter", NameVal: "exampleexporter"}: MockExporter{},
+					&configmodels.ExporterSettings{TypeVal: "nop", NameVal: "nop"}: MockExporter{},
 				},
-				metadataExportersFromConfig: []string{"exampleexporter"},
+				metadataExportersFromConfig: []string{"nop"},
 			},
 			true,
 		},
@@ -54,9 +54,9 @@ func TestSetupMetadataExporters(t *testing.T) {
 				metadataConsumers: []metadataConsumer{(&mockExporterWithK8sMetadata{}).ConsumeMetadata},
 			},
 			args{exporters: map[configmodels.NamedEntity]component.Exporter{
-				&configmodels.ExporterSettings{TypeVal: "exampleexporter", NameVal: "exampleexporter"}: mockExporterWithK8sMetadata{},
+				&configmodels.ExporterSettings{TypeVal: "nop", NameVal: "nop"}: mockExporterWithK8sMetadata{},
 			},
-				metadataExportersFromConfig: []string{"exampleexporter"},
+				metadataExportersFromConfig: []string{"nop"},
 			},
 			false,
 		},
@@ -66,9 +66,9 @@ func TestSetupMetadataExporters(t *testing.T) {
 				metadataConsumers: []metadataConsumer{},
 			},
 			args{exporters: map[configmodels.NamedEntity]component.Exporter{
-				&configmodels.ExporterSettings{TypeVal: "exampleexporter", NameVal: "exampleexporter"}: mockExporterWithK8sMetadata{},
+				&configmodels.ExporterSettings{TypeVal: "nop", NameVal: "nop"}: mockExporterWithK8sMetadata{},
 			},
-				metadataExportersFromConfig: []string{"exampleexporter/1"},
+				metadataExportersFromConfig: []string{"nop/1"},
 			},
 			true,
 		},

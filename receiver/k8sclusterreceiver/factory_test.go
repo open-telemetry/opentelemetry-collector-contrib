@@ -79,7 +79,7 @@ func TestFactory(t *testing.T) {
 	ctx := context.Background()
 	require.NoError(t, r.Start(ctx, nopHostWithExporters{}))
 	require.NoError(t, r.Shutdown(ctx))
-	rCfg.MetadataExporters = []string{"exampleexporter/withoutmetadata"}
+	rCfg.MetadataExporters = []string{"nop/withoutmetadata"}
 	require.Error(t, r.Start(context.Background(), nopHostWithExporters{}))
 }
 
@@ -103,8 +103,8 @@ func (n nopHostWithExporters) GetExtensions() map[configmodels.NamedEntity]compo
 func (n nopHostWithExporters) GetExporters() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter {
 	return map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter{
 		configmodels.MetricsDataType: {
-			&configmodels.ExporterSettings{TypeVal: "exampleexporter", NameVal: "exampleexporter/withoutmetadata"}: MockExporter{},
-			&configmodels.ExporterSettings{TypeVal: "exampleexporter", NameVal: "exampleexporter/withmetadata"}:    mockExporterWithK8sMetadata{},
+			&configmodels.ExporterSettings{TypeVal: "nop", NameVal: "nop/withoutmetadata"}: MockExporter{},
+			&configmodels.ExporterSettings{TypeVal: "nop", NameVal: "nop/withmetadata"}:    mockExporterWithK8sMetadata{},
 		},
 	}
 }

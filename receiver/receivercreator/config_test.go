@@ -15,15 +15,18 @@
 package receivercreator
 
 import (
+	"context"
 	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/consumer"
 )
 
 type mockHostFactories struct {
@@ -52,8 +55,10 @@ func (mh *mockHostFactories) GetExtensions() map[configmodels.NamedEntity]compon
 }
 
 func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *configmodels.Config) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.Nil(t, err)
+
+	factories.Receivers[configmodels.Type("nop")] = &nopWithEndpointFactory{ReceiverFactory: componenttest.NewNopReceiverFactory()}
 
 	factory := NewFactory()
 	factories.Receivers[configmodels.Type(typeStr)] = factory
@@ -80,10 +85,43 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.NotNil(t, r1)
 	assert.Len(t, r1.receiverTemplates, 1)
-	assert.Contains(t, r1.receiverTemplates, "examplereceiver/1")
-	assert.Equal(t, `type.port`, r1.receiverTemplates["examplereceiver/1"].Rule)
+	assert.Contains(t, r1.receiverTemplates, "nop/1")
+	assert.Equal(t, `type.port`, r1.receiverTemplates["nop/1"].Rule)
 	assert.Equal(t, userConfigMap{
 		endpointConfigKey: "localhost:12345",
-	}, r1.receiverTemplates["examplereceiver/1"].config)
+	}, r1.receiverTemplates["nop/1"].config)
 	assert.Equal(t, []configmodels.Type{"mock_observer"}, r1.WatchObservers)
+}
+
+type nopWithEndpointConfig struct {
+	configmodels.ReceiverSettings `mapstructure:",squash"`
+	Endpoint                      string `mapstructure:"endpoint"`
+}
+
+type nopWithEndpointFactory struct {
+	component.ReceiverFactory
+}
+
+type nopWithEndpointReceiver struct {
+	component.Component
+	consumer.MetricsConsumer
+}
+
+func (*nopWithEndpointFactory) CreateDefaultConfig() configmodels.Receiver {
+	return &nopWithEndpointConfig{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			TypeVal: "nop",
+		},
+	}
+}
+
+func (*nopWithEndpointFactory) CreateMetricsReceiver(
+	ctx context.Context,
+	_ component.ReceiverCreateParams,
+	_ configmodels.Receiver,
+	nextConsumer consumer.MetricsConsumer) (component.MetricsReceiver, error) {
+	return &nopWithEndpointReceiver{
+		Component:       componenthelper.NewComponent(componenthelper.DefaultComponentSettings()),
+		MetricsConsumer: nextConsumer,
+	}, nil
 }

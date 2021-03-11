@@ -1,8 +1,8 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
   signalfx:
@@ -53,10 +53,10 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
+      receivers: [nop]
+      processors: [nop]
       exporters: [signalfx, signalfx/allsettings]
     traces:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
+      receivers: [nop]
+      processors: [nop]
       exporters: [signalfx]

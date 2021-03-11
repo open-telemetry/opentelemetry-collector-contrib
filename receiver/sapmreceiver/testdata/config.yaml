@@ -20,15 +20,15 @@ receivers:
 
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     traces:
      receivers: [sapm]
-     processors: [exampleprocessor]
-     exporters: [exampleexporter]
+     processors: [nop]
+     exporters: [nop]
 

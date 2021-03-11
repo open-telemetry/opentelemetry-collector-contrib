@@ -160,7 +160,7 @@ func TestLoadingFullConfig(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.filterName, func(t *testing.T) {
 
-			factories, err := componenttest.ExampleComponents()
+			factories, err := componenttest.NopFactories()
 			assert.NoError(t, err)
 
 			factory := NewFactory()

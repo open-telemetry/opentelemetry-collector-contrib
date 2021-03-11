@@ -87,7 +87,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 // TestLoadConfig tests that the configuration is loaded correctly
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -212,7 +212,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 		assert.NoError(t, os.Unsetenv("DD_APM_URL"))
 	}()
 
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -318,7 +318,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 
 	logger := zap.NewNop()
 
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	factory := NewFactory()
@@ -351,7 +351,7 @@ func TestCreateAPITracesExporter(t *testing.T) {
 
 	logger := zap.NewNop()
 
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	factory := NewFactory()
@@ -382,7 +382,7 @@ func TestOnlyMetadata(t *testing.T) {
 	defer server.Close()
 	logger := zap.NewNop()
 
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	factory := NewFactory()

@@ -39,7 +39,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateTraceExporter(t *testing.T) {
 	logger := zap.NewNop()
 
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factory := NewFactory()
 	factories.Exporters[configmodels.Type(typeStr)] = factory
@@ -57,7 +57,7 @@ func TestCreateTraceExporter(t *testing.T) {
 func TestCreateMetricsExporter(t *testing.T) {
 	logger := zap.NewNop()
 
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factory := NewFactory()
 	factories.Exporters[configmodels.Type(typeStr)] = factory
