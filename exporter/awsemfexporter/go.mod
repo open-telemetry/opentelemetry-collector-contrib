@@ -21,4 +21,8 @@ require (
 	go.uber.org/zap v1.16.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/ini.v1 v1.57.0 // indirect
+
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws v0.0.0-00010101000000-000000000000
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws => ../../internal/aws
