@@ -42,16 +42,25 @@ func carbon2TagString(record metricPair) string {
 		if k == "name" || k == "unit" {
 			k = fmt.Sprintf("_%s", k)
 		}
-		returnValue = append(returnValue, fmt.Sprintf("%s=%s", k, tracetranslator.AttributeValueToString(v, false)))
+		returnValue = append(returnValue, fmt.Sprintf(
+			"%s=%s",
+			sanitizeCarbonString(k),
+			sanitizeCarbonString(tracetranslator.AttributeValueToString(v, false)),
+			))
 	})
 
-	returnValue = append(returnValue, fmt.Sprintf("metric=%s", record.metric.Name()))
+	returnValue = append(returnValue, fmt.Sprintf("metric=%s", sanitizeCarbonString(record.metric.Name())))
 
 	if len(record.metric.Unit()) > 0 {
-		returnValue = append(returnValue, fmt.Sprintf("unit=%s", record.metric.Unit()))
+		returnValue = append(returnValue, fmt.Sprintf("unit=%s", sanitizeCarbonString(record.metric.Unit())))
 	}
 
 	return strings.Join(returnValue, " ")
+}
+
+// sanitizeCarbonString replaces problematic characters with underscore
+func sanitizeCarbonString(text string) string {
+	return strings.NewReplacer(" ", "_", "=", "_", "\n", "_").Replace(text)
 }
 
 // carbon2IntRecord converts IntDataPoint to carbon2 metric string
