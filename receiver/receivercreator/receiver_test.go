@@ -110,7 +110,7 @@ func TestMockedEndToEnd(t *testing.T) {
 
 	// Test that we can send metrics.
 	for _, receiver := range dyn.observerHandler.receiversByEndpointID.Values() {
-		example := receiver.(*componenttest.ExampleReceiverProducer)
+		example := receiver.(*nopWithEndpointReceiver)
 		md := internaldata.OCToMetrics(internaldata.MetricsData{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "dynamictest"},
@@ -143,10 +143,6 @@ func TestMockedEndToEnd(t *testing.T) {
 
 	// TODO: Will have to rework once receivers are started asynchronously to Start().
 	assert.Len(t, mockConsumer.Metrics, 1)
-
-	shutdown()
-
-	assert.True(t, dyn.observerHandler.receiversByEndpointID.Values()[0].(*componenttest.ExampleReceiverProducer).Stopped)
 }
 
 func TestLoggingHost(t *testing.T) {

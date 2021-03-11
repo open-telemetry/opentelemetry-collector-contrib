@@ -1,5 +1,5 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
   resourcedetection:
@@ -29,12 +29,12 @@ processors:
     override: false
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     metrics:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors:
       # Choose one depending on your cloud provider and environment:
       # - resourcedetection/system
@@ -42,4 +42,4 @@ service:
       # - resourcedetection/ec2
       # - resourcedetection/ecs
       # - resourcedetection/azure
-      exporters: [exampleexporter]
+      exporters: [nop]

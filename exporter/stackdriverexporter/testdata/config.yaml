@@ -1,8 +1,8 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
   stackdriver:
@@ -39,7 +39,7 @@ exporters:
 service:
   pipelines:
     traces:
-        receivers: [examplereceiver]
-        processors: [exampleprocessor]
+        receivers: [nop]
+        processors: [nop]
         exporters: [stackdriver]
 
