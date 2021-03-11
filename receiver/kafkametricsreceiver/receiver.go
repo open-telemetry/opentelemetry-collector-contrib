@@ -16,10 +16,20 @@ package kafkametricsreceiver
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter/kafkaexporter"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.uber.org/zap"
+)
+
+var (
+	allScrapers = map[string]func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.MetricsScraper, error){
+		"brokers": createBrokerScraper,
+	}
 )
 
 var newMetricsReceiver = func(
@@ -28,7 +38,31 @@ var newMetricsReceiver = func(
 	params component.ReceiverCreateParams,
 	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
+	sc := sarama.NewConfig()
+	sc.ClientID = config.ClientID
+	if config.ProtocolVersion != "" {
+		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
+		if err != nil {
+			return nil, err
+		}
+		sc.Version = version
+	}
+	if err := kafkaexporter.ConfigureAuthentication(config.Authentication, sc); err != nil {
+		return nil, err
+	}
 	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(config.Scrapers))
+	for _, scraper := range config.Scrapers {
+		if s, ok := allScrapers[scraper]; ok {
+			s, err := s(ctx, config, sc, params.Logger)
+			if err != nil {
+				return nil, err
+			}
+			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddMetricsScraper(s))
+			continue
+		}
+		return nil, fmt.Errorf("no scraper found for key: %s", scraper)
+	}
+
 	return scraperhelper.NewScraperControllerReceiver(
 		&config.ScraperControllerSettings,
 		params.Logger,
