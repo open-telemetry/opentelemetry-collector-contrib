@@ -33,8 +33,9 @@ type mockSaramaClient struct {
 	mock.Mock
 	sarama.Client
 
-	close  error
-	closed bool
+	close   error
+	closed  bool
+	brokers []*sarama.Broker
 }
 
 func (s *mockSaramaClient) Closed() bool {
@@ -45,6 +46,11 @@ func (s *mockSaramaClient) Closed() bool {
 func (s *mockSaramaClient) Close() error {
 	s.Called()
 	return s.close
+}
+
+func (s *mockSaramaClient) Brokers() []*sarama.Broker {
+	s.Called()
+	return s.brokers
 }
 
 func newMockClient() *mockSaramaClient {
