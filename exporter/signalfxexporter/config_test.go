@@ -98,17 +98,17 @@ func TestLoadConfig(t *testing.T) {
 			},
 			{
 				Action: translation.ActionDropDimensions,
-				WithoutDimensionPairs: map[string][]string{
+				DimensionPairs: map[string]map[string]bool{
 					"foo":  nil,
-					"foo1": {"bar"},
+					"foo1": {"bar": true},
 				},
 			},
 			{
 				Action:     translation.ActionDropDimensions,
 				MetricName: "metric",
-				WithoutDimensionPairs: map[string][]string{
+				DimensionPairs: map[string]map[string]bool{
 					"foo":  nil,
-					"foo1": {"bar"},
+					"foo1": {"bar": true},
 				},
 			},
 			{
@@ -117,9 +117,9 @@ func TestLoadConfig(t *testing.T) {
 					"metric1": true,
 					"metric2": true,
 				},
-				WithoutDimensionPairs: map[string][]string{
+				DimensionPairs: map[string]map[string]bool{
 					"foo":  nil,
-					"foo1": {"bar"},
+					"foo1": {"bar": true},
 				},
 			},
 		},

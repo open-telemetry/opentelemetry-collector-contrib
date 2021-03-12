@@ -536,7 +536,7 @@ func TestNewMetricTranslator(t *testing.T) {
 					Action: ActionDropDimensions,
 				},
 			},
-			wantError: `field "without_dimension_pairs" is required for "drop_dimensions" translation rule`,
+			wantError: `field "dimension_pairs" is required for "drop_dimensions" translation rule`,
 		},
 	}
 
@@ -2603,9 +2603,12 @@ func TestDropDimensions(t *testing.T) {
 					MetricNames: map[string]bool{
 						"testmetric": true,
 					},
-					WithoutDimensionPairs: map[string][]string{
+					DimensionPairs: map[string]map[string]bool{
 						"dim_key1": nil,
-						"dim_key2": {"dim_val1", "dim_val2"},
+						"dim_key2": {
+							"dim_val1": true,
+							"dim_val2": true,
+						},
 					},
 				},
 			},
@@ -2679,9 +2682,12 @@ func TestDropDimensions(t *testing.T) {
 			rules: []Rule{
 				{
 					Action: ActionDropDimensions,
-					WithoutDimensionPairs: map[string][]string{
+					DimensionPairs: map[string]map[string]bool{
 						"dim_key1": nil,
-						"dim_key2": {"dim_val1", "dim_val2"},
+						"dim_key2": {
+							"dim_val1": true,
+							"dim_val2": true,
+						},
 					},
 				},
 			},
@@ -2746,7 +2752,7 @@ func TestDropDimensions(t *testing.T) {
 			rules: []Rule{
 				{
 					Action: ActionDropDimensions,
-					WithoutDimensionPairs: map[string][]string{
+					DimensionPairs: map[string]map[string]bool{
 						"dim_key1": {},
 						"dim_key2": nil,
 					},
@@ -2796,9 +2802,9 @@ func TestDropDimensions(t *testing.T) {
 			rules: []Rule{
 				{
 					Action: ActionDropDimensions,
-					WithoutDimensionPairs: map[string][]string{
-						"dim_key1": {"dim_val1"},
-						"dim_key2": {"dim_val2"},
+					DimensionPairs: map[string]map[string]bool{
+						"dim_key1": {"dim_val1": true},
+						"dim_key2": {"dim_val2": true},
 					},
 				},
 			},
@@ -2856,9 +2862,9 @@ func TestDropDimensions(t *testing.T) {
 			rules: []Rule{
 				{
 					Action: ActionDropDimensions,
-					WithoutDimensionPairs: map[string][]string{
-						"dim_key1": {"dim_val1"},
-						"dim_key2": {"dim_val2"},
+					DimensionPairs: map[string]map[string]bool{
+						"dim_key1": {"dim_val1": true},
+						"dim_key2": {"dim_val2": true},
 					},
 				},
 			},
@@ -2889,9 +2895,9 @@ func TestDropDimensions(t *testing.T) {
 			rules: []Rule{
 				{
 					Action: ActionDropDimensions,
-					WithoutDimensionPairs: map[string][]string{
-						"dim_key1": {"dim_val1"},
-						"dim_key2": {"dim_val2"},
+					DimensionPairs: map[string]map[string]bool{
+						"dim_key1": {"dim_val1": true},
+						"dim_key2": {"dim_val2": true},
 					},
 				},
 			},
@@ -2930,29 +2936,16 @@ func TestDropDimensionsErrorCases(t *testing.T) {
 				{
 					Action:     ActionDropDimensions,
 					MetricName: "/metric.*(/",
-					WithoutDimensionPairs: map[string][]string{
+					DimensionPairs: map[string]map[string]bool{
 						"dim_key1": nil,
-						"dim_key2": {"dim_val1", "dim_val2"},
+						"dim_key2": {
+							"dim_val1": true,
+							"dim_val2": true,
+						},
 					},
 				},
 			},
 			expectedError: "failed creating metric matcher: error parsing regexp: missing closing ): `metric.*(`",
-		},
-		{
-			name: "Test drop action with invalid dimension pattern",
-			rules: []Rule{
-				{
-					Action: ActionDropDimensions,
-					MetricNames: map[string]bool{
-						"/metric.*/": true,
-					},
-					WithoutDimensionPairs: map[string][]string{
-						"dim_key1": nil,
-						"dim_key2": {"/dim_val.*(/"},
-					},
-				},
-			},
-			expectedError: "failed creating dimension matcher: error parsing regexp: missing closing ): `dim_val.*(`",
 		},
 	}
 

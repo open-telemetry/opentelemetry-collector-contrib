@@ -126,11 +126,13 @@ const (
 	// - action: drop_dimensions
 	//   metric_names:
 	//     k8s.pod.phase: true
-	//   without_dimension_pairs:
+	//   dimension_pairs:
 	//     dim_key1:
-	//     dim_key2: [dim_val1, dim_val2]
+	//     dim_key2:
+	//       dim_val1: true
+	//       dim_val2: true
 	// - action: drop_dimensions
-	//   without_dimension_pairs:
+	//   dimension_pairs:
 	//     dim_key1:
 	ActionDropDimensions Action = "drop_dimensions"
 )
@@ -217,12 +219,11 @@ type Rule struct {
 	Operand2Metric string         `mapstructure:"operand2_metric"`
 	Operator       MetricOperator `mapstructure:"operator"`
 
-	// WithoutDimensionPairs used by "drop_dimensions" translation rule to specify dimension pairs that
+	// DimensionPairs used by "drop_dimensions" translation rule to specify dimension pairs that
 	// should be dropped.
-	WithoutDimensionPairs map[string][]string `mapstructure:"without_dimension_pairs"`
+	DimensionPairs map[string]map[string]bool `mapstructure:"dimension_pairs"`
 
-	metricMatcher    *dpfilters.StringFilter
-	dimensionMatcher map[string]*dpfilters.StringFilter
+	metricMatcher *dpfilters.StringFilter
 }
 
 type MetricTranslator struct {
@@ -346,8 +347,8 @@ func validateTranslationRules(rules []Rule) error {
 				return fmt.Errorf(`field "mapping" is required for %q translation rule`, tr.Action)
 			}
 		case ActionDropDimensions:
-			if len(tr.WithoutDimensionPairs) == 0 {
-				return fmt.Errorf(`field "without_dimension_pairs" is required for %q translation rule`, tr.Action)
+			if len(tr.DimensionPairs) == 0 {
+				return fmt.Errorf(`field "dimension_pairs" is required for %q translation rule`, tr.Action)
 			}
 		default:
 			return fmt.Errorf("unknown \"action\" value: %q", tr.Action)
@@ -370,8 +371,6 @@ func createDimensionsMap(rules []Rule) map[string]string {
 func processRules(rules []Rule) error {
 	for i, tr := range rules {
 		if tr.Action == ActionDropDimensions {
-			processedRule := Rule{Action: ActionDropDimensions}
-
 			// Set metric name filter, if metric name(s) are specified on the rule.
 			// When "drop_dimensions" actions is not scoped to a metric name, the
 			// specified dimensions will be globally dropped from all datapoints
@@ -381,28 +380,8 @@ func processRules(rules []Rule) error {
 				if err != nil {
 					return fmt.Errorf("failed creating metric matcher: %w", err)
 				}
-				processedRule.metricMatcher = metricMatcher
+				rules[i].metricMatcher = metricMatcher
 			}
-
-			// Walk through WithoutDimensionPairs on the rule and create respective filters
-			// for dimension keys provided. If values for a particular key turns out to be
-			// empty, the dimension should be dropped irrespective of the value, in such cases
-			// set the dimensionMatcher to nil
-			dimensionMatcher := map[string]*dpfilters.StringFilter{}
-			for key, values := range tr.WithoutDimensionPairs {
-				if len(values) == 0 {
-					dimensionMatcher[key] = nil
-					continue
-				}
-				stringFilter, err := dpfilters.NewStringFilter(values)
-				if err != nil {
-					return fmt.Errorf("failed creating dimension matcher: %w", err)
-				}
-				dimensionMatcher[key] = stringFilter
-			}
-			processedRule.dimensionMatcher = dimensionMatcher
-
-			rules[i] = processedRule
 		}
 	}
 	return nil
@@ -874,7 +853,7 @@ func dropDimensions(dp *sfxpb.DataPoint, rule Rule) {
 	if rule.metricMatcher != nil && !rule.metricMatcher.Matches(dp.Metric) {
 		return
 	}
-	processedDimensions := filterDimensionsByValues(dp.Dimensions, rule.dimensionMatcher)
+	processedDimensions := filterDimensionsByValues(dp.Dimensions, rule.DimensionPairs)
 	if processedDimensions == nil {
 		return
 	}
@@ -883,7 +862,7 @@ func dropDimensions(dp *sfxpb.DataPoint, rule Rule) {
 
 func filterDimensionsByValues(
 	dimensions []*sfxpb.Dimension,
-	dimensionMatcher map[string]*dpfilters.StringFilter) []*sfxpb.Dimension {
+	dimensionPairs map[string]map[string]bool) []*sfxpb.Dimension {
 	if len(dimensions) == 0 {
 		return nil
 	}
@@ -891,9 +870,9 @@ func filterDimensionsByValues(
 	for _, d := range dimensions {
 		// If a dimension key does not exist in dimensionMatcher,
 		// it should not be dropped. If the key exists but there's
-		// no matcher, drop the dimension for all values.
-		if dimValMatcher, ok := dimensionMatcher[d.Key]; ok {
-			if dimValMatcher != nil && !dimValMatcher.Matches(d.Value) {
+		// no matcher/empty matcher, drop the dimension for all values.
+		if dimValMatcher, ok := dimensionPairs[d.Key]; ok {
+			if len(dimValMatcher) > 0 && !dimValMatcher[d.Value] {
 				result = append(result, d)
 			}
 		} else {

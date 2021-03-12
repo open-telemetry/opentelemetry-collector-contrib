@@ -29,10 +29,10 @@ translation_rules:
 # refactored and this resource type dimension will cease to exist. 
 - action: drop_dimensions
   metric_name: /^(k8s\.|container\.).*/
-  without_dimension_pairs:
+  dimension_pairs:
     opencensus.resourcetype:
-      - k8s
-      - container
+      k8s: true
+      container: true
 
 - action: rename_dimension_keys
   mapping:
