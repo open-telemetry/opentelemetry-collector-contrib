@@ -3,6 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxra
 go 1.14
 
 require (
-	github.com/aws/aws-sdk-go v1.37.26
+	github.com/aws/aws-sdk-go v1.37.28
 	github.com/stretchr/testify v1.7.0
 )
