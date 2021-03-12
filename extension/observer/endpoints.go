@@ -75,7 +75,7 @@ func (e *Endpoint) Env() (EndpointEnv, error) {
 	env["endpoint"] = e.Target
 
 	if e.Details.Type() == PodType {
-		env["type"] = string(e.Details.Type())
+		env["type"] = string(PodType)
 		return env, nil
 	}
 

@@ -44,7 +44,7 @@ func TestEndpointEnv(t *testing.T) {
 				},
 			},
 			want: EndpointEnv{
-				"type": "pod",
+				"type":     "pod",
 				"endpoint": "192.68.73.2",
 				"name":     "pod_name",
 				"labels": map[string]string{
