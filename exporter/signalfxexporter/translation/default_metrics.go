@@ -182,7 +182,7 @@ exclude_metrics:
   - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.major_page_faults$/
   - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.page_faults$/
   - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.rss$/
-  - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.usage$/
+  - /^(?i:(k8s\.node)|(k8s\.pod))\.memory\.usage$/
   - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.working_set$/
 
   # matches (k8s.node|k8s.pod).filesystem...

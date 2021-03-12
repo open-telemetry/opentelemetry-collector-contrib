@@ -288,14 +288,6 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Equal(t, 1, len(dps))
 	require.Equal(t, 3, len(dps[0].Dimensions))
 	require.Equal(t, int64(10e9), *dps[0].Value.IntValue)
-
-	// memory page faults and working set renames
-	_, ok = metrics["container_memory_working_set_bytes"]
-	require.True(t, ok, "container_memory_working_set_bytes not found")
-	_, ok = metrics["container_memory_page_faults"]
-	require.True(t, ok, "container_memory_page_faults not found")
-	_, ok = metrics["container_memory_major_page_faults"]
-	require.True(t, ok, "container_memory_major_page_faults not found")
 }
 
 func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
@@ -1067,7 +1059,7 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	require.NoError(t, err)
 
 	rms := getResourceMetrics(metrics)
-	require.Equal(t, 72, rms.InstrumentationLibraryMetrics().At(0).Metrics().Len())
+	require.Equal(t, 71, rms.InstrumentationLibraryMetrics().At(0).Metrics().Len())
 	dps := converter.MetricDataToSignalFxV2(rms)
 	require.Equal(t, 0, len(dps))
 }
