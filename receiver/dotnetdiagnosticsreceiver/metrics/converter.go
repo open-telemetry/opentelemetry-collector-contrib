@@ -15,6 +15,7 @@
 package metrics
 
 import (
+	"math"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -22,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/dotnet"
 )
 
-func rawMetricsToPdata(rawMetrics []dotnet.Metric, startTime, now time.Time) pdata.Metrics {
+func rawMetricsToPdata(rawMetrics []dotnet.Metric, now time.Time) pdata.Metrics {
 	pdm := pdata.NewMetrics()
 	rms := pdm.ResourceMetrics()
 	rms.Resize(1)
@@ -34,12 +35,12 @@ func rawMetricsToPdata(rawMetrics []dotnet.Metric, startTime, now time.Time) pda
 	ms := ilm.Metrics()
 	ms.Resize(len(rawMetrics))
 	for i := 0; i < len(rawMetrics); i++ {
-		rawMetricToPdata(rawMetrics[i], ms.At(i), startTime, now)
+		rawMetricToPdata(rawMetrics[i], ms.At(i), now)
 	}
 	return pdm
 }
 
-func rawMetricToPdata(dm dotnet.Metric, pdm pdata.Metric, startTime, now time.Time) pdata.Metric {
+func rawMetricToPdata(dm dotnet.Metric, pdm pdata.Metric, now time.Time) pdata.Metric {
 	const metricNamePrefix = "dotnet."
 	pdm.SetName(metricNamePrefix + dm.Name())
 	pdm.SetDescription(dm.DisplayName())
@@ -60,6 +61,8 @@ func rawMetricToPdata(dm dotnet.Metric, pdm pdata.Metric, startTime, now time.Ti
 		dps := sum.DataPoints()
 		dps.Resize(1)
 		dp := dps.At(0)
+		interval := time.Duration(math.Round(float64(dm.IntervalSec()) * float64(time.Second)))
+		startTime := now.Add(-interval)
 		dp.SetStartTime(pdata.TimestampFromTime(startTime))
 		dp.SetTimestamp(nowPD)
 		dp.SetValue(dm.Increment())
