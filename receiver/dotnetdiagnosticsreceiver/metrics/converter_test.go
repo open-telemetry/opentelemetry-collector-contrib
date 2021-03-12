@@ -36,7 +36,7 @@ func TestMeanMetricToPdata(t *testing.T) {
 	assert.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
 	assert.EqualValues(t, 0, pt.StartTime())
-	assert.Equal(t, pdata.TimestampFromTime(time.Unix(42, 0)), pt.Timestamp())
+	assert.Equal(t, pdata.TimestampFromTime(time.Unix(111, 0)), pt.Timestamp())
 	assert.Equal(t, 0.5, pt.Value())
 }
 
@@ -50,16 +50,14 @@ func TestSumMetricToPdata(t *testing.T) {
 	pts := sum.DataPoints()
 	assert.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
-	assert.True(t, pt.StartTime().AsTime().Before(pt.Timestamp().AsTime()))
-	delta := pt.Timestamp().AsTime().Sub(pt.StartTime().AsTime())
-	assert.InDelta(t, 900*time.Millisecond, delta, 25)
-	assert.Equal(t, pdata.TimestampFromTime(time.Unix(42, 0)), pt.Timestamp())
+	assert.Equal(t, pdata.TimestampFromTime(time.Unix(42, 0)), pt.StartTime())
+	assert.Equal(t, pdata.TimestampFromTime(time.Unix(111, 0)), pt.Timestamp())
 	assert.Equal(t, 262672.0, pt.Value())
 }
 
 func testMetricConversion(t *testing.T, metricFile int, expectedName string, expectedUnits string) pdata.Metric {
 	rm := readTestdataMetric(metricFile)
-	pdms := rawMetricsToPdata([]dotnet.Metric{rm}, time.Unix(42, 0))
+	pdms := rawMetricsToPdata([]dotnet.Metric{rm}, time.Unix(42, 0), time.Unix(111, 0))
 	rms := pdms.ResourceMetrics()
 	assert.Equal(t, 1, rms.Len())
 	ilms := rms.At(0).InstrumentationLibraryMetrics()
@@ -82,8 +80,6 @@ func readTestdataMetric(i int) dotnet.Metric {
 	if err != nil {
 		panic(err)
 	}
-	// we need a float32, not a float64
-	m["IntervalSec"] = float32(m["IntervalSec"].(float64))
 	return m
 }
 

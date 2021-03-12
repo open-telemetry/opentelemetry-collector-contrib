@@ -27,8 +27,9 @@ import (
 // Sender wraps a consumer.MetricsConsumer, and has a Send method which
 // conforms to dotnet.MetricsConsumer so it can be passed into a Parser.
 type Sender struct {
-	next   consumer.MetricsConsumer
-	logger *zap.Logger
+	next         consumer.MetricsConsumer
+	logger       *zap.Logger
+	prevSendTime time.Time
 }
 
 func NewSender(next consumer.MetricsConsumer, logger *zap.Logger) *Sender {
@@ -37,8 +38,10 @@ func NewSender(next consumer.MetricsConsumer, logger *zap.Logger) *Sender {
 
 // Send accepts a slice of dotnet.Metrics, converts them to pdata.Metrics, and
 // sends them to the next pdata consumer. Conforms to dotnet.MetricsConsumer.
-func (s Sender) Send(rawMetrics []dotnet.Metric) {
-	pdm := rawMetricsToPdata(rawMetrics, time.Now())
+func (s *Sender) Send(rawMetrics []dotnet.Metric) {
+	now := time.Now()
+	pdm := rawMetricsToPdata(rawMetrics, s.prevSendTime, now)
+	s.prevSendTime = now
 	err := s.next.ConsumeMetrics(context.Background(), pdm)
 	if err != nil {
 		s.logger.Error(err.Error())
