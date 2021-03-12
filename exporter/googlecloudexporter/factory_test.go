@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stackdriverexporter
+package googlecloudexporter
 
 import (
 	"context"
@@ -34,7 +34,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateExporter(t *testing.T) {
 	if os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" {
-		t.Skip("Default credentials not set, skip creating Stackdriver exporter")
+		t.Skip("Default credentials not set, skip creating Google Cloud exporter")
 	}
 	ctx := context.Background()
 	factory := NewFactory()

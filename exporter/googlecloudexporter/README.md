@@ -1,4 +1,4 @@
-# Stackdriver Exporter
+# Google Cloud Exporter
 
 This exporter can be used to send metrics and traces to Google Cloud Monitoring and Trace (formerly known as Stackdriver) respectively.
 
@@ -10,7 +10,7 @@ The following configuration options are supported:
 - `use_insecure` (optional): If true. use gRPC as their communication transport. Only has effect if Endpoint is not "".
 - `timeout` (optional): Timeout for all API calls. If not set, defaults to 12 seconds.
 - `number_of_workers` (optional): NumberOfWorkers sets the number of go rountines that send requests. The minimum number of workers is 1.
-- `resource_mappings` (optional): ResourceMapping defines mapping of resources from source (OpenCensus) to target (Stackdriver).
+- `resource_mappings` (optional): ResourceMapping defines mapping of resources from source (OpenCensus) to target (Google Cloud).
   - `label_mappings` (optional): Optional flag signals whether we can proceed with transformation if a label is missing in the resource.
 - `retry_on_failure` (optional): Configuration for how to handle retries when sending data to Google Cloud fails.
   - `enabled` (default = true)
@@ -29,14 +29,14 @@ Note: These `retry_on_failure` and `sending_queue` are provided (and documented)
 
 Additional configuration for the metric exporter:
 
-- `metric.prefix` (optional): MetricPrefix overrides the prefix / namespace of the Stackdriver metric type identifier. If not set, defaults to "custom.googleapis.com/opencensus/"
+- `metric.prefix` (optional): MetricPrefix overrides the prefix / namespace of the Google Cloud metric type identifier. If not set, defaults to "custom.googleapis.com/opencensus/"
 - `metric.skip_create_descriptor` (optional): Whether to skip creating the metric descriptor.
 
 Example:
 
 ```yaml
 exporters:
-  stackdriver:
+  googlecloud:
     project: my-project
     endpoint: test-endpoint
     user_agent: my-collector {{version}}
@@ -48,7 +48,7 @@ exporters:
       - source_type: source.resource1
         target_type: target-resource1
         label_mappings:
-          - source_key: contrib.opencensus.io/exporter/stackdriver/project_id
+          - source_key: contrib.opencensus.io/exporter/googlecloud/project_id
             target_key: project_id
             optional: true
           - source_key: source.label1

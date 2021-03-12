@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package spandata defines translators from Trace proto spans to OpenCensus Go spanData.
-package stackdriverexporter
+package googlecloudexporter
 
 import (
 	"context"
