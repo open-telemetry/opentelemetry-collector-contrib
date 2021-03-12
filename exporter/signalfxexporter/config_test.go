@@ -96,6 +96,32 @@ func TestLoadConfig(t *testing.T) {
 					"k8s.cluster.name": "kubernetes_cluster",
 				},
 			},
+			{
+				Action: translation.ActionDropDimensions,
+				DimensionPairs: map[string]map[string]bool{
+					"foo":  nil,
+					"foo1": {"bar": true},
+				},
+			},
+			{
+				Action:     translation.ActionDropDimensions,
+				MetricName: "metric",
+				DimensionPairs: map[string]map[string]bool{
+					"foo":  nil,
+					"foo1": {"bar": true},
+				},
+			},
+			{
+				Action: translation.ActionDropDimensions,
+				MetricNames: map[string]bool{
+					"metric1": true,
+					"metric2": true,
+				},
+				DimensionPairs: map[string]map[string]bool{
+					"foo":  nil,
+					"foo1": {"bar": true},
+				},
+			},
 		},
 		ExcludeMetrics: []dpfilters.MetricFilter{
 			{
