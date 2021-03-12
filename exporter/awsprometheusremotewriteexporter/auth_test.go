@@ -20,12 +20,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -46,7 +48,6 @@ func TestRequestSignature(t *testing.T) {
 	for _, tt := range tests {
 		// Some form of AWS credentials must be set up for tests to succeed
 		awsCreds := fetchMockCredentials()
-		authConfig := tt.authConfig
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			_, err := v4.GetSignedRequestSignature(r)
 			assert.NoError(t, err)
@@ -64,7 +65,7 @@ func TestRequestSignature(t *testing.T) {
 			WriteBufferSize: 0,
 			Timeout:         0,
 			CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
-				return createSigningRoundTripperWithCredentials(authConfig, awsCreds, next)
+				return createSigningRoundTripperWithCredentials(tt.authConfig, awsCreds, next)
 			},
 		}
 		client, _ := setting.ToClient()
@@ -74,7 +75,6 @@ func TestRequestSignature(t *testing.T) {
 		assert.NoError(t, err)
 	}
 }
-
 
 type ErrorRoundTripper struct{}
 
@@ -223,6 +223,16 @@ func TestCloneRequest(t *testing.T) {
 			assert.EqualValues(t, tt.request.Header, r2.Header)
 		})
 	}
+}
+
+func TestGetRoleSessionName(t *testing.T) {
+
+	sessionName := getRoleSessionName()
+	require.NotNil(t, sessionName)
+
+	osHostname, err := os.Hostname()
+	require.NoError(t, err)
+	assert.Contains(t, sessionName, osHostname)
 }
 
 func fetchMockCredentials() *credentials.Credentials {

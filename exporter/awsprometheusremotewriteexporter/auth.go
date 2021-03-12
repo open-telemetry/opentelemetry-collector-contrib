@@ -83,12 +83,12 @@ func newSigningRoundTripper(auth AuthConfig, next http.RoundTripper) (http.Round
 	}
 
 	var creds *credentials.Credentials
-	if auth.RoleArn  != "" {
+	if auth.RoleArn != "" {
 		// Get credentials from an assumeRole API call
 		creds = stscreds.NewCredentials(sess, auth.RoleArn, func(p *stscreds.AssumeRoleProvider) {
-		    p.RoleSessionName = getRoleSessionName()
-	    })
-	}else{
+			p.RoleSessionName = getRoleSessionName()
+		})
+	} else {
 		if _, err = sess.Config.Credentials.Get(); err != nil {
 			return nil, err
 		}
