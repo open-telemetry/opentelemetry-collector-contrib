@@ -182,9 +182,6 @@ func TestLoadConfig(t *testing.T) {
 				RetryDelay:      30 * time.Second,
 				CleanupInterval: 1 * time.Minute,
 			},
-			HostTranslations: map[string]string{
-				"host.name": "host",
-			},
 		},
 		NonAlphanumericDimensionChars: "_-.",
 	}
