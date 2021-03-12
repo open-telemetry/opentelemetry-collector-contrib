@@ -31,36 +31,50 @@ import (
 )
 
 func TestRequestSignature(t *testing.T) {
-	// Some form of AWS credentials must be set up for tests to succeed
-	awsCreds := fetchMockCredentials()
-	authConfig := AuthConfig{Region: "region", Service: "service"}
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := v4.GetSignedRequestSignature(r)
-		assert.NoError(t, err)
-		w.WriteHeader(200)
-	}))
-	defer server.Close()
-
-	serverURL, err := url.Parse(server.URL)
-	assert.NoError(t, err)
-
-	setting := confighttp.HTTPClientSettings{
-		Endpoint:        serverURL.String(),
-		TLSSetting:      configtls.TLSClientSetting{},
-		ReadBufferSize:  0,
-		WriteBufferSize: 0,
-		Timeout:         0,
-		CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
-			return createSigningRoundTripperWithCredentials(authConfig, awsCreds, next)
+	tests := []struct {
+		authConfig AuthConfig
+	}{
+		{
+			AuthConfig{Region: "region", Service: "service"},
+		},
+		{
+			AuthConfig{Region: "region", Service: "service", RoleArn: "arn:aws:iam::123456789012:role/IAMRole"},
 		},
 	}
-	client, _ := setting.ToClient()
-	req, err := http.NewRequest("POST", setting.Endpoint, strings.NewReader("a=1&b=2"))
-	assert.NoError(t, err)
-	_, err = client.Do(req)
-	assert.NoError(t, err)
+
+	for _, tt := range tests {
+		// Some form of AWS credentials must be set up for tests to succeed
+		awsCreds := fetchMockCredentials()
+		authConfig := tt.authConfig
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, err := v4.GetSignedRequestSignature(r)
+			assert.NoError(t, err)
+			w.WriteHeader(200)
+		}))
+		defer server.Close()
+
+		serverURL, err := url.Parse(server.URL)
+		assert.NoError(t, err)
+
+		setting := confighttp.HTTPClientSettings{
+			Endpoint:        serverURL.String(),
+			TLSSetting:      configtls.TLSClientSetting{},
+			ReadBufferSize:  0,
+			WriteBufferSize: 0,
+			Timeout:         0,
+			CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
+				return createSigningRoundTripperWithCredentials(authConfig, awsCreds, next)
+			},
+		}
+		client, _ := setting.ToClient()
+		req, err := http.NewRequest("POST", setting.Endpoint, strings.NewReader("a=1&b=2"))
+		assert.NoError(t, err)
+		_, err = client.Do(req)
+		assert.NoError(t, err)
+	}
 }
+
 
 type ErrorRoundTripper struct{}
 
