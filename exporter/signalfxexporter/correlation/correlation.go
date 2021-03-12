@@ -114,11 +114,6 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) (dropped 
 
 		hostDimension := string(hostID.Key)
 
-		// Translate host dimension (e.g. from host.name to host depending on configuration).
-		if newHostDimension, ok := cor.cfg.HostTranslations[string(hostID.Key)]; ok {
-			hostDimension = newHostDimension
-		}
-
 		cor.traceTracker = tracetracker.New(
 			newZapShim(cor.params.Logger),
 			cor.cfg.StaleServiceTimeout,
