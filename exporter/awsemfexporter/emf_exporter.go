@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 )
 
@@ -196,9 +195,7 @@ func (emf *emfExporter) listPushers() []Pusher {
 }
 
 func (emf *emfExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	exporterCtx := obsreport.ExporterContext(ctx, "emf.exporterFullName")
-
-	_, err := emf.pushMetricsData(exporterCtx, md)
+	_, err := emf.pushMetricsData(ctx, md)
 	return err
 }
 
