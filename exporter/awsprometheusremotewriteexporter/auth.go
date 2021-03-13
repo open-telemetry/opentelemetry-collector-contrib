@@ -74,6 +74,15 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 
 func newSigningRoundTripper(auth AuthConfig, next http.RoundTripper) (http.RoundTripper, error) {
 
+	creds, err := getCredsFromConfig(auth)
+	if err != nil {
+		return nil, err
+	}
+
+	return createSigningRoundTripperWithCredentials(auth, creds, next)
+}
+
+func getCredsFromConfig(auth AuthConfig) (*credentials.Credentials, error) {
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(auth.Region)},
 	)
@@ -89,14 +98,10 @@ func newSigningRoundTripper(auth AuthConfig, next http.RoundTripper) (http.Round
 			p.RoleSessionName = getRoleSessionName()
 		})
 	} else {
-		if _, err = sess.Config.Credentials.Get(); err != nil {
-			return nil, err
-		}
 		// Get Credentials, either from ./aws or from environmental variables
 		creds = sess.Config.Credentials
 	}
-
-	return createSigningRoundTripperWithCredentials(auth, creds, next)
+	return creds, nil
 }
 
 func createSigningRoundTripperWithCredentials(auth AuthConfig, creds *credentials.Credentials, next http.RoundTripper) (http.RoundTripper, error) {
@@ -138,12 +143,10 @@ func cloneRequest(r *http.Request) *http.Request {
 }
 
 func getRoleSessionName() string {
-	suffix, err := os.Hostname()
 
-	if err != nil {
-		now := time.Now().Unix()
-		suffix = strconv.FormatInt(now, 10)
+	if suffix, err := os.Hostname(); err == nil {
+		return "aws-otel-collector-" + suffix
 	}
 
-	return "aws-otel-collector-" + suffix
+	return "aws-otel-collector-" + strconv.FormatInt(time.Now().Unix(), 10)
 }
