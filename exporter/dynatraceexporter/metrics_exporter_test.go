@@ -136,11 +136,10 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 		md  pdata.Metrics
 	}
 	test := struct {
-		name                  string
-		fields                fields
-		args                  args
-		wantDroppedTimeSeries int
-		wantErr               bool
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
 	}{
 		name: "Send metric data",
 		fields: fields{
@@ -157,8 +156,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 			ctx: context.Background(),
 			md:  md,
 		},
-		wantErr:               false,
-		wantDroppedTimeSeries: 1,
+		wantErr: false,
 	}
 
 	t.Run(test.name, func(t *testing.T) {
@@ -167,13 +165,10 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 			cfg:    test.fields.cfg,
 			client: test.fields.client,
 		}
-		gotDroppedTimeSeries, err := e.PushMetricsData(test.args.ctx, test.args.md)
+		err := e.PushMetricsData(test.args.ctx, test.args.md)
 		if (err != nil) != test.wantErr {
 			t.Errorf("exporter.PushMetricsData() error = %v, wantErr %v", err, test.wantErr)
 			return
-		}
-		if gotDroppedTimeSeries != test.wantDroppedTimeSeries {
-			t.Errorf("exporter.PushMetricsData() = %v, want %v", gotDroppedTimeSeries, test.wantDroppedTimeSeries)
 		}
 	})
 
@@ -209,13 +204,10 @@ func Test_exporter_PushMetricsData_EmptyPayload(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	gotDroppedTimeSeries, err := e.PushMetricsData(context.Background(), md)
+	err := e.PushMetricsData(context.Background(), md)
 	if err != nil {
 		t.Errorf("exporter.PushMetricsData() error = %v", err)
 		return
-	}
-	if gotDroppedTimeSeries != md.MetricCount() {
-		t.Errorf("Expected %d metrics to be reported dropped, got %d", md.MetricCount(), gotDroppedTimeSeries)
 	}
 }
 
@@ -254,13 +246,10 @@ func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 		client:     ts.Client(),
 		isDisabled: true,
 	}
-	gotDroppedTimeSeries, err := e.PushMetricsData(context.Background(), md)
+	err := e.PushMetricsData(context.Background(), md)
 	if err != nil {
 		t.Errorf("exporter.PushMetricsData() error = %v", err)
 		return
-	}
-	if gotDroppedTimeSeries != md.MetricCount() {
-		t.Errorf("Expected %d metrics to be reported dropped, got %d", md.MetricCount(), gotDroppedTimeSeries)
 	}
 }
 
@@ -458,11 +447,10 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 		md  pdata.Metrics
 	}
 	test := struct {
-		name                  string
-		fields                fields
-		args                  args
-		wantDroppedTimeSeries int
-		wantErr               bool
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
 	}{
 		name: "When the client errors, all timeseries are assumed to be dropped",
 		fields: fields{
@@ -479,8 +467,7 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 			ctx: context.Background(),
 			md:  md,
 		},
-		wantErr:               true,
-		wantDroppedTimeSeries: 1,
+		wantErr: true,
 	}
 
 	t.Run(test.name, func(t *testing.T) {
@@ -489,13 +476,10 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 			cfg:    test.fields.cfg,
 			client: test.fields.client,
 		}
-		gotDroppedTimeSeries, err := e.PushMetricsData(test.args.ctx, test.args.md)
+		err := e.PushMetricsData(test.args.ctx, test.args.md)
 		if (err != nil) != test.wantErr {
 			t.Errorf("exporter.PushMetricsData() error = %v, wantErr %v", err, test.wantErr)
 			return
-		}
-		if gotDroppedTimeSeries != test.wantDroppedTimeSeries {
-			t.Errorf("exporter.PushMetricsData() = %v, want %v", gotDroppedTimeSeries, test.wantDroppedTimeSeries)
 		}
 	})
 }

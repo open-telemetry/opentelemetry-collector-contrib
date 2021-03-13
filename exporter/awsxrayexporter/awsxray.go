@@ -48,9 +48,9 @@ func newTraceExporter(
 	return exporterhelper.NewTraceExporter(
 		config,
 		logger,
-		func(ctx context.Context, td pdata.Traces) (totalDroppedSpans int, err error) {
+		func(ctx context.Context, td pdata.Traces) error {
+			var err error
 			logger.Debug("TraceExporter", typeLog, nameLog, zap.Int("#spans", td.SpanCount()))
-			totalDroppedSpans = 0
 			documents := make([]*string, 0, td.SpanCount())
 			for i := 0; i < td.ResourceSpans().Len(); i++ {
 				rspans := td.ResourceSpans().At(i)
@@ -62,7 +62,6 @@ func newTraceExporter(
 							config.(*Config).IndexedAttributes, config.(*Config).IndexAllAttributes)
 						if localErr != nil {
 							logger.Debug("Error translating span.", zap.Error(localErr))
-							totalDroppedSpans++
 							continue
 						}
 						documents = append(documents, &document)
@@ -83,15 +82,12 @@ func newTraceExporter(
 				}
 				if output != nil {
 					logger.Debug("response: " + output.String())
-					if output.UnprocessedTraceSegments != nil {
-						totalDroppedSpans += len(output.UnprocessedTraceSegments)
-					}
 				}
 				if err != nil {
 					break
 				}
 			}
-			return totalDroppedSpans, err
+			return err
 		},
 		exporterhelper.WithShutdown(func(context.Context) error {
 			return logger.Sync()

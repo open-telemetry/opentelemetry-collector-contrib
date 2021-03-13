@@ -49,10 +49,10 @@ type SentryExporter struct {
 
 // pushTraceData takes an incoming OpenTelemetry trace, converts them into Sentry spans and transactions
 // and sends them using Sentry's transport.
-func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) (droppedSpans int, err error) {
+func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error {
 	resourceSpans := td.ResourceSpans()
 	if resourceSpans.Len() == 0 {
-		return 0, nil
+		return nil
 	}
 
 	maybeOrphanSpans := make([]*sentry.Span, 0, td.SpanCount())
@@ -96,7 +96,7 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) (drop
 	}
 
 	if len(transactionMap) == 0 {
-		return 0, nil
+		return nil
 	}
 
 	// After the first pass through, we can't necessarily make the assumption we have not associated all
@@ -107,7 +107,7 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) (drop
 
 	s.transport.SendTransactions(transactions)
 
-	return 0, nil
+	return nil
 }
 
 // generateTransactions creates a set of Sentry transactions from a transaction map and orphan spans.

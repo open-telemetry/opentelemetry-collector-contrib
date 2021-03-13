@@ -100,9 +100,8 @@ func createLogData(numberOfLogs int) pdata.Logs {
 func TestLogsDataToLogService(t *testing.T) {
 	totalLogCount := 10
 	validLogCount := totalLogCount - 1
-	gotLogs, dropped := logDataToLogService(createLogData(10))
+	gotLogs := logDataToLogService(createLogData(10))
 	assert.Equal(t, len(gotLogs), 9)
-	assert.Equal(t, dropped, 1)
 
 	gotLogPairs := make([][]logKeyValuePair, 0, len(gotLogs))
 

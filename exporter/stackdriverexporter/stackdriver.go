@@ -179,7 +179,7 @@ func newStackdriverMetricsExporter(cfg *Config, params component.ExporterCreateP
 }
 
 // pushMetrics calls StackdriverExporter.PushMetricsProto on each element of the given metrics
-func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) (int, error) {
+func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) error {
 	// PushMetricsProto doesn't bundle subsequent calls, so we need to
 	// combine the data here to avoid generating too many RPC calls.
 	mds := internaldata.MetricsToOC(m)
@@ -205,16 +205,14 @@ func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) (in
 	// (which we just moved to individual metrics).
 	dropped, err := me.mexporter.PushMetricsProto(ctx, nil, nil, metrics)
 	recordPointCount(ctx, points-dropped, dropped, err)
-	return dropped, err
+	return err
 }
 
 // pushTraces calls texporter.ExportSpan for each span in the given traces
-func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) (int, error) {
+func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
 	var errs []error
 	resourceSpans := td.ResourceSpans()
-	numSpans := td.SpanCount()
-	spans := make([]*traceexport.SpanSnapshot, 0, numSpans)
-
+	spans := make([]*traceexport.SpanSnapshot, 0, td.SpanCount())
 	for i := 0; i < resourceSpans.Len(); i++ {
 		sd := pdataResourceSpansToOTSpanData(resourceSpans.At(i))
 		spans = append(spans, sd...)
@@ -224,7 +222,7 @@ func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) (int, 
 	if err != nil {
 		errs = append(errs, err)
 	}
-	return numSpans - len(spans), consumererror.CombineErrors(errs)
+	return consumererror.CombineErrors(errs)
 }
 
 func numPoints(metrics []*metricspb.Metric) int {

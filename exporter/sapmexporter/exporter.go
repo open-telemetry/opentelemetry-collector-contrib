@@ -101,17 +101,17 @@ func newSAPMTraceExporter(cfg *Config, params component.ExporterCreateParams) (c
 
 // pushTraceData exports traces in SAPM proto by associated SFx access token and returns number of dropped spans
 // and the last experienced error if any translation or export failed
-func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, error) {
+func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
 	rss := td.ResourceSpans()
 	if rss.Len() == 0 {
-		return 0, nil
+		return nil
 	}
 
 	// All metrics in the pdata.Metrics will have the same access token because of the BatchPerResourceMetrics.
 	accessToken := se.retrieveAccessToken(rss.At(0))
 	batches, err := jaeger.InternalTracesToJaegerProto(td)
 	if err != nil {
-		return td.SpanCount(), consumererror.Permanent(err)
+		return consumererror.Permanent(err)
 	}
 
 	// Cannot remove the access token from the pdata, because exporters required to not modify incoming pdata,
@@ -121,12 +121,12 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) (int
 	err = se.client.ExportWithAccessToken(ctx, batches, accessToken)
 	if err != nil {
 		if sendErr, ok := err.(*sapmclient.ErrSend); ok && sendErr.Permanent {
-			return td.SpanCount(), consumererror.Permanent(sendErr)
+			return consumererror.Permanent(sendErr)
 		}
-		return td.SpanCount(), err
+		return err
 	}
 
-	return 0, nil
+	return nil
 }
 
 func (se *sapmExporter) retrieveAccessToken(md pdata.ResourceSpans) string {
