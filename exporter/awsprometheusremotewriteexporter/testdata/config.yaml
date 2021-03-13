@@ -36,5 +36,3 @@ service:
             receivers: [nop]
             processors: [nop]
             exporters: [awsprometheusremotewrite]
-
-

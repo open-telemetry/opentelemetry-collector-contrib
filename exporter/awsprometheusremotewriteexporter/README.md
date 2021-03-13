@@ -33,7 +33,6 @@ The following settings can be optionally configured:
     - `service`: AWS service being exported to.
     - `role_arn`: Amazon Resource Name of the role to assume.
 
-
 #### Examples:
 
 Simplest configuration:

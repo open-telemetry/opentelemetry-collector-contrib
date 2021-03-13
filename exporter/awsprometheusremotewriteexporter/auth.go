@@ -74,22 +74,16 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 
 func newSigningRoundTripper(auth AuthConfig, next http.RoundTripper) (http.RoundTripper, error) {
 
-	creds, err := getCredsFromConfig(auth)
-	if err != nil {
-		return nil, err
-	}
-
+	creds := getCredsFromConfig(auth)
 	return createSigningRoundTripperWithCredentials(auth, creds, next)
 }
 
-func getCredsFromConfig(auth AuthConfig) (*credentials.Credentials, error) {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(auth.Region)},
-	)
+func getCredsFromConfig(auth AuthConfig) *credentials.Credentials {
 
-	if err != nil {
-		return nil, err
-	}
+	// Session Must ensure the Session is valid
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		Config: aws.Config{Region: aws.String(auth.Region)},
+	}))
 
 	var creds *credentials.Credentials
 	if auth.RoleArn != "" {
@@ -101,7 +95,7 @@ func getCredsFromConfig(auth AuthConfig) (*credentials.Credentials, error) {
 		// Get Credentials, either from ./aws or from environmental variables
 		creds = sess.Config.Credentials
 	}
-	return creds, nil
+	return creds
 }
 
 func createSigningRoundTripperWithCredentials(auth AuthConfig, creds *credentials.Credentials, next http.RoundTripper) (http.RoundTripper, error) {

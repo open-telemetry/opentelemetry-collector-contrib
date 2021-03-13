@@ -67,33 +67,26 @@ func TestRequestSignature(t *testing.T) {
 func TestGetCredsFromConfig(t *testing.T) {
 
 	tests := []struct {
-		name        string
-		authConfig  AuthConfig
-		returnError bool
+		name       string
+		authConfig AuthConfig
 	}{
 		{
 			"success_case_without_role",
 			AuthConfig{Region: "region", Service: "service"},
-			false,
 		},
 		{
-			"success_case_without_role",
+			"success_case_with_role",
 			AuthConfig{Region: "region", Service: "service", RoleArn: "arn:aws:iam::123456789012:role/IAMRole"},
-			false,
 		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			creds, err := getCredsFromConfig(tt.authConfig)
+			creds := getCredsFromConfig(tt.authConfig)
 			require.NotNil(t, creds)
-			if tt.returnError {
-				assert.Error(t, err)
-				return
-			}
+
 		})
 	}
-
 }
 
 type ErrorRoundTripper struct{}
