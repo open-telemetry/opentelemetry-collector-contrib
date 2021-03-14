@@ -17,6 +17,7 @@ package loadbalancingexporter
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -36,7 +37,6 @@ var _ component.TracesExporter = (*traceExporterImp)(nil)
 
 var (
 	errNoTracesInBatch        = errors.New("no traces were found in the batch")
-	errUnexpectedExporterType = errors.New("unexpected exporter type")
 )
 
 type traceExporterImp struct {
@@ -117,7 +117,8 @@ func (e *traceExporterImp) consumeTrace(ctx context.Context, td pdata.Traces) er
 
 	te, ok := exp.(component.TracesExporter)
 	if !ok {
-		return errUnexpectedExporterType
+		expectType := (*component.TracesExporter)(nil)
+		return fmt.Errorf("expected %T but got %T", expectType, exp)
 	}
 
 	start := time.Now()

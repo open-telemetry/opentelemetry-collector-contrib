@@ -217,6 +217,45 @@ func TestExporterNotFound(t *testing.T) {
 	assert.EqualError(t, res, fmt.Sprintf("couldn't find the exporter for the endpoint %q", "endpoint-1"))
 }
 
+func TestUnexpectedExporterType(t *testing.T) {
+	// prepare
+	config := simpleConfig()
+	params := component.ExporterCreateParams{
+		Logger: zap.NewNop(),
+	}
+	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+		return mockComponent{}, nil
+	}
+	lb, err := newLoadBalancer(params, config, componentFactory)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	p, err := newTracesExporter(params, config)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	// pre-load an exporter here, so that we don't use the actual OTLP exporter
+	lb.exporters["endpoint-1"] = &mockComponent{}
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(ctx context.Context) ([]string, error) {
+			return []string{"endpoint-1"}, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer p.Shutdown(context.Background())
+
+	// test
+	res := p.ConsumeTraces(context.Background(), simpleTraces())
+
+	// verify
+	assert.Error(t, res)
+	assert.EqualError(t, res, fmt.Sprintf("expected *component.TracesExporter but got %T", &mockComponent{}))
+}
+
 func TestBuildExporterConfig(t *testing.T) {
 	// prepare
 	factories, err := componenttest.ExampleComponents()
