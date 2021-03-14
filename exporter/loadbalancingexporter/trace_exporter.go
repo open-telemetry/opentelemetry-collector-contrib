@@ -36,7 +36,7 @@ import (
 var _ component.TracesExporter = (*traceExporterImp)(nil)
 
 var (
-	errNoTracesInBatch        = errors.New("no traces were found in the batch")
+	errNoTracesInBatch = errors.New("no traces were found in the batch")
 )
 
 type traceExporterImp struct {

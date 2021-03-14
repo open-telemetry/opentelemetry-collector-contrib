@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -198,7 +199,7 @@ func TestOnBackendChanges(t *testing.T) {
 		Logger: zap.NewNop(),
 	}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
-		return mockComponent{}, nil
+		return newNopMockExporter(), nil
 	}
 	p, err := newLoadBalancer(params, config, componentFactory)
 	require.NotNil(t, p)
@@ -226,8 +227,8 @@ func TestRemoveExtraExporters(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	p.exporters["endpoint-1"] = &componenttest.ExampleExporterConsumer{}
-	p.exporters["endpoint-2"] = &componenttest.ExampleExporterConsumer{}
+	p.exporters["endpoint-1"] = newNopMockExporter()
+	p.exporters["endpoint-2"] = newNopMockExporter()
 	resolved := []string{"endpoint-1"}
 
 	// test
@@ -251,7 +252,7 @@ func TestAddMissingExporters(t *testing.T) {
 		_ component.ExporterCreateParams,
 		_ configmodels.Exporter,
 	) (component.TracesExporter, error) {
-		return &componenttest.ExampleExporterConsumer{}, nil
+		return newNopMockTracesExporter(), nil
 	}))
 	tmplParams := component.ExporterCreateParams{
 		Logger:               params.Logger,
@@ -267,7 +268,7 @@ func TestAddMissingExporters(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	p.exporters["endpoint-1:4317"] = &componenttest.ExampleExporterConsumer{}
+	p.exporters["endpoint-1:4317"] = newNopMockExporter()
 	resolved := []string{"endpoint-1", "endpoint-2"}
 
 	// test
@@ -308,7 +309,7 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	p.exporters["endpoint-1"] = &componenttest.ExampleExporterConsumer{}
+	p.exporters["endpoint-1"] = newNopMockExporter()
 	resolved := []string{"endpoint-1", "endpoint-2"}
 
 	// test
@@ -370,7 +371,7 @@ func TestFailedExporterInRing(t *testing.T) {
 		Logger: zap.NewNop(),
 	}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
-		return mockComponent{}, nil
+		return newNopMockExporter(), nil
 	}
 	p, err := newLoadBalancer(params, config, componentFactory)
 	require.NotNil(t, p)
@@ -396,14 +397,6 @@ func TestFailedExporterInRing(t *testing.T) {
 	assert.Error(t, err)
 }
 
-var _ component.Exporter = (*mockComponent)(nil)
-
-type mockComponent struct{}
-
-func (m mockComponent) Start(ctx context.Context, host component.Host) error {
-	return nil
-}
-
-func (m mockComponent) Shutdown(ctx context.Context) error {
-	return nil
+func newNopMockExporter() component.Exporter {
+	return componenthelper.NewComponent(componenthelper.DefaultComponentSettings())
 }
