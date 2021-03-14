@@ -20,7 +20,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -89,7 +88,7 @@ func getCredsFromConfig(auth AuthConfig) *credentials.Credentials {
 	if auth.RoleArn != "" {
 		// Get credentials from an assumeRole API call
 		creds = stscreds.NewCredentials(sess, auth.RoleArn, func(p *stscreds.AssumeRoleProvider) {
-			p.RoleSessionName = getRoleSessionName()
+			p.RoleSessionName = "aws-otel-collector-" + strconv.FormatInt(time.Now().Unix(), 10)
 		})
 	} else {
 		// Get Credentials, either from ./aws or from environmental variables
@@ -134,13 +133,4 @@ func cloneRequest(r *http.Request) *http.Request {
 		r2.Header[k] = append([]string(nil), s...)
 	}
 	return r2
-}
-
-func getRoleSessionName() string {
-
-	if suffix, err := os.Hostname(); err == nil {
-		return "aws-otel-collector-" + suffix
-	}
-
-	return "aws-otel-collector-" + strconv.FormatInt(time.Now().Unix(), 10)
 }

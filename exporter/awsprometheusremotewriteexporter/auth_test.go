@@ -20,7 +20,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"strings"
 	"testing"
 
@@ -239,16 +238,6 @@ func TestCloneRequest(t *testing.T) {
 			assert.EqualValues(t, tt.request.Header, r2.Header)
 		})
 	}
-}
-
-func TestGetRoleSessionName(t *testing.T) {
-
-	sessionName := getRoleSessionName()
-	require.NotNil(t, sessionName)
-
-	osHostname, err := os.Hostname()
-	require.NoError(t, err)
-	assert.Contains(t, sessionName, osHostname)
 }
 
 func fetchMockCredentials() *credentials.Credentials {
