@@ -16,6 +16,7 @@ package stanza
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -39,6 +40,59 @@ func TestCreateReceiver(t *testing.T) {
 		receiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, &mockLogsConsumer{})
 		require.NoError(t, err, "receiver creation failed")
 		require.NotNil(t, receiver, "receiver creation failed")
+	})
+
+	t.Run("SuccessWithOffsetsFile", func(t *testing.T) {
+		tempDir := newTempDir(t)
+		factory := NewFactory(TestReceiverType{})
+		cfg := factory.CreateDefaultConfig().(*TestConfig)
+		cfg.Operators = []map[string]interface{}{
+			{
+				"type": "json_parser",
+			},
+		}
+		cfg.OffsetsFile = filepath.Join(tempDir, "offsets.db")
+		receiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, &mockLogsConsumer{})
+		require.NoError(t, err, "receiver creation failed")
+		require.NotNil(t, receiver, "receiver creation failed")
+	})
+
+	t.Run("SuccessWithDifferentOffsetsFiles", func(t *testing.T) {
+		tempDir := newTempDir(t)
+		factory := NewFactory(TestReceiverType{})
+		cfg := factory.CreateDefaultConfig().(*TestConfig)
+		cfg.Operators = []map[string]interface{}{
+			{
+				"type": "json_parser",
+			},
+		}
+		cfg.OffsetsFile = filepath.Join(tempDir, "one.db")
+		receiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, &mockLogsConsumer{})
+		require.NoError(t, err, "receiver creation failed")
+		require.NotNil(t, receiver, "receiver creation failed")
+
+		cfg.OffsetsFile = filepath.Join(tempDir, "two.db")
+		receiver, err = factory.CreateLogsReceiver(context.Background(), params, cfg, &mockLogsConsumer{})
+		require.NoError(t, err, "receiver creation failed")
+		require.NotNil(t, receiver, "receiver creation failed")
+	})
+
+	t.Run("FailureWithReusedOffsetsFile", func(t *testing.T) {
+		tempDir := newTempDir(t)
+		factory := NewFactory(TestReceiverType{})
+		cfg := factory.CreateDefaultConfig().(*TestConfig)
+		cfg.Operators = []map[string]interface{}{
+			{
+				"type": "json_parser",
+			},
+		}
+		cfg.OffsetsFile = filepath.Join(tempDir, "offsets.db")
+		receiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, &mockLogsConsumer{})
+		require.NoError(t, err, "receiver creation failed")
+		require.NotNil(t, receiver, "receiver creation failed")
+
+		receiver, err = factory.CreateLogsReceiver(context.Background(), params, cfg, &mockLogsConsumer{})
+		require.Error(t, err, "receiver creation fails due to open offsets file")
 	})
 
 	t.Run("DecodeInputConfigFailure", func(t *testing.T) {

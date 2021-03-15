@@ -16,6 +16,11 @@ package stanza
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"path"
+	"path/filepath"
+	"runtime"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/agent"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
@@ -60,12 +65,15 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 			return nil, err
 		}
 
+		offsetsFile := getOffsetsFile(baseCfg.OffsetsFile, cfg.Name())
+
 		pipeline := append([]operator.Config{*inputCfg}, operatorCfgs...)
 
 		emitter := NewLogEmitter(params.Logger.Sugar())
 		logAgent, err := agent.NewBuilder(params.Logger.Sugar()).
 			WithConfig(&agent.Config{Pipeline: pipeline}).
 			WithDefaultOutput(emitter).
+			WithDatabaseFile(offsetsFile, cfg.Name()).
 			Build()
 		if err != nil {
 			return nil, err
@@ -78,4 +86,34 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 			logger:   params.Logger,
 		}, nil
 	}
+}
+
+func getOffsetsFile(path, name string) string {
+
+	if path == "disabled" {
+		return "" // disables offsets file
+	}
+
+	if path != "" {
+		return path // user specified
+	}
+
+	offsetsDir := getOffsetsDir()
+	if _, err := os.Stat(offsetsDir); os.IsNotExist(err) {
+		// TODO mkdir -p?
+
+	}
+
+	// TODO make name pathsafe based on OS
+	filename := fmt.Sprintf("%s.db", name)
+	return filepath.Join(getOffsetsDir(), filename)
+
+}
+
+func getOffsetsDir() string {
+	if runtime.GOOS != "windows" {
+		return "/var/lib/otelcol"
+	}
+
+	return path.Join(os.Getenv("ProgramData"), "otelcol")
 }

@@ -24,6 +24,7 @@ import (
 type BaseConfig struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 	Operators                     OperatorConfigs `mapstructure:"operators"`
+	OffsetsFile                   string          `mapstructure:"offsets_file"`
 }
 
 // OperatorConfigs is an alias that allows for unmarshaling outside of mapstructure

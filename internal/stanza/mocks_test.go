@@ -17,11 +17,15 @@ package stanza
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"testing"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/noop"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
@@ -130,4 +134,17 @@ func (f TestReceiverType) DecodeInputConfig(cfg configmodels.Receiver) (*operato
 		return nil, fmt.Errorf("Unknown input type")
 	}
 	return &operator.Config{Builder: NewUnstartableConfig()}, nil
+}
+
+func newTempDir(t *testing.T) string {
+	tempDir, err := ioutil.TempDir("", "")
+	require.NoError(t, err)
+
+	t.Logf("Temp Dir: %s", tempDir)
+
+	t.Cleanup(func() {
+		os.RemoveAll(tempDir)
+	})
+
+	return tempDir
 }
