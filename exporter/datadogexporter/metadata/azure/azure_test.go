@@ -55,3 +55,25 @@ func TestHostnameFromAttributes(t *testing.T) {
 	_, ok = HostnameFromAttributes(testEmpty)
 	assert.False(t, ok)
 }
+
+func TestClusterNameFromAttributes(t *testing.T) {
+	cluster, ok := ClusterNameFromAttributes(testutils.NewAttributeMap(map[string]string{
+		AttributeResourceGroupName: "MC_aks-kenafeh_aks-kenafeh-eu_westeurope",
+	}))
+	assert.True(t, ok)
+	assert.Equal(t, cluster, "aks-kenafeh-eu")
+
+	cluster, ok = ClusterNameFromAttributes(testutils.NewAttributeMap(map[string]string{
+		AttributeResourceGroupName: "mc_foo-bar-aks-k8s-rg_foo-bar-aks-k8s_westeurope",
+	}))
+	assert.True(t, ok)
+	assert.Equal(t, cluster, "foo-bar-aks-k8s")
+
+	_, ok = ClusterNameFromAttributes(testutils.NewAttributeMap(map[string]string{
+		AttributeResourceGroupName: "unexpected-resource-group-name-format",
+	}))
+	assert.False(t, ok)
+
+	_, ok = ClusterNameFromAttributes(testutils.NewAttributeMap(map[string]string{}))
+	assert.False(t, ok)
+}

@@ -145,11 +145,20 @@ func TestGetClusterName(t *testing.T) {
 	// Azure
 	attrs = testutils.NewAttributeMap(map[string]string{
 		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
-		azure.AttributeResourceGroupName:   testClusterName,
+		azure.AttributeResourceGroupName:   "MC_aks-kenafeh_aks-kenafeh-eu_westeurope",
 	})
 	cluster, ok = getClusterName(attrs)
 	assert.True(t, ok)
-	assert.Equal(t, cluster, testClusterName)
+	assert.Equal(t, cluster, "aks-kenafeh-eu")
+
+	// AWS
+	attrs = testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
+		"ec2.tag.kubernetes.io/cluster/clustername":   "dummy_value",
+	})
+	cluster, ok = getClusterName(attrs)
+	assert.True(t, ok)
+	assert.Equal(t, cluster, "clustername")
 
 	// None
 	attrs = testutils.NewAttributeMap(map[string]string{})

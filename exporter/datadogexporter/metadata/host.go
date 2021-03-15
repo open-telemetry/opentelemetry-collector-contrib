@@ -74,10 +74,9 @@ func getClusterName(attrs pdata.AttributeMap) (string, bool) {
 
 	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
 	if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure {
-		// On Azure, use the resource group name as the cluster name
-		if resourceGroup, ok := attrs.Get(azure.AttributeResourceGroupName); ok {
-			return resourceGroup.StringVal(), true
-		}
+		return azure.ClusterNameFromAttributes(attrs)
+	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS {
+		return ec2.ClusterNameFromAttributes(attrs)
 	}
 
 	return "", false

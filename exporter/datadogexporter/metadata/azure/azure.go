@@ -14,6 +14,8 @@
 package azure
 
 import (
+	"strings"
+
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
@@ -45,6 +47,21 @@ func HostInfoFromAttributes(attrs pdata.AttributeMap) (hostInfo *HostInfo) {
 func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
 	if hostname, ok := attrs.Get(conventions.AttributeHostName); ok {
 		return hostname.StringVal(), true
+	}
+
+	return "", false
+}
+
+// ClusterNameFromAttributes gets the Azure cluster name from attributes
+func ClusterNameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
+	// Get cluster name from resource group
+	// https://github.com/DataDog/datadog-agent/blob/aad29b8/pkg/util/azure/azure.go#L51
+	if resourceGroup, ok := attrs.Get(AttributeResourceGroupName); ok {
+		splitAll := strings.Split(resourceGroup.StringVal(), "_")
+		if len(splitAll) < 4 || strings.ToLower(splitAll[0]) != "mc" {
+			return "", false // Failed to parse
+		}
+		return splitAll[len(splitAll)-2], true
 	}
 
 	return "", false
