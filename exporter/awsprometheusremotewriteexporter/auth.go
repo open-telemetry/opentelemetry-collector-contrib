@@ -20,10 +20,12 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 )
@@ -70,21 +72,29 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 }
 
 func newSigningRoundTripper(auth AuthConfig, next http.RoundTripper) (http.RoundTripper, error) {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(auth.Region)},
-	)
-	if err != nil {
-		return nil, err
-	}
 
-	if _, err = sess.Config.Credentials.Get(); err != nil {
-		return nil, err
-	}
-
-	// Get Credentials, either from ./aws or from environmental variables
-	creds := sess.Config.Credentials
-
+	creds := getCredsFromConfig(auth)
 	return createSigningRoundTripperWithCredentials(auth, creds, next)
+}
+
+func getCredsFromConfig(auth AuthConfig) *credentials.Credentials {
+
+	// Session Must ensure the Session is valid
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		Config: aws.Config{Region: aws.String(auth.Region)},
+	}))
+
+	var creds *credentials.Credentials
+	if auth.RoleArn != "" {
+		// Get credentials from an assumeRole API call
+		creds = stscreds.NewCredentials(sess, auth.RoleArn, func(p *stscreds.AssumeRoleProvider) {
+			p.RoleSessionName = "aws-otel-collector-" + strconv.FormatInt(time.Now().Unix(), 10)
+		})
+	} else {
+		// Get Credentials, either from ./aws or from environmental variables
+		creds = sess.Config.Credentials
+	}
+	return creds
 }
 
 func createSigningRoundTripperWithCredentials(auth AuthConfig, creds *credentials.Credentials, next http.RoundTripper) (http.RoundTripper, error) {
