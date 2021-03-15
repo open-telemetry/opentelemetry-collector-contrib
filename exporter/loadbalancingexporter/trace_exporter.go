@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -36,151 +35,54 @@ import (
 
 var _ component.TracesExporter = (*traceExporterImp)(nil)
 
-const (
-	defaultPort = "55680"
-)
-
 var (
-	errNoResolver                = errors.New("no resolvers specified for the exporter")
-	errMultipleResolversProvided = errors.New("only one resolver should be specified")
-	errNoTracesInBatch           = errors.New("no traces were found in the batch")
+	errNoTracesInBatch = errors.New("no traces were found in the batch")
 )
 
 type traceExporterImp struct {
 	logger *zap.Logger
-	config Config
-	host   component.Host
 
-	res  resolver
-	ring *hashRing
-
-	exporters            map[string]component.TracesExporter
-	exporterFactory      component.ExporterFactory
-	templateCreateParams component.ExporterCreateParams
+	loadBalancer loadBalancer
 
 	stopped    bool
 	shutdownWg sync.WaitGroup
-	updateLock sync.RWMutex
 }
 
-// Crete new exporter
+// Crete new traces exporter
 func newTracesExporter(params component.ExporterCreateParams, cfg configmodels.Exporter) (*traceExporterImp, error) {
-	oCfg := cfg.(*Config)
+	exporterFactory := otlpexporter.NewFactory()
 
 	tmplParams := component.ExporterCreateParams{
 		Logger:               params.Logger,
 		ApplicationStartInfo: params.ApplicationStartInfo,
 	}
 
-	if oCfg.Resolver.DNS != nil && oCfg.Resolver.Static != nil {
-		return nil, errMultipleResolversProvided
-	}
-
-	var res resolver
-	if oCfg.Resolver.Static != nil {
-		var err error
-		res, err = newStaticResolver(oCfg.Resolver.Static.Hostnames)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if oCfg.Resolver.DNS != nil {
-		dnsLogger := params.Logger.With(zap.String("resolver", "dns"))
-
-		var err error
-		res, err = newDNSResolver(dnsLogger, oCfg.Resolver.DNS.Hostname, oCfg.Resolver.DNS.Port)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if res == nil {
-		return nil, errNoResolver
+	loadBalancer, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Exporter, error) {
+		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
+		return exporterFactory.CreateTracesExporter(ctx, tmplParams, &oCfg)
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return &traceExporterImp{
-		logger: params.Logger,
-		config: *oCfg,
-
-		res: res,
-
-		exporters:            map[string]component.TracesExporter{},
-		exporterFactory:      otlpexporter.NewFactory(),
-		templateCreateParams: tmplParams,
+		logger:       params.Logger,
+		loadBalancer: loadBalancer,
 	}, nil
 }
 
-func (e *traceExporterImp) Start(ctx context.Context, host component.Host) error {
-	e.res.onChange(e.onBackendChanges)
-	e.host = host
-	if err := e.res.start(ctx); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (e *traceExporterImp) onBackendChanges(resolved []string) {
-	newRing := newHashRing(resolved)
-
-	if !newRing.equal(e.ring) {
-		e.updateLock.Lock()
-		defer e.updateLock.Unlock()
-
-		e.ring = newRing
-
-		// TODO: set a timeout?
-		ctx := context.Background()
-
-		// add the missing exporters first
-		e.addMissingExporters(ctx, resolved)
-		e.removeExtraExporters(ctx, resolved)
-	}
-}
-
-func (e *traceExporterImp) addMissingExporters(ctx context.Context, endpoints []string) {
-	for _, endpoint := range endpoints {
-		endpoint = endpointWithPort(endpoint)
-
-		if _, exists := e.exporters[endpoint]; !exists {
-			cfg := e.buildExporterConfig(endpoint)
-			exp, err := e.exporterFactory.CreateTracesExporter(ctx, e.templateCreateParams, &cfg)
-			if err != nil {
-				e.logger.Error("failed to create new trace exporter for endpoint", zap.String("endpoint", endpoint), zap.Error(err))
-				continue
-			}
-			if err = exp.Start(ctx, e.host); err != nil {
-				e.logger.Error("failed to start new trace exporter for endpoint", zap.String("endpoint", endpoint), zap.Error(err))
-				continue
-			}
-			e.exporters[endpoint] = exp
-		}
-	}
-}
-
-func (e *traceExporterImp) buildExporterConfig(endpoint string) otlpexporter.Config {
-	oCfg := e.config.Protocol.OTLP
+func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
+	oCfg := cfg.Protocol.OTLP
 	oCfg.Endpoint = endpoint
 	return oCfg
 }
 
-func (e *traceExporterImp) removeExtraExporters(ctx context.Context, endpoints []string) {
-	for existing := range e.exporters {
-		if !endpointFound(existing, endpoints) {
-			e.exporters[existing].Shutdown(ctx)
-			delete(e.exporters, existing)
-		}
-	}
-}
-
-func endpointFound(endpoint string, endpoints []string) bool {
-	for _, candidate := range endpoints {
-		if candidate == endpoint {
-			return true
-		}
+func (e *traceExporterImp) Start(ctx context.Context, host component.Host) error {
+	if err := e.loadBalancer.Start(ctx, host); err != nil {
+		return err
 	}
 
-	return false
+	return nil
 }
 
 func (e *traceExporterImp) Shutdown(context.Context) error {
@@ -207,20 +109,20 @@ func (e *traceExporterImp) consumeTrace(ctx context.Context, td pdata.Traces) er
 		return errNoTracesInBatch
 	}
 
-	// NOTE: make rolling updates of next tier of collectors work. currently this may cause
-	// data loss because the latest batches sent to outdated backend will never find their way out.
-	// for details: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1690
-	e.updateLock.RLock()
-	endpoint := e.ring.endpointFor(traceID)
-	exp, found := e.exporters[endpoint]
-	e.updateLock.RUnlock()
-	if !found {
-		// something is really wrong... how come we couldn't find the exporter??
-		return fmt.Errorf("couldn't find the exporter for the endpoint %q", endpoint)
+	endpoint := e.loadBalancer.Endpoint(traceID)
+	exp, err := e.loadBalancer.Exporter(endpoint)
+	if err != nil {
+		return err
+	}
+
+	te, ok := exp.(component.TracesExporter)
+	if !ok {
+		expectType := (*component.TracesExporter)(nil)
+		return fmt.Errorf("expected %T but got %T", expectType, exp)
 	}
 
 	start := time.Now()
-	err := exp.ConsumeTraces(ctx, td)
+	err = te.ConsumeTraces(ctx, td)
 	duration := time.Since(start)
 	ctx, _ = tag.New(ctx, tag.Upsert(tag.MustNewKey("endpoint"), endpoint))
 
@@ -233,10 +135,6 @@ func (e *traceExporterImp) consumeTrace(ctx context.Context, td pdata.Traces) er
 	}
 
 	return err
-}
-
-func (e *traceExporterImp) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
 func traceIDFromTraces(td pdata.Traces) pdata.TraceID {
@@ -256,11 +154,4 @@ func traceIDFromTraces(td pdata.Traces) pdata.TraceID {
 	}
 
 	return spans.At(0).TraceID()
-}
-
-func endpointWithPort(endpoint string) string {
-	if !strings.Contains(endpoint, ":") {
-		endpoint = fmt.Sprintf("%s:%s", endpoint, defaultPort)
-	}
-	return endpoint
 }
