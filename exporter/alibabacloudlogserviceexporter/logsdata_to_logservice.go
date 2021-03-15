@@ -42,8 +42,7 @@ const (
 	slsLogInstrumentationVersion = "otlp.version"
 )
 
-func logDataToLogService(ld pdata.Logs) ([]*sls.Log, int) {
-	numDroppedLogs := 0
+func logDataToLogService(ld pdata.Logs) []*sls.Log {
 	slsLogs := make([]*sls.Log, 0)
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
@@ -57,16 +56,14 @@ func logDataToLogService(ld pdata.Logs) ([]*sls.Log, int) {
 			logs := ils.Logs()
 			for j := 0; j < logs.Len(); j++ {
 				slsLog := mapLogRecordToLogService(logs.At(j), resourceContents, instrumentationLibraryContents)
-				if slsLog == nil {
-					numDroppedLogs++
-				} else {
+				if slsLog != nil {
 					slsLogs = append(slsLogs, slsLog)
 				}
 			}
 		}
 	}
 
-	return slsLogs, numDroppedLogs
+	return slsLogs
 }
 
 func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {

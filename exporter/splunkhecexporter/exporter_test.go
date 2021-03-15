@@ -75,12 +75,11 @@ func TestConsumeMetricsData(t *testing.T) {
 		},
 	}
 	tests := []struct {
-		name                 string
-		md                   internaldata.MetricsData
-		reqTestFunc          func(t *testing.T, r *http.Request)
-		httpResponseCode     int
-		numDroppedTimeSeries int
-		wantErr              bool
+		name             string
+		md               internaldata.MetricsData
+		reqTestFunc      func(t *testing.T, r *http.Request)
+		httpResponseCode int
+		wantErr          bool
 	}{
 		{
 			name: "happy_path",
@@ -111,12 +110,11 @@ func TestConsumeMetricsData(t *testing.T) {
 			httpResponseCode: http.StatusAccepted,
 		},
 		{
-			name:                 "response_forbidden",
-			md:                   smallBatch,
-			reqTestFunc:          nil,
-			httpResponseCode:     http.StatusForbidden,
-			numDroppedTimeSeries: 1,
-			wantErr:              true,
+			name:             "response_forbidden",
+			md:               smallBatch,
+			reqTestFunc:      nil,
+			httpResponseCode: http.StatusForbidden,
+			wantErr:          true,
 		},
 		{
 			name:             "large_batch",
@@ -151,9 +149,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			sender := buildClient(options, config, zap.NewNop())
 
 			md := internaldata.OCToMetrics(tt.md)
-			numDroppedTimeSeries, err := sender.pushMetricsData(context.Background(), md)
-			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
-
+			err = sender.pushMetricsData(context.Background(), md)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -227,7 +223,6 @@ func TestConsumeLogsData(t *testing.T) {
 		ld               pdata.Logs
 		reqTestFunc      func(t *testing.T, r *http.Request)
 		httpResponseCode int
-		numDroppedLogs   int
 		wantErr          bool
 	}{
 		{
@@ -263,7 +258,6 @@ func TestConsumeLogsData(t *testing.T) {
 			ld:               smallBatch,
 			reqTestFunc:      nil,
 			httpResponseCode: http.StatusForbidden,
-			numDroppedLogs:   1,
 			wantErr:          true,
 		},
 		{
@@ -298,9 +292,7 @@ func TestConsumeLogsData(t *testing.T) {
 			}
 			sender := buildClient(options, config, zap.NewNop())
 
-			numDroppedLogs, err := sender.pushLogData(context.Background(), tt.ld)
-			assert.Equal(t, tt.numDroppedLogs, numDroppedLogs)
-
+			err = sender.pushLogData(context.Background(), tt.ld)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

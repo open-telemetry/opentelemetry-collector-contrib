@@ -102,7 +102,7 @@ func NewEmfExporter(
 	)
 }
 
-func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (droppedTimeSeries int, err error) {
+func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) error {
 	rms := md.ResourceMetrics()
 	labels := map[string]string{}
 	for i := 0; i < rms.Len(); i++ {
@@ -139,8 +139,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (dr
 		if pusher != nil {
 			returnError := pusher.AddLogEntry(putLogEvent)
 			if returnError != nil {
-				err = wrapErrorIfBadRequest(&returnError)
-				return
+				return wrapErrorIfBadRequest(&returnError)
 			}
 		}
 	}
@@ -149,17 +148,17 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (dr
 		returnError := pusher.ForceFlush()
 		if returnError != nil {
 			//TODO now we only have one pusher, so it's ok to return after first error occurred
-			err = wrapErrorIfBadRequest(&returnError)
+			err := wrapErrorIfBadRequest(&returnError)
 			if err != nil {
 				emf.logger.Error("Error force flushing logs. Skipping to next pusher.", zap.Error(err))
 			}
-			return
+			return err
 		}
 	}
 
 	emf.logger.Info("Finish processing resource metrics", zap.Any("labels", labels))
 
-	return
+	return nil
 }
 
 func (emf *emfExporter) getPusher(logGroup, logStream string) Pusher {
@@ -195,8 +194,7 @@ func (emf *emfExporter) listPushers() []Pusher {
 }
 
 func (emf *emfExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	_, err := emf.pushMetricsData(ctx, md)
-	return err
+	return emf.pushMetricsData(ctx, md)
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.

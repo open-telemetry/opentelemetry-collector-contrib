@@ -138,10 +138,9 @@ func (e *exporter) extractInsertKeyFromHeader(ctx context.Context) string {
 	return values[0]
 }
 
-func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, error) {
+func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
 	var (
-		errs      []error
-		goodSpans int
+		errs []error
 	)
 
 	var batch telemetry.SpanBatch
@@ -162,7 +161,6 @@ func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, erro
 				}
 
 				spans = append(spans, nrSpan)
-				goodSpans++
 			}
 			batch.Spans = append(batch.Spans, spans...)
 		}
@@ -179,14 +177,14 @@ func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, erro
 	}
 	if err != nil {
 		e.logger.Error("Failed to build batch", zap.Error(err))
-		return 0, err
+		return err
 	}
 
 	// Execute the http request and handle the response
 	response, err := http.DefaultClient.Do(req)
 	if err != nil {
 		e.logger.Error("Error making HTTP request.", zap.Error(err))
-		return 0, &urlError{Err: err}
+		return &urlError{Err: err}
 	}
 	defer response.Body.Close()
 	io.Copy(ioutil.Discard, response.Body)
@@ -200,16 +198,15 @@ func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, erro
 			e.logger.Debug("Error on HTTP response.", zap.String("Status", response.Status))
 		}
 
-		return 0, &httpError{Response: response}
+		return &httpError{Response: response}
 	}
 
-	return td.SpanCount() - goodSpans, consumererror.CombineErrors(errs)
+	return consumererror.CombineErrors(errs)
 
 }
 
-func (e exporter) pushMetricData(ctx context.Context, md pdata.Metrics) (int, error) {
+func (e exporter) pushMetricData(ctx context.Context, md pdata.Metrics) error {
 	var errs []error
-	goodMetrics := 0
 
 	ocmds := internaldata.MetricsToOC(md)
 	for _, ocmd := range ocmds {
@@ -234,13 +231,12 @@ func (e exporter) pushMetricData(ctx context.Context, md pdata.Metrics) (int, er
 			for _, m := range nrMetrics {
 				e.harvester.RecordMetric(m)
 			}
-			goodMetrics++
 		}
 	}
 
 	e.harvester.HarvestNow(ctx)
 
-	return md.MetricCount() - goodMetrics, consumererror.CombineErrors(errs)
+	return consumererror.CombineErrors(errs)
 }
 
 func (e exporter) Shutdown(ctx context.Context) error {

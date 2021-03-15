@@ -61,26 +61,26 @@ const (
 	maxMetricKeyLen = 250
 )
 
-func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
+func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error {
 	if e.isDisabled {
-		return md.MetricCount(), nil
+		return nil
 	}
 
-	lines, dropped := e.serializeMetrics(md)
+	lines, _ := e.serializeMetrics(md)
 
 	// If request is empty string, there are no serializable metrics in the batch.
 	// This can happen if all metric names are invalid
 	if len(lines) == 0 {
-		return md.MetricCount(), nil
+		return nil
 	}
 
-	droppedByCluster, err := e.send(ctx, lines)
+	_, err := e.send(ctx, lines)
 
 	if err != nil {
-		return md.MetricCount(), err
+		return err
 	}
 
-	return dropped + droppedByCluster, nil
+	return nil
 }
 
 func (e *exporter) serializeMetrics(md pdata.Metrics) ([]string, int) {

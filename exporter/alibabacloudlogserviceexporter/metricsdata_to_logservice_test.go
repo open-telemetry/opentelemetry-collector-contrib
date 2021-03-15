@@ -139,8 +139,7 @@ func TestMetricDataToLogService(t *testing.T) {
 	doubleSummaryDataPoint.QuantileValues().Append(quantileVal)
 	doubleSummaryDataPoint.QuantileValues().Append(quantileVal2)
 
-	gotLogs, gotNumDroppedTimeSeries := metricsDataToLogServiceData(logger, md)
-	assert.Equal(t, gotNumDroppedTimeSeries, 0)
+	gotLogs := metricsDataToLogServiceData(logger, md)
 	gotLogPairs := make([][]logKeyValuePair, 0, len(gotLogs))
 
 	for _, log := range gotLogs {

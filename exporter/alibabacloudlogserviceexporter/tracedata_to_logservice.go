@@ -44,14 +44,14 @@ const (
 )
 
 // traceDataToLogService translates trace data into the LogService format.
-func traceDataToLogServiceData(td pdata.Traces) ([]*sls.Log, int) {
+func traceDataToLogServiceData(td pdata.Traces) []*sls.Log {
 	var slsLogs []*sls.Log
 	resourceSpansSlice := td.ResourceSpans()
 	for i := 0; i < resourceSpansSlice.Len(); i++ {
 		logs := resourceSpansToLogServiceData(resourceSpansSlice.At(i))
 		slsLogs = append(slsLogs, logs...)
 	}
-	return slsLogs, 0
+	return slsLogs
 }
 
 func resourceSpansToLogServiceData(resourceSpans pdata.ResourceSpans) []*sls.Log {
