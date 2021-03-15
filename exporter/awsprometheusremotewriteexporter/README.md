@@ -8,7 +8,7 @@ of the AWS SDK for Go.
 Note: this exporter imports and uses the [Prometheus remote write exporter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/prometheusremotewriteexporter)
 from upstream, and simply wraps it in Sigv4 authentication logic
 
-Same as the Prometheus remote write exporter, this exporter checks the temporality and the type of each incoming metric 
+Same as the Prometheus remote write exporter, this exporter checks the temporality and the type of each incoming metric
 and only exports the following combination:
 
 - Int64 or Double type with any temporality
@@ -16,7 +16,7 @@ and only exports the following combination:
 
 ## Configuration
 The following settings are required:
-- `endpoint`: protocol:host:port to which the exporter is going to send traces or metrics, using the HTTP/HTTPS protocol. 
+- `endpoint`: protocol:host:port to which the exporter is going to send traces or metrics, using the HTTP/HTTPS protocol.
 
 The following settings can be optionally configured:
 - `namespace`: prefix attached to each exported metric name.
@@ -31,8 +31,8 @@ The following settings can be optionally configured:
 - `aws_auth`: specify if each request should be signed with AWS Sig v4. The following settings must be configured:
     - `region`: region of the AWS service being exported to.
     - `service`: AWS service being exported to.
-    
-    
+    - `role_arn`: Amazon Resource Name of the role to assume.
+
 #### Examples:
 
 Simplest configuration:

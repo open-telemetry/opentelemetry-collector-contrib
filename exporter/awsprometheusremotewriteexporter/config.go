@@ -34,4 +34,6 @@ type AuthConfig struct {
 	Region string `mapstructure:"region"`
 	// Service is the service name for AWS Sig v4
 	Service string `mapstructure:"service"`
+	// Amazon Resource Name (ARN) of a role to assume
+	RoleArn string `mapstructure:"role_arn"`
 }
