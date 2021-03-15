@@ -8,10 +8,9 @@ data:
     receivers:
       filelog:
         include:
-          # - /var/log/pods/namespace_pod-name_pod-uid/container-name/*.log
           - /var/log/pods/*/*/*.log
         exclude:
-          # - /var/log/pods/namespace_pod-name_pod-uid/container-name/*.log
+          # Exclude logs from all containers named otel-collector
           - /var/log/pods/*/otel-collector/*.log
         start_at: beginning
         include_file_path: true

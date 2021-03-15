@@ -8,6 +8,23 @@ This demo is a sample app to build the collector and exercise its kubernetes log
 
 Switch to this directory and run following command: `kubectl apply -n <namespace> -f otel-collector.yaml`
 
+#### Include/Exclude Specific Logs
+
+Kubernetes logs are being stored in `/var/log/pods`.
+Path to container logs is constructed using following pattern:
+
+`/var/log/pods/<namespace>_<pod_name>_<pod_uid>/<container>/<run_id>.log`
+
+You can use it to manage from which containers do you want to include and exclude logs.
+
+For example, to include all logs from `default` namespace, you can use following configuration:
+
+```yaml
+include:
+    - /var/log/pods/default_*/*/*.log
+exclude: []
+```
+
 ### Docker Compose
 
 Two steps are required to build and run the demo:
