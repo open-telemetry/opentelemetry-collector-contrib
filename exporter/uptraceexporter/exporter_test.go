@@ -58,9 +58,8 @@ func TestTraceExporterEmptyTraces(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
-	dropped, err := exp.pushTraceData(ctx, pdata.NewTraces())
+	err = exp.pushTraceData(ctx, pdata.NewTraces())
 	require.NoError(t, err)
-	require.Zero(t, dropped)
 
 	err = exp.Shutdown(ctx)
 	require.NoError(t, err)
@@ -100,10 +99,8 @@ func TestTraceExporterGenTraces(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
-	dropped, err := exp.pushTraceData(
-		ctx, testdata.GenerateTraceDataTwoSpansSameResource())
+	err = exp.pushTraceData(ctx, testdata.GenerateTraceDataTwoSpansSameResource())
 	require.NoError(t, err)
-	require.Zero(t, dropped)
 
 	err = exp.Shutdown(ctx)
 	require.NoError(t, err)

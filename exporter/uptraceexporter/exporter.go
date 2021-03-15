@@ -58,7 +58,7 @@ func newTraceExporter(cfg *Config, logger *zap.Logger) (*traceExporter, error) {
 }
 
 // pushTraceData is the method called when trace data is available.
-func (e *traceExporter) pushTraceData(ctx context.Context, traces pdata.Traces) (int, error) {
+func (e *traceExporter) pushTraceData(ctx context.Context, traces pdata.Traces) error {
 	outSpans := make([]spanexp.Span, 0, traces.SpanCount())
 
 	rsSpans := traces.ResourceSpans()
@@ -103,7 +103,7 @@ func (e *traceExporter) pushTraceData(ctx context.Context, traces pdata.Traces) 
 	}
 
 	if len(outSpans) == 0 {
-		return 0, nil
+		return nil
 	}
 
 	out := map[string]interface{}{
@@ -111,12 +111,12 @@ func (e *traceExporter) pushTraceData(ctx context.Context, traces pdata.Traces) 
 	}
 	if err := e.upexp.SendSpans(ctx, out); err != nil {
 		if err, ok := err.(temporaryError); ok && err.Temporary() {
-			return len(outSpans), err
+			return err
 		}
-		return len(outSpans), consumererror.Permanent(err)
+		return consumererror.Permanent(err)
 	}
 
-	return 0, nil
+	return nil
 }
 
 func (e *traceExporter) Shutdown(ctx context.Context) error {

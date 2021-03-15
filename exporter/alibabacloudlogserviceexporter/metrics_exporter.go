@@ -50,10 +50,11 @@ type logServiceMetricsSender struct {
 func (s *logServiceMetricsSender) pushMetricsData(
 	_ context.Context,
 	md pdata.Metrics,
-) (droppedTimeSeries int, err error) {
-	logs, dts := metricsDataToLogServiceData(s.logger, md)
+) error {
+	var err error
+	logs := metricsDataToLogServiceData(s.logger, md)
 	if len(logs) > 0 {
 		err = s.client.SendLogs(logs)
 	}
-	return dts, err
+	return err
 }

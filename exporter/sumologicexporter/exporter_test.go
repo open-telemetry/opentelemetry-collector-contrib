@@ -120,7 +120,7 @@ func TestAllSuccess(t *testing.T) {
 
 	logs := LogRecordsToLogs(exampleLog())
 
-	_, err := test.exp.pushLogsData(context.Background(), logs)
+	err := test.exp.pushLogsData(context.Background(), logs)
 	assert.NoError(t, err)
 }
 
@@ -143,7 +143,7 @@ func TestResourceMerge(t *testing.T) {
 	logs.ResourceLogs().At(0).Resource().Attributes().InsertString("key1", "overwrite_value")
 	logs.ResourceLogs().At(0).Resource().Attributes().InsertString("key2", "additional_value")
 
-	_, err = test.exp.pushLogsData(context.Background(), logs)
+	err = test.exp.pushLogsData(context.Background(), logs)
 	assert.NoError(t, err)
 }
 
@@ -161,9 +161,8 @@ func TestAllFailed(t *testing.T) {
 
 	logs := LogRecordsToLogs(exampleTwoLogs())
 
-	dropped, err := test.exp.pushLogsData(context.Background(), logs)
+	err := test.exp.pushLogsData(context.Background(), logs)
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
-	assert.Equal(t, 2, dropped)
 
 	partial, ok := err.(consumererror.PartialError)
 	require.True(t, ok)
@@ -195,9 +194,8 @@ func TestPartiallyFailed(t *testing.T) {
 	logs := LogRecordsToLogs(records)
 	expected := LogRecordsToLogs(records[:1])
 
-	dropped, err := test.exp.pushLogsData(context.Background(), logs)
+	err = test.exp.pushLogsData(context.Background(), logs)
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
-	assert.Equal(t, 1, dropped)
 
 	partial, ok := err.(consumererror.PartialError)
 	require.True(t, ok)
@@ -247,7 +245,7 @@ func TestPushInvalidCompressor(t *testing.T) {
 
 	test.exp.config.CompressEncoding = "invalid"
 
-	_, err := test.exp.pushLogsData(context.Background(), logs)
+	err := test.exp.pushLogsData(context.Background(), logs)
 	assert.EqualError(t, err, "failed to initialize compressor: invalid format: invalid")
 }
 
@@ -284,9 +282,8 @@ func TestPushFailedBatch(t *testing.T) {
 		logs.ResourceLogs().Append(log)
 	}
 
-	count, err := test.exp.pushLogsData(context.Background(), logs)
+	err := test.exp.pushLogsData(context.Background(), logs)
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
-	assert.Equal(t, maxBufferSize, count)
 }
 
 func TestAllMetricsSuccess(t *testing.T) {
@@ -308,7 +305,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 		exampleIntGaugeMetric(),
 	})
 
-	_, err := test.exp.pushMetricsData(context.Background(), metrics)
+	err := test.exp.pushMetricsData(context.Background(), metrics)
 	assert.NoError(t, err)
 }
 
@@ -333,9 +330,8 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 		exampleIntGaugeMetric(),
 	})
 
-	dropped, err := test.exp.pushMetricsData(context.Background(), metrics)
+	err := test.exp.pushMetricsData(context.Background(), metrics)
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
-	assert.Equal(t, 2, dropped)
 
 	partial, ok := err.(consumererror.PartialError)
 	require.True(t, ok)
@@ -371,9 +367,8 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 	metrics := metricPairToMetrics(records)
 	expected := metricPairToMetrics(records[:1])
 
-	dropped, err := test.exp.pushMetricsData(context.Background(), metrics)
+	err := test.exp.pushMetricsData(context.Background(), metrics)
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
-	assert.Equal(t, 1, dropped)
 
 	partial, ok := err.(consumererror.PartialError)
 	require.True(t, ok)
@@ -397,7 +392,7 @@ func TestPushMetricsInvalidCompressor(t *testing.T) {
 
 	test.exp.config.CompressEncoding = "invalid"
 
-	_, err := test.exp.pushMetricsData(context.Background(), metrics)
+	err := test.exp.pushMetricsData(context.Background(), metrics)
 	assert.EqualError(t, err, "failed to initialize compressor: invalid format: invalid")
 }
 
@@ -438,9 +433,8 @@ gauge_metric_name{foo="bar",key2="value2",remote_name="156955",url="http://anoth
 	metrics := metricPairToMetrics(records)
 	expected := metricPairToMetrics(records[:1])
 
-	dropped, err := test.exp.pushMetricsData(context.Background(), metrics)
+	err = test.exp.pushMetricsData(context.Background(), metrics)
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
-	assert.Equal(t, 1, dropped)
 
 	partial, ok := err.(consumererror.PartialError)
 	require.True(t, ok)
@@ -481,7 +475,6 @@ func TestPushMetricsFailedBatch(t *testing.T) {
 		metrics.ResourceMetrics().Append(metric)
 	}
 
-	count, err := test.exp.pushMetricsData(context.Background(), metrics)
+	err := test.exp.pushMetricsData(context.Background(), metrics)
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
-	assert.Equal(t, maxBufferSize, count)
 }
