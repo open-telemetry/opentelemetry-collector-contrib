@@ -480,7 +480,7 @@ func TestNewEventExporter(t *testing.T) {
 
 	// This is expected to fail.
 	ld := makeSampleResourceLogs()
-	_, err = got.pushLogs(context.Background(), ld)
+	err = got.pushLogs(context.Background(), ld)
 	assert.Error(t, err)
 }
 

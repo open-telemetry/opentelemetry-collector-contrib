@@ -41,9 +41,9 @@ const (
 )
 
 type splunkExporter struct {
-	pushMetricsData func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
-	pushTraceData   func(ctx context.Context, td pdata.Traces) (numDroppedSpans int, err error)
-	pushLogData     func(ctx context.Context, td pdata.Logs) (numDroppedSpans int, err error)
+	pushMetricsData func(ctx context.Context, md pdata.Metrics) error
+	pushTraceData   func(ctx context.Context, td pdata.Traces) error
+	pushLogData     func(ctx context.Context, td pdata.Logs) error
 	stop            func(ctx context.Context) (err error)
 	start           func(ctx context.Context, host component.Host) (err error)
 }

@@ -78,7 +78,7 @@ type jaegerThriftHTTPSender struct {
 func (s *jaegerThriftHTTPSender) pushTraceData(
 	_ context.Context,
 	td pdata.Traces,
-) (droppedSpans int, err error) {
+) error {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		var octd traceData
@@ -86,17 +86,17 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 
 		tBatch, err := oCProtoToJaegerThrift(octd)
 		if err != nil {
-			return td.SpanCount(), consumererror.Permanent(err)
+			return consumererror.Permanent(err)
 		}
 
 		body, err := serializeThrift(tBatch)
 		if err != nil {
-			return td.SpanCount(), err
+			return err
 		}
 
 		req, err := http.NewRequest("POST", s.url, body)
 		if err != nil {
-			return td.SpanCount(), err
+			return err
 		}
 
 		req.Header.Set("Content-Type", "application/x-thrift")
@@ -108,7 +108,7 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 
 		resp, err := s.client.Do(req)
 		if err != nil {
-			return td.SpanCount(), err
+			return err
 		}
 
 		io.Copy(ioutil.Discard, resp.Body)
@@ -119,11 +119,11 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 				"HTTP %d %q",
 				resp.StatusCode,
 				http.StatusText(resp.StatusCode))
-			return td.SpanCount(), err
+			return err
 		}
 	}
 
-	return 0, nil
+	return nil
 }
 
 func serializeThrift(obj thrift.TStruct) (*bytes.Buffer, error) {

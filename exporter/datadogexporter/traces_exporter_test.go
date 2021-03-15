@@ -191,9 +191,8 @@ func TestPushTraceData(t *testing.T) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exp := newTraceExporter(context.Background(), params, cfg)
 
-	tracesLength, err := exp.pushTraceData(context.Background(), testutils.TestTraces.Clone())
+	err := exp.pushTraceData(context.Background(), testutils.TestTraces.Clone())
 	assert.NoError(t, err)
-	assert.Equal(t, 1, tracesLength)
 
 	body := <-server.MetadataChan
 	var recvMetadata metadata.HostMetadata
