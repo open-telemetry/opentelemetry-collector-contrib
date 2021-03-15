@@ -38,9 +38,9 @@ func NewRegexParserConfig(operatorID string) *RegexParserConfig {
 
 // RegexParserConfig is the configuration of a regex parser operator.
 type RegexParserConfig struct {
-	helper.ParserConfig `yaml:",inline"`
+	helper.ParserConfig `mapstructure:",squash" yaml:",inline"`
 
-	Regex string `json:"regex" yaml:"regex"`
+	Regex string `mapstructure:"regex" json:"regex" yaml:"regex"`
 }
 
 // Build will build a regex parser operator.

@@ -36,8 +36,8 @@ func NewTimeParserConfig(operatorID string) *TimeParserConfig {
 
 // TimeParserConfig is the configuration of a time parser operator.
 type TimeParserConfig struct {
-	helper.TransformerConfig `yaml:",inline"`
-	helper.TimeParser        `yaml:",omitempty,inline"`
+	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
+	helper.TimeParser        `mapstructure:",omitempty,squash" yaml:",omitempty,inline"`
 }
 
 // Build will build a time parser operator.

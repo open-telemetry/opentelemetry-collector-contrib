@@ -19,10 +19,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
-	"github.com/stretchr/testify/require"
 )
 
 func TestSyslogParser(t *testing.T) {
@@ -61,4 +64,40 @@ func TestSyslogParser(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSyslogParserConfig(t *testing.T) {
+	expect := NewSyslogParserConfig("test")
+	expect.Protocol = "rfc3164"
+	expect.ParseFrom = entry.NewRecordField("from")
+	expect.ParseTo = entry.NewRecordField("to")
+
+	t.Run("mapstructure", func(t *testing.T) {
+		input := map[string]interface{}{
+			"id":         "test",
+			"type":       "syslog_parser",
+			"protocol":   "rfc3164",
+			"parse_from": "$.from",
+			"parse_to":   "$.to",
+			"on_error":   "send",
+		}
+		var actual SyslogParserConfig
+		err := helper.UnmarshalMapstructure(input, &actual)
+		require.NoError(t, err)
+		require.Equal(t, expect, &actual)
+	})
+
+	t.Run("yaml", func(t *testing.T) {
+		input := `
+type: syslog_parser
+id: test
+on_error: "send"
+protocol: "rfc3164"
+parse_from: $.from
+parse_to: $.to`
+		var actual SyslogParserConfig
+		err := yaml.Unmarshal([]byte(input), &actual)
+		require.NoError(t, err)
+		require.Equal(t, expect, &actual)
+	})
 }
