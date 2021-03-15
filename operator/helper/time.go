@@ -48,11 +48,11 @@ func NewTimeParser() TimeParser {
 
 // TimeParser is a helper that parses time onto an entry.
 type TimeParser struct {
-	ParseFrom  *entry.Field `json:"parse_from,omitempty"  yaml:"parse_from,omitempty"`
-	Layout     string       `json:"layout,omitempty"      yaml:"layout,omitempty"`
-	LayoutType string       `json:"layout_type,omitempty" yaml:"layout_type,omitempty"`
-	PreserveTo *entry.Field `json:"preserve_to,omitempty" yaml:"preserve_to,omitempty"`
-	Location   string       `json:"location,omitempty"   yaml:"location,omitempty"`
+	ParseFrom  *entry.Field `mapstructure:"parse_from,omitempty"  json:"parse_from,omitempty"  yaml:"parse_from,omitempty"`
+	Layout     string       `mapstructure:"layout,omitempty"      json:"layout,omitempty"      yaml:"layout,omitempty"`
+	LayoutType string       `mapstructure:"layout_type,omitempty" json:"layout_type,omitempty" yaml:"layout_type,omitempty"`
+	PreserveTo *entry.Field `mapstructure:"preserve_to,omitempty" json:"preserve_to,omitempty" yaml:"preserve_to,omitempty"`
+	Location   string       `mapstructure:"location,omitempty"    json:"location,omitempty"    yaml:"location,omitempty"`
 
 	location *time.Location
 }

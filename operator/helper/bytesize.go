@@ -34,6 +34,14 @@ func (h *ByteSize) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return h.unmarshalShared(unmarshal)
 }
 
+func (h *ByteSize) UnmarshalText(text []byte) (err error) {
+	slice := make([]byte, 1, 2+len(text))
+	slice[0] = byte('"')
+	slice = append(slice, text...)
+	slice = append(slice, byte('"'))
+	return h.UnmarshalJSON(slice)
+}
+
 var byteSizeRegex = regexp.MustCompile(`^([0-9]+\.?[0-9]*)\s*([kKmMgGtTpP]i?[bB])?$`)
 
 func (h *ByteSize) unmarshalShared(unmarshal func(interface{}) error) error {

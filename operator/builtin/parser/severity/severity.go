@@ -36,8 +36,8 @@ func NewSeverityParserConfig(operatorID string) *SeverityParserConfig {
 
 // SeverityParserConfig is the configuration of a severity parser operator.
 type SeverityParserConfig struct {
-	helper.TransformerConfig    `yaml:",inline"`
-	helper.SeverityParserConfig `yaml:",omitempty,inline"`
+	helper.TransformerConfig    `mapstructure:",squash" yaml:",inline"`
+	helper.SeverityParserConfig `mapstructure:",omitempty,squash" yaml:",omitempty,inline"`
 }
 
 // Build will build a time parser operator.

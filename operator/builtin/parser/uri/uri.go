@@ -38,7 +38,7 @@ func NewURIParserConfig(operatorID string) *URIParserConfig {
 
 // URIParserConfig is the configuration of a uri parser operator.
 type URIParserConfig struct {
-	helper.ParserConfig `yaml:",inline"`
+	helper.ParserConfig `mapstructure:",squash" yaml:",inline"`
 }
 
 // Build will build a uri parser operator.

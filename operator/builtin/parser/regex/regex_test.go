@@ -18,10 +18,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
-	"github.com/stretchr/testify/require"
 )
 
 func newTestParser(t *testing.T, regex string) *RegexParser {
@@ -156,5 +159,41 @@ func TestBuildParserRegex(t *testing.T) {
 		_, err := c.Build(testutil.NewBuildContext(t))
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "no named capture groups")
+	})
+}
+
+func TestRegexParserConfig(t *testing.T) {
+	expect := NewRegexParserConfig("test")
+	expect.Regex = "test123"
+	expect.ParseFrom = entry.NewRecordField("from")
+	expect.ParseTo = entry.NewRecordField("to")
+
+	t.Run("mapstructure", func(t *testing.T) {
+		input := map[string]interface{}{
+			"id":         "test",
+			"type":       "regex_parser",
+			"regex":      "test123",
+			"parse_from": "$.from",
+			"parse_to":   "$.to",
+			"on_error":   "send",
+		}
+		var actual RegexParserConfig
+		err := helper.UnmarshalMapstructure(input, &actual)
+		require.NoError(t, err)
+		require.Equal(t, expect, &actual)
+	})
+
+	t.Run("yaml", func(t *testing.T) {
+		input := `
+type: regex_parser
+id: test
+on_error: "send"
+regex: "test123"
+parse_from: $.from
+parse_to: $.to`
+		var actual RegexParserConfig
+		err := yaml.Unmarshal([]byte(input), &actual)
+		require.NoError(t, err)
+		require.Equal(t, expect, &actual)
 	})
 }

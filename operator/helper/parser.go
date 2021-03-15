@@ -34,13 +34,13 @@ func NewParserConfig(operatorID, operatorType string) ParserConfig {
 
 // ParserConfig provides the basic implementation of a parser config.
 type ParserConfig struct {
-	TransformerConfig `yaml:",inline"`
+	TransformerConfig `mapstructure:",squash" yaml:",inline"`
 
-	ParseFrom            entry.Field           `json:"parse_from"          yaml:"parse_from"`
-	ParseTo              entry.Field           `json:"parse_to"            yaml:"parse_to"`
-	PreserveTo           *entry.Field          `json:"preserve_to"         yaml:"preserve_to"`
-	TimeParser           *TimeParser           `json:"timestamp,omitempty" yaml:"timestamp,omitempty"`
-	SeverityParserConfig *SeverityParserConfig `json:"severity,omitempty"  yaml:"severity,omitempty"`
+	ParseFrom            entry.Field           `mapstructure:"parse_from"          json:"parse_from"          yaml:"parse_from"`
+	ParseTo              entry.Field           `mapstructure:"parse_to"            json:"parse_to"            yaml:"parse_to"`
+	PreserveTo           *entry.Field          `mapstructure:"preserve_to"         json:"preserve_to"         yaml:"preserve_to"`
+	TimeParser           *TimeParser           `mapstructure:"timestamp,omitempty" json:"timestamp,omitempty" yaml:"timestamp,omitempty"`
+	SeverityParserConfig *SeverityParserConfig `mapstructure:"severity,omitempty"  json:"severity,omitempty"  yaml:"severity,omitempty"`
 }
 
 // Build will build a parser operator.

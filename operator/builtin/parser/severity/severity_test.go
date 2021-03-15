@@ -17,12 +17,14 @@ package severity
 import (
 	"testing"
 
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 )
 
 type severityTestCase struct {
@@ -359,4 +361,39 @@ func makeTestEntry(field entry.Field, value interface{}) *entry.Entry {
 	e := entry.New()
 	e.Set(field, value)
 	return e
+}
+
+func TestSeverityParserConfig(t *testing.T) {
+	expect := NewSeverityParserConfig("test")
+	parseFrom := entry.NewRecordField("from")
+	expect.ParseFrom = &parseFrom
+	expect.Preset = "test"
+
+	t.Run("mapstructure", func(t *testing.T) {
+		input := map[string]interface{}{
+			"id":         "test",
+			"type":       "severity_parser",
+			"parse_from": "$.from",
+			"on_error":   "send",
+			"preset":     "test",
+		}
+		var actual SeverityParserConfig
+		err := helper.UnmarshalMapstructure(input, &actual)
+		require.NoError(t, err)
+		require.Equal(t, expect, &actual)
+	})
+
+	t.Run("yaml", func(t *testing.T) {
+		input := `
+type: severity_parser
+id: test
+on_error: "send"
+parse_from: $.from
+preset: test
+`
+		var actual SeverityParserConfig
+		err := yaml.Unmarshal([]byte(input), &actual)
+		require.NoError(t, err)
+		require.Equal(t, expect, &actual)
+	})
 }

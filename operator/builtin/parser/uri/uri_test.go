@@ -18,6 +18,10 @@ import (
 	"net/url"
 	"testing"
 
+	"gopkg.in/yaml.v2"
+
+	"github.com/open-telemetry/opentelemetry-log-collection/entry"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 
 	"github.com/stretchr/testify/require"
@@ -197,7 +201,7 @@ func TestParseURI(t *testing.T) {
 			"path",
 			"/docs",
 			map[string]interface{}{
-				"path":  "/docs",
+				"path": "/docs",
 			},
 			false,
 		},
@@ -205,7 +209,7 @@ func TestParseURI(t *testing.T) {
 			"path-advanced",
 			`/x/y%2Fz`,
 			map[string]interface{}{
-				"path":  `/x/y%2Fz`,
+				"path": `/x/y%2Fz`,
 			},
 			false,
 		},
@@ -213,7 +217,7 @@ func TestParseURI(t *testing.T) {
 			"path-root",
 			"/",
 			map[string]interface{}{
-				"path":  "/",
+				"path": "/",
 			},
 			false,
 		},
@@ -418,9 +422,9 @@ func TestURLToMap(t *testing.T) {
 		{
 			"absolute-uri",
 			url.URL{
-				Scheme: "https",
-				Host:   "google.com:8443",
-				Path:   "/app",
+				Scheme:   "https",
+				Host:     "google.com:8443",
+				Path:     "/app",
 				RawQuery: "stage=prod&stage=dev",
 			},
 			map[string]interface{}{
@@ -450,11 +454,11 @@ func TestURLToMap(t *testing.T) {
 		{
 			"path",
 			url.URL{
-				Path:   "/app",
+				Path:     "/app",
 				RawQuery: "stage=prod&stage=dev",
 			},
 			map[string]interface{}{
-				"path":   "/app",
+				"path": "/app",
 				"query": map[string]interface{}{
 					"stage": []interface{}{
 						"prod",
@@ -466,10 +470,10 @@ func TestURLToMap(t *testing.T) {
 		{
 			"path-simple",
 			url.URL{
-				Path:   "/app",
+				Path: "/app",
 			},
 			map[string]interface{}{
-				"path":   "/app",
+				"path": "/app",
 			},
 		},
 		{
@@ -607,4 +611,37 @@ func BenchmarkQueryParamValuesToMap(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		queryParamValuesToMap(v)
 	}
+}
+
+func TestURIParserConfig(t *testing.T) {
+	expect := NewURIParserConfig("test")
+	expect.ParseFrom = entry.NewRecordField("from")
+	expect.ParseTo = entry.NewRecordField("to")
+
+	t.Run("mapstructure", func(t *testing.T) {
+		input := map[string]interface{}{
+			"id":         "test",
+			"type":       "uri_parser",
+			"parse_from": "$.from",
+			"parse_to":   "$.to",
+			"on_error":   "send",
+		}
+		var actual URIParserConfig
+		err := helper.UnmarshalMapstructure(input, &actual)
+		require.NoError(t, err)
+		require.Equal(t, expect, &actual)
+	})
+
+	t.Run("yaml", func(t *testing.T) {
+		input := `
+type: uri_parser
+id: test
+on_error: "send"
+parse_from: $.from
+parse_to: $.to`
+		var actual URIParserConfig
+		err := yaml.Unmarshal([]byte(input), &actual)
+		require.NoError(t, err)
+		require.Equal(t, expect, &actual)
+	})
 }

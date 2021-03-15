@@ -37,7 +37,7 @@ func NewJSONParserConfig(operatorID string) *JSONParserConfig {
 
 // JSONParserConfig is the configuration of a JSON parser operator.
 type JSONParserConfig struct {
-	helper.ParserConfig `yaml:",inline"`
+	helper.ParserConfig `mapstructure:",squash" yaml:",inline"`
 }
 
 // Build will build a JSON parser operator.
