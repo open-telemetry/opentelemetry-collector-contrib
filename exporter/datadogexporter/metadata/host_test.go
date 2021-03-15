@@ -153,8 +153,8 @@ func TestGetClusterName(t *testing.T) {
 
 	// AWS
 	attrs = testutils.NewAttributeMap(map[string]string{
-		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
-		"ec2.tag.kubernetes.io/cluster/clustername":   "dummy_value",
+		conventions.AttributeCloudProvider:          conventions.AttributeCloudProviderAWS,
+		"ec2.tag.kubernetes.io/cluster/clustername": "dummy_value",
 	})
 	cluster, ok = getClusterName(attrs)
 	assert.True(t, ok)
