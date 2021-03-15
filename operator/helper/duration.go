@@ -17,6 +17,7 @@ package helper
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -79,7 +80,13 @@ func durationFromInterface(val interface{}) (time.Duration, error) {
 	case int:
 		return time.Duration(value) * time.Second, nil
 	case string:
-		var err error
+
+		if _, err := strconv.Atoi(value); err == nil {
+			value += "s" // int value with no unit
+		}
+		if _, err := strconv.ParseFloat(value, 64); err == nil {
+			value += "s" // float value with no unit
+		}
 		d, err := time.ParseDuration(value)
 		return d, err
 	default:
