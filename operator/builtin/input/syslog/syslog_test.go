@@ -20,13 +20,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/tcp"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/udp"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/syslog"
 	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
-	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 )
 
 func TestSyslogInput(t *testing.T) {
@@ -128,12 +129,12 @@ protocol: rfc5424
 tcp:
   listen_address: localhost:1234
   tls:
-    enable: true
+    ca_file: /tmp/test.ca 
 `
 	err = yaml.Unmarshal([]byte(base), &cfg)
 	require.NoError(t, err)
 	require.Equal(t, "rfc5424", cfg.Protocol)
 	require.Equal(t, "localhost:1234", cfg.Tcp.ListenAddress)
-	require.Equal(t, true, cfg.Tcp.TLS.Enable)
+	require.Equal(t, "/tmp/test.ca", cfg.Tcp.TLS.CAFile)
 
 }
