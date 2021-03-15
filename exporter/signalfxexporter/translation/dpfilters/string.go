@@ -20,16 +20,16 @@ import (
 	"github.com/gobwas/glob"
 )
 
-// stringFilter will match if any one of the given strings is a match.
-type stringFilter struct {
+// StringFilter will match if any one of the given strings is a match.
+type StringFilter struct {
 	staticSet        map[string]bool
 	regexps          []regexMatcher
 	globs            []globMatcher
 	anyStaticNegated bool
 }
 
-// newStringFilter returns a filter that can match against the provided items.
-func newStringFilter(items []string) (*stringFilter, error) {
+// NewStringFilter returns a filter that can match against the provided items.
+func NewStringFilter(items []string) (*StringFilter, error) {
 	staticSet := make(map[string]bool)
 	var regexps []regexMatcher
 	var globs []globMatcher
@@ -65,7 +65,7 @@ func newStringFilter(items []string) (*stringFilter, error) {
 		}
 	}
 
-	return &stringFilter{
+	return &StringFilter{
 		staticSet:        staticSet,
 		regexps:          regexps,
 		globs:            globs,
@@ -76,7 +76,7 @@ func newStringFilter(items []string) (*stringFilter, error) {
 // Matches if s is positively matched by the filter items OR
 // if it is positively matched by a non-glob/regex pattern exactly
 // and is negated as well.  See the unit tests for examples.
-func (f *stringFilter) Matches(s string) bool {
+func (f *StringFilter) Matches(s string) bool {
 	negated, matched := f.staticSet[s]
 	// If a metric is negated and it matched it won't match anything else by
 	// definition.

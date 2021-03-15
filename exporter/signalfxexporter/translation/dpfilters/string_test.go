@@ -153,7 +153,7 @@ func TestStringFilter(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			f, err := newStringFilter(test.filter)
+			f, err := NewStringFilter(test.filter)
 			if test.shouldError {
 				assert.NotNil(t, err)
 			} else {

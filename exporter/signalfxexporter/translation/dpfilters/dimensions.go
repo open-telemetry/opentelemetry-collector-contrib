@@ -21,7 +21,7 @@ import (
 )
 
 type dimensionsFilter struct {
-	filterMap map[string]*stringFilter
+	filterMap map[string]*StringFilter
 }
 
 // newDimensionsFilter returns a filter that matches against a
@@ -30,14 +30,14 @@ type dimensionsFilter struct {
 // there are no filters for any of the dimension keys in the slice,
 // the filter will return false.
 func newDimensionsFilter(m map[string][]string) (*dimensionsFilter, error) {
-	filterMap := map[string]*stringFilter{}
+	filterMap := map[string]*StringFilter{}
 	for k := range m {
 		if len(m[k]) == 0 {
 			return nil, errors.New("string map value in filter cannot be empty")
 		}
 
 		var err error
-		filterMap[k], err = newStringFilter(m[k])
+		filterMap[k], err = NewStringFilter(m[k])
 		if err != nil {
 			return nil, err
 		}
