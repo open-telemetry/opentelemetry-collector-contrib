@@ -46,7 +46,7 @@ func carbon2TagString(record metricPair) string {
 			"%s=%s",
 			sanitizeCarbonString(k),
 			sanitizeCarbonString(tracetranslator.AttributeValueToString(v, false)),
-			))
+		))
 	})
 
 	returnValue = append(returnValue, fmt.Sprintf("metric=%s", sanitizeCarbonString(record.metric.Name())))
@@ -60,7 +60,7 @@ func carbon2TagString(record metricPair) string {
 
 // sanitizeCarbonString replaces problematic characters with underscore
 func sanitizeCarbonString(text string) string {
-	return strings.NewReplacer(" ", "_", "=", "_", "\n", "_").Replace(text)
+	return strings.NewReplacer(" ", "_", "=", ":", "\n", "_").Replace(text)
 }
 
 // carbon2IntRecord converts IntDataPoint to carbon2 metric string

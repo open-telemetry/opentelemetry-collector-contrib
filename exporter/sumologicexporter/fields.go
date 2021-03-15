@@ -32,7 +32,7 @@ type fields struct {
 func newFields(attrMap pdata.AttributeMap) fields {
 	return fields{
 		orig:     attrMap,
-		replacer: strings.NewReplacer(",", "_", "=", "_", "\n", "_"),
+		replacer: strings.NewReplacer(",", "_", "=", ":", "\n", "_"),
 	}
 }
 
