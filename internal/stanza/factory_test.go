@@ -24,98 +24,173 @@ import (
 	"go.uber.org/zap"
 )
 
+type factoryTestCase struct {
+	name      string
+	cfgMod    cfgModFunc
+	expectErr bool
+}
+
+type cfgModFunc func(*TestConfig) *TestConfig
+
+type validationFunc func()
+
 func TestCreateReceiver(t *testing.T) {
-	params := component.ReceiverCreateParams{
-		Logger: zap.NewNop(),
+
+	testCases := []factoryTestCase{
+		{
+			name: "Simple",
+			cfgMod: func(cfg *TestConfig) *TestConfig {
+				cfg.Operators = []map[string]interface{}{
+					{
+						"type": "json_parser",
+					},
+				}
+				return cfg
+			},
+		},
+		{
+			name: "OffsetsFileDisabledDefault",
+			cfgMod: func(cfg *TestConfig) *TestConfig {
+				cfg.Operators = []map[string]interface{}{
+					{
+						"type": "json_parser",
+					},
+				}
+				cfg.OffsetsFile = OffsetsConfig{
+					Enabled: false,
+				}
+				return cfg
+			},
+		},
+		{
+			name: "OffsetsFileDisabledCustom",
+			cfgMod: func(cfg *TestConfig) *TestConfig {
+				cfg.Operators = []map[string]interface{}{
+					{
+						"type": "json_parser",
+					},
+				}
+				cfg.OffsetsFile = OffsetsConfig{
+					Enabled: false,
+					Path:    filepath.Join(newTempDir(t), "offsets.db"),
+				}
+				return cfg
+			},
+		},
+		{
+			name: "OffsetsFileEnabledDefault",
+			cfgMod: func(cfg *TestConfig) *TestConfig {
+				cfg.Operators = []map[string]interface{}{
+					{
+						"type": "json_parser",
+					},
+				}
+				cfg.OffsetsFile = OffsetsConfig{
+					Enabled: true,
+				}
+				return cfg
+			},
+		},
+		{
+			name: "OffsetsFileEnabledCustom",
+			cfgMod: func(cfg *TestConfig) *TestConfig {
+				cfg.Operators = []map[string]interface{}{
+					{
+						"type": "json_parser",
+					},
+				}
+				cfg.OffsetsFile = OffsetsConfig{
+					Enabled: true,
+					Path:    filepath.Join(newTempDir(t), "offsets.db"),
+				}
+				return cfg
+			},
+		},
+		{
+			name: "DecodeInputConfigFailure",
+			cfgMod: func(cfg *TestConfig) *TestConfig {
+				cfg.Input = map[string]interface{}{
+					"type": "unknown",
+				}
+				return cfg
+			},
+			expectErr: true,
+		},
+		{
+			name: "DecodeOperatorConfigsFailureMissingFields",
+			cfgMod: func(cfg *TestConfig) *TestConfig {
+				cfg.Operators = []map[string]interface{}{
+					{
+						"badparam": "badvalue",
+					},
+				}
+				return cfg
+			},
+			expectErr: true,
+		},
 	}
 
-	t.Run("Success", func(t *testing.T) {
-		factory := NewFactory(TestReceiverType{})
-		cfg := factory.CreateDefaultConfig().(*TestConfig)
-		cfg.Operators = []map[string]interface{}{
-			{
-				"type": "json_parser",
-			},
-		}
-		receiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, &mockLogsConsumer{})
-		require.NoError(t, err, "receiver creation failed")
-		require.NotNil(t, receiver, "receiver creation failed")
-	})
+	for _, tc := range testCases {
+		runCreateTest(t, tc)
+	}
+}
 
-	t.Run("SuccessWithOffsetsFile", func(t *testing.T) {
-		tempDir := newTempDir(t)
-		factory := NewFactory(TestReceiverType{})
-		cfg := factory.CreateDefaultConfig().(*TestConfig)
-		cfg.Operators = []map[string]interface{}{
-			{
-				"type": "json_parser",
-			},
-		}
-		cfg.OffsetsFile = filepath.Join(tempDir, "offsets.db")
-		receiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, &mockLogsConsumer{})
-		require.NoError(t, err, "receiver creation failed")
-		require.NotNil(t, receiver, "receiver creation failed")
-	})
+func runCreateTest(t *testing.T, tc factoryTestCase) {
+	factory := NewFactory(TestReceiverType{})
+	cfg := factory.CreateDefaultConfig().(*TestConfig)
+	cfg = tc.cfgMod(cfg)
+	receiver, err := factory.CreateLogsReceiver(context.Background(), params(), cfg, &mockLogsConsumer{})
 
-	t.Run("SuccessWithDifferentOffsetsFiles", func(t *testing.T) {
-		tempDir := newTempDir(t)
-		factory := NewFactory(TestReceiverType{})
-		cfg := factory.CreateDefaultConfig().(*TestConfig)
-		cfg.Operators = []map[string]interface{}{
-			{
-				"type": "json_parser",
-			},
-		}
-		cfg.OffsetsFile = filepath.Join(tempDir, "one.db")
-		receiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, &mockLogsConsumer{})
-		require.NoError(t, err, "receiver creation failed")
-		require.NotNil(t, receiver, "receiver creation failed")
+	if tc.expectErr {
+		require.Error(t, err)
+		require.Nil(t, receiver)
+	} else {
+		require.NoError(t, err)
+		require.NotNil(t, receiver)
+	}
+}
 
-		cfg.OffsetsFile = filepath.Join(tempDir, "two.db")
-		receiver, err = factory.CreateLogsReceiver(context.Background(), params, cfg, &mockLogsConsumer{})
-		require.NoError(t, err, "receiver creation failed")
-		require.NotNil(t, receiver, "receiver creation failed")
-	})
+func TestSuccessWithDifferentOffsetsFiles(t *testing.T) {
+	tempDir := newTempDir(t)
+	factory := NewFactory(TestReceiverType{})
+	cfg := factory.CreateDefaultConfig().(*TestConfig)
+	cfg.Operators = []map[string]interface{}{
+		{
+			"type": "json_parser",
+		},
+	}
+	cfg.OffsetsFile = OffsetsConfig{true, filepath.Join(tempDir, "one.db")}
+	receiver, err := factory.CreateLogsReceiver(context.Background(), params(), cfg, &mockLogsConsumer{})
+	require.NoError(t, err, "receiver creation failed")
+	require.NotNil(t, receiver, "receiver creation failed")
 
-	t.Run("FailureWithReusedOffsetsFile", func(t *testing.T) {
-		tempDir := newTempDir(t)
-		factory := NewFactory(TestReceiverType{})
-		cfg := factory.CreateDefaultConfig().(*TestConfig)
-		cfg.Operators = []map[string]interface{}{
-			{
-				"type": "json_parser",
-			},
-		}
-		cfg.OffsetsFile = filepath.Join(tempDir, "offsets.db")
-		receiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, &mockLogsConsumer{})
-		require.NoError(t, err, "receiver creation failed")
-		require.NotNil(t, receiver, "receiver creation failed")
+	cfg.OffsetsFile = OffsetsConfig{true, filepath.Join(tempDir, "two.db")}
+	receiver, err = factory.CreateLogsReceiver(context.Background(), params(), cfg, &mockLogsConsumer{})
+	require.NoError(t, err, "receiver creation failed")
+	require.NotNil(t, receiver, "receiver creation failed")
+}
 
-		receiver, err = factory.CreateLogsReceiver(context.Background(), params, cfg, &mockLogsConsumer{})
-		require.Error(t, err, "receiver creation fails due to open offsets file")
-	})
+// This behavior is not ideal, but it is currently expected
+func TestFailureWithReusedOffsetsFile(t *testing.T) {
+	tempDir := newTempDir(t)
+	factory := NewFactory(TestReceiverType{})
+	cfg := factory.CreateDefaultConfig().(*TestConfig)
+	cfg.Operators = []map[string]interface{}{
+		{
+			"type": "json_parser",
+		},
+	}
+	cfg.OffsetsFile = OffsetsConfig{true, filepath.Join(tempDir, "offsets.db")}
+	receiver, err := factory.CreateLogsReceiver(context.Background(), params(), cfg, &mockLogsConsumer{})
+	require.NoError(t, err, "receiver creation failed")
+	require.NotNil(t, receiver, "receiver creation failed")
 
-	t.Run("DecodeInputConfigFailure", func(t *testing.T) {
-		factory := NewFactory(TestReceiverType{})
-		badCfg := factory.CreateDefaultConfig().(*TestConfig)
-		badCfg.Input = map[string]interface{}{
-			"type": "unknown",
-		}
-		receiver, err := factory.CreateLogsReceiver(context.Background(), params, badCfg, &mockLogsConsumer{})
-		require.Error(t, err, "receiver creation should fail if input config isn't valid")
-		require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
-	})
+	receiver, err = factory.CreateLogsReceiver(context.Background(), params(), cfg, &mockLogsConsumer{})
+	require.Error(t, err, "receiver creation fails due to open offsets file")
+}
 
-	t.Run("DecodeOperatorConfigsFailureMissingFields", func(t *testing.T) {
-		factory := NewFactory(TestReceiverType{})
-		badCfg := factory.CreateDefaultConfig().(*TestConfig)
-		badCfg.Operators = []map[string]interface{}{
-			{
-				"badparam": "badvalue",
-			},
-		}
-		receiver, err := factory.CreateLogsReceiver(context.Background(), params, badCfg, &mockLogsConsumer{})
-		require.Error(t, err, "receiver creation should fail if parser configs aren't valid")
-		require.Nil(t, receiver, "receiver creation should fail if parser configs aren't valid")
-	})
+func params() component.ReceiverCreateParams {
+	return component.ReceiverCreateParams{
+		Logger: zap.NewNop(),
+	}
 }

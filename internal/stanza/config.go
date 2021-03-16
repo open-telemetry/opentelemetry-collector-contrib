@@ -24,7 +24,13 @@ import (
 type BaseConfig struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 	Operators                     OperatorConfigs `mapstructure:"operators"`
-	OffsetsFile                   string          `mapstructure:"offsets_file"`
+	OffsetsFile                   OffsetsConfig   `mapstructure:"offsets_file"`
+}
+
+// OffsetsConfig allows for configuration of a persistance offsets tracking file
+type OffsetsConfig struct {
+	Enabled bool   `mapstructure:"enabled"`
+	Path    string `mapstructure:"path"`
 }
 
 // OperatorConfigs is an alias that allows for unmarshaling outside of mapstructure

@@ -65,7 +65,10 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 			return nil, err
 		}
 
-		offsetsFile := getOffsetsFile(baseCfg.OffsetsFile, cfg.Name())
+		offsetsFile, err := getOffsetsFile(baseCfg.OffsetsFile, cfg.Name())
+		if err != nil {
+			return nil, err
+		}
 
 		pipeline := append([]operator.Config{*inputCfg}, operatorCfgs...)
 
@@ -88,25 +91,27 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 	}
 }
 
-func getOffsetsFile(path, name string) string {
+func getOffsetsFile(cfg OffsetsConfig, componentName string) (string, error) {
 
-	if path == "disabled" {
-		return "" // disables offsets file
+	if !cfg.Enabled {
+		return "", nil
 	}
 
-	if path != "" {
-		return path // user specified
+	if cfg.Path != "" { // user specified
+		return cfg.Path, nil
 	}
 
 	offsetsDir := getOffsetsDir()
 	if _, err := os.Stat(offsetsDir); os.IsNotExist(err) {
-		// TODO mkdir -p?
-
+		// TODO should otelcol manage directories for components?
+		if err := os.MkdirAll(offsetsDir, os.ModePerm); err != nil {
+			return "", err
+		}
 	}
 
-	// TODO make name pathsafe based on OS
-	filename := fmt.Sprintf("%s.db", name)
-	return filepath.Join(getOffsetsDir(), filename)
+	// TODO does componentName need to be made pathsafe?
+	filename := fmt.Sprintf("%s.db", componentName)
+	return filepath.Join(getOffsetsDir(), filename), nil
 
 }
 
