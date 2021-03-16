@@ -1,5 +1,5 @@
 receivers:
-  examplereceiver:
+  nop:
 
 exporters:
   awskinesis:
@@ -27,11 +27,11 @@ exporters:
         max_backoff_seconds: 18
 
 processors:
-  exampleprocessor:
+  nop:
 
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
+      receivers: [nop]
+      processors: [nop]
       exporters: [awskinesis]

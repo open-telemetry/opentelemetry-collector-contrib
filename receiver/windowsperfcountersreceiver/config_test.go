@@ -29,7 +29,7 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	factory := NewFactory()
@@ -129,7 +129,7 @@ func TestLoadConfig_Error(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			factories, err := componenttest.ExampleComponents()
+			factories, err := componenttest.NopFactories()
 			require.NoError(t, err)
 
 			factory := NewFactory()

@@ -26,7 +26,7 @@ import (
 )
 
 func TestLoadConfig(tester *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.Nil(tester, err)
 
 	factory := NewFactory()

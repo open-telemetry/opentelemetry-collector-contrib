@@ -1,5 +1,5 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
   metricstransform:
@@ -57,15 +57,15 @@ processors:
         group_resource_labels: {"metric_group": "2"}
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors: [metricstransform]
-      exporters: [exampleexporter]
+      exporters: [nop]
     metrics:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors: [metricstransform]
-      exporters: [exampleexporter]
+      exporters: [nop]

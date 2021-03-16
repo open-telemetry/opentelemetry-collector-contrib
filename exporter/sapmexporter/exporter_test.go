@@ -224,13 +224,11 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 			assert.NotNil(t, se, "failed to create trace exporter")
 
 			trace := buildTestTrace(!tt.translateError)
-			dropped, err := se.pushTraceData(context.Background(), trace)
+			err = se.pushTraceData(context.Background(), trace)
 
 			if tt.sendError || tt.translateError {
-				assert.Equal(t, 2, dropped)
 				require.Error(t, err)
 			} else {
-				assert.Equal(t, 0, dropped)
 				require.NoError(t, err)
 			}
 		})

@@ -24,10 +24,10 @@ receivers:
 
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
@@ -36,5 +36,5 @@ service:
         - prometheus_simple
         - prometheus_simple/all_settings
         - prometheus_simple/partial_settings
-      processors: [exampleprocessor]
-      exporters: [exampleexporter]
+      processors: [nop]
+      exporters: [nop]

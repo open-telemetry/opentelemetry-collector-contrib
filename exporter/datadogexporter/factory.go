@@ -104,7 +104,7 @@ func createMetricsExporter(
 	var pushMetricsFn exporterhelper.PushMetrics
 
 	if cfg.OnlyMetadata {
-		pushMetricsFn = func(_ context.Context, md pdata.Metrics) (int, error) {
+		pushMetricsFn = func(_ context.Context, md pdata.Metrics) error {
 			// only sending metadata use only metrics
 			once := cfg.OnceMetadata()
 			once.Do(func() {
@@ -114,7 +114,7 @@ func createMetricsExporter(
 				}
 				go metadata.Pusher(ctx, params, cfg, attrs)
 			})
-			return 0, nil
+			return nil
 		}
 	} else {
 		pushMetricsFn = newMetricsExporter(ctx, params, cfg).PushMetricsData
@@ -154,7 +154,7 @@ func createTraceExporter(
 	var pushTracesFn exporterhelper.PushTraces
 
 	if cfg.OnlyMetadata {
-		pushTracesFn = func(_ context.Context, td pdata.Traces) (int, error) {
+		pushTracesFn = func(_ context.Context, td pdata.Traces) error {
 			// only sending metadata, use only attributes
 			once := cfg.OnceMetadata()
 			once.Do(func() {
@@ -164,7 +164,7 @@ func createTraceExporter(
 				}
 				go metadata.Pusher(ctx, params, cfg, attrs)
 			})
-			return 0, nil
+			return nil
 		}
 	} else {
 		pushTracesFn = newTraceExporter(ctx, params, cfg).pushTraceData

@@ -101,9 +101,8 @@ func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (*honeycombExpor
 
 // pushTraceData is the method called when trace data is available. It will be
 // responsible for sending a batch of events.
-func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, error) {
+func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
 	var errs []error
-	goodSpans := 0
 
 	// Run the error logger. This just listens for messages in the error
 	// response queue and writes them out using the logger.
@@ -167,14 +166,12 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) 
 
 				if err := ev.SendPresampled(); err != nil {
 					errs = append(errs, err)
-				} else {
-					goodSpans++
 				}
 			}
 		}
 	}
 
-	return td.SpanCount() - goodSpans, consumererror.CombineErrors(errs)
+	return consumererror.CombineErrors(errs)
 }
 
 func getSpanKind(kind pdata.SpanKind) string {

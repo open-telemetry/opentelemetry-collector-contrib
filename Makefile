@@ -12,6 +12,9 @@ BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
 BUILD_X3=-X go.opentelemetry.io/collector/internal/version.BuildType=$(BUILD_TYPE)
 BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
 
+# ALL_MODULES includes ./* dirs (excludes . dir and example with go code)
+ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
+
 # Modules to run integration tests on.
 # XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
 INTEGRATION_TEST_MODULES := \
@@ -23,8 +26,11 @@ INTEGRATION_TEST_MODULES := \
 
 .DEFAULT_GOAL := all
 
+all-modules:
+	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
+
 .PHONY: all
-all: common otelcontribcol otelcontribcol-unstable
+all: common gotest otelcontribcol otelcontribcol-unstable
 
 .PHONY: e2e-test
 e2e-test: otelcontribcol otelcontribcol-unstable
@@ -52,6 +58,10 @@ stability-tests: otelcontribcol
 gotidy:
 	$(MAKE) for-all CMD="rm -fr go.sum"
 	$(MAKE) for-all CMD="go mod tidy"
+
+.PHONY: gotest
+gotest:
+	$(MAKE) for-all CMD="make test"
 
 .PHONY: gofmt
 gofmt:

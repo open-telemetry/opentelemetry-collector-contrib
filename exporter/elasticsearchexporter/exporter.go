@@ -86,7 +86,7 @@ func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 	return e.bulkIndexer.Close(ctx)
 }
 
-func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld pdata.Logs) (dropped int, err error) {
+func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld pdata.Logs) error {
 	panic("TODO")
 }
 

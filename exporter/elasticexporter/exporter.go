@@ -44,19 +44,17 @@ func newElasticTraceExporter(
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elastic APM trace exporter: %v", err)
 	}
-	return exporterhelper.NewTraceExporter(cfg, params.Logger, func(ctx context.Context, traces pdata.Traces) (int, error) {
-		var dropped int
+	return exporterhelper.NewTraceExporter(cfg, params.Logger, func(ctx context.Context, traces pdata.Traces) error {
 		var errs []error
 		resourceSpansSlice := traces.ResourceSpans()
 		for i := 0; i < resourceSpansSlice.Len(); i++ {
 			resourceSpans := resourceSpansSlice.At(i)
-			n, err := exporter.ExportResourceSpans(ctx, resourceSpans)
+			_, err := exporter.ExportResourceSpans(ctx, resourceSpans)
 			if err != nil {
 				errs = append(errs, err)
 			}
-			dropped += n
 		}
-		return dropped, consumererror.CombineErrors(errs)
+		return consumererror.CombineErrors(errs)
 	})
 }
 
@@ -68,19 +66,17 @@ func newElasticMetricsExporter(
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elastic APM metrics exporter: %v", err)
 	}
-	return exporterhelper.NewMetricsExporter(cfg, params.Logger, func(ctx context.Context, input pdata.Metrics) (int, error) {
-		var dropped int
+	return exporterhelper.NewMetricsExporter(cfg, params.Logger, func(ctx context.Context, input pdata.Metrics) error {
 		var errs []error
 		resourceMetricsSlice := input.ResourceMetrics()
 		for i := 0; i < resourceMetricsSlice.Len(); i++ {
 			resourceMetrics := resourceMetricsSlice.At(i)
-			n, err := exporter.ExportResourceMetrics(ctx, resourceMetrics)
+			_, err := exporter.ExportResourceMetrics(ctx, resourceMetrics)
 			if err != nil {
 				errs = append(errs, err)
 			}
-			dropped += n
 		}
-		return dropped, consumererror.CombineErrors(errs)
+		return consumererror.CombineErrors(errs)
 	})
 }
 

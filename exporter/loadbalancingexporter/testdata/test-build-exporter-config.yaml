@@ -1,5 +1,5 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
 
@@ -17,7 +17,7 @@ service:
   pipelines:
     traces:
       receivers:
-      - examplereceiver
+      - nop
       processors: []
       exporters:
       - loadbalancing

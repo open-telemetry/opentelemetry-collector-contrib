@@ -1,5 +1,5 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
   groupbytrace/custom:
@@ -7,11 +7,11 @@ processors:
     num_traces: 1000
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors: [groupbytrace/custom]
-      exporters: [exampleexporter]
+      exporters: [nop]

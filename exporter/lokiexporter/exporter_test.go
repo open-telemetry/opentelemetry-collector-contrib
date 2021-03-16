@@ -151,7 +151,6 @@ func TestExporter_pushLogData(t *testing.T) {
 		testServer       bool
 		config           *Config
 		genLogsFunc      func() pdata.Logs
-		numDroppedLogs   int
 		errFunc          func(err error)
 	}{
 		{
@@ -169,7 +168,6 @@ func TestExporter_pushLogData(t *testing.T) {
 			httpResponseCode: http.StatusInternalServerError,
 			testServer:       true,
 			genLogsFunc:      genericGenLogsFunc,
-			numDroppedLogs:   10,
 			errFunc: func(err error) {
 				e := err.(consumererror.PartialError)
 				require.Equal(t, 10, e.GetLogs().LogRecordCount())
@@ -182,7 +180,6 @@ func TestExporter_pushLogData(t *testing.T) {
 			httpResponseCode: 0,
 			testServer:       false,
 			genLogsFunc:      genericGenLogsFunc,
-			numDroppedLogs:   10,
 			errFunc: func(err error) {
 				e := err.(consumererror.PartialError)
 				require.Equal(t, 10, e.GetLogs().LogRecordCount())
@@ -200,7 +197,6 @@ func TestExporter_pushLogData(t *testing.T) {
 						"not.a.match": pdata.NewAttributeValueString("random"),
 					}))
 			},
-			numDroppedLogs: 10,
 			errFunc: func(err error) {
 				require.True(t, consumererror.IsPermanent(err))
 				require.Equal(t, "Permanent error: failed to transform logs into Loki log streams", err.Error())
@@ -231,7 +227,6 @@ func TestExporter_pushLogData(t *testing.T) {
 
 				return outLogs
 			},
-			numDroppedLogs: 5,
 		},
 	}
 	for _, tt := range tests {
@@ -256,7 +251,7 @@ func TestExporter_pushLogData(t *testing.T) {
 			err = exp.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
-			numDroppedLogs, err := exp.pushLogData(context.Background(), tt.genLogsFunc())
+			err = exp.pushLogData(context.Background(), tt.genLogsFunc())
 
 			if tt.errFunc != nil {
 				tt.errFunc(err)
@@ -264,7 +259,6 @@ func TestExporter_pushLogData(t *testing.T) {
 			}
 
 			assert.NoError(t, err)
-			assert.Equal(t, tt.numDroppedLogs, numDroppedLogs)
 		})
 	}
 }

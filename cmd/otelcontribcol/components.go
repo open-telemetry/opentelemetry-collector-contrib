@@ -16,7 +16,6 @@ package main
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
@@ -45,6 +44,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
@@ -75,7 +75,6 @@ import (
 )
 
 func components() (component.Factories, error) {
-	var errs []error
 	factories, err := defaultcomponents.Components()
 	if err != nil {
 		return component.Factories{}, err
@@ -93,7 +92,7 @@ func components() (component.Factories, error) {
 
 	factories.Extensions, err = component.MakeExtensionFactoryMap(extensions...)
 	if err != nil {
-		errs = append(errs, err)
+		return component.Factories{}, err
 	}
 
 	receivers := []component.ReceiverFactory{
@@ -126,7 +125,7 @@ func components() (component.Factories, error) {
 	}
 	factories.Receivers, err = component.MakeReceiverFactoryMap(receivers...)
 	if err != nil {
-		errs = append(errs, err)
+		return component.Factories{}, err
 	}
 
 	exporters := []component.ExporterFactory{
@@ -159,10 +158,11 @@ func components() (component.Factories, error) {
 	}
 	factories.Exporters, err = component.MakeExporterFactoryMap(exporters...)
 	if err != nil {
-		errs = append(errs, err)
+		return component.Factories{}, err
 	}
 
 	processors := []component.ProcessorFactory{
+		groupbyattrsprocessor.NewFactory(),
 		groupbytraceprocessor.NewFactory(),
 		k8sprocessor.NewFactory(),
 		metricstransformprocessor.NewFactory(),
@@ -176,8 +176,8 @@ func components() (component.Factories, error) {
 	}
 	factories.Processors, err = component.MakeProcessorFactoryMap(processors...)
 	if err != nil {
-		errs = append(errs, err)
+		return component.Factories{}, err
 	}
 
-	return factories, consumererror.CombineErrors(errs)
+	return factories, nil
 }

@@ -15,14 +15,14 @@ receivers:
     group_match: test_*
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     metrics:
       receivers: [ kafkametrics ]
-      processors: [ exampleprocessor ]
-      exporters: [ exampleexporter ]
+      processors: [ nop ]
+      exporters: [ nop ]
