@@ -35,38 +35,30 @@ var once sync.Once
 
 // NewFactory creates a factory for the googlecloud exporter
 func NewFactory() component.ExporterFactory {
-	return NewFactoryWithTypeStr(typeStr)
-}
-
-// creates a factory for the googlecloud exporter, overriding the type string
-// used in config
-func NewFactoryWithTypeStr(ts string) component.ExporterFactory {
 	// register view for self-observability
 	once.Do(func() {
 		view.Register(viewPointCount)
 	})
 
 	return exporterhelper.NewFactory(
-		configmodels.Type(ts),
-		createDefaultConfigWithTypeStr(ts),
+		typeStr,
+		createDefaultConfig,
 		exporterhelper.WithTraces(createTraceExporter),
 		exporterhelper.WithMetrics(createMetricsExporter),
 	)
 }
 
 // createDefaultConfig creates the default configuration for exporter.
-func createDefaultConfigWithTypeStr(ts string) exporterhelper.CreateDefaultConfig {
-	return func() configmodels.Exporter {
-		return &Config{
-			ExporterSettings: configmodels.ExporterSettings{
-				TypeVal: configmodels.Type(ts),
-				NameVal: ts,
-			},
-			TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
-			RetrySettings:   exporterhelper.DefaultRetrySettings(),
-			QueueSettings:   exporterhelper.DefaultQueueSettings(),
-			UserAgent:       "opentelemetry-collector-contrib {{version}}",
-		}
+func createDefaultConfig() configmodels.Exporter {
+	return &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
+		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
+		RetrySettings:   exporterhelper.DefaultRetrySettings(),
+		QueueSettings:   exporterhelper.DefaultQueueSettings(),
+		UserAgent:       "opentelemetry-collector-contrib {{version}}",
 	}
 }
 

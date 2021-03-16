@@ -15,10 +15,17 @@
 package stackdriverexporter
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configmodels"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 )
+
+type factory struct {
+	delegate component.ExporterFactory
+}
 
 const (
 	// The value of "type" key in configuration.
@@ -27,5 +34,39 @@ const (
 
 // NewFactory creates a factory for the stackdriver exporter
 func NewFactory() component.ExporterFactory {
-	return googlecloudexporter.NewFactoryWithTypeStr(typeStr)
+	return &factory{delegate: googlecloudexporter.NewFactory()}
+}
+
+func (*factory) Type() configmodels.Type {
+	return configmodels.Type(typeStr)
+}
+
+func (f *factory) CreateDefaultConfig() configmodels.Exporter {
+	cfg := f.delegate.CreateDefaultConfig()
+	cfg.(*googlecloudexporter.Config).TypeVal = f.Type()
+	return cfg
+}
+
+func (f *factory) CreateTracesExporter(
+	ctx context.Context,
+	params component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.TracesExporter, error) {
+	return f.delegate.CreateTracesExporter(ctx, params, cfg)
+}
+
+func (f *factory) CreateMetricsExporter(
+	ctx context.Context,
+	params component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.MetricsExporter, error) {
+	return f.delegate.CreateMetricsExporter(ctx, params, cfg)
+}
+
+func (f *factory) CreateLogsExporter(
+	ctx context.Context,
+	params component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.LogsExporter, error) {
+	return f.delegate.CreateLogsExporter(ctx, params, cfg)
 }
