@@ -5,8 +5,8 @@ processors:
   nop:
 
 exporters:
-  stackdriver:
-  stackdriver/customname:
+  googlecloud:
+  googlecloud/customname:
     project: my-project
     endpoint: test-endpoint
     user_agent: opentelemetry-collector-contrib {{version}}
@@ -16,7 +16,7 @@ exporters:
       - source_type: source.resource1
         target_type: target-resource1
         label_mappings:
-          - source_key: contrib.opencensus.io/exporter/stackdriver/project_id
+          - source_key: contrib.opencensus.io/exporter/googlecloud/project_id
             target_key: project_id
             optional: true
           - source_key: source.label1
@@ -41,5 +41,5 @@ service:
     traces:
         receivers: [nop]
         processors: [nop]
-        exporters: [stackdriver]
+        exporters: [googlecloud]
 

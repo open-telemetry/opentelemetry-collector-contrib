@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stackdriverexporter
+package googlecloudexporter
 
 import (
 	"context"
@@ -55,7 +55,7 @@ func (ts *testServer) CreateSpan(context.Context, *cloudtracepb.Span) (*cloudtra
 	return nil, nil
 }
 
-func TestStackdriverTraceExport(t *testing.T) {
+func TestGoogleCloudTraceExport(t *testing.T) {
 	type testCase struct {
 		name        string
 		cfg         *Config
@@ -97,7 +97,7 @@ func TestStackdriverTraceExport(t *testing.T) {
 			go srv.Serve(lis)
 
 			createParams := component.ExporterCreateParams{Logger: zap.NewNop(), ApplicationStartInfo: component.ApplicationStartInfo{Version: "v0.0.1"}}
-			sde, err := newStackdriverTraceExporter(test.cfg, createParams)
+			sde, err := newGoogleCloudTraceExporter(test.cfg, createParams)
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
 				return
@@ -164,7 +164,7 @@ func (ms *mockMetricServer) CreateTimeSeries(ctx context.Context, req *cloudmoni
 	return &emptypb.Empty{}, nil
 }
 
-func TestStackdriverMetricExport(t *testing.T) {
+func TestGoogleCloudMetricExport(t *testing.T) {
 	srv := grpc.NewServer()
 
 	descriptorReqCh := make(chan *requestWithMetadata)
@@ -185,7 +185,7 @@ func TestStackdriverMetricExport(t *testing.T) {
 		option.WithTelemetryDisabled(),
 	}
 
-	sde, err := newStackdriverMetricsExporter(&Config{
+	sde, err := newGoogleCloudMetricsExporter(&Config{
 		ProjectID:   "idk",
 		Endpoint:    "127.0.0.1:8080",
 		UserAgent:   "MyAgent {{version}}",

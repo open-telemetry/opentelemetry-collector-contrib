@@ -29,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
@@ -39,7 +40,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
@@ -140,6 +140,7 @@ func components() (component.Factories, error) {
 		dynatraceexporter.NewFactory(),
 		elasticexporter.NewFactory(),
 		f5cloudexporter.NewFactory(),
+		googlecloudexporter.NewFactory(),
 		honeycombexporter.NewFactory(),
 		jaegerthrifthttpexporter.NewFactory(),
 		loadbalancingexporter.NewFactory(),
@@ -150,7 +151,6 @@ func components() (component.Factories, error) {
 		sentryexporter.NewFactory(),
 		signalfxexporter.NewFactory(),
 		splunkhecexporter.NewFactory(),
-		stackdriverexporter.NewFactory(),
 		sumologicexporter.NewFactory(),
 	}
 	for _, exp := range factories.Exporters {

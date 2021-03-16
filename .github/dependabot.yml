@@ -55,6 +55,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/exporter/googlecloudexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/exporter/honeycombexporter"
     schedule:
       interval: "weekly"
@@ -95,10 +99,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/exporter/stackdriverexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/exporter/sumologicexporter"
     schedule:
       interval: "weekly"
@@ -120,6 +120,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/extension/observer/k8sobserver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/aws"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -156,6 +160,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/pkg/batchperresourceattr"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/batchpersignal"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

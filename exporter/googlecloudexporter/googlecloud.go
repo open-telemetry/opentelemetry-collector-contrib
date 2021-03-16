@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package stackdriverexporter contains the wrapper for OpenTelemetry-Stackdriver
+// Package googlecloudexporter contains the wrapper for OpenTelemetry-GoogleCloud
 // exporter to be used in opentelemetry-collector.
-package stackdriverexporter
+package googlecloudexporter
 
 import (
 	"context"
@@ -87,7 +87,7 @@ func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
 	return copts, nil
 }
 
-func newStackdriverTraceExporter(cfg *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
+func newGoogleCloudTraceExporter(cfg *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
 	setVersionInUserAgent(cfg, params.ApplicationStartInfo.Version)
 
 	topts := []cloudtrace.Option{
@@ -103,7 +103,7 @@ func newStackdriverTraceExporter(cfg *Config, params component.ExporterCreatePar
 
 	exp, err := cloudtrace.NewExporter(topts...)
 	if err != nil {
-		return nil, fmt.Errorf("error creating Stackdriver Trace exporter: %w", err)
+		return nil, fmt.Errorf("error creating GoogleCloud Trace exporter: %w", err)
 	}
 
 	tExp := &traceExporter{texporter: exp}
@@ -120,11 +120,11 @@ func newStackdriverTraceExporter(cfg *Config, params component.ExporterCreatePar
 		exporterhelper.WithRetry(cfg.RetrySettings))
 }
 
-func newStackdriverMetricsExporter(cfg *Config, params component.ExporterCreateParams) (component.MetricsExporter, error) {
+func newGoogleCloudMetricsExporter(cfg *Config, params component.ExporterCreateParams) (component.MetricsExporter, error) {
 	setVersionInUserAgent(cfg, params.ApplicationStartInfo.Version)
 
 	// TODO:  For each ProjectID, create a different exporter
-	// or at least a unique Stackdriver client per ProjectID.
+	// or at least a unique Google Cloud client per ProjectID.
 	options := stackdriver.Options{
 		// If the project ID is an empty string, it will be set by default based on
 		// the project this is running on in GCP.
@@ -162,7 +162,7 @@ func newStackdriverMetricsExporter(cfg *Config, params component.ExporterCreateP
 
 	sde, serr := stackdriver.NewExporter(options)
 	if serr != nil {
-		return nil, fmt.Errorf("cannot configure Stackdriver metric exporter: %w", serr)
+		return nil, fmt.Errorf("cannot configure Google Cloud metric exporter: %w", serr)
 	}
 	mExp := &metricsExporter{mexporter: sde}
 
