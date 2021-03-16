@@ -27,16 +27,16 @@ import (
 )
 
 func init() {
-	operator.Register("windows_eventlog_input", NewDefaultConfig)
+	operator.Register("windows_eventlog_input", func() operator.Builder { return NewDefaultConfig() })
 }
 
 // EventLogConfig is the configuration of a windows event log operator.
 type EventLogConfig struct {
-	helper.InputConfig `yaml:",inline"`
-	Channel            string          `json:"channel" yaml:"channel"`
-	MaxReads           int             `json:"max_reads,omitempty" yaml:"max_reads,omitempty"`
-	StartAt            string          `json:"start_at,omitempty" yaml:"start_at,omitempty"`
-	PollInterval       helper.Duration `json:"poll_interval,omitempty" yaml:"poll_interval,omitempty"`
+	helper.InputConfig `mapstructure:",squash" yaml:",inline"`
+	Channel            string          `mapstructure:"channel" json:"channel" yaml:"channel"`
+	MaxReads           int             `mapstructure:"max_reads,omitempty" json:"max_reads,omitempty" yaml:"max_reads,omitempty"`
+	StartAt            string          `mapstructure:"start_at,omitempty" json:"start_at,omitempty" yaml:"start_at,omitempty"`
+	PollInterval       helper.Duration `mapstructure:"poll_interval,omitempty" json:"poll_interval,omitempty" yaml:"poll_interval,omitempty"`
 }
 
 // Build will build a windows event log operator.
@@ -73,7 +73,7 @@ func (c *EventLogConfig) Build(context operator.BuildContext) ([]operator.Operat
 }
 
 // NewDefaultConfig will return an event log config with default values.
-func NewDefaultConfig() operator.Builder {
+func NewDefaultConfig() *EventLogConfig {
 	return &EventLogConfig{
 		InputConfig: helper.NewInputConfig("", "windows_eventlog_input"),
 		MaxReads:    100,
