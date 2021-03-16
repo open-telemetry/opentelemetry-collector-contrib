@@ -61,7 +61,22 @@ func convertToOTLPMetrics(prefix string, m ECSMetrics, r pdata.Resource, timesta
 	return rms
 }
 
+func convertStoppedContainerDataToOTMetrics(prefix string, containerResource pdata.Resource, timestamp pdata.Timestamp, duration float64) pdata.ResourceMetricsSlice {
+	rms := pdata.NewResourceMetricsSlice()
+	rms.Resize(1)
+	rm := rms.At(0)
+
+	containerResource.CopyTo(rm.Resource())
+
+	ilms := rm.InstrumentationLibraryMetrics()
+
+	ilms.Append(doubleGauge(prefix+AttributeDuration, UnitSecond, duration, timestamp))
+
+	return rms
+}
+
 func intGauge(metricName string, unit string, value int64, ts pdata.Timestamp) pdata.InstrumentationLibraryMetrics {
+
 	ilm := pdata.NewInstrumentationLibraryMetrics()
 
 	metric := initMetric(ilm, metricName, unit)

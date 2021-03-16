@@ -268,8 +268,7 @@ func Test_connPool_Concurrency(t *testing.T) {
 		go func() {
 			<-startCh
 			for i := 0; i < writesPerRoutine; i++ {
-				_, err := sender.pushMetricsData(ctx, md)
-				assert.NoError(t, err)
+				assert.NoError(t, sender.pushMetricsData(ctx, md))
 			}
 			writersWG.Done()
 		}()

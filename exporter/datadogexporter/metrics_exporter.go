@@ -54,7 +54,7 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreatePara
 	return &metricsExporter{params, cfg, ctx, client, prevPts}
 }
 
-func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
+func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error {
 
 	// Start host metadata with resource attributes from
 	// the first payload.
@@ -69,10 +69,10 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 		})
 	}
 
-	ms, droppedTimeSeries := mapMetrics(exp.cfg.Metrics, exp.prevPts, md)
+	ms, _ := mapMetrics(exp.cfg.Metrics, exp.prevPts, md)
 
 	metrics.ProcessMetrics(ms, exp.params.Logger, exp.cfg)
 
 	err := exp.client.PostMetrics(ms)
-	return droppedTimeSeries, err
+	return err
 }

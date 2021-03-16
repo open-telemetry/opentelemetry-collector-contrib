@@ -44,6 +44,7 @@ type Config struct {
 
 	// Metrics related configuration
 	// The format of metrics you will be sending, either graphite or carbon2 or prometheus (Default is prometheus)
+	// Possible values are `carbon2` and `prometheus`
 	MetricFormat MetricFormatType `mapstructure:"metric_format"`
 
 	// List of regexes for attributes which should be send as metadata

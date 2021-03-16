@@ -38,6 +38,7 @@ exporter/signalfxexporter/                           @open-telemetry/collector-c
 exporter/signalfxcorrelationexporter/                @open-telemetry/collector-contrib-approvers @jrcamp @keitwb
 exporter/splunkhecexporter/                          @open-telemetry/collector-contrib-approvers @atoulme
 exporter/stackdriverexporter/                        @open-telemetry/collector-contrib-approvers @dashpole
+exporter/googlecloudexporter/                        @open-telemetry/collector-contrib-approvers @dashpole
 exporter/sumologicexporter/                          @open-telemetry/collector-contrib-approvers @pmm-sumo @sumo-drosiek
 exporter/uptraceexporter/                            @open-telemetry/collector-contrib-approvers @vmihailenco
 

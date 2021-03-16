@@ -43,7 +43,7 @@ func TestCreateTraceExporterError(t *testing.T) {
 }
 
 func TestCreateTraceExporterLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	factory := NewFactory()

@@ -315,7 +315,7 @@ func translateCWMetricToEMF(cWMetric *CWMetrics) *LogEvent {
 	}
 
 	metricCreationTime := cWMetric.TimestampMs
-	logEvent := NewLogEvent(
+	logEvent := newLogEvent(
 		metricCreationTime,
 		string(pleMsg),
 	)

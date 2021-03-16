@@ -40,7 +40,7 @@ import (
 
 // loadConfigAssertNoError loads the test config and asserts there are no errors, and returns the receiver wanted
 func loadConfigAssertNoError(t *testing.T, receiverConfigName string) configmodels.Receiver {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()

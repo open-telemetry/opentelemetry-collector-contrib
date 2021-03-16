@@ -777,3 +777,35 @@ func TestMetricsBufferOverflow(t *testing.T) {
 	assert.EqualError(t, err, `parse ":": missing protocol scheme`)
 	assert.Equal(t, 0, test.s.countMetrics())
 }
+
+func TestSendCarbon2Metrics(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
+		func(w http.ResponseWriter, req *http.Request) {
+			body := extractBody(t, req)
+			expected := `test=test_value test2=second_value _unit=m/s metric=true metric=test.metric.data unit=bytes  14500 1605534165
+foo=bar metric=gauge_metric_name  124 1608124661
+foo=bar metric=gauge_metric_name  245 1608124662`
+			assert.Equal(t, expected, body)
+			assert.Equal(t, "otelcol", req.Header.Get("X-Sumo-Client"))
+			assert.Equal(t, "application/vnd.sumologic.carbon2", req.Header.Get("Content-Type"))
+		},
+	})
+	defer func() { test.srv.Close() }()
+
+	test.s.config.MetricFormat = Carbon2Format
+	test.s.metricBuffer = []metricPair{
+		exampleIntMetric(),
+		exampleIntGaugeMetric(),
+	}
+
+	flds := fieldsFromMap(map[string]string{
+		"key1": "value",
+		"key2": "value2",
+	})
+
+	test.s.metricBuffer[0].attributes.InsertString("unit", "m/s")
+	test.s.metricBuffer[0].attributes.InsertBool("metric", true)
+
+	_, err := test.s.sendMetrics(context.Background(), flds)
+	assert.NoError(t, err)
+}

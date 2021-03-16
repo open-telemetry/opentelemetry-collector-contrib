@@ -25,7 +25,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cenkalti/backoff"
+	"github.com/cenkalti/backoff/v4"
 	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
 	esutil7 "github.com/elastic/go-elasticsearch/v7/esutil"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -86,7 +86,7 @@ func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 	return e.bulkIndexer.Close(ctx)
 }
 
-func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld pdata.Logs) (dropped int, err error) {
+func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld pdata.Logs) error {
 	panic("TODO")
 }
 

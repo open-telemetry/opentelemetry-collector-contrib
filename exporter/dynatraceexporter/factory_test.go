@@ -57,7 +57,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 // TestLoadConfig tests that the configuration is loaded correctly
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -102,7 +102,7 @@ func TestLoadConfig(t *testing.T) {
 func TestCreateAPIMetricsExporter(t *testing.T) {
 	logger := zap.NewNop()
 
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	factory := NewFactory()
@@ -129,7 +129,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 func TestCreateAPIMetricsExporterInvalid(t *testing.T) {
 	logger := zap.NewNop()
 
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	factory := NewFactory()

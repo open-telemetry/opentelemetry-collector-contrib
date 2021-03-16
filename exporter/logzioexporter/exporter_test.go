@@ -114,8 +114,8 @@ func TestWriteSpanError(tester *testing.T) {
 	exporter.WriteSpanFunc = func(context.Context, *model.Span) error {
 		return errors.New("fail")
 	}
-	droppedSpans, _ := exporter.pushTraceData(context.Background(), internaldata.OCToTraces(nil, nil, testSpans))
-	assert.Equal(tester, 1, droppedSpans)
+	err := exporter.pushTraceData(context.Background(), internaldata.OCToTraces(nil, nil, testSpans))
+	assert.NoError(tester, err)
 }
 
 func TestConversionTraceError(tester *testing.T) {
@@ -130,7 +130,7 @@ func TestConversionTraceError(tester *testing.T) {
 	exporter.InternalTracesToJaegerTraces = func(td pdata.Traces) ([]*model.Batch, error) {
 		return nil, errors.New("fail")
 	}
-	_, err := exporter.pushTraceData(context.Background(), internaldata.OCToTraces(nil, nil, testSpans))
+	err := exporter.pushTraceData(context.Background(), internaldata.OCToTraces(nil, nil, testSpans))
 	assert.Error(tester, err)
 }
 

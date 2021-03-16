@@ -49,10 +49,11 @@ type logServiceLogsSender struct {
 
 func (s *logServiceLogsSender) pushLogsData(
 	ctx context.Context,
-	md pdata.Logs) (droppedTimeSeries int, err error) {
-	slsLogs, dropped := logDataToLogService(md)
+	md pdata.Logs) error {
+	var err error
+	slsLogs := logDataToLogService(md)
 	if len(slsLogs) > 0 {
 		err = s.client.SendLogs(slsLogs)
 	}
-	return dropped, err
+	return err
 }

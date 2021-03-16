@@ -1,9 +1,9 @@
 receivers:
-    examplereceiver:
-  
+    nop:
+
 processors:
-    exampleprocessor:
- 
+    nop:
+
 exporters:
     awsprometheusremotewrite:
     awsprometheusremotewrite/2:
@@ -26,14 +26,13 @@ exporters:
         aws_auth:
             region: "us-west-2"
             service: "service-name"
+            role_arn: "arn:aws:iam::123456789012:role/IAMRole"
         external_labels:
             key1: value1
             key2: value2
 service:
     pipelines:
         metrics:
-            receivers: [examplereceiver]
-            processors: [exampleprocessor]
+            receivers: [nop]
+            processors: [nop]
             exporters: [awsprometheusremotewrite]
-    
-    

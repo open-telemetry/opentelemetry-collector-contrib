@@ -122,7 +122,7 @@ func TestReceiverWithMetadata(t *testing.T) {
 	numCalls = atomic.NewInt32(0)
 
 	r := setupReceiver(client, consumer, 10*time.Second)
-	r.config.MetadataExporters = []string{"exampleexporter/withmetadata"}
+	r.config.MetadataExporters = []string{"nop/withmetadata"}
 
 	// Setup k8s resources.
 	pods := createPods(t, client, 1)

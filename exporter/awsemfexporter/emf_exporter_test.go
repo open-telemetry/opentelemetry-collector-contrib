@@ -463,14 +463,10 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 		},
 	}
 	md := internaldata.OCToMetrics(mdata)
-	_, err = exp.(*emfExporter).pushMetricsData(ctx, md)
-	assert.NotNil(t, err)
-	_, err = exp.(*emfExporter).pushMetricsData(ctx, md)
-	assert.NotNil(t, err)
-	_, err = exp.(*emfExporter).pushMetricsData(ctx, md)
-	assert.Nil(t, err)
-	err = exp.(*emfExporter).Shutdown(ctx)
-	assert.Nil(t, err)
+	assert.NotNil(t, exp.(*emfExporter).pushMetricsData(ctx, md))
+	assert.NotNil(t, exp.(*emfExporter).pushMetricsData(ctx, md))
+	assert.Nil(t, exp.(*emfExporter).pushMetricsData(ctx, md))
+	assert.Nil(t, exp.(*emfExporter).Shutdown(ctx))
 }
 
 func TestNewExporterWithoutConfig(t *testing.T) {

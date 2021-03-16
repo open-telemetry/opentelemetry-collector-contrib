@@ -27,7 +27,7 @@ import (
 	"github.com/uptrace/uptrace-go/spanexp"
 	"github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/uptraceexporter/testdata"
@@ -58,9 +58,8 @@ func TestTraceExporterEmptyTraces(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
-	dropped, err := exp.pushTraceData(ctx, pdata.NewTraces())
+	err = exp.pushTraceData(ctx, pdata.NewTraces())
 	require.NoError(t, err)
-	require.Zero(t, dropped)
 
 	err = exp.Shutdown(ctx)
 	require.NoError(t, err)
@@ -100,10 +99,8 @@ func TestTraceExporterGenTraces(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
-	dropped, err := exp.pushTraceData(
-		ctx, testdata.GenerateTraceDataTwoSpansSameResource())
+	err = exp.pushTraceData(ctx, testdata.GenerateTraceDataTwoSpansSameResource())
 	require.NoError(t, err)
-	require.Zero(t, dropped)
 
 	err = exp.Shutdown(ctx)
 	require.NoError(t, err)
@@ -122,8 +119,8 @@ func TestTraceExporterGenTraces(t *testing.T) {
 				StartTime: 1581452772000000321,
 				EndTime:   1581452773000000789,
 
-				Resource: []label.KeyValue{
-					label.String("resource-attr", "resource-attr-val-1"),
+				Resource: []attribute.KeyValue{
+					attribute.String("resource-attr", "resource-attr-val-1"),
 				},
 
 				StatusCode:    "error",
@@ -132,8 +129,8 @@ func TestTraceExporterGenTraces(t *testing.T) {
 				Events: []spanexp.Event{
 					{
 						Name: "event-with-attr",
-						Attrs: []label.KeyValue{
-							label.String("span-event-attr", "span-event-attr-val"),
+						Attrs: []attribute.KeyValue{
+							attribute.String("span-event-attr", "span-event-attr-val"),
 						},
 						Time: 1581452773000000123,
 					},
@@ -149,8 +146,8 @@ func TestTraceExporterGenTraces(t *testing.T) {
 				StartTime: 1581452772000000321,
 				EndTime:   1581452773000000789,
 
-				Resource: []label.KeyValue{
-					label.String("resource-attr", "resource-attr-val-1"),
+				Resource: []attribute.KeyValue{
+					attribute.String("resource-attr", "resource-attr-val-1"),
 				},
 
 				StatusCode:    "ok",
@@ -158,8 +155,8 @@ func TestTraceExporterGenTraces(t *testing.T) {
 
 				Links: []spanexp.Link{
 					{
-						Attrs: []label.KeyValue{
-							label.String("span-link-attr", "span-link-attr-val"),
+						Attrs: []attribute.KeyValue{
+							attribute.String("span-link-attr", "span-link-attr-val"),
 						},
 					},
 					{},

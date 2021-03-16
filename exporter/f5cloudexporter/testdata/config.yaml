@@ -1,8 +1,8 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
   f5cloud:
@@ -31,6 +31,6 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [ examplereceiver ]
-      processors: [ exampleprocessor ]
+      receivers: [ nop ]
+      processors: [ nop ]
       exporters: [ f5cloud, f5cloud/allsettings ]
