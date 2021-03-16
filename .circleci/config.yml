@@ -282,7 +282,7 @@ jobs:
           command: make -j2 for-all-target TARGET=lint
       - run:
           name: Checks
-          command: make -j4 checklicense impi misspell
+          command: make -j4 checklicense checkdoc impi misspell
       - run:
           name: Codegen
           command: |
