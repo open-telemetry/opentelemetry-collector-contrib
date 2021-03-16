@@ -134,7 +134,7 @@ func TestConsumeMetricsWithRunInLambda(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
-	mdata := consumerdata.MetricsData{
+	mdata := internaldata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
 			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
