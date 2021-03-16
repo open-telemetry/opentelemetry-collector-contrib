@@ -52,7 +52,7 @@ func (s *brokerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, err
 		MetricFactoriesByName:      metadata.M.FactoriesByName(),
 		InstrumentationLibraryName: "otelcol/kafkametrics",
 	}
-	metrics.AddGaugeDataPoint(metadata.M.BrokersCount.Name(), int64(len(brokers)))
+	metrics.AddGaugeDataPoint(metadata.M.KafkaBrokers.Name(), int64(len(brokers)))
 
 	return metrics.Metrics.ResourceMetrics(), nil
 }

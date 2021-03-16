@@ -9,66 +9,66 @@ labels:
     description: The ID (string) of a consumer group
 
 metrics:
-  brokers.count:
+  kafka.brokers:
     description: Number of brokers in the cluster.
     unit: brokers
     data:
       type: int gauge
-  topic.partitions:
+  kafka.topic.partitions:
     description: Number of partitions in topic.
     unit: partitions
     data:
       type: int gauge
     labels: [topic]
-  partition.current_offset:
+  kafka.partition.current_offset:
     description: Current offset of partition of topic.
     unit: "{messages}"
     data:
       type: int gauge
     labels: [topic, partition]
-  partition.oldest_offset:
+  kafka.partition.oldest_offset:
     description: Oldest offset of partition of topic
     unit: "{messages}"
     data:
       type: int gauge
     labels: [topic, partition]
-  partition.replicas:
+  kafka.partition.replicas:
     description: Number of replicas for partition of topic
     unit: replicas
     data:
       type: int gauge
     labels: [topic, partition]
-  partition.replicas_in_sync:
+  kafka.partition.replicas_in_sync:
     description: Number of synchronized replicas of partition
     unit: replicas
     data:
       type: int gauge
     labels: [topic, partition]
-  consumer_group.members.count:
+  kafka.consumer_group.members:
     description: Count of members in the consumer group
     unit: members
     data:
       type: int gauge
     labels: [group]
-  consumer_group.offset:
+  kafka.consumer_group.offset:
     description: Current offset of the consumer group at partition of topic
     unit: "{messages}"
     data:
       type: int gauge
     labels: [group, topic, partition]
-  consumer_group.offset_sum:
+  kafka.consumer_group.offset_sum:
     description: Sum of consumer group offset across partitions of topic
     unit: "{messages}"
     data:
       type: int gauge
     labels: [group, topic]
-  consumer_group.lag:
+  kafka.consumer_group.lag:
     description: Current approximate lag of consumer group at partition of topic
     unit: "{messages}"
     data:
       type: int gauge
     labels: [group, topic, partition]
-  consumer_group.lag_sum:
+  kafka.consumer_group.lag_sum:
     description: Current approximate sum of consumer group lag across all partitions of topic
     unit: "{messages}"
     data:

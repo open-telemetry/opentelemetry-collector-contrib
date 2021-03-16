@@ -55,48 +55,48 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 }
 
 type metricStruct struct {
-	BrokersCount              MetricIntf
-	ConsumerGroupLag          MetricIntf
-	ConsumerGroupLagSum       MetricIntf
-	ConsumerGroupMembersCount MetricIntf
-	ConsumerGroupOffset       MetricIntf
-	ConsumerGroupOffsetSum    MetricIntf
-	PartitionCurrentOffset    MetricIntf
-	PartitionOldestOffset     MetricIntf
-	PartitionReplicas         MetricIntf
-	PartitionReplicasInSync   MetricIntf
-	TopicPartitions           MetricIntf
+	KafkaBrokers                 MetricIntf
+	KafkaConsumerGroupLag        MetricIntf
+	KafkaConsumerGroupLagSum     MetricIntf
+	KafkaConsumerGroupMembers    MetricIntf
+	KafkaConsumerGroupOffset     MetricIntf
+	KafkaConsumerGroupOffsetSum  MetricIntf
+	KafkaPartitionCurrentOffset  MetricIntf
+	KafkaPartitionOldestOffset   MetricIntf
+	KafkaPartitionReplicas       MetricIntf
+	KafkaPartitionReplicasInSync MetricIntf
+	KafkaTopicPartitions         MetricIntf
 }
 
 // Names returns a list of all the metric name strings.
 func (m *metricStruct) Names() []string {
 	return []string{
-		"brokers.count",
-		"consumer_group.lag",
-		"consumer_group.lag_sum",
-		"consumer_group.members.count",
-		"consumer_group.offset",
-		"consumer_group.offset_sum",
-		"partition.current_offset",
-		"partition.oldest_offset",
-		"partition.replicas",
-		"partition.replicas_in_sync",
-		"topic.partitions",
+		"kafka.brokers",
+		"kafka.consumer_group.lag",
+		"kafka.consumer_group.lag_sum",
+		"kafka.consumer_group.members",
+		"kafka.consumer_group.offset",
+		"kafka.consumer_group.offset_sum",
+		"kafka.partition.current_offset",
+		"kafka.partition.oldest_offset",
+		"kafka.partition.replicas",
+		"kafka.partition.replicas_in_sync",
+		"kafka.topic.partitions",
 	}
 }
 
 var metricsByName = map[string]MetricIntf{
-	"brokers.count":                Metrics.BrokersCount,
-	"consumer_group.lag":           Metrics.ConsumerGroupLag,
-	"consumer_group.lag_sum":       Metrics.ConsumerGroupLagSum,
-	"consumer_group.members.count": Metrics.ConsumerGroupMembersCount,
-	"consumer_group.offset":        Metrics.ConsumerGroupOffset,
-	"consumer_group.offset_sum":    Metrics.ConsumerGroupOffsetSum,
-	"partition.current_offset":     Metrics.PartitionCurrentOffset,
-	"partition.oldest_offset":      Metrics.PartitionOldestOffset,
-	"partition.replicas":           Metrics.PartitionReplicas,
-	"partition.replicas_in_sync":   Metrics.PartitionReplicasInSync,
-	"topic.partitions":             Metrics.TopicPartitions,
+	"kafka.brokers":                    Metrics.KafkaBrokers,
+	"kafka.consumer_group.lag":         Metrics.KafkaConsumerGroupLag,
+	"kafka.consumer_group.lag_sum":     Metrics.KafkaConsumerGroupLagSum,
+	"kafka.consumer_group.members":     Metrics.KafkaConsumerGroupMembers,
+	"kafka.consumer_group.offset":      Metrics.KafkaConsumerGroupOffset,
+	"kafka.consumer_group.offset_sum":  Metrics.KafkaConsumerGroupOffsetSum,
+	"kafka.partition.current_offset":   Metrics.KafkaPartitionCurrentOffset,
+	"kafka.partition.oldest_offset":    Metrics.KafkaPartitionOldestOffset,
+	"kafka.partition.replicas":         Metrics.KafkaPartitionReplicas,
+	"kafka.partition.replicas_in_sync": Metrics.KafkaPartitionReplicasInSync,
+	"kafka.topic.partitions":           Metrics.KafkaTopicPartitions,
 }
 
 func (m *metricStruct) ByName(n string) MetricIntf {
@@ -105,17 +105,17 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 
 func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
 	return map[string]func() pdata.Metric{
-		Metrics.BrokersCount.Name():              Metrics.BrokersCount.New,
-		Metrics.ConsumerGroupLag.Name():          Metrics.ConsumerGroupLag.New,
-		Metrics.ConsumerGroupLagSum.Name():       Metrics.ConsumerGroupLagSum.New,
-		Metrics.ConsumerGroupMembersCount.Name(): Metrics.ConsumerGroupMembersCount.New,
-		Metrics.ConsumerGroupOffset.Name():       Metrics.ConsumerGroupOffset.New,
-		Metrics.ConsumerGroupOffsetSum.Name():    Metrics.ConsumerGroupOffsetSum.New,
-		Metrics.PartitionCurrentOffset.Name():    Metrics.PartitionCurrentOffset.New,
-		Metrics.PartitionOldestOffset.Name():     Metrics.PartitionOldestOffset.New,
-		Metrics.PartitionReplicas.Name():         Metrics.PartitionReplicas.New,
-		Metrics.PartitionReplicasInSync.Name():   Metrics.PartitionReplicasInSync.New,
-		Metrics.TopicPartitions.Name():           Metrics.TopicPartitions.New,
+		Metrics.KafkaBrokers.Name():                 Metrics.KafkaBrokers.New,
+		Metrics.KafkaConsumerGroupLag.Name():        Metrics.KafkaConsumerGroupLag.New,
+		Metrics.KafkaConsumerGroupLagSum.Name():     Metrics.KafkaConsumerGroupLagSum.New,
+		Metrics.KafkaConsumerGroupMembers.Name():    Metrics.KafkaConsumerGroupMembers.New,
+		Metrics.KafkaConsumerGroupOffset.Name():     Metrics.KafkaConsumerGroupOffset.New,
+		Metrics.KafkaConsumerGroupOffsetSum.Name():  Metrics.KafkaConsumerGroupOffsetSum.New,
+		Metrics.KafkaPartitionCurrentOffset.Name():  Metrics.KafkaPartitionCurrentOffset.New,
+		Metrics.KafkaPartitionOldestOffset.Name():   Metrics.KafkaPartitionOldestOffset.New,
+		Metrics.KafkaPartitionReplicas.Name():       Metrics.KafkaPartitionReplicas.New,
+		Metrics.KafkaPartitionReplicasInSync.Name(): Metrics.KafkaPartitionReplicasInSync.New,
+		Metrics.KafkaTopicPartitions.Name():         Metrics.KafkaTopicPartitions.New,
 	}
 }
 
@@ -123,99 +123,99 @@ func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
 // manipulating those metrics.
 var Metrics = &metricStruct{
 	&metricImpl{
-		"brokers.count",
+		"kafka.brokers",
 		func(metric pdata.Metric) {
-			metric.SetName("brokers.count")
+			metric.SetName("kafka.brokers")
 			metric.SetDescription("Number of brokers in the cluster.")
 			metric.SetUnit("brokers")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},
 	&metricImpl{
-		"consumer_group.lag",
+		"kafka.consumer_group.lag",
 		func(metric pdata.Metric) {
-			metric.SetName("consumer_group.lag")
+			metric.SetName("kafka.consumer_group.lag")
 			metric.SetDescription("Current approximate lag of consumer group at partition of topic")
 			metric.SetUnit("{messages}")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},
 	&metricImpl{
-		"consumer_group.lag_sum",
+		"kafka.consumer_group.lag_sum",
 		func(metric pdata.Metric) {
-			metric.SetName("consumer_group.lag_sum")
+			metric.SetName("kafka.consumer_group.lag_sum")
 			metric.SetDescription("Current approximate sum of consumer group lag across all partitions of topic")
 			metric.SetUnit("{messages}")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},
 	&metricImpl{
-		"consumer_group.members.count",
+		"kafka.consumer_group.members",
 		func(metric pdata.Metric) {
-			metric.SetName("consumer_group.members.count")
+			metric.SetName("kafka.consumer_group.members")
 			metric.SetDescription("Count of members in the consumer group")
 			metric.SetUnit("members")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},
 	&metricImpl{
-		"consumer_group.offset",
+		"kafka.consumer_group.offset",
 		func(metric pdata.Metric) {
-			metric.SetName("consumer_group.offset")
+			metric.SetName("kafka.consumer_group.offset")
 			metric.SetDescription("Current offset of the consumer group at partition of topic")
 			metric.SetUnit("{messages}")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},
 	&metricImpl{
-		"consumer_group.offset_sum",
+		"kafka.consumer_group.offset_sum",
 		func(metric pdata.Metric) {
-			metric.SetName("consumer_group.offset_sum")
+			metric.SetName("kafka.consumer_group.offset_sum")
 			metric.SetDescription("Sum of consumer group offset across partitions of topic")
 			metric.SetUnit("{messages}")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},
 	&metricImpl{
-		"partition.current_offset",
+		"kafka.partition.current_offset",
 		func(metric pdata.Metric) {
-			metric.SetName("partition.current_offset")
+			metric.SetName("kafka.partition.current_offset")
 			metric.SetDescription("Current offset of partition of topic.")
 			metric.SetUnit("{messages}")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},
 	&metricImpl{
-		"partition.oldest_offset",
+		"kafka.partition.oldest_offset",
 		func(metric pdata.Metric) {
-			metric.SetName("partition.oldest_offset")
+			metric.SetName("kafka.partition.oldest_offset")
 			metric.SetDescription("Oldest offset of partition of topic")
 			metric.SetUnit("{messages}")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},
 	&metricImpl{
-		"partition.replicas",
+		"kafka.partition.replicas",
 		func(metric pdata.Metric) {
-			metric.SetName("partition.replicas")
+			metric.SetName("kafka.partition.replicas")
 			metric.SetDescription("Number of replicas for partition of topic")
 			metric.SetUnit("replicas")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},
 	&metricImpl{
-		"partition.replicas_in_sync",
+		"kafka.partition.replicas_in_sync",
 		func(metric pdata.Metric) {
-			metric.SetName("partition.replicas_in_sync")
+			metric.SetName("kafka.partition.replicas_in_sync")
 			metric.SetDescription("Number of synchronized replicas of partition")
 			metric.SetUnit("replicas")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},
 	&metricImpl{
-		"topic.partitions",
+		"kafka.topic.partitions",
 		func(metric pdata.Metric) {
-			metric.SetName("topic.partitions")
+			metric.SetName("kafka.topic.partitions")
 			metric.SetDescription("Number of partitions in topic.")
 			metric.SetUnit("partitions")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
