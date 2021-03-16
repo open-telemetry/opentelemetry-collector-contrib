@@ -125,7 +125,7 @@ func newSignalFxExporter(
 			// buffer a fixed number of updates. Might also be a good candidate
 			// to make configurable.
 			PropertiesMaxBuffered: 10000,
-			MetricTranslator:      options.metricTranslator,
+			MetricsConverter:      *converter,
 		})
 	dimClient.Start()
 
@@ -182,14 +182,15 @@ func newEventExporter(config *Config, logger *zap.Logger) (*signalfxExporter, er
 	}, nil
 }
 
-func (se *signalfxExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
-	numDroppedTimeSeries, err := se.pushMetricsData(ctx, md)
+func (se *signalfxExporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
+	_, err := se.pushMetricsData(ctx, md)
 	if err == nil && se.hostMetadataSyncer != nil {
 		se.hostMetadataSyncer.Sync(md)
 	}
-	return numDroppedTimeSeries, err
+	return err
 }
 
-func (se *signalfxExporter) pushLogs(ctx context.Context, ld pdata.Logs) (int, error) {
-	return se.pushLogsData(ctx, ld)
+func (se *signalfxExporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
+	_, err := se.pushLogsData(ctx, ld)
+	return err
 }

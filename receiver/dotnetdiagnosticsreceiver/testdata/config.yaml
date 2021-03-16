@@ -5,14 +5,14 @@ receivers:
     counters: [ "Foo", "Bar" ]
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     metrics:
       receivers: [ dotnet_diagnostics ]
-      processors: [ exampleprocessor ]
-      exporters: [ exampleexporter ]
+      processors: [ nop ]
+      exporters: [ nop ]

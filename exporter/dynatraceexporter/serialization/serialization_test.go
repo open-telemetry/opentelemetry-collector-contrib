@@ -28,10 +28,13 @@ func TestSerializeIntDataPoints(t *testing.T) {
 	}
 
 	intSlice := pdata.NewIntDataPointSlice()
-	intSlice.Resize(1)
+	intSlice.Resize(2)
 	intPoint := intSlice.At(0)
 	intPoint.SetValue(13)
 	intPoint.SetTimestamp(pdata.Timestamp(100_000_000))
+	intPoint1 := intSlice.At(1)
+	intPoint1.SetValue(14)
+	intPoint1.SetTimestamp(pdata.Timestamp(101_000_000))
 
 	labelIntSlice := pdata.NewIntDataPointSlice()
 	labelIntSlice.Resize(1)
@@ -40,10 +43,17 @@ func TestSerializeIntDataPoints(t *testing.T) {
 	labelIntPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 	labelIntPoint.LabelsMap().Insert("labelKey", "labelValue")
 
+	emptyLabelIntSlice := pdata.NewIntDataPointSlice()
+	emptyLabelIntSlice.Resize(1)
+	emptyLabelIntPoint := emptyLabelIntSlice.At(0)
+	emptyLabelIntPoint.SetValue(13)
+	emptyLabelIntPoint.SetTimestamp(pdata.Timestamp(100_000_000))
+	emptyLabelIntPoint.LabelsMap().Insert("emptyLabelKey", "")
+
 	tests := []struct {
 		name string
 		args args
-		want string
+		want []string
 	}{
 		{
 			name: "Serialize integer data points",
@@ -52,7 +62,7 @@ func TestSerializeIntDataPoints(t *testing.T) {
 				data: intSlice,
 				tags: []string{},
 			},
-			want: "my_int_gauge 13 100",
+			want: []string{"my_int_gauge 13 100", "my_int_gauge 14 101"},
 		},
 		{
 			name: "Serialize integer data points with tags",
@@ -61,7 +71,7 @@ func TestSerializeIntDataPoints(t *testing.T) {
 				data: intSlice,
 				tags: []string{"test_key=testval"},
 			},
-			want: "my_int_gauge_with_tags,test_key=testval 13 100",
+			want: []string{"my_int_gauge_with_tags,test_key=testval 13 100", "my_int_gauge_with_tags,test_key=testval 14 101"},
 		},
 		{
 			name: "Serialize integer data points with labels",
@@ -70,12 +80,21 @@ func TestSerializeIntDataPoints(t *testing.T) {
 				data: labelIntSlice,
 				tags: []string{},
 			},
-			want: "my_int_gauge_with_labels,labelkey=\"labelValue\" 13 100",
+			want: []string{"my_int_gauge_with_labels,labelkey=\"labelValue\" 13 100"},
+		},
+		{
+			name: "Serialize integer data points with empty label",
+			args: args{
+				name: "my_int_gauge_with_empty_labels",
+				data: emptyLabelIntSlice,
+				tags: []string{},
+			},
+			want: []string{"my_int_gauge_with_empty_labels,emptylabelkey=\"\" 13 100"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := SerializeIntDataPoints(tt.args.name, tt.args.data, tt.args.tags); got != tt.want {
+			if got := SerializeIntDataPoints(tt.args.name, tt.args.data, tt.args.tags); !equal(got, tt.want) {
 				t.Errorf("SerializeIntDataPoints() = %#v, want %#v", got, tt.want)
 			}
 		})
@@ -104,7 +123,7 @@ func TestSerializeDoubleDataPoints(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want string
+		want []string
 	}{
 		{
 			name: "Serialize double data points",
@@ -113,7 +132,7 @@ func TestSerializeDoubleDataPoints(t *testing.T) {
 				data: doubleSlice,
 				tags: []string{},
 			},
-			want: "my_double_gauge 13.1 100",
+			want: []string{"my_double_gauge 13.1 100"},
 		},
 		{
 			name: "Serialize double data points with tags",
@@ -122,7 +141,7 @@ func TestSerializeDoubleDataPoints(t *testing.T) {
 				data: doubleSlice,
 				tags: []string{"test_key=testval"},
 			},
-			want: "my_double_gauge_with_tags,test_key=testval 13.1 100",
+			want: []string{"my_double_gauge_with_tags,test_key=testval 13.1 100"},
 		},
 		{
 			name: "Serialize double data points with labels",
@@ -131,12 +150,12 @@ func TestSerializeDoubleDataPoints(t *testing.T) {
 				data: labelDoubleSlice,
 				tags: []string{},
 			},
-			want: "my_double_gauge_with_labels,labelkey=\"labelValue\" 13.1 100",
+			want: []string{"my_double_gauge_with_labels,labelkey=\"labelValue\" 13.1 100"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := SerializeDoubleDataPoints(tt.args.name, tt.args.data, tt.args.tags); got != tt.want {
+			if got := SerializeDoubleDataPoints(tt.args.name, tt.args.data, tt.args.tags); !equal(got, tt.want) {
 				t.Errorf("SerializeDoubleDataPoints() = %v, want %v", got, tt.want)
 			}
 		})
@@ -174,7 +193,7 @@ func TestSerializeDoubleHistogramMetrics(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want string
+		want []string
 	}{
 		{
 			name: "Serialize double histogram data points",
@@ -183,7 +202,7 @@ func TestSerializeDoubleHistogramMetrics(t *testing.T) {
 				data: doubleHistSlice,
 				tags: []string{},
 			},
-			want: "my_double_hist gauge,min=10.1,max=10.1,sum=101,count=10 100",
+			want: []string{"my_double_hist gauge,min=10.1,max=10.1,sum=101,count=10 100"},
 		},
 		{
 			name: "Serialize double histogram data points with tags",
@@ -192,7 +211,7 @@ func TestSerializeDoubleHistogramMetrics(t *testing.T) {
 				data: doubleHistSlice,
 				tags: []string{"test_key=testval"},
 			},
-			want: "my_double_hist_with_tags,test_key=testval gauge,min=10.1,max=10.1,sum=101,count=10 100",
+			want: []string{"my_double_hist_with_tags,test_key=testval gauge,min=10.1,max=10.1,sum=101,count=10 100"},
 		},
 		{
 			name: "Serialize double histogram data points with labels",
@@ -201,7 +220,7 @@ func TestSerializeDoubleHistogramMetrics(t *testing.T) {
 				data: labelDoubleHistSlice,
 				tags: []string{},
 			},
-			want: "my_double_hist_with_labels,labelkey=\"labelValue\" gauge,min=10.1,max=10.1,sum=101,count=10 100",
+			want: []string{"my_double_hist_with_labels,labelkey=\"labelValue\" gauge,min=10.1,max=10.1,sum=101,count=10 100"},
 		},
 		{
 			name: "Serialize zero double histogram",
@@ -210,12 +229,12 @@ func TestSerializeDoubleHistogramMetrics(t *testing.T) {
 				data: zeroDoubleHistogramSlice,
 				tags: []string{},
 			},
-			want: "",
+			want: []string{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := SerializeDoubleHistogramMetrics(tt.args.name, tt.args.data, tt.args.tags); got != tt.want {
+			if got := SerializeDoubleHistogramMetrics(tt.args.name, tt.args.data, tt.args.tags); !equal(got, tt.want) {
 				t.Errorf("SerializeDoubleHistogramMetrics() = %v, want %v", got, tt.want)
 			}
 		})
@@ -253,7 +272,7 @@ func TestSerializeIntHistogramMetrics(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want string
+		want []string
 	}{
 		{
 			name: "Serialize integer histogram data points",
@@ -262,7 +281,7 @@ func TestSerializeIntHistogramMetrics(t *testing.T) {
 				data: intHistSlice,
 				tags: []string{},
 			},
-			want: "my_int_hist gauge,min=11,max=11,sum=110,count=10 100",
+			want: []string{"my_int_hist gauge,min=11,max=11,sum=110,count=10 100"},
 		},
 		{
 			name: "Serialize integer histogram data points with tags",
@@ -271,7 +290,7 @@ func TestSerializeIntHistogramMetrics(t *testing.T) {
 				data: intHistSlice,
 				tags: []string{"test_key=testval"},
 			},
-			want: "my_int_hist_with_tags,test_key=testval gauge,min=11,max=11,sum=110,count=10 100",
+			want: []string{"my_int_hist_with_tags,test_key=testval gauge,min=11,max=11,sum=110,count=10 100"},
 		},
 		{
 			name: "Serialize integer histogram data points with labels",
@@ -280,7 +299,7 @@ func TestSerializeIntHistogramMetrics(t *testing.T) {
 				data: labelIntHistSlice,
 				tags: []string{},
 			},
-			want: "my_int_hist_with_labels,labelkey=\"labelValue\" gauge,min=11,max=11,sum=110,count=10 100",
+			want: []string{"my_int_hist_with_labels,labelkey=\"labelValue\" gauge,min=11,max=11,sum=110,count=10 100"},
 		},
 		{
 			name: "Serialize zero integer histogram",
@@ -289,12 +308,12 @@ func TestSerializeIntHistogramMetrics(t *testing.T) {
 				data: zeroIntHistogramSlice,
 				tags: []string{},
 			},
-			want: "",
+			want: []string{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := SerializeIntHistogramMetrics(tt.args.name, tt.args.data, tt.args.tags); got != tt.want {
+			if got := SerializeIntHistogramMetrics(tt.args.name, tt.args.data, tt.args.tags); !equal(got, tt.want) {
 				t.Errorf("SerializeIntHistogramMetrics() = %v, want %v", got, tt.want)
 			}
 		})
@@ -489,4 +508,16 @@ func Test_serializeFloat64(t *testing.T) {
 			}
 		})
 	}
+}
+
+func equal(a, b []string) bool {
+	if len(a) == len(b) {
+		for i := range a {
+			if a[i] != b[i] {
+				return false
+			}
+		}
+		return true
+	}
+	return false
 }

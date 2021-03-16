@@ -29,6 +29,8 @@ const (
 	// Keys for K8s metadata
 	k8sKeyWorkLoadKind = "k8s.workload.kind"
 	k8sKeyWorkLoadName = "k8s.workload.name"
+
+	k8sServicePrefix = "k8s.service."
 )
 
 // KubernetesMetadata associates a resource to a set of properties.
@@ -54,19 +56,24 @@ func getGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetad
 		rType)] = om.GetCreationTimestamp().Format(time.RFC3339)
 
 	for _, or := range om.OwnerReferences {
-		metadata[strings.ToLower(or.Kind)] = or.Name
-		metadata[strings.ToLower(or.Kind)+"_uid"] = string(or.UID)
+		kind := strings.ToLower(or.Kind)
+		metadata[getOTelNameFromKind(kind)] = or.Name
+		metadata[getOTelUIDFromKind(kind)] = string(or.UID)
 	}
 
 	return &KubernetesMetadata{
-		resourceIDKey: getResourceIDKey(rType),
+		resourceIDKey: getOTelUIDFromKind(rType),
 		resourceID:    metadataPkg.ResourceID(om.UID),
 		metadata:      metadata,
 	}
 }
 
-func getResourceIDKey(rType string) string {
-	return fmt.Sprintf("k8s.%s.uid", rType)
+func getOTelUIDFromKind(kind string) string {
+	return fmt.Sprintf("k8s.%s.uid", kind)
+}
+
+func getOTelNameFromKind(kind string) string {
+	return fmt.Sprintf("k8s.%s.name", kind)
 }
 
 // mergeKubernetesMetadataMaps merges maps of string (resource id) to

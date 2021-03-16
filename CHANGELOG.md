@@ -2,6 +2,43 @@
 
 ## Unreleased
 
+## v0.22.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.22.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.22.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+
+- `filelog` receiver to tail and parse logs from files using the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library
+
+## 💡 Enhancements 💡
+
+- `dynatrace` exporter: Send metrics to Dynatrace in chunks of 1000 (#2468)
+- `k8s` processor: Add ability to associate metadata tags using pod UID rather than just IP (#2199)
+- `signalfx` exporter:
+  - Add statusCode to logging field on dimension client (#2459)
+  - Add translation rules for `cpu.utilization_per_core` (#2540)
+  - Updates to metadata handling (#2531)
+  - Calculate extra network I/O metrics (#2553)
+  - Calculate extra disk I/O metrics (#2557)
+- `statsd` receiver: Add metric type label and `enable_metric_type` option (#2466)
+- `sumologic` exporter: Add support for carbon2 format (#2562)
+- `resourcedetection` processor: Add Azure detector (#2372)
+- `k8scluster` receiver: Use OTel conventions for metadata (#2530)
+- `newrelic` exporter: Multi-tenant support for sending trace data and performance enhancements (#2481)
+- `stackdriver` exporter: Enable `retry_on_failure` and `sending_queue` options (#2613)
+- Use standard way to convert from time.Time to proto Timestamp (#2548)
+
+## 🧰 Bug fixes 🧰
+
+- `signalfx` exporter:
+  - Fix calculation of `network.total` metric (#2551)
+  - Correctly convert dimensions on metadata updates (#2552)
+- `awsxray` exporter and receiver: Fix the type of content_length (#2539)
+- `resourcedetection` processor: Use values in accordance to semantic conventions for AWS (#2556)
+- `awsemf` exporter: Fix concurrency issue (#2571)
+
 ## v0.21.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.21.0 (Beta) 🎉

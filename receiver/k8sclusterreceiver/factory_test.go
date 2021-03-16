@@ -79,7 +79,7 @@ func TestFactory(t *testing.T) {
 	ctx := context.Background()
 	require.NoError(t, r.Start(ctx, nopHostWithExporters{}))
 	require.NoError(t, r.Shutdown(ctx))
-	rCfg.MetadataExporters = []string{"exampleexporter/withoutmetadata"}
+	rCfg.MetadataExporters = []string{"nop/withoutmetadata"}
 	require.Error(t, r.Start(context.Background(), nopHostWithExporters{}))
 }
 
@@ -96,15 +96,15 @@ func (n nopHostWithExporters) GetFactory(component.Kind, configmodels.Type) comp
 	return nil
 }
 
-func (n nopHostWithExporters) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
+func (n nopHostWithExporters) GetExtensions() map[configmodels.NamedEntity]component.Extension {
 	return nil
 }
 
-func (n nopHostWithExporters) GetExporters() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
-	return map[configmodels.DataType]map[configmodels.Exporter]component.Exporter{
+func (n nopHostWithExporters) GetExporters() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter {
+	return map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter{
 		configmodels.MetricsDataType: {
-			&configmodels.ExporterSettings{TypeVal: "exampleexporter", NameVal: "exampleexporter/withoutmetadata"}: MockExporter{},
-			&configmodels.ExporterSettings{TypeVal: "exampleexporter", NameVal: "exampleexporter/withmetadata"}:    mockExporterWithK8sMetadata{},
+			&configmodels.ExporterSettings{TypeVal: "nop", NameVal: "nop/withoutmetadata"}: MockExporter{},
+			&configmodels.ExporterSettings{TypeVal: "nop", NameVal: "nop/withmetadata"}:    mockExporterWithK8sMetadata{},
 		},
 	}
 }

@@ -19,6 +19,8 @@ The Following settings are optional:
 
 - `aggregation_interval: 70s`(default value is 60s): The aggregation time that the receiver aggregates the metrics (similar to the flush interval in StatsD server)
 
+- `enable_metric_type: true`(default value is false): Enbale the statsd receiver to be able to emit the mertic type(gauge, counter, timer(in the future), histogram(in the future)) as a lable.
+
 Example:
 
 ```yaml
@@ -27,6 +29,7 @@ receivers:
   statsd/2:
     endpoint: "localhost:8127"
     aggregation_interval: 70s
+    enable_metric_type: true
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
@@ -95,6 +98,7 @@ receivers:
   statsd:
     endpoint: "localhost:8125" # default
     aggregation_interval: 60s  # default
+    enable_metric_type: false   # default
 
 exporters:
   file:

@@ -21,7 +21,6 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -139,7 +138,7 @@ func newMetricsExporter(
 // pushLogsData groups data with common metadata and sends them as separate batched requests.
 // It returns the number of unsent logs and an error which contains a list of dropped records
 // so they can be handled by OTC retry mechanism
-func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) (int, error) {
+func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) error {
 	var (
 		currentMetadata  fields = newFields(pdata.NewAttributeMap())
 		previousMetadata fields = newFields(pdata.NewAttributeMap())
@@ -150,7 +149,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) (i
 
 	c, err := newCompressor(se.config.CompressEncoding)
 	if err != nil {
-		return 0, consumererror.PartialLogsError(fmt.Errorf("failed to initialize compressor: %w", err), ld)
+		return consumererror.PartialLogsError(fmt.Errorf("failed to initialize compressor: %w", err), ld)
 	}
 	sdr := newSender(se.config, se.client, se.filter, se.sources, c, se.prometheusFormatter)
 
@@ -225,16 +224,16 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) (i
 			logs.Append(log)
 		}
 
-		return len(droppedRecords), consumererror.PartialLogsError(componenterror.CombineErrors(errs), droppedLogs)
+		return consumererror.PartialLogsError(consumererror.CombineErrors(errs), droppedLogs)
 	}
 
-	return 0, nil
+	return nil
 }
 
 // pushMetricsData groups data with common metadata and send them as separate batched requests
 // it returns number of unsent metrics and error which contains list of dropped records
 // so they can be handle by the OTC retry mechanism
-func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
+func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metrics) error {
 	var (
 		currentMetadata  fields = newFields(pdata.NewAttributeMap())
 		previousMetadata fields = newFields(pdata.NewAttributeMap())
@@ -245,7 +244,7 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metri
 
 	c, err := newCompressor(se.config.CompressEncoding)
 	if err != nil {
-		return 0, consumererror.PartialMetricsError(fmt.Errorf("failed to initialize compressor: %w", err), md)
+		return consumererror.PartialMetricsError(fmt.Errorf("failed to initialize compressor: %w", err), md)
 	}
 	sdr := newSender(se.config, se.client, se.filter, se.sources, c, se.prometheusFormatter)
 
@@ -317,8 +316,8 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metri
 			ilms.At(0).Metrics().Append(record.metric)
 		}
 
-		return len(droppedRecords), consumererror.PartialMetricsError(componenterror.CombineErrors(errs), droppedMetrics)
+		return consumererror.PartialMetricsError(consumererror.CombineErrors(errs), droppedMetrics)
 	}
 
-	return 0, nil
+	return nil
 }

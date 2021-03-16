@@ -52,7 +52,7 @@ func createExtension(
 	_ context.Context,
 	params component.ExtensionCreateParams,
 	cfg configmodels.Extension,
-) (component.ServiceExtension, error) {
+) (component.Extension, error) {
 	config := cfg.(*Config)
 	return newObserver(params.Logger, config)
 }

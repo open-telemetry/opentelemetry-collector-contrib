@@ -22,7 +22,6 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -45,7 +44,7 @@ func TestNewMetricsExporter(t *testing.T) {
 	doublePt := metricstestutil.Double(tsUnix, doubleVal)
 
 	// This will put trace data to send buffer and return success.
-	err = got.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(consumerdata.MetricsData{
+	err = got.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(internaldata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			metricstestutil.Gauge("gauge_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
 		},

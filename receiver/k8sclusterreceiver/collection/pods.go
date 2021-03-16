@@ -15,6 +15,7 @@
 package collection
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -146,8 +147,9 @@ func getMetadataForPod(pod *corev1.Pod, mc *metadataStore, logger *zap.Logger) m
 	metadata[podCreationTime] = pod.CreationTimestamp.Format(time.RFC3339)
 
 	for _, or := range pod.OwnerReferences {
-		metadata[strings.ToLower(or.Kind)] = or.Name
-		metadata[strings.ToLower(or.Kind)+"_uid"] = string(or.UID)
+		kind := strings.ToLower(or.Kind)
+		metadata[getOTelNameFromKind(kind)] = or.Name
+		metadata[getOTelUIDFromKind(kind)] = string(or.UID)
 
 		// defer syncing replicaset and job workload metadata.
 		if or.Kind == k8sKindReplicaSet || or.Kind == k8sKindJob {
@@ -256,7 +258,7 @@ func getPodServiceTags(pod *corev1.Pod, services cache.Store) map[string]string 
 		serObj := ser.(*corev1.Service)
 		if serObj.Namespace == pod.Namespace &&
 			labels.Set(serObj.Spec.Selector).AsSelectorPreValidated().Matches(labels.Set(pod.Labels)) {
-			properties["kubernetes_service_"+serObj.Name] = ""
+			properties[fmt.Sprintf("%s%s", k8sServicePrefix, serObj.Name)] = ""
 		}
 	}
 
@@ -265,10 +267,9 @@ func getPodServiceTags(pod *corev1.Pod, services cache.Store) map[string]string 
 
 // getWorkloadProperties returns workload metadata for provided owner reference.
 func getWorkloadProperties(ref *v1.OwnerReference, labelKey string) map[string]string {
-	kind := ref.Kind
-	uidKey := strings.ToLower(kind) + "_uid"
+	uidKey := getOTelUIDFromKind(strings.ToLower(ref.Kind))
 	return map[string]string{
-		k8sKeyWorkLoadKind: kind,
+		k8sKeyWorkLoadKind: ref.Kind,
 		k8sKeyWorkLoadName: ref.Name,
 		labelKey:           ref.Name,
 		uidKey:             string(ref.UID),

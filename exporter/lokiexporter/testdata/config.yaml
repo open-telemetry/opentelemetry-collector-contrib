@@ -1,8 +1,8 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
   loki:
@@ -42,6 +42,6 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [ examplereceiver ]
-      processors: [ exampleprocessor ]
+      receivers: [ nop ]
+      processors: [ nop ]
       exporters: [ loki, loki/allsettings ]

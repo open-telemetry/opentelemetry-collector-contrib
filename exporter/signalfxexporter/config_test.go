@@ -39,7 +39,7 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
 	factory := NewFactory()
@@ -94,6 +94,32 @@ func TestLoadConfig(t *testing.T) {
 				Action: translation.ActionRenameDimensionKeys,
 				Mapping: map[string]string{
 					"k8s.cluster.name": "kubernetes_cluster",
+				},
+			},
+			{
+				Action: translation.ActionDropDimensions,
+				DimensionPairs: map[string]map[string]bool{
+					"foo":  nil,
+					"foo1": {"bar": true},
+				},
+			},
+			{
+				Action:     translation.ActionDropDimensions,
+				MetricName: "metric",
+				DimensionPairs: map[string]map[string]bool{
+					"foo":  nil,
+					"foo1": {"bar": true},
+				},
+			},
+			{
+				Action: translation.ActionDropDimensions,
+				MetricNames: map[string]bool{
+					"metric1": true,
+					"metric2": true,
+				},
+				DimensionPairs: map[string]map[string]bool{
+					"foo":  nil,
+					"foo1": {"bar": true},
 				},
 			},
 		},
@@ -155,9 +181,6 @@ func TestLoadConfig(t *testing.T) {
 				LogUpdates:      false,
 				RetryDelay:      30 * time.Second,
 				CleanupInterval: 1 * time.Minute,
-			},
-			HostTranslations: map[string]string{
-				"host.name": "host",
 			},
 		},
 		NonAlphanumericDimensionChars: "_-.",

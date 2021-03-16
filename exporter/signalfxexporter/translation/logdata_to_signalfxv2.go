@@ -27,13 +27,14 @@ import (
 func LogSliceToSignalFxV2(
 	logger *zap.Logger,
 	logs pdata.LogSlice,
+	resourceAttrs pdata.AttributeMap,
 ) ([]*sfxpb.Event, int) {
 	events := make([]*sfxpb.Event, 0, logs.Len())
 	numDroppedLogRecords := 0
 
 	for i := 0; i < logs.Len(); i++ {
 		lr := logs.At(i)
-		event, ok := convertLogRecord(lr, logger)
+		event, ok := convertLogRecord(lr, resourceAttrs, logger)
 		if !ok {
 			numDroppedLogRecords++
 			continue
@@ -44,7 +45,7 @@ func LogSliceToSignalFxV2(
 	return events, numDroppedLogRecords
 }
 
-func convertLogRecord(lr pdata.LogRecord, logger *zap.Logger) (*sfxpb.Event, bool) {
+func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logger *zap.Logger) (*sfxpb.Event, bool) {
 	attrs := lr.Attributes()
 
 	categoryVal, ok := attrs.Get(splunk.SFxEventCategoryKey)
@@ -76,9 +77,19 @@ func convertLogRecord(lr pdata.LogRecord, logger *zap.Logger) (*sfxpb.Event, boo
 	}
 	attrs.Delete(splunk.SFxEventPropertiesKey)
 
-	attrs.ForEach(func(k string, v pdata.AttributeValue) {
+	// keep a record of Resource attributes to add as dimensions
+	// so as not to modify LogRecord attributes
+	resourceAttrsForDimensions := pdata.NewAttributeMap()
+	resourceAttrs.ForEach(func(k string, v pdata.AttributeValue) {
+		// LogRecord attribute takes priority
+		if _, ok := attrs.Get(k); !ok {
+			resourceAttrsForDimensions.Insert(k, v)
+		}
+	})
+
+	addDimension := func(k string, v pdata.AttributeValue) {
 		if v.Type() != pdata.AttributeValueSTRING {
-			logger.Debug("Failed to convert log record attribute value to SignalFx property value, key is not a string", zap.String("key", k))
+			logger.Debug("Failed to convert log record or resource attribute value to SignalFx property value, key is not a string", zap.String("key", k))
 			return
 		}
 
@@ -86,7 +97,10 @@ func convertLogRecord(lr pdata.LogRecord, logger *zap.Logger) (*sfxpb.Event, boo
 			Key:   k,
 			Value: v.StringVal(),
 		})
-	})
+	}
+
+	resourceAttrsForDimensions.ForEach(addDimension)
+	attrs.ForEach(addDimension)
 
 	event.EventType = lr.Name()
 	// Convert nanoseconds to nearest milliseconds, which is the unit of

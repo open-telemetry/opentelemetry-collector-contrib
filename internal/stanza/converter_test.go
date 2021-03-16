@@ -43,8 +43,8 @@ func complexEntry() *entry.Entry {
 	e := entry.New()
 	e.Severity = entry.Error
 	e.AddResourceKey("type", "global")
-	e.AddLabel("one", "two")
-	e.AddLabel("two", "three")
+	e.AddAttribute("one", "two")
+	e.AddAttribute("two", "three")
 	e.Record = map[string]interface{}{
 		"bool":   true,
 		"int":    123,
@@ -77,7 +77,7 @@ func TestConvertMetadata(t *testing.T) {
 	e.Timestamp = now
 	e.Severity = entry.Error
 	e.AddResourceKey("type", "global")
-	e.AddLabel("one", "two")
+	e.AddAttribute("one", "two")
 	e.Record = true
 
 	result := Convert(e)

@@ -54,7 +54,15 @@ func addHTTP(seg *awsxray.Segment, span *pdata.Span) {
 			attrs.UpsertInt(conventions.AttributeHTTPStatusCode, *resp.Status)
 		}
 
-		addInt64(resp.ContentLength, conventions.AttributeHTTPResponseContentLength, &attrs)
+		switch resp.ContentLength.(type) {
+		case string:
+			lengthPointer := resp.ContentLength.(string)
+			addString(&lengthPointer, conventions.AttributeHTTPResponseContentLength, &attrs)
+		case float64:
+			length := resp.ContentLength.(float64)
+			lengthPointer := int64(length)
+			addInt64(&lengthPointer, conventions.AttributeHTTPResponseContentLength, &attrs)
+		}
 	}
 
 }

@@ -89,9 +89,9 @@ func newCorrelationClient(cfg *Config, accessToken string, params component.Expo
 
 // AddSpans processes the provided spans to correlate the services and environment observed
 // to the resources (host, pods, etc.) emitting the spans.
-func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) (dropped int, err error) {
+func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) error {
 	if cor == nil || traces.ResourceSpans().Len() == 0 {
-		return
+		return nil
 	}
 
 	cor.once.Do(func() {
@@ -114,11 +114,6 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) (dropped 
 
 		hostDimension := string(hostID.Key)
 
-		// Translate host dimension (e.g. from host.name to host depending on configuration).
-		if newHostDimension, ok := cor.cfg.HostTranslations[string(hostID.Key)]; ok {
-			hostDimension = newHostDimension
-		}
-
 		cor.traceTracker = tracetracker.New(
 			newZapShim(cor.params.Logger),
 			cor.cfg.StaleServiceTimeout,
@@ -136,7 +131,7 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) (dropped 
 		cor.traceTracker.AddSpansGeneric(ctx, spanListWrap{traces.ResourceSpans()})
 	}
 
-	return
+	return nil
 }
 
 // Start correlation tracking.

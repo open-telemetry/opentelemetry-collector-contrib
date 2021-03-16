@@ -23,7 +23,6 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -308,7 +307,7 @@ func TestIntDataPointSliceAt(t *testing.T) {
 			assert.Equal(t, 1, dps.Len())
 			dp := dps.At(0)
 			if strings.Contains(tc.testName, "2nd rate") {
-				assert.True(t, (expectedDP.Value.(float64)-dp.Value.(float64)) < 0.01)
+				assert.InDelta(t, expectedDP.Value.(float64), dp.Value.(float64), 0.01)
 			} else {
 				assert.Equal(t, expectedDP, dp)
 			}
@@ -384,7 +383,7 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 			assert.Equal(t, 1, dps.Len())
 			dp := dps.At(0)
 			if strings.Contains(tc.testName, "2nd rate") {
-				assert.True(t, (expectedDP.Value.(float64)-dp.Value.(float64)) < 0.002)
+				assert.InDelta(t, expectedDP.Value.(float64), dp.Value.(float64), 0.002)
 			} else {
 				assert.Equal(t, expectedDP, dp)
 			}
@@ -506,15 +505,21 @@ func TestCalculateRate(t *testing.T) {
 	assert.Equal(t, float64(0), rate)
 
 	rate = calculateRate(intRateKey, intVal2, time2)
-	assert.Equal(t, float64(1), rate)
+	assert.InDelta(t, float64(1), rate, 0.1)
 	rate = calculateRate(doubleRateKey, doubleVal2, time2)
-	assert.Equal(t, 0.5, rate)
+	assert.InDelta(t, 0.5, rate, 0.1)
 
 	// Test change of data type
 	rate = calculateRate(intRateKey, doubleVal3, time3)
-	assert.Equal(t, float64(0.51), rate)
+	assert.InDelta(t, float64(0.51), rate, 0.1)
 	rate = calculateRate(doubleRateKey, intVal3, time3)
-	assert.Equal(t, float64(19.5), rate)
+	assert.InDelta(t, float64(19.5), rate, 0.1)
+}
+
+func calculateRate(metricName string, value float64, timestampMs int64) interface{} {
+	time := time.Unix(0, timestampMs*int64(time.Millisecond))
+	val, _ := rateMetricCalculator.Calculate(metricName, nil, value, time)
+	return val
 }
 
 func TestGetDataPoints(t *testing.T) {
@@ -622,7 +627,7 @@ func TestGetDataPoints(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		oc := consumerdata.MetricsData{
+		oc := internaldata.MetricsData{
 			Metrics: []*metricspb.Metric{tc.metric},
 		}
 
@@ -710,7 +715,7 @@ func TestGetDataPoints(t *testing.T) {
 }
 
 func BenchmarkGetDataPoints(b *testing.B) {
-	oc := consumerdata.MetricsData{
+	oc := internaldata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			generateTestIntGauge("int-gauge"),
 			generateTestDoubleGauge("double-gauge"),

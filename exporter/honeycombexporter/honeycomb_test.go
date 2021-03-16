@@ -553,7 +553,7 @@ func TestNode(t *testing.T) {
 				"opencensus.same_process_as_parent_span": true,
 				"opencensus.starttime":                   "2020-09-08T20:15:12Z",
 				"host.name":                              "my-host",
-				"opencensus.pid":                         float64(123),
+				"process.pid":                            float64(123),
 				"service.name":                           "test_service",
 			},
 		},

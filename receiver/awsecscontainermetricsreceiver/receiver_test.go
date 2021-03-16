@@ -16,7 +16,7 @@ package awsecscontainermetricsreceiver
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io/ioutil"
 	"testing"
 
@@ -98,14 +98,10 @@ func TestCollectDataFromEndpoint(t *testing.T) {
 func TestCollectDataFromEndpointWithConsumerError(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
-	sme := new(consumertest.MetricsSink)
-	e := fmt.Errorf("Test Error for Metrics Consumer")
-	sme.SetConsumeError(e)
-
 	metricsReceiver, err := New(
 		zap.NewNop(),
 		cfg,
-		sme,
+		consumertest.NewMetricsErr(errors.New("Test Error for Metrics Consumer")),
 		&fakeRestClient{},
 	)
 

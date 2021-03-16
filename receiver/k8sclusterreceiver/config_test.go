@@ -29,7 +29,7 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
 	factory := NewFactory()
@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 			CollectionInterval:         30 * time.Second,
 			NodeConditionTypesToReport: []string{"Ready", "MemoryPressure"},
-			MetadataExporters:          []string{"exampleexporter"},
+			MetadataExporters:          []string{"nop"},
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: k8sconfig.AuthTypeServiceAccount,
 			},

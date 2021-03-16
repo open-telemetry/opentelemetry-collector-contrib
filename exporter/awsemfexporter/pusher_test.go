@@ -20,22 +20,99 @@ import (
 	"math/rand"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
 )
+
+func TestConcurrentPushAndFlush(t *testing.T) {
+	maxEventPayloadBytes = 128
+
+	concurrency := 10
+	current := time.Now().UnixNano() / 1e6
+	collection := map[string]interface{}{}
+
+	pusher, _ := newMockPusherWithEventCheck(func(msg string) {
+		if _, ok := collection[msg]; ok {
+			t.Errorf("Sending duplicated event message %s", msg)
+		} else {
+			collection[msg] = struct{}{}
+		}
+	})
+
+	wg := sync.WaitGroup{}
+	wg.Add(concurrency)
+	for i := 0; i < concurrency; i++ {
+		go func(ii int) {
+			for j := 0; j < 10; j++ {
+				pusher.AddLogEntry(newLogEvent(current, fmt.Sprintf("batch-%d-%d", ii, j)))
+			}
+			time.Sleep(1000 * time.Millisecond)
+			pusher.ForceFlush()
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+	assert.Equal(t, concurrency*10, len(collection))
+
+	maxEventPayloadBytes = DefaultMaxEventPayloadBytes
+}
+
+func newMockPusherWithEventCheck(check func(msg string)) (Pusher, string) {
+	logger := zap.NewNop()
+	tmpfolder, _ := ioutil.TempDir("", "")
+	svc := NewAlwaysPassMockLogClient(func(args mock.Arguments) {
+		input := args.Get(0).(*cloudwatchlogs.PutLogEventsInput)
+		for _, event := range input.LogEvents {
+			eventMsg := *event.Message
+			check(eventMsg)
+		}
+	})
+	p := newPusher(&logGroup, &logStreamName, svc, logger)
+	return p, tmpfolder
+}
 
 //
 //  LogEvent Tests
 //
 func TestLogEvent_eventPayloadBytes(t *testing.T) {
 	testMessage := "test message"
-	logEvent := NewLogEvent(0, testMessage)
+	logEvent := newLogEvent(0, testMessage)
 	assert.Equal(t, len(testMessage)+PerEventHeaderBytes, logEvent.eventPayloadBytes())
+}
+
+func TestValidateLogEventWithMutating(t *testing.T) {
+	maxEventPayloadBytes = 64
+
+	logger := zap.NewNop()
+	logEvent := newLogEvent(0, "abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789")
+	logEvent.LogGeneratedTime = time.Now()
+	err := logEvent.Validate(logger)
+	assert.Nil(t, err)
+	assert.True(t, *logEvent.InputLogEvent.Timestamp > int64(0))
+	assert.Equal(t, 64-PerEventHeaderBytes, len(*logEvent.InputLogEvent.Message))
+
+	maxEventPayloadBytes = DefaultMaxEventPayloadBytes
+}
+
+func TestValidateLogEventFailed(t *testing.T) {
+	logger := zap.NewNop()
+	logEvent := newLogEvent(0, "")
+	err := logEvent.Validate(logger)
+	assert.NotNil(t, err)
+	assert.Equal(t, "empty log event message", err.Error())
+
+	invalidTimestamp := time.Now().AddDate(0, -1, 0)
+	logEvent = newLogEvent(invalidTimestamp.Unix()*1e3, "test")
+	err = logEvent.Validate(logger)
+	assert.NotNil(t, err)
+	assert.Equal(t, "the log entry's timestamp is older than 14 days or more than 2 hours in the future", err.Error())
 }
 
 //
@@ -45,27 +122,27 @@ func TestLogEventBatch_timestampWithin24Hours(t *testing.T) {
 	min := time.Date(2017, time.June, 20, 23, 38, 0, 0, time.Local)
 	max := min.Add(23 * time.Hour)
 	logEventBatch := &LogEventBatch{
-		maxTimestampInMillis: max.UnixNano() / 1e6,
-		minTimestampInMillis: min.UnixNano() / 1e6,
+		maxTimestampMs: max.UnixNano() / 1e6,
+		minTimestampMs: min.UnixNano() / 1e6,
 	}
 
 	//less than the min
 	target := min.Add(-1 * time.Hour)
-	assert.True(t, logEventBatch.timestampWithin24Hours(aws.Int64(target.UnixNano()/1e6)))
+	assert.True(t, logEventBatch.isActive(aws.Int64(target.UnixNano()/1e6)))
 
 	target = target.Add(-1 * time.Millisecond)
-	assert.False(t, logEventBatch.timestampWithin24Hours(aws.Int64(target.UnixNano()/1e6)))
+	assert.False(t, logEventBatch.isActive(aws.Int64(target.UnixNano()/1e6)))
 
 	//more than the max
 	target = max.Add(1 * time.Hour)
-	assert.True(t, logEventBatch.timestampWithin24Hours(aws.Int64(target.UnixNano()/1e6)))
+	assert.True(t, logEventBatch.isActive(aws.Int64(target.UnixNano()/1e6)))
 
 	target = target.Add(1 * time.Millisecond)
-	assert.False(t, logEventBatch.timestampWithin24Hours(aws.Int64(target.UnixNano()/1e6)))
+	assert.False(t, logEventBatch.isActive(aws.Int64(target.UnixNano()/1e6)))
 
 	//in between min and max
 	target = min.Add(2 * time.Hour)
-	assert.True(t, logEventBatch.timestampWithin24Hours(aws.Int64(target.UnixNano()/1e6)))
+	assert.True(t, logEventBatch.isActive(aws.Int64(target.UnixNano()/1e6)))
 }
 
 func TestLogEventBatch_sortLogEvents(t *testing.T) {
@@ -76,7 +153,7 @@ func TestLogEventBatch_sortLogEvents(t *testing.T) {
 
 	for i := 0; i < totalEvents; i++ {
 		timestamp := rand.Int()
-		logEvent := NewLogEvent(
+		logEvent := newLogEvent(
 			int64(timestamp),
 			fmt.Sprintf("message%v", timestamp))
 		fmt.Printf("logEvents[%d].Timestamp=%d.\n", i, timestamp)
@@ -100,7 +177,7 @@ func TestLogEventBatch_sortLogEvents(t *testing.T) {
 func newMockPusher() (*pusher, string) {
 	logger := zap.NewNop()
 	tmpfolder, _ := ioutil.TempDir("", "")
-	svc := NewAlwaysPassMockLogClient()
+	svc := NewAlwaysPassMockLogClient(func(args mock.Arguments) {})
 	p := newPusher(&logGroup, &logStreamName, svc, logger)
 	return p, tmpfolder
 }
@@ -109,16 +186,16 @@ func newMockPusher() (*pusher, string) {
 // Pusher Tests
 //
 
-var timestampInMillis = time.Now().UnixNano() / 1e6
+var timestampMs = time.Now().UnixNano() / 1e6
 var msg = "test log message"
 
 func TestPusher_newLogEventBatch(t *testing.T) {
 	p, tmpFolder := newMockPusher()
 	defer os.RemoveAll(tmpFolder)
 
-	logEventBatch := p.newLogEventBatch()
-	assert.Equal(t, int64(0), logEventBatch.maxTimestampInMillis)
-	assert.Equal(t, int64(0), logEventBatch.minTimestampInMillis)
+	logEventBatch := newLogEventBatch(p.logGroupName, p.logStreamName)
+	assert.Equal(t, int64(0), logEventBatch.maxTimestampMs)
+	assert.Equal(t, int64(0), logEventBatch.minTimestampMs)
 	assert.Equal(t, 0, logEventBatch.byteTotal)
 	assert.Equal(t, 0, len(logEventBatch.PutLogEventsInput.LogEvents))
 	assert.Equal(t, p.logStreamName, logEventBatch.PutLogEventsInput.LogStreamName)
@@ -126,12 +203,12 @@ func TestPusher_newLogEventBatch(t *testing.T) {
 	assert.Equal(t, (*string)(nil), logEventBatch.PutLogEventsInput.SequenceToken)
 }
 
-func TestPusher_newLogEventBatchIfNeeded(t *testing.T) {
+func TestPusher_addLogEventBatch(t *testing.T) {
 	p, tmpFolder := newMockPusher()
 	defer os.RemoveAll(tmpFolder)
 
 	cap := cap(p.logEventBatch.PutLogEventsInput.LogEvents)
-	logEvent := NewLogEvent(timestampInMillis, msg)
+	logEvent := newLogEvent(timestampMs, msg)
 
 	for i := 0; i < cap; i++ {
 		p.logEventBatch.PutLogEventsInput.LogEvents = append(p.logEventBatch.PutLogEventsInput.LogEvents, logEvent.InputLogEvent)
@@ -139,77 +216,41 @@ func TestPusher_newLogEventBatchIfNeeded(t *testing.T) {
 
 	assert.Equal(t, cap, len(p.logEventBatch.PutLogEventsInput.LogEvents))
 
-	p.newLogEventBatchIfNeeded(logEvent)
+	assert.NotNil(t, p.addLogEvent(logEvent))
 	//the actual log event add operation happens after the func newLogEventBatchIfNeeded
-	assert.Equal(t, 0, len(p.logEventBatch.PutLogEventsInput.LogEvents))
+	assert.Equal(t, 1, len(p.logEventBatch.PutLogEventsInput.LogEvents))
 
 	p.logEventBatch.byteTotal = MaxRequestPayloadBytes - logEvent.eventPayloadBytes() + 1
-	p.newLogEventBatchIfNeeded(logEvent)
-	assert.Equal(t, 0, len(p.logEventBatch.PutLogEventsInput.LogEvents))
-
-	p.logEventBatch.minTimestampInMillis, p.logEventBatch.maxTimestampInMillis = timestampInMillis, timestampInMillis
-	p.newLogEventBatchIfNeeded(NewLogEvent(timestampInMillis+(time.Hour*24+time.Millisecond*1).Nanoseconds()/1e6, msg))
-	assert.Equal(t, 0, len(p.logEventBatch.PutLogEventsInput.LogEvents))
-
-	//even the event batch is expired, the total byte is sitll 0 at this time.
-	p.newLogEventBatchIfNeeded(nil)
-	assert.Equal(t, 0, len(p.logEventBatch.PutLogEventsInput.LogEvents))
-
-	//even the event batch is expired, the total byte is sitll 0 at this time.
-	p.newLogEventBatchIfNeeded(logEvent)
-	assert.Equal(t, 0, len(p.logEventBatch.PutLogEventsInput.LogEvents))
-
-	//the previous sleep is still in effect at this step.
-	p.logEventBatch.byteTotal = 1
-	p.newLogEventBatchIfNeeded(nil)
-	assert.Equal(t, 0, len(p.logEventBatch.PutLogEventsInput.LogEvents))
-
-}
-
-func TestPusher_addLogEvent(t *testing.T) {
-	p, tmpFolder := newMockPusher()
-	defer os.RemoveAll(tmpFolder)
-
-	p.addLogEvent(NewLogEvent(time.Now().Add(-(14*24+1)*time.Hour).UnixNano()/1e6, msg))
-	assert.Equal(t, 0, len(p.logEventBatch.PutLogEventsInput.LogEvents))
-	assert.Equal(t, int64(0), p.logEventBatch.minTimestampInMillis)
-	assert.Equal(t, int64(0), p.logEventBatch.maxTimestampInMillis)
-	assert.Equal(t, 0, p.logEventBatch.byteTotal)
-
-	p.addLogEvent(NewLogEvent(time.Now().Add((2+1)*time.Hour).UnixNano()/1e6, msg))
-	assert.Equal(t, 0, len(p.logEventBatch.PutLogEventsInput.LogEvents))
-	assert.Equal(t, int64(0), p.logEventBatch.minTimestampInMillis)
-	assert.Equal(t, int64(0), p.logEventBatch.maxTimestampInMillis)
-	assert.Equal(t, 0, p.logEventBatch.byteTotal)
-
-	p.addLogEvent(NewLogEvent(timestampInMillis, ""))
-	assert.Equal(t, 0, len(p.logEventBatch.PutLogEventsInput.LogEvents))
-	assert.Equal(t, int64(0), p.logEventBatch.minTimestampInMillis)
-	assert.Equal(t, int64(0), p.logEventBatch.maxTimestampInMillis)
-	assert.Equal(t, 0, p.logEventBatch.byteTotal)
-
-	p.addLogEvent(NewLogEvent(timestampInMillis, msg))
+	assert.NotNil(t, p.addLogEvent(logEvent))
 	assert.Equal(t, 1, len(p.logEventBatch.PutLogEventsInput.LogEvents))
-	assert.Equal(t, timestampInMillis, p.logEventBatch.minTimestampInMillis)
-	assert.Equal(t, timestampInMillis, p.logEventBatch.maxTimestampInMillis)
-	assert.Equal(t, len(msg)+PerEventHeaderBytes, p.logEventBatch.byteTotal)
 
-	p.addLogEvent(NewLogEvent(timestampInMillis+1, msg+"1"))
-	assert.Equal(t, 2, len(p.logEventBatch.PutLogEventsInput.LogEvents))
-	assert.Equal(t, timestampInMillis, p.logEventBatch.minTimestampInMillis)
-	assert.Equal(t, timestampInMillis+1, p.logEventBatch.maxTimestampInMillis)
-	assert.Equal(t, len(msg)+len(msg+"1")+2*PerEventHeaderBytes, p.logEventBatch.byteTotal)
+	p.logEventBatch.minTimestampMs, p.logEventBatch.maxTimestampMs = timestampMs, timestampMs
+	assert.NotNil(t, p.addLogEvent(newLogEvent(timestampMs+(time.Hour*24+time.Millisecond*1).Nanoseconds()/1e6, msg)))
+	assert.Equal(t, 1, len(p.logEventBatch.PutLogEventsInput.LogEvents))
+
+	assert.Nil(t, p.addLogEvent(nil))
+	assert.Equal(t, 1, len(p.logEventBatch.PutLogEventsInput.LogEvents))
+
+	assert.NotNil(t, p.addLogEvent(logEvent))
+	assert.Equal(t, 1, len(p.logEventBatch.PutLogEventsInput.LogEvents))
+
+	p.logEventBatch.byteTotal = 1
+	assert.Nil(t, p.addLogEvent(nil))
+	assert.Equal(t, 1, len(p.logEventBatch.PutLogEventsInput.LogEvents))
+
 }
 
-func TestPusher_truncateLogEvent(t *testing.T) {
+func TestAddLogEventWithValidation(t *testing.T) {
 	p, tmpFolder := newMockPusher()
 	defer os.RemoveAll(tmpFolder)
-	largeEventContent := strings.Repeat("a", MaxEventPayloadBytes)
+	largeEventContent := strings.Repeat("a", DefaultMaxEventPayloadBytes)
 
-	logEvent := NewLogEvent(timestampInMillis, largeEventContent)
-	expectedTruncatedContent := (*logEvent.InputLogEvent.Message)[0:(MaxEventPayloadBytes-PerEventHeaderBytes-len(TruncatedSuffix))] + TruncatedSuffix
+	logEvent := newLogEvent(timestampMs, largeEventContent)
+	expectedTruncatedContent := (*logEvent.InputLogEvent.Message)[0:(DefaultMaxEventPayloadBytes-PerEventHeaderBytes-len(TruncatedSuffix))] + TruncatedSuffix
 
 	p.AddLogEntry(logEvent)
-
 	assert.Equal(t, expectedTruncatedContent, *logEvent.InputLogEvent.Message)
+
+	logEvent = newLogEvent(timestampMs, "")
+	assert.NotNil(t, p.addLogEvent(logEvent))
 }

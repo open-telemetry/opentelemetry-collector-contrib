@@ -1,8 +1,8 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
   newrelic:
@@ -13,13 +13,13 @@ exporters:
       server: test-server
       prod: true
       weight: 3
-    metrics_url_override: http://alt.metrics.newrelic.com
-    spans_url_override: http://alt.spans.newrelic.com
+    metrics_host_override: alt.metrics.newrelic.com
+    spans_host_override: alt.spans.newrelic.com
 
 service:
   pipelines:
     traces:
-        receivers: [examplereceiver]
-        processors: [exampleprocessor]
+        receivers: [nop]
+        processors: [nop]
         exporters: [newrelic]
 
