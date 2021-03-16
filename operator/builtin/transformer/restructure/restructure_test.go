@@ -28,26 +28,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	yaml "gopkg.in/yaml.v2"
 )
-
-func NewFakeRestructureOperator() (*RestructureOperator, *testutil.Operator) {
-	mock := testutil.Operator{}
-	logger, _ := zap.NewProduction()
-	return &RestructureOperator{
-		TransformerOperator: helper.TransformerOperator{
-			WriterOperator: helper.WriterOperator{
-				BasicOperator: helper.BasicOperator{
-					OperatorID:    "test",
-					OperatorType:  "restructure",
-					SugaredLogger: logger.Sugar(),
-				},
-				OutputOperators: []operator.Operator{&mock},
-			},
-		},
-	}, &mock
-}
 
 func TestRestructureOperator(t *testing.T) {
 	os.Setenv("TEST_RESTRUCTURE_PLUGIN_ENV", "foo")
@@ -360,7 +342,7 @@ ops:
   }]
 }`
 
-	expected := operator.Config(operator.Config{
+	expected := operator.Config{
 		Builder: &RestructureOperatorConfig{
 			TransformerConfig: helper.TransformerConfig{
 				WriterConfig: helper.WriterConfig{
@@ -408,7 +390,7 @@ ops:
 				}},
 			},
 		},
-	})
+	}
 
 	var unmarshalledYAML operator.Config
 	err := yaml.UnmarshalStrict([]byte(configYAML), &unmarshalledYAML)

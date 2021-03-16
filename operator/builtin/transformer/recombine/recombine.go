@@ -194,7 +194,7 @@ func (r *RecombineOperator) matchIndicatesLast() bool {
 }
 
 // addToBatch adds the current entry to the current batch of entries that will be combined
-func (r *RecombineOperator) addToBatch(ctx context.Context, e *entry.Entry) {
+func (r *RecombineOperator) addToBatch(_ context.Context, e *entry.Entry) {
 	if len(r.batch) >= r.maxBatchSize {
 		r.Error("Batch size exceeds max batch size. Flushing logs that have not been recombined")
 		r.flushUncombined(context.Background())

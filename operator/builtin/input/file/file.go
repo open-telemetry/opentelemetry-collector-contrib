@@ -57,7 +57,6 @@ type InputOperator struct {
 	encoding encoding.Encoding
 
 	wg         sync.WaitGroup
-	readerWg   sync.WaitGroup
 	firstCheck bool
 	cancel     context.CancelFunc
 }
@@ -111,25 +110,26 @@ func (f *InputOperator) startPoller(ctx context.Context) {
 
 // poll checks all the watched paths for new entries
 func (f *InputOperator) poll(ctx context.Context) {
-
 	var matches []string
 	if len(f.queuedMatches) > f.MaxConcurrentFiles {
 		matches, f.queuedMatches = f.queuedMatches[:f.MaxConcurrentFiles], f.queuedMatches[f.MaxConcurrentFiles:]
-	} else if len(f.queuedMatches) > 0 {
-		matches, f.queuedMatches = f.queuedMatches, make([]string, 0)
 	} else {
-		// Increment the generation on all known readers
-		// This is done here because the next generation is about to start
-		for i := 0; i < len(f.knownFiles); i++ {
-			f.knownFiles[i].generation++
-		}
+		if len(f.queuedMatches) > 0 {
+			matches, f.queuedMatches = f.queuedMatches, make([]string, 0)
+		} else {
+			// Increment the generation on all known readers
+			// This is done here because the next generation is about to start
+			for i := 0; i < len(f.knownFiles); i++ {
+				f.knownFiles[i].generation++
+			}
 
-		// Get the list of paths on disk
-		matches = getMatches(f.Include, f.Exclude)
-		if f.firstCheck && len(matches) == 0 {
-			f.Warnw("no files match the configured include patterns", "include", f.Include)
-		} else if len(matches) > f.MaxConcurrentFiles {
-			matches, f.queuedMatches = matches[:f.MaxConcurrentFiles], matches[f.MaxConcurrentFiles:]
+			// Get the list of paths on disk
+			matches = getMatches(f.Include, f.Exclude)
+			if f.firstCheck && len(matches) == 0 {
+				f.Warnw("no files match the configured include patterns", "include", f.Include)
+			} else if len(matches) > f.MaxConcurrentFiles {
+				matches, f.queuedMatches = matches[:f.MaxConcurrentFiles], matches[f.MaxConcurrentFiles:]
+			}
 		}
 	}
 
@@ -229,7 +229,6 @@ OUTER:
 			// Empty file, don't read it until we can compare its fingerprint
 			fps = append(fps[:i], fps[i+1:]...)
 			filesCopy = append(filesCopy[:i], filesCopy[i+1:]...)
-
 		}
 
 		for j := 0; j < len(fps); j++ {
@@ -267,9 +266,7 @@ OUTER:
 // before clearing out readers that have existed for 3 generations.
 func (f *InputOperator) saveCurrent(readers []*Reader) {
 	// Add readers from the current, completed poll interval to the list of known files
-	for _, reader := range readers {
-		f.knownFiles = append(f.knownFiles, reader)
-	}
+	f.knownFiles = append(f.knownFiles, readers...)
 
 	// Clear out old readers. They are sorted such that they are oldest first,
 	// so we can just find the first reader whose generation is less than our

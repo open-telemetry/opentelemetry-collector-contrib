@@ -24,17 +24,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func NewTestConfig(t *testing.T) (*operator.Config, error) {
-	json := `{
-		"type": "noop",
-		"id": "test_id",
-		"output": "test_output"
-	}`
-	config := &operator.Config{}
-	err := config.UnmarshalJSON([]byte(json))
-	return config, err
-}
-
 func TestBuildValid(t *testing.T) {
 	cfg := NewNoopOperatorConfig("test")
 	ops, err := cfg.Build(testutil.NewBuildContext(t))

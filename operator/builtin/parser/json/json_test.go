@@ -154,7 +154,6 @@ func TestJSONParser(t *testing.T) {
 }
 
 func TestJSONParserWithEmbeddedTimeParser(t *testing.T) {
-
 	testTime := time.Unix(1136214245, 0)
 
 	cases := []struct {

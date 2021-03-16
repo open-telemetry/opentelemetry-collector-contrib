@@ -68,7 +68,7 @@ func TestSyslogParser(t *testing.T) {
 
 func TestSyslogParserConfig(t *testing.T) {
 	expect := NewSyslogParserConfig("test")
-	expect.Protocol = "rfc3164"
+	expect.Protocol = RFC3164
 	expect.ParseFrom = entry.NewRecordField("from")
 	expect.ParseTo = entry.NewRecordField("to")
 
@@ -76,7 +76,7 @@ func TestSyslogParserConfig(t *testing.T) {
 		input := map[string]interface{}{
 			"id":         "test",
 			"type":       "syslog_parser",
-			"protocol":   "rfc3164",
+			"protocol":   RFC3164,
 			"parse_from": "$.from",
 			"parse_to":   "$.to",
 			"on_error":   "send",
@@ -92,7 +92,7 @@ func TestSyslogParserConfig(t *testing.T) {
 type: syslog_parser
 id: test
 on_error: "send"
-protocol: "rfc3164"
+protocol: rfc3164
 parse_from: $.from
 parse_to: $.to`
 		var actual SyslogParserConfig
