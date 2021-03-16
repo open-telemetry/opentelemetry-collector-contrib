@@ -206,9 +206,12 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 
 	md := internaldata.MetricsData{
 		Resource: &resourcepb.Resource{
-			Type: "test",
+			Type: "host",
 			Labels: map[string]string{
-				"attr": "attr_value",
+				"cloud.zone":       "us-central1",
+				"host.name":        "foo",
+				"k8s.cluster.name": "test",
+				"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
 			},
 		},
 		Metrics: []*metricspb.Metric{
@@ -235,6 +238,15 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 					metricstestutil.Double(time.Now(), 123))),
 		},
 	}
+	md.Metrics[2].Resource = &resourcepb.Resource{
+		Type: "host",
+		Labels: map[string]string{
+			"cloud.zone":       "us-central1",
+			"host.name":        "bar",
+			"k8s.cluster.name": "test",
+			"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
+		},
+	}
 
 	assert.NoError(t, sde.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(md)), err)
 
@@ -256,21 +268,39 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 	tr := trm.req.(*cloudmonitoringpb.CreateTimeSeriesRequest)
 	require.Len(t, tr.TimeSeries, 3)
 
+	resourceFoo := map[string]string{
+		"node_name":    "foo",
+		"cluster_name": "test",
+		"location":     "us-central1",
+		"project_id":   "1234567",
+	}
+
+	resourceBar := map[string]string{
+		"node_name":    "bar",
+		"cluster_name": "test",
+		"location":     "us-central1",
+		"project_id":   "1234567",
+	}
+
 	expectedTimeSeries := map[string]struct {
-		value  float64
-		labels map[string]string
+		value          float64
+		labels         map[string]string
+		resourceLabels map[string]string
 	}{
 		"custom.googleapis.com/opencensus/test_gauge1": {
-			value:  float64(1),
-			labels: map[string]string{"k0": "v0"},
+			value:          float64(1),
+			labels:         map[string]string{"k0": "v0"},
+			resourceLabels: resourceFoo,
 		},
 		"custom.googleapis.com/opencensus/test_gauge2": {
-			value:  float64(12),
-			labels: map[string]string{"k0": "v0", "k1": "v1"},
+			value:          float64(12),
+			labels:         map[string]string{"k0": "v0", "k1": "v1"},
+			resourceLabels: resourceFoo,
 		},
 		"custom.googleapis.com/opencensus/test_gauge3": {
-			value:  float64(123),
-			labels: map[string]string{"k0": "v0", "k1": "v1", "k2": "v2"},
+			value:          float64(123),
+			labels:         map[string]string{"k0": "v0", "k1": "v1", "k2": "v2"},
+			resourceLabels: resourceBar,
 		},
 	}
 	for i := 0; i < 3; i++ {
@@ -279,5 +309,6 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 		assert.Equal(t, ts.labels, tr.TimeSeries[i].Metric.Labels)
 		require.Len(t, tr.TimeSeries[i].Points, 1)
 		assert.Equal(t, ts.value, tr.TimeSeries[i].Points[0].Value.GetDoubleValue())
+		assert.Equal(t, ts.resourceLabels, tr.TimeSeries[i].Resource.Labels)
 	}
 }
