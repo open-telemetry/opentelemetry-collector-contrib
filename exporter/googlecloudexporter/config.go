@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stackdriverexporter
+package googlecloudexporter
 
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -20,7 +20,7 @@ import (
 	"google.golang.org/api/option"
 )
 
-// Config defines configuration for Stackdriver exporter.
+// Config defines configuration for Google Cloud exporter.
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	ProjectID                     string                   `mapstructure:"project"`
@@ -49,7 +49,7 @@ type MetricConfig struct {
 	SkipCreateMetricDescriptor bool   `mapstructure:"skip_create_descriptor"`
 }
 
-// ResourceMapping defines mapping of resources from source (OpenCensus) to target (Stackdriver).
+// ResourceMapping defines mapping of resources from source (OpenCensus) to target (Google Cloud).
 type ResourceMapping struct {
 	SourceType string `mapstructure:"source_type"`
 	TargetType string `mapstructure:"target_type"`

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stackdriverexporter
+package googlecloudexporter
 
 import (
 	"path"
@@ -42,13 +42,13 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Exporters), 2)
 
-	r0 := cfg.Exporters["stackdriver"]
+	r0 := cfg.Exporters["googlecloud"]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Exporters["stackdriver/customname"].(*Config)
+	r1 := cfg.Exporters["googlecloud/customname"].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ExporterSettings: configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "stackdriver/customname"},
+			ExporterSettings: configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "googlecloud/customname"},
 			ProjectID:        "my-project",
 			UserAgent:        "opentelemetry-collector-contrib {{version}}",
 			Endpoint:         "test-endpoint",
@@ -62,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 					TargetType: "target-resource1",
 					LabelMappings: []LabelMapping{
 						{
-							SourceKey: "contrib.opencensus.io/exporter/stackdriver/project_id",
+							SourceKey: "contrib.opencensus.io/exporter/googlecloud/project_id",
 							TargetKey: "project_id",
 							Optional:  true,
 						},

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stackdriverexporter
+package googlecloudexporter
 
 import (
 	"context"
@@ -27,13 +27,13 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr        = "stackdriver"
+	typeStr        = "googlecloud"
 	defaultTimeout = 12 * time.Second // Consistent with Cloud Monitoring's timeout
 )
 
 var once sync.Once
 
-// NewFactory creates a factory for the stackdriver exporter
+// NewFactory creates a factory for the googlecloud exporter
 func NewFactory() component.ExporterFactory {
 	// register view for self-observability
 	once.Do(func() {
@@ -68,7 +68,7 @@ func createTraceExporter(
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter) (component.TracesExporter, error) {
 	eCfg := cfg.(*Config)
-	return newStackdriverTraceExporter(eCfg, params)
+	return newGoogleCloudTraceExporter(eCfg, params)
 }
 
 // createMetricsExporter creates a metrics exporter based on this config.
@@ -77,5 +77,5 @@ func createMetricsExporter(
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter) (component.MetricsExporter, error) {
 	eCfg := cfg.(*Config)
-	return newStackdriverMetricsExporter(eCfg, params)
+	return newGoogleCloudMetricsExporter(eCfg, params)
 }
