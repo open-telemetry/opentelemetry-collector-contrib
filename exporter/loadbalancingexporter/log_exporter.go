@@ -16,8 +16,8 @@ package loadbalancingexporter
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -33,13 +33,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
-var _ component.TracesExporter = (*traceExporterImp)(nil)
+var _ component.LogsExporter = (*logExporterImp)(nil)
 
-var (
-	errNoTracesInBatch = errors.New("no traces were found in the batch")
-)
-
-type traceExporterImp struct {
+type logExporterImp struct {
 	logger *zap.Logger
 
 	loadBalancer loadBalancer
@@ -48,8 +44,8 @@ type traceExporterImp struct {
 	shutdownWg sync.WaitGroup
 }
 
-// Create new traces exporter
-func newTracesExporter(params component.ExporterCreateParams, cfg configmodels.Exporter) (*traceExporterImp, error) {
+// Create new logs exporter
+func newLogsExporter(params component.ExporterCreateParams, cfg configmodels.Exporter) (*logExporterImp, error) {
 	exporterFactory := otlpexporter.NewFactory()
 
 	tmplParams := component.ExporterCreateParams{
@@ -59,25 +55,19 @@ func newTracesExporter(params component.ExporterCreateParams, cfg configmodels.E
 
 	loadBalancer, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
-		return exporterFactory.CreateTracesExporter(ctx, tmplParams, &oCfg)
+		return exporterFactory.CreateLogsExporter(ctx, tmplParams, &oCfg)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &traceExporterImp{
+	return &logExporterImp{
 		logger:       params.Logger,
 		loadBalancer: loadBalancer,
 	}, nil
 }
 
-func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
-	oCfg := cfg.Protocol.OTLP
-	oCfg.Endpoint = endpoint
-	return oCfg
-}
-
-func (e *traceExporterImp) Start(ctx context.Context, host component.Host) error {
+func (e *logExporterImp) Start(ctx context.Context, host component.Host) error {
 	if err := e.loadBalancer.Start(ctx, host); err != nil {
 		return err
 	}
@@ -85,17 +75,17 @@ func (e *traceExporterImp) Start(ctx context.Context, host component.Host) error
 	return nil
 }
 
-func (e *traceExporterImp) Shutdown(context.Context) error {
+func (e *logExporterImp) Shutdown(context.Context) error {
 	e.stopped = true
 	e.shutdownWg.Wait()
 	return nil
 }
 
-func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	var errors []error
-	batches := batchpersignal.SplitTraces(td)
+	batches := batchpersignal.SplitLogs(ld)
 	for _, batch := range batches {
-		if err := e.consumeTrace(ctx, batch); err != nil {
+		if err := e.consumeLog(ctx, batch); err != nil {
 			errors = append(errors, err)
 		}
 	}
@@ -103,26 +93,30 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td pdata.Traces) e
 	return consumererror.CombineErrors(errors)
 }
 
-func (e *traceExporterImp) consumeTrace(ctx context.Context, td pdata.Traces) error {
-	traceID := traceIDFromTraces(td)
+func (e *logExporterImp) consumeLog(ctx context.Context, ld pdata.Logs) error {
+	traceID := traceIDFromLogs(ld)
+	balancingKey := traceID
 	if traceID == pdata.InvalidTraceID() {
-		return errNoTracesInBatch
+		// every log may not contain a traceID
+		// generate a random traceID as balancingKey
+		// so the log can be routed to a random backend
+		balancingKey = random()
 	}
 
-	endpoint := e.loadBalancer.Endpoint(traceID)
+	endpoint := e.loadBalancer.Endpoint(balancingKey)
 	exp, err := e.loadBalancer.Exporter(endpoint)
 	if err != nil {
 		return err
 	}
 
-	te, ok := exp.(component.TracesExporter)
+	le, ok := exp.(component.LogsExporter)
 	if !ok {
-		expectType := (*component.TracesExporter)(nil)
-		return fmt.Errorf("expected %T but got %T", expectType, exp)
+		expectType := (*component.LogsExporter)(nil)
+		return fmt.Errorf("unable to export logs, unexpected exporter type: expected %T but got %T", expectType, exp)
 	}
 
 	start := time.Now()
-	err = te.ConsumeTraces(ctx, td)
+	err = le.ConsumeLogs(ctx, ld)
 	duration := time.Since(start)
 	ctx, _ = tag.New(ctx, tag.Upsert(tag.MustNewKey("endpoint"), endpoint))
 
@@ -137,21 +131,29 @@ func (e *traceExporterImp) consumeTrace(ctx context.Context, td pdata.Traces) er
 	return err
 }
 
-func traceIDFromTraces(td pdata.Traces) pdata.TraceID {
-	rs := td.ResourceSpans()
-	if rs.Len() == 0 {
+func traceIDFromLogs(ld pdata.Logs) pdata.TraceID {
+	rl := ld.ResourceLogs()
+	if rl.Len() == 0 {
 		return pdata.InvalidTraceID()
 	}
 
-	ils := rs.At(0).InstrumentationLibrarySpans()
-	if ils.Len() == 0 {
+	ill := rl.At(0).InstrumentationLibraryLogs()
+	if ill.Len() == 0 {
 		return pdata.InvalidTraceID()
 	}
 
-	spans := ils.At(0).Spans()
-	if spans.Len() == 0 {
+	logs := ill.At(0).Logs()
+	if logs.Len() == 0 {
 		return pdata.InvalidTraceID()
 	}
 
-	return spans.At(0).TraceID()
+	return logs.At(0).TraceID()
+}
+
+func random() pdata.TraceID {
+	v1 := uint8(rand.Intn(256))
+	v2 := uint8(rand.Intn(256))
+	v3 := uint8(rand.Intn(256))
+	v4 := uint8(rand.Intn(256))
+	return pdata.NewTraceID([16]byte{v1, v2, v3, v4})
 }
