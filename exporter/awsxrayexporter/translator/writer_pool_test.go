@@ -75,7 +75,6 @@ func BenchmarkWithPool(b *testing.B) {
 
 func constructWriterPoolSpan() pdata.Span {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[semconventions.AttributeHTTPClientIP] = "192.168.15.32"

@@ -330,7 +330,6 @@ func makeXRayAttributes(attributes map[string]string, resource pdata.Resource, s
 		metadata    = map[string]map[string]interface{}{}
 		user        string
 	)
-	delete(attributes, semconventions.AttributeComponent)
 	userid, ok := attributes[semconventions.AttributeEnduserID]
 	if ok {
 		user = userid
