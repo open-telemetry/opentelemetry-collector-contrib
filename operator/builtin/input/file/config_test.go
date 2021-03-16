@@ -339,8 +339,7 @@ func TestConfig(t *testing.T) {
 			false,
 			func() *InputConfig {
 				cfg := defaultCfg()
-				var newMulti *MultilineConfig
-				newMulti = new(MultilineConfig)
+				newMulti := new(MultilineConfig)
 				newMulti.LineStartPattern = "Start"
 				cfg.Multiline = newMulti
 				return cfg
@@ -351,8 +350,7 @@ func TestConfig(t *testing.T) {
 			false,
 			func() *InputConfig {
 				cfg := defaultCfg()
-				var newMulti *MultilineConfig
-				newMulti = new(MultilineConfig)
+				newMulti := new(MultilineConfig)
 				newMulti.LineStartPattern = "%"
 				cfg.Multiline = newMulti
 				return cfg
@@ -363,8 +361,7 @@ func TestConfig(t *testing.T) {
 			false,
 			func() *InputConfig {
 				cfg := defaultCfg()
-				var newMulti *MultilineConfig
-				newMulti = new(MultilineConfig)
+				newMulti := new(MultilineConfig)
 				newMulti.LineEndPattern = "Start"
 				cfg.Multiline = newMulti
 				return cfg
@@ -375,8 +372,7 @@ func TestConfig(t *testing.T) {
 			false,
 			func() *InputConfig {
 				cfg := defaultCfg()
-				var newMulti *MultilineConfig
-				newMulti = new(MultilineConfig)
+				newMulti := new(MultilineConfig)
 				newMulti.LineEndPattern = "%"
 				cfg.Multiline = newMulti
 				return cfg
@@ -468,7 +464,7 @@ func TestConfig(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfgFromYaml, yamlErr := configFromFileViaYaml(t, path.Join(".", "testdata", fmt.Sprintf("%s.yaml", tc.name)))
+			cfgFromYaml, yamlErr := configFromFileViaYaml(path.Join(".", "testdata", fmt.Sprintf("%s.yaml", tc.name)))
 			cfgFromMapstructure, mapErr := configFromFileViaMapstructure(path.Join(".", "testdata", fmt.Sprintf("%s.yaml", tc.name)))
 			if tc.expectErr {
 				require.Error(t, yamlErr)
@@ -483,7 +479,7 @@ func TestConfig(t *testing.T) {
 	}
 }
 
-func configFromFileViaYaml(t *testing.T, file string) (*InputConfig, error) {
+func configFromFileViaYaml(file string) (*InputConfig, error) {
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("could not find config file: %s", err)
@@ -520,7 +516,6 @@ func configFromFileViaMapstructure(file string) (*InputConfig, error) {
 		return nil, err
 	}
 	return cfg, nil
-
 }
 
 func defaultCfg() *InputConfig {

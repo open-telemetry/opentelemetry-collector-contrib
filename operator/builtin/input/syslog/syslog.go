@@ -87,15 +87,14 @@ func (c *SyslogInputConfig) UnmarshalYAML(unmarshal func(interface{}) error) err
 	}
 	c.SyslogParserConfig = *parserCfg
 
-	base := &BaseSyslogInputConfig{
-	}
-	err =  unmarshal(base)
+	base := &BaseSyslogInputConfig{}
+	err = unmarshal(base)
 	if err != nil {
 		return err
 	}
 
 	c.InputConfig = base.InputConfig
-	c.Tcp= base.Tcp
+	c.Tcp = base.Tcp
 	c.Udp = base.Udp
 	return nil
 }

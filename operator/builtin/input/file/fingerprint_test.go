@@ -23,7 +23,6 @@ import (
 )
 
 func TestNewFingerprintDoesNotModifyOffset(t *testing.T) {
-
 	fingerprint := "this is the fingerprint"
 	next := "this comes after the fingerprint and is substantially longer than the fingerprint"
 	extra := "fin"
@@ -61,7 +60,6 @@ func TestNewFingerprintDoesNotModifyOffset(t *testing.T) {
 }
 
 func TestNewFingerprint(t *testing.T) {
-
 	cases := []struct {
 		name            string
 		fingerprintSize int

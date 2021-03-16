@@ -134,7 +134,7 @@ func TestBuild(t *testing.T) {
 	}{
 		{
 			"Basic",
-			func(f *InputConfig) { return },
+			func(f *InputConfig) {},
 			require.NoError,
 			func(t *testing.T, f *InputOperator) {
 				require.Equal(t, f.OutputOperators[0], fakeOutput)
@@ -802,7 +802,6 @@ func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(
 }
 
 func TestRotation(t *testing.T) {
-
 	cases := []rotationTest{
 		{
 			name:            "NoRotation",

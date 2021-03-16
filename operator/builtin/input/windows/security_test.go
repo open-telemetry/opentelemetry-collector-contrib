@@ -24,7 +24,6 @@ import (
 )
 
 func TestParseSecurity(t *testing.T) {
-
 	testCases := []string{
 		"account_name_changed",
 		"audit_settings_changed",
@@ -51,7 +50,6 @@ func TestParseSecurity(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc, func(t *testing.T) {
-
 			testDir := filepath.Join("testdata", "security", tc)
 			messageBytes, err := ioutil.ReadFile(filepath.Join(testDir, "message.in"))
 			require.NoError(t, err, "problem reading input file")
@@ -76,12 +74,4 @@ func TestParseSecurity(t *testing.T) {
 			require.JSONEq(t, string(expectedDetailsBytes), string(detailBytes))
 		})
 	}
-}
-
-// Use this to initialize test results from a WEL security message
-// make sure to validate manually!
-func initTestResult(testDir, message string, details map[string]interface{}) {
-	ioutil.WriteFile(filepath.Join(testDir, "message.out"), []byte(message), 0644)
-	bytes, _ := json.MarshalIndent(details, "", "  ")
-	ioutil.WriteFile(filepath.Join(testDir, "details.out"), bytes, 0644)
 }

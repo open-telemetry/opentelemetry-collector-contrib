@@ -38,7 +38,6 @@ type severityTestCase struct {
 }
 
 func TestSeverityParser(t *testing.T) {
-
 	testCases := []severityTestCase{
 		{
 			name:     "unknown",
@@ -304,17 +303,16 @@ func TestSeverityParser(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			rootCfg := parseSeverityTestConfig(rootField, tc.mappingSet, tc.mapping)
 			rootEntry := makeTestEntry(rootField, tc.sample)
-			t.Run("root", runSeverityParseTest(t, rootCfg, rootEntry, tc.buildErr, tc.parseErr, tc.expected))
+			t.Run("root", runSeverityParseTest(rootCfg, rootEntry, tc.buildErr, tc.parseErr, tc.expected))
 
 			nonRootCfg := parseSeverityTestConfig(someField, tc.mappingSet, tc.mapping)
 			nonRootEntry := makeTestEntry(someField, tc.sample)
-			t.Run("non-root", runSeverityParseTest(t, nonRootCfg, nonRootEntry, tc.buildErr, tc.parseErr, tc.expected))
+			t.Run("non-root", runSeverityParseTest(nonRootCfg, nonRootEntry, tc.buildErr, tc.parseErr, tc.expected))
 		})
 	}
 }
 
-func runSeverityParseTest(t *testing.T, cfg *SeverityParserConfig, ent *entry.Entry, buildErr bool, parseErr bool, expected entry.Severity) func(*testing.T) {
-
+func runSeverityParseTest(cfg *SeverityParserConfig, ent *entry.Entry, buildErr bool, parseErr bool, expected entry.Severity) func(*testing.T) {
 	return func(t *testing.T) {
 		buildContext := testutil.NewBuildContext(t)
 

@@ -136,7 +136,7 @@ func (t *TCPInput) configureListener() error {
 		return nil
 	}
 
-	t.tls.Time = func() time.Time { return time.Now() }
+	t.tls.Time = time.Now
 	t.tls.Rand = rand.Reader
 
 	listener, err := tls.Listen("tcp", t.address, t.tls)

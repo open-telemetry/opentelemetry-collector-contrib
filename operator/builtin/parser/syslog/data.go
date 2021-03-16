@@ -58,7 +58,7 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 			"RFC3164",
 			func() *SyslogParserConfig {
 				cfg := basicConfig()
-				cfg.Protocol = "rfc3164"
+				cfg.Protocol = RFC3164
 				cfg.Location = location["utc"].String()
 				return cfg
 			}(),
@@ -78,7 +78,7 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 			"RFC3164Detroit",
 			func() *SyslogParserConfig {
 				cfg := basicConfig()
-				cfg.Protocol = "rfc3164"
+				cfg.Protocol = RFC3164
 				cfg.Location = location["detroit"].String()
 				return cfg
 			}(),
@@ -98,7 +98,7 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 			"RFC3164Athens",
 			func() *SyslogParserConfig {
 				cfg := basicConfig()
-				cfg.Protocol = "rfc3164"
+				cfg.Protocol = RFC3164
 				cfg.Location = location["athens"].String()
 				return cfg
 			}(),
@@ -118,7 +118,7 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 			"RFC3164Bytes",
 			func() *SyslogParserConfig {
 				cfg := basicConfig()
-				cfg.Protocol = "rfc3164"
+				cfg.Protocol = RFC3164
 				return cfg
 			}(),
 			[]byte("<34>Jan 12 06:30:00 1.2.3.4 apache_server: test message"),
@@ -137,7 +137,7 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 			"RFC5424",
 			func() *SyslogParserConfig {
 				cfg := basicConfig()
-				cfg.Protocol = "rfc5424"
+				cfg.Protocol = RFC5424
 				return cfg
 			}(),
 			`<86>1 2015-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [SecureAuth@27389 UserHostAddress="192.168.2.132" Realm="SecureAuth0" UserID="Tester2" PEN="27389"] Found the user for retrieving user's profile`,
@@ -167,7 +167,7 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 			"RFC5424LongSDName",
 			func() *SyslogParserConfig {
 				cfg := basicConfig()
-				cfg.Protocol = "rfc5424"
+				cfg.Protocol = RFC5424
 				return cfg
 			}(),
 			`<86>1 2015-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [verylongsdnamethatisgreaterthan32bytes@12345 UserHostAddress="192.168.2.132"] my message`,
@@ -193,5 +193,4 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 	}
 
 	return cases, nil
-
 }

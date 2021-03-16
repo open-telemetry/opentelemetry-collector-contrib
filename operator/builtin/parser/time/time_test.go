@@ -35,7 +35,6 @@ func TestIsZero(t *testing.T) {
 }
 
 func TestTimeParser(t *testing.T) {
-
 	// Mountain Standard Time
 	mst, err := time.LoadLocation("MST")
 	require.NoError(t, err)
@@ -166,7 +165,6 @@ func TestTimeParser(t *testing.T) {
 }
 
 func TestTimeEpochs(t *testing.T) {
-
 	testCases := []struct {
 		name     string
 		sample   interface{}
@@ -328,7 +326,6 @@ func TestTimeEpochs(t *testing.T) {
 }
 
 func TestTimeErrors(t *testing.T) {
-
 	testCases := []struct {
 		name       string
 		sample     interface{}
@@ -400,8 +397,7 @@ func runTimeParseTest(t *testing.T, cfg *TimeParserConfig, ent *entry.Entry, bui
 	return runLossyTimeParseTest(t, cfg, ent, buildErr, parseErr, expected, time.Duration(0))
 }
 
-func runLossyTimeParseTest(t *testing.T, cfg *TimeParserConfig, ent *entry.Entry, buildErr bool, parseErr bool, expected time.Time, maxLoss time.Duration) func(*testing.T) {
-
+func runLossyTimeParseTest(_ *testing.T, cfg *TimeParserConfig, ent *entry.Entry, buildErr bool, parseErr bool, expected time.Time, maxLoss time.Duration) func(*testing.T) {
 	return func(t *testing.T) {
 		buildContext := testutil.NewBuildContext(t)
 

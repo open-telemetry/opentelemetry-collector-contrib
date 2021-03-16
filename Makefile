@@ -45,7 +45,11 @@ listmod:
 
 .PHONY: lint
 lint:
-	golangci-lint run ./...
+	golangci-lint run --allow-parallel-runners ./...
+
+.PHONY: lint-fix
+lint-fix:
+	golangci-lint run --fix --allow-parallel-runners ./...
 
 .PHONY: vet
 vet:

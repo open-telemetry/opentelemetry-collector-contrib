@@ -132,7 +132,6 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 
 func tlsTCPInputTest(input []byte, expected []string) func(t *testing.T) {
 	return func(t *testing.T) {
-
 		f, err := os.Create("test.crt")
 		require.NoError(t, err)
 		defer f.Close()
@@ -335,5 +334,4 @@ func createTlsConfig(cert string, key string) *helper.TLSServerConfig {
 			KeyFile:  key,
 		},
 	})
-
 }

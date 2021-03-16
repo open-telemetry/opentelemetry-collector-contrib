@@ -151,14 +151,14 @@ func TestLineStartSplitFunc(t *testing.T) {
 		data := []byte(`LOGSTART`)
 
 		t.Run("NotAtEOF", func(t *testing.T) {
-			advance, token, err := splitFunc(data[:], false)
+			advance, token, err := splitFunc(data, false)
 			require.NoError(t, err)
 			require.Equal(t, 0, advance)
 			require.Nil(t, token)
 		})
 
 		t.Run("AtEOF", func(t *testing.T) {
-			advance, token, err := splitFunc(data[:], true)
+			advance, token, err := splitFunc(data, true)
 			require.NoError(t, err)
 			require.Equal(t, 0, advance)
 			require.Nil(t, token)
