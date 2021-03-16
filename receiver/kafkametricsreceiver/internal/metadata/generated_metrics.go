@@ -136,7 +136,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("kafka.consumer_group.lag")
 			metric.SetDescription("Current approximate lag of consumer group at partition of topic")
-			metric.SetUnit("{messages}")
+			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},
@@ -145,7 +145,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("kafka.consumer_group.lag_sum")
 			metric.SetDescription("Current approximate sum of consumer group lag across all partitions of topic")
-			metric.SetUnit("{messages}")
+			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},
@@ -163,7 +163,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("kafka.consumer_group.offset")
 			metric.SetDescription("Current offset of the consumer group at partition of topic")
-			metric.SetUnit("{messages}")
+			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},
@@ -172,7 +172,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("kafka.consumer_group.offset_sum")
 			metric.SetDescription("Sum of consumer group offset across partitions of topic")
-			metric.SetUnit("{messages}")
+			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},
@@ -181,7 +181,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("kafka.partition.current_offset")
 			metric.SetDescription("Current offset of partition of topic.")
-			metric.SetUnit("{messages}")
+			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},
@@ -190,7 +190,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("kafka.partition.oldest_offset")
 			metric.SetDescription("Oldest offset of partition of topic")
-			metric.SetUnit("{messages}")
+			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},

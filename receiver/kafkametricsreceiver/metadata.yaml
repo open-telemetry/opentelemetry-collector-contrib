@@ -22,13 +22,13 @@ metrics:
     labels: [topic]
   kafka.partition.current_offset:
     description: Current offset of partition of topic.
-    unit: "{messages}"
+    unit: 1
     data:
       type: int gauge
     labels: [topic, partition]
   kafka.partition.oldest_offset:
     description: Oldest offset of partition of topic
-    unit: "{messages}"
+    unit: 1
     data:
       type: int gauge
     labels: [topic, partition]
@@ -52,25 +52,25 @@ metrics:
     labels: [group]
   kafka.consumer_group.offset:
     description: Current offset of the consumer group at partition of topic
-    unit: "{messages}"
+    unit: 1
     data:
       type: int gauge
     labels: [group, topic, partition]
   kafka.consumer_group.offset_sum:
     description: Sum of consumer group offset across partitions of topic
-    unit: "{messages}"
+    unit: 1
     data:
       type: int gauge
     labels: [group, topic]
   kafka.consumer_group.lag:
     description: Current approximate lag of consumer group at partition of topic
-    unit: "{messages}"
+    unit: 1
     data:
       type: int gauge
     labels: [group, topic, partition]
   kafka.consumer_group.lag_sum:
     description: Current approximate sum of consumer group lag across all partitions of topic
-    unit: "{messages}"
+    unit: 1
     data:
       type: int gauge
     labels: [group, topic]
