@@ -127,7 +127,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("kafka.brokers")
 			metric.SetDescription("Number of brokers in the cluster.")
-			metric.SetUnit("brokers")
+			metric.SetUnit("{brokers}")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},
@@ -154,7 +154,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("kafka.consumer_group.members")
 			metric.SetDescription("Count of members in the consumer group")
-			metric.SetUnit("members")
+			metric.SetUnit("{members}")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},
@@ -199,7 +199,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("kafka.partition.replicas")
 			metric.SetDescription("Number of replicas for partition of topic")
-			metric.SetUnit("replicas")
+			metric.SetUnit("{replicas}")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},
@@ -208,7 +208,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("kafka.partition.replicas_in_sync")
 			metric.SetDescription("Number of synchronized replicas of partition")
-			metric.SetUnit("replicas")
+			metric.SetUnit("{replicas}")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},
@@ -217,7 +217,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("kafka.topic.partitions")
 			metric.SetDescription("Number of partitions in topic.")
-			metric.SetUnit("partitions")
+			metric.SetUnit("{partitions}")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},

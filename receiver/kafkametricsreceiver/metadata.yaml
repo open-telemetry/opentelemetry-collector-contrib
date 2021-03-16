@@ -11,12 +11,12 @@ labels:
 metrics:
   kafka.brokers:
     description: Number of brokers in the cluster.
-    unit: brokers
+    unit: "{brokers}"
     data:
       type: int gauge
   kafka.topic.partitions:
     description: Number of partitions in topic.
-    unit: partitions
+    unit: "{partitions}"
     data:
       type: int gauge
     labels: [topic]
@@ -34,19 +34,19 @@ metrics:
     labels: [topic, partition]
   kafka.partition.replicas:
     description: Number of replicas for partition of topic
-    unit: replicas
+    unit: "{replicas}"
     data:
       type: int gauge
     labels: [topic, partition]
   kafka.partition.replicas_in_sync:
     description: Number of synchronized replicas of partition
-    unit: replicas
+    unit: "{replicas}"
     data:
       type: int gauge
     labels: [topic, partition]
   kafka.consumer_group.members:
     description: Count of members in the consumer group
-    unit: members
+    unit: "{members}"
     data:
       type: int gauge
     labels: [group]
