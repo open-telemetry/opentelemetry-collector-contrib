@@ -95,14 +95,15 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 
 func (e *logExporterImp) consumeLog(ctx context.Context, ld pdata.Logs) error {
 	traceID := traceIDFromLogs(ld)
+	balancingKey := traceID
 	if traceID == pdata.InvalidTraceID() {
 		// every log may not contain a traceID
-		// generate a random traceID so the log can be routed to a random backend
-		// but do not inject the random traceID into the log itself
-		traceID = randomTraceID()
+		// generate a random traceID as balancingKey
+		// so the log can be routed to a random backend
+		balancingKey = random()
 	}
 
-	endpoint := e.loadBalancer.Endpoint(traceID)
+	endpoint := e.loadBalancer.Endpoint(balancingKey)
 	exp, err := e.loadBalancer.Exporter(endpoint)
 	if err != nil {
 		return err
@@ -111,7 +112,7 @@ func (e *logExporterImp) consumeLog(ctx context.Context, ld pdata.Logs) error {
 	le, ok := exp.(component.LogsExporter)
 	if !ok {
 		expectType := (*component.LogsExporter)(nil)
-		return fmt.Errorf("expected %T but got %T", expectType, exp)
+		return fmt.Errorf("unable to export logs, unexpected exporter type: expected %T but got %T", expectType, exp)
 	}
 
 	start := time.Now()
@@ -149,7 +150,7 @@ func traceIDFromLogs(ld pdata.Logs) pdata.TraceID {
 	return logs.At(0).TraceID()
 }
 
-func randomTraceID() pdata.TraceID {
+func random() pdata.TraceID {
 	v1 := uint8(rand.Intn(256))
 	v2 := uint8(rand.Intn(256))
 	v3 := uint8(rand.Intn(256))

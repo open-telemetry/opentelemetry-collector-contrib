@@ -16,8 +16,8 @@ package loadbalancingexporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"math/rand"
 	"net"
 	"sync/atomic"
 	"testing"
@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
-	"errors"
 )
 
 func TestNewLogsExporter(t *testing.T) {
@@ -252,7 +251,7 @@ func TestConsumeLogsUnexpectedExporterType(t *testing.T) {
 
 	// verify
 	assert.Error(t, res)
-	assert.EqualError(t, res, fmt.Sprintf("expected *component.LogsExporter but got %T", newNopMockExporter()))
+	assert.EqualError(t, res, fmt.Sprintf("unable to export logs, unexpected exporter type: expected *component.LogsExporter but got %T", newNopMockExporter()))
 }
 
 func TestLogBatchWithTwoTraces(t *testing.T) {
@@ -493,11 +492,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 }
 
 func randomLogs() pdata.Logs {
-	v1 := uint8(rand.Intn(256))
-	v2 := uint8(rand.Intn(256))
-	v3 := uint8(rand.Intn(256))
-	v4 := uint8(rand.Intn(256))
-	return simpleLogWithID(pdata.NewTraceID([16]byte{v1, v2, v3, v4}))
+	return simpleLogWithID(random())
 }
 
 func simpleLogs() pdata.Logs {
