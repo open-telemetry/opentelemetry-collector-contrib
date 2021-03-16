@@ -1,6 +1,7 @@
 # Syslog Receiver
 
-Parses Syslogs from tcp/udp using the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library.
+Parses Syslogs from tcp/udp using
+the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library.
 
 Supported pipeline types: logs
 
@@ -40,11 +41,11 @@ The `tcp_input` operator supports TLS, disabled by default.
 
 | Field             | Default          | Description                               |
 | ---               | ---              | ---                                       |
-| `enable`          | `false`          | Boolean value to enable or disable TLS    |
-| `certificate`     |                  | File path for the X509 certificate chain  |
-| `private_key`     |                  | File path for the X509 private key        |
-
-
+| `cert_file`       |                  | Path to the TLS cert to use for TLS required connections.       |
+| `key_file`        |                  | Path to the TLS key to use for TLS required connections.|
+| `ca_file`         |                  | Path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty uses system root CA.  |
+| `client_ca_file`  |                  | (optional) Path to the TLS cert to use by the server to verify a client certificate. This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to godoc.org/crypto/tls#Config for more information.
+|
 
 ## Example Configurations
 
@@ -58,6 +59,7 @@ TCP Configuration:
 ```
 
 UDP Configuration:
+
 ```yaml
 - type: syslog_input
   udp:
