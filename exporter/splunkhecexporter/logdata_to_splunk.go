@@ -47,15 +47,18 @@ func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config, logger *zap.L
 	index := config.Index
 	fields := map[string]interface{}{}
 	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-		if k == conventions.AttributeHostName {
+		switch k {
+		case conventions.AttributeHostName:
 			host = v.StringVal()
-		} else if k == conventions.AttributeServiceName {
+			fields[k] = v.StringVal()
+		case conventions.AttributeServiceName:
 			source = v.StringVal()
-		} else if k == splunk.SourcetypeLabel {
+			fields[k] = v.StringVal()
+		case splunk.SourcetypeLabel:
 			sourcetype = v.StringVal()
-		} else if k == splunk.IndexLabel {
+		case splunk.IndexLabel:
 			index = v.StringVal()
-		} else {
+		default:
 			fields[k] = convertAttributeValue(v, logger)
 		}
 	})

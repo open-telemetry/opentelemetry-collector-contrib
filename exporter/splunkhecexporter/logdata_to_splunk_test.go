@@ -55,7 +55,8 @@ func Test_logDataToSplunk(t *testing.T) {
 				}
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
+				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "service.name": "myapp", "host.name": "myhost"},
+					"myhost", "myapp", "myapp-type"),
 			},
 		},
 		{
@@ -77,7 +78,7 @@ func Test_logDataToSplunk(t *testing.T) {
 				}
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"foo": float64(123)}, "myhost", "myapp", "myapp-type"),
+				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"foo": float64(123), "service.name": "myapp", "host.name": "myhost"}, "myhost", "myapp", "myapp-type"),
 			},
 		},
 		{
@@ -134,7 +135,7 @@ func Test_logDataToSplunk(t *testing.T) {
 				}
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent(float64(42), ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
+				commonLogSplunkEvent(float64(42), ts, map[string]interface{}{"custom": "custom", "service.name": "myapp", "host.name": "myhost"}, "myhost", "myapp", "myapp-type"),
 			},
 		},
 		{
@@ -156,7 +157,7 @@ func Test_logDataToSplunk(t *testing.T) {
 				}
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent(int64(42), ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
+				commonLogSplunkEvent(int64(42), ts, map[string]interface{}{"custom": "custom", "service.name": "myapp", "host.name": "myhost"}, "myhost", "myapp", "myapp-type"),
 			},
 		},
 		{
@@ -178,7 +179,7 @@ func Test_logDataToSplunk(t *testing.T) {
 				}
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent(true, ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
+				commonLogSplunkEvent(true, ts, map[string]interface{}{"custom": "custom", "service.name": "myapp", "host.name": "myhost"}, "myhost", "myapp", "myapp-type"),
 			},
 		},
 		{
@@ -204,7 +205,9 @@ func Test_logDataToSplunk(t *testing.T) {
 				}
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent(map[string]interface{}{"23": float64(45), "foo": "bar"}, ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
+				commonLogSplunkEvent(map[string]interface{}{"23": float64(45), "foo": "bar"}, ts,
+					map[string]interface{}{"custom": "custom", "service.name": "myapp", "host.name": "myhost"},
+					"myhost", "myapp", "myapp-type"),
 			},
 		},
 		{
@@ -225,7 +228,8 @@ func Test_logDataToSplunk(t *testing.T) {
 				}
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent(nil, ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
+				commonLogSplunkEvent(nil, ts, map[string]interface{}{"custom": "custom", "service.name": "myapp", "host.name": "myhost"},
+					"myhost", "myapp", "myapp-type"),
 			},
 		},
 		{
@@ -250,7 +254,8 @@ func Test_logDataToSplunk(t *testing.T) {
 				}
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent([]interface{}{"foo"}, ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
+				commonLogSplunkEvent([]interface{}{"foo"}, ts, map[string]interface{}{"custom": "custom", "service.name": "myapp", "host.name": "myhost"},
+					"myhost", "myapp", "myapp-type"),
 			},
 		},
 	}
