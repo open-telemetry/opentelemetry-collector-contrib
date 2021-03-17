@@ -64,9 +64,7 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 	acc.accumulate(convertToOTLPMetrics(TaskPrefix, taskMetrics, taskResource, timestamp))
 }
 
-func (acc *metricDataAccumulator) accumulate(rms pdata.ResourceMetricsSlice) {
-	md := pdata.Metrics(rms)
-
+func (acc *metricDataAccumulator) accumulate(md pdata.Metrics) {
 	acc.mds = append(acc.mds, md)
 }
 
