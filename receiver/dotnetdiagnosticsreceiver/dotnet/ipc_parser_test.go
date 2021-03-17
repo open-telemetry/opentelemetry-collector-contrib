@@ -31,7 +31,7 @@ func TestIPCParser_NoErrors(t *testing.T) {
 			0: []byte(magicTerminated),
 		},
 	}
-	r := network.NewMultiReader(rw)
+	r := network.NewMultiReader(rw, &network.NopBlobWriter{})
 	err := parseIPC(r)
 	require.NoError(t, err)
 }
@@ -43,7 +43,7 @@ func TestIPCParser_BadMagic(t *testing.T) {
 			0: []byte("DOTNET_IPC_V2"),
 		},
 	}
-	err := parseIPC(network.NewMultiReader(rw))
+	err := parseIPC(network.NewMultiReader(rw, &network.NopBlobWriter{}))
 	require.EqualError(t, err, `ipc header: expected magic "DOTNET_IPC_V1" got "DOTNET_IPC_V2"`)
 }
 
@@ -55,7 +55,7 @@ func TestIPCParser_BadResponseID(t *testing.T) {
 			3: {responseError},
 		},
 	}
-	r := network.NewMultiReader(rw)
+	r := network.NewMultiReader(rw, &network.NopBlobWriter{})
 	err := parseIPC(r)
 	assert.EqualError(t, err, "ipc header: got error response")
 }
@@ -70,7 +70,7 @@ func testIPCError(t *testing.T, idx int) {
 	rw := &network.FakeRW{
 		ReadErrIdx: idx,
 	}
-	r := network.NewMultiReader(rw)
+	r := network.NewMultiReader(rw, &network.NopBlobWriter{})
 	err := parseIPC(r)
 	require.EqualError(t, err, fmt.Sprintf("deliberate error on read %d", idx))
 }

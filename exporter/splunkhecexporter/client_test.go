@@ -270,11 +270,11 @@ func TestReceiveTraces(t *testing.T) {
 func TestReceiveLogs(t *testing.T) {
 	actual, err := runLogExport(true, 3, t)
 	assert.NoError(t, err)
-	expected := `{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}`
+	expected := `{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}`
+	expected += `{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}`
+	expected += `{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}`
 	expected += "\n\r\n\r\n"
 	assert.Equal(t, expected, actual)
 }
