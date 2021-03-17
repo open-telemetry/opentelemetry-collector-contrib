@@ -21,3 +21,9 @@ service:
       processors: []
       exporters:
       - loadbalancing
+    logs:
+      receivers:
+        - nop
+      processors: []
+      exporters:
+        - loadbalancing
