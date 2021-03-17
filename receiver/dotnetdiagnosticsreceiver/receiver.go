@@ -23,6 +23,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/dotnet"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/network"
 )
 
 type receiver struct {
@@ -31,7 +33,9 @@ type receiver struct {
 	counters     []string
 	intervalSec  int
 	logger       *zap.Logger
-	cancel       context.CancelFunc
+
+	bw     network.BlobWriter
+	cancel context.CancelFunc
 }
 
 type connectionSupplier func() (io.ReadWriter, error)
@@ -45,6 +49,7 @@ func NewReceiver(
 	counters []string,
 	intervalSec int,
 	logger *zap.Logger,
+	bw network.BlobWriter,
 ) (component.MetricsReceiver, error) {
 	return &receiver{
 		nextConsumer: mc,
@@ -52,6 +57,7 @@ func NewReceiver(
 		counters:     counters,
 		intervalSec:  intervalSec,
 		logger:       logger,
+		bw:           bw,
 	}, nil
 }
 
@@ -67,7 +73,13 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	p := dotnet.NewParser(conn, r.logger)
+	err = r.bw.Init()
+	if err != nil {
+		return err
+	}
+
+	sender := metrics.NewSender(r.nextConsumer, r.logger)
+	p := dotnet.NewParser(conn, sender.Send, r.bw, r.logger)
 
 	err = p.ParseIPC()
 	if err != nil {
