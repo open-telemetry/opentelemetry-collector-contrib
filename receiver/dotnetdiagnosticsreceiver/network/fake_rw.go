@@ -87,26 +87,29 @@ func blobFile(dir string, i int) string {
 	return path.Join(dir, fmt.Sprintf("msg.%d.bin", i))
 }
 
-// BlobReader implements io.ReadWriter and can fake a socket from pre-recorded
-// binary blobs. It can also return errors for testing purposes.
+// BlobReader implements io.ReadWriter and can fake a socket from files saved by
+// BlobWriter. It can also return errors for testing purposes.
 type BlobReader struct {
 	WriteBuf []byte
 
 	currChunk int
 	chunks    []*chunk
 
-	errOnRead int
+	errOn     int
 	readCount int
 
-	done chan struct{}
+	stopOn int
+	gate   chan struct{}
 }
 
 var _ io.ReadWriter = (*BlobReader)(nil)
 
 func NewBlobReader(data [][]byte) *BlobReader {
 	br := &BlobReader{
-		errOnRead: -1,
-		done:      make(chan struct{}),
+		errOn:     -1,
+		stopOn:    -1,
+		readCount: -1,
+		gate:      make(chan struct{}),
 	}
 	for _, p := range data {
 		br.chunks = append(br.chunks, &chunk{p: p})
@@ -121,12 +124,15 @@ func (r *BlobReader) Write(p []byte) (n int, err error) {
 
 // Read reads the appropriate number of bytes into the passed in slice, from the
 // member byte arrays, maintaining a count of how many times it was called. If
-// the count matches the errOnRead field's value, an error is returned.
+// the count matches the errOn field's value, an error is returned.
 func (r *BlobReader) Read(p []byte) (int, error) {
-	if r.errOnRead == r.readCount {
+	r.readCount++
+	if r.errOn == r.readCount {
 		return 0, fmt.Errorf("deliberate err at readCount %d", r.readCount)
 	}
-	r.readCount++
+	if r.stopOn == r.readCount {
+		r.stop()
+	}
 	tot := r.readChunk(p)
 	for tot < len(p) {
 		r.currChunk++
@@ -135,25 +141,33 @@ func (r *BlobReader) Read(p []byte) (int, error) {
 	return tot, nil
 }
 
-// SetReadError will cause a call to Read to return an error at the specified
+// ErrOnRead will cause a call to Read to return an error at the specified
 // readCount.
-func (r *BlobReader) SetReadError(i int) {
-	r.readCount = 0
-	r.errOnRead = i
+func (r *BlobReader) ErrOnRead(i int) {
+	r.readCount = -1
+	r.errOn = i
+}
+
+func (r *BlobReader) StopOnRead(i int) {
+	r.readCount = -1
+	r.stopOn = i
 }
 
 func (r *BlobReader) readChunk(p []byte) int {
 	if r.currChunk == len(r.chunks) {
-		r.done <- struct{}{}
-		// signal done, now hang
-		ch := make(chan struct{})
-		<-ch
+		r.stop()
 	}
 	return r.chunks[r.currChunk].read(p)
 }
 
-func (r *BlobReader) Done() chan struct{} {
-	return r.done
+func (r *BlobReader) stop() {
+	r.stopOn = -1
+	r.gate <- struct{}{}
+	<-r.gate
+}
+
+func (r *BlobReader) Gate() chan struct{} {
+	return r.gate
 }
 
 type chunk struct {

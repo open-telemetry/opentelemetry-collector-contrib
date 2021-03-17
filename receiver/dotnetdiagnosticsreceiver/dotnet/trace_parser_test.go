@@ -27,7 +27,7 @@ func TestTraceParser(t *testing.T) {
 	data, err := network.ReadBlobData(path.Join("..", "testdata"), 2)
 	require.NoError(t, err)
 	rw := network.NewBlobReader(data)
-	reader := network.NewMultiReader(rw)
+	reader := network.NewMultiReader(rw, &network.NopBlobWriter{})
 	err = reader.Seek(81)
 	require.NoError(t, err)
 	err = parseTraceMessage(reader)
@@ -45,10 +45,10 @@ func TestTraceParser_Errors(t *testing.T) {
 
 func testTraceParserReadError(t *testing.T, data [][]byte, i int) {
 	rw := network.NewBlobReader(data)
-	reader := network.NewMultiReader(rw)
+	reader := network.NewMultiReader(rw, &network.NopBlobWriter{})
 	err := reader.Seek(81)
 	require.NoError(t, err)
-	rw.SetReadError(i)
+	rw.ErrOnRead(i)
 	err = parseTraceMessage(reader)
 	require.Error(t, err)
 }

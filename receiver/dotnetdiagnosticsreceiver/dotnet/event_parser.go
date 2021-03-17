@@ -71,7 +71,9 @@ func parseEventBlock(r network.MultiReader, fm fieldMetadataMap) (metrics []Metr
 		if err != nil {
 			return
 		}
-		metrics = append(metrics, m)
+		if len(m) > 0 {
+			metrics = append(metrics, m)
+		}
 	}
 
 	return

@@ -15,6 +15,7 @@
 package dotnet
 
 import (
+	"context"
 	"path"
 	"testing"
 
@@ -36,7 +37,12 @@ func TestParser(t *testing.T) {
 			8: []byte(fastSerialization),
 		},
 	}
-	p := NewParser(rw, zap.NewNop())
+	p := NewParser(
+		rw,
+		func(metrics []Metric) {},
+		&network.NopBlobWriter{},
+		zap.NewNop(),
+	)
 	err := p.ParseIPC()
 	require.NoError(t, err)
 	err = p.ParseNettrace()
@@ -47,7 +53,7 @@ func TestParser_TestData(t *testing.T) {
 	data, err := network.ReadBlobData(path.Join("..", "testdata"), 16)
 	require.NoError(t, err)
 	rw := network.NewBlobReader(data)
-	parser := NewParser(rw, zap.NewNop())
+	parser := NewParser(rw, func([]Metric) {}, &network.NopBlobWriter{}, zap.NewNop())
 	err = parser.ParseIPC()
 	require.NoError(t, err)
 	err = parser.ParseNettrace()
@@ -85,10 +91,10 @@ func testParseBlockError(t *testing.T, data [][]byte, offset, errIdx int) {
 
 func testParseBlock(t *testing.T, data [][]byte, offset, errIdx int) error {
 	rw := network.NewBlobReader(data)
-	reader := network.NewMultiReader(rw)
+	reader := network.NewMultiReader(rw, &network.NopBlobWriter{})
 	err := reader.Seek(offset)
 	require.NoError(t, err)
-	rw.SetReadError(errIdx)
+	rw.ErrOnRead(errIdx)
 	msgs := fieldMetadataMap{}
 	parser := &Parser{r: reader, logger: zap.NewNop()}
 	for i := 0; i < 16; i++ {
@@ -98,4 +104,47 @@ func testParseBlock(t *testing.T, data [][]byte, offset, errIdx int) error {
 		}
 	}
 	return nil
+}
+
+func TestParser_ParseAll_Error(t *testing.T) {
+	data, err := network.ReadBlobData(path.Join("..", "testdata"), 16)
+	require.NoError(t, err)
+	rw := network.NewBlobReader(data)
+	parser := NewParser(rw, func([]Metric) {}, &network.NopBlobWriter{}, zap.NewNop())
+	err = parser.ParseIPC()
+	require.NoError(t, err)
+	err = parser.ParseNettrace()
+	require.NoError(t, err)
+	rw.StopOnRead(0)
+	errCh := make(chan error)
+	go func() {
+		err = parser.ParseAll(context.Background())
+		errCh <- err
+	}()
+	<-rw.Gate()
+	rw.ErrOnRead(0)
+	rw.Gate() <- struct{}{}
+	require.Error(t, <-errCh)
+}
+
+func TestParser_ParseAll_Cancel(t *testing.T) {
+	data, err := network.ReadBlobData(path.Join("..", "testdata"), 16)
+	require.NoError(t, err)
+	rw := network.NewBlobReader(data)
+	parser := NewParser(rw, func([]Metric) {}, &network.NopBlobWriter{}, zap.NewNop())
+	err = parser.ParseIPC()
+	require.NoError(t, err)
+	err = parser.ParseNettrace()
+	require.NoError(t, err)
+	rw.StopOnRead(0)
+	errCh := make(chan error)
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		err = parser.ParseAll(ctx)
+		errCh <- err
+	}()
+	<-rw.Gate()
+	cancel()
+	rw.Gate() <- struct{}{}
+	require.NoError(t, <-errCh)
 }

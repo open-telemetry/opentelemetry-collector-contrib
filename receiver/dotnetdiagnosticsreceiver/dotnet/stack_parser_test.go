@@ -27,7 +27,7 @@ func TestParseStackBlock(t *testing.T) {
 	data, err := network.ReadBlobData(path.Join("..", "testdata"), 4)
 	require.NoError(t, err)
 	rw := network.NewBlobReader(data)
-	reader := network.NewMultiReader(rw)
+	reader := network.NewMultiReader(rw, &network.NopBlobWriter{})
 	err = reader.Seek(972)
 	require.NoError(t, err)
 	err = parseStackBlock(reader)
@@ -44,10 +44,10 @@ func TestParseStackBlockErrors(t *testing.T) {
 
 func testParseStackBlockError(t *testing.T, data [][]byte, i int) {
 	rw := network.NewBlobReader(data)
-	reader := network.NewMultiReader(rw)
+	reader := network.NewMultiReader(rw, &network.NopBlobWriter{})
 	err := reader.Seek(972)
 	require.NoError(t, err)
-	rw.SetReadError(i)
+	rw.ErrOnRead(i)
 	err = parseStackBlock(reader)
 	require.Error(t, err)
 }
