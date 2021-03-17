@@ -16,33 +16,43 @@ package stackdriverexporter
 
 import (
 	"context"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 )
 
 type factory struct {
-	delegate component.ExporterFactory
+	component.ExporterFactory
 }
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "stackdriver"
+	typeVal = configmodels.Type("stackdriver")
 )
+
+var once sync.Once
 
 // NewFactory creates a factory for the stackdriver exporter
 func NewFactory() component.ExporterFactory {
-	return &factory{delegate: googlecloudexporter.NewFactory()}
+	return &factory{ExporterFactory: googlecloudexporter.NewFactory()}
 }
 
-func (*factory) Type() configmodels.Type {
-	return configmodels.Type(typeStr)
+func logDeprecation(logger *zap.Logger) {
+	once.Do(func() {
+		logger.Warn("stackdriver exporter is deprecated. Use googlecloudexporter instead.")
+	})
+}
+
+func (f *factory) Type() configmodels.Type {
+	return typeVal
 }
 
 func (f *factory) CreateDefaultConfig() configmodels.Exporter {
-	cfg := f.delegate.CreateDefaultConfig()
+	cfg := f.ExporterFactory.CreateDefaultConfig()
 	cfg.(*googlecloudexporter.Config).TypeVal = f.Type()
 	return cfg
 }
@@ -52,7 +62,8 @@ func (f *factory) CreateTracesExporter(
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.TracesExporter, error) {
-	return f.delegate.CreateTracesExporter(ctx, params, cfg)
+	logDeprecation(params.Logger)
+	return f.ExporterFactory.CreateTracesExporter(ctx, params, cfg)
 }
 
 func (f *factory) CreateMetricsExporter(
@@ -60,13 +71,6 @@ func (f *factory) CreateMetricsExporter(
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.MetricsExporter, error) {
-	return f.delegate.CreateMetricsExporter(ctx, params, cfg)
-}
-
-func (f *factory) CreateLogsExporter(
-	ctx context.Context,
-	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
-) (component.LogsExporter, error) {
-	return f.delegate.CreateLogsExporter(ctx, params, cfg)
+	logDeprecation(params.Logger)
+	return f.ExporterFactory.CreateMetricsExporter(ctx, params, cfg)
 }
