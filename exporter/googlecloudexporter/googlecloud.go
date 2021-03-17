@@ -211,10 +211,11 @@ func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) err
 
 func exportAdditionalLabels(mds []internaldata.MetricsData) []internaldata.MetricsData {
 	for _, md := range mds {
-		if md.Resource == nil || md.Resource.Labels == nil {
-			continue
-		}
-		if md.Node == nil || md.Node.Identifier == nil || len(md.Node.Identifier.HostName) == 0 {
+		if md.Resource == nil ||
+			md.Resource.Labels == nil ||
+			md.Node == nil ||
+			md.Node.Identifier == nil ||
+			len(md.Node.Identifier.HostName) == 0 {
 			continue
 		}
 		// MetricsToOC removes `host.name` label and writes it to node indentifier, here we reintroduce it.
