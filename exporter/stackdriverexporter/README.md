@@ -1,8 +1,7 @@
 # Deprecated Stackdriver Exporter
 
-This exporter has been replaced by the [Google Cloud exporter](../googlecloudexporter/README.md).
-`stackdriver` exporter configurations will continue to work but are deprecated. Please use [Google
-Cloud exporter](../googlecloudexporter/README.md) instead.
+This exporter has been renamed to the [Google Cloud exporter](../googlecloudexporter/README.md).
+`stackdriver` exporter configurations will continue to work for the sake of backwards compatibility.
 
 `stackdriver` exporter supports the same configuration options as [Google Cloud
 exporter](../googlecloudexporter/README.md).
