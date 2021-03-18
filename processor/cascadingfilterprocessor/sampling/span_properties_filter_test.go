@@ -153,8 +153,8 @@ func newTraceAttrs(operationName string, duration time.Duration, numberOfSpans i
 	for i := 0; i < numberOfSpans; i++ {
 		span := ils.Spans().At(i)
 		span.SetName(operationName)
-		span.SetStartTime(pdata.TimestampUnixNano(startTs))
-		span.SetEndTime(pdata.TimestampUnixNano(endTs))
+		span.SetStartTime(pdata.Timestamp(startTs))
+		span.SetEndTime(pdata.Timestamp(endTs))
 	}
 
 	traceBatches = append(traceBatches, traces)

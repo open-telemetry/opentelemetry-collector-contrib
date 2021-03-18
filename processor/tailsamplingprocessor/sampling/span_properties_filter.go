@@ -77,7 +77,7 @@ func (df *spanPropertiesFilter) EvaluateSecondChance(_ pdata.TraceID, trace *Tra
 	return NotSampled, nil
 }
 
-func tsToMicros(ts pdata.TimestampUnixNano) int64 {
+func tsToMicros(ts pdata.Timestamp) int64 {
 	return int64(ts / 1000)
 }
 

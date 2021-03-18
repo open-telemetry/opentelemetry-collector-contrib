@@ -65,7 +65,7 @@ require (
 	golang.org/x/sys v0.0.0-20210220050731-9a76102bfb43
 )
 
-replace go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector v0.21.0-sumo
+replace go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector v0.22.0-sumo
 
 replace github.com/influxdata/telegraf => github.com/sumologic/telegraf v1.17.3-sumo
 
