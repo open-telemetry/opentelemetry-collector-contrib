@@ -44,7 +44,10 @@ The following configuration options can also be configured:
 - `exclude_metrics`: List of metric filters that will determine metrics to be
   excluded from sending to Signalfx backend. If `translation_rules` options
   are enabled, the exclusion will be applied on translated metrics.
-  See [here](./testdata/config.yaml) for examples.
+  See [here](./testdata/config.yaml) for examples. Apart from the values explicitly
+  provided via this option, by default, [these](./translation/default_metrics.go) are
+  also appended to this list. Setting this option to `[]` will override all the default
+  excludes.
 - `include_metrics`: List of filters to override exclusion of any metrics.
   This option can be used to included metrics that are otherwise dropped by
   default. See [here](./translation/default_metrics.go) for a list of metrics
