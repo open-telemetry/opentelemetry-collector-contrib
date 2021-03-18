@@ -363,7 +363,7 @@ func TestNoHostnameExtractionRules(t *testing.T) {
 	}
 
 	c.handlePodAdd(pod)
-	p, _ := c.GetPodByIP(pod.Status.PodIP)
+	p, _ := c.GetPod(PodIdentifier(pod.Status.PodIP))
 	assert.Equal(t, p.Attributes["k8s.pod.hostname"], podName)
 }
 

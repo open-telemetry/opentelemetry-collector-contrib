@@ -100,6 +100,8 @@ github.com/SumoLogic/opentelemetry-collector v0.12.0 h1:eplzxiBs4uBkfO7jWMRERqxr
 github.com/SumoLogic/opentelemetry-collector v0.12.0/go.mod h1:mKQha2MeRhJi0rHS8yvZlzFk28ZVBCf6qMTsjGX0n1Y=
 github.com/SumoLogic/opentelemetry-collector v0.13.0 h1:uBEKNAJwVqEKcTq6BXZMMOfwZHN/4Qbe0Fqb/MrD4Eg=
 github.com/SumoLogic/opentelemetry-collector v0.13.0/go.mod h1:UB7wWD7RrEx8GFSaUR47TO1GAqxSi5+Kq68tI1icwJk=
+github.com/SumoLogic/opentelemetry-collector v0.22.0-sumo h1:Vcs1lbNIKhjvtMekLUUlWep6N7qKOM4eEj02tMuziu0=
+github.com/SumoLogic/opentelemetry-collector v0.22.0-sumo/go.mod h1:sBkAGYUQSh1f+owCK0aPV2uLcUB6rPHEOWjdvuE2SdQ=
 github.com/VividCortex/gohistogram v1.0.0 h1:6+hBz+qvs0JOrrNhhmR7lFxo5sINxBCGXrdtl/UvroE=
 github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=
 github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5/go.mod h1:SkGFH1ia65gfNATL8TAiHDNxPzPdmEL5uirI2Uyuz6c=

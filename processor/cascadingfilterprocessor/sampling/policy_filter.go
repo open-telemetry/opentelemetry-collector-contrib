@@ -28,7 +28,7 @@ func (pe *policyEvaluator) OnLateArrivingSpans(earlyDecision Decision, spans []*
 	return nil
 }
 
-func tsToMicros(ts pdata.TimestampUnixNano) int64 {
+func tsToMicros(ts pdata.Timestamp) int64 {
 	return int64(ts / 1000)
 }
 
