@@ -1,0 +1,45 @@
+- targets:
+  - 172.168.0.1:8008
+  labels:
+    __meta_ecs_cluster_name: ut-cluster-1
+    __meta_ecs_container_labels_PROMETHEUS_PORT: "1008"
+    __meta_ecs_container_name: c2-t1
+    __meta_ecs_ec2_instance_id: ""
+    __meta_ecs_ec2_instance_type: ""
+    __meta_ecs_ec2_private_ip: 172.168.0.1
+    __meta_ecs_ec2_public_ip: ""
+    __meta_ecs_ec2_subnet_id: ""
+    __meta_ecs_ec2_tags_aws_cloudformation_is_not_valid_prometheus_label: but it will
+      ber sanitized
+    __meta_ecs_ec2_vpc_id: ""
+    __meta_ecs_health_status: ""
+    __meta_ecs_service_name: s1
+    __meta_ecs_source: arn:task:t1
+    __meta_ecs_task_definition_family: ""
+    __meta_ecs_task_definition_revision: "0"
+    __meta_ecs_task_group: ""
+    __meta_ecs_task_launch_type: ""
+    __meta_ecs_task_started_by: ""
+    __meta_ecs_task_tags_ecs_tag_is: different struct from ec2.Tag
+    __metrics_path__: /metrics
+- targets:
+  - 172.168.1.1:8112
+  labels:
+    __meta_ecs_cluster_name: ut-cluster-1
+    __meta_ecs_container_labels_PROMETHEUS_PORT: "2112"
+    __meta_ecs_container_name: c2-t2
+    __meta_ecs_ec2_instance_id: ""
+    __meta_ecs_ec2_instance_type: ""
+    __meta_ecs_ec2_private_ip: ""
+    __meta_ecs_ec2_public_ip: ""
+    __meta_ecs_ec2_subnet_id: ""
+    __meta_ecs_ec2_vpc_id: ""
+    __meta_ecs_health_status: ""
+    __meta_ecs_service_name: s2
+    __meta_ecs_source: arn:task:t2
+    __meta_ecs_task_definition_family: ""
+    __meta_ecs_task_definition_revision: "0"
+    __meta_ecs_task_group: ""
+    __meta_ecs_task_launch_type: ""
+    __meta_ecs_task_started_by: ""
+    __metrics_path__: /metrics

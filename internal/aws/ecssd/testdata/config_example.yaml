@@ -1,0 +1,16 @@
+cluster_name: 'ecs-sd-test-1'
+cluster_region: 'us-west-2'
+result_file: '/etc/ecs_sd_targets.yaml'
+refresh_interval: 15s
+job_label_name: 'prometheus_job'
+services:
+  - name_pattern: '^retail-.*$'
+task_definitions:
+  - job_name: 'task_def_1'
+    metrics_path: '/not/metrics'
+    metrics_ports:
+      - 9113
+      - 9090
+    arn_pattern: '.*:task-definition/nginx:[0-9]+'
+docker_labels:
+  - port_label: 'ECS_PROMETHEUS_EXPORTER_PORT'
