@@ -1,0 +1,16 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "localhost:55680"
+
+exporters:
+  otlphttp:
+    traces_endpoint: $SUMOLOGIC_HTTP_TRACES_ENDPOINT_URL
+    insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [otlphttp]
