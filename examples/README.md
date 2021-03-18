@@ -65,6 +65,7 @@ environment.
 [non-kubernetes/aws-otel-ec2-deployment.yaml](non-kubernetes/aws-otel-ec2-deployment.yaml) contains
 an AWS OpenTelemetry Collector distribution YAML file which includes  
 CloudFormation template. It should be deployed on the AWS EC2.
-=======
-for more details.
->>>>>>> main
+
+### AWS Distro for OpenTelemetry configuration
+[aws_lambda/aws-distro-collector-lambda-layer-config.yaml](aws_lambda/aws-distro-collector-lambda-layer-config.yaml) contains 
+an [AWS Distro for Opentelemetry Collector](https://github.com/aws-observability/aws-otel-lambda/tree/main/extensions/aoc-extension) YAML file which includes configuration for collector installed in a Lambda Layer. Collector requires *SUMOLOGIC_HTTP_TRACES_ENDPOINT_URL* environment variable to be set. 
