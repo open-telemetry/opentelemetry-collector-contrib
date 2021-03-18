@@ -17,8 +17,42 @@ package ecssd
 import (
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestTask_MappedPort(t *testing.T) {
+	// Network mode is optional for ecs and it default to ec2 bridge
+	t.Run("empty is ec2 bridge", func(t *testing.T) {
+		task := Task{
+			Task: &ecs.Task{
+				TaskArn: aws.String("arn:task:1"),
+				Containers: []*ecs.Container{
+					{
+						Name: aws.String("c1"),
+						NetworkBindings: []*ecs.NetworkBinding{
+							{
+								ContainerPort: aws.Int64(2112),
+								HostPort:      aws.Int64(2345),
+							},
+						},
+					},
+				},
+			},
+			Definition: &ecs.TaskDefinition{NetworkMode: nil},
+			EC2:        &ec2.Instance{PrivateIpAddress: aws.String("172.168.1.1")},
+		}
+		ip, err := task.PrivateIP()
+		require.Nil(t, err)
+		assert.Equal(t, "172.168.1.1", ip)
+		p, err := task.MappedPort(&ecs.ContainerDefinition{Name: aws.String("c1")}, 2112)
+		require.Nil(t, err)
+		assert.Equal(t, int64(2345), p)
+	})
+}
 
 func TestTask_AddMatchedContainer(t *testing.T) {
 	task := Task{

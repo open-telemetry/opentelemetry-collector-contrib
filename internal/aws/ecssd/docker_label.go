@@ -45,6 +45,9 @@ func (d *DockerLabelConfig) Init() error {
 	if len(d.MetricsPorts) != 0 {
 		return fmt.Errorf("metrics_ports is not supported in docker_labels, got %v", d.MetricsPorts)
 	}
+	if d.PortLabel == "" {
+		return fmt.Errorf("port_label is empty")
+	}
 	return nil
 }
 
@@ -74,16 +77,8 @@ func (d *DockerLabelMatcher) Type() MatcherType {
 	return MatcherTypeDockerLabel
 }
 
-func (d *DockerLabelMatcher) ExporterConfig() CommonExporterConfig {
-	return d.cfg.CommonExporterConfig
-}
-
 func (d *DockerLabelMatcher) MatchTargets(t *Task, c *ecs.ContainerDefinition) ([]MatchedTarget, error) {
 	portLabel := d.cfg.PortLabel
-	// Skip if portLabel is not set
-	if portLabel == "" {
-		return nil, errNotMatched
-	}
 
 	// Only check port label
 	ps, ok := c.DockerLabels[portLabel]

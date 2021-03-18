@@ -16,6 +16,7 @@ package ecssd
 
 import (
 	"context"
+	"fmt"
 
 	"go.uber.org/zap"
 )
@@ -26,18 +27,18 @@ type Fetcher interface {
 	FetchAndDecorate(ctx context.Context) ([]*Task, error)
 }
 
+// TaskFetcher calls AWS API to list tasks within ECS cluster.
 type TaskFetcher struct {
 }
 
 type TaskFetcherOptions struct {
-	Logger            *zap.Logger
-	Cluster           string
-	Region            string
-	ServiceNameFilter ServiceNameFilter
+	Logger  *zap.Logger
+	Cluster string
+	Region  string
 }
 
 func NewTaskFetcher(opts TaskFetcherOptions) (*TaskFetcher, error) {
-	panic("not implemented")
+	return nil, fmt.Errorf("not implemented")
 }
 
 func (f *TaskFetcher) FetchAndDecorate(ctx context.Context) ([]*Task, error) {

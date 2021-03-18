@@ -16,6 +16,7 @@ package ecssd
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"testing"
 	"time"
@@ -27,6 +28,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
+
+func TestNew(t *testing.T) {
+	t.Run("actual fecther is not implemented", func(t *testing.T) {
+		_, err := New(ExampleConfig(), ServiceDiscoveryOptions{})
+		require.Error(t, err)
+	})
+}
 
 func TestServiceDiscovery_RunAndWriteFile(t *testing.T) {
 	genTasks := func() []*Task {
@@ -134,7 +142,7 @@ func TestServiceDiscovery_RunAndWriteFile(t *testing.T) {
 		}
 	}
 
-	outputFile := "testdata/ut_targets.yaml"
+	outputFile := "testdata/ut_targets.actual.yaml"
 	cfg := Config{
 		ClusterName:     "ut-cluster-1",
 		ClusterRegion:   "us-test-2",
@@ -148,17 +156,43 @@ func TestServiceDiscovery_RunAndWriteFile(t *testing.T) {
 		},
 	}
 	opts := ServiceDiscoveryOptions{
-		Logger:          zap.NewExample(),
-		FetcherOverride: newMockFetcher(genTasks),
+		Logger: zap.NewExample(),
+		FetcherOverride: newMockFetcher(func() ([]*Task, error) {
+			return genTasks(), nil
+		}),
 	}
-	sd, err := New(cfg, opts)
-	require.NoError(t, err)
-	ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
-	defer cancel()
-	require.NoError(t, sd.RunAndWriteFile(ctx))
-	assert.FileExists(t, outputFile)
-	expectedFile := "testdata/ut_targets.expected.yaml"
-	assert.Equal(t, string(mustReadFile(t, expectedFile)), string(mustReadFile(t, outputFile)))
+
+	t.Run("success", func(t *testing.T) {
+		sd, err := New(cfg, opts)
+		require.NoError(t, err)
+		ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
+		defer cancel()
+		require.NoError(t, sd.RunAndWriteFile(ctx))
+		assert.FileExists(t, outputFile)
+		expectedFile := "testdata/ut_targets.expected.yaml"
+		assert.Equal(t, string(mustReadFile(t, expectedFile)), string(mustReadFile(t, outputFile)))
+	})
+
+	t.Run("fail to write file", func(t *testing.T) {
+		cfg2 := cfg
+		cfg2.ResultFile = "testdata/folder/does/not/exists/ut_targets.yaml"
+		sd, err := New(cfg2, opts)
+		require.NoError(t, err)
+		require.Error(t, sd.RunAndWriteFile(context.TODO()))
+	})
+
+	t.Run("invalid discovery", func(t *testing.T) {
+		optsNoFetch := ServiceDiscoveryOptions{
+			Logger: zap.NewExample(),
+			FetcherOverride: newMockFetcher(func() ([]*Task, error) {
+				return nil, fmt.Errorf("discovery should fail")
+			}),
+		}
+		sd, err := New(cfg, optsNoFetch)
+		require.NoError(t, err)
+		require.Error(t, sd.RunAndWriteFile(context.TODO()))
+	})
+
 }
 
 // Util Start

@@ -22,7 +22,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs"
 )
 
-// Task contains both raw task info and its definition
+// Task contains both raw task info and its definition.
+// It is generated from TaskFetcher.
 type Task struct {
 	Task       *ecs.Task
 	Definition *ecs.TaskDefinition
@@ -115,7 +116,7 @@ func (t *Task) MappedPort(def *ecs.ContainerDefinition, containerPort int64) (in
 			}
 		}
 		return 0, fmt.Errorf("port %d not found for network mode %s", containerPort, mode)
-	case ecs.NetworkModeBridge:
+	case "", ecs.NetworkModeBridge:
 		//  task->containers->networkBindings
 		for _, c := range t.Task.Containers {
 			if aws.StringValue(def.Name) == aws.StringValue(c.Name) {

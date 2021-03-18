@@ -24,8 +24,9 @@ import (
 
 type Matcher interface {
 	Type() MatcherType
-	ExporterConfig() CommonExporterConfig
-	MatchTargets(t *Task, c *ecs.ContainerDefinition) ([]MatchedTarget, error)
+	// MatchTargets returns targets fond from the specific container.
+	// One container can have multiple targets because it may have multiple ports.
+	MatchTargets(task *Task, container *ecs.ContainerDefinition) ([]MatchedTarget, error)
 }
 
 type MatcherConfig interface {

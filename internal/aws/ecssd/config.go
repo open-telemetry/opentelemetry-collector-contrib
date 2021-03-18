@@ -52,7 +52,7 @@ type Config struct {
 // It returns the yaml decode error directly.
 func LoadConfig(b []byte) (Config, error) {
 	var c Config
-	if err := yaml.Unmarshal(b, &c); err != nil {
+	if err := yaml.UnmarshalStrict(b, &c); err != nil {
 		return Config{}, err
 	}
 	return c, nil

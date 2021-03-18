@@ -24,6 +24,9 @@ import (
 func TestLoadConfig(t *testing.T) {
 	b := mustReadFile(t, "testdata/config_example.yaml")
 	c, err := LoadConfig(b)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, ExampleConfig(), c)
+
+	_, err = LoadConfig([]byte("{this is not yaml, just to increase test coverage}"))
+	require.Error(t, err)
 }
