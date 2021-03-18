@@ -80,7 +80,7 @@ func (mc metricConverter) Convert(m telegraf.Metric) (pdata.Metrics, error) {
 				dps.Resize(1)
 				dp := dps.At(0)
 				dp.SetValue(v)
-				dp.SetTimestamp(pdata.TimestampUnixNano(tim))
+				dp.SetTimestamp(pdata.Timestamp(tim))
 				if mc.separateField {
 					dp.LabelsMap().Insert(fieldLabel, f.Key)
 				}
@@ -97,7 +97,7 @@ func (mc metricConverter) Convert(m telegraf.Metric) (pdata.Metrics, error) {
 					dp.SetValue(int64(vv))
 				}
 
-				dp.SetTimestamp(pdata.TimestampUnixNano(tim))
+				dp.SetTimestamp(pdata.Timestamp(tim))
 				if mc.separateField {
 					dp.LabelsMap().Insert(fieldLabel, f.Key)
 				}
