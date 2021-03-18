@@ -12,7 +12,6 @@ jobs:
   build:
     env:
       # We use these variables to convert between tox and GHA version literals
-      py35: 3.5
       py36: 3.6
       py37: 3.7
       py38: 3.8
@@ -22,18 +21,9 @@ jobs:
     strategy:
       fail-fast: false  # ensures the entire test matrix is run, even if one permutation fails
       matrix:
-        python-version: [ py35, py36, py37, py38, pypy3 ]
+        python-version: [ py36, py37, py38, pypy3 ]
         package: ["instrumentation", "exporter", "sdkextension", "propagator"]
         os: [ ubuntu-latest ]
-        include:
-          # py35-instrumentation segfaults on 18.04 so we instead run on 20.04
-          - python-version: py35
-            package: instrumentation
-            os: ubuntu-20.04
-        exclude:
-          - os: ubuntu-latest
-            python-version: py35
-            package: instrumentation
     steps:
       - name: Checkout Contrib Repo @ SHA - ${{ github.sha }}
         uses: actions/checkout@v2

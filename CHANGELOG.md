@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `opentelemetry-exporter-datadog` Fix warning when DatadogFormat encounters a request with
   no DD_ORIGIN headers ([#368](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/368)).
 
+### Removed
+- Removing support for Python 3.5
+  ([#374](https://github.com/open-telemetry/opentelemetry-python/pull/374))
+
 ## [0.18b0](https://github.com/open-telemetry/opentelemetry-python-contrib/releases/tag/v0.18b0) - 2021-02-16
 
 ### Added
