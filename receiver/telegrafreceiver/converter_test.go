@@ -342,7 +342,7 @@ func newMetricIntGauge(metric string, value int64, t time.Time) pdata.Metric {
 	dps.Resize(1)
 	dp := dps.At(0)
 	dp.SetValue(value)
-	dp.SetTimestamp(pdata.TimestampUnixNano(t.UnixNano()))
+	dp.SetTimestamp(pdata.Timestamp(t.UnixNano()))
 	return pm
 }
 
@@ -355,7 +355,7 @@ func newMetricIntGaugeWithSeparateField(metric string, field string, value int64
 	dps.Resize(1)
 	dp := dps.At(0)
 	dp.SetValue(value)
-	dp.SetTimestamp(pdata.TimestampUnixNano(t.UnixNano()))
+	dp.SetTimestamp(pdata.Timestamp(t.UnixNano()))
 	dp.LabelsMap().Insert(fieldLabel, field)
 	return pm
 }
@@ -369,7 +369,7 @@ func newMetricDoubleGauge(metric string, value float64, t time.Time) pdata.Metri
 	dps.Resize(1)
 	dp := dps.At(0)
 	dp.SetValue(value)
-	dp.SetTimestamp(pdata.TimestampUnixNano(t.UnixNano()))
+	dp.SetTimestamp(pdata.Timestamp(t.UnixNano()))
 	return pm
 }
 
@@ -382,7 +382,7 @@ func newMetricDoubleGaugeWithSeparateField(metric string, field string, value fl
 	dps.Resize(1)
 	dp := dps.At(0)
 	dp.SetValue(value)
-	dp.SetTimestamp(pdata.TimestampUnixNano(t.UnixNano()))
+	dp.SetTimestamp(pdata.Timestamp(t.UnixNano()))
 	dp.LabelsMap().Insert(fieldLabel, field)
 	return pm
 }
