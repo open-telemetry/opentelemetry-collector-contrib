@@ -44,26 +44,27 @@ The `tcp_input` operator supports TLS, disabled by default.
 | `cert_file`       |                  | Path to the TLS cert to use for TLS required connections.       |
 | `key_file`        |                  | Path to the TLS key to use for TLS required connections.|
 | `ca_file`         |                  | Path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty uses system root CA.  |
-| `client_ca_file`  |                  | (optional) Path to the TLS cert to use by the server to verify a client certificate. This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to godoc.org/crypto/tls#Config for more information.
-|
+| `client_ca_file`  |                  | (optional) Path to the TLS cert to use by the server to verify a client certificate. This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to godoc.org/crypto/tls#Config for more information. |
 
 ## Example Configurations
 
 TCP Configuration:
 
 ```yaml
-- type: syslog_input
-  protocol: rfc5424
-  tcp:
-    listen_address: "0.0.0.0:54526"
+receivers:
+  syslog:
+    tcp:
+      listen_address: "0.0.0.0:54526"
+    protocol: rfc5424
 ```
 
 UDP Configuration:
 
 ```yaml
-- type: syslog_input
-  udp:
-    listen_address: "0.0.0.0:54526"
-  protocol: rfc3164
-  location: UTC
+receivers:
+  syslog:
+    udp:
+      listen_address: "0.0.0.0:54526"
+    protocol: rfc3164
+    location: UTC
 ```
