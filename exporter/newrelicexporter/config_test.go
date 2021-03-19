@@ -43,7 +43,13 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, len(cfg.Exporters), 2)
 
 	r0 := cfg.Exporters["newrelic"]
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
+	defaultConfig := factory.CreateDefaultConfig().(*Config)
+	assert.Equal(t, r0, defaultConfig)
+
+	defaultNrConfig := new(telemetry.Config)
+	defaultConfig.HarvestOption(defaultNrConfig)
+	assert.Empty(t, defaultNrConfig.MetricsURLOverride)
+	assert.Empty(t, defaultNrConfig.SpansURLOverride)
 
 	r1 := cfg.Exporters["newrelic/alt"].(*Config)
 	assert.Equal(t, r1, &Config{
