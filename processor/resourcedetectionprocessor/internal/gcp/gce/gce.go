@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 )
 
 const (
@@ -34,11 +35,11 @@ const (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
-	metadata gceMetadata
+	metadata gcp.Metadata
 }
 
 func NewDetector(component.ProcessorCreateParams, internal.DetectorConfig) (internal.Detector, error) {
-	return &Detector{metadata: &gceMetadataImpl{}}, nil
+	return &Detector{metadata: &gcp.MetadataImpl{}}, nil
 }
 
 func (d *Detector) Detect(context.Context) (pdata.Resource, error) {

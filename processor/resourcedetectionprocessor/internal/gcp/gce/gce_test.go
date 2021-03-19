@@ -20,52 +20,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 )
-
-type mockMetadata struct {
-	mock.Mock
-}
-
-func (m *mockMetadata) OnGCE() bool {
-	return m.MethodCalled("OnGCE").Bool(0)
-}
-
-func (m *mockMetadata) ProjectID() (string, error) {
-	args := m.MethodCalled("ProjectID")
-	return args.String(0), args.Error(1)
-}
-
-func (m *mockMetadata) Zone() (string, error) {
-	args := m.MethodCalled("Zone")
-	return args.String(0), args.Error(1)
-}
-
-func (m *mockMetadata) Hostname() (string, error) {
-	args := m.MethodCalled("Hostname")
-	return args.String(0), args.Error(1)
-}
-
-func (m *mockMetadata) InstanceID() (string, error) {
-	args := m.MethodCalled("InstanceID")
-	return args.String(0), args.Error(1)
-}
-
-func (m *mockMetadata) InstanceName() (string, error) {
-	args := m.MethodCalled("InstanceName")
-	return args.String(0), args.Error(1)
-}
-
-func (m *mockMetadata) Get(suffix string) (string, error) {
-	args := m.MethodCalled("Get")
-	return args.String(0), args.Error(1)
-}
 
 func TestNewDetector(t *testing.T) {
 	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
@@ -74,7 +36,7 @@ func TestNewDetector(t *testing.T) {
 }
 
 func TestDetectTrue(t *testing.T) {
-	md := &mockMetadata{}
+	md := &gcp.MockMetadata{}
 	md.On("OnGCE").Return(true)
 	md.On("ProjectID").Return("1", nil)
 	md.On("Zone").Return("zone", nil)
@@ -105,7 +67,7 @@ func TestDetectTrue(t *testing.T) {
 }
 
 func TestDetectFalse(t *testing.T) {
-	md := &mockMetadata{}
+	md := &gcp.MockMetadata{}
 	md.On("OnGCE").Return(false)
 
 	detector := &Detector{metadata: md}
@@ -116,7 +78,7 @@ func TestDetectFalse(t *testing.T) {
 }
 
 func TestDetectError(t *testing.T) {
-	md := &mockMetadata{}
+	md := &gcp.MockMetadata{}
 	md.On("OnGCE").Return(true)
 	md.On("ProjectID").Return("", errors.New("err1"))
 	md.On("Zone").Return("", errors.New("err2"))
