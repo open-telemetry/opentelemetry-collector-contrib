@@ -24,10 +24,10 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	dtypes "github.com/docker/docker/api/types"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/internaldata"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -47,7 +47,7 @@ func ContainerStatsToMetrics(
 	container *DockerContainer,
 	config *Config,
 ) (*internaldata.MetricsData, error) {
-	now, _ := ptypes.TimestampProto(time.Now())
+	now := timestamppb.New(time.Now())
 
 	var metrics []*metricspb.Metric
 	metrics = append(metrics, blockioMetrics(&containerStats.BlkioStats, now)...)
