@@ -131,7 +131,7 @@ func TestDetectError(t *testing.T) {
 	assert.EqualError(t, err, "[err1; err2; err3; err4; err6]")
 
 	expected := internal.NewResource(map[string]interface{}{
-		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP,
+		conventions.AttributeCloudProvider:              conventions.AttributeCloudProviderGCP,
 		conventions.AttributeCloudInfrastructureService: conventions.AttributeCloudProviderGCPComputeEngine,
 	})
 
