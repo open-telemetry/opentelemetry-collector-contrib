@@ -15,12 +15,12 @@
 package protocol
 
 import (
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // Parser is something that can map input StatsD strings to OTLP Metric representations.
 type Parser interface {
 	Initialize(enableMetricType bool) error
-	GetMetrics() []*metricspb.Metric
+	GetMetrics() pdata.Metrics
 	Aggregate(line string) error
 }
