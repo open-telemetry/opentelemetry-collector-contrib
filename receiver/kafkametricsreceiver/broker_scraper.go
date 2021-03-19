@@ -16,11 +16,15 @@ package kafkametricsreceiver
 
 import (
 	"context"
+	"time"
 
 	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/simple"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
 type brokerScraper struct {
@@ -40,13 +44,20 @@ func (s *brokerScraper) shutdown(context.Context) error {
 	return nil
 }
 
-func (s *brokerScraper) scrape(context.Context) (pdata.MetricSlice, error) {
-	metrics := pdata.NewMetricSlice()
-	// implement brokers metrics
-	return metrics, nil
+func (s *brokerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, error) {
+	brokers := s.client.Brokers()
+	metrics := simple.Metrics{
+		Metrics:                    pdata.NewMetrics(),
+		Timestamp:                  time.Now(),
+		MetricFactoriesByName:      metadata.M.FactoriesByName(),
+		InstrumentationLibraryName: "otelcol/kafkametrics",
+	}
+	metrics.AddGaugeDataPoint(metadata.M.KafkaBrokers.Name(), int64(len(brokers)))
+
+	return metrics.Metrics.ResourceMetrics(), nil
 }
 
-func createBrokerScraper(_ context.Context, config Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.MetricsScraper, error) {
+func createBrokerScraper(_ context.Context, config Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.ResourceMetricsScraper, error) {
 	client, err := newSaramaClient(config.Brokers, saramaConfig)
 	if err != nil {
 		return nil, err
@@ -56,7 +67,7 @@ func createBrokerScraper(_ context.Context, config Config, saramaConfig *sarama.
 		logger: logger,
 		config: config,
 	}
-	ms := scraperhelper.NewMetricsScraper(
+	ms := scraperhelper.NewResourceMetricsScraper(
 		s.Name(),
 		s.scrape,
 		scraperhelper.WithShutdown(s.shutdown),
