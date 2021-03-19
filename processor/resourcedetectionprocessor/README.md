@@ -58,10 +58,10 @@ ec2:
 * Amazon ECS: Queries the [Task Metadata Endpoint](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint.html) (TMDE) to record information about the current ECS Task. Only TMDE V4 and V3 are supported.
 
     * cloud.provider ("aws")
+    * cloud.infrastructure_service ("aws_ecs")
     * cloud.account.id
     * cloud.region
     * cloud.zone
-    * cloud.infrastructure_service ("aws_ecs")
     * aws.ecs.cluster.arn
     * aws.ecs.task.arn
     * aws.ecs.task.family
