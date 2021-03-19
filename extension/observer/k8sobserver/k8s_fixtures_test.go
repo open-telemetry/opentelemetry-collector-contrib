@@ -18,7 +18,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
 )
 
 // NewPod is a helper function for creating Pods for testing.
@@ -92,7 +91,7 @@ var container2StatusRunning = v1.ContainerStatus{
 	},
 	Ready:   true,
 	Image:   "container-image-1",
-	Started: pointer.BoolPtr(true),
+	Started: pointerBool(true),
 }
 
 var podWithNamedPorts = func() *v1.Pod {
@@ -110,3 +109,7 @@ var podWithNamedPorts = func() *v1.Pod {
 	}
 	return pod
 }()
+
+func pointerBool(val bool) *bool {
+	return &val
+}
