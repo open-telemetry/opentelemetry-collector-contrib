@@ -82,6 +82,7 @@ func TestBrokerScraper_scrape(t *testing.T) {
 	r := sarama.NewBroker(testBroker)
 	testBrokers := make([]*sarama.Broker, 1)
 	testBrokers[0] = r
+	client.brokers = testBrokers
 	client.Mock.On("Brokers").Return(testBrokers)
 	bs := brokerScraper{
 		client: client,
@@ -90,6 +91,10 @@ func TestBrokerScraper_scrape(t *testing.T) {
 	}
 	ms, err := bs.scrape(context.Background())
 	assert.Nil(t, err)
+	expectedDp := int64(len(testBrokers))
+	receivedMetrics := ms.At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+	receivedDp := receivedMetrics.IntGauge().DataPoints().At(0).Value()
+	assert.Equal(t, expectedDp, receivedDp)
 	assert.NotNil(t, ms)
 }
 
