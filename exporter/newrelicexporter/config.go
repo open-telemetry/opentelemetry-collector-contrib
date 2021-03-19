@@ -63,10 +63,12 @@ func (c Config) HarvestOption(cfg *telemetry.Config) {
 	cfg.Product = product
 	cfg.ProductVersion = version
 	var prefix string
-	if c.metricsInsecure {
-		prefix = "http://"
-	} else {
-		prefix = "https://"
+	if c.MetricsHostOverride != "" {
+		if c.metricsInsecure {
+			prefix = "http://"
+		} else {
+			prefix = "https://"
+		}
+		cfg.MetricsURLOverride = prefix + c.MetricsHostOverride
 	}
-	cfg.MetricsURLOverride = prefix + c.MetricsHostOverride
 }
