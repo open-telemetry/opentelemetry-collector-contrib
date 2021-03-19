@@ -331,6 +331,26 @@ func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 	assert.Equal(t, 11, len(config.ExcludeMetrics))
 }
 
+func TestCreateMetricsExporterWithEmptyExcludeMetrics(t *testing.T) {
+	config := &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
+		AccessToken:    "testToken",
+		Realm:          "us1",
+		ExcludeMetrics: []dpfilters.MetricFilter{},
+	}
+
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	// Validate that default excludes are overridden when exclude metrics
+	// is explicitly set to an empty slice.
+	assert.Equal(t, 0, len(config.ExcludeMetrics))
+}
+
 func testMetricsData() pdata.ResourceMetrics {
 	md := internaldata.MetricsData{
 		Metrics: []*metricspb.Metric{
