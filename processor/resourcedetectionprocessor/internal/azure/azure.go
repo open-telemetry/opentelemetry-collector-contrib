@@ -53,6 +53,7 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	}
 
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+	attrs.InsertString(conventions.AttributeCloudInfrastructureService, conventions.AttributeCloudProviderAzureVM)
 	attrs.InsertString(conventions.AttributeHostName, compute.Name)
 	attrs.InsertString(conventions.AttributeCloudRegion, compute.Location)
 	attrs.InsertString(conventions.AttributeHostID, compute.VMID)
