@@ -33,12 +33,12 @@ type mockMetadata struct {
 	mock.Mock
 }
 
-func (m *mockMetadata) FQDN() (string, error) {
-	args := m.MethodCalled("FQDN")
+func (m *mockMetadata) Hostname(context.Context) (string, error) {
+	args := m.MethodCalled("Hostname")
 	return args.String(0), args.Error(1)
 }
 
-func (m *mockMetadata) OSType() (string, error) {
+func (m *mockMetadata) OSType(context.Context) (string, error) {
 	args := m.MethodCalled("OSType")
 	return args.String(0), args.Error(1)
 }
@@ -49,12 +49,12 @@ func TestNewDetector(t *testing.T) {
 	assert.NotNil(t, d)
 }
 
-func TestDetectFQDNAvailable(t *testing.T) {
+func TestDetectHostnameAvailable(t *testing.T) {
 	md := &mockMetadata{}
-	md.On("FQDN").Return("fqdn", nil)
+	md.On("Hostname").Return("fqdn", nil)
 	md.On("OSType").Return("DARWIN", nil)
 
-	detector := &Detector{provider: md}
+	detector := &Detector{systemProvider: md}
 	res, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	md.AssertExpectations(t)
@@ -74,19 +74,19 @@ func TestDetectError(t *testing.T) {
 	// FQDN fails
 	mdFQDN := &mockMetadata{}
 	mdFQDN.On("OSType").Return("WINDOWS", nil)
-	mdFQDN.On("FQDN").Return("", errors.New("err"))
+	mdFQDN.On("Hostname").Return("", errors.New("err"))
 
-	detector := &Detector{provider: mdFQDN}
+	detector := &Detector{systemProvider: mdFQDN}
 	res, err := detector.Detect(context.Background())
 	assert.Error(t, err)
 	assert.True(t, internal.IsEmptyResource(res))
 
 	// Hostname fails
 	mdHostname := &mockMetadata{}
-	mdHostname.On("FQDN").Return("fqdn", nil)
+	mdHostname.On("Hostname").Return("fqdn", nil)
 	mdHostname.On("OSType").Return("", errors.New("err"))
 
-	detector = &Detector{provider: mdHostname}
+	detector = &Detector{systemProvider: mdHostname}
 	res, err = detector.Detect(context.Background())
 	assert.Error(t, err)
 	assert.True(t, internal.IsEmptyResource(res))

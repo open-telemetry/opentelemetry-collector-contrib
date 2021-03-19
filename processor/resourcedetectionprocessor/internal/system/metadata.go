@@ -15,26 +15,61 @@
 package system
 
 import (
+	"context"
+	"fmt"
 	"runtime"
 	"strings"
 
 	"github.com/Showmax/go-fqdn"
+	"github.com/docker/docker/client"
 )
 
 type systemMetadata interface {
-	// FQDN returns the fully qualified domain name
-	FQDN() (string, error)
+	// Hostname returns the hostname or fully qualified domain name
+	Hostname(context.Context) (string, error)
 
 	// OSType returns the host operating system
-	OSType() (string, error)
+	OSType(context.Context) (string, error)
+}
+
+func newSystemMetadata() systemMetadata {
+	return &systemMetadataImpl{}
 }
 
 type systemMetadataImpl struct{}
 
-func (*systemMetadataImpl) OSType() (string, error) {
+func (*systemMetadataImpl) Hostname(context.Context) (string, error) {
+	return fqdn.FqdnHostname()
+}
+
+func (*systemMetadataImpl) OSType(context.Context) (string, error) {
 	return strings.ToUpper(runtime.GOOS), nil
 }
 
-func (*systemMetadataImpl) FQDN() (string, error) {
-	return fqdn.FqdnHostname()
+type dockerMetadataImpl struct {
+	dockerClient *client.Client
+}
+
+func newDockerMetadata() (systemMetadata, error) {
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return nil, fmt.Errorf("could not initialize Docker client: %w", err)
+	}
+	return &dockerMetadataImpl{dockerClient: cli}, nil
+}
+
+func (d *dockerMetadataImpl) Hostname(ctx context.Context) (string, error) {
+	info, err := d.dockerClient.Info(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch Docker information: %w", err)
+	}
+	return info.Name, nil
+}
+
+func (d *dockerMetadataImpl) OSType(ctx context.Context) (string, error) {
+	info, err := d.dockerClient.Info(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch Docker OS type: %w", err)
+	}
+	return info.OSType, nil
 }

@@ -26,6 +26,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -87,6 +88,18 @@ func TestGetConfigFromType(t *testing.T) {
 			},
 			expectedConfig: ec2.Config{
 				Tags: []string{"tag1", "tag2"},
+			},
+		},
+		{
+			name:         "Get System Config",
+			detectorType: system.TypeStr,
+			inputDetectorConfig: DetectorConfig{
+				SystemConfig: system.Config{
+					Docker: true,
+				},
+			},
+			expectedConfig: system.Config{
+				Docker: true,
 			},
 		},
 		{

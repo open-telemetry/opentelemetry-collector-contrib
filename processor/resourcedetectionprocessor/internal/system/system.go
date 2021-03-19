@@ -34,30 +34,47 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider systemMetadata
+	systemProvider systemMetadata
+}
+
+// Config defines user-specified configurations unique to the system detector
+type Config struct {
+	// Docker states whether to fetch information from the Docker socket
+	Docker bool `mapstructure:"use_docker_sock"`
 }
 
 // NewDetector creates a new system metadata detector
-func NewDetector(component.ProcessorCreateParams, internal.DetectorConfig) (internal.Detector, error) {
-	return &Detector{provider: &systemMetadataImpl{}}, nil
+func NewDetector(_ component.ProcessorCreateParams, dcfg internal.DetectorConfig) (internal.Detector, error) {
+	cfg := dcfg.(Config)
+
+	if cfg.Docker {
+		dockerProvider, err := newDockerMetadata()
+		if err != nil {
+			return nil, fmt.Errorf("failed creating detector: %w", err)
+		}
+
+		return &Detector{systemProvider: dockerProvider}, nil
+	}
+
+	return &Detector{systemProvider: newSystemMetadata()}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
-func (d *Detector) Detect(_ context.Context) (pdata.Resource, error) {
+func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()
 	attrs := res.Attributes()
 
-	osType, err := d.provider.OSType()
+	osType, err := d.systemProvider.OSType(ctx)
 	if err != nil {
 		return res, fmt.Errorf("failed getting OS type: %w", err)
 	}
 
-	fqdn, err := d.provider.FQDN()
+	hostname, err := d.systemProvider.Hostname(ctx)
 	if err != nil {
-		return res, fmt.Errorf("failed getting FQDN: %w", err)
+		return res, fmt.Errorf("failed getting hostname: %w", err)
 	}
 
-	attrs.InsertString(conventions.AttributeHostName, fqdn)
+	attrs.InsertString(conventions.AttributeHostName, hostname)
 	attrs.InsertString(conventions.AttributeOSType, osType)
 
 	return res, nil
