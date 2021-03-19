@@ -24,7 +24,7 @@ processors:
     timeout: 2s
     override: false
     system:
-      use_docker_sock: auto
+      use_docker_sock: false
   resourcedetection/azure:
     detectors: [env, azure]
     timeout: 2s
