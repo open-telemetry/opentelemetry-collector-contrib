@@ -85,7 +85,7 @@ func TestHostnameFromAttributes(t *testing.T) {
 	})
 	hostname, ok = HostnameFromAttributes(attrs)
 	assert.True(t, ok)
-	assert.Equal(t, hostname, testContainerID)
+	assert.Equal(t, hostname, testHostID)
 
 	// AWS cloud provider means relying on the EC2 function
 	attrs = testutils.NewAttributeMap(map[string]string{
@@ -200,5 +200,5 @@ func TestHostnameKubernetes(t *testing.T) {
 	hostname, ok = HostnameFromAttributes(attrs)
 	assert.True(t, ok)
 	// cluster name gets ignored, fallback to next option
-	assert.Equal(t, hostname, testContainerID)
+	assert.Equal(t, hostname, testHostID)
 }

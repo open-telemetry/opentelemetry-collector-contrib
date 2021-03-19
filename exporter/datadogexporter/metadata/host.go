@@ -106,11 +106,6 @@ func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
 		return k8sNodeName.StringVal(), true
 	}
 
-	// container id (e.g. from Docker)
-	if containerID, ok := attrs.Get(conventions.AttributeContainerID); ok {
-		return containerID.StringVal(), true
-	}
-
 	// handle AWS case separately to have similar behavior to the Datadog Agent
 	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
 	if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS {
@@ -129,6 +124,11 @@ func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
 	// hostname from cloud provider or OS
 	if hostName, ok := attrs.Get(conventions.AttributeHostName); ok {
 		return hostName.StringVal(), true
+	}
+
+	// container id (e.g. from Docker)
+	if containerID, ok := attrs.Get(conventions.AttributeContainerID); ok {
+		return containerID.StringVal(), true
 	}
 
 	return "", false
