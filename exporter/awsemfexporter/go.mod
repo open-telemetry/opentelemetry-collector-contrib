@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go v1.38.1
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/gogo/googleapis v1.3.0 // indirect
-	github.com/golang/protobuf v1.5.0
+	github.com/golang/protobuf v1.5.1
 	github.com/google/uuid v1.2.0
 	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
