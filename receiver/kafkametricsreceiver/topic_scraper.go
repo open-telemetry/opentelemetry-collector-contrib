@@ -70,7 +70,7 @@ func (s *topicScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 			continue
 		}
 		topicMetrics := metrics.WithLabels(map[string]string{
-			metadata.Labels.Topic: topic,
+			metadata.L.Topic: topic,
 		})
 		topicMetrics.AddGaugeDataPoint(metadata.M.KafkaTopicPartitions.Name(), int64(len(partitions)))
 		for _, partition := range partitions {
