@@ -16,6 +16,7 @@ package kafkametricsreceiver
 
 import (
 	"fmt"
+
 	"github.com/Shopify/sarama"
 	"github.com/stretchr/testify/mock"
 )

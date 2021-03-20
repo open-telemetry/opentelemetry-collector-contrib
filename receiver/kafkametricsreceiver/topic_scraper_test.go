@@ -17,12 +17,14 @@ package kafkametricsreceiver
 import (
 	"context"
 	"fmt"
-	"github.com/Shopify/sarama"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 	"regexp"
 	"testing"
+
+	"github.com/Shopify/sarama"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
 func TestTopicShutdown(t *testing.T) {
