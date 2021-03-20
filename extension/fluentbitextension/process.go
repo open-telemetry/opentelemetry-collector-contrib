@@ -23,9 +23,8 @@ import (
 	"syscall"
 	"time"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
 )
 
 type processManager struct {
