@@ -79,7 +79,7 @@ func TestBlobReader(t *testing.T) {
 	assert.Equal(t, "DOTNET", string(p))
 	_, _ = r.Write([]byte("GOLANG"))
 	assert.Equal(t, "GOLANG", string(r.WriteBuf))
-	r.SetReadError(0)
+	r.ErrOnRead(0)
 	_, err = r.Read(p)
 	require.Error(t, err)
 }
@@ -94,10 +94,34 @@ func TestBlobReader_MultiChunkRead(t *testing.T) {
 	go func() {
 		_, err = r.Read(bigSlice)
 	}()
-	<-r.Done()
+	<-r.Gate()
 }
 
 func TestReadBlobData_ReadErr(t *testing.T) {
 	_, err := ReadBlobData(path.Join("foo", "bar"), 2)
 	require.Error(t, err)
+}
+
+func TestBlobReader_ReadAllChunks(t *testing.T) {
+	data, err := ReadBlobData(path.Join("..", "testdata"), 1)
+	require.NoError(t, err)
+	r := NewBlobReader(data)
+	p := make([]byte, len(data[0]))
+	go func() {
+		_, err = r.Read(p)
+		_, err = r.Read(p)
+	}()
+	<-r.Gate()
+}
+
+func TestBlobReader_StopOnRead(t *testing.T) {
+	data, err := ReadBlobData(path.Join("..", "testdata"), 1)
+	require.NoError(t, err)
+	r := NewBlobReader(data)
+	p := make([]byte, len(data[0]))
+	r.StopOnRead(0)
+	go func() {
+		_, _ = r.Read(p)
+	}()
+	<-r.Gate()
 }

@@ -17,11 +17,11 @@ package protocol
 import (
 	"errors"
 	"testing"
+	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/otel/attribute"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func Test_ParseMessageToMetric(t *testing.T) {
@@ -71,11 +71,12 @@ func Test_ParseMessageToMetric(t *testing.T) {
 			name:  "integer counter",
 			input: "test.metric:42|c",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"42",
 				42,
 				0,
 				false,
-				"c", 1, 0, nil, nil),
+				"c", 0, nil, nil),
 		},
 		{
 			name:  "invalid  counter metric value",
@@ -91,97 +92,65 @@ func Test_ParseMessageToMetric(t *testing.T) {
 			name:  "counter metric with sample rate and tag",
 			input: "test.metric:42|c|@0.1|#key:value",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"42",
 				420,
 				0,
 				false,
 				"c",
-				1,
 				0.1,
-				[]*metricspb.LabelKey{
-					{
-						Key: "key",
-					},
-				},
-				[]*metricspb.LabelValue{
-					{
-						Value:    "value",
-						HasValue: true,
-					},
-				}),
+				[]string{"key"},
+				[]string{"value"}),
 		},
 		{
 			name:  "counter metric with sample rate(not divisible) and tag",
 			input: "test.metric:42|c|@0.8|#key:value",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"42",
 				52,
 				0,
 				false,
 				"c",
-				1,
 				0.8,
-				[]*metricspb.LabelKey{
-					{
-						Key: "key",
-					},
-				},
-				[]*metricspb.LabelValue{
-					{
-						Value:    "value",
-						HasValue: true,
-					},
-				}),
+				[]string{"key"},
+				[]string{"value"}),
 		},
 		{
 			name:  "counter metric with sample rate(not divisible) and two tags",
 			input: "test.metric:42|c|@0.8|#key:value,key2:value2",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"42",
 				52,
 				0,
 				false,
 				"c",
-				1,
 				0.8,
-				[]*metricspb.LabelKey{
-					{
-						Key: "key",
-					},
-					{
-						Key: "key2",
-					},
-				},
-				[]*metricspb.LabelValue{
-					{
-						Value:    "value",
-						HasValue: true,
-					},
-					{
-						Value:    "value2",
-						HasValue: true,
-					},
-				}),
+				[]string{"key", "key2"},
+				[]string{"value", "value2"}),
 		},
 		{
 			name:  "double gauge",
 			input: "test.metric:42.0|g",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"42.0",
 				0,
 				42,
 				false,
-				"g", 2, 0, nil, nil),
+				"g", 0, nil, nil),
 		},
 		{
 			name:  "int gauge",
 			input: "test.metric:42|g",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"42",
 				0,
 				42,
 				false,
-				"g", 2, 0, nil, nil),
+				"g", 0, nil, nil),
 		},
 		{
 			name:  "invalid gauge metric value",
@@ -192,94 +161,73 @@ func Test_ParseMessageToMetric(t *testing.T) {
 			name:  "gauge metric with sample rate and tag",
 			input: "test.metric:11|g|@0.1|#key:value",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"11",
 				0,
 				11,
 				false,
 				"g",
-				2,
 				0.1,
-				[]*metricspb.LabelKey{
-					{
-						Key: "key",
-					},
-				},
-				[]*metricspb.LabelValue{
-					{
-						Value:    "value",
-						HasValue: true,
-					},
-				}),
+				[]string{"key"},
+				[]string{"value"}),
 		},
 		{
 			name:  "gauge metric with sample rate and two tags",
 			input: "test.metric:11|g|@0.8|#key:value,key2:value2",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"11",
 				0,
 				11,
 				false,
 				"g",
-				2,
 				0.8,
-				[]*metricspb.LabelKey{
-					{
-						Key: "key",
-					},
-					{
-						Key: "key2",
-					},
-				},
-				[]*metricspb.LabelValue{
-					{
-						Value:    "value",
-						HasValue: true,
-					},
-					{
-						Value:    "value2",
-						HasValue: true,
-					},
-				}),
+				[]string{"key", "key2"},
+				[]string{"value", "value2"}),
 		},
 		{
 			name:  "double gauge plus",
 			input: "test.metric:+42.0|g",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"+42.0",
 				0,
 				42,
 				true,
-				"g", 2, 0, nil, nil),
+				"g", 0, nil, nil),
 		},
 		{
 			name:  "double gauge minus",
 			input: "test.metric:-42.0|g",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"-42.0",
 				0,
 				-42,
 				true,
-				"g", 2, 0, nil, nil),
+				"g", 0, nil, nil),
 		},
 		{
 			name:  "int gauge plus",
 			input: "test.metric:+42|g",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"+42",
 				0,
 				42,
 				true,
-				"g", 2, 0, nil, nil),
+				"g", 0, nil, nil),
 		},
 		{
 			name:  "int gauge minus",
 			input: "test.metric:-42|g",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"-42",
 				0,
 				-42,
 				true,
-				"g", 2, 0, nil, nil),
+				"g", 0, nil, nil),
 		},
 	}
 
@@ -307,206 +255,85 @@ func Test_ParseMessageToMetricWithMetricType(t *testing.T) {
 		err        error
 	}{
 		{
-			name:  "empty input string",
-			input: "",
-			err:   errors.New("invalid message format: "),
-		},
-		{
-			name:  "missing metric value",
-			input: "test.metric|c",
-			err:   errors.New("invalid <name>:<value> format: test.metric"),
-		},
-		{
-			name:  "empty metric name",
-			input: ":42|c",
-			err:   errors.New("empty metric name"),
-		},
-		{
-			name:  "empty metric value",
-			input: "test.metric:|c",
-			err:   errors.New("empty metric value"),
-		},
-		{
-			name:  "invalid sample rate value",
-			input: "test.metric:42|c|@1.0a",
-			err:   errors.New("parse sample rate: 1.0a"),
-		},
-		{
-			name:  "invalid tag format",
-			input: "test.metric:42|c|#key1",
-			err:   errors.New("invalid tag format: [key1]"),
-		},
-		{
-			name:  "unrecognized message part",
-			input: "test.metric:42|c|$extra",
-			err:   errors.New("unrecognized message part: $extra"),
-		},
-		{
 			name:  "integer counter",
 			input: "test.metric:42|c",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"42",
 				42,
 				0,
 				false,
-				"c", 1, 0, []*metricspb.LabelKey{
-					{
-						Key: "metric_type",
-					},
-				},
-				[]*metricspb.LabelValue{
-					{
-						Value:    "counter",
-						HasValue: true,
-					},
-				}),
-		},
-		{
-			name:  "invalid  counter metric value",
-			input: "test.metric:42.abc|c",
-			err:   errors.New("counter: parse metric value string: 42.abc"),
-		},
-		{
-			name:  "unhandled metric type",
-			input: "test.metric:42|unhandled_type",
-			err:   errors.New("unsupported metric type: unhandled_type"),
+				"c", 0,
+				[]string{"metric_type"},
+				[]string{"counter"}),
 		},
 		{
 			name:  "counter metric with sample rate and tag",
 			input: "test.metric:42|c|@0.1|#key:value",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"42",
 				420,
 				0,
 				false,
 				"c",
-				1,
 				0.1,
-				[]*metricspb.LabelKey{
-					{
-						Key: "key",
-					},
-					{
-						Key: "metric_type",
-					},
-				},
-				[]*metricspb.LabelValue{
-					{
-						Value:    "value",
-						HasValue: true,
-					},
-					{
-						Value:    "counter",
-						HasValue: true,
-					},
-				}),
+				[]string{"key", "metric_type"},
+				[]string{"value", "counter"}),
 		},
 		{
 			name:  "counter metric with sample rate(not divisible) and tag",
 			input: "test.metric:42|c|@0.8|#key:value",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"42",
 				52,
 				0,
 				false,
 				"c",
-				1,
 				0.8,
-				[]*metricspb.LabelKey{
-					{
-						Key: "key",
-					},
-					{
-						Key: "metric_type",
-					},
-				},
-				[]*metricspb.LabelValue{
-					{
-						Value:    "value",
-						HasValue: true,
-					},
-					{
-						Value:    "counter",
-						HasValue: true,
-					},
-				}),
+				[]string{"key", "metric_type"},
+				[]string{"value", "counter"}),
 		},
 		{
 			name:  "counter metric with sample rate(not divisible) and two tags",
 			input: "test.metric:42|c|@0.8|#key:value,key2:value2",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"42",
 				52,
 				0,
 				false,
 				"c",
-				1,
 				0.8,
-				[]*metricspb.LabelKey{
-					{
-						Key: "key",
-					},
-					{
-						Key: "key2",
-					},
-					{
-						Key: "metric_type",
-					},
-				},
-				[]*metricspb.LabelValue{
-					{
-						Value:    "value",
-						HasValue: true,
-					},
-					{
-						Value:    "value2",
-						HasValue: true,
-					},
-					{
-						Value:    "counter",
-						HasValue: true,
-					},
-				}),
+				[]string{"key", "key2", "metric_type"},
+				[]string{"value", "value2", "counter"}),
 		},
 		{
 			name:  "double gauge",
 			input: "test.metric:42.0|g",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"42.0",
 				0,
 				42,
 				false,
-				"g", 2, 0, []*metricspb.LabelKey{
-					{
-						Key: "metric_type",
-					},
-				},
-				[]*metricspb.LabelValue{
-					{
-						Value:    "gauge",
-						HasValue: true,
-					},
-				}),
+				"g", 0,
+				[]string{"metric_type"},
+				[]string{"gauge"}),
 		},
 		{
 			name:  "int gauge",
 			input: "test.metric:42|g",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"42",
 				0,
 				42,
 				false,
-				"g", 2, 0, []*metricspb.LabelKey{
-					{
-						Key: "metric_type",
-					},
-				},
-				[]*metricspb.LabelValue{
-					{
-						Value:    "gauge",
-						HasValue: true,
-					},
-				}),
+				"g", 0,
+				[]string{"metric_type"},
+				[]string{"gauge"}),
 		},
 		{
 			name:  "invalid gauge metric value",
@@ -517,148 +344,81 @@ func Test_ParseMessageToMetricWithMetricType(t *testing.T) {
 			name:  "gauge metric with sample rate and tag",
 			input: "test.metric:11|g|@0.1|#key:value",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"11",
 				0,
 				11,
 				false,
 				"g",
-				2,
 				0.1,
-				[]*metricspb.LabelKey{
-					{
-						Key: "key",
-					},
-					{
-						Key: "metric_type",
-					},
-				},
-				[]*metricspb.LabelValue{
-					{
-						Value:    "value",
-						HasValue: true,
-					},
-					{
-						Value:    "gauge",
-						HasValue: true,
-					},
-				}),
+				[]string{"key", "metric_type"},
+				[]string{"value", "gauge"}),
 		},
 		{
 			name:  "gauge metric with sample rate and two tags",
 			input: "test.metric:11|g|@0.8|#key:value,key2:value2",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"11",
 				0,
 				11,
 				false,
 				"g",
-				2,
 				0.8,
-				[]*metricspb.LabelKey{
-					{
-						Key: "key",
-					},
-					{
-						Key: "key2",
-					},
-					{
-						Key: "metric_type",
-					},
-				},
-				[]*metricspb.LabelValue{
-					{
-						Value:    "value",
-						HasValue: true,
-					},
-					{
-						Value:    "value2",
-						HasValue: true,
-					},
-					{
-						Value:    "gauge",
-						HasValue: true,
-					},
-				}),
+				[]string{"key", "key2", "metric_type"},
+				[]string{"value", "value2", "gauge"}),
 		},
 		{
 			name:  "double gauge plus",
 			input: "test.metric:+42.0|g",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"+42.0",
 				0,
 				42,
 				true,
-				"g", 2, 0, []*metricspb.LabelKey{
-					{
-						Key: "metric_type",
-					},
-				},
-				[]*metricspb.LabelValue{
-					{
-						Value:    "gauge",
-						HasValue: true,
-					},
-				}),
+				"g", 0,
+				[]string{"metric_type"},
+				[]string{"gauge"}),
 		},
 		{
 			name:  "double gauge minus",
 			input: "test.metric:-42.0|g",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"-42.0",
 				0,
 				-42,
 				true,
-				"g", 2, 0, []*metricspb.LabelKey{
-					{
-						Key: "metric_type",
-					},
-				},
-				[]*metricspb.LabelValue{
-					{
-						Value:    "gauge",
-						HasValue: true,
-					},
-				}),
+				"g", 0,
+				[]string{"metric_type"},
+				[]string{"gauge"}),
 		},
 		{
 			name:  "int gauge plus",
 			input: "test.metric:+42|g",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"+42",
 				0,
 				42,
 				true,
-				"g", 2, 0, []*metricspb.LabelKey{
-					{
-						Key: "metric_type",
-					},
-				},
-				[]*metricspb.LabelValue{
-					{
-						Value:    "gauge",
-						HasValue: true,
-					},
-				}),
+				"g", 0,
+				[]string{"metric_type"},
+				[]string{"gauge"}),
 		},
 		{
 			name:  "int gauge minus",
 			input: "test.metric:-42|g",
 			wantMetric: testStatsDMetric(
+				"test.metric",
 				"-42",
 				0,
 				-42,
 				true,
-				"g", 2, 0, []*metricspb.LabelKey{
-					{
-						Key: "metric_type",
-					},
-				},
-				[]*metricspb.LabelValue{
-					{
-						Value:    "gauge",
-						HasValue: true,
-					},
-				}),
+				"g", 0,
+				[]string{"metric_type"},
+				[]string{"gauge"}),
 		},
 	}
 
@@ -677,24 +437,21 @@ func Test_ParseMessageToMetricWithMetricType(t *testing.T) {
 	}
 }
 
-func testStatsDMetric(value string, intValue int64,
-	floatValue float64,
+func testStatsDMetric(name string, value string,
+	intValue int64, floatValue float64,
 	addition bool, statsdMetricType string,
-	metricType metricspb.MetricDescriptor_Type,
-	sampleRate float64, labelKeys []*metricspb.LabelKey,
-	labelValue []*metricspb.LabelValue) statsDMetric {
+	sampleRate float64, labelKeys []string,
+	labelValue []string) statsDMetric {
 	if len(labelKeys) > 0 {
 		var kvs []attribute.KeyValue
 		var sortable attribute.Sortable
 		for n, k := range labelKeys {
-			if labelValue[n].HasValue {
-				kvs = append(kvs, attribute.String(k.Key, labelValue[n].Value))
-			}
+			kvs = append(kvs, attribute.String(k, labelValue[n]))
 		}
 		set := attribute.NewSetWithSortable(kvs, &sortable)
 		return statsDMetric{
 			description: statsDMetricdescription{
-				name:             "test.metric",
+				name:             name,
 				statsdMetricType: statsdMetricType,
 				labels:           set.Equivalent(),
 			},
@@ -703,7 +460,6 @@ func testStatsDMetric(value string, intValue int64,
 			floatvalue:  floatValue,
 			addition:    addition,
 			unit:        "",
-			metricType:  metricType,
 			sampleRate:  sampleRate,
 			labelKeys:   labelKeys,
 			labelValues: labelValue,
@@ -711,7 +467,7 @@ func testStatsDMetric(value string, intValue int64,
 	}
 	return statsDMetric{
 		description: statsDMetricdescription{
-			name:             "test.metric",
+			name:             name,
 			statsdMetricType: statsdMetricType,
 		},
 		value:       value,
@@ -719,7 +475,6 @@ func testStatsDMetric(value string, intValue int64,
 		floatvalue:  floatValue,
 		addition:    addition,
 		unit:        "",
-		metricType:  metricType,
 		sampleRate:  sampleRate,
 		labelKeys:   labelKeys,
 		labelValues: labelValue,
@@ -740,15 +495,15 @@ func testDescription(name string, statsdMetricType string, keys []string, values
 	}
 }
 func TestStatsDParser_Aggregate(t *testing.T) {
-	timeNowFunc = func() int64 {
-		return 0
+	timeNowFunc = func() time.Time {
+		return time.Unix(711, 0)
 	}
 
 	tests := []struct {
 		name             string
 		input            []string
-		expectedGauges   map[statsDMetricdescription]*metricspb.Metric
-		expectedCounters map[statsDMetricdescription]*metricspb.Metric
+		expectedGauges   map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics
+		expectedCounters map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics
 		err              error
 	}{
 		{
@@ -776,53 +531,13 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 				"statsdTestMetric2:+5|g|#mykey:myvalue",
 				"statsdTestMetric2:+500|g|#mykey:myvalue",
 			},
-			expectedGauges: map[statsDMetricdescription]*metricspb.Metric{
+			expectedGauges: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric1",
-					metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_DoubleValue{
-							DoubleValue: 10102,
-						},
-					}),
+					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 10102, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 				testDescription("statsdTestMetric2", "g",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric2",
-					metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_DoubleValue{
-							DoubleValue: 507,
-						},
-					}),
+					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric2", "", 0, 507, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 			},
-			expectedCounters: map[statsDMetricdescription]*metricspb.Metric{},
+			expectedCounters: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{},
 		},
 		{
 			name: "gauge minus",
@@ -838,53 +553,13 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 				"statsdTestMetric1:-100|g|#mykey:myvalue",
 				"statsdTestMetric1:-1|g|#mykey:myvalue",
 			},
-			expectedGauges: map[statsDMetricdescription]*metricspb.Metric{
+			expectedGauges: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric1",
-					metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_DoubleValue{
-							DoubleValue: 4885,
-						},
-					}),
+					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 4885, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 				testDescription("statsdTestMetric2", "g",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric2",
-					metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_DoubleValue{
-							DoubleValue: 5,
-						},
-					}),
+					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric2", "", 0, 5, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 			},
-			expectedCounters: map[statsDMetricdescription]*metricspb.Metric{},
+			expectedCounters: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{},
 		},
 		{
 			name: "gauge plus and minus",
@@ -900,53 +575,13 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 				"statsdTestMetric2:-200|g|#mykey:myvalue",
 				"statsdTestMetric2:200|g|#mykey:myvalue",
 			},
-			expectedGauges: map[statsDMetricdescription]*metricspb.Metric{
+			expectedGauges: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric1",
-					metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_DoubleValue{
-							DoubleValue: 4101,
-						},
-					}),
+					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 4101, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 				testDescription("statsdTestMetric2", "g",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric2",
-					metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_DoubleValue{
-							DoubleValue: 200,
-						},
-					}),
+					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric2", "", 0, 200, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 			},
-			expectedCounters: map[statsDMetricdescription]*metricspb.Metric{},
+			expectedCounters: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{},
 		},
 		{
 			name: "counter with increment and sample rate",
@@ -956,52 +591,12 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 				"statsdTestMetric2:20|c|@0.8|#mykey:myvalue",
 				"statsdTestMetric2:20|c|@0.8|#mykey:myvalue",
 			},
-			expectedGauges: map[statsDMetricdescription]*metricspb.Metric{},
-			expectedCounters: map[statsDMetricdescription]*metricspb.Metric{
+			expectedGauges: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{},
+			expectedCounters: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "c",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric1",
-					metricspb.MetricDescriptor_GAUGE_INT64,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_Int64Value{
-							Int64Value: 7000,
-						},
-					}),
+					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric1", "", 7000, 0, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 				testDescription("statsdTestMetric2", "c",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric2",
-					metricspb.MetricDescriptor_GAUGE_INT64,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_Int64Value{
-							Int64Value: 50,
-						},
-					}),
+					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", "", 50, 0, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 			},
 		},
 		{
@@ -1017,75 +612,15 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 				"statsdTestMetric1:+2|g|#mykey:myvalue",
 				"statsdTestMetric2:20|c|@0.8|#mykey:myvalue",
 			},
-			expectedGauges: map[statsDMetricdescription]*metricspb.Metric{
+			expectedGauges: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric1",
-					metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_DoubleValue{
-							DoubleValue: 421,
-						},
-					}),
+					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 421, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 			},
-			expectedCounters: map[statsDMetricdescription]*metricspb.Metric{
+			expectedCounters: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "c",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric1",
-					metricspb.MetricDescriptor_GAUGE_INT64,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_Int64Value{
-							Int64Value: 7000,
-						},
-					}),
+					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric1", "", 7000, 0, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 				testDescription("statsdTestMetric2", "c",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric2",
-					metricspb.MetricDescriptor_GAUGE_INT64,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_Int64Value{
-							Int64Value: 50,
-						},
-					}),
+					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", "", 50, 0, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 			},
 		},
 		{
@@ -1102,97 +637,17 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 				"statsdTestMetric1:15|c|#mykey:myvalue",
 				"statsdTestMetric2:5|c|@0.2|#mykey:myvalue",
 			},
-			expectedGauges: map[statsDMetricdescription]*metricspb.Metric{
+			expectedGauges: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric1",
-					metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_DoubleValue{
-							DoubleValue: 319,
-						},
-					}),
+					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 319, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey"}, []string{"myvalue1"}): testMetric("statsdTestMetric1",
-					metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue1",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_DoubleValue{
-							DoubleValue: 399,
-						},
-					}),
+					[]string{"mykey"}, []string{"myvalue1"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 399, false, "g", 0, []string{"mykey"}, []string{"myvalue1"}), time.Unix(711, 0)),
 			},
-			expectedCounters: map[statsDMetricdescription]*metricspb.Metric{
+			expectedCounters: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "c",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric1",
-					metricspb.MetricDescriptor_GAUGE_INT64,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_Int64Value{
-							Int64Value: 215,
-						},
-					}),
+					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric1", "", 215, 0, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 				testDescription("statsdTestMetric2", "c",
-					[]string{"mykey"}, []string{"myvalue"}): testMetric("statsdTestMetric2",
-					metricspb.MetricDescriptor_GAUGE_INT64,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_Int64Value{
-							Int64Value: 75,
-						},
-					}),
+					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", "", 75, 0, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 			},
 		},
 	}
@@ -1215,31 +670,17 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 }
 
 func TestStatsDParser_AggregateWithMetricType(t *testing.T) {
-	timeNowFunc = func() int64 {
-		return 0
+	timeNowFunc = func() time.Time {
+		return time.Unix(711, 0)
 	}
 
 	tests := []struct {
 		name             string
 		input            []string
-		expectedGauges   map[statsDMetricdescription]*metricspb.Metric
-		expectedCounters map[statsDMetricdescription]*metricspb.Metric
+		expectedGauges   map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics
+		expectedCounters map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics
 		err              error
 	}{
-		{
-			name: "parsedMetric error: empty metric value",
-			input: []string{
-				"test.metric:|c",
-			},
-			err: errors.New("empty metric value"),
-		},
-		{
-			name: "parsedMetric error: empty metric name",
-			input: []string{
-				":42|c",
-			},
-			err: errors.New("empty metric name"),
-		},
 		{
 			name: "gauge plus",
 			input: []string{
@@ -1251,220 +692,15 @@ func TestStatsDParser_AggregateWithMetricType(t *testing.T) {
 				"statsdTestMetric2:+5|g|#mykey:myvalue",
 				"statsdTestMetric2:+500|g|#mykey:myvalue",
 			},
-			expectedGauges: map[statsDMetricdescription]*metricspb.Metric{
+			expectedGauges: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): testMetric("statsdTestMetric1",
-					metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-						{
-							Key: "metric_type",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-						{
-							Value:    "gauge",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_DoubleValue{
-							DoubleValue: 10102,
-						},
-					}),
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 10102, false, "g", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}), time.Unix(711, 0)),
 				testDescription("statsdTestMetric2", "g",
-					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): testMetric("statsdTestMetric2",
-					metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-						{
-							Key: "metric_type",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-						{
-							Value:    "gauge",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_DoubleValue{
-							DoubleValue: 507,
-						},
-					}),
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric2", "", 0, 507, false, "g", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}), time.Unix(711, 0)),
 			},
-			expectedCounters: map[statsDMetricdescription]*metricspb.Metric{},
+			expectedCounters: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{},
 		},
-		{
-			name: "gauge minus",
-			input: []string{
-				"statsdTestMetric1:5000|g|#mykey:myvalue",
-				"statsdTestMetric2:10|g|#mykey:myvalue",
-				"statsdTestMetric1:-1|g|#mykey:myvalue",
-				"statsdTestMetric2:-5|g|#mykey:myvalue",
-				"statsdTestMetric1:-1|g|#mykey:myvalue",
-				"statsdTestMetric1:-1|g|#mykey:myvalue",
-				"statsdTestMetric1:-10|g|#mykey:myvalue",
-				"statsdTestMetric1:-1|g|#mykey:myvalue",
-				"statsdTestMetric1:-100|g|#mykey:myvalue",
-				"statsdTestMetric1:-1|g|#mykey:myvalue",
-			},
-			expectedGauges: map[statsDMetricdescription]*metricspb.Metric{
-				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): testMetric("statsdTestMetric1",
-					metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-						{
-							Key: "metric_type",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-						{
-							Value:    "gauge",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_DoubleValue{
-							DoubleValue: 4885,
-						},
-					}),
-				testDescription("statsdTestMetric2", "g",
-					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): testMetric("statsdTestMetric2",
-					metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-						{
-							Key: "metric_type",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-						{
-							Value:    "gauge",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_DoubleValue{
-							DoubleValue: 5,
-						},
-					}),
-			},
-			expectedCounters: map[statsDMetricdescription]*metricspb.Metric{},
-		},
-		{
-			name: "gauge plus and minus",
-			input: []string{
-				"statsdTestMetric1:5000|g|#mykey:myvalue",
-				"statsdTestMetric1:4000|g|#mykey:myvalue",
-				"statsdTestMetric1:+500|g|#mykey:myvalue",
-				"statsdTestMetric1:-400|g|#mykey:myvalue",
-				"statsdTestMetric1:+2|g|#mykey:myvalue",
-				"statsdTestMetric1:-1|g|#mykey:myvalue",
-				"statsdTestMetric2:365|g|#mykey:myvalue",
-				"statsdTestMetric2:+300|g|#mykey:myvalue",
-				"statsdTestMetric2:-200|g|#mykey:myvalue",
-				"statsdTestMetric2:200|g|#mykey:myvalue",
-			},
-			expectedGauges: map[statsDMetricdescription]*metricspb.Metric{
-				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): testMetric("statsdTestMetric1",
-					metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-						{
-							Key: "metric_type",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-						{
-							Value:    "gauge",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_DoubleValue{
-							DoubleValue: 4101,
-						},
-					}),
-				testDescription("statsdTestMetric2", "g",
-					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): testMetric("statsdTestMetric2",
-					metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-						{
-							Key: "metric_type",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-						{
-							Value:    "gauge",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_DoubleValue{
-							DoubleValue: 200,
-						},
-					}),
-			},
-			expectedCounters: map[statsDMetricdescription]*metricspb.Metric{},
-		},
+
 		{
 			name: "counter with increment and sample rate",
 			input: []string{
@@ -1473,306 +709,12 @@ func TestStatsDParser_AggregateWithMetricType(t *testing.T) {
 				"statsdTestMetric2:20|c|@0.8|#mykey:myvalue",
 				"statsdTestMetric2:20|c|@0.8|#mykey:myvalue",
 			},
-			expectedGauges: map[statsDMetricdescription]*metricspb.Metric{},
-			expectedCounters: map[statsDMetricdescription]*metricspb.Metric{
+			expectedGauges: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{},
+			expectedCounters: map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics{
 				testDescription("statsdTestMetric1", "c",
-					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): testMetric("statsdTestMetric1",
-					metricspb.MetricDescriptor_GAUGE_INT64,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-						{
-							Key: "metric_type",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-						{
-							Value:    "counter",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_Int64Value{
-							Int64Value: 7000,
-						},
-					}),
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): buildCounterMetric(testStatsDMetric("statsdTestMetric1", "", 7000, 0, false, "c", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "counter"}), time.Unix(711, 0)),
 				testDescription("statsdTestMetric2", "c",
-					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): testMetric("statsdTestMetric2",
-					metricspb.MetricDescriptor_GAUGE_INT64,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-						{
-							Key: "metric_type",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-						{
-							Value:    "counter",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_Int64Value{
-							Int64Value: 50,
-						},
-					}),
-			},
-		},
-		{
-			name: "counter and gauge: one gauge and two counters",
-			input: []string{
-				"statsdTestMetric1:3000|c|#mykey:myvalue",
-				"statsdTestMetric1:500|g|#mykey:myvalue",
-				"statsdTestMetric1:400|g|#mykey:myvalue",
-				"statsdTestMetric1:+20|g|#mykey:myvalue",
-				"statsdTestMetric1:4000|c|#mykey:myvalue",
-				"statsdTestMetric1:-1|g|#mykey:myvalue",
-				"statsdTestMetric2:20|c|@0.8|#mykey:myvalue",
-				"statsdTestMetric1:+2|g|#mykey:myvalue",
-				"statsdTestMetric2:20|c|@0.8|#mykey:myvalue",
-			},
-			expectedGauges: map[statsDMetricdescription]*metricspb.Metric{
-				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): testMetric("statsdTestMetric1",
-					metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-						{
-							Key: "metric_type",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-						{
-							Value:    "gauge",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_DoubleValue{
-							DoubleValue: 421,
-						},
-					}),
-			},
-			expectedCounters: map[statsDMetricdescription]*metricspb.Metric{
-				testDescription("statsdTestMetric1", "c",
-					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): testMetric("statsdTestMetric1",
-					metricspb.MetricDescriptor_GAUGE_INT64,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-						{
-							Key: "metric_type",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-						{
-							Value:    "counter",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_Int64Value{
-							Int64Value: 7000,
-						},
-					}),
-				testDescription("statsdTestMetric2", "c",
-					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): testMetric("statsdTestMetric2",
-					metricspb.MetricDescriptor_GAUGE_INT64,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-						{
-							Key: "metric_type",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-						{
-							Value:    "counter",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_Int64Value{
-							Int64Value: 50,
-						},
-					}),
-			},
-		},
-		{
-			name: "counter and gauge: 2 gauges and 2 counters",
-			input: []string{
-				"statsdTestMetric1:500|g|#mykey:myvalue",
-				"statsdTestMetric1:400|g|#mykey:myvalue1",
-				"statsdTestMetric1:300|g|#mykey:myvalue",
-				"statsdTestMetric1:-1|g|#mykey:myvalue1",
-				"statsdTestMetric1:+20|g|#mykey:myvalue",
-				"statsdTestMetric1:-1|g|#mykey:myvalue",
-				"statsdTestMetric1:20|c|@0.1|#mykey:myvalue",
-				"statsdTestMetric2:50|c|#mykey:myvalue",
-				"statsdTestMetric1:15|c|#mykey:myvalue",
-				"statsdTestMetric2:5|c|@0.2|#mykey:myvalue",
-			},
-			expectedGauges: map[statsDMetricdescription]*metricspb.Metric{
-				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}): testMetric("statsdTestMetric1",
-					metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-						{
-							Key: "metric_type",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-						{
-							Value:    "gauge",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_DoubleValue{
-							DoubleValue: 319,
-						},
-					}),
-				testDescription("statsdTestMetric1", "g",
-					[]string{"mykey", "metric_type"}, []string{"myvalue1", "gauge"}): testMetric("statsdTestMetric1",
-					metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-						{
-							Key: "metric_type",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue1",
-							HasValue: true,
-						},
-						{
-							Value:    "gauge",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_DoubleValue{
-							DoubleValue: 399,
-						},
-					}),
-			},
-			expectedCounters: map[statsDMetricdescription]*metricspb.Metric{
-				testDescription("statsdTestMetric1", "c",
-					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): testMetric("statsdTestMetric1",
-					metricspb.MetricDescriptor_GAUGE_INT64,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-						{
-							Key: "metric_type",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-						{
-							Value:    "counter",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_Int64Value{
-							Int64Value: 215,
-						},
-					}),
-				testDescription("statsdTestMetric2", "c",
-					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): testMetric("statsdTestMetric2",
-					metricspb.MetricDescriptor_GAUGE_INT64,
-					[]*metricspb.LabelKey{
-						{
-							Key: "mykey",
-						},
-						{
-							Key: "metric_type",
-						},
-					},
-					[]*metricspb.LabelValue{
-						{
-							Value:    "myvalue",
-							HasValue: true,
-						},
-						{
-							Value:    "counter",
-							HasValue: true,
-						},
-					},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{
-							Seconds: 0,
-						},
-						Value: &metricspb.Point_Int64Value{
-							Int64Value: 75,
-						},
-					}),
+					[]string{"mykey", "metric_type"}, []string{"myvalue", "counter"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", "", 50, 0, false, "c", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "counter"}), time.Unix(711, 0)),
 			},
 		},
 	}
@@ -1791,29 +733,6 @@ func TestStatsDParser_AggregateWithMetricType(t *testing.T) {
 				assert.Equal(t, tt.expectedCounters, p.counters)
 			}
 		})
-	}
-}
-
-func testMetric(metricName string,
-	metricType metricspb.MetricDescriptor_Type,
-	lableKeys []*metricspb.LabelKey,
-	labelValues []*metricspb.LabelValue,
-	point *metricspb.Point) *metricspb.Metric {
-	return &metricspb.Metric{
-		MetricDescriptor: &metricspb.MetricDescriptor{
-			Name:      metricName,
-			Type:      metricType,
-			LabelKeys: lableKeys,
-			Unit:      "",
-		},
-		Timeseries: []*metricspb.TimeSeries{
-			{
-				LabelValues: labelValues,
-				Points: []*metricspb.Point{
-					point,
-				},
-			},
-		},
 	}
 }
 
@@ -1868,54 +787,27 @@ func TestStatsDParser_Initialize(t *testing.T) {
 		name:             "test",
 		statsdMetricType: "g",
 		labels:           labels}
-	p.gauges[teststatsdDMetricdescription] = &metricspb.Metric{}
-	p.counters[teststatsdDMetricdescription] = &metricspb.Metric{}
+	p.gauges[teststatsdDMetricdescription] = pdata.InstrumentationLibraryMetrics{}
 	assert.Equal(t, 1, len(p.gauges))
-	assert.Equal(t, 1, len(p.counters))
 }
 
 func TestStatsDParser_GetMetrics(t *testing.T) {
 	p := &StatsDParser{}
 	p.Initialize(true)
 	p.gauges[testDescription("statsdTestMetric1", "g",
-		[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"})] = testMetric("testGauge1",
-		metricspb.MetricDescriptor_GAUGE_DOUBLE,
-		nil,
-		nil,
-		&metricspb.Point{
-			Timestamp: &timestamppb.Timestamp{
-				Seconds: 0,
-			},
-			Value: &metricspb.Point_DoubleValue{
-				DoubleValue: 1,
-			},
-		})
+		[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"})] =
+		buildGaugeMetric(testStatsDMetric("testGauge1", "", 0, 1, false, "g", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}), time.Unix(711, 0))
 	p.gauges[testDescription("statsdTestMetric1", "g",
-		[]string{"mykey2"}, []string{"myvalue2"})] = testMetric("testGauge2",
-		metricspb.MetricDescriptor_GAUGE_DOUBLE,
-		nil,
-		nil,
-		&metricspb.Point{
-			Timestamp: &timestamppb.Timestamp{
-				Seconds: 0,
-			},
-			Value: &metricspb.Point_DoubleValue{
-				DoubleValue: 2,
-			},
-		})
+		[]string{"mykey2", "metric_type"}, []string{"myvalue2", "gauge"})] =
+		buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 10102, false, "g", 0, []string{"mykey2", "metric_type"}, []string{"myvalue2", "gauge"}), time.Unix(711, 0))
 	p.counters[testDescription("statsdTestMetric1", "g",
-		[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"})] = testMetric("testCounter1",
-		metricspb.MetricDescriptor_GAUGE_INT64,
-		nil,
-		nil,
-		&metricspb.Point{
-			Timestamp: &timestamppb.Timestamp{
-				Seconds: 0,
-			},
-			Value: &metricspb.Point_Int64Value{
-				Int64Value: 1,
-			},
-		})
+		[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"})] =
+		buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 10102, false, "g", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}), time.Unix(711, 0))
 	metrics := p.GetMetrics()
-	assert.Equal(t, 3, len(metrics))
+	assert.Equal(t, 3, metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len())
+}
+
+func TestTimeNowFunc(t *testing.T) {
+	timeNow := timeNowFunc()
+	assert.NotNil(t, timeNow)
 }

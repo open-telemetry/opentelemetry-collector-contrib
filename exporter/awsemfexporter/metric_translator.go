@@ -32,7 +32,22 @@ const (
 	// DimensionRollupOptions
 	zeroAndSingleDimensionRollup = "ZeroAndSingleDimensionRollup"
 	singleDimensionRollupOnly    = "SingleDimensionRollupOnly"
+
+	prometheusReceiver        = "prometheus"
+	attributeReceiver         = "receiver"
+	fieldPrometheusMetricType = "prom_metric_type"
 )
+
+var fieldPrometheusTypes = map[pdata.MetricDataType]string{
+	pdata.MetricDataTypeNone:            "",
+	pdata.MetricDataTypeIntGauge:        "gauge",
+	pdata.MetricDataTypeDoubleGauge:     "gauge",
+	pdata.MetricDataTypeIntSum:          "counter",
+	pdata.MetricDataTypeDoubleSum:       "counter",
+	pdata.MetricDataTypeIntHistogram:    "histogram",
+	pdata.MetricDataTypeDoubleHistogram: "histogram",
+	pdata.MetricDataTypeDoubleSummary:   "summary",
+}
 
 // CWMetrics defines
 type CWMetrics struct {
@@ -63,6 +78,9 @@ type CWMetricMetadata struct {
 	LogGroup                   string
 	LogStream                  string
 	InstrumentationLibraryName string
+
+	receiver       string
+	metricDataType pdata.MetricDataType
 }
 
 type metricTranslator struct {
@@ -87,6 +105,10 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetric
 	logGroup, logStream := getLogInfo(rm, cWNamespace, config)
 
 	ilms := rm.InstrumentationLibraryMetrics()
+	var metricReceiver string
+	if receiver, ok := rm.Resource().Attributes().Get(attributeReceiver); ok {
+		metricReceiver = receiver.StringVal()
+	}
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
 		if ilm.InstrumentationLibrary().Name() == "" {
@@ -104,6 +126,8 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetric
 				LogGroup:                   logGroup,
 				LogStream:                  logStream,
 				InstrumentationLibraryName: instrumentationLibName,
+				receiver:                   metricReceiver,
+				metricDataType:             metric.DataType(),
 			}
 			addToGroupedMetric(&metric, groupedMetrics, metadata, config.logger, mt.metricDescriptor)
 		}
@@ -113,16 +137,24 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetric
 // translateGroupedMetricToCWMetric converts Grouped Metric format to CloudWatch Metric format.
 func translateGroupedMetricToCWMetric(groupedMetric *GroupedMetric, config *Config) *CWMetrics {
 	labels := groupedMetric.Labels
-	fields := make(map[string]interface{}, len(labels)+len(groupedMetric.Metrics))
+	fieldsLength := len(labels) + len(groupedMetric.Metrics)
+
+	isPrometheusMetric := groupedMetric.Metadata.receiver == prometheusReceiver
+	if isPrometheusMetric {
+		fieldsLength++
+	}
+	fields := make(map[string]interface{}, fieldsLength)
 
 	// Add labels to fields
 	for k, v := range labels {
 		fields[k] = v
 	}
-
 	// Add metrics to fields
 	for metricName, metricInfo := range groupedMetric.Metrics {
 		fields[metricName] = metricInfo.Value
+	}
+	if isPrometheusMetric {
+		fields[fieldPrometheusMetricType] = fieldPrometheusTypes[groupedMetric.Metadata.metricDataType]
 	}
 
 	var cWMeasurements []CWMeasurement
@@ -181,7 +213,9 @@ func groupedMetricToCWMeasurement(groupedMetric *GroupedMetric, config *Config) 
 	for metricName, metricInfo := range groupedMetric.Metrics {
 		metrics[idx] = map[string]string{
 			"Name": metricName,
-			"Unit": metricInfo.Unit,
+		}
+		if metricInfo.Unit != "" {
+			metrics[idx]["Unit"] = metricInfo.Unit
 		}
 		idx++
 	}
@@ -247,7 +281,9 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *GroupedMetric, conf
 
 		metric := map[string]string{
 			"Name": metricName,
-			"Unit": metricInfo.Unit,
+		}
+		if metricInfo.Unit != "" {
+			metric["Unit"] = metricInfo.Unit
 		}
 		metricDeclKey := fmt.Sprint(metricDeclIdx)
 		if group, ok := metricDeclGroups[metricDeclKey]; ok {

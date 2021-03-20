@@ -21,9 +21,8 @@ import (
 	"strings"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/otel/attribute"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var (
@@ -39,8 +38,8 @@ const TagMetricType = "metric_type"
 
 // StatsDParser supports the Parse method for parsing StatsD messages with Tags.
 type StatsDParser struct {
-	gauges           map[statsDMetricdescription]*metricspb.Metric
-	counters         map[statsDMetricdescription]*metricspb.Metric
+	gauges           map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics
+	counters         map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics
 	enableMetricType bool
 }
 
@@ -51,10 +50,9 @@ type statsDMetric struct {
 	floatvalue  float64
 	addition    bool
 	unit        string
-	metricType  metricspb.MetricDescriptor_Type
 	sampleRate  float64
-	labelKeys   []*metricspb.LabelKey
-	labelValues []*metricspb.LabelValue
+	labelKeys   []string
+	labelValues []string
 }
 
 type statsDMetricdescription struct {
@@ -64,32 +62,34 @@ type statsDMetricdescription struct {
 }
 
 func (p *StatsDParser) Initialize(enableMetricType bool) error {
-	p.gauges = make(map[statsDMetricdescription]*metricspb.Metric)
-	p.counters = make(map[statsDMetricdescription]*metricspb.Metric)
+	p.gauges = make(map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics)
+	p.counters = make(map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics)
 	p.enableMetricType = enableMetricType
 	return nil
 }
 
 // get the metrics preparing for flushing and reset the state
-func (p *StatsDParser) GetMetrics() []*metricspb.Metric {
-	var metrics []*metricspb.Metric
+func (p *StatsDParser) GetMetrics() pdata.Metrics {
+	metrics := pdata.NewMetrics()
+	metrics.ResourceMetrics().Resize(1)
+	metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Resize(0)
 
 	for _, metric := range p.gauges {
-		metrics = append(metrics, metric)
+		metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Append(metric)
 	}
 
 	for _, metric := range p.counters {
-		metrics = append(metrics, metric)
+		metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Append(metric)
 	}
 
-	p.gauges = make(map[statsDMetricdescription]*metricspb.Metric)
-	p.counters = make(map[statsDMetricdescription]*metricspb.Metric)
+	p.gauges = make(map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics)
+	p.counters = make(map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics)
 
 	return metrics
 }
 
-var timeNowFunc = func() int64 {
-	return time.Now().Unix()
+var timeNowFunc = func() time.Time {
+	return time.Now()
 }
 
 //aggregate for each metric line
@@ -102,30 +102,25 @@ func (p *StatsDParser) Aggregate(line string) error {
 	case "g":
 		_, ok := p.gauges[parsedMetric.description]
 		if !ok {
-			metricPoint := buildPoint(parsedMetric)
-			p.gauges[parsedMetric.description] = buildMetric(parsedMetric, metricPoint)
+			p.gauges[parsedMetric.description] = buildGaugeMetric(parsedMetric, timeNowFunc())
 		} else {
 			if parsedMetric.addition {
-				savedValue := p.gauges[parsedMetric.description].GetTimeseries()[0].Points[0].GetDoubleValue()
+				savedValue := p.gauges[parsedMetric.description].Metrics().At(0).DoubleGauge().DataPoints().At(0).Value()
 				parsedMetric.floatvalue = parsedMetric.floatvalue + savedValue
-				metricPoint := buildPoint(parsedMetric)
-				p.gauges[parsedMetric.description] = buildMetric(parsedMetric, metricPoint)
+				p.gauges[parsedMetric.description] = buildGaugeMetric(parsedMetric, timeNowFunc())
 			} else {
-				metricPoint := buildPoint(parsedMetric)
-				p.gauges[parsedMetric.description] = buildMetric(parsedMetric, metricPoint)
+				p.gauges[parsedMetric.description] = buildGaugeMetric(parsedMetric, timeNowFunc())
 			}
 		}
 
 	case "c":
 		_, ok := p.counters[parsedMetric.description]
 		if !ok {
-			metricPoint := buildPoint(parsedMetric)
-			p.counters[parsedMetric.description] = buildMetric(parsedMetric, metricPoint)
+			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, timeNowFunc())
 		} else {
-			savedValue := p.counters[parsedMetric.description].GetTimeseries()[0].Points[0].GetInt64Value()
+			savedValue := p.counters[parsedMetric.description].Metrics().At(0).IntSum().DataPoints().At(0).Value()
 			parsedMetric.intvalue = parsedMetric.intvalue + savedValue
-			metricPoint := buildPoint(parsedMetric)
-			p.counters[parsedMetric.description] = buildMetric(parsedMetric, metricPoint)
+			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, timeNowFunc())
 		}
 	}
 
@@ -188,11 +183,8 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 				if len(tagParts) != 2 {
 					return result, fmt.Errorf("invalid tag format: %s", tagParts)
 				}
-				result.labelKeys = append(result.labelKeys, &metricspb.LabelKey{Key: tagParts[0]})
-				result.labelValues = append(result.labelValues, &metricspb.LabelValue{
-					Value:    tagParts[1],
-					HasValue: true,
-				})
+				result.labelKeys = append(result.labelKeys, tagParts[0])
+				result.labelValues = append(result.labelValues, tagParts[1])
 				kvs = append(kvs, attribute.String(tagParts[0], tagParts[1]))
 			}
 
@@ -207,7 +199,6 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 			return result, fmt.Errorf("gauge: parse metric value string: %s", result.value)
 		}
 		result.floatvalue = f
-		result.metricType = metricspb.MetricDescriptor_GAUGE_DOUBLE
 	case "c":
 		f, err := strconv.ParseFloat(result.value, 64)
 		if err != nil {
@@ -218,7 +209,6 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 			i = int64(f / result.sampleRate)
 		}
 		result.intvalue = i
-		result.metricType = metricspb.MetricDescriptor_GAUGE_INT64
 	}
 
 	// add metric_type dimension for all metrics
@@ -231,11 +221,9 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 		case "c":
 			metricType = "counter"
 		}
-		result.labelKeys = append(result.labelKeys, &metricspb.LabelKey{Key: TagMetricType})
-		result.labelValues = append(result.labelValues, &metricspb.LabelValue{
-			Value:    metricType,
-			HasValue: true,
-		})
+		result.labelKeys = append(result.labelKeys, TagMetricType)
+		result.labelValues = append(result.labelValues, metricType)
+
 		kvs = append(kvs, attribute.String(TagMetricType, metricType))
 	}
 
@@ -254,58 +242,4 @@ func contains(slice []string, element string) bool {
 		}
 	}
 	return false
-}
-
-func buildMetric(metric statsDMetric, point *metricspb.Point) *metricspb.Metric {
-	return &metricspb.Metric{
-		MetricDescriptor: &metricspb.MetricDescriptor{
-			Name:      metric.description.name,
-			Type:      metric.metricType,
-			LabelKeys: metric.labelKeys,
-			Unit:      metric.unit,
-		},
-		Timeseries: []*metricspb.TimeSeries{
-			{
-				LabelValues: metric.labelValues,
-				Points: []*metricspb.Point{
-					point,
-				},
-			},
-		},
-	}
-}
-
-func buildPoint(parsedMetric statsDMetric) *metricspb.Point {
-	now := &timestamppb.Timestamp{
-		Seconds: timeNowFunc(),
-	}
-
-	switch parsedMetric.description.statsdMetricType {
-	case "c":
-		return buildCounterPoint(parsedMetric, now)
-	case "g":
-		return buildGaugePoint(parsedMetric, now)
-	}
-
-	return nil
-}
-
-func buildCounterPoint(parsedMetric statsDMetric, now *timestamppb.Timestamp) *metricspb.Point {
-	point := &metricspb.Point{
-		Timestamp: now,
-		Value: &metricspb.Point_Int64Value{
-			Int64Value: parsedMetric.intvalue,
-		},
-	}
-	return point
-}
-
-func buildGaugePoint(parsedMetric statsDMetric, now *timestamppb.Timestamp) *metricspb.Point {
-	point := &metricspb.Point{
-		Timestamp: now,
-		Value: &metricspb.Point_DoubleValue{
-			DoubleValue: parsedMetric.floatvalue,
-		},
-	}
-	return point
 }
