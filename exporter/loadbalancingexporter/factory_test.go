@@ -24,7 +24,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
+func TestTraceExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
@@ -40,6 +40,28 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 
 	// test
 	exp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
+
+	// verify
+	assert.Nil(t, err)
+	assert.NotNil(t, exp)
+}
+
+func TestLogExporterGetsCreatedWithValidConfiguration(t *testing.T) {
+	// prepare
+	factory := NewFactory()
+	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	cfg := &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			NameVal: "loadbalancing",
+			TypeVal: "loadbalancing",
+		},
+		Resolver: ResolverSettings{
+			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
+		},
+	}
+
+	// test
+	exp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
 
 	// verify
 	assert.Nil(t, err)
