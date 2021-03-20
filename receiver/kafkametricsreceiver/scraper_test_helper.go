@@ -84,17 +84,11 @@ func (s *mockSaramaClient) GetOffset(string, int32, int64) (int64, error) {
 }
 
 func (s *mockSaramaClient) Replicas(string, int32) ([]int32, error) {
-	if s.replicas != nil {
-		return s.replicas, nil
-	}
-	return testReplicas, nil
+	return s.replicas, nil
 }
 
 func (s *mockSaramaClient) InSyncReplicas(string, int32) ([]int32, error) {
-	if s.inSyncReplicas != nil {
-		return s.inSyncReplicas, nil
-	}
-	return testReplicas, nil
+	return s.inSyncReplicas, nil
 }
 
 func newMockClient() *mockSaramaClient {
