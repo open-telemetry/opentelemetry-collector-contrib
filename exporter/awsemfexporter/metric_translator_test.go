@@ -52,6 +52,7 @@ func createMetricTestData() internaldata.MetricsData {
 			Labels: map[string]string{
 				conventions.AttributeServiceName:      "myServiceName",
 				conventions.AttributeServiceNamespace: "myServiceNS",
+				attributeReceiver:                     prometheusReceiver,
 			},
 		},
 		Metrics: []*metricspb.Metric{
@@ -792,6 +793,47 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 				TimestampMs: timestamp,
 				Fields: map[string]interface{}{
 					"label1": "value1",
+				},
+			},
+		},
+		{
+			"prometheus metrics",
+			&GroupedMetric{
+				Labels: map[string]string{
+					"label1": "value1",
+				},
+				Metrics: map[string]*MetricInfo{
+					"metric1": {
+						Value: 1,
+						Unit:  "Count",
+					},
+				},
+				Metadata: CWMetricMetadata{
+					Namespace:      namespace,
+					TimestampMs:    timestamp,
+					receiver:       prometheusReceiver,
+					metricDataType: pdata.MetricDataTypeDoubleGauge,
+				},
+			},
+			nil,
+			&CWMetrics{
+				Measurements: []CWMeasurement{
+					{
+						Namespace:  namespace,
+						Dimensions: [][]string{{"label1"}},
+						Metrics: []map[string]string{
+							{
+								"Name": "metric1",
+								"Unit": "Count",
+							},
+						},
+					},
+				},
+				TimestampMs: timestamp,
+				Fields: map[string]interface{}{
+					"label1":                  "value1",
+					"metric1":                 1,
+					fieldPrometheusMetricType: "gauge",
 				},
 			},
 		},

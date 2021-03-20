@@ -8,5 +8,4 @@ require (
 	go.opentelemetry.io/otel/metric v0.18.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/tools v0.0.0-20210106214847-113979e3529a // indirect
-	google.golang.org/protobuf v1.25.0 // indirect
 )

@@ -26,15 +26,20 @@ import (
 
 // Parser encapsulates all of the functionality to parse an IPC stream.
 type Parser struct {
-	r      network.MultiReader
-	logger *zap.Logger
+	r       network.MultiReader
+	consume func([]Metric)
+	logger  *zap.Logger
 }
 
-// NewParser accepts an io.Reader and logger returns a Parser for processing an
-// IPC stream.
-func NewParser(rdr io.Reader, logger *zap.Logger) *Parser {
-	r := network.NewMultiReader(rdr)
-	return &Parser{r: r, logger: logger}
+// MetricsConsumer is a function that accepts a slice of Metrics. Parser has a
+// member consumer function, used to send Metrics as they are created.
+type MetricsConsumer func([]Metric)
+
+// NewParser accepts an io.Reader, a MetricsConsumer, and logger, and returns a
+// Parser for processing an IPC stream.
+func NewParser(rdr io.Reader, mc MetricsConsumer, bw network.BlobWriter, logger *zap.Logger) *Parser {
+	r := network.NewMultiReader(rdr, bw)
+	return &Parser{r: r, consume: mc, logger: logger}
 }
 
 // ParseIPC parses the IPC response from the initial request to a dotnet process.
@@ -58,6 +63,8 @@ func (p *Parser) ParseAll(ctx context.Context) error {
 			return nil
 		default:
 			err = p.parseBlock(fms)
+			// flush regardless of error
+			p.r.Flush()
 			if err != nil {
 				return err
 			}
@@ -97,10 +104,12 @@ func (p *Parser) parseBlock(fms fieldMetadataMap) error {
 			return err
 		}
 	case "EventBlock":
-		_, err = parseEventBlock(p.r, fms)
+		var metrics []Metric
+		metrics, err = parseEventBlock(p.r, fms)
 		if err != nil {
 			return err
 		}
+		p.consume(metrics)
 	case "SPBlock":
 		err = parseSPBlock(p.r)
 		if err != nil {

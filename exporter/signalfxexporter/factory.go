@@ -187,9 +187,7 @@ func setDefaultExcludes(cfg *Config) error {
 	if err != nil {
 		return err
 	}
-	if cfg.ExcludeMetrics == nil {
-		cfg.ExcludeMetrics = defaultExcludeMetrics
-	} else {
+	if cfg.ExcludeMetrics == nil || len(cfg.ExcludeMetrics) > 0 {
 		cfg.ExcludeMetrics = append(cfg.ExcludeMetrics, defaultExcludeMetrics...)
 	}
 	return nil

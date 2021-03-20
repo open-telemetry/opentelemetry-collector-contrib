@@ -18,8 +18,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-func convertToOTLPMetrics(prefix string, m ECSMetrics, r pdata.Resource, timestamp pdata.Timestamp) pdata.ResourceMetricsSlice {
-	rms := pdata.NewResourceMetricsSlice()
+func convertToOTLPMetrics(prefix string, m ECSMetrics, r pdata.Resource, timestamp pdata.Timestamp) pdata.Metrics {
+	md := pdata.NewMetrics()
+	rms := md.ResourceMetrics()
 	rms.Resize(1)
 	rm := rms.At(0)
 
@@ -58,11 +59,12 @@ func convertToOTLPMetrics(prefix string, m ECSMetrics, r pdata.Resource, timesta
 	ilms.Append(intSum(prefix+AttributeStorageRead, UnitBytes, int64(m.StorageReadBytes), timestamp))
 	ilms.Append(intSum(prefix+AttributeStorageWrite, UnitBytes, int64(m.StorageWriteBytes), timestamp))
 
-	return rms
+	return md
 }
 
-func convertStoppedContainerDataToOTMetrics(prefix string, containerResource pdata.Resource, timestamp pdata.Timestamp, duration float64) pdata.ResourceMetricsSlice {
-	rms := pdata.NewResourceMetricsSlice()
+func convertStoppedContainerDataToOTMetrics(prefix string, containerResource pdata.Resource, timestamp pdata.Timestamp, duration float64) pdata.Metrics {
+	md := pdata.NewMetrics()
+	rms := md.ResourceMetrics()
 	rms.Resize(1)
 	rm := rms.At(0)
 
@@ -72,7 +74,7 @@ func convertStoppedContainerDataToOTMetrics(prefix string, containerResource pda
 
 	ilms.Append(doubleGauge(prefix+AttributeDuration, UnitSecond, duration, timestamp))
 
-	return rms
+	return md
 }
 
 func intGauge(metricName string, unit string, value int64, ts pdata.Timestamp) pdata.InstrumentationLibraryMetrics {

@@ -24,7 +24,9 @@ import (
 
 func TestEventHeader(t *testing.T) {
 	h := eventHeader{}
-	err := parseEventHeader(network.NewMultiReader(network.NewDefaultFakeRW("", "", "")), &h)
+	rw := network.NewDefaultFakeRW("", "", "")
+	mr := network.NewMultiReader(rw, &network.NopBlobWriter{})
+	err := parseEventHeader(mr, &h)
 	require.NoError(t, err)
 }
 
@@ -49,6 +51,7 @@ func testEventHeaderError(t *testing.T, flags headerFlags, errPos int) {
 			0: {byte(flags)},
 		},
 	}
-	err := parseEventHeader(network.NewMultiReader(pr), &eventHeader{})
+	mr := network.NewMultiReader(pr, &network.NopBlobWriter{})
+	err := parseEventHeader(mr, &eventHeader{})
 	require.Error(t, err)
 }

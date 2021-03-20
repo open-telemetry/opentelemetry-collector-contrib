@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	allScrapers = map[string]func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.MetricsScraper, error){
+	allScrapers = map[string]func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.ResourceMetricsScraper, error){
 		"brokers": createBrokerScraper,
 	}
 )
@@ -57,7 +57,7 @@ var newMetricsReceiver = func(
 			if err != nil {
 				return nil, err
 			}
-			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddMetricsScraper(s))
+			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddResourceMetricsScraper(s))
 			continue
 		}
 		return nil, fmt.Errorf("no scraper found for key: %s", scraper)

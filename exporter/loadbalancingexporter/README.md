@@ -1,6 +1,8 @@
 # Trace ID aware load-balancing exporter
 
-This is an exporter that will consistently export spans belonging to the same trace to the same backend.
+Supported pipeline types: traces, logs
+
+This is an exporter that will consistently export spans and logs belonging to the same trace to the same backend.
 
 It requires a source of backend information to be provided: static, with a fixed list of backends, or DNS, with a hostname that will resolve to all IP addresses to use. The DNS resolver will periodically check for updates.
 
@@ -49,6 +51,12 @@ exporters:
 service:
   pipelines:
     traces:
+      receivers:
+        - otlp
+      processors: []
+      exporters:
+        - loadbalancing
+    logs:
       receivers:
         - otlp
       processors: []
@@ -128,6 +136,37 @@ service:
         - logging
 
     traces/backend-4:
+      receivers:
+        - otlp/backend-4
+      processors: []
+      exporters:
+        - logging
+
+    logs/loadbalancer:
+      receivers:
+        - otlp/loadbalancer
+      processors: []
+      exporters:
+        - loadbalancing
+    logs/backend-1:
+      receivers:
+        - otlp/backend-1
+      processors: []
+      exporters:
+        - logging
+    logs/backend-2:
+      receivers:
+        - otlp/backend-2
+      processors: []
+      exporters:
+        - logging
+    logs/backend-3:
+      receivers:
+        - otlp/backend-3
+      processors: []
+      exporters:
+        - logging
+    logs/backend-4:
       receivers:
         - otlp/backend-4
       processors: []

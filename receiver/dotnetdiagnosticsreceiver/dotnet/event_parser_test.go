@@ -28,7 +28,7 @@ func TestEventParser(t *testing.T) {
 	data, err := network.ReadBlobData(path.Join("..", "testdata"), 4)
 	require.NoError(t, err)
 	rw := network.NewBlobReader(data)
-	reader := network.NewMultiReader(rw)
+	reader := network.NewMultiReader(rw, &network.NopBlobWriter{})
 	err = reader.Seek(1131)
 	require.NoError(t, err)
 	metrics, err := parseEventBlock(reader, fms())
@@ -73,9 +73,9 @@ func TestEventParserErrors(t *testing.T) {
 
 func testEventParserError(t *testing.T, data [][]byte, i int) {
 	rw := network.NewBlobReader(data)
-	reader := network.NewMultiReader(rw)
+	reader := network.NewMultiReader(rw, &network.NopBlobWriter{})
 	err := reader.Seek(1131)
-	rw.SetReadError(i)
+	rw.ErrOnRead(i)
 	require.NoError(t, err)
 	_, err = parseEventBlock(reader, fms())
 	require.Error(t, err)
