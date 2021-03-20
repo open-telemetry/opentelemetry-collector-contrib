@@ -16,7 +16,7 @@ package kubelet
 
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
+	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 )
 
 func fsMetrics(prefix string, s *stats.FsStats) []*metricspb.Metric {
