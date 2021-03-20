@@ -28,12 +28,12 @@ Example
 
    from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor
    from opentelemetry import trace
-   from opentelemetry.exporter import jaeger
+   from opentelemetry.exporter.jaeger.thrift import JaegerExporter
    from opentelemetry.sdk.trace import TracerProvider
    from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 
-   _JAEGER_EXPORTER = jaeger.JaegerExporter(
+   _JAEGER_EXPORTER = JaegerExporter(
       service_name="example-xxx",
       agent_host_name="localhost",
       agent_port=6831,
