@@ -182,6 +182,7 @@ func TestGetLogInfo(t *testing.T) {
 			Labels: map[string]string{
 				"aws.ecs.cluster.name": "test-cluster-name",
 				"aws.ecs.task.id":      "test-task-id",
+				"NodeName":             "ip-192-168-58-245.ec2.internal",
 			},
 		},
 	}
@@ -242,6 +243,15 @@ func TestGetLogInfo(t *testing.T) {
 			"{TaskId}",
 			"/aws/ecs/containerinsights/test-cluster-name/performance",
 			"test-task-id",
+		},
+		//test case for aws container insight usage
+		{
+			"empty namespace, config w/ pattern",
+			"",
+			"/aws/containerinsights/{ClusterName}/performance",
+			"{NodeName}",
+			"/aws/containerinsights/test-cluster-name/performance",
+			"ip-192-168-58-245.ec2.internal",
 		},
 	}
 
