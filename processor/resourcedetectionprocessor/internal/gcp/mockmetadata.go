@@ -59,6 +59,6 @@ func (m *MockMetadata) InstanceName() (string, error) {
 }
 
 func (m *MockMetadata) Get(suffix string) (string, error) {
-	args := m.MethodCalled("Get")
+	args := m.MethodCalled("Get", suffix)
 	return args.String(0), args.Error(1)
 }
