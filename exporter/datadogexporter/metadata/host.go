@@ -106,7 +106,6 @@ func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
 		return k8sNodeName.StringVal(), true
 	}
 
-	// handle AWS case separately to have similar behavior to the Datadog Agent
 	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
 	if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS {
 		return ec2.HostnameFromAttributes(attrs)

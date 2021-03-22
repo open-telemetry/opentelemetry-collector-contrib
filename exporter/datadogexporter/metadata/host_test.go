@@ -109,7 +109,7 @@ func TestHostnameFromAttributes(t *testing.T) {
 
 	// Azure cloud provider means relying on the Azure function
 	attrs = testutils.NewAttributeMap(map[string]string{
-		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP,
+		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
 		conventions.AttributeHostID:        testHostID,
 		conventions.AttributeHostName:      testHostName,
 	})
