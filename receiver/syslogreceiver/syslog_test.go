@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
@@ -72,17 +73,13 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 	require.Eventually(t, expectNLogs(sink, numLogs), 2*time.Second, time.Millisecond)
 	require.NoError(t, rcvr.Shutdown(context.Background()))
 	for i := 0; i < numLogs; i++ {
-		origs := *(sink.AllLogs()[i].InternalRep().Orig)
-		log := origs[0].InstrumentationLibraryLogs[0].GetLogs()[0]
-		kvs := log.Body.GetKvlistValue().GetValues()
-		require.Equal(t, log.GetTimeUnixNano(), uint64(1614470402003000000+i*60*1000*1000*1000))
-		msg := ""
-		for _, kv := range kvs {
-			if kv.Key == "message" {
-				msg = kv.Value.GetStringValue()
-			}
-		}
-		require.Equal(t, msg, fmt.Sprintf("test msg %d", i))
+		logs := sink.AllLogs()[i]
+		log := logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0)
+
+		require.Equal(t, log.Timestamp(), pdata.Timestamp(1614470402003000000+i*60*1000*1000*1000))
+		msg, ok := log.Body().MapVal().Get("message")
+		require.True(t, ok)
+		require.Equal(t, msg.StringVal(), fmt.Sprintf("test msg %d", i))
 	}
 }
 
