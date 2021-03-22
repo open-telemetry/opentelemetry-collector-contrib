@@ -136,6 +136,7 @@ func NormalizeServiceName(service string) string {
 
 // NormalizeTag applies some normalization to ensure the tags match the backend requirements.
 // Specifically used for env tag currently
+// port from: https://github.com/DataDog/datadog-agent/blob/c87e93a75b1fc97f0691faf78ae8eb2c280d6f55/pkg/trace/traceutil/normalize.go#L89
 func NormalizeTag(v string) string {
 	// the algorithm works by creating a set of cuts marking start and end offsets in v
 	// that have to be replaced with underscore (_)
