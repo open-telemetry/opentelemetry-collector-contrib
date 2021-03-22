@@ -53,7 +53,7 @@ func TestOnAdd(t *testing.T) {
 	rcvrCfg := receiverConfig{typeStr: configmodels.Type("name"), config: userConfigMap{"foo": "bar"}, fullName: "name/1"}
 	cfg := createDefaultConfig().(*Config)
 	cfg.receiverTemplates = map[string]receiverTemplate{
-		"name/1": {rcvrCfg, "", newRuleOrPanic(`type.port`)},
+		"name/1": {rcvrCfg, "", newRuleOrPanic(`type == "port"`)},
 	}
 	handler := &observerHandler{
 		config:                cfg,
@@ -105,7 +105,7 @@ func TestOnChange(t *testing.T) {
 	newRcvr := &componenttest.ExampleReceiverProducer{}
 	cfg := createDefaultConfig().(*Config)
 	cfg.receiverTemplates = map[string]receiverTemplate{
-		"name/1": {rcvrCfg, "", newRuleOrPanic(`type.port`)},
+		"name/1": {rcvrCfg, "", newRuleOrPanic(`type == "port"`)},
 	}
 	handler := &observerHandler{
 		config:                cfg,
