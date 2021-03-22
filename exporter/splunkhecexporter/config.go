@@ -58,11 +58,14 @@ type Config struct {
 	// Disable GZip compression. Defaults to false.
 	DisableCompression bool `mapstructure:"disable_compression"`
 
+	// Minimum content length in bytes to compress. Defaults to 1500 bytes (Maximum Transmission Unit of an ethernet frame).
+	MinContentLengthCompression uint `mapstructure:"min_content_length_compression"`
+
 	// insecure_skip_verify skips checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
 
-	// MaxContentLengthLogs is the maximum log data size per HTTP post limited to 1048576 bytes (1Mib). Defaults to 1048576.
-	MaxContentLengthLogs int `mapstructure:"max_content_length_logs"`
+	// MaxContentLengthLogs is the maximum log data size in bytes per HTTP post. Defaults to the backend limit of 1048576 bytes (1MiB).
+	MaxContentLengthLogs uint `mapstructure:"max_content_length_logs"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {

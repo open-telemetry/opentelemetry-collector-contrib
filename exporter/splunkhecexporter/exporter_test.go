@@ -142,12 +142,13 @@ func TestConsumeMetricsData(t *testing.T) {
 				url:   serverURL,
 				token: "1234",
 			}
-			config := &Config{
-				Source:     "test",
-				SourceType: "test_type",
-				Token:      "1234",
-				Index:      "test_index",
-			}
+
+			config := NewFactory().CreateDefaultConfig().(*Config)
+			config.Source = "test"
+			config.SourceType = "test_type"
+			config.Token = "1234"
+			config.Index = "test_index"
+
 			sender := buildClient(options, config, zap.NewNop())
 
 			md := internaldata.OCToMetrics(tt.md)
@@ -290,12 +291,13 @@ func TestConsumeLogsData(t *testing.T) {
 				url:   serverURL,
 				token: "1234",
 			}
-			config := &Config{
-				Source:     "test",
-				SourceType: "test_type",
-				Token:      "1234",
-				Index:      "test_index",
-			}
+
+			config := NewFactory().CreateDefaultConfig().(*Config)
+			config.Source = "test"
+			config.SourceType = "test_type"
+			config.Token = "1234"
+			config.Index = "test_index"
+
 			sender := buildClient(options, config, zap.NewNop())
 
 			numDroppedLogs, err := sender.pushLogData(context.Background(), tt.ld)
