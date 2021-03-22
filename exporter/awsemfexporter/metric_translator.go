@@ -332,10 +332,23 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *GroupedMetric, conf
 }
 
 // translateCWMetricToEMF converts CloudWatch Metric format to EMF.
-func translateCWMetricToEMF(cWMetric *CWMetrics) *LogEvent {
+func translateCWMetricToEMF(cWMetric *CWMetrics, config *Config) *LogEvent {
 	// convert CWMetric into map format for compatible with PLE input
 	cWMetricMap := make(map[string]interface{})
 	fieldMap := cWMetric.Fields
+
+	//restore the json objects that are stored as string in attributes
+	for _, key := range config.ParseJSONEncodedAttributeValues {
+		if fieldMap[key] == nil {
+			continue
+		}
+		var f interface{}
+		err := json.Unmarshal([]byte(fieldMap[key].(string)), &f)
+		if err != nil {
+			continue
+		}
+		fieldMap[key] = f
+	}
 
 	// Create `_aws` section only if there are measurements
 	if len(cWMetric.Measurements) > 0 {
