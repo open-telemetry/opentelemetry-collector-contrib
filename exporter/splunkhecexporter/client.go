@@ -177,14 +177,9 @@ func (c *client) sentLogBatch(ctx context.Context, ld pdata.Logs, send func(cont
 	var submax int
 	var index *logIndex
 	var permanentErrors []error
-	var batch *bytes.Buffer
 
 	// Provide 5000 overflow because it overruns the max content length then trims it block. Hopefully will prevent extra allocation.
-	if c.config.MaxContentLengthLogs > 0 {
-		batch = bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthLogs+5_000))
-	} else {
-		batch = bytes.NewBuffer(make([]byte, 0))
-	}
+	batch := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthLogs+5_000))
 	encoder := json.NewEncoder(batch)
 
 	overflow := bytes.NewBuffer(make([]byte, 0, 5000))
@@ -201,7 +196,7 @@ func (c *client) sentLogBatch(ctx context.Context, ld pdata.Logs, send func(cont
 
 				event := mapLogRecordToSplunkEvent(logs.At(k), c.config, c.logger)
 				if err = encoder.Encode(event); err != nil {
-					permanentErrors = append(permanentErrors, consumererror.Permanent(err))
+					permanentErrors = append(permanentErrors, consumererror.Permanent(fmt.Errorf("dropped log event: %v, error: %v", event, err)))
 					continue
 				}
 				batch.WriteString("\r\n\r\n")
@@ -217,8 +212,7 @@ func (c *client) sentLogBatch(ctx context.Context, ld pdata.Logs, send func(cont
 					if over := batch.Len() - submax; over <= int(c.config.MaxContentLengthLogs) {
 						overflow.Write(batch.Bytes()[submax:batch.Len()])
 					} else {
-						err = fmt.Errorf("log event too large (configured max content length: %d bytes, event: %d bytes)", c.config.MaxContentLengthLogs, over)
-						permanentErrors = append(permanentErrors, consumererror.Permanent(err))
+						permanentErrors = append(permanentErrors, consumererror.Permanent(fmt.Errorf("dropped log event: %s, error: event size %d bytes larger than configured max content length %d bytes", string(batch.Bytes()[submax:batch.Len()]), over, c.config.MaxContentLengthLogs)))
 					}
 				}
 
@@ -254,13 +248,9 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (numDroppedLogs
 	gzipWriter := c.zippers.Get().(*gzip.Writer)
 	defer c.zippers.Put(gzipWriter)
 
-	var gzipBuf *bytes.Buffer
-	if c.config.MaxContentLengthLogs > 0 {
-		gzipBuf = bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthLogs))
-	} else {
-		gzipBuf = bytes.NewBuffer(make([]byte, 0))
-	}
-	gzipWriter.Reset(gzipBuf)
+	gzipBuffer := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthLogs))
+	gzipWriter.Reset(gzipBuffer)
+
 	defer gzipWriter.Close()
 
 	// Callback when each batch is to be sent.
@@ -268,18 +258,18 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (numDroppedLogs
 		compression := buf.Len() >= int(c.config.MinContentLengthCompression) && !c.config.DisableCompression
 
 		if compression {
-			gzipBuf.Reset()
-			gzipWriter.Reset(gzipBuf)
+			gzipBuffer.Reset()
+			gzipWriter.Reset(gzipBuffer)
 
 			if _, err = io.Copy(gzipWriter, buf); err != nil {
-				return
+				return fmt.Errorf("failed copying buffer to gzip writer: %v", err)
 			}
 
 			if err = gzipWriter.Flush(); err != nil {
-				return
+				return fmt.Errorf("failed flushing compressed data to gzip writer: %v", err)
 			}
 
-			return c.postEvents(ctx, gzipBuf, compression)
+			return c.postEvents(ctx, gzipBuffer, compression)
 		}
 
 		return c.postEvents(ctx, buf, compression)

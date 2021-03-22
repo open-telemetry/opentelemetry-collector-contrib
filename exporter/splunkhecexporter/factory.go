@@ -30,7 +30,7 @@ const (
 	defaultMaxIdleCons                 = 100
 	defaultHTTPTimeout                 = 10 * time.Second
 	defaultMinContentLengthCompression = 1500
-	defaultMaxContentLengthLogs        = 1024 * 1024
+	defaultMaxContentLengthLogs        = 2 * 1024 * 1024
 )
 
 // NewFactory creates a factory for Splunk HEC exporter.

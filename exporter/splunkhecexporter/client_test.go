@@ -27,9 +27,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -622,7 +621,7 @@ func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 		require.Error(t, err)
 
 		assert.True(t, consumererror.IsPermanent(err))
-		assert.Contains(t, err.Error(), "log event too large")
+		assert.Contains(t, err.Error(), "dropped log event")
 		assert.Equal(t, numLogs, numDroppedLogs)
 	}
 }
