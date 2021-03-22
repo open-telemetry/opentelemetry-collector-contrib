@@ -984,3 +984,31 @@ func TestStatsAggregations(t *testing.T) {
 
 	assert.Equal(t, "test-version", statsVersionTag.Value)
 }
+
+// ensure that sanitization  of trace payloads occurs
+func TestSanitization(t *testing.T) {
+	calculator := newSublayerCalculator()
+
+	traces := pdata.NewTraces()
+	traces.ResourceSpans().Resize(1)
+	rs := traces.ResourceSpans().At(0)
+	resource := rs.Resource()
+	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		"deployment.environment": pdata.NewAttributeValueString("UpperCase"),
+	})
+	rs.InstrumentationLibrarySpans().Resize(1)
+	ilss := rs.InstrumentationLibrarySpans().At(0)
+	instrumentationLibrary := ilss.InstrumentationLibrary()
+	instrumentationLibrary.SetName("flash")
+	instrumentationLibrary.SetVersion("v1")
+	ilss.Spans().Resize(1)
+
+	outputTraces, _ := convertToDatadogTd(traces, calculator, &config.Config{})
+	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
+
+	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
+	obfuscatePayload(obfuscator, aggregatedTraces)
+	assert.Equal(t, 1, len(aggregatedTraces))
+
+	assert.Equal(t, "uppercase", aggregatedTraces[0].Env)
+}

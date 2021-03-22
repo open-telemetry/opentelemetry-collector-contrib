@@ -117,7 +117,7 @@ func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePa
 // converts a Trace's resource spans into a trace payload
 func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCalculator, hostname string, cfg *config.Config) pb.TracePayload {
 	// get env tag
-	env := cfg.Env
+	env := utils.NormalizeTag(cfg.Env)
 
 	resource := rs.Resource()
 	ilss := rs.InstrumentationLibrarySpans()
@@ -138,7 +138,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 	// specification states that the resource level deployment.environment should be used for passing env, so defer to that
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/deployment_environment.md#deployment
 	if resourceEnv, ok := datadogTags[conventions.AttributeDeploymentEnvironment]; ok {
-		payload.Env = resourceEnv
+		payload.Env = utils.NormalizeTag(resourceEnv)
 	}
 
 	apiTraces := map[uint64]*pb.APITrace{}
