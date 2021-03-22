@@ -38,9 +38,9 @@ func NewMetadataOperatorConfig(operatorID string) *MetadataOperatorConfig {
 
 // MetadataOperatorConfig is the configuration of a metadata operator
 type MetadataOperatorConfig struct {
-	helper.TransformerConfig `yaml:",inline"`
-	helper.AttributerConfig  `yaml:",inline"`
-	helper.IdentifierConfig  `yaml:",inline"`
+	helper.TransformerConfig `mapstructure:",squash"  yaml:",inline"`
+	helper.AttributerConfig  `mapstructure:",squash"  yaml:",inline"`
+	helper.IdentifierConfig  `mapstructure:",squash"  yaml:",inline"`
 }
 
 // Build will build a metadata operator from the supplied configuration
