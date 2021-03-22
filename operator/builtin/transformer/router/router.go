@@ -39,16 +39,16 @@ func NewRouterOperatorConfig(operatorID string) *RouterOperatorConfig {
 
 // RouterOperatorConfig is the configuration of a router operator
 type RouterOperatorConfig struct {
-	helper.BasicConfig `yaml:",inline"`
-	Routes             []*RouterOperatorRouteConfig `json:"routes" yaml:"routes"`
-	Default            helper.OutputIDs             `json:"default" yaml:"default"`
+	helper.BasicConfig `mapstructure:",squash" yaml:",inline"`
+	Routes             []*RouterOperatorRouteConfig `mapstructure:"routes" json:"routes" yaml:"routes"`
+	Default            helper.OutputIDs             `mapstructure:"default" json:"default" yaml:"default"`
 }
 
 // RouterOperatorRouteConfig is the configuration of a route on a router operator
 type RouterOperatorRouteConfig struct {
-	helper.AttributerConfig `yaml:",inline"`
-	Expression              string           `json:"expr"   yaml:"expr"`
-	OutputIDs               helper.OutputIDs `json:"output" yaml:"output"`
+	helper.AttributerConfig `mapstructure:",squash" yaml:",inline"`
+	Expression              string           `mapstructure:"expr" json:"expr"   yaml:"expr"`
+	OutputIDs               helper.OutputIDs `mapstructure:"output" json:"output" yaml:"output"`
 }
 
 // Build will build a router operator from the supplied configuration
