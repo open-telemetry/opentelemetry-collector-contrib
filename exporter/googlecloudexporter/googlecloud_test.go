@@ -206,9 +206,12 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 
 	md := internaldata.MetricsData{
 		Resource: &resourcepb.Resource{
-			Type: "test",
+			Type: "host",
 			Labels: map[string]string{
-				"attr": "attr_value",
+				"cloud.zone":       "us-central1",
+				"host.name":        "foo",
+				"k8s.cluster.name": "test",
+				"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
 			},
 		},
 		Metrics: []*metricspb.Metric{
@@ -233,7 +236,39 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 					time.Now(),
 					[]string{"v0", "v1", "v2"},
 					metricstestutil.Double(time.Now(), 123))),
+			metricstestutil.Gauge(
+				"test_gauge4",
+				[]string{"k0", "k1", "k2", "k3"},
+				metricstestutil.Timeseries(
+					time.Now(),
+					[]string{"v0", "v1", "v2", "v3"},
+					metricstestutil.Double(time.Now(), 1234))),
+			metricstestutil.Gauge(
+				"test_gauge5",
+				[]string{"k4", "k5"},
+				metricstestutil.Timeseries(
+					time.Now(),
+					[]string{"v4", "v5"},
+					metricstestutil.Double(time.Now(), 34))),
 		},
+	}
+	md.Metrics[2].Resource = &resourcepb.Resource{
+		Type: "host",
+		Labels: map[string]string{
+			"cloud.zone":       "us-central1",
+			"host.name":        "bar",
+			"k8s.cluster.name": "test",
+			"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
+		},
+	}
+	md.Metrics[3].Resource = &resourcepb.Resource{
+		Type: "host",
+		Labels: map[string]string{
+			"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
+		},
+	}
+	md.Metrics[4].Resource = &resourcepb.Resource{
+		Type: "test",
 	}
 
 	assert.NoError(t, sde.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(md)), err)
@@ -242,8 +277,10 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 		"projects/idk/metricDescriptors/custom.googleapis.com/opencensus/test_gauge1": {},
 		"projects/idk/metricDescriptors/custom.googleapis.com/opencensus/test_gauge2": {},
 		"projects/idk/metricDescriptors/custom.googleapis.com/opencensus/test_gauge3": {},
+		"projects/idk/metricDescriptors/custom.googleapis.com/opencensus/test_gauge4": {},
+		"projects/idk/metricDescriptors/custom.googleapis.com/opencensus/test_gauge5": {},
 	}
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 5; i++ {
 		drm := <-descriptorReqCh
 		assert.Regexp(t, "MyAgent v0\\.0\\.1", drm.metadata["user-agent"])
 		dr := drm.req.(*cloudmonitoringpb.CreateMetricDescriptorRequest)
@@ -254,30 +291,63 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 	trm := <-timeSeriesReqCh
 	assert.Regexp(t, "MyAgent v0\\.0\\.1", trm.metadata["user-agent"])
 	tr := trm.req.(*cloudmonitoringpb.CreateTimeSeriesRequest)
-	require.Len(t, tr.TimeSeries, 3)
+	require.Len(t, tr.TimeSeries, 5)
+
+	resourceFoo := map[string]string{
+		"node_name":    "foo",
+		"cluster_name": "test",
+		"location":     "us-central1",
+		"project_id":   "1234567",
+	}
+
+	resourceBar := map[string]string{
+		"node_name":    "bar",
+		"cluster_name": "test",
+		"location":     "us-central1",
+		"project_id":   "1234567",
+	}
+
+	resourceProjectID := map[string]string{
+		"project_id": "1234567",
+	}
 
 	expectedTimeSeries := map[string]struct {
-		value  float64
-		labels map[string]string
+		value          float64
+		labels         map[string]string
+		resourceLabels map[string]string
 	}{
 		"custom.googleapis.com/opencensus/test_gauge1": {
-			value:  float64(1),
-			labels: map[string]string{"k0": "v0"},
+			value:          float64(1),
+			labels:         map[string]string{"k0": "v0"},
+			resourceLabels: resourceFoo,
 		},
 		"custom.googleapis.com/opencensus/test_gauge2": {
-			value:  float64(12),
-			labels: map[string]string{"k0": "v0", "k1": "v1"},
+			value:          float64(12),
+			labels:         map[string]string{"k0": "v0", "k1": "v1"},
+			resourceLabels: resourceFoo,
 		},
 		"custom.googleapis.com/opencensus/test_gauge3": {
-			value:  float64(123),
-			labels: map[string]string{"k0": "v0", "k1": "v1", "k2": "v2"},
+			value:          float64(123),
+			labels:         map[string]string{"k0": "v0", "k1": "v1", "k2": "v2"},
+			resourceLabels: resourceBar,
+		},
+		"custom.googleapis.com/opencensus/test_gauge4": {
+			value:          float64(1234),
+			labels:         map[string]string{"k0": "v0", "k1": "v1", "k2": "v2", "k3": "v3"},
+			resourceLabels: resourceProjectID,
+		},
+		"custom.googleapis.com/opencensus/test_gauge5": {
+			value:          float64(34),
+			labels:         map[string]string{"k4": "v4", "k5": "v5"},
+			resourceLabels: nil,
 		},
 	}
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 5; i++ {
 		require.Contains(t, expectedTimeSeries, tr.TimeSeries[i].Metric.Type)
 		ts := expectedTimeSeries[tr.TimeSeries[i].Metric.Type]
 		assert.Equal(t, ts.labels, tr.TimeSeries[i].Metric.Labels)
 		require.Len(t, tr.TimeSeries[i].Points, 1)
 		assert.Equal(t, ts.value, tr.TimeSeries[i].Points[0].Value.GetDoubleValue())
+		assert.Equal(t, ts.resourceLabels, tr.TimeSeries[i].Resource.Labels)
 	}
 }
