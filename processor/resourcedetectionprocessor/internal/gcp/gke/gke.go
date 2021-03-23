@@ -35,7 +35,7 @@ const (
 	clusterNameAttribute = "cluster-name"
 
 	// Environment variable that is set when running on Kubernetes.
-	kubernetesServiceHost = "KUBERNETES_SERVICE_HOST"
+	kubernetesServiceHostEnvVar = "KUBERNETES_SERVICE_HOST"
 )
 
 var _ internal.Detector = (*Detector)(nil)
@@ -62,7 +62,7 @@ func (gke *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
 
 	// Check if running on k8s.
-	if os.Getenv(kubernetesServiceHost) == "" {
+	if os.Getenv(kubernetesServiceHostEnvVar) == "" {
 		return res, nil
 	}
 
