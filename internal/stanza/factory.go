@@ -47,7 +47,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 		ctx context.Context,
 		params component.ReceiverCreateParams,
 		cfg configmodels.Receiver,
-		nextConsumer consumer.LogsConsumer,
+		nextConsumer consumer.Logs,
 	) (component.LogsReceiver, error) {
 		inputCfg, err := logReceiverType.DecodeInputConfig(cfg)
 		if err != nil {

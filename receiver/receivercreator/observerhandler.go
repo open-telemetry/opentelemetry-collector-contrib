@@ -37,7 +37,7 @@ type observerHandler struct {
 	// receiversByEndpointID is a map of endpoint IDs to a receiver instance.
 	receiversByEndpointID receiverMap
 	// nextConsumer is the receiver_creator's own consumer
-	nextConsumer consumer.MetricsConsumer
+	nextConsumer consumer.Metrics
 	// runner starts and stops receiver instances.
 	runner runner
 }

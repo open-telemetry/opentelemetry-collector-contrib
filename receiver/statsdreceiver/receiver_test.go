@@ -43,7 +43,7 @@ func Test_statsdreceiver_New(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 	type args struct {
 		config       Config
-		nextConsumer consumer.MetricsConsumer
+		nextConsumer consumer.Metrics
 	}
 	tests := []struct {
 		name    string

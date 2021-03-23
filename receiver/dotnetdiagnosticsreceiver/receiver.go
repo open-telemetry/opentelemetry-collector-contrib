@@ -28,7 +28,7 @@ import (
 )
 
 type receiver struct {
-	nextConsumer consumer.MetricsConsumer
+	nextConsumer consumer.Metrics
 	connect      connectionSupplier
 	counters     []string
 	intervalSec  int
@@ -44,7 +44,7 @@ type connectionSupplier func() (io.ReadWriter, error)
 // testing.
 func NewReceiver(
 	_ context.Context,
-	mc consumer.MetricsConsumer,
+	mc consumer.Metrics,
 	connect connectionSupplier,
 	counters []string,
 	intervalSec int,

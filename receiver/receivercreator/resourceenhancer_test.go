@@ -42,7 +42,7 @@ func Test_newResourceEnhancer(t *testing.T) {
 		resources    resourceAttributes
 		env          observer.EndpointEnv
 		endpoint     observer.Endpoint
-		nextConsumer consumer.MetricsConsumer
+		nextConsumer consumer.Metrics
 	}
 	tests := []struct {
 		name    string

@@ -35,7 +35,7 @@ type receiver struct {
 
 	agent    *agent.LogAgent
 	emitter  *LogEmitter
-	consumer consumer.LogsConsumer
+	consumer consumer.Logs
 	logger   *zap.Logger
 }
 

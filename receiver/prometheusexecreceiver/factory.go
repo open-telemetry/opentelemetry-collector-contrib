@@ -61,7 +61,7 @@ func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)
 	return newPromExecReceiver(params, rCfg, nextConsumer)

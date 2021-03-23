@@ -51,7 +51,7 @@ type mockMetricsConsumer struct {
 	TotalMetrics int
 }
 
-var _ consumer.MetricsConsumer = &mockMetricsConsumer{}
+var _ consumer.Metrics = &mockMetricsConsumer{}
 
 func (p *mockMetricsConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	p.Metrics = append(p.Metrics, md)
@@ -138,7 +138,7 @@ func TestMockedEndToEnd(t *testing.T) {
 				},
 			},
 		})
-		assert.NoError(t, example.MetricsConsumer.ConsumeMetrics(context.Background(), md))
+		assert.NoError(t, example.ConsumeMetrics(context.Background(), md))
 	}
 
 	// TODO: Will have to rework once receivers are started asynchronously to Start().

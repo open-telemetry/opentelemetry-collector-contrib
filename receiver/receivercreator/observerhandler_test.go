@@ -34,7 +34,7 @@ type mockRunner struct {
 func (run *mockRunner) start(
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 ) (component.Receiver, error) {
 	args := run.Called(receiver, discoveredConfig, nextConsumer)
 	return args.Get(0).(component.Receiver), args.Error(1)

@@ -52,7 +52,7 @@ func NewUDPServer(addr string) (Server, error) {
 
 func (u *udpServer) ListenAndServe(
 	parser protocol.Parser,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 	reporter Reporter,
 ) error {
 	if parser == nil || nextConsumer == nil || reporter == nil {
@@ -96,7 +96,7 @@ func (u *udpServer) Close() error {
 
 func (u *udpServer) handlePacket(
 	p protocol.Parser,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 	data []byte,
 ) {
 	ctx := u.reporter.OnDataReceived(context.Background())

@@ -94,7 +94,7 @@ func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
+	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)
 
@@ -121,7 +121,7 @@ func createLogsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	consumer consumer.LogsConsumer,
+	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	rCfg := cfg.(*Config)
 

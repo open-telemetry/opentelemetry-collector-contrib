@@ -37,7 +37,7 @@ import (
 type mockMetricsConsumer struct {
 }
 
-var _ (consumer.MetricsConsumer) = (*mockMetricsConsumer)(nil)
+var _ (consumer.Metrics) = (*mockMetricsConsumer)(nil)
 
 func (m *mockMetricsConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	return nil
