@@ -174,7 +174,7 @@ func TestGetNamespace(t *testing.T) {
 
 func TestGetLogInfo(t *testing.T) {
 	metrics := []internaldata.MetricsData{
-		internaldata.MetricsData{
+		{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
 				LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
@@ -187,7 +187,7 @@ func TestGetLogInfo(t *testing.T) {
 				},
 			},
 		},
-		internaldata.MetricsData{
+		{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
 				LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
