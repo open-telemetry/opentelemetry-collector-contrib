@@ -386,13 +386,13 @@ func (m *mockProxy) Close() error {
 func createAndOptionallyStartReceiver(
 	t *testing.T,
 	receiverName string,
-	csu consumer.TracesConsumer,
+	csu consumer.Traces,
 	start bool) (string, component.TracesReceiver, *observer.ObservedLogs) {
 	addr, err := findAvailableUDPAddress()
 	assert.NoError(t, err, "there should be address available")
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
 
-	var sink consumer.TracesConsumer
+	var sink consumer.Traces
 	if csu == nil {
 		sink = new(consumertest.TracesSink)
 	} else {

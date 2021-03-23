@@ -38,7 +38,7 @@ type runnable struct {
 	receiverName          string
 	statsProvider         *kubelet.StatsProvider
 	metadataProvider      *kubelet.MetadataProvider
-	consumer              consumer.MetricsConsumer
+	consumer              consumer.Metrics
 	logger                *zap.Logger
 	restClient            kubelet.RestClient
 	extraMetadataLabels   []kubelet.MetadataLabel
@@ -49,7 +49,7 @@ type runnable struct {
 
 func newRunnable(
 	ctx context.Context,
-	consumer consumer.MetricsConsumer,
+	consumer consumer.Metrics,
 	restClient kubelet.RestClient,
 	logger *zap.Logger,
 	rOptions *receiverOptions,

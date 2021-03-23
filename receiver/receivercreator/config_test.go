@@ -104,7 +104,7 @@ type nopWithEndpointFactory struct {
 
 type nopWithEndpointReceiver struct {
 	component.Component
-	consumer.MetricsConsumer
+	consumer.Metrics
 }
 
 func (*nopWithEndpointFactory) CreateDefaultConfig() configmodels.Receiver {
@@ -119,9 +119,9 @@ func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	ctx context.Context,
 	_ component.ReceiverCreateParams,
 	_ configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumer) (component.MetricsReceiver, error) {
+	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	return &nopWithEndpointReceiver{
-		Component:       componenthelper.NewComponent(componenthelper.DefaultComponentSettings()),
-		MetricsConsumer: nextConsumer,
+		Component: componenthelper.NewComponent(componenthelper.DefaultComponentSettings()),
+		Metrics:   nextConsumer,
 	}, nil
 }

@@ -59,7 +59,7 @@ func createTraceProcessor(
 	ctx context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	next consumer.TracesConsumer,
+	next consumer.Traces,
 ) (component.TracesProcessor, error) {
 	return createTraceProcessorWithOptions(ctx, params, cfg, next)
 }
@@ -68,7 +68,7 @@ func createLogsProcessor(
 	ctx context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextLogsConsumer consumer.LogsConsumer,
+	nextLogsConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	return createLogsProcessorWithOptions(ctx, params, cfg, nextLogsConsumer)
 }
@@ -77,7 +77,7 @@ func createMetricsProcessor(
 	ctx context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextMetricsConsumer consumer.MetricsConsumer,
+	nextMetricsConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	return createMetricsProcessorWithOptions(ctx, params, cfg, nextMetricsConsumer)
 }
@@ -86,7 +86,7 @@ func createTraceProcessorWithOptions(
 	_ context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	next consumer.TracesConsumer,
+	next consumer.Traces,
 	options ...Option,
 ) (component.TracesProcessor, error) {
 	kp, err := createKubernetesProcessor(params, cfg, options...)
@@ -107,7 +107,7 @@ func createMetricsProcessorWithOptions(
 	_ context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextMetricsConsumer consumer.MetricsConsumer,
+	nextMetricsConsumer consumer.Metrics,
 	options ...Option,
 ) (component.MetricsProcessor, error) {
 	kp, err := createKubernetesProcessor(params, cfg, options...)
@@ -128,7 +128,7 @@ func createLogsProcessorWithOptions(
 	_ context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextLogsConsumer consumer.LogsConsumer,
+	nextLogsConsumer consumer.Logs,
 	options ...Option,
 ) (component.LogsProcessor, error) {
 	kp, err := createKubernetesProcessor(params, cfg, options...)
