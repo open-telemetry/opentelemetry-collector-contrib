@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+- Change `receivercreator` endpoint type rule expressions from `type.port`, `type.hostport`, `type.pod` to `type == "port"`, `type == "hostport"`, `type == "pod"` respectively.
+
 ## v0.22.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.22.0 (Beta) 🎉
