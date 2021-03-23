@@ -41,7 +41,7 @@ type kubernetesReceiver struct {
 
 	config   *Config
 	logger   *zap.Logger
-	consumer consumer.MetricsConsumer
+	consumer consumer.Metrics
 	cancel   context.CancelFunc
 }
 
@@ -111,7 +111,7 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 
 // newReceiver creates the Kubernetes cluster receiver with the given configuration.
 func newReceiver(
-	logger *zap.Logger, config *Config, consumer consumer.MetricsConsumer,
+	logger *zap.Logger, config *Config, consumer consumer.Metrics,
 	client kubernetes.Interface) (component.MetricsReceiver, error) {
 	resourceWatcher := newResourceWatcher(logger, client, config.NodeConditionTypesToReport, defaultInitialSyncTimeout)
 

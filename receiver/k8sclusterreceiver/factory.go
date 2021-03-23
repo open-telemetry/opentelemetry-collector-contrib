@@ -52,7 +52,7 @@ func createDefaultConfig() configmodels.Receiver {
 
 func createMetricsReceiver(
 	_ context.Context, params component.ReceiverCreateParams, cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer) (component.MetricsReceiver, error) {
+	consumer consumer.Metrics) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)
 
 	k8sClient, err := rCfg.getK8sClient()

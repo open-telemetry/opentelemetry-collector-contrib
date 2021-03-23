@@ -54,7 +54,7 @@ func createMetricsProcessor(
 	ctx context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	oCfg := cfg.(*Config)
 	if err := validateConfiguration(oCfg); err != nil {

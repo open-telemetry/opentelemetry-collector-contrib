@@ -60,7 +60,7 @@ type processorImp struct {
 	config Config
 
 	metricsExporter component.MetricsExporter
-	nextConsumer    consumer.TracesConsumer
+	nextConsumer    consumer.Traces
 
 	// Additional dimensions to add to metrics.
 	dimensions []Dimension
@@ -82,7 +82,7 @@ type processorImp struct {
 	metricKeyToDimensions map[metricKey]dimKV
 }
 
-func newProcessor(logger *zap.Logger, config configmodels.Exporter, nextConsumer consumer.TracesConsumer) *processorImp {
+func newProcessor(logger *zap.Logger, config configmodels.Exporter, nextConsumer consumer.Traces) *processorImp {
 	logger.Info("Building spanmetricsprocessor")
 	pConfig := config.(*Config)
 
@@ -167,7 +167,7 @@ func (p *processorImp) GetCapabilities() component.ProcessorCapabilities {
 	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
-// ConsumeTraces implements the consumer.TracesConsumer interface.
+// ConsumeTraces implements the consumer.Traces interface.
 // It aggregates the trace data to generate metrics, forwarding these metrics to the discovered metrics exporter.
 // The original input trace data will be forwarded to the next consumer, unmodified.
 func (p *processorImp) ConsumeTraces(ctx context.Context, traces pdata.Traces) error {

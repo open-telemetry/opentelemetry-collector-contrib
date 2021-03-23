@@ -156,8 +156,8 @@ func createMetricsExporter(
 	// this ensures that we get batches of data for the same token when pushing to the backend.
 	if expCfg.AccessTokenPassthrough {
 		me = &baseMetricsExporter{
-			Component:       me,
-			MetricsConsumer: batchperresourceattr.NewBatchPerResourceMetrics(splunk.SFxAccessTokenLabel, me),
+			Component: me,
+			Metrics:   batchperresourceattr.NewBatchPerResourceMetrics(splunk.SFxAccessTokenLabel, me),
 		}
 	}
 
@@ -236,8 +236,8 @@ func createLogsExporter(
 	// this ensures that we get batches of data for the same token when pushing to the backend.
 	if expCfg.AccessTokenPassthrough {
 		le = &baseLogsExporter{
-			Component:    le,
-			LogsConsumer: batchperresourceattr.NewBatchPerResourceLogs(splunk.SFxAccessTokenLabel, le),
+			Component: le,
+			Logs:      batchperresourceattr.NewBatchPerResourceLogs(splunk.SFxAccessTokenLabel, le),
 		}
 	}
 

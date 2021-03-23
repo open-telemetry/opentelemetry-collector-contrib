@@ -69,7 +69,7 @@ func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	baseCfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
+	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := baseCfg.(*Config)
 	rOptions, err := cfg.getReceiverOptions()
