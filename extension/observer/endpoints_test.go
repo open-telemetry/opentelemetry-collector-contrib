@@ -44,11 +44,7 @@ func TestEndpointEnv(t *testing.T) {
 				},
 			},
 			want: EndpointEnv{
-				"type": map[string]bool{
-					"pod":      true,
-					"hostport": false,
-					"port":     false,
-				},
+				"type":     "pod",
 				"endpoint": "192.68.73.2",
 				"name":     "pod_name",
 				"labels": map[string]string{
@@ -85,11 +81,7 @@ func TestEndpointEnv(t *testing.T) {
 				},
 			},
 			want: EndpointEnv{
-				"type": map[string]bool{
-					"pod":      false,
-					"hostport": false,
-					"port":     true,
-				},
+				"type":     "port",
 				"endpoint": "192.68.73.2",
 				"name":     "port_name",
 				"port":     uint16(2379),
@@ -122,11 +114,7 @@ func TestEndpointEnv(t *testing.T) {
 				},
 			},
 			want: EndpointEnv{
-				"type": map[string]bool{
-					"hostport": true,
-					"pod":      false,
-					"port":     false,
-				},
+				"type":         "hostport",
 				"endpoint":     "127.0.0.1",
 				"process_name": "process_name",
 				"command":      "./cmd --config config.yaml",
