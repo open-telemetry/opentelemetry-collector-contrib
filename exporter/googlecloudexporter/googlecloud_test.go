@@ -16,7 +16,6 @@ package googlecloudexporter
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"testing"
 	"time"
@@ -124,7 +123,7 @@ func TestGoogleCloudTraceExport(t *testing.T) {
 
 			r := <-reqCh
 			assert.Len(t, r.Spans, 1)
-			assert.Equal(t, fmt.Sprintf("Span.internal-%s", spanName), r.Spans[0].GetDisplayName().Value)
+			assert.Equal(t, spanName, r.Spans[0].GetDisplayName().Value)
 			assert.Equal(t, timestamppb.New(testTime), r.Spans[0].StartTime)
 		})
 	}
