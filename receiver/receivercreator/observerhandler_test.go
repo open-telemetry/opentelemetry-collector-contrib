@@ -136,7 +136,7 @@ func TestDynamicConfig(t *testing.T) {
 	cfg.receiverTemplates = map[string]receiverTemplate{
 		"name/1": {
 			receiverConfig: receiverConfig{typeStr: configmodels.Type("name"), config: userConfigMap{"endpoint": "`endpoint`:6379"}, fullName: "name/1"},
-			Rule:           "type == \"pod\"",
+			Rule:           `type == "pod"`,
 			rule:           newRuleOrPanic("type == \"pod\""),
 		},
 	}
