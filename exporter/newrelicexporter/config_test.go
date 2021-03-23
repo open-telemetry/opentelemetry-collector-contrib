@@ -28,7 +28,7 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
 	factory := NewFactory()
@@ -43,7 +43,13 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, len(cfg.Exporters), 2)
 
 	r0 := cfg.Exporters["newrelic"]
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
+	defaultConfig := factory.CreateDefaultConfig().(*Config)
+	assert.Equal(t, r0, defaultConfig)
+
+	defaultNrConfig := new(telemetry.Config)
+	defaultConfig.HarvestOption(defaultNrConfig)
+	assert.Empty(t, defaultNrConfig.MetricsURLOverride)
+	assert.Empty(t, defaultNrConfig.SpansURLOverride)
 
 	r1 := cfg.Exporters["newrelic/alt"].(*Config)
 	assert.Equal(t, r1, &Config{
@@ -58,8 +64,10 @@ func TestLoadConfig(t *testing.T) {
 			"prod":   true,
 			"weight": 3,
 		},
-		MetricsURLOverride: "http://alt.metrics.newrelic.com",
-		SpansURLOverride:   "http://alt.spans.newrelic.com",
+		MetricsHostOverride: "alt.metrics.newrelic.com",
+		SpansHostOverride:   "alt.spans.newrelic.com",
+		metricsInsecure:     false,
+		spansInsecure:       false,
 	})
 
 	nrConfig := new(telemetry.Config)
@@ -73,8 +81,7 @@ func TestLoadConfig(t *testing.T) {
 			"prod":   true,
 			"weight": 3,
 		},
-		MetricsURLOverride: "http://alt.metrics.newrelic.com",
-		SpansURLOverride:   "http://alt.spans.newrelic.com",
+		MetricsURLOverride: "https://alt.metrics.newrelic.com",
 		Product:            product,
 		ProductVersion:     version,
 	})

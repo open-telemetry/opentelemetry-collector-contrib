@@ -61,7 +61,7 @@ func TestLoadConfig(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.configFile, func(t *testing.T) {
 			// Prepare
-			factories, err := componenttest.ExampleComponents()
+			factories, err := componenttest.NopFactories()
 			require.NoError(t, err)
 
 			factories.Receivers["otlp"] = otlpreceiver.NewFactory()

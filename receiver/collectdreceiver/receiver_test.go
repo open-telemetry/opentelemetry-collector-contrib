@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -92,7 +91,7 @@ func TestCollectDServer(t *testing.T) {
 		queryParams  string
 		requestBody  string
 		responseCode int
-		wantData     []consumerdata.MetricsData
+		wantData     []internaldata.MetricsData
 	}
 
 	testCases := []testCase{{
@@ -119,7 +118,7 @@ func TestCollectDServer(t *testing.T) {
     }
 ]`,
 		responseCode: 200,
-		wantData: []consumerdata.MetricsData{{
+		wantData: []internaldata.MetricsData{{
 			Metrics: []*metricspb.Metric{{
 				MetricDescriptor: &metricspb.MetricDescriptor{
 					Name: "memory.free",
@@ -151,7 +150,7 @@ func TestCollectDServer(t *testing.T) {
 		name:         "invalid-request-body",
 		requestBody:  `invalid-body`,
 		responseCode: 400,
-		wantData:     []consumerdata.MetricsData{},
+		wantData:     []internaldata.MetricsData{},
 	}}
 
 	sink := new(consumertest.MetricsSink)
@@ -203,7 +202,7 @@ func TestCollectDServer(t *testing.T) {
 	}
 }
 
-func assertMetricsDataAreEqual(t *testing.T, metricsData1, metricsData2 []consumerdata.MetricsData) {
+func assertMetricsDataAreEqual(t *testing.T, metricsData1, metricsData2 []internaldata.MetricsData) {
 	if len(metricsData1) != len(metricsData2) {
 		t.Errorf("metrics data length mismatch. got:\n%d\nwant:\n%d\n", len(metricsData1), len(metricsData2))
 		return

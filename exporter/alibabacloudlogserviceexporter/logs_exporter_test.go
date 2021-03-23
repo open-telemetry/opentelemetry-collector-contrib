@@ -35,7 +35,7 @@ func createSimpleLogData(numberOfLogs int) pdata.Logs {
 	ill := rl.InstrumentationLibraryLogs().At(0)
 
 	for i := 0; i < numberOfLogs; i++ {
-		ts := pdata.TimestampUnixNano(int64(i) * time.Millisecond.Nanoseconds())
+		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := pdata.NewLogRecord()
 		logRecord.Body().SetStringVal("mylog")
 		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")

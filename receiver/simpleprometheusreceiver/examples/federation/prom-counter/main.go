@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package main
 
 import (
@@ -22,10 +23,10 @@ import (
 	"syscall"
 	"time"
 
-	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/metric/prometheus"
-	"go.opentelemetry.io/otel/label"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/global"
 	"go.uber.org/zap"
 )
 
@@ -47,11 +48,11 @@ func main() {
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 	logger.Info("Start Prometheus metrics app")
-	meter := otel.Meter("counter")
+	meter := global.Meter("federation/prom-counter")
 	valueRecorder := metric.Must(meter).NewInt64ValueRecorder("prom_counter")
 	ctx := context.Background()
 	valueRecorder.Measurement(0)
-	commonLabels := []label.KeyValue{label.String("A", "1"), label.String("B", "2"), label.String("C", "3")}
+	commonLabels := []attribute.KeyValue{attribute.String("A", "1"), attribute.String("B", "2"), attribute.String("C", "3")}
 	counter := int64(0)
 	meter.RecordBatch(ctx,
 		commonLabels,

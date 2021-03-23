@@ -1,5 +1,5 @@
 receivers:
-    examplereceiver:
+    nop:
 
 processors:
     metricstransform:
@@ -8,15 +8,15 @@ processors:
             action: invalid # invalid action type
 
 exporters:
-    exampleexporter:
+    nop:
 
 service:
     pipelines:
         traces:
-            receivers: [examplereceiver]
+            receivers: [nop]
             processors: [metricstransform]
-            exporters: [exampleexporter]
+            exporters: [nop]
         metrics:
-            receivers: [examplereceiver]
+            receivers: [nop]
             processors: [metricstransform]
-            exporters: [exampleexporter]
+            exporters: [nop]

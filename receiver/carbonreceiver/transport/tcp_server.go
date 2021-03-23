@@ -27,7 +27,6 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
@@ -185,7 +184,7 @@ func (t *tcpServer) handleConnection(
 				continue
 			}
 
-			md := consumerdata.MetricsData{
+			md := internaldata.MetricsData{
 				Metrics: []*metricspb.Metric{metric},
 			}
 			err = nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))

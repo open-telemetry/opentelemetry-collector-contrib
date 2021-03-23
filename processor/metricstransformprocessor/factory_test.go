@@ -122,7 +122,7 @@ func TestCreateProcessors(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		factories, err := componenttest.ExampleComponents()
+		factories, err := componenttest.NopFactories()
 		assert.NoError(t, err)
 
 		factory := NewFactory()

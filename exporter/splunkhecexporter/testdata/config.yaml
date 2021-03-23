@@ -1,8 +1,8 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
   splunk_hec:
@@ -28,6 +28,6 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
+      receivers: [nop]
+      processors: [nop]
       exporters: [splunk_hec, splunk_hec/allsettings]

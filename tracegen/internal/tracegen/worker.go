@@ -17,13 +17,13 @@ package tracegen
 
 import (
 	"context"
-	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -52,14 +52,14 @@ func (w worker) simulateTraces() {
 	var i int
 	for atomic.LoadUint32(w.running) == 1 {
 		ctx, sp := tracer.Start(context.Background(), "lets-go", trace.WithAttributes(
-			label.String("span.kind", "client"), // is there a semantic convention for this?
+			attribute.String("span.kind", "client"), // is there a semantic convention for this?
 			semconv.NetPeerIPKey.String(fakeIP),
 			semconv.PeerServiceKey.String("tracegen-server"),
 		))
 
 		childCtx := ctx
 		if w.propagateContext {
-			header := http.Header{}
+			header := propagation.HeaderCarrier{}
 			// simulates going remote
 			otel.GetTextMapPropagator().Inject(childCtx, header)
 
@@ -68,7 +68,7 @@ func (w worker) simulateTraces() {
 		}
 
 		_, child := tracer.Start(childCtx, "okey-dokey", trace.WithAttributes(
-			label.String("span.kind", "server"),
+			attribute.String("span.kind", "server"),
 			semconv.NetPeerIPKey.String(fakeIP),
 			semconv.PeerServiceKey.String("tracegen-client"),
 		))

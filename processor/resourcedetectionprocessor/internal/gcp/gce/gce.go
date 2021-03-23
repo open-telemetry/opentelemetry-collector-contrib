@@ -14,13 +14,13 @@
 
 // Package gce provides a detector that loads resource information from
 // the GCE metatdata
-package gce // import "cloud.google.com/go/compute/metadata"
+package gce
 
 import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
@@ -53,11 +53,12 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	var errors []error
 	errors = append(errors, d.initializeCloudAttributes(attr)...)
 	errors = append(errors, d.initializeHostAttributes(attr)...)
-	return res, componenterror.CombineErrors(errors)
+	return res, consumererror.CombineErrors(errors)
 }
 
 func (d *Detector) initializeCloudAttributes(attr pdata.AttributeMap) []error {
 	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
+	attr.InsertString(conventions.AttributeCloudInfrastructureService, conventions.AttributeCloudProviderGCPComputeEngine)
 
 	var errors []error
 

@@ -215,8 +215,8 @@ func (p *processorImp) buildMetrics() *pdata.Metrics {
 func (p *processorImp) collectLatencyMetrics(ilm *pdata.InstrumentationLibraryMetrics) {
 	for key := range p.latencyCount {
 		dpLatency := pdata.NewIntHistogramDataPoint()
-		dpLatency.SetStartTime(pdata.TimeToUnixNano(p.startTime))
-		dpLatency.SetTimestamp(pdata.TimeToUnixNano(time.Now()))
+		dpLatency.SetStartTime(pdata.TimestampFromTime(p.startTime))
+		dpLatency.SetTimestamp(pdata.TimestampFromTime(time.Now()))
 		dpLatency.SetExplicitBounds(p.latencyBounds)
 		dpLatency.SetBucketCounts(p.latencyBucketCounts[key])
 		dpLatency.SetCount(p.latencyCount[key])
@@ -238,8 +238,8 @@ func (p *processorImp) collectLatencyMetrics(ilm *pdata.InstrumentationLibraryMe
 func (p *processorImp) collectCallMetrics(ilm *pdata.InstrumentationLibraryMetrics) {
 	for key := range p.callSum {
 		dpCalls := pdata.NewIntDataPoint()
-		dpCalls.SetStartTime(pdata.TimeToUnixNano(p.startTime))
-		dpCalls.SetTimestamp(pdata.TimeToUnixNano(time.Now()))
+		dpCalls.SetStartTime(pdata.TimestampFromTime(p.startTime))
+		dpCalls.SetTimestamp(pdata.TimestampFromTime(time.Now()))
 		dpCalls.SetValue(p.callSum[key])
 
 		dpCalls.LabelsMap().InitFromMap(p.metricKeyToDimensions[key])

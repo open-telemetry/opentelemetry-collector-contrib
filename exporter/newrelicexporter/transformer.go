@@ -24,7 +24,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/cumulative"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -77,7 +77,7 @@ var (
 )
 
 func (t *traceTransformer) Span(span pdata.Span) (telemetry.Span, error) {
-	startTime := pdata.UnixNanoToTime(span.StartTime())
+	startTime := span.StartTime().AsTime()
 	sp := telemetry.Span{
 		// HexString validates the IDs, it will be an empty string if invalid.
 		ID:         span.SpanID().HexString(),
@@ -85,7 +85,7 @@ func (t *traceTransformer) Span(span pdata.Span) (telemetry.Span, error) {
 		ParentID:   span.ParentSpanID().HexString(),
 		Name:       span.Name(),
 		Timestamp:  startTime,
-		Duration:   pdata.UnixNanoToTime(span.EndTime()).Sub(startTime),
+		Duration:   span.EndTime().AsTime().Sub(startTime),
 		Attributes: t.SpanAttributes(span),
 		Events:     t.SpanEvents(span),
 	}
@@ -165,7 +165,7 @@ func (t *traceTransformer) SpanEvents(span pdata.Span) []telemetry.Event {
 		event := span.Events().At(i)
 		events[i] = telemetry.Event{
 			EventType:  event.Name(),
-			Timestamp:  pdata.UnixNanoToTime(event.Timestamp()),
+			Timestamp:  event.Timestamp().AsTime(),
 			Attributes: tracetranslator.AttributeMapToMap(event.Attributes()),
 		}
 	}
@@ -220,7 +220,7 @@ func (t *metricTransformer) Metric(metric *metricspb.Metric) ([]telemetry.Metric
 			}
 		}
 	}
-	return metrics, componenterror.CombineErrors(errs)
+	return metrics, consumererror.CombineErrors(errs)
 }
 
 func (t *metricTransformer) MetricAttributes(metric *metricspb.Metric) map[string]interface{} {

@@ -29,7 +29,7 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factory := NewFactory()
 	factories.Processors[configmodels.Type(typeStr)] = factory
@@ -87,6 +87,28 @@ func TestLoadConfig(t *testing.T) {
 				Fields: []FieldFilterConfig{
 					{Key: "key1", Value: "value1"},
 					{Key: "key2", Value: "value2", Op: "not-equals"},
+				},
+			},
+			Association: []PodAssociationConfig{
+				{
+					From: "resource_attribute",
+					Name: "ip",
+				},
+				{
+					From: "resource_attribute",
+					Name: "k8s.pod.ip",
+				},
+				{
+					From: "resource_attribute",
+					Name: "host.name",
+				},
+				{
+					From: "connection",
+					Name: "ip",
+				},
+				{
+					From: "resource_attribute",
+					Name: "k8s.pod.uid",
 				},
 			},
 		})

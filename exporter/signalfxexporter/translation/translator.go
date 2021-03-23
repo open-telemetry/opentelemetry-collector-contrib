@@ -22,6 +22,8 @@ import (
 	"github.com/gogo/protobuf/proto"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
 )
 
 // Action is the enum to capture actions to perform on metrics.
@@ -117,6 +119,22 @@ const (
 	// metric. It takes mappings of names of the existing metrics to the names of the new, delta metrics to be
 	// created. All dimensions will be preserved.
 	ActionDeltaMetric Action = "delta_metric"
+
+	// ActionDropDimensions drops specified dimensions. If no corresponding metric names are provided, the
+	// dimensions are dropped globally from all datapoints. If dimension values are provided, only datapoints
+	// with matching dimension values are dropped. Below are the possible configurations.
+	// - action: drop_dimensions
+	//   metric_names:
+	//     k8s.pod.phase: true
+	//   dimension_pairs:
+	//     dim_key1:
+	//     dim_key2:
+	//       dim_val1: true
+	//       dim_val2: true
+	// - action: drop_dimensions
+	//   dimension_pairs:
+	//     dim_key1:
+	ActionDropDimensions Action = "drop_dimensions"
 )
 
 type MetricOperator string
@@ -200,6 +218,12 @@ type Rule struct {
 	Operand1Metric string         `mapstructure:"operand1_metric"`
 	Operand2Metric string         `mapstructure:"operand2_metric"`
 	Operator       MetricOperator `mapstructure:"operator"`
+
+	// DimensionPairs used by "drop_dimensions" translation rule to specify dimension pairs that
+	// should be dropped.
+	DimensionPairs map[string]map[string]bool `mapstructure:"dimension_pairs"`
+
+	metricMatcher *dpfilters.StringFilter
 }
 
 type MetricTranslator struct {
@@ -213,6 +237,11 @@ type MetricTranslator struct {
 
 func NewMetricTranslator(rules []Rule, ttl int64) (*MetricTranslator, error) {
 	err := validateTranslationRules(rules)
+	if err != nil {
+		return nil, err
+	}
+
+	err = processRules(rules)
 	if err != nil {
 		return nil, err
 	}
@@ -317,6 +346,10 @@ func validateTranslationRules(rules []Rule) error {
 			if len(tr.Mapping) == 0 {
 				return fmt.Errorf(`field "mapping" is required for %q translation rule`, tr.Action)
 			}
+		case ActionDropDimensions:
+			if len(tr.DimensionPairs) == 0 {
+				return fmt.Errorf(`field "dimension_pairs" is required for %q translation rule`, tr.Action)
+			}
 		default:
 			return fmt.Errorf("unknown \"action\" value: %q", tr.Action)
 		}
@@ -332,8 +365,39 @@ func createDimensionsMap(rules []Rule) map[string]string {
 			return tr.Mapping
 		}
 	}
-
 	return nil
+}
+
+func processRules(rules []Rule) error {
+	for i, tr := range rules {
+		if tr.Action == ActionDropDimensions {
+			// Set metric name filter, if metric name(s) are specified on the rule.
+			// When "drop_dimensions" actions is not scoped to a metric name, the
+			// specified dimensions will be globally dropped from all datapoints
+			// irrespective of metric name.
+			if metricNames := getMetricNamesAsSlice(tr.MetricName, tr.MetricNames); len(metricNames) > 0 {
+				metricMatcher, err := dpfilters.NewStringFilter(metricNames)
+				if err != nil {
+					return fmt.Errorf("failed creating metric matcher: %w", err)
+				}
+				rules[i].metricMatcher = metricMatcher
+			}
+		}
+	}
+	return nil
+}
+
+// getMetricNamesAsSlice returns a slice of metric names consolidating entries from metricName string
+// and metricNames set.
+func getMetricNamesAsSlice(metricName string, metricNames map[string]bool) []string {
+	out := make([]string, 0, len(metricNames)+1)
+	for m := range metricNames {
+		out = append(out, m)
+	}
+	if metricName != "" {
+		out = append(out, metricName)
+	}
+	return out
 }
 
 // TranslateDataPoints transforms datapoints to a format compatible with signalfx backend
@@ -473,6 +537,11 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 
 		case ActionDeltaMetric:
 			processedDataPoints = mp.deltaTranslator.translate(processedDataPoints, tr)
+
+		case ActionDropDimensions:
+			for _, dp := range processedDataPoints {
+				dropDimensions(dp, tr)
+			}
 		}
 	}
 
@@ -588,7 +657,7 @@ func ptToFloatVal(pt *sfxpb.DataPoint) *float64 {
 	return &f
 }
 
-func (mp *MetricTranslator) TranslateDimension(orig string) string {
+func (mp *MetricTranslator) translateDimension(orig string) string {
 	if translated, ok := mp.dimensionsMap[orig]; ok {
 		return translated
 	}
@@ -778,4 +847,38 @@ func copyMetric(tr Rule, dp *sfxpb.DataPoint, newMetricName string) *sfxpb.DataP
 	newDataPoint := proto.Clone(dp).(*sfxpb.DataPoint)
 	newDataPoint.Metric = newMetricName
 	return newDataPoint
+}
+
+func dropDimensions(dp *sfxpb.DataPoint, rule Rule) {
+	if rule.metricMatcher != nil && !rule.metricMatcher.Matches(dp.Metric) {
+		return
+	}
+	processedDimensions := filterDimensionsByValues(dp.Dimensions, rule.DimensionPairs)
+	if processedDimensions == nil {
+		return
+	}
+	dp.Dimensions = processedDimensions
+}
+
+func filterDimensionsByValues(
+	dimensions []*sfxpb.Dimension,
+	dimensionPairs map[string]map[string]bool) []*sfxpb.Dimension {
+	if len(dimensions) == 0 {
+		return nil
+	}
+	result := make([]*sfxpb.Dimension, 0, len(dimensions))
+	for _, d := range dimensions {
+		// If a dimension key does not exist in dimensionMatcher,
+		// it should not be dropped. If the key exists but there's
+		// no matcher/empty matcher, drop the dimension for all values.
+		if dimValMatcher, ok := dimensionPairs[d.Key]; ok {
+			if len(dimValMatcher) > 0 && !dimValMatcher[d.Value] {
+				result = append(result, d)
+			}
+		} else {
+			result = append(result, d)
+		}
+	}
+
+	return result
 }

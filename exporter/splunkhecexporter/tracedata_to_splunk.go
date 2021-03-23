@@ -25,9 +25,9 @@ import (
 
 // HecEvent is a data structure holding a span event to export explicitly to Splunk HEC.
 type HecEvent struct {
-	Attributes map[string]interface{}  `json:"attributes,omitempty"`
-	Name       string                  `json:"name"`
-	Timestamp  pdata.TimestampUnixNano `json:"timestamp"`
+	Attributes map[string]interface{} `json:"attributes,omitempty"`
+	Name       string                 `json:"name"`
+	Timestamp  pdata.Timestamp        `json:"timestamp"`
 }
 
 // HecLink is a data structure holding a span link to export explicitly to Splunk HEC.
@@ -46,17 +46,17 @@ type HecSpanStatus struct {
 
 // HecSpan is a data structure used to export explicitly a span to Splunk HEC.
 type HecSpan struct {
-	TraceID    string                  `json:"trace_id"`
-	SpanID     string                  `json:"span_id"`
-	ParentSpan string                  `json:"parent_span_id"`
-	Name       string                  `json:"name"`
-	Attributes map[string]interface{}  `json:"attributes,omitempty"`
-	EndTime    pdata.TimestampUnixNano `json:"end_time"`
-	Kind       string                  `json:"kind"`
-	Status     HecSpanStatus           `json:"status,omitempty"`
-	StartTime  pdata.TimestampUnixNano `json:"start_time"`
-	Events     []HecEvent              `json:"events,omitempty"`
-	Links      []HecLink               `json:"links,omitempty"`
+	TraceID    string                 `json:"trace_id"`
+	SpanID     string                 `json:"span_id"`
+	ParentSpan string                 `json:"parent_span_id"`
+	Name       string                 `json:"name"`
+	Attributes map[string]interface{} `json:"attributes,omitempty"`
+	EndTime    pdata.Timestamp        `json:"end_time"`
+	Kind       string                 `json:"kind"`
+	Status     HecSpanStatus          `json:"status,omitempty"`
+	StartTime  pdata.Timestamp        `json:"start_time"`
+	Events     []HecEvent             `json:"events,omitempty"`
+	Links      []HecLink              `json:"links,omitempty"`
 }
 
 func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([]*splunk.Event, int) {

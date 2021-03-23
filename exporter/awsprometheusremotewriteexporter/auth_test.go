@@ -26,6 +26,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -62,6 +63,31 @@ func TestRequestSignature(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestGetCredsFromConfig(t *testing.T) {
+
+	tests := []struct {
+		name       string
+		authConfig AuthConfig
+	}{
+		{
+			"success_case_without_role",
+			AuthConfig{Region: "region", Service: "service"},
+		},
+		{
+			"success_case_with_role",
+			AuthConfig{Region: "region", Service: "service", RoleArn: "arn:aws:iam::123456789012:role/IAMRole"},
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			creds := getCredsFromConfig(tt.authConfig)
+			require.NotNil(t, creds)
+
+		})
+	}
+}
+
 type ErrorRoundTripper struct{}
 
 func (ert *ErrorRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
@@ -79,16 +105,19 @@ func TestRoundTrip(t *testing.T) {
 		name        string
 		rt          http.RoundTripper
 		shouldError bool
+		authConfig  AuthConfig
 	}{
 		{
 			"valid_round_tripper",
 			defaultRoundTripper,
 			false,
+			AuthConfig{Region: "region", Service: "service"},
 		},
 		{
 			"round_tripper_error",
 			errorRoundTripper,
 			true,
+			AuthConfig{Region: "region", Service: "service", RoleArn: "arn:aws:iam::123456789012:role/IAMRole"},
 		},
 	}
 

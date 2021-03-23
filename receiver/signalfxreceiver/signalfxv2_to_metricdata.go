@@ -184,9 +184,9 @@ func fillDoubleDataPoint(sfxDataPoint *sfxpb.DataPoint, dps pdata.DoubleDataPoin
 
 }
 
-func dpTimestamp(dp *sfxpb.DataPoint) pdata.TimestampUnixNano {
+func dpTimestamp(dp *sfxpb.DataPoint) pdata.Timestamp {
 	// Convert from SignalFx millis to pdata nanos
-	return pdata.TimestampUnixNano(dp.GetTimestamp() * 1e6)
+	return pdata.Timestamp(dp.GetTimestamp() * 1e6)
 }
 
 func fillInLabels(

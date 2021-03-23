@@ -375,7 +375,7 @@ func TestMetricDeclarationInit(t *testing.T) {
 	})
 }
 
-func TestMetricDeclarationMatches(t *testing.T) {
+func TestMetricDeclarationMatchesName(t *testing.T) {
 	m := &MetricDeclaration{
 		MetricNameSelectors: []string{"^a+$", "^b.*$", "^ac+a$"},
 	}
@@ -383,36 +383,18 @@ func TestMetricDeclarationMatches(t *testing.T) {
 	err := m.Init(logger)
 	assert.Nil(t, err)
 
-	metric := pdata.NewMetric()
-	metric.SetName("a")
-	assert.True(t, m.Matches(&metric, nil))
-
-	metric.SetName("aa")
-	assert.True(t, m.Matches(&metric, nil))
-
-	metric.SetName("aaaa")
-	assert.True(t, m.Matches(&metric, nil))
-
-	metric.SetName("aaab")
-	assert.False(t, m.Matches(&metric, nil))
-
-	metric.SetName("b")
-	assert.True(t, m.Matches(&metric, nil))
-
-	metric.SetName("ba")
-	assert.True(t, m.Matches(&metric, nil))
-
-	metric.SetName("c")
-	assert.False(t, m.Matches(&metric, nil))
-
-	metric.SetName("aca")
-	assert.True(t, m.Matches(&metric, nil))
-
-	metric.SetName("accca")
-	assert.True(t, m.Matches(&metric, nil))
+	assert.True(t, m.MatchesName("a"))
+	assert.True(t, m.MatchesName("aa"))
+	assert.True(t, m.MatchesName("aaaa"))
+	assert.False(t, m.MatchesName("aaab"))
+	assert.True(t, m.MatchesName("b"))
+	assert.True(t, m.MatchesName("ba"))
+	assert.False(t, m.MatchesName("c"))
+	assert.True(t, m.MatchesName("aca"))
+	assert.True(t, m.MatchesName("accca"))
 }
 
-func TestMetricDeclarationMatchesWithLabelMatchers(t *testing.T) {
+func TestMetricDeclarationMatchesLabels(t *testing.T) {
 	labels := map[string]string{
 		"label1": "foo",
 		"label2": "bar",
@@ -525,7 +507,7 @@ func TestMetricDeclarationMatchesWithLabelMatchers(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			err := m.Init(logger)
 			assert.Nil(t, err)
-			matches := m.Matches(&metric, labels)
+			matches := m.MatchesLabels(labels)
 			assert.Equal(t, tc.expected, matches)
 		})
 	}
@@ -610,158 +592,6 @@ func TestExtractDimensions(t *testing.T) {
 			assert.Nil(t, err)
 			dimensions := m.ExtractDimensions(tc.labels)
 			assert.Equal(t, tc.extractedDimensions, dimensions)
-		})
-	}
-}
-
-func TestProcessMetricDeclarations(t *testing.T) {
-	metricDeclarations := []*MetricDeclaration{
-		{
-			Dimensions:          [][]string{{"dim1", "dim2"}},
-			MetricNameSelectors: []string{"a", "b", "c"},
-		},
-		{
-			Dimensions:          [][]string{{"dim1"}},
-			MetricNameSelectors: []string{"aa", "b"},
-		},
-		{
-			Dimensions:          [][]string{{"dim2", "dim1"}, {"dim1"}},
-			MetricNameSelectors: []string{"a"},
-		},
-	}
-	logger := zap.NewNop()
-	for _, m := range metricDeclarations {
-		err := m.Init(logger)
-		assert.Nil(t, err)
-	}
-	testCases := []struct {
-		testName     string
-		metricName   string
-		labels       map[string]string
-		rollUpDims   [][]string
-		expectedDims [][]string
-	}{
-		{
-			"Matching single declaration",
-			"c",
-			map[string]string{
-				"dim1": "foo",
-				"dim2": "bar",
-			},
-			nil,
-			[][]string{
-				{"dim1", "dim2"},
-			},
-		},
-		{
-			"Match single dimension set",
-			"a",
-			map[string]string{
-				"dim1": "foo",
-			},
-			nil,
-			[][]string{
-				{"dim1"},
-			},
-		},
-		{
-			"Match single dimension set w/ rolled-up dims",
-			"a",
-			map[string]string{
-				"dim1": "foo",
-				"dim3": "car",
-			},
-			[][]string{{"dim1"}, {"dim3"}},
-			[][]string{
-				{"dim1"},
-				{"dim3"},
-			},
-		},
-		{
-			"Matching multiple declarations",
-			"b",
-			map[string]string{
-				"dim1": "foo",
-				"dim2": "bar",
-			},
-			nil,
-			[][]string{
-				{"dim1", "dim2"},
-				{"dim1"},
-			},
-		},
-		{
-			"Matching multiple declarations w/ duplicate",
-			"a",
-			map[string]string{
-				"dim1": "foo",
-				"dim2": "bar",
-			},
-			nil,
-			[][]string{
-				{"dim1", "dim2"},
-				{"dim1"},
-			},
-		},
-		{
-			"Matching multiple declarations w/ duplicate + rolled-up dims",
-			"a",
-			map[string]string{
-				"dim1": "foo",
-				"dim2": "bar",
-				"dim3": "car",
-			},
-			[][]string{{"dim2", "dim1"}, {"dim3"}},
-			[][]string{
-				{"dim1", "dim2"},
-				{"dim1"},
-				{"dim3"},
-			},
-		},
-		{
-			"No matching dimension set",
-			"a",
-			map[string]string{
-				"dim2": "bar",
-			},
-			nil,
-			nil,
-		},
-		{
-			"No matching dimension set w/ rolled-up dims",
-			"a",
-			map[string]string{
-				"dim2": "bar",
-			},
-			[][]string{{"dim2"}},
-			[][]string{{"dim2"}},
-		},
-		{
-			"No matching metric name",
-			"c",
-			map[string]string{
-				"dim1": "foo",
-			},
-			nil,
-			nil,
-		},
-		{
-			"No matching metric name w/ rolled-up dims",
-			"c",
-			map[string]string{
-				"dim1": "foo",
-			},
-			[][]string{{"dim1"}},
-			[][]string{{"dim1"}},
-		},
-	}
-
-	for _, tc := range testCases {
-		metric := pdata.NewMetric()
-		metric.SetName(tc.metricName)
-		t.Run(tc.testName, func(t *testing.T) {
-			dimensions := processMetricDeclarations(metricDeclarations, &metric, tc.labels, tc.rollUpDims)
-			assert.Equal(t, tc.expectedDims, dimensions)
 		})
 	}
 }

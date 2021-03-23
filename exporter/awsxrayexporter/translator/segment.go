@@ -319,7 +319,7 @@ func convertToAmazonTraceID(traceID pdata.TraceID) (string, error) {
 	return string(content[0:traceIDLength]), nil
 }
 
-func timestampToFloatSeconds(ts pdata.TimestampUnixNano) float64 {
+func timestampToFloatSeconds(ts pdata.Timestamp) float64 {
 	return float64(ts) / float64(time.Second)
 }
 
@@ -330,7 +330,6 @@ func makeXRayAttributes(attributes map[string]string, resource pdata.Resource, s
 		metadata    = map[string]map[string]interface{}{}
 		user        string
 	)
-	delete(attributes, semconventions.AttributeComponent)
 	userid, ok := attributes[semconventions.AttributeEnduserID]
 	if ok {
 		user = userid

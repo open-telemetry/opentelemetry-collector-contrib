@@ -1,6 +1,8 @@
 # Honeycomb Exporter
 
-This exporter supports sending trace data to [Honeycomb](https://www.honeycomb.io). 
+**NOTE:** Honeycomb now supports OTLP ingest directly. This means you can use an [OTLP](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlpexporter) exporter and no longer need this exporter to send data to Honeycomb.
+
+This exporter supports sending trace data to [Honeycomb](https://www.honeycomb.io).
 
 The following configuration options are supported:
 

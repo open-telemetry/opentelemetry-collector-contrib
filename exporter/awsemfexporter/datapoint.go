@@ -18,18 +18,26 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/mapwithexpiry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws"
 )
 
-const (
-	cleanInterval = 5 * time.Minute
-	minTimeDiff   = 50 * time.Millisecond // We assume 50 milli-seconds is the minimal gap between two collected data sample to be valid to calculate delta
-)
+var rateMetricCalculator = newFloat64RateCalculator()
 
-var currentState = mapwithexpiry.NewMapWithExpiry(cleanInterval)
+func newFloat64RateCalculator() aws.MetricCalculator {
+	return aws.NewMetricCalculator(func(prev *aws.MetricValue, val interface{}, timestamp time.Time) (interface{}, bool) {
+		if prev != nil {
+			deltaTimestampMs := timestamp.Sub(prev.Timestamp).Milliseconds()
+			deltaValue := val.(float64) - prev.RawValue.(float64)
+			if deltaTimestampMs > 50*time.Millisecond.Milliseconds() && deltaValue >= 0 {
+				return deltaValue * 1e3 / float64(deltaTimestampMs), true
+			}
+		}
+		return float64(0), true
+	})
+}
 
 // DataPoint represents a processed metric data point
 type DataPoint struct {
@@ -62,13 +70,8 @@ type rateKeyParams struct {
 	metricNameKey string
 	logGroupKey   string
 	logStreamKey  string
-	labels        label.Distinct
-}
-
-// rateState stores a metric's value
-type rateState struct {
-	value       float64
-	timestampMs int64
+	timestampKey  string
+	labels        attribute.Distinct
 }
 
 // IntDataPointSlice is a wrapper for pdata.IntDataPointSlice
@@ -100,21 +103,20 @@ type DoubleSummaryDataPointSlice struct {
 // At retrieves the IntDataPoint at the given index and performs rate calculation if necessary.
 func (dps IntDataPointSlice) At(i int) DataPoint {
 	metric := dps.IntDataPointSlice.At(i)
-	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
-	labels := createLabels(metric.LabelsMap())
+	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
 
+	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
+	rateTimestamp := metric.Timestamp().AsTime()
+	if timestampMs == 0 {
+		rateTimestamp = time.Unix(0, dps.timestampMs*int64(time.Millisecond))
+	}
 	var metricVal float64
 	metricVal = float64(metric.Value())
+
 	if dps.needsCalculateRate {
-		sortedLabels := getSortedLabels(metric.LabelsMap())
-		dps.rateKeyParams.labels = sortedLabels
-		rateKey := dps.rateKeyParams
-		rateTS := dps.timestampMs
-		if timestampMs > 0 {
-			// Use metric timestamp if available
-			rateTS = timestampMs
-		}
-		metricVal = calculateRate(rateKey, metricVal, rateTS)
+		rateVal, _ := rateMetricCalculator.Calculate(dps.rateKeyParams.metricNameKey, labels,
+			metricVal, rateTimestamp)
+		metricVal = rateVal.(float64)
 	}
 
 	return DataPoint{
@@ -127,21 +129,19 @@ func (dps IntDataPointSlice) At(i int) DataPoint {
 // At retrieves the DoubleDataPoint at the given index and performs rate calculation if necessary.
 func (dps DoubleDataPointSlice) At(i int) DataPoint {
 	metric := dps.DoubleDataPointSlice.At(i)
-	labels := createLabels(metric.LabelsMap())
-	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
+	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
 
-	var metricVal float64
-	metricVal = metric.Value()
+	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
+	rateTimestamp := metric.Timestamp().AsTime()
+	if timestampMs == 0 {
+		rateTimestamp = time.Unix(0, dps.timestampMs*int64(time.Millisecond))
+	}
+	metricVal := metric.Value()
+
 	if dps.needsCalculateRate {
-		sortedLabels := getSortedLabels(metric.LabelsMap())
-		dps.rateKeyParams.labels = sortedLabels
-		rateKey := dps.rateKeyParams
-		rateTS := dps.timestampMs
-		if timestampMs > 0 {
-			// Use metric timestamp if available
-			rateTS = timestampMs
-		}
-		metricVal = calculateRate(rateKey, metricVal, rateTS)
+		rateVal, _ := rateMetricCalculator.Calculate(dps.rateKeyParams.metricNameKey, labels,
+			metricVal, rateTimestamp)
+		metricVal = rateVal.(float64)
 	}
 
 	return DataPoint{
@@ -154,7 +154,7 @@ func (dps DoubleDataPointSlice) At(i int) DataPoint {
 // At retrieves the DoubleHistogramDataPoint at the given index.
 func (dps DoubleHistogramDataPointSlice) At(i int) DataPoint {
 	metric := dps.DoubleHistogramDataPointSlice.At(i)
-	labels := createLabels(metric.LabelsMap())
+	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
 	timestamp := unixNanoToMilliseconds(metric.Timestamp())
 
 	return DataPoint{
@@ -170,7 +170,7 @@ func (dps DoubleHistogramDataPointSlice) At(i int) DataPoint {
 // At retrieves the DoubleSummaryDataPoint at the given index.
 func (dps DoubleSummaryDataPointSlice) At(i int) DataPoint {
 	metric := dps.DoubleSummaryDataPointSlice.At(i)
-	labels := createLabels(metric.LabelsMap())
+	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
 	metricVal := &CWMetricStats{
@@ -190,48 +190,31 @@ func (dps DoubleSummaryDataPointSlice) At(i int) DataPoint {
 }
 
 // createLabels converts OTel StringMap labels to a map
-func createLabels(labelsMap pdata.StringMap) map[string]string {
+// and optionally adds in the OTel instrumentation library name
+func createLabels(labelsMap pdata.StringMap, instrLibName string) map[string]string {
 	labels := make(map[string]string, labelsMap.Len()+1)
 	labelsMap.ForEach(func(k, v string) {
 		labels[k] = v
 	})
 
+	// Add OTel instrumentation lib name as an additional label if it is defined
+	if instrLibName != noInstrumentationLibraryName {
+		labels[oTellibDimensionKey] = instrLibName
+	}
+
 	return labels
 }
 
-// getSortedLabels converts OTel StringMap labels to sorted labels as label.Distinct
-func getSortedLabels(labelsMap pdata.StringMap) label.Distinct {
-	var kvs []label.KeyValue
-	var sortable label.Sortable
-	labelsMap.ForEach(func(k, v string) {
-		kvs = append(kvs, label.String(k, v))
-	})
-	set := label.NewSetWithSortable(kvs, &sortable)
+// getSortedLabels converts OTel StringMap labels to sorted labels as attribute.Distinct
+func getSortedLabels(labels map[string]string) attribute.Distinct {
+	var kvs []attribute.KeyValue
+	var sortable attribute.Sortable
+	for k, v := range labels {
+		kvs = append(kvs, attribute.String(k, v))
+	}
+	set := attribute.NewSetWithSortable(kvs, &sortable)
 
 	return set.Equivalent()
-}
-
-// calculateRate calculates the metric value's rate of change using valDelta / timeDelta.
-func calculateRate(metricKey interface{}, val float64, timestampMs int64) float64 {
-	var metricRate float64
-	// get previous Metric content from map. Need to lock the map until set the new state
-	currentState.Lock()
-	if state, ok := currentState.Get(metricKey); ok {
-		prevStats := state.(*rateState)
-		deltaTime := timestampMs - prevStats.timestampMs
-
-		deltaVal := val - prevStats.value
-		if deltaTime > minTimeDiff.Milliseconds() && deltaVal >= 0 {
-			metricRate = deltaVal * 1e3 / float64(deltaTime)
-		}
-	}
-	content := &rateState{
-		value:       val,
-		timestampMs: timestampMs,
-	}
-	currentState.Set(metricKey, content)
-	currentState.Unlock()
-	return metricRate
 }
 
 // getDataPoints retrieves data points from OT Metric.

@@ -1,5 +1,5 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
   k8s_tagger:
@@ -47,12 +47,24 @@ processors:
           value: value2
           op: not-equals
 
+    pod_association:
+      - from: resource_attribute
+        name: ip
+      - from: resource_attribute
+        name: k8s.pod.ip
+      - from: resource_attribute
+        name: host.name
+      - from: connection
+        name: ip
+      - from: resource_attribute
+        name: k8s.pod.uid
+
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors: [k8s_tagger]
-      exporters: [exampleexporter]
+      exporters: [nop]

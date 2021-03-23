@@ -232,7 +232,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 	return splunkMetrics, numDroppedTimeSeries
 }
 
-func createEvent(timestamp pdata.TimestampUnixNano, host string, source string, sourceType string, index string, fields map[string]interface{}) *splunk.Event {
+func createEvent(timestamp pdata.Timestamp, host string, source string, sourceType string, index string, fields map[string]interface{}) *splunk.Event {
 	return &splunk.Event{
 		Time:       timestampToSecondsWithMillisecondPrecision(timestamp),
 		Host:       host,
@@ -259,7 +259,7 @@ func cloneMap(fields map[string]interface{}) map[string]interface{} {
 	return newFields
 }
 
-func timestampToSecondsWithMillisecondPrecision(ts pdata.TimestampUnixNano) *float64 {
+func timestampToSecondsWithMillisecondPrecision(ts pdata.Timestamp) *float64 {
 	if ts == 0 {
 		// some telemetry sources send data with timestamps set to 0 by design, as their original target destinations
 		// (i.e. before Open Telemetry) are setup with the know-how on how to consume them. In this case,

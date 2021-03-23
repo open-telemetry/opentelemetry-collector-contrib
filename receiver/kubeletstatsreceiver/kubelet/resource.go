@@ -19,7 +19,7 @@ import (
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
-	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
+	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 )
 
 func nodeResource(s stats.NodeStats) *resourcepb.Resource {

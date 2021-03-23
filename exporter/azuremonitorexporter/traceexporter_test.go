@@ -37,9 +37,7 @@ func TestExporterTraceDataCallbackNoSpans(t *testing.T) {
 
 	traces := pdata.NewTraces()
 
-	droppedSpans, err := exporter.onTraceData(context.Background(), traces)
-	assert.Nil(t, err)
-	assert.Equal(t, 0, droppedSpans)
+	assert.NoError(t, exporter.onTraceData(context.Background(), traces))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 0)
 }
@@ -65,9 +63,7 @@ func TestExporterTraceDataCallbackSingleSpan(t *testing.T) {
 	ilss.Spans().Resize(1)
 	span.CopyTo(ilss.Spans().At(0))
 
-	droppedSpans, err := exporter.onTraceData(context.Background(), traces)
-	assert.Nil(t, err)
-	assert.Equal(t, 0, droppedSpans)
+	assert.NoError(t, exporter.onTraceData(context.Background(), traces))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 1)
 }
@@ -97,10 +93,9 @@ func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 	ilss.Spans().Resize(1)
 	span.CopyTo(ilss.Spans().At(0))
 
-	droppedSpans, err := exporter.onTraceData(context.Background(), traces)
-	assert.NotNil(t, err)
+	err := exporter.onTraceData(context.Background(), traces)
+	assert.Error(t, err)
 	assert.True(t, consumererror.IsPermanent(err), "error should be permanent")
-	assert.Equal(t, 1, droppedSpans)
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 0)
 }

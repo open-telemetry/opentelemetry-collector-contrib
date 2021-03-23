@@ -113,7 +113,7 @@ func newTraceExporter(ctx context.Context, params component.ExporterCreateParams
 func (exp *traceExporter) pushTraceData(
 	ctx context.Context,
 	td pdata.Traces,
-) (int, error) {
+) error {
 
 	// Start host metadata with resource attributes from
 	// the first payload.
@@ -151,7 +151,7 @@ func (exp *traceExporter) pushTraceData(
 
 	_ = exp.client.PostMetrics(ms)
 
-	return len(aggregatedTraces), nil
+	return nil
 }
 
 // gives us flexibility to add custom retry logic later

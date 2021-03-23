@@ -16,46 +16,94 @@ package dotnetdiagnosticsreceiver
 
 import (
 	"context"
-	"net"
-	"time"
+	"io"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/dotnet"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/network"
 )
 
 type receiver struct {
-	logger             *zap.Logger
-	nextConsumer       consumer.MetricsConsumer
-	counters           []string
-	collectionInterval time.Duration
-	connect            connectionSupplier
+	nextConsumer consumer.MetricsConsumer
+	connect      connectionSupplier
+	counters     []string
+	intervalSec  int
+	logger       *zap.Logger
+
+	bw     network.BlobWriter
+	cancel context.CancelFunc
 }
 
-var _ = (component.MetricsReceiver)(nil)
+type connectionSupplier func() (io.ReadWriter, error)
 
+// NewReceiver creates a new receiver. connectionSupplier is swappable for
+// testing.
 func NewReceiver(
 	_ context.Context,
-	logger *zap.Logger,
-	cfg *Config,
 	mc consumer.MetricsConsumer,
 	connect connectionSupplier,
+	counters []string,
+	intervalSec int,
+	logger *zap.Logger,
+	bw network.BlobWriter,
 ) (component.MetricsReceiver, error) {
 	return &receiver{
-		logger:             logger,
-		nextConsumer:       mc,
-		counters:           cfg.Counters,
-		collectionInterval: cfg.CollectionInterval,
-		connect:            connect,
+		nextConsumer: mc,
+		connect:      connect,
+		counters:     counters,
+		intervalSec:  intervalSec,
+		logger:       logger,
+		bw:           bw,
 	}, nil
 }
 
-type connectionSupplier func() (net.Conn, error)
-
 func (r *receiver) Start(ctx context.Context, host component.Host) error {
+	conn, err := r.connect()
+	if err != nil {
+		return err
+	}
+
+	w := dotnet.NewRequestWriter(conn, r.intervalSec, r.counters...)
+	err = w.SendRequest()
+	if err != nil {
+		return err
+	}
+
+	err = r.bw.Init()
+	if err != nil {
+		return err
+	}
+
+	sender := metrics.NewSender(r.nextConsumer, r.logger)
+	p := dotnet.NewParser(conn, sender.Send, r.bw, r.logger)
+
+	err = p.ParseIPC()
+	if err != nil {
+		return err
+	}
+
+	err = p.ParseNettrace()
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		ctx, r.cancel = context.WithCancel(context.Background())
+		err = p.ParseAll(ctx)
+		if err != nil {
+			r.logger.Error("parseAll error", zap.Error(err))
+		}
+	}()
 	return nil
 }
 
 func (r *receiver) Shutdown(context.Context) error {
+	if r.cancel != nil {
+		r.cancel()
+	}
 	return nil
 }

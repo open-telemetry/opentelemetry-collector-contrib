@@ -32,7 +32,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
 	tsUnix := time.Unix(unixSecs, unixNSecs)
-	ts := pdata.TimestampUnixNano(tsUnix.UnixNano())
+	ts := pdata.TimestampFromTime(tsUnix)
 	tsMSecs := timestampToSecondsWithMillisecondPrecision(ts)
 
 	doubleVal := 1234.5678
@@ -244,7 +244,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				doubleGauge.DoubleGauge().DataPoints().Resize(1)
 				doubleDataPt := doubleGauge.DoubleGauge().DataPoints().At(0)
 				doubleDataPt.SetValue(doubleVal)
-				doubleDataPt.SetTimestamp(pdata.TimestampUnixNano(tsUnix.UnixNano()))
+				doubleDataPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
 
 				intGauge := ilm.Metrics().At(1)
 				intGauge.SetName("gauge_int_with_dims")
@@ -252,8 +252,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 				intGauge.IntGauge().DataPoints().Resize(1)
 				intDataPt := intGauge.IntGauge().DataPoints().At(0)
 				intDataPt.SetValue(int64Val)
-				intDataPt.SetTimestamp(pdata.TimestampUnixNano(tsUnix.UnixNano()))
-				intDataPt.SetTimestamp(pdata.TimestampUnixNano(tsUnix.UnixNano()))
+				intDataPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
+				intDataPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
 
 				return metrics
 			},
@@ -278,7 +278,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				doubleHistogramPt.SetBucketCounts([]uint64{4, 2, 3})
 				doubleHistogramPt.SetSum(23)
 				doubleHistogramPt.SetCount(7)
-				doubleHistogramPt.SetTimestamp(pdata.TimestampUnixNano(tsUnix.UnixNano()))
+				doubleHistogramPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
 				return metrics
 			},
 		},
@@ -297,7 +297,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				doubleHistogramPt.SetBucketCounts(distributionCounts)
 				doubleHistogramPt.SetSum(23)
 				doubleHistogramPt.SetCount(7)
-				doubleHistogramPt.SetTimestamp(pdata.TimestampUnixNano(tsUnix.UnixNano()))
+				doubleHistogramPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
 				return metrics
 			},
 			wantSplunkMetrics: []*splunk.Event{
@@ -394,7 +394,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				intHistogramPt.SetBucketCounts([]uint64{4, 2, 3})
 				intHistogramPt.SetCount(7)
 				intHistogramPt.SetSum(23)
-				intHistogramPt.SetTimestamp(pdata.TimestampUnixNano(tsUnix.UnixNano()))
+				intHistogramPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
 				return metrics
 			},
 		},
@@ -414,7 +414,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				intHistogramPt.SetBucketCounts(distributionCounts)
 				intHistogramPt.SetCount(7)
 				intHistogramPt.SetSum(23)
-				intHistogramPt.SetTimestamp(pdata.TimestampUnixNano(tsUnix.UnixNano()))
+				intHistogramPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
 				return metrics
 			},
 			wantSplunkMetrics: []*splunk.Event{
@@ -611,22 +611,22 @@ func commonSplunkMetric(
 }
 
 func TestTimestampFormat(t *testing.T) {
-	ts := pdata.TimestampUnixNano(32001000345)
+	ts := pdata.Timestamp(32001000345)
 	assert.Equal(t, 32.001, *timestampToSecondsWithMillisecondPrecision(ts))
 }
 
 func TestTimestampFormatRounding(t *testing.T) {
-	ts := pdata.TimestampUnixNano(32001999345)
+	ts := pdata.Timestamp(32001999345)
 	assert.Equal(t, 32.002, *timestampToSecondsWithMillisecondPrecision(ts))
 }
 
 func TestTimestampFormatRoundingWithNanos(t *testing.T) {
-	ts := pdata.TimestampUnixNano(9999999999991500001)
+	ts := pdata.Timestamp(9999999999991500001)
 	assert.Equal(t, 9999999999.992, *timestampToSecondsWithMillisecondPrecision(ts))
 }
 
 func TestNilTimeWhenTimestampIsZero(t *testing.T) {
-	ts := pdata.TimestampUnixNano(0)
+	ts := pdata.Timestamp(0)
 	assert.Nil(t, timestampToSecondsWithMillisecondPrecision(ts))
 }
 

@@ -12,14 +12,14 @@ receivers:
       key_file: /test.key
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     metrics:
       receivers: [splunk_hec, splunk_hec/allsettings]
-      processors: [exampleprocessor]
-      exporters: [exampleexporter]
+      processors: [nop]
+      exporters: [nop]

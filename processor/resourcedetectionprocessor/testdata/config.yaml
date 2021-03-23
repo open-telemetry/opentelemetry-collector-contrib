@@ -1,5 +1,5 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
   resourcedetection:
@@ -23,18 +23,23 @@ processors:
     detectors: [env, system]
     timeout: 2s
     override: false
+  resourcedetection/azure:
+    detectors: [env, azure]
+    timeout: 2s
+    override: false
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     metrics:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors:
       # Choose one depending on your cloud provider and environment:
       # - resourcedetection/system
       # - resourcedetection/gce
       # - resourcedetection/ec2
       # - resourcedetection/ecs
-      exporters: [exampleexporter]
+      # - resourcedetection/azure
+      exporters: [nop]

@@ -190,5 +190,7 @@ func createProcessorOpts(cfg configmodels.Processor) []Option {
 	opts = append(opts, WithFilterFields(oCfg.Filter.Fields...))
 	opts = append(opts, WithAPIConfig(oCfg.APIConfig))
 
+	opts = append(opts, WithExtractPodAssociations(oCfg.Association...))
+
 	return opts
 }

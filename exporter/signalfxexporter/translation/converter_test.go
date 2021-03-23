@@ -44,7 +44,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
-	ts := pdata.TimestampUnixNano(time.Unix(unixSecs, unixNSecs).UnixNano())
+	ts := pdata.TimestampFromTime(time.Unix(unixSecs, unixNSecs))
 	tsMSecs := unixSecs*1e3 + unixNSecs/1e6
 
 	doubleVal := 1234.5678
@@ -640,7 +640,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, err := NewMetricsConverter(logger, nil, tt.excludeMetrics, tt.includeMetrics)
+			c, err := NewMetricsConverter(logger, nil, tt.excludeMetrics, tt.includeMetrics, "")
 			require.NoError(t, err)
 			gotSfxDataPoints := c.MetricDataToSignalFxV2(tt.metricsDataFn())
 			// Sort SFx dimensions since they are built from maps and the order
@@ -689,9 +689,52 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 			},
 		},
 	}
-	c, err := NewMetricsConverter(zap.NewNop(), translator, nil, nil)
+	c, err := NewMetricsConverter(zap.NewNop(), translator, nil, nil, "")
 	require.NoError(t, err)
 	assert.EqualValues(t, expected, c.MetricDataToSignalFxV2(wrapMetric(md)))
+}
+
+func TestDimensionKeyCharsWithPeriod(t *testing.T) {
+	translator, err := NewMetricTranslator([]Rule{
+		{
+			Action: ActionRenameDimensionKeys,
+			Mapping: map[string]string{
+				"old.dim.with.periods": "new.dim.with.periods",
+			},
+		},
+	}, 1)
+	require.NoError(t, err)
+
+	md := pdata.NewMetric()
+	md.SetDataType(pdata.MetricDataTypeIntGauge)
+	md.IntGauge().DataPoints().Resize(1)
+	md.SetName("metric1")
+	dp := md.IntGauge().DataPoints().At(0)
+	dp.SetValue(123)
+	dp.LabelsMap().InitFromMap(map[string]string{
+		"old.dim.with.periods": "val1",
+	})
+
+	gaugeType := sfxpb.MetricType_GAUGE
+	expected := []*sfxpb.DataPoint{
+		{
+			Metric: "metric1",
+			Value: sfxpb.Datum{
+				IntValue: generateIntPtr(123),
+			},
+			MetricType: &gaugeType,
+			Dimensions: []*sfxpb.Dimension{
+				{
+					Key:   "new.dim.with.periods",
+					Value: "val1",
+				},
+			},
+		},
+	}
+	c, err := NewMetricsConverter(zap.NewNop(), translator, nil, nil, "_-.")
+	require.NoError(t, err)
+	assert.EqualValues(t, expected, c.MetricDataToSignalFxV2(wrapMetric(md)))
+
 }
 
 func sortDimensions(points []*sfxpb.DataPoint) {
@@ -858,13 +901,71 @@ func TestNewMetricsConverter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewMetricsConverter(zap.NewNop(), nil, tt.excludes, nil)
+			got, err := NewMetricsConverter(zap.NewNop(), nil, tt.excludes, nil, "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewMetricsConverter() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewMetricsConverter() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMetricsConverter_ConvertDimension(t *testing.T) {
+	type fields struct {
+		metricTranslator        *MetricTranslator
+		nonAlphanumericDimChars string
+	}
+	type args struct {
+		dim string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   string
+	}{
+		{
+			name: "No translations",
+			fields: fields{
+				metricTranslator:        nil,
+				nonAlphanumericDimChars: "_-",
+			},
+			args: args{
+				dim: "d.i.m",
+			},
+			want: "d_i_m",
+		},
+		{
+			name: "With translations",
+			fields: fields{
+				metricTranslator: func() *MetricTranslator {
+					t, _ := NewMetricTranslator([]Rule{
+						{
+							Action: ActionRenameDimensionKeys,
+							Mapping: map[string]string{
+								"d.i.m": "di.m",
+							},
+						},
+					}, 0)
+					return t
+				}(),
+				nonAlphanumericDimChars: "_-",
+			},
+			args: args{
+				dim: "d.i.m",
+			},
+			want: "di_m",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, err := NewMetricsConverter(zap.NewNop(), tt.fields.metricTranslator, nil, nil, tt.fields.nonAlphanumericDimChars)
+			require.NoError(t, err)
+			if got := c.ConvertDimension(tt.args.dim); got != tt.want {
+				t.Errorf("ConvertDimension() = %v, want %v", got, tt.want)
 			}
 		})
 	}

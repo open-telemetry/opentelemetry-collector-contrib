@@ -284,7 +284,8 @@ func TestSpanWithNotEnoughHTTPRequestURLAttributes(t *testing.T) {
 	assert.Equal(t, "192.168.15.32", *httpData.Request.ClientIP)
 	assert.Equal(t, "GET", *httpData.Request.Method)
 	assert.Equal(t, "PostmanRuntime/7.21.0", *httpData.Request.UserAgent)
-	assert.Equal(t, int64(12452), *httpData.Response.ContentLength)
+	contentLength := *httpData.Response.ContentLength.(*int64)
+	assert.Equal(t, int64(12452), contentLength)
 	assert.Equal(t, int64(200), *httpData.Response.Status)
 	assert.NotNil(t, filtered)
 }
@@ -300,8 +301,8 @@ func constructHTTPClientSpan(attributes map[string]interface{}) pdata.Span {
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindCLIENT)
-	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
-	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+	span.SetStartTime(pdata.TimestampFromTime(startTime))
+	span.SetEndTime(pdata.TimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(0)
@@ -323,8 +324,8 @@ func constructHTTPServerSpan(attributes map[string]interface{}) pdata.Span {
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindSERVER)
-	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
-	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+	span.SetStartTime(pdata.TimestampFromTime(startTime))
+	span.SetEndTime(pdata.TimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(0)

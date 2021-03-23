@@ -24,8 +24,9 @@ import (
 	"net/http"
 	"strings"
 
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 type appendResponse struct {
@@ -67,6 +68,7 @@ const (
 
 	contentTypeLogs       string = "application/x-www-form-urlencoded"
 	contentTypePrometheus string = "application/vnd.sumologic.prometheus"
+	contentTypeCarbon2    string = "application/vnd.sumologic.carbon2"
 
 	contentEncodingGzip    string = "gzip"
 	contentEncodingDeflate string = "deflate"
@@ -140,6 +142,8 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, body io.Reader
 		switch s.config.MetricFormat {
 		case PrometheusFormat:
 			req.Header.Add(headerContentType, contentTypePrometheus)
+		case Carbon2Format:
+			req.Header.Add(headerContentType, contentTypeCarbon2)
 		default:
 			return fmt.Errorf("unsupported metrics format: %s", s.config.MetricFormat)
 		}
@@ -159,15 +163,15 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, body io.Reader
 
 // logToText converts LogRecord to a plain text line, returns it and error eventually
 func (s *sender) logToText(record pdata.LogRecord) string {
-	return record.Body().StringVal()
+	return tracetranslator.AttributeValueToString(record.Body(), false)
 }
 
 // logToJSON converts LogRecord to a json line, returns it and error eventually
 func (s *sender) logToJSON(record pdata.LogRecord) (string, error) {
 	data := s.filter.filterOut(record.Attributes())
-	data[logKey] = record.Body().StringVal()
+	data.orig.Upsert(logKey, record.Body())
 
-	nextLine, err := json.Marshal(data)
+	nextLine, err := json.Marshal(tracetranslator.AttributeMapToMap(data.orig))
 	if err != nil {
 		return "", err
 	}
@@ -236,7 +240,7 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]pdata.LogRecord, 
 	}
 
 	if len(errs) > 0 {
-		return droppedRecords, componenterror.CombineErrors(errs)
+		return droppedRecords, consumererror.CombineErrors(errs)
 	}
 	return droppedRecords, nil
 }
@@ -257,6 +261,8 @@ func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, er
 		switch s.config.MetricFormat {
 		case PrometheusFormat:
 			formattedLine = s.prometheusFormatter.metric2String(record)
+		case Carbon2Format:
+			formattedLine = carbon2Metric2String(record)
 		default:
 			err = fmt.Errorf("unexpected metric format: %s", s.config.MetricFormat)
 		}
@@ -298,7 +304,7 @@ func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, er
 	}
 
 	if len(errs) > 0 {
-		return droppedRecords, componenterror.CombineErrors(errs)
+		return droppedRecords, consumererror.CombineErrors(errs)
 	}
 	return droppedRecords, nil
 }
@@ -341,7 +347,7 @@ func (s *sender) appendAndSend(
 	}
 
 	if len(errors) > 0 {
-		return ar, componenterror.CombineErrors(errors)
+		return ar, consumererror.CombineErrors(errors)
 	}
 	return ar, nil
 }
