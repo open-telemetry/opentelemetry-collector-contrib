@@ -15,7 +15,6 @@
 package ecsobserver
 
 import (
-	"sigs.k8s.io/yaml"
 	"time"
 
 	"gopkg.in/yaml.v2"
