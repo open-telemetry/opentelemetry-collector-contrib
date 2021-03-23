@@ -17,6 +17,7 @@ package awsemfexporter
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -342,12 +343,27 @@ func translateCWMetricToEMF(cWMetric *CWMetrics, config *Config) *LogEvent {
 		if fieldMap[key] == nil {
 			continue
 		}
-		var f interface{}
-		err := json.Unmarshal([]byte(fieldMap[key].(string)), &f)
-		if err != nil {
-			continue
+
+		if val, ok := fieldMap[key].(string); ok {
+			var f interface{}
+			err := json.Unmarshal([]byte(val), &f)
+			if err != nil {
+				config.logger.Debug(
+					"Failed to parse json-encoded string",
+					zap.String("label key", key),
+					zap.String("label value", val),
+					zap.Error(err),
+				)
+				continue
+			}
+			fieldMap[key] = f
+		} else {
+			config.logger.Debug(
+				"Invalid json-encoded data. A string is expected",
+				zap.Any("type", reflect.TypeOf(fieldMap[key])),
+				zap.Any("value", reflect.ValueOf(fieldMap[key])),
+			)
 		}
-		fieldMap[key] = f
 	}
 
 	// Create `_aws` section only if there are measurements
