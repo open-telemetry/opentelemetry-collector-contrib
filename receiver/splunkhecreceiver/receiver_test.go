@@ -52,7 +52,7 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 	emptyEndpointConfig.Endpoint = ""
 	type args struct {
 		config       Config
-		logsConsumer consumer.LogsConsumer
+		logsConsumer consumer.Logs
 	}
 	tests := []struct {
 		name    string
@@ -112,7 +112,7 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 	emptyEndpointConfig.Endpoint = ""
 	type args struct {
 		config          Config
-		metricsConsumer consumer.MetricsConsumer
+		metricsConsumer consumer.Metrics
 	}
 	tests := []struct {
 		name    string

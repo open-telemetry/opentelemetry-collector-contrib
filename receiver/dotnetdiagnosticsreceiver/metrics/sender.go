@@ -24,15 +24,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/dotnet"
 )
 
-// Sender wraps a consumer.MetricsConsumer, and has a Send method which
+// Sender wraps a consumer.Metrics, and has a Send method which
 // conforms to dotnet.MetricsConsumer so it can be passed into a Parser.
 type Sender struct {
-	next         consumer.MetricsConsumer
+	next         consumer.Metrics
 	logger       *zap.Logger
 	prevSendTime time.Time
 }
 
-func NewSender(next consumer.MetricsConsumer, logger *zap.Logger) *Sender {
+func NewSender(next consumer.Metrics, logger *zap.Logger) *Sender {
 	return &Sender{next: next, logger: logger}
 }
 

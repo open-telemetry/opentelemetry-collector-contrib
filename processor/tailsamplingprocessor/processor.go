@@ -49,7 +49,7 @@ type Policy struct {
 // policy to sample traces.
 type tailSamplingSpanProcessor struct {
 	ctx             context.Context
-	nextConsumer    consumer.TracesConsumer
+	nextConsumer    consumer.Traces
 	start           sync.Once
 	maxNumTraces    uint64
 	policies        []*Policy
@@ -67,7 +67,7 @@ const (
 
 // newTraceProcessor returns a processor.TraceProcessor that will perform tail sampling according to the given
 // configuration.
-func newTraceProcessor(logger *zap.Logger, nextConsumer consumer.TracesConsumer, cfg Config) (component.TracesProcessor, error) {
+func newTraceProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Config) (component.TracesProcessor, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}

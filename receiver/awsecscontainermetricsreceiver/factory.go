@@ -63,7 +63,7 @@ func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	baseCfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
+	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	ecsTaskMetadataEndpointV4 := os.Getenv(awsecscontainermetrics.EndpointEnvKey)
 	if ecsTaskMetadataEndpointV4 == "" {
