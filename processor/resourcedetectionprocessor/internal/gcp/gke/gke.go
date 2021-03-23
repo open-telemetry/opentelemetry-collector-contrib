@@ -27,8 +27,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 )
 
-// TypeStr is type of detector.
-const TypeStr = "gke"
+const (
+	// TypeStr is type of detector.
+	TypeStr = "gke"
+
+	// GCE metadata attribute containing the GKE cluster name.
+	clusterNameAttribute = "cluster-name"
+
+	// Environment variable that is set when running on Kubernetes.
+	kubernetesServiceHost = "KUBERNETES_SERVICE_HOST"
+)
 
 var _ internal.Detector = (*Detector)(nil)
 
@@ -54,13 +62,13 @@ func (gke *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
 
 	// Check if running on k8s.
-	if os.Getenv("KUBERNETES_SERVICE_HOST") == "" {
+	if os.Getenv(kubernetesServiceHost) == "" {
 		return res, nil
 	}
 
 	attr.InsertString(conventions.AttributeCloudInfrastructureService, conventions.AttributeCloudProviderGCPGKE)
 
-	if clusterName, err := gke.metadata.InstanceAttributeValue("cluster-name"); err != nil {
+	if clusterName, err := gke.metadata.InstanceAttributeValue(clusterNameAttribute); err != nil {
 		gke.log.Warn("Unable to determine GKE cluster name", zap.Error(err))
 	} else if clusterName != "" {
 		attr.InsertString(conventions.AttributeK8sCluster, clusterName)
