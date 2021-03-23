@@ -307,7 +307,7 @@ func TestIntDataPointSliceAt(t *testing.T) {
 			assert.Equal(t, 1, dps.Len())
 			dp := dps.At(0)
 			if strings.Contains(tc.testName, "2nd rate") {
-				assert.InDelta(t, expectedDP.Value.(float64), dp.Value.(float64), 0.01)
+				assert.InDelta(t, expectedDP.Value.(float64), dp.Value.(float64), 0.02)
 			} else {
 				assert.Equal(t, expectedDP, dp)
 			}
