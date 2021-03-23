@@ -84,9 +84,11 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers["receiver_creator/1"].(*Config)
 
 	assert.NotNil(t, r1)
-	assert.Len(t, r1.receiverTemplates, 1)
+	assert.Len(t, r1.receiverTemplates, 2)
+	assert.Contains(t, r1.receiverTemplates, "examplereceiver/1")
+	assert.Equal(t, `type == "port"`, r1.receiverTemplates["examplereceiver/1"].Rule)
 	assert.Contains(t, r1.receiverTemplates, "nop/1")
-	assert.Equal(t, `type.port`, r1.receiverTemplates["nop/1"].Rule)
+	assert.Equal(t, `type == "port"`, r1.receiverTemplates["nop/1"].Rule)
 	assert.Equal(t, userConfigMap{
 		endpointConfigKey: "localhost:12345",
 	}, r1.receiverTemplates["nop/1"].config)
