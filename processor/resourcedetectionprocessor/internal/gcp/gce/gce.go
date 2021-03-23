@@ -14,7 +14,7 @@
 
 // Package gce provides a detector that loads resource information from
 // the GCE metatdata
-package gce // import "cloud.google.com/go/compute/metadata"
+package gce
 
 import (
 	"context"
