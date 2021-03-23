@@ -274,14 +274,14 @@ func TestGetLogInfo(t *testing.T) {
 		},
 	}
 
-	for _, rm := range rms {
+	for i := range rms {
 		for _, tc := range testCases {
 			t.Run(tc.testName, func(t *testing.T) {
 				config := &Config{
 					LogGroupName:  tc.configLogGroup,
 					LogStreamName: tc.configLogStream,
 				}
-				logGroup, logStream := getLogInfo(&rm, tc.namespace, config)
+				logGroup, logStream := getLogInfo(&rms[i], tc.namespace, config)
 				assert.Equal(t, tc.logGroup, logGroup)
 				assert.Equal(t, tc.logStream, logStream)
 			})
