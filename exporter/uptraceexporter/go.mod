@@ -15,7 +15,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/uptrace/uptrace-go v0.19.1
 	github.com/vmihailenco/msgpack/v5 v5.3.0
-	go.opentelemetry.io/collector v0.22.1-0.20210323150444-0c6757ec71a5
+	go.opentelemetry.io/collector v0.23.0
 	go.opentelemetry.io/otel v0.19.0
 	go.uber.org/zap v1.16.0
 	gopkg.in/ini.v1 v1.57.0 // indirect
