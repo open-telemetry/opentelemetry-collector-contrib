@@ -48,9 +48,7 @@ func TestSplitTracesReturnError(t *testing.T) {
 	fillResourceSpans(inBatch.ResourceSpans().At(1), "attr_key", pdata.NewAttributeValueString("1"))
 
 	err := errors.New("test_error")
-	sink := new(consumertest.TracesSink)
-	sink.SetConsumeError(err)
-	bpr := NewBatchPerResourceTraces("attr_key", sink)
+	bpr := NewBatchPerResourceTraces("attr_key", consumertest.NewTracesErr(err))
 	assert.Equal(t, err, bpr.ConsumeTraces(context.Background(), inBatch))
 }
 
@@ -116,9 +114,7 @@ func TestSplitMetricsReturnError(t *testing.T) {
 	fillResourceMetrics(inBatch.ResourceMetrics().At(1), "attr_key", pdata.NewAttributeValueString("1"))
 
 	err := errors.New("test_error")
-	sink := new(consumertest.MetricsSink)
-	sink.SetConsumeError(err)
-	bpr := NewBatchPerResourceMetrics("attr_key", sink)
+	bpr := NewBatchPerResourceMetrics("attr_key", consumertest.NewMetricsErr(err))
 	assert.Equal(t, err, bpr.ConsumeMetrics(context.Background(), inBatch))
 }
 
@@ -184,9 +180,7 @@ func TestSplitLogsReturnError(t *testing.T) {
 	fillResourceLogs(inBatch.ResourceLogs().At(1), "attr_key", pdata.NewAttributeValueString("1"))
 
 	err := errors.New("test_error")
-	sink := new(consumertest.LogsSink)
-	sink.SetConsumeError(err)
-	bpr := NewBatchPerResourceLogs("attr_key", sink)
+	bpr := NewBatchPerResourceLogs("attr_key", consumertest.NewLogsErr(err))
 	assert.Equal(t, err, bpr.ConsumeLogs(context.Background(), inBatch))
 }
 

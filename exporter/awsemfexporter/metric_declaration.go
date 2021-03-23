@@ -21,7 +21,6 @@ import (
 	"sort"
 	"strings"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
 
@@ -129,21 +128,20 @@ func (m *MetricDeclaration) Init(logger *zap.Logger) (err error) {
 	return
 }
 
-// Matches returns true if the given OTLP Metric's name matches any of the Metric
-// Declaration's metric name selectors and label matchers.
-func (m *MetricDeclaration) Matches(metric *pdata.Metric, labels map[string]string) bool {
-	// Check if metric matches at least one of the metric name selectors
-	hasMetricNameMatch := false
+// MatchesName returns true if the given OTLP Metric's name matches any of the Metric
+// Declaration's metric name selectors.
+func (m *MetricDeclaration) MatchesName(metricName string) bool {
 	for _, regex := range m.metricRegexList {
-		if regex.MatchString(metric.Name()) {
-			hasMetricNameMatch = true
-			break
+		if regex.MatchString(metricName) {
+			return true
 		}
 	}
-	if !hasMetricNameMatch {
-		return false
-	}
+	return false
+}
 
+// MatchesLabels returns true if the given OTLP Metric's name matches any of the Metric
+// Declaration's label matchers.
+func (m *MetricDeclaration) MatchesLabels(labels map[string]string) bool {
 	if len(m.LabelMatchers) == 0 {
 		return true
 	}
@@ -158,8 +156,8 @@ func (m *MetricDeclaration) Matches(metric *pdata.Metric, labels map[string]stri
 	return false
 }
 
-// ExtractDimensions extracts dimensions within the MetricDeclaration that only
-// contains labels found in `labels`. Returned order of dimensions are preserved.
+// ExtractDimensions filters through the dimensions defined in the given metric declaration and
+// returns dimensions that only contains labels from in the given label set.
 func (m *MetricDeclaration) ExtractDimensions(labels map[string]string) (dimensions [][]string) {
 	for _, dimensionSet := range m.Dimensions {
 		if len(dimensionSet) == 0 {
@@ -215,38 +213,4 @@ func (lm *LabelMatcher) getConcatenatedLabels(labels map[string]string) string {
 		buf.WriteString(labels[labelName])
 	}
 	return buf.String()
-}
-
-// processMetricDeclarations processes a list of MetricDeclarations and creates a
-// list of dimension sets that matches the given `metric`. This list is then aggregated
-// together with the rolled-up dimensions. Returned dimension sets
-// are deduped and the dimensions in each dimension set are sorted.
-// Prerequisite:
-//   1. metricDeclarations' dimensions are sorted.
-func processMetricDeclarations(metricDeclarations []*MetricDeclaration, metric *pdata.Metric,
-	labels map[string]string, rolledUpDimensions [][]string) (dimensions [][]string) {
-	seen := make(map[string]bool)
-	addDimSet := func(dimSet []string) {
-		key := strings.Join(dimSet, ",")
-		// Only add dimension set if not a duplicate
-		if _, ok := seen[key]; !ok {
-			dimensions = append(dimensions, dimSet)
-			seen[key] = true
-		}
-	}
-	// Extract and append dimensions from metric declarations
-	for _, m := range metricDeclarations {
-		if m.Matches(metric, labels) {
-			extractedDims := m.ExtractDimensions(labels)
-			for _, dimSet := range extractedDims {
-				addDimSet(dimSet)
-			}
-		}
-	}
-	// Add on rolled-up dimensions
-	for _, dimSet := range rolledUpDimensions {
-		sort.Strings(dimSet)
-		addDimSet(dimSet)
-	}
-	return
 }

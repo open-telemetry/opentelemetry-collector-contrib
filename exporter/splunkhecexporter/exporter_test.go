@@ -32,13 +32,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -59,7 +59,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestConsumeMetricsData(t *testing.T) {
-	smallBatch := consumerdata.MetricsData{
+	smallBatch := internaldata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test_splunk"},
 		},
@@ -75,12 +75,11 @@ func TestConsumeMetricsData(t *testing.T) {
 		},
 	}
 	tests := []struct {
-		name                 string
-		md                   consumerdata.MetricsData
-		reqTestFunc          func(t *testing.T, r *http.Request)
-		httpResponseCode     int
-		numDroppedTimeSeries int
-		wantErr              bool
+		name             string
+		md               internaldata.MetricsData
+		reqTestFunc      func(t *testing.T, r *http.Request)
+		httpResponseCode int
+		wantErr          bool
 	}{
 		{
 			name: "happy_path",
@@ -111,12 +110,11 @@ func TestConsumeMetricsData(t *testing.T) {
 			httpResponseCode: http.StatusAccepted,
 		},
 		{
-			name:                 "response_forbidden",
-			md:                   smallBatch,
-			reqTestFunc:          nil,
-			httpResponseCode:     http.StatusForbidden,
-			numDroppedTimeSeries: 1,
-			wantErr:              true,
+			name:             "response_forbidden",
+			md:               smallBatch,
+			reqTestFunc:      nil,
+			httpResponseCode: http.StatusForbidden,
+			wantErr:          true,
 		},
 		{
 			name:             "large_batch",
@@ -152,9 +150,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			sender := buildClient(options, config, zap.NewNop())
 
 			md := internaldata.OCToMetrics(tt.md)
-			numDroppedTimeSeries, err := sender.pushMetricsData(context.Background(), md)
-			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
-
+			err = sender.pushMetricsData(context.Background(), md)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -165,8 +161,8 @@ func TestConsumeMetricsData(t *testing.T) {
 	}
 }
 
-func generateLargeBatch() consumerdata.MetricsData {
-	md := consumerdata.MetricsData{
+func generateLargeBatch() internaldata.MetricsData {
+	md := internaldata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test_splunkhec"},
 		},
@@ -183,7 +179,7 @@ func generateLargeBatch() consumerdata.MetricsData {
 					time.Now(),
 					[]string{"v0", "v1"},
 					&metricspb.Point{
-						Timestamp: metricstestutil.Timestamp(ts),
+						Timestamp: timestamppb.New(ts),
 						Value:     &metricspb.Point_Int64Value{Int64Value: int64(i)},
 					},
 				),
@@ -201,7 +197,7 @@ func generateLargeLogsBatch() pdata.Logs {
 	rl.InstrumentationLibraryLogs().Resize(1)
 	ill := rl.InstrumentationLibraryLogs().At(0)
 	ill.Logs().Resize(65000)
-	ts := pdata.TimestampUnixNano(123)
+	ts := pdata.Timestamp(123)
 	for i := 0; i < 65000; i++ {
 		logRecord := ill.Logs().At(i)
 		logRecord.Body().SetStringVal("mylog")
@@ -228,7 +224,6 @@ func TestConsumeLogsData(t *testing.T) {
 		ld               pdata.Logs
 		reqTestFunc      func(t *testing.T, r *http.Request)
 		httpResponseCode int
-		numDroppedLogs   int
 		wantErr          bool
 	}{
 		{
@@ -264,7 +259,6 @@ func TestConsumeLogsData(t *testing.T) {
 			ld:               smallBatch,
 			reqTestFunc:      nil,
 			httpResponseCode: http.StatusForbidden,
-			numDroppedLogs:   1,
 			wantErr:          true,
 		},
 		{
@@ -300,9 +294,7 @@ func TestConsumeLogsData(t *testing.T) {
 
 			sender := buildClient(options, config, zap.NewNop())
 
-			numDroppedLogs, err := sender.pushLogData(context.Background(), tt.ld)
-			assert.Equal(t, tt.numDroppedLogs, numDroppedLogs)
-
+			err = sender.pushLogData(context.Background(), tt.ld)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

@@ -183,7 +183,7 @@ func TestGetSTSCreds(t *testing.T) {
 }
 
 func loadExporterConfig(t *testing.T) *Config {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory

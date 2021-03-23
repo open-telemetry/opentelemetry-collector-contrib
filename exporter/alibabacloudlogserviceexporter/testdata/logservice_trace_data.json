@@ -66,7 +66,7 @@
     },
     {
       "Key": "attribute",
-      "Value": "{\"component\":\"http\",\"http.method\":\"GET\",\"http.status_code\":200,\"http.url\":\"https://api.example.com/users/junit\"}"
+      "Value": "{\"http.method\":\"GET\",\"http.status_code\":200,\"http.url\":\"https://api.example.com/users/junit\"}"
     },
     {
       "Key": "statusCode",
@@ -144,7 +144,7 @@
     },
     {
       "Key": "attribute",
-      "Value": "{\"component\":\"http\",\"http.client_ip\":\"192.168.15.32\",\"http.method\":\"GET\",\"http.status_code\":200,\"http.url\":\"https://api.example.com/users/junit\"}"
+      "Value": "{\"http.client_ip\":\"192.168.15.32\",\"http.method\":\"GET\",\"http.status_code\":200,\"http.url\":\"https://api.example.com/users/junit\"}"
     },
     {
       "Key": "statusCode",

@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -31,6 +32,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/serialization"
 )
+
+// The maximum number of metrics that may be sent in a single request to the Dynatrace API
+const maxChunkSize = 1000
 
 // NewExporter exports to a Dynatrace Metrics v2 API
 func newMetricsExporter(params component.ExporterCreateParams, cfg *config.Config) (*exporter, error) {
@@ -57,26 +61,26 @@ const (
 	maxMetricKeyLen = 250
 )
 
-func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
+func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error {
 	if e.isDisabled {
-		return md.MetricCount(), nil
+		return nil
 	}
 
-	lines, dropped := e.serializeMetrics(md)
+	lines, _ := e.serializeMetrics(md)
 
 	// If request is empty string, there are no serializable metrics in the batch.
 	// This can happen if all metric names are invalid
 	if len(lines) == 0 {
-		return md.MetricCount(), nil
+		return nil
 	}
 
-	droppedByCluster, err := e.send(ctx, lines)
+	_, err := e.send(ctx, lines)
 
 	if err != nil {
-		return md.MetricCount(), err
+		return err
 	}
 
-	return dropped + droppedByCluster, nil
+	return nil
 }
 
 func (e *exporter) serializeMetrics(md pdata.Metrics) ([]string, int) {
@@ -84,6 +88,8 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) ([]string, int) {
 	dropped := 0
 
 	resourceMetrics := md.ResourceMetrics()
+
+	e.logger.Debug(fmt.Sprintf("res metric len: %d, e.cfg.Tags: %v\n", resourceMetrics.Len(), e.cfg.Tags))
 
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		resourceMetric := resourceMetrics.At(i)
@@ -100,24 +106,25 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) ([]string, int) {
 					continue
 				}
 
-				e.logger.Debug("Exporting type " + metric.DataType().String())
-
+				var l []string
 				switch metric.DataType() {
 				case pdata.MetricDataTypeNone:
 					continue
 				case pdata.MetricDataTypeIntGauge:
-					lines = append(lines, serialization.SerializeIntDataPoints(name, metric.IntGauge().DataPoints(), e.cfg.Tags))
+					l = serialization.SerializeIntDataPoints(name, metric.IntGauge().DataPoints(), e.cfg.Tags)
 				case pdata.MetricDataTypeDoubleGauge:
-					lines = append(lines, serialization.SerializeDoubleDataPoints(name, metric.DoubleGauge().DataPoints(), e.cfg.Tags))
+					l = serialization.SerializeDoubleDataPoints(name, metric.DoubleGauge().DataPoints(), e.cfg.Tags)
 				case pdata.MetricDataTypeIntSum:
-					lines = append(lines, serialization.SerializeIntDataPoints(name, metric.IntSum().DataPoints(), e.cfg.Tags))
+					l = serialization.SerializeIntDataPoints(name, metric.IntSum().DataPoints(), e.cfg.Tags)
 				case pdata.MetricDataTypeDoubleSum:
-					lines = append(lines, serialization.SerializeDoubleDataPoints(name, metric.DoubleSum().DataPoints(), e.cfg.Tags))
+					l = serialization.SerializeDoubleDataPoints(name, metric.DoubleSum().DataPoints(), e.cfg.Tags)
 				case pdata.MetricDataTypeIntHistogram:
-					lines = append(lines, serialization.SerializeIntHistogramMetrics(name, metric.IntHistogram().DataPoints(), e.cfg.Tags))
+					l = serialization.SerializeIntHistogramMetrics(name, metric.IntHistogram().DataPoints(), e.cfg.Tags)
 				case pdata.MetricDataTypeDoubleHistogram:
-					lines = append(lines, serialization.SerializeDoubleHistogramMetrics(name, metric.DoubleHistogram().DataPoints(), e.cfg.Tags))
+					l = serialization.SerializeDoubleHistogramMetrics(name, metric.DoubleHistogram().DataPoints(), e.cfg.Tags)
 				}
+				lines = append(lines, l...)
+				e.logger.Debug(fmt.Sprintf("Exporting type %s, Name: %s, len: %d ", metric.DataType().String(), name, len(l)))
 			}
 		}
 	}
@@ -125,12 +132,42 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) ([]string, int) {
 	return lines, dropped
 }
 
+var lastLog int64 = 0
+
 // send sends a serialized metric batch to Dynatrace.
 // Returns the number of lines rejected by Dynatrace.
 // An error indicates all lines were dropped regardless of the returned number.
 func (e *exporter) send(ctx context.Context, lines []string) (int, error) {
+	if now := time.Now().Unix(); len(lines) > maxChunkSize && now-lastLog > 60 {
+		e.logger.Warn(fmt.Sprintf("Batch too large. Sending in chunks of %[1]d metrics. If any chunk fails, previous chunks in the batch could be retried by the batch processor. Please set send_batch_max_size to %[1]d or less. Suppressing this log for 60 seconds.", maxChunkSize))
+		lastLog = time.Now().Unix()
+	}
+
+	rejected := 0
+	for i := 0; i < len(lines); i += maxChunkSize {
+		end := i + maxChunkSize
+
+		if end > len(lines) {
+			end = len(lines)
+		}
+
+		batchRejected, err := e.sendBatch(ctx, lines[i:end])
+		rejected += batchRejected
+		if err != nil {
+			return rejected, err
+		}
+	}
+
+	return rejected, nil
+}
+
+// send sends a serialized metric batch to Dynatrace.
+// Returns the number of lines rejected by Dynatrace.
+// An error indicates all lines were dropped regardless of the returned number.
+func (e *exporter) sendBatch(ctx context.Context, lines []string) (int, error) {
 	message := strings.Join(lines, "\n")
-	e.logger.Debug("Sending lines to Dynatrace\n" + message)
+	e.logger.Debug(fmt.Sprintf("Sending lines to Dynatrace: %d", len(lines)))
+
 	req, err := http.NewRequestWithContext(ctx, "POST", e.cfg.Endpoint, bytes.NewBufferString(message))
 	if err != nil {
 		return 0, consumererror.Permanent(err)

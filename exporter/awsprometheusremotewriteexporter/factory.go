@@ -51,6 +51,7 @@ func (af *awsFactory) CreateDefaultConfig() configmodels.Exporter {
 		AuthConfig: AuthConfig{
 			Region:  "",
 			Service: "",
+			RoleArn: "",
 		},
 	}
 

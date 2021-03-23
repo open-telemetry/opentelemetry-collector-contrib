@@ -169,8 +169,8 @@ func TestSpanToSentrySpan(t *testing.T) {
 		spanID := pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 		parentSpanID := pdata.NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 		name := "span_name"
-		var startTime pdata.TimestampUnixNano = 123
-		var endTime pdata.TimestampUnixNano = 1234567890
+		var startTime pdata.Timestamp = 123
+		var endTime pdata.Timestamp = 1234567890
 		kind := pdata.SpanKindCLIENT
 		statusMessage := "message"
 

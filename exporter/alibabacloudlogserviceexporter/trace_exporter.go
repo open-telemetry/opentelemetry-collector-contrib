@@ -50,11 +50,11 @@ type logServiceTraceSender struct {
 func (s *logServiceTraceSender) pushTraceData(
 	_ context.Context,
 	td pdata.Traces,
-) (int, error) {
+) error {
 	var err error
-	slsLogs, dropped := traceDataToLogServiceData(td)
+	slsLogs := traceDataToLogServiceData(td)
 	if len(slsLogs) > 0 {
 		err = s.client.SendLogs(slsLogs)
 	}
-	return dropped, err
+	return err
 }

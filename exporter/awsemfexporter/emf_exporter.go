@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 )
 
@@ -89,7 +88,6 @@ func NewEmfExporter(
 	config configmodels.Exporter,
 	params component.ExporterCreateParams,
 ) (component.MetricsExporter, error) {
-
 	exp, err := New(config, params)
 	if err != nil {
 		return nil, err
@@ -104,62 +102,63 @@ func NewEmfExporter(
 	)
 }
 
-func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (droppedTimeSeries int, err error) {
-	var cwm []*CWMetrics
-	var totalDroppedMetrics int
-	expConfig := emf.config.(*Config)
-	namespace := expConfig.Namespace
-	logGroup := "/metrics/default"
-	logStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
-
+func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) error {
 	rms := md.ResourceMetrics()
+	labels := map[string]string{}
+	for i := 0; i < rms.Len(); i++ {
+		rm := rms.At(i)
+		am := rm.Resource().Attributes()
+		if am.Len() > 0 {
+			am.ForEach(func(k string, v pdata.AttributeValue) {
+				labels[k] = v.StringVal()
+			})
+		}
+	}
+	emf.logger.Info("Start processing resource metrics", zap.Any("labels", labels))
+
+	groupedMetrics := make(map[interface{}]*GroupedMetric)
+	expConfig := emf.config.(*Config)
+	defaultLogStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
 
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
-		var droppedMetrics int
-		cwm, droppedMetrics = emf.metricTranslator.translateOTelToCWMetric(&rm, expConfig)
-		totalDroppedMetrics = totalDroppedMetrics + droppedMetrics
+		emf.metricTranslator.translateOTelToGroupedMetric(&rm, groupedMetrics, expConfig)
+	}
 
-		if len(cwm) > 0 && len(cwm[0].Measurements) > 0 {
-			namespace = cwm[0].Measurements[0].Namespace
-		}
+	for _, groupedMetric := range groupedMetrics {
+		cWMetric := translateGroupedMetricToCWMetric(groupedMetric, expConfig)
+		putLogEvent := translateCWMetricToEMF(cWMetric)
 
-		putLogEvents := translateCWMetricToEMF(cwm, expConfig.logger)
-
-		if namespace != "" {
-			logGroup = fmt.Sprintf("/metrics/%s", namespace)
-		}
-
-		// override log group if found it in exp configuration, this configuration has top priority.
-		// However, in this case, customer won't have correlation experience
-		if len(expConfig.LogGroupName) > 0 {
-			logGroup = replacePatterns(expConfig.LogGroupName, rm.Resource().Attributes(), expConfig.logger)
-		}
-		if len(expConfig.LogStreamName) > 0 {
-			logStream = replacePatterns(expConfig.LogStreamName, rm.Resource().Attributes(), expConfig.logger)
+		logGroup := groupedMetric.Metadata.LogGroup
+		logStream := groupedMetric.Metadata.LogStream
+		if logStream == "" {
+			logStream = defaultLogStream
 		}
 
 		pusher := emf.getPusher(logGroup, logStream)
 		if pusher != nil {
-			for _, ple := range putLogEvents {
-				returnError := pusher.AddLogEntry(ple)
-				if returnError != nil {
-					err = wrapErrorIfBadRequest(&returnError)
-				}
-				if err != nil {
-					return totalDroppedMetrics, err
-				}
-			}
-			returnError := pusher.ForceFlush()
+			returnError := pusher.AddLogEntry(putLogEvent)
 			if returnError != nil {
-				err = wrapErrorIfBadRequest(&returnError)
-			}
-			if err != nil {
-				return totalDroppedMetrics, err
+				return wrapErrorIfBadRequest(&returnError)
 			}
 		}
 	}
-	return totalDroppedMetrics, nil
+
+	for _, pusher := range emf.listPushers() {
+		returnError := pusher.ForceFlush()
+		if returnError != nil {
+			//TODO now we only have one pusher, so it's ok to return after first error occurred
+			err := wrapErrorIfBadRequest(&returnError)
+			if err != nil {
+				emf.logger.Error("Error force flushing logs. Skipping to next pusher.", zap.Error(err))
+			}
+			return err
+		}
+	}
+
+	emf.logger.Info("Finish processing resource metrics", zap.Any("labels", labels))
+
+	return nil
 }
 
 func (emf *emfExporter) getPusher(logGroup, logStream string) Pusher {
@@ -181,29 +180,31 @@ func (emf *emfExporter) getPusher(logGroup, logStream string) Pusher {
 	return pusher
 }
 
-func (emf *emfExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	exporterCtx := obsreport.ExporterContext(ctx, "emf.exporterFullName")
+func (emf *emfExporter) listPushers() []Pusher {
+	emf.pusherMapLock.Lock()
+	defer emf.pusherMapLock.Unlock()
 
-	_, err := emf.pushMetricsData(exporterCtx, md)
-	return err
+	pushers := []Pusher{}
+	for _, pusherMap := range emf.groupStreamToPusherMap {
+		for _, pusher := range pusherMap {
+			pushers = append(pushers, pusher)
+		}
+	}
+	return pushers
+}
+
+func (emf *emfExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+	return emf.pushMetricsData(ctx, md)
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
 func (emf *emfExporter) Shutdown(ctx context.Context) error {
-	emf.pusherMapLock.Lock()
-	defer emf.pusherMapLock.Unlock()
-
-	var err error
-	for _, streamToPusherMap := range emf.groupStreamToPusherMap {
-		for _, pusher := range streamToPusherMap {
-			if pusher != nil {
-				returnError := pusher.ForceFlush()
-				if returnError != nil {
-					err = wrapErrorIfBadRequest(&returnError)
-				}
-				if err != nil {
-					emf.logger.Error("Error when gracefully shutting down emf_exporter. Skipping to next pusher.", zap.Error(err))
-				}
+	for _, pusher := range emf.listPushers() {
+		returnError := pusher.ForceFlush()
+		if returnError != nil {
+			err := wrapErrorIfBadRequest(&returnError)
+			if err != nil {
+				emf.logger.Error("Error when gracefully shutting down emf_exporter. Skipping to next pusher.", zap.Error(err))
 			}
 		}
 	}

@@ -30,7 +30,7 @@ type metricDataAccumulator struct {
 func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*ContainerStats, metadata TaskMetadata, logger *zap.Logger) {
 
 	taskMetrics := ECSMetrics{}
-	timestamp := pdata.TimeToUnixNano(time.Now())
+	timestamp := pdata.TimestampFromTime(time.Now())
 	taskResource := taskResource(metadata)
 
 	for _, containerMetadata := range metadata.Containers {
@@ -43,33 +43,33 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 		stats, ok := containerStatsMap[containerMetadata.DockerID]
 
 		if ok && !isEmptyStats(stats) {
+
 			containerMetrics := convertContainerMetrics(stats, logger, containerMetadata)
 			acc.accumulate(convertToOTLPMetrics(ContainerPrefix, containerMetrics, containerResource, timestamp))
 			aggregateTaskMetrics(&taskMetrics, containerMetrics)
-			overrideWithTaskLevelLimit(&taskMetrics, metadata)
-			acc.accumulate(convertToOTLPMetrics(TaskPrefix, taskMetrics, taskResource, timestamp))
-		} else {
-			acc.accumulate(convertResourceToRMS(containerResource))
+
+		} else if containerMetadata.FinishedAt != "" && containerMetadata.StartedAt != "" {
+
+			duration, err := calculateDuration(containerMetadata.StartedAt, containerMetadata.FinishedAt)
+
+			if err != nil {
+				logger.Warn("Error time format error found for this container:" + containerMetadata.ContainerName)
+			}
+
+			acc.accumulate(convertStoppedContainerDataToOTMetrics(ContainerPrefix, containerResource, timestamp, duration))
+
 		}
 	}
+	overrideWithTaskLevelLimit(&taskMetrics, metadata)
+	acc.accumulate(convertToOTLPMetrics(TaskPrefix, taskMetrics, taskResource, timestamp))
 }
 
-func (acc *metricDataAccumulator) accumulate(rms pdata.ResourceMetricsSlice) {
-	md := pdata.Metrics(rms)
-
+func (acc *metricDataAccumulator) accumulate(md pdata.Metrics) {
 	acc.mds = append(acc.mds, md)
 }
 
 func isEmptyStats(stats *ContainerStats) bool {
 	return stats == nil || stats.ID == ""
-}
-
-func convertResourceToRMS(containerResource pdata.Resource) pdata.ResourceMetricsSlice {
-	rms := pdata.NewResourceMetricsSlice()
-	rms.Resize(1)
-	rm := rms.At(0)
-	containerResource.CopyTo(rm.Resource())
-	return rms
 }
 
 func convertContainerMetrics(stats *ContainerStats, logger *zap.Logger, containerMetadata ContainerMetadata) ECSMetrics {
@@ -108,4 +108,17 @@ func overrideWithTaskLevelLimit(taskMetrics *ECSMetrics, metadata TaskMetadata) 
 	if taskMetrics.CPUReserved > 0 {
 		taskMetrics.CPUUtilized = ((taskMetrics.CPUUsageInVCPU / taskMetrics.CPUReserved) * 100)
 	}
+}
+
+func calculateDuration(startTime, endTime string) (float64, error) {
+	start, err := time.Parse(time.RFC3339Nano, startTime)
+	if err != nil {
+		return 0, err
+	}
+	end, err := time.Parse(time.RFC3339Nano, endTime)
+	if err != nil {
+		return 0, err
+	}
+	duration := end.Sub(start)
+	return duration.Seconds(), nil
 }

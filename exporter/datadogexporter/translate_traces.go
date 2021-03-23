@@ -67,7 +67,7 @@ func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *co
 	var traces []*pb.TracePayload
 
 	var runningMetrics []datadog.Metric
-	pushTime := time.Now().UTC().UnixNano()
+	pushTime := pdata.TimestampFromTime(time.Now())
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
 		// TODO pass logger here once traces code stabilizes
@@ -299,10 +299,10 @@ func extractDatadogServiceName(datadogTags map[string]string) string {
 
 func extractInstrumentationLibraryTags(il pdata.InstrumentationLibrary, datadogTags map[string]string) {
 	if ilName := il.Name(); ilName != "" {
-		datadogTags[tracetranslator.TagInstrumentationName] = ilName
+		datadogTags[conventions.InstrumentationLibraryName] = ilName
 	}
 	if ilVer := il.Version(); ilVer != "" {
-		datadogTags[tracetranslator.TagInstrumentationVersion] = ilVer
+		datadogTags[conventions.InstrumentationLibraryVersion] = ilVer
 	}
 }
 
@@ -416,7 +416,7 @@ func getDatadogSpanName(s pdata.Span, datadogTags map[string]string) string {
 
 	// The spec has changed over time and, depending on the original exporter, IL Name could represented a few different ways
 	// so we try to account for all permutations
-	if ilnOtlp, okOtlp := datadogTags[tracetranslator.TagInstrumentationName]; okOtlp {
+	if ilnOtlp, okOtlp := datadogTags[conventions.InstrumentationLibraryName]; okOtlp {
 		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtlp, utils.NormalizeSpanKind(s.Kind())), false)
 	}
 

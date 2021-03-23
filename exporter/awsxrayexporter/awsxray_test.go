@@ -100,7 +100,6 @@ func constructResource() pdata.Resource {
 
 func constructHTTPClientSpan() pdata.Span {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[semconventions.AttributeHTTPStatusCode] = 200
@@ -114,8 +113,8 @@ func constructHTTPClientSpan() pdata.Span {
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindCLIENT)
-	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
-	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+	span.SetStartTime(pdata.TimestampFromTime(startTime))
+	span.SetEndTime(pdata.TimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(0)
@@ -128,7 +127,6 @@ func constructHTTPClientSpan() pdata.Span {
 
 func constructHTTPServerSpan() pdata.Span {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[semconventions.AttributeHTTPClientIP] = "192.168.15.32"
@@ -143,8 +141,8 @@ func constructHTTPServerSpan() pdata.Span {
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindSERVER)
-	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
-	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+	span.SetStartTime(pdata.TimestampFromTime(startTime))
+	span.SetEndTime(pdata.TimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(0)

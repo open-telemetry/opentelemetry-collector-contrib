@@ -58,15 +58,15 @@ type carbonSender struct {
 	connPool *connPool
 }
 
-func (cs *carbonSender) pushMetricsData(_ context.Context, md pdata.Metrics) (int, error) {
-	lines, converted, dropped := metricDataToPlaintext(internaldata.MetricsToOC(md))
+func (cs *carbonSender) pushMetricsData(_ context.Context, md pdata.Metrics) error {
+	lines, _, _ := metricDataToPlaintext(internaldata.MetricsToOC(md))
 
 	if _, err := cs.connPool.Write([]byte(lines)); err != nil {
 		// Use the sum of converted and dropped since the write failed for all.
-		return converted + dropped, err
+		return err
 	}
 
-	return dropped, nil
+	return nil
 }
 
 func (cs *carbonSender) Shutdown(context.Context) error {

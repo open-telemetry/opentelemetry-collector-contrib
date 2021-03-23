@@ -87,7 +87,7 @@ func TestProcessorStart(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
-			exporters := map[configmodels.DataType]map[configmodels.Exporter]component.Exporter{
+			exporters := map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter{
 				configmodels.MetricsDataType: {
 					otlpConfig: tc.exporter,
 				},
@@ -450,8 +450,8 @@ func buildSpan(span span) pdata.Span {
 	s.SetKind(span.kind)
 	s.Status().SetCode(span.statusCode)
 	now := time.Now()
-	s.SetStartTime(pdata.TimestampUnixNano(now.UnixNano()))
-	s.SetEndTime(pdata.TimestampUnixNano(now.Add(sampleLatencyDuration).UnixNano()))
+	s.SetStartTime(pdata.TimestampFromTime(now))
+	s.SetEndTime(pdata.TimestampFromTime(now.Add(sampleLatencyDuration)))
 	s.Attributes().InsertString(stringAttrName, "stringAttrValue")
 	s.Attributes().InsertInt(intAttrName, 99)
 	s.Attributes().InsertDouble(doubleAttrName, 99.99)

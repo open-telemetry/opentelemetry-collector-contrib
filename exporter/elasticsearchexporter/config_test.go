@@ -27,7 +27,7 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	factory := NewFactory()
@@ -81,9 +81,9 @@ func TestLoadConfig(t *testing.T) {
 	})
 }
 
-func withDefaultConfig(fn func(*Config)) *Config {
+func withDefaultConfig(fns ...func(*Config)) *Config {
 	cfg := createDefaultConfig().(*Config)
-	if fn != nil {
+	for _, fn := range fns {
 		fn(cfg)
 	}
 	return cfg

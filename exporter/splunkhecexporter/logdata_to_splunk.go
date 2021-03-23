@@ -45,15 +45,18 @@ func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config, logger *zap.L
 	index := config.Index
 	fields := map[string]interface{}{}
 	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-		if k == conventions.AttributeHostName {
+		switch k {
+		case conventions.AttributeHostName:
 			host = v.StringVal()
-		} else if k == conventions.AttributeServiceName {
+			fields[k] = v.StringVal()
+		case conventions.AttributeServiceName:
 			source = v.StringVal()
-		} else if k == splunk.SourcetypeLabel {
+			fields[k] = v.StringVal()
+		case splunk.SourcetypeLabel:
 			sourcetype = v.StringVal()
-		} else if k == splunk.IndexLabel {
+		case splunk.IndexLabel:
 			index = v.StringVal()
-		} else {
+		default:
 			fields[k] = convertAttributeValue(v, logger)
 		}
 	})
@@ -102,7 +105,7 @@ func convertAttributeValue(value pdata.AttributeValue, logger *zap.Logger) inter
 }
 
 // nanoTimestampToEpochMilliseconds transforms nanoseconds into <sec>.<ms>. For example, 1433188255.500 indicates 1433188255 seconds and 500 milliseconds after epoch.
-func nanoTimestampToEpochMilliseconds(ts pdata.TimestampUnixNano) *float64 {
+func nanoTimestampToEpochMilliseconds(ts pdata.Timestamp) *float64 {
 	duration := time.Duration(ts)
 	if duration == 0 {
 		// some telemetry sources send data with timestamps set to 0 by design, as their original target destinations

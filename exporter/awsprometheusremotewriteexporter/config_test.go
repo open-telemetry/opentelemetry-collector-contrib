@@ -33,7 +33,7 @@ import (
 
 // TestLoadConfig checks whether yaml configuration can be loaded correctly
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -95,6 +95,7 @@ func TestLoadConfig(t *testing.T) {
 		AuthConfig: AuthConfig{
 			Region:  "us-west-2",
 			Service: "service-name",
+			RoleArn: "arn:aws:iam::123456789012:role/IAMRole",
 		},
 	}
 	// testing function equality is not supported in Go hence these will be ignored for this test

@@ -1,8 +1,8 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
   stackdriver:
@@ -12,7 +12,6 @@ exporters:
     user_agent: opentelemetry-collector-contrib {{version}}
     use_insecure: true
     timeout: 20s
-    number_of_workers: 3
     resource_mappings:
       - source_type: source.resource1
         target_type: target-resource1
@@ -24,12 +23,15 @@ exporters:
             target_key: target_label_1
       - source_type: source.resource2
         target_type: target-resource2
-    trace:
-      bundle_delay_threshold: 2s
-      bundle_count_threshold: 50
-      bundle_byte_threshold: 15e3
-      bundle_byte_limit: 0
-      buffer_max_bytes: 8e6
+    sending_queue:
+      enabled: true
+      num_consumers: 2
+      queue_size: 10
+    retry_on_failure:
+      enabled: true
+      initial_interval: 10s
+      max_interval: 60s
+      max_elapsed_time: 10m
     metric:
       prefix: prefix
       skip_create_descriptor: true
@@ -37,7 +39,7 @@ exporters:
 service:
   pipelines:
     traces:
-        receivers: [examplereceiver]
-        processors: [exampleprocessor]
+        receivers: [nop]
+        processors: [nop]
         exporters: [stackdriver]
 

@@ -357,7 +357,7 @@ func metricDataToLogServiceData(md pdata.Metric, defaultLabels KeyValues) (logs 
 func metricsDataToLogServiceData(
 	_ *zap.Logger,
 	md pdata.Metrics,
-) (logs []*sls.Log, numDroppedTimeSeries int) {
+) (logs []*sls.Log) {
 
 	resMetrics := md.ResourceMetrics()
 	for i := 0; i < resMetrics.Len(); i++ {
@@ -376,5 +376,5 @@ func metricsDataToLogServiceData(
 		}
 	}
 
-	return logs, numDroppedTimeSeries
+	return logs
 }

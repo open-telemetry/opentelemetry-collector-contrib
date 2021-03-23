@@ -39,6 +39,10 @@ type Config struct {
 	// Filter section allows specifying filters to filter
 	// pods by labels, fields, namespaces, nodes, etc.
 	Filter FilterConfig `mapstructure:"filter"`
+
+	// Association section allows to define rules for tagging spans, metrics,
+	// and logs with Pod metadata.
+	Association []PodAssociationConfig `mapstructure:"pod_association"`
 }
 
 // ExtractConfig section allows specifying extraction rules to extract
@@ -172,4 +176,16 @@ type FieldFilterConfig struct {
 	// Key: Value pair. The following operations are supported
 	//   equals, not-equals, exists, does-not-exist.
 	Op string `mapstructure:"op"`
+}
+
+// PodAssociationConfig contain single rule how to associate Pod metadata
+// with logs, spans and metrics
+type PodAssociationConfig struct {
+	// From represents the source of the association.
+	// Allowed values are "connection" and "labels".
+	From string `mapstructure:"from"`
+
+	// Name represents extracted key name.
+	// e.g. ip, pod_uid, k8s.pod.ip
+	Name string `mapstructure:"name"`
 }

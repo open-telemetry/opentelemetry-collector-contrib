@@ -41,7 +41,7 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 		metricReceiver component.MetricsReceiver
 	)
 
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()

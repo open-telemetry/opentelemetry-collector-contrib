@@ -24,7 +24,6 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -110,7 +109,7 @@ func (f internalFilterRegexp) getSubexpNames() []string {
 
 type metricNameMapping map[string][]*metricspb.Metric
 
-func newMetricNameMapping(data *consumerdata.MetricsData) metricNameMapping {
+func newMetricNameMapping(data *internaldata.MetricsData) metricNameMapping {
 	mnm := metricNameMapping(make(map[string][]*metricspb.Metric, len(data.Metrics)))
 	for _, m := range data.Metrics {
 		mnm.add(m.MetricDescriptor.Name, m)
@@ -143,7 +142,7 @@ func newMetricsTransformProcessor(logger *zap.Logger, internalTransforms []inter
 // ProcessMetrics implements the MProcessor interface.
 func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 	mds := internaldata.MetricsToOC(md)
-	groupedMds := make([]consumerdata.MetricsData, 0)
+	groupedMds := make([]internaldata.MetricsData, 0)
 
 	for i := range mds {
 		data := &mds[i]
@@ -198,10 +197,10 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 }
 
 // groupMatchedMetrics groups matched metrics into a new MetricsData with a new Resource and returns it.
-func (mtp *metricsTransformProcessor) groupMatchedMetrics(oData *consumerdata.MetricsData, matchedMetrics []*match,
-	transform internalTransform) (nData *consumerdata.MetricsData) {
+func (mtp *metricsTransformProcessor) groupMatchedMetrics(oData *internaldata.MetricsData, matchedMetrics []*match,
+	transform internalTransform) (nData *internaldata.MetricsData) {
 	// create new ResouceMetrics bucket
-	nData = &consumerdata.MetricsData{
+	nData = &internaldata.MetricsData{
 		Node:     proto.Clone(oData.Node).(*commonpb.Node),
 		Resource: proto.Clone(oData.Resource).(*resourcepb.Resource),
 		Metrics:  make([]*metricspb.Metric, 0),

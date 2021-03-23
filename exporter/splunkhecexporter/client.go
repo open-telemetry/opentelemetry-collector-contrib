@@ -48,23 +48,23 @@ type client struct {
 func (c *client) pushMetricsData(
 	ctx context.Context,
 	md pdata.Metrics,
-) (droppedTimeSeries int, err error) {
+) error {
 	c.wg.Add(1)
 	defer c.wg.Done()
 
-	splunkDataPoints, numDroppedTimeseries := metricDataToSplunk(c.logger, md, c.config)
+	splunkDataPoints, _ := metricDataToSplunk(c.logger, md, c.config)
 	if len(splunkDataPoints) == 0 {
-		return numDroppedTimeseries, nil
+		return nil
 	}
 
 	body, compressed, err := encodeBody(&c.zippers, splunkDataPoints, c.config.DisableCompression, c.config.MinContentLengthCompression)
 	if err != nil {
-		return numMetricPoint(md), consumererror.Permanent(err)
+		return consumererror.Permanent(err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", c.url.String(), body)
 	if err != nil {
-		return numMetricPoint(md), consumererror.Permanent(err)
+		return consumererror.Permanent(err)
 	}
 
 	for k, v := range c.headers {
@@ -77,7 +77,7 @@ func (c *client) pushMetricsData(
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return numMetricPoint(md), err
+		return err
 	}
 
 	io.Copy(ioutil.Discard, resp.Body)
@@ -89,30 +89,25 @@ func (c *client) pushMetricsData(
 			"HTTP %d %q",
 			resp.StatusCode,
 			http.StatusText(resp.StatusCode))
-		return numMetricPoint(md), err
+		return err
 	}
 
-	return numDroppedTimeseries, nil
+	return nil
 }
 
 func (c *client) pushTraceData(
 	ctx context.Context,
 	td pdata.Traces,
-) (droppedSpans int, err error) {
+) error {
 	c.wg.Add(1)
 	defer c.wg.Done()
 
-	splunkEvents, numDroppedSpans := traceDataToSplunk(c.logger, td, c.config)
+	splunkEvents, _ := traceDataToSplunk(c.logger, td, c.config)
 	if len(splunkEvents) == 0 {
-		return numDroppedSpans, nil
+		return nil
 	}
 
-	err = c.sendSplunkEvents(ctx, splunkEvents)
-	if err != nil {
-		return td.SpanCount(), err
-	}
-
-	return numDroppedSpans, nil
+	return c.sendSplunkEvents(ctx, splunkEvents)
 }
 
 func (c *client) sendSplunkEvents(ctx context.Context, splunkEvents []*splunk.Event) error {
@@ -330,9 +325,4 @@ func (c *client) stop(context context.Context) error {
 
 func (c *client) start(context.Context, component.Host) (err error) {
 	return nil
-}
-
-func numMetricPoint(md pdata.Metrics) int {
-	_, numPoints := md.MetricAndDataPointCount()
-	return numPoints
 }

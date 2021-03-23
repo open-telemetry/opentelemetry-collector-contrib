@@ -24,7 +24,6 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
@@ -125,7 +124,7 @@ func (u *udpServer) handlePacket(
 		}
 	}
 
-	md := consumerdata.MetricsData{
+	md := internaldata.MetricsData{
 		Metrics: metrics,
 	}
 	err := nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))

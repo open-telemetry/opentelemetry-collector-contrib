@@ -21,12 +21,10 @@ import (
 	"sync"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/translator/internaldata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
@@ -101,7 +99,7 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 		var transferChan = make(chan string, 10)
 		ticker := time.NewTicker(r.config.AggregationInterval)
 		err = nil
-		r.parser.Initialize()
+		r.parser.Initialize(r.config.EnableMetricType)
 		go func() {
 			err = r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter, transferChan)
 			if err != nil {
@@ -113,7 +111,7 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 				select {
 				case <-ticker.C:
 					metrics := r.parser.GetMetrics()
-					if len(metrics) > 0 {
+					if metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len() > 0 {
 						r.Flush(ctx, metrics, r.nextConsumer)
 					}
 				case rawMetric := <-transferChan:
@@ -142,11 +140,8 @@ func (r *statsdReceiver) Shutdown(context.Context) error {
 	return err
 }
 
-func (r *statsdReceiver) Flush(ctx context.Context, metrics []*metricspb.Metric, nextConsumer consumer.MetricsConsumer) error {
-	md := consumerdata.MetricsData{
-		Metrics: metrics,
-	}
-	error := nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
+func (r *statsdReceiver) Flush(ctx context.Context, metrics pdata.Metrics, nextConsumer consumer.MetricsConsumer) error {
+	error := nextConsumer.ConsumeMetrics(ctx, metrics)
 	if error != nil {
 		return error
 	}

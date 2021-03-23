@@ -16,13 +16,13 @@ package awsemfexporter
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -242,7 +242,6 @@ func generateTestSummary(name string) *metricspb.Metric {
 }
 
 func TestIntDataPointSliceAt(t *testing.T) {
-	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 	instrLibName := "cloudwatch-otel"
 	labels := map[string]string{"label1": "value1"}
 	rateKeys := rateKeyParams{
@@ -256,25 +255,35 @@ func TestIntDataPointSliceAt(t *testing.T) {
 		testName           string
 		needsCalculateRate bool
 		value              interface{}
+		calculatedValue    interface{}
 	}{
 		{
 			"no rate calculation",
 			false,
+			int64(-17),
 			float64(-17),
 		},
 		{
-			"w/ rate calculation",
+			"w/ 1st rate calculation",
 			true,
+			int64(1),
 			float64(0),
+		},
+		{
+			"w/ 2nd rate calculation",
+			true,
+			int64(2),
+			float64(1),
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
+			timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 			testDPS := pdata.NewIntDataPointSlice()
 			testDPS.Resize(1)
 			testDP := testDPS.At(0)
-			testDP.SetValue(int64(-17))
+			testDP.SetValue(tc.value.(int64))
 			testDP.LabelsMap().InitFromMap(labels)
 
 			dps := IntDataPointSlice{
@@ -288,21 +297,27 @@ func TestIntDataPointSliceAt(t *testing.T) {
 			}
 
 			expectedDP := DataPoint{
-				Value: tc.value,
+				Value: tc.calculatedValue,
 				Labels: map[string]string{
-					"label1": "value1",
+					oTellibDimensionKey: instrLibName,
+					"label1":            "value1",
 				},
 			}
 
 			assert.Equal(t, 1, dps.Len())
 			dp := dps.At(0)
-			assert.Equal(t, expectedDP, dp)
+			if strings.Contains(tc.testName, "2nd rate") {
+				assert.InDelta(t, expectedDP.Value.(float64), dp.Value.(float64), 0.02)
+			} else {
+				assert.Equal(t, expectedDP, dp)
+			}
+			// sleep 1s for verifying the cumulative metric delta rate
+			time.Sleep(1000 * time.Millisecond)
 		})
 	}
 }
 
 func TestDoubleDataPointSliceAt(t *testing.T) {
-	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 	instrLibName := "cloudwatch-otel"
 	labels := map[string]string{"label1": "value1"}
 	rateKeys := rateKeyParams{
@@ -316,25 +331,35 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 		testName           string
 		needsCalculateRate bool
 		value              interface{}
+		calculatedValue    interface{}
 	}{
 		{
 			"no rate calculation",
 			false,
 			float64(0.3),
+			float64(0.3),
 		},
 		{
-			"w/ rate calculation",
+			"w/ 1st rate calculation",
 			true,
-			float64(0),
+			float64(0.4),
+			float64(0.0),
+		},
+		{
+			"w/ 2nd rate calculation",
+			true,
+			float64(0.5),
+			float64(0.1),
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
+			timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 			testDPS := pdata.NewDoubleDataPointSlice()
 			testDPS.Resize(1)
 			testDP := testDPS.At(0)
-			testDP.SetValue(float64(0.3))
+			testDP.SetValue(tc.value.(float64))
 			testDP.LabelsMap().InitFromMap(labels)
 
 			dps := DoubleDataPointSlice{
@@ -348,15 +373,22 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 			}
 
 			expectedDP := DataPoint{
-				Value: tc.value,
+				Value: tc.calculatedValue,
 				Labels: map[string]string{
-					"label1": "value1",
+					oTellibDimensionKey: instrLibName,
+					"label1":            "value1",
 				},
 			}
 
 			assert.Equal(t, 1, dps.Len())
 			dp := dps.At(0)
-			assert.Equal(t, expectedDP, dp)
+			if strings.Contains(tc.testName, "2nd rate") {
+				assert.InDelta(t, expectedDP.Value.(float64), dp.Value.(float64), 0.002)
+			} else {
+				assert.Equal(t, expectedDP, dp)
+			}
+			// sleep 10ms for verifying the cumulative metric delta rate
+			time.Sleep(1000 * time.Millisecond)
 		})
 	}
 }
@@ -385,7 +417,8 @@ func TestDoubleHistogramDataPointSliceAt(t *testing.T) {
 			Count: 17,
 		},
 		Labels: map[string]string{
-			"label1": "value1",
+			oTellibDimensionKey: instrLibName,
+			"label1":            "value1",
 		},
 	}
 
@@ -425,7 +458,8 @@ func TestDoubleSummaryDataPointSliceAt(t *testing.T) {
 			Sum:   17.13,
 		},
 		Labels: map[string]string{
-			"label1": "value1",
+			oTellibDimensionKey: instrLibName,
+			"label1":            "value1",
 		},
 	}
 
@@ -442,11 +476,12 @@ func TestCreateLabels(t *testing.T) {
 	}
 	labelsMap := pdata.NewStringMap().InitFromMap(expectedLabels)
 
-	labels := createLabels(labelsMap)
+	labels := createLabels(labelsMap, noInstrumentationLibraryName)
 	assert.Equal(t, expectedLabels, labels)
 
 	// With isntrumentation library name
-	labels = createLabels(labelsMap)
+	labels = createLabels(labelsMap, "cloudwatch-otel")
+	expectedLabels[oTellibDimensionKey] = "cloudwatch-otel"
 	assert.Equal(t, expectedLabels, labels)
 }
 
@@ -470,15 +505,21 @@ func TestCalculateRate(t *testing.T) {
 	assert.Equal(t, float64(0), rate)
 
 	rate = calculateRate(intRateKey, intVal2, time2)
-	assert.Equal(t, float64(1), rate)
+	assert.InDelta(t, float64(1), rate, 0.1)
 	rate = calculateRate(doubleRateKey, doubleVal2, time2)
-	assert.Equal(t, 0.5, rate)
+	assert.InDelta(t, 0.5, rate, 0.1)
 
 	// Test change of data type
 	rate = calculateRate(intRateKey, doubleVal3, time3)
-	assert.Equal(t, float64(0.51), rate)
+	assert.InDelta(t, float64(0.51), rate, 0.1)
 	rate = calculateRate(doubleRateKey, intVal3, time3)
-	assert.Equal(t, float64(19.5), rate)
+	assert.InDelta(t, float64(19.5), rate, 0.1)
+}
+
+func calculateRate(metricName string, value float64, timestampMs int64) interface{} {
+	time := time.Unix(0, timestampMs*int64(time.Millisecond))
+	val, _ := rateMetricCalculator.Calculate(metricName, nil, value, time)
+	return val
 }
 
 func TestGetDataPoints(t *testing.T) {
@@ -586,7 +627,7 @@ func TestGetDataPoints(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		oc := consumerdata.MetricsData{
+		oc := internaldata.MetricsData{
 			Metrics: []*metricspb.Metric{tc.metric},
 		}
 
@@ -674,7 +715,7 @@ func TestGetDataPoints(t *testing.T) {
 }
 
 func BenchmarkGetDataPoints(b *testing.B) {
-	oc := consumerdata.MetricsData{
+	oc := internaldata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			generateTestIntGauge("int-gauge"),
 			generateTestDoubleGauge("double-gauge"),
@@ -708,13 +749,13 @@ func BenchmarkGetDataPoints(b *testing.B) {
 }
 
 func TestGetSortedLabelsEquals(t *testing.T) {
-	labelMap1 := pdata.NewStringMap()
-	labelMap1.Insert("k1", "v1")
-	labelMap1.Insert("k2", "v2")
+	labelMap1 := make(map[string]string)
+	labelMap1["k1"] = "v1"
+	labelMap1["k2"] = "v2"
 
-	labelMap2 := pdata.NewStringMap()
-	labelMap2.Insert("k2", "v2")
-	labelMap2.Insert("k1", "v1")
+	labelMap2 := make(map[string]string)
+	labelMap2["k2"] = "v2"
+	labelMap2["k1"] = "v1"
 
 	sortedLabels1 := getSortedLabels(labelMap1)
 	sortedLabels2 := getSortedLabels(labelMap2)
@@ -737,13 +778,13 @@ func TestGetSortedLabelsEquals(t *testing.T) {
 }
 
 func TestGetSortedLabelsNotEqual(t *testing.T) {
-	labelMap1 := pdata.NewStringMap()
-	labelMap1.Insert("k1", "v1")
-	labelMap1.Insert("k2", "v2")
+	labelMap1 := make(map[string]string)
+	labelMap1["k1"] = "v1"
+	labelMap1["k2"] = "v2"
 
-	labelMap2 := pdata.NewStringMap()
-	labelMap2.Insert("k2", "v2")
-	labelMap2.Insert("k1", "v3")
+	labelMap2 := make(map[string]string)
+	labelMap2["k2"] = "v2"
+	labelMap2["k1"] = "v3"
 
 	sortedLabels1 := getSortedLabels(labelMap1)
 	sortedLabels2 := getSortedLabels(labelMap2)
@@ -766,13 +807,13 @@ func TestGetSortedLabelsNotEqual(t *testing.T) {
 }
 
 func TestGetSortedLabelsNotEqualOnPram(t *testing.T) {
-	labelMap1 := pdata.NewStringMap()
-	labelMap1.Insert("k1", "v1")
-	labelMap1.Insert("k2", "v2")
+	labelMap1 := make(map[string]string)
+	labelMap1["k1"] = "v1"
+	labelMap1["k2"] = "v2"
 
-	labelMap2 := pdata.NewStringMap()
-	labelMap2.Insert("k2", "v2")
-	labelMap2.Insert("k1", "v1")
+	labelMap2 := make(map[string]string)
+	labelMap2["k2"] = "v2"
+	labelMap2["k1"] = "v1"
 
 	sortedLabels1 := getSortedLabels(labelMap1)
 	sortedLabels2 := getSortedLabels(labelMap2)

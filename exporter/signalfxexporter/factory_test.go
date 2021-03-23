@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -193,7 +192,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.NoError(t, err)
 	data := testMetricsData()
 
-	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil)
+	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "")
 	require.NoError(t, err)
 	translated := c.MetricDataToSignalFxV2(data)
 	require.NotNil(t, translated)
@@ -212,26 +211,51 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Equal(t, 1, len(dps))
 	require.Equal(t, 40.0, *dps[0].Value.DoubleValue)
 
-	// system.disk.operations metric split and dimension rename
-	dps, ok = metrics["disk_ops.read"]
-	require.True(t, ok, "disk_ops.read metrics not found")
-	require.Equal(t, 4, len(dps))
+	// system.disk.operations dimension rename
+	dps, ok = metrics["system.disk.operations"]
+	require.True(t, ok, "system.disk.operations metrics not found")
+	require.Equal(t, 8, len(dps))
 	require.Equal(t, int64(4e3), *dps[0].Value.IntValue)
-	require.Equal(t, "disk", dps[0].Dimensions[1].Key)
-	require.Equal(t, "sda1", dps[0].Dimensions[1].Value)
+	require.Equal(t, "direction", dps[0].Dimensions[1].Key)
+	require.Equal(t, "read", dps[0].Dimensions[1].Value)
+	require.Equal(t, "disk", dps[0].Dimensions[2].Key)
+	require.Equal(t, "sda1", dps[0].Dimensions[2].Value)
 	require.Equal(t, int64(6e3), *dps[1].Value.IntValue)
-	require.Equal(t, "disk", dps[1].Dimensions[1].Key)
-	require.Equal(t, "sda2", dps[1].Dimensions[1].Value)
+	require.Equal(t, "direction", dps[1].Dimensions[1].Key)
+	require.Equal(t, "read", dps[1].Dimensions[1].Value)
+	require.Equal(t, "disk", dps[1].Dimensions[2].Key)
+	require.Equal(t, "sda2", dps[1].Dimensions[2].Value)
+	require.Equal(t, int64(1e3), *dps[2].Value.IntValue)
+	require.Equal(t, "direction", dps[2].Dimensions[1].Key)
+	require.Equal(t, "write", dps[2].Dimensions[1].Value)
+	require.Equal(t, "disk", dps[2].Dimensions[2].Key)
+	require.Equal(t, "sda1", dps[2].Dimensions[2].Value)
+	require.Equal(t, int64(5e3), *dps[3].Value.IntValue)
+	require.Equal(t, "direction", dps[3].Dimensions[1].Key)
+	require.Equal(t, "write", dps[3].Dimensions[1].Value)
+	require.Equal(t, "disk", dps[3].Dimensions[2].Key)
+	require.Equal(t, "sda2", dps[3].Dimensions[2].Value)
 
-	dps, ok = metrics["disk_ops.write"]
-	require.True(t, ok, "disk_ops.write metrics not found")
+	// system.network.operations.total new metric calculation
+	dps, ok = metrics["system.disk.operations.total"]
+	require.True(t, ok, "system.network.operations.total metrics not found")
 	require.Equal(t, 4, len(dps))
-	require.Equal(t, int64(1e3), *dps[0].Value.IntValue)
-	require.Equal(t, "disk", dps[0].Dimensions[1].Key)
-	require.Equal(t, "sda1", dps[0].Dimensions[1].Value)
-	require.Equal(t, int64(5e3), *dps[1].Value.IntValue)
-	require.Equal(t, "disk", dps[1].Dimensions[1].Key)
-	require.Equal(t, "sda2", dps[1].Dimensions[1].Value)
+	require.Equal(t, 2, len(dps[0].Dimensions))
+
+	// system.network.io.total new metric calculation
+	dps, ok = metrics["system.disk.io.total"]
+	require.True(t, ok, "system.network.io.total metrics not found")
+	require.Equal(t, 2, len(dps))
+	require.Equal(t, 2, len(dps[0].Dimensions))
+	for _, dp := range dps {
+		require.Equal(t, "direction", dp.Dimensions[1].Key)
+		switch dp.Dimensions[1].Value {
+		case "write":
+			require.Equal(t, int64(11e9), *dp.Value.IntValue)
+		case "read":
+			require.Equal(t, int64(3e9), *dp.Value.IntValue)
+		}
+	}
 
 	// disk_ops.total gauge from system.disk.operations cumulative, where is disk_ops.total
 	// is the cumulative across devices and directions.
@@ -243,20 +267,27 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Equal(t, "host", dps[0].Dimensions[0].Key)
 	require.Equal(t, "host0", dps[0].Dimensions[0].Value)
 
+	// system.network.io.total new metric calculation
+	dps, ok = metrics["system.network.io.total"]
+	require.True(t, ok, "system.network.io.total metrics not found")
+	require.Equal(t, 2, len(dps))
+	require.Equal(t, 4, len(dps[0].Dimensions))
+
+	// system.network.packets.total new metric calculation
+	dps, ok = metrics["system.network.packets.total"]
+	require.True(t, ok, "system.network.packets.total metrics not found")
+	require.Equal(t, 1, len(dps))
+	require.Equal(t, 4, len(dps[0].Dimensions))
+	require.Equal(t, int64(350), *dps[0].Value.IntValue)
+	require.Equal(t, "direction", dps[0].Dimensions[0].Key)
+	require.Equal(t, "receive", dps[0].Dimensions[0].Value)
+
 	// network.total new metric calculation
 	dps, ok = metrics["network.total"]
 	require.True(t, ok, "network.total metrics not found")
 	require.Equal(t, 1, len(dps))
 	require.Equal(t, 3, len(dps[0].Dimensions))
 	require.Equal(t, int64(10e9), *dps[0].Value.IntValue)
-
-	// memory page faults and working set renames
-	_, ok = metrics["container_memory_working_set_bytes"]
-	require.True(t, ok, "container_memory_working_set_bytes not found")
-	_, ok = metrics["container_memory_page_faults"]
-	require.True(t, ok, "container_memory_page_faults not found")
-	_, ok = metrics["container_memory_major_page_faults"]
-	require.True(t, ok, "container_memory_major_page_faults not found")
 }
 
 func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
@@ -300,8 +331,28 @@ func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 	assert.Equal(t, 11, len(config.ExcludeMetrics))
 }
 
+func TestCreateMetricsExporterWithEmptyExcludeMetrics(t *testing.T) {
+	config := &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
+		AccessToken:    "testToken",
+		Realm:          "us1",
+		ExcludeMetrics: []dpfilters.MetricFilter{},
+	}
+
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	// Validate that default excludes are overridden when exclude metrics
+	// is explicitly set to an empty slice.
+	assert.Equal(t, 0, len(config.ExcludeMetrics))
+}
+
 func testMetricsData() pdata.ResourceMetrics {
-	md := consumerdata.MetricsData{
+	md := internaldata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
@@ -362,6 +413,104 @@ func testMetricsData() pdata.ResourceMetrics {
 							},
 							Value: &metricspb.Point_Int64Value{
 								Int64Value: 6e9,
+							},
+						}},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "system.disk.io",
+					Description: "Disk I/O.",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "host"},
+						{Key: "direction"},
+						{Key: "device"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "read",
+							HasValue: true,
+						}, {
+							Value:    "sda1",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 1e9,
+							},
+						}},
+					},
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "read",
+							HasValue: true,
+						}, {
+							Value:    "sda2",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 2e9,
+							},
+						}},
+					},
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "write",
+							HasValue: true,
+						}, {
+							Value:    "sda1",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 3e9,
+							},
+						}},
+					},
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "write",
+							HasValue: true,
+						}, {
+							Value:    "sda2",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 8e9,
 							},
 						}},
 					},
@@ -573,7 +722,7 @@ func testMetricsData() pdata.ResourceMetrics {
 					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 					LabelKeys: []*metricspb.LabelKey{
 						{Key: "direction"},
-						{Key: "interface"},
+						{Key: "device"},
 						{Key: "host"},
 						{Key: "kubernetes_node"},
 						{Key: "kubernetes_cluster"},
@@ -631,6 +780,76 @@ func testMetricsData() pdata.ResourceMetrics {
 							},
 							Value: &metricspb.Point_Int64Value{
 								Int64Value: 6e9,
+							},
+						}},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "system.network.packets",
+					Description: "The number of packets transferred",
+					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "direction"},
+						{Key: "device"},
+						{Key: "host"},
+						{Key: "kubernetes_node"},
+						{Key: "kubernetes_cluster"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "receive",
+							HasValue: true,
+						}, {
+							Value:    "eth0",
+							HasValue: true,
+						}, {
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "node0",
+							HasValue: true,
+						}, {
+							Value:    "cluster0",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 200,
+							},
+						}},
+					},
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "receive",
+							HasValue: true,
+						}, {
+							Value:    "eth1",
+							HasValue: true,
+						}, {
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "node0",
+							HasValue: true,
+						}, {
+							Value:    "cluster0",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 150,
 							},
 						}},
 					},
@@ -743,7 +962,7 @@ func testMetricsData() pdata.ResourceMetrics {
 			},
 		},
 	}
-	return internaldata.OCSliceToMetrics([]consumerdata.MetricsData{md}).ResourceMetrics().At(0)
+	return internaldata.OCSliceToMetrics([]internaldata.MetricsData{md}).ResourceMetrics().At(0)
 }
 
 func TestDefaultDiskTranslations(t *testing.T) {
@@ -829,7 +1048,7 @@ func TestDefaultExcludes_translated(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	setDefaultExcludes(cfg)
 
-	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics)
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "")
 	require.NoError(t, err)
 
 	var metrics []map[string]string
@@ -839,7 +1058,12 @@ func TestDefaultExcludes_translated(t *testing.T) {
 	rms := getResourceMetrics(metrics)
 	require.Equal(t, 62, rms.InstrumentationLibraryMetrics().At(0).Metrics().Len())
 	dps := converter.MetricDataToSignalFxV2(rms)
-	require.Equal(t, 0, len(dps))
+
+	// the default cpu.utilization metric is added after applying the default translations
+	// (because cpu.utilization_per_core is supplied) and should not be excluded
+	require.Equal(t, 1, len(dps))
+	require.Equal(t, "cpu.utilization", dps[0].Metric)
+
 }
 
 func TestDefaultExcludes_not_translated(t *testing.T) {
@@ -847,7 +1071,7 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	setDefaultExcludes(cfg)
 
-	converter, err := translation.NewMetricsConverter(zap.NewNop(), nil, cfg.ExcludeMetrics, cfg.IncludeMetrics)
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), nil, cfg.ExcludeMetrics, cfg.IncludeMetrics, "")
 	require.NoError(t, err)
 
 	var metrics []map[string]string
@@ -855,7 +1079,7 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	require.NoError(t, err)
 
 	rms := getResourceMetrics(metrics)
-	require.Equal(t, 72, rms.InstrumentationLibraryMetrics().At(0).Metrics().Len())
+	require.Equal(t, 71, rms.InstrumentationLibraryMetrics().At(0).Metrics().Len())
 	dps := converter.MetricDataToSignalFxV2(rms)
 	require.Equal(t, 0, len(dps))
 }

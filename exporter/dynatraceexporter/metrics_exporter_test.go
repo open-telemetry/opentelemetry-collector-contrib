@@ -17,6 +17,7 @@ package dynatraceexporter
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -70,7 +71,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intGaugeDataPoints.Resize(1)
 	intGaugeDataPoint := intGaugeDataPoints.At(0)
 	intGaugeDataPoint.SetValue(10)
-	intGaugeDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+	intGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	intSumMetric := metrics.At(3)
 	intSumMetric.SetDataType(pdata.MetricDataTypeIntSum)
@@ -80,7 +81,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intSumDataPoints.Resize(1)
 	intSumDataPoint := intSumDataPoints.At(0)
 	intSumDataPoint.SetValue(10)
-	intSumDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+	intSumDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	intHistogramMetric := metrics.At(4)
 	intHistogramMetric.SetDataType(pdata.MetricDataTypeIntHistogram)
@@ -91,7 +92,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intHistogramDataPoint := intHistogramDataPoints.At(0)
 	intHistogramDataPoint.SetCount(2)
 	intHistogramDataPoint.SetSum(19)
-	intHistogramDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+	intHistogramDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	doubleGaugeMetric := metrics.At(5)
 	doubleGaugeMetric.SetDataType(pdata.MetricDataTypeDoubleGauge)
@@ -101,7 +102,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleGaugeDataPoints.Resize(1)
 	doubleGaugeDataPoint := doubleGaugeDataPoints.At(0)
 	doubleGaugeDataPoint.SetValue(10.1)
-	doubleGaugeDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+	doubleGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	doubleSumMetric := metrics.At(6)
 	doubleSumMetric.SetDataType(pdata.MetricDataTypeDoubleSum)
@@ -111,7 +112,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleSumDataPoints.Resize(1)
 	doubleSumDataPoint := doubleSumDataPoints.At(0)
 	doubleSumDataPoint.SetValue(10.1)
-	doubleSumDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+	doubleSumDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	doubleHistogramMetric := metrics.At(7)
 	doubleHistogramMetric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
@@ -123,7 +124,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleHistogramDataPoint := doubleHistogramDataPoints.At(0)
 	doubleHistogramDataPoint.SetCount(2)
 	doubleHistogramDataPoint.SetSum(10.1)
-	doubleHistogramDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+	doubleHistogramDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	type fields struct {
 		logger *zap.Logger
@@ -135,11 +136,10 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 		md  pdata.Metrics
 	}
 	test := struct {
-		name                  string
-		fields                fields
-		args                  args
-		wantDroppedTimeSeries int
-		wantErr               bool
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
 	}{
 		name: "Send metric data",
 		fields: fields{
@@ -156,8 +156,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 			ctx: context.Background(),
 			md:  md,
 		},
-		wantErr:               false,
-		wantDroppedTimeSeries: 1,
+		wantErr: false,
 	}
 
 	t.Run(test.name, func(t *testing.T) {
@@ -166,13 +165,10 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 			cfg:    test.fields.cfg,
 			client: test.fields.client,
 		}
-		gotDroppedTimeSeries, err := e.PushMetricsData(test.args.ctx, test.args.md)
+		err := e.PushMetricsData(test.args.ctx, test.args.md)
 		if (err != nil) != test.wantErr {
 			t.Errorf("exporter.PushMetricsData() error = %v, wantErr %v", err, test.wantErr)
 			return
-		}
-		if gotDroppedTimeSeries != test.wantDroppedTimeSeries {
-			t.Errorf("exporter.PushMetricsData() = %v, want %v", gotDroppedTimeSeries, test.wantDroppedTimeSeries)
 		}
 	})
 
@@ -208,13 +204,10 @@ func Test_exporter_PushMetricsData_EmptyPayload(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	gotDroppedTimeSeries, err := e.PushMetricsData(context.Background(), md)
+	err := e.PushMetricsData(context.Background(), md)
 	if err != nil {
 		t.Errorf("exporter.PushMetricsData() error = %v", err)
 		return
-	}
-	if gotDroppedTimeSeries != md.MetricCount() {
-		t.Errorf("Expected %d metrics to be reported dropped, got %d", md.MetricCount(), gotDroppedTimeSeries)
 	}
 }
 
@@ -243,7 +236,7 @@ func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 	intGaugeDataPoints.Resize(1)
 	intGaugeDataPoint := intGaugeDataPoints.At(0)
 	intGaugeDataPoint.SetValue(10)
-	intGaugeDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+	intGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	e := &exporter{
 		logger: zap.NewNop(),
@@ -253,13 +246,10 @@ func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 		client:     ts.Client(),
 		isDisabled: true,
 	}
-	gotDroppedTimeSeries, err := e.PushMetricsData(context.Background(), md)
+	err := e.PushMetricsData(context.Background(), md)
 	if err != nil {
 		t.Errorf("exporter.PushMetricsData() error = %v", err)
 		return
-	}
-	if gotDroppedTimeSeries != md.MetricCount() {
-		t.Errorf("Expected %d metrics to be reported dropped, got %d", md.MetricCount(), gotDroppedTimeSeries)
 	}
 }
 
@@ -281,7 +271,7 @@ func Test_exporter_send_BadRequest(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	invalid, err := e.send(context.Background(), []string{})
+	invalid, err := e.send(context.Background(), []string{""})
 	if invalid != 10 {
 		t.Errorf("Expected 10 lines to be reported invalid")
 		return
@@ -310,7 +300,7 @@ func Test_exporter_send_Unauthorized(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	_, err := e.send(context.Background(), []string{})
+	_, err := e.send(context.Background(), []string{""})
 	if !consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to be permanent %v", err)
 		return
@@ -335,7 +325,7 @@ func Test_exporter_send_TooLarge(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	_, err := e.send(context.Background(), []string{})
+	_, err := e.send(context.Background(), []string{""})
 	if !consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to be permanent %v", err)
 		return
@@ -363,13 +353,59 @@ func Test_exporter_send_NotFound(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	_, err := e.send(context.Background(), []string{})
+	_, err := e.send(context.Background(), []string{""})
 	if !consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to be permanent %v", err)
 		return
 	}
 	if !e.isDisabled {
 		t.Error("Expected exporter to be disabled")
+		return
+	}
+}
+
+func Test_exporter_send_chunking(t *testing.T) {
+	sentChunks := 0
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		body, _ := json.Marshal(metricsResponse{
+			Ok:      0,
+			Invalid: 1,
+		})
+		w.Write(body)
+		sentChunks++
+	}))
+	defer ts.Close()
+
+	e := &exporter{
+		logger: zap.NewNop(),
+		cfg: &config.Config{
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+		},
+		client: ts.Client(),
+	}
+
+	batch := make([]string, 1001)
+
+	for i := 0; i < 1001; i++ {
+		batch[i] = fmt.Sprintf("%d", i)
+	}
+
+	invalid, err := e.send(context.Background(), batch)
+	if sentChunks != 2 {
+		t.Errorf("Expected batch to be sent in 2 chunks")
+	}
+	if invalid != 2 {
+		t.Errorf("Expected 2 lines to be reported invalid")
+		return
+	}
+	if consumererror.IsPermanent(err) {
+		t.Errorf("Expected error to not be permanent %v", err)
+		return
+	}
+	if e.isDisabled {
+		t.Error("Expected exporter to not be disabled")
 		return
 	}
 }
@@ -399,7 +435,7 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 	intGaugeDataPoints.Resize(1)
 	intGaugeDataPoint := intGaugeDataPoints.At(0)
 	intGaugeDataPoint.SetValue(10)
-	intGaugeDataPoint.SetTimestamp(pdata.TimestampUnixNano(100_000_000))
+	intGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	type fields struct {
 		logger *zap.Logger
@@ -411,11 +447,10 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 		md  pdata.Metrics
 	}
 	test := struct {
-		name                  string
-		fields                fields
-		args                  args
-		wantDroppedTimeSeries int
-		wantErr               bool
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
 	}{
 		name: "When the client errors, all timeseries are assumed to be dropped",
 		fields: fields{
@@ -432,8 +467,7 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 			ctx: context.Background(),
 			md:  md,
 		},
-		wantErr:               true,
-		wantDroppedTimeSeries: 1,
+		wantErr: true,
 	}
 
 	t.Run(test.name, func(t *testing.T) {
@@ -442,13 +476,10 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 			cfg:    test.fields.cfg,
 			client: test.fields.client,
 		}
-		gotDroppedTimeSeries, err := e.PushMetricsData(test.args.ctx, test.args.md)
+		err := e.PushMetricsData(test.args.ctx, test.args.md)
 		if (err != nil) != test.wantErr {
 			t.Errorf("exporter.PushMetricsData() error = %v, wantErr %v", err, test.wantErr)
 			return
-		}
-		if gotDroppedTimeSeries != test.wantDroppedTimeSeries {
-			t.Errorf("exporter.PushMetricsData() = %v, want %v", gotDroppedTimeSeries, test.wantDroppedTimeSeries)
 		}
 	})
 }

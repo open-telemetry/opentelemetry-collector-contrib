@@ -49,7 +49,7 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
 	factory := NewFactory()
@@ -91,19 +91,19 @@ func TestReadStaticFile(t *testing.T) {
 	e1.Timestamp = expectedTimestamp
 	e1.Severity = entry.Info
 	e1.Set(entry.NewRecordField("msg"), "Something routine")
-	e1.AddLabel("file_name", "simple.log")
+	e1.AddAttribute("file_name", "simple.log")
 
 	e2 := entry.New()
 	e2.Timestamp = expectedTimestamp
 	e2.Severity = entry.Error
 	e2.Set(entry.NewRecordField("msg"), "Something bad happened!")
-	e2.AddLabel("file_name", "simple.log")
+	e2.AddAttribute("file_name", "simple.log")
 
 	e3 := entry.New()
 	e3.Timestamp = expectedTimestamp
 	e3.Severity = entry.Debug
 	e3.Set(entry.NewRecordField("msg"), "Some details...")
-	e3.AddLabel("file_name", "simple.log")
+	e3.AddAttribute("file_name", "simple.log")
 
 	expectedLogs := []pdata.Logs{
 		stanza.Convert(e1),

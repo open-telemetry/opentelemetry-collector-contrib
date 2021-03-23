@@ -24,10 +24,10 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	dtypes "github.com/docker/docker/api/types"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/translator/internaldata"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -46,8 +46,8 @@ func ContainerStatsToMetrics(
 	containerStats *dtypes.StatsJSON,
 	container *DockerContainer,
 	config *Config,
-) (*consumerdata.MetricsData, error) {
-	now, _ := ptypes.TimestampProto(time.Now())
+) (*internaldata.MetricsData, error) {
+	now := timestamppb.New(time.Now())
 
 	var metrics []*metricspb.Metric
 	metrics = append(metrics, blockioMetrics(&containerStats.BlkioStats, now)...)
@@ -59,7 +59,7 @@ func ContainerStatsToMetrics(
 		return nil, nil
 	}
 
-	md := &consumerdata.MetricsData{
+	md := &internaldata.MetricsData{
 		Metrics: metrics,
 		Resource: &resourcepb.Resource{
 			Type: "container",
@@ -77,7 +77,7 @@ func ContainerStatsToMetrics(
 	return md, nil
 }
 
-func updateConfiguredResourceLabels(md *consumerdata.MetricsData, container *DockerContainer, config *Config) {
+func updateConfiguredResourceLabels(md *internaldata.MetricsData, container *DockerContainer, config *Config) {
 	for k, label := range config.EnvVarsToMetricLabels {
 		if v := container.EnvMap[k]; v != "" {
 			md.Resource.Labels[label] = v

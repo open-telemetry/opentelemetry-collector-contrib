@@ -1,8 +1,8 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
   signalfx:
@@ -28,6 +28,25 @@ exporters:
     - action: rename_dimension_keys
       mapping:
         k8s.cluster.name: kubernetes_cluster
+    - action: drop_dimensions
+      dimension_pairs:
+        foo:
+        foo1:
+          bar: true
+    - action: drop_dimensions
+      metric_name: metric
+      dimension_pairs:
+        foo:
+        foo1:
+          bar: true
+    - action: drop_dimensions
+      metric_names:
+        metric1: true
+        metric2: true
+      dimension_pairs:
+        foo:
+        foo1:
+          bar: true
     exclude_metrics:
       - metric_name: metric1
       - metric_names: [metric2, metric3]
@@ -53,10 +72,10 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
+      receivers: [nop]
+      processors: [nop]
       exporters: [signalfx, signalfx/allsettings]
     traces:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
+      receivers: [nop]
+      processors: [nop]
       exporters: [signalfx]

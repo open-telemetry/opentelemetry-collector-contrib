@@ -17,15 +17,15 @@ package kubelet
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
-	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
+	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 )
 
 func MetricsData(
 	logger *zap.Logger, summary *stats.Summary,
 	metadata Metadata, typeStr string,
-	metricGroupsToCollect map[MetricGroup]bool) []consumerdata.MetricsData {
+	metricGroupsToCollect map[MetricGroup]bool) []internaldata.MetricsData {
 	acc := &metricDataAccumulator{
 		metadata:              metadata,
 		logger:                logger,

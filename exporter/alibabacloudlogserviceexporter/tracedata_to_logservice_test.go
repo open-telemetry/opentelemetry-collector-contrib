@@ -40,9 +40,8 @@ func (kv logKeyValuePairs) Swap(i, j int)      { kv[i], kv[j] = kv[j], kv[i] }
 func (kv logKeyValuePairs) Less(i, j int) bool { return kv[i].Key < kv[j].Key }
 
 func TestTraceDataToLogService(t *testing.T) {
-	gotLogs, dropped := traceDataToLogServiceData(constructSpanData())
+	gotLogs := traceDataToLogServiceData(constructSpanData())
 	assert.Equal(t, len(gotLogs), 2)
-	assert.Equal(t, dropped, 0)
 
 	gotLogPairs := make([][]logKeyValuePair, 0, len(gotLogs))
 
@@ -112,7 +111,6 @@ func fillResource(resource pdata.Resource) {
 
 func fillHTTPClientSpan(span pdata.Span) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[semconventions.AttributeHTTPStatusCode] = 200
@@ -125,8 +123,8 @@ func fillHTTPClientSpan(span pdata.Span) {
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindCLIENT)
-	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
-	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+	span.SetStartTime(pdata.TimestampFromTime(startTime))
+	span.SetEndTime(pdata.TimestampFromTime(endTime))
 	span.SetTraceState("x:y")
 
 	span.Events().Resize(1)
@@ -147,7 +145,6 @@ func fillHTTPClientSpan(span pdata.Span) {
 
 func fillHTTPServerSpan(span pdata.Span) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[semconventions.AttributeHTTPClientIP] = "192.168.15.32"
@@ -161,8 +158,8 @@ func fillHTTPServerSpan(span pdata.Span) {
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindSERVER)
-	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
-	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+	span.SetStartTime(pdata.TimestampFromTime(startTime))
+	span.SetEndTime(pdata.TimestampFromTime(endTime))
 
 	status := span.Status()
 	status.SetCode(2)

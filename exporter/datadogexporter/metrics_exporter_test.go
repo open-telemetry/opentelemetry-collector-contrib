@@ -49,12 +49,12 @@ func TestNewExporter(t *testing.T) {
 	// The client should have been created correctly
 	exp := newMetricsExporter(context.Background(), params, cfg)
 	assert.NotNil(t, exp)
-	_, _ = exp.PushMetricsData(context.Background(), testutils.TestMetrics.Clone())
+	_ = exp.PushMetricsData(context.Background(), testutils.TestMetrics.Clone())
 	assert.Equal(t, len(server.MetadataChan), 0)
 
 	cfg.SendMetadata = true
 	cfg.UseResourceMetadata = true
-	_, _ = exp.PushMetricsData(context.Background(), testutils.TestMetrics.Clone())
+	_ = exp.PushMetricsData(context.Background(), testutils.TestMetrics.Clone())
 	body := <-server.MetadataChan
 	var recvMetadata metadata.HostMetadata
 	err := json.Unmarshal(body, &recvMetadata)

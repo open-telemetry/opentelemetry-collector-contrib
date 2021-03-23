@@ -20,7 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
@@ -67,7 +66,7 @@ func TestOnAdd(t *testing.T) {
 		rcvrCfg,
 		userConfigMap{endpointConfigKey: "localhost:1234"},
 		mock.IsType(&resourceEnhancer{}),
-	).Return(&componenttest.ExampleReceiverProducer{}, nil)
+	).Return(&nopWithEndpointReceiver{}, nil)
 
 	handler.OnAdd([]observer.Endpoint{
 		portEndpoint,
@@ -80,7 +79,7 @@ func TestOnAdd(t *testing.T) {
 
 func TestOnRemove(t *testing.T) {
 	runner := &mockRunner{}
-	rcvr := &componenttest.ExampleReceiverProducer{}
+	rcvr := &nopWithEndpointReceiver{}
 	handler := &observerHandler{
 		config:                createDefaultConfig().(*Config),
 		logger:                zap.NewNop(),
@@ -101,8 +100,8 @@ func TestOnRemove(t *testing.T) {
 func TestOnChange(t *testing.T) {
 	runner := &mockRunner{}
 	rcvrCfg := receiverConfig{typeStr: configmodels.Type("name"), config: userConfigMap{"foo": "bar"}, fullName: "name/1"}
-	oldRcvr := &componenttest.ExampleReceiverProducer{}
-	newRcvr := &componenttest.ExampleReceiverProducer{}
+	oldRcvr := &nopWithEndpointReceiver{}
+	newRcvr := &nopWithEndpointReceiver{}
 	cfg := createDefaultConfig().(*Config)
 	cfg.receiverTemplates = map[string]receiverTemplate{
 		"name/1": {rcvrCfg, "", newRuleOrPanic(`type.port`)},
@@ -156,7 +155,7 @@ func TestDynamicConfig(t *testing.T) {
 		},
 		userConfigMap{},
 		mock.IsType(&resourceEnhancer{}),
-	).Return(&componenttest.ExampleReceiverProducer{}, nil)
+	).Return(&nopWithEndpointReceiver{}, nil)
 	handler.OnAdd([]observer.Endpoint{
 		podEndpoint,
 	})

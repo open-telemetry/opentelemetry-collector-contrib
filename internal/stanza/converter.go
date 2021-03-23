@@ -40,15 +40,15 @@ func Convert(obsLog *entry.Entry) pdata.Logs {
 	ills := rls.InstrumentationLibraryLogs().At(0)
 
 	lr := pdata.NewLogRecord()
-	lr.SetTimestamp(pdata.TimestampUnixNano(obsLog.Timestamp.UnixNano()))
+	lr.SetTimestamp(pdata.TimestampFromTime(obsLog.Timestamp))
 
 	sevText, sevNum := convertSeverity(obsLog.Severity)
 	lr.SetSeverityText(sevText)
 	lr.SetSeverityNumber(sevNum)
 
-	if len(obsLog.Labels) > 0 {
+	if len(obsLog.Attributes) > 0 {
 		attributes := lr.Attributes()
-		for k, v := range obsLog.Labels {
+		for k, v := range obsLog.Attributes {
 			attributes.InsertString(k, v)
 		}
 	}

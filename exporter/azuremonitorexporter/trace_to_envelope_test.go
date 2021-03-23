@@ -61,8 +61,8 @@ var (
 	defaultSpanIDAsHex            = fmt.Sprintf("%02x", defaultSpanID)
 	defaultParentSpanID           = [8]byte{35, 191, 77, 229, 162, 242, 217, 77}
 	defaultParentSpanIDAsHex      = fmt.Sprintf("%02x", defaultParentSpanID)
-	defaultSpanStartTime          = pdata.TimestampUnixNano(0)
-	defaultSpanEndTme             = pdata.TimestampUnixNano(60000000000)
+	defaultSpanStartTime          = pdata.Timestamp(0)
+	defaultSpanEndTme             = pdata.Timestamp(60000000000)
 	defaultSpanDuration           = formatDuration(toTime(defaultSpanEndTme).Sub(toTime(defaultSpanStartTime)))
 	defaultHTTPStatusCodeAsString = strconv.FormatInt(defaultHTTPStatusCode, 10)
 	defaultRPCStatusCodeAsString  = strconv.FormatInt(defaultRPCStatusCode, 10)
@@ -417,22 +417,6 @@ func TestRPCClientSpanToRemoteDependencyData(t *testing.T) {
 
 	assert.Equal(t, "8", data.ResultCode)
 	assert.Equal(t, span.Status().Code().String(), data.Properties[attributeOtelStatusCode])
-	assert.Equal(t, pdata.DeprecatedStatusCodeUnknownError.String(), data.Properties[attributeOtelStatusDeprecatedCode])
-	assert.Equal(t, span.Status().Message(), data.Properties[attributeOtelStatusDescription])
-
-	// test RPC error using the legacy Deprecated status code
-	span.Status().SetCode(pdata.StatusCodeUnset)
-	spanAttributes.Delete(attributeRPCGRPCStatusCode)
-
-	span.Status().SetDeprecatedCode(8)
-	span.Status().SetMessage("Resource exhausted")
-
-	envelope, _ = spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
-	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
-
-	assert.Equal(t, "8", data.ResultCode)
-	assert.Equal(t, pdata.StatusCodeUnset.String(), data.Properties[attributeOtelStatusCode])
-	assert.Equal(t, pdata.DeprecatedStatusCodeResourceExhausted.String(), data.Properties[attributeOtelStatusDeprecatedCode])
 	assert.Equal(t, span.Status().Message(), data.Properties[attributeOtelStatusDescription])
 }
 
