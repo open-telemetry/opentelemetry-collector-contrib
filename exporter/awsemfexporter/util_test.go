@@ -183,7 +183,7 @@ func TestGetLogInfo(t *testing.T) {
 				Labels: map[string]string{
 					"aws.ecs.cluster.name": "test-cluster-name",
 					"aws.ecs.task.id":      "test-task-id",
-					"NodeName":             "ip-192-168-58-245.ec2.internal",
+					"k8s.node.name":        "ip-192-168-58-245.ec2.internal",
 				},
 			},
 		},
@@ -194,9 +194,9 @@ func TestGetLogInfo(t *testing.T) {
 			},
 			Resource: &resourcepb.Resource{
 				Labels: map[string]string{
-					"ClusterName":   "test-cluster-name",
-					"TaskId":        "test-task-id",
-					"k8s.node.name": "ip-192-168-58-245.ec2.internal",
+					"ClusterName": "test-cluster-name",
+					"TaskId":      "test-task-id",
+					"NodeName":    "ip-192-168-58-245.ec2.internal",
 				},
 			},
 		},
