@@ -27,15 +27,15 @@ import (
 // Composite index of a log record in pdata.Logs.
 type logIndex struct {
 	// Index in orig list (i.e. root parent index).
-	resourceIdx int
+	resource int
 	// Index in InstrumentationLibraryLogs list (i.e. immediate parent index).
-	libraryIdx int
+	library int
 	// Index in Logs list (i.e. the log record index).
-	recordIdx int
+	record int
 }
 
 func (i *logIndex) zero() bool {
-	return i.resourceIdx == 0 && i.libraryIdx == 0 && i.recordIdx == 0
+	return i.resource == 0 && i.library == 0 && i.record == 0
 }
 
 func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {

@@ -107,7 +107,7 @@ func createLogData(numResources int, numLibraries int, numRecords int) pdata.Log
 		for j := 0; j < numLibraries; j++ {
 			ill := rl.InstrumentationLibraryLogs().At(j)
 			for k := 0; k < numRecords; k++ {
-				ts := pdata.TimestampUnixNano(int64(k) * time.Millisecond.Nanoseconds())
+				ts := pdata.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
 				logRecord := pdata.NewLogRecord()
 				logRecord.SetName(fmt.Sprintf("%d_%d_%d", i, j, k))
 				logRecord.Body().SetStringVal("mylog")
@@ -310,10 +310,10 @@ func TestReceiveLogs(t *testing.T) {
 			},
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}` + "\n\r\n\r\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}` + "\n\r\n\r\n" +
-						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}` + "\n\r\n\r\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}` + "\n\r\n\r\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
 				},
 				numBatches: 1,
 			},
@@ -328,15 +328,15 @@ func TestReceiveLogs(t *testing.T) {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.DisableCompression = disableCompression
 				cfg.MinContentLengthCompression = 4 // Given the 4 logs, 4 bytes minimum triggers compression when enable.
-				cfg.MaxContentLengthLogs = 150
+				cfg.MaxContentLengthLogs = 300
 				return cfg
 			},
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}` + "\n\r\n\r\n",
-					`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}` + "\n\r\n\r\n",
-					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}` + "\n\r\n\r\n",
-					`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}` + "\n\r\n\r\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
 				},
 				numBatches: 4,
 			},
@@ -351,15 +351,15 @@ func TestReceiveLogs(t *testing.T) {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.DisableCompression = disableCompression
 				cfg.MinContentLengthCompression = 4 // Given the 4 logs, 4 bytes minimum triggers compression when enable.
-				cfg.MaxContentLengthLogs = 300
+				cfg.MaxContentLengthLogs = 400
 				return cfg
 			},
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}` + "\n\r\n\r\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}` + "\n\r\n\r\n",
-					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}` + "\n\r\n\r\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}` + "\n\r\n\r\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
 				},
 				numBatches: 2,
 			},
@@ -568,10 +568,9 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 	log.Body().SetDoubleVal(math.Inf(1))
 	logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().Append(log)
 
-	numDroppedLogs, err := c.pushLogData(context.Background(), logs)
+	err := c.pushLogData(context.Background(), logs)
 
 	assert.Contains(t, err.Error(), "json: unsupported value: +Inf")
-	assert.Equal(t, 1, numDroppedLogs)
 }
 
 func Test_pushLogData_PostError(t *testing.T) {
@@ -592,10 +591,9 @@ func Test_pushLogData_PostError(t *testing.T) {
 	for _, disable := range []bool{true, false} {
 		c.config.DisableCompression = disable
 
-		numDroppedLogs, err := c.pushLogData(context.Background(), logs)
+		err := c.pushLogData(context.Background(), logs)
 		if assert.Error(t, err) {
 			assert.IsType(t, consumererror.PartialError{}, err)
-			assert.Equal(t, numLogs, numDroppedLogs)
 		}
 	}
 }
@@ -617,12 +615,11 @@ func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 	for _, disable := range []bool{true, false} {
 		c.config.DisableCompression = disable
 
-		numDroppedLogs, err := c.pushLogData(context.Background(), logs)
+		err := c.pushLogData(context.Background(), logs)
 		require.Error(t, err)
 
 		assert.True(t, consumererror.IsPermanent(err))
 		assert.Contains(t, err.Error(), "dropped log event")
-		assert.Equal(t, numLogs, numDroppedLogs)
 	}
 }
 
@@ -631,37 +628,34 @@ func TestSubLogs(t *testing.T) {
 	logs := createLogData(2, 2, 3)
 
 	// Logs subset from leftmost index (resource 0, library 0, record 0).
-	_0_0_0 := &logIndex{resourceIdx: 0, libraryIdx: 0, recordIdx: 0}
+	_0_0_0 := &logIndex{resource: 0, library: 0, record: 0}
 	got := subLogs(&logs, _0_0_0)
 
 	// Number of logs in subset should equal original logs.
 	assert.Equal(t, logs.LogRecordCount(), got.LogRecordCount())
 
-	orig := *got.InternalRep().Orig
 	// The name of the leftmost log record should be 0_0_0.
-	assert.Equal(t, "0_0_0", orig[0].InstrumentationLibraryLogs[0].Logs[0].Name)
+	assert.Equal(t, "0_0_0", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
 	// The name of the leftmost log record should be 1_1_2.
-	assert.Equal(t, "1_1_2", orig[1].InstrumentationLibraryLogs[1].Logs[2].Name)
+	assert.Equal(t, "1_1_2", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(1).Logs().At(2).Name())
 
 	// Logs subset from some mid index (resource 0, library 1, log 2).
-	_0_1_2 := &logIndex{resourceIdx: 0, libraryIdx: 1, recordIdx: 2}
+	_0_1_2 := &logIndex{resource: 0, library: 1, record: 2}
 	got = subLogs(&logs, _0_1_2)
 
 	assert.Equal(t, 7, got.LogRecordCount())
 
-	orig = *got.InternalRep().Orig
 	// The name of the leftmost log record should be 0_1_2.
-	assert.Equal(t, "0_1_2", orig[0].InstrumentationLibraryLogs[0].Logs[0].Name)
+	assert.Equal(t, "0_1_2", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
 	// The name of the rightmost log record should be 1_1_2.
-	assert.Equal(t, "1_1_2", orig[1].InstrumentationLibraryLogs[1].Logs[2].Name)
+	assert.Equal(t, "1_1_2", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(1).Logs().At(2).Name())
 
 	// Logs subset from some rightmost index (resource 0, library 1, log 2).
-	_1_1_2 := &logIndex{resourceIdx: 1, libraryIdx: 1, recordIdx: 2}
+	_1_1_2 := &logIndex{resource: 1, library: 1, record: 2}
 	got = subLogs(&logs, _1_1_2)
 
 	assert.Equal(t, 1, got.LogRecordCount())
 
-	orig = *got.InternalRep().Orig
 	// The name of the sole log record should be 1_1_2.
-	assert.Equal(t, "1_1_2", orig[0].InstrumentationLibraryLogs[0].Logs[0].Name)
+	assert.Equal(t, "1_1_2", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
 }

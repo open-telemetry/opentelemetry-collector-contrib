@@ -152,23 +152,47 @@ func (c *client) postEvents(ctx context.Context, events io.Reader, compressed bo
 	return nil
 }
 
-func subLogs(ld *pdata.Logs, logIdx *logIndex) *pdata.Logs {
-	if logIdx.zero() {
+func subLogs(ld *pdata.Logs, start *logIndex) *pdata.Logs {
+	if start.zero() {
 		return ld
 	}
-	clone := ld.Clone().InternalRep()
 
-	subset := *clone.Orig
-	subset = subset[logIdx.resourceIdx:]
-	subset[0].InstrumentationLibraryLogs = subset[0].InstrumentationLibraryLogs[logIdx.libraryIdx:]
-	subset[0].InstrumentationLibraryLogs[0].Logs = subset[0].InstrumentationLibraryLogs[0].Logs[logIdx.recordIdx:]
+	logs := pdata.NewLogs()
+	RL, RL2 := ld.ResourceLogs(), logs.ResourceLogs()
 
-	clone.Orig = &subset
-	logs := pdata.LogsFromInternalRep(clone)
+	for r := start.resource; r < RL.Len(); r++ {
+		RL2.Append(pdata.NewResourceLogs())
+		RL.At(r).Resource().CopyTo(RL2.At(r - start.resource).Resource())
+
+		IL, IL2 := RL.At(r).InstrumentationLibraryLogs(), RL2.At(r-start.resource).InstrumentationLibraryLogs()
+
+		i := 0
+		if r == start.resource {
+			i = start.library
+		}
+		for i2 := 0; i < IL.Len(); i++ {
+			IL2.Append(pdata.NewInstrumentationLibraryLogs())
+			IL.At(i).InstrumentationLibrary().CopyTo(IL2.At(i2).InstrumentationLibrary())
+
+			LR, LR2 := IL.At(i).Logs(), IL2.At(i2).Logs()
+			i2++
+
+			l := 0
+			if r == start.resource && i == start.library {
+				l = start.record
+			}
+			for l2 := 0; l < LR.Len(); l++ {
+				LR2.Append(pdata.NewLogRecord())
+				LR.At(l).CopyTo(LR2.At(l2))
+				l2++
+			}
+		}
+	}
+
 	return &logs
 }
 
-func (c *client) sentLogBatch(ctx context.Context, ld pdata.Logs, send func(context.Context, *bytes.Buffer) error) (numDroppedLogs int, err error) {
+func (c *client) sentLogBatch(ctx context.Context, ld pdata.Logs, send func(context.Context, *bytes.Buffer) error) (err error) {
 	var submax int
 	var index *logIndex
 	var permanentErrors []error
@@ -186,7 +210,7 @@ func (c *client) sentLogBatch(ctx context.Context, ld pdata.Logs, send func(cont
 			logs := ills.At(j).Logs()
 			for k := 0; k < logs.Len(); k++ {
 				if index == nil {
-					index = &logIndex{resourceIdx: i, libraryIdx: j, recordIdx: k}
+					index = &logIndex{resource: i, library: j, record: k}
 				}
 
 				event := mapLogRecordToSplunkEvent(logs.At(k), c.config, c.logger)
@@ -215,7 +239,7 @@ func (c *client) sentLogBatch(ctx context.Context, ld pdata.Logs, send func(cont
 				if batch.Len() > 0 {
 					if err = send(ctx, batch); err != nil {
 						dropped := subLogs(&ld, index)
-						return dropped.LogRecordCount(), consumererror.PartialLogsError(err, *dropped)
+						return consumererror.PartialLogsError(err, *dropped)
 					}
 				}
 				batch.Reset()
@@ -229,14 +253,14 @@ func (c *client) sentLogBatch(ctx context.Context, ld pdata.Logs, send func(cont
 	if batch.Len() > 0 {
 		if err = send(ctx, batch); err != nil {
 			dropped := subLogs(&ld, index)
-			return dropped.LogRecordCount(), consumererror.PartialLogsError(err, *dropped)
+			return consumererror.PartialLogsError(err, *dropped)
 		}
 	}
 
-	return len(permanentErrors), consumererror.CombineErrors(permanentErrors)
+	return consumererror.CombineErrors(permanentErrors)
 }
 
-func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (numDroppedLogs int, err error) {
+func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (err error) {
 	c.wg.Add(1)
 	defer c.wg.Done()
 
