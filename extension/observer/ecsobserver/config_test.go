@@ -12,14 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ecssd
+package ecsobserver
 
-type TaskDefinitionConfig struct {
-	CommonExporterConfig `mapstructure:",squash" yaml:",inline"`
+import (
+	"testing"
 
-	// ArnPattern is mandetory, empty string means arn based match is skipped.
-	ArnPattern string `mapstructure:"arn_pattern" yaml:"arn_pattern"`
-	// ContainerNamePattern is optional, empty string means all containers in that task definition would be exported.
-	// Otherwise both service and container name petterns need to metch.
-	ContainerNamePattern string `mapstructure:"container_name_pattern" yaml:"container_name_pattern"`
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestLoadConfig(t *testing.T) {
+	b := mustReadFile(t, "testdata/config_example.yaml")
+	c, err := LoadConfig(b)
+	require.NoError(t, err)
+	assert.Equal(t, ExampleConfig(), c)
+
+	_, err = LoadConfig([]byte("{this is not yaml, just to increase test coverage}"))
+	require.Error(t, err)
 }

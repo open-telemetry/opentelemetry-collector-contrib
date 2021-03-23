@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ecssd
+package ecsobserver
 
 import (
+	"sigs.k8s.io/yaml"
 	"time"
 
 	"gopkg.in/yaml.v2"
