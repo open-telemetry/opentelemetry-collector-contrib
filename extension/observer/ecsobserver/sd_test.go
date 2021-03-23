@@ -31,7 +31,7 @@ import (
 
 func TestNew(t *testing.T) {
 	t.Run("actual fecther is not implemented", func(t *testing.T) {
-		_, err := New(ExampleConfig(), ServiceDiscoveryOptions{})
+		_, err := NewDiscovery(ExampleConfig(), ServiceDiscoveryOptions{})
 		require.Error(t, err)
 	})
 }
@@ -163,7 +163,7 @@ func TestServiceDiscovery_RunAndWriteFile(t *testing.T) {
 	}
 
 	t.Run("success", func(t *testing.T) {
-		sd, err := New(cfg, opts)
+		sd, err := NewDiscovery(cfg, opts)
 		require.NoError(t, err)
 		ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
 		defer cancel()
@@ -176,7 +176,7 @@ func TestServiceDiscovery_RunAndWriteFile(t *testing.T) {
 	t.Run("fail to write file", func(t *testing.T) {
 		cfg2 := cfg
 		cfg2.ResultFile = "testdata/folder/does/not/exists/ut_targets.yaml"
-		sd, err := New(cfg2, opts)
+		sd, err := NewDiscovery(cfg2, opts)
 		require.NoError(t, err)
 		require.Error(t, sd.RunAndWriteFile(context.TODO()))
 	})
@@ -188,7 +188,7 @@ func TestServiceDiscovery_RunAndWriteFile(t *testing.T) {
 				return nil, fmt.Errorf("discovery should fail")
 			}),
 		}
-		sd, err := New(cfg, optsNoFetch)
+		sd, err := NewDiscovery(cfg, optsNoFetch)
 		require.NoError(t, err)
 		require.Error(t, sd.RunAndWriteFile(context.TODO()))
 	})

@@ -15,9 +15,10 @@
 package ecsobserver
 
 import (
+	"os"
 	"time"
 
-	"gopkg.in/yaml.v2"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 const (
@@ -27,6 +28,8 @@ const (
 )
 
 type Config struct {
+	configmodels.ExtensionSettings `mapstructure:",squash" yaml:",inline"`
+
 	// ClusterName is the target ECS cluster name for service discovery.
 	ClusterName string `mapstructure:"cluster_name" yaml:"cluster_name"`
 	// ClusterRegion is the target ECS cluster's AWS region.
@@ -48,14 +51,20 @@ type Config struct {
 	DockerLabels []DockerLabelConfig `mapstructure:"docker_labels" yaml:"docker_labels"`
 }
 
-// LoadConfig use yaml.v2 to decode the struct.
-// It returns the yaml decode error directly.
-func LoadConfig(b []byte) (Config, error) {
-	var c Config
-	if err := yaml.UnmarshalStrict(b, &c); err != nil {
-		return Config{}, err
+// DefaultConfig does NOT work out of box because it has no filters.
+// TODO: add docker label? how will viper handles merging slice?
+func DefaultConfig() Config {
+	return Config{
+		ExtensionSettings: configmodels.ExtensionSettings{
+			TypeVal: typeStr,
+			NameVal: string(typeStr),
+		},
+		ClusterName:     "default",
+		ClusterRegion:   os.Getenv(AWSRegionEnvKey),
+		ResultFile:      "/etc/ecs_sd_targets.yaml",
+		RefreshInterval: DefaultRefreshInterval,
+		JobLabelName:    DefaultJobLabelName,
 	}
-	return c, nil
 }
 
 // ExampleConfig returns an example instance that matches testdata/config_example.yaml.

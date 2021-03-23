@@ -15,18 +15,47 @@
 package ecsobserver
 
 import (
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	b := mustReadFile(t, "testdata/config_example.yaml")
-	c, err := LoadConfig(b)
-	require.NoError(t, err)
-	assert.Equal(t, ExampleConfig(), c)
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
 
-	_, err = LoadConfig([]byte("{this is not yaml, just to increase test coverage}"))
-	require.Error(t, err)
+	factory := NewFactory()
+	factories.Extensions[typeStr] = factory
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+
+	require.Nil(t, err)
+	require.NotNil(t, cfg)
+
+	require.Len(t, cfg.Extensions, 3)
+
+	// Default
+	ext0 := cfg.Extensions["ecs_observer"]
+	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
+
+	// Merge w/ Default
+	ext1 := cfg.Extensions["ecs_observer/1"]
+	assert.Equal(t, DefaultConfig().ClusterName, ext1.(*Config).ClusterName)
+	assert.NotEqual(t, DefaultConfig().ClusterRegion, ext1.(*Config).ClusterRegion)
+	assert.Equal(t, "my_prometheus_job", ext1.(*Config).JobLabelName)
+
+	// Example Config
+	ext2 := cfg.Extensions["ecs_observer/2"]
+	exampleCfg := ExampleConfig()
+	exampleCfg.ExtensionSettings = configmodels.ExtensionSettings{
+		TypeVal: "ecs_observer",
+		NameVal: "ecs_observer/2",
+	}
+	assert.Equal(t,
+		&exampleCfg,
+		ext2)
 }

@@ -27,15 +27,10 @@ type TaskFilter struct {
 	matchers map[MatcherType][]Matcher
 }
 
-type TaskFilterOptions struct {
-	Logger   *zap.Logger
-	Matchers map[MatcherType][]Matcher
-}
-
-func NewTaskFilter(c Config, opts TaskFilterOptions) (*TaskFilter, error) {
+func NewTaskFilter(c Config, logger *zap.Logger, matchers map[MatcherType][]Matcher) (*TaskFilter, error) {
 	return &TaskFilter{
-		logger:   opts.Logger,
-		matchers: opts.Matchers,
+		logger:  logger,
+		matchers: matchers,
 	}, nil
 }
 

@@ -36,7 +36,7 @@ type ServiceDiscoveryOptions struct {
 	FetcherOverride Fetcher // for injecting MockFetcher
 }
 
-func New(cfg Config, opts ServiceDiscoveryOptions) (*ServiceDiscovery, error) {
+func NewDiscovery(cfg Config, opts ServiceDiscoveryOptions) (*ServiceDiscovery, error) {
 	var (
 		fetcher Fetcher
 		err     error
@@ -59,7 +59,7 @@ func New(cfg Config, opts ServiceDiscoveryOptions) (*ServiceDiscovery, error) {
 	if err != nil {
 		return nil, fmt.Errorf("init matchers failed: %w", err)
 	}
-	filter, err := NewTaskFilter(cfg, TaskFilterOptions{Logger: opts.Logger, Matchers: matchers})
+	filter, err := NewTaskFilter(cfg, opts.Logger, matchers)
 	if err != nil {
 		return nil, fmt.Errorf("init filter failed: %w", err)
 	}
