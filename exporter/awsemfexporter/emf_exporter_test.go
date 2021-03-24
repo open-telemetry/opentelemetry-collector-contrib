@@ -122,14 +122,14 @@ func TestConsumeMetrics(t *testing.T) {
 	require.NoError(t, exp.Shutdown(ctx))
 }
 
-func TestConsumeMetricsWithRunInLambda(t *testing.T) {
+func TestConsumeMetricsWithOutputDestination(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = 0
-	expCfg.RunInLambda = true
+	expCfg.OutputDestination = "stdout"
 	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)

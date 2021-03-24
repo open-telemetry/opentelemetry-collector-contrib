@@ -119,7 +119,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) err
 	groupedMetrics := make(map[interface{}]*GroupedMetric)
 	expConfig := emf.config.(*Config)
 	defaultLogStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
-	runInLambda := expConfig.RunInLambda
+	outputDestination := expConfig.OutputDestination
 
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
@@ -129,10 +129,10 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) err
 	for _, groupedMetric := range groupedMetrics {
 		cWMetric := translateGroupedMetricToCWMetric(groupedMetric, expConfig)
 		putLogEvent := translateCWMetricToEMF(cWMetric)
-		// If RUN_IN_LAMBDA, send EMF log into stdout, which will then be redirected to CWLogs by Lambda
-		if runInLambda {
+		// Currently we only support two options for "OutputDestination".
+		if outputDestination == "stdout" {
 			fmt.Println(*putLogEvent.InputLogEvent.Message)
-		} else {
+		} else if outputDestination == "CloudWatch" {
 			logGroup := groupedMetric.Metadata.LogGroup
 			logStream := groupedMetric.Metadata.LogStream
 			if logStream == "" {
@@ -149,7 +149,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) err
 		}
 	}
 
-	if !runInLambda {
+	if outputDestination == "CloudWatch" {
 		for _, pusher := range emf.listPushers() {
 			returnError := pusher.ForceFlush()
 			if returnError != nil {
