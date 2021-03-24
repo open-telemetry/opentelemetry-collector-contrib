@@ -56,6 +56,7 @@ func (s *topicScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 		Timestamp:                  time.Now(),
 	}
 	if err != nil {
+		s.logger.Error("Error fetching cluster topics ", zap.Error(err))
 		return metrics.Metrics.ResourceMetrics(), err
 	}
 
