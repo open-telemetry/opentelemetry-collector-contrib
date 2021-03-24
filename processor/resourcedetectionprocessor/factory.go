@@ -99,7 +99,7 @@ func (f *factory) createTraceProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextConsumer consumer.TracesConsumer,
+	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	rdp, err := f.getResourceDetectionProcessor(params, cfg)
 	if err != nil {
@@ -118,7 +118,7 @@ func (f *factory) createMetricsProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	rdp, err := f.getResourceDetectionProcessor(params, cfg)
 	if err != nil {
@@ -137,7 +137,7 @@ func (f *factory) createLogsProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextConsumer consumer.LogsConsumer,
+	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	rdp, err := f.getResourceDetectionProcessor(params, cfg)
 	if err != nil {

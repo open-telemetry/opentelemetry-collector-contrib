@@ -120,5 +120,5 @@ func (dc *DimensionClient) PushMetadata(metadata []*metadata.MetadataUpdate) err
 		}
 	}
 
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }

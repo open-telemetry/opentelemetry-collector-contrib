@@ -60,7 +60,7 @@ func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
 	rConf configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
+	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*config)
 

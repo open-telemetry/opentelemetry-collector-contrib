@@ -67,7 +67,7 @@ func createTraceReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	consumer consumer.TracesConsumer,
+	consumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 
 	return nil, configerror.ErrDataTypeIsNotSupported
@@ -78,7 +78,7 @@ func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
+	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 
 	rCfg := cfg.(*Config)
@@ -96,7 +96,7 @@ func createLogsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	consumer consumer.LogsConsumer,
+	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 
 	rCfg := cfg.(*Config)

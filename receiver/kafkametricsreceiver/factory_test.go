@@ -44,7 +44,7 @@ func TestCreateMetricsReceiver_errors(t *testing.T) {
 
 func TestCreateMetricsReceiver(t *testing.T) {
 	prev := newMetricsReceiver
-	newMetricsReceiver = func(ctx context.Context, config Config, params component.ReceiverCreateParams, consumer consumer.MetricsConsumer) (component.MetricsReceiver, error) {
+	newMetricsReceiver = func(ctx context.Context, config Config, params component.ReceiverCreateParams, consumer consumer.Metrics) (component.MetricsReceiver, error) {
 		return nil, nil
 	}
 	factory := NewFactory()

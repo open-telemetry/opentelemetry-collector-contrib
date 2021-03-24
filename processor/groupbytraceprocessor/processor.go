@@ -38,7 +38,7 @@ import (
 // This processor uses also a ring buffer to hold the in-flight trace IDs, so that we don't hold more than the given maximum number
 // of traces in memory/storage. Items that are evicted from the buffer are discarded without warning.
 type groupByTraceProcessor struct {
-	nextConsumer consumer.TracesConsumer
+	nextConsumer consumer.Traces
 	config       Config
 	logger       *zap.Logger
 
@@ -55,7 +55,7 @@ type groupByTraceProcessor struct {
 var _ component.TracesProcessor = (*groupByTraceProcessor)(nil)
 
 // newGroupByTraceProcessor returns a new processor.
-func newGroupByTraceProcessor(logger *zap.Logger, st storage, nextConsumer consumer.TracesConsumer, config Config) *groupByTraceProcessor {
+func newGroupByTraceProcessor(logger *zap.Logger, st storage, nextConsumer consumer.Traces, config Config) *groupByTraceProcessor {
 	// the event machine will buffer up to N concurrent events before blocking
 	eventMachine := newEventMachine(logger, 10000)
 

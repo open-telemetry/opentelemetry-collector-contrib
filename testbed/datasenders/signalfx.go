@@ -29,7 +29,7 @@ import (
 // SFxMetricsDataSender implements MetricDataSender for SignalFx metrics protocol.
 type SFxMetricsDataSender struct {
 	testbed.DataSenderBase
-	consumer.MetricsConsumer
+	consumer.Metrics
 }
 
 // Ensure SFxMetricsDataSender implements MetricDataSenderOld.
@@ -62,7 +62,7 @@ func (sf *SFxMetricsDataSender) Start() error {
 		return err
 	}
 
-	sf.MetricsConsumer = exporter
+	sf.Metrics = exporter
 	return nil
 }
 

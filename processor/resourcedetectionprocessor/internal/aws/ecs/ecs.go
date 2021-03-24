@@ -69,6 +69,7 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	attr.InsertString(conventions.AttributeCloudInfrastructureService, conventions.AttributeCloudProviderAWSECS)
 	attr.InsertString("aws.ecs.task.arn", tmdeResp.TaskARN)
 	attr.InsertString("aws.ecs.task.family", tmdeResp.Family)
+	attr.InsertString("aws.ecs.task.revision", tmdeResp.Revision)
 
 	region, account := parseRegionAndAccount(tmdeResp.TaskARN)
 	if account != "" {

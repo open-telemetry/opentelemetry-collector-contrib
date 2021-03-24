@@ -54,7 +54,7 @@ func newElasticTraceExporter(
 				errs = append(errs, err)
 			}
 		}
-		return consumererror.CombineErrors(errs)
+		return consumererror.Combine(errs)
 	})
 }
 
@@ -76,7 +76,7 @@ func newElasticMetricsExporter(
 				errs = append(errs, err)
 			}
 		}
-		return consumererror.CombineErrors(errs)
+		return consumererror.Combine(errs)
 	})
 }
 
@@ -149,7 +149,7 @@ func (e *elasticExporter) ExportResourceSpans(ctx context.Context, rs pdata.Reso
 	if err := e.sendEvents(ctx, &w); err != nil {
 		return count, err
 	}
-	return len(errs), consumererror.CombineErrors(errs)
+	return len(errs), consumererror.Combine(errs)
 }
 
 // ExportResourceMetrics exports OTLP metrics to Elastic APM Server,
@@ -175,7 +175,7 @@ func (e *elasticExporter) ExportResourceMetrics(ctx context.Context, rm pdata.Re
 	if err := e.sendEvents(ctx, &w); err != nil {
 		return totalDropped, err
 	}
-	return totalDropped, consumererror.CombineErrors(errs)
+	return totalDropped, consumererror.Combine(errs)
 }
 
 func (e *elasticExporter) sendEvents(ctx context.Context, w *fastjson.Writer) error {

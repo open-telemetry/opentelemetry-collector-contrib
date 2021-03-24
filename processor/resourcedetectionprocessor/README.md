@@ -65,6 +65,7 @@ ec2:
     * aws.ecs.cluster.arn
     * aws.ecs.task.arn
     * aws.ecs.task.family
+    * aws.ecs.task.revision
     * aws.ecs.launchtype (V4 only)
     * aws.log.group.names (V4 only)
     * aws.log.group.arns (V4 only)

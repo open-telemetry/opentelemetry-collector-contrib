@@ -90,7 +90,7 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 		}
 	}
 
-	return consumererror.CombineErrors(errors)
+	return consumererror.Combine(errors)
 }
 
 func (e *logExporterImp) consumeLog(ctx context.Context, ld pdata.Logs) error {

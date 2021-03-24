@@ -70,7 +70,7 @@ func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
+	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	return newReceiverCreator(params, cfg.(*Config), consumer)
 }
