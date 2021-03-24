@@ -307,10 +307,11 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 	mi := 0
 	// The first 3 metrics are for call counts.
 	for ; mi < 3; mi++ {
-		assert.Equal(t, "calls", m.At(mi).Name())
+		assert.Equal(t, "calls_total", m.At(mi).Name())
 
 		data := m.At(mi).IntSum()
 		assert.Equal(t, pdata.AggregationTemporalityCumulative, data.AggregationTemporality())
+		assert.True(t, data.IsMonotonic())
 
 		dps := data.DataPoints()
 		require.Equal(t, 1, dps.Len())
