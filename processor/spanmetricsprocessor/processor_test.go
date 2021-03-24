@@ -311,7 +311,7 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 
 		data := m.At(mi).IntSum()
 		assert.Equal(t, pdata.AggregationTemporalityCumulative, data.AggregationTemporality())
-		assert.Equal(t, true, data.IsMonotonic())
+		assert.True(t, data.IsMonotonic())
 
 		dps := data.DataPoints()
 		require.Equal(t, 1, dps.Len())
