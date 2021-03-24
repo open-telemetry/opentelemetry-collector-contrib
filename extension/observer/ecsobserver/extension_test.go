@@ -16,11 +16,11 @@ package ecsobserver
 
 import (
 	"context"
-	"go.uber.org/zap"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/zap"
 )
 
 // Simply start and stop, the actual test logic is in sd_test.go until we implement the ListWatcher interface.

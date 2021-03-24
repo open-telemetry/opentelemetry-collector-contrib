@@ -22,9 +22,10 @@ import (
 )
 
 const (
-	DefaultRefreshInterval = 30 * time.Second
-	DefaultJobLabelName    = "prometheus_job"
-	AWSRegionEnvKey        = "AWS_REGION"
+	DefaultRefreshInterval             = 30 * time.Second
+	DefaultJobLabelName                = "prometheus_job"
+	AWSRegionEnvKey                    = "AWS_REGION"
+	DefaultDockerLabelMatcherPortLabel = "ECS_PROMETHEUS_EXPORTER_PORT"
 )
 
 type Config struct {
@@ -51,8 +52,7 @@ type Config struct {
 	DockerLabels []DockerLabelConfig `mapstructure:"docker_labels" yaml:"docker_labels"`
 }
 
-// DefaultConfig does NOT work out of box because it has no filters.
-// TODO: add docker label? how will viper handles merging slice?
+// DefaultConfig only applies docker label
 func DefaultConfig() Config {
 	return Config{
 		ExtensionSettings: configmodels.ExtensionSettings{
@@ -64,6 +64,11 @@ func DefaultConfig() Config {
 		ResultFile:      "/etc/ecs_sd_targets.yaml",
 		RefreshInterval: DefaultRefreshInterval,
 		JobLabelName:    DefaultJobLabelName,
+		DockerLabels: []DockerLabelConfig{
+			{
+				PortLabel: DefaultDockerLabelMatcherPortLabel,
+			},
+		},
 	}
 }
 

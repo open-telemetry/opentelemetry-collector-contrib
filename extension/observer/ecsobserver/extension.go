@@ -16,9 +16,9 @@ package ecsobserver
 
 import (
 	"context"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
 )
 
 var _ component.Extension = (*ecsObserver)(nil)

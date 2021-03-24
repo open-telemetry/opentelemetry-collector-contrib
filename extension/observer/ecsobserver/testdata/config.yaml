@@ -19,6 +19,9 @@ extensions:
         arn_pattern: '.*:task-definition/nginx:[0-9]+'
     docker_labels:
       - port_label: 'ECS_PROMETHEUS_EXPORTER_PORT'
+  ecs_observer/3:
+    docker_labels:
+      - port_label: 'IS_NOT_DEFAULT'
 
 service:
   extensions: [ ecs_observer, ecs_observer/1 ]

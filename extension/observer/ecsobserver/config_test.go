@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	require.Len(t, cfg.Extensions, 3)
+	require.Len(t, cfg.Extensions, 4)
 
 	// Default
 	ext0 := cfg.Extensions["ecs_observer"]
@@ -50,12 +50,24 @@ func TestLoadConfig(t *testing.T) {
 
 	// Example Config
 	ext2 := cfg.Extensions["ecs_observer/2"]
-	exampleCfg := ExampleConfig()
-	exampleCfg.ExtensionSettings = configmodels.ExtensionSettings{
+	ext2Expected := ExampleConfig()
+	ext2Expected.ExtensionSettings = configmodels.ExtensionSettings{
 		TypeVal: "ecs_observer",
 		NameVal: "ecs_observer/2",
 	}
-	assert.Equal(t,
-		&exampleCfg,
-		ext2)
+	assert.Equal(t, &ext2Expected, ext2)
+
+	// Override docker label from default
+	ext3 := cfg.Extensions["ecs_observer/3"]
+	ext3Expected := DefaultConfig()
+	ext3Expected.ExtensionSettings = configmodels.ExtensionSettings{
+		TypeVal: "ecs_observer",
+		NameVal: "ecs_observer/3",
+	}
+	ext3Expected.DockerLabels = []DockerLabelConfig{
+		{
+			PortLabel: "IS_NOT_DEFAULT",
+		},
+	}
+	assert.Equal(t, &ext3Expected, ext3)
 }

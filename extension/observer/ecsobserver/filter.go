@@ -29,7 +29,7 @@ type TaskFilter struct {
 
 func NewTaskFilter(c Config, logger *zap.Logger, matchers map[MatcherType][]Matcher) (*TaskFilter, error) {
 	return &TaskFilter{
-		logger:  logger,
+		logger:   logger,
 		matchers: matchers,
 	}, nil
 }
