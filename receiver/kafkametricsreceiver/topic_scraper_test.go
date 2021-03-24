@@ -137,7 +137,23 @@ func TestTopicScraper_scrape_handlesPartitionError(t *testing.T) {
 		logger:      zap.NewNop(),
 		topicFilter: match,
 	}
-	m, err := scraper.scrape(context.Background())
-	assert.Nil(t, err)
-	assert.NotNil(t, m)
+	_, err := scraper.scrape(context.Background())
+	assert.NotNil(t, err)
+}
+
+func TestTopicScraper_scrape_handlesPartialScrapeErrors(t *testing.T) {
+	client := newMockClient()
+	client.replicas = nil
+	client.inSyncReplicas = nil
+	client.replicas = nil
+	client.offset = -1
+	config := createDefaultConfig().(*Config)
+	match := regexp.MustCompile(config.TopicMatch)
+	scraper := topicScraper{
+		client:      client,
+		logger:      zap.NewNop(),
+		topicFilter: match,
+	}
+	_, err := scraper.scrape(context.Background())
+	assert.NotNil(t, err)
 }

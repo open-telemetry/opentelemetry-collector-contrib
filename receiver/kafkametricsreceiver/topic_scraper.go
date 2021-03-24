@@ -22,6 +22,7 @@ import (
 	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/simple"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
@@ -60,6 +61,8 @@ func (s *topicScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 		return metrics.Metrics.ResourceMetrics(), err
 	}
 
+	var scrapeErrors = scrapererror.ScrapeErrors{}
+
 	var matchedTopics []string
 	for _, t := range topics {
 		if s.topicFilter.MatchString(t) {
@@ -69,6 +72,7 @@ func (s *topicScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 	for _, topic := range matchedTopics {
 		partitions, err := s.client.Partitions(topic)
 		if err != nil {
+			scrapeErrors.Add(err)
 			continue
 		}
 		topicMetrics := metrics.WithLabels(map[string]string{
@@ -80,24 +84,32 @@ func (s *topicScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 				metadata.L.Partition: string(partition),
 			})
 			currentOffset, err := s.client.GetOffset(topic, partition, sarama.OffsetNewest)
-			if err == nil {
+			if err != nil {
+				scrapeErrors.AddPartial(1, err)
+			} else {
 				partitionMetrics.AddGaugeDataPoint(metadata.M.KafkaPartitionCurrentOffset.Name(), currentOffset)
 			}
 			oldestOffset, err := s.client.GetOffset(topic, partition, sarama.OffsetOldest)
-			if err == nil {
+			if err != nil {
+				scrapeErrors.AddPartial(1, err)
+			} else {
 				partitionMetrics.AddGaugeDataPoint(metadata.M.KafkaPartitionOldestOffset.Name(), oldestOffset)
 			}
 			replicas, err := s.client.Replicas(topic, partition)
-			if err == nil {
+			if err != nil {
+				scrapeErrors.AddPartial(1, err)
+			} else {
 				partitionMetrics.AddGaugeDataPoint(metadata.M.KafkaPartitionReplicas.Name(), int64(len(replicas)))
 			}
 			replicasInSync, err := s.client.InSyncReplicas(topic, partition)
-			if err == nil {
+			if err != nil {
+				scrapeErrors.AddPartial(1, err)
+			} else {
 				partitionMetrics.AddGaugeDataPoint(metadata.M.KafkaPartitionReplicasInSync.Name(), int64(len(replicasInSync)))
 			}
 		}
 	}
-	return metrics.Metrics.ResourceMetrics(), nil
+	return metrics.Metrics.ResourceMetrics(), scrapeErrors.Combine()
 }
 
 func createTopicsScraper(_ context.Context, config Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.ResourceMetricsScraper, error) {

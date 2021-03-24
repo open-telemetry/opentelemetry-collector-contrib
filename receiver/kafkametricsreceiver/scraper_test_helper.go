@@ -80,15 +80,24 @@ func (s *mockSaramaClient) Partitions(string) ([]int32, error) {
 }
 
 func (s *mockSaramaClient) GetOffset(string, int32, int64) (int64, error) {
-	return s.offset, nil
+	if s.offset != -1 {
+		return s.offset, nil
+	}
+	return s.offset, fmt.Errorf("mock offset error")
 }
 
 func (s *mockSaramaClient) Replicas(string, int32) ([]int32, error) {
-	return s.replicas, nil
+	if s.replicas != nil {
+		return s.replicas, nil
+	}
+	return nil, fmt.Errorf("mock replicas error")
 }
 
 func (s *mockSaramaClient) InSyncReplicas(string, int32) ([]int32, error) {
-	return s.inSyncReplicas, nil
+	if s.inSyncReplicas != nil {
+		return s.inSyncReplicas, nil
+	}
+	return nil, fmt.Errorf("mock in sync replicas error")
 }
 
 func newMockClient() *mockSaramaClient {
