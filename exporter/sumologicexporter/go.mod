@@ -12,6 +12,6 @@ require (
 	github.com/onsi/gomega v1.10.2 // indirect
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.23.1-0.20210323233523-a65a5a697891
+	go.opentelemetry.io/collector v0.23.1-0.20210324183556-8da7dcc70543
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )

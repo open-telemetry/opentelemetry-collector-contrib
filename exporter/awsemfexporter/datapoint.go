@@ -51,7 +51,7 @@ type DataPoint struct {
 // 	- pdata.DoubleDataPointSlice
 // 	- pdata.IntHistogramDataPointSlice
 // 	- pdata.DoubleHistogramDataPointSlice
-//  - pdata.DoubleSummaryDataPointSlice
+//  - pdata.SummaryDataPointSlice
 type DataPoints interface {
 	Len() int
 	// NOTE: At() is an expensive call as it calculates the metric's value
@@ -94,10 +94,10 @@ type DoubleHistogramDataPointSlice struct {
 	pdata.DoubleHistogramDataPointSlice
 }
 
-// DoubleSummaryDataPointSlice is a wrapper for pdata.DoubleSummaryDataPointSlice
-type DoubleSummaryDataPointSlice struct {
+// SummaryDataPointSlice is a wrapper for pdata.SummaryDataPointSlice
+type SummaryDataPointSlice struct {
 	instrumentationLibraryName string
-	pdata.DoubleSummaryDataPointSlice
+	pdata.SummaryDataPointSlice
 }
 
 // At retrieves the IntDataPoint at the given index and performs rate calculation if necessary.
@@ -167,9 +167,9 @@ func (dps DoubleHistogramDataPointSlice) At(i int) DataPoint {
 	}
 }
 
-// At retrieves the DoubleSummaryDataPoint at the given index.
-func (dps DoubleSummaryDataPointSlice) At(i int) DataPoint {
-	metric := dps.DoubleSummaryDataPointSlice.At(i)
+// At retrieves the SummaryDataPoint at the given index.
+func (dps SummaryDataPointSlice) At(i int) DataPoint {
+	metric := dps.SummaryDataPointSlice.At(i)
 	labels := createLabels(metric.LabelsMap(), dps.instrumentationLibraryName)
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
@@ -281,9 +281,9 @@ func getDataPoints(pmd *pdata.Metric, metadata CWMetricMetadata, logger *zap.Log
 			metadata.InstrumentationLibraryName,
 			metric.DataPoints(),
 		}
-	case pdata.MetricDataTypeDoubleSummary:
-		metric := pmd.DoubleSummary()
-		dps = DoubleSummaryDataPointSlice{
+	case pdata.MetricDataTypeSummary:
+		metric := pmd.Summary()
+		dps = SummaryDataPointSlice{
 			metadata.InstrumentationLibraryName,
 			metric.DataPoints(),
 		}

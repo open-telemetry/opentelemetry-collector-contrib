@@ -120,9 +120,9 @@ func TestMetricDataToLogService(t *testing.T) {
 	doubleHistogramDataPoint.SetExplicitBounds([]float64{1, 2})
 
 	doubleSummaryMetric := metrics.At(8)
-	doubleSummaryMetric.SetDataType(pdata.MetricDataTypeDoubleSummary)
+	doubleSummaryMetric.SetDataType(pdata.MetricDataTypeSummary)
 	doubleSummaryMetric.SetName("double-summary")
-	doubleSummary := doubleSummaryMetric.DoubleSummary()
+	doubleSummary := doubleSummaryMetric.Summary()
 	doubleSummaryDataPoints := doubleSummary.DataPoints()
 	doubleSummaryDataPoints.Resize(1)
 	doubleSummaryDataPoint := doubleSummaryDataPoints.At(0)
