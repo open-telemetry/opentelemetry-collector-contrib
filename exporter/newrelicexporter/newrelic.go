@@ -201,7 +201,7 @@ func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
 		return &httpError{Response: response}
 	}
 
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 
 }
 
@@ -236,7 +236,7 @@ func (e exporter) pushMetricData(ctx context.Context, md pdata.Metrics) error {
 
 	e.harvester.HarvestNow(ctx)
 
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 func (e exporter) Shutdown(ctx context.Context) error {
