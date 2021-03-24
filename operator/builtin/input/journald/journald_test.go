@@ -24,11 +24,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/entry"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-log-collection/entry"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
+	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 )
 
 type fakeJournaldCmd struct{}
@@ -112,4 +114,23 @@ func TestInputJournald(t *testing.T) {
 	case <-time.After(time.Second):
 		require.FailNow(t, "Timed out waiting for entry to be read")
 	}
+}
+
+func TestJournaldInputConfig(t *testing.T) {
+	expect := NewJournaldInputConfig("my_journald_input")
+	expect.WriteTo = entry.NewRecordField("to")
+
+	input := map[string]interface{}{
+		"id":         "my_journald_input",
+		"type":       "journald_input",
+		"start_at":   "end",
+		"write_to":   "$record.to",
+		"attributes": map[string]interface{}{},
+		"resource":   map[string]interface{}{},
+	}
+
+	var actual JournaldInputConfig
+	err := helper.UnmarshalMapstructure(input, &actual)
+	require.NoError(t, err)
+	require.Equal(t, expect, &actual)
 }

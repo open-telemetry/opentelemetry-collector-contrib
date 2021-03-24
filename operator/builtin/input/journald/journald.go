@@ -47,11 +47,11 @@ func NewJournaldInputConfig(operatorID string) *JournaldInputConfig {
 
 // JournaldInputConfig is the configuration of a journald input operator
 type JournaldInputConfig struct {
-	helper.InputConfig `yaml:",inline"`
+	helper.InputConfig `mapstructure:",squash" yaml:",inline"`
 
-	Directory *string  `json:"directory,omitempty" yaml:"directory,omitempty"`
-	Files     []string `json:"files,omitempty"     yaml:"files,omitempty"`
-	StartAt   string   `json:"start_at,omitempty"  yaml:"start_at,omitempty"`
+	Directory *string  `mapstructure:"directory,omitempty" json:"directory,omitempty" yaml:"directory,omitempty"`
+	Files     []string `mapstructure:"files,omitempty"     json:"files,omitempty"     yaml:"files,omitempty"`
+	StartAt   string   `mapstructure:"start_at,omitempty"  json:"start_at,omitempty"  yaml:"start_at,omitempty"`
 }
 
 // Build will build a journald input operator from the supplied configuration
