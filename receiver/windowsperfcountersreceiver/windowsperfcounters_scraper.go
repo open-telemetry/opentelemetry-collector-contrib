@@ -77,7 +77,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 
 	// log a warning if some counters cannot be loaded, but do not crash the app
 	if len(errors) > 0 {
-		s.logger.Warn("some performance counters could not be initialized", zap.Error(consumererror.CombineErrors(errors)))
+		s.logger.Warn("some performance counters could not be initialized", zap.Error(consumererror.Combine(errors)))
 	}
 
 	return nil
@@ -100,7 +100,7 @@ func (s *scraper) shutdown(context.Context) error {
 		}
 	}
 
-	return consumererror.CombineErrors(errors)
+	return consumererror.Combine(errors)
 }
 
 func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
@@ -124,7 +124,7 @@ func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 	}
 	metrics.Resize(len(s.counters) - len(errors))
 
-	return metrics, consumererror.CombineErrors(errors)
+	return metrics, consumererror.Combine(errors)
 }
 
 func initializeDoubleGaugeMetric(metric pdata.Metric, now pdata.Timestamp, name string, counterValues []win_perf_counters.CounterValue) {

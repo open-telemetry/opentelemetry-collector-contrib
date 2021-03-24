@@ -53,7 +53,7 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	var errors []error
 	errors = append(errors, d.initializeCloudAttributes(attr)...)
 	errors = append(errors, d.initializeHostAttributes(attr)...)
-	return res, consumererror.CombineErrors(errors)
+	return res, consumererror.Combine(errors)
 }
 
 func (d *Detector) initializeCloudAttributes(attr pdata.AttributeMap) []error {

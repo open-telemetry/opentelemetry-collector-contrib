@@ -171,7 +171,7 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) 
 		}
 	}
 
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 func getSpanKind(kind pdata.SpanKind) string {
