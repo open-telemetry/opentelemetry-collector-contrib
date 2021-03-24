@@ -270,10 +270,10 @@ func (f *prometheusFormatter) doubleSum2Strings(record metricPair) []string {
 	return lines
 }
 
-// doubleSummary2Strings converts DoubleSummary record to a list of strings
+// doubleSummary2Strings converts Summary record to a list of strings
 // n+2 where n is number of quantiles and 2 stands for sum and count metrics per each data point
 func (f *prometheusFormatter) doubleSummary2Strings(record metricPair) []string {
-	dps := record.metric.DoubleSummary().DataPoints()
+	dps := record.metric.Summary().DataPoints()
 	var lines []string
 
 	for i := 0; i < dps.Len(); i++ {
@@ -437,7 +437,7 @@ func (f *prometheusFormatter) metric2String(record metricPair) string {
 		lines = f.intSum2Strings(record)
 	case pdata.MetricDataTypeDoubleSum:
 		lines = f.doubleSum2Strings(record)
-	case pdata.MetricDataTypeDoubleSummary:
+	case pdata.MetricDataTypeSummary:
 		lines = f.doubleSummary2Strings(record)
 	case pdata.MetricDataTypeIntHistogram:
 		lines = f.intHistogram2Strings(record)
