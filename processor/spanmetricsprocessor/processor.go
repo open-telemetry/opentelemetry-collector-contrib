@@ -246,7 +246,7 @@ func (p *processorImp) collectCallMetrics(ilm *pdata.InstrumentationLibraryMetri
 
 		mCalls := pdata.NewMetric()
 		mCalls.SetDataType(pdata.MetricDataTypeIntSum)
-		mCalls.SetName("calls")
+		mCalls.SetName("calls_total")
 		mCalls.IntSum().SetIsMonotonic(true)
 		mCalls.IntSum().DataPoints().Append(dpCalls)
 		mCalls.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
