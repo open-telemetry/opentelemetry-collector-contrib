@@ -64,8 +64,8 @@ func TestLoadConfig(t *testing.T) {
 		SourceType:                  "otel",
 		Index:                       "metrics",
 		MaxConnections:              100,
-		MinContentLengthCompression: defaultMinContentLengthCompression,
-		MaxContentLengthLogs:        defaultMaxContentLengthLogs,
+		MinContentLengthCompression: 1500,
+		MaxContentLengthLogs:        2 * 1024 * 1024,
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: 10 * time.Second,
 		},
@@ -91,12 +91,13 @@ func TestLoadConfig(t *testing.T) {
 
 func TestConfig_getOptionsFromConfig(t *testing.T) {
 	type fields struct {
-		ExporterSettings configmodels.ExporterSettings
-		Endpoint         string
-		Token            string
-		Source           string
-		SourceType       string
-		Index            string
+		ExporterSettings     configmodels.ExporterSettings
+		Endpoint             string
+		Token                string
+		Source               string
+		SourceType           string
+		Index                string
+		MaxContentLengthLogs uint
 	}
 	tests := []struct {
 		name    string
@@ -141,16 +142,27 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 		},
+		{
+			name: "Test max content length logs greater than limit",
+			fields: fields{
+				Token:                "1234",
+				Endpoint:             "https://example.com:8000",
+				MaxContentLengthLogs: maxContentLengthLogsLimit + 1,
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ExporterSettings: tt.fields.ExporterSettings,
-				Token:            tt.fields.Token,
-				Endpoint:         tt.fields.Endpoint,
-				Source:           tt.fields.Source,
-				SourceType:       tt.fields.SourceType,
-				Index:            tt.fields.Index,
+				ExporterSettings:     tt.fields.ExporterSettings,
+				Token:                tt.fields.Token,
+				Endpoint:             tt.fields.Endpoint,
+				Source:               tt.fields.Source,
+				SourceType:           tt.fields.SourceType,
+				Index:                tt.fields.Index,
+				MaxContentLengthLogs: tt.fields.MaxContentLengthLogs,
 			}
 			got, err := cfg.getOptionsFromConfig()
 			if (err != nil) != tt.wantErr {

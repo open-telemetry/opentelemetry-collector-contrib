@@ -296,32 +296,22 @@ func commonLogSplunkEvent(
 	}
 }
 
-//func Test_nilLogs(t *testing.T) {
-//	events := logDataToSplunk(zap.NewNop(), pdata.NewLogs(), &Config{})
-//	assert.Equal(t, 0, len(events))
-//}
-//
-//func Test_nilResourceLogs(t *testing.T) {
-//	logs := pdata.NewLogs()
-//	logs.ResourceLogs().Resize(1)
-//	events := logDataToSplunk(zap.NewNop(), logs, &Config{})
-//	assert.Equal(t, 0, len(events))
-//}
-//
-//func Test_nilInstrumentationLogs(t *testing.T) {
-//	logs := pdata.NewLogs()
-//	logs.ResourceLogs().Resize(1)
-//	resourceLog := logs.ResourceLogs().At(0)
-//	resourceLog.InstrumentationLibraryLogs().Resize(1)
-//	events := logDataToSplunk(zap.NewNop(), logs, &Config{})
-//	assert.Equal(t, 0, len(events))
-//}
-//
-//func Test_nanoTimestampToEpochMilliseconds(t *testing.T) {
-//	splunkTs := nanoTimestampToEpochMilliseconds(1001000000)
-//	assert.Equal(t, 1.001, *splunkTs)
-//	splunkTs = nanoTimestampToEpochMilliseconds(1001990000)
-//	assert.Equal(t, 1.002, *splunkTs)
-//	splunkTs = nanoTimestampToEpochMilliseconds(0)
-//	assert.True(t, nil == splunkTs)
-//}
+func Test_emptyLogRecord(t *testing.T) {
+	event := mapLogRecordToSplunkEvent(pdata.NewLogRecord(), &Config{}, zap.NewNop())
+	assert.Nil(t, event.Time)
+	assert.Equal(t, event.Host, "unknown")
+	assert.Zero(t, event.Source)
+	assert.Zero(t, event.SourceType)
+	assert.Zero(t, event.Index)
+	assert.Nil(t, event.Event)
+	assert.Empty(t, event.Fields)
+}
+
+func Test_nanoTimestampToEpochMilliseconds(t *testing.T) {
+	splunkTs := nanoTimestampToEpochMilliseconds(1001000000)
+	assert.Equal(t, 1.001, *splunkTs)
+	splunkTs = nanoTimestampToEpochMilliseconds(1001990000)
+	assert.Equal(t, 1.002, *splunkTs)
+	splunkTs = nanoTimestampToEpochMilliseconds(0)
+	assert.True(t, nil == splunkTs)
+}

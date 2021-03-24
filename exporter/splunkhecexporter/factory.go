@@ -30,7 +30,6 @@ const (
 	defaultMaxIdleCons                 = 100
 	defaultHTTPTimeout                 = 10 * time.Second
 	defaultMinContentLengthCompression = 1500
-	defaultMaxContentLengthLogs        = 2 * 1024 * 1024
 )
 
 // NewFactory creates a factory for Splunk HEC exporter.
@@ -57,7 +56,7 @@ func createDefaultConfig() configmodels.Exporter {
 		DisableCompression:          false,
 		MaxConnections:              defaultMaxIdleCons,
 		MinContentLengthCompression: defaultMinContentLengthCompression,
-		MaxContentLengthLogs:        defaultMaxContentLengthLogs,
+		MaxContentLengthLogs:        maxContentLengthLogsLimit,
 	}
 }
 

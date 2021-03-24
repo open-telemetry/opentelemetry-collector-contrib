@@ -551,6 +551,73 @@ func TestInvalidURLClient(t *testing.T) {
 	assert.EqualError(t, err, "Permanent error: parse \"//in%20va%20lid\": invalid URL escape \"%20\"")
 }
 
+func Test_pushLogData_nil_Logs(t *testing.T) {
+	tests := []struct {
+		name     func(bool) string
+		logs     pdata.Logs
+		requires func(*testing.T, pdata.Logs)
+	}{
+		{
+			name: func(disable bool) string {
+				return "COMPRESSION " + map[bool]string{true: "DISABLED ", false: "ENABLED "}[disable] + "nil ResourceLogs"
+			},
+			logs: pdata.NewLogs(),
+			requires: func(t *testing.T, logs pdata.Logs) {
+				require.Zero(t, logs.ResourceLogs().Len())
+			},
+		},
+		{
+			name: func(disable bool) string {
+				return "COMPRESSION " + map[bool]string{true: "DISABLED ", false: "ENABLED "}[disable] + "nil InstrumentationLogs"
+			},
+			logs: func() pdata.Logs {
+				logs := pdata.NewLogs()
+				logs.ResourceLogs().Resize(1)
+				logs.ResourceLogs().At(0).InstrumentationLibraryLogs()
+				return logs
+			}(),
+			requires: func(t *testing.T, logs pdata.Logs) {
+				require.Equal(t, logs.ResourceLogs().Len(), 1)
+				require.Zero(t, logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Len())
+			},
+		},
+		{
+			name: func(disable bool) string {
+				return "COMPRESSION " + map[bool]string{true: "DISABLED ", false: "ENABLED "}[disable] + "nil LogRecords"
+			},
+			logs: func() pdata.Logs {
+				logs := pdata.NewLogs()
+				logs.ResourceLogs().Resize(1)
+				logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
+				return logs
+			}(),
+			requires: func(t *testing.T, logs pdata.Logs) {
+				require.Equal(t, logs.ResourceLogs().Len(), 1)
+				require.Equal(t, logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Len(), 1)
+				require.Zero(t, logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().Len())
+			},
+		},
+	}
+
+	c := client{
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+	}
+
+	for _, test := range tests {
+		for _, disabled := range []bool{true, false} {
+			t.Run(test.name(disabled), func(t *testing.T) {
+				test.requires(t, test.logs)
+				err := c.pushLogData(context.Background(), test.logs)
+				assert.NoError(t, err)
+			})
+		}
+	}
+
+}
+
 func Test_pushLogData_InvalidLog(t *testing.T) {
 	c := client{
 		zippers: sync.Pool{New: func() interface{} {
@@ -582,20 +649,40 @@ func Test_pushLogData_PostError(t *testing.T) {
 		config: NewFactory().CreateDefaultConfig().(*Config),
 	}
 
-	numLogs := 1500
-	logs := createLogData(1, 1, numLogs)
+	// 1500 log records -> ~371888 bytes when JSON encoded.
+	logs := createLogData(1, 1, 2000)
 
-	// Given 1500 logs, 1024 bytes is small enough to trigger compression when compression enable.
-	c.config.MinContentLengthCompression = 1024
+	// 0 -> unlimited size batch, true -> compression disabled.
+	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, true
+	err := c.pushLogData(context.Background(), logs)
+	require.Error(t, err)
+	assert.IsType(t, consumererror.PartialError{}, err)
+	assert.Equal(t, (err.(consumererror.PartialError)).GetLogs(), logs)
 
-	for _, disable := range []bool{true, false} {
-		c.config.DisableCompression = disable
+	// 0 -> unlimited size batch, true -> compression enabled.
+	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, false
+	// 1500 < 371888 -> compression occurs.
+	c.config.MinContentLengthCompression = 1500
+	err = c.pushLogData(context.Background(), logs)
+	require.Error(t, err)
+	assert.IsType(t, consumererror.PartialError{}, err)
+	assert.Equal(t, (err.(consumererror.PartialError)).GetLogs(), logs)
 
-		err := c.pushLogData(context.Background(), logs)
-		if assert.Error(t, err) {
-			assert.IsType(t, consumererror.PartialError{}, err)
-		}
-	}
+	// 200000 < 371888 -> multiple batches, true -> compression disabled.
+	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200_000, true
+	err = c.pushLogData(context.Background(), logs)
+	require.Error(t, err)
+	assert.IsType(t, consumererror.PartialError{}, err)
+	assert.Equal(t, (err.(consumererror.PartialError)).GetLogs(), logs)
+
+	// 200000 < 371888 -> multiple batches, true -> compression enabled.
+	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200_000, false
+	// 1500 < 200000 -> compression occurs.
+	c.config.MinContentLengthCompression = 1500
+	err = c.pushLogData(context.Background(), logs)
+	require.Error(t, err)
+	assert.IsType(t, consumererror.PartialError{}, err)
+	assert.Equal(t, (err.(consumererror.PartialError)).GetLogs(), logs)
 }
 
 func Test_pushLogData_Small_MaxContentLength(t *testing.T) {

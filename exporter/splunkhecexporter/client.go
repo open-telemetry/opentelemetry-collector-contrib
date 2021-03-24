@@ -153,7 +153,7 @@ func (c *client) postEvents(ctx context.Context, events io.Reader, compressed bo
 }
 
 func subLogs(ld *pdata.Logs, start *logIndex) *pdata.Logs {
-	if start.zero() {
+	if ld == nil || start == nil || start.zero() {
 		return ld
 	}
 
@@ -238,8 +238,7 @@ func (c *client) sentLogBatch(ctx context.Context, ld pdata.Logs, send func(cont
 				batch.Truncate(submax)
 				if batch.Len() > 0 {
 					if err = send(ctx, batch); err != nil {
-						dropped := subLogs(&ld, index)
-						return consumererror.PartialLogsError(err, *dropped)
+						return consumererror.PartialLogsError(err, *subLogs(&ld, index))
 					}
 				}
 				batch.Reset()
@@ -252,8 +251,7 @@ func (c *client) sentLogBatch(ctx context.Context, ld pdata.Logs, send func(cont
 
 	if batch.Len() > 0 {
 		if err = send(ctx, batch); err != nil {
-			dropped := subLogs(&ld, index)
-			return consumererror.PartialLogsError(err, *dropped)
+			return consumererror.PartialLogsError(err, *subLogs(&ld, index))
 		}
 	}
 
