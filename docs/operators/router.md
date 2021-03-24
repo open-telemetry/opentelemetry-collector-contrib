@@ -54,6 +54,5 @@ An entry that does not match any of the routes is dropped and not processed furt
   routes:
     - output: my_json_parser
       expr: '$.format == "json"'
-    - output: catchall
-      expr: 'true'
+  default: catchall
 ```
