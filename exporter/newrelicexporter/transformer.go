@@ -220,7 +220,7 @@ func (t *metricTransformer) Metric(metric *metricspb.Metric) ([]telemetry.Metric
 			}
 		}
 	}
-	return metrics, consumererror.CombineErrors(errs)
+	return metrics, consumererror.Combine(errs)
 }
 
 func (t *metricTransformer) MetricAttributes(metric *metricspb.Metric) map[string]interface{} {

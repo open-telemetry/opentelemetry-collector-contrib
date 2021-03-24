@@ -427,11 +427,11 @@ func TestDoubleHistogramDataPointSliceAt(t *testing.T) {
 	assert.Equal(t, expectedDP, dp)
 }
 
-func TestDoubleSummaryDataPointSliceAt(t *testing.T) {
+func TestSummaryDataPointSliceAt(t *testing.T) {
 	instrLibName := "cloudwatch-otel"
 	labels := map[string]string{"label1": "value1"}
 
-	testDPS := pdata.NewDoubleSummaryDataPointSlice()
+	testDPS := pdata.NewSummaryDataPointSlice()
 	testDPS.Resize(1)
 	testDP := testDPS.At(0)
 	testDP.SetCount(uint64(17))
@@ -445,7 +445,7 @@ func TestDoubleSummaryDataPointSliceAt(t *testing.T) {
 	testQuantileValue.SetValue(float64(5))
 	testDP.LabelsMap().InitFromMap(labels)
 
-	dps := DoubleSummaryDataPointSlice{
+	dps := SummaryDataPointSlice{
 		instrLibName,
 		testDPS,
 	}
@@ -619,9 +619,9 @@ func TestGetDataPoints(t *testing.T) {
 		{
 			"Summary",
 			generateTestSummary("foo"),
-			DoubleSummaryDataPointSlice{
+			SummaryDataPointSlice{
 				metadata.InstrumentationLibraryName,
-				pdata.DoubleSummaryDataPointSlice{},
+				pdata.SummaryDataPointSlice{},
 			},
 		},
 	}
@@ -668,10 +668,10 @@ func TestGetDataPoints(t *testing.T) {
 				assert.Equal(t, uint64(18), dp.Count())
 				assert.Equal(t, []float64{0, 10}, dp.ExplicitBounds())
 				assert.Equal(t, expectedLabels, dp.LabelsMap())
-			case DoubleSummaryDataPointSlice:
+			case SummaryDataPointSlice:
 				assert.Equal(t, metadata.InstrumentationLibraryName, convertedDPS.instrumentationLibraryName)
 				assert.Equal(t, 1, convertedDPS.Len())
-				dp := convertedDPS.DoubleSummaryDataPointSlice.At(0)
+				dp := convertedDPS.SummaryDataPointSlice.At(0)
 				assert.Equal(t, 15.0, dp.Sum())
 				assert.Equal(t, uint64(5), dp.Count())
 				assert.Equal(t, 2, dp.QuantileValues().Len())
