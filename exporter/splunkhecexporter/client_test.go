@@ -649,7 +649,7 @@ func Test_pushLogData_PostError(t *testing.T) {
 		config: NewFactory().CreateDefaultConfig().(*Config),
 	}
 
-	// 1500 log records -> ~371888 bytes when JSON encoded.
+	// 2000 log records -> ~371888 bytes when JSON encoded.
 	logs := createLogData(1, 1, 2000)
 
 	// 0 -> unlimited size batch, true -> compression disabled.
@@ -669,14 +669,14 @@ func Test_pushLogData_PostError(t *testing.T) {
 	assert.Equal(t, (err.(consumererror.PartialError)).GetLogs(), logs)
 
 	// 200000 < 371888 -> multiple batches, true -> compression disabled.
-	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200_000, true
+	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, true
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
 	assert.IsType(t, consumererror.PartialError{}, err)
 	assert.Equal(t, (err.(consumererror.PartialError)).GetLogs(), logs)
 
-	// 200000 < 371888 -> multiple batches, true -> compression enabled.
-	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200_000, false
+	// 200000 < 371888 -> multiple batches, false -> compression enabled.
+	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, false
 	// 1500 < 200000 -> compression occurs.
 	c.config.MinContentLengthCompression = 1500
 	err = c.pushLogData(context.Background(), logs)
