@@ -16,12 +16,15 @@ package helper
 
 import (
 	"fmt"
+	"io/ioutil"
+	"path"
 	"strings"
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 	"github.com/stretchr/testify/require"
+	yaml "gopkg.in/yaml.v2"
 )
 
 type severityTestCase struct {
@@ -391,4 +394,123 @@ func (tc severityTestCase) run(parseFrom entry.Field) func(*testing.T) {
 
 		require.Equal(t, tc.expected, ent.Severity)
 	}
+}
+
+type severityConfigTestCase struct {
+	name      string
+	expectErr bool
+	expect    *SeverityParserConfig
+}
+
+func TestGoldenSeverityParserConfig(t *testing.T) {
+	cases := []severityConfigTestCase{
+		{
+			"default",
+			false,
+			defaultSeverityCfg(),
+		},
+		{
+			"parse_from_simple",
+			false,
+			func() *SeverityParserConfig {
+				cfg := defaultSeverityCfg()
+				newParse := entry.NewRecordField("from")
+				cfg.ParseFrom = &newParse
+				return cfg
+			}(),
+		},
+		{
+			"mapping",
+			false,
+			func() *SeverityParserConfig {
+				cfg := defaultSeverityCfg()
+				cfg.Mapping = map[interface{}]interface{}{
+					"critical": "5xx",
+					"error":    "4xx",
+					"info":     "3xx",
+					"debug":    "2xx",
+				}
+				return cfg
+			}(),
+		},
+		{
+			"preserve_to",
+			false,
+			func() *SeverityParserConfig {
+				cfg := defaultSeverityCfg()
+				preserve := entry.NewRecordField("aField")
+				cfg.PreserveTo = &preserve
+				return cfg
+			}(),
+		},
+		{
+			"preset",
+			false,
+			func() *SeverityParserConfig {
+				cfg := defaultSeverityCfg()
+				cfg.Preset = "default"
+				return cfg
+			}(),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run("yaml/"+tc.name, func(t *testing.T) {
+			cfgFromYaml, yamlErr := configFromFileViaYaml(path.Join(".", "severitytestdata", fmt.Sprintf("%s.yaml", tc.name)))
+			if tc.expectErr {
+				require.Error(t, yamlErr)
+			} else {
+				require.NoError(t, yamlErr)
+				require.Equal(t, tc.expect, cfgFromYaml)
+			}
+		})
+		t.Run("mapstructure/"+tc.name, func(t *testing.T) {
+			cfgFromMapstructure := defaultSeverityCfg()
+			mapErr := configFromFileViaMapstructure(
+				path.Join(".", "severitytestdata", fmt.Sprintf("%s.yaml", tc.name)),
+				cfgFromMapstructure,
+			)
+			if tc.expectErr {
+				require.Error(t, mapErr)
+			} else {
+				require.NoError(t, mapErr)
+				require.Equal(t, tc.expect, cfgFromMapstructure)
+			}
+		})
+	}
+}
+
+func configFromFileViaYaml(file string) (*SeverityParserConfig, error) {
+	bytes, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil, fmt.Errorf("could not find config file: %s", err)
+	}
+
+	config := defaultSeverityCfg()
+	if err := yaml.Unmarshal(bytes, config); err != nil {
+		return nil, fmt.Errorf("failed to read config file as yaml: %s", err)
+	}
+
+	return config, nil
+}
+
+func configFromFileViaMapstructure(file string, result *SeverityParserConfig) error {
+	bytes, err := ioutil.ReadFile(file)
+	if err != nil {
+		return fmt.Errorf("could not find config file: %s", err)
+	}
+
+	raw := map[string]interface{}{}
+
+	if err := yaml.Unmarshal(bytes, raw); err != nil {
+		return fmt.Errorf("failed to read data from yaml: %s", err)
+	}
+
+	err = UnmarshalMapstructure(raw, result)
+	return err
+}
+
+func defaultSeverityCfg() *SeverityParserConfig {
+	newCfg := NewSeverityParserConfig()
+	return &newCfg
 }
