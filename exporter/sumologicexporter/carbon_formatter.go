@@ -106,7 +106,7 @@ func carbon2Metric2String(record metricPair) string {
 	// Skip complex metrics
 	case pdata.MetricDataTypeDoubleHistogram:
 	case pdata.MetricDataTypeIntHistogram:
-	case pdata.MetricDataTypeDoubleSummary:
+	case pdata.MetricDataTypeSummary:
 	}
 
 	return strings.Join(nextLines, "\n")

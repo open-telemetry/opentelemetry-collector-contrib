@@ -46,7 +46,7 @@ var fieldPrometheusTypes = map[pdata.MetricDataType]string{
 	pdata.MetricDataTypeDoubleSum:       "counter",
 	pdata.MetricDataTypeIntHistogram:    "histogram",
 	pdata.MetricDataTypeDoubleHistogram: "histogram",
-	pdata.MetricDataTypeDoubleSummary:   "summary",
+	pdata.MetricDataTypeSummary:         "summary",
 }
 
 // CWMetrics defines

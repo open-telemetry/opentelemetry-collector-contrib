@@ -151,18 +151,18 @@ func exampleDoubleSumMetric() metricPair {
 	return metric
 }
 
-func exampleDoubleSummaryMetric() metricPair {
+func exampleSummaryMetric() metricPair {
 	metric := metricPair{
 		attributes: pdata.NewAttributeMap(),
 		metric:     pdata.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pdata.MetricDataTypeDoubleSummary)
+	metric.metric.SetDataType(pdata.MetricDataTypeSummary)
 	metric.metric.SetName("summary_metric_double_test")
 
 	metric.attributes.InsertString("foo", "bar")
 
-	dp := pdata.NewDoubleSummaryDataPoint()
+	dp := pdata.NewSummaryDataPoint()
 	dp.LabelsMap().Insert("pod_name", "dolor")
 	dp.LabelsMap().Insert("namespace", "sumologic")
 	dp.SetSum(45.6)
@@ -179,15 +179,15 @@ func exampleDoubleSummaryMetric() metricPair {
 	quantile.SetValue(4)
 	dp.QuantileValues().Append(quantile)
 
-	metric.metric.DoubleSummary().DataPoints().Append(dp)
+	metric.metric.Summary().DataPoints().Append(dp)
 
-	dp = pdata.NewDoubleSummaryDataPoint()
+	dp = pdata.NewSummaryDataPoint()
 	dp.LabelsMap().Insert("pod_name", "sit")
 	dp.LabelsMap().Insert("namespace", "main")
 	dp.SetSum(1238.1)
 	dp.SetCount(7)
 	dp.SetTimestamp(1608424699.186 * 1e9)
-	metric.metric.DoubleSummary().DataPoints().Append(dp)
+	metric.metric.Summary().DataPoints().Append(dp)
 
 	return metric
 }
