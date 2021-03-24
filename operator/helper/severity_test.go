@@ -456,7 +456,7 @@ func TestGoldenSeverityParserConfig(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run("yaml/"+tc.name, func(t *testing.T) {
-			cfgFromYaml, yamlErr := configFromFileViaYaml(path.Join(".", "severitytestdata", fmt.Sprintf("%s.yaml", tc.name)))
+			cfgFromYaml, yamlErr := severityConfigFromFileViaYaml(path.Join(".", "severitytestdata", fmt.Sprintf("%s.yaml", tc.name)))
 			if tc.expectErr {
 				require.Error(t, yamlErr)
 			} else {
@@ -466,7 +466,7 @@ func TestGoldenSeverityParserConfig(t *testing.T) {
 		})
 		t.Run("mapstructure/"+tc.name, func(t *testing.T) {
 			cfgFromMapstructure := defaultSeverityCfg()
-			mapErr := configFromFileViaMapstructure(
+			mapErr := severityConfigFromFileViaMapstructure(
 				path.Join(".", "severitytestdata", fmt.Sprintf("%s.yaml", tc.name)),
 				cfgFromMapstructure,
 			)
@@ -480,7 +480,7 @@ func TestGoldenSeverityParserConfig(t *testing.T) {
 	}
 }
 
-func configFromFileViaYaml(file string) (*SeverityParserConfig, error) {
+func severityConfigFromFileViaYaml(file string) (*SeverityParserConfig, error) {
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("could not find config file: %s", err)
@@ -494,7 +494,7 @@ func configFromFileViaYaml(file string) (*SeverityParserConfig, error) {
 	return config, nil
 }
 
-func configFromFileViaMapstructure(file string, result *SeverityParserConfig) error {
+func severityConfigFromFileViaMapstructure(file string, result *SeverityParserConfig) error {
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
 		return fmt.Errorf("could not find config file: %s", err)
