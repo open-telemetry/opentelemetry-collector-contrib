@@ -43,7 +43,7 @@ func TestDetectTrue(t *testing.T) {
 	md.On("Hostname").Return("hostname", nil)
 	md.On("InstanceID").Return("2", nil)
 	md.On("InstanceName").Return("name", nil)
-	md.On("Get", "").Return("machine-type", nil)
+	md.On("Get", "instance/machine-type").Return("machine-type", nil)
 
 	detector := &Detector{metadata: md}
 	res, err := detector.Detect(context.Background())
@@ -85,7 +85,7 @@ func TestDetectError(t *testing.T) {
 	md.On("Hostname").Return("", errors.New("err3"))
 	md.On("InstanceID").Return("", errors.New("err4"))
 	md.On("InstanceName").Return("", errors.New("err5"))
-	md.On("Get").Return("", errors.New("err6"))
+	md.On("Get", "instance/machine-type").Return("", errors.New("err6"))
 
 	detector := &Detector{metadata: md}
 	res, err := detector.Detect(context.Background())
