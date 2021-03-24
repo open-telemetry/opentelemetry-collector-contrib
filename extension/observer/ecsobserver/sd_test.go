@@ -15,6 +15,7 @@
 package ecsobserver
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -170,7 +171,10 @@ func TestServiceDiscovery_RunAndWriteFile(t *testing.T) {
 		require.NoError(t, sd.RunAndWriteFile(ctx))
 		assert.FileExists(t, outputFile)
 		expectedFile := "testdata/ut_targets.expected.yaml"
-		assert.Equal(t, string(mustReadFile(t, expectedFile)), string(mustReadFile(t, outputFile)))
+		// workaround for windows git checkout autocrlf
+		// https://circleci.com/blog/circleci-config-teardown-how-we-write-our-circleci-config-at-circleci/#main:~:text=Line%20endings
+		expectedContent := bytes.ReplaceAll(mustReadFile(t, expectedFile), []byte("\r\n"), []byte("\n"))
+		assert.Equal(t, string(expectedContent), string(mustReadFile(t, outputFile)))
 	})
 
 	t.Run("fail to write file", func(t *testing.T) {
