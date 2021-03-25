@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/armon/go-metrics v0.3.3 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.0
-	github.com/elastic/go-elasticsearch/v7 v7.11.0
+	github.com/elastic/go-elasticsearch/v7 v7.12.0
 	github.com/gogo/googleapis v1.3.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
