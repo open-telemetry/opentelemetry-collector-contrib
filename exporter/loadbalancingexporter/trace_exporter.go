@@ -100,7 +100,7 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td pdata.Traces) e
 		}
 	}
 
-	return consumererror.CombineErrors(errors)
+	return consumererror.Combine(errors)
 }
 
 func (e *traceExporterImp) consumeTrace(ctx context.Context, td pdata.Traces) error {

@@ -56,7 +56,7 @@ const (
 type prometheusExecReceiver struct {
 	params   component.ReceiverCreateParams
 	config   *Config
-	consumer consumer.MetricsConsumer
+	consumer consumer.Metrics
 
 	// Prometheus receiver config
 	promReceiverConfig *prometheusreceiver.Config
@@ -78,7 +78,7 @@ type runResult struct {
 }
 
 // newPromExecReceiver returns a prometheusExecReceiver
-func newPromExecReceiver(params component.ReceiverCreateParams, config *Config, consumer consumer.MetricsConsumer) (*prometheusExecReceiver, error) {
+func newPromExecReceiver(params component.ReceiverCreateParams, config *Config, consumer consumer.Metrics) (*prometheusExecReceiver, error) {
 	if config.SubprocessConfig.Command == "" {
 		return nil, fmt.Errorf("no command to execute entered in config file for %v", config.Name())
 	}

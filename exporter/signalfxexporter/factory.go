@@ -23,8 +23,8 @@ import (
 
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
-	otelconfig "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
@@ -156,8 +156,8 @@ func createMetricsExporter(
 	// this ensures that we get batches of data for the same token when pushing to the backend.
 	if expCfg.AccessTokenPassthrough {
 		me = &baseMetricsExporter{
-			Component:       me,
-			MetricsConsumer: batchperresourceattr.NewBatchPerResourceMetrics(splunk.SFxAccessTokenLabel, me),
+			Component: me,
+			Metrics:   batchperresourceattr.NewBatchPerResourceMetrics(splunk.SFxAccessTokenLabel, me),
 		}
 	}
 
@@ -170,7 +170,7 @@ func createMetricsExporter(
 func loadDefaultTranslationRules() ([]translation.Rule, error) {
 	config := Config{}
 
-	v := otelconfig.NewViper()
+	v := configparser.NewViper()
 	v.SetConfigType("yaml")
 	v.ReadConfig(strings.NewReader(translation.DefaultTranslationRulesYaml))
 	err := v.UnmarshalExact(&config)
@@ -187,9 +187,7 @@ func setDefaultExcludes(cfg *Config) error {
 	if err != nil {
 		return err
 	}
-	if cfg.ExcludeMetrics == nil {
-		cfg.ExcludeMetrics = defaultExcludeMetrics
-	} else {
+	if cfg.ExcludeMetrics == nil || len(cfg.ExcludeMetrics) > 0 {
 		cfg.ExcludeMetrics = append(cfg.ExcludeMetrics, defaultExcludeMetrics...)
 	}
 	return nil
@@ -198,7 +196,7 @@ func setDefaultExcludes(cfg *Config) error {
 func loadDefaultExcludes() ([]dpfilters.MetricFilter, error) {
 	config := Config{}
 
-	v := otelconfig.NewViper()
+	v := configparser.NewViper()
 	v.SetConfigType("yaml")
 	v.ReadConfig(strings.NewReader(translation.DefaultExcludeMetricsYaml))
 	err := v.UnmarshalExact(&config)
@@ -238,8 +236,8 @@ func createLogsExporter(
 	// this ensures that we get batches of data for the same token when pushing to the backend.
 	if expCfg.AccessTokenPassthrough {
 		le = &baseLogsExporter{
-			Component:    le,
-			LogsConsumer: batchperresourceattr.NewBatchPerResourceLogs(splunk.SFxAccessTokenLabel, le),
+			Component: le,
+			Logs:      batchperresourceattr.NewBatchPerResourceLogs(splunk.SFxAccessTokenLabel, le),
 		}
 	}
 

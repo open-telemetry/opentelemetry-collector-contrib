@@ -22,7 +22,6 @@ import (
 	"testing"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -31,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -43,7 +43,7 @@ func Test_statsdreceiver_New(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 	type args struct {
 		config       Config
-		nextConsumer consumer.MetricsConsumer
+		nextConsumer consumer.Metrics
 	}
 	tests := []struct {
 		name    string
@@ -87,7 +87,7 @@ func TestStatsdReceiver_Flush(t *testing.T) {
 	rcv, err := New(zap.NewNop(), *cfg, nextConsumer)
 	assert.NoError(t, err)
 	r := rcv.(*statsdReceiver)
-	var metrics = []*metricspb.Metric{}
+	var metrics = pdata.NewMetrics()
 	assert.Nil(t, r.Flush(ctx, metrics, nextConsumer))
 	r.Start(ctx, componenttest.NewNopHost())
 	r.Shutdown(ctx)

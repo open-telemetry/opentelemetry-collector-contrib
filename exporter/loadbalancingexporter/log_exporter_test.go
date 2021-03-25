@@ -536,14 +536,14 @@ func (e *mockLogsExporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error
 
 func newMockLogsExporter(ConsumeLogsFn func(ctx context.Context, ld pdata.Logs) error) component.LogsExporter {
 	return &mockLogsExporter{
-		Component:     componenthelper.NewComponent(componenthelper.DefaultComponentSettings()),
+		Component:     componenthelper.New(),
 		ConsumeLogsFn: ConsumeLogsFn,
 	}
 }
 
 func newNopMockLogsExporter() component.LogsExporter {
 	return &mockLogsExporter{
-		Component: componenthelper.NewComponent(componenthelper.DefaultComponentSettings()),
+		Component: componenthelper.New(),
 		ConsumeLogsFn: func(ctx context.Context, ld pdata.Logs) error {
 			return nil
 		},

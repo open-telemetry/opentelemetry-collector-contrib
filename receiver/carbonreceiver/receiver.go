@@ -45,7 +45,7 @@ type carbonReceiver struct {
 	server       transport.Server
 	reporter     transport.Reporter
 	parser       protocol.Parser
-	nextConsumer consumer.MetricsConsumer
+	nextConsumer consumer.Metrics
 
 	startOnce sync.Once
 	stopOnce  sync.Once
@@ -57,7 +57,7 @@ var _ component.MetricsReceiver = (*carbonReceiver)(nil)
 func New(
 	logger *zap.Logger,
 	config Config,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 
 	if nextConsumer == nil {

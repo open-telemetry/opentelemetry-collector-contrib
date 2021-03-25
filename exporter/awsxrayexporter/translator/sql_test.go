@@ -24,7 +24,6 @@ import (
 
 func TestClientSpanWithStatementAttribute(t *testing.T) {
 	attributes := make(map[string]string)
-	attributes[semconventions.AttributeComponent] = "db"
 	attributes[semconventions.AttributeDBSystem] = "mysql"
 	attributes[semconventions.AttributeDBName] = "customers"
 	attributes[semconventions.AttributeDBStatement] = "SELECT * FROM user WHERE user_id = ?"
@@ -49,7 +48,6 @@ func TestClientSpanWithStatementAttribute(t *testing.T) {
 
 func TestClientSpanWithNonSQLDatabase(t *testing.T) {
 	attributes := make(map[string]string)
-	attributes[semconventions.AttributeComponent] = "db"
 	attributes[semconventions.AttributeDBSystem] = "redis"
 	attributes[semconventions.AttributeDBName] = "0"
 	attributes[semconventions.AttributeDBStatement] = "SET key value"
@@ -65,7 +63,6 @@ func TestClientSpanWithNonSQLDatabase(t *testing.T) {
 
 func TestClientSpanWithoutDBurlAttribute(t *testing.T) {
 	attributes := make(map[string]string)
-	attributes[semconventions.AttributeComponent] = "db"
 	attributes[semconventions.AttributeDBSystem] = "postgresql"
 	attributes[semconventions.AttributeDBName] = "customers"
 	attributes[semconventions.AttributeDBStatement] = "SELECT * FROM user WHERE user_id = ?"

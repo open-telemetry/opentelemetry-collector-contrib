@@ -20,7 +20,8 @@ details of which are currently pending confirmation in the OpenTelemetry specifi
 * GCE Metadata: Uses the [Google Cloud Client Libraries for Go](https://github.com/googleapis/google-cloud-go)
 to read resource information from the [GCE metadata server](https://cloud.google.com/compute/docs/storing-retrieving-metadata) to retrieve the following resource attributes:
 
-    * cloud.provider (gcp)
+    * cloud.provider ("gcp")
+    * cloud.infrastructure_service ("gcp_compute_engine")
     * cloud.account.id
     * cloud.region
     * cloud.zone
@@ -28,10 +29,16 @@ to read resource information from the [GCE metadata server](https://cloud.google
     * host.image.id
     * host.type
 
+* GKE: Google Kubernetes Engine
+
+    * cloud.provider ("gcp")
+    * cloud.infrastructure_service ("gcp_gke")
+    * k8s.cluster.name (name of the GKE cluster)
+
 * AWS EC2: Uses [AWS SDK for Go](https://docs.aws.amazon.com/sdk-for-go/api/aws/ec2metadata/) to read resource information from the [EC2 instance metadata API](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html) to retrieve the following resource attributes:
 
-    * cloud.provider (aws)
-    * cloud.infrastructure_service (EC2)
+    * cloud.provider ("aws")
+    * cloud.infrastructure_service ("aws_ec2")
     * cloud.account.id
     * cloud.region
     * cloud.zone
@@ -56,14 +63,15 @@ ec2:
 
 * Amazon ECS: Queries the [Task Metadata Endpoint](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint.html) (TMDE) to record information about the current ECS Task. Only TMDE V4 and V3 are supported.
 
-    * cloud.provider (aws)
+    * cloud.provider ("aws")
+    * cloud.infrastructure_service ("aws_ecs")
     * cloud.account.id
     * cloud.region
     * cloud.zone
-    * cloud.infrastructure_service (ECS)
     * aws.ecs.cluster.arn
     * aws.ecs.task.arn
     * aws.ecs.task.family
+    * aws.ecs.task.revision
     * aws.ecs.launchtype (V4 only)
     * aws.log.group.names (V4 only)
     * aws.log.group.arns (V4 only)
@@ -72,15 +80,16 @@ ec2:
     
 * Amazon Elastic Beanstalk: Reads the AWS X-Ray configuration file available on all Beanstalk instances with [X-Ray Enabled](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/environment-configuration-debugging.html).
 
-    * cloud.provider (aws)
-    * cloud.infrastructure_service (ElasticBeanstalk)
+    * cloud.provider ("aws")
+    * cloud.infrastructure_service ("aws_elastic_beanstalk")
     * deployment.environment
     * service.instance.id
     * service.version
     
 * Azure: Queries the [Azure Instance Metadata Service](https://aka.ms/azureimds) to retrieve the following resource attributes:
 
-    * cloud.provider (azure)
+    * cloud.provider ("azure")
+    * cloud.infrastructure_service ("azure_vm")
     * cloud.region
     * cloud.account.id (subscription ID)
     * host.id (virtual machine ID)
@@ -91,7 +100,7 @@ ec2:
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system",  "gce", "ec2", "ecs", "elastic_beanstalk", "azure"
+# a list of resource detectors to run, valid options are: "env", "system", "gce", "gke", "ec2", "ecs", "elastic_beanstalk", "azure"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>

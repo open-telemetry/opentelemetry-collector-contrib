@@ -44,7 +44,7 @@ func TestNewReceiver(t *testing.T) {
 		addr         string
 		timeout      time.Duration
 		attrsPrefix  string
-		nextConsumer consumer.MetricsConsumer
+		nextConsumer consumer.Metrics
 	}
 	tests := []struct {
 		name    string

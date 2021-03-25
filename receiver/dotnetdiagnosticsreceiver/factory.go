@@ -58,9 +58,10 @@ func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	baseConfig configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
+	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := baseConfig.(*Config)
+	bw := network.NewBlobWriter(cfg.LocalDebugDir, cfg.MaxLocalDebugFiles, params.Logger)
 	sec := int(math.Round(cfg.CollectionInterval.Seconds()))
 	return NewReceiver(
 		ctx,
@@ -69,6 +70,7 @@ func createMetricsReceiver(
 		cfg.Counters,
 		sec,
 		params.Logger,
+		bw,
 	)
 }
 

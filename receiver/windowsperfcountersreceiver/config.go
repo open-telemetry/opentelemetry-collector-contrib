@@ -71,5 +71,5 @@ func (c *Config) validate() error {
 		errors = append(errors, fmt.Errorf("must specify object name for all perf counters"))
 	}
 
-	return consumererror.CombineErrors(errors)
+	return consumererror.Combine(errors)
 }

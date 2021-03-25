@@ -27,6 +27,7 @@ type TaskMetaData struct {
 	TaskARN          string
 	Family           string
 	AvailabilityZone string
+	Revision         string
 	Containers       []Container
 }
 

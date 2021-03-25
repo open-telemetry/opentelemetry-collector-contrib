@@ -35,7 +35,7 @@ var _ interval.Runnable = (*Receiver)(nil)
 type Receiver struct {
 	config            *Config
 	logger            *zap.Logger
-	nextConsumer      consumer.MetricsConsumer
+	nextConsumer      consumer.Metrics
 	client            *dockerClient
 	runner            *interval.Runner
 	obsCtx            context.Context
@@ -49,7 +49,7 @@ func NewReceiver(
 	_ context.Context,
 	logger *zap.Logger,
 	config *Config,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	err := config.Validate()
 	if err != nil {
