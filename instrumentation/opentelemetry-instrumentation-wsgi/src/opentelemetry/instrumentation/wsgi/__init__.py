@@ -66,6 +66,8 @@ from opentelemetry.propagators.textmap import DictGetter
 from opentelemetry.trace.status import Status, StatusCode
 
 _HTTP_VERSION_PREFIX = "HTTP/"
+_CARRIER_KEY_PREFIX = "HTTP_"
+_CARRIER_KEY_PREFIX_LEN = len(_CARRIER_KEY_PREFIX)
 
 
 class CarrierGetter(DictGetter):
@@ -89,7 +91,11 @@ class CarrierGetter(DictGetter):
         return None
 
     def keys(self, carrier):
-        return []
+        return [
+            key[_CARRIER_KEY_PREFIX_LEN:].lower().replace("_", "-")
+            for key in carrier
+            if key.startswith(_CARRIER_KEY_PREFIX)
+        ]
 
 
 carrier_getter = CarrierGetter()

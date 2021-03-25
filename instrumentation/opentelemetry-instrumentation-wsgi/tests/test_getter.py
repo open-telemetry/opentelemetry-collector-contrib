@@ -22,15 +22,30 @@ class TestCarrierGetter(TestCase):
         getter = CarrierGetter()
         carrier = {}
         val = getter.get(carrier, "test")
+
         self.assertIsNone(val)
 
-    def test_get_(self):
+    def test_get(self):
         getter = CarrierGetter()
         carrier = {"HTTP_TEST_KEY": "val"}
         val = getter.get(carrier, "test-key")
+
         self.assertEqual(val, ["val"])
 
     def test_keys(self):
         getter = CarrierGetter()
+        keys = getter.keys(
+            {
+                "HTTP_TEST_KEY": "val",
+                "HTTP_OTHER_KEY": 42,
+                "NON_HTTP_KEY": "val",
+            }
+        )
+
+        self.assertEqual(keys, ["test-key", "other-key"])
+
+    def test_keys_empty(self):
+        getter = CarrierGetter()
         keys = getter.keys({})
+
         self.assertEqual(keys, [])

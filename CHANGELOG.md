@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#364](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/364))
 - `opentelemetry-propagator-ot-trace` Do not throw an exception when headers are not present
   ([#378](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/378))
+- `opentelemetry-instrumentation-wsgi` Reimplement `keys` method to return actual keys from the carrier instead of an empty list.
+  ([#379](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/379))
 
 ### Changed
 - Rename `IdsGenerator` to `IdGenerator`
