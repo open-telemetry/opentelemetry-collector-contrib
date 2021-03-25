@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/consumer"
@@ -83,7 +84,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
 ) (configmodels.Receiver, error) {
-	mergedConfig := configparser.NewViper()
+	mergedConfig := config.NewViper()
 
 	// Merge in the config values specified in the config file.
 	if err := mergedConfig.MergeConfigMap(receiver.config); err != nil {
