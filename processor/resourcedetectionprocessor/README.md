@@ -29,6 +29,12 @@ to read resource information from the [GCE metadata server](https://cloud.google
     * host.image.id
     * host.type
 
+* GKE: Google Kubernetes Engine
+
+    * cloud.provider ("gcp")
+    * cloud.infrastructure_service ("gcp_gke")
+    * k8s.cluster.name (name of the GKE cluster)
+
 * AWS EC2: Uses [AWS SDK for Go](https://docs.aws.amazon.com/sdk-for-go/api/aws/ec2metadata/) to read resource information from the [EC2 instance metadata API](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html) to retrieve the following resource attributes:
 
     * cloud.provider ("aws")
@@ -94,7 +100,7 @@ ec2:
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gce", "ec2", "ecs", "elastic_beanstalk", "azure"
+# a list of resource detectors to run, valid options are: "env", "system", "gce", "gke", "ec2", "ecs", "elastic_beanstalk", "azure"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
