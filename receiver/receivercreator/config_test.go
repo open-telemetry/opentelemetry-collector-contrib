@@ -123,7 +123,7 @@ func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	_ configmodels.Receiver,
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	return &nopWithEndpointReceiver{
-		Component: componenthelper.NewComponent(componenthelper.DefaultComponentSettings()),
+		Component: componenthelper.New(),
 		Metrics:   nextConsumer,
 	}, nil
 }
