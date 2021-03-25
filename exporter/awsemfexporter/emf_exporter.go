@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -29,6 +30,12 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
+)
+
+const (
+	// OutputDestination Options
+	outputDestinationCloudWatch = "cloudwatch"
+	outputDestinationStdout     = "stdout"
 )
 
 type emfExporter struct {
@@ -119,6 +126,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) err
 	groupedMetrics := make(map[interface{}]*GroupedMetric)
 	expConfig := emf.config.(*Config)
 	defaultLogStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
+	outputDestination := expConfig.OutputDestination
 
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
@@ -128,31 +136,37 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) err
 	for _, groupedMetric := range groupedMetrics {
 		cWMetric := translateGroupedMetricToCWMetric(groupedMetric, expConfig)
 		putLogEvent := translateCWMetricToEMF(cWMetric, expConfig)
+		// Currently we only support two options for "OutputDestination".
+		if strings.EqualFold(outputDestination, outputDestinationStdout) {
+			fmt.Println(*putLogEvent.InputLogEvent.Message)
+		} else if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
+			logGroup := groupedMetric.Metadata.LogGroup
+			logStream := groupedMetric.Metadata.LogStream
+			if logStream == "" {
+				logStream = defaultLogStream
+			}
 
-		logGroup := groupedMetric.Metadata.LogGroup
-		logStream := groupedMetric.Metadata.LogStream
-		if logStream == "" {
-			logStream = defaultLogStream
-		}
-
-		pusher := emf.getPusher(logGroup, logStream)
-		if pusher != nil {
-			returnError := pusher.AddLogEntry(putLogEvent)
-			if returnError != nil {
-				return wrapErrorIfBadRequest(&returnError)
+			pusher := emf.getPusher(logGroup, logStream)
+			if pusher != nil {
+				returnError := pusher.AddLogEntry(putLogEvent)
+				if returnError != nil {
+					return wrapErrorIfBadRequest(&returnError)
+				}
 			}
 		}
 	}
 
-	for _, pusher := range emf.listPushers() {
-		returnError := pusher.ForceFlush()
-		if returnError != nil {
-			//TODO now we only have one pusher, so it's ok to return after first error occurred
-			err := wrapErrorIfBadRequest(&returnError)
-			if err != nil {
-				emf.logger.Error("Error force flushing logs. Skipping to next pusher.", zap.Error(err))
+	if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
+		for _, pusher := range emf.listPushers() {
+			returnError := pusher.ForceFlush()
+			if returnError != nil {
+				//TODO now we only have one pusher, so it's ok to return after first error occurred
+				err := wrapErrorIfBadRequest(&returnError)
+				if err != nil {
+					emf.logger.Error("Error force flushing logs. Skipping to next pusher.", zap.Error(err))
+				}
+				return err
 			}
-			return err
 		}
 	}
 
