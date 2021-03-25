@@ -16,13 +16,13 @@ package kafkametricsreceiver
 
 import (
 	"context"
-	"github.com/Shopify/sarama"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"regexp"
 	"time"
 
+	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/simple"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
