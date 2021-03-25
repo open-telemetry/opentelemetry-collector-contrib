@@ -106,9 +106,9 @@ func TestMetricDataToLogService(t *testing.T) {
 	intHistogramDataPoint.SetExplicitBounds([]float64{1, 2})
 
 	doubleHistogramMetric := metrics.At(7)
-	doubleHistogramMetric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
+	doubleHistogramMetric.SetDataType(pdata.MetricDataTypeHistogram)
 	doubleHistogramMetric.SetName("double_$histogram")
-	doubleHistogram := doubleHistogramMetric.DoubleHistogram()
+	doubleHistogram := doubleHistogramMetric.Histogram()
 	doubleHistogramDataPoints := doubleHistogram.DataPoints()
 	doubleHistogramDataPoints.Resize(1)
 	doubleHistogramDataPoint := doubleHistogramDataPoints.At(0)
