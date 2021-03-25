@@ -12,46 +12,53 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gce
+package gcp
 
 import "cloud.google.com/go/compute/metadata"
 
-type gceMetadata interface {
+type Metadata interface {
 	OnGCE() bool
 	ProjectID() (string, error)
 	Zone() (string, error)
 	Hostname() (string, error)
+	InstanceAttributeValue(attr string) (string, error)
 	InstanceID() (string, error)
 	InstanceName() (string, error)
 	Get(suffix string) (string, error)
 }
 
-type gceMetadataImpl struct{}
+type MetadataImpl struct{}
 
-func (m *gceMetadataImpl) OnGCE() bool {
+var _ Metadata = (*MetadataImpl)(nil)
+
+func (m *MetadataImpl) OnGCE() bool {
 	return metadata.OnGCE()
 }
 
-func (m *gceMetadataImpl) ProjectID() (string, error) {
+func (m *MetadataImpl) ProjectID() (string, error) {
 	return metadata.ProjectID()
 }
 
-func (m *gceMetadataImpl) Zone() (string, error) {
+func (m *MetadataImpl) Zone() (string, error) {
 	return metadata.Zone()
 }
 
-func (m *gceMetadataImpl) Hostname() (string, error) {
+func (m *MetadataImpl) Hostname() (string, error) {
 	return metadata.Hostname()
 }
 
-func (m *gceMetadataImpl) InstanceID() (string, error) {
+func (m *MetadataImpl) InstanceAttributeValue(attr string) (string, error) {
+	return metadata.InstanceAttributeValue(attr)
+}
+
+func (m *MetadataImpl) InstanceID() (string, error) {
 	return metadata.InstanceID()
 }
 
-func (m *gceMetadataImpl) InstanceName() (string, error) {
+func (m *MetadataImpl) InstanceName() (string, error) {
 	return metadata.InstanceName()
 }
 
-func (m *gceMetadataImpl) Get(suffix string) (string, error) {
+func (m *MetadataImpl) Get(suffix string) (string, error) {
 	return metadata.Get(suffix)
 }
