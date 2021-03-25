@@ -33,6 +33,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/gce"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/gke"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
@@ -62,6 +63,7 @@ func NewFactory() component.ProcessorFactory {
 		elasticbeanstalk.TypeStr: elasticbeanstalk.NewDetector,
 		env.TypeStr:              env.NewDetector,
 		gce.TypeStr:              gce.NewDetector,
+		gke.TypeStr:              gke.NewDetector,
 		system.TypeStr:           system.NewDetector,
 	})
 
