@@ -26,6 +26,7 @@ const (
 )
 
 var newSaramaClient = sarama.NewClient
+var newClusterAdmin = sarama.NewClusterAdmin
 
 var testTopics = []string{"test_topic"}
 var testPartitions = []int32{1}
