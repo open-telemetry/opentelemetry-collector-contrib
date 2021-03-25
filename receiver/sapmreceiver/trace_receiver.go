@@ -186,7 +186,7 @@ func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 
 		// run the server on a routine
 		go func() {
-			if errHTTP := sr.server.Serve(ln); errHTTP != nil {
+			if errHTTP := sr.server.Serve(ln); errHTTP != http.ErrServerClosed {
 				host.ReportFatalError(errHTTP)
 			}
 		}()

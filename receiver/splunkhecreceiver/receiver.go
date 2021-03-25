@@ -168,7 +168,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	r.server.WriteTimeout = defaultServerTimeout
 
 	go func() {
-		if errHTTP := r.server.Serve(ln); errHTTP != nil {
+		if errHTTP := r.server.Serve(ln); errHTTP != http.ErrServerClosed {
 			host.ReportFatalError(errHTTP)
 		}
 	}()

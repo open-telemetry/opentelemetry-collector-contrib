@@ -89,7 +89,7 @@ func (detector *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 
 	attr := res.Attributes()
 	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.InsertString(conventions.AttributeCloudInfrastructureService, conventions.AttributeCloudProviderAWSEKS)
+	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEKS)
 
 	// Get clusterName and append to attributes
 	clusterName, err := getClusterName(ctx, detector.utils)

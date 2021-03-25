@@ -73,10 +73,10 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 
 	attr := res.Attributes()
 	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.InsertString(conventions.AttributeCloudInfrastructureService, conventions.AttributeCloudProviderAWSEC2)
+	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
 	attr.InsertString(conventions.AttributeCloudRegion, meta.Region)
 	attr.InsertString(conventions.AttributeCloudAccount, meta.AccountID)
-	attr.InsertString(conventions.AttributeCloudZone, meta.AvailabilityZone)
+	attr.InsertString(conventions.AttributeCloudAvailabilityZone, meta.AvailabilityZone)
 	attr.InsertString(conventions.AttributeHostID, meta.InstanceID)
 	attr.InsertString(conventions.AttributeHostImageID, meta.ImageID)
 	attr.InsertString(conventions.AttributeHostType, meta.InstanceType)

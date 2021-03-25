@@ -21,10 +21,10 @@ details of which are currently pending confirmation in the OpenTelemetry specifi
 to read resource information from the [GCE metadata server](https://cloud.google.com/compute/docs/storing-retrieving-metadata) to retrieve the following resource attributes:
 
     * cloud.provider ("gcp")
-    * cloud.infrastructure_service ("gcp_compute_engine")
+    * cloud.platform ("gcp_compute_engine")
     * cloud.account.id
     * cloud.region
-    * cloud.zone
+    * cloud.availability_zone
     * host.id
     * host.image.id
     * host.type
@@ -32,16 +32,16 @@ to read resource information from the [GCE metadata server](https://cloud.google
 * GKE: Google Kubernetes Engine
 
     * cloud.provider ("gcp")
-    * cloud.infrastructure_service ("gcp_gke")
+    * cloud.platform ("gcp_gke")
     * k8s.cluster.name (name of the GKE cluster)
 
 * AWS EC2: Uses [AWS SDK for Go](https://docs.aws.amazon.com/sdk-for-go/api/aws/ec2metadata/) to read resource information from the [EC2 instance metadata API](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html) to retrieve the following resource attributes:
 
     * cloud.provider ("aws")
-    * cloud.infrastructure_service ("aws_ec2")
+    * cloud.platform ("aws_ec2")
     * cloud.account.id
     * cloud.region
-    * cloud.zone
+    * cloud.availability_zone
     * host.id
     * host.image.id
     * host.name
@@ -64,10 +64,10 @@ ec2:
 * Amazon ECS: Queries the [Task Metadata Endpoint](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint.html) (TMDE) to record information about the current ECS Task. Only TMDE V4 and V3 are supported.
 
     * cloud.provider ("aws")
-    * cloud.infrastructure_service ("aws_ecs")
+    * cloud.platform ("aws_ecs")
     * cloud.account.id
     * cloud.region
-    * cloud.zone
+    * cloud.availability_zone
     * aws.ecs.cluster.arn
     * aws.ecs.task.arn
     * aws.ecs.task.family
@@ -81,7 +81,7 @@ ec2:
 * Amazon Elastic Beanstalk: Reads the AWS X-Ray configuration file available on all Beanstalk instances with [X-Ray Enabled](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/environment-configuration-debugging.html).
 
     * cloud.provider ("aws")
-    * cloud.infrastructure_service ("aws_elastic_beanstalk")
+    * cloud.platform ("aws_elastic_beanstalk")
     * deployment.environment
     * service.instance.id
     * service.version
@@ -89,13 +89,13 @@ ec2:
 * Amazon EKS
 
     * cloud.provider ("aws")
-    * cloud.infrastructure_service ("aws_eks")
+    * cloud.platform ("aws_eks")
     * k8s.cluster.name (name of the EKS cluster)
     
 * Azure: Queries the [Azure Instance Metadata Service](https://aka.ms/azureimds) to retrieve the following resource attributes:
 
     * cloud.provider ("azure")
-    * cloud.infrastructure_service ("azure_vm")
+    * cloud.platform ("azure_vm")
     * cloud.region
     * cloud.account.id (subscription ID)
     * host.id (virtual machine ID)
@@ -115,7 +115,7 @@ override: <bool>
 
 ## Ordering
 
-Note that if multiple detectors are inserting the same attribute name, the first detector to insert wins. For example if you had `detectors: [eks, ec2]` then `cloud.infrastructure_service` will be `aws_eks` instead of `ec2`. The below ordering is recommended.
+Note that if multiple detectors are inserting the same attribute name, the first detector to insert wins. For example if you had `detectors: [eks, ec2]` then `cloud.platform` will be `aws_eks` instead of `ec2`. The below ordering is recommended.
 
 ### GCP
 

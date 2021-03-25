@@ -112,11 +112,11 @@ func TestMetadataFromAttributes(t *testing.T) {
 
 	// GCP
 	attrsGCP := testutils.NewAttributeMap(map[string]string{
-		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP,
-		conventions.AttributeHostID:        "host-id",
-		conventions.AttributeHostName:      "host-name",
-		conventions.AttributeHostType:      "host-type",
-		conventions.AttributeCloudZone:     "cloud-zone",
+		conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
+		conventions.AttributeHostID:                "host-id",
+		conventions.AttributeHostName:              "host-name",
+		conventions.AttributeHostType:              "host-type",
+		conventions.AttributeCloudAvailabilityZone: "cloud-zone",
 	})
 	metadataGCP := metadataFromAttributes(attrsGCP)
 	assert.Equal(t, metadataGCP.InternalHostname, "host-name")
