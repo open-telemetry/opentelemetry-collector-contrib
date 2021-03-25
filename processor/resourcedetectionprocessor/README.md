@@ -112,7 +112,21 @@ detectors: [ <string> ]
 override: <bool>
 ```
 
-Note that if multiple detectors are inserting the same attribute name, the first detector to insert wins. For example if you had `detectors: [eks, ec2]` then `cloud.infrastructure_service` will be `aws_eks` instead of `ec2`.
+## Ordering
+
+Note that if multiple detectors are inserting the same attribute name, the first detector to insert wins. For example if you had `detectors: [eks, ec2]` then `cloud.infrastructure_service` will be `aws_eks` instead of `ec2`. The below ordering is recommended.
+
+### GCP
+
+* gke
+* gce
+
+### AWS
+
+* elastic_beanstalk
+* eks
+* ecs
+* ec2
 
 The full list of settings exposed for this extension are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).

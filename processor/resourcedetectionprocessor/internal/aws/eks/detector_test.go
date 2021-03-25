@@ -38,8 +38,8 @@ func (detectorUtils *MockDetectorUtils) fileExists(filename string) bool {
 }
 
 // Mock function for fetchString()
-func (detectorUtils *MockDetectorUtils) fetchString(httpMethod string, URL string) (string, error) {
-	args := detectorUtils.Called(httpMethod, URL)
+func (detectorUtils *MockDetectorUtils) fetchString(ctx context.Context, httpMethod string, URL string) (string, error) {
+	args := detectorUtils.Called(ctx, httpMethod, URL)
 	return args.String(0), args.Error(1)
 }
 
@@ -51,17 +51,18 @@ func TestNewDetector(t *testing.T) {
 
 // Tests EKS resource detector running in EKS environment
 func TestEks(t *testing.T) {
-	detectorUtils := new(MockDetectorUtils)
+	detectorUtils := &MockDetectorUtils{}
+	ctx := context.Background()
 
 	// Mock functions and set expectations
 	detectorUtils.On("fileExists", k8sTokenPath).Return(true)
 	detectorUtils.On("fileExists", k8sCertPath).Return(true)
-	detectorUtils.On("fetchString", "GET", k8sSvcURL+authConfigmapPath).Return("not empty", nil)
-	detectorUtils.On("fetchString", "GET", k8sSvcURL+cwConfigmapPath).Return(`{"data":{"cluster.name":"my-cluster"}}`, nil)
+	detectorUtils.On("fetchString", ctx, "GET", authConfigmapPath).Return("not empty", nil)
+	detectorUtils.On("fetchString", ctx, "GET", cwConfigmapPath).Return(`{"data":{"cluster.name":"my-cluster"}}`, nil)
 
 	// Call EKS Resource detector to detect resources
 	eksResourceDetector := &Detector{utils: detectorUtils}
-	res, err := eksResourceDetector.Detect(context.Background())
+	res, err := eksResourceDetector.Detect(ctx)
 	require.NoError(t, err)
 
 	assert.Equal(t, map[string]interface{}{

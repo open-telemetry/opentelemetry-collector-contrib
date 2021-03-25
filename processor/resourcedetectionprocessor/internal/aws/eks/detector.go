@@ -23,7 +23,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -36,19 +35,20 @@ const (
 	// TypeStr is type of detector.
 	TypeStr = "eks"
 
-	k8sSvcURL = "https://kubernetes.default.svc"
 	/* #nosec */
 	k8sTokenPath      = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 	k8sCertPath       = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-	authConfigmapPath = "/api/v1/namespaces/kube-system/configmaps/aws-auth"
-	cwConfigmapPath   = "/api/v1/namespaces/amazon-cloudwatch/configmaps/cluster-info"
-	timeoutMillis     = 2000
+	authConfigmapPath = "https://kubernetes.default.svc/api/v1/namespaces/kube-system/configmaps/aws-auth"
+	cwConfigmapPath   = "https://kubernetes.default.svc/api/v1/namespaces/amazon-cloudwatch/configmaps/cluster-info"
 )
 
 // detectorUtils is used for testing the resourceDetector by abstracting functions that rely on external systems.
 type detectorUtils interface {
+	// fileExists returns true if the file exists, otherwise false.
 	fileExists(filename string) bool
-	fetchString(httpMethod string, URL string) (string, error)
+	// fetchString executes an HTTP request with a given HTTP Method and URL string returning
+	// the content body or an error.
+	fetchString(ctx context.Context, httpMethod string, URL string) (string, error)
 }
 
 // This struct will implement the detectorUtils interface
@@ -77,7 +77,7 @@ func NewDetector(_ component.ProcessorCreateParams, _ internal.DetectorConfig) (
 // Detect returns a Resource describing the Amazon EKS environment being run in.
 func (detector *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()
-	isEks, err := isEKS(detector.utils)
+	isEks, err := isEKS(ctx, detector.utils)
 	if err != nil {
 		return res, err
 	}
@@ -92,7 +92,7 @@ func (detector *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	attr.InsertString(conventions.AttributeCloudInfrastructureService, conventions.AttributeCloudProviderAWSEKS)
 
 	// Get clusterName and append to attributes
-	clusterName, err := getClusterName(detector.utils)
+	clusterName, err := getClusterName(ctx, detector.utils)
 	if err != nil {
 		return res, err
 	}
@@ -104,13 +104,13 @@ func (detector *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 }
 
 // isEKS checks if the current environment is running in EKS.
-func isEKS(utils detectorUtils) (bool, error) {
+func isEKS(ctx context.Context, utils detectorUtils) (bool, error) {
 	if !isK8s(utils) {
 		return false, nil
 	}
 
 	// Make HTTP GET request
-	awsAuth, err := utils.fetchString(http.MethodGet, k8sSvcURL+authConfigmapPath)
+	awsAuth, err := utils.fetchString(ctx, http.MethodGet, authConfigmapPath)
 	if err != nil {
 		return false, fmt.Errorf("isEks() error retrieving auth configmap: %w", err)
 	}
@@ -123,25 +123,26 @@ func isK8s(utils detectorUtils) bool {
 	return utils.fileExists(k8sTokenPath) && utils.fileExists(k8sCertPath)
 }
 
-// fileExists checks if a file with a given filename exists.
+// fileExists returns true if the file exists, otherwise false.
 func (eksUtils eksDetectorUtils) fileExists(filename string) bool {
 	info, err := os.Stat(filename)
 	return err == nil && !info.IsDir()
 }
 
-// fetchString executes an HTTP request with a given HTTP Method and URL string.
-func (eksUtils eksDetectorUtils) fetchString(httpMethod string, URL string) (string, error) {
-	request, err := http.NewRequest(httpMethod, URL, nil)
+// fetchString executes an HTTP request with a given HTTP Method and URL string returning
+// the content body or an error.
+func (eksUtils eksDetectorUtils) fetchString(ctx context.Context, httpMethod string, URL string) (string, error) {
+	request, err := http.NewRequestWithContext(ctx, httpMethod, URL, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create new HTTP request with method=%s, URL=%s: %w", httpMethod, URL, err)
 	}
 
 	// Set HTTP request header with authentication credentials
-	authHeader, err := getK8sCredHeader()
+	k8sToken, err := getK8sToken()
 	if err != nil {
 		return "", err
 	}
-	request.Header.Set("Authorization", authHeader)
+	request.Header.Set("Authorization", "Bearer "+k8sToken)
 
 	// Get certificate
 	caCert, err := ioutil.ReadFile(k8sCertPath)
@@ -153,7 +154,6 @@ func (eksUtils eksDetectorUtils) fetchString(httpMethod string, URL string) (str
 
 	// Set HTTP request timeout and add certificate
 	client := &http.Client{
-		Timeout: timeoutMillis * time.Millisecond,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
 				RootCAs: caCertPool,
@@ -175,19 +175,19 @@ func (eksUtils eksDetectorUtils) fetchString(httpMethod string, URL string) (str
 	return string(body), nil
 }
 
-// getK8sCredHeader retrieves the kubernetes credential information.
-func getK8sCredHeader() (string, error) {
+// getK8sToken retrieves the kubernetes credential information.
+func getK8sToken() (string, error) {
 	content, err := ioutil.ReadFile(k8sTokenPath)
 	if err != nil {
-		return "", fmt.Errorf("getK8sCredHeader() error: cannot read file with path %s", k8sTokenPath)
+		return "", fmt.Errorf("getK8sToken() error: cannot read file with path %s", k8sTokenPath)
 	}
 
-	return "Bearer " + string(content), nil
+	return string(content), nil
 }
 
 // getClusterName retrieves the clusterName resource attribute
-func getClusterName(utils detectorUtils) (string, error) {
-	resp, err := utils.fetchString("GET", k8sSvcURL+cwConfigmapPath)
+func getClusterName(ctx context.Context, utils detectorUtils) (string, error) {
+	resp, err := utils.fetchString(ctx, "GET", cwConfigmapPath)
 	if err != nil {
 		return "", fmt.Errorf("getClusterName() error: %w", err)
 	}
