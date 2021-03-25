@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#378](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/378))
 - `opentelemetry-instrumentation-wsgi` Reimplement `keys` method to return actual keys from the carrier instead of an empty list.
   ([#379](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/379))
+- `opentelemetry-instrumentation-sqlalchemy` Fix multithreading issues in recording spans from SQLAlchemy
+  ([#315](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/315))
 
 ### Changed
 - Rename `IdsGenerator` to `IdGenerator`
