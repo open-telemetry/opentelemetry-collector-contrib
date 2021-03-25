@@ -61,6 +61,10 @@ type Config struct {
 	// "SingleDimensionRollupOnly" - Enable single dimension rollup
 	// "NoDimensionRollup" - No dimension rollup (only keep original metrics which contain all dimensions)
 	DimensionRollupOption string `mapstructure:"dimension_rollup_option"`
+	// ParseJSONEncodedAttributeValues is an array of attribute keys whose corresponding values are JSON-encoded as strings.
+	// Those strings will be decoded to its original json structure.
+	ParseJSONEncodedAttributeValues []string `mapstructure:"parse_json_encoded_attr_values"`
+
 	// MetricDeclarations is the list of rules to be used to set dimensions for exported metrics.
 	MetricDeclarations []*MetricDeclaration `mapstructure:"metric_declarations"`
 
