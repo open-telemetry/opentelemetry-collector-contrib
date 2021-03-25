@@ -272,7 +272,7 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (err error) {
 
 	// Callback when each batch is to be sent.
 	send := func(ctx context.Context, buf *bytes.Buffer) (err error) {
-		compression := buf.Len() >= int(c.config.MinContentLengthCompression) && !c.config.DisableCompression
+		shouldCompress := buf.Len() >= int(c.config.MinContentLengthCompression) && !c.config.DisableCompression
 
 		if compression {
 			gzipBuffer.Reset()
