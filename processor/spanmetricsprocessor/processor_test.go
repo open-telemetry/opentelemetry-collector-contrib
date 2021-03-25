@@ -555,9 +555,9 @@ func TestValidateDimensions(t *testing.T) {
 			name: "duplicate additional dimensions after sanitization",
 			dimensions: []Dimension{
 				{Name: "http.status_code"},
-				{Name: "http_status_code"},
+				{Name: "http!status_code"},
 			},
-			expectedErr: "duplicate dimension name http_status_code",
+			expectedErr: "duplicate dimension name http_status_code after sanitization",
 		},
 		{
 			name: "we skip the case if the dimension name is the same after sanitization",
