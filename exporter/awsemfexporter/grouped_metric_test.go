@@ -94,7 +94,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		},
 		{
 			"Double histogram",
-			generateTestDoubleHistogram("foo"),
+			generateTestHistogram("foo"),
 			map[string]*MetricInfo{
 				"foo": {
 					Value: &CWMetricStats{
@@ -177,7 +177,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 				generateTestDoubleGauge("double-gauge"),
 				generateTestIntSum("int-sum"),
 				generateTestDoubleSum("double-sum"),
-				generateTestDoubleHistogram("double-histogram"),
+				generateTestHistogram("double-histogram"),
 				generateTestSummary("summary"),
 			},
 		}
@@ -429,7 +429,7 @@ func BenchmarkAddToGroupedMetric(b *testing.B) {
 			generateTestDoubleGauge("double-gauge"),
 			generateTestIntSum("int-sum"),
 			generateTestDoubleSum("double-sum"),
-			generateTestDoubleHistogram("double-histogram"),
+			generateTestHistogram("double-histogram"),
 			generateTestSummary("summary"),
 		},
 	}

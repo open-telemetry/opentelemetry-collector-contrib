@@ -226,18 +226,18 @@ func exampleIntHistogramMetric() metricPair {
 	return metric
 }
 
-func exampleDoubleHistogramMetric() metricPair {
+func exampleHistogramMetric() metricPair {
 	metric := metricPair{
 		attributes: pdata.NewAttributeMap(),
 		metric:     pdata.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
+	metric.metric.SetDataType(pdata.MetricDataTypeHistogram)
 	metric.metric.SetName("histogram_metric_double_test")
 
 	metric.attributes.InsertString("bar", "foo")
 
-	dp := pdata.NewDoubleHistogramDataPoint()
+	dp := pdata.NewHistogramDataPoint()
 	dp.LabelsMap().Insert("container", "dolor")
 	dp.LabelsMap().Insert("branch", "sumologic")
 	dp.SetBucketCounts([]uint64{0, 12, 7, 5, 8, 13})
@@ -245,9 +245,9 @@ func exampleDoubleHistogramMetric() metricPair {
 	dp.SetTimestamp(1618124444.169 * 1e9)
 	dp.SetSum(45.6)
 	dp.SetCount(7)
-	metric.metric.DoubleHistogram().DataPoints().Append(dp)
+	metric.metric.Histogram().DataPoints().Append(dp)
 
-	dp = pdata.NewDoubleHistogramDataPoint()
+	dp = pdata.NewHistogramDataPoint()
 	dp.LabelsMap().Insert("container", "sit")
 	dp.LabelsMap().Insert("branch", "main")
 	dp.SetBucketCounts([]uint64{0, 10, 1, 1, 4, 6})
@@ -255,7 +255,7 @@ func exampleDoubleHistogramMetric() metricPair {
 	dp.SetTimestamp(1608424699.186 * 1e9)
 	dp.SetSum(54.1)
 	dp.SetCount(98)
-	metric.metric.DoubleHistogram().DataPoints().Append(dp)
+	metric.metric.Histogram().DataPoints().Append(dp)
 
 	return metric
 }

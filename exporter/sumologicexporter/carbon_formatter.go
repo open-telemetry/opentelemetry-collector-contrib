@@ -104,7 +104,7 @@ func carbon2Metric2String(record metricPair) string {
 			nextLines = append(nextLines, carbon2DoubleRecord(record, dps.At(i)))
 		}
 	// Skip complex metrics
-	case pdata.MetricDataTypeDoubleHistogram:
+	case pdata.MetricDataTypeHistogram:
 	case pdata.MetricDataTypeIntHistogram:
 	case pdata.MetricDataTypeSummary:
 	}

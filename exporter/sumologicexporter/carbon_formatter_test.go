@@ -90,8 +90,8 @@ func TestCarbonMetricDataTypeIntHistogram(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
-func TestCarbonMetricDataTypeDoubleHistogram(t *testing.T) {
-	metric := exampleDoubleHistogramMetric()
+func TestCarbonMetricDataTypeHistogram(t *testing.T) {
+	metric := exampleHistogramMetric()
 
 	result := carbon2Metric2String(metric)
 	expected := ``

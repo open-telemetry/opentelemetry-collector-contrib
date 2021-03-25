@@ -140,7 +140,7 @@ func generateTestDoubleSum(name string) *metricspb.Metric {
 	}
 }
 
-func generateTestDoubleHistogram(name string) *metricspb.Metric {
+func generateTestHistogram(name string) *metricspb.Metric {
 	return &metricspb.Metric{
 		MetricDescriptor: &metricspb.MetricDescriptor{
 			Name: name,
@@ -393,11 +393,11 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 	}
 }
 
-func TestDoubleHistogramDataPointSliceAt(t *testing.T) {
+func TestHistogramDataPointSliceAt(t *testing.T) {
 	instrLibName := "cloudwatch-otel"
 	labels := map[string]string{"label1": "value1"}
 
-	testDPS := pdata.NewDoubleHistogramDataPointSlice()
+	testDPS := pdata.NewHistogramDataPointSlice()
 	testDPS.Resize(1)
 	testDP := testDPS.At(0)
 	testDP.SetCount(uint64(17))
@@ -406,7 +406,7 @@ func TestDoubleHistogramDataPointSliceAt(t *testing.T) {
 	testDP.SetExplicitBounds([]float64{1, 2, 3})
 	testDP.LabelsMap().InitFromMap(labels)
 
-	dps := DoubleHistogramDataPointSlice{
+	dps := HistogramDataPointSlice{
 		instrLibName,
 		testDPS,
 	}
@@ -610,10 +610,10 @@ func TestGetDataPoints(t *testing.T) {
 		},
 		{
 			"Double histogram",
-			generateTestDoubleHistogram("foo"),
-			DoubleHistogramDataPointSlice{
+			generateTestHistogram("foo"),
+			HistogramDataPointSlice{
 				metadata.InstrumentationLibraryName,
-				pdata.DoubleHistogramDataPointSlice{},
+				pdata.HistogramDataPointSlice{},
 			},
 		},
 		{
@@ -660,10 +660,10 @@ func TestGetDataPoints(t *testing.T) {
 				dp := convertedDPS.DoubleDataPointSlice.At(0)
 				assert.Equal(t, 0.1, dp.Value())
 				assert.Equal(t, expectedLabels, dp.LabelsMap())
-			case DoubleHistogramDataPointSlice:
+			case HistogramDataPointSlice:
 				assert.Equal(t, metadata.InstrumentationLibraryName, convertedDPS.instrumentationLibraryName)
 				assert.Equal(t, 1, convertedDPS.Len())
-				dp := convertedDPS.DoubleHistogramDataPointSlice.At(0)
+				dp := convertedDPS.HistogramDataPointSlice.At(0)
 				assert.Equal(t, 35.0, dp.Sum())
 				assert.Equal(t, uint64(18), dp.Count())
 				assert.Equal(t, []float64{0, 10}, dp.ExplicitBounds())
@@ -721,7 +721,7 @@ func BenchmarkGetDataPoints(b *testing.B) {
 			generateTestDoubleGauge("double-gauge"),
 			generateTestIntSum("int-sum"),
 			generateTestDoubleSum("double-sum"),
-			generateTestDoubleHistogram("double-histogram"),
+			generateTestHistogram("double-histogram"),
 			generateTestSummary("summary"),
 		},
 	}
