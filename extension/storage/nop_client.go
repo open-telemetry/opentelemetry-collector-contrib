@@ -14,16 +14,16 @@
 
 package storage
 
-type StubClient struct{}
+type NopClient struct{}
 
-func (c StubClient) Get(string) ([]byte, bool) {
+func (c NopClient) Get(string) ([]byte, error) {
 	return nil, nil // no result, but no problem
 }
 
-func (c StubClient) Set(string, []byte) error {
-	return nil
+func (c NopClient) Set(string, []byte) error {
+	return nil // no problem
 }
 
-func (c StubClient) Delete(string) error {
-	return nil
+func (c NopClient) Delete(string) error {
+	return nil // no problem
 }

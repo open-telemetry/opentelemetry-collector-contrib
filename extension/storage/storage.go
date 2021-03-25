@@ -26,8 +26,9 @@ type Extension interface {
 }
 
 // Client is the interface that storage clients must implement
+// All methods should return error only if a problem occurred
 type Client interface {
-	Get(string) ([]byte, error)
+	Get(string) ([]byte, error) // returns nil, nil if not found
 	Set(string, []byte) error
 	Delete(string) error
 }

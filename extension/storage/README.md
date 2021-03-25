@@ -1,16 +1,14 @@
 # Storage
 
-Storage is a singleton extension that can be used to persist state to disk. Other components can request a persistance interface from the storage extension, and use it to manage a persistent key/value store. 
+A storage extension persist state beyond the collector process. Other components can request a storage client from the storage extension and use it to manage state. 
 
-The `Storage` interface contains the following methods:
+The `storage.Extension` interface contains the following methods:
 ```
 Get(string) ([]byte, error) // returns error if not found
 Set(string, []byte) error   // returns error if not set
 Delete(string) error        // returns error if not found
 ```
+Note: All methods should return error only if a problem occurred. (For example, if a fiel )
 
-# TODO
-
-- Document configuration
-- Sample code to get the extension, and to get the inteface from it
+# TODO Sample code
 - Document component expections
