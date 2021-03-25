@@ -72,12 +72,16 @@ type CWMetricStats struct {
 	Sum   float64
 }
 
+type GroupedMetricMetadata struct {
+	Namespace   string
+	TimestampMs int64
+	LogGroup    string
+	LogStream   string
+}
+
 // CWMetricMetadata represents the metadata associated with a given CloudWatch metric
 type CWMetricMetadata struct {
-	Namespace                  string
-	TimestampMs                int64
-	LogGroup                   string
-	LogStream                  string
+	GroupedMetricMetadata
 	InstrumentationLibraryName string
 
 	receiver       string
@@ -122,10 +126,12 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetric
 		for k := 0; k < metrics.Len(); k++ {
 			metric := metrics.At(k)
 			metadata := CWMetricMetadata{
-				Namespace:                  cWNamespace,
-				TimestampMs:                timestamp,
-				LogGroup:                   logGroup,
-				LogStream:                  logStream,
+				GroupedMetricMetadata: GroupedMetricMetadata{
+					Namespace:   cWNamespace,
+					TimestampMs: timestamp,
+					LogGroup:    logGroup,
+					LogStream:   logStream,
+				},
 				InstrumentationLibraryName: instrumentationLibName,
 				receiver:                   metricReceiver,
 				metricDataType:             metric.DataType(),

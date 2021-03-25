@@ -24,37 +24,37 @@ import (
 )
 
 func TestFloat64RateCalculator(t *testing.T) {
-	metricName := "rate"
+	MetricMetadata := "rate"
 	initTime := time.Now()
 	c := newFloat64RateCalculator()
-	r, ok := c.Calculate(metricName, nil, float64(50), initTime)
+	r, ok := c.Calculate(MetricMetadata, nil, float64(50), initTime)
 	assert.False(t, ok)
 	assert.Equal(t, float64(0), r)
 
 	nextTime := initTime.Add(100 * time.Millisecond)
-	r, ok = c.Calculate(metricName, nil, float64(100), nextTime)
+	r, ok = c.Calculate(MetricMetadata, nil, float64(100), nextTime)
 	assert.True(t, ok)
 	assert.InDelta(t, 0.5, r, 0.1)
 }
 
 func TestFloat64RateCalculatorWithTooFrequentUpdate(t *testing.T) {
-	metricName := "rate"
+	MetricMetadata := "rate"
 	initTime := time.Now()
 	c := newFloat64RateCalculator()
-	r, ok := c.Calculate(metricName, nil, float64(50), initTime)
+	r, ok := c.Calculate(MetricMetadata, nil, float64(50), initTime)
 	assert.False(t, ok)
 	assert.Equal(t, float64(0), r)
 
 	nextTime := initTime
 	for i := 0; i < 10; i++ {
 		nextTime = nextTime.Add(5 * time.Millisecond)
-		r, ok = c.Calculate(metricName, nil, float64(105), nextTime)
+		r, ok = c.Calculate(MetricMetadata, nil, float64(105), nextTime)
 		assert.False(t, ok)
 		assert.Equal(t, float64(0), r)
 	}
 
 	nextTime = nextTime.Add(5 * time.Millisecond)
-	r, ok = c.Calculate(metricName, nil, float64(105), nextTime)
+	r, ok = c.Calculate(MetricMetadata, nil, float64(105), nextTime)
 	assert.True(t, ok)
 	assert.InDelta(t, 1, r, 0.1)
 }
@@ -73,13 +73,13 @@ func newFloat64RateCalculator() MetricCalculator {
 }
 
 func TestFloat64DeltaCalculator(t *testing.T) {
-	metricName := "delta"
+	MetricMetadata := "delta"
 	initTime := time.Now()
 	c := NewFloat64DeltaCalculator()
 
 	testCases := []float64{0.1, 0.1, 0.5, 1.3, 1.9, 2.5, 5, 24.2, 103}
 	for i, f := range testCases {
-		r, ok := c.Calculate(metricName, nil, f, initTime)
+		r, ok := c.Calculate(MetricMetadata, nil, f, initTime)
 		assert.True(t, ok)
 		if i == 0 {
 			assert.Equal(t, f, r)
@@ -90,13 +90,13 @@ func TestFloat64DeltaCalculator(t *testing.T) {
 }
 
 func TestFloat64DeltaCalculatorWithDecreasingValues(t *testing.T) {
-	metricName := "delta"
+	MetricMetadata := "delta"
 	initTime := time.Now()
 	c := NewFloat64DeltaCalculator()
 
 	testCases := []float64{108, 106, 56.2, 28.8, 10, 10, 3, -1, -100}
 	for i, f := range testCases {
-		r, ok := c.Calculate(metricName, nil, f, initTime)
+		r, ok := c.Calculate(MetricMetadata, nil, f, initTime)
 		if i == 0 {
 			assert.True(t, ok)
 			assert.Equal(t, f, r)
@@ -110,12 +110,12 @@ func TestFloat64DeltaCalculatorWithDecreasingValues(t *testing.T) {
 func TestMapWithExpiryAdd(t *testing.T) {
 	store := NewMapWithExpiry(time.Second)
 	value1 := rand.Float64()
-	store.Set(Key{MetricName: "key1"}, MetricValue{RawValue: value1})
-	val, ok := store.Get(Key{MetricName: "key1"})
+	store.Set(Key{MetricMetadata: "key1"}, MetricValue{RawValue: value1})
+	val, ok := store.Get(Key{MetricMetadata: "key1"})
 	assert.Equal(t, true, ok)
 	assert.Equal(t, value1, val.RawValue)
 
-	val, ok = store.Get(Key{MetricName: "key2"})
+	val, ok = store.Get(Key{MetricMetadata: "key2"})
 	assert.Equal(t, false, ok)
 	assert.True(t, val == nil)
 }
@@ -123,17 +123,17 @@ func TestMapWithExpiryAdd(t *testing.T) {
 func TestMapWithExpiryCleanup(t *testing.T) {
 	store := NewMapWithExpiry(time.Second)
 	value1 := rand.Float64()
-	store.Set(Key{MetricName: "key1"}, MetricValue{RawValue: value1, Timestamp: time.Now()})
+	store.Set(Key{MetricMetadata: "key1"}, MetricValue{RawValue: value1, Timestamp: time.Now()})
 
 	store.CleanUp(time.Now())
-	val, ok := store.Get(Key{MetricName: "key1"})
+	val, ok := store.Get(Key{MetricMetadata: "key1"})
 	assert.Equal(t, true, ok)
 	assert.Equal(t, value1, val.RawValue.(float64))
 	assert.Equal(t, 1, store.Size())
 
 	time.Sleep(time.Second)
 	store.CleanUp(time.Now())
-	val, ok = store.Get(Key{MetricName: "key1"})
+	val, ok = store.Get(Key{MetricMetadata: "key1"})
 	assert.Equal(t, false, ok)
 	assert.True(t, val == nil)
 	assert.Equal(t, 0, store.Size())
@@ -141,18 +141,18 @@ func TestMapWithExpiryCleanup(t *testing.T) {
 
 func TestMapWithExpiryConcurrency(t *testing.T) {
 	store := NewMapWithExpiry(time.Second)
-	store.Set(Key{MetricName: "sum"}, MetricValue{RawValue: 0})
+	store.Set(Key{MetricMetadata: "sum"}, MetricValue{RawValue: 0})
 
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
 		for i := 0; i < 30; i++ {
 			store.Lock()
-			sum, _ := store.Get(Key{MetricName: "sum"})
+			sum, _ := store.Get(Key{MetricMetadata: "sum"})
 			newSum := MetricValue{
 				RawValue: sum.RawValue.(int) + 1,
 			}
-			store.Set(Key{MetricName: "sum"}, newSum)
+			store.Set(Key{MetricMetadata: "sum"}, newSum)
 			store.Unlock()
 		}
 		wg.Done()
@@ -161,18 +161,23 @@ func TestMapWithExpiryConcurrency(t *testing.T) {
 	go func() {
 		for i := 0; i < 30; i++ {
 			store.Lock()
-			sum, _ := store.Get(Key{MetricName: "sum"})
+			sum, _ := store.Get(Key{MetricMetadata: "sum"})
 			newSum := MetricValue{
 				RawValue: sum.RawValue.(int) - 1,
 			}
-			store.Set(Key{MetricName: "sum"}, newSum)
+			store.Set(Key{MetricMetadata: "sum"}, newSum)
 			store.Unlock()
 		}
 		wg.Done()
 	}()
 	wg.Wait()
-	sum, _ := store.Get(Key{MetricName: "sum"})
+	sum, _ := store.Get(Key{MetricMetadata: "sum"})
 	assert.Equal(t, 0, sum.RawValue.(int))
+}
+
+type mockKey struct {
+	name  string
+	index int64
 }
 
 func TestMapKeyEquals(t *testing.T) {
@@ -187,6 +192,16 @@ func TestMapKeyEquals(t *testing.T) {
 	key1 := NewKey("name", labelMap1)
 	key2 := NewKey("name", labelMap2)
 	assert.Equal(t, key1, key2)
+
+	key1 = NewKey(mockKey{
+		name:  "name",
+		index: 1,
+	}, labelMap1)
+	key2 = NewKey(mockKey{
+		name:  "name",
+		index: 1,
+	}, labelMap2)
+	assert.Equal(t, key1, key2)
 }
 
 func TestMapKeyNotEqualOnName(t *testing.T) {
@@ -200,5 +215,21 @@ func TestMapKeyNotEqualOnName(t *testing.T) {
 
 	key1 := NewKey("name1", labelMap1)
 	key2 := NewKey("name2", labelMap2)
+	assert.NotEqual(t, key1, key2)
+
+	key1 = NewKey(mockKey{
+		name:  "name",
+		index: 1,
+	}, labelMap1)
+	key2 = NewKey(mockKey{
+		name:  "name",
+		index: 2,
+	}, labelMap2)
+	assert.NotEqual(t, key1, key2)
+
+	key2 = NewKey(mockKey{
+		name:  "name0",
+		index: 1,
+	}, labelMap2)
 	assert.NotEqual(t, key1, key2)
 }
