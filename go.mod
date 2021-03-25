@@ -62,7 +62,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.23.1-0.20210325165544-a675700280f5
-	golang.org/x/sys v0.0.0-20210315160823-c6e025ad8005
+	golang.org/x/sys v0.0.0-20210320140829-1e4c9ba3b0c4
 )
 
 // Replace references to modules that are in this repository with their relateive paths
