@@ -22,6 +22,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -82,7 +83,7 @@ type processorImp struct {
 	metricKeyToDimensions map[metricKey]dimKV
 }
 
-func newProcessor(logger *zap.Logger, config configmodels.Exporter, nextConsumer consumer.Traces) *processorImp {
+func newProcessor(logger *zap.Logger, config configmodels.Exporter, nextConsumer consumer.Traces) (*processorImp, error) {
 	logger.Info("Building spanmetricsprocessor")
 	pConfig := config.(*Config)
 
@@ -98,6 +99,10 @@ func newProcessor(logger *zap.Logger, config configmodels.Exporter, nextConsumer
 		}
 	}
 
+	if err := validateDimensions(pConfig.Dimensions); err != nil {
+		return nil, err
+	}
+
 	return &processorImp{
 		logger:                logger,
 		config:                *pConfig,
@@ -110,7 +115,7 @@ func newProcessor(logger *zap.Logger, config configmodels.Exporter, nextConsumer
 		nextConsumer:          nextConsumer,
 		dimensions:            pConfig.Dimensions,
 		metricKeyToDimensions: make(map[metricKey]dimKV),
-	}
+	}, nil
 }
 
 func mapDurationsToMillis(vs []time.Duration, f func(duration time.Duration) float64) []float64 {
@@ -119,6 +124,35 @@ func mapDurationsToMillis(vs []time.Duration, f func(duration time.Duration) flo
 		vsm[i] = f(v)
 	}
 	return vsm
+}
+
+// validateDimensions checks duplicates for reserved dimensions and additional dimensions. Considering
+// the usage of Prometheus related exporters, we also validate the dimensions after sanitization.
+func validateDimensions(dimensions []Dimension) error {
+	labelNames := make(map[string]struct{})
+	for _, key := range []string{serviceNameKey, spanKindKey, statusCodeKey} {
+		labelNames[key] = struct{}{}
+		labelNames[sanitize(key)] = struct{}{}
+	}
+	labelNames[operationKey] = struct{}{}
+
+	for _, key := range dimensions {
+		if _, ok := labelNames[key.Name]; ok {
+			return fmt.Errorf("duplicate dimension name %s", key.Name)
+		}
+		labelNames[key.Name] = struct{}{}
+
+		sanitizedName := sanitize(key.Name)
+		if sanitizedName == key.Name {
+			continue
+		}
+		if _, ok := labelNames[sanitizedName]; ok {
+			return fmt.Errorf("duplicate dimension name %s after sanitization", sanitizedName)
+		}
+		labelNames[sanitizedName] = struct{}{}
+	}
+
+	return nil
 }
 
 // Start implements the component.Component interface.
@@ -378,4 +412,34 @@ func (p *processorImp) cache(serviceName string, span pdata.Span, k metricKey) {
 	if _, ok := p.metricKeyToDimensions[k]; !ok {
 		p.metricKeyToDimensions[k] = buildDimensionKVs(serviceName, span, p.dimensions)
 	}
+}
+
+// copied from prometheus-go-metric-exporter
+// sanitize replaces non-alphanumeric characters with underscores in s.
+func sanitize(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+
+	// Note: No length limit for label keys because Prometheus doesn't
+	// define a length limit, thus we should NOT be truncating label keys.
+	// See https://github.com/orijtech/prometheus-go-metrics-exporter/issues/4.
+	s = strings.Map(sanitizeRune, s)
+	if unicode.IsDigit(rune(s[0])) {
+		s = "key_" + s
+	}
+	if s[0] == '_' {
+		s = "key" + s
+	}
+	return s
+}
+
+// copied from prometheus-go-metric-exporter
+// sanitizeRune converts anything that is not a letter or digit to an underscore
+func sanitizeRune(r rune) rune {
+	if unicode.IsLetter(r) || unicode.IsDigit(r) {
+		return r
+	}
+	// Everything else turns into an underscore
+	return '_'
 }
