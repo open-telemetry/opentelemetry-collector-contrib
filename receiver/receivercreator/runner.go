@@ -19,8 +19,8 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -83,7 +83,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
 ) (configmodels.Receiver, error) {
-	mergedConfig := config.NewViper()
+	mergedConfig := configparser.NewViper()
 
 	// Merge in the config values specified in the config file.
 	if err := mergedConfig.MergeConfigMap(receiver.config); err != nil {
@@ -95,7 +95,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 		return nil, fmt.Errorf("failed to merge template config from discovered runtime values: %v", err)
 	}
 
-	receiverConfig, err := config.LoadReceiver(mergedConfig, receiver.typeStr, receiver.fullName, factory)
+	receiverConfig, err := configparser.LoadReceiver(mergedConfig, receiver.typeStr, receiver.fullName, factory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template config: %v", err)
 	}
