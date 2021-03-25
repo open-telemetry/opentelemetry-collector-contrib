@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python-contrib/compare/v0.18b0...HEAD)
 - Updated instrumentations to use `opentelemetry.trace.use_span` instead of `Tracer.use_span()`
   ([#364](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/364))
+- `opentelemetry-propagator-ot-trace` Do not throw an exception when headers are not present
+  ([#378](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/378))
 
 ### Changed
 - Rename `IdsGenerator` to `IdGenerator`

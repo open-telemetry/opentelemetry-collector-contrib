@@ -366,3 +366,12 @@ class TestOTTracePropagator(TestCase):
 
         self.assertEqual(baggage["abc"], "abc")
         self.assertEqual(baggage["def"], "def")
+
+    def test_extract_empty(self):
+        "Test extraction when no headers are present"
+
+        span_context = get_current_span(
+            self.ot_trace_propagator.extract(carrier_getter, {})
+        ).get_span_context()
+
+        self.assertEqual(span_context, INVALID_SPAN_CONTEXT)

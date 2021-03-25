@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from re import compile as re_compile
-from typing import Iterable, Optional
+from typing import Any, Iterable, Optional
 
 from opentelemetry.baggage import get_all, set_baggage
 from opentelemetry.context import Context
@@ -55,10 +55,12 @@ class OTTracePropagator(TextMapPropagator):
     ) -> Context:
 
         traceid = _extract_first_element(
-            getter.get(carrier, OT_TRACE_ID_HEADER)
+            getter.get(carrier, OT_TRACE_ID_HEADER), INVALID_TRACE_ID
         )
 
-        spanid = _extract_first_element(getter.get(carrier, OT_SPAN_ID_HEADER))
+        spanid = _extract_first_element(
+            getter.get(carrier, OT_SPAN_ID_HEADER), INVALID_SPAN_ID
+        )
 
         sampled = _extract_first_element(
             getter.get(carrier, OT_SAMPLED_HEADER)
@@ -163,8 +165,8 @@ class OTTracePropagator(TextMapPropagator):
 
 
 def _extract_first_element(
-    items: Iterable[TextMapPropagatorT],
+    items: Iterable[TextMapPropagatorT], default: Any = None,
 ) -> Optional[TextMapPropagatorT]:
     if items is None:
-        return None
+        return default
     return next(iter(items), None)
