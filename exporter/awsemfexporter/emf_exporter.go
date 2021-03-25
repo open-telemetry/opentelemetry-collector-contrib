@@ -127,7 +127,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) err
 
 	for _, groupedMetric := range groupedMetrics {
 		cWMetric := translateGroupedMetricToCWMetric(groupedMetric, expConfig)
-		putLogEvent := translateCWMetricToEMF(cWMetric)
+		putLogEvent := translateCWMetricToEMF(cWMetric, expConfig)
 
 		logGroup := groupedMetric.Metadata.LogGroup
 		logStream := groupedMetric.Metadata.LogStream

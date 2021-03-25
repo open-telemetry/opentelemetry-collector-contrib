@@ -17,6 +17,7 @@ package awsemfexporter
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -332,10 +333,38 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *GroupedMetric, conf
 }
 
 // translateCWMetricToEMF converts CloudWatch Metric format to EMF.
-func translateCWMetricToEMF(cWMetric *CWMetrics) *LogEvent {
+func translateCWMetricToEMF(cWMetric *CWMetrics, config *Config) *LogEvent {
 	// convert CWMetric into map format for compatible with PLE input
 	cWMetricMap := make(map[string]interface{})
 	fieldMap := cWMetric.Fields
+
+	//restore the json objects that are stored as string in attributes
+	for _, key := range config.ParseJSONEncodedAttributeValues {
+		if fieldMap[key] == nil {
+			continue
+		}
+
+		if val, ok := fieldMap[key].(string); ok {
+			var f interface{}
+			err := json.Unmarshal([]byte(val), &f)
+			if err != nil {
+				config.logger.Debug(
+					"Failed to parse json-encoded string",
+					zap.String("label key", key),
+					zap.String("label value", val),
+					zap.Error(err),
+				)
+				continue
+			}
+			fieldMap[key] = f
+		} else {
+			config.logger.Debug(
+				"Invalid json-encoded data. A string is expected",
+				zap.Any("type", reflect.TypeOf(fieldMap[key])),
+				zap.Any("value", reflect.ValueOf(fieldMap[key])),
+			)
+		}
+	}
 
 	// Create `_aws` section only if there are measurements
 	if len(cWMetric.Measurements) > 0 {
