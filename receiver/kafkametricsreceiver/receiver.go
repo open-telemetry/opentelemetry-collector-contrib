@@ -29,8 +29,11 @@ import (
 var (
 	allScrapers = map[string]func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.ResourceMetricsScraper, error){
 		"brokers": createBrokerScraper,
+		"topics":  createTopicsScraper,
 	}
 )
+
+const InstrumentationLibName = "otelcol/kafkametrics"
 
 var newMetricsReceiver = func(
 	ctx context.Context,
