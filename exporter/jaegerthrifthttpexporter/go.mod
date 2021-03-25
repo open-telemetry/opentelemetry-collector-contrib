@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaeger
 go 1.14
 
 require (
-	github.com/apache/thrift v0.13.0
+	github.com/apache/thrift v0.14.1
 	github.com/armon/go-metrics v0.3.3 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/gogo/googleapis v1.3.0 // indirect
