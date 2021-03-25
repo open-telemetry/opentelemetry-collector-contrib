@@ -28,6 +28,7 @@ import (
 var patternKeyToAttributeMap = map[string]string{
 	"ClusterName": "aws.ecs.cluster.name",
 	"TaskId":      "aws.ecs.task.id",
+	"NodeName":    "k8s.node.name",
 }
 
 func replacePatterns(s string, attrMap pdata.AttributeMap, logger *zap.Logger) string {

@@ -173,19 +173,39 @@ func TestGetNamespace(t *testing.T) {
 }
 
 func TestGetLogInfo(t *testing.T) {
-	metric := internaldata.MetricsData{
-		Node: &commonpb.Node{
-			ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
-			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
+	metrics := []internaldata.MetricsData{
+		{
+			Node: &commonpb.Node{
+				ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
+				LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
+			},
+			Resource: &resourcepb.Resource{
+				Labels: map[string]string{
+					"aws.ecs.cluster.name": "test-cluster-name",
+					"aws.ecs.task.id":      "test-task-id",
+					"k8s.node.name":        "ip-192-168-58-245.ec2.internal",
+				},
+			},
 		},
-		Resource: &resourcepb.Resource{
-			Labels: map[string]string{
-				"aws.ecs.cluster.name": "test-cluster-name",
-				"aws.ecs.task.id":      "test-task-id",
+		{
+			Node: &commonpb.Node{
+				ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
+				LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
+			},
+			Resource: &resourcepb.Resource{
+				Labels: map[string]string{
+					"ClusterName": "test-cluster-name",
+					"TaskId":      "test-task-id",
+					"NodeName":    "ip-192-168-58-245.ec2.internal",
+				},
 			},
 		},
 	}
-	rm := internaldata.OCToMetrics(metric).ResourceMetrics().At(0)
+
+	var rms []pdata.ResourceMetrics
+	for _, m := range metrics {
+		rms = append(rms, internaldata.OCToMetrics(m).ResourceMetrics().At(0))
+	}
 
 	testCases := []struct {
 		testName        string
@@ -243,17 +263,29 @@ func TestGetLogInfo(t *testing.T) {
 			"/aws/ecs/containerinsights/test-cluster-name/performance",
 			"test-task-id",
 		},
+		//test case for aws container insight usage
+		{
+			"empty namespace, config w/ pattern",
+			"",
+			"/aws/containerinsights/{ClusterName}/performance",
+			"{NodeName}",
+			"/aws/containerinsights/test-cluster-name/performance",
+			"ip-192-168-58-245.ec2.internal",
+		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.testName, func(t *testing.T) {
-			config := &Config{
-				LogGroupName:  tc.configLogGroup,
-				LogStreamName: tc.configLogStream,
-			}
-			logGroup, logStream := getLogInfo(&rm, tc.namespace, config)
-			assert.Equal(t, tc.logGroup, logGroup)
-			assert.Equal(t, tc.logStream, logStream)
-		})
+	for i := range rms {
+		for _, tc := range testCases {
+			t.Run(tc.testName, func(t *testing.T) {
+				config := &Config{
+					LogGroupName:  tc.configLogGroup,
+					LogStreamName: tc.configLogStream,
+				}
+				logGroup, logStream := getLogInfo(&rms[i], tc.namespace, config)
+				assert.Equal(t, tc.logGroup, logGroup)
+				assert.Equal(t, tc.logStream, logStream)
+			})
+		}
 	}
+
 }
