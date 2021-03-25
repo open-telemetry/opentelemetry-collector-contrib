@@ -111,6 +111,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/extension/fluentbitextension"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/extension/httpforwarder"
     schedule:
       interval: "weekly"
@@ -296,6 +300,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/statsdreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/syslogreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
