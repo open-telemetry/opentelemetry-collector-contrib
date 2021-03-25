@@ -71,6 +71,12 @@ type Config struct {
 	// MetricDescriptors is the list of override metric descriptors that are sent to the CloudWatch
 	MetricDescriptors []MetricDescriptor `mapstructure:"metric_descriptors"`
 
+	// OutputDestination is an option to specify the EMFExporter output. Default option is "cloudwatch"
+	// "cloudwatch" - direct the exporter output to CloudWatch backend
+	// "stdout" - direct the exporter output to stdout
+	// TODO: we can support directing output to a file (in the future) while customer specifies a file path here.
+	OutputDestination string `mapstructure:"output_destination"`
+
 	// ResourceToTelemetrySettings is the option for converting resource attrihutes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
 	// If enabled, all the resource attributes will be converted to metric labels by default.

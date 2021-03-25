@@ -55,6 +55,7 @@ func createDefaultConfig() configmodels.Exporter {
 		DimensionRollupOption:           "ZeroAndSingleDimensionRollup",
 		ParseJSONEncodedAttributeValues: make([]string, 0),
 		MetricDeclarations:              make([]*MetricDeclaration, 0),
+		OutputDestination:               "cloudwatch",
 		logger:                          nil,
 	}
 }
