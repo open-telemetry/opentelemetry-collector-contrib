@@ -109,8 +109,8 @@ func (c *MetricsConverter) metricToSfxDataPoints(metric pdata.Metric, extraDimen
 		dps = convertDoubleDatapoints(metric.DoubleSum().DataPoints(), basePoint, extraDimensions)
 	case pdata.MetricDataTypeIntHistogram:
 		dps = convertIntHistogram(metric.IntHistogram().DataPoints(), basePoint, extraDimensions)
-	case pdata.MetricDataTypeDoubleHistogram:
-		dps = convertDoubleHistogram(metric.DoubleHistogram().DataPoints(), basePoint, extraDimensions)
+	case pdata.MetricDataTypeHistogram:
+		dps = convertHistogram(metric.Histogram().DataPoints(), basePoint, extraDimensions)
 	}
 
 	if c.metricTranslator != nil {
@@ -228,8 +228,8 @@ func fromMetricDataTypeToMetricType(metric pdata.Metric) *sfxpb.MetricType {
 		}
 		return &sfxMetricTypeCumulativeCounter
 
-	case pdata.MetricDataTypeDoubleHistogram:
-		if metric.DoubleHistogram().AggregationTemporality() == pdata.AggregationTemporalityDelta {
+	case pdata.MetricDataTypeHistogram:
+		if metric.Histogram().AggregationTemporality() == pdata.AggregationTemporalityDelta {
 			return &sfxMetricTypeCounter
 		}
 		return &sfxMetricTypeCumulativeCounter
@@ -293,7 +293,7 @@ func convertIntHistogram(histDPs pdata.IntHistogramDataPointSlice, basePoint *sf
 	return out
 }
 
-func convertDoubleHistogram(histDPs pdata.DoubleHistogramDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
+func convertHistogram(histDPs pdata.HistogramDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
 	var out []*sfxpb.DataPoint
 
 	for i := 0; i < histDPs.Len(); i++ {

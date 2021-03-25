@@ -154,10 +154,10 @@ histogram_metric_int_test_count{foo="bar",pod_name="sit",namespace="main"} 5 160
 	assert.Equal(t, expected, result)
 }
 
-func TestPrometheusMetricDataTypeDoubleHistogram(t *testing.T) {
+func TestPrometheusMetricDataTypeHistogram(t *testing.T) {
 	f, err := newPrometheusFormatter()
 	require.NoError(t, err)
-	metric := exampleDoubleHistogramMetric()
+	metric := exampleHistogramMetric()
 
 	result := f.metric2String(metric)
 	expected := `histogram_metric_double_test{bar="foo",le="0.1",container="dolor",branch="sumologic"} 0 1618124444169

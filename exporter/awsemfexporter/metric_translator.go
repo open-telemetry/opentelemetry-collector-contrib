@@ -40,14 +40,14 @@ const (
 )
 
 var fieldPrometheusTypes = map[pdata.MetricDataType]string{
-	pdata.MetricDataTypeNone:            "",
-	pdata.MetricDataTypeIntGauge:        "gauge",
-	pdata.MetricDataTypeDoubleGauge:     "gauge",
-	pdata.MetricDataTypeIntSum:          "counter",
-	pdata.MetricDataTypeDoubleSum:       "counter",
-	pdata.MetricDataTypeIntHistogram:    "histogram",
-	pdata.MetricDataTypeDoubleHistogram: "histogram",
-	pdata.MetricDataTypeSummary:         "summary",
+	pdata.MetricDataTypeNone:         "",
+	pdata.MetricDataTypeIntGauge:     "gauge",
+	pdata.MetricDataTypeDoubleGauge:  "gauge",
+	pdata.MetricDataTypeIntSum:       "counter",
+	pdata.MetricDataTypeDoubleSum:    "counter",
+	pdata.MetricDataTypeIntHistogram: "histogram",
+	pdata.MetricDataTypeHistogram:    "histogram",
+	pdata.MetricDataTypeSummary:      "summary",
 }
 
 // CWMetrics defines
