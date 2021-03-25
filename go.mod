@@ -63,6 +63,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.22.1-0.20210323150444-0c6757ec71a5
 	golang.org/x/sys v0.0.0-20210315160823-c6e025ad8005
+	golang.org/x/tools/gopls v0.6.9 // indirect
 )
 
 // Replace references to modules that are in this repository with their relateive paths
