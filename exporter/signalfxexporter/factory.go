@@ -23,8 +23,8 @@ import (
 
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
@@ -168,17 +168,17 @@ func createMetricsExporter(
 }
 
 func loadDefaultTranslationRules() ([]translation.Rule, error) {
-	config := Config{}
+	cfg := Config{}
 
-	v := configparser.NewViper()
+	v := config.NewViper()
 	v.SetConfigType("yaml")
 	v.ReadConfig(strings.NewReader(translation.DefaultTranslationRulesYaml))
-	err := v.UnmarshalExact(&config)
+	err := v.UnmarshalExact(&cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load default translation rules: %v", err)
 	}
 
-	return config.TranslationRules, nil
+	return cfg.TranslationRules, nil
 }
 
 // setDefaultExcludes appends default metrics to be excluded to the exclude_metrics option.
@@ -194,17 +194,17 @@ func setDefaultExcludes(cfg *Config) error {
 }
 
 func loadDefaultExcludes() ([]dpfilters.MetricFilter, error) {
-	config := Config{}
+	cfg := Config{}
 
-	v := configparser.NewViper()
+	v := config.NewViper()
 	v.SetConfigType("yaml")
 	v.ReadConfig(strings.NewReader(translation.DefaultExcludeMetricsYaml))
-	err := v.UnmarshalExact(&config)
+	err := v.UnmarshalExact(&cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load default exclude metrics: %v", err)
 	}
 
-	return config.ExcludeMetrics, nil
+	return cfg.ExcludeMetrics, nil
 }
 
 func createLogsExporter(
