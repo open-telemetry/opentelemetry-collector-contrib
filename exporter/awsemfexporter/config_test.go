@@ -60,7 +60,7 @@ func TestLoadConfig(t *testing.T) {
 			Region:                "us-west-2",
 			RoleARN:               "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole",
 			DimensionRollupOption: "ZeroAndSingleDimensionRollup",
-			OutputDestination:     "CloudWatch",
+			OutputDestination:     "cloudwatch",
 			MetricDeclarations:    []*MetricDeclaration{},
 			MetricDescriptors:     []MetricDescriptor{},
 		}, r1)
@@ -80,7 +80,7 @@ func TestLoadConfig(t *testing.T) {
 			Region:                      "",
 			RoleARN:                     "",
 			DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
-			OutputDestination:           "CloudWatch",
+			OutputDestination:           "cloudwatch",
 			ResourceToTelemetrySettings: exporterhelper.ResourceToTelemetrySettings{Enabled: true},
 			MetricDeclarations:          []*MetricDeclaration{},
 			MetricDescriptors:           []MetricDescriptor{},

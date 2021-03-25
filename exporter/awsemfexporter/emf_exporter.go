@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -29,6 +30,12 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
+)
+
+const (
+	// OutputDestination Options
+	outputDestinationCloudWatch = "cloudwatch"
+	outputDestinationStdout     = "stdout"
 )
 
 type emfExporter struct {
@@ -130,9 +137,9 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) err
 		cWMetric := translateGroupedMetricToCWMetric(groupedMetric, expConfig)
 		putLogEvent := translateCWMetricToEMF(cWMetric)
 		// Currently we only support two options for "OutputDestination".
-		if outputDestination == "stdout" {
+		if strings.EqualFold(outputDestination, outputDestinationStdout) {
 			fmt.Println(*putLogEvent.InputLogEvent.Message)
-		} else if outputDestination == "CloudWatch" {
+		} else if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
 			logGroup := groupedMetric.Metadata.LogGroup
 			logStream := groupedMetric.Metadata.LogStream
 			if logStream == "" {
@@ -149,7 +156,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) err
 		}
 	}
 
-	if outputDestination == "CloudWatch" {
+	if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
 		for _, pusher := range emf.listPushers() {
 			returnError := pusher.ForceFlush()
 			if returnError != nil {

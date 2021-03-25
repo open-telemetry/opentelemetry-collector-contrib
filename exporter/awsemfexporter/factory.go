@@ -54,7 +54,7 @@ func createDefaultConfig() configmodels.Exporter {
 		RoleARN:               "",
 		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
 		MetricDeclarations:    make([]*MetricDeclaration, 0),
-		OutputDestination:     "CloudWatch",
+		OutputDestination:     "cloudwatch",
 		logger:                nil,
 	}
 }
