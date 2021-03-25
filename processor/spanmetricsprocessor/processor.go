@@ -39,9 +39,6 @@ const (
 	spanKindKey        = tracetranslator.TagSpanKind
 	statusCodeKey      = tracetranslator.TagStatusCode
 	metricKeySeparator = string(byte(0))
-
-	delimiter = "_"
-	keyStr    = "key"
 )
 
 var (
@@ -429,10 +426,10 @@ func sanitize(s string) string {
 	// See https://github.com/orijtech/prometheus-go-metrics-exporter/issues/4.
 	s = strings.Map(sanitizeRune, s)
 	if unicode.IsDigit(rune(s[0])) {
-		s = keyStr + delimiter + s
+		s = "key_" + s
 	}
 	if s[0] == '_' {
-		s = keyStr + s
+		s = "key" + s
 	}
 	return s
 }

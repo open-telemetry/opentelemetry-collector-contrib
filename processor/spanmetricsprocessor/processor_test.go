@@ -16,7 +16,6 @@ package spanmetricsprocessor
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -497,17 +496,31 @@ func TestBuildKey(t *testing.T) {
 	assert.NotEqual(t, k0, k1)
 }
 
+func TestProcessorDuplicateDimensions(t *testing.T) {
+	// Prepare
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	// Duplicate dimension with reserved label after sanitization.
+	cfg.Dimensions = []Dimension{
+		{Name: "status_code"},
+	}
+
+	// Test
+	next := new(consumertest.TracesSink)
+	p, err := newProcessor(zap.NewNop(), cfg, next)
+	assert.Error(t, err)
+	assert.Nil(t, p)
+}
+
 func TestValidateDimensions(t *testing.T) {
 	for _, tc := range []struct {
 		name        string
 		dimensions  []Dimension
-		hasError bool
-		expectedErr error
+		expectedErr string
 	}{
 		{
-			name: "no additional dimensions",
+			name:       "no additional dimensions",
 			dimensions: []Dimension{},
-			hasError: false,
 		},
 		{
 			name: "no duplicate dimensions",
@@ -515,23 +528,20 @@ func TestValidateDimensions(t *testing.T) {
 				{Name: "http.service_name"},
 				{Name: "http.status_code"},
 			},
-			hasError: false,
 		},
 		{
 			name: "duplicate dimension with reserved labels",
 			dimensions: []Dimension{
 				{Name: "service.name"},
 			},
-			hasError: true,
-			expectedErr: errors.New("duplicate dimension name service.name"),
+			expectedErr: "duplicate dimension name service.name",
 		},
 		{
 			name: "duplicate dimension with reserved labels after sanitization",
 			dimensions: []Dimension{
 				{Name: "service_name"},
 			},
-			hasError: true,
-			expectedErr: errors.New("duplicate dimension name service_name after sanitization"),
+			expectedErr: "duplicate dimension name service_name",
 		},
 		{
 			name: "duplicate additional dimensions",
@@ -539,8 +549,7 @@ func TestValidateDimensions(t *testing.T) {
 				{Name: "service_name"},
 				{Name: "service_name"},
 			},
-			hasError: true,
-			expectedErr: errors.New("duplicate dimension name service_name sanitization"),
+			expectedErr: "duplicate dimension name service_name",
 		},
 		{
 			name: "duplicate additional dimensions after sanitization",
@@ -548,24 +557,30 @@ func TestValidateDimensions(t *testing.T) {
 				{Name: "http.status_code"},
 				{Name: "http_status_code"},
 			},
-			hasError: true,
-			expectedErr: errors.New("duplicate dimension name http_status_code sanitization"),
+			expectedErr: "duplicate dimension name http_status_code",
 		},
 		{
 			name: "we skip the case if the dimension name is the same after sanitization",
 			dimensions: []Dimension{
 				{Name: "http_status_code"},
 			},
-			hasError: false,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := validateDimensions(tc.dimensions)
-			if tc.hasError {
-				assert.Error(t, err, tc.expectedErr)
+			if tc.expectedErr != "" {
+				assert.EqualError(t, err, tc.expectedErr)
 			} else {
 				assert.NoError(t, err)
 			}
 		})
 	}
+}
+
+func TestSanitize(t *testing.T) {
+	require.Equal(t, "", sanitize(""), "")
+	require.Equal(t, "key_test", sanitize("_test"))
+	require.Equal(t, "key_0test", sanitize("0test"))
+	require.Equal(t, "test", sanitize("test"))
+	require.Equal(t, "test__", sanitize("test_/"))
 }
