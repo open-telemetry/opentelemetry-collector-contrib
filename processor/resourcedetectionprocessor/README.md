@@ -85,6 +85,12 @@ ec2:
     * deployment.environment
     * service.instance.id
     * service.version
+
+* Amazon EKS
+
+    * cloud.provider ("aws")
+    * cloud.infrastructure_service ("aws_eks")
+    * k8s.cluster.name (name of the EKS cluster)
     
 * Azure: Queries the [Azure Instance Metadata Service](https://aka.ms/azureimds) to retrieve the following resource attributes:
 
@@ -100,11 +106,27 @@ ec2:
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gce", "gke", "ec2", "ecs", "elastic_beanstalk", "azure"
+# a list of resource detectors to run, valid options are: "env", "system", "gce", "gke", "ec2", "ecs", "elastic_beanstalk", "eks", "azure"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
 ```
+
+## Ordering
+
+Note that if multiple detectors are inserting the same attribute name, the first detector to insert wins. For example if you had `detectors: [eks, ec2]` then `cloud.infrastructure_service` will be `aws_eks` instead of `ec2`. The below ordering is recommended.
+
+### GCP
+
+* gke
+* gce
+
+### AWS
+
+* elastic_beanstalk
+* eks
+* ecs
+* ec2
 
 The full list of settings exposed for this extension are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
