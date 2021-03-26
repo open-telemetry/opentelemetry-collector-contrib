@@ -11,4 +11,4 @@ Delete(string) error        // returns error if not found
 Note: All methods should return error only if a problem occurred. (For example, if a fiel )
 
 # TODO Sample code
-- Document component expections
+- Document component expectations
