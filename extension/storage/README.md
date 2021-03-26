@@ -8,7 +8,7 @@ Get(string) ([]byte, error) // returns error if not found
 Set(string, []byte) error   // returns error if not set
 Delete(string) error        // returns error if not found
 ```
-Note: All methods should return error only if a problem occurred. (For example, if a fiel )
+Note: All methods should return error only if a problem occurred. (For example, if a file is no longer accessible, or if a remote service is unavailable.)
 
 # TODO Sample code
 - Document component expectations
