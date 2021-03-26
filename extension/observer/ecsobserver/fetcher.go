@@ -22,8 +22,8 @@ import (
 )
 
 type Fetcher interface {
-	// FetcherAndDecorate fetches all the tasks and attach addation information
-	// like definition, serivces and container instances.
+	// FetcherAndDecorate fetches all the tasks and attach additional information
+	// like definition, services and container instances.
 	FetchAndDecorate(ctx context.Context) ([]*Task, error)
 }
 

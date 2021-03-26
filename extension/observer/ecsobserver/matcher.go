@@ -101,7 +101,7 @@ func matcherOrders() []MatcherType {
 }
 
 func newMatchers(c Config, mOpt MatcherOptions) (map[MatcherType][]Matcher, error) {
-	// We can have a registry or factory methods etc. but since we only have three type of metchers in filter.
+	// We can have a registry or factory methods etc. but since we only have three type of matchers in filter.
 	matcherConfigs := map[MatcherType][]MatcherConfig{
 		MatcherTypeDockerLabel: dockerLabelConfigToMatchers(c.DockerLabels),
 	}
@@ -140,7 +140,7 @@ func matchContainers(tasks []*Task, matcher Matcher, matcherIndex int) (*MatchRe
 		var matched []MatchedContainer
 		for cIndex, c := range t.Definition.ContainerDefinitions {
 			targets, err := matcher.MatchTargets(t, c)
-			// NOTE: we don't stop when there is an error becaause it could be one task has invalid docker label.
+			// NOTE: we don't stop when there is an error because it could be one task has invalid docker label.
 			if err != nil {
 				// Keep track of unexpected error
 				if err != errNotMatched {

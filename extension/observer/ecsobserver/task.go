@@ -32,13 +32,26 @@ type Task struct {
 	Matched    []MatchedContainer
 }
 
+// AddMatchedContainer merge match result from Matcher with existing containers.
+// Each container can contain multiple targets, it is allowed (but not suggested),
+// that different MatcherConfig matches same container with different targets (even on same port).
+// For example you can use it to workaround multiple metrics_path for same port.
+// services:
+//   - name: nginx
+//	   metrics_path: /foo
+//	   metrics_port: [9000]
+//   - name: nginx
+//     metrics_path: /foo/v2
+//	   metrics_port: [9000]
 func (t *Task) AddMatchedContainer(newContainer MatchedContainer) {
+	// Merge targets for existing containers
 	for i, oldContainer := range t.Matched {
 		if oldContainer.ContainerIndex == newContainer.ContainerIndex {
 			t.Matched[i].MergeTargets(newContainer.Targets)
 			return
 		}
 	}
+	// New container in this task
 	t.Matched = append(t.Matched, newContainer)
 }
 

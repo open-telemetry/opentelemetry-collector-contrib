@@ -149,7 +149,7 @@ func TestServiceDiscovery_RunAndWriteFile(t *testing.T) {
 		ClusterRegion:   "us-test-2",
 		RefreshInterval: 100 * time.Millisecond,
 		ResultFile:      outputFile,
-		JobLabelName:    DefaultJobLabelName,
+		JobLabelName:    defaultJobLabelName,
 		DockerLabels: []DockerLabelConfig{
 			{
 				PortLabel: "PROMETHEUS_PORT",

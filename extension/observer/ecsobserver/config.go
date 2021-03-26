@@ -22,10 +22,10 @@ import (
 )
 
 const (
-	DefaultRefreshInterval             = 30 * time.Second
-	DefaultJobLabelName                = "prometheus_job"
-	AWSRegionEnvKey                    = "AWS_REGION"
-	DefaultDockerLabelMatcherPortLabel = "ECS_PROMETHEUS_EXPORTER_PORT"
+	defaultRefreshInterval             = 30 * time.Second
+	defaultJobLabelName                = "prometheus_job"
+	awsRegionEnvKey                    = "AWS_REGION"
+	defaultDockerLabelMatcherPortLabel = "ECS_PROMETHEUS_EXPORTER_PORT"
 )
 
 type Config struct {
@@ -60,13 +60,13 @@ func DefaultConfig() Config {
 			NameVal: string(typeStr),
 		},
 		ClusterName:     "default",
-		ClusterRegion:   os.Getenv(AWSRegionEnvKey),
+		ClusterRegion:   os.Getenv(awsRegionEnvKey),
 		ResultFile:      "/etc/ecs_sd_targets.yaml",
-		RefreshInterval: DefaultRefreshInterval,
-		JobLabelName:    DefaultJobLabelName,
+		RefreshInterval: defaultRefreshInterval,
+		JobLabelName:    defaultJobLabelName,
 		DockerLabels: []DockerLabelConfig{
 			{
-				PortLabel: DefaultDockerLabelMatcherPortLabel,
+				PortLabel: defaultDockerLabelMatcherPortLabel,
 			},
 		},
 	}
@@ -80,7 +80,7 @@ func ExampleConfig() Config {
 		ClusterRegion:   "us-west-2",
 		ResultFile:      "/etc/ecs_sd_targets.yaml",
 		RefreshInterval: 15 * time.Second,
-		JobLabelName:    DefaultJobLabelName,
+		JobLabelName:    defaultJobLabelName,
 		Services: []ServiceConfig{
 			{
 				NamePattern: "^retail-.*$",

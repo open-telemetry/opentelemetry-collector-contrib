@@ -35,7 +35,9 @@ func NewTaskFilter(c Config, logger *zap.Logger, matchers map[MatcherType][]Matc
 }
 
 // Filter run all the matchers and return all the tasks that including at least one matched container.
+// It updates those matched tasks in place. (i.e. it does not do shallow copy).
 func (f *TaskFilter) Filter(tasks []*Task) ([]*Task, error) {
+	// Gather results from all the matchers
 	matched := make(map[MatcherType][]*MatchResult)
 	var merr error
 	for tpe, matchers := range f.matchers {
@@ -55,12 +57,16 @@ func (f *TaskFilter) Filter(tasks []*Task) ([]*Task, error) {
 		}
 	}
 
-	matchedTasks := make(map[int]bool)
+	// Dedupe, key is task index
+	matchedTasks := make(map[int]struct{})
 	for _, tpe := range matcherOrders() {
 		for _, res := range matched[tpe] {
 			for _, container := range res.Containers {
-				matchedTasks[container.TaskIndex] = true
+				matchedTasks[container.TaskIndex] = struct{}{}
 				task := tasks[container.TaskIndex]
+				// Merge mached containers into the task, this is in place update.
+				// Each task can contain match result from different matchers on different containers.
+				// Same container can also contain multiple targets。
 				task.AddMatchedContainer(container)
 			}
 		}
