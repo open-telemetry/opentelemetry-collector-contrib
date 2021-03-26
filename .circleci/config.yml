@@ -330,6 +330,13 @@ jobs:
     steps:
       - restore_workspace
       - run:
+          name: Install fluentbit
+          command: |
+              wget https://packages.fluentbit.io/ubuntu/bionic/pool/main/t/td-agent-bit/td-agent-bit_1.5.3_amd64.deb
+              sudo dpkg -i ./td-agent-bit*.deb
+              export PATH="${PATH}:/opt/td-agent-bit/bin"
+              sudo ln -s /opt/td-agent-bit/bin/td-agent-bit /usr/local/bin/fluent-bit
+      - run:
           name: Loadtest
           command: make e2e-test
       - store_artifacts:
