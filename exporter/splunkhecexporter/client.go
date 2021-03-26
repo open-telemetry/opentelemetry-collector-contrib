@@ -119,6 +119,114 @@ func (c *client) sendSplunkEvents(ctx context.Context, splunkEvents []*splunk.Ev
 	return c.postEvents(ctx, body, compressed)
 }
 
+func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (err error) {
+	c.wg.Add(1)
+	defer c.wg.Done()
+
+	gzipWriter := c.zippers.Get().(*gzip.Writer)
+	defer c.zippers.Put(gzipWriter)
+
+	gzipBuffer := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthLogs))
+	gzipWriter.Reset(gzipBuffer)
+
+	defer gzipWriter.Close()
+
+	// Callback when each batch is to be sent.
+	send := func(ctx context.Context, buf *bytes.Buffer) (err error) {
+		shouldCompress := buf.Len() >= int(c.config.MinContentLengthCompression) && !c.config.DisableCompression
+
+		if shouldCompress {
+			gzipBuffer.Reset()
+			gzipWriter.Reset(gzipBuffer)
+
+			if _, err = io.Copy(gzipWriter, buf); err != nil {
+				return fmt.Errorf("failed copying buffer to gzip writer: %v", err)
+			}
+
+			if err = gzipWriter.Flush(); err != nil {
+				return fmt.Errorf("failed flushing compressed data to gzip writer: %v", err)
+			}
+
+			return c.postEvents(ctx, gzipBuffer, shouldCompress)
+		}
+
+		return c.postEvents(ctx, buf, shouldCompress)
+	}
+
+	return c.pushLogDataParts(ctx, ld, send)
+}
+
+// pushLogDataParts partitions log data then pushes the parts.
+func (c *client) pushLogDataParts(ctx context.Context, ld pdata.Logs, send func(context.Context, *bytes.Buffer) error) (err error) {
+	// max is the maximum number of bytes allowed in logs buffer.
+	// pad4096 pads max by 4096 to prevent reallocation in logs buffer prior to truncation. It is assumed that a single log is likely less than 4096 bytes.
+	var max, pad4096 = c.config.MaxContentLengthLogs, uint(4096)
+	// Buffer of a part of log data.
+	var logsBuf = bytes.NewBuffer(make([]byte, 0, max+pad4096))
+	var encoder = json.NewEncoder(logsBuf)
+	// Number of bytes below max of logs in logsBuf.
+	var length int
+	// Temp storage for log over max in logsBuf.
+	var overMaxBuf = bytes.NewBuffer(make([]byte, 0, pad4096))
+	// Index of the first log in a logs part.
+	var log0Index *logIndex
+	var permanentErrors []error
+	var rls = ld.ResourceLogs()
+
+	for i := 0; i < rls.Len(); i++ {
+		ills := rls.At(i).InstrumentationLibraryLogs()
+		for j := 0; j < ills.Len(); j++ {
+			logs := ills.At(j).Logs()
+			for k := 0; k < logs.Len(); k++ {
+				if log0Index == nil {
+					log0Index = &logIndex{resource: i, library: j, record: k}
+				}
+
+				event := mapLogRecordToSplunkEvent(logs.At(k), c.config, c.logger)
+				if err = encoder.Encode(event); err != nil {
+					permanentErrors = append(permanentErrors, consumererror.Permanent(fmt.Errorf("dropped log event: %v, error: %v", event, err)))
+					continue
+				}
+				logsBuf.WriteString("\r\n\r\n")
+
+				// Consistent with ContentLength in http.Request, MaxContentLengthLogs value of 0 indicates length unknown (i.e. unbound).
+				if max == 0 || logsBuf.Len() <= int(max) {
+					length = logsBuf.Len()
+					continue
+				}
+
+				overMaxBuf.Reset()
+				if max > 0 {
+					if overLength := logsBuf.Len() - length; overLength <= int(max) {
+						overMaxBuf.Write(logsBuf.Bytes()[length:logsBuf.Len()])
+					} else {
+						permanentErrors = append(permanentErrors, consumererror.Permanent(fmt.Errorf("dropped log event: %s, error: event size %d bytes larger than configured max content length %d bytes", string(logsBuf.Bytes()[length:logsBuf.Len()]), overLength, max)))
+					}
+				}
+
+				logsBuf.Truncate(length)
+				if logsBuf.Len() > 0 {
+					if err = send(ctx, logsBuf); err != nil {
+						return consumererror.PartialLogsError(err, *subLogs(&ld, log0Index))
+					}
+				}
+				logsBuf.Reset()
+				overMaxBuf.WriteTo(logsBuf)
+
+				log0Index, length = nil, logsBuf.Len()
+			}
+		}
+	}
+
+	if logsBuf.Len() > 0 {
+		if err = send(ctx, logsBuf); err != nil {
+			return consumererror.PartialLogsError(err, *subLogs(&ld, log0Index))
+		}
+	}
+
+	return consumererror.CombineErrors(permanentErrors)
+}
+
 func (c *client) postEvents(ctx context.Context, events io.Reader, compressed bool) error {
 	req, err := http.NewRequestWithContext(ctx, "POST", c.url.String(), events)
 	if err != nil {
@@ -158,141 +266,39 @@ func subLogs(ld *pdata.Logs, start *logIndex) *pdata.Logs {
 	}
 
 	logs := pdata.NewLogs()
-	RL, RL2 := ld.ResourceLogs(), logs.ResourceLogs()
 
-	for r := start.resource; r < RL.Len(); r++ {
-		RL2.Append(pdata.NewResourceLogs())
-		RL.At(r).Resource().CopyTo(RL2.At(r - start.resource).Resource())
+	rl, rl2 := ld.ResourceLogs(), logs.ResourceLogs()
 
-		IL, IL2 := RL.At(r).InstrumentationLibraryLogs(), RL2.At(r-start.resource).InstrumentationLibraryLogs()
+	for r := start.resource; r < rl.Len(); r++ {
+		rl2.Append(pdata.NewResourceLogs())
+		rl.At(r).Resource().CopyTo(rl2.At(r - start.resource).Resource())
+
+		il, il2 := rl.At(r).InstrumentationLibraryLogs(), rl2.At(r-start.resource).InstrumentationLibraryLogs()
 
 		i := 0
 		if r == start.resource {
 			i = start.library
 		}
-		for i2 := 0; i < IL.Len(); i++ {
-			IL2.Append(pdata.NewInstrumentationLibraryLogs())
-			IL.At(i).InstrumentationLibrary().CopyTo(IL2.At(i2).InstrumentationLibrary())
+		for i2 := 0; i < il.Len(); i++ {
+			il2.Append(pdata.NewInstrumentationLibraryLogs())
+			il.At(i).InstrumentationLibrary().CopyTo(il2.At(i2).InstrumentationLibrary())
 
-			LR, LR2 := IL.At(i).Logs(), IL2.At(i2).Logs()
+			lr, lr2 := il.At(i).Logs(), il2.At(i2).Logs()
 			i2++
 
 			l := 0
 			if r == start.resource && i == start.library {
 				l = start.record
 			}
-			for l2 := 0; l < LR.Len(); l++ {
-				LR2.Append(pdata.NewLogRecord())
-				LR.At(l).CopyTo(LR2.At(l2))
+			for l2 := 0; l < lr.Len(); l++ {
+				lr2.Append(pdata.NewLogRecord())
+				lr.At(l).CopyTo(lr2.At(l2))
 				l2++
 			}
 		}
 	}
 
 	return &logs
-}
-
-func (c *client) sentLogBatch(ctx context.Context, ld pdata.Logs, send func(context.Context, *bytes.Buffer) error) (err error) {
-	var submax int
-	var index *logIndex
-	var permanentErrors []error
-
-	// Provide 5000 overflow because it overruns the max content length then trims it block. Hopefully will prevent extra allocation.
-	batch := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthLogs+5_000))
-	encoder := json.NewEncoder(batch)
-
-	overflow := bytes.NewBuffer(make([]byte, 0, 5000))
-
-	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
-		ills := rls.At(i).InstrumentationLibraryLogs()
-		for j := 0; j < ills.Len(); j++ {
-			logs := ills.At(j).Logs()
-			for k := 0; k < logs.Len(); k++ {
-				if index == nil {
-					index = &logIndex{resource: i, library: j, record: k}
-				}
-
-				event := mapLogRecordToSplunkEvent(logs.At(k), c.config, c.logger)
-				if err = encoder.Encode(event); err != nil {
-					permanentErrors = append(permanentErrors, consumererror.Permanent(fmt.Errorf("dropped log event: %v, error: %v", event, err)))
-					continue
-				}
-				batch.WriteString("\r\n\r\n")
-
-				// Consistent with ContentLength in http.Request, MaxContentLengthLogs value of 0 indicates length unknown (i.e. unbound).
-				if c.config.MaxContentLengthLogs == 0 || batch.Len() <= int(c.config.MaxContentLengthLogs) {
-					submax = batch.Len()
-					continue
-				}
-
-				overflow.Reset()
-				if c.config.MaxContentLengthLogs > 0 {
-					if over := batch.Len() - submax; over <= int(c.config.MaxContentLengthLogs) {
-						overflow.Write(batch.Bytes()[submax:batch.Len()])
-					} else {
-						permanentErrors = append(permanentErrors, consumererror.Permanent(fmt.Errorf("dropped log event: %s, error: event size %d bytes larger than configured max content length %d bytes", string(batch.Bytes()[submax:batch.Len()]), over, c.config.MaxContentLengthLogs)))
-					}
-				}
-
-				batch.Truncate(submax)
-				if batch.Len() > 0 {
-					if err = send(ctx, batch); err != nil {
-						return consumererror.PartialLogsError(err, *subLogs(&ld, index))
-					}
-				}
-				batch.Reset()
-				overflow.WriteTo(batch)
-
-				index, submax = nil, batch.Len()
-			}
-		}
-	}
-
-	if batch.Len() > 0 {
-		if err = send(ctx, batch); err != nil {
-			return consumererror.PartialLogsError(err, *subLogs(&ld, index))
-		}
-	}
-
-	return consumererror.CombineErrors(permanentErrors)
-}
-
-func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (err error) {
-	c.wg.Add(1)
-	defer c.wg.Done()
-
-	gzipWriter := c.zippers.Get().(*gzip.Writer)
-	defer c.zippers.Put(gzipWriter)
-
-	gzipBuffer := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthLogs))
-	gzipWriter.Reset(gzipBuffer)
-
-	defer gzipWriter.Close()
-
-	// Callback when each batch is to be sent.
-	send := func(ctx context.Context, buf *bytes.Buffer) (err error) {
-		shouldCompress := buf.Len() >= int(c.config.MinContentLengthCompression) && !c.config.DisableCompression
-
-		if compression {
-			gzipBuffer.Reset()
-			gzipWriter.Reset(gzipBuffer)
-
-			if _, err = io.Copy(gzipWriter, buf); err != nil {
-				return fmt.Errorf("failed copying buffer to gzip writer: %v", err)
-			}
-
-			if err = gzipWriter.Flush(); err != nil {
-				return fmt.Errorf("failed flushing compressed data to gzip writer: %v", err)
-			}
-
-			return c.postEvents(ctx, gzipBuffer, compression)
-		}
-
-		return c.postEvents(ctx, buf, compression)
-	}
-
-	return c.sentLogBatch(ctx, ld, send)
 }
 
 func encodeBodyEvents(zippers *sync.Pool, evs []*splunk.Event, disableCompression bool, minContentLengthCompression uint) (bodyReader io.Reader, compressed bool, err error) {

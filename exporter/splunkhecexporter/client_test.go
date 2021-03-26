@@ -659,7 +659,7 @@ func Test_pushLogData_PostError(t *testing.T) {
 	assert.IsType(t, consumererror.PartialError{}, err)
 	assert.Equal(t, (err.(consumererror.PartialError)).GetLogs(), logs)
 
-	// 0 -> unlimited size batch, true -> compression enabled.
+	// 0 -> unlimited size batch, false -> compression enabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, false
 	// 1500 < 371888 -> compression occurs.
 	c.config.MinContentLengthCompression = 1500
@@ -723,7 +723,7 @@ func TestSubLogs(t *testing.T) {
 
 	// The name of the leftmost log record should be 0_0_0.
 	assert.Equal(t, "0_0_0", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
-	// The name of the leftmost log record should be 1_1_2.
+	// The name of the rightmost log record should be 1_1_2.
 	assert.Equal(t, "1_1_2", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(1).Logs().At(2).Name())
 
 	// Logs subset from some mid index (resource 0, library 1, log 2).
@@ -737,10 +737,11 @@ func TestSubLogs(t *testing.T) {
 	// The name of the rightmost log record should be 1_1_2.
 	assert.Equal(t, "1_1_2", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(1).Logs().At(2).Name())
 
-	// Logs subset from some rightmost index (resource 0, library 1, log 2).
+	// Logs subset from rightmost index (resource 1, library 1, log 2).
 	_1_1_2 := &logIndex{resource: 1, library: 1, record: 2}
 	got = subLogs(&logs, _1_1_2)
 
+	// Number of logs in subset should be 1.
 	assert.Equal(t, 1, got.LogRecordCount())
 
 	// The name of the sole log record should be 1_1_2.
