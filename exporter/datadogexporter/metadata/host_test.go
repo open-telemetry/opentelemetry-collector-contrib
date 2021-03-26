@@ -80,12 +80,10 @@ func TestHostnameFromAttributes(t *testing.T) {
 	// Container ID
 	attrs = testutils.NewAttributeMap(map[string]string{
 		conventions.AttributeContainerID: testContainerID,
-		conventions.AttributeHostID:      testHostID,
-		conventions.AttributeHostName:    testHostName,
 	})
 	hostname, ok = HostnameFromAttributes(attrs)
 	assert.True(t, ok)
-	assert.Equal(t, hostname, testHostID)
+	assert.Equal(t, hostname, testContainerID)
 
 	// AWS cloud provider means relying on the EC2 function
 	attrs = testutils.NewAttributeMap(map[string]string{
