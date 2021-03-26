@@ -86,6 +86,28 @@ func TestConsumerScraper_createScraper_handles_clusterAdmin_error(t *testing.T) 
 	assert.Nil(t, ms)
 }
 
+func TestConsumerScraper_createScraper_handles_invalid_topic_match(t *testing.T) {
+	newSaramaClient = mockNewSaramaClient
+	newClusterAdmin = mockNewClusterAdmin
+	sc := sarama.NewConfig()
+	ms, err := createConsumerScraper(context.Background(), Config{
+		TopicMatch: "[",
+	}, sc, zap.NewNop())
+	assert.NotNil(t, err)
+	assert.Nil(t, ms)
+}
+
+func TestConsumerScraper_createScraper_handles_invalid_group_match(t *testing.T) {
+	newSaramaClient = mockNewSaramaClient
+	newClusterAdmin = mockNewClusterAdmin
+	sc := sarama.NewConfig()
+	ms, err := createConsumerScraper(context.Background(), Config{
+		GroupMatch: "[",
+	}, sc, zap.NewNop())
+	assert.NotNil(t, err)
+	assert.Nil(t, ms)
+}
+
 func TestConsumerScraper_scrape(t *testing.T) {
 	filter := regexp.MustCompile(defaultGroupMatch)
 	cs := consumerScraper{

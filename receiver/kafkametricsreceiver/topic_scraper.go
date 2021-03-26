@@ -113,7 +113,10 @@ func (s *topicScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 }
 
 func createTopicsScraper(_ context.Context, config Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.ResourceMetricsScraper, error) {
-	topicFilter := regexp.MustCompile(config.TopicMatch)
+	topicFilter, err := regexp.Compile(config.TopicMatch)
+	if err != nil {
+		return nil, err
+	}
 	client, err := newSaramaClient(config.Brokers, saramaConfig)
 	if err != nil {
 		return nil, err

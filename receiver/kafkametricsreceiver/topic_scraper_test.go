@@ -80,6 +80,16 @@ func TestTopicScraper_createScraperHandlesError(t *testing.T) {
 	assert.Nil(t, ms)
 }
 
+func TestTopicScraper_createScraperHandles_invalid_topicMatch(t *testing.T) {
+	newSaramaClient = mockNewSaramaClient
+	sc := sarama.NewConfig()
+	ms, err := createTopicsScraper(context.Background(), Config{
+		TopicMatch: "[",
+	}, sc, zap.NewNop())
+	assert.NotNil(t, err)
+	assert.Nil(t, ms)
+}
+
 func TestTopicScraper_scrapes(t *testing.T) {
 	client := newMockClient()
 	var testOffset int64 = 5
