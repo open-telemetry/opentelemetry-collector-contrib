@@ -16,32 +16,16 @@ package eks
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
-
-type MockDetectorUtils struct {
-	mock.Mock
-}
-
-// Mock function for fileExists()
-func (detectorUtils *MockDetectorUtils) fileExists(filename string) bool {
-	args := detectorUtils.Called(filename)
-	return args.Bool(0)
-}
-
-// Mock function for fetchString()
-func (detectorUtils *MockDetectorUtils) fetchString(ctx context.Context, httpMethod string, URL string) (string, error) {
-	args := detectorUtils.Called(ctx, httpMethod, URL)
-	return args.String(0), args.Error(1)
-}
 
 func TestNewDetector(t *testing.T) {
 	detector, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
@@ -50,42 +34,27 @@ func TestNewDetector(t *testing.T) {
 }
 
 // Tests EKS resource detector running in EKS environment
-func TestEks(t *testing.T) {
-	detectorUtils := &MockDetectorUtils{}
+func TestEKS(t *testing.T) {
 	ctx := context.Background()
 
-	// Mock functions and set expectations
-	detectorUtils.On("fileExists", k8sTokenPath).Return(true)
-	detectorUtils.On("fileExists", k8sCertPath).Return(true)
-	detectorUtils.On("fetchString", ctx, "GET", authConfigmapPath).Return("not empty", nil)
-	detectorUtils.On("fetchString", ctx, "GET", cwConfigmapPath).Return(`{"data":{"cluster.name":"my-cluster"}}`, nil)
+	require.NoError(t, os.Setenv("KUBERNETES_SERVICE_HOST", "localhost"))
 
 	// Call EKS Resource detector to detect resources
-	eksResourceDetector := &Detector{utils: detectorUtils}
+	eksResourceDetector := &Detector{}
 	res, err := eksResourceDetector.Detect(ctx)
 	require.NoError(t, err)
 
 	assert.Equal(t, map[string]interface{}{
-		"cloud.provider":   "aws",
-		"cloud.platform":   "aws_eks",
-		"k8s.cluster.name": "my-cluster",
+		"cloud.provider": "aws",
+		"cloud.platform": "aws_eks",
 	}, internal.AttributesToMap(res.Attributes()), "Resource object returned is incorrect")
-	detectorUtils.AssertExpectations(t)
 }
 
 // Tests EKS resource detector not running in EKS environment
 func TestNotEKS(t *testing.T) {
-	detectorUtils := new(MockDetectorUtils)
-
-	/* #nosec */
-	k8sTokenPath := "/var/run/secrets/kubernetes.io/serviceaccount/token"
-
-	// Mock functions and set expectations
-	detectorUtils.On("fileExists", k8sTokenPath).Return(false)
-
-	detector := Detector{detectorUtils}
+	detector := Detector{}
+	require.NoError(t, os.Unsetenv("KUBERNETES_SERVICE_HOST"))
 	r, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 0, r.Attributes().Len(), "Resource object should be empty")
-	detectorUtils.AssertExpectations(t)
 }
