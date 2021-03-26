@@ -60,8 +60,8 @@ func TestDetectWithoutCluster(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, map[string]interface{}{
-		"cloud.provider":               "gcp",
-		"cloud.infrastructure_service": "gcp_gke",
+		"cloud.provider": "gcp",
+		"cloud.platform": "gcp_gke",
 	}, internal.AttributesToMap(res.Attributes()))
 
 	metadata.AssertExpectations(t)
@@ -104,9 +104,9 @@ func TestDetector_Detect(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, map[string]interface{}{
-		"cloud.provider":               "gcp",
-		"cloud.infrastructure_service": "gcp_gke",
-		"k8s.cluster.name":             "cluster-a",
+		"cloud.provider":   "gcp",
+		"cloud.platform":   "gcp_gke",
+		"k8s.cluster.name": "cluster-a",
 	}, internal.AttributesToMap(res.Attributes()))
 
 	metadata.AssertExpectations(t)

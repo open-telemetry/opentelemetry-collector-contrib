@@ -66,9 +66,9 @@ func TestEks(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, map[string]interface{}{
-		"cloud.provider":               "aws",
-		"cloud.infrastructure_service": "aws_eks",
-		"k8s.cluster.name":             "my-cluster",
+		"cloud.provider":   "aws",
+		"cloud.platform":   "aws_eks",
+		"k8s.cluster.name": "my-cluster",
 	}, internal.AttributesToMap(res.Attributes()), "Resource object returned is incorrect")
 	detectorUtils.AssertExpectations(t)
 }

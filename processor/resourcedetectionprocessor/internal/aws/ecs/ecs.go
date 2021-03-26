@@ -66,7 +66,7 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 
 	attr := res.Attributes()
 	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.InsertString(conventions.AttributeCloudInfrastructureService, conventions.AttributeCloudProviderAWSECS)
+	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
 	attr.InsertString("aws.ecs.task.arn", tmdeResp.TaskARN)
 	attr.InsertString("aws.ecs.task.family", tmdeResp.Family)
 	attr.InsertString("aws.ecs.task.revision", tmdeResp.Revision)
@@ -85,7 +85,7 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 
 	// The Availability Zone is not available in all Fargate runtimes
 	if tmdeResp.AvailabilityZone != "" {
-		attr.InsertString(conventions.AttributeCloudZone, tmdeResp.AvailabilityZone)
+		attr.InsertString(conventions.AttributeCloudAvailabilityZone, tmdeResp.AvailabilityZone)
 	}
 
 	// The launch type and log data attributes are only available in TMDE v4

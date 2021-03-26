@@ -133,6 +133,8 @@ func TestResourceMapper(t *testing.T) {
 				Labels: map[string]string{
 					"source.label1": "value1", // unknown label is dropped
 					"contrib.opencensus.io/exporter/stackdriver/project_id": "123",
+					// TODO: Change this to use `cloud.availability_zone` as per semantic conventions.
+					//  Changes are required in dependency package.
 					"cloud.zone": "zone1",
 					"contrib.opencensus.io/exporter/stackdriver/generic_task/namespace": "ns1",
 					"contrib.opencensus.io/exporter/stackdriver/generic_task/job":       "job1",

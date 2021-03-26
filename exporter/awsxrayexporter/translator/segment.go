@@ -220,9 +220,9 @@ func determineAwsOrigin(resource pdata.Resource) string {
 		}
 	}
 
-	// TODO(willarmiros): Only use infrastructure_service for origin resolution once detectors for all AWS environments are
+	// TODO(willarmiros): Only use platform for origin resolution once detectors for all AWS environments are
 	// implemented for robustness
-	if is, present := resource.Attributes().Get("cloud.infrastructure_service"); present {
+	if is, present := resource.Attributes().Get(semconventions.AttributeCloudPlatform); present {
 		switch is.StringVal() {
 		case "EKS":
 			return OriginEKS
