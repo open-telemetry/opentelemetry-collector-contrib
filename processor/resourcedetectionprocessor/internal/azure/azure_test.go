@@ -53,6 +53,7 @@ func TestDetectAzureAvailable(t *testing.T) {
 		VMSize:            "vmSize",
 		SubscriptionID:    "subscriptionID",
 		ResourceGroupName: "resourceGroup",
+		VMScaleSetName:    "myScaleset",
 	}, nil)
 
 	detector := &Detector{provider: mp}
@@ -70,6 +71,7 @@ func TestDetectAzureAvailable(t *testing.T) {
 		conventions.AttributeCloudAccount:               "subscriptionID",
 		"azure.vm.size":                                 "vmSize",
 		"azure.resourcegroup.name":                      "resourceGroup",
+		"azure.vm.scaleset.name":                        "myScaleset",
 	})
 	expected.Attributes().Sort()
 

@@ -101,6 +101,7 @@ ec2:
     * host.id (virtual machine ID)
     * host.name
     * azure.vm.size (virtual machine size)
+    * azure.vm.scaleset.name (name of the scale set if any)
     * azure.resourcegroup.name (resource group name)
 
 ## Configuration
