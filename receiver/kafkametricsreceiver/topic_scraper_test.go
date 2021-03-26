@@ -59,7 +59,7 @@ func TestTopicShutdown_closed(t *testing.T) {
 
 func TestTopicScraper_Name(t *testing.T) {
 	s := topicScraper{}
-	assert.Equal(t, s.Name(), "topics")
+	assert.Equal(t, s.Name(), topicsScraperName)
 }
 
 func TestTopicScraper_createsScraper(t *testing.T) {

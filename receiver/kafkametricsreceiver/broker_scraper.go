@@ -34,7 +34,7 @@ type brokerScraper struct {
 }
 
 func (s *brokerScraper) Name() string {
-	return "brokers"
+	return brokersScraperName
 }
 
 func (s *brokerScraper) shutdown(context.Context) error {

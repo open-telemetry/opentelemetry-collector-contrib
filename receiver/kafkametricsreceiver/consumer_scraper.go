@@ -38,7 +38,7 @@ type consumerScraper struct {
 }
 
 func (s *consumerScraper) Name() string {
-	return "consumers"
+	return consumersScraperName
 }
 
 func (s *consumerScraper) shutdown(_ context.Context) error {

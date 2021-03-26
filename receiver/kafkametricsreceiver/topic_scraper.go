@@ -38,7 +38,7 @@ type topicScraper struct {
 }
 
 func (s *topicScraper) Name() string {
-	return "topics"
+	return topicsScraperName
 }
 
 func (s *topicScraper) shutdown(context.Context) error {
