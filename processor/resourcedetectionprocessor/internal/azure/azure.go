@@ -59,6 +59,7 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	attrs.InsertString(conventions.AttributeHostID, compute.VMID)
 	attrs.InsertString(conventions.AttributeCloudAccount, compute.SubscriptionID)
 	attrs.InsertString("azure.vm.size", compute.VMSize)
+	attrs.InsertString("azure.vm.scaleset.name", compute.VMScaleSetName)
 	attrs.InsertString("azure.resourcegroup.name", compute.ResourceGroupName)
 
 	return res, nil
