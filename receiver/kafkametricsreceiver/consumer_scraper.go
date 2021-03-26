@@ -73,20 +73,19 @@ func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, e
 		return metrics.ResourceMetrics(), listErr
 	}
 
-	matchedTopics := make(map[string]sarama.TopicDetail)
+	matchedTopics := map[string]sarama.TopicDetail{}
 	for t, d := range allTopics {
 		if s.topicFilter.MatchString(t) {
 			matchedTopics[t] = d
 		}
 	}
-	var scrapeErrors = scrapererror.ScrapeErrors{}
+	scrapeErrors := scrapererror.ScrapeErrors{}
 	// partitionIds in matchedTopics
-	topicPartitions := make(map[string][]int32)
+	topicPartitions := map[string][]int32{}
 	// currentOffset for each partition in matchedTopics
-	topicPartitionOffset := make(map[string]map[int32]int64)
+	topicPartitionOffset := map[string]map[int32]int64{}
 	for topic := range matchedTopics {
-		topicPartitions[topic] = make([]int32, 0)
-		topicPartitionOffset[topic] = make(map[int32]int64)
+		topicPartitionOffset[topic] = map[int32]int64{}
 		partitions, err := s.client.Partitions(topic)
 		if err != nil {
 			scrapeErrors.Add(err)
