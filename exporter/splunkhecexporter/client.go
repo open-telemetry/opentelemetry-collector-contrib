@@ -159,7 +159,7 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (err error) {
 	return c.pushLogDataParts(ctx, ld, send)
 }
 
-// pushLogDataParts partitions log data then pushes the parts.
+// pushLogDataParts partitions log data into parts that are less than or equal to MaxContentLengthLogs then sends the parts.
 func (c *client) pushLogDataParts(ctx context.Context, ld pdata.Logs, send func(context.Context, *bytes.Buffer) error) (err error) {
 	// max is the maximum number of bytes allowed in logs buffer.
 	// pad4096 pads max by 4096 to prevent reallocation in logs buffer prior to truncation. It is assumed that a single log is likely less than 4096 bytes.
