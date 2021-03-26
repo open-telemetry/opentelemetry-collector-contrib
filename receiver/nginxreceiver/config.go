@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
-type config struct {
+type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
 }

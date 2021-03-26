@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -44,9 +44,9 @@ func NewFactory() component.ReceiverFactory {
 		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -61,7 +61,7 @@ func createDefaultConfig() configmodels.Receiver {
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)

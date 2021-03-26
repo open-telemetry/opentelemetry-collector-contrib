@@ -25,8 +25,9 @@ import (
 
 	"github.com/tinylib/msgp/msgp"
 	"go.opencensus.io/stats"
-	"go.opentelemetry.io/collector/receiver/fluentforwardreceiver/observ"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/observ"
 )
 
 // The initial size of the read buffer. Messages can come in that are bigger

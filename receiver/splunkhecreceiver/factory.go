@@ -18,9 +18,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
@@ -48,9 +48,9 @@ func NewFactory() component.ReceiverFactory {
 }
 
 // CreateDefaultConfig creates the default configuration for Splunk HEC receiver.
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -66,7 +66,7 @@ func createDefaultConfig() configmodels.Receiver {
 func createTraceReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	consumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 
@@ -77,7 +77,7 @@ func createTraceReceiver(
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 
@@ -95,7 +95,7 @@ func createMetricsReceiver(
 func createLogsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 

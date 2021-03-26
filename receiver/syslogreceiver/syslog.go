@@ -21,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/udp"
 	syslogparser "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/syslog"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
@@ -39,16 +39,16 @@ func NewFactory() component.ReceiverFactory {
 type ReceiverType struct{}
 
 // Type is the receiver type
-func (f ReceiverType) Type() configmodels.Type {
-	return configmodels.Type(typeStr)
+func (f ReceiverType) Type() config.Type {
+	return config.Type(typeStr)
 }
 
 // CreateDefaultConfig creates a config with type and version
-func (f ReceiverType) CreateDefaultConfig() configmodels.Receiver {
+func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 	return &SysLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(typeStr),
+			ReceiverSettings: config.ReceiverSettings{
+				TypeVal: config.Type(typeStr),
 				NameVal: typeStr,
 			},
 			Operators: stanza.OperatorConfigs{},
@@ -58,7 +58,7 @@ func (f ReceiverType) CreateDefaultConfig() configmodels.Receiver {
 }
 
 // BaseConfig gets the base config from config, for now
-func (f ReceiverType) BaseConfig(cfg configmodels.Receiver) stanza.BaseConfig {
+func (f ReceiverType) BaseConfig(cfg config.Receiver) stanza.BaseConfig {
 	return cfg.(*SysLogConfig).BaseConfig
 }
 
@@ -69,7 +69,7 @@ type SysLogConfig struct {
 }
 
 // DecodeInputConfig unmarshals the input operator
-func (f ReceiverType) DecodeInputConfig(cfg configmodels.Receiver) (*operator.Config, error) {
+func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
 	logConfig := cfg.(*SysLogConfig)
 	yamlBytes, _ := yaml.Marshal(logConfig.Input)
 	inputCfg := syslog.NewSyslogInputConfig("syslog_input")

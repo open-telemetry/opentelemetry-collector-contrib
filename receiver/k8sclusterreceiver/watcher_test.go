@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.uber.org/zap"
 )
 
@@ -28,7 +28,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 		metadataConsumers []metadataConsumer
 	}
 	type args struct {
-		exporters                   map[configmodels.NamedEntity]component.Exporter
+		exporters                   map[config.NamedEntity]component.Exporter
 		metadataExportersFromConfig []string
 	}
 	tests := []struct {
@@ -41,8 +41,8 @@ func TestSetupMetadataExporters(t *testing.T) {
 			"Unsupported exporter",
 			fields{},
 			args{
-				exporters: map[configmodels.NamedEntity]component.Exporter{
-					&configmodels.ExporterSettings{TypeVal: "nop", NameVal: "nop"}: MockExporter{},
+				exporters: map[config.NamedEntity]component.Exporter{
+					&config.ExporterSettings{TypeVal: "nop", NameVal: "nop"}: MockExporter{},
 				},
 				metadataExportersFromConfig: []string{"nop"},
 			},
@@ -53,8 +53,8 @@ func TestSetupMetadataExporters(t *testing.T) {
 			fields{
 				metadataConsumers: []metadataConsumer{(&mockExporterWithK8sMetadata{}).ConsumeMetadata},
 			},
-			args{exporters: map[configmodels.NamedEntity]component.Exporter{
-				&configmodels.ExporterSettings{TypeVal: "nop", NameVal: "nop"}: mockExporterWithK8sMetadata{},
+			args{exporters: map[config.NamedEntity]component.Exporter{
+				&config.ExporterSettings{TypeVal: "nop", NameVal: "nop"}: mockExporterWithK8sMetadata{},
 			},
 				metadataExportersFromConfig: []string{"nop"},
 			},
@@ -65,8 +65,8 @@ func TestSetupMetadataExporters(t *testing.T) {
 			fields{
 				metadataConsumers: []metadataConsumer{},
 			},
-			args{exporters: map[configmodels.NamedEntity]component.Exporter{
-				&configmodels.ExporterSettings{TypeVal: "nop", NameVal: "nop"}: mockExporterWithK8sMetadata{},
+			args{exporters: map[config.NamedEntity]component.Exporter{
+				&config.ExporterSettings{TypeVal: "nop", NameVal: "nop"}: mockExporterWithK8sMetadata{},
 			},
 				metadataExportersFromConfig: []string{"nop/1"},
 			},

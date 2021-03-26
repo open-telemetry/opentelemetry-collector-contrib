@@ -31,8 +31,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -53,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[configmodels.Type(typeStr)] = factory
+	factories.Receivers[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -254,7 +254,7 @@ func (h *testHost) ReportFatalError(err error) {
 func testdataConfigYamlAsMap() *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "filelog",
 				NameVal: "filelog",
 			},
@@ -284,7 +284,7 @@ func testdataConfigYamlAsMap() *FileLogConfig {
 func testdataRotateTestYamlAsMap(tempDir string) *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "filelog",
 				NameVal: "filelog",
 			},

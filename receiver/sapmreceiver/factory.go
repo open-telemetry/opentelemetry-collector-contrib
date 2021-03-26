@@ -23,8 +23,8 @@ import (
 	"strconv"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
@@ -45,9 +45,9 @@ func NewFactory() component.ReceiverFactory {
 		receiverhelper.WithTraces(createTraceReceiver))
 }
 
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -88,7 +88,7 @@ func (rCfg *Config) validate() error {
 func createTraceReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	// assert config is SAPM config

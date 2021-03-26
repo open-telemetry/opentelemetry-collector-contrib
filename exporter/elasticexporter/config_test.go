@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 
 	r1 := cfg.Exporters["elastic/customname"].(*Config)
 	assert.Equal(t, r1, &Config{
-		ExporterSettings: configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "elastic/customname"},
+		ExporterSettings: config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "elastic/customname"},
 		APMServerURL:     "https://elastic.example.com",
 		APIKey:           "RTNxMjlXNEJt",
 		SecretToken:      "hunter2",

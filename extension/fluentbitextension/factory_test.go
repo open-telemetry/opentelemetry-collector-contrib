@@ -21,15 +21,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 )
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
-		ExtensionSettings: configmodels.ExtensionSettings{
+		ExtensionSettings: config.ExtensionSettings{
 			NameVal: typeStr,
 			TypeVal: typeStr,
 		},

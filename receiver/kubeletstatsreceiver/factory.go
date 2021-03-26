@@ -21,7 +21,7 @@ import (
 
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
@@ -51,9 +51,9 @@ func NewFactory() component.ReceiverFactory {
 		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: typeStr,
 		},
 		ClientConfig: kubelet.ClientConfig{
@@ -68,7 +68,7 @@ func createDefaultConfig() configmodels.Receiver {
 func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	baseCfg configmodels.Receiver,
+	baseCfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := baseCfg.(*Config)

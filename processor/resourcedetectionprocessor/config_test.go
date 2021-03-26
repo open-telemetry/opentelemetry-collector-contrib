@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -44,7 +44,7 @@ func TestLoadConfig(t *testing.T) {
 
 	p2 := cfg.Processors["resourcedetection/gce"]
 	assert.Equal(t, p2, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			TypeVal: "resourcedetection",
 			NameVal: "resourcedetection/gce",
 		},
@@ -55,7 +55,7 @@ func TestLoadConfig(t *testing.T) {
 
 	p3 := cfg.Processors["resourcedetection/ec2"]
 	assert.Equal(t, p3, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			TypeVal: "resourcedetection",
 			NameVal: "resourcedetection/ec2",
 		},

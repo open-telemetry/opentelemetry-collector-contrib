@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	otlphttp "go.opentelemetry.io/collector/exporter/otlphttpexporter"
@@ -34,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 	actualCfg := exporter.(*Config)
 	expectedCfg := &Config{
 		Config: otlphttp.Config{
-			ExporterSettings: configmodels.ExporterSettings{
+			ExporterSettings: config.ExporterSettings{
 				NameVal: "f5cloud/allsettings",
 				TypeVal: "f5cloud",
 			},
@@ -88,7 +88,7 @@ func TestConfig_sanitize(t *testing.T) {
 	const validSource = "tests"
 
 	type fields struct {
-		ExporterSettings configmodels.ExporterSettings
+		ExporterSettings config.ExporterSettings
 		Endpoint         string
 		Source           string
 		CredentialFile   string

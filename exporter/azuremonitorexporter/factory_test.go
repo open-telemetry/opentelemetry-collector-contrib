@@ -20,13 +20,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.uber.org/zap"
 )
 
 // An inappropriate config
 type badConfig struct {
-	configmodels.ExporterSettings `mapstructure:",squash"`
+	config.ExporterSettings `mapstructure:",squash"`
 }
 
 func TestCreateTraceExporterUsingSpecificTransportChannel(t *testing.T) {

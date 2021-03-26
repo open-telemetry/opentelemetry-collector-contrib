@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
@@ -34,7 +34,7 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	factory := NewFactory()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	cfg := &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			NameVal: "routing",
 			TypeVal: "routing",
 		},
@@ -75,7 +75,7 @@ func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 	factory := NewFactory()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	cfg := &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			NameVal: "routing",
 			TypeVal: "routing",
 		},
@@ -101,7 +101,7 @@ func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
 	factory := NewFactory()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	cfg := &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			NameVal: "routing",
 			TypeVal: "routing",
 		},
@@ -123,7 +123,7 @@ func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 	factory := NewFactory()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	cfg := &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			NameVal: "routing",
 			TypeVal: "routing",
 		},
@@ -149,7 +149,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	factory := NewFactory()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	cfg := &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			NameVal: "routing",
 			TypeVal: "routing",
 		},
@@ -178,7 +178,7 @@ func TestShutdown(t *testing.T) {
 	factory := NewFactory()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	cfg := &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ProcessorSettings: config.ProcessorSettings{
 			NameVal: "routing",
 			TypeVal: "routing",
 		},
