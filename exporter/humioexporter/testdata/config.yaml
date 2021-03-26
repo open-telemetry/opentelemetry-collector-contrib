@@ -1,0 +1,38 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  humio:
+    ingest_token: "00000000-0000-0000-0000-0000000000000"
+  humio/allsettings:
+    ingest_token: "00000000-0000-0000-0000-0000000000000"
+    endpoint: "localhost:8080"
+    enable_service_tag: false
+    tags:
+      host: "web_server"
+      environment: "production"
+    logs:
+      log_parser: "custom-parser"
+    traces:
+      iso_timestamps: false
+      timezone: "Europe/Copenhagen"
+      enable_rawstrings: true
+    sending_queue:
+      enabled: false
+      num_consumers: 20
+      queue_size: 2500
+    retry_on_failure:
+      enabled: false
+      initial_interval: 8s
+      max_interval: 2m
+      max_elapsed_time: 5m
+
+service:
+  pipelines:
+    metrics:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [humio, humio/allsettings]
