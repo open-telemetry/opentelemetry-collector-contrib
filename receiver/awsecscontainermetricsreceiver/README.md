@@ -144,7 +144,7 @@ aws.ecs.task.arn     | aws.ecs.task.arn
 aws.ecs.task.id      | aws.ecs.task.id
 aws.ecs.task.version | aws.ecs.task.version
 aws.ecs.service.name | aws.ecs.service.name
-cloud.zone | cloud.zone
+cloud.availability_zone | cloud.availability_zone
 cloud.account.id | cloud.account.id
 cloud.region | cloud.region
 aws.ecs.task.pull_started_at | aws.ecs.container.started_at

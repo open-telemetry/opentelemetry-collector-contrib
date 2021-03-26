@@ -66,7 +66,7 @@ func (gke *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 		return res, nil
 	}
 
-	attr.InsertString(conventions.AttributeCloudInfrastructureService, conventions.AttributeCloudProviderGCPGKE)
+	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPGKE)
 
 	if clusterName, err := gke.metadata.InstanceAttributeValue(clusterNameAttribute); err != nil {
 		gke.log.Warn("Unable to determine GKE cluster name", zap.Error(err))

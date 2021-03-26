@@ -10,7 +10,7 @@
     },
     {
       "Key": "resource",
-      "Value": "{\"cloud.account.id\":\"999999998\",\"cloud.provider\":\"aws\",\"cloud.region\":\"us-west-2\",\"cloud.zone\":\"us-west-1b\",\"container.image.name\":\"otel/signupaggregator\",\"container.image.tag\":\"v1\",\"container.name\":\"signup_aggregator\"}"
+      "Value": "{\"cloud.account.id\":\"999999998\",\"cloud.availability_zone\":\"us-west-1b\",\"cloud.provider\":\"aws\",\"cloud.region\":\"us-west-2\",\"container.image.name\":\"otel/signupaggregator\",\"container.image.tag\":\"v1\",\"container.name\":\"signup_aggregator\"}"
     },
     {
       "Key": "otlp.name",
@@ -88,7 +88,7 @@
     },
     {
       "Key": "resource",
-      "Value": "{\"cloud.account.id\":\"999999998\",\"cloud.provider\":\"aws\",\"cloud.region\":\"us-west-2\",\"cloud.zone\":\"us-west-1b\",\"container.image.name\":\"otel/signupaggregator\",\"container.image.tag\":\"v1\",\"container.name\":\"signup_aggregator\"}"
+      "Value": "{\"cloud.account.id\":\"999999998\",\"cloud.availability_zone\":\"us-west-1b\",\"cloud.provider\":\"aws\",\"cloud.region\":\"us-west-2\",\"container.image.name\":\"otel/signupaggregator\",\"container.image.tag\":\"v1\",\"container.name\":\"signup_aggregator\"}"
     },
     {
       "Key": "otlp.name",
@@ -166,7 +166,7 @@
     },
     {
       "Key": "resource",
-      "Value": "{\"cloud.account.id\":\"999999998\",\"cloud.provider\":\"aws\",\"cloud.region\":\"us-west-2\",\"cloud.zone\":\"us-west-1b\",\"container.image.name\":\"otel/signupaggregator\",\"container.image.tag\":\"v1\",\"container.name\":\"signup_aggregator\"}"
+      "Value": "{\"cloud.account.id\":\"999999998\",\"cloud.availability_zone\":\"us-west-1b\",\"cloud.provider\":\"aws\",\"cloud.region\":\"us-west-2\",\"container.image.name\":\"otel/signupaggregator\",\"container.image.tag\":\"v1\",\"container.name\":\"signup_aggregator\"}"
     },
     {
       "Key": "otlp.name",
@@ -244,7 +244,7 @@
     },
     {
       "Key": "resource",
-      "Value": "{\"cloud.account.id\":\"999999998\",\"cloud.provider\":\"aws\",\"cloud.region\":\"us-west-2\",\"cloud.zone\":\"us-west-1b\",\"container.image.name\":\"otel/signupaggregator\",\"container.image.tag\":\"v1\",\"container.name\":\"signup_aggregator\"}"
+      "Value": "{\"cloud.account.id\":\"999999998\",\"cloud.availability_zone\":\"us-west-1b\",\"cloud.provider\":\"aws\",\"cloud.region\":\"us-west-2\",\"container.image.name\":\"otel/signupaggregator\",\"container.image.tag\":\"v1\",\"container.name\":\"signup_aggregator\"}"
     },
     {
       "Key": "otlp.name",

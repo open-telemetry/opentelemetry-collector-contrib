@@ -63,15 +63,15 @@ func TestDetectAzureAvailable(t *testing.T) {
 	res.Attributes().Sort()
 
 	expected := internal.NewResource(map[string]interface{}{
-		conventions.AttributeCloudProvider:              conventions.AttributeCloudProviderAzure,
-		conventions.AttributeCloudInfrastructureService: conventions.AttributeCloudProviderAzureVM,
-		conventions.AttributeHostName:                   "name",
-		conventions.AttributeCloudRegion:                "location",
-		conventions.AttributeHostID:                     "vmID",
-		conventions.AttributeCloudAccount:               "subscriptionID",
-		"azure.vm.size":                                 "vmSize",
-		"azure.resourcegroup.name":                      "resourceGroup",
-		"azure.vm.scaleset.name":                        "myScaleset",
+		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
+		conventions.AttributeCloudPlatform: conventions.AttributeCloudPlatformAzureVM,
+		conventions.AttributeHostName:      "name",
+		conventions.AttributeCloudRegion:   "location",
+		conventions.AttributeHostID:        "vmID",
+		conventions.AttributeCloudAccount:  "subscriptionID",
+		"azure.vm.size":                    "vmSize",
+		"azure.resourcegroup.name":         "resourceGroup",
+		"azure.vm.scaleset.name":           "myScaleset",
 	})
 	expected.Attributes().Sort()
 
