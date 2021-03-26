@@ -260,6 +260,7 @@ func (c *client) postEvents(ctx context.Context, events io.Reader, compressed bo
 	return nil
 }
 
+// subLogs returns a subset of `ld` starting from index `start` to the end.
 func subLogs(ld *pdata.Logs, start *logIndex) *pdata.Logs {
 	if ld == nil || start == nil || start.zero() {
 		return ld
