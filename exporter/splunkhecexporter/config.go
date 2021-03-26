@@ -59,9 +59,6 @@ type Config struct {
 	// Disable GZip compression. Defaults to false.
 	DisableCompression bool `mapstructure:"disable_compression"`
 
-	// Minimum content length in bytes to compress. Defaults to 1500 bytes (Maximum Transmission Unit of an ethernet frame).
-	MinContentLengthCompression uint `mapstructure:"min_content_length_compression"`
-
 	// insecure_skip_verify skips checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
 

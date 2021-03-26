@@ -45,6 +45,9 @@ type client struct {
 	headers map[string]string
 }
 
+// Minimum number of bytes to compress. 1500 is the MTU of an ethernet frame.
+const minCompressionLen = 1500
+
 func (c *client) pushMetricsData(
 	ctx context.Context,
 	md pdata.Metrics,
@@ -57,7 +60,7 @@ func (c *client) pushMetricsData(
 		return nil
 	}
 
-	body, compressed, err := encodeBody(&c.zippers, splunkDataPoints, c.config.DisableCompression, c.config.MinContentLengthCompression)
+	body, compressed, err := encodeBody(&c.zippers, splunkDataPoints, c.config.DisableCompression)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
@@ -111,7 +114,7 @@ func (c *client) pushTraceData(
 }
 
 func (c *client) sendSplunkEvents(ctx context.Context, splunkEvents []*splunk.Event) error {
-	body, compressed, err := encodeBodyEvents(&c.zippers, splunkEvents, c.config.DisableCompression, c.config.MinContentLengthCompression)
+	body, compressed, err := encodeBodyEvents(&c.zippers, splunkEvents, c.config.DisableCompression)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
@@ -133,7 +136,7 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (err error) {
 
 	// Callback when each batch is to be sent.
 	send := func(ctx context.Context, buf *bytes.Buffer) (err error) {
-		shouldCompress := buf.Len() >= int(c.config.MinContentLengthCompression) && !c.config.DisableCompression
+		shouldCompress := buf.Len() >= minCompressionLen && !c.config.DisableCompression
 
 		if shouldCompress {
 			gzipBuffer.Reset()
@@ -302,7 +305,7 @@ func subLogs(ld *pdata.Logs, start *logIndex) *pdata.Logs {
 	return &logs
 }
 
-func encodeBodyEvents(zippers *sync.Pool, evs []*splunk.Event, disableCompression bool, minContentLengthCompression uint) (bodyReader io.Reader, compressed bool, err error) {
+func encodeBodyEvents(zippers *sync.Pool, evs []*splunk.Event, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
 	buf := new(bytes.Buffer)
 	encoder := json.NewEncoder(buf)
 	for _, e := range evs {
@@ -312,10 +315,10 @@ func encodeBodyEvents(zippers *sync.Pool, evs []*splunk.Event, disableCompressio
 		}
 		buf.WriteString("\r\n\r\n")
 	}
-	return getReader(zippers, buf, disableCompression, minContentLengthCompression)
+	return getReader(zippers, buf, disableCompression)
 }
 
-func encodeBody(zippers *sync.Pool, dps []*splunk.Event, disableCompression bool, minContentLengthCompression uint) (bodyReader io.Reader, compressed bool, err error) {
+func encodeBody(zippers *sync.Pool, dps []*splunk.Event, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
 	buf := new(bytes.Buffer)
 	encoder := json.NewEncoder(buf)
 	for _, e := range dps {
@@ -325,13 +328,13 @@ func encodeBody(zippers *sync.Pool, dps []*splunk.Event, disableCompression bool
 		}
 		buf.WriteString("\r\n\r\n")
 	}
-	return getReader(zippers, buf, disableCompression, minContentLengthCompression)
+	return getReader(zippers, buf, disableCompression)
 }
 
 // avoid attempting to compress things that fit into a single ethernet frame
-func getReader(zippers *sync.Pool, b *bytes.Buffer, disableCompression bool, minContentLengthCompression uint) (io.Reader, bool, error) {
+func getReader(zippers *sync.Pool, b *bytes.Buffer, disableCompression bool) (io.Reader, bool, error) {
 	var err error
-	if !disableCompression && b.Len() > int(minContentLengthCompression) {
+	if !disableCompression && b.Len() > minCompressionLen {
 		buf := new(bytes.Buffer)
 		w := zippers.Get().(*gzip.Writer)
 		defer zippers.Put(w)

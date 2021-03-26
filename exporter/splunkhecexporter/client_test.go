@@ -127,18 +127,17 @@ func createLogData(numResources int, numLibraries int, numRecords int) pdata.Log
 }
 
 type CapturingData struct {
-	testing                     *testing.T
-	receivedRequest             chan string
-	statusCode                  int
-	checkCompression            bool
-	minContentLengthCompression uint
+	testing          *testing.T
+	receivedRequest  chan string
+	statusCode       int
+	checkCompression bool
 }
 
 func (c *CapturingData) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 
 	if c.checkCompression {
-		if len(body) > int(c.minContentLengthCompression) && r.Header.Get("Content-Encoding") != "gzip" {
+		if len(body) > minCompressionLen && r.Header.Get("Content-Encoding") != "gzip" {
 			c.testing.Fatal("No compression")
 		}
 	}
@@ -165,7 +164,7 @@ func runMetricsExport(disableCompression bool, numberOfDataPoints int, t *testin
 	cfg.Token = "1234-1234"
 
 	receivedRequest := make(chan string)
-	capture := CapturingData{testing: t, receivedRequest: receivedRequest, statusCode: 200, checkCompression: !cfg.DisableCompression, minContentLengthCompression: cfg.MinContentLengthCompression}
+	capture := CapturingData{testing: t, receivedRequest: receivedRequest, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler: &capture,
 	}
@@ -204,7 +203,7 @@ func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (
 	cfg.Token = "1234-1234"
 
 	receivedRequest := make(chan string)
-	capture := CapturingData{testing: t, receivedRequest: receivedRequest, statusCode: 200, checkCompression: !cfg.DisableCompression, minContentLengthCompression: cfg.MinContentLengthCompression}
+	capture := CapturingData{testing: t, receivedRequest: receivedRequest, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler: &capture,
 	}
@@ -240,7 +239,7 @@ func runLogExport(cfg *Config, ld pdata.Logs, t *testing.T) ([]string, error) {
 	cfg.Token = "1234-1234"
 
 	receivedRequest := make(chan string)
-	capture := CapturingData{testing: t, receivedRequest: receivedRequest, statusCode: 200, checkCompression: !cfg.DisableCompression, minContentLengthCompression: cfg.MinContentLengthCompression}
+	capture := CapturingData{testing: t, receivedRequest: receivedRequest, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler: &capture,
 	}
@@ -290,24 +289,19 @@ func TestReceiveLogs(t *testing.T) {
 	}
 
 	tests := []struct {
-		name func(bool) string
-		conf func(bool) *Config
+		name string
+		conf *Config
 		logs pdata.Logs
 		want wantType
 	}{
 		{
-			name: func(disableCompression bool) string {
-				return "COMPRESSION " + map[bool]string{true: "DISABLED ", false: "ENABLED "}[disableCompression] +
-					"all log events in payload when max content length unknown (configured max content length 0)"
-			},
+			name: "all log events in payload when max content length unknown (configured max content length 0)",
 			logs: createLogData(1, 1, 4),
-			conf: func(disableCompression bool) *Config {
+			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.DisableCompression = disableCompression
-				cfg.MinContentLengthCompression = 4 // Given the 4 logs, 4 bytes minimum triggers compression when enable.
 				cfg.MaxContentLengthLogs = 0
 				return cfg
-			},
+			}(),
 			want: wantType{
 				batches: []string{
 					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
@@ -319,18 +313,13 @@ func TestReceiveLogs(t *testing.T) {
 			},
 		},
 		{
-			name: func(disableCompression bool) string {
-				return "COMPRESSION " + map[bool]string{true: "DISABLED ", false: "ENABLED "}[disableCompression] +
-					"1 log event per payload (configured max content length is same as event size)"
-			},
+			name: "1 log event per payload (configured max content length is same as event size)",
 			logs: createLogData(1, 1, 4),
-			conf: func(disableCompression bool) *Config {
+			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.DisableCompression = disableCompression
-				cfg.MinContentLengthCompression = 4 // Given the 4 logs, 4 bytes minimum triggers compression when enable.
 				cfg.MaxContentLengthLogs = 300
 				return cfg
-			},
+			}(),
 			want: wantType{
 				batches: []string{
 					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
@@ -342,18 +331,13 @@ func TestReceiveLogs(t *testing.T) {
 			},
 		},
 		{
-			name: func(disableCompression bool) string {
-				return "COMPRESSION " + map[bool]string{true: "DISABLED ", false: "ENABLED "}[disableCompression] +
-					"2 log events per payload (configured max content length is twice event size)"
-			},
+			name: "2 log events per payload (configured max content length is twice event size)",
 			logs: createLogData(1, 1, 4),
-			conf: func(disableCompression bool) *Config {
+			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.DisableCompression = disableCompression
-				cfg.MinContentLengthCompression = 4 // Given the 4 logs, 4 bytes minimum triggers compression when enable.
 				cfg.MaxContentLengthLogs = 400
 				return cfg
-			},
+			}(),
 			want: wantType{
 				batches: []string{
 					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
@@ -367,22 +351,18 @@ func TestReceiveLogs(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		for _, disabled := range []bool{true, false} {
-			t.Run(test.name(disabled), func(t *testing.T) {
-				got, err := runLogExport(test.conf(disabled), test.logs, t)
-				require.NoError(t, err)
+		t.Run(test.name, func(t *testing.T) {
+			got, err := runLogExport(test.conf, test.logs, t)
 
-				require.Len(t, got, test.want.numBatches)
+			require.NoError(t, err)
+			require.Len(t, got, test.want.numBatches)
 
-				for i := 0; i < test.want.numBatches; i++ {
-					require.NotZero(t, got[i])
+			for i := 0; i < test.want.numBatches; i++ {
+				require.NotZero(t, got[i])
+				assert.Equal(t, test.want.batches[i], got[i])
 
-					if disabled {
-						assert.Equal(t, test.want.batches[i], got[i])
-					}
-				}
-			})
-		}
+			}
+		})
 	}
 }
 
@@ -508,7 +488,7 @@ func TestInvalidJson(t *testing.T) {
 		},
 		nil,
 	}
-	reader, _, err := encodeBodyEvents(&syncPool, evs, false, defaultMinContentLengthCompression)
+	reader, _, err := encodeBodyEvents(&syncPool, evs, false)
 	assert.Error(t, err, reader)
 }
 
@@ -661,8 +641,6 @@ func Test_pushLogData_PostError(t *testing.T) {
 
 	// 0 -> unlimited size batch, false -> compression enabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, false
-	// 1500 < 371888 -> compression occurs.
-	c.config.MinContentLengthCompression = 1500
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
 	assert.IsType(t, consumererror.PartialError{}, err)
@@ -677,8 +655,6 @@ func Test_pushLogData_PostError(t *testing.T) {
 
 	// 200000 < 371888 -> multiple batches, false -> compression enabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, false
-	// 1500 < 200000 -> compression occurs.
-	c.config.MinContentLengthCompression = 1500
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
 	assert.IsType(t, consumererror.PartialError{}, err)
@@ -692,12 +668,9 @@ func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 		}},
 		config: NewFactory().CreateDefaultConfig().(*Config),
 	}
-	length1byte := uint(1)
-	c.config.MinContentLengthCompression = length1byte
-	c.config.MaxContentLengthLogs = length1byte
+	c.config.MaxContentLengthLogs = 1
 
-	numLogs := 4
-	logs := createLogData(1, 1, numLogs)
+	logs := createLogData(1, 1, 2000)
 
 	for _, disable := range []bool{true, false} {
 		c.config.DisableCompression = disable
