@@ -14,9 +14,7 @@
 
 package fluentforwardreceiver
 
-import (
-	"go.opentelemetry.io/collector/config/configmodels"
-)
+import "go.opentelemetry.io/collector/config/configmodels"
 
 // Config defines configuration for the SignalFx receiver.
 type Config struct {
