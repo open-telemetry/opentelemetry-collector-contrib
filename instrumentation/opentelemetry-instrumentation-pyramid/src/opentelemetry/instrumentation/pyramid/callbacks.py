@@ -78,7 +78,9 @@ def _before_traversal(event):
 
     start_time = request_environ.get(_ENVIRON_STARTTIME_KEY)
 
-    token = context.attach(extract(otel_wsgi.carrier_getter, request_environ))
+    token = context.attach(
+        extract(request_environ, getter=otel_wsgi.wsgi_getter)
+    )
     tracer = trace.get_tracer(__name__, __version__)
 
     if request.matched_route:

@@ -53,7 +53,6 @@ from opentelemetry.instrumentation.utils import (
     unwrap,
 )
 from opentelemetry.propagate import extract
-from opentelemetry.propagators.textmap import DictGetter
 from opentelemetry.trace.status import Status
 from opentelemetry.util._time import _time_ns
 from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
@@ -68,7 +67,6 @@ _OTEL_PATCHED_KEY = "_otel_patched_key"
 
 _excluded_urls = get_excluded_urls("TORNADO")
 _traced_request_attrs = get_traced_request_attrs("TORNADO")
-carrier_getter = DictGetter()
 
 
 class TornadoInstrumentor(BaseInstrumentor):
@@ -197,7 +195,7 @@ def _get_operation_name(handler, request):
 
 
 def _start_span(tracer, handler, start_time) -> _TraceContext:
-    token = context.attach(extract(carrier_getter, handler.request.headers,))
+    token = context.attach(extract(handler.request.headers))
 
     span = tracer.start_span(
         _get_operation_name(handler, handler.request),

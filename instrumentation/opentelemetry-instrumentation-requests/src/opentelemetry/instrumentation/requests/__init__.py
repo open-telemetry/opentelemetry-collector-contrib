@@ -134,7 +134,7 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
                 span.set_attribute("http.url", url)
 
             headers = get_or_create_headers()
-            inject(type(headers).__setitem__, headers)
+            inject(headers)
 
             token = context.attach(
                 context.set_value(_SUPPRESS_REQUESTS_INSTRUMENTATION_KEY, True)

@@ -14,26 +14,26 @@
 
 from unittest import TestCase
 
-from opentelemetry.instrumentation.wsgi import CarrierGetter
+from opentelemetry.instrumentation.wsgi import WSGIGetter
 
 
-class TestCarrierGetter(TestCase):
+class TestGetter(TestCase):
     def test_get_none(self):
-        getter = CarrierGetter()
+        getter = WSGIGetter()
         carrier = {}
         val = getter.get(carrier, "test")
 
         self.assertIsNone(val)
 
     def test_get(self):
-        getter = CarrierGetter()
+        getter = WSGIGetter()
         carrier = {"HTTP_TEST_KEY": "val"}
         val = getter.get(carrier, "test-key")
 
         self.assertEqual(val, ["val"])
 
     def test_keys(self):
-        getter = CarrierGetter()
+        getter = WSGIGetter()
         keys = getter.keys(
             {
                 "HTTP_TEST_KEY": "val",
@@ -45,7 +45,7 @@ class TestCarrierGetter(TestCase):
         self.assertEqual(keys, ["test-key", "other-key"])
 
     def test_keys_empty(self):
-        getter = CarrierGetter()
+        getter = WSGIGetter()
         keys = getter.keys({})
 
         self.assertEqual(keys, [])

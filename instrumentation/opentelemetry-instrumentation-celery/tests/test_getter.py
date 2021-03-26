@@ -14,31 +14,31 @@
 
 from unittest import TestCase, mock
 
-from opentelemetry.instrumentation.celery import CarrierGetter
+from opentelemetry.instrumentation.celery import CeleryGetter
 
 
-class TestCarrierGetter(TestCase):
+class TestCeleryGetter(TestCase):
     def test_get_none(self):
-        getter = CarrierGetter()
+        getter = CeleryGetter()
         carrier = {}
         val = getter.get(carrier, "test")
         self.assertIsNone(val)
 
     def test_get_str(self):
         mock_obj = mock.Mock()
-        getter = CarrierGetter()
+        getter = CeleryGetter()
         mock_obj.test = "val"
         val = getter.get(mock_obj, "test")
         self.assertEqual(val, ("val",))
 
     def test_get_iter(self):
         mock_obj = mock.Mock()
-        getter = CarrierGetter()
+        getter = CeleryGetter()
         mock_obj.test = ["val"]
         val = getter.get(mock_obj, "test")
         self.assertEqual(val, ["val"])
 
     def test_keys(self):
-        getter = CarrierGetter()
+        getter = CeleryGetter()
         keys = getter.keys({})
         self.assertEqual(keys, [])

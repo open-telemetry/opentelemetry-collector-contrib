@@ -14,18 +14,18 @@
 
 from unittest import TestCase
 
-from opentelemetry.instrumentation.asgi import CarrierGetter
+from opentelemetry.instrumentation.asgi import ASGIGetter
 
 
-class TestCarrierGetter(TestCase):
+class TestASGIGetter(TestCase):
     def test_get_none(self):
-        getter = CarrierGetter()
+        getter = ASGIGetter()
         carrier = {}
         val = getter.get(carrier, "test")
         self.assertIsNone(val)
 
     def test_get_(self):
-        getter = CarrierGetter()
+        getter = ASGIGetter()
         carrier = {"headers": [(b"test-key", b"val")]}
         expected_val = ["val"]
         self.assertEqual(
@@ -45,6 +45,6 @@ class TestCarrierGetter(TestCase):
         )
 
     def test_keys(self):
-        getter = CarrierGetter()
+        getter = ASGIGetter()
         keys = getter.keys({})
         self.assertEqual(keys, [])

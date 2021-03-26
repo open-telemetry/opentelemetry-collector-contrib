@@ -61,7 +61,7 @@ from opentelemetry.instrumentation.celery import utils
 from opentelemetry.instrumentation.celery.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.propagate import extract, inject
-from opentelemetry.propagators.textmap import DictGetter
+from opentelemetry.propagators.textmap import Getter
 from opentelemetry.trace.status import Status, StatusCode
 
 logger = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ _TASK_NAME_KEY = "celery.task_name"
 _MESSAGE_ID_ATTRIBUTE_NAME = "messaging.message_id"
 
 
-class CarrierGetter(DictGetter):
+class CeleryGetter(Getter):
     def get(self, carrier, key):
         value = getattr(carrier, key, None)
         if value is None:
@@ -91,7 +91,7 @@ class CarrierGetter(DictGetter):
         return []
 
 
-carrier_getter = CarrierGetter()
+celery_getter = CeleryGetter()
 
 
 class CeleryInstrumentor(BaseInstrumentor):
@@ -128,7 +128,7 @@ class CeleryInstrumentor(BaseInstrumentor):
             return
 
         request = task.request
-        tracectx = extract(carrier_getter, request) or None
+        tracectx = extract(request, getter=celery_getter) or None
 
         logger.debug("prerun signal start task_id=%s", task_id)
 
@@ -193,7 +193,7 @@ class CeleryInstrumentor(BaseInstrumentor):
 
         headers = kwargs.get("headers")
         if headers:
-            inject(type(headers).__setitem__, headers)
+            inject(headers)
 
     @staticmethod
     def _trace_after_publish(*args, **kwargs):
