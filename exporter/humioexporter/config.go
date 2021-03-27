@@ -62,6 +62,15 @@ type Config struct {
 	// The base URL on which the Humio backend can be reached
 	Endpoint string `mapstructure:"endpoint"`
 
+	// Endpoint for the unstructured ingest API, created internally
+	UnstructuredEndpoint *url.URL
+
+	// Endpoint for the structured ingest API, created internally
+	StructuredEndpoint *url.URL
+
+	// User-provided headers to attach in all requests to Humio
+	Headers map[string]string `mapstructure:"headers,omitempty"`
+
 	// Key-value pairs used to target specific data sources for storage inside Humio
 	Tags map[string]string `mapstructure:"tags,omitempty"`
 
@@ -76,7 +85,7 @@ type Config struct {
 }
 
 // Ensure that a valid configuration has been provided, such that we can fail early
-func (c *Config) validate() error {
+func (c *Config) sanitize() error {
 	if c.IngestToken == "" {
 		return errors.New("requires an ingest_token")
 	}
@@ -91,6 +100,38 @@ func (c *Config) validate() error {
 
 	if !c.Traces.IsoTimestamps && c.Traces.TimeZone == "" {
 		return errors.New("requires a time zone when using Unix timestamps")
+	}
+
+	// Ensure that it is possible to construct a URL to access the unstructured ingest API
+	if c.UnstructuredEndpoint == nil {
+		endp, err := c.getEndpoint(unstructuredPath)
+		if err != nil {
+			return errors.New("unable to create URL for unstructured ingest API")
+		}
+		c.UnstructuredEndpoint = endp
+	}
+
+	// Ensure that it is possible to construct a URL to access the structured ingest API
+	if c.StructuredEndpoint == nil {
+		endp, err := c.getEndpoint(structuredPath)
+		if err != nil {
+			return errors.New("unable to create URL for structured ingest API")
+		}
+		c.StructuredEndpoint = endp
+	}
+
+	if c.Headers == nil {
+		c.Headers = make(map[string]string)
+	}
+
+	// We require these headers in addition to the ones provided by the user
+	// The user cannot override these headers
+	c.Headers["Content-Type"] = "application/json"
+	c.Headers["Authorization"] = "Bearer " + c.IngestToken
+
+	// Fallback User-Agent if not overridden by user
+	if _, ok := c.Headers["User-Agent"]; !ok {
+		c.Headers["User-Agent"] = "opentelemetry-collector-contrib Humio"
 	}
 
 	return nil

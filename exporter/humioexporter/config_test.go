@@ -78,8 +78,11 @@ func TestLoadAllSettings(t *testing.T) {
 			MaxElapsedTime:  5 * time.Minute,
 		},
 
-		IngestToken:      "00000000-0000-0000-0000-0000000000000",
-		Endpoint:         "localhost:8080",
+		IngestToken: "00000000-0000-0000-0000-0000000000000",
+		Endpoint:    "localhost:8080",
+		Headers: map[string]string{
+			"user-agent": "my-collector",
+		},
 		EnableServiceTag: false,
 		Tags: map[string]string{
 			"host":        "web_server",
@@ -102,24 +105,73 @@ func TestLoadAllSettings(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func TestValidate(t *testing.T) {
+func TestSanitizeValid(t *testing.T) {
+	//Arrange
+	config := &Config{
+		IngestToken:      "token",
+		Endpoint:         "http://localhost:8080",
+		EnableServiceTag: true,
+		Traces: TracesConfig{
+			IsoTimestamps: true,
+		},
+	}
+
+	// Act
+	err := config.sanitize()
+
+	// Assert
+	require.NoError(t, err)
+
+	assert.NotNil(t, config.UnstructuredEndpoint)
+	assert.Equal(t, "localhost:8080", config.UnstructuredEndpoint.Host)
+	assert.Equal(t, unstructuredPath, config.UnstructuredEndpoint.Path)
+
+	assert.NotNil(t, config.StructuredEndpoint)
+	assert.Equal(t, "localhost:8080", config.StructuredEndpoint.Host)
+	assert.Equal(t, structuredPath, config.StructuredEndpoint.Path)
+
+	assert.Equal(t, map[string]string{
+		"Content-Type":  "application/json",
+		"Authorization": "Bearer token",
+		"User-Agent":    "opentelemetry-collector-contrib Humio",
+	}, config.Headers)
+}
+
+func TestSanitizeCustomHeaders(t *testing.T) {
+	//Arrange
+	config := &Config{
+		IngestToken: "token",
+		Endpoint:    "http://localhost:8080",
+		Headers: map[string]string{
+			"User-Agent": "Humio",
+			"Meta":       "Data",
+		},
+		EnableServiceTag: true,
+		Traces: TracesConfig{
+			IsoTimestamps: true,
+		},
+	}
+
+	// Act
+	err := config.sanitize()
+
+	// Assert
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"Content-Type":  "application/json",
+		"Authorization": "Bearer token",
+		"User-Agent":    "Humio",
+		"Meta":          "Data",
+	}, config.Headers)
+}
+
+func TestSanitizeErrors(t *testing.T) {
+	// Arrange
 	tests := []struct {
 		name    string
 		config  *Config
 		wantErr bool
 	}{
-		{
-			name: "Valid configuration",
-			config: &Config{
-				IngestToken:      "t",
-				Endpoint:         "e",
-				EnableServiceTag: true,
-				Traces: TracesConfig{
-					IsoTimestamps: true,
-				},
-			},
-			wantErr: false,
-		},
 		{
 			name: "Missing ingest token",
 			config: &Config{
@@ -194,12 +246,25 @@ func TestValidate(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Error creating URLs",
+			config: &Config{
+				IngestToken:      "t",
+				Endpoint:         "\n\t",
+				EnableServiceTag: true,
+				Traces: TracesConfig{
+					IsoTimestamps: true,
+				},
+			},
+			wantErr: true,
+		},
 	}
 
+	// Act / Assert
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if err := test.config.validate(); (err != nil) != test.wantErr {
-				t.Errorf("Config.validate() error = %v, wantErr %v", err, test.wantErr)
+			if err := test.config.sanitize(); (err != nil) != test.wantErr {
+				t.Errorf("Config.sanitize() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
@@ -228,4 +293,16 @@ func TestGetEndpoint(t *testing.T) {
 	// Assert
 	require.NoError(t, err)
 	assert.Equal(t, expected, actual)
+}
+
+func TestGetEndpointError(t *testing.T) {
+	// Arrange
+	c := Config{Endpoint: "\n\t"}
+
+	// Act
+	result, err := c.getEndpoint(structuredPath)
+
+	// Assert
+	require.Error(t, err)
+	assert.Nil(t, result)
 }
