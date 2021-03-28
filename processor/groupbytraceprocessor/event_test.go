@@ -37,10 +37,11 @@ func TestEventCallback(t *testing.T) {
 		{
 			casename: "onTraceReceived",
 			typ:      traceReceived,
-			payload:  pdata.NewTraces(),
+			payload:  tracesWithID{id: pdata.InvalidTraceID(), td: pdata.NewTraces()},
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onBatchReceived = func(expired pdata.Traces) {
+				em.onTraceReceived = func(received tracesWithID, worker *eventMachineWorker) error {
 					wg.Done()
+					return nil
 				}
 			},
 		},
@@ -49,7 +50,7 @@ func TestEventCallback(t *testing.T) {
 			typ:      traceExpired,
 			payload:  pdata.NewTraceID([16]byte{1, 2, 3, 4}),
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceExpired = func(expired pdata.TraceID) error {
+				em.onTraceExpired = func(expired pdata.TraceID, worker *eventMachineWorker) error {
 					wg.Done()
 					assert.Equal(t, pdata.NewTraceID([16]byte{1, 2, 3, 4}), expired)
 					return nil
@@ -86,7 +87,7 @@ func TestEventCallback(t *testing.T) {
 			require.NoError(t, err)
 
 			wg := &sync.WaitGroup{}
-			em := newEventMachine(logger, 50)
+			em := newEventMachine(logger, 50, 1, 1_000)
 			tt.registerCallback(em, wg)
 
 			em.startInBackground()
@@ -94,7 +95,7 @@ func TestEventCallback(t *testing.T) {
 
 			// test
 			wg.Add(1)
-			em.fire(event{
+			em.workers[0].fire(event{
 				typ:     tt.typ,
 				payload: tt.payload,
 			})
@@ -133,7 +134,7 @@ func TestEventCallbackNotSet(t *testing.T) {
 			require.NoError(t, err)
 
 			wg := &sync.WaitGroup{}
-			em := newEventMachine(logger, 50)
+			em := newEventMachine(logger, 50, 1, 1_000)
 			em.onError = func(e event) {
 				wg.Done()
 			}
@@ -142,7 +143,7 @@ func TestEventCallbackNotSet(t *testing.T) {
 
 			// test
 			wg.Add(1)
-			em.fire(event{
+			em.workers[0].fire(event{
 				typ: tt.typ,
 			})
 
@@ -162,14 +163,16 @@ func TestEventInvalidPayload(t *testing.T) {
 			casename: "onTraceReceived",
 			typ:      traceReceived,
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onBatchReceived = func(expired pdata.Traces) {}
+				em.onTraceReceived = func(received tracesWithID, worker *eventMachineWorker) error {
+					return nil
+				}
 			},
 		},
 		{
 			casename: "onTraceExpired",
 			typ:      traceExpired,
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceExpired = func(expired pdata.TraceID) error {
+				em.onTraceExpired = func(expired pdata.TraceID, worker *eventMachineWorker) error {
 					return nil
 				}
 			},
@@ -178,7 +181,7 @@ func TestEventInvalidPayload(t *testing.T) {
 			casename: "onTraceReleased",
 			typ:      traceReleased,
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceReleased = func(expired []pdata.ResourceSpans) error {
+				em.onTraceReleased = func(released []pdata.ResourceSpans) error {
 					return nil
 				}
 			},
@@ -199,7 +202,7 @@ func TestEventInvalidPayload(t *testing.T) {
 			require.NoError(t, err)
 
 			wg := &sync.WaitGroup{}
-			em := newEventMachine(logger, 50)
+			em := newEventMachine(logger, 50, 1, 1_000)
 			em.onError = func(e event) {
 				wg.Done()
 			}
@@ -209,7 +212,7 @@ func TestEventInvalidPayload(t *testing.T) {
 
 			// test
 			wg.Add(1)
-			em.fire(event{
+			em.workers[0].fire(event{
 				typ: tt.typ,
 			})
 
@@ -225,7 +228,7 @@ func TestEventUnknownType(t *testing.T) {
 	require.NoError(t, err)
 
 	wg := &sync.WaitGroup{}
-	em := newEventMachine(logger, 50)
+	em := newEventMachine(logger, 50, 1, 1_000)
 	em.onError = func(e event) {
 		wg.Done()
 	}
@@ -234,7 +237,7 @@ func TestEventUnknownType(t *testing.T) {
 
 	// test
 	wg.Add(1)
-	em.fire(event{
+	em.workers[0].fire(event{
 		typ: eventType(1234),
 	})
 
@@ -251,11 +254,12 @@ func TestEventShutdown(t *testing.T) {
 	wg.Add(1)
 
 	traceReceivedFired, traceExpiredFired := false, false
-	em := newEventMachine(logger, 50)
-	em.onBatchReceived = func(pdata.Traces) {
+	em := newEventMachine(logger, 50, 1, 1_000)
+	em.onTraceReceived = func(tracesWithID, *eventMachineWorker) error {
 		traceReceivedFired = true
+		return nil
 	}
-	em.onTraceExpired = func(pdata.TraceID) error {
+	em.onTraceExpired = func(pdata.TraceID, *eventMachineWorker) error {
 		traceExpiredFired = true
 		return nil
 	}
@@ -266,21 +270,21 @@ func TestEventShutdown(t *testing.T) {
 	em.startInBackground()
 
 	// test
-	em.fire(event{
+	em.workers[0].fire(event{
 		typ:     traceReceived,
-		payload: pdata.NewTraces(),
+		payload: tracesWithID{id: pdata.InvalidTraceID(), td: pdata.NewTraces()},
 	})
-	em.fire(event{
+	em.workers[0].fire(event{
 		typ:     traceRemoved,
 		payload: pdata.NewTraceID([16]byte{1, 2, 3, 4}),
 	})
-	em.fire(event{
+	em.workers[0].fire(event{
 		typ:     traceRemoved,
 		payload: pdata.NewTraceID([16]byte{1, 2, 3, 4}),
 	})
 
-	time.Sleep(10 * time.Millisecond) // give it a bit of time to process the items
-	assert.Len(t, em.events, 1)       // we should have one pending event in the queue, the second traceRemoved event
+	time.Sleep(10 * time.Millisecond)  // give it a bit of time to process the items
+	assert.Equal(t, 1, em.numEvents()) // we should have one pending event in the queue, the second traceRemoved event
 
 	shutdownWg := sync.WaitGroup{}
 	shutdownWg.Add(1)
@@ -292,10 +296,10 @@ func TestEventShutdown(t *testing.T) {
 	wg.Done()                          // the pending event should be processed
 	time.Sleep(100 * time.Millisecond) // give it a bit of time to process the items
 
-	assert.Len(t, em.events, 0)
+	assert.Equal(t, 0, em.numEvents())
 
 	// new events should *not* be processed
-	em.fire(event{
+	em.workers[0].fire(event{
 		typ:     traceExpired,
 		payload: pdata.NewTraceID([16]byte{1, 2, 3, 4}),
 	})
@@ -326,7 +330,7 @@ func TestPeriodicMetrics(t *testing.T) {
 
 	logger, err := zap.NewDevelopment()
 	require.NoError(t, err)
-	em := newEventMachine(logger, 50)
+	em := newEventMachine(logger, 50, 1, 1_000)
 	em.metricsCollectionInterval = time.Millisecond
 
 	wg := sync.WaitGroup{}
@@ -334,7 +338,7 @@ func TestPeriodicMetrics(t *testing.T) {
 	go func() {
 		expected := 2
 		calls := 0
-		for range em.events {
+		for range em.workers[0].events {
 			// we expect two events, after which we just exit the loop
 			// if we return from here, we'd still have one item in the queue that is not going to be consumed
 			wg.Wait()
@@ -350,8 +354,8 @@ func TestPeriodicMetrics(t *testing.T) {
 	assertGaugeNotCreated(t, mNumEventsInQueue)
 
 	// test
-	em.fire(event{typ: traceReceived})
-	em.fire(event{typ: traceReceived}) // the first is consumed right away, the second is in the queue
+	em.workers[0].fire(event{typ: traceReceived})
+	em.workers[0].fire(event{typ: traceReceived}) // the first is consumed right away, the second is in the queue
 	go em.periodicMetrics()
 
 	// ensure our gauge is showing 1 item in the queue
@@ -373,11 +377,11 @@ func TestPeriodicMetrics(t *testing.T) {
 
 func TestForceShutdown(t *testing.T) {
 	// prepare
-	em := newEventMachine(logger, 50)
+	em := newEventMachine(logger, 50, 1, 1_000)
 	em.shutdownTimeout = 20 * time.Millisecond
 
 	// test
-	em.fire(event{typ: traceExpired})
+	em.workers[0].fire(event{typ: traceExpired})
 
 	start := time.Now()
 	em.shutdown() // should take about 20ms to return

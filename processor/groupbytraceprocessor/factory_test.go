@@ -28,6 +28,7 @@ func TestDefaultConfiguration(t *testing.T) {
 
 	// verify
 	assert.Equal(t, defaultNumTraces, c.NumTraces)
+	assert.Equal(t, defaultNumWorkers, c.NumWorkers)
 	assert.Equal(t, defaultWaitDuration, c.WaitDuration)
 	assert.Equal(t, defaultDiscardOrphans, c.DiscardOrphans)
 	assert.Equal(t, defaultStoreOnDisk, c.StoreOnDisk)

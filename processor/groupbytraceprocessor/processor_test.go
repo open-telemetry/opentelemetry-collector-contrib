@@ -27,6 +27,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
 var (
@@ -41,6 +43,7 @@ func TestTraceIsDispatchedAfterDuration(t *testing.T) {
 	config := Config{
 		WaitDuration: time.Nanosecond,
 		NumTraces:    10,
+		NumWorkers:   1,
 	}
 	mockProcessor := &mockProcessor{
 		onTraces: func(ctx context.Context, received pdata.Traces) error {
@@ -87,6 +90,8 @@ func TestInternalCacheLimit(t *testing.T) {
 
 		// we create 6 traces, only 5 should be at the storage in the end
 		NumTraces: 5,
+
+		NumWorkers: 1,
 	}
 
 	wg.Add(5) // 5 traces are expected to be received
@@ -143,6 +148,7 @@ func TestProcessorCapabilities(t *testing.T) {
 	config := Config{
 		WaitDuration: time.Nanosecond,
 		NumTraces:    10,
+		NumWorkers:   1,
 	}
 	st := newMemoryStorage()
 	next := &mockProcessor{}
@@ -161,15 +167,16 @@ func TestProcessBatchDoesntFail(t *testing.T) {
 	config := Config{
 		WaitDuration: time.Nanosecond,
 		NumTraces:    10,
+		NumWorkers:   1,
 	}
 	st := newMemoryStorage()
 	next := &mockProcessor{}
 
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
-	batch := pdata.NewTraces()
-	trace := batch.ResourceSpans().AppendEmpty()
-	ils := trace.InstrumentationLibrarySpans().AppendEmpty()
+	trace := pdata.NewTraces()
+	rs := trace.ResourceSpans().AppendEmpty()
+	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
@@ -178,7 +185,7 @@ func TestProcessBatchDoesntFail(t *testing.T) {
 	assert.NotNil(t, p)
 
 	// test
-	p.onBatchReceived(batch)
+	p.onTraceReceived(tracesWithID{id: traceID, td: trace}, p.eventMachine.workers[0])
 }
 
 func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
@@ -186,6 +193,7 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 	config := Config{
 		WaitDuration: time.Second, // we are not waiting for this whole time
 		NumTraces:    5,
+		NumWorkers:   1,
 	}
 	st := &mockStorage{
 		onGet: func(pdata.TraceID) ([]pdata.ResourceSpans, error) {
@@ -209,7 +217,7 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 
 	// test
 	// we trigger this manually, instead of waiting the whole duration
-	err = p.markAsReleased(traceID)
+	err = p.markAsReleased(traceID, p.eventMachine.workers[0].fire)
 
 	// verify
 	assert.Error(t, err)
@@ -220,6 +228,7 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 	config := Config{
 		WaitDuration: time.Second, // we are not waiting for this whole time
 		NumTraces:    5,
+		NumWorkers:   1,
 	}
 	expectedError := errors.New("some unexpected error")
 	st := &mockStorage{
@@ -244,7 +253,7 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 
 	// test
 	// we trigger this manually, instead of waiting the whole duration
-	err = p.markAsReleased(traceID)
+	err = p.markAsReleased(traceID, p.eventMachine.workers[0].fire)
 
 	// verify
 	assert.True(t, errors.Is(err, expectedError))
@@ -255,10 +264,11 @@ func TestTraceErrorFromStorageWhileProcessingTrace(t *testing.T) {
 	config := Config{
 		WaitDuration: time.Second, // we are not waiting for this whole time
 		NumTraces:    5,
+		NumWorkers:   1,
 	}
 	expectedError := errors.New("some unexpected error")
 	st := &mockStorage{
-		onCreateOrAppend: func(pdata.TraceID, pdata.ResourceSpans) error {
+		onCreateOrAppend: func(pdata.TraceID, pdata.Traces) error {
 			return expectedError
 		},
 	}
@@ -269,16 +279,18 @@ func TestTraceErrorFromStorageWhileProcessingTrace(t *testing.T) {
 
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
-	rs := pdata.NewResourceSpans()
+	trace := pdata.NewTraces()
+	rss := trace.ResourceSpans()
+	rs := rss.AppendEmpty()
 	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
 
-	batch := splitByTrace(rs)
+	batch := batchpersignal.SplitTraces(trace)
 
 	// test
-	err := p.processBatch(batch[0])
+	err := p.onTraceReceived(tracesWithID{id: traceID, td: batch[0]}, p.eventMachine.workers[0])
 
 	// verify
 	assert.True(t, errors.Is(err, expectedError))
@@ -290,6 +302,7 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 	config := Config{
 		WaitDuration: 50 * time.Millisecond,
 		NumTraces:    5,
+		NumWorkers:   1,
 	}
 	st := newMemoryStorage()
 
@@ -336,6 +349,7 @@ func TestTraceErrorFromStorageWhileProcessingSecondTrace(t *testing.T) {
 	config := Config{
 		WaitDuration: time.Second, // we are not waiting for this whole time
 		NumTraces:    5,
+		NumWorkers:   1,
 	}
 	st := &mockStorage{}
 	next := &mockProcessor{}
@@ -345,25 +359,27 @@ func TestTraceErrorFromStorageWhileProcessingSecondTrace(t *testing.T) {
 
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
-	rs := pdata.NewResourceSpans()
+	trace := pdata.NewTraces()
+	rss := trace.ResourceSpans()
+	rs := rss.AppendEmpty()
 	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
 
-	batch := splitByTrace(rs)
+	batch := batchpersignal.SplitTraces(trace)
 
 	// test
-	err := p.processBatch(batch[0])
+	err := p.onTraceReceived(tracesWithID{id: traceID, td: batch[0]}, p.eventMachine.workers[0])
 	assert.NoError(t, err)
 
 	expectedError := errors.New("some unexpected error")
-	st.onCreateOrAppend = func(pdata.TraceID, pdata.ResourceSpans) error {
+	st.onCreateOrAppend = func(pdata.TraceID, pdata.Traces) error {
 		return expectedError
 	}
 
 	// processing another batch for the same trace takes a slightly different code path
-	err = p.processBatch(batch[0])
+	err = p.onTraceReceived(tracesWithID{id: traceID, td: batch[0]}, p.eventMachine.workers[0])
 
 	// verify
 	assert.True(t, errors.Is(err, expectedError))
@@ -374,6 +390,7 @@ func TestErrorFromStorageWhileRemovingTrace(t *testing.T) {
 	config := Config{
 		WaitDuration: time.Second, // we are not waiting for this whole time
 		NumTraces:    5,
+		NumWorkers:   1,
 	}
 	expectedError := errors.New("some unexpected error")
 	st := &mockStorage{
@@ -400,6 +417,7 @@ func TestTraceNotFoundWhileRemovingTrace(t *testing.T) {
 	config := Config{
 		WaitDuration: time.Second, // we are not waiting for this whole time
 		NumTraces:    5,
+		NumWorkers:   1,
 	}
 	st := &mockStorage{
 		onDelete: func(pdata.TraceID) ([]pdata.ResourceSpans, error) {
@@ -427,6 +445,7 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 	config := Config{
 		WaitDuration: time.Nanosecond, // we are not waiting for this whole time
 		NumTraces:    5,
+		NumWorkers:   1,
 	}
 	st := newMemoryStorage()
 	next := &mockProcessor{
@@ -447,13 +466,17 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
-	firstResourceSpans := pdata.NewResourceSpans()
+	firstTrace := pdata.NewTraces()
+	firstRss := firstTrace.ResourceSpans()
+	firstResourceSpans := firstRss.AppendEmpty()
 	ils := firstResourceSpans.InstrumentationLibrarySpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 
 	secondTraceID := pdata.NewTraceID([16]byte{2, 3, 4, 5})
-	secondResourceSpans := pdata.NewResourceSpans()
+	secondTrace := pdata.NewTraces()
+	secondRss := secondTrace.ResourceSpans()
+	secondResourceSpans := secondRss.AppendEmpty()
 	secondIls := secondResourceSpans.InstrumentationLibrarySpans().AppendEmpty()
 	secondSpan := secondIls.Spans().AppendEmpty()
 	secondSpan.SetTraceID(secondTraceID)
@@ -461,8 +484,8 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 	// test
 	wg.Add(2)
 
-	p.processResourceSpans(firstResourceSpans)
-	p.processResourceSpans(secondResourceSpans)
+	p.onTraceReceived(tracesWithID{id: traceID, td: firstTrace}, p.eventMachine.workers[0])
+	p.onTraceReceived(tracesWithID{id: secondTraceID, td: secondTrace}, p.eventMachine.workers[0])
 
 	wg.Wait()
 
@@ -569,6 +592,7 @@ func TestErrorOnProcessResourceSpansContinuesProcessing(t *testing.T) {
 	config := Config{
 		WaitDuration: time.Second, // we are not waiting for this whole time
 		NumTraces:    5,
+		NumWorkers:   1,
 	}
 	st := &mockStorage{}
 	next := &mockProcessor{}
@@ -578,7 +602,9 @@ func TestErrorOnProcessResourceSpansContinuesProcessing(t *testing.T) {
 
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
-	rs := pdata.NewResourceSpans()
+	trace := pdata.NewTraces()
+	rss := trace.ResourceSpans()
+	rs := rss.AppendEmpty()
 	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
@@ -586,13 +612,13 @@ func TestErrorOnProcessResourceSpansContinuesProcessing(t *testing.T) {
 
 	expectedError := errors.New("some unexpected error")
 	returnedError := false
-	st.onCreateOrAppend = func(pdata.TraceID, pdata.ResourceSpans) error {
+	st.onCreateOrAppend = func(pdata.TraceID, pdata.Traces) error {
 		returnedError = true
 		return expectedError
 	}
 
 	// test
-	p.processResourceSpans(rs)
+	p.onTraceReceived(tracesWithID{id: traceID, td: trace}, p.eventMachine.workers[0])
 
 	// verify
 	assert.True(t, returnedError)
@@ -617,6 +643,7 @@ func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 	config := Config{
 		WaitDuration: 50 * time.Millisecond,
 		NumTraces:    defaultNumTraces,
+		NumWorkers:   2 * defaultNumWorkers,
 	}
 	st := newMemoryStorage()
 	next := &mockProcessor{}
@@ -661,7 +688,7 @@ func (m *mockProcessor) Start(_ context.Context, _ component.Host) error {
 }
 
 type mockStorage struct {
-	onCreateOrAppend func(pdata.TraceID, pdata.ResourceSpans) error
+	onCreateOrAppend func(pdata.TraceID, pdata.Traces) error
 	onGet            func(pdata.TraceID) ([]pdata.ResourceSpans, error)
 	onDelete         func(pdata.TraceID) ([]pdata.ResourceSpans, error)
 	onStart          func() error
@@ -670,7 +697,7 @@ type mockStorage struct {
 
 var _ storage = (*mockStorage)(nil)
 
-func (st *mockStorage) createOrAppend(traceID pdata.TraceID, trace pdata.ResourceSpans) error {
+func (st *mockStorage) createOrAppend(traceID pdata.TraceID, trace pdata.Traces) error {
 	if st.onCreateOrAppend != nil {
 		return st.onCreateOrAppend(traceID, trace)
 	}
