@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -39,7 +39,7 @@ import (
 )
 
 // loadConfigAssertNoError loads the test config and asserts there are no errors, and returns the receiver wanted
-func loadConfigAssertNoError(t *testing.T, receiverConfigName string) configmodels.Receiver {
+func loadConfigAssertNoError(t *testing.T, receiverConfigName string) config.Receiver {
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
@@ -62,7 +62,7 @@ func TestExecKeyMissing(t *testing.T) {
 }
 
 // assertErrorWhenExecKeyMissing makes sure the config passed throws an error, since it's missing the exec key
-func assertErrorWhenExecKeyMissing(t *testing.T, errorReceiverConfig configmodels.Receiver) {
+func assertErrorWhenExecKeyMissing(t *testing.T, errorReceiverConfig config.Receiver) {
 	_, err := newPromExecReceiver(component.ReceiverCreateParams{Logger: zap.NewNop()}, errorReceiverConfig.(*Config), nil)
 	assert.Error(t, err, "newPromExecReceiver() didn't return an error")
 }
@@ -76,7 +76,7 @@ func TestEndToEnd(t *testing.T) {
 }
 
 // endToEndScrapeTest creates a receiver that invokes `go run test_prometheus_exporter.go` and waits until it has scraped the /metrics endpoint twice - the application will crash between each scrape
-func endToEndScrapeTest(t *testing.T, receiverConfig configmodels.Receiver, testName string) {
+func endToEndScrapeTest(t *testing.T, receiverConfig config.Receiver, testName string) {
 	sink := new(consumertest.MetricsSink)
 	wrapper, err := newPromExecReceiver(component.ReceiverCreateParams{Logger: zap.NewNop()}, receiverConfig.(*Config), sink)
 	assert.NoError(t, err, "newPromExecReceiver() returned an error")
@@ -141,7 +141,7 @@ func TestConfigBuilderFunctions(t *testing.T) {
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					TypeVal: "prometheus_exec",
 					NameVal: "prometheus_exec",
 				},
@@ -190,7 +190,7 @@ func TestConfigBuilderFunctions(t *testing.T) {
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					TypeVal: "prometheus_exec",
 					NameVal: "prometheus_exec/mysqld",
 				},
@@ -244,7 +244,7 @@ func TestConfigBuilderFunctions(t *testing.T) {
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					TypeVal: "prometheus_exec",
 					NameVal: "prometheus_exec/postgres/test",
 				},
@@ -309,7 +309,7 @@ func TestExtractName(t *testing.T) {
 		{
 			name: "no custom name",
 			config: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					TypeVal: "prometheus_exec",
 					NameVal: "prometheus_exec",
 				},
@@ -319,7 +319,7 @@ func TestExtractName(t *testing.T) {
 		{
 			name: "no custom name, only trailing slash",
 			config: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					TypeVal: "prometheus_exec",
 					NameVal: "prometheus_exec/",
 				},
@@ -329,7 +329,7 @@ func TestExtractName(t *testing.T) {
 		{
 			name: "custom name",
 			config: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					TypeVal: "prometheus_exec",
 					NameVal: "prometheus_exec/custom",
 				},
@@ -339,7 +339,7 @@ func TestExtractName(t *testing.T) {
 		{
 			name: "custom name with slashes inside",
 			config: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					TypeVal: "prometheus_exec",
 					NameVal: "prometheus_exec/custom/name",
 				},

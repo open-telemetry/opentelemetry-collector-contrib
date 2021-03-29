@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.uber.org/zap"
@@ -44,8 +44,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 	// Note: the default configuration created by CreateDefaultConfig
 	// still has the unresolved environment variables.
 	assert.Equal(t, &config.Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
+		ExporterSettings: config.ExporterSettings{
+			TypeVal: config.Type(typeStr),
 			NameVal: typeStr,
 		},
 
@@ -102,7 +102,7 @@ func TestLoadConfig(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, &config.Config{
-		ExporterSettings: configmodels.ExporterSettings{
+		ExporterSettings: config.ExporterSettings{
 			NameVal: "datadog/api",
 			TypeVal: typeStr,
 		},
@@ -145,7 +145,7 @@ func TestLoadConfig(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, &config.Config{
-		ExporterSettings: configmodels.ExporterSettings{
+		ExporterSettings: config.ExporterSettings{
 			NameVal: "datadog/default",
 			TypeVal: typeStr,
 		},
@@ -228,7 +228,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	// Check that settings with env variables get overridden when explicitly set in config
 	require.NoError(t, err)
 	assert.Equal(t, &config.Config{
-		ExporterSettings: configmodels.ExporterSettings{
+		ExporterSettings: config.ExporterSettings{
 			NameVal: "datadog/api2",
 			TypeVal: typeStr,
 		},
@@ -274,7 +274,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	// Check that settings with env variables get taken into account when
 	// no settings are given.
 	assert.Equal(t, &config.Config{
-		ExporterSettings: configmodels.ExporterSettings{
+		ExporterSettings: config.ExporterSettings{
 			NameVal: "datadog/default2",
 			TypeVal: typeStr,
 		},
@@ -322,7 +322,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
@@ -355,7 +355,7 @@ func TestCreateAPITracesExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
@@ -386,7 +386,7 @@ func TestOnlyMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[config.Type(typeStr)] = factory
 
 	ctx := context.Background()
 	cfg := &config.Config{

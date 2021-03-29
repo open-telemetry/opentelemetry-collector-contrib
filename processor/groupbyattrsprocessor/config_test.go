@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 	conf := config.Processors["groupbyattrs/custom"]
 	assert.Equal(t, conf,
 		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
+			ProcessorSettings: config.ProcessorSettings{
 				TypeVal: "groupbyattrs",
 				NameVal: "groupbyattrs/custom",
 			},

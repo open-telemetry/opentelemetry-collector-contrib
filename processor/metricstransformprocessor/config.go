@@ -15,7 +15,7 @@
 package metricstransformprocessor
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 const (
@@ -55,7 +55,7 @@ const (
 
 // Config defines configuration for Resource processor.
 type Config struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
+	config.ProcessorSettings `mapstructure:",squash"`
 
 	// Transform specifies a list of transforms on metrics with each transform focusing on one metric.
 	Transforms []Transform `mapstructure:"transforms"`

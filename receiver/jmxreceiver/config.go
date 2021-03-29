@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	configmodels "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 

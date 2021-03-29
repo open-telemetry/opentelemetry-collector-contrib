@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -33,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[configmodels.Type(typeStr)] = factory
+	factories.Receivers[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
@@ -53,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, r1.validate())
 	assert.Equal(t,
 		&config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "jmx",
 				NameVal: "jmx/all",
 			},
@@ -86,7 +86,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, configcheck.ValidateConfig(r2))
 	assert.Equal(t,
 		&config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "jmx",
 				NameVal: "jmx/missingendpoint",
 			},
@@ -108,7 +108,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, configcheck.ValidateConfig(r3))
 	assert.Equal(t,
 		&config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "jmx",
 				NameVal: "jmx/missinggroovy",
 			},
@@ -130,7 +130,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, configcheck.ValidateConfig(r4))
 	assert.Equal(t,
 		&config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "jmx",
 				NameVal: "jmx/invalidinterval",
 			},
@@ -153,7 +153,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, configcheck.ValidateConfig(r5))
 	assert.Equal(t,
 		&config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "jmx",
 				NameVal: "jmx/invalidotlptimeout",
 			},

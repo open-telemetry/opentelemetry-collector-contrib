@@ -17,7 +17,7 @@ package redisreceiver
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	configmodels "go.opentelemetry.io/collector/config"
 )
 
 type config struct {

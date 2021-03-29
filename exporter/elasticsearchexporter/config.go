@@ -21,13 +21,13 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
-	configmodels.ExporterSettings `mapstructure:",squash"`
+	config.ExporterSettings `mapstructure:",squash"`
 
 	// Endpoints holds the Elasticsearch URLs the exporter should send events to.
 	//

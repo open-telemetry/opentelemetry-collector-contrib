@@ -15,13 +15,13 @@
 package loadbalancingexporter
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 )
 
 // Config defines configuration for the exporter.
 type Config struct {
-	configmodels.ExporterSettings `mapstructure:",squash"`
+	config.ExporterSettings `mapstructure:",squash"`
 	Protocol                      Protocol         `mapstructure:"protocol"`
 	Resolver                      ResolverSettings `mapstructure:"resolver"`
 }

@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -35,7 +35,7 @@ func TestLoadingFullConfig(t *testing.T) {
 			configFile: "config_full.yaml",
 			filterName: "metricstransform",
 			expCfg: &Config{
-				ProcessorSettings: configmodels.ProcessorSettings{
+				ProcessorSettings: config.ProcessorSettings{
 					TypeVal: "metricstransform",
 					NameVal: "metricstransform",
 				},
@@ -55,7 +55,7 @@ func TestLoadingFullConfig(t *testing.T) {
 			configFile: "config_full.yaml",
 			filterName: "metricstransform/multiple",
 			expCfg: &Config{
-				ProcessorSettings: configmodels.ProcessorSettings{
+				ProcessorSettings: config.ProcessorSettings{
 					TypeVal: "metricstransform",
 					NameVal: "metricstransform/multiple",
 				},
@@ -142,7 +142,7 @@ func TestLoadingFullConfig(t *testing.T) {
 			configFile: "config_deprecated.yaml",
 			filterName: "metricstransform",
 			expCfg: &Config{
-				ProcessorSettings: configmodels.ProcessorSettings{
+				ProcessorSettings: config.ProcessorSettings{
 					NameVal: "metricstransform",
 					TypeVal: typeStr,
 				},
@@ -164,7 +164,7 @@ func TestLoadingFullConfig(t *testing.T) {
 			assert.NoError(t, err)
 
 			factory := NewFactory()
-			factories.Processors[configmodels.Type(typeStr)] = factory
+			factories.Processors[config.Type(typeStr)] = factory
 			config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", test.configFile), factories)
 			assert.NoError(t, err)
 			require.NotNil(t, config)

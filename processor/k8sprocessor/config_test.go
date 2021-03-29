@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Processors[configmodels.Type(typeStr)] = factory
+	factories.Processors[config.Type(typeStr)] = factory
 	require.NoError(t, err)
 
 	err = configcheck.ValidateConfig(factory.CreateDefaultConfig())
@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 	p0 := config.Processors["k8s_tagger"]
 	assert.Equal(t, p0,
 		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
+			ProcessorSettings: config.ProcessorSettings{
 				TypeVal: "k8s_tagger",
 				NameVal: "k8s_tagger",
 			},
@@ -59,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 	p1 := config.Processors["k8s_tagger/2"]
 	assert.Equal(t, p1,
 		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
+			ProcessorSettings: config.ProcessorSettings{
 				TypeVal: "k8s_tagger",
 				NameVal: "k8s_tagger/2",
 			},

@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -245,12 +245,12 @@ func TestAddMissingExporters(t *testing.T) {
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
-	exporterFactory := exporterhelper.NewFactory("otlp", func() configmodels.Exporter {
+	exporterFactory := exporterhelper.NewFactory("otlp", func() config.Exporter {
 		return &otlpexporter.Config{}
 	}, exporterhelper.WithTraces(func(
 		_ context.Context,
 		_ component.ExporterCreateParams,
-		_ configmodels.Exporter,
+		_ config.Exporter,
 	) (component.TracesExporter, error) {
 		return newNopMockTracesExporter(), nil
 	}))
@@ -286,12 +286,12 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 		Logger: zap.NewNop(),
 	}
 	expectedErr := errors.New("some expected error")
-	exporterFactory := exporterhelper.NewFactory("otlp", func() configmodels.Exporter {
+	exporterFactory := exporterhelper.NewFactory("otlp", func() config.Exporter {
 		return &otlpexporter.Config{}
 	}, exporterhelper.WithTraces(func(
 		_ context.Context,
 		_ component.ExporterCreateParams,
-		_ configmodels.Exporter,
+		_ config.Exporter,
 	) (component.TracesExporter, error) {
 		return nil, expectedErr
 	}))

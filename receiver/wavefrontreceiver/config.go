@@ -17,13 +17,13 @@ package wavefrontreceiver
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 )
 
 // Config defines configuration for the Wavefront receiver.
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
+	config.ReceiverSettings `mapstructure:",squash"`
 	confignet.TCPAddr             `mapstructure:",squash"`
 
 	// TCPIdleTimeout is the timout for idle TCP connections.

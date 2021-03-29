@@ -17,7 +17,7 @@ package carbonexporter
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Defaults for not specified configuration settings.
@@ -28,7 +28,7 @@ const (
 
 // Config defines configuration for Carbon exporter.
 type Config struct {
-	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// Endpoint specifies host and port to send metrics in the Carbon plaintext
 	// format. The default value is defined by the DefaultEndpoint constant.
