@@ -17,7 +17,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws v0.0.0-00010101000000-000000000000
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.23.1-0.20210326203202-f5bfc3c516be
+	go.opentelemetry.io/collector v0.23.1-0.20210329172532-38e57614135f
 	go.uber.org/zap v1.16.0
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/ini.v1 v1.57.0 // indirect

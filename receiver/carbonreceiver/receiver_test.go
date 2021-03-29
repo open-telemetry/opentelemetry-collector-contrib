@@ -17,9 +17,8 @@ package carbonreceiver
 import (
 	"context"
 	"errors"
-	"net"
+	"fmt"
 	"runtime"
-	"strconv"
 	"testing"
 	"time"
 
@@ -171,12 +170,8 @@ func Test_carbonreceiver_New(t *testing.T) {
 }
 
 func Test_carbonreceiver_EndToEnd(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-	host, portStr, err := net.SplitHostPort(addr)
-	require.NoError(t, err)
-	port, err := strconv.Atoi(portStr)
-	require.NoError(t, err)
-
+	host := "localhost"
+	port := int(testutil.GetAvailablePort(t))
 	tests := []struct {
 		name     string
 		configFn func() *Config
@@ -210,7 +205,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.configFn()
-			cfg.Endpoint = addr
+			cfg.Endpoint = fmt.Sprintf("%s:%d", host, port)
 			sink := new(consumertest.MetricsSink)
 			rcv, err := New(zap.NewNop(), *cfg, sink)
 			require.NoError(t, err)
