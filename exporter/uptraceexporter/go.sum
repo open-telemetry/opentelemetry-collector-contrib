@@ -1009,8 +1009,8 @@ github.com/uber/jaeger-lib v2.4.0+incompatible h1:fY7QsGQWiCt8pajv4r7JEvmATdCVaW
 github.com/uber/jaeger-lib v2.4.0+incompatible/go.mod h1:ComeNDZlWwrWnDv8aPp0Ba6+uUTzImX/AauajbLI56U=
 github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGrc=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
-github.com/uptrace/uptrace-go v0.19.3 h1:nsWNjV40NB8oD1U2PiTTI5WsoPX6JCRC5AONgRzwmRY=
-github.com/uptrace/uptrace-go v0.19.3/go.mod h1:cmIbJ7JO89hqH1D7hlkhsB21MEjsTwbudqGRnQfTOzQ=
+github.com/uptrace/uptrace-go v0.19.4 h1:y1D5FCsSD90ss9mF5YgelsErqgl3LmnlSXga3SsT9qM=
+github.com/uptrace/uptrace-go v0.19.4/go.mod h1:cmIbJ7JO89hqH1D7hlkhsB21MEjsTwbudqGRnQfTOzQ=
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
 github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/vektah/gqlparser v1.1.2/go.mod h1:1ycwN7Ij5njmMkPPAOaRFY4rET2Enx7IkVv3vaXspKw=
