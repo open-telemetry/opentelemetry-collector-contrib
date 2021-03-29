@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/armon/go-metrics v0.3.3 // indirect
-	github.com/aws/aws-sdk-go v1.38.5
+	github.com/aws/aws-sdk-go v1.38.7
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/gogo/googleapis v1.3.0 // indirect
 	github.com/golang/protobuf v1.5.1
