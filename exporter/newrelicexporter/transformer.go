@@ -31,16 +31,17 @@ import (
 )
 
 const (
-	unitAttrKey               = "unit"
-	descriptionAttrKey        = "description"
-	collectorNameKey          = "collector.name"
-	collectorVersionKey       = "collector.version"
-	instrumentationNameKey    = "instrumentation.name"
-	instrumentationVersionKey = "instrumentation.version"
-	statusCodeKey             = "otel.status_code"
-	statusDescriptionKey      = "otel.status_description"
-	spanKindKey               = "span.kind"
-	serviceNameKey            = "service.name"
+	unitAttrKey                    = "unit"
+	descriptionAttrKey             = "description"
+	collectorNameKey               = "collector.name"
+	collectorVersionKey            = "collector.version"
+	instrumentationNameKey         = "instrumentation.name"
+	instrumentationVersionKey      = "instrumentation.version"
+	instrumentationProviderAttrKey = "instrumentation.provider"
+	statusCodeKey                  = "otel.status_code"
+	statusDescriptionKey           = "otel.status_description"
+	spanKindKey                    = "span.kind"
+	serviceNameKey                 = "service.name"
 )
 
 // TODO (MrAlias): unify this with the traceTransformer when the metric data
@@ -148,6 +149,7 @@ func (t *traceTransformer) SpanAttributes(span pdata.Span) map[string]interface{
 	// (overrides any existing)
 	attrs[collectorNameKey] = name
 	attrs[collectorVersionKey] = version
+	attrs[instrumentationProviderAttrKey] = "opentelemetry"
 
 	return attrs
 }
