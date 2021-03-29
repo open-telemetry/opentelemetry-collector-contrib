@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, cfg.Processors["tail_sampling"],
 		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
+			ProcessorSettings: config.ProcessorSettings{
 				TypeVal: "tail_sampling",
 				NameVal: "tail_sampling",
 			},

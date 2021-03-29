@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -37,10 +37,10 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
+		ExporterSettings: config.ExporterSettings{
+			TypeVal: config.Type(typeStr),
 			NameVal: typeStr,
 		},
 	}
@@ -49,7 +49,7 @@ func createDefaultConfig() configmodels.Exporter {
 func createTraceExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	return newElasticTraceExporter(params, cfg)
 }
@@ -57,7 +57,7 @@ func createTraceExporter(
 func createMetricsExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	return newElasticMetricsExporter(params, cfg)
 }

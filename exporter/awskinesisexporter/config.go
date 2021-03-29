@@ -15,7 +15,7 @@
 package awskinesisexporter
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // AWSConfig contains AWS specific configuration such as awskinesis stream, region, etc.
@@ -42,7 +42,7 @@ type KPLConfig struct {
 
 // Config contains the main configuration options for the awskinesis exporter
 type Config struct {
-	configmodels.ExporterSettings `mapstructure:",squash"`
+	config.ExporterSettings `mapstructure:",squash"`
 
 	AWS AWSConfig `mapstructure:"aws"`
 	KPL KPLConfig `mapstructure:"kpl"`

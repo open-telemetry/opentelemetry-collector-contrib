@@ -20,8 +20,9 @@ import (
 	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/receiver/fluentforwardreceiver/observ"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/observ"
 )
 
 // Collector acts as an aggregator of LogRecords so that we don't have to

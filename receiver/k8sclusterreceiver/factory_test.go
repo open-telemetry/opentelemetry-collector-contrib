@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
@@ -31,14 +31,14 @@ import (
 
 func TestFactory(t *testing.T) {
 	f := NewFactory()
-	require.Equal(t, configmodels.Type("k8s_cluster"), f.Type())
+	require.Equal(t, config.Type("k8s_cluster"), f.Type())
 
 	cfg := f.CreateDefaultConfig()
 	rCfg, ok := cfg.(*Config)
 	require.True(t, ok)
 
 	require.Equal(t, &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -51,7 +51,7 @@ func TestFactory(t *testing.T) {
 
 	r, err := f.CreateTracesReceiver(
 		context.Background(), component.ReceiverCreateParams{},
-		&configmodels.ReceiverSettings{}, consumertest.NewTracesNop(),
+		&config.ReceiverSettings{}, consumertest.NewTracesNop(),
 	)
 	require.Error(t, err)
 	require.Nil(t, r)
@@ -92,19 +92,19 @@ var _ component.Host = (*nopHostWithExporters)(nil)
 func (n nopHostWithExporters) ReportFatalError(error) {
 }
 
-func (n nopHostWithExporters) GetFactory(component.Kind, configmodels.Type) component.Factory {
+func (n nopHostWithExporters) GetFactory(component.Kind, config.Type) component.Factory {
 	return nil
 }
 
-func (n nopHostWithExporters) GetExtensions() map[configmodels.NamedEntity]component.Extension {
+func (n nopHostWithExporters) GetExtensions() map[config.NamedEntity]component.Extension {
 	return nil
 }
 
-func (n nopHostWithExporters) GetExporters() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter {
-	return map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter{
-		configmodels.MetricsDataType: {
-			&configmodels.ExporterSettings{TypeVal: "nop", NameVal: "nop/withoutmetadata"}: MockExporter{},
-			&configmodels.ExporterSettings{TypeVal: "nop", NameVal: "nop/withmetadata"}:    mockExporterWithK8sMetadata{},
+func (n nopHostWithExporters) GetExporters() map[config.DataType]map[config.NamedEntity]component.Exporter {
+	return map[config.DataType]map[config.NamedEntity]component.Exporter{
+		config.MetricsDataType: {
+			&config.ExporterSettings{TypeVal: "nop", NameVal: "nop/withoutmetadata"}: MockExporter{},
+			&config.ExporterSettings{TypeVal: "nop", NameVal: "nop/withmetadata"}:    mockExporterWithK8sMetadata{},
 		},
 	}
 }

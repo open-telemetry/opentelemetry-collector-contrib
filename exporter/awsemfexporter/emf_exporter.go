@@ -25,7 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -42,7 +42,7 @@ type emfExporter struct {
 	//Each (log group, log stream) keeps a separate Pusher because of each (log group, log stream) requires separate stream token.
 	groupStreamToPusherMap map[string]map[string]Pusher
 	svcStructuredLog       LogClient
-	config                 configmodels.Exporter
+	config                 config.Exporter
 	logger                 *zap.Logger
 
 	metricTranslator metricTranslator
@@ -54,7 +54,7 @@ type emfExporter struct {
 
 // New func creates an EMF Exporter instance with data push callback func
 func New(
-	config configmodels.Exporter,
+	config config.Exporter,
 	params component.ExporterCreateParams,
 ) (component.MetricsExporter, error) {
 	if config == nil {
@@ -92,7 +92,7 @@ func New(
 
 // NewEmfExporter creates a new exporter using exporterhelper
 func NewEmfExporter(
-	config configmodels.Exporter,
+	config config.Exporter,
 	params component.ExporterCreateParams,
 ) (component.MetricsExporter, error) {
 	exp, err := New(config, params)

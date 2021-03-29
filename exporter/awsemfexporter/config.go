@@ -15,7 +15,7 @@
 package awsemfexporter
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
@@ -28,7 +28,7 @@ var (
 
 // Config defines configuration for AWS EMF exporter.
 type Config struct {
-	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	// LogGroupName is the name of CloudWatch log group which defines group of log streams
 	// that share the same retention, monitoring, and access control settings.
 	LogGroupName string `mapstructure:"log_group_name"`

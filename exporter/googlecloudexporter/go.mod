@@ -16,7 +16,7 @@ require (
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.23.1-0.20210326174743-acb3ae141cae
+	go.opentelemetry.io/collector v0.23.1-0.20210326203202-f5bfc3c516be
 	go.opentelemetry.io/otel v0.19.0
 	go.opentelemetry.io/otel/sdk v0.19.0
 	go.opentelemetry.io/otel/trace v0.19.0

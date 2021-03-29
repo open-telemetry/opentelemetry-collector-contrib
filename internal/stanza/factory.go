@@ -20,17 +20,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/agent"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 // LogReceiverType is the interface used by stanza-based log receivers
 type LogReceiverType interface {
-	Type() configmodels.Type
-	CreateDefaultConfig() configmodels.Receiver
-	BaseConfig(configmodels.Receiver) BaseConfig
-	DecodeInputConfig(configmodels.Receiver) (*operator.Config, error)
+	Type() config.Type
+	CreateDefaultConfig() config.Receiver
+	BaseConfig(config.Receiver) BaseConfig
+	DecodeInputConfig(config.Receiver) (*operator.Config, error)
 }
 
 // NewFactory creates a factory for a Stanza-based receiver
@@ -46,7 +46,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 	return func(
 		ctx context.Context,
 		params component.ReceiverCreateParams,
-		cfg configmodels.Receiver,
+		cfg config.Receiver,
 		nextConsumer consumer.Logs,
 	) (component.LogsReceiver, error) {
 		inputCfg, err := logReceiverType.DecodeInputConfig(cfg)

@@ -17,12 +17,12 @@ package hostobserver
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Config defines configuration for host observer.
 type Config struct {
-	configmodels.ExtensionSettings `mapstructure:",squash"`
+	config.ExtensionSettings `mapstructure:",squash"`
 
 	// RefreshInterval determines how frequency at which the observer
 	// needs to poll for collecting information about new processes.

@@ -17,13 +17,13 @@ package config
 import (
 	"testing"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 func TestConfig_Sanitize(t *testing.T) {
 	type fields struct {
-		ExporterSettings configmodels.ExporterSettings
+		ExporterSettings config.ExporterSettings
 		APIToken         string
 		Endpoint         string
 		Tags             []string

@@ -16,14 +16,14 @@ package stanza
 
 import (
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"gopkg.in/yaml.v2"
 )
 
 // BaseConfig is the common configuration of a stanza-based receiver
 type BaseConfig struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
-	Operators                     OperatorConfigs `mapstructure:"operators"`
+	config.ReceiverSettings `mapstructure:",squash"`
+	Operators               OperatorConfigs `mapstructure:"operators"`
 }
 
 // OperatorConfigs is an alias that allows for unmarshaling outside of mapstructure

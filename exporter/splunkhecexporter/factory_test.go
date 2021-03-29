@@ -21,8 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 )
 
@@ -123,8 +123,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 func TestFactory_CreateMetricsExporter(t *testing.T) {
 	config := &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
+		ExporterSettings: config.ExporterSettings{
+			TypeVal: config.Type(typeStr),
 			NameVal: typeStr,
 		},
 		Token:    "testToken",
@@ -146,8 +146,8 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "empty_endpoint",
 			config: &Config{
-				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: configmodels.Type(typeStr),
+				ExporterSettings: config.ExporterSettings{
+					TypeVal: config.Type(typeStr),
 					NameVal: typeStr,
 				},
 				Token: "token",
@@ -157,8 +157,8 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "empty_token",
 			config: &Config{
-				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: configmodels.Type(typeStr),
+				ExporterSettings: config.ExporterSettings{
+					TypeVal: config.Type(typeStr),
 					NameVal: typeStr,
 				},
 				Endpoint: "https://example.com:8000",

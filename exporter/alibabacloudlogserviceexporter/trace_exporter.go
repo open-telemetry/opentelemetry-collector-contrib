@@ -18,14 +18,14 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
 
 // newTraceExporter return a new LogSerice trace exporter.
-func newTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.TracesExporter, error) {
+func newTraceExporter(logger *zap.Logger, cfg config.Exporter) (component.TracesExporter, error) {
 
 	l := &logServiceTraceSender{
 		logger: logger,

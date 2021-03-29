@@ -15,7 +15,7 @@
 package receivercreator
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configparser"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -35,7 +35,7 @@ type receiverConfig struct {
 	// fullName is the full subreceiver name (ie <receiver type>/<id>).
 	fullName string
 	// typeStr is set based on the configured receiver name.
-	typeStr configmodels.Type
+	typeStr config.Type
 	// config is the map configured by the user in the config file. It is the contents of the map from
 	// the "config" section. The keys and values are arbitrarily configured by the user.
 	config userConfigMap
@@ -76,10 +76,10 @@ func newReceiverTemplate(name string, config userConfigMap) (receiverTemplate, e
 
 // Config defines configuration for receiver_creator.
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
-	receiverTemplates             map[string]receiverTemplate
+	config.ReceiverSettings `mapstructure:",squash"`
+	receiverTemplates       map[string]receiverTemplate
 	// WatchObservers are the extensions to listen to endpoints from.
-	WatchObservers []configmodels.Type `mapstructure:"watch_observers"`
+	WatchObservers []config.Type `mapstructure:"watch_observers"`
 	// ResourceAttributes is a map of default resource attributes to add to each resource
 	// object received by this receiver from dynamically created receivers.
 	ResourceAttributes resourceAttributes `mapstructure:"resource_attributes"`

@@ -20,7 +20,7 @@ import (
 	"strings"
 	"sync"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/valid"
@@ -146,7 +146,7 @@ func (t *TagsConfig) GetHostTags() []string {
 
 // Config defines configuration for the Datadog exporter.
 type Config struct {
-	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	TagsConfig `mapstructure:",squash"`
 

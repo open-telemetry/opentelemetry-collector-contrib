@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -41,10 +41,10 @@ func NewFactory() component.ExporterFactory {
 		exporterhelper.WithLogs(createLogsExporter))
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
+		ExporterSettings: config.ExporterSettings{
+			TypeVal: config.Type(typeStr),
 			NameVal: typeStr,
 		},
 		TimeoutSettings: exporterhelper.TimeoutSettings{
@@ -60,7 +60,7 @@ func createDefaultConfig() configmodels.Exporter {
 func createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	config configmodels.Exporter,
+	config config.Exporter,
 ) (component.TracesExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
@@ -87,7 +87,7 @@ func createTraceExporter(
 func createMetricsExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	config configmodels.Exporter,
+	config config.Exporter,
 ) (component.MetricsExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
@@ -115,7 +115,7 @@ func createMetricsExporter(
 func createLogsExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	config configmodels.Exporter,
+	config config.Exporter,
 ) (exporter component.LogsExporter, err error) {
 	if config == nil {
 		return nil, errors.New("nil config")

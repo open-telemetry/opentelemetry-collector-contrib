@@ -18,13 +18,13 @@ import (
 	"errors"
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
-var _ configmodels.Receiver = (*Config)(nil)
+var _ config.Receiver = (*Config)(nil)
 
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
+	config.ReceiverSettings `mapstructure:",squash"`
 	// The URL of the docker server.  Default is "unix:///var/run/docker.sock"
 	Endpoint string `mapstructure:"endpoint"`
 	// The time between each collection event.  Default is 10s.

@@ -17,7 +17,7 @@ package resourcedetectionprocessor
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
@@ -25,7 +25,7 @@ import (
 
 // Config defines configuration for Resource processor.
 type Config struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
+	config.ProcessorSettings `mapstructure:",squash"`
 	// Detectors is an ordered list of named detectors that should be
 	// run to attempt to detect resource information.
 	Detectors []string `mapstructure:"detectors"`
