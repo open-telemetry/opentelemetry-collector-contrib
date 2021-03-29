@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -29,7 +29,7 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[config.Type(typeStr)] = factory
 
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
@@ -41,15 +41,15 @@ func TestLoadConfig(t *testing.T) {
 	require.Equal(t, 2, len(cfg.Exporters))
 
 	c0 := cfg.Exporters["uptrace"].(*Config)
-	require.Equal(t, configmodels.ExporterSettings{
-		TypeVal: configmodels.Type(typeStr),
+	require.Equal(t, config.ExporterSettings{
+		TypeVal: config.Type(typeStr),
 		NameVal: "uptrace",
 	}, c0.ExporterSettings)
 	require.Equal(t, "https://api.uptrace.dev@example.com/1", c0.DSN)
 
 	c1 := cfg.Exporters["uptrace/customname"].(*Config)
-	require.Equal(t, configmodels.ExporterSettings{
-		TypeVal: configmodels.Type(typeStr),
+	require.Equal(t, config.ExporterSettings{
+		TypeVal: config.Type(typeStr),
 		NameVal: "uptrace/customname",
 	}, c1.ExporterSettings)
 	require.Equal(t, "https://key@example.com/1", c1.DSN)

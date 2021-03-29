@@ -24,7 +24,6 @@ import (
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
@@ -54,10 +53,10 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
+		ExporterSettings: config.ExporterSettings{
+			TypeVal: config.Type(typeStr),
 			NameVal: typeStr,
 		},
 		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultHTTPTimeout},
@@ -96,7 +95,7 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 func createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	eCfg configmodels.Exporter,
+	eCfg config.Exporter,
 ) (component.TracesExporter, error) {
 	cfg := eCfg.(*Config)
 	corrCfg := cfg.Correlation
@@ -124,7 +123,7 @@ func createTraceExporter(
 func createMetricsExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	config configmodels.Exporter,
+	config config.Exporter,
 ) (component.MetricsExporter, error) {
 
 	expCfg := config.(*Config)
@@ -210,7 +209,7 @@ func loadDefaultExcludes() ([]dpfilters.MetricFilter, error) {
 func createLogsExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	expCfg := cfg.(*Config)
 

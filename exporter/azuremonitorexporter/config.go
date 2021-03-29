@@ -17,15 +17,15 @@ package azuremonitorexporter
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Config defines configuration for Azure Monitor
 type Config struct {
 	// squash ensures fields are correctly decoded in embedded struct.
-	configmodels.ExporterSettings `mapstructure:",squash"`
-	Endpoint                      string        `mapstructure:"endpoint"`
-	InstrumentationKey            string        `mapstructure:"instrumentation_key"`
-	MaxBatchSize                  int           `mapstructure:"maxbatchsize"`
-	MaxBatchInterval              time.Duration `mapstructure:"maxbatchinterval"`
+	config.ExporterSettings `mapstructure:",squash"`
+	Endpoint                string        `mapstructure:"endpoint"`
+	InstrumentationKey      string        `mapstructure:"instrumentation_key"`
+	MaxBatchSize            int           `mapstructure:"maxbatchsize"`
+	MaxBatchInterval        time.Duration `mapstructure:"maxbatchinterval"`
 }

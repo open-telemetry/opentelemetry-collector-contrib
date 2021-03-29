@@ -22,7 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/noop"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -96,15 +96,15 @@ type TestConfig struct {
 }
 type TestReceiverType struct{}
 
-func (f TestReceiverType) Type() configmodels.Type {
-	return configmodels.Type(testType)
+func (f TestReceiverType) Type() config.Type {
+	return config.Type(testType)
 }
 
-func (f TestReceiverType) CreateDefaultConfig() configmodels.Receiver {
+func (f TestReceiverType) CreateDefaultConfig() config.Receiver {
 	return &TestConfig{
 		BaseConfig: BaseConfig{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(testType),
+			ReceiverSettings: config.ReceiverSettings{
+				TypeVal: config.Type(testType),
 				NameVal: testType,
 			},
 			Operators: OperatorConfigs{},
@@ -113,11 +113,11 @@ func (f TestReceiverType) CreateDefaultConfig() configmodels.Receiver {
 	}
 }
 
-func (f TestReceiverType) BaseConfig(cfg configmodels.Receiver) BaseConfig {
+func (f TestReceiverType) BaseConfig(cfg config.Receiver) BaseConfig {
 	return cfg.(*TestConfig).BaseConfig
 }
 
-func (f TestReceiverType) DecodeInputConfig(cfg configmodels.Receiver) (*operator.Config, error) {
+func (f TestReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
 	testConfig := cfg.(*TestConfig)
 
 	// Allow tests to run without implementing input config

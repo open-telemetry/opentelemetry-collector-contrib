@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -30,7 +30,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -45,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 
 	r1 := cfg.Exporters["honeycomb/customname"].(*Config)
 	assert.Equal(t, r1, &Config{
-		ExporterSettings: configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "honeycomb/customname"},
+		ExporterSettings: config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "honeycomb/customname"},
 		APIKey:           "test-apikey",
 		Dataset:          "test-dataset",
 		APIURL:           "https://api.testhost.io",
@@ -53,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 
 	r2 := cfg.Exporters["honeycomb/sample_rate"].(*Config)
 	assert.Equal(t, r2, &Config{
-		ExporterSettings:    configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "honeycomb/sample_rate"},
+		ExporterSettings:    config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "honeycomb/sample_rate"},
 		APIURL:              "https://api.honeycomb.io",
 		SampleRate:          5,
 		SampleRateAttribute: "custom.sample_rate",

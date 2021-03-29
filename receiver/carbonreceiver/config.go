@@ -17,7 +17,7 @@ package carbonreceiver
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
@@ -32,7 +32,7 @@ const (
 
 // Config defines configuration for the Carbon receiver.
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
+	config.ReceiverSettings `mapstructure:",squash"`
 
 	confignet.NetAddr `mapstructure:",squash"`
 

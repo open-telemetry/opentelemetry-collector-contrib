@@ -20,7 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/xray"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -36,7 +36,7 @@ const (
 // newTraceExporter creates an component.TraceExporter that converts to an X-Ray PutTraceSegments
 // request and then posts the request to the configured region's X-Ray endpoint.
 func newTraceExporter(
-	config configmodels.Exporter, params component.ExporterCreateParams, cn connAttr) (component.TracesExporter, error) {
+	config config.Exporter, params component.ExporterCreateParams, cn connAttr) (component.TracesExporter, error) {
 	typeLog := zap.String("type", string(config.Type()))
 	nameLog := zap.String("name", config.Name())
 	logger := params.Logger

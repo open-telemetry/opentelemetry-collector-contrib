@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -36,13 +36,13 @@ func NewFactory() component.ReceiverFactory {
 		receiverhelper.WithTraces(createTraceReceiver))
 }
 
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	// reference the existing default configurations provided
 	// in the X-Ray daemon:
 	// https://github.com/aws/aws-xray-daemon/blob/master/pkg/cfg/cfg.go#L99
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: configmodels.Type(awsxray.TypeStr),
+		ReceiverSettings: config.ReceiverSettings{
+			TypeVal: config.Type(awsxray.TypeStr),
 			NameVal: awsxray.TypeStr,
 			// X-Ray daemon defaults to 127.0.0.1:2000 but
 			// the default in OT is 0.0.0.0.
@@ -58,7 +58,7 @@ func createDefaultConfig() configmodels.Receiver {
 func createTraceReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	consumer consumer.Traces) (component.TracesReceiver, error) {
 	rcfg := cfg.(*Config)
 	return newReceiver(rcfg, consumer, params.Logger)

@@ -19,7 +19,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
@@ -31,7 +31,7 @@ type factory struct {
 
 const (
 	// The value of "type" key in configuration.
-	typeVal = configmodels.Type("stackdriver")
+	typeVal = config.Type("stackdriver")
 )
 
 var once sync.Once
@@ -47,11 +47,11 @@ func logDeprecation(logger *zap.Logger) {
 	})
 }
 
-func (f *factory) Type() configmodels.Type {
+func (f *factory) Type() config.Type {
 	return typeVal
 }
 
-func (f *factory) CreateDefaultConfig() configmodels.Exporter {
+func (f *factory) CreateDefaultConfig() config.Exporter {
 	cfg := f.ExporterFactory.CreateDefaultConfig()
 	cfg.(*googlecloudexporter.Config).TypeVal = f.Type()
 	return cfg
@@ -60,7 +60,7 @@ func (f *factory) CreateDefaultConfig() configmodels.Exporter {
 func (f *factory) CreateTracesExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	logDeprecation(params.Logger)
 	return f.ExporterFactory.CreateTracesExporter(ctx, params, cfg)
@@ -69,7 +69,7 @@ func (f *factory) CreateTracesExporter(
 func (f *factory) CreateMetricsExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	logDeprecation(params.Logger)
 	return f.ExporterFactory.CreateMetricsExporter(ctx, params, cfg)
