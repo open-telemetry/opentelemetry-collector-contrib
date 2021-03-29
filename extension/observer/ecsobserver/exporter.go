@@ -14,10 +14,6 @@
 
 package ecsobserver
 
-const (
-	defaultMetricsPath = "/metrics"
-)
-
 // CommonExporterConfig should be embedded into filter config.
 // They set labels like job, metrics_path etc. that can override prometheus default.
 type CommonExporterConfig struct {

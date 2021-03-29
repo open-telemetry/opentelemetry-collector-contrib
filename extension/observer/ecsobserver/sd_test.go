@@ -16,11 +16,9 @@ package ecsobserver
 
 import (
 	"context"
-	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 )
 
 func TestNewDiscovery(t *testing.T) {
@@ -34,26 +32,3 @@ func TestNewDiscovery(t *testing.T) {
 		require.Error(t, err)
 	})
 }
-
-// Util Start
-
-func mustReadFile(t *testing.T, p string) []byte {
-	b, err := ioutil.ReadFile(p)
-	require.NoError(t, err, p)
-	return b
-}
-
-func newMatcher(t *testing.T, cfg MatcherConfig) Matcher {
-	require.NoError(t, cfg.Init())
-	m, err := cfg.NewMatcher(testMatcherOptions())
-	require.NoError(t, err)
-	return m
-}
-
-func testMatcherOptions() MatcherOptions {
-	return MatcherOptions{
-		Logger: zap.NewExample(),
-	}
-}
-
-// Util End
