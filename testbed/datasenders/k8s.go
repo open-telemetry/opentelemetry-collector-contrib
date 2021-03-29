@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -29,7 +30,6 @@ import (
 
 // FileLogK8sWriter represents abstract container k8s writer
 type FileLogK8sWriter struct {
-	testbed.DataSenderBase
 	file   *os.File
 	config string
 }
@@ -149,8 +149,8 @@ func (f *FileLogK8sWriter) ProtocolName() string {
 	return "filelog"
 }
 
-func (f *FileLogK8sWriter) GetEndpoint() string {
-	return ""
+func (f *FileLogK8sWriter) GetEndpoint() net.Addr {
+	return nil
 }
 
 // NewKubernetesContainerWriter returns FileLogK8sWriter with configuration
