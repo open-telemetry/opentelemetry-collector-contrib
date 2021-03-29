@@ -92,7 +92,7 @@ func createTraceProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextConsumer consumer.TracesConsumer) (component.TracesProcessor, error) {
+	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 
 	oCfg := cfg.(*Config)
 	gap, err := createGroupByAttrsProcessor(params.Logger, oCfg.GroupByKeys)
@@ -112,7 +112,7 @@ func createLogsProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextConsumer consumer.LogsConsumer) (component.LogsProcessor, error) {
+	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 
 	oCfg := cfg.(*Config)
 	gap, err := createGroupByAttrsProcessor(params.Logger, oCfg.GroupByKeys)

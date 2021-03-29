@@ -56,6 +56,7 @@ type computeMetadata struct {
 	VMSize            string `json:"vmSize"`
 	SubscriptionID    string `json:"subscriptionID"`
 	ResourceGroupName string `json:"resourceGroupName"`
+	VMScaleSetName    string `json:"vmScaleSetName"`
 }
 
 // queryEndpointWithContext queries a given endpoint and parses the output to the Azure IMDS format

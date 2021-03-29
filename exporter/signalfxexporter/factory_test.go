@@ -211,31 +211,6 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Equal(t, 1, len(dps))
 	require.Equal(t, 40.0, *dps[0].Value.DoubleValue)
 
-	// system.disk.operations dimension rename
-	dps, ok = metrics["system.disk.operations"]
-	require.True(t, ok, "system.disk.operations metrics not found")
-	require.Equal(t, 8, len(dps))
-	require.Equal(t, int64(4e3), *dps[0].Value.IntValue)
-	require.Equal(t, "direction", dps[0].Dimensions[1].Key)
-	require.Equal(t, "read", dps[0].Dimensions[1].Value)
-	require.Equal(t, "disk", dps[0].Dimensions[2].Key)
-	require.Equal(t, "sda1", dps[0].Dimensions[2].Value)
-	require.Equal(t, int64(6e3), *dps[1].Value.IntValue)
-	require.Equal(t, "direction", dps[1].Dimensions[1].Key)
-	require.Equal(t, "read", dps[1].Dimensions[1].Value)
-	require.Equal(t, "disk", dps[1].Dimensions[2].Key)
-	require.Equal(t, "sda2", dps[1].Dimensions[2].Value)
-	require.Equal(t, int64(1e3), *dps[2].Value.IntValue)
-	require.Equal(t, "direction", dps[2].Dimensions[1].Key)
-	require.Equal(t, "write", dps[2].Dimensions[1].Value)
-	require.Equal(t, "disk", dps[2].Dimensions[2].Key)
-	require.Equal(t, "sda1", dps[2].Dimensions[2].Value)
-	require.Equal(t, int64(5e3), *dps[3].Value.IntValue)
-	require.Equal(t, "direction", dps[3].Dimensions[1].Key)
-	require.Equal(t, "write", dps[3].Dimensions[1].Value)
-	require.Equal(t, "disk", dps[3].Dimensions[2].Key)
-	require.Equal(t, "sda2", dps[3].Dimensions[2].Value)
-
 	// system.network.operations.total new metric calculation
 	dps, ok = metrics["system.disk.operations.total"]
 	require.True(t, ok, "system.network.operations.total metrics not found")

@@ -166,7 +166,7 @@ func getUpdatedPod(pod *corev1.Pod) interface{} {
 
 func setupReceiver(
 	client *fake.Clientset,
-	consumer consumer.MetricsConsumer,
+	consumer consumer.Metrics,
 	initialSyncTimeout time.Duration) *kubernetesReceiver {
 
 	logger := zap.NewNop()

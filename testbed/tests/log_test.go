@@ -27,6 +27,7 @@ import (
 )
 
 func TestLog10kDPS(t *testing.T) {
+	// flw := testbed.NewFluentBitFileLogWriter(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	tests := []struct {
 		name         string
 		sender       testbed.DataSender
@@ -88,6 +89,18 @@ func TestLog10kDPS(t *testing.T) {
 				ExpectedMaxRAM: 150,
 			},
 		},
+		/*
+			{
+				name:     "FluentBitToOTLP",
+				sender:   flw,
+				receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+				resourceSpec: testbed.ResourceSpec{
+					ExpectedMaxCPU: 50,
+					ExpectedMaxRAM: 155,
+				},
+				extensions: flw.Extensions(),
+			},
+		*/
 	}
 
 	processors := map[string]string{

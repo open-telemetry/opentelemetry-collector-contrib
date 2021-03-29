@@ -46,7 +46,7 @@ type collectdReceiver struct {
 	addr               string
 	server             *http.Server
 	defaultAttrsPrefix string
-	nextConsumer       consumer.MetricsConsumer
+	nextConsumer       consumer.Metrics
 
 	startOnce sync.Once
 	stopOnce  sync.Once
@@ -58,7 +58,7 @@ func newCollectdReceiver(
 	addr string,
 	timeout time.Duration,
 	defaultAttrsPrefix string,
-	nextConsumer consumer.MetricsConsumer) (component.MetricsReceiver, error) {
+	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextConsumer
 	}

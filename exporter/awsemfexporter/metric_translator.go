@@ -17,6 +17,7 @@ package awsemfexporter
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -32,7 +33,22 @@ const (
 	// DimensionRollupOptions
 	zeroAndSingleDimensionRollup = "ZeroAndSingleDimensionRollup"
 	singleDimensionRollupOnly    = "SingleDimensionRollupOnly"
+
+	prometheusReceiver        = "prometheus"
+	attributeReceiver         = "receiver"
+	fieldPrometheusMetricType = "prom_metric_type"
 )
+
+var fieldPrometheusTypes = map[pdata.MetricDataType]string{
+	pdata.MetricDataTypeNone:         "",
+	pdata.MetricDataTypeIntGauge:     "gauge",
+	pdata.MetricDataTypeDoubleGauge:  "gauge",
+	pdata.MetricDataTypeIntSum:       "counter",
+	pdata.MetricDataTypeDoubleSum:    "counter",
+	pdata.MetricDataTypeIntHistogram: "histogram",
+	pdata.MetricDataTypeHistogram:    "histogram",
+	pdata.MetricDataTypeSummary:      "summary",
+}
 
 // CWMetrics defines
 type CWMetrics struct {
@@ -56,13 +72,20 @@ type CWMetricStats struct {
 	Sum   float64
 }
 
+type GroupedMetricMetadata struct {
+	Namespace   string
+	TimestampMs int64
+	LogGroup    string
+	LogStream   string
+}
+
 // CWMetricMetadata represents the metadata associated with a given CloudWatch metric
 type CWMetricMetadata struct {
-	Namespace                  string
-	TimestampMs                int64
-	LogGroup                   string
-	LogStream                  string
+	GroupedMetricMetadata
 	InstrumentationLibraryName string
+
+	receiver       string
+	metricDataType pdata.MetricDataType
 }
 
 type metricTranslator struct {
@@ -87,6 +110,10 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetric
 	logGroup, logStream := getLogInfo(rm, cWNamespace, config)
 
 	ilms := rm.InstrumentationLibraryMetrics()
+	var metricReceiver string
+	if receiver, ok := rm.Resource().Attributes().Get(attributeReceiver); ok {
+		metricReceiver = receiver.StringVal()
+	}
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
 		if ilm.InstrumentationLibrary().Name() == "" {
@@ -99,11 +126,15 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetric
 		for k := 0; k < metrics.Len(); k++ {
 			metric := metrics.At(k)
 			metadata := CWMetricMetadata{
-				Namespace:                  cWNamespace,
-				TimestampMs:                timestamp,
-				LogGroup:                   logGroup,
-				LogStream:                  logStream,
+				GroupedMetricMetadata: GroupedMetricMetadata{
+					Namespace:   cWNamespace,
+					TimestampMs: timestamp,
+					LogGroup:    logGroup,
+					LogStream:   logStream,
+				},
 				InstrumentationLibraryName: instrumentationLibName,
+				receiver:                   metricReceiver,
+				metricDataType:             metric.DataType(),
 			}
 			addToGroupedMetric(&metric, groupedMetrics, metadata, config.logger, mt.metricDescriptor)
 		}
@@ -113,16 +144,24 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetric
 // translateGroupedMetricToCWMetric converts Grouped Metric format to CloudWatch Metric format.
 func translateGroupedMetricToCWMetric(groupedMetric *GroupedMetric, config *Config) *CWMetrics {
 	labels := groupedMetric.Labels
-	fields := make(map[string]interface{}, len(labels)+len(groupedMetric.Metrics))
+	fieldsLength := len(labels) + len(groupedMetric.Metrics)
+
+	isPrometheusMetric := groupedMetric.Metadata.receiver == prometheusReceiver
+	if isPrometheusMetric {
+		fieldsLength++
+	}
+	fields := make(map[string]interface{}, fieldsLength)
 
 	// Add labels to fields
 	for k, v := range labels {
 		fields[k] = v
 	}
-
 	// Add metrics to fields
 	for metricName, metricInfo := range groupedMetric.Metrics {
 		fields[metricName] = metricInfo.Value
+	}
+	if isPrometheusMetric {
+		fields[fieldPrometheusMetricType] = fieldPrometheusTypes[groupedMetric.Metadata.metricDataType]
 	}
 
 	var cWMeasurements []CWMeasurement
@@ -181,7 +220,9 @@ func groupedMetricToCWMeasurement(groupedMetric *GroupedMetric, config *Config) 
 	for metricName, metricInfo := range groupedMetric.Metrics {
 		metrics[idx] = map[string]string{
 			"Name": metricName,
-			"Unit": metricInfo.Unit,
+		}
+		if metricInfo.Unit != "" {
+			metrics[idx]["Unit"] = metricInfo.Unit
 		}
 		idx++
 	}
@@ -247,7 +288,9 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *GroupedMetric, conf
 
 		metric := map[string]string{
 			"Name": metricName,
-			"Unit": metricInfo.Unit,
+		}
+		if metricInfo.Unit != "" {
+			metric["Unit"] = metricInfo.Unit
 		}
 		metricDeclKey := fmt.Sprint(metricDeclIdx)
 		if group, ok := metricDeclGroups[metricDeclKey]; ok {
@@ -296,10 +339,38 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *GroupedMetric, conf
 }
 
 // translateCWMetricToEMF converts CloudWatch Metric format to EMF.
-func translateCWMetricToEMF(cWMetric *CWMetrics) *LogEvent {
+func translateCWMetricToEMF(cWMetric *CWMetrics, config *Config) *LogEvent {
 	// convert CWMetric into map format for compatible with PLE input
 	cWMetricMap := make(map[string]interface{})
 	fieldMap := cWMetric.Fields
+
+	//restore the json objects that are stored as string in attributes
+	for _, key := range config.ParseJSONEncodedAttributeValues {
+		if fieldMap[key] == nil {
+			continue
+		}
+
+		if val, ok := fieldMap[key].(string); ok {
+			var f interface{}
+			err := json.Unmarshal([]byte(val), &f)
+			if err != nil {
+				config.logger.Debug(
+					"Failed to parse json-encoded string",
+					zap.String("label key", key),
+					zap.String("label value", val),
+					zap.Error(err),
+				)
+				continue
+			}
+			fieldMap[key] = f
+		} else {
+			config.logger.Debug(
+				"Invalid json-encoded data. A string is expected",
+				zap.Any("type", reflect.TypeOf(fieldMap[key])),
+				zap.Any("value", reflect.ValueOf(fieldMap[key])),
+			)
+		}
+	}
 
 	// Create `_aws` section only if there are measurements
 	if len(cWMetric.Measurements) > 0 {

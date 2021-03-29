@@ -594,7 +594,7 @@ func TestTranslation(t *testing.T) {
 				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString(conventions.AttributeCloudProviderAWS)
 				attrs[conventions.AttributeCloudAccount] = pdata.NewAttributeValueString(
 					*seg.AWS.AccountID)
-				attrs[conventions.AttributeCloudZone] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeCloudAvailabilityZone] = pdata.NewAttributeValueString(
 					*seg.AWS.EC2.AvailabilityZone)
 				attrs[conventions.AttributeHostID] = pdata.NewAttributeValueString(
 					*seg.AWS.EC2.InstanceID)
@@ -606,7 +606,7 @@ func TestTranslation(t *testing.T) {
 					*seg.AWS.ECS.ContainerName)
 				attrs[conventions.AttributeContainerID] = pdata.NewAttributeValueString(
 					*seg.AWS.ECS.ContainerID)
-				attrs[conventions.AttributeCloudZone] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeCloudAvailabilityZone] = pdata.NewAttributeValueString(
 					*seg.AWS.ECS.AvailabilityZone)
 				attrs[conventions.AttributeServiceNamespace] = pdata.NewAttributeValueString(
 					*seg.AWS.Beanstalk.Environment)

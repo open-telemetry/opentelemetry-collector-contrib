@@ -32,7 +32,7 @@ var _ component.MetricsReceiver = (*awsEcsContainerMetricsReceiver)(nil)
 // awsEcsContainerMetricsReceiver implements the component.MetricsReceiver for aws ecs container metrics.
 type awsEcsContainerMetricsReceiver struct {
 	logger       *zap.Logger
-	nextConsumer consumer.MetricsConsumer
+	nextConsumer consumer.Metrics
 	config       *Config
 	cancel       context.CancelFunc
 	restClient   awsecscontainermetrics.RestClient
@@ -43,7 +43,7 @@ type awsEcsContainerMetricsReceiver struct {
 func New(
 	logger *zap.Logger,
 	config *Config,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 	rest awsecscontainermetrics.RestClient) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer

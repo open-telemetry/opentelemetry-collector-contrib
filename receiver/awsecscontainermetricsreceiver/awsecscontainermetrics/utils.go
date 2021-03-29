@@ -19,8 +19,6 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -52,18 +50,4 @@ func createGaugeIntMetric(i int) *metricspb.Metric {
 			},
 		),
 	)
-}
-
-func timestampProto(t time.Time) *timestamp.Timestamp {
-	out, _ := ptypes.TimestampProto(t)
-	return out
-}
-
-func applyTimestamp(metrics []*metricspb.Metric, t *timestamp.Timestamp) []*metricspb.Metric {
-	for _, metric := range metrics {
-		if metric != nil {
-			metric.Timeseries[0].Points[0].Timestamp = t
-		}
-	}
-	return metrics
 }

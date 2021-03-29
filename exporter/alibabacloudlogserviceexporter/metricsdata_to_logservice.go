@@ -250,7 +250,7 @@ func intHistogramMetricsToLogs(name string, data pdata.IntHistogramDataPointSlic
 	return logs
 }
 
-func doubleHistogramMetricsToLogs(name string, data pdata.DoubleHistogramDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
+func doubleHistogramMetricsToLogs(name string, data pdata.HistogramDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
 		labelsMap := dataPoint.LabelsMap()
@@ -297,7 +297,7 @@ func doubleHistogramMetricsToLogs(name string, data pdata.DoubleHistogramDataPoi
 	return logs
 }
 
-func doubleSummaryMetricsToLogs(name string, data pdata.DoubleSummaryDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
+func doubleSummaryMetricsToLogs(name string, data pdata.SummaryDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
 		labelsMap := dataPoint.LabelsMap()
@@ -346,10 +346,10 @@ func metricDataToLogServiceData(md pdata.Metric, defaultLabels KeyValues) (logs 
 		return doubleMetricsToLogs(md.Name(), md.DoubleSum().DataPoints(), defaultLabels)
 	case pdata.MetricDataTypeIntHistogram:
 		return intHistogramMetricsToLogs(md.Name(), md.IntHistogram().DataPoints(), defaultLabels)
-	case pdata.MetricDataTypeDoubleHistogram:
-		return doubleHistogramMetricsToLogs(md.Name(), md.DoubleHistogram().DataPoints(), defaultLabels)
-	case pdata.MetricDataTypeDoubleSummary:
-		return doubleSummaryMetricsToLogs(md.Name(), md.DoubleSummary().DataPoints(), defaultLabels)
+	case pdata.MetricDataTypeHistogram:
+		return doubleHistogramMetricsToLogs(md.Name(), md.Histogram().DataPoints(), defaultLabels)
+	case pdata.MetricDataTypeSummary:
+		return doubleSummaryMetricsToLogs(md.Name(), md.Summary().DataPoints(), defaultLabels)
 	}
 	return logs
 }

@@ -36,7 +36,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
-func newTraceProcessor(cfg configmodels.Processor, next consumer.TracesConsumer, options ...Option) (component.TracesProcessor, error) {
+func newTraceProcessor(cfg configmodels.Processor, next consumer.Traces, options ...Option) (component.TracesProcessor, error) {
 	opts := append(options, withKubeClientProvider(newFakeClient))
 	return createTraceProcessorWithOptions(
 		context.Background(),
@@ -47,7 +47,7 @@ func newTraceProcessor(cfg configmodels.Processor, next consumer.TracesConsumer,
 	)
 }
 
-func newMetricsProcessor(cfg configmodels.Processor, nextMetricsConsumer consumer.MetricsConsumer, options ...Option) (component.MetricsProcessor, error) {
+func newMetricsProcessor(cfg configmodels.Processor, nextMetricsConsumer consumer.Metrics, options ...Option) (component.MetricsProcessor, error) {
 	opts := append(options, withKubeClientProvider(newFakeClient))
 	return createMetricsProcessorWithOptions(
 		context.Background(),
@@ -58,7 +58,7 @@ func newMetricsProcessor(cfg configmodels.Processor, nextMetricsConsumer consume
 	)
 }
 
-func newLogsProcessor(cfg configmodels.Processor, nextLogsConsumer consumer.LogsConsumer, options ...Option) (component.LogsProcessor, error) {
+func newLogsProcessor(cfg configmodels.Processor, nextLogsConsumer consumer.Logs, options ...Option) (component.LogsProcessor, error) {
 	opts := append(options, withKubeClientProvider(newFakeClient))
 	return createLogsProcessorWithOptions(
 		context.Background(),

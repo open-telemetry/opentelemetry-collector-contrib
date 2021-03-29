@@ -21,13 +21,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/consumer"
 )
 
 // runner starts and stops receiver instances.
 type runner interface {
 	// start a receiver instance from its static config and discovered config.
-	start(receiver receiverConfig, discoveredConfig userConfigMap, nextConsumer consumer.MetricsConsumer) (component.Receiver, error)
+	start(receiver receiverConfig, discoveredConfig userConfigMap, nextConsumer consumer.Metrics) (component.Receiver, error)
 	// shutdown a receiver.
 	shutdown(rcvr component.Receiver) error
 }
@@ -45,7 +46,7 @@ var _ runner = (*receiverRunner)(nil)
 func (run *receiverRunner) start(
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 ) (component.Receiver, error) {
 	factory := run.host.GetFactory(component.KindReceiver, receiver.typeStr)
 
@@ -95,7 +96,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 		return nil, fmt.Errorf("failed to merge template config from discovered runtime values: %v", err)
 	}
 
-	receiverConfig, err := config.LoadReceiver(mergedConfig, receiver.typeStr, receiver.fullName, factory)
+	receiverConfig, err := configparser.LoadReceiver(config.ParserFromViper(mergedConfig), receiver.typeStr, receiver.fullName, factory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template config: %v", err)
 	}
@@ -109,7 +110,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 func (run *receiverRunner) createRuntimeReceiver(
 	factory component.ReceiverFactory,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	return factory.CreateMetricsReceiver(context.Background(), run.params, cfg, nextConsumer)
 }

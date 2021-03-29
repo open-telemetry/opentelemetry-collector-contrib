@@ -51,7 +51,7 @@ func taskResource(tm TaskMetadata) pdata.Resource {
 	resource.Attributes().UpsertString(AttributeECSTaskRevision, tm.Revision)
 	resource.Attributes().UpsertString(AttributeECSServiceName, "undefined")
 
-	resource.Attributes().UpsertString(conventions.AttributeCloudZone, tm.AvailabilityZone)
+	resource.Attributes().UpsertString(conventions.AttributeCloudAvailabilityZone, tm.AvailabilityZone)
 	resource.Attributes().UpsertString(AttributeECSTaskPullStartedAt, tm.PullStartedAt)
 	resource.Attributes().UpsertString(AttributeECSTaskPullStoppedAt, tm.PullStoppedAt)
 	resource.Attributes().UpsertString(AttributeECSTaskKnownStatus, tm.KnownStatus)
