@@ -49,6 +49,7 @@ func defaultAttrFunc(res map[string]interface{}) func(map[string]interface{}) ma
 		full := make(map[string]interface{}, 2+len(res)+len(add))
 		full[collectorNameKey] = name
 		full[collectorVersionKey] = version
+		full[instrumentationProviderAttrKey] = "opentelemetry"
 		for k, v := range res {
 			full[k] = v
 		}
