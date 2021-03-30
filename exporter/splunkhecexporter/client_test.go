@@ -636,29 +636,29 @@ func Test_pushLogData_PostError(t *testing.T) {
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, true
 	err := c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
-	assert.IsType(t, consumererror.PartialError{}, err)
-	assert.Equal(t, (err.(consumererror.PartialError)).GetLogs(), logs)
+	assert.IsType(t, consumererror.Logs{}, err)
+	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
 
 	// 0 -> unlimited size batch, false -> compression enabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, false
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
-	assert.IsType(t, consumererror.PartialError{}, err)
-	assert.Equal(t, (err.(consumererror.PartialError)).GetLogs(), logs)
+	assert.IsType(t, consumererror.Logs{}, err)
+	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
 
 	// 200000 < 371888 -> multiple batches, true -> compression disabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, true
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
-	assert.IsType(t, consumererror.PartialError{}, err)
-	assert.Equal(t, (err.(consumererror.PartialError)).GetLogs(), logs)
+	assert.IsType(t, consumererror.Logs{}, err)
+	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
 
 	// 200000 < 371888 -> multiple batches, false -> compression enabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, false
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
-	assert.IsType(t, consumererror.PartialError{}, err)
-	assert.Equal(t, (err.(consumererror.PartialError)).GetLogs(), logs)
+	assert.IsType(t, consumererror.Logs{}, err)
+	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
 }
 
 func Test_pushLogData_Small_MaxContentLength(t *testing.T) {

@@ -225,7 +225,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 				buf.Truncate(bufLen)
 				if buf.Len() > 0 {
 					if err = send(ctx, buf); err != nil {
-						return consumererror.PartialLogsError(err, *subLogs(&ld, bufFront))
+						return consumererror.NewLogs(err, *subLogs(&ld, bufFront))
 					}
 				}
 				buf.Reset()
@@ -240,11 +240,11 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 
 	if buf.Len() > 0 {
 		if err = send(ctx, buf); err != nil {
-			return consumererror.PartialLogsError(err, *subLogs(&ld, bufFront))
+			return consumererror.NewLogs(err, *subLogs(&ld, bufFront))
 		}
 	}
 
-	return consumererror.CombineErrors(permanentErrors)
+	return consumererror.Combine(permanentErrors)
 }
 
 func (c *client) postEvents(ctx context.Context, events io.Reader, compressed bool) error {

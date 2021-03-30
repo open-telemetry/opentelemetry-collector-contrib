@@ -90,7 +90,6 @@ func TestLoadConfig(t *testing.T) {
 
 func TestConfig_getOptionsFromConfig(t *testing.T) {
 	type fields struct {
-		ExporterSettings     configmodels.ExporterSettings
 		Endpoint             string
 		Token                string
 		Source               string
@@ -155,7 +154,6 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ExporterSettings:     tt.fields.ExporterSettings,
 				Token:                tt.fields.Token,
 				Endpoint:             tt.fields.Endpoint,
 				Source:               tt.fields.Source,
