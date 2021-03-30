@@ -50,10 +50,11 @@ func createDefaultConfig() config.Exporter {
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: defaultHTTPTimeout,
 		},
-		RetrySettings:      exporterhelper.DefaultRetrySettings(),
-		QueueSettings:      exporterhelper.DefaultQueueSettings(),
-		DisableCompression: false,
-		MaxConnections:     defaultMaxIdleCons,
+		RetrySettings:        exporterhelper.DefaultRetrySettings(),
+		QueueSettings:        exporterhelper.DefaultQueueSettings(),
+		DisableCompression:   false,
+		MaxConnections:       defaultMaxIdleCons,
+		MaxContentLengthLogs: maxContentLengthLogsLimit,
 	}
 }
 

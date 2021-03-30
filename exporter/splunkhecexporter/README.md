@@ -22,6 +22,7 @@ The following configuration options can also be configured:
 - `disable_compression` (default: false): Whether to disable gzip compression over HTTP.
 - `timeout` (default: 10s): HTTP timeout when sending data.
 - `insecure_skip_verify` (default: false): Whether to skip checking the certificate of the HEC endpoint when sending data over HTTPS.
+- `max_content_length_logs` (default: 2097152): Maximum log data size in bytes per HTTP post limited to 2097152 bytes (2 MiB).
 
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
