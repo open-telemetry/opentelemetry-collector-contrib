@@ -26,7 +26,8 @@ import (
 
 const (
 	// hecPath is the default HEC path on the Splunk instance.
-	hecPath = "services/collector"
+	hecPath                   = "services/collector"
+	maxContentLengthLogsLimit = 2 * 1024 * 1024
 )
 
 // Config defines configuration for Splunk exporter.
@@ -60,6 +61,9 @@ type Config struct {
 
 	// insecure_skip_verify skips checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
+
+	// Maximum log data size in bytes per HTTP post. Defaults to the backend limit of 2097152 bytes (2MiB).
+	MaxContentLengthLogs uint `mapstructure:"max_content_length_logs"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
@@ -85,6 +89,10 @@ func (cfg *Config) validateConfig() error {
 
 	if cfg.Token == "" {
 		return errors.New(`requires a non-empty "token"`)
+	}
+
+	if cfg.MaxContentLengthLogs > maxContentLengthLogsLimit {
+		return fmt.Errorf(`requires "max_content_length_logs" <= %d`, maxContentLengthLogsLimit)
 	}
 
 	return nil

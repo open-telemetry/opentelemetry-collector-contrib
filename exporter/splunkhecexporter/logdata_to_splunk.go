@@ -24,20 +24,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-func logDataToSplunk(logger *zap.Logger, ld pdata.Logs, config *Config) []*splunk.Event {
-	var splunkEvents []*splunk.Event
-	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
-		ills := rls.At(i).InstrumentationLibraryLogs()
-		for j := 0; j < ills.Len(); j++ {
-			logs := ills.At(j).Logs()
-			for k := 0; k < logs.Len(); k++ {
-				splunkEvents = append(splunkEvents, mapLogRecordToSplunkEvent(logs.At(k), config, logger))
-			}
-		}
-	}
+// Composite index of a log record in pdata.Logs.
+type logIndex struct {
+	// Index in orig list (i.e. root parent index).
+	resource int
+	// Index in InstrumentationLibraryLogs list (i.e. immediate parent index).
+	library int
+	// Index in Logs list (i.e. the log record index).
+	record int
+}
 
-	return splunkEvents
+func (i *logIndex) zero() bool {
+	return i.resource == 0 && i.library == 0 && i.record == 0
 }
 
 func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
