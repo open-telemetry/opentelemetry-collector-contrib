@@ -156,74 +156,91 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (err error) {
 		return c.postEvents(ctx, buf, shouldCompress)
 	}
 
-	return c.pushLogDataParts(ctx, ld, send)
+	return c.pushLogDataInBatches(ctx, ld, send)
 }
 
-// pushLogDataParts partitions log data into parts that are less than or equal to MaxContentLengthLogs then sends the parts.
-func (c *client) pushLogDataParts(ctx context.Context, ld pdata.Logs, send func(context.Context, *bytes.Buffer) error) (err error) {
-	// max is the maximum number of bytes allowed in logs buffer.
-	// pad4096 pads max by 4096 to prevent reallocation in logs buffer prior to truncation. It is assumed that a single log is likely less than 4096 bytes.
-	var max, pad4096 = c.config.MaxContentLengthLogs, uint(4096)
-	// Buffer of a part of log data.
-	var logsBuf = bytes.NewBuffer(make([]byte, 0, max+pad4096))
-	var encoder = json.NewEncoder(logsBuf)
-	// Number of bytes below max of logs in logsBuf.
-	var length int
-	// Temp storage for log over max in logsBuf.
-	var overMaxBuf = bytes.NewBuffer(make([]byte, 0, pad4096))
-	// Index of the first log in a logs part.
-	var log0Index *logIndex
-	var permanentErrors []error
-	var rls = ld.ResourceLogs()
+// pushLogDataInBatches sends batches of Splunk events in JSON format.
+// The batch content length is restricted to MaxContentLengthLogs.
+// ld log records are parsed to Splunk events.
+func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send func(context.Context, *bytes.Buffer) error) (err error) {
+	// Length of retained bytes in buffer after truncation.
+	var bufLen int
+	// Buffer capacity.
+	var bufCap = c.config.MaxContentLengthLogs
+	// A guesstimated value > length of bytes of a single event.
+	// Added to buffer capacity so that buffer is likely to grow by reslicing when buf.Len() > bufCap.
+	const bufCapPadding = uint(4096)
 
+	// Buffer of JSON encoded Splunk events.
+	// Expected to grow more than bufCap then truncated to bufLen.
+	var buf = bytes.NewBuffer(make([]byte, 0, bufCap+bufCapPadding))
+	var encoder = json.NewEncoder(buf)
+
+	var tmpBuf = bytes.NewBuffer(make([]byte, 0, bufCapPadding))
+
+	// Index of the log record of the first event in buffer.
+	var bufFront *logIndex
+
+	var permanentErrors []error
+
+	var rls = ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		ills := rls.At(i).InstrumentationLibraryLogs()
 		for j := 0; j < ills.Len(); j++ {
 			logs := ills.At(j).Logs()
 			for k := 0; k < logs.Len(); k++ {
-				if log0Index == nil {
-					log0Index = &logIndex{resource: i, library: j, record: k}
+				if bufFront == nil {
+					bufFront = &logIndex{resource: i, library: j, record: k}
 				}
 
+				// Parsing log record to Splunk event.
 				event := mapLogRecordToSplunkEvent(logs.At(k), c.config, c.logger)
+				// JSON encoding event and writing to buffer.
 				if err = encoder.Encode(event); err != nil {
 					permanentErrors = append(permanentErrors, consumererror.Permanent(fmt.Errorf("dropped log event: %v, error: %v", event, err)))
 					continue
 				}
-				logsBuf.WriteString("\r\n\r\n")
+				buf.WriteString("\r\n\r\n")
 
-				// Consistent with ContentLength in http.Request, MaxContentLengthLogs value of 0 indicates length unknown (i.e. unbound).
-				if max == 0 || logsBuf.Len() <= int(max) {
-					length = logsBuf.Len()
+				// Continue adding events to buffer up to capacity.
+				// 0 capacity is interpreted as unknown/unbound consistent with ContentLength in http.Request.
+				if buf.Len() <= int(bufCap) || bufCap == 0 {
+					// Tracking length of event bytes below capacity in buffer.
+					bufLen = buf.Len()
 					continue
 				}
 
-				overMaxBuf.Reset()
-				if max > 0 {
-					if overLength := logsBuf.Len() - length; overLength <= int(max) {
-						overMaxBuf.Write(logsBuf.Bytes()[length:logsBuf.Len()])
+				tmpBuf.Reset()
+				// Storing event bytes over capacity in buffer before truncating.
+				if bufCap > 0 {
+					if over := buf.Len() - bufLen; over <= int(bufCap) {
+						tmpBuf.Write(buf.Bytes()[bufLen:buf.Len()])
 					} else {
-						permanentErrors = append(permanentErrors, consumererror.Permanent(fmt.Errorf("dropped log event: %s, error: event size %d bytes larger than configured max content length %d bytes", string(logsBuf.Bytes()[length:logsBuf.Len()]), overLength, max)))
+						permanentErrors = append(permanentErrors, consumererror.Permanent(
+							fmt.Errorf("dropped log event: %s, error: event size %d bytes larger than configured max content length %d bytes", string(buf.Bytes()[bufLen:buf.Len()]), over, bufCap)))
 					}
 				}
 
-				logsBuf.Truncate(length)
-				if logsBuf.Len() > 0 {
-					if err = send(ctx, logsBuf); err != nil {
-						return consumererror.PartialLogsError(err, *subLogs(&ld, log0Index))
+				// Truncating buffer at tracked length below capacity and sending.
+				buf.Truncate(bufLen)
+				if buf.Len() > 0 {
+					if err = send(ctx, buf); err != nil {
+						return consumererror.PartialLogsError(err, *subLogs(&ld, bufFront))
 					}
 				}
-				logsBuf.Reset()
-				overMaxBuf.WriteTo(logsBuf)
+				buf.Reset()
 
-				log0Index, length = nil, logsBuf.Len()
+				// Writing truncated bytes back to buffer.
+				tmpBuf.WriteTo(buf)
+
+				bufFront, bufLen = nil, buf.Len()
 			}
 		}
 	}
 
-	if logsBuf.Len() > 0 {
-		if err = send(ctx, logsBuf); err != nil {
-			return consumererror.PartialLogsError(err, *subLogs(&ld, log0Index))
+	if buf.Len() > 0 {
+		if err = send(ctx, buf); err != nil {
+			return consumererror.PartialLogsError(err, *subLogs(&ld, bufFront))
 		}
 	}
 
@@ -263,46 +280,49 @@ func (c *client) postEvents(ctx context.Context, events io.Reader, compressed bo
 	return nil
 }
 
-// subLogs returns a subset of `ld` starting from index `start` to the end.
-func subLogs(ld *pdata.Logs, start *logIndex) *pdata.Logs {
-	if ld == nil || start == nil || start.zero() {
+// subLogs returns a subset of `ld` starting from index `from` to the end.
+func subLogs(ld *pdata.Logs, from *logIndex) *pdata.Logs {
+	if ld == nil || from == nil || from.zero() {
 		return ld
 	}
 
-	logs := pdata.NewLogs()
+	subset := pdata.NewLogs()
 
-	rl, rl2 := ld.ResourceLogs(), logs.ResourceLogs()
+	resources := ld.ResourceLogs()
+	resourcesSub := subset.ResourceLogs()
 
-	for r := start.resource; r < rl.Len(); r++ {
-		rl2.Append(pdata.NewResourceLogs())
-		rl.At(r).Resource().CopyTo(rl2.At(r - start.resource).Resource())
+	for i := from.resource; i < resources.Len(); i++ {
+		resourcesSub.Append(pdata.NewResourceLogs())
+		resources.At(i).Resource().CopyTo(resourcesSub.At(i - from.resource).Resource())
 
-		il, il2 := rl.At(r).InstrumentationLibraryLogs(), rl2.At(r-start.resource).InstrumentationLibraryLogs()
+		libraries := resources.At(i).InstrumentationLibraryLogs()
+		librariesSub := resourcesSub.At(i - from.resource).InstrumentationLibraryLogs()
 
-		i := 0
-		if r == start.resource {
-			i = start.library
+		j := 0
+		if i == from.resource {
+			j = from.library
 		}
-		for i2 := 0; i < il.Len(); i++ {
-			il2.Append(pdata.NewInstrumentationLibraryLogs())
-			il.At(i).InstrumentationLibrary().CopyTo(il2.At(i2).InstrumentationLibrary())
+		for jSub := 0; j < libraries.Len(); j++ {
+			librariesSub.Append(pdata.NewInstrumentationLibraryLogs())
+			libraries.At(j).InstrumentationLibrary().CopyTo(librariesSub.At(jSub).InstrumentationLibrary())
 
-			lr, lr2 := il.At(i).Logs(), il2.At(i2).Logs()
-			i2++
+			logs := libraries.At(j).Logs()
+			logsSub := librariesSub.At(jSub).Logs()
+			jSub++
 
-			l := 0
-			if r == start.resource && i == start.library {
-				l = start.record
+			k := 0
+			if i == from.resource && j == from.library {
+				k = from.record
 			}
-			for l2 := 0; l < lr.Len(); l++ {
-				lr2.Append(pdata.NewLogRecord())
-				lr.At(l).CopyTo(lr2.At(l2))
-				l2++
+			for kSub := 0; k < logs.Len(); k++ {
+				logsSub.Append(pdata.NewLogRecord())
+				logs.At(k).CopyTo(logsSub.At(kSub))
+				kSub++
 			}
 		}
 	}
 
-	return &logs
+	return &subset
 }
 
 func encodeBodyEvents(zippers *sync.Pool, evs []*splunk.Event, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
