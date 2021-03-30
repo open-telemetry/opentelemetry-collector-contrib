@@ -115,9 +115,9 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleSumDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	doubleHistogramMetric := metrics.At(7)
-	doubleHistogramMetric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
+	doubleHistogramMetric.SetDataType(pdata.MetricDataTypeHistogram)
 	doubleHistogramMetric.SetName("double_histogram")
-	doubleHistogram := doubleHistogramMetric.DoubleHistogram()
+	doubleHistogram := doubleHistogramMetric.Histogram()
 	doubleHistogramDataPoints := doubleHistogram.DataPoints()
 	doubleHistogramDataPoints.Resize(1)
 

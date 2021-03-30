@@ -54,7 +54,7 @@ type sapmReceiver struct {
 	config *Config
 	server *http.Server
 
-	nextConsumer consumer.TracesConsumer
+	nextConsumer consumer.Traces
 
 	// defaultResponse is a placeholder. For now this receiver returns an empty sapm response.
 	// This defaultResponse is an optimization so we don't have to proto.Marshal the response
@@ -186,7 +186,7 @@ func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 
 		// run the server on a routine
 		go func() {
-			if errHTTP := sr.server.Serve(ln); errHTTP != nil {
+			if errHTTP := sr.server.Serve(ln); errHTTP != http.ErrServerClosed {
 				host.ReportFatalError(errHTTP)
 			}
 		}()
@@ -218,7 +218,7 @@ func New(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	config *Config,
-	nextConsumer consumer.TracesConsumer,
+	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	// build the response message
 	defaultResponse := &splunksapm.PostSpansResponse{}

@@ -19,14 +19,14 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
 )
 
 const (
 	// The value of extension "type" in configuration.
-	typeStr configmodels.Type = "http_forwarder"
+	typeStr config.Type = "http_forwarder"
 
 	// Default endpoints to bind to.
 	defaultEndpoint = ":6060"
@@ -40,9 +40,9 @@ func NewFactory() component.ExtensionFactory {
 		createExtension)
 }
 
-func createDefaultConfig() configmodels.Extension {
+func createDefaultConfig() config.Extension {
 	return &Config{
-		ExtensionSettings: configmodels.ExtensionSettings{
+		ExtensionSettings: config.ExtensionSettings{
 			TypeVal: typeStr,
 			NameVal: string(typeStr),
 		},
@@ -58,7 +58,7 @@ func createDefaultConfig() configmodels.Extension {
 func createExtension(
 	_ context.Context,
 	params component.ExtensionCreateParams,
-	cfg configmodels.Extension,
+	cfg config.Extension,
 ) (component.Extension, error) {
 	return newHTTPForwarder(cfg.(*Config), params.Logger)
 }

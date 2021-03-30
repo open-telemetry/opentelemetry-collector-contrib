@@ -29,14 +29,17 @@ import (
 var (
 	allScrapers = map[string]func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.ResourceMetricsScraper, error){
 		"brokers": createBrokerScraper,
+		"topics":  createTopicsScraper,
 	}
 )
+
+const InstrumentationLibName = "otelcol/kafkametrics"
 
 var newMetricsReceiver = func(
 	ctx context.Context,
 	config Config,
 	params component.ReceiverCreateParams,
-	consumer consumer.MetricsConsumer,
+	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	sc := sarama.NewConfig()
 	sc.ClientID = config.ClientID

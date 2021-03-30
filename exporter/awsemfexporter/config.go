@@ -15,7 +15,7 @@
 package awsemfexporter
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
@@ -28,7 +28,7 @@ var (
 
 // Config defines configuration for AWS EMF exporter.
 type Config struct {
-	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	// LogGroupName is the name of CloudWatch log group which defines group of log streams
 	// that share the same retention, monitoring, and access control settings.
 	LogGroupName string `mapstructure:"log_group_name"`
@@ -61,11 +61,21 @@ type Config struct {
 	// "SingleDimensionRollupOnly" - Enable single dimension rollup
 	// "NoDimensionRollup" - No dimension rollup (only keep original metrics which contain all dimensions)
 	DimensionRollupOption string `mapstructure:"dimension_rollup_option"`
+	// ParseJSONEncodedAttributeValues is an array of attribute keys whose corresponding values are JSON-encoded as strings.
+	// Those strings will be decoded to its original json structure.
+	ParseJSONEncodedAttributeValues []string `mapstructure:"parse_json_encoded_attr_values"`
+
 	// MetricDeclarations is the list of rules to be used to set dimensions for exported metrics.
 	MetricDeclarations []*MetricDeclaration `mapstructure:"metric_declarations"`
 
 	// MetricDescriptors is the list of override metric descriptors that are sent to the CloudWatch
 	MetricDescriptors []MetricDescriptor `mapstructure:"metric_descriptors"`
+
+	// OutputDestination is an option to specify the EMFExporter output. Default option is "cloudwatch"
+	// "cloudwatch" - direct the exporter output to CloudWatch backend
+	// "stdout" - direct the exporter output to stdout
+	// TODO: we can support directing output to a file (in the future) while customer specifies a file path here.
+	OutputDestination string `mapstructure:"output_destination"`
 
 	// ResourceToTelemetrySettings is the option for converting resource attrihutes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.

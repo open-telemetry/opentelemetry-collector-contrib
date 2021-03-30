@@ -19,12 +19,12 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-type config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
+type Config struct {
+	config.ReceiverSettings `mapstructure:",squash"`
 	// The path for the JMX Metric Gatherer uber JAR (/opt/opentelemetry-java-contrib-jmx-metrics.jar by default).
 	JARPath string `mapstructure:"jar_path"`
 	// The Service URL or host:port for the target coerced to one of form: service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
@@ -70,7 +70,7 @@ type otlpExporterConfig struct {
 	Headers map[string]string `mapstructure:"headers"`
 }
 
-func (c *config) validate() error {
+func (c *Config) validate() error {
 	var missingFields []string
 	if c.Endpoint == "" {
 		missingFields = append(missingFields, "`endpoint`")

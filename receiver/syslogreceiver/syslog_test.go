@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -88,7 +88,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[configmodels.Type(typeStr)] = factory
+	factories.Receivers[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -102,7 +102,7 @@ func TestLoadConfig(t *testing.T) {
 func testdataConfigYamlAsMap() *SysLogConfig {
 	return &SysLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "syslog",
 				NameVal: "syslog",
 			},
@@ -120,7 +120,7 @@ func testdataConfigYamlAsMap() *SysLogConfig {
 func testdataUDPConfig() *SysLogConfig {
 	return &SysLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "syslog",
 				NameVal: "syslog",
 			},
@@ -143,7 +143,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 	factory := NewFactory()
 	badCfg := &SysLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "syslog",
 				NameVal: "syslog",
 			},

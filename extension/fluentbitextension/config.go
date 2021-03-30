@@ -15,12 +15,12 @@
 package fluentbitextension
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Config has the configuration for the fluentbit extension.
 type Config struct {
-	configmodels.ExtensionSettings `mapstructure:",squash"`
+	config.ExtensionSettings `mapstructure:",squash"`
 
 	// The TCP `host:port` to which the subprocess should send log entries.
 	// This is required unless you are overridding `args` and providing the

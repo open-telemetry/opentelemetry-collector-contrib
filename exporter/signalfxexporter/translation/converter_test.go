@@ -83,7 +83,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	histDP.SetBucketCounts(histCounts)
 	labels.CopyTo(histDP.LabelsMap())
 
-	doubleHistDP := pdata.NewDoubleHistogramDataPoint()
+	doubleHistDP := pdata.NewHistogramDataPoint()
 	doubleHistDP.SetTimestamp(ts)
 	doubleHistDP.SetCount(16)
 	doubleHistDP.SetSum(100.0)
@@ -457,8 +457,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				{
 					m := ilm.Metrics().At(1)
 					m.SetName("double_histo")
-					m.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-					m.DoubleHistogram().DataPoints().Append(doubleHistDP)
+					m.SetDataType(pdata.MetricDataTypeHistogram)
+					m.Histogram().DataPoints().Append(doubleHistDP)
 				}
 
 				{
@@ -471,18 +471,18 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				{
 					m := ilm.Metrics().At(3)
 					m.SetName("double_delta_histo")
-					m.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-					m.DoubleHistogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-					m.DoubleHistogram().DataPoints().Append(doubleHistDP)
+					m.SetDataType(pdata.MetricDataTypeHistogram)
+					m.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+					m.Histogram().DataPoints().Append(doubleHistDP)
 				}
 
 				return out
 			},
 			wantSfxDataPoints: mergeDPs(
 				expectedFromIntHistogram("int_histo", tsMSecs, labelMap, histDP, false),
-				expectedFromDoubleHistogram("double_histo", tsMSecs, labelMap, doubleHistDP, false),
+				expectedFromHistogram("double_histo", tsMSecs, labelMap, doubleHistDP, false),
 				expectedFromIntHistogram("int_delta_histo", tsMSecs, labelMap, histDP, true),
-				expectedFromDoubleHistogram("double_delta_histo", tsMSecs, labelMap, doubleHistDP, true),
+				expectedFromHistogram("double_delta_histo", tsMSecs, labelMap, doubleHistDP, true),
 			),
 		},
 		{
@@ -835,11 +835,11 @@ func expectedFromIntHistogram(
 	return dps
 }
 
-func expectedFromDoubleHistogram(
+func expectedFromHistogram(
 	metricName string,
 	ts int64,
 	dims map[string]string,
-	histDP pdata.DoubleHistogramDataPoint,
+	histDP pdata.HistogramDataPoint,
 	isDelta bool,
 ) []*sfxpb.DataPoint {
 	buckets := histDP.BucketCounts()

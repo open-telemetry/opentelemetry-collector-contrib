@@ -16,7 +16,6 @@ package googlecloudexporter
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"testing"
 	"time"
@@ -124,7 +123,7 @@ func TestGoogleCloudTraceExport(t *testing.T) {
 
 			r := <-reqCh
 			assert.Len(t, r.Spans, 1)
-			assert.Equal(t, fmt.Sprintf("Span.internal-%s", spanName), r.Spans[0].GetDisplayName().Value)
+			assert.Equal(t, spanName, r.Spans[0].GetDisplayName().Value)
 			assert.Equal(t, timestamppb.New(testTime), r.Spans[0].StartTime)
 		})
 	}
@@ -208,9 +207,9 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 		Resource: &resourcepb.Resource{
 			Type: "host",
 			Labels: map[string]string{
-				"cloud.zone":       "us-central1",
-				"host.name":        "foo",
-				"k8s.cluster.name": "test",
+				"cloud.availability_zone": "us-central1",
+				"host.name":               "foo",
+				"k8s.cluster.name":        "test",
 				"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
 			},
 		},
@@ -255,9 +254,9 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 	md.Metrics[2].Resource = &resourcepb.Resource{
 		Type: "host",
 		Labels: map[string]string{
-			"cloud.zone":       "us-central1",
-			"host.name":        "bar",
-			"k8s.cluster.name": "test",
+			"cloud.availability_zone": "us-central1",
+			"host.name":               "bar",
+			"k8s.cluster.name":        "test",
 			"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
 		},
 	}

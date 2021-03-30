@@ -14,11 +14,11 @@
 
 package awsxrayexporter
 
-import "go.opentelemetry.io/collector/config/configmodels"
+import "go.opentelemetry.io/collector/config"
 
 // Config defines configuration for AWS X-Ray exporter.
 type Config struct {
-	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	// Maximum number of concurrent calls to AWS X-Ray to upload documents.
 	NumberOfWorkers int `mapstructure:"num_workers"`
 	// X-Ray service endpoint to which the collector sends segment documents.

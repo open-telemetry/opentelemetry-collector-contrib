@@ -37,8 +37,8 @@ exporter/sentryexporter/                             @open-telemetry/collector-c
 exporter/signalfxexporter/                           @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
 exporter/signalfxcorrelationexporter/                @open-telemetry/collector-contrib-approvers @jrcamp @keitwb
 exporter/splunkhecexporter/                          @open-telemetry/collector-contrib-approvers @atoulme
-exporter/stackdriverexporter/                        @open-telemetry/collector-contrib-approvers @dashpole
-exporter/googlecloudexporter/                        @open-telemetry/collector-contrib-approvers @dashpole
+exporter/stackdriverexporter/                        @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @tbarker25
+exporter/googlecloudexporter/                        @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @tbarker25
 exporter/sumologicexporter/                          @open-telemetry/collector-contrib-approvers @pmm-sumo @sumo-drosiek
 exporter/uptraceexporter/                            @open-telemetry/collector-contrib-approvers @vmihailenco
 
@@ -66,6 +66,7 @@ receiver/awsxrayreceiver/                            @open-telemetry/collector-c
 receiver/carbonreceiver/                             @open-telemetry/collector-contrib-approvers @pjanotti
 receiver/collectdreceiver/                           @open-telemetry/collector-contrib-approvers @owais
 receiver/dockerstatsreceiver/                        @open-telemetry/collector-contrib-approvers @rmfitzpatrick
+receiver/dotnetdiagnosticsreceiver/                  @open-telemetry/collector-contrib-approvers @pmcollins @davmason
 receiver/jmxreceiver/                                @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/k8sclusterreceiver/                         @open-telemetry/collector-contrib-approvers @asuresh4
 receiver/kubeletstatsreceiver/                       @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4

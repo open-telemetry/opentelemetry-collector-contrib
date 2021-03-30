@@ -76,8 +76,8 @@ type splunkReceiver struct {
 	sync.Mutex
 	logger          *zap.Logger
 	config          *Config
-	logsConsumer    consumer.LogsConsumer
-	metricsConsumer consumer.MetricsConsumer
+	logsConsumer    consumer.Logs
+	metricsConsumer consumer.Metrics
 	server          *http.Server
 }
 
@@ -87,7 +87,7 @@ var _ component.MetricsReceiver = (*splunkReceiver)(nil)
 func NewMetricsReceiver(
 	logger *zap.Logger,
 	config Config,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextMetricsConsumer
@@ -117,7 +117,7 @@ func NewMetricsReceiver(
 func NewLogsReceiver(
 	logger *zap.Logger,
 	config Config,
-	nextConsumer consumer.LogsConsumer,
+	nextConsumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextLogsConsumer
@@ -168,7 +168,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	r.server.WriteTimeout = defaultServerTimeout
 
 	go func() {
-		if errHTTP := r.server.Serve(ln); errHTTP != nil {
+		if errHTTP := r.server.Serve(ln); errHTTP != http.ErrServerClosed {
 			host.ReportFatalError(errHTTP)
 		}
 	}()

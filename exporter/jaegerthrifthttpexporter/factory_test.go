@@ -21,8 +21,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 )
 
@@ -55,8 +55,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 func TestFactory_CreateTraceExporter(t *testing.T) {
 	config := &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
+		ExporterSettings: config.ExporterSettings{
+			TypeVal: config.Type(typeStr),
 			NameVal: typeStr,
 		},
 		URL: "http://some.other.location/api/traces",
@@ -82,8 +82,8 @@ func TestFactory_CreateTraceExporterFails(t *testing.T) {
 		{
 			name: "empty_url",
 			config: &Config{
-				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: configmodels.Type(typeStr),
+				ExporterSettings: config.ExporterSettings{
+					TypeVal: config.Type(typeStr),
 					NameVal: typeStr,
 				},
 			},
@@ -92,8 +92,8 @@ func TestFactory_CreateTraceExporterFails(t *testing.T) {
 		{
 			name: "invalid_url",
 			config: &Config{
-				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: configmodels.Type(typeStr),
+				ExporterSettings: config.ExporterSettings{
+					TypeVal: config.Type(typeStr),
 					NameVal: typeStr,
 				},
 				URL: ".localhost:123",
@@ -103,8 +103,8 @@ func TestFactory_CreateTraceExporterFails(t *testing.T) {
 		{
 			name: "negative_duration",
 			config: &Config{
-				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: configmodels.Type(typeStr),
+				ExporterSettings: config.ExporterSettings{
+					TypeVal: config.Type(typeStr),
 					NameVal: typeStr,
 				},
 				URL:     "localhost:123",

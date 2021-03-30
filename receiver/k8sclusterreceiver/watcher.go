@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
@@ -172,7 +172,7 @@ func (rw *resourceWatcher) waitForInitialInformerSync() {
 }
 
 func (rw *resourceWatcher) setupMetadataExporters(
-	exporters map[configmodels.NamedEntity]component.Exporter,
+	exporters map[config.NamedEntity]component.Exporter,
 	metadataExportersFromConfig []string,
 ) error {
 
@@ -202,7 +202,7 @@ func (rw *resourceWatcher) setupMetadataExporters(
 }
 
 func validateMetadataExporters(metadataExporters map[string]bool,
-	exporters map[configmodels.NamedEntity]component.Exporter) error {
+	exporters map[config.NamedEntity]component.Exporter) error {
 
 	configuredExporters := map[string]bool{}
 	for cfg := range exporters {

@@ -23,9 +23,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -37,7 +37,7 @@ import (
 type mockMetricsConsumer struct {
 }
 
-var _ (consumer.MetricsConsumer) = (*mockMetricsConsumer)(nil)
+var _ (consumer.Metrics) = (*mockMetricsConsumer)(nil)
 
 func (m *mockMetricsConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	return nil
@@ -49,7 +49,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 
-	assert.Equal(t, configmodels.Type(awsxray.TypeStr), factory.Type())
+	assert.Equal(t, config.Type(awsxray.TypeStr), factory.Type())
 }
 
 func TestCreateTracesReceiver(t *testing.T) {

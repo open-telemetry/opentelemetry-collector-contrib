@@ -37,7 +37,7 @@ type observerHandler struct {
 	// receiversByEndpointID is a map of endpoint IDs to a receiver instance.
 	receiversByEndpointID receiverMap
 	// nextConsumer is the receiver_creator's own consumer
-	nextConsumer consumer.MetricsConsumer
+	nextConsumer consumer.Metrics
 	// runner starts and stops receiver instances.
 	runner runner
 }
@@ -58,7 +58,7 @@ func (obs *observerHandler) shutdown() error {
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("shutdown on %d receivers failed: %v", len(errs), consumererror.CombineErrors(errs))
+		return fmt.Errorf("shutdown on %d receivers failed: %v", len(errs), consumererror.Combine(errs))
 	}
 
 	return nil

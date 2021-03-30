@@ -24,43 +24,39 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	config = &Config{
-		GroupByKeys: []string{"foo"},
-	}
-
-	logger, _ = zap.NewDevelopment()
-
-	params = component.ProcessorCreateParams{
-		Logger: logger,
-	}
-)
-
 func TestDefaultConfiguration(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	assert.Empty(t, c.GroupByKeys)
 }
 
 func TestCreateTestProcessor(t *testing.T) {
-	tp, err := createTraceProcessor(context.Background(), params, config, consumertest.NewTracesNop())
+	cfg := &Config{
+		GroupByKeys: []string{"foo"},
+	}
+
+	params := component.ProcessorCreateParams{
+		Logger: zap.NewNop(),
+	}
+
+	tp, err := createTraceProcessor(context.Background(), params, cfg, consumertest.NewTracesNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 	assert.Equal(t, true, tp.GetCapabilities().MutatesConsumedData)
 
-	lp, err := createLogsProcessor(context.Background(), params, config, consumertest.NewLogsNop())
+	lp, err := createLogsProcessor(context.Background(), params, cfg, consumertest.NewLogsNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
 	assert.Equal(t, true, lp.GetCapabilities().MutatesConsumedData)
 }
 
 func TestNoKeys(t *testing.T) {
-	gbap, err := createGroupByAttrsProcessor(logger, []string{})
+	gbap, err := createGroupByAttrsProcessor(zap.NewNop(), []string{})
 	assert.Error(t, err)
 	assert.Nil(t, gbap)
 }
 
 func TestDuplicateKeys(t *testing.T) {
-	gbap, err := createGroupByAttrsProcessor(logger, []string{"foo", "foo", ""})
+	gbap, err := createGroupByAttrsProcessor(zap.NewNop(), []string{"foo", "foo", ""})
 	assert.NoError(t, err)
 	assert.NotNil(t, gbap)
 	assert.EqualValues(t, []string{"foo"}, gbap.groupByKeys)

@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.uber.org/zap"
@@ -127,7 +127,7 @@ func TestRegisterExportersForValidRoute(t *testing.T) {
 	otlpExpFactory := otlpexporter.NewFactory()
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: configmodels.ExporterSettings{
+		ExporterSettings: config.ExporterSettings{
 			NameVal: "otlp",
 			TypeVal: "otlp",
 		},
@@ -139,9 +139,9 @@ func TestRegisterExportersForValidRoute(t *testing.T) {
 	require.NoError(t, err)
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter {
-			return map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter{
-				configmodels.TracesDataType: {
+		GetExportersFunc: func() map[config.DataType]map[config.NamedEntity]component.Exporter {
+			return map[config.DataType]map[config.NamedEntity]component.Exporter{
+				config.TracesDataType: {
 					otlpConfig: otlpExp,
 				},
 			}
@@ -195,7 +195,7 @@ func TestErrorRequestedExporterNotFoundForDefaultRoute(t *testing.T) {
 	otlpExpFactory := otlpexporter.NewFactory()
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: configmodels.ExporterSettings{
+		ExporterSettings: config.ExporterSettings{
 			NameVal: "otlp",
 			TypeVal: "otlp",
 		},
@@ -207,9 +207,9 @@ func TestErrorRequestedExporterNotFoundForDefaultRoute(t *testing.T) {
 	require.NoError(t, err)
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter {
-			return map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter{
-				configmodels.TracesDataType: {
+		GetExportersFunc: func() map[config.DataType]map[config.NamedEntity]component.Exporter {
+			return map[config.DataType]map[config.NamedEntity]component.Exporter{
+				config.TracesDataType: {
 					otlpConfig: otlpExp,
 				},
 			}
@@ -238,16 +238,16 @@ func TestInvalidExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: configmodels.ExporterSettings{
+		ExporterSettings: config.ExporterSettings{
 			NameVal: "otlp",
 			TypeVal: "otlp",
 		},
 	}
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter {
-			return map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter{
-				configmodels.TracesDataType: {
+		GetExportersFunc: func() map[config.DataType]map[config.NamedEntity]component.Exporter {
+			return map[config.DataType]map[config.NamedEntity]component.Exporter{
+				config.TracesDataType: {
 					otlpConfig: &mockComponent{},
 				},
 			}
@@ -425,10 +425,10 @@ func TestProcessorCapabilities(t *testing.T) {
 
 type mockHost struct {
 	component.Host
-	GetExportersFunc func() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter
+	GetExportersFunc func() map[config.DataType]map[config.NamedEntity]component.Exporter
 }
 
-func (m *mockHost) GetExporters() map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter {
+func (m *mockHost) GetExporters() map[config.DataType]map[config.NamedEntity]component.Exporter {
 	if m.GetExportersFunc != nil {
 		return m.GetExportersFunc()
 	}

@@ -18,10 +18,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -44,10 +44,10 @@ func NewFactory() component.ReceiverFactory {
 		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: configmodels.Type(typeStr),
+		ReceiverSettings: config.ReceiverSettings{
+			TypeVal: config.Type(typeStr),
 			NameVal: typeStr,
 		},
 		ResourceAttributes: resourceAttributes{
@@ -69,8 +69,8 @@ func createDefaultConfig() configmodels.Receiver {
 func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
+	cfg config.Receiver,
+	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	return newReceiverCreator(params, cfg.(*Config), consumer)
 }
@@ -80,30 +80,32 @@ func customUnmarshaler(sourceViperSection *viper.Viper, intoCfg interface{}) err
 		// Nothing to do if there is no config given.
 		return nil
 	}
+	cp := config.ParserFromViper(sourceViperSection)
 	c := intoCfg.(*Config)
 
-	if err := sourceViperSection.Unmarshal(&c); err != nil {
+	if err := cp.Unmarshal(&c); err != nil {
 		return err
 	}
 
-	receiversCfg, err := config.ViperSubExact(sourceViperSection, receiversConfigKey)
+	receiversCfg, err := cp.Sub(receiversConfigKey)
 	if err != nil {
 		return fmt.Errorf("unable to extract key %v: %v", receiversConfigKey, err)
 	}
 
-	for subreceiverKey := range receiversCfg.AllSettings() {
-		subreceiverSection, err := config.ViperSubExact(receiversCfg, subreceiverKey)
+	receiversSettings := cast.ToStringMap(cp.Get(receiversConfigKey))
+	for subreceiverKey := range receiversSettings {
+		subreceiverSection, err := receiversCfg.Sub(subreceiverKey)
 		if err != nil {
 			return fmt.Errorf("unable to extract subreceiver key %v: %v", subreceiverKey, err)
 		}
-		cfgSection := subreceiverSection.GetStringMap(configKey)
+		cfgSection := cast.ToStringMap(subreceiverSection.Get(configKey))
 		subreceiver, err := newReceiverTemplate(subreceiverKey, cfgSection)
 		if err != nil {
 			return err
 		}
 
 		// Unmarshals receiver_creator configuration like rule.
-		if err = receiversCfg.UnmarshalKey(subreceiverKey, &subreceiver); err != nil {
+		if err = subreceiverSection.Unmarshal(&subreceiver); err != nil {
 			return fmt.Errorf("failed to deserialize sub-receiver %q: %s", subreceiverKey, err)
 		}
 

@@ -23,8 +23,7 @@ import (
 
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
-	otelconfig "go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
@@ -54,10 +53,10 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
+		ExporterSettings: config.ExporterSettings{
+			TypeVal: config.Type(typeStr),
 			NameVal: typeStr,
 		},
 		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultHTTPTimeout},
@@ -96,7 +95,7 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 func createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	eCfg configmodels.Exporter,
+	eCfg config.Exporter,
 ) (component.TracesExporter, error) {
 	cfg := eCfg.(*Config)
 	corrCfg := cfg.Correlation
@@ -124,7 +123,7 @@ func createTraceExporter(
 func createMetricsExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	config configmodels.Exporter,
+	config config.Exporter,
 ) (component.MetricsExporter, error) {
 
 	expCfg := config.(*Config)
@@ -156,8 +155,8 @@ func createMetricsExporter(
 	// this ensures that we get batches of data for the same token when pushing to the backend.
 	if expCfg.AccessTokenPassthrough {
 		me = &baseMetricsExporter{
-			Component:       me,
-			MetricsConsumer: batchperresourceattr.NewBatchPerResourceMetrics(splunk.SFxAccessTokenLabel, me),
+			Component: me,
+			Metrics:   batchperresourceattr.NewBatchPerResourceMetrics(splunk.SFxAccessTokenLabel, me),
 		}
 	}
 
@@ -168,17 +167,17 @@ func createMetricsExporter(
 }
 
 func loadDefaultTranslationRules() ([]translation.Rule, error) {
-	config := Config{}
+	cfg := Config{}
 
-	v := otelconfig.NewViper()
+	v := config.NewViper()
 	v.SetConfigType("yaml")
 	v.ReadConfig(strings.NewReader(translation.DefaultTranslationRulesYaml))
-	err := v.UnmarshalExact(&config)
+	err := v.UnmarshalExact(&cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load default translation rules: %v", err)
 	}
 
-	return config.TranslationRules, nil
+	return cfg.TranslationRules, nil
 }
 
 // setDefaultExcludes appends default metrics to be excluded to the exclude_metrics option.
@@ -194,23 +193,23 @@ func setDefaultExcludes(cfg *Config) error {
 }
 
 func loadDefaultExcludes() ([]dpfilters.MetricFilter, error) {
-	config := Config{}
+	cfg := Config{}
 
-	v := otelconfig.NewViper()
+	v := config.NewViper()
 	v.SetConfigType("yaml")
 	v.ReadConfig(strings.NewReader(translation.DefaultExcludeMetricsYaml))
-	err := v.UnmarshalExact(&config)
+	err := v.UnmarshalExact(&cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load default exclude metrics: %v", err)
 	}
 
-	return config.ExcludeMetrics, nil
+	return cfg.ExcludeMetrics, nil
 }
 
 func createLogsExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	expCfg := cfg.(*Config)
 
@@ -236,8 +235,8 @@ func createLogsExporter(
 	// this ensures that we get batches of data for the same token when pushing to the backend.
 	if expCfg.AccessTokenPassthrough {
 		le = &baseLogsExporter{
-			Component:    le,
-			LogsConsumer: batchperresourceattr.NewBatchPerResourceLogs(splunk.SFxAccessTokenLabel, le),
+			Component: le,
+			Logs:      batchperresourceattr.NewBatchPerResourceLogs(splunk.SFxAccessTokenLabel, le),
 		}
 	}
 

@@ -30,7 +30,7 @@ import (
 // CarbonDataSender implements MetricDataSender for Carbon metrics protocol.
 type CarbonDataSender struct {
 	testbed.DataSenderBase
-	consumer.MetricsConsumer
+	consumer.Metrics
 }
 
 // Ensure CarbonDataSender implements MetricDataSenderOld.
@@ -50,7 +50,7 @@ func NewCarbonDataSender(port int) *CarbonDataSender {
 // Start the sender.
 func (cs *CarbonDataSender) Start() error {
 	cfg := &carbonexporter.Config{
-		Endpoint: cs.GetEndpoint(),
+		Endpoint: cs.GetEndpoint().String(),
 		Timeout:  5 * time.Second,
 	}
 
@@ -62,7 +62,7 @@ func (cs *CarbonDataSender) Start() error {
 		return err
 	}
 
-	cs.MetricsConsumer = exporter
+	cs.Metrics = exporter
 	return nil
 }
 

@@ -162,15 +162,15 @@ func TestSerializeDoubleDataPoints(t *testing.T) {
 	}
 }
 
-func TestSerializeDoubleHistogramMetrics(t *testing.T) {
-	doubleHistSlice := pdata.NewDoubleHistogramDataPointSlice()
+func TestSerializeHistogramMetrics(t *testing.T) {
+	doubleHistSlice := pdata.NewHistogramDataPointSlice()
 	doubleHistSlice.Resize(1)
 	doubleHistPoint := doubleHistSlice.At(0)
 	doubleHistPoint.SetCount(10)
 	doubleHistPoint.SetSum(101.0)
 	doubleHistPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
-	labelDoubleHistSlice := pdata.NewDoubleHistogramDataPointSlice()
+	labelDoubleHistSlice := pdata.NewHistogramDataPointSlice()
 	labelDoubleHistSlice.Resize(1)
 	labelDoubleHistPoint := labelDoubleHistSlice.At(0)
 	labelDoubleHistPoint.SetCount(10)
@@ -178,16 +178,16 @@ func TestSerializeDoubleHistogramMetrics(t *testing.T) {
 	labelDoubleHistPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 	labelDoubleHistPoint.LabelsMap().Insert("labelKey", "labelValue")
 
-	zeroDoubleHistogramSlice := pdata.NewDoubleHistogramDataPointSlice()
-	zeroDoubleHistogramSlice.Resize(1)
-	zeroDoubleHistogramDataPoint := zeroDoubleHistogramSlice.At(0)
-	zeroDoubleHistogramDataPoint.SetCount(0)
-	zeroDoubleHistogramDataPoint.SetSum(0)
-	zeroDoubleHistogramDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
+	zeroHistogramSlice := pdata.NewHistogramDataPointSlice()
+	zeroHistogramSlice.Resize(1)
+	zeroHistogramDataPoint := zeroHistogramSlice.At(0)
+	zeroHistogramDataPoint.SetCount(0)
+	zeroHistogramDataPoint.SetSum(0)
+	zeroHistogramDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
 	type args struct {
 		name string
-		data pdata.DoubleHistogramDataPointSlice
+		data pdata.HistogramDataPointSlice
 		tags []string
 	}
 	tests := []struct {
@@ -226,7 +226,7 @@ func TestSerializeDoubleHistogramMetrics(t *testing.T) {
 			name: "Serialize zero double histogram",
 			args: args{
 				name: "zero_double_hist",
-				data: zeroDoubleHistogramSlice,
+				data: zeroHistogramSlice,
 				tags: []string{},
 			},
 			want: []string{},
@@ -234,8 +234,8 @@ func TestSerializeDoubleHistogramMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := SerializeDoubleHistogramMetrics(tt.args.name, tt.args.data, tt.args.tags); !equal(got, tt.want) {
-				t.Errorf("SerializeDoubleHistogramMetrics() = %v, want %v", got, tt.want)
+			if got := SerializeHistogramMetrics(tt.args.name, tt.args.data, tt.args.tags); !equal(got, tt.want) {
+				t.Errorf("SerializeHistogramMetrics() = %v, want %v", got, tt.want)
 			}
 		})
 	}

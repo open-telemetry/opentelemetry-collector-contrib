@@ -93,7 +93,7 @@ func constructResource() pdata.Resource {
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
 	attrs.InsertString(semconventions.AttributeCloudAccount, "999999998")
 	attrs.InsertString(semconventions.AttributeCloudRegion, "us-west-2")
-	attrs.InsertString(semconventions.AttributeCloudZone, "us-west-1b")
+	attrs.InsertString(semconventions.AttributeCloudAvailabilityZone, "us-west-1b")
 	attrs.CopyTo(resource.Attributes())
 	return resource
 }

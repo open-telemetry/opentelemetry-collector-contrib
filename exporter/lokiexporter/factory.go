@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -35,10 +35,10 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
+		ExporterSettings: config.ExporterSettings{
+			TypeVal: config.Type(typeStr),
 			NameVal: typeStr,
 		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -57,7 +57,7 @@ func createDefaultConfig() configmodels.Exporter {
 	}
 }
 
-func createLogsExporter(_ context.Context, params component.ExporterCreateParams, config configmodels.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(_ context.Context, params component.ExporterCreateParams, config config.Exporter) (component.LogsExporter, error) {
 	expCfg := config.(*Config)
 
 	if err := expCfg.validate(); err != nil {
