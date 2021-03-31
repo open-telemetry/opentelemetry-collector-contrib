@@ -41,6 +41,10 @@ type Config struct {
 	makeClient func(apiConf k8sconfig.APIConfig) (k8s.Interface, error)
 }
 
+func (cfg *Config) Validate() error {
+	return cfg.APIConfig.Validate()
+}
+
 func (cfg *Config) getK8sClient() (k8s.Interface, error) {
 	if cfg.makeClient == nil {
 		cfg.makeClient = k8sconfig.MakeClient
