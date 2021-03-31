@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python-contrib/compare/v0.19b0...HEAD)
 
+### Added
+- `opentelemetry-instrumentation-urllib3` Add urllib3 instrumentation
+  ([#299](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/299))
+
 ## [0.19b0](https://github.com/open-telemetry/opentelemetry-python-contrib/releases/tag/v0.19b0) - 2021-03-26
 
 ### Changed
@@ -153,7 +157,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `opentelemetry-instrumentation-botocore` Make botocore instrumentation check if instrumentation has been suppressed
   ([#182](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/182))
 - `opentelemetry-instrumentation-botocore` Botocore SpanKind as CLIENT and modify existing traced attributes
-  ([#150])(https://github.com/open-telemetry/opentelemetry-python-contrib/pull/150)
+  ([#150](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/150))
 - `opentelemetry-instrumentation-dbapi` Update dbapi and its dependant instrumentations to follow semantic conventions
   ([#195](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/195))
 - `opentelemetry-instrumentation-dbapi` Stop capturing query parameters by default

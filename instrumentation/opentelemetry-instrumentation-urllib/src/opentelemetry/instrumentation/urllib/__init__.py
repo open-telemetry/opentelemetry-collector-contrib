@@ -54,7 +54,7 @@ from opentelemetry.trace import SpanKind, get_tracer
 from opentelemetry.trace.status import Status
 
 # A key to a context variable to avoid creating duplicate spans when instrumenting
-_SUPPRESS_URLLIB_INSTRUMENTATION_KEY = "suppress_urllib_instrumentation"
+_SUPPRESS_HTTP_INSTRUMENTATION_KEY = "suppress_http_instrumentation"
 
 
 class URLLibInstrumentor(BaseInstrumentor):
@@ -124,7 +124,7 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
         _, request, call_wrapped, get_or_create_headers
     ):  # pylint: disable=too-many-locals
         if context.get_value("suppress_instrumentation") or context.get_value(
-            _SUPPRESS_URLLIB_INSTRUMENTATION_KEY
+            _SUPPRESS_HTTP_INSTRUMENTATION_KEY
         ):
             return call_wrapped()
 
@@ -154,7 +154,7 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
             inject(headers)
 
             token = context.attach(
-                context.set_value(_SUPPRESS_URLLIB_INSTRUMENTATION_KEY, True)
+                context.set_value(_SUPPRESS_HTTP_INSTRUMENTATION_KEY, True)
             )
             try:
                 result = call_wrapped()  # *** PROCEED
