@@ -143,6 +143,7 @@ func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
 			t.Parallel()
 
 			converter := NewConverter(
+				WithWorkerCount(1),
 				WithMaxFlushCount(tc.maxFlushCount),
 				WithFlushInterval(10*time.Millisecond), // To minimize time spent in test
 			)
@@ -187,6 +188,8 @@ func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
 					ill := ills.At(0)
 
 					actualCount += ill.Logs().Len()
+
+					assert.LessOrEqual(t, uint(ill.Logs().Len()), tc.maxFlushCount)
 
 				case <-timeoutTimer.C:
 					break forLoop
@@ -241,6 +244,7 @@ func TestAllConvertedEntriesAreSentAndReceivedWithinAnExpectedTimeDuration(t *te
 			t.Parallel()
 
 			converter := NewConverter(
+				WithWorkerCount(1),
 				WithMaxFlushCount(tc.maxFlushCount),
 				WithFlushInterval(tc.flushInterval),
 			)

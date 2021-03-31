@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza
 go 1.14
 
 require (
+	github.com/mitchellh/hashstructure/v2 v2.0.1
 	github.com/open-telemetry/opentelemetry-log-collection v0.16.1-0.20210315170618-aa8d82509c31
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.23.1-0.20210329172532-38e57614135f
