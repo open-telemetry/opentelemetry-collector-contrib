@@ -1,12 +1,17 @@
 # Storage
 
-A storage extension persist state beyond the collector process. Other components can request a storage client from the storage extension and use it to manage state. 
+A storage extension persists state beyond the collector process. Other components can request a storage client from the storage extension and use it to manage state. 
 
-The `storage.Extension` interface contains the following methods:
+The `storage.Extension` interface extends `component.Extension` by adding the following method:
 ```
-Get(string) ([]byte, error) // returns error if not found
-Set(string, []byte) error   // returns error if not set
-Delete(string) error        // returns error if not found
+GetClient(component.Kind, configmodels.NamedEntity) (Client, error)
+```
+
+The `storage.Client` interface contains the following methods:
+```
+Get(string) ([]byte, error)
+Set(string, []byte) error
+Delete(string) error
 ```
 Note: All methods should return error only if a problem occurred. (For example, if a file is no longer accessible, or if a remote service is unavailable.)
 
