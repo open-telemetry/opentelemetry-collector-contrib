@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/testbed/testbed"
 	scenarios "go.opentelemetry.io/collector/testbed/tests"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
 )
 
@@ -125,6 +126,15 @@ func TestLog10kDPS(t *testing.T) {
 				ExpectedMaxRAM: 155,
 			},
 			extensions: flw.Extensions(),
+		},
+		{
+			name:     "FluentForward-SplunkHEC",
+			sender:   datasenders.NewFluentLogsForwarder(t, testbed.GetAvailablePort(t)),
+			receiver: datareceivers.NewSplunkHECDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 60,
+				ExpectedMaxRAM: 150,
+			},
 		},
 	}
 
