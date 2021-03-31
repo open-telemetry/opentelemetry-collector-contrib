@@ -20,7 +20,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/tinylib/msgp v1.1.5 // indirect
 	github.com/zorkian/go-datadog-api v2.29.0+incompatible // indirect
-	go.opentelemetry.io/collector v0.23.1-0.20210329172532-38e57614135f
+	go.opentelemetry.io/collector v0.23.1-0.20210331155714-fe86ab5cba6d
 	go.uber.org/zap v1.16.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.29.1
 	gopkg.in/ini.v1 v1.57.0 // indirect
