@@ -1065,6 +1065,7 @@ github.com/nxadm/tail v1.4.4 h1:DQuhQpB1tVlglWS2hLQ5OV6B5r8aGxSrPc5Qo6uTN78=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/observiq/ctimefmt v1.0.0 h1:r7vTJ+Slkrt9fZ67mkf+mA6zAdR5nGIJRMTzkUyvilk=
 github.com/observiq/ctimefmt v1.0.0/go.mod h1:mxi62//WbSpG/roCO1c6MqZ7zQTvjVtYheqHN3eOjvc=
+github.com/observiq/go-syslog/v3 v3.0.2 h1:vaeINFErM/E3cKE2Ot1FAhhGq5mv7uGBOzjnGL3qhbY=
 github.com/observiq/go-syslog/v3 v3.0.2/go.mod h1:9abcumkQwDUY0VgWdH6CaaJ3Ks39A7NvIelMlavPru0=
 github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc h1:49ewVBwLcy+eYqI4R0ICilCI4dPjddpFXWv3liXzUxM=
 github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc/go.mod h1:WXIHwGy+c7/IK2PiJ4oxuTHkpnkSut7TNFpKnI5llPU=
