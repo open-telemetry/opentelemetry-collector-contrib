@@ -45,6 +45,10 @@ type Config struct {
 	Association []PodAssociationConfig `mapstructure:"pod_association"`
 }
 
+func (cfg *Config) Validate() error {
+	return cfg.APIConfig.Validate()
+}
+
 // ExtractConfig section allows specifying extraction rules to extract
 // data from k8s pod specs.
 type ExtractConfig struct {
