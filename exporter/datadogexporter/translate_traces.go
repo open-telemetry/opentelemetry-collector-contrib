@@ -228,12 +228,12 @@ func spanToDatadogSpan(s pdata.Span,
 	}
 
 	// get start/end time to calc duration
-	startTime := s.StartTime()
-	endTime := s.EndTime()
+	startTime := s.StartTimestamp()
+	endTime := s.EndTimestamp()
 	duration := int64(endTime) - int64(startTime)
 
 	// it's possible end time is unset, so default to 0 rather than using a negative number
-	if s.EndTime() == 0 {
+	if s.EndTimestamp() == 0 {
 		duration = 0
 	}
 

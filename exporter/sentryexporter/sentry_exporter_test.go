@@ -180,8 +180,8 @@ func TestSpanToSentrySpan(t *testing.T) {
 		testSpan.SetSpanID(spanID)
 		testSpan.SetParentSpanID(parentSpanID)
 		testSpan.SetName(name)
-		testSpan.SetStartTime(startTime)
-		testSpan.SetEndTime(endTime)
+		testSpan.SetStartTimestamp(startTime)
+		testSpan.SetEndTimestamp(endTime)
 		testSpan.SetKind(kind)
 
 		testSpan.Status().SetMessage(statusMessage)

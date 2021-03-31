@@ -21,12 +21,12 @@ import (
 )
 
 func addStartTime(startTime *float64, span *pdata.Span) {
-	span.SetStartTime(floatSecToNanoEpoch(startTime))
+	span.SetStartTimestamp(floatSecToNanoEpoch(startTime))
 }
 
 func addEndTime(endTime *float64, span *pdata.Span) {
 	if endTime != nil {
-		span.SetEndTime(floatSecToNanoEpoch(endTime))
+		span.SetEndTimestamp(floatSecToNanoEpoch(endTime))
 	}
 }
 

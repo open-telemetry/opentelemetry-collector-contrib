@@ -60,7 +60,7 @@ func rawMetricToPdata(dm dotnet.Metric, pdm pdata.Metric, startTime, now time.Ti
 		dps := sum.DataPoints()
 		dps.Resize(1)
 		dp := dps.At(0)
-		dp.SetStartTime(pdata.TimestampFromTime(startTime))
+		dp.SetStartTimestamp(pdata.TimestampFromTime(startTime))
 		dp.SetTimestamp(nowPD)
 		dp.SetValue(dm.Increment())
 	}

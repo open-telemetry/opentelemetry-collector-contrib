@@ -62,8 +62,8 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	span.SetParentSpanID(parentSpanID)
 	span.SetName("End-To-End Here")
 	span.SetKind(pdata.SpanKindSERVER)
-	span.SetStartTime(pdataStartTime)
-	span.SetEndTime(pdataEndTime)
+	span.SetStartTimestamp(pdataStartTime)
+	span.SetEndTimestamp(pdataEndTime)
 	span.SetTraceState("tracestatekey=tracestatevalue")
 
 	status := span.Status()

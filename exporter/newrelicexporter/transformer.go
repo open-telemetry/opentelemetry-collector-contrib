@@ -78,7 +78,7 @@ var (
 )
 
 func (t *traceTransformer) Span(span pdata.Span) (telemetry.Span, error) {
-	startTime := span.StartTime().AsTime()
+	startTime := span.StartTimestamp().AsTime()
 	sp := telemetry.Span{
 		// HexString validates the IDs, it will be an empty string if invalid.
 		ID:         span.SpanID().HexString(),
@@ -86,7 +86,7 @@ func (t *traceTransformer) Span(span pdata.Span) (telemetry.Span, error) {
 		ParentID:   span.ParentSpanID().HexString(),
 		Name:       span.Name(),
 		Timestamp:  startTime,
-		Duration:   span.EndTime().AsTime().Sub(startTime),
+		Duration:   span.EndTimestamp().AsTime().Sub(startTime),
 		Attributes: t.SpanAttributes(span),
 		Events:     t.SpanEvents(span),
 	}

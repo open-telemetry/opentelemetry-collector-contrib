@@ -178,8 +178,8 @@ func constructExceptionServerSpan(attributes map[string]interface{}, statuscode 
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/widgets")
 	span.SetKind(pdata.SpanKindSERVER)
-	span.SetStartTime(pdata.TimestampFromTime(startTime))
-	span.SetEndTime(pdata.TimestampFromTime(endTime))
+	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(statuscode)

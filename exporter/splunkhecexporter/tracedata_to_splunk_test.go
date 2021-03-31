@@ -102,7 +102,7 @@ func makeSpan(name string, ts *pdata.Timestamp) pdata.Span {
 	span.Attributes().InsertString("foo", "bar")
 	span.SetName(name)
 	if ts != nil {
-		span.SetStartTime(*ts)
+		span.SetStartTimestamp(*ts)
 	}
 	span.Links().Resize(1)
 	spanLink := span.Links().At(0)

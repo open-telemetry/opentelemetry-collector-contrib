@@ -52,8 +52,8 @@ func pdataSpanToOTSpanData(
 	sc := apitrace.SpanContextConfig{}
 	sc.TraceID = span.TraceID().Bytes()
 	sc.SpanID = span.SpanID().Bytes()
-	startTime := time.Unix(0, int64(span.StartTime()))
-	endTime := time.Unix(0, int64(span.EndTime()))
+	startTime := time.Unix(0, int64(span.StartTimestamp()))
+	endTime := time.Unix(0, int64(span.EndTimestamp()))
 	// TODO: Decide if ignoring the error is fine.
 	r, _ := sdkresource.New(
 		context.Background(),
