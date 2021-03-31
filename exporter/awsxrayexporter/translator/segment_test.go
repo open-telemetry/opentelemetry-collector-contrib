@@ -711,7 +711,6 @@ func constructDefaultResource() pdata.Resource {
 
 	resourceMapVal := pdata.NewAttributeValueMap()
 	resourceMap := resourceMapVal.MapVal()
-	resourceMap.InitEmptyWithCapacity(2)
 	resourceMap.InsertInt("key1", 1)
 	resourceMap.InsertString("key2", "value")
 	attrs.Insert(resourceMapKey, resourceMapVal)

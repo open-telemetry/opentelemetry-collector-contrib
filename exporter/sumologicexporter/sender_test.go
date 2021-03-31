@@ -140,7 +140,6 @@ func exampleMultitypeLogs() []pdata.LogRecord {
 
 	attVal := pdata.NewAttributeValueMap()
 	attMap := attVal.MapVal()
-	attMap.InitEmptyWithCapacity(2)
 	attMap.InsertString("lk1", "lv1")
 	attMap.InsertInt("lk2", 13)
 
