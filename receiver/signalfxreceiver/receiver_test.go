@@ -120,13 +120,11 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	doublePt := pdata.NewDoubleDataPoint()
 	doublePt.SetTimestamp(ts)
 	doublePt.SetValue(doubleVal)
-	doublePt.LabelsMap().InitEmptyWithCapacity(0)
 
 	int64Val := int64(123)
 	int64Pt := pdata.NewIntDataPoint()
 	int64Pt.SetTimestamp(ts)
 	int64Pt.SetValue(int64Val)
-	int64Pt.LabelsMap().InitEmptyWithCapacity(0)
 
 	want := pdata.NewMetrics()
 	rms := want.ResourceMetrics()
