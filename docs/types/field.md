@@ -6,13 +6,13 @@ Many [operators](/docs/operators/README.md) use fields in their configurations. 
 
 Fields are `.`-delimited strings which allow you to select attributes or records on the entry. 
 
-Fields can be used to select record, resource, or label values. For values on the record, use the prefix `$record` such as `$record.my_value`. To select a label, prefix your field with `$label` such as with `$label.my_attribute`. For resource values, use the prefix `$resource`.
+Fields can be used to select record, resource, or attribute values. For values on the record, use the prefix `$record` such as `$record.my_value`. To select an attributes, prefix your field with `$attributes` such as with `$attributes.my_attribute`. For resource values, use the prefix `$resource`.
 
 If a field contains a dot in it, a field can alternatively use bracket syntax for traversing through a map. For example, to select the key `k8s.cluster.name` on the entry's record, you can use the field `$record["k8s.cluster.name"]`.
 
 Record fields can be nested arbitrarily deeply, such as `$record.my_value.my_nested_value`.
 
-If a field does not start with `$resource`, `$label`, or `$record`, then `$record` is assumed. For example, `my_value` is equivalent to `$record.my_value`.
+If a field does not start with `$resource`, `$attributes`, or `$record`, then `$record` is assumed. For example, `my_value` is equivalent to `$record.my_value`.
 
 ## Examples
 
