@@ -18,9 +18,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 )
 
 func TestStartAgentSuccess(t *testing.T) {

@@ -17,10 +17,11 @@ package helper
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/errors"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"go.uber.org/zap"
 )
 
 // NewInputConfig creates a new input config with default values.

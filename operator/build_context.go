@@ -18,9 +18,10 @@ import (
 	"fmt"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/database"
 	"github.com/open-telemetry/opentelemetry-log-collection/logger"
-	"go.uber.org/zap"
 )
 
 // BuildContext supplies contextual resources when building an operator.

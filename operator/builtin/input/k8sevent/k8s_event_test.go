@@ -19,9 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
-	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +27,10 @@ import (
 	watch "k8s.io/apimachinery/pkg/watch"
 	fakev1 "k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	fakeTest "k8s.io/client-go/testing"
+
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
+	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 )
 
 var fakeTime = time.Date(2000, 1, 1, 1, 1, 1, 1, time.UTC)

@@ -22,10 +22,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/errors"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/transform"
+
+	"github.com/open-telemetry/opentelemetry-log-collection/errors"
 )
 
 // Reader manages a single file

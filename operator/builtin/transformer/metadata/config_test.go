@@ -19,9 +19,10 @@ import (
 	"path"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
+
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 )
 
 type testCase struct {

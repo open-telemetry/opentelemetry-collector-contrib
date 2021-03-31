@@ -19,8 +19,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 )
 
 func TestExprString(t *testing.T) {
