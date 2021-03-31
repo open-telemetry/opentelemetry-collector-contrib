@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testbed/testbed"
@@ -13,7 +15,6 @@ import (
 type SyslogWriter struct {
 	testbed.DataSenderBase
 	conn    net.Conn
-	count   int
 	buf     []string
 	bufSize int
 	network string
@@ -47,11 +48,14 @@ func (f *SyslogWriter) GetEndpoint() net.Addr {
 
 func (f *SyslogWriter) Start() (err error) {
 	f.conn, err = net.Dial(f.GetEndpoint().Network(), f.GetEndpoint().String())
+	// udp not ack, can't use net.Dial to check udp server is ready, use sleep 1 second to wait udp server start
+	if f.network == "udp" {
+		time.Sleep(1 * time.Second)
+	}
 	return err
 }
 
 func (f *SyslogWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) error {
-
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		for j := 0; j < logs.ResourceLogs().At(i).InstrumentationLibraryLogs().Len(); j++ {
 			ills := logs.ResourceLogs().At(i).InstrumentationLibraryLogs().At(j)
@@ -75,7 +79,15 @@ func (f *SyslogWriter) GenConfigYAMLStr() string {
 `, f.network, f.GetEndpoint())
 }
 func (f *SyslogWriter) Send(lr pdata.LogRecord) error {
-	msg := "<86>1 2021-02-28T00:01:02.003Z 192.168.1.1 SecureAuth0 23108 ID52020 [SecureAuth@27389] test msg\n"
+	ts := time.Unix(int64(lr.Timestamp()/1000000000), int64(lr.Timestamp()%100000000)).Format(time.RFC3339Nano)
+	sdid := strings.Builder{}
+	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "trace_id", lr.TraceID().HexString()))
+	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "span_id", lr.SpanID().HexString()))
+	sdid.WriteString(fmt.Sprintf("%s=\"%d\" ", "trace_flags", lr.Flags()))
+	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", k, v.StringVal()))
+	})
+	msg := fmt.Sprintf("<166> %s localhost %s - - [%s] %s", ts, lr.Name(), sdid.String(), lr.Body().StringVal())
 	f.buf = append(f.buf, msg)
 	return f.SendCheck()
 }
@@ -86,11 +98,13 @@ func (f *SyslogWriter) SendCheck() error {
 		for _, v := range f.buf {
 			b.WriteString(v)
 		}
+
 		_, err := f.conn.Write(b.Bytes())
 		f.buf = []string{}
 		if err != nil {
-			return err
+			return nil
 		}
+
 	}
 	return nil
 }
