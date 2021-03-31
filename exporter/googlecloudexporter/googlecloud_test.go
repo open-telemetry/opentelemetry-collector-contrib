@@ -117,7 +117,7 @@ func TestGoogleCloudTraceExport(t *testing.T) {
 			ispans.Spans().Resize(1)
 			span := ispans.Spans().At(0)
 			span.SetName(spanName)
-			span.SetStartTime(pdata.TimestampFromTime(testTime))
+			span.SetStartTimestamp(pdata.TimestampFromTime(testTime))
 			err = sde.ConsumeTraces(context.Background(), traces)
 			assert.NoError(t, err)
 

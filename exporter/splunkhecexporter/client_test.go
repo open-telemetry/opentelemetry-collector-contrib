@@ -81,8 +81,8 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 	for i := 0; i < numberOfTraces; i++ {
 		span := ils.Spans().At(i)
 		span.SetName("root")
-		span.SetStartTime(pdata.Timestamp((i + 1) * 1e9))
-		span.SetEndTime(pdata.Timestamp((i + 2) * 1e9))
+		span.SetStartTimestamp(pdata.Timestamp((i + 1) * 1e9))
+		span.SetEndTimestamp(pdata.Timestamp((i + 2) * 1e9))
 		span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 		span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 		span.SetTraceState("foo")

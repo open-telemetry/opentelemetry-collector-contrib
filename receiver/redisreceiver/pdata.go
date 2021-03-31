@@ -99,7 +99,7 @@ func newIntMetric(m *redisMetric, pt pdata.IntDataPoint, t *timeBundle) pdata.Me
 	if m.pdType == pdata.MetricDataTypeIntGauge {
 		points = pdm.IntGauge().DataPoints()
 	} else if m.pdType == pdata.MetricDataTypeIntSum {
-		pt.SetStartTime(pdata.TimestampFromTime(t.serverStart))
+		pt.SetStartTimestamp(pdata.TimestampFromTime(t.serverStart))
 		sum := pdm.IntSum()
 		sum.SetIsMonotonic(m.isMonotonic)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
@@ -120,7 +120,7 @@ func newDoubleMetric(m *redisMetric, pt pdata.DoubleDataPoint, t *timeBundle) pd
 	if m.pdType == pdata.MetricDataTypeDoubleGauge {
 		points = pdm.DoubleGauge().DataPoints()
 	} else if m.pdType == pdata.MetricDataTypeDoubleSum {
-		pt.SetStartTime(pdata.TimestampFromTime(t.serverStart))
+		pt.SetStartTimestamp(pdata.TimestampFromTime(t.serverStart))
 		sum := pdm.DoubleSum()
 		sum.SetIsMonotonic(m.isMonotonic)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)

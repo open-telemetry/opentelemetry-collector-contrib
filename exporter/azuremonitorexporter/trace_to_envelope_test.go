@@ -580,7 +580,7 @@ func commonEnvelopeValidations(
 
 	assert.NotNil(t, envelope)
 	assert.Equal(t, expectedEnvelopeName, envelope.Name)
-	assert.Equal(t, toTime(span.StartTime()).Format(time.RFC3339Nano), envelope.Time)
+	assert.Equal(t, toTime(span.StartTimestamp()).Format(time.RFC3339Nano), envelope.Time)
 	assert.Equal(t, defaultTraceIDAsHex, envelope.Tags[contracts.OperationId])
 	assert.Equal(t, defaultParentSpanIDAsHex, envelope.Tags[contracts.OperationParentId])
 	assert.Equal(t, defaultServiceNamespace+"."+defaultServiceName, envelope.Tags[contracts.CloudRole])
@@ -765,8 +765,8 @@ func getSpan(spanName string, spanKind pdata.SpanKind, initialAttributes map[str
 	span.SetParentSpanID(pdata.NewSpanID(defaultParentSpanID))
 	span.SetName(spanName)
 	span.SetKind(spanKind)
-	span.SetStartTime(defaultSpanStartTime)
-	span.SetEndTime(defaultSpanEndTme)
+	span.SetStartTimestamp(defaultSpanStartTime)
+	span.SetEndTimestamp(defaultSpanEndTme)
 	span.Attributes().InitFromMap(initialAttributes)
 	return span
 }

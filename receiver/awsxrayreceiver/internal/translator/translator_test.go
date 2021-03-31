@@ -1013,9 +1013,9 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 			sp.SetParentSpanID(pdata.NewSpanID(parentIDBytes))
 		}
 		sp.SetName(props.name)
-		sp.SetStartTime(pdata.Timestamp(props.startTimeSec * float64(time.Second)))
+		sp.SetStartTimestamp(pdata.Timestamp(props.startTimeSec * float64(time.Second)))
 		if props.endTimeSec != nil {
-			sp.SetEndTime(pdata.Timestamp(*props.endTimeSec * float64(time.Second)))
+			sp.SetEndTimestamp(pdata.Timestamp(*props.endTimeSec * float64(time.Second)))
 		}
 		sp.SetKind(props.spanKind)
 		traceIDBytes, _ := decodeXRayTraceID(&props.traceID)

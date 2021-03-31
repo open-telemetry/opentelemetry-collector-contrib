@@ -249,7 +249,7 @@ func (p *processorImp) buildMetrics() *pdata.Metrics {
 func (p *processorImp) collectLatencyMetrics(ilm *pdata.InstrumentationLibraryMetrics) {
 	for key := range p.latencyCount {
 		dpLatency := pdata.NewIntHistogramDataPoint()
-		dpLatency.SetStartTime(pdata.TimestampFromTime(p.startTime))
+		dpLatency.SetStartTimestamp(pdata.TimestampFromTime(p.startTime))
 		dpLatency.SetTimestamp(pdata.TimestampFromTime(time.Now()))
 		dpLatency.SetExplicitBounds(p.latencyBounds)
 		dpLatency.SetBucketCounts(p.latencyBucketCounts[key])
@@ -272,7 +272,7 @@ func (p *processorImp) collectLatencyMetrics(ilm *pdata.InstrumentationLibraryMe
 func (p *processorImp) collectCallMetrics(ilm *pdata.InstrumentationLibraryMetrics) {
 	for key := range p.callSum {
 		dpCalls := pdata.NewIntDataPoint()
-		dpCalls.SetStartTime(pdata.TimestampFromTime(p.startTime))
+		dpCalls.SetStartTimestamp(pdata.TimestampFromTime(p.startTime))
 		dpCalls.SetTimestamp(pdata.TimestampFromTime(time.Now()))
 		dpCalls.SetValue(p.callSum[key])
 
@@ -319,7 +319,7 @@ func (p *processorImp) aggregateMetricsForServiceSpans(rspans pdata.ResourceSpan
 }
 
 func (p *processorImp) aggregateMetricsForSpan(serviceName string, span pdata.Span) {
-	latencyInMilliseconds := float64(span.EndTime()-span.StartTime()) / float64(time.Millisecond.Nanoseconds())
+	latencyInMilliseconds := float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
 
 	// Binary search to find the latencyInMilliseconds bucket index.
 	index := sort.SearchFloat64s(p.latencyBounds, latencyInMilliseconds)

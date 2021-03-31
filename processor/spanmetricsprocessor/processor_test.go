@@ -320,7 +320,7 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 
 		dp := dps.At(0)
 		assert.Equal(t, int64(1), dp.Value(), "There should only be one metric per Service/operation/kind combination")
-		assert.NotZero(t, dp.StartTime(), "StartTimestamp should be set")
+		assert.NotZero(t, dp.StartTimestamp(), "StartTimestamp should be set")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
 		verifyMetricLabels(dp, t, seenMetricIDs)
@@ -453,8 +453,8 @@ func buildSpan(span span) pdata.Span {
 	s.SetKind(span.kind)
 	s.Status().SetCode(span.statusCode)
 	now := time.Now()
-	s.SetStartTime(pdata.TimestampFromTime(now))
-	s.SetEndTime(pdata.TimestampFromTime(now.Add(sampleLatencyDuration)))
+	s.SetStartTimestamp(pdata.TimestampFromTime(now))
+	s.SetEndTimestamp(pdata.TimestampFromTime(now.Add(sampleLatencyDuration)))
 	s.Attributes().InsertString(stringAttrName, "stringAttrValue")
 	s.Attributes().InsertInt(intAttrName, 99)
 	s.Attributes().InsertDouble(doubleAttrName, 99.99)
