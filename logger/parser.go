@@ -15,8 +15,9 @@
 package logger
 
 import (
-	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 )
 
 // parseEntry will create a stanza entry from a zapcore entry.

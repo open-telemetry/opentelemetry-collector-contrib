@@ -18,8 +18,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 )
 
 func TestParseValidTimestamp(t *testing.T) {

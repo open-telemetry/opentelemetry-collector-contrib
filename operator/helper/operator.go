@@ -15,9 +15,10 @@
 package helper
 
 import (
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/errors"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"go.uber.org/zap"
 )
 
 // NewBasicConfig creates a new basic config

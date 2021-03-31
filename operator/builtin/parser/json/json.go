@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	jsoniter "github.com/json-iterator/go"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"

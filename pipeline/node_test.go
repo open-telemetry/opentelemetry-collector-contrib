@@ -17,10 +17,11 @@ package pipeline
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/generate"
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/noop"
 	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNodeDOTID(t *testing.T) {

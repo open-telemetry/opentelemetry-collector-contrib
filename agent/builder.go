@@ -18,12 +18,13 @@ import (
 	"fmt"
 	"time"
 
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/database"
 	"github.com/open-telemetry/opentelemetry-log-collection/errors"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/plugin"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // LogAgentBuilder is a construct used to build a log agent

@@ -19,11 +19,12 @@ import (
 	"fmt"
 	"strings"
 
+	yaml "gopkg.in/yaml.v2"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/errors"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
-	yaml "gopkg.in/yaml.v2"
 )
 
 // Enforce that Config implements operator.Builder

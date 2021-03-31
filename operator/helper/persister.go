@@ -17,8 +17,9 @@ package helper
 import (
 	"sync"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/database"
 	"go.etcd.io/bbolt"
+
+	"github.com/open-telemetry/opentelemetry-log-collection/database"
 )
 
 // Persister is a helper used to persist data

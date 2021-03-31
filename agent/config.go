@@ -19,8 +19,9 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	yaml "gopkg.in/yaml.v2"
+
+	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 )
 
 // Config is the configuration of the stanza log agent.

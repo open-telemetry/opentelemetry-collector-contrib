@@ -19,8 +19,9 @@ package operator
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 )
 
 // Operator is a log monitoring component.

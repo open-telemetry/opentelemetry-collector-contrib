@@ -18,8 +18,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 )
 
 func TestIdentifier(t *testing.T) {

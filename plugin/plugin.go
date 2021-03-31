@@ -23,9 +23,10 @@ import (
 	"strings"
 	"text/template"
 
+	yaml "gopkg.in/yaml.v2"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/errors"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	yaml "gopkg.in/yaml.v2"
 )
 
 // Plugin is the rendered result of a plugin template.

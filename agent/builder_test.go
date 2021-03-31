@@ -19,9 +19,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 )
 
 func TestBuildAgentSuccess(t *testing.T) {

@@ -17,9 +17,10 @@ package agent
 import (
 	"sync"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/database"
 	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
-	"go.uber.org/zap"
 )
 
 // LogAgent is an entity that handles log monitoring.
