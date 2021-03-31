@@ -145,9 +145,9 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) 
 					e.addSampleRate(ev, attrs)
 				}
 
-				ev.Timestamp = timestampToTime(span.StartTime())
-				startTime := timestampToTime(span.StartTime())
-				endTime := timestampToTime(span.EndTime())
+				ev.Timestamp = timestampToTime(span.StartTimestamp())
+				startTime := timestampToTime(span.StartTimestamp())
+				endTime := timestampToTime(span.EndTimestamp())
 
 				ev.Add(event{
 					ID:            getHoneycombSpanID(span.SpanID()),

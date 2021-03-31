@@ -97,8 +97,8 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 	}
 
 	var (
-		startTime                              = timestampToFloatSeconds(span.StartTime())
-		endTime                                = timestampToFloatSeconds(span.EndTime())
+		startTime                              = timestampToFloatSeconds(span.StartTimestamp())
+		endTime                                = timestampToFloatSeconds(span.EndTimestamp())
 		httpfiltered, http                     = makeHTTP(span)
 		isError, isFault, causefiltered, cause = makeCause(span, httpfiltered, resource)
 		origin                                 = determineAwsOrigin(resource)

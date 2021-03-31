@@ -46,8 +46,8 @@ func EncodeSpan(
 	parentID := model.SpanID(otlpSpan.ParentSpanID().Bytes())
 	root := parentID == model.SpanID{}
 
-	startTime := time.Unix(0, int64(otlpSpan.StartTime())).UTC()
-	endTime := time.Unix(0, int64(otlpSpan.EndTime())).UTC()
+	startTime := time.Unix(0, int64(otlpSpan.StartTimestamp())).UTC()
+	endTime := time.Unix(0, int64(otlpSpan.EndTimestamp())).UTC()
 	durationMillis := endTime.Sub(startTime).Seconds() * 1000
 
 	name := truncate(otlpSpan.Name())

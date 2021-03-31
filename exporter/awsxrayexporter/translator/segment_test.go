@@ -108,7 +108,7 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	attributes[semconventions.AttributeEnduserID] = enduser
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, errorMessage, attributes)
-	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime())
+	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
 	timeEvents.CopyTo(span.Events())
 
 	segment, _ := MakeSegment(span, resource, nil, false)
@@ -137,8 +137,8 @@ func TestSpanNoParentId(t *testing.T) {
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(pdata.InvalidSpanID())
 	span.SetKind(pdata.SpanKindPRODUCER)
-	span.SetStartTime(pdata.TimestampFromTime(time.Now()))
-	span.SetEndTime(pdata.TimestampFromTime(time.Now().Add(10)))
+	span.SetStartTimestamp(pdata.TimestampFromTime(time.Now()))
+	span.SetEndTimestamp(pdata.TimestampFromTime(time.Now().Add(10)))
 	resource := pdata.NewResource()
 	segment, _ := MakeSegment(span, resource, nil, false)
 
@@ -152,8 +152,8 @@ func TestSpanWithNoStatus(t *testing.T) {
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
 	span.SetKind(pdata.SpanKindSERVER)
-	span.SetStartTime(pdata.TimestampFromTime(time.Now()))
-	span.SetEndTime(pdata.TimestampFromTime(time.Now().Add(10)))
+	span.SetStartTimestamp(pdata.TimestampFromTime(time.Now()))
+	span.SetEndTimestamp(pdata.TimestampFromTime(time.Now().Add(10)))
 
 	resource := pdata.NewResource()
 	segment, _ := MakeSegment(span, resource, nil, false)
@@ -272,7 +272,7 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 	attributes[semconventions.AttributeHTTPTarget] = spanName
 	resource := constructDefaultResource()
 	span := constructClientSpan(pdata.InvalidSpanID(), spanName, pdata.StatusCodeUnset, "OK", attributes)
-	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime())
+	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
 	timeEvents.CopyTo(span.Events())
 	traceID := span.TraceID().Bytes()
 	traceID[0] = 0x11
@@ -322,7 +322,7 @@ func TestServerSpanWithNilAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
-	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime())
+	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
 	timeEvents.CopyTo(span.Events())
 	pdata.NewAttributeMap().CopyTo(span.Attributes())
 
@@ -635,8 +635,8 @@ func constructClientSpan(parentSpanID pdata.SpanID, name string, code pdata.Stat
 	span.SetParentSpanID(parentSpanID)
 	span.SetName(name)
 	span.SetKind(pdata.SpanKindCLIENT)
-	span.SetStartTime(pdata.TimestampFromTime(startTime))
-	span.SetEndTime(pdata.TimestampFromTime(endTime))
+	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(code)
@@ -662,8 +662,8 @@ func constructServerSpan(parentSpanID pdata.SpanID, name string, code pdata.Stat
 	span.SetParentSpanID(parentSpanID)
 	span.SetName(name)
 	span.SetKind(pdata.SpanKindSERVER)
-	span.SetStartTime(pdata.TimestampFromTime(startTime))
-	span.SetEndTime(pdata.TimestampFromTime(endTime))
+	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(code)
