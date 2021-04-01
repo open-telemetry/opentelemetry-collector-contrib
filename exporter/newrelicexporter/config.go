@@ -23,7 +23,7 @@ import (
 
 // Config defines configuration options for the New Relic exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	*config.ExporterSettings `mapstructure:"-"`
 
 	// APIKey is the required authentication credentials for New Relic APIs. This field specifies the default key.
 	APIKey string `mapstructure:"apikey"`

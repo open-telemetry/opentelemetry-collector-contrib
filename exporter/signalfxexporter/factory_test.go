@@ -112,12 +112,9 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: config.Type(typeStr),
-			NameVal: typeStr,
-		},
-		AccessToken: "testToken",
-		Realm:       "us1",
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		AccessToken:      "testToken",
+		Realm:            "us1",
 		Headers: map[string]string{
 			"added-entry": "added value",
 			"dot.test":    "test",
@@ -139,24 +136,18 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "negative_duration",
 			config: &Config{
-				ExporterSettings: config.ExporterSettings{
-					TypeVal: config.Type(typeStr),
-					NameVal: typeStr,
-				},
-				AccessToken:     "testToken",
-				Realm:           "lab",
-				TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: -2 * time.Second},
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				AccessToken:      "testToken",
+				Realm:            "lab",
+				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: -2 * time.Second},
 			},
 			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"timeout\"",
 		},
 		{
 			name: "empty_realm_and_urls",
 			config: &Config{
-				ExporterSettings: config.ExporterSettings{
-					TypeVal: config.Type(typeStr),
-					NameVal: typeStr,
-				},
-				AccessToken: "testToken",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				AccessToken:      "testToken",
 			},
 			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
 				" or \"ingest_url\" and \"api_url\" should be explicitly set",
@@ -164,12 +155,9 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "empty_realm_and_api_url",
 			config: &Config{
-				ExporterSettings: config.ExporterSettings{
-					TypeVal: config.Type(typeStr),
-					NameVal: typeStr,
-				},
-				AccessToken: "testToken",
-				IngestURL:   "http://localhost:123",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				AccessToken:      "testToken",
+				IngestURL:        "http://localhost:123",
 			},
 			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
 				" or \"ingest_url\" and \"api_url\" should be explicitly set",
@@ -267,12 +255,9 @@ func TestDefaultTranslationRules(t *testing.T) {
 
 func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: config.Type(typeStr),
-			NameVal: typeStr,
-		},
-		AccessToken: "testToken",
-		Realm:       "us1",
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		AccessToken:      "testToken",
+		Realm:            "us1",
 	}
 
 	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
@@ -285,12 +270,9 @@ func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
 
 func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: config.Type(typeStr),
-			NameVal: typeStr,
-		},
-		AccessToken: "testToken",
-		Realm:       "us1",
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		AccessToken:      "testToken",
+		Realm:            "us1",
 		ExcludeMetrics: []dpfilters.MetricFilter{
 			{
 				MetricNames: []string{"metric1"},
@@ -308,13 +290,10 @@ func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 
 func TestCreateMetricsExporterWithEmptyExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: config.Type(typeStr),
-			NameVal: typeStr,
-		},
-		AccessToken:    "testToken",
-		Realm:          "us1",
-		ExcludeMetrics: []dpfilters.MetricFilter{},
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		AccessToken:      "testToken",
+		Realm:            "us1",
+		ExcludeMetrics:   []dpfilters.MetricFilter{},
 	}
 
 	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)

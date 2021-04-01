@@ -22,7 +22,7 @@ import (
 
 // Config defines configuration for host observer.
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"`
+	*config.ExtensionSettings `mapstructure:"-"`
 
 	// RefreshInterval determines how frequency at which the observer
 	// needs to poll for collecting information about new processes.

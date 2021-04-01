@@ -49,12 +49,9 @@ func NewFactory() component.ProcessorFactory {
 
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
-		DecisionWait: 30 * time.Second,
-		NumTraces:    50000,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		DecisionWait:      30 * time.Second,
+		NumTraces:         50000,
 	}
 }
 

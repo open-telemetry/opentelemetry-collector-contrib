@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 	ext1 := cfg.Extensions["k8s_observer/1"]
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: config.ExtensionSettings{
+			ExtensionSettings: &config.ExtensionSettings{
 				TypeVal: "k8s_observer",
 				NameVal: "k8s_observer/1",
 			},

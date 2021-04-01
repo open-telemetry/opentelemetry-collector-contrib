@@ -23,6 +23,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/testutil"
@@ -57,6 +58,7 @@ func TestFactory_CreateLogExporter(t *testing.T) {
 		{
 			name: "with valid config",
 			config: Config{
+				ExporterSettings: config.NewExporterSettings(typeStr),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://" + testutil.GetAvailableLocalAddress(t),
 				},
@@ -69,6 +71,7 @@ func TestFactory_CreateLogExporter(t *testing.T) {
 		{
 			name: "with invalid config",
 			config: Config{
+				ExporterSettings: config.NewExporterSettings(typeStr),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "",
 				},
@@ -78,6 +81,7 @@ func TestFactory_CreateLogExporter(t *testing.T) {
 		{
 			name: "with forced bad configuration (for coverage)",
 			config: Config{
+				ExporterSettings: config.NewExporterSettings(typeStr),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "",
 					CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {

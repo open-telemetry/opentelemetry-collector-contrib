@@ -146,7 +146,7 @@ func (t *TagsConfig) GetHostTags() []string {
 
 // Config defines configuration for the Datadog exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	*config.ExporterSettings `mapstructure:"-"`
 
 	TagsConfig `mapstructure:",squash"`
 

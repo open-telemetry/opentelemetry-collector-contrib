@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 	conf := cfg.Processors["groupbyattrs/custom"]
 	assert.Equal(t, conf,
 		&Config{
-			ProcessorSettings: config.ProcessorSettings{
+			ProcessorSettings: &config.ProcessorSettings{
 				TypeVal: "groupbyattrs",
 				NameVal: "groupbyattrs/custom",
 			},

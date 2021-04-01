@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 
 	e1 := cfg.Exporters[expectedName]
 	expectedCfg := Config{
-		ExporterSettings: config.ExporterSettings{
+		ExporterSettings: &config.ExporterSettings{
 			TypeVal: config.Type(typeStr),
 			NameVal: expectedName,
 		},

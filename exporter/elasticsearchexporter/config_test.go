@@ -45,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 
 	r1 := cfg.Exporters["elasticsearch/customname"].(*Config)
 	assert.Equal(t, r1, &Config{
-		ExporterSettings: config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "elasticsearch/customname"},
+		ExporterSettings: &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "elasticsearch/customname"},
 		Endpoints:        []string{"https://elastic.example.com:9200"},
 		CloudID:          "TRNMxjXlNJEt",
 		Index:            "myindex",

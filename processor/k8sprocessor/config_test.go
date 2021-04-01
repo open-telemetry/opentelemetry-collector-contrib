@@ -49,17 +49,14 @@ func TestLoadConfig(t *testing.T) {
 	p0 := cfg.Processors["k8s_tagger"]
 	assert.Equal(t, p0,
 		&Config{
-			ProcessorSettings: config.ProcessorSettings{
-				TypeVal: "k8s_tagger",
-				NameVal: "k8s_tagger",
-			},
-			APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+			ProcessorSettings: config.NewProcessorSettings(typeStr),
+			APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 		})
 
 	p1 := cfg.Processors["k8s_tagger/2"]
 	assert.Equal(t, p1,
 		&Config{
-			ProcessorSettings: config.ProcessorSettings{
+			ProcessorSettings: &config.ProcessorSettings{
 				TypeVal: "k8s_tagger",
 				NameVal: "k8s_tagger/2",
 			},

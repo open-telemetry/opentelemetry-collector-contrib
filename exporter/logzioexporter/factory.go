@@ -34,12 +34,9 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: config.Type(typeStr),
-			NameVal: typeStr,
-		},
-		Region:      "",
-		TracesToken: "",
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		Region:           "",
+		TracesToken:      "",
 	}
 }
 

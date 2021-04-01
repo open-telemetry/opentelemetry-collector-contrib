@@ -22,7 +22,7 @@ import (
 
 // Config defines configuration for Jaeger Thrift over HTTP exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	*config.ExporterSettings `mapstructure:"-"`
 
 	// URL is the URL to send the Jaeger trace data to (e.g.:
 	// http://some.url:14268/api/traces).

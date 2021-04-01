@@ -63,7 +63,7 @@ func TestLoadConfig(t *testing.T) {
 
 	e1 := cfg.Exporters[expectedName]
 	expectedCfg := Config{
-		ExporterSettings: config.ExporterSettings{
+		ExporterSettings: &config.ExporterSettings{
 			TypeVal: config.Type(typeStr),
 			NameVal: expectedName,
 		},
@@ -199,7 +199,6 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 		return translator
 	}
 	type fields struct {
-		ExporterSettings config.ExporterSettings
 		AccessToken      string
 		Realm            string
 		IngestURL        string
@@ -317,7 +316,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ExporterSettings: tt.fields.ExporterSettings,
+				ExporterSettings: config.NewExporterSettings(typeStr),
 				AccessToken:      tt.fields.AccessToken,
 				Realm:            tt.fields.Realm,
 				IngestURL:        tt.fields.IngestURL,

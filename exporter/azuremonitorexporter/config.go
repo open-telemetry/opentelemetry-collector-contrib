@@ -22,10 +22,9 @@ import (
 
 // Config defines configuration for Azure Monitor
 type Config struct {
-	// squash ensures fields are correctly decoded in embedded struct.
-	config.ExporterSettings `mapstructure:",squash"`
-	Endpoint                string        `mapstructure:"endpoint"`
-	InstrumentationKey      string        `mapstructure:"instrumentation_key"`
-	MaxBatchSize            int           `mapstructure:"maxbatchsize"`
-	MaxBatchInterval        time.Duration `mapstructure:"maxbatchinterval"`
+	*config.ExporterSettings `mapstructure:"-"`
+	Endpoint                 string        `mapstructure:"endpoint"`
+	InstrumentationKey       string        `mapstructure:"instrumentation_key"`
+	MaxBatchSize             int           `mapstructure:"maxbatchsize"`
+	MaxBatchInterval         time.Duration `mapstructure:"maxbatchinterval"`
 }

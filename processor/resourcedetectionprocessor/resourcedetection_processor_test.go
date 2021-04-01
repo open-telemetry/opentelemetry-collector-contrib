@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -169,7 +170,12 @@ func TestResourceProcessor(t *testing.T) {
 				tt.detectorKeys = []string{"mock"}
 			}
 
-			cfg := &Config{Override: tt.override, Detectors: tt.detectorKeys, Timeout: time.Second}
+			cfg := &Config{
+				ProcessorSettings: config.NewProcessorSettings(typeStr),
+				Override:          tt.override,
+				Detectors:         tt.detectorKeys,
+				Timeout:           time.Second,
+			}
 
 			// Test trace consuner
 			ttn := new(consumertest.TracesSink)

@@ -468,10 +468,7 @@ func buildSpan(span span) pdata.Span {
 func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExporter, component.TracesExporter) {
 	otlpExpFactory := otlpexporter.NewFactory()
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.ExporterSettings{
-			NameVal: "otlp",
-			TypeVal: "otlp",
-		},
+		ExporterSettings: config.NewExporterSettings("otlp"),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},

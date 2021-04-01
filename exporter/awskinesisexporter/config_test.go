@@ -42,10 +42,7 @@ func TestDefaultConfig(t *testing.T) {
 
 	assert.Equal(t, e,
 		&Config{
-			ExporterSettings: config.ExporterSettings{
-				TypeVal: "awskinesis",
-				NameVal: "awskinesis",
-			},
+			ExporterSettings: config.NewExporterSettings(typeStr),
 			AWS: AWSConfig{
 				Region: "us-west-2",
 			},
@@ -83,10 +80,7 @@ func TestConfig(t *testing.T) {
 
 	assert.Equal(t, e,
 		&Config{
-			ExporterSettings: config.ExporterSettings{
-				TypeVal: "awskinesis",
-				NameVal: "awskinesis",
-			},
+			ExporterSettings: config.NewExporterSettings(typeStr),
 			AWS: AWSConfig{
 				StreamName:      "test-stream",
 				KinesisEndpoint: "awskinesis.mars-1.aws.galactic",

@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 	ext1 := cfg.Extensions["fluentbit/1"]
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: config.ExtensionSettings{
+			ExtensionSettings: &config.ExtensionSettings{
 				TypeVal: "fluentbit",
 				NameVal: "fluentbit/1",
 			},

@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Exporters["awsxray/customname"].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ExporterSettings:      config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "awsxray/customname"},
+			ExporterSettings:      &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "awsxray/customname"},
 			NumberOfWorkers:       8,
 			Endpoint:              "",
 			RequestTimeoutSeconds: 30,

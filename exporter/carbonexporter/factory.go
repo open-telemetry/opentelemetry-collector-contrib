@@ -37,12 +37,9 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: config.Type(typeStr),
-			NameVal: typeStr,
-		},
-		Endpoint: DefaultEndpoint,
-		Timeout:  DefaultSendTimeout,
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		Endpoint:         DefaultEndpoint,
+		Timeout:          DefaultSendTimeout,
 	}
 }
 

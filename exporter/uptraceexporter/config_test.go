@@ -41,14 +41,11 @@ func TestLoadConfig(t *testing.T) {
 	require.Equal(t, 2, len(cfg.Exporters))
 
 	c0 := cfg.Exporters["uptrace"].(*Config)
-	require.Equal(t, config.ExporterSettings{
-		TypeVal: config.Type(typeStr),
-		NameVal: "uptrace",
-	}, c0.ExporterSettings)
+	require.Equal(t, config.NewExporterSettings(typeStr), c0.ExporterSettings)
 	require.Equal(t, "https://api.uptrace.dev@example.com/1", c0.DSN)
 
 	c1 := cfg.Exporters["uptrace/customname"].(*Config)
-	require.Equal(t, config.ExporterSettings{
+	require.Equal(t, &config.ExporterSettings{
 		TypeVal: config.Type(typeStr),
 		NameVal: "uptrace/customname",
 	}, c1.ExporterSettings)

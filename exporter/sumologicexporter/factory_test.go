@@ -38,10 +38,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	qs.Enabled = false
 
 	assert.Equal(t, cfg, &Config{
-		ExporterSettings: config.ExporterSettings{
-			NameVal: typeStr,
-			TypeVal: typeStr,
-		},
+		ExporterSettings:   config.NewExporterSettings(typeStr),
 		CompressEncoding:   "gzip",
 		MaxRequestBodySize: 1_048_576,
 		LogFormat:          "json",

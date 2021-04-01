@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
@@ -49,12 +50,12 @@ func NewCarbonDataSender(port int) *CarbonDataSender {
 
 // Start the sender.
 func (cs *CarbonDataSender) Start() error {
-	cfg := &carbonexporter.Config{
-		Endpoint: cs.GetEndpoint().String(),
-		Timeout:  5 * time.Second,
-	}
-
 	factory := carbonexporter.NewFactory()
+	cfg := &carbonexporter.Config{
+		ExporterSettings: config.NewExporterSettings(factory.Type()),
+		Endpoint:         cs.GetEndpoint().String(),
+		Timeout:          5 * time.Second,
+	}
 	params := component.ExporterCreateParams{Logger: zap.L()}
 	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 

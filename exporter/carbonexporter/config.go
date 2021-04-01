@@ -28,7 +28,7 @@ const (
 
 // Config defines configuration for Carbon exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	*config.ExporterSettings `mapstructure:"-"`
 
 	// Endpoint specifies host and port to send metrics in the Carbon plaintext
 	// format. The default value is defined by the DefaultEndpoint constant.
