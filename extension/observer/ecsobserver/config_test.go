@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 	// Example Config
 	ext2 := cfg.Extensions["ecs_observer/2"]
 	ext2Expected := ExampleConfig()
-	ext2Expected.ExtensionSettings = configmodels.ExtensionSettings{
+	ext2Expected.ExtensionSettings = &config.ExtensionSettings{
 		TypeVal: "ecs_observer",
 		NameVal: "ecs_observer/2",
 	}
@@ -60,7 +60,7 @@ func TestLoadConfig(t *testing.T) {
 	// Override docker label from default
 	ext3 := cfg.Extensions["ecs_observer/3"]
 	ext3Expected := DefaultConfig()
-	ext3Expected.ExtensionSettings = configmodels.ExtensionSettings{
+	ext3Expected.ExtensionSettings = &config.ExtensionSettings{
 		TypeVal: "ecs_observer",
 		NameVal: "ecs_observer/3",
 	}

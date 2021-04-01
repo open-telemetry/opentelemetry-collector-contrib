@@ -18,12 +18,12 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
 )
 
 const (
-	typeStr configmodels.Type = "ecs_observer"
+	typeStr config.Type = "ecs_observer"
 )
 
 // NewFactory creates a factory for ECSObserver extension.
@@ -35,12 +35,12 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() configmodels.Extension {
+func createDefaultConfig() config.Extension {
 	cfg := DefaultConfig()
 	return &cfg
 }
 
-func createExtension(ctx context.Context, params component.ExtensionCreateParams, cfg configmodels.Extension) (component.Extension, error) {
+func createExtension(ctx context.Context, params component.ExtensionCreateParams, cfg config.Extension) (component.Extension, error) {
 	sdCfg := cfg.(*Config)
 	sd, err := NewDiscovery(*sdCfg, ServiceDiscoveryOptions{Logger: params.Logger})
 	if err != nil {

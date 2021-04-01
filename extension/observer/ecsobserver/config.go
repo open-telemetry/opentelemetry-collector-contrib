@@ -18,7 +18,7 @@ import (
 	"os"
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 const (
@@ -29,7 +29,7 @@ const (
 )
 
 type Config struct {
-	configmodels.ExtensionSettings `mapstructure:",squash" yaml:",inline"`
+	*config.ExtensionSettings `mapstructure:"-" yaml:"-"`
 
 	// ClusterName is the target ECS cluster name for service discovery.
 	ClusterName string `mapstructure:"cluster_name" yaml:"cluster_name"`
@@ -55,15 +55,12 @@ type Config struct {
 // DefaultConfig only applies docker label
 func DefaultConfig() Config {
 	return Config{
-		ExtensionSettings: configmodels.ExtensionSettings{
-			TypeVal: typeStr,
-			NameVal: string(typeStr),
-		},
-		ClusterName:     "default",
-		ClusterRegion:   os.Getenv(awsRegionEnvKey),
-		ResultFile:      "/etc/ecs_sd_targets.yaml",
-		RefreshInterval: defaultRefreshInterval,
-		JobLabelName:    defaultJobLabelName,
+		ExtensionSettings: config.NewExtensionSettings(typeStr),
+		ClusterName:       "default",
+		ClusterRegion:     os.Getenv(awsRegionEnvKey),
+		ResultFile:        "/etc/ecs_sd_targets.yaml",
+		RefreshInterval:   defaultRefreshInterval,
+		JobLabelName:      defaultJobLabelName,
 		DockerLabels: []DockerLabelConfig{
 			{
 				PortLabel: defaultDockerLabelMatcherPortLabel,
