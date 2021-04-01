@@ -42,7 +42,7 @@ type KPLConfig struct {
 
 // Config contains the main configuration options for the awskinesis exporter
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
+	*config.ExporterSettings `mapstructure:"-"`
 
 	AWS AWSConfig `mapstructure:"aws"`
 	KPL KPLConfig `mapstructure:"kpl"`

@@ -39,11 +39,8 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: config.Type(typeStr),
-			NameVal: typeStr,
-		},
-		NumWorkers: defaultNumWorkers,
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		NumWorkers:       defaultNumWorkers,
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
 		},

@@ -127,10 +127,7 @@ func TestRegisterExportersForValidRoute(t *testing.T) {
 	otlpExpFactory := otlpexporter.NewFactory()
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.ExporterSettings{
-			NameVal: "otlp",
-			TypeVal: "otlp",
-		},
+		ExporterSettings: config.NewExporterSettings("otlp"),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
@@ -195,10 +192,7 @@ func TestErrorRequestedExporterNotFoundForDefaultRoute(t *testing.T) {
 	otlpExpFactory := otlpexporter.NewFactory()
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.ExporterSettings{
-			NameVal: "otlp",
-			TypeVal: "otlp",
-		},
+		ExporterSettings: config.NewExporterSettings("otlp"),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
@@ -238,10 +232,7 @@ func TestInvalidExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.ExporterSettings{
-			NameVal: "otlp",
-			TypeVal: "otlp",
-		},
+		ExporterSettings: config.NewExporterSettings("otlp"),
 	}
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),

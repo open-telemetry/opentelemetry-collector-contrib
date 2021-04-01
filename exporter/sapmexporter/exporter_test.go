@@ -37,7 +37,7 @@ import (
 
 func TestCreateTraceExporter(t *testing.T) {
 	config := &Config{
-		ExporterSettings:   config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "sapm/customname"},
+		ExporterSettings:   &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "sapm/customname"},
 		Endpoint:           "test-endpoint",
 		AccessToken:        "abcd1234",
 		NumWorkers:         3,

@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 
 	r1 := cfg.Exporters["elastic/customname"].(*Config)
 	assert.Equal(t, r1, &Config{
-		ExporterSettings: config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "elastic/customname"},
+		ExporterSettings: &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "elastic/customname"},
 		APMServerURL:     "https://elastic.example.com",
 		APIKey:           "RTNxMjlXNEJt",
 		SecretToken:      "hunter2",

@@ -38,10 +38,7 @@ func NewFactory() component.ExporterFactory {
 // CreateDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: config.Type(typeStr),
-			NameVal: typeStr,
-		},
+		ExporterSettings:                config.NewExporterSettings(typeStr),
 		LogGroupName:                    "",
 		LogStreamName:                   "",
 		Namespace:                       "",

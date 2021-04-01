@@ -46,12 +46,9 @@ func TestLoadConfig(t *testing.T) {
 	parsed := cfg.Processors["routing"]
 	assert.Equal(t, parsed,
 		&Config{
-			ProcessorSettings: config.ProcessorSettings{
-				NameVal: "routing",
-				TypeVal: "routing",
-			},
-			DefaultExporters: []string{"otlp"},
-			FromAttribute:    "X-Tenant",
+			ProcessorSettings: config.NewProcessorSettings(typeStr),
+			DefaultExporters:  []string{"otlp"},
+			FromAttribute:     "X-Tenant",
 			Table: []RoutingTableItem{
 				{
 					Value:     "acme",

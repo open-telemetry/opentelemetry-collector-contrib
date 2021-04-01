@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
@@ -46,7 +47,9 @@ func TestNewLogsExporter(t *testing.T) {
 		},
 		{
 			"empty",
-			&Config{},
+			&Config{
+				ExporterSettings: config.NewExporterSettings(typeStr),
+			},
 			errNoResolver,
 		},
 	} {
@@ -76,12 +79,12 @@ func TestLogExporterStart(t *testing.T) {
 			"ok",
 			func() *logExporterImp {
 				// prepare
-				config := simpleConfig()
+				cfg := simpleConfig()
 				params := component.ExporterCreateParams{
 					Logger: zap.NewNop(),
 				}
 
-				p, _ := newLogsExporter(params, config)
+				p, _ := newLogsExporter(params, cfg)
 				return p
 			}(),
 			nil,
@@ -90,13 +93,13 @@ func TestLogExporterStart(t *testing.T) {
 			"error",
 			func() *logExporterImp {
 				// prepare
-				config := simpleConfig()
+				cfg := simpleConfig()
 				params := component.ExporterCreateParams{
 					Logger: zap.NewNop(),
 				}
 
-				lb, _ := newLoadBalancer(params, config, nil)
-				p, _ := newLogsExporter(params, config)
+				lb, _ := newLoadBalancer(params, cfg, nil)
+				p, _ := newLogsExporter(params, cfg)
 
 				lb.res = &mockResolver{
 					onStart: func(context.Context) error {
@@ -407,7 +410,8 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	}
 	res.resInterval = 10 * time.Millisecond
 
-	config := &Config{
+	cfg := &Config{
+		ExporterSettings: config.NewExporterSettings(typeStr),
 		Resolver: ResolverSettings{
 			DNS: &DNSResolver{Hostname: "service-1", Port: ""},
 		},
@@ -416,11 +420,11 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		return newNopMockLogsExporter(), nil
 	}
-	lb, err := newLoadBalancer(params, config, componentFactory)
+	lb, err := newLoadBalancer(params, cfg, componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(params, config)
+	p, err := newLogsExporter(params, cfg)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 

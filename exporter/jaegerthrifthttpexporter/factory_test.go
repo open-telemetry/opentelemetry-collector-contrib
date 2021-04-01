@@ -55,11 +55,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 func TestFactory_CreateTraceExporter(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: config.Type(typeStr),
-			NameVal: typeStr,
-		},
-		URL: "http://some.other.location/api/traces",
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		URL:              "http://some.other.location/api/traces",
 		Headers: map[string]string{
 			"added-entry": "added value",
 			"dot.test":    "test",
@@ -82,33 +79,24 @@ func TestFactory_CreateTraceExporterFails(t *testing.T) {
 		{
 			name: "empty_url",
 			config: &Config{
-				ExporterSettings: config.ExporterSettings{
-					TypeVal: config.Type(typeStr),
-					NameVal: typeStr,
-				},
+				ExporterSettings: config.NewExporterSettings(typeStr),
 			},
 			errorMessage: "\"jaeger_thrift\" config requires a valid \"url\": parse \"\": empty url",
 		},
 		{
 			name: "invalid_url",
 			config: &Config{
-				ExporterSettings: config.ExporterSettings{
-					TypeVal: config.Type(typeStr),
-					NameVal: typeStr,
-				},
-				URL: ".localhost:123",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				URL:              ".localhost:123",
 			},
 			errorMessage: "\"jaeger_thrift\" config requires a valid \"url\": parse \".localhost:123\": invalid URI for request",
 		},
 		{
 			name: "negative_duration",
 			config: &Config{
-				ExporterSettings: config.ExporterSettings{
-					TypeVal: config.Type(typeStr),
-					NameVal: typeStr,
-				},
-				URL:     "localhost:123",
-				Timeout: -2 * time.Second,
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				URL:              "localhost:123",
+				Timeout:          -2 * time.Second,
 			},
 			errorMessage: "\"jaeger_thrift\" config requires a positive value for \"timeout\"",
 		},

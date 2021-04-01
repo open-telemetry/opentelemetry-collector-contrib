@@ -34,12 +34,9 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	factory := NewFactory()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	cfg := &Config{
-		ProcessorSettings: config.ProcessorSettings{
-			NameVal: "routing",
-			TypeVal: "routing",
-		},
-		DefaultExporters: []string{"otlp"},
-		FromAttribute:    "X-Tenant",
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		DefaultExporters:  []string{"otlp"},
+		FromAttribute:     "X-Tenant",
 		Table: []RoutingTableItem{
 			{
 				Value:     "acme",
@@ -75,12 +72,9 @@ func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 	factory := NewFactory()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	cfg := &Config{
-		ProcessorSettings: config.ProcessorSettings{
-			NameVal: "routing",
-			TypeVal: "routing",
-		},
-		DefaultExporters: []string{"otlp"},
-		FromAttribute:    "X-Tenant",
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		DefaultExporters:  []string{"otlp"},
+		FromAttribute:     "X-Tenant",
 		Table: []RoutingTableItem{
 			{
 				Value: "acme",
@@ -101,13 +95,10 @@ func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
 	factory := NewFactory()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	cfg := &Config{
-		ProcessorSettings: config.ProcessorSettings{
-			NameVal: "routing",
-			TypeVal: "routing",
-		},
-		DefaultExporters: []string{"otlp"},
-		FromAttribute:    "X-Tenant",
-		Table:            []RoutingTableItem{},
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		DefaultExporters:  []string{"otlp"},
+		FromAttribute:     "X-Tenant",
+		Table:             []RoutingTableItem{},
 	}
 
 	// test
@@ -123,11 +114,8 @@ func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 	factory := NewFactory()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	cfg := &Config{
-		ProcessorSettings: config.ProcessorSettings{
-			NameVal: "routing",
-			TypeVal: "routing",
-		},
-		DefaultExporters: []string{"otlp"},
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		DefaultExporters:  []string{"otlp"},
 		Table: []RoutingTableItem{
 			{
 				Value:     "acme",
@@ -149,12 +137,9 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	factory := NewFactory()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	cfg := &Config{
-		ProcessorSettings: config.ProcessorSettings{
-			NameVal: "routing",
-			TypeVal: "routing",
-		},
-		DefaultExporters: []string{"otlp"},
-		FromAttribute:    "X-Tenant",
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		DefaultExporters:  []string{"otlp"},
+		FromAttribute:     "X-Tenant",
 		Table: []RoutingTableItem{
 			{
 				Value:     "acme",
@@ -178,12 +163,9 @@ func TestShutdown(t *testing.T) {
 	factory := NewFactory()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	cfg := &Config{
-		ProcessorSettings: config.ProcessorSettings{
-			NameVal: "routing",
-			TypeVal: "routing",
-		},
-		DefaultExporters: []string{"otlp"},
-		FromAttribute:    "X-Tenant",
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		DefaultExporters:  []string{"otlp"},
+		FromAttribute:     "X-Tenant",
 		Table: []RoutingTableItem{
 			{
 				Value:     "acme",

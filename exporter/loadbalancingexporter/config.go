@@ -21,9 +21,9 @@ import (
 
 // Config defines configuration for the exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
-	Protocol                Protocol         `mapstructure:"protocol"`
-	Resolver                ResolverSettings `mapstructure:"resolver"`
+	*config.ExporterSettings `mapstructure:"-"`
+	Protocol                 Protocol         `mapstructure:"protocol"`
+	Resolver                 ResolverSettings `mapstructure:"resolver"`
 }
 
 // Protocol holds the individual protocol-specific settings. Only OTLP is supported at the moment.

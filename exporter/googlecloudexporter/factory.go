@@ -51,14 +51,11 @@ func NewFactory() component.ExporterFactory {
 // createDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: config.Type(typeStr),
-			NameVal: typeStr,
-		},
-		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
-		RetrySettings:   exporterhelper.DefaultRetrySettings(),
-		QueueSettings:   exporterhelper.DefaultQueueSettings(),
-		UserAgent:       "opentelemetry-collector-contrib {{version}}",
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		UserAgent:        "opentelemetry-collector-contrib {{version}}",
 	}
 }
 

@@ -23,11 +23,10 @@ import (
 
 func TestConfig_Sanitize(t *testing.T) {
 	type fields struct {
-		ExporterSettings config.ExporterSettings
-		APIToken         string
-		Endpoint         string
-		Tags             []string
-		Prefix           string
+		APIToken string
+		Endpoint string
+		Tags     []string
+		Prefix   string
 	}
 	tests := []struct {
 		name    string
@@ -58,7 +57,7 @@ func TestConfig_Sanitize(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Config{
-				ExporterSettings:   tt.fields.ExporterSettings,
+				ExporterSettings:   config.NewExporterSettings("dynatrace"),
 				APIToken:           tt.fields.APIToken,
 				HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: tt.fields.Endpoint},
 				Tags:               tt.fields.Tags,

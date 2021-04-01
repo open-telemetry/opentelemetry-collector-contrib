@@ -44,10 +44,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	// Note: the default configuration created by CreateDefaultConfig
 	// still has the unresolved environment variables.
 	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: config.Type(typeStr),
-			NameVal: typeStr,
-		},
+		ExporterSettings: config.NewExporterSettings(typeStr),
 
 		API: ddconfig.APIConfig{
 			Key:  "$DD_API_KEY",
@@ -102,7 +99,7 @@ func TestLoadConfig(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: config.ExporterSettings{
+		ExporterSettings: &config.ExporterSettings{
 			NameVal: "datadog/api",
 			TypeVal: typeStr,
 		},
@@ -145,7 +142,7 @@ func TestLoadConfig(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: config.ExporterSettings{
+		ExporterSettings: &config.ExporterSettings{
 			NameVal: "datadog/default",
 			TypeVal: typeStr,
 		},
@@ -228,7 +225,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	// Check that settings with env variables get overridden when explicitly set in config
 	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: config.ExporterSettings{
+		ExporterSettings: &config.ExporterSettings{
 			NameVal: "datadog/api2",
 			TypeVal: typeStr,
 		},
@@ -274,7 +271,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	// Check that settings with env variables get taken into account when
 	// no settings are given.
 	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: config.ExporterSettings{
+		ExporterSettings: &config.ExporterSettings{
 			NameVal: "datadog/default2",
 			TypeVal: typeStr,
 		},
@@ -390,9 +387,10 @@ func TestOnlyMetadata(t *testing.T) {
 
 	ctx := context.Background()
 	cfg := &ddconfig.Config{
-		API:     ddconfig.APIConfig{Key: "notnull"},
-		Metrics: ddconfig.MetricsConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
-		Traces:  ddconfig.TracesConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		API:              ddconfig.APIConfig{Key: "notnull"},
+		Metrics:          ddconfig.MetricsConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
+		Traces:           ddconfig.TracesConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
 
 		SendMetadata:        true,
 		OnlyMetadata:        true,

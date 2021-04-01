@@ -40,10 +40,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 
 			mtp, err := processorhelper.NewMetricsProcessor(
 				&Config{
-					ProcessorSettings: config.ProcessorSettings{
-						TypeVal: typeStr,
-						NameVal: typeStr,
-					},
+					ProcessorSettings: config.NewProcessorSettings(typeStr),
 				},
 				next,
 				p,

@@ -20,7 +20,7 @@ import (
 
 // Config defines configuration for the Routing processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"`
+	*config.ProcessorSettings `mapstructure:"-"`
 
 	// DefaultExporters contains the list of exporters to use when a more specific record can't be found in the routing table.
 	// Optional.

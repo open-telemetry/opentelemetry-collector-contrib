@@ -39,12 +39,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, &dtconfig.Config{
-		ExporterSettings: config.ExporterSettings{
-			TypeVal: config.Type(typeStr),
-			NameVal: typeStr,
-		},
-		RetrySettings: exporterhelper.DefaultRetrySettings(),
-		QueueSettings: exporterhelper.DefaultQueueSettings(),
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 		ResourceToTelemetrySettings: exporterhelper.ResourceToTelemetrySettings{
 			Enabled: false,
 		},
@@ -72,7 +69,7 @@ func TestLoadConfig(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, &dtconfig.Config{
-		ExporterSettings: config.ExporterSettings{
+		ExporterSettings: &config.ExporterSettings{
 			NameVal: "dynatrace/valid",
 			TypeVal: typeStr,
 		},

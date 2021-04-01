@@ -39,10 +39,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, cfg.Processors["tail_sampling"],
 		&Config{
-			ProcessorSettings: config.ProcessorSettings{
-				TypeVal: "tail_sampling",
-				NameVal: "tail_sampling",
-			},
+			ProcessorSettings:       config.NewProcessorSettings(typeStr),
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,
 			ExpectedNewTracesPerSec: 10,

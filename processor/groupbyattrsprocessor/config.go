@@ -20,7 +20,7 @@ import (
 
 // Config is the configuration for the processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"`
+	*config.ProcessorSettings `mapstructure:"-"`
 
 	// GroupByKeys describes the attribute names that are going to be used for grouping.
 	// Must include at least one attribute name.
