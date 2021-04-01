@@ -17,6 +17,7 @@ package cascadingfilterprocessor
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 	"sync"
 	"testing"
@@ -403,6 +404,73 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	}
 }
 
+func TestExceedingTheMaximumNumberOfTraces(t *testing.T) {
+	testMaximumNumberOfTraces(t, 2, 410)
+}
+
+func TestNotExceedingTheMaximumNumberOfTraces(t *testing.T) {
+	testMaximumNumberOfTraces(t, 5, 400)
+}
+
+func testMaximumNumberOfTraces(t *testing.T, maxSize uint64, expectedNumberOfSpans int) {
+	const decisionWaitSeconds = 1
+	const numOfBatches = 10
+	const numOfSpansInBatch = 10
+	msp := new(consumertest.TracesSink)
+	mpe := &mockPolicyEvaluator{
+		NextDecision: sampling.Sampled,
+	}
+	mtt := &manualTTicker{}
+	tsp := &cascadingFilterSpanProcessor{
+		ctx:               context.Background(),
+		nextConsumer:      msp,
+		maxNumTraces:      maxSize,
+		logger:            zap.NewNop(),
+		decisionBatcher:   newSyncIDBatcher(decisionWaitSeconds),
+		policies:          []*Policy{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
+		deleteChan:        make(chan traceKey, maxSize),
+		policyTicker:      mtt,
+		maxSpansPerSecond: 10000,
+	}
+
+	batches1 := generateBatchesForGivenId(1, numOfBatches, numOfSpansInBatch)
+	batches2 := generateBatchesForGivenId(2, numOfBatches, numOfSpansInBatch)
+	batches3 := generateBatchesForGivenId(3, numOfBatches, numOfSpansInBatch)
+	batches4 := generateBatchesForGivenId(4, numOfBatches, numOfSpansInBatch)
+	batches5 := generateBatchesForGivenId(5, numOfBatches, numOfSpansInBatch)
+	for i := 0; i < numOfBatches; i++ {
+		tsp.ConsumeTraces(context.Background(), batches1[i])
+		tsp.samplingPolicyOnTick()
+	}
+	for i := 0; i < numOfBatches; i++ {
+		tsp.ConsumeTraces(context.Background(), batches2[i])
+		tsp.samplingPolicyOnTick()
+	}
+	require.EqualValues(t, 200, msp.SpansCount(), "exporter should have received 200 spans")
+	mpe.NextDecision = sampling.NotSampled
+	for i := 0; i < numOfBatches; i++ {
+		tsp.ConsumeTraces(context.Background(), batches3[i])
+		tsp.samplingPolicyOnTick()
+	}
+	mpe.NextDecision = sampling.Sampled
+	require.EqualValues(t, 200, msp.SpansCount(), "exporter should have received 200 spans")
+	for i := 0; i < numOfBatches; i++ {
+		tsp.ConsumeTraces(context.Background(), batches4[i])
+		tsp.samplingPolicyOnTick()
+	}
+	for i := 0; i < numOfBatches; i++ {
+		tsp.ConsumeTraces(context.Background(), batches5[i])
+		tsp.samplingPolicyOnTick()
+	}
+	currentExpectedNumberOfSpans := 4*numOfBatches*numOfSpansInBatch
+	require.EqualValues(t, currentExpectedNumberOfSpans, msp.SpansCount(), fmt.Sprintf("exporter should have received %d spans", currentExpectedNumberOfSpans))
+	time.Sleep(2 * time.Second)
+	tsp.ConsumeTraces(context.Background(), batches3[0])
+	tsp.samplingPolicyOnTick()
+	tsp.samplingPolicyOnTick()
+	require.EqualValues(t, expectedNumberOfSpans, msp.SpansCount(), fmt.Sprintf("exporter should have received %d spans", expectedNumberOfSpans))
+}
+
 func collectSpanIds(trace *pdata.Traces) []pdata.SpanID {
 	spanIDs := make([]pdata.SpanID, 0)
 
@@ -451,6 +519,28 @@ func generateIdsAndBatches(numIds int) ([]pdata.TraceID, []pdata.Traces) {
 	}
 
 	return traceIds, tds
+}
+
+func generateBatchesForGivenId(id int, numOfBatches int, numOfSpansInBatch int) []pdata.Traces {
+	spanID := 0
+	var tds []pdata.Traces
+	for i:=0; i< numOfBatches; i++ {
+		trace := pdata.NewTraces()
+		ils := pdata.NewInstrumentationLibrarySpans()
+		rs := pdata.NewResourceSpans()
+		rs.InstrumentationLibrarySpans().Append(ils)
+		trace.ResourceSpans().Append(rs)
+		for j:=0; j<numOfSpansInBatch; j++ {
+			span := pdata.NewSpan()
+			span.SetTraceID(tracetranslator.Int64ToTraceID(0, int64(id)))
+			span.SetSpanID(tracetranslator.UInt64ToSpanID(uint64(spanID)))
+			spanID++
+			ils.Spans().Append(span)
+		}
+
+		tds = append(tds, trace)
+	}
+	return tds
 }
 
 func simpleTraces() pdata.Traces {
