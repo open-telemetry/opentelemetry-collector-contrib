@@ -117,7 +117,7 @@ func TestGoogleCloudTraceExport(t *testing.T) {
 			ispans.Spans().Resize(1)
 			span := ispans.Spans().At(0)
 			span.SetName(spanName)
-			span.SetStartTime(pdata.TimestampFromTime(testTime))
+			span.SetStartTimestamp(pdata.TimestampFromTime(testTime))
 			err = sde.ConsumeTraces(context.Background(), traces)
 			assert.NoError(t, err)
 
@@ -207,9 +207,9 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 		Resource: &resourcepb.Resource{
 			Type: "host",
 			Labels: map[string]string{
-				"cloud.zone":       "us-central1",
-				"host.name":        "foo",
-				"k8s.cluster.name": "test",
+				"cloud.availability_zone": "us-central1",
+				"host.name":               "foo",
+				"k8s.cluster.name":        "test",
 				"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
 			},
 		},
@@ -254,9 +254,9 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 	md.Metrics[2].Resource = &resourcepb.Resource{
 		Type: "host",
 		Labels: map[string]string{
-			"cloud.zone":       "us-central1",
-			"host.name":        "bar",
-			"k8s.cluster.name": "test",
+			"cloud.availability_zone": "us-central1",
+			"host.name":               "bar",
+			"k8s.cluster.name":        "test",
 			"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
 		},
 	}

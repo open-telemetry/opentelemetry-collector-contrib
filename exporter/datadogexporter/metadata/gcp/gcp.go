@@ -47,7 +47,7 @@ func HostInfoFromAttributes(attrs pdata.AttributeMap) (hostInfo *HostInfo) {
 		hostInfo.GCPTags = append(hostInfo.GCPTags, fmt.Sprintf("instance-id:%s", hostID.StringVal()))
 	}
 
-	if cloudZone, ok := attrs.Get(conventions.AttributeCloudZone); ok {
+	if cloudZone, ok := attrs.Get(conventions.AttributeCloudAvailabilityZone); ok {
 		hostInfo.GCPTags = append(hostInfo.GCPTags, fmt.Sprintf("zone:%s", cloudZone.StringVal()))
 	}
 

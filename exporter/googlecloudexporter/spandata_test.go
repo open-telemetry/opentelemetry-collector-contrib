@@ -56,8 +56,8 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 	span.SetParentSpanID(parentSpanID)
 	span.SetName("End-To-End Here")
 	span.SetKind(pdata.SpanKindSERVER)
-	span.SetStartTime(pdataStartTime)
-	span.SetEndTime(pdataEndTime)
+	span.SetStartTimestamp(pdataStartTime)
+	span.SetEndTimestamp(pdataEndTime)
 
 	status := span.Status()
 	status.SetCode(pdata.StatusCodeError)

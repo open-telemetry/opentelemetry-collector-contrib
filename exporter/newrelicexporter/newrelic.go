@@ -24,7 +24,7 @@ import (
 
 	"github.com/newrelic/newrelic-telemetry-sdk-go/cumulative"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -61,7 +61,7 @@ type exporter struct {
 	logger             *zap.Logger
 }
 
-func newMetricsExporter(l *zap.Logger, c configmodels.Exporter) (*exporter, error) {
+func newMetricsExporter(l *zap.Logger, c config.Exporter) (*exporter, error) {
 	nrConfig, ok := c.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config: %#v", c)
@@ -85,7 +85,7 @@ func newMetricsExporter(l *zap.Logger, c configmodels.Exporter) (*exporter, erro
 	}, nil
 }
 
-func newTraceExporter(l *zap.Logger, c configmodels.Exporter) (*exporter, error) {
+func newTraceExporter(l *zap.Logger, c config.Exporter) (*exporter, error) {
 	nrConfig, ok := c.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config: %#v", c)

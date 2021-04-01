@@ -20,18 +20,19 @@ import (
 	"net/url"
 	"path"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
 	// hecPath is the default HEC path on the Splunk instance.
-	hecPath = "services/collector"
+	hecPath                   = "services/collector"
+	maxContentLengthLogsLimit = 2 * 1024 * 1024
 )
 
 // Config defines configuration for Splunk exporter.
 type Config struct {
-	configmodels.ExporterSettings  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	config.ExporterSettings        `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
@@ -60,6 +61,9 @@ type Config struct {
 
 	// insecure_skip_verify skips checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
+
+	// Maximum log data size in bytes per HTTP post. Defaults to the backend limit of 2097152 bytes (2MiB).
+	MaxContentLengthLogs uint `mapstructure:"max_content_length_logs"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
@@ -85,6 +89,10 @@ func (cfg *Config) validateConfig() error {
 
 	if cfg.Token == "" {
 		return errors.New(`requires a non-empty "token"`)
+	}
+
+	if cfg.MaxContentLengthLogs > maxContentLengthLogsLimit {
+		return fmt.Errorf(`requires "max_content_length_logs" <= %d`, maxContentLengthLogsLimit)
 	}
 
 	return nil

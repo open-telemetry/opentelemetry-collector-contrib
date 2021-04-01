@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -30,7 +30,7 @@ func TestLoadConfig(tester *testing.T) {
 	assert.Nil(tester, err)
 
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		tester, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -40,11 +40,11 @@ func TestLoadConfig(tester *testing.T) {
 
 	assert.Equal(tester, 2, len(cfg.Exporters))
 
-	config := cfg.Exporters["logzio/2"].(*Config)
+	cfgExp := cfg.Exporters["logzio/2"].(*Config)
 	assert.Equal(tester, &Config{
-		ExporterSettings: configmodels.ExporterSettings{TypeVal: typeStr, NameVal: "logzio/2"},
+		ExporterSettings: config.ExporterSettings{TypeVal: typeStr, NameVal: "logzio/2"},
 		TracesToken:      "logzioTESTtoken",
 		Region:           "eu",
 		CustomEndpoint:   "https://some-url.com:8888",
-	}, config)
+	}, cfgExp)
 }

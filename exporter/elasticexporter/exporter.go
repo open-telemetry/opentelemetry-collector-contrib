@@ -27,7 +27,7 @@ import (
 	"go.elastic.co/apm/transport"
 	"go.elastic.co/fastjson"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -38,7 +38,7 @@ import (
 
 func newElasticTraceExporter(
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	exporter, err := newElasticExporter(cfg.(*Config), params.Logger)
 	if err != nil {
@@ -60,7 +60,7 @@ func newElasticTraceExporter(
 
 func newElasticMetricsExporter(
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	exporter, err := newElasticExporter(cfg.(*Config), params.Logger)
 	if err != nil {

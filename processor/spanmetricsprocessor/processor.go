@@ -22,9 +22,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -82,7 +83,7 @@ type processorImp struct {
 	metricKeyToDimensions map[metricKey]dimKV
 }
 
-func newProcessor(logger *zap.Logger, config configmodels.Exporter, nextConsumer consumer.Traces) *processorImp {
+func newProcessor(logger *zap.Logger, config config.Exporter, nextConsumer consumer.Traces) (*processorImp, error) {
 	logger.Info("Building spanmetricsprocessor")
 	pConfig := config.(*Config)
 
@@ -98,6 +99,10 @@ func newProcessor(logger *zap.Logger, config configmodels.Exporter, nextConsumer
 		}
 	}
 
+	if err := validateDimensions(pConfig.Dimensions); err != nil {
+		return nil, err
+	}
+
 	return &processorImp{
 		logger:                logger,
 		config:                *pConfig,
@@ -110,7 +115,7 @@ func newProcessor(logger *zap.Logger, config configmodels.Exporter, nextConsumer
 		nextConsumer:          nextConsumer,
 		dimensions:            pConfig.Dimensions,
 		metricKeyToDimensions: make(map[metricKey]dimKV),
-	}
+	}, nil
 }
 
 func mapDurationsToMillis(vs []time.Duration, f func(duration time.Duration) float64) []float64 {
@@ -121,6 +126,35 @@ func mapDurationsToMillis(vs []time.Duration, f func(duration time.Duration) flo
 	return vsm
 }
 
+// validateDimensions checks duplicates for reserved dimensions and additional dimensions. Considering
+// the usage of Prometheus related exporters, we also validate the dimensions after sanitization.
+func validateDimensions(dimensions []Dimension) error {
+	labelNames := make(map[string]struct{})
+	for _, key := range []string{serviceNameKey, spanKindKey, statusCodeKey} {
+		labelNames[key] = struct{}{}
+		labelNames[sanitize(key)] = struct{}{}
+	}
+	labelNames[operationKey] = struct{}{}
+
+	for _, key := range dimensions {
+		if _, ok := labelNames[key.Name]; ok {
+			return fmt.Errorf("duplicate dimension name %s", key.Name)
+		}
+		labelNames[key.Name] = struct{}{}
+
+		sanitizedName := sanitize(key.Name)
+		if sanitizedName == key.Name {
+			continue
+		}
+		if _, ok := labelNames[sanitizedName]; ok {
+			return fmt.Errorf("duplicate dimension name %s after sanitization", sanitizedName)
+		}
+		labelNames[sanitizedName] = struct{}{}
+	}
+
+	return nil
+}
+
 // Start implements the component.Component interface.
 func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 	p.logger.Info("Starting spanmetricsprocessor")
@@ -129,7 +163,7 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 	var availableMetricsExporters []string
 
 	// The available list of exporters come from any configured metrics pipelines' exporters.
-	for k, exp := range exporters[configmodels.MetricsDataType] {
+	for k, exp := range exporters[config.MetricsDataType] {
 		metricsExp, ok := exp.(component.MetricsExporter)
 		if !ok {
 			return fmt.Errorf("the exporter %q isn't a metrics exporter", k.Name())
@@ -215,7 +249,7 @@ func (p *processorImp) buildMetrics() *pdata.Metrics {
 func (p *processorImp) collectLatencyMetrics(ilm *pdata.InstrumentationLibraryMetrics) {
 	for key := range p.latencyCount {
 		dpLatency := pdata.NewIntHistogramDataPoint()
-		dpLatency.SetStartTime(pdata.TimestampFromTime(p.startTime))
+		dpLatency.SetStartTimestamp(pdata.TimestampFromTime(p.startTime))
 		dpLatency.SetTimestamp(pdata.TimestampFromTime(time.Now()))
 		dpLatency.SetExplicitBounds(p.latencyBounds)
 		dpLatency.SetBucketCounts(p.latencyBucketCounts[key])
@@ -238,7 +272,7 @@ func (p *processorImp) collectLatencyMetrics(ilm *pdata.InstrumentationLibraryMe
 func (p *processorImp) collectCallMetrics(ilm *pdata.InstrumentationLibraryMetrics) {
 	for key := range p.callSum {
 		dpCalls := pdata.NewIntDataPoint()
-		dpCalls.SetStartTime(pdata.TimestampFromTime(p.startTime))
+		dpCalls.SetStartTimestamp(pdata.TimestampFromTime(p.startTime))
 		dpCalls.SetTimestamp(pdata.TimestampFromTime(time.Now()))
 		dpCalls.SetValue(p.callSum[key])
 
@@ -285,7 +319,7 @@ func (p *processorImp) aggregateMetricsForServiceSpans(rspans pdata.ResourceSpan
 }
 
 func (p *processorImp) aggregateMetricsForSpan(serviceName string, span pdata.Span) {
-	latencyInMilliseconds := float64(span.EndTime()-span.StartTime()) / float64(time.Millisecond.Nanoseconds())
+	latencyInMilliseconds := float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
 
 	// Binary search to find the latencyInMilliseconds bucket index.
 	index := sort.SearchFloat64s(p.latencyBounds, latencyInMilliseconds)
@@ -378,4 +412,34 @@ func (p *processorImp) cache(serviceName string, span pdata.Span, k metricKey) {
 	if _, ok := p.metricKeyToDimensions[k]; !ok {
 		p.metricKeyToDimensions[k] = buildDimensionKVs(serviceName, span, p.dimensions)
 	}
+}
+
+// copied from prometheus-go-metric-exporter
+// sanitize replaces non-alphanumeric characters with underscores in s.
+func sanitize(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+
+	// Note: No length limit for label keys because Prometheus doesn't
+	// define a length limit, thus we should NOT be truncating label keys.
+	// See https://github.com/orijtech/prometheus-go-metrics-exporter/issues/4.
+	s = strings.Map(sanitizeRune, s)
+	if unicode.IsDigit(rune(s[0])) {
+		s = "key_" + s
+	}
+	if s[0] == '_' {
+		s = "key" + s
+	}
+	return s
+}
+
+// copied from prometheus-go-metric-exporter
+// sanitizeRune converts anything that is not a letter or digit to an underscore
+func sanitizeRune(r rune) rune {
+	if unicode.IsLetter(r) || unicode.IsDigit(r) {
+		return r
+	}
+	// Everything else turns into an underscore
+	return '_'
 }

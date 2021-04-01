@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -87,8 +87,8 @@ func TestProcessorStart(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
-			exporters := map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter{
-				configmodels.MetricsDataType: {
+			exporters := map[config.DataType]map[config.NamedEntity]component.Exporter{
+				config.MetricsDataType: {
 					otlpConfig: tc.exporter,
 				},
 			}
@@ -125,8 +125,9 @@ func TestProcessorShutdown(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p := newProcessor(zap.NewNop(), cfg, next)
-	err := p.Shutdown(context.Background())
+	p, err := newProcessor(zap.NewNop(), cfg, next)
+	assert.NoError(t, err)
+	err = p.Shutdown(context.Background())
 
 	// Verify
 	assert.NoError(t, err)
@@ -139,7 +140,8 @@ func TestProcessorCapabilities(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p := newProcessor(zap.NewNop(), cfg, next)
+	p, err := newProcessor(zap.NewNop(), cfg, next)
+	assert.NoError(t, err)
 	caps := p.GetCapabilities()
 
 	// Verify
@@ -318,7 +320,7 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 
 		dp := dps.At(0)
 		assert.Equal(t, int64(1), dp.Value(), "There should only be one metric per Service/operation/kind combination")
-		assert.NotZero(t, dp.StartTime(), "StartTimestamp should be set")
+		assert.NotZero(t, dp.StartTimestamp(), "StartTimestamp should be set")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
 		verifyMetricLabels(dp, t, seenMetricIDs)
@@ -451,8 +453,8 @@ func buildSpan(span span) pdata.Span {
 	s.SetKind(span.kind)
 	s.Status().SetCode(span.statusCode)
 	now := time.Now()
-	s.SetStartTime(pdata.TimestampFromTime(now))
-	s.SetEndTime(pdata.TimestampFromTime(now.Add(sampleLatencyDuration)))
+	s.SetStartTimestamp(pdata.TimestampFromTime(now))
+	s.SetEndTimestamp(pdata.TimestampFromTime(now.Add(sampleLatencyDuration)))
 	s.Attributes().InsertString(stringAttrName, "stringAttrValue")
 	s.Attributes().InsertInt(intAttrName, 99)
 	s.Attributes().InsertDouble(doubleAttrName, 99.99)
@@ -466,7 +468,7 @@ func buildSpan(span span) pdata.Span {
 func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExporter, component.TracesExporter) {
 	otlpExpFactory := otlpexporter.NewFactory()
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: configmodels.ExporterSettings{
+		ExporterSettings: config.ExporterSettings{
 			NameVal: "otlp",
 			TypeVal: "otlp",
 		},
@@ -492,4 +494,93 @@ func TestBuildKey(t *testing.T) {
 	k1 := buildKey("a", span1, nil)
 
 	assert.NotEqual(t, k0, k1)
+}
+
+func TestProcessorDuplicateDimensions(t *testing.T) {
+	// Prepare
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	// Duplicate dimension with reserved label after sanitization.
+	cfg.Dimensions = []Dimension{
+		{Name: "status_code"},
+	}
+
+	// Test
+	next := new(consumertest.TracesSink)
+	p, err := newProcessor(zap.NewNop(), cfg, next)
+	assert.Error(t, err)
+	assert.Nil(t, p)
+}
+
+func TestValidateDimensions(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		dimensions  []Dimension
+		expectedErr string
+	}{
+		{
+			name:       "no additional dimensions",
+			dimensions: []Dimension{},
+		},
+		{
+			name: "no duplicate dimensions",
+			dimensions: []Dimension{
+				{Name: "http.service_name"},
+				{Name: "http.status_code"},
+			},
+		},
+		{
+			name: "duplicate dimension with reserved labels",
+			dimensions: []Dimension{
+				{Name: "service.name"},
+			},
+			expectedErr: "duplicate dimension name service.name",
+		},
+		{
+			name: "duplicate dimension with reserved labels after sanitization",
+			dimensions: []Dimension{
+				{Name: "service_name"},
+			},
+			expectedErr: "duplicate dimension name service_name",
+		},
+		{
+			name: "duplicate additional dimensions",
+			dimensions: []Dimension{
+				{Name: "service_name"},
+				{Name: "service_name"},
+			},
+			expectedErr: "duplicate dimension name service_name",
+		},
+		{
+			name: "duplicate additional dimensions after sanitization",
+			dimensions: []Dimension{
+				{Name: "http.status_code"},
+				{Name: "http!status_code"},
+			},
+			expectedErr: "duplicate dimension name http_status_code after sanitization",
+		},
+		{
+			name: "we skip the case if the dimension name is the same after sanitization",
+			dimensions: []Dimension{
+				{Name: "http_status_code"},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateDimensions(tc.dimensions)
+			if tc.expectedErr != "" {
+				assert.EqualError(t, err, tc.expectedErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestSanitize(t *testing.T) {
+	require.Equal(t, "", sanitize(""), "")
+	require.Equal(t, "key_test", sanitize("_test"))
+	require.Equal(t, "key_0test", sanitize("0test"))
+	require.Equal(t, "test", sanitize("test"))
+	require.Equal(t, "test__", sanitize("test_/"))
 }

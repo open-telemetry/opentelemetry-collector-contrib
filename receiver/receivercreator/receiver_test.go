@@ -28,8 +28,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -80,8 +80,8 @@ var _ observer.Observable = (*mockObserver)(nil)
 
 func TestMockedEndToEnd(t *testing.T) {
 	host, cfg := exampleCreatorFactory(t)
-	host.extensions = map[configmodels.NamedEntity]component.Extension{
-		&configmodels.ExtensionSettings{
+	host.extensions = map[config.NamedEntity]component.Extension{
+		&config.ExtensionSettings{
 			TypeVal: "mock_observer",
 			NameVal: "mock_observer",
 		}: &mockObserver{},

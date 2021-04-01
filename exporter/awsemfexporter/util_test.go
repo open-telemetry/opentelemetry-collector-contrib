@@ -32,8 +32,6 @@ func TestReplacePatternValidTaskId(t *testing.T) {
 	input := "{TaskId}"
 
 	attrMap := pdata.NewAttributeMap()
-	attrMap.InitEmptyWithCapacity(2)
-
 	attrMap.UpsertString("aws.ecs.cluster.name", "test-cluster-name")
 	attrMap.UpsertString("aws.ecs.task.id", "test-task-id")
 
@@ -48,8 +46,6 @@ func TestReplacePatternValidClusterName(t *testing.T) {
 	input := "/aws/ecs/containerinsights/{ClusterName}/performance"
 
 	attrMap := pdata.NewAttributeMap()
-	attrMap.InitEmptyWithCapacity(2)
-
 	attrMap.UpsertString("aws.ecs.cluster.name", "test-cluster-name")
 	attrMap.UpsertString("aws.ecs.task.id", "test-task-id")
 
@@ -64,8 +60,6 @@ func TestReplacePatternMissingAttribute(t *testing.T) {
 	input := "/aws/ecs/containerinsights/{ClusterName}/performance"
 
 	attrMap := pdata.NewAttributeMap()
-	attrMap.InitEmptyWithCapacity(1)
-
 	attrMap.UpsertString("aws.ecs.task.id", "test-task-id")
 
 	s := replacePatterns(input, attrMap, logger)
@@ -79,8 +73,6 @@ func TestReplacePatternAttrPlaceholderClusterName(t *testing.T) {
 	input := "/aws/ecs/containerinsights/{ClusterName}/performance"
 
 	attrMap := pdata.NewAttributeMap()
-	attrMap.InitEmptyWithCapacity(1)
-
 	attrMap.UpsertString("ClusterName", "test-cluster-name")
 
 	s := replacePatterns(input, attrMap, logger)
@@ -94,8 +86,6 @@ func TestReplacePatternWrongKey(t *testing.T) {
 	input := "/aws/ecs/containerinsights/{WrongKey}/performance"
 
 	attrMap := pdata.NewAttributeMap()
-	attrMap.InitEmptyWithCapacity(1)
-
 	attrMap.UpsertString("ClusterName", "test-task-id")
 
 	s := replacePatterns(input, attrMap, logger)

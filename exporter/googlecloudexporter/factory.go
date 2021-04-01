@@ -21,7 +21,7 @@ import (
 
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -49,10 +49,10 @@ func NewFactory() component.ExporterFactory {
 }
 
 // createDefaultConfig creates the default configuration for exporter.
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
+		ExporterSettings: config.ExporterSettings{
+			TypeVal: config.Type(typeStr),
 			NameVal: typeStr,
 		},
 		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
@@ -66,7 +66,7 @@ func createDefaultConfig() configmodels.Exporter {
 func createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter) (component.TracesExporter, error) {
+	cfg config.Exporter) (component.TracesExporter, error) {
 	eCfg := cfg.(*Config)
 	return newGoogleCloudTraceExporter(eCfg, params)
 }
@@ -75,7 +75,7 @@ func createTraceExporter(
 func createMetricsExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter) (component.MetricsExporter, error) {
+	cfg config.Exporter) (component.MetricsExporter, error) {
 	eCfg := cfg.(*Config)
 	return newGoogleCloudMetricsExporter(eCfg, params)
 }

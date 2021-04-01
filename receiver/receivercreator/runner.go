@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -82,8 +82,8 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	factory component.ReceiverFactory,
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
-) (configmodels.Receiver, error) {
-	mergedConfig := configparser.NewViper()
+) (config.Receiver, error) {
+	mergedConfig := config.NewViper()
 
 	// Merge in the config values specified in the config file.
 	if err := mergedConfig.MergeConfigMap(receiver.config); err != nil {
@@ -95,7 +95,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 		return nil, fmt.Errorf("failed to merge template config from discovered runtime values: %v", err)
 	}
 
-	receiverConfig, err := configparser.LoadReceiver(mergedConfig, receiver.typeStr, receiver.fullName, factory)
+	receiverConfig, err := configparser.LoadReceiver(config.ParserFromViper(mergedConfig), receiver.fullName, factory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template config: %v", err)
 	}
@@ -108,7 +108,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 // createRuntimeReceiver creates a receiver that is discovered at runtime.
 func (run *receiverRunner) createRuntimeReceiver(
 	factory component.ReceiverFactory,
-	cfg configmodels.Receiver,
+	cfg config.Receiver,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	return factory.CreateMetricsReceiver(context.Background(), run.params, cfg, nextConsumer)

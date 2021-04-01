@@ -17,7 +17,7 @@ package spanmetricsprocessor
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Dimension defines the dimension name and optional default value if the Dimension is missing from a span attribute.
@@ -28,7 +28,7 @@ type Dimension struct {
 
 // Config defines the configuration options for spanmetricsprocessor.
 type Config struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
+	config.ProcessorSettings `mapstructure:",squash"`
 
 	// MetricsExporter is the name of the metrics exporter to use to ship metrics.
 	MetricsExporter string `mapstructure:"metrics_exporter"`

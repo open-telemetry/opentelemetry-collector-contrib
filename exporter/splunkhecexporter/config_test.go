@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
@@ -54,16 +54,17 @@ func TestLoadConfig(t *testing.T) {
 
 	e1 := cfg.Exporters[expectedName]
 	expectedCfg := Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
+		ExporterSettings: config.ExporterSettings{
+			TypeVal: config.Type(typeStr),
 			NameVal: expectedName,
 		},
-		Token:          "00000000-0000-0000-0000-0000000000000",
-		Endpoint:       "https://splunk:8088/services/collector",
-		Source:         "otel",
-		SourceType:     "otel",
-		Index:          "metrics",
-		MaxConnections: 100,
+		Token:                "00000000-0000-0000-0000-0000000000000",
+		Endpoint:             "https://splunk:8088/services/collector",
+		Source:               "otel",
+		SourceType:           "otel",
+		Index:                "metrics",
+		MaxConnections:       100,
+		MaxContentLengthLogs: 2 * 1024 * 1024,
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: 10 * time.Second,
 		},
@@ -89,12 +90,12 @@ func TestLoadConfig(t *testing.T) {
 
 func TestConfig_getOptionsFromConfig(t *testing.T) {
 	type fields struct {
-		ExporterSettings configmodels.ExporterSettings
-		Endpoint         string
-		Token            string
-		Source           string
-		SourceType       string
-		Index            string
+		Endpoint             string
+		Token                string
+		Source               string
+		SourceType           string
+		Index                string
+		MaxContentLengthLogs uint
 	}
 	tests := []struct {
 		name    string
@@ -139,16 +140,26 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 		},
+		{
+			name: "Test max content length logs greater than limit",
+			fields: fields{
+				Token:                "1234",
+				Endpoint:             "https://example.com:8000",
+				MaxContentLengthLogs: maxContentLengthLogsLimit + 1,
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ExporterSettings: tt.fields.ExporterSettings,
-				Token:            tt.fields.Token,
-				Endpoint:         tt.fields.Endpoint,
-				Source:           tt.fields.Source,
-				SourceType:       tt.fields.SourceType,
-				Index:            tt.fields.Index,
+				Token:                tt.fields.Token,
+				Endpoint:             tt.fields.Endpoint,
+				Source:               tt.fields.Source,
+				SourceType:           tt.fields.SourceType,
+				Index:                tt.fields.Index,
+				MaxContentLengthLogs: tt.fields.MaxContentLengthLogs,
 			}
 			got, err := cfg.getOptionsFromConfig()
 			if (err != nil) != tt.wantErr {

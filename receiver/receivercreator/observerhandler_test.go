@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
@@ -49,7 +49,7 @@ var _ runner = (*mockRunner)(nil)
 
 func TestOnAdd(t *testing.T) {
 	runner := &mockRunner{}
-	rcvrCfg := receiverConfig{typeStr: configmodels.Type("name"), config: userConfigMap{"foo": "bar"}, fullName: "name/1"}
+	rcvrCfg := receiverConfig{typeStr: config.Type("name"), config: userConfigMap{"foo": "bar"}, fullName: "name/1"}
 	cfg := createDefaultConfig().(*Config)
 	cfg.receiverTemplates = map[string]receiverTemplate{
 		"name/1": {rcvrCfg, "", newRuleOrPanic(`type == "port"`)},
@@ -99,7 +99,7 @@ func TestOnRemove(t *testing.T) {
 
 func TestOnChange(t *testing.T) {
 	runner := &mockRunner{}
-	rcvrCfg := receiverConfig{typeStr: configmodels.Type("name"), config: userConfigMap{"foo": "bar"}, fullName: "name/1"}
+	rcvrCfg := receiverConfig{typeStr: config.Type("name"), config: userConfigMap{"foo": "bar"}, fullName: "name/1"}
 	oldRcvr := &nopWithEndpointReceiver{}
 	newRcvr := &nopWithEndpointReceiver{}
 	cfg := createDefaultConfig().(*Config)
@@ -135,7 +135,7 @@ func TestDynamicConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.receiverTemplates = map[string]receiverTemplate{
 		"name/1": {
-			receiverConfig: receiverConfig{typeStr: configmodels.Type("name"), config: userConfigMap{"endpoint": "`endpoint`:6379"}, fullName: "name/1"},
+			receiverConfig: receiverConfig{typeStr: config.Type("name"), config: userConfigMap{"endpoint": "`endpoint`:6379"}, fullName: "name/1"},
 			Rule:           `type == "pod"`,
 			rule:           newRuleOrPanic("type == \"pod\""),
 		},

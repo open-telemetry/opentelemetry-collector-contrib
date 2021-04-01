@@ -109,18 +109,18 @@ func TestTaskResource(t *testing.T) {
 	attrMap := r.Attributes()
 	require.EqualValues(t, 13, attrMap.Len())
 	expected := map[string]string{
-		AttributeECSCluster:               "cluster-1",
-		AttributeECSTaskARN:               "arn:aws:ecs:us-west-2:111122223333:task/default/158d1c8083dd49d6b527399fd6414f5c",
-		AttributeECSTaskID:                "158d1c8083dd49d6b527399fd6414f5c",
-		AttributeECSTaskFamily:            "task-def-family-1",
-		AttributeECSTaskRevision:          "v1.2",
-		conventions.AttributeCloudZone:    "us-west-2d",
-		AttributeECSTaskPullStartedAt:     "2020-10-02T00:43:06.202617438Z",
-		AttributeECSTaskPullStoppedAt:     "2020-10-02T00:43:06.31288465Z",
-		AttributeECSTaskKnownStatus:       "RUNNING",
-		AttributeECSTaskLaunchType:        "EC2",
-		conventions.AttributeCloudRegion:  "us-west-2",
-		conventions.AttributeCloudAccount: "111122223333",
+		AttributeECSCluster:                        "cluster-1",
+		AttributeECSTaskARN:                        "arn:aws:ecs:us-west-2:111122223333:task/default/158d1c8083dd49d6b527399fd6414f5c",
+		AttributeECSTaskID:                         "158d1c8083dd49d6b527399fd6414f5c",
+		AttributeECSTaskFamily:                     "task-def-family-1",
+		AttributeECSTaskRevision:                   "v1.2",
+		conventions.AttributeCloudAvailabilityZone: "us-west-2d",
+		AttributeECSTaskPullStartedAt:              "2020-10-02T00:43:06.202617438Z",
+		AttributeECSTaskPullStoppedAt:              "2020-10-02T00:43:06.31288465Z",
+		AttributeECSTaskKnownStatus:                "RUNNING",
+		AttributeECSTaskLaunchType:                 "EC2",
+		conventions.AttributeCloudRegion:           "us-west-2",
+		conventions.AttributeCloudAccount:          "111122223333",
 	}
 
 	verifyAttributeMap(t, expected, attrMap)
@@ -145,18 +145,18 @@ func TestTaskResourceWithClusterARN(t *testing.T) {
 	require.EqualValues(t, 13, attrMap.Len())
 
 	expected := map[string]string{
-		AttributeECSCluster:               "main-cluster",
-		AttributeECSTaskARN:               "arn:aws:ecs:us-west-2:803860917211:cluster/main-cluster/c8083dd49d6b527399fd6414",
-		AttributeECSTaskID:                "c8083dd49d6b527399fd6414",
-		AttributeECSTaskFamily:            "task-def-family-1",
-		AttributeECSTaskRevision:          "v1.2",
-		conventions.AttributeCloudZone:    "us-west-2d",
-		AttributeECSTaskPullStartedAt:     "2020-10-02T00:43:06.202617438Z",
-		AttributeECSTaskPullStoppedAt:     "2020-10-02T00:43:06.31288465Z",
-		AttributeECSTaskKnownStatus:       "RUNNING",
-		AttributeECSTaskLaunchType:        "EC2",
-		conventions.AttributeCloudRegion:  "us-west-2",
-		conventions.AttributeCloudAccount: "803860917211",
+		AttributeECSCluster:                        "main-cluster",
+		AttributeECSTaskARN:                        "arn:aws:ecs:us-west-2:803860917211:cluster/main-cluster/c8083dd49d6b527399fd6414",
+		AttributeECSTaskID:                         "c8083dd49d6b527399fd6414",
+		AttributeECSTaskFamily:                     "task-def-family-1",
+		AttributeECSTaskRevision:                   "v1.2",
+		conventions.AttributeCloudAvailabilityZone: "us-west-2d",
+		AttributeECSTaskPullStartedAt:              "2020-10-02T00:43:06.202617438Z",
+		AttributeECSTaskPullStoppedAt:              "2020-10-02T00:43:06.31288465Z",
+		AttributeECSTaskKnownStatus:                "RUNNING",
+		AttributeECSTaskLaunchType:                 "EC2",
+		conventions.AttributeCloudRegion:           "us-west-2",
+		conventions.AttributeCloudAccount:          "803860917211",
 	}
 
 	verifyAttributeMap(t, expected, attrMap)

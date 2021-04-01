@@ -49,6 +49,7 @@ func defaultAttrFunc(res map[string]interface{}) func(map[string]interface{}) ma
 		full := make(map[string]interface{}, 2+len(res)+len(add))
 		full[collectorNameKey] = name
 		full[collectorVersionKey] = version
+		full[instrumentationProviderAttrKey] = "opentelemetry"
 		for k, v := range res {
 			full[k] = v
 		}
@@ -254,8 +255,8 @@ func TestTransformSpan(t *testing.T) {
 				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 5}))
 				s.SetName("with time")
-				s.SetStartTime(pdata.TimestampFromTime(now))
-				s.SetEndTime(pdata.TimestampFromTime(now.Add(time.Second * 5)))
+				s.SetStartTimestamp(pdata.TimestampFromTime(now))
+				s.SetEndTimestamp(pdata.TimestampFromTime(now.Add(time.Second * 5)))
 				return s
 			},
 			want: telemetry.Span{

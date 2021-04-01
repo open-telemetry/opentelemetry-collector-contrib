@@ -18,12 +18,12 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	ddconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
 )
 
@@ -43,19 +43,19 @@ func NewFactory() component.ExporterFactory {
 }
 
 // createDefaultConfig creates the default exporter configuration
-func createDefaultConfig() configmodels.Exporter {
-	return &config.Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
+func createDefaultConfig() config.Exporter {
+	return &ddconfig.Config{
+		ExporterSettings: config.ExporterSettings{
+			TypeVal: config.Type(typeStr),
 			NameVal: typeStr,
 		},
 
-		API: config.APIConfig{
+		API: ddconfig.APIConfig{
 			Key:  "$DD_API_KEY", // Must be set if using API
 			Site: "$DD_SITE",    // If not provided, set during config sanitization
 		},
 
-		TagsConfig: config.TagsConfig{
+		TagsConfig: ddconfig.TagsConfig{
 			Hostname:   "$DD_HOST",
 			Env:        "$DD_ENV",
 			Service:    "$DD_SERVICE",
@@ -63,18 +63,18 @@ func createDefaultConfig() configmodels.Exporter {
 			EnvVarTags: "$DD_TAGS", // Only taken into account if Tags is not set
 		},
 
-		Metrics: config.MetricsConfig{
+		Metrics: ddconfig.MetricsConfig{
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "$DD_URL", // If not provided, set during config sanitization
 			},
 			SendMonotonic: true,
 			DeltaTTL:      3600,
-			ExporterConfig: config.MetricsExporterConfig{
+			ExporterConfig: ddconfig.MetricsExporterConfig{
 				ResourceAttributesAsTags: false,
 			},
 		},
 
-		Traces: config.TracesConfig{
+		Traces: ddconfig.TracesConfig{
 			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "$DD_APM_URL", // If not provided, set during config sanitization
@@ -90,10 +90,10 @@ func createDefaultConfig() configmodels.Exporter {
 func createMetricsExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
-	c configmodels.Exporter,
+	c config.Exporter,
 ) (component.MetricsExporter, error) {
 
-	cfg := c.(*config.Config)
+	cfg := c.(*ddconfig.Config)
 
 	params.Logger.Info("sanitizing Datadog metrics exporter configuration")
 	if err := cfg.Sanitize(); err != nil {
@@ -140,10 +140,10 @@ func createMetricsExporter(
 func createTraceExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
-	c configmodels.Exporter,
+	c config.Exporter,
 ) (component.TracesExporter, error) {
 
-	cfg := c.(*config.Config)
+	cfg := c.(*ddconfig.Config)
 
 	params.Logger.Info("sanitizing Datadog metrics exporter configuration")
 	if err := cfg.Sanitize(); err != nil {

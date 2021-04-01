@@ -50,7 +50,7 @@ func NewCarbonDataSender(port int) *CarbonDataSender {
 // Start the sender.
 func (cs *CarbonDataSender) Start() error {
 	cfg := &carbonexporter.Config{
-		Endpoint: cs.GetEndpoint(),
+		Endpoint: cs.GetEndpoint().String(),
 		Timeout:  5 * time.Second,
 	}
 

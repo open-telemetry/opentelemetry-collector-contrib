@@ -59,7 +59,7 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 
 func (d *Detector) initializeCloudAttributes(attr pdata.AttributeMap) []error {
 	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
-	attr.InsertString(conventions.AttributeCloudInfrastructureService, conventions.AttributeCloudProviderGCPComputeEngine)
+	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPComputeEngine)
 
 	var errors []error
 
@@ -74,7 +74,7 @@ func (d *Detector) initializeCloudAttributes(attr pdata.AttributeMap) []error {
 	if err != nil {
 		errors = append(errors, err)
 	} else {
-		attr.InsertString(conventions.AttributeCloudZone, zone)
+		attr.InsertString(conventions.AttributeCloudAvailabilityZone, zone)
 	}
 
 	return errors

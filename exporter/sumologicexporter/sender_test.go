@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -36,12 +37,16 @@ type senderTest struct {
 }
 
 func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.Request)) *senderTest {
-	reqCounter := 0
+	var reqCounter int32
 	// generate a test server so we can capture and inspect the request
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		if len(cb) > 0 && assert.Greater(t, len(cb), reqCounter) {
-			cb[reqCounter](w, req)
-			reqCounter++
+		if len(cb) == 0 {
+			return
+		}
+
+		if c := int(atomic.LoadInt32(&reqCounter)); assert.Greater(t, len(cb), c) {
+			cb[c](w, req)
+			atomic.AddInt32(&reqCounter, 1)
 		}
 	}))
 
@@ -135,7 +140,6 @@ func exampleMultitypeLogs() []pdata.LogRecord {
 
 	attVal := pdata.NewAttributeValueMap()
 	attMap := attVal.MapVal()
-	attMap.InitEmptyWithCapacity(2)
 	attMap.InsertString("lk1", "lv1")
 	attMap.InsertInt("lk2", 13)
 

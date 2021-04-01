@@ -137,7 +137,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 	logger := zap.New(logCore)
 	params := component.ReceiverCreateParams{Logger: logger}
 
-	config := &config{
+	cfg := &Config{
 		CollectionInterval: 100 * time.Millisecond,
 		Endpoint:           fmt.Sprintf("%v:7199", hostname),
 		JARPath:            suite.JARPath,
@@ -155,7 +155,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 	consumer := new(consumertest.MetricsSink)
 	require.NotNil(t, consumer)
 
-	receiver := newJMXMetricReceiver(params, config, consumer)
+	receiver := newJMXMetricReceiver(params, cfg, consumer)
 	require.NotNil(t, receiver)
 	defer func() {
 		require.Nil(t, receiver.Shutdown(context.Background()))
@@ -210,7 +210,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 
 func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	config := &config{
+	cfg := &Config{
 		CollectionInterval: 100 * time.Millisecond,
 		Endpoint:           fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),
 		JARPath:            "/notavalidpath",
@@ -222,7 +222,7 @@ func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 			},
 		},
 	}
-	receiver := newJMXMetricReceiver(params, config, consumertest.NewMetricsNop())
+	receiver := newJMXMetricReceiver(params, cfg, consumertest.NewMetricsNop())
 	require.NotNil(t, receiver)
 	defer func() {
 		require.EqualError(t, receiver.Shutdown(context.Background()), "no subprocess.cancel().  Has it been started properly?")

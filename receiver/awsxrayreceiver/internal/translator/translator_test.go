@@ -594,7 +594,7 @@ func TestTranslation(t *testing.T) {
 				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString(conventions.AttributeCloudProviderAWS)
 				attrs[conventions.AttributeCloudAccount] = pdata.NewAttributeValueString(
 					*seg.AWS.AccountID)
-				attrs[conventions.AttributeCloudZone] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeCloudAvailabilityZone] = pdata.NewAttributeValueString(
 					*seg.AWS.EC2.AvailabilityZone)
 				attrs[conventions.AttributeHostID] = pdata.NewAttributeValueString(
 					*seg.AWS.EC2.InstanceID)
@@ -606,7 +606,7 @@ func TestTranslation(t *testing.T) {
 					*seg.AWS.ECS.ContainerName)
 				attrs[conventions.AttributeContainerID] = pdata.NewAttributeValueString(
 					*seg.AWS.ECS.ContainerID)
-				attrs[conventions.AttributeCloudZone] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeCloudAvailabilityZone] = pdata.NewAttributeValueString(
 					*seg.AWS.ECS.AvailabilityZone)
 				attrs[conventions.AttributeServiceNamespace] = pdata.NewAttributeValueString(
 					*seg.AWS.Beanstalk.Environment)
@@ -1013,9 +1013,9 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 			sp.SetParentSpanID(pdata.NewSpanID(parentIDBytes))
 		}
 		sp.SetName(props.name)
-		sp.SetStartTime(pdata.Timestamp(props.startTimeSec * float64(time.Second)))
+		sp.SetStartTimestamp(pdata.Timestamp(props.startTimeSec * float64(time.Second)))
 		if props.endTimeSec != nil {
-			sp.SetEndTime(pdata.Timestamp(*props.endTimeSec * float64(time.Second)))
+			sp.SetEndTimestamp(pdata.Timestamp(*props.endTimeSec * float64(time.Second)))
 		}
 		sp.SetKind(props.spanKind)
 		traceIDBytes, _ := decodeXRayTraceID(&props.traceID)

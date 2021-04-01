@@ -20,9 +20,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 )
@@ -54,7 +54,7 @@ func TestCreateReceiver(t *testing.T) {
 }
 
 func TestFactoryType(t *testing.T) {
-	assert.Equal(t, configmodels.Type("splunk_hec"), NewFactory().Type())
+	assert.Equal(t, config.Type("splunk_hec"), NewFactory().Type())
 }
 
 func TestValidate(t *testing.T) {

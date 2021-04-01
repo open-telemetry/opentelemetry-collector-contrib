@@ -17,6 +17,7 @@ import (
 	"compress/gzip"
 	"context"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"math"
 	"net"
@@ -27,8 +28,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
@@ -78,8 +81,8 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 	for i := 0; i < numberOfTraces; i++ {
 		span := ils.Spans().At(i)
 		span.SetName("root")
-		span.SetStartTime(pdata.Timestamp((i + 1) * 1e9))
-		span.SetEndTime(pdata.Timestamp((i + 2) * 1e9))
+		span.SetStartTimestamp(pdata.Timestamp((i + 1) * 1e9))
+		span.SetEndTimestamp(pdata.Timestamp((i + 2) * 1e9))
 		span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 		span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 		span.SetTraceState("foo")
@@ -94,25 +97,30 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 	return traces
 }
 
-func createLogData(numberOfLogs int) pdata.Logs {
+func createLogData(numResources int, numLibraries int, numRecords int) pdata.Logs {
 	logs := pdata.NewLogs()
-	logs.ResourceLogs().Resize(1)
-	rl := logs.ResourceLogs().At(0)
-	rl.InstrumentationLibraryLogs().Resize(1)
-	ill := rl.InstrumentationLibraryLogs().At(0)
+	logs.ResourceLogs().Resize(numResources)
 
-	for i := 0; i < numberOfLogs; i++ {
-		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
-		logRecord := pdata.NewLogRecord()
-		logRecord.Body().SetStringVal("mylog")
-		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
-		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-		logRecord.Attributes().InsertString(splunk.IndexLabel, "myindex")
-		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-		logRecord.Attributes().InsertString("custom", "custom")
-		logRecord.SetTimestamp(ts)
+	for i := 0; i < numResources; i++ {
+		rl := logs.ResourceLogs().At(i)
+		rl.InstrumentationLibraryLogs().Resize(numLibraries)
+		for j := 0; j < numLibraries; j++ {
+			ill := rl.InstrumentationLibraryLogs().At(j)
+			for k := 0; k < numRecords; k++ {
+				ts := pdata.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
+				logRecord := pdata.NewLogRecord()
+				logRecord.SetName(fmt.Sprintf("%d_%d_%d", i, j, k))
+				logRecord.Body().SetStringVal("mylog")
+				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
+				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
+				logRecord.Attributes().InsertString(splunk.IndexLabel, "myindex")
+				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().InsertString("custom", "custom")
+				logRecord.SetTimestamp(ts)
 
-		ill.Logs().Append(logRecord)
+				ill.Logs().Append(logRecord)
+			}
+		}
 	}
 
 	return logs
@@ -126,12 +134,14 @@ type CapturingData struct {
 }
 
 func (c *CapturingData) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+
 	if c.checkCompression {
-		if r.Header.Get("Content-Encoding") != "gzip" {
+		if len(body) > minCompressionLen && r.Header.Get("Content-Encoding") != "gzip" {
 			c.testing.Fatal("No compression")
 		}
 	}
-	body, err := ioutil.ReadAll(r.Body)
+
 	if err != nil {
 		panic(err)
 	}
@@ -142,24 +152,25 @@ func (c *CapturingData) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func runMetricsExport(disableCompression bool, numberOfDataPoints int, t *testing.T) (string, error) {
-	receivedRequest := make(chan string)
-	capture := CapturingData{testing: t, receivedRequest: receivedRequest, statusCode: 200, checkCompression: !disableCompression}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
 	}
-	s := &http.Server{
-		Handler: &capture,
-	}
-	go func() {
-		panic(s.Serve(listener))
-	}()
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.DisableCompression = disableCompression
 	cfg.Token = "1234-1234"
+
+	receivedRequest := make(chan string)
+	capture := CapturingData{testing: t, receivedRequest: receivedRequest, statusCode: 200, checkCompression: !cfg.DisableCompression}
+	s := &http.Server{
+		Handler: &capture,
+	}
+	go func() {
+		panic(s.Serve(listener))
+	}()
 
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
@@ -180,24 +191,25 @@ func runMetricsExport(disableCompression bool, numberOfDataPoints int, t *testin
 }
 
 func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (string, error) {
-	receivedRequest := make(chan string)
-	capture := CapturingData{testing: t, receivedRequest: receivedRequest, statusCode: 200, checkCompression: !disableCompression}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
 	}
-	s := &http.Server{
-		Handler: &capture,
-	}
-	go func() {
-		panic(s.Serve(listener))
-	}()
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.DisableCompression = disableCompression
 	cfg.Token = "1234-1234"
+
+	receivedRequest := make(chan string)
+	capture := CapturingData{testing: t, receivedRequest: receivedRequest, statusCode: 200, checkCompression: !cfg.DisableCompression}
+	s := &http.Server{
+		Handler: &capture,
+	}
+	go func() {
+		panic(s.Serve(listener))
+	}()
 
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
@@ -217,13 +229,17 @@ func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (
 	}
 }
 
-func runLogExport(disableCompression bool, numberOfLogs int, t *testing.T) (string, error) {
-	receivedRequest := make(chan string)
-	capture := CapturingData{testing: t, receivedRequest: receivedRequest, statusCode: 200, checkCompression: !disableCompression}
+func runLogExport(cfg *Config, ld pdata.Logs, t *testing.T) ([]string, error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
 	}
+
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.Token = "1234-1234"
+
+	receivedRequest := make(chan string)
+	capture := CapturingData{testing: t, receivedRequest: receivedRequest, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler: &capture,
 	}
@@ -231,27 +247,26 @@ func runLogExport(disableCompression bool, numberOfLogs int, t *testing.T) (stri
 		panic(s.Serve(listener))
 	}()
 
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
-	cfg.DisableCompression = disableCompression
-	cfg.Token = "1234-1234"
-
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
+	exporter, err := NewFactory().CreateLogsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer exporter.Shutdown(context.Background())
 
-	ld := createLogData(numberOfLogs)
-
 	err = exporter.ConsumeLogs(context.Background(), ld)
 	assert.NoError(t, err)
-	select {
-	case request := <-receivedRequest:
-		return request, nil
-	case <-time.After(1 * time.Second):
-		return "", errors.New("timeout")
+
+	var requests []string
+	for {
+		select {
+		case request := <-receivedRequest:
+			requests = append(requests, request)
+		case <-time.After(1 * time.Second):
+			if len(requests) == 0 {
+				err = errors.New("timeout")
+			}
+			return requests, err
+		}
 	}
 }
 
@@ -268,15 +283,87 @@ func TestReceiveTraces(t *testing.T) {
 }
 
 func TestReceiveLogs(t *testing.T) {
-	actual, err := runLogExport(true, 3, t)
-	assert.NoError(t, err)
-	expected := `{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}`
-	expected += "\n\r\n\r\n"
-	expected += `{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}`
-	expected += "\n\r\n\r\n"
-	expected += `{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}`
-	expected += "\n\r\n\r\n"
-	assert.Equal(t, expected, actual)
+	type wantType struct {
+		batches    []string
+		numBatches int
+	}
+
+	tests := []struct {
+		name string
+		conf *Config
+		logs pdata.Logs
+		want wantType
+	}{
+		{
+			name: "all log events in payload when max content length unknown (configured max content length 0)",
+			logs: createLogData(1, 1, 4),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthLogs = 0
+				return cfg
+			}(),
+			want: wantType{
+				batches: []string{
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
+				},
+				numBatches: 1,
+			},
+		},
+		{
+			name: "1 log event per payload (configured max content length is same as event size)",
+			logs: createLogData(1, 1, 4),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthLogs = 300
+				return cfg
+			}(),
+			want: wantType{
+				batches: []string{
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
+				},
+				numBatches: 4,
+			},
+		},
+		{
+			name: "2 log events per payload (configured max content length is twice event size)",
+			logs: createLogData(1, 1, 4),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthLogs = 400
+				return cfg
+			}(),
+			want: wantType{
+				batches: []string{
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
+				},
+				numBatches: 2,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := runLogExport(test.conf, test.logs, t)
+
+			require.NoError(t, err)
+			require.Len(t, got, test.want.numBatches)
+
+			for i := 0; i < test.want.numBatches; i++ {
+				require.NotZero(t, got[i])
+				assert.Equal(t, test.want.batches[i], got[i])
+
+			}
+		})
+	}
 }
 
 func TestReceiveMetrics(t *testing.T) {
@@ -293,12 +380,6 @@ func TestReceiveMetrics(t *testing.T) {
 
 func TestReceiveTracesWithCompression(t *testing.T) {
 	request, err := runTraceExport(false, 1000, t)
-	assert.NoError(t, err)
-	assert.NotEqual(t, "", request)
-}
-
-func TestReceiveLogsWithCompression(t *testing.T) {
-	request, err := runLogExport(false, 1000, t)
 	assert.NoError(t, err)
 	assert.NotEqual(t, "", request)
 }
@@ -357,7 +438,9 @@ func TestInvalidTraces(t *testing.T) {
 }
 
 func TestInvalidLogs(t *testing.T) {
-	_, err := runLogExport(false, 0, t)
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.DisableCompression = false
+	_, err := runLogExport(config, createLogData(1, 1, 0), t)
 	assert.Error(t, err)
 }
 
@@ -446,4 +529,194 @@ func TestInvalidURLClient(t *testing.T) {
 	}
 	err := c.sendSplunkEvents(context.Background(), []*splunk.Event{})
 	assert.EqualError(t, err, "Permanent error: parse \"//in%20va%20lid\": invalid URL escape \"%20\"")
+}
+
+func Test_pushLogData_nil_Logs(t *testing.T) {
+	tests := []struct {
+		name     func(bool) string
+		logs     pdata.Logs
+		requires func(*testing.T, pdata.Logs)
+	}{
+		{
+			name: func(disable bool) string {
+				return "COMPRESSION " + map[bool]string{true: "DISABLED ", false: "ENABLED "}[disable] + "nil ResourceLogs"
+			},
+			logs: pdata.NewLogs(),
+			requires: func(t *testing.T, logs pdata.Logs) {
+				require.Zero(t, logs.ResourceLogs().Len())
+			},
+		},
+		{
+			name: func(disable bool) string {
+				return "COMPRESSION " + map[bool]string{true: "DISABLED ", false: "ENABLED "}[disable] + "nil InstrumentationLogs"
+			},
+			logs: func() pdata.Logs {
+				logs := pdata.NewLogs()
+				logs.ResourceLogs().Resize(1)
+				logs.ResourceLogs().At(0).InstrumentationLibraryLogs()
+				return logs
+			}(),
+			requires: func(t *testing.T, logs pdata.Logs) {
+				require.Equal(t, logs.ResourceLogs().Len(), 1)
+				require.Zero(t, logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Len())
+			},
+		},
+		{
+			name: func(disable bool) string {
+				return "COMPRESSION " + map[bool]string{true: "DISABLED ", false: "ENABLED "}[disable] + "nil LogRecords"
+			},
+			logs: func() pdata.Logs {
+				logs := pdata.NewLogs()
+				logs.ResourceLogs().Resize(1)
+				logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
+				return logs
+			}(),
+			requires: func(t *testing.T, logs pdata.Logs) {
+				require.Equal(t, logs.ResourceLogs().Len(), 1)
+				require.Equal(t, logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Len(), 1)
+				require.Zero(t, logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().Len())
+			},
+		},
+	}
+
+	c := client{
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+	}
+
+	for _, test := range tests {
+		for _, disabled := range []bool{true, false} {
+			t.Run(test.name(disabled), func(t *testing.T) {
+				test.requires(t, test.logs)
+				err := c.pushLogData(context.Background(), test.logs)
+				assert.NoError(t, err)
+			})
+		}
+	}
+
+}
+
+func Test_pushLogData_InvalidLog(t *testing.T) {
+	c := client{
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: &Config{},
+	}
+
+	logs := pdata.NewLogs()
+	logs.ResourceLogs().Resize(1)
+	logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
+
+	log := pdata.NewLogRecord()
+	// Invalid log value
+	log.Body().SetDoubleVal(math.Inf(1))
+	logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().Append(log)
+
+	err := c.pushLogData(context.Background(), logs)
+
+	assert.Contains(t, err.Error(), "json: unsupported value: +Inf")
+}
+
+func Test_pushLogData_PostError(t *testing.T) {
+	c := client{
+		url: &url.URL{Host: "in va lid"},
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+	}
+
+	// 2000 log records -> ~371888 bytes when JSON encoded.
+	logs := createLogData(1, 1, 2000)
+
+	// 0 -> unlimited size batch, true -> compression disabled.
+	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, true
+	err := c.pushLogData(context.Background(), logs)
+	require.Error(t, err)
+	assert.IsType(t, consumererror.Logs{}, err)
+	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
+
+	// 0 -> unlimited size batch, false -> compression enabled.
+	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, false
+	err = c.pushLogData(context.Background(), logs)
+	require.Error(t, err)
+	assert.IsType(t, consumererror.Logs{}, err)
+	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
+
+	// 200000 < 371888 -> multiple batches, true -> compression disabled.
+	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, true
+	err = c.pushLogData(context.Background(), logs)
+	require.Error(t, err)
+	assert.IsType(t, consumererror.Logs{}, err)
+	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
+
+	// 200000 < 371888 -> multiple batches, false -> compression enabled.
+	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, false
+	err = c.pushLogData(context.Background(), logs)
+	require.Error(t, err)
+	assert.IsType(t, consumererror.Logs{}, err)
+	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
+}
+
+func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
+	c := client{
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+	}
+	c.config.MaxContentLengthLogs = 1
+
+	logs := createLogData(1, 1, 2000)
+
+	for _, disable := range []bool{true, false} {
+		c.config.DisableCompression = disable
+
+		err := c.pushLogData(context.Background(), logs)
+		require.Error(t, err)
+
+		assert.True(t, consumererror.IsPermanent(err))
+		assert.Contains(t, err.Error(), "dropped log event")
+	}
+}
+
+func TestSubLogs(t *testing.T) {
+	// Creating 12 logs (2 resources x 2 libraries x 3 records)
+	logs := createLogData(2, 2, 3)
+
+	// Logs subset from leftmost index (resource 0, library 0, record 0).
+	_0_0_0 := &logIndex{resource: 0, library: 0, record: 0}
+	got := subLogs(&logs, _0_0_0)
+
+	// Number of logs in subset should equal original logs.
+	assert.Equal(t, logs.LogRecordCount(), got.LogRecordCount())
+
+	// The name of the leftmost log record should be 0_0_0.
+	assert.Equal(t, "0_0_0", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	// The name of the rightmost log record should be 1_1_2.
+	assert.Equal(t, "1_1_2", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(1).Logs().At(2).Name())
+
+	// Logs subset from some mid index (resource 0, library 1, log 2).
+	_0_1_2 := &logIndex{resource: 0, library: 1, record: 2}
+	got = subLogs(&logs, _0_1_2)
+
+	assert.Equal(t, 7, got.LogRecordCount())
+
+	// The name of the leftmost log record should be 0_1_2.
+	assert.Equal(t, "0_1_2", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	// The name of the rightmost log record should be 1_1_2.
+	assert.Equal(t, "1_1_2", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(1).Logs().At(2).Name())
+
+	// Logs subset from rightmost index (resource 1, library 1, log 2).
+	_1_1_2 := &logIndex{resource: 1, library: 1, record: 2}
+	got = subLogs(&logs, _1_1_2)
+
+	// Number of logs in subset should be 1.
+	assert.Equal(t, 1, got.LogRecordCount())
+
+	// The name of the sole log record should be 1_1_2.
+	assert.Equal(t, "1_1_2", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
 }
