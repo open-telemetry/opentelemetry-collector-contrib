@@ -64,6 +64,67 @@ var (
 		attr.InsertString(conventions.AttributeCloudAccount, "1234")
 		return res
 	}()
+	azureResource = func() pdata.Resource {
+		res := pdata.NewResource()
+		attrs := res.Attributes()
+		attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+		attrs.InsertString(conventions.AttributeCloudInfrastructureService, conventions.AttributeCloudProviderAzureVM)
+		attrs.InsertString(conventions.AttributeHostName, "myHostName")
+		attrs.InsertString(conventions.AttributeCloudRegion, "myCloudRegion")
+		attrs.InsertString(conventions.AttributeHostID, "myHostID")
+		attrs.InsertString(conventions.AttributeCloudAccount, "myCloudAccount")
+		attrs.InsertString("azure.vm.size", "42")
+		attrs.InsertString("azure.resourcegroup.name", "myResourcegroupName")
+		return res
+	}()
+	azureScalesetResource = func() pdata.Resource {
+		res := pdata.NewResource()
+		attrs := res.Attributes()
+		attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+		attrs.InsertString(conventions.AttributeCloudInfrastructureService, conventions.AttributeCloudProviderAzureVM)
+		attrs.InsertString(conventions.AttributeHostName, "myVMScalesetName_1")
+		attrs.InsertString(conventions.AttributeCloudRegion, "myCloudRegion")
+		attrs.InsertString(conventions.AttributeHostID, "myHostID")
+		attrs.InsertString(conventions.AttributeCloudAccount, "myCloudAccount")
+		attrs.InsertString("azure.vm.size", "42")
+		attrs.InsertString("azure.vm.scaleset.name", "myVMScalesetName")
+		attrs.InsertString("azure.resourcegroup.name", "myResourcegroupName")
+		return res
+	}()
+	azureMissingCloudAcct = func() pdata.Resource {
+		res := pdata.NewResource()
+		attrs := res.Attributes()
+		attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+		attrs.InsertString(conventions.AttributeCloudInfrastructureService, conventions.AttributeCloudProviderAzureVM)
+		attrs.InsertString(conventions.AttributeCloudRegion, "myCloudRegion")
+		attrs.InsertString(conventions.AttributeHostID, "myHostID")
+		attrs.InsertString("azure.vm.size", "42")
+		attrs.InsertString("azure.resourcegroup.name", "myResourcegroupName")
+		return res
+	}()
+	azureMissingResourceGroup = func() pdata.Resource {
+		res := pdata.NewResource()
+		attrs := res.Attributes()
+		attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+		attrs.InsertString(conventions.AttributeCloudInfrastructureService, conventions.AttributeCloudProviderAzureVM)
+		attrs.InsertString(conventions.AttributeCloudRegion, "myCloudRegion")
+		attrs.InsertString(conventions.AttributeHostID, "myHostID")
+		attrs.InsertString(conventions.AttributeCloudAccount, "myCloudAccount")
+		attrs.InsertString("azure.vm.size", "42")
+		return res
+	}()
+	azureMissingHostName = func() pdata.Resource {
+		res := pdata.NewResource()
+		attrs := res.Attributes()
+		attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+		attrs.InsertString(conventions.AttributeCloudInfrastructureService, conventions.AttributeCloudProviderAzureVM)
+		attrs.InsertString(conventions.AttributeCloudRegion, "myCloudRegion")
+		attrs.InsertString(conventions.AttributeHostID, "myHostID")
+		attrs.InsertString(conventions.AttributeCloudAccount, "myCloudAccount")
+		attrs.InsertString("azure.resourcegroup.name", "myResourcegroupName")
+		attrs.InsertString("azure.vm.size", "42")
+		return res
+	}()
 	hostResource = func() pdata.Resource {
 		res := pdata.NewResource()
 		attr := res.Attributes()
@@ -124,6 +185,42 @@ func TestResourceToHostID(t *testing.T) {
 			ok: true,
 		},
 		{
+			name: "azure",
+			args: args{azureResource},
+			want: HostID{
+				Key: "azure_resource_id",
+				ID:  "mycloudaccount/myresourcegroupname/microsoft.compute/virtualmachines/myhostname",
+			},
+			ok: true,
+		},
+		{
+			name: "azure scaleset",
+			args: args{azureScalesetResource},
+			want: HostID{
+				Key: "azure_resource_id",
+				ID:  "mycloudaccount/myresourcegroupname/microsoft.compute/virtualmachinescalesets/myvmscalesetname/virtualmachines/1",
+			},
+			ok: true,
+		},
+		{
+			name: "azure cloud account missing",
+			args: args{azureMissingCloudAcct},
+			want: HostID{},
+			ok:   false,
+		},
+		{
+			name: "azure resource group missing",
+			args: args{azureMissingResourceGroup},
+			want: HostID{},
+			ok:   false,
+		},
+		{
+			name: "azure hostname missing",
+			args: args{azureMissingHostName},
+			want: HostID{},
+			ok:   false,
+		},
+		{
 			name: "ec2 attributes missing",
 			args: args{ec2PartialResource},
 			want: HostID{},
@@ -158,4 +255,14 @@ func TestResourceToHostID(t *testing.T) {
 			assert.Equal(t, tt.want, hostID)
 		})
 	}
+}
+
+func TestAzureID(t *testing.T) {
+	attrs := pdata.NewAttributeMap()
+	attrs.Insert("azure.resourcegroup.name", pdata.NewAttributeValueString("myResourceGroup"))
+	attrs.Insert("azure.vm.scaleset.name", pdata.NewAttributeValueString("myScalesetName"))
+	attrs.Insert(conventions.AttributeHostName, pdata.NewAttributeValueString("myScalesetName_1"))
+	id := azureID(attrs, "myCloudAccount")
+	expected := "mycloudaccount/myresourcegroup/microsoft.compute/virtualmachinescalesets/myscalesetname/virtualmachines/1"
+	assert.Equal(t, expected, id)
 }
