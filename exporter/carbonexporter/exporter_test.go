@@ -33,6 +33,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
@@ -54,14 +55,16 @@ func TestNew(t *testing.T) {
 		{
 			name: "invalid_tcp_addr",
 			config: &Config{
-				Endpoint: "http://localhost:2003",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				Endpoint:         "http://localhost:2003",
 			},
 			wantErr: true,
 		},
 		{
 			name: "invalid_timeout",
 			config: &Config{
-				Timeout: -5 * time.Second,
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				Timeout:          -5 * time.Second,
 			},
 			wantErr: true,
 		},

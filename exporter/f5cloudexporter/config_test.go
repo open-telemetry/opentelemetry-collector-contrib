@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 	actualCfg := exporter.(*Config)
 	expectedCfg := &Config{
 		Config: otlphttp.Config{
-			ExporterSettings: config.ExporterSettings{
+			ExporterSettings: &config.ExporterSettings{
 				NameVal: "f5cloud/allsettings",
 				TypeVal: "f5cloud",
 			},
@@ -88,11 +88,10 @@ func TestConfig_sanitize(t *testing.T) {
 	const validSource = "tests"
 
 	type fields struct {
-		ExporterSettings config.ExporterSettings
-		Endpoint         string
-		Source           string
-		CredentialFile   string
-		Audience         string
+		Endpoint       string
+		Source         string
+		CredentialFile string
+		Audience       string
 	}
 	tests := []struct {
 		name         string
@@ -151,7 +150,7 @@ func TestConfig_sanitize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.ExporterSettings = tt.fields.ExporterSettings
+			cfg.ExporterSettings = config.NewExporterSettings(typeStr)
 			cfg.Endpoint = tt.fields.Endpoint
 			cfg.Source = tt.fields.Source
 			cfg.AuthConfig = AuthConfig{

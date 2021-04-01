@@ -42,7 +42,7 @@ func TestLoadConfig(tester *testing.T) {
 
 	cfgExp := cfg.Exporters["logzio/2"].(*Config)
 	assert.Equal(tester, &Config{
-		ExporterSettings: config.ExporterSettings{TypeVal: typeStr, NameVal: "logzio/2"},
+		ExporterSettings: &config.ExporterSettings{TypeVal: typeStr, NameVal: "logzio/2"},
 		TracesToken:      "logzioTESTtoken",
 		Region:           "eu",
 		CustomEndpoint:   "https://some-url.com:8888",

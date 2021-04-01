@@ -53,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 
 	r1 := cfg.Exporters["newrelic/alt"].(*Config)
 	assert.Equal(t, r1, &Config{
-		ExporterSettings: config.ExporterSettings{
+		ExporterSettings: &config.ExporterSettings{
 			TypeVal: config.Type(typeStr),
 			NameVal: "newrelic/alt",
 		},

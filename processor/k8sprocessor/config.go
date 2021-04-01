@@ -22,7 +22,7 @@ import (
 
 // Config defines configuration for k8s attributes processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"`
+	*config.ProcessorSettings `mapstructure:"-"`
 
 	k8sconfig.APIConfig `mapstructure:",squash"`
 

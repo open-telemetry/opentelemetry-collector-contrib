@@ -28,7 +28,7 @@ type Dimension struct {
 
 // Config defines the configuration options for spanmetricsprocessor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"`
+	*config.ProcessorSettings `mapstructure:"-"`
 
 	// MetricsExporter is the name of the metrics exporter to use to ship metrics.
 	MetricsExporter string `mapstructure:"metrics_exporter"`

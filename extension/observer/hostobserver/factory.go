@@ -40,11 +40,8 @@ func NewFactory() component.ExtensionFactory {
 
 func createDefaultConfig() config.Extension {
 	return &Config{
-		ExtensionSettings: config.ExtensionSettings{
-			TypeVal: typeStr,
-			NameVal: string(typeStr),
-		},
-		RefreshInterval: defaultCollectionInterval * time.Second,
+		ExtensionSettings: config.NewExtensionSettings(typeStr),
+		RefreshInterval:   defaultCollectionInterval * time.Second,
 	}
 }
 

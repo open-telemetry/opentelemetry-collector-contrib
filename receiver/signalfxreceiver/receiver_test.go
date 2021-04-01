@@ -37,6 +37,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
@@ -165,9 +166,10 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	}
 
 	expCfg := &signalfxexporter.Config{
-		IngestURL:   "http://" + addr + "/v2/datapoint",
-		APIURL:      "http://localhost",
-		AccessToken: "access_token",
+		ExporterSettings: config.NewExporterSettings("signalfx"),
+		IngestURL:        "http://" + addr + "/v2/datapoint",
+		APIURL:           "http://localhost",
+		AccessToken:      "access_token",
 	}
 	exp, err := signalfxexporter.NewFactory().CreateMetricsExporter(
 		context.Background(),

@@ -44,7 +44,7 @@ func TestLoadConfig(t *testing.T) {
 
 	p2 := cfg.Processors["resourcedetection/gce"]
 	assert.Equal(t, p2, &Config{
-		ProcessorSettings: config.ProcessorSettings{
+		ProcessorSettings: &config.ProcessorSettings{
 			TypeVal: "resourcedetection",
 			NameVal: "resourcedetection/gce",
 		},
@@ -55,7 +55,7 @@ func TestLoadConfig(t *testing.T) {
 
 	p3 := cfg.Processors["resourcedetection/ec2"]
 	assert.Equal(t, p3, &Config{
-		ProcessorSettings: config.ProcessorSettings{
+		ProcessorSettings: &config.ProcessorSettings{
 			TypeVal: "resourcedetection",
 			NameVal: "resourcedetection/ec2",
 		},

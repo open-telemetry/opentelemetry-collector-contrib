@@ -45,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 	ext1 := cfg.Extensions["host_observer/all_settings"]
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: config.ExtensionSettings{
+			ExtensionSettings: &config.ExtensionSettings{
 				TypeVal: "host_observer",
 				NameVal: "host_observer/all_settings",
 			},

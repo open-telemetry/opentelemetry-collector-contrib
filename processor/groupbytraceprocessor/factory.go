@@ -55,12 +55,9 @@ func NewFactory() component.ProcessorFactory {
 // createDefaultConfig creates the default configuration for the processor.
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: string(typeStr),
-		},
-		NumTraces:    defaultNumTraces,
-		WaitDuration: defaultWaitDuration,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		NumTraces:         defaultNumTraces,
+		WaitDuration:      defaultWaitDuration,
 
 		// not supported for now
 		DiscardOrphans: defaultDiscardOrphans,

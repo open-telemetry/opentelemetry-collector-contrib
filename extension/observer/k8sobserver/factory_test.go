@@ -43,11 +43,8 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := Factory{createK8sClientset: nilClient}
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &Config{
-		ExtensionSettings: config.ExtensionSettings{
-			TypeVal: typeStr,
-			NameVal: string(typeStr),
-		},
-		APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+		ExtensionSettings: config.NewExtensionSettings(typeStr),
+		APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 	},
 		cfg)
 

@@ -15,7 +15,7 @@ require (
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20201202163743-65b4fa925fc8
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.23.1-0.20210331231428-f8bdcf682f15
+	go.opentelemetry.io/collector v0.23.1-0.20210331235005-1edaf40cedaf
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0
 	google.golang.org/protobuf v1.26.0

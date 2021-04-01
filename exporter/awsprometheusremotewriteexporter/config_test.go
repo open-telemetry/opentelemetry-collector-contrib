@@ -55,7 +55,7 @@ func TestLoadConfig(t *testing.T) {
 	e1 := cfg.Exporters["awsprometheusremotewrite/2"]
 	cfgComplete := &Config{
 		Config: prw.Config{
-			ExporterSettings: config.ExporterSettings{
+			ExporterSettings: &config.ExporterSettings{
 				NameVal: "awsprometheusremotewrite/2",
 				TypeVal: "awsprometheusremotewrite",
 			},

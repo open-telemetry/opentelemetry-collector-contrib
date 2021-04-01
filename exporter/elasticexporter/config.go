@@ -23,7 +23,7 @@ import (
 
 // Config defines configuration for Elastic APM exporter.
 type Config struct {
-	config.ExporterSettings    `mapstructure:",squash"`
+	*config.ExporterSettings   `mapstructure:"-"`
 	configtls.TLSClientSetting `mapstructure:",squash"`
 
 	// APMServerURLs holds the APM Server URL.

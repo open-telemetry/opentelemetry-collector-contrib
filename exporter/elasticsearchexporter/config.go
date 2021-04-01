@@ -27,7 +27,7 @@ import (
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
+	*config.ExporterSettings `mapstructure:"-"`
 
 	// Endpoints holds the Elasticsearch URLs the exporter should send events to.
 	//

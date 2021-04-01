@@ -18,7 +18,7 @@ import "go.opentelemetry.io/collector/config"
 
 // Config defines configuration for AlibabaCloud Log Service exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	*config.ExporterSettings `mapstructure:"-"`
 	// LogService's Endpoint, https://www.alibabacloud.com/help/doc-detail/29008.htm
 	// for AlibabaCloud Kubernetes(or ECS), set {region-id}-intranet.log.aliyuncs.com, eg cn-hangzhou-intranet.log.aliyuncs.com;
 	//  others set {region-id}.log.aliyuncs.com, eg cn-hangzhou.log.aliyuncs.com

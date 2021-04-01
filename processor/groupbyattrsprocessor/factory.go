@@ -56,11 +56,8 @@ func NewFactory() component.ProcessorFactory {
 // createDefaultConfig creates the default configuration for the processor.
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: string(typeStr),
-		},
-		GroupByKeys: []string{},
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		GroupByKeys:       []string{},
 	}
 }
 

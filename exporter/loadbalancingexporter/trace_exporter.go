@@ -73,6 +73,7 @@ func newTracesExporter(params component.ExporterCreateParams, cfg config.Exporte
 
 func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
 	oCfg := cfg.Protocol.OTLP
+	oCfg.ExporterSettings = config.NewExporterSettings("otlp")
 	oCfg.Endpoint = endpoint
 	return oCfg
 }

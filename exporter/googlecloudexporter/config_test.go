@@ -48,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Exporters["googlecloud/customname"].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ExporterSettings: config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "googlecloud/customname"},
+			ExporterSettings: &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "googlecloud/customname"},
 			ProjectID:        "my-project",
 			UserAgent:        "opentelemetry-collector-contrib {{version}}",
 			Endpoint:         "test-endpoint",

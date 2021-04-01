@@ -52,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(
 		t,
 		&Config{
-			ExporterSettings:   config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: exporterType},
+			ExporterSettings:   &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: exporterType},
 			Endpoint:           defaultEndpoint,
 			InstrumentationKey: "abcdefg",
 			MaxBatchSize:       100,

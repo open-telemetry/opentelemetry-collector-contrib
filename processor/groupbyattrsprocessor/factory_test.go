@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 )
@@ -31,7 +32,8 @@ func TestDefaultConfiguration(t *testing.T) {
 
 func TestCreateTestProcessor(t *testing.T) {
 	cfg := &Config{
-		GroupByKeys: []string{"foo"},
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		GroupByKeys:       []string{"foo"},
 	}
 
 	params := component.ProcessorCreateParams{

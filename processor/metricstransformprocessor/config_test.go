@@ -35,10 +35,7 @@ func TestLoadingFullConfig(t *testing.T) {
 			configFile: "config_full.yaml",
 			filterName: "metricstransform",
 			expCfg: &Config{
-				ProcessorSettings: config.ProcessorSettings{
-					TypeVal: "metricstransform",
-					NameVal: "metricstransform",
-				},
+				ProcessorSettings: config.NewProcessorSettings(typeStr),
 				Transforms: []Transform{
 					{
 						MetricIncludeFilter: FilterConfig{
@@ -55,7 +52,7 @@ func TestLoadingFullConfig(t *testing.T) {
 			configFile: "config_full.yaml",
 			filterName: "metricstransform/multiple",
 			expCfg: &Config{
-				ProcessorSettings: config.ProcessorSettings{
+				ProcessorSettings: &config.ProcessorSettings{
 					TypeVal: "metricstransform",
 					NameVal: "metricstransform/multiple",
 				},
@@ -142,10 +139,7 @@ func TestLoadingFullConfig(t *testing.T) {
 			configFile: "config_deprecated.yaml",
 			filterName: "metricstransform",
 			expCfg: &Config{
-				ProcessorSettings: config.ProcessorSettings{
-					NameVal: "metricstransform",
-					TypeVal: typeStr,
-				},
+				ProcessorSettings: config.NewProcessorSettings(typeStr),
 				Transforms: []Transform{
 					{
 						MetricName: "old_name",

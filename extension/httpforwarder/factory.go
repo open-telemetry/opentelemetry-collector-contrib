@@ -42,10 +42,7 @@ func NewFactory() component.ExtensionFactory {
 
 func createDefaultConfig() config.Extension {
 	return &Config{
-		ExtensionSettings: config.ExtensionSettings{
-			TypeVal: typeStr,
-			NameVal: string(typeStr),
-		},
+		ExtensionSettings: config.NewExtensionSettings(typeStr),
 		Ingress: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
