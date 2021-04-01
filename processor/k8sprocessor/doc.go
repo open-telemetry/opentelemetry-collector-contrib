@@ -132,4 +132,14 @@
 // as a sidecar. While this can be done, we think it is simpler to just use the kubernetes
 // downward API to inject environment variables into the pods and directly use their values
 // as tags.
+//
+// Metrics
+//
+// The following metrics are recorded by this processor
+//
+//    otelcol_k8s_pod_updated - Number of pod update events received.
+//    otelcol_k8s_pod_added - Number of pod add events received.
+//    otelcol_k8s_pod_deleted - Number of pod delete events received.
+//    otelcol_k8s_pod_table_size - Size of table containing pod info.
+//    otelcol_k8s_ip_lookup_miss - Number of times pod by identifier (IP, UID) lookup failed.
 package k8sprocessor

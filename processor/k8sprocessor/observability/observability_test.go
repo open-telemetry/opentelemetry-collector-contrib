@@ -63,20 +63,20 @@ func TestMetrics(t *testing.T) {
 	}
 	tests := []testCase{
 		{
-			"otelsvc/k8s/pod_added",
+			"otelcol_k8s_pod_added",
 			RecordPodAdded,
 		},
 		{
-			"otelsvc/k8s/pod_deleted",
+			"otelcol_k8s_pod_deleted",
 			RecordPodDeleted,
 		},
 		{
-			"otelsvc/k8s/pod_updated",
+			"otelcol_k8s_pod_updated",
 			RecordPodUpdated,
 		},
 		{
-			"otelsvc/k8s/ip_lookup_miss",
-			RecordIPLookupMiss,
+			"otelcol_k8s_ip_lookup_miss",
+			RecordIDLookupMiss,
 		},
 	}
 

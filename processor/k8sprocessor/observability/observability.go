@@ -35,12 +35,12 @@ func init() {
 }
 
 var (
-	mPodsUpdated  = stats.Int64("otelsvc/k8s/pod_updated", "Number of pod update events received", "1")
-	mPodsAdded    = stats.Int64("otelsvc/k8s/pod_added", "Number of pod add events received", "1")
-	mPodsDeleted  = stats.Int64("otelsvc/k8s/pod_deleted", "Number of pod delete events received", "1")
-	mPodTableSize = stats.Int64("otelsvc/k8s/pod_table_size", "Size of table containing pod info", "1")
+	mPodsUpdated  = stats.Int64("otelcol_k8s_pod_updated", "Number of pod update events received", "1")
+	mPodsAdded    = stats.Int64("otelcol_k8s_pod_added", "Number of pod add events received", "1")
+	mPodsDeleted  = stats.Int64("otelcol_k8s_pod_deleted", "Number of pod delete events received", "1")
+	mPodTableSize = stats.Int64("otelcol_k8s_pod_table_size", "Size of table containing pod info", "1")
 
-	mIPLookupMiss = stats.Int64("otelsvc/k8s/ip_lookup_miss", "Number of times pod by IP lookup failed.", "1")
+	mIDLookupMiss = stats.Int64("otelcol_k8s_ip_lookup_miss", "Number of times pod by identifier (IP, UID) lookup failed.", "1")
 )
 
 var viewPodsUpdated = &view.View{
@@ -65,9 +65,9 @@ var viewPodsDeleted = &view.View{
 }
 
 var viewIPLookupMiss = &view.View{
-	Name:        mIPLookupMiss.Name(),
-	Description: mIPLookupMiss.Description(),
-	Measure:     mIPLookupMiss,
+	Name:        mIDLookupMiss.Name(),
+	Description: mIDLookupMiss.Description(),
+	Measure:     mIDLookupMiss,
 	Aggregation: view.Sum(),
 }
 var viewPodTableSize = &view.View{
@@ -92,9 +92,9 @@ func RecordPodDeleted() {
 	stats.Record(context.Background(), mPodsDeleted.M(int64(1)))
 }
 
-// RecordIPLookupMiss increments the metric that records Pod lookup by IP misses.
-func RecordIPLookupMiss() {
-	stats.Record(context.Background(), mIPLookupMiss.M(int64(1)))
+// RecordIDLookupMiss increments the metric that records Pod lookup by ID (IP, UID) misses.
+func RecordIDLookupMiss() {
+	stats.Record(context.Background(), mIDLookupMiss.M(int64(1)))
 }
 
 // RecordPodTableSize store size of pod table field in WatchClient
