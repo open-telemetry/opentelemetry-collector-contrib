@@ -398,5 +398,5 @@ func TestFailedExporterInRing(t *testing.T) {
 }
 
 func newNopMockExporter() component.Exporter {
-	return componenthelper.NewComponent(componenthelper.DefaultComponentSettings())
+	return componenthelper.New()
 }

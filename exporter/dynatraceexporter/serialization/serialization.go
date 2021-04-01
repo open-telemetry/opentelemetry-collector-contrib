@@ -59,10 +59,10 @@ func SerializeDoubleDataPoints(name string, data pdata.DoubleDataPointSlice, tag
 	return output
 }
 
-// SerializeDoubleHistogramMetrics serializes a slice of double histogram datapoints to a Dynatrace gauge.
+// SerializeHistogramMetrics serializes a slice of double histogram datapoints to a Dynatrace gauge.
 //
 // IMPORTANT: Min and max are required by Dynatrace but not provided by histogram so they are assumed to be the average.
-func SerializeDoubleHistogramMetrics(name string, data pdata.DoubleHistogramDataPointSlice, tags []string) []string {
+func SerializeHistogramMetrics(name string, data pdata.HistogramDataPointSlice, tags []string) []string {
 	// {name} gauge,min=9.75,max=9.75,sum=19.5,count=2 {timestamp_unix_ms}
 	output := []string{}
 	for i := 0; i < data.Len(); i++ {

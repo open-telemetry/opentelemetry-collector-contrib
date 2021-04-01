@@ -87,11 +87,11 @@ func (rm *MetricCalculator) Calculate(metricName string, labels map[string]strin
 }
 
 type Key struct {
-	MetricName   string
-	MetricLabels attribute.Distinct
+	MetricMetadata interface{}
+	MetricLabels   attribute.Distinct
 }
 
-func NewKey(metricName string, labels map[string]string) Key {
+func NewKey(metricMetadata interface{}, labels map[string]string) Key {
 	var kvs []attribute.KeyValue
 	var sortable attribute.Sortable
 	for k, v := range labels {
@@ -101,8 +101,8 @@ func NewKey(metricName string, labels map[string]string) Key {
 
 	dedupSortedLabels := set.Equivalent()
 	return Key{
-		MetricName:   metricName,
-		MetricLabels: dedupSortedLabels,
+		MetricMetadata: metricMetadata,
+		MetricLabels:   dedupSortedLabels,
 	}
 }
 

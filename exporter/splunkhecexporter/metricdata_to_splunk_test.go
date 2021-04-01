@@ -115,7 +115,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				ilm.Metrics().Resize(1)
 				doubleHistogram := ilm.Metrics().At(0)
 				doubleHistogram.SetName("hist_double_with_dims")
-				doubleHistogram.SetDataType(pdata.MetricDataTypeDoubleHistogram)
+				doubleHistogram.SetDataType(pdata.MetricDataTypeHistogram)
 				return metrics
 			},
 		},
@@ -190,8 +190,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 				ilm.Metrics().Resize(1)
 				doubleHistogram := ilm.Metrics().At(0)
 				doubleHistogram.SetName("double_histogram_with_dims")
-				doubleHistogram.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-				doubleHistogram.DoubleHistogram().DataPoints().Resize(1)
+				doubleHistogram.SetDataType(pdata.MetricDataTypeHistogram)
+				doubleHistogram.Histogram().DataPoints().Resize(1)
 				return metrics
 			},
 		},
@@ -271,9 +271,9 @@ func Test_metricDataToSplunk(t *testing.T) {
 				ilm.Metrics().Resize(1)
 				doubleHistogram := ilm.Metrics().At(0)
 				doubleHistogram.SetName("double_histogram_with_dims")
-				doubleHistogram.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-				doubleHistogram.DoubleHistogram().DataPoints().Resize(1)
-				doubleHistogramPt := doubleHistogram.DoubleHistogram().DataPoints().At(0)
+				doubleHistogram.SetDataType(pdata.MetricDataTypeHistogram)
+				doubleHistogram.Histogram().DataPoints().Resize(1)
+				doubleHistogramPt := doubleHistogram.Histogram().DataPoints().At(0)
 				doubleHistogramPt.SetExplicitBounds(distributionBounds)
 				doubleHistogramPt.SetBucketCounts([]uint64{4, 2, 3})
 				doubleHistogramPt.SetSum(23)
@@ -290,9 +290,9 @@ func Test_metricDataToSplunk(t *testing.T) {
 				ilm.Metrics().Resize(1)
 				doubleHistogram := ilm.Metrics().At(0)
 				doubleHistogram.SetName("double_histogram_with_dims")
-				doubleHistogram.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-				doubleHistogram.DoubleHistogram().DataPoints().Resize(1)
-				doubleHistogramPt := doubleHistogram.DoubleHistogram().DataPoints().At(0)
+				doubleHistogram.SetDataType(pdata.MetricDataTypeHistogram)
+				doubleHistogram.Histogram().DataPoints().Resize(1)
+				doubleHistogramPt := doubleHistogram.Histogram().DataPoints().At(0)
 				doubleHistogramPt.SetExplicitBounds(distributionBounds)
 				doubleHistogramPt.SetBucketCounts(distributionCounts)
 				doubleHistogramPt.SetSum(23)

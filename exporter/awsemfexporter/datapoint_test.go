@@ -28,6 +28,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws"
 )
 
 func generateTestIntGauge(name string) *metricspb.Metric {
@@ -140,7 +142,7 @@ func generateTestDoubleSum(name string) *metricspb.Metric {
 	}
 }
 
-func generateTestDoubleHistogram(name string) *metricspb.Metric {
+func generateTestHistogram(name string) *metricspb.Metric {
 	return &metricspb.Metric{
 		MetricDescriptor: &metricspb.MetricDescriptor{
 			Name: name,
@@ -241,45 +243,39 @@ func generateTestSummary(name string) *metricspb.Metric {
 	}
 }
 
-func TestIntDataPointSliceAt(t *testing.T) {
-	instrLibName := "cloudwatch-otel"
-	labels := map[string]string{"label1": "value1"}
-	rateKeys := rateKeyParams{
-		namespaceKey:  "namespace",
-		metricNameKey: "foo",
-		logGroupKey:   "log-group",
-		logStreamKey:  "log-stream",
-	}
+func setupDataPointCache() {
+	deltaMetricCalculator = aws.NewFloat64DeltaCalculator()
+	summaryMetricCalculator = aws.NewMetricCalculator(calculateSummaryDelta)
+}
 
-	testCases := []struct {
-		testName           string
-		needsCalculateRate bool
-		value              interface{}
-		calculatedValue    interface{}
+func TestIntDataPointSliceAt(t *testing.T) {
+	setupDataPointCache()
+
+	instrLibName := "cloudwatch-otel"
+	labels := map[string]string{"label": "value"}
+
+	testDeltaCases := []struct {
+		testName        string
+		adjustToDelta   bool
+		value           interface{}
+		calculatedValue interface{}
 	}{
 		{
-			"no rate calculation",
-			false,
+			"w/ 1st delta calculation",
+			true,
 			int64(-17),
 			float64(-17),
 		},
 		{
-			"w/ 1st rate calculation",
+			"w/ 2st delta calculation",
 			true,
 			int64(1),
-			float64(0),
-		},
-		{
-			"w/ 2nd rate calculation",
-			true,
-			int64(2),
-			float64(1),
+			float64(18),
 		},
 	}
 
-	for _, tc := range testCases {
+	for _, tc := range testDeltaCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 			testDPS := pdata.NewIntDataPointSlice()
 			testDPS.Resize(1)
 			testDP := testDPS.At(0)
@@ -288,10 +284,13 @@ func TestIntDataPointSliceAt(t *testing.T) {
 
 			dps := IntDataPointSlice{
 				instrLibName,
-				rateCalculationMetadata{
-					tc.needsCalculateRate,
-					rateKeys,
-					timestamp,
+				deltaMetricMetadata{
+					tc.adjustToDelta,
+					"foo",
+					0,
+					"namespace",
+					"log-group",
+					"log-stream",
 				},
 				testDPS,
 			}
@@ -300,7 +299,7 @@ func TestIntDataPointSliceAt(t *testing.T) {
 				Value: tc.calculatedValue,
 				Labels: map[string]string{
 					oTellibDimensionKey: instrLibName,
-					"label1":            "value1",
+					"label":             "value",
 				},
 			}
 
@@ -311,51 +310,38 @@ func TestIntDataPointSliceAt(t *testing.T) {
 			} else {
 				assert.Equal(t, expectedDP, dp)
 			}
-			// sleep 1s for verifying the cumulative metric delta rate
-			time.Sleep(1000 * time.Millisecond)
 		})
 	}
 }
 
 func TestDoubleDataPointSliceAt(t *testing.T) {
+	setupDataPointCache()
+
 	instrLibName := "cloudwatch-otel"
 	labels := map[string]string{"label1": "value1"}
-	rateKeys := rateKeyParams{
-		namespaceKey:  "namespace",
-		metricNameKey: "foo",
-		logGroupKey:   "log-group",
-		logStreamKey:  "log-stream",
-	}
 
-	testCases := []struct {
-		testName           string
-		needsCalculateRate bool
-		value              interface{}
-		calculatedValue    interface{}
+	testDeltaCases := []struct {
+		testName        string
+		adjustToDelta   bool
+		value           interface{}
+		calculatedValue interface{}
 	}{
 		{
-			"no rate calculation",
-			false,
-			float64(0.3),
-			float64(0.3),
-		},
-		{
-			"w/ 1st rate calculation",
+			"w/ 1st delta calculation",
 			true,
 			float64(0.4),
-			float64(0.0),
+			float64(0.4),
 		},
 		{
-			"w/ 2nd rate calculation",
-			true,
+			"w/ 2nd delta calculation",
+			false,
 			float64(0.5),
 			float64(0.1),
 		},
 	}
 
-	for _, tc := range testCases {
+	for _, tc := range testDeltaCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 			testDPS := pdata.NewDoubleDataPointSlice()
 			testDPS.Resize(1)
 			testDP := testDPS.At(0)
@@ -364,10 +350,13 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 
 			dps := DoubleDataPointSlice{
 				instrLibName,
-				rateCalculationMetadata{
-					tc.needsCalculateRate,
-					rateKeys,
-					timestamp,
+				deltaMetricMetadata{
+					tc.adjustToDelta,
+					"foo",
+					0,
+					"namespace",
+					"log-group",
+					"log-stream",
 				},
 				testDPS,
 			}
@@ -382,22 +371,16 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 
 			assert.Equal(t, 1, dps.Len())
 			dp := dps.At(0)
-			if strings.Contains(tc.testName, "2nd rate") {
-				assert.InDelta(t, expectedDP.Value.(float64), dp.Value.(float64), 0.002)
-			} else {
-				assert.Equal(t, expectedDP, dp)
-			}
-			// sleep 10ms for verifying the cumulative metric delta rate
-			time.Sleep(1000 * time.Millisecond)
+			assert.True(t, (expectedDP.Value.(float64)-dp.Value.(float64)) < 0.002)
 		})
 	}
 }
 
-func TestDoubleHistogramDataPointSliceAt(t *testing.T) {
+func TestHistogramDataPointSliceAt(t *testing.T) {
 	instrLibName := "cloudwatch-otel"
 	labels := map[string]string{"label1": "value1"}
 
-	testDPS := pdata.NewDoubleHistogramDataPointSlice()
+	testDPS := pdata.NewHistogramDataPointSlice()
 	testDPS.Resize(1)
 	testDP := testDPS.At(0)
 	testDP.SetCount(uint64(17))
@@ -406,7 +389,7 @@ func TestDoubleHistogramDataPointSliceAt(t *testing.T) {
 	testDP.SetExplicitBounds([]float64{1, 2, 3})
 	testDP.LabelsMap().InitFromMap(labels)
 
-	dps := DoubleHistogramDataPointSlice{
+	dps := HistogramDataPointSlice{
 		instrLibName,
 		testDPS,
 	}
@@ -427,45 +410,89 @@ func TestDoubleHistogramDataPointSliceAt(t *testing.T) {
 	assert.Equal(t, expectedDP, dp)
 }
 
-func TestDoubleSummaryDataPointSliceAt(t *testing.T) {
+func TestSummaryDataPointSliceAt(t *testing.T) {
+	setupDataPointCache()
+
 	instrLibName := "cloudwatch-otel"
 	labels := map[string]string{"label1": "value1"}
+	metadataTimeStamp := time.Now().UnixNano() / int64(time.Millisecond)
 
-	testDPS := pdata.NewDoubleSummaryDataPointSlice()
-	testDPS.Resize(1)
-	testDP := testDPS.At(0)
-	testDP.SetCount(uint64(17))
-	testDP.SetSum(float64(17.13))
-	testDP.QuantileValues().Resize(2)
-	testQuantileValue := testDP.QuantileValues().At(0)
-	testQuantileValue.SetQuantile(0)
-	testQuantileValue.SetValue(float64(1))
-	testQuantileValue = testDP.QuantileValues().At(1)
-	testQuantileValue.SetQuantile(100)
-	testQuantileValue.SetValue(float64(5))
-	testDP.LabelsMap().InitFromMap(labels)
-
-	dps := DoubleSummaryDataPointSlice{
-		instrLibName,
-		testDPS,
-	}
-
-	expectedDP := DataPoint{
-		Value: &CWMetricStats{
-			Max:   5,
-			Min:   1,
-			Count: 17,
-			Sum:   17.13,
+	testCases := []struct {
+		testName           string
+		inputSumCount      []interface{}
+		calculatedSumCount []interface{}
+	}{
+		{
+			"1st summary count calculation",
+			[]interface{}{float64(17.3), uint64(17)},
+			[]interface{}{float64(17.3), uint64(17)},
 		},
-		Labels: map[string]string{
-			oTellibDimensionKey: instrLibName,
-			"label1":            "value1",
+		{
+			"2nd summary count calculation",
+			[]interface{}{float64(100), uint64(25)},
+			[]interface{}{float64(82.7), uint64(8)},
+		},
+		{
+			"3rd summary count calculation",
+			[]interface{}{float64(120), uint64(26)},
+			[]interface{}{float64(20), uint64(1)},
 		},
 	}
 
-	assert.Equal(t, 1, dps.Len())
-	dp := dps.At(0)
-	assert.Equal(t, expectedDP, dp)
+	for _, tt := range testCases {
+		t.Run(tt.testName, func(t *testing.T) {
+			testDPS := pdata.NewSummaryDataPointSlice()
+			testDPS.Resize(1)
+			testDP := testDPS.At(0)
+			testDP.SetSum(tt.inputSumCount[0].(float64))
+			testDP.SetCount(tt.inputSumCount[1].(uint64))
+
+			testDP.QuantileValues().Resize(2)
+			testQuantileValue := testDP.QuantileValues().At(0)
+			testQuantileValue.SetQuantile(0)
+			testQuantileValue.SetValue(float64(1))
+			testQuantileValue = testDP.QuantileValues().At(1)
+			testQuantileValue.SetQuantile(100)
+			testQuantileValue.SetValue(float64(5))
+			testDP.LabelsMap().InitFromMap(labels)
+
+			dps := SummaryDataPointSlice{
+				instrLibName,
+				deltaMetricMetadata{
+					true,
+					"foo",
+					metadataTimeStamp,
+					"namespace",
+					"log-group",
+					"log-stream",
+				},
+				testDPS,
+			}
+
+			expectedDP := DataPoint{
+				Value: &CWMetricStats{
+					Max:   5,
+					Min:   1,
+					Sum:   tt.calculatedSumCount[0].(float64),
+					Count: tt.calculatedSumCount[1].(uint64),
+				},
+				Labels: map[string]string{
+					oTellibDimensionKey: instrLibName,
+					"label1":            "value1",
+				},
+			}
+
+			assert.Equal(t, 1, dps.Len())
+			dp := dps.At(0)
+			expectedMetricStats := expectedDP.Value.(*CWMetricStats)
+			actualMetricsStats := dp.Value.(*CWMetricStats)
+			assert.Equal(t, expectedDP.Labels, dp.Labels)
+			assert.Equal(t, expectedMetricStats.Max, actualMetricsStats.Max)
+			assert.Equal(t, expectedMetricStats.Min, actualMetricsStats.Min)
+			assert.InDelta(t, expectedMetricStats.Count, actualMetricsStats.Count, 0.1)
+			assert.True(t, expectedMetricStats.Sum-actualMetricsStats.Sum < float64(0.02))
+		})
+	}
 }
 
 func TestCreateLabels(t *testing.T) {
@@ -485,52 +512,33 @@ func TestCreateLabels(t *testing.T) {
 	assert.Equal(t, expectedLabels, labels)
 }
 
-func TestCalculateRate(t *testing.T) {
-	intRateKey := "foo"
-	doubleRateKey := "bar"
-	time1 := time.Now().UnixNano() / int64(time.Millisecond)
-	time2 := time.Unix(0, time1*int64(time.Millisecond)).Add(time.Second*10).UnixNano() / int64(time.Millisecond)
-	time3 := time.Unix(0, time2*int64(time.Millisecond)).Add(time.Second*10).UnixNano() / int64(time.Millisecond)
-
-	intVal1 := float64(0)
-	intVal2 := float64(10)
-	intVal3 := float64(200)
-	doubleVal1 := 0.0
-	doubleVal2 := 5.0
-	doubleVal3 := 15.1
-
-	rate := calculateRate(intRateKey, intVal1, time1)
-	assert.Equal(t, float64(0), rate)
-	rate = calculateRate(doubleRateKey, doubleVal1, time1)
-	assert.Equal(t, float64(0), rate)
-
-	rate = calculateRate(intRateKey, intVal2, time2)
-	assert.InDelta(t, float64(1), rate, 0.1)
-	rate = calculateRate(doubleRateKey, doubleVal2, time2)
-	assert.InDelta(t, 0.5, rate, 0.1)
-
-	// Test change of data type
-	rate = calculateRate(intRateKey, doubleVal3, time3)
-	assert.InDelta(t, float64(0.51), rate, 0.1)
-	rate = calculateRate(doubleRateKey, intVal3, time3)
-	assert.InDelta(t, float64(19.5), rate, 0.1)
-}
-
-func calculateRate(metricName string, value float64, timestampMs int64) interface{} {
-	time := time.Unix(0, timestampMs*int64(time.Millisecond))
-	val, _ := rateMetricCalculator.Calculate(metricName, nil, value, time)
-	return val
-}
-
 func TestGetDataPoints(t *testing.T) {
 	metadata := CWMetricMetadata{
-		Namespace:                  "Namespace",
-		TimestampMs:                time.Now().UnixNano() / int64(time.Millisecond),
-		LogGroup:                   "log-group",
-		LogStream:                  "log-stream",
+		GroupedMetricMetadata: GroupedMetricMetadata{
+			Namespace:   "namespace",
+			TimestampMs: time.Now().UnixNano() / int64(time.Millisecond),
+			LogGroup:    "log-group",
+			LogStream:   "log-stream",
+		},
 		InstrumentationLibraryName: "cloudwatch-otel",
 	}
 
+	dmm := deltaMetricMetadata{
+		false,
+		"foo",
+		metadata.TimestampMs,
+		"namespace",
+		"log-group",
+		"log-stream",
+	}
+	cumulativeDmm := deltaMetricMetadata{
+		true,
+		"foo",
+		metadata.TimestampMs,
+		"namespace",
+		"log-group",
+		"log-stream",
+	}
 	testCases := []struct {
 		testName           string
 		metric             *metricspb.Metric
@@ -541,16 +549,7 @@ func TestGetDataPoints(t *testing.T) {
 			generateTestIntGauge("foo"),
 			IntDataPointSlice{
 				metadata.InstrumentationLibraryName,
-				rateCalculationMetadata{
-					false,
-					rateKeyParams{
-						namespaceKey:  metadata.Namespace,
-						metricNameKey: "foo",
-						logGroupKey:   metadata.LogGroup,
-						logStreamKey:  metadata.LogStream,
-					},
-					metadata.TimestampMs,
-				},
+				dmm,
 				pdata.IntDataPointSlice{},
 			},
 		},
@@ -559,16 +558,7 @@ func TestGetDataPoints(t *testing.T) {
 			generateTestDoubleGauge("foo"),
 			DoubleDataPointSlice{
 				metadata.InstrumentationLibraryName,
-				rateCalculationMetadata{
-					false,
-					rateKeyParams{
-						namespaceKey:  metadata.Namespace,
-						metricNameKey: "foo",
-						logGroupKey:   metadata.LogGroup,
-						logStreamKey:  metadata.LogStream,
-					},
-					metadata.TimestampMs,
-				},
+				dmm,
 				pdata.DoubleDataPointSlice{},
 			},
 		},
@@ -577,16 +567,7 @@ func TestGetDataPoints(t *testing.T) {
 			generateTestIntSum("foo"),
 			IntDataPointSlice{
 				metadata.InstrumentationLibraryName,
-				rateCalculationMetadata{
-					true,
-					rateKeyParams{
-						namespaceKey:  metadata.Namespace,
-						metricNameKey: "foo",
-						logGroupKey:   metadata.LogGroup,
-						logStreamKey:  metadata.LogStream,
-					},
-					metadata.TimestampMs,
-				},
+				cumulativeDmm,
 				pdata.IntDataPointSlice{},
 			},
 		},
@@ -595,33 +576,25 @@ func TestGetDataPoints(t *testing.T) {
 			generateTestDoubleSum("foo"),
 			DoubleDataPointSlice{
 				metadata.InstrumentationLibraryName,
-				rateCalculationMetadata{
-					true,
-					rateKeyParams{
-						namespaceKey:  metadata.Namespace,
-						metricNameKey: "foo",
-						logGroupKey:   metadata.LogGroup,
-						logStreamKey:  metadata.LogStream,
-					},
-					metadata.TimestampMs,
-				},
+				cumulativeDmm,
 				pdata.DoubleDataPointSlice{},
 			},
 		},
 		{
 			"Double histogram",
-			generateTestDoubleHistogram("foo"),
-			DoubleHistogramDataPointSlice{
+			generateTestHistogram("foo"),
+			HistogramDataPointSlice{
 				metadata.InstrumentationLibraryName,
-				pdata.DoubleHistogramDataPointSlice{},
+				pdata.HistogramDataPointSlice{},
 			},
 		},
 		{
 			"Summary",
 			generateTestSummary("foo"),
-			DoubleSummaryDataPointSlice{
+			SummaryDataPointSlice{
 				metadata.InstrumentationLibraryName,
-				pdata.DoubleSummaryDataPointSlice{},
+				cumulativeDmm,
+				pdata.SummaryDataPointSlice{},
 			},
 		},
 	}
@@ -647,7 +620,7 @@ func TestGetDataPoints(t *testing.T) {
 			case IntDataPointSlice:
 				expectedDPS := tc.expectedDataPoints.(IntDataPointSlice)
 				assert.Equal(t, metadata.InstrumentationLibraryName, convertedDPS.instrumentationLibraryName)
-				assert.Equal(t, expectedDPS.rateCalculationMetadata, convertedDPS.rateCalculationMetadata)
+				assert.Equal(t, expectedDPS.deltaMetricMetadata, convertedDPS.deltaMetricMetadata)
 				assert.Equal(t, 1, convertedDPS.Len())
 				dp := convertedDPS.IntDataPointSlice.At(0)
 				assert.Equal(t, int64(1), dp.Value())
@@ -655,23 +628,23 @@ func TestGetDataPoints(t *testing.T) {
 			case DoubleDataPointSlice:
 				expectedDPS := tc.expectedDataPoints.(DoubleDataPointSlice)
 				assert.Equal(t, metadata.InstrumentationLibraryName, convertedDPS.instrumentationLibraryName)
-				assert.Equal(t, expectedDPS.rateCalculationMetadata, convertedDPS.rateCalculationMetadata)
+				assert.Equal(t, expectedDPS.deltaMetricMetadata, convertedDPS.deltaMetricMetadata)
 				assert.Equal(t, 1, convertedDPS.Len())
 				dp := convertedDPS.DoubleDataPointSlice.At(0)
 				assert.Equal(t, 0.1, dp.Value())
 				assert.Equal(t, expectedLabels, dp.LabelsMap())
-			case DoubleHistogramDataPointSlice:
+			case HistogramDataPointSlice:
 				assert.Equal(t, metadata.InstrumentationLibraryName, convertedDPS.instrumentationLibraryName)
 				assert.Equal(t, 1, convertedDPS.Len())
-				dp := convertedDPS.DoubleHistogramDataPointSlice.At(0)
+				dp := convertedDPS.HistogramDataPointSlice.At(0)
 				assert.Equal(t, 35.0, dp.Sum())
 				assert.Equal(t, uint64(18), dp.Count())
 				assert.Equal(t, []float64{0, 10}, dp.ExplicitBounds())
 				assert.Equal(t, expectedLabels, dp.LabelsMap())
-			case DoubleSummaryDataPointSlice:
+			case SummaryDataPointSlice:
 				assert.Equal(t, metadata.InstrumentationLibraryName, convertedDPS.instrumentationLibraryName)
 				assert.Equal(t, 1, convertedDPS.Len())
-				dp := convertedDPS.DoubleSummaryDataPointSlice.At(0)
+				dp := convertedDPS.SummaryDataPointSlice.At(0)
 				assert.Equal(t, 15.0, dp.Sum())
 				assert.Equal(t, uint64(5), dp.Count())
 				assert.Equal(t, 2, dp.QuantileValues().Len())
@@ -721,7 +694,7 @@ func BenchmarkGetDataPoints(b *testing.B) {
 			generateTestDoubleGauge("double-gauge"),
 			generateTestIntSum("int-sum"),
 			generateTestDoubleSum("double-sum"),
-			generateTestDoubleHistogram("double-histogram"),
+			generateTestHistogram("double-histogram"),
 			generateTestSummary("summary"),
 		},
 	}
@@ -730,10 +703,12 @@ func BenchmarkGetDataPoints(b *testing.B) {
 	numMetrics := metrics.Len()
 
 	metadata := CWMetricMetadata{
-		Namespace:                  "Namespace",
-		TimestampMs:                int64(1596151098037),
-		LogGroup:                   "log-group",
-		LogStream:                  "log-stream",
+		GroupedMetricMetadata: GroupedMetricMetadata{
+			Namespace:   "Namespace",
+			TimestampMs: int64(1596151098037),
+			LogGroup:    "log-group",
+			LogStream:   "log-stream",
+		},
 		InstrumentationLibraryName: "cloudwatch-otel",
 	}
 
@@ -748,105 +723,33 @@ func BenchmarkGetDataPoints(b *testing.B) {
 	}
 }
 
-func TestGetSortedLabelsEquals(t *testing.T) {
-	labelMap1 := make(map[string]string)
-	labelMap1["k1"] = "v1"
-	labelMap1["k2"] = "v2"
-
-	labelMap2 := make(map[string]string)
-	labelMap2["k2"] = "v2"
-	labelMap2["k1"] = "v1"
-
-	sortedLabels1 := getSortedLabels(labelMap1)
-	sortedLabels2 := getSortedLabels(labelMap2)
-
-	rateKeyParams1 := rateKeyParams{
-		namespaceKey:  "namespace",
-		metricNameKey: "foo",
-		logGroupKey:   "log-group",
-		logStreamKey:  "log-stream",
-		labels:        sortedLabels1,
+func TestIntDataPointSlice_At(t *testing.T) {
+	type fields struct {
+		instrumentationLibraryName string
+		deltaMetricMetadata        deltaMetricMetadata
+		IntDataPointSlice          pdata.IntDataPointSlice
 	}
-	rateKeyParams2 := rateKeyParams{
-		namespaceKey:  "namespace",
-		metricNameKey: "foo",
-		logGroupKey:   "log-group",
-		logStreamKey:  "log-stream",
-		labels:        sortedLabels2,
+	type args struct {
+		i int
 	}
-	assert.Equal(t, rateKeyParams1, rateKeyParams2)
-}
-
-func TestGetSortedLabelsNotEqual(t *testing.T) {
-	labelMap1 := make(map[string]string)
-	labelMap1["k1"] = "v1"
-	labelMap1["k2"] = "v2"
-
-	labelMap2 := make(map[string]string)
-	labelMap2["k2"] = "v2"
-	labelMap2["k1"] = "v3"
-
-	sortedLabels1 := getSortedLabels(labelMap1)
-	sortedLabels2 := getSortedLabels(labelMap2)
-
-	rateKeyParams1 := rateKeyParams{
-		namespaceKey:  "namespace",
-		metricNameKey: "foo",
-		logGroupKey:   "log-group",
-		logStreamKey:  "log-stream",
-		labels:        sortedLabels1,
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   DataPoint
+	}{
+		// TODO: Add test cases.
 	}
-	rateKeyParams2 := rateKeyParams{
-		namespaceKey:  "namespace",
-		metricNameKey: "foo",
-		logGroupKey:   "log-group",
-		logStreamKey:  "log-stream",
-		labels:        sortedLabels2,
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dps := IntDataPointSlice{
+				instrumentationLibraryName: tt.fields.instrumentationLibraryName,
+				deltaMetricMetadata:        tt.fields.deltaMetricMetadata,
+				IntDataPointSlice:          tt.fields.IntDataPointSlice,
+			}
+			if got := dps.At(tt.args.i); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("At() = %v, want %v", got, tt.want)
+			}
+		})
 	}
-	assert.NotEqual(t, rateKeyParams1, rateKeyParams2)
-}
-
-func TestGetSortedLabelsNotEqualOnPram(t *testing.T) {
-	labelMap1 := make(map[string]string)
-	labelMap1["k1"] = "v1"
-	labelMap1["k2"] = "v2"
-
-	labelMap2 := make(map[string]string)
-	labelMap2["k2"] = "v2"
-	labelMap2["k1"] = "v1"
-
-	sortedLabels1 := getSortedLabels(labelMap1)
-	sortedLabels2 := getSortedLabels(labelMap2)
-
-	rateKeyParams1 := rateKeyParams{
-		namespaceKey:  "namespaceA",
-		metricNameKey: "foo",
-		logGroupKey:   "log-group",
-		logStreamKey:  "log-stream",
-		labels:        sortedLabels1,
-	}
-	rateKeyParams2 := rateKeyParams{
-		namespaceKey:  "namespaceB",
-		metricNameKey: "foo",
-		logGroupKey:   "log-group",
-		logStreamKey:  "log-stream",
-		labels:        sortedLabels2,
-	}
-	assert.NotEqual(t, rateKeyParams1, rateKeyParams2)
-}
-
-func TestGetSortedLabelsNotEqualOnEmptyLabel(t *testing.T) {
-	rateKeyParams1 := rateKeyParams{
-		namespaceKey:  "namespaceA",
-		metricNameKey: "foo",
-		logGroupKey:   "log-group",
-		logStreamKey:  "log-stream",
-	}
-	rateKeyParams2 := rateKeyParams{
-		namespaceKey:  "namespaceA",
-		metricNameKey: "foo",
-		logGroupKey:   "log-group",
-		logStreamKey:  "log-stream",
-	}
-	assert.Equal(t, rateKeyParams1, rateKeyParams2)
 }

@@ -52,7 +52,7 @@ func TestOnAdd(t *testing.T) {
 	rcvrCfg := receiverConfig{typeStr: configmodels.Type("name"), config: userConfigMap{"foo": "bar"}, fullName: "name/1"}
 	cfg := createDefaultConfig().(*Config)
 	cfg.receiverTemplates = map[string]receiverTemplate{
-		"name/1": {rcvrCfg, "", newRuleOrPanic(`type.port`)},
+		"name/1": {rcvrCfg, "", newRuleOrPanic(`type == "port"`)},
 	}
 	handler := &observerHandler{
 		config:                cfg,
@@ -104,7 +104,7 @@ func TestOnChange(t *testing.T) {
 	newRcvr := &nopWithEndpointReceiver{}
 	cfg := createDefaultConfig().(*Config)
 	cfg.receiverTemplates = map[string]receiverTemplate{
-		"name/1": {rcvrCfg, "", newRuleOrPanic(`type.port`)},
+		"name/1": {rcvrCfg, "", newRuleOrPanic(`type == "port"`)},
 	}
 	handler := &observerHandler{
 		config:                cfg,
@@ -136,8 +136,8 @@ func TestDynamicConfig(t *testing.T) {
 	cfg.receiverTemplates = map[string]receiverTemplate{
 		"name/1": {
 			receiverConfig: receiverConfig{typeStr: configmodels.Type("name"), config: userConfigMap{"endpoint": "`endpoint`:6379"}, fullName: "name/1"},
-			Rule:           "type.pod",
-			rule:           newRuleOrPanic("type.pod"),
+			Rule:           `type == "pod"`,
+			rule:           newRuleOrPanic("type == \"pod\""),
 		},
 	}
 	handler := &observerHandler{

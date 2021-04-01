@@ -15,8 +15,8 @@
 package receivercreator
 
 import (
-	otelconfig "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configparser"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -60,7 +60,7 @@ type resourceAttributes map[observer.EndpointType]map[string]string
 // newReceiverTemplate creates a receiverTemplate instance from the full name of a subreceiver
 // and its arbitrary config map values.
 func newReceiverTemplate(name string, config userConfigMap) (receiverTemplate, error) {
-	typeStr, fullName, err := otelconfig.DecodeTypeAndName(name)
+	typeStr, fullName, err := configparser.DecodeTypeAndName(name)
 	if err != nil {
 		return receiverTemplate{}, err
 	}
