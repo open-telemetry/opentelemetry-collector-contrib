@@ -20,7 +20,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
 )
@@ -117,11 +116,6 @@ func makeHTTP(span pdata.Span) (map[string]string, *awsxray.HTTPData) {
 		} else {
 			info.Request.URL = awsxray.String(constructClientURL(urlParts))
 		}
-	}
-
-	if info.Response.Status == nil {
-		// TODO(anuraaga): Replace with direct translator of StatusCode without casting to int
-		info.Response.Status = aws.Int64(int64(tracetranslator.HTTPStatusCodeFromOCStatus(int32(span.Status().Code()))))
 	}
 
 	info.Response.ContentLength = aws.Int64(extractResponseSizeFromEvents(span))
