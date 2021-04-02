@@ -17,10 +17,12 @@ package awsprometheusremotewriteexporter
 
 import (
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -61,6 +63,57 @@ func TestRequestSignature(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = client.Do(req)
 	assert.NoError(t, err)
+}
+
+type checkCloser struct {
+	io.Reader
+	mu     sync.Mutex
+	closed bool
+}
+
+func (cc *checkCloser) Close() error {
+	cc.mu.Lock()
+	cc.closed = true
+	cc.mu.Unlock()
+	return nil
+}
+
+func TestLeakingBody(t *testing.T) {
+	// Some form of AWS credentials must be set up for tests to succeed
+	awsCreds := fetchMockCredentials()
+	authConfig := AuthConfig{Region: "region", Service: "service"}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := v4.GetSignedRequestSignature(r)
+		assert.NoError(t, err)
+		w.WriteHeader(200)
+	}))
+	defer server.Close()
+
+	serverURL, err := url.Parse(server.URL)
+	assert.NoError(t, err)
+
+	setting := confighttp.HTTPClientSettings{
+		Endpoint:        serverURL.String(),
+		TLSSetting:      configtls.TLSClientSetting{},
+		ReadBufferSize:  0,
+		WriteBufferSize: 0,
+		Timeout:         0,
+		CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
+			return createSigningRoundTripperWithCredentials(authConfig, awsCreds, next)
+		},
+	}
+	client, _ := setting.ToClient()
+	checker := &checkCloser{Reader: strings.NewReader("a=1&b=2")}
+	req, err := http.NewRequest("POST", setting.Endpoint, checker)
+	assert.NoError(t, err)
+	req.GetBody = func() (io.ReadCloser, error) {
+		checker.Reader = strings.NewReader("a=1&b=2")
+		return checker, nil
+	}
+	_, err = client.Do(req)
+	assert.NoError(t, err)
+	assert.True(t, checker.closed)
 }
 
 func TestGetCredsFromConfig(t *testing.T) {
