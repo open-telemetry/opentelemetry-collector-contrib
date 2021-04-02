@@ -20,6 +20,14 @@ from tests.protobuf import (  # pylint: disable=no-name-in-module
 import opentelemetry.instrumentation.grpc
 from opentelemetry import trace
 from opentelemetry.instrumentation.grpc import GrpcInstrumentorClient
+from opentelemetry.instrumentation.grpc._client import (
+    OpenTelemetryClientInterceptor,
+)
+from opentelemetry.instrumentation.grpc.grpcext._interceptor import (
+    _UnaryClientInfo,
+)
+from opentelemetry.propagate import get_global_textmap, set_global_textmap
+from opentelemetry.test.mock_textmap import MockTextMapPropagator
 from opentelemetry.test.test_base import TestBase
 
 from ._client import (
@@ -29,6 +37,7 @@ from ._client import (
     simple_method,
 )
 from ._server import create_test_server
+from .protobuf.test_server_pb2 import Request
 
 
 class TestClientProto(TestBase):
@@ -187,3 +196,40 @@ class TestClientProto(TestBase):
         self.assertIs(
             span.status.status_code, trace.StatusCode.ERROR,
         )
+
+    def test_client_interceptor_trace_context_propagation(
+        self,
+    ):  # pylint: disable=no-self-use
+        """ensure that client interceptor correctly inject trace context into all outgoing requests."""
+        previous_propagator = get_global_textmap()
+        try:
+            set_global_textmap(MockTextMapPropagator())
+            interceptor = OpenTelemetryClientInterceptor(
+                trace._DefaultTracer()
+            )
+
+            carrier = tuple()
+
+            def invoker(request, metadata):
+                nonlocal carrier
+                carrier = metadata
+                return {}
+
+            request = Request(client_id=1, request_data="data")
+            interceptor.intercept_unary(
+                request,
+                {},
+                _UnaryClientInfo(
+                    full_method="/GRPCTestServer/SimpleMethod", timeout=None
+                ),
+                invoker=invoker,
+            )
+
+            assert len(carrier) == 2
+            assert carrier[0][0] == "mock-traceid"
+            assert carrier[0][1] == "0"
+            assert carrier[1][0] == "mock-spanid"
+            assert carrier[1][1] == "0"
+
+        finally:
+            set_global_textmap(previous_propagator)

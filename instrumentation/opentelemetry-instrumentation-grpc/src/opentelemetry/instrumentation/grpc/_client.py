@@ -28,6 +28,7 @@ from opentelemetry import trace
 from opentelemetry.instrumentation.grpc import grpcext
 from opentelemetry.instrumentation.grpc._utilities import RpcInfo
 from opentelemetry.propagate import inject
+from opentelemetry.propagators.textmap import Setter
 from opentelemetry.trace.status import Status, StatusCode
 
 
@@ -52,15 +53,16 @@ class _GuardedSpan:
         return self.span
 
 
-def _inject_span_context(metadata: MutableMapping[str, str]) -> None:
-    # pylint:disable=unused-argument
-    def append_metadata(
-        carrier: MutableMapping[str, str], key: str, value: str
-    ):
-        metadata[key] = value
+class _CarrierSetter(Setter):
+    """We use a custom setter in order to be able to lower case
+    keys as is required by grpc.
+    """
 
-    # Inject current active span from the context
-    inject(append_metadata, metadata)
+    def set(self, carrier: MutableMapping[str, str], key: str, value: str):
+        carrier[key.lower()] = value
+
+
+_carrier_setter = _CarrierSetter()
 
 
 def _make_future_done_callback(span, rpc_info):
@@ -125,7 +127,7 @@ class OpenTelemetryClientInterceptor(
             mutable_metadata = OrderedDict(metadata)
 
         with self._start_guarded_span(client_info.full_method) as guarded_span:
-            _inject_span_context(mutable_metadata)
+            inject(mutable_metadata, setter=_carrier_setter)
             metadata = tuple(mutable_metadata.items())
 
             rpc_info = RpcInfo(
@@ -160,7 +162,7 @@ class OpenTelemetryClientInterceptor(
             mutable_metadata = OrderedDict(metadata)
 
         with self._start_span(client_info.full_method) as span:
-            _inject_span_context(mutable_metadata)
+            inject(mutable_metadata, setter=_carrier_setter)
             metadata = tuple(mutable_metadata.items())
             rpc_info = RpcInfo(
                 full_method=client_info.full_method,
@@ -195,7 +197,7 @@ class OpenTelemetryClientInterceptor(
             mutable_metadata = OrderedDict(metadata)
 
         with self._start_guarded_span(client_info.full_method) as guarded_span:
-            _inject_span_context(mutable_metadata)
+            inject(mutable_metadata, setter=_carrier_setter)
             metadata = tuple(mutable_metadata.items())
             rpc_info = RpcInfo(
                 full_method=client_info.full_method,
