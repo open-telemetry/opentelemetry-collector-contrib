@@ -14,16 +14,28 @@
 
 package storage
 
-type NopClient struct{}
+import "context"
 
-func (c NopClient) Get(string) ([]byte, error) {
+type nopClient struct{}
+
+var nopClientInstance Client = &nopClient{}
+
+// NewNopClient returns a nop client
+func NewNopClient() Client {
+	return nopClientInstance
+}
+
+// Get does nothing, and returns nil, nil
+func (c nopClient) Get(context.Context, string) ([]byte, error) {
 	return nil, nil // no result, but no problem
 }
 
-func (c NopClient) Set(string, []byte) error {
+// Set does nothing and returns nil
+func (c nopClient) Set(context.Context, string, []byte) error {
 	return nil // no problem
 }
 
-func (c NopClient) Delete(string) error {
+// Delete does nothing and returns nil
+func (c nopClient) Delete(context.Context, string) error {
 	return nil // no problem
 }

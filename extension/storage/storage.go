@@ -15,6 +15,8 @@
 package storage
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
@@ -22,13 +24,26 @@ import (
 // Extension is the interface that storage extensions must implement
 type Extension interface {
 	component.Extension
-	GetClient(component.Kind, configmodels.NamedEntity) (Client, error)
+
+	// GetClient will create a client for use by the specified component.
+	// The component can use the client to manage state
+	// TODO change parameters to new config.ComponentID
+	// https://github.com/open-telemetry/opentelemetry-collector/pull/2869
+	GetClient(context.Context, component.Kind, configmodels.NamedEntity) (Client, error)
 }
 
 // Client is the interface that storage clients must implement
 // All methods should return error only if a problem occurred
 type Client interface {
-	Get(string) ([]byte, error) // returns nil, nil if not found
-	Set(string, []byte) error
-	Delete(string) error
+
+	// Get will retrieve data from storage that corresponds to the
+	// specified key. It should return nil, nil if not found
+	Get(context.Context, string) ([]byte, error)
+
+	// Set will store data. The data can be retrieved by the same
+	// component after a process restart, using the same key
+	Set(context.Context, string, []byte) error
+
+	// Delete will delete data associated with the specified key
+	Delete(context.Context, string) error
 }
