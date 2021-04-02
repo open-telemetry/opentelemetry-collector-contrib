@@ -16,6 +16,7 @@ package kafkametricsreceiver
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"time"
 
@@ -115,11 +116,11 @@ func (s *topicScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 func createTopicsScraper(_ context.Context, config Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.ResourceMetricsScraper, error) {
 	topicFilter, err := regexp.Compile(config.TopicMatch)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to compile topic filter: %w ", err)
 	}
 	client, err := newSaramaClient(config.Brokers, saramaConfig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create sarama client: %w ", err)
 	}
 	s := topicScraper{
 		client:       client,

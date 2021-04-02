@@ -16,6 +16,7 @@ package kafkametricsreceiver
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"time"
 
@@ -155,19 +156,19 @@ func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, e
 func createConsumerScraper(_ context.Context, config Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.ResourceMetricsScraper, error) {
 	groupFilter, err := regexp.Compile(config.GroupMatch)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to compile group_match: %w", err)
 	}
 	topicFilter, err := regexp.Compile(config.TopicMatch)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to compile topic filter: %w ", err)
 	}
 	client, err := newSaramaClient(config.Brokers, saramaConfig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create sarama client: %w ", err)
 	}
 	clusterAdmin, err := newClusterAdmin(config.Brokers, saramaConfig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create sarama cluster admin: %w ", err)
 	}
 	s := consumerScraper{
 		client:       client,
