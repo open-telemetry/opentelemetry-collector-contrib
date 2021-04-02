@@ -245,25 +245,6 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))
 }
 
-func TestHttpStatusFromSpanStatus(t *testing.T) {
-	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "GET"
-	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
-	span := constructHTTPClientSpan(attributes)
-
-	filtered, httpData := makeHTTP(span)
-
-	assert.NotNil(t, httpData)
-	assert.NotNil(t, filtered)
-	w := testWriters.borrow()
-	if err := w.Encode(httpData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
-	jsonStr := w.String()
-	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "200"))
-}
-
 func TestSpanWithNotEnoughHTTPRequestURLAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
