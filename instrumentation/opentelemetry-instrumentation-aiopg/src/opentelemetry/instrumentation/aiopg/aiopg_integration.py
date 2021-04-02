@@ -86,9 +86,11 @@ def get_traced_pool_proxy(pool, db_api_integration, *args, **kwargs):
         async def _acquire(self):
             # pylint: disable=protected-access
             connection = await self.__wrapped__._acquire()
-            return get_traced_connection_proxy(
-                connection, db_api_integration, *args, **kwargs
-            )
+            if not isinstance(connection, AsyncProxyObject):
+                connection = get_traced_connection_proxy(
+                    connection, db_api_integration, *args, **kwargs
+                )
+            return connection
 
     return TracedPoolProxy(pool, *args, **kwargs)
 
