@@ -67,7 +67,7 @@ func Test_statsdreceiver_New(t *testing.T) {
 						Transport: "unknown",
 					},
 				},
-				nextConsumer: consumertest.NewMetricsNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 			wantErr: errors.New("unsupported transport \"unknown\" for receiver \"statsd\""),
 		},
@@ -83,7 +83,7 @@ func Test_statsdreceiver_New(t *testing.T) {
 func TestStatsdReceiver_Flush(t *testing.T) {
 	ctx := context.Background()
 	cfg := createDefaultConfig().(*Config)
-	nextConsumer := consumertest.NewMetricsNop()
+	nextConsumer := consumertest.NewNop()
 	rcv, err := New(zap.NewNop(), *cfg, nextConsumer)
 	assert.NoError(t, err)
 	r := rcv.(*statsdReceiver)

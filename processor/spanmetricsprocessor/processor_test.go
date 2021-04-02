@@ -101,7 +101,7 @@ func TestProcessorStart(t *testing.T) {
 			cfg.MetricsExporter = tc.metricsExporter
 
 			procCreationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-			traceProcessor, err := factory.CreateTracesProcessor(context.Background(), procCreationParams, cfg, consumertest.NewTracesNop())
+			traceProcessor, err := factory.CreateTracesProcessor(context.Background(), procCreationParams, cfg, consumertest.NewNop())
 			require.NoError(t, err)
 
 			// Test

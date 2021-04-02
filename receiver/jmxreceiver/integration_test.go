@@ -222,7 +222,7 @@ func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 			},
 		},
 	}
-	receiver := newJMXMetricReceiver(params, cfg, consumertest.NewMetricsNop())
+	receiver := newJMXMetricReceiver(params, cfg, consumertest.NewNop())
 	require.NotNil(t, receiver)
 	defer func() {
 		require.EqualError(t, receiver.Shutdown(context.Background()), "no subprocess.cancel().  Has it been started properly?")

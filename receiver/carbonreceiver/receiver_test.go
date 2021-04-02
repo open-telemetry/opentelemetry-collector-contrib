@@ -54,7 +54,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "default_config",
 			args: args{
 				config:       *defaultConfig,
-				nextConsumer: consumertest.NewMetricsNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 		},
 		{
@@ -68,7 +68,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 					},
 					TCPIdleTimeout: defaultConfig.TCPIdleTimeout,
 				},
-				nextConsumer: consumertest.NewMetricsNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 		},
 		{
@@ -84,7 +84,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 				config: Config{
 					ReceiverSettings: config.ReceiverSettings{},
 				},
-				nextConsumer: consumertest.NewMetricsNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 			wantErr: errEmptyEndpoint,
 		},
@@ -104,7 +104,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 						Config: &protocol.PlaintextConfig{},
 					},
 				},
-				nextConsumer: consumertest.NewMetricsNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 			wantErr: errors.New("unsupported transport \"unknown_transp\" for receiver \"invalid_transport_rcv\""),
 		},
@@ -130,7 +130,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 						},
 					},
 				},
-				nextConsumer: consumertest.NewMetricsNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 		},
 		{
@@ -150,7 +150,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 						Config: &protocol.PlaintextConfig{},
 					},
 				},
-				nextConsumer: consumertest.NewMetricsNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 			wantErr: errors.New("invalid idle timeout: -1s"),
 		},

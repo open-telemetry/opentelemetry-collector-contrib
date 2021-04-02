@@ -29,7 +29,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
 
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, consumertest.NewMetricsNop())
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
 
 	assert.EqualError(t, err, "the windows perf counters receiver is only supported on Windows")
 	assert.Nil(t, mReceiver)

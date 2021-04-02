@@ -36,7 +36,7 @@ func TestWithInvalidConfig(t *testing.T) {
 	r, err := f.CreateMetricsReceiver(
 		context.Background(),
 		component.ReceiverCreateParams{Logger: zap.NewNop()},
-		cfg, consumertest.NewMetricsNop(),
+		cfg, consumertest.NewNop(),
 	)
 	require.Error(t, err)
 	assert.Equal(t, "jmx missing required fields: `endpoint`, `target_system` or `groovy_script`", err.Error())
@@ -52,7 +52,7 @@ func TestWithValidConfig(t *testing.T) {
 	cfg.(*Config).GroovyScript = "mygroovyscriptpath"
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	r, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewMetricsNop())
+	r, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	receiver := r.(*jmxMetricReceiver)

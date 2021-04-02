@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Extension is the interface that storage extensions must implement
@@ -29,7 +29,7 @@ type Extension interface {
 	// The component can use the client to manage state
 	// TODO change parameters to new config.ComponentID
 	// https://github.com/open-telemetry/opentelemetry-collector/pull/2869
-	GetClient(context.Context, component.Kind, configmodels.NamedEntity) (Client, error)
+	GetClient(context.Context, component.Kind, config.NamedEntity) (Client, error)
 }
 
 // Client is the interface that storage clients must implement
