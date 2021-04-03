@@ -66,7 +66,7 @@ func TestNewReceiver(t *testing.T) {
 				addr:         ":0",
 				timeout:      defaultTimeout,
 				attrsPrefix:  "default_attr_",
-				nextConsumer: consumertest.NewMetricsNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 		},
 	}

@@ -882,7 +882,7 @@ func TestRealClient(t *testing.T) {
 func TestCapabilities(t *testing.T) {
 	p, err := newTraceProcessor(
 		NewFactory().CreateDefaultConfig(),
-		consumertest.NewTracesNop(),
+		consumertest.NewNop(),
 	)
 	assert.NoError(t, err)
 	caps := p.GetCapabilities()
@@ -893,7 +893,7 @@ func TestStartStop(t *testing.T) {
 	var kp *kubernetesprocessor
 	p, err := newTraceProcessor(
 		NewFactory().CreateDefaultConfig(),
-		consumertest.NewTracesNop(),
+		consumertest.NewNop(),
 		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)

@@ -37,7 +37,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg.NetAddr.Endpoint = "localhost:0" // Endpoint is required, not going to be used here.
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	tReceiver, err := createMetricsReceiver(context.Background(), params, cfg, consumertest.NewMetricsNop())
+	tReceiver, err := createMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 }
