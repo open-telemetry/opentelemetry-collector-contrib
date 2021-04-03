@@ -487,7 +487,7 @@ func TestConsumerErrors(t *testing.T) {
 			}
 			r := newRunnable(
 				context.Background(),
-				consumertest.NewMetricsErr(test.err),
+				consumertest.NewErr(test.err),
 				&fakeRestClient{},
 				zap.New(core),
 				options,

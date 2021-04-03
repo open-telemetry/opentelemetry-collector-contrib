@@ -133,7 +133,7 @@ func TestCreateProcessors(t *testing.T) {
 					context.Background(),
 					component.ProcessorCreateParams{Logger: zap.NewNop()},
 					cfg,
-					consumertest.NewTracesNop())
+					consumertest.NewNop())
 				// Not implemented error
 				assert.Error(t, tErr)
 				assert.Nil(t, tp)
@@ -142,7 +142,7 @@ func TestCreateProcessors(t *testing.T) {
 					context.Background(),
 					component.ProcessorCreateParams{Logger: zap.NewNop()},
 					cfg,
-					consumertest.NewMetricsNop())
+					consumertest.NewNop())
 				if test.succeed {
 					assert.NotNil(t, mp)
 					assert.NoError(t, mErr)

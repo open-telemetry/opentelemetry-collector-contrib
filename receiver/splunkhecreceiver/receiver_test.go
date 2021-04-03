@@ -79,7 +79,7 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 			name: "default_endpoint",
 			args: args{
 				config:       *defaultConfig,
-				logsConsumer: consumertest.NewLogsNop(),
+				logsConsumer: consumertest.NewNop(),
 			},
 		},
 		{
@@ -90,7 +90,7 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 						Endpoint: "localhost:1234",
 					},
 				},
-				logsConsumer: consumertest.NewLogsNop(),
+				logsConsumer: consumertest.NewNop(),
 			},
 		},
 	}
@@ -139,7 +139,7 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 			name: "default_endpoint",
 			args: args{
 				config:          *defaultConfig,
-				metricsConsumer: consumertest.NewMetricsNop(),
+				metricsConsumer: consumertest.NewNop(),
 			},
 		},
 		{
@@ -150,7 +150,7 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 						Endpoint: "localhost:1234",
 					},
 				},
-				metricsConsumer: consumertest.NewMetricsNop(),
+				metricsConsumer: consumertest.NewNop(),
 			},
 		},
 	}
@@ -337,7 +337,7 @@ func Test_consumer_err(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 	config.initialize()
-	rcv, err := NewLogsReceiver(zap.NewNop(), *config, consumertest.NewLogsErr(errors.New("bad consumer")))
+	rcv, err := NewLogsReceiver(zap.NewNop(), *config, consumertest.NewErr(errors.New("bad consumer")))
 	assert.NoError(t, err)
 
 	r := rcv.(*splunkReceiver)
@@ -365,7 +365,7 @@ func Test_consumer_err_metrics(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint\
 	config.initialize()
-	rcv, err := NewMetricsReceiver(zap.NewNop(), *config, consumertest.NewMetricsErr(errors.New("bad consumer")))
+	rcv, err := NewMetricsReceiver(zap.NewNop(), *config, consumertest.NewErr(errors.New("bad consumer")))
 	assert.NoError(t, err)
 
 	r := rcv.(*splunkReceiver)

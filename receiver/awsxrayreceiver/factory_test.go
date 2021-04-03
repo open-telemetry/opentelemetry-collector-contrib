@@ -69,7 +69,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 			Logger: zap.NewNop(),
 		},
 		factory.CreateDefaultConfig().(*Config),
-		consumertest.NewTracesNop(),
+		consumertest.NewNop(),
 	)
 	assert.Nil(t, err, "trace receiver can be created")
 }

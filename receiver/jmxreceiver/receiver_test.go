@@ -38,7 +38,7 @@ func TestReceiver(t *testing.T) {
 		},
 	}
 
-	receiver := newJMXMetricReceiver(params, config, consumertest.NewMetricsNop())
+	receiver := newJMXMetricReceiver(params, config, consumertest.NewNop())
 	require.NotNil(t, receiver)
 	require.Same(t, params.Logger, receiver.logger)
 	require.Same(t, config, receiver.config)
@@ -172,7 +172,7 @@ otel.exporter.otlp.metric.timeout = 234000
 	for _, test := range tests {
 		t.Run(test.name, func(tt *testing.T) {
 			params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-			receiver := newJMXMetricReceiver(params, &test.config, consumertest.NewMetricsNop())
+			receiver := newJMXMetricReceiver(params, &test.config, consumertest.NewNop())
 			jmxConfig, err := receiver.buildJMXMetricGathererConfig()
 			if test.expectedError == "" {
 				require.NoError(t, err)
@@ -205,7 +205,7 @@ func TestBuildOTLPReceiverInvalidEndpoints(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(tt *testing.T) {
 			params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-			jmxReceiver := newJMXMetricReceiver(params, &test.config, consumertest.NewMetricsNop())
+			jmxReceiver := newJMXMetricReceiver(params, &test.config, consumertest.NewNop())
 			otlpReceiver, err := jmxReceiver.buildOTLPReceiver()
 			require.Error(t, err)
 			require.Contains(t, err.Error(), test.expectedErr)

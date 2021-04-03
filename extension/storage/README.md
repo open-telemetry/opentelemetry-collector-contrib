@@ -4,7 +4,7 @@ A storage extension persists state beyond the collector process. Other component
 
 The `storage.Extension` interface extends `component.Extension` by adding the following method:
 ```
-GetClient(component.Kind, configmodels.NamedEntity) (Client, error)
+GetClient(component.Kind, config.NamedEntity) (Client, error)
 ```
 
 The `storage.Client` interface contains the following methods:
