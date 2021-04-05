@@ -30,6 +30,7 @@ General purpose:
 - [Filter](/docs/operators/filter.md)
 - [Router](/docs/operators/router.md)
 - [Metadata](/docs/operators/metadata.md)
+- [Recombine](/docs/operators/recombine.md)
 - [Restructure](/docs/operators/restructure.md)
 - [Host Metadata](/docs/operators/host_metadata.md)
 - [Kubernetes Metadata Decorator](/docs/operators/k8s_metadata_decorator.md)
