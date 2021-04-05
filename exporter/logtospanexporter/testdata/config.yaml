@@ -1,0 +1,46 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  logtospan:
+    endpoint: "otelcol:4317"
+    trace_type: "w3c"
+    field_map:
+      w3c:
+        traceparent: "traceparent"
+        tracestate: "tracestate"
+      span_name: "span_name"
+      span_start_time: "req_start_time"
+      span_end_time: "res_start_time"
+  logtospan/allsettings:
+    endpoint: "otelcol:4317"
+    read_buffer_size: 123
+    write_buffer_size: 345
+    sending_queue:
+      enabled: true
+      num_consumers: 2
+      queue_size: 10
+    retry_on_failure:
+      enabled: true
+      initial_interval: 10s
+      max_interval: 60s
+      max_elapsed_time: 10m
+    trace_type: "w3c"
+    field_map:
+      w3c:
+        traceparent: "traceparent"
+        tracestate: "tracestate"
+      span_name: "span_name"
+      span_start_time: "req_start_time"
+      span_end_time: "res_start_time"
+      ignored:
+        - "fluent.tag"
+service:
+  pipelines:
+    metrics:
+      receivers: [ nop ]
+      processors: [ nop ]
+      exporters: [ logtospan, logtospan/allsettings ]
