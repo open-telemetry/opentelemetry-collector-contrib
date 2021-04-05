@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python-contrib/compare/v0.19b0...HEAD)
 
 ### Changed
+- Restrict DataDog exporter's `ddtrace` dependency to known working versions.
+  ([#400](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/400))
 - GRPC instrumentation now correctly injects trace context into outgoing requests.
   ([#392](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/39))
 - Publish `opentelemetry-propagator-ot-trace` package as a part of the release process
