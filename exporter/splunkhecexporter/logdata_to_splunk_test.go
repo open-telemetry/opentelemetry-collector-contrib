@@ -273,34 +273,33 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			logRecordFn: func() pdata.LogRecord {
 				logRecord := pdata.NewLogRecord()
 				logRecord.Body().SetStringVal("mylog")
-				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
-				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-				logRecord.Attributes().InsertString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
 			logResourceFn: func() pdata.Resource {
 				attr := map[string]pdata.AttributeValue{
-					"resourceAttr1":        pdata.NewAttributeValueString("some_string"),
-					splunk.SourcetypeLabel: pdata.NewAttributeValueString("myapp-type-from-resource-attr"),
+					"resourceAttr1":                  pdata.NewAttributeValueString("some_string"),
+					splunk.SourcetypeLabel:           pdata.NewAttributeValueString("myapp-type-from-resource-attr"),
+					splunk.IndexLabel:                pdata.NewAttributeValueString("index-resource"),
+					conventions.AttributeServiceName: pdata.NewAttributeValueString("myapp-resource"),
+					conventions.AttributeHostName:    pdata.NewAttributeValueString("myhost-resource"),
 				}
 				resource := pdata.NewResource()
-
-				for key, value := range attr {
-					resource.Attributes().Insert(key, value)
-				}
+				resource.Attributes().InitFromMap(attr)
 				return resource
 			},
 			configDataFn: func() *Config {
-				return &Config{
-					Source:     "source",
-					SourceType: "sourcetype",
+				return &Config{}
+			},
+			wantSplunkEvents: func() []*splunk.Event {
+				event := commonLogSplunkEvent("mylog", ts, map[string]interface{}{
+					"service.name": "myapp-resource", "host.name": "myhost-resource", "resourceAttr1": "some_string",
+				}, "myhost-resource", "myapp-resource", "myapp-type-from-resource-attr")
+				event.Index = "index-resource"
+				return []*splunk.Event{
+					event,
 				}
-			},
-			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "service.name": "myapp", "host.name": "myhost", "resourceAttr1": "some_string"},
-					"myhost", "myapp", "myapp-type-from-resource-attr"),
-			},
+			}(),
 		},
 	}
 	for _, tt := range tests {
