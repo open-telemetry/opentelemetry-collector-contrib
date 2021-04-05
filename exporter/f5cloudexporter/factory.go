@@ -16,12 +16,12 @@ package f5cloudexporter
 
 import (
 	"context"
-	"net/http"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	otlphttp "go.opentelemetry.io/collector/exporter/otlphttpexporter"
+	otlp "go.opentelemetry.io/collector/exporter/otlpexporter"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/idtoken"
 )
@@ -41,7 +41,7 @@ func NewFactory() component.ExporterFactory {
 }
 
 func NewFactoryWithTokenSourceGetter(tsg TokenSourceGetter) component.ExporterFactory {
-	return &f5cloudFactory{ExporterFactory: otlphttp.NewFactory(), getTokenSource: tsg}
+	return &f5cloudFactory{ExporterFactory: otlp.NewFactory(), getTokenSource: tsg}
 }
 
 func (f *f5cloudFactory) Type() config.Type {
@@ -98,7 +98,7 @@ func (f *f5cloudFactory) CreateLogsExporter(
 
 func (f *f5cloudFactory) CreateDefaultConfig() config.Exporter {
 	cfg := &Config{
-		Config: *f.ExporterFactory.CreateDefaultConfig().(*otlphttp.Config),
+		Config: *f.ExporterFactory.CreateDefaultConfig().(*otlp.Config),
 		AuthConfig: AuthConfig{
 			CredentialFile: "",
 			Audience:       "",
@@ -110,14 +110,16 @@ func (f *f5cloudFactory) CreateDefaultConfig() config.Exporter {
 
 	cfg.Headers["User-Agent"] = "opentelemetry-collector-contrib {{version}}"
 
-	cfg.HTTPClientSettings.CustomRoundTripper = func(next http.RoundTripper) (http.RoundTripper, error) {
-		ts, err := f.getTokenSource(cfg)
-		if err != nil {
-			return nil, err
-		}
+	cfg.Timeout = 5 * time.Second
 
-		return newF5CloudAuthRoundTripper(ts, cfg.Source, next)
-	}
+	//cfg.GRPCClientSettings.CustomRoundTripper = func(next http.RoundTripper) (http.RoundTripper, error) {
+	//	ts, err := f.getTokenSource(cfg)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	return newF5CloudAuthRoundTripper(ts, cfg.Source, next)
+	//}
 
 	return cfg
 }

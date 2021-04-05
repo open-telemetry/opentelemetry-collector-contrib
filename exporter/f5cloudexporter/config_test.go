@@ -23,10 +23,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	otlphttp "go.opentelemetry.io/collector/exporter/otlphttpexporter"
+	otlp "go.opentelemetry.io/collector/exporter/otlpexporter"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -45,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 	exporter := cfg.Exporters["f5cloud/allsettings"]
 	actualCfg := exporter.(*Config)
 	expectedCfg := &Config{
-		Config: otlphttp.Config{
+		Config: otlp.Config{
 			ExporterSettings: &config.ExporterSettings{
 				NameVal: "f5cloud/allsettings",
 				TypeVal: "f5cloud",
@@ -61,15 +61,15 @@ func TestLoadConfig(t *testing.T) {
 				NumConsumers: 2,
 				QueueSize:    10,
 			},
-			HTTPClientSettings: confighttp.HTTPClientSettings{
-				Endpoint:        "https://f5cloud",
+			GRPCClientSettings: configgrpc.GRPCClientSettings{
+				Endpoint:        "f5cloud:443",
 				ReadBufferSize:  123,
 				WriteBufferSize: 345,
-				Timeout:         time.Second * 10,
 				Headers: map[string]string{
 					"User-Agent": "opentelemetry-collector-contrib {{version}}",
 				},
 			},
+			TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 5 * time.Second},
 		},
 		Source: "dev",
 		AuthConfig: AuthConfig{
@@ -77,9 +77,6 @@ func TestLoadConfig(t *testing.T) {
 			Audience:       "exampleaudience",
 		},
 	}
-	// testing function equality is not supported in Go hence these will be ignored for this test
-	expectedCfg.HTTPClientSettings.CustomRoundTripper = nil
-	exporter.(*Config).HTTPClientSettings.CustomRoundTripper = nil
 	assert.Equal(t, expectedCfg, actualCfg)
 }
 

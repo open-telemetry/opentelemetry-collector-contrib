@@ -41,8 +41,8 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
-	assert.Equal(t, ocfg.HTTPClientSettings.Endpoint, "")
-	assert.Equal(t, ocfg.HTTPClientSettings.Timeout, 30*time.Second, "default timeout is 30 seconds")
+	assert.Equal(t, ocfg.GRPCClientSettings.Endpoint, "")
+	assert.Equal(t, ocfg.Timeout, 5*time.Second, "default timeout is 5 seconds")
 	assert.Equal(t, ocfg.RetrySettings.Enabled, true, "default retry is enabled")
 	assert.Equal(t, ocfg.RetrySettings.MaxElapsedTime, 300*time.Second, "default retry MaxElapsedTime")
 	assert.Equal(t, ocfg.RetrySettings.InitialInterval, 5*time.Second, "default retry InitialInterval")
@@ -53,7 +53,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 func TestFactory_CreateMetricsExporter(t *testing.T) {
 	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
+	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.Source = "tests"
 	cfg.AuthConfig = AuthConfig{
 		CredentialFile: "testdata/empty_credential_file.json",
@@ -86,7 +86,7 @@ func TestFactory_CreateMetricsExporterInvalidConfig(t *testing.T) {
 func TestFactory_CreateTraceExporter(t *testing.T) {
 	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
+	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.Source = "tests"
 	cfg.AuthConfig = AuthConfig{
 		CredentialFile: "testdata/empty_credential_file.json",
@@ -119,7 +119,7 @@ func Test_Factory_CreateTraceExporterInvalidConfig(t *testing.T) {
 func TestFactory_CreateLogsExporter(t *testing.T) {
 	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
+	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.Source = "tests"
 	cfg.AuthConfig = AuthConfig{
 		CredentialFile: "testdata/empty_credential_file.json",
@@ -152,7 +152,7 @@ func TestFactory_CreateLogsExporterInvalidConfig(t *testing.T) {
 func TestFactory_getTokenSourceFromConfig(t *testing.T) {
 	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
+	cfg.GRPCClientSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.Source = "tests"
 	cfg.AuthConfig = AuthConfig{
 		CredentialFile: "testdata/empty_credential_file.json",

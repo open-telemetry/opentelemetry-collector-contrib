@@ -6,12 +6,12 @@ processors:
 
 exporters:
   f5cloud:
-    endpoint: "https://f5cloud"
+    endpoint: "f5cloud:443"
     source: "dev"
     auth:
       credential_file: "/etc/creds/key.json"
   f5cloud/allsettings:
-    endpoint: "https://f5cloud"
+    endpoint: "f5cloud:443"
     source: "dev"
     auth:
       credential_file: "/etc/creds/key.json"

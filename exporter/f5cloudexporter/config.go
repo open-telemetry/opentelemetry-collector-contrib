@@ -19,13 +19,13 @@ import (
 	"net/url"
 	"os"
 
-	otlphttp "go.opentelemetry.io/collector/exporter/otlphttpexporter"
+	otlp "go.opentelemetry.io/collector/exporter/otlpexporter"
 )
 
 // Config defines configuration for F5 Cloud exporter.
 type Config struct {
-	// Config represents the OTLP HTTP Exporter configuration.
-	otlphttp.Config `mapstructure:",squash"`
+	// Config represents the OTLP Exporter configuration.
+	otlp.Config `mapstructure:",squash"`
 
 	// Source represents a unique identifier that is used to distinguish where this data is coming from.
 	Source string `mapstructure:"source"`
