@@ -20,9 +20,6 @@ from opentelemetry.test.test_base import TestBase
 
 
 class TestRedisInstrument(TestBase):
-
-    test_service = "redis"
-
     def setUp(self):
         super().setUp()
         self.redis_client = redis.Redis(port=6379)
@@ -34,7 +31,6 @@ class TestRedisInstrument(TestBase):
         RedisInstrumentor().uninstrument()
 
     def _check_span(self, span, name):
-        self.assertEqual(span.attributes["service"], self.test_service)
         self.assertEqual(span.name, name)
         self.assertIs(span.status.status_code, trace.StatusCode.UNSET)
         self.assertEqual(span.attributes.get("db.name"), 0)
@@ -60,7 +56,7 @@ class TestRedisInstrument(TestBase):
         span = spans[0]
         self._check_span(span, "GET")
         self.assertEqual(span.attributes.get("db.statement"), "GET cheese")
-        self.assertEqual(span.attributes.get("redis.args_length"), 2)
+        self.assertEqual(span.attributes.get("db.redis.args_length"), 2)
 
     def test_pipeline_traced(self):
         with self.redis_client.pipeline(transaction=False) as pipeline:
@@ -77,7 +73,7 @@ class TestRedisInstrument(TestBase):
             span.attributes.get("db.statement"),
             "SET blah 32\nRPUSH foo éé\nHGETALL xxx",
         )
-        self.assertEqual(span.attributes.get("redis.pipeline_length"), 3)
+        self.assertEqual(span.attributes.get("db.redis.pipeline_length"), 3)
 
     def test_pipeline_immediate(self):
         with self.redis_client.pipeline() as pipeline:
@@ -111,9 +107,6 @@ class TestRedisInstrument(TestBase):
         self.assertEqual(parent_span.name, "redis_get")
         self.assertEqual(parent_span.instrumentation_info.name, "redis_svc")
 
-        self.assertEqual(
-            child_span.attributes.get("service"), self.test_service
-        )
         self.assertEqual(child_span.name, "GET")
 
 

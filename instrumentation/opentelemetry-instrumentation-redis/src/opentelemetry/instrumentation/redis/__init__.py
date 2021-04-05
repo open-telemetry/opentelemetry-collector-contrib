@@ -79,10 +79,9 @@ def _traced_execute_command(func, instance, args, kwargs):
         name, kind=trace.SpanKind.CLIENT
     ) as span:
         if span.is_recording():
-            span.set_attribute("service", tracer.instrumentation_info.name)
             span.set_attribute(_RAWCMD, query)
             _set_connection_attributes(span, instance)
-            span.set_attribute("redis.args_length", len(args))
+            span.set_attribute("db.redis.args_length", len(args))
         return func(*args, **kwargs)
 
 
@@ -98,11 +97,10 @@ def _traced_execute_pipeline(func, instance, args, kwargs):
         span_name, kind=trace.SpanKind.CLIENT
     ) as span:
         if span.is_recording():
-            span.set_attribute("service", tracer.instrumentation_info.name)
             span.set_attribute(_RAWCMD, resource)
             _set_connection_attributes(span, instance)
             span.set_attribute(
-                "redis.pipeline_length", len(instance.command_stack)
+                "db.redis.pipeline_length", len(instance.command_stack)
             )
         return func(*args, **kwargs)
 
