@@ -19,7 +19,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -43,7 +42,6 @@ func NewFactory() component.ReceiverFactory {
 		typeStr,
 		createDefaultConfig,
 		receiverhelper.WithMetrics(createMetricsReceiver),
-		receiverhelper.WithTraces(createTraceReceiver),
 		receiverhelper.WithLogs(createLogsReceiver))
 }
 
@@ -60,17 +58,6 @@ func createDefaultConfig() config.Receiver {
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{},
 		Path:                         "",
 	}
-}
-
-// CreateTracesReceiver creates a trace receiver based on provided config.
-func createTraceReceiver(
-	ctx context.Context,
-	params component.ReceiverCreateParams,
-	cfg config.Receiver,
-	consumer consumer.Traces,
-) (component.TracesReceiver, error) {
-
-	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
