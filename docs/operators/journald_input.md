@@ -4,7 +4,7 @@ The `journald_input` operator reads logs from the systemd journal using the `jou
 
 By default, `journalctl` will read from `/run/journal` or `/var/log/journal`. If either `directory` or `files` are set, `journalctl` will instead read from those.
 
-The `journald_input` operator will use the `__REALTIME_TIMESTAMP` field of the journald entry as the parsed entry's timestamp. All other fields are added to the entry's record as returned by `journalctl`.
+The `journald_input` operator will use the `__REALTIME_TIMESTAMP` field of the journald entry as the parsed entry's timestamp. All other fields are added to the entry's body as returned by `journalctl`.
 
 ### Configuration Fields
 
@@ -14,7 +14,7 @@ The `journald_input` operator will use the `__REALTIME_TIMESTAMP` field of the j
 | `output`          | Next in pipeline | The connected operator(s) that will receive all outbound entries                                 |
 | `directory`       |                  | A directory containing journal files to read entries from                                        |
 | `files`           |                  | A list of journal files to read entries from                                                     |
-| `write_to`        | $                | The record [field](/docs/types/field.md) written to when creating a new log entry                |
+| `write_to`        | $                | The body [field](/docs/types/field.md) written to when creating a new log entry                |
 | `start_at`        | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`          |
 | `attributes`      | {}               | A map of `key: value` pairs to add to the entry's attributes                                        |
 | `resource`        | {}               | A map of `key: value` pairs to add to the entry's resource                                      |
@@ -32,7 +32,7 @@ Output entry sample:
 ```json
 "entry": {
   "timestamp": "2020-04-16T11:05:49.516168-04:00",
-  "record": {
+  "body": {
     "CODE_FILE": "../src/core/unit.c",
     "CODE_FUNC": "unit_log_success",
     "CODE_LINE": "5487",

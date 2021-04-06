@@ -20,52 +20,52 @@ import (
 	"strings"
 )
 
-// RecordField is a field found on an entry record.
-type RecordField struct {
+// BodyField is a field found on an entry body.
+type BodyField struct {
 	Keys []string
 }
 
 // Parent returns the parent of the current field.
-// In the case that the record field points to the root node, it is a no-op.
-func (f RecordField) Parent() RecordField {
+// In the case that the body field points to the root node, it is a no-op.
+func (f BodyField) Parent() BodyField {
 	if f.isRoot() {
 		return f
 	}
 
 	keys := f.Keys[:len(f.Keys)-1]
-	return RecordField{keys}
+	return BodyField{keys}
 }
 
 // Child returns a child of the current field using the given key.
-func (f RecordField) Child(key string) RecordField {
+func (f BodyField) Child(key string) BodyField {
 	child := make([]string, len(f.Keys), len(f.Keys)+1)
 	copy(child, f.Keys)
 	keys := append(child, key)
-	return RecordField{keys}
+	return BodyField{keys}
 }
 
 // IsRoot returns a boolean indicating if this is a root level field.
-func (f RecordField) isRoot() bool {
+func (f BodyField) isRoot() bool {
 	return len(f.Keys) == 0
 }
 
 // String returns the string representation of this field.
-func (f RecordField) String() string {
+func (f BodyField) String() string {
 	return toJSONDot(f)
 }
 
-// Get will retrieve a value from an entry's record using the field.
+// Get will retrieve a value from an entry's body using the field.
 // It will return the value and whether the field existed.
-func (f RecordField) Get(entry *Entry) (interface{}, bool) {
-	var currentValue interface{} = entry.Record
+func (f BodyField) Get(entry *Entry) (interface{}, bool) {
+	var currentValue interface{} = entry.Body
 
 	for _, key := range f.Keys {
-		currentRecord, ok := currentValue.(map[string]interface{})
+		currentBody, ok := currentValue.(map[string]interface{})
 		if !ok {
 			return nil, false
 		}
 
-		currentValue, ok = currentRecord[key]
+		currentValue, ok = currentBody[key]
 		if !ok {
 			return nil, false
 		}
@@ -74,10 +74,10 @@ func (f RecordField) Get(entry *Entry) (interface{}, bool) {
 	return currentValue, true
 }
 
-// Set will set a value on an entry's record using the field.
+// Set will set a value on an entry's body using the field.
 // If a key already exists, it will be overwritten.
 // If mergeMaps is set to true, map values will be merged together.
-func (f RecordField) Set(entry *Entry, value interface{}) error {
+func (f BodyField) Set(entry *Entry, value interface{}) error {
 	mapValue, isMapValue := value.(map[string]interface{})
 	if isMapValue {
 		f.Merge(entry, mapValue)
@@ -85,14 +85,14 @@ func (f RecordField) Set(entry *Entry, value interface{}) error {
 	}
 
 	if f.isRoot() {
-		entry.Record = value
+		entry.Body = value
 		return nil
 	}
 
-	currentMap, ok := entry.Record.(map[string]interface{})
+	currentMap, ok := entry.Body.(map[string]interface{})
 	if !ok {
 		currentMap = map[string]interface{}{}
-		entry.Record = currentMap
+		entry.Body = currentMap
 	}
 
 	for i, key := range f.Keys {
@@ -105,13 +105,13 @@ func (f RecordField) Set(entry *Entry, value interface{}) error {
 	return nil
 }
 
-// Merge will attempt to merge the contents of a map into an entry's record.
+// Merge will attempt to merge the contents of a map into an entry's body.
 // It will overwrite any intermediate values as necessary.
-func (f RecordField) Merge(entry *Entry, mapValues map[string]interface{}) {
-	currentMap, ok := entry.Record.(map[string]interface{})
+func (f BodyField) Merge(entry *Entry, mapValues map[string]interface{}) {
+	currentMap, ok := entry.Body.(map[string]interface{})
 	if !ok {
 		currentMap = map[string]interface{}{}
-		entry.Record = currentMap
+		entry.Body = currentMap
 	}
 
 	for _, key := range f.Keys {
@@ -123,16 +123,16 @@ func (f RecordField) Merge(entry *Entry, mapValues map[string]interface{}) {
 	}
 }
 
-// Delete removes a value from an entry's record using the field.
+// Delete removes a value from an entry's body using the field.
 // It will return the deleted value and whether the field existed.
-func (f RecordField) Delete(entry *Entry) (interface{}, bool) {
+func (f BodyField) Delete(entry *Entry) (interface{}, bool) {
 	if f.isRoot() {
-		oldRecord := entry.Record
-		entry.Record = nil
-		return oldRecord, true
+		oldBody := entry.Body
+		entry.Body = nil
+		return oldBody, true
 	}
 
-	currentValue := entry.Record
+	currentValue := entry.Body
 	for i, key := range f.Keys {
 		currentMap, ok := currentValue.(map[string]interface{})
 		if !ok {
@@ -155,7 +155,7 @@ func (f RecordField) Delete(entry *Entry) (interface{}, bool) {
 
 // getNestedMap will get a nested map assigned to a key.
 // If the map does not exist, it will create and return it.
-func (f RecordField) getNestedMap(currentMap map[string]interface{}, key string) map[string]interface{} {
+func (f BodyField) getNestedMap(currentMap map[string]interface{}, key string) map[string]interface{} {
 	currentValue, ok := currentMap[key]
 	if !ok {
 		currentMap[key] = map[string]interface{}{}
@@ -175,7 +175,7 @@ func (f RecordField) getNestedMap(currentMap map[string]interface{}, key string)
 ****************/
 
 // UnmarshalJSON will attempt to unmarshal the field from JSON.
-func (f *RecordField) UnmarshalJSON(raw []byte) error {
+func (f *BodyField) UnmarshalJSON(raw []byte) error {
 	var value string
 	if err := json.Unmarshal(raw, &value); err != nil {
 		return fmt.Errorf("the field is not a string: %s", err)
@@ -186,13 +186,13 @@ func (f *RecordField) UnmarshalJSON(raw []byte) error {
 }
 
 // MarshalJSON will marshal the field for JSON.
-func (f RecordField) MarshalJSON() ([]byte, error) {
+func (f BodyField) MarshalJSON() ([]byte, error) {
 	json := fmt.Sprintf(`"%s"`, toJSONDot(f))
 	return []byte(json), nil
 }
 
 // UnmarshalYAML will attempt to unmarshal a field from YAML.
-func (f *RecordField) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (f *BodyField) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var value string
 	if err := unmarshal(&value); err != nil {
 		return fmt.Errorf("the field is not a string: %s", err)
@@ -203,25 +203,25 @@ func (f *RecordField) UnmarshalYAML(unmarshal func(interface{}) error) error {
 }
 
 // MarshalYAML will marshal the field for YAML.
-func (f RecordField) MarshalYAML() (interface{}, error) {
+func (f BodyField) MarshalYAML() (interface{}, error) {
 	return toJSONDot(f), nil
 }
 
 // fromJSONDot creates a field from JSON dot notation.
-func fromJSONDot(value string) RecordField {
+func fromJSONDot(value string) BodyField {
 	keys := strings.Split(value, ".")
 
-	if keys[0] == "$" || keys[0] == recordPrefix {
+	if keys[0] == "$" || keys[0] == bodyPrefix {
 		keys = keys[1:]
 	}
 
-	return RecordField{keys}
+	return BodyField{keys}
 }
 
 // toJSONDot returns the JSON dot notation for a field.
-func toJSONDot(field RecordField) string {
+func toJSONDot(field BodyField) string {
 	if field.isRoot() {
-		return recordPrefix
+		return bodyPrefix
 	}
 
 	containsDots := false
@@ -233,7 +233,7 @@ func toJSONDot(field RecordField) string {
 
 	var b strings.Builder
 	if containsDots {
-		b.WriteString(recordPrefix)
+		b.WriteString(bodyPrefix)
 		for _, key := range field.Keys {
 			b.WriteString(`['`)
 			b.WriteString(key)
@@ -251,9 +251,9 @@ func toJSONDot(field RecordField) string {
 	return b.String()
 }
 
-// NewRecordField creates a new field from an ordered array of keys.
-func NewRecordField(keys ...string) Field {
-	return Field{RecordField{
+// NewBodyField creates a new field from an ordered array of keys.
+func NewBodyField(keys ...string) Field {
+	return Field{BodyField{
 		Keys: keys,
 	}}
 }

@@ -31,17 +31,17 @@ func TestFieldUnmarshalJSON(t *testing.T) {
 		{
 			"SimpleField",
 			[]byte(`"test1"`),
-			NewRecordField("test1"),
+			NewBodyField("test1"),
 		},
 		{
 			"ComplexField",
 			[]byte(`"test1.test2"`),
-			NewRecordField("test1", "test2"),
+			NewBodyField("test1", "test2"),
 		},
 		{
 			"RootField",
 			[]byte(`"$"`),
-			NewRecordField([]string{}...),
+			NewBodyField([]string{}...),
 		},
 	}
 
@@ -72,12 +72,12 @@ func TestFieldMarshalJSON(t *testing.T) {
 	}{
 		{
 			"SimpleField",
-			NewRecordField("test1"),
+			NewBodyField("test1"),
 			[]byte(`"test1"`),
 		},
 		{
 			"ComplexField",
-			NewRecordField("test1", "test2"),
+			NewBodyField("test1", "test2"),
 			[]byte(`"test1.test2"`),
 		},
 	}
@@ -101,27 +101,27 @@ func TestFieldUnmarshalYAML(t *testing.T) {
 		{
 			"SimpleField",
 			[]byte(`"test1"`),
-			NewRecordField("test1"),
+			NewBodyField("test1"),
 		},
 		{
 			"UnquotedField",
 			[]byte(`test1`),
-			NewRecordField("test1"),
+			NewBodyField("test1"),
 		},
 		{
 			"RootField",
 			[]byte(`"$"`),
-			NewRecordField([]string{}...),
+			NewBodyField([]string{}...),
 		},
 		{
 			"ComplexField",
 			[]byte(`"test1.test2"`),
-			NewRecordField("test1", "test2"),
+			NewBodyField("test1", "test2"),
 		},
 		{
 			"ComplexFieldWithRoot",
 			[]byte(`"$.test1.test2"`),
-			NewRecordField("test1", "test2"),
+			NewBodyField("test1", "test2"),
 		},
 	}
 
@@ -152,33 +152,33 @@ func TestFieldMarshalYAML(t *testing.T) {
 	}{
 		{
 			"SimpleField",
-			NewRecordField("test1"),
+			NewBodyField("test1"),
 			"test1\n",
 		},
 		{
 			"ComplexField",
-			NewRecordField("test1", "test2"),
+			NewBodyField("test1", "test2"),
 			"test1.test2\n",
 		},
 		{
 			"EmptyField",
-			NewRecordField(),
-			"$record\n",
+			NewBodyField(),
+			"$body\n",
 		},
 		{
 			"FieldWithDots",
-			NewRecordField("test.1"),
-			"$record['test.1']\n",
+			NewBodyField("test.1"),
+			"$body['test.1']\n",
 		},
 		{
 			"FieldWithDotsThenNone",
-			NewRecordField("test.1", "test2"),
-			"$record['test.1']['test2']\n",
+			NewBodyField("test.1", "test2"),
+			"$body['test.1']['test2']\n",
 		},
 		{
 			"FieldWithNoDotsThenDots",
-			NewRecordField("test1", "test.2"),
-			"$record['test1']['test.2']\n",
+			NewBodyField("test1", "test.2"),
+			"$body['test1']['test.2']\n",
 		},
 		{
 			"AttributeField",
@@ -222,24 +222,24 @@ func TestSplitField(t *testing.T) {
 		{"Simple", "test", []string{"test"}, false},
 		{"Sub", "test.case", []string{"test", "case"}, false},
 		{"Root", "$", []string{"$"}, false},
-		{"RootWithSub", "$record.field", []string{"$record", "field"}, false},
-		{"RootWithTwoSub", "$record.field1.field2", []string{"$record", "field1", "field2"}, false},
+		{"RootWithSub", "$body.field", []string{"$body", "field"}, false},
+		{"RootWithTwoSub", "$body.field1.field2", []string{"$body", "field1", "field2"}, false},
 		{"BracketSyntaxSingleQuote", "['test']", []string{"test"}, false},
 		{"BracketSyntaxDoubleQuote", `["test"]`, []string{"test"}, false},
-		{"RootSubBracketSyntax", `$record["test"]`, []string{"$record", "test"}, false},
-		{"BracketThenDot", `$record["test1"].test2`, []string{"$record", "test1", "test2"}, false},
-		{"BracketThenBracket", `$record["test1"]["test2"]`, []string{"$record", "test1", "test2"}, false},
-		{"DotThenBracket", `$record.test1["test2"]`, []string{"$record", "test1", "test2"}, false},
-		{"DotsInBrackets", `$record["test1.test2"]`, []string{"$record", "test1.test2"}, false},
-		{"UnclosedBrackets", `$record["test1.test2"`, nil, true},
-		{"UnclosedQuotes", `$record["test1.test2]`, nil, true},
-		{"UnmatchedQuotes", `$record["test1.test2']`, nil, true},
-		{"BracketAtEnd", `$record[`, nil, true},
-		{"SingleQuoteAtEnd", `$record['`, nil, true},
-		{"DoubleQuoteAtEnd", `$record["`, nil, true},
-		{"BracketMissingQuotes", `$record[test]`, nil, true},
-		{"CharacterBetweenBracketAndQuote", `$record["test"a]`, nil, true},
-		{"CharacterOutsideBracket", `$record["test"]a`, nil, true},
+		{"RootSubBracketSyntax", `$body["test"]`, []string{"$body", "test"}, false},
+		{"BracketThenDot", `$body["test1"].test2`, []string{"$body", "test1", "test2"}, false},
+		{"BracketThenBracket", `$body["test1"]["test2"]`, []string{"$body", "test1", "test2"}, false},
+		{"DotThenBracket", `$body.test1["test2"]`, []string{"$body", "test1", "test2"}, false},
+		{"DotsInBrackets", `$body["test1.test2"]`, []string{"$body", "test1.test2"}, false},
+		{"UnclosedBrackets", `$body["test1.test2"`, nil, true},
+		{"UnclosedQuotes", `$body["test1.test2]`, nil, true},
+		{"UnmatchedQuotes", `$body["test1.test2']`, nil, true},
+		{"BracketAtEnd", `$body[`, nil, true},
+		{"SingleQuoteAtEnd", `$body['`, nil, true},
+		{"DoubleQuoteAtEnd", `$body["`, nil, true},
+		{"BracketMissingQuotes", `$body[test]`, nil, true},
+		{"CharacterBetweenBracketAndQuote", `$body["test"a]`, nil, true},
+		{"CharacterOutsideBracket", `$body["test"]a`, nil, true},
 	}
 
 	for _, tc := range cases {

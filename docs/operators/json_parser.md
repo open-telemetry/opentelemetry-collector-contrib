@@ -29,14 +29,14 @@ Configuration:
 ```
 
 <table>
-<tr><td> Input record </td> <td> Output record </td></tr>
+<tr><td> Input body </td> <td> Output body</td></tr>
 <tr>
 <td>
 
 ```json
 {
   "timestamp": "",
-  "record": {
+  "body": {
     "message": "{\"key\": \"val\"}"
   }
 }
@@ -48,7 +48,7 @@ Configuration:
 ```json
 {
   "timestamp": "",
-  "record": {
+  "body": {
     "key": "val"
   }
 }
@@ -69,14 +69,14 @@ Configuration:
 ```
 
 <table>
-<tr><td> Input record </td> <td> Output record </td></tr>
+<tr><td> Input body </td> <td> Output body </td></tr>
 <tr>
 <td>
 
 ```json
 {
   "timestamp": "",
-  "record": {
+  "body": {
     "message": {
       "embedded": "{\"key\": \"val\"}"
     }
@@ -90,7 +90,7 @@ Configuration:
 ```json
 {
   "timestamp": "",
-  "record": {
+  "body": {
     "message": {
       "embedded": "{\"key\": \"val\"}"
     },
@@ -118,14 +118,14 @@ Configuration:
 ```
 
 <table>
-<tr><td> Input record </td> <td> Output record </td></tr>
+<tr><td> Input body </td> <td> Output body </td></tr>
 <tr>
 <td>
 
 ```json
 {
   "timestamp": "",
-  "record": {
+  "body": {
     "message": "{\"key\": \"val\", \"seconds_since_epoch\": 1136214245}"
   }
 }
@@ -137,7 +137,7 @@ Configuration:
 ```json
 {
   "timestamp": "2006-01-02T15:04:05-07:00",
-  "record": {
+  "body": {
     "key": "val"
   }
 }
@@ -152,17 +152,17 @@ Configuration:
 Configuration:
 ```yaml
 - type: json_parser
-  if: '$record matches "^{.*}$"'
+  if: '$matches "^{.*}$"'
 ```
 
 <table>
-<tr><td> Input record </td> <td> Output record </td></tr>
+<tr><td> Input body </td> <td> Output body </td></tr>
 <tr>
 <td>
 
 ```json
 {
-  "record": "{\"key\": \"val\"}"
+  "body": "{\"key\": \"val\"}"
 }
 ```
 
@@ -171,7 +171,7 @@ Configuration:
 
 ```json
 {
-  "record": {
+  "body": {
     "key": "val"
   }
 }
@@ -185,7 +185,7 @@ Configuration:
 
 ```json
 {
-  "record": "notjson"
+  "body": "notjson"
 }
 ```
 
@@ -194,7 +194,7 @@ Configuration:
 
 ```json
 {
-  "record": "notjson"
+  "body": "notjson"
 }
 ```
 

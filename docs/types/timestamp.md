@@ -58,7 +58,7 @@ Configuration:
 ```json
 {
   "timestamp": "",
-  "record": {
+  "body": {
     "timestamp_field": "Jun 5 13:50:27 EST 2020"
   }
 }
@@ -70,7 +70,7 @@ Configuration:
 ```json
 {
   "timestamp": "2020-06-05T13:50:27-05:00",
-  "record": {}
+  "body": {}
 }
 ```
 
@@ -98,7 +98,7 @@ Configuration:
 ```json
 {
   "timestamp": "",
-  "record": {
+  "body": {
     "timestamp_field": "Jun 5 13:50:27 EST 2020"
   }
 }
@@ -110,7 +110,7 @@ Configuration:
 ```json
 {
   "timestamp": "2020-06-05T13:50:27-05:00",
-  "record": {}
+  "body": {}
 }
 ```
 
@@ -154,7 +154,7 @@ Configuration:
 ```json
 {
   "timestamp": "",
-  "record": {
+  "body": {
     "timestamp_field": 1136214245
   }
 }
@@ -166,7 +166,7 @@ Configuration:
 ```json
 {
   "timestamp": "2006-01-02T15:04:05-07:00",
-  "record": {
+  "body": {
     "timestamp_field": 1136214245
   }
 }

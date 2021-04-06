@@ -27,5 +27,5 @@ Configuration:
 ```yaml
 - type: file_output
   path: /tmp/output.log
-  format: "Time: {{.Timestamp}} Record: {{.Record}}\n"
+  format: "Time: {{.Timestamp}} Body: {{.Body}}\n"
 ```

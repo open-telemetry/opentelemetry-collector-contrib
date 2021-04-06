@@ -102,7 +102,7 @@ func TestInputOperatorProcess(t *testing.T) {
 
 func TestInputOperatorNewEntry(t *testing.T) {
 	buildContext := testutil.NewBuildContext(t)
-	writeTo := entry.NewRecordField("test-field")
+	writeTo := entry.NewBodyField("test-field")
 
 	labelExpr, err := ExprStringConfig("test").Build()
 	require.NoError(t, err)

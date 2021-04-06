@@ -30,14 +30,14 @@ Configuration:
 ```
 
 <table>
-<tr><td> Input record </td> <td> Output record </td></tr>
+<tr><td> Input body </td> <td> Output body </td></tr>
 <tr>
 <td>
 
 ```json
 {
   "timestamp": "",
-  "record": "<34>Jan 12 06:30:00 1.2.3.4 apache_server: test message"
+  "body": "<34>Jan 12 06:30:00 1.2.3.4 apache_server: test message"
 }
 ```
 
@@ -47,7 +47,7 @@ Configuration:
 ```json
 {
   "timestamp": "2020-01-12T06:30:00Z",
-  "record": {
+  "body": {
     "appname": "apache_server",
     "facility": 4,
     "hostname": "1.2.3.4",

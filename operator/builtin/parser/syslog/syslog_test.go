@@ -49,13 +49,13 @@ func TestSyslogParser(t *testing.T) {
 			require.NoError(t, err)
 
 			newEntry := entry.New()
-			newEntry.Record = tc.InputRecord
+			newEntry.Body = tc.InputBody
 			err = op.Process(context.Background(), newEntry)
 			require.NoError(t, err)
 
 			select {
 			case e := <-fake.Received:
-				require.Equal(t, tc.ExpectedRecord, e.Record)
+				require.Equal(t, tc.ExpectedBody, e.Body)
 				require.Equal(t, tc.ExpectedTimestamp, e.Timestamp)
 				require.Equal(t, tc.ExpectedSeverity, e.Severity)
 				require.Equal(t, tc.ExpectedSeverityText, e.SeverityText)
@@ -69,8 +69,8 @@ func TestSyslogParser(t *testing.T) {
 func TestSyslogParserConfig(t *testing.T) {
 	expect := NewSyslogParserConfig("test")
 	expect.Protocol = RFC3164
-	expect.ParseFrom = entry.NewRecordField("from")
-	expect.ParseTo = entry.NewRecordField("to")
+	expect.ParseFrom = entry.NewBodyField("from")
+	expect.ParseTo = entry.NewBodyField("to")
 
 	t.Run("mapstructure", func(t *testing.T) {
 		input := map[string]interface{}{

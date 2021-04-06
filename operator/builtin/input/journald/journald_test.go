@@ -110,7 +110,7 @@ func TestInputJournald(t *testing.T) {
 
 	select {
 	case e := <-received:
-		require.Equal(t, expected, e.Record)
+		require.Equal(t, expected, e.Body)
 	case <-time.After(time.Second):
 		require.FailNow(t, "Timed out waiting for entry to be read")
 	}
@@ -118,13 +118,13 @@ func TestInputJournald(t *testing.T) {
 
 func TestJournaldInputConfig(t *testing.T) {
 	expect := NewJournaldInputConfig("my_journald_input")
-	expect.WriteTo = entry.NewRecordField("to")
+	expect.WriteTo = entry.NewBodyField("to")
 
 	input := map[string]interface{}{
 		"id":         "my_journald_input",
 		"type":       "journald_input",
 		"start_at":   "end",
-		"write_to":   "$record.to",
+		"write_to":   "$body.to",
 		"attributes": map[string]interface{}{},
 		"resource":   map[string]interface{}{},
 	}

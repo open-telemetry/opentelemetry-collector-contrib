@@ -102,7 +102,7 @@ func (g *StdinInput) Start() error {
 			}
 
 			e := entry.New()
-			e.Record = scanner.Text()
+			e.Body = scanner.Text()
 			g.Write(ctx, e)
 		}
 	}()

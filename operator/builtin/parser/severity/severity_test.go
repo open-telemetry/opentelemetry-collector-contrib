@@ -296,8 +296,8 @@ func TestSeverityParser(t *testing.T) {
 		},
 	}
 
-	rootField := entry.NewRecordField()
-	someField := entry.NewRecordField("some_field")
+	rootField := entry.NewBodyField()
+	someField := entry.NewBodyField("some_field")
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -363,7 +363,7 @@ func makeTestEntry(field entry.Field, value interface{}) *entry.Entry {
 
 func TestSeverityParserConfig(t *testing.T) {
 	expect := NewSeverityParserConfig("test")
-	parseFrom := entry.NewRecordField("from")
+	parseFrom := entry.NewBodyField("from")
 	expect.ParseFrom = &parseFrom
 	expect.Preset = "test"
 

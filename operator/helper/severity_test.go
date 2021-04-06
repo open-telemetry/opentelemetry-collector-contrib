@@ -354,8 +354,8 @@ func TestSeverityParser(t *testing.T) {
 
 	testCases = append(testCases, otlpSevCases()...)
 
-	rootField := entry.NewRecordField()
-	someField := entry.NewRecordField("some_field")
+	rootField := entry.NewBodyField()
+	someField := entry.NewBodyField("some_field")
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -415,7 +415,7 @@ func TestGoldenSeverityParserConfig(t *testing.T) {
 			false,
 			func() *SeverityParserConfig {
 				cfg := defaultSeverityCfg()
-				newParse := entry.NewRecordField("from")
+				newParse := entry.NewBodyField("from")
 				cfg.ParseFrom = &newParse
 				return cfg
 			}(),
@@ -439,7 +439,7 @@ func TestGoldenSeverityParserConfig(t *testing.T) {
 			false,
 			func() *SeverityParserConfig {
 				cfg := defaultSeverityCfg()
-				preserve := entry.NewRecordField("aField")
+				preserve := entry.NewBodyField("aField")
 				cfg.PreserveTo = &preserve
 				return cfg
 			}(),

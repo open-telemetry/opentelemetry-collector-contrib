@@ -27,7 +27,7 @@ import (
 
 func TestEventLogConfig(t *testing.T) {
 	expect := NewDefaultConfig()
-	expect.WriteTo = entry.NewRecordField("to")
+	expect.WriteTo = entry.NewBodyField("to")
 
 	input := map[string]interface{}{
 		"id":            "",
@@ -37,7 +37,7 @@ func TestEventLogConfig(t *testing.T) {
 		"poll_interval": "1s",
 		"attributes":    map[string]interface{}{},
 		"resource":      map[string]interface{}{},
-		"write_to":      "$record.to",
+		"write_to":      "$body.to",
 	}
 
 	var actual EventLogConfig

@@ -1,6 +1,6 @@
 ## `time_parser` operator
 
-The `time_parser` operator sets the timestamp on an entry by parsing a value from the record.
+The `time_parser` operator sets the timestamp on an entry by parsing a value from the body.
 
 ### Configuration Fields
 

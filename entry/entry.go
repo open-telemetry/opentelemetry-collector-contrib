@@ -47,10 +47,10 @@ type Entry struct {
 	SeverityText string            `json:"severity_text,omitempty" yaml:"severity_text,omitempty"`
 	Attributes   map[string]string `json:"attributes,omitempty"    yaml:"attributes,omitempty"`
 	Resource     map[string]string `json:"resource,omitempty"      yaml:"resource,omitempty"`
-	Record       interface{}       `json:"record"                  yaml:"record"`
+	Body         interface{}       `json:"body"                    yaml:"body"`
 }
 
-// New will create a new log entry with current timestamp and an empty record.
+// New will create a new log entry with current timestamp and an empty body.
 func New() *Entry {
 	return &Entry{
 		Timestamp: now(),
@@ -195,6 +195,6 @@ func (entry *Entry) Copy() *Entry {
 		SeverityText: entry.SeverityText,
 		Attributes:   copyStringMap(entry.Attributes),
 		Resource:     copyStringMap(entry.Resource),
-		Record:       copyValue(entry.Record),
+		Body:         copyValue(entry.Body),
 	}
 }

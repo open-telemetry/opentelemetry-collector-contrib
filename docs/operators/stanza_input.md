@@ -27,12 +27,12 @@ Sample entry output:
 {
   "timestamp": "2020-11-06T13:55:11.314283-05:00",
   "severity": 60,
-  "record": {
+  "body": {
     "action": "send",
     "entry": {
       "timestamp": "2020-11-06T13:55:11.314057-05:00",
       "severity": 0,
-      "record": "{\"key\":\"value\""
+      "body": "{\"key\":\"value\""
     },
     "error": "ReadMapCB: expect }, but found \u0000, error found in #10 byte of ...|y\":\"value\"|..., bigger context ...|{\"key\":\"value\"|...",
     "message": "Failed to process entry"

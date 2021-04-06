@@ -41,7 +41,7 @@ func TestParserConfigMissingBase(t *testing.T) {
 
 func TestParserConfigInvalidTimeParser(t *testing.T) {
 	cfg := NewParserConfig("test-id", "test-type")
-	f := entry.NewRecordField("timestamp")
+	f := entry.NewBodyField("timestamp")
 	cfg.TimeParser = &TimeParser{
 		ParseFrom:  &f,
 		Layout:     "",
@@ -55,7 +55,7 @@ func TestParserConfigInvalidTimeParser(t *testing.T) {
 
 func TestParserConfigBuildValid(t *testing.T) {
 	cfg := NewParserConfig("test-id", "test-type")
-	f := entry.NewRecordField("timestamp")
+	f := entry.NewBodyField("timestamp")
 	cfg.TimeParser = &TimeParser{
 		ParseFrom:  &f,
 		Layout:     "",
@@ -77,7 +77,7 @@ func TestParserMissingField(t *testing.T) {
 			},
 			OnError: DropOnError,
 		},
-		ParseFrom: entry.NewRecordField("test"),
+		ParseFrom: entry.NewBodyField("test"),
 	}
 	parse := func(i interface{}) (interface{}, error) {
 		return i, nil
@@ -102,7 +102,7 @@ func TestParserInvalidParse(t *testing.T) {
 			},
 			OnError: DropOnError,
 		},
-		ParseFrom: entry.NewRecordField(),
+		ParseFrom: entry.NewBodyField(),
 	}
 	parse := func(i interface{}) (interface{}, error) {
 		return i, fmt.Errorf("parse failure")
@@ -127,11 +127,11 @@ func TestParserInvalidTimeParse(t *testing.T) {
 			},
 			OnError: DropOnError,
 		},
-		ParseFrom: entry.NewRecordField(),
-		ParseTo:   entry.NewRecordField(),
+		ParseFrom: entry.NewBodyField(),
+		ParseTo:   entry.NewBodyField(),
 		TimeParser: &TimeParser{
 			ParseFrom: func() *entry.Field {
-				f := entry.NewRecordField("missing-key")
+				f := entry.NewBodyField("missing-key")
 				return &f
 			}(),
 		},
@@ -160,10 +160,10 @@ func TestParserInvalidSeverityParse(t *testing.T) {
 			OnError: DropOnError,
 		},
 		SeverityParser: &SeverityParser{
-			ParseFrom: entry.NewRecordField("missing-key"),
+			ParseFrom: entry.NewBodyField("missing-key"),
 		},
-		ParseFrom: entry.NewRecordField(),
-		ParseTo:   entry.NewRecordField(),
+		ParseFrom: entry.NewBodyField(),
+		ParseTo:   entry.NewBodyField(),
 	}
 	parse := func(i interface{}) (interface{}, error) {
 		return i, nil
@@ -190,25 +190,25 @@ func TestParserInvalidTimeValidSeverityParse(t *testing.T) {
 		},
 		TimeParser: &TimeParser{
 			ParseFrom: func() *entry.Field {
-				f := entry.NewRecordField("missing-key")
+				f := entry.NewBodyField("missing-key")
 				return &f
 			}(),
 		},
 		SeverityParser: &SeverityParser{
-			ParseFrom: entry.NewRecordField("severity"),
+			ParseFrom: entry.NewBodyField("severity"),
 			Mapping: map[string]entry.Severity{
 				"info": entry.Info,
 			},
 		},
-		ParseFrom: entry.NewRecordField(),
-		ParseTo:   entry.NewRecordField(),
+		ParseFrom: entry.NewBodyField(),
+		ParseTo:   entry.NewBodyField(),
 	}
 	parse := func(i interface{}) (interface{}, error) {
 		return i, nil
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	err := testEntry.Set(entry.NewRecordField("severity"), "info")
+	err := testEntry.Set(entry.NewBodyField("severity"), "info")
 	require.NoError(t, err)
 
 	err = parser.ProcessWith(ctx, testEntry, parse)
@@ -244,24 +244,24 @@ func TestParserValidTimeInvalidSeverityParse(t *testing.T) {
 		},
 		TimeParser: &TimeParser{
 			ParseFrom: func() *entry.Field {
-				f := entry.NewRecordField("timestamp")
+				f := entry.NewBodyField("timestamp")
 				return &f
 			}(),
 			LayoutType: "gotime",
 			Layout:     layout,
 		},
 		SeverityParser: &SeverityParser{
-			ParseFrom: entry.NewRecordField("missing-key"),
+			ParseFrom: entry.NewBodyField("missing-key"),
 		},
-		ParseFrom: entry.NewRecordField(),
-		ParseTo:   entry.NewRecordField(),
+		ParseFrom: entry.NewBodyField(),
+		ParseTo:   entry.NewBodyField(),
 	}
 	parse := func(i interface{}) (interface{}, error) {
 		return i, nil
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	err = testEntry.Set(entry.NewRecordField("timestamp"), sample)
+	err = testEntry.Set(entry.NewBodyField("timestamp"), sample)
 	require.NoError(t, err)
 
 	err = parser.ProcessWith(ctx, testEntry, parse)
@@ -288,8 +288,8 @@ func TestParserOutput(t *testing.T) {
 				OutputOperators: []operator.Operator{output},
 			},
 		},
-		ParseFrom: entry.NewRecordField(),
-		ParseTo:   entry.NewRecordField(),
+		ParseFrom: entry.NewBodyField(),
+		ParseTo:   entry.NewBodyField(),
 	}
 	parse := func(i interface{}) (interface{}, error) {
 		return i, nil
@@ -303,10 +303,10 @@ func TestParserOutput(t *testing.T) {
 
 func TestParserPreserve(t *testing.T) {
 	cases := []struct {
-		name         string
-		cfgMod       func(*ParserConfig)
-		inputRecord  interface{}
-		outputRecord interface{}
+		name       string
+		cfgMod     func(*ParserConfig)
+		inputBody  interface{}
+		outputBody interface{}
 	}{
 		{
 			"NoPreserve",
@@ -317,7 +317,7 @@ func TestParserPreserve(t *testing.T) {
 		{
 			"PreserveToSubkey",
 			func(cfg *ParserConfig) {
-				dst := entry.NewRecordField("original")
+				dst := entry.NewBodyField("original")
 				cfg.PreserveTo = &dst
 			},
 			"key:value",
@@ -326,7 +326,7 @@ func TestParserPreserve(t *testing.T) {
 		{
 			"PreserveToOverwrite",
 			func(cfg *ParserConfig) {
-				dst := entry.NewRecordField("key")
+				dst := entry.NewBodyField("key")
 				cfg.PreserveTo = &dst
 			},
 			"key:value",
@@ -335,7 +335,7 @@ func TestParserPreserve(t *testing.T) {
 		{
 			"PreserveToRoot",
 			func(cfg *ParserConfig) {
-				dst := entry.NewRecordField()
+				dst := entry.NewBodyField()
 				cfg.PreserveTo = &dst
 			},
 			"key:value",
@@ -344,7 +344,7 @@ func TestParserPreserve(t *testing.T) {
 		{
 			"AlternativeParseFrom",
 			func(cfg *ParserConfig) {
-				dst := entry.NewRecordField("source")
+				dst := entry.NewBodyField("source")
 				cfg.PreserveTo = &dst
 				cfg.ParseFrom = dst
 			},
@@ -354,9 +354,9 @@ func TestParserPreserve(t *testing.T) {
 		{
 			"AlternativeParseTo",
 			func(cfg *ParserConfig) {
-				dst := entry.NewRecordField("original")
+				dst := entry.NewBodyField("original")
 				cfg.PreserveTo = &dst
-				cfg.ParseTo = entry.NewRecordField("source_parsed")
+				cfg.ParseTo = entry.NewBodyField("source_parsed")
 			},
 			"key:value",
 			map[string]interface{}{
@@ -382,19 +382,18 @@ func TestParserPreserve(t *testing.T) {
 			require.NoError(t, err)
 
 			e := entry.New()
-			e.Record = tc.inputRecord
-
+			e.Body = tc.inputBody
 			err = parser.ProcessWith(context.Background(), e, parse)
 			require.NoError(t, err)
 
-			require.Equal(t, tc.outputRecord, e.Record)
+			require.Equal(t, tc.outputBody, e.Body)
 		})
 	}
 }
 func NewTestParserConfig() ParserConfig {
 	except := NewParserConfig("parser_config", "test_type")
-	except.ParseFrom = entry.NewRecordField("from")
-	except.ParseTo = entry.NewRecordField("to")
+	except.ParseFrom = entry.NewBodyField("from")
+	except.ParseTo = entry.NewBodyField("to")
 	tp := NewTimeParser()
 	sp := NewSeverityParserConfig()
 	sp.Mapping = map[interface{}]interface{}{
@@ -412,8 +411,8 @@ func TestMapStructureDecodeParserConfigWithHook(t *testing.T) {
 		"id":         "parser_config",
 		"type":       "test_type",
 		"on_error":   "send",
-		"parse_from": "$record.from",
-		"parse_to":   "$record.to",
+		"parse_from": "$body.from",
+		"parse_to":   "$body.to",
 		"timestamp": map[string]interface{}{
 			"layout_type": "strptime",
 		},
@@ -440,8 +439,8 @@ func TestMapStructureDecodeParserConfig(t *testing.T) {
 		"id":         "parser_config",
 		"type":       "test_type",
 		"on_error":   "send",
-		"parse_from": entry.NewRecordField("from"),
-		"parse_to":   entry.NewRecordField("to"),
+		"parse_from": entry.NewBodyField("from"),
+		"parse_to":   entry.NewBodyField("to"),
 		"timestamp": map[string]interface{}{
 			"layout_type": "strptime",
 		},

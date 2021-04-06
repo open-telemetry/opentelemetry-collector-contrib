@@ -220,8 +220,8 @@ func (e *EventLogInput) processEvent(ctx context.Context, event Event) {
 
 // sendEvent will send EventXML as an entry to the operator's output.
 func (e *EventLogInput) sendEvent(ctx context.Context, eventXML EventXML) {
-	record := eventXML.parseRecord()
-	entry, err := e.NewEntry(record)
+	body := eventXML.parseBody()
+	entry, err := e.NewEntry(body)
 	if err != nil {
 		e.Errorf("Failed to create entry: %s", err)
 		return

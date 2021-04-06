@@ -317,8 +317,8 @@ func TestTimeParser(t *testing.T) {
 		},
 	}
 
-	rootField := entry.NewRecordField()
-	someField := entry.NewRecordField("some_field")
+	rootField := entry.NewBodyField()
+	someField := entry.NewBodyField("some_field")
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -484,8 +484,8 @@ func TestTimeEpochs(t *testing.T) {
 		},
 	}
 
-	rootField := entry.NewRecordField()
-	someField := entry.NewRecordField("some_field")
+	rootField := entry.NewBodyField()
+	someField := entry.NewBodyField("some_field")
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -559,8 +559,8 @@ func TestTimeErrors(t *testing.T) {
 		},
 	}
 
-	rootField := entry.NewRecordField()
-	someField := entry.NewRecordField("some_field")
+	rootField := entry.NewBodyField()
+	someField := entry.NewBodyField("some_field")
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -632,7 +632,7 @@ func TestGoldenTimeParserConfig(t *testing.T) {
 			false,
 			func() *TimeParser {
 				cfg := defaultTimeCfg()
-				newParse := entry.NewRecordField("from")
+				newParse := entry.NewBodyField("from")
 				cfg.ParseFrom = &newParse
 				return cfg
 			}(),
@@ -660,7 +660,7 @@ func TestGoldenTimeParserConfig(t *testing.T) {
 			false,
 			func() *TimeParser {
 				cfg := defaultTimeCfg()
-				newPreserve := entry.NewRecordField("aField")
+				newPreserve := entry.NewBodyField("aField")
 				cfg.PreserveTo = &newPreserve
 				return cfg
 			}(),

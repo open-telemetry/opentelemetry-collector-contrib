@@ -29,7 +29,7 @@ func TestInputGenerate(t *testing.T) {
 	cfg.OutputIDs = []string{"fake"}
 	cfg.Count = 5
 	cfg.Entry = entry.Entry{
-		Record: "test message",
+		Body: "test message",
 	}
 
 	ops, err := cfg.Build(testutil.NewBuildContext(t))
@@ -44,6 +44,6 @@ func TestInputGenerate(t *testing.T) {
 	defer op.Stop()
 
 	for i := 0; i < 5; i++ {
-		fake.ExpectRecord(t, "test message")
+		fake.ExpectBody(t, "test message")
 	}
 }

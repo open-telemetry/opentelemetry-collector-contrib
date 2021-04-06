@@ -144,9 +144,9 @@ pipeline:
   # Route based on log type
   - type: router
     routes:
-      - expr: '$record startsWith "ERROR"'
+      - expr: '$body startsWith "ERROR"'
         output: error_parser
-      - expr: '$record startsWith "INFO"'
+      - expr: '$body startsWith "INFO"'
         output: info_parser
 
   # Parse logs with format one

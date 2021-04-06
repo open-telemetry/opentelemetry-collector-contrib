@@ -41,15 +41,14 @@ func TestStanzaOperator(t *testing.T) {
 
 	bc.Logger.Errorw("test failure", "key", "value")
 
-	expectedRecord := map[string]interface{}{
+	expectedBody := map[string]interface{}{
 		"message": "test failure",
 		"key":     "value",
 	}
 
 	select {
 	case e := <-fake.Received:
-		require.Equal(t, expectedRecord, e.Record)
-
+		require.Equal(t, expectedBody, e.Body)
 	case <-time.After(time.Second):
 		require.FailNow(t, "timed out")
 	}

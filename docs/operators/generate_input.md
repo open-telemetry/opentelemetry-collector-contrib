@@ -1,6 +1,6 @@
 ## `generate_input` operator
 
-The `generate_input` operator generates log entries with a static record. This is useful for testing pipelines, especially when
+The `generate_input` operator generates log entries with a static body. This is useful for testing pipelines, especially when
 coupled with the [`rate_limit`](/docs/operators/rate_limit.md) operator.
 
 ### Configuration Fields
@@ -22,21 +22,21 @@ Configuration:
 ```yaml
 - type: generate_input
   entry:
-    record:
+    body:
       message1: log1
       message2: log2
 ```
 
-Output records:
+Output bodies:
 ```json
 {
-  "record": {
+  "body": {
     "message1": "log1",
     "message2": "log2"
   },
 },
 {
-  "record": {
+  "body": {
     "message1": "log1",
     "message2": "log2"
   },

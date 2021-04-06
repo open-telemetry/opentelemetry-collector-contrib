@@ -50,14 +50,14 @@ Configuration:
 ```
 
 <table>
-<tr><td> Input record </td> <td> Output record </td></tr>
+<tr><td> Input body </td> <td> Output body </td></tr>
 <tr>
 <td>
 
 ```json
 {
   "timestamp": "",
-  "record": {
+  "body": {
     "message": "https://dev:pass@google.com/app?user_id=2&token=001"
   }
 }
@@ -69,7 +69,7 @@ Configuration:
 ```json
 {
   "timestamp": "",
-  "record": {
+  "body": {
     "host": "google.com",
     "path": "/app",
     "query": {
@@ -99,14 +99,14 @@ Configuration:
 ```
 
 <table>
-<tr><td> Input record </td> <td> Output record </td></tr>
+<tr><td> Input body </td> <td> Output body </td></tr>
 <tr>
 <td>
 
 ```json
 {
   "timestamp": "",
-  "record": {
+  "body": {
     "message": "/app?user=admin"
   }
 }
@@ -118,7 +118,7 @@ Configuration:
 ```json
 {
   "timestamp": "",
-  "record": {
+  "body": {
     "path": "/app",
     "query": {
       "user": [
@@ -142,14 +142,14 @@ Configuration:
 ```
 
 <table>
-<tr><td> Input record </td> <td> Output record </td></tr>
+<tr><td> Input body </td> <td> Output body </td></tr>
 <tr>
 <td>
 
 ```json
 {
   "timestamp": "",
-  "record": {
+  "body": {
     "query": "?request=681e6fc4-3314-4ccc-933e-4f9c9f0efd24&env=stage&env=dev"
   }
 }
@@ -161,7 +161,7 @@ Configuration:
 ```json
 {
   "timestamp": "",
-  "record": {
+  "body": {
     "query": {
       "env": [
         "stage",

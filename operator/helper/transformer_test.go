@@ -156,10 +156,10 @@ func TestTransformerProcessWithValid(t *testing.T) {
 
 func TestTransformerIf(t *testing.T) {
 	cases := []struct {
-		name        string
-		ifExpr      string
-		inputRecord string
-		expected    string
+		name      string
+		ifExpr    string
+		inputBody string
+		expected  string
 	}{
 		{
 			"NoIf",
@@ -181,19 +181,19 @@ func TestTransformerIf(t *testing.T) {
 		},
 		{
 			"EvaluatedTrue",
-			"$record == 'test'",
+			"$body == 'test'",
 			"test",
 			"parsed",
 		},
 		{
 			"EvaluatedFalse",
-			"$record == 'notest'",
+			"$body == 'notest'",
 			"test",
 			"test",
 		},
 		{
 			"FailingExpressionEvaluation",
-			"$record.test.noexist == 'notest'",
+			"$body.test.noexist == 'notest'",
 			"test",
 			"test",
 		},
@@ -211,14 +211,14 @@ func TestTransformerIf(t *testing.T) {
 			transformer.OutputOperators = []operator.Operator{fake}
 
 			e := entry.New()
-			e.Record = tc.inputRecord
+			e.Body = tc.inputBody
 			err = transformer.ProcessWith(context.Background(), e, func(e *entry.Entry) error {
-				e.Record = "parsed"
+				e.Body = "parsed"
 				return nil
 			})
 			require.NoError(t, err)
 
-			fake.ExpectRecord(t, tc.expected)
+			fake.ExpectBody(t, tc.expected)
 		})
 	}
 
