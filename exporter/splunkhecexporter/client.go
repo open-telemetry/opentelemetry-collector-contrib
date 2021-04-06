@@ -185,6 +185,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 
 	var rls = ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
+		res := rls.At(i).Resource()
 		ills := rls.At(i).InstrumentationLibraryLogs()
 		for j := 0; j < ills.Len(); j++ {
 			logs := ills.At(j).Logs()
@@ -194,7 +195,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 				}
 
 				// Parsing log record to Splunk event.
-				event := mapLogRecordToSplunkEvent(logs.At(k), c.config, c.logger)
+				event := mapLogRecordToSplunkEvent(res, logs.At(k), c.config, c.logger)
 				// JSON encoding event and writing to buffer.
 				if err = encoder.Encode(event); err != nil {
 					permanentErrors = append(permanentErrors, consumererror.Permanent(fmt.Errorf("dropped log event: %v, error: %v", event, err)))

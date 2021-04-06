@@ -38,12 +38,28 @@ func (i *logIndex) zero() bool {
 	return i.resource == 0 && i.library == 0 && i.record == 0
 }
 
-func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
+func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
 	host := unknownHostName
 	source := config.Source
 	sourcetype := config.SourceType
 	index := config.Index
 	fields := map[string]interface{}{}
+	res.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		switch k {
+		case conventions.AttributeHostName:
+			host = v.StringVal()
+			fields[k] = v.StringVal()
+		case conventions.AttributeServiceName:
+			source = v.StringVal()
+			fields[k] = v.StringVal()
+		case splunk.SourcetypeLabel:
+			sourcetype = v.StringVal()
+		case splunk.IndexLabel:
+			index = v.StringVal()
+		default:
+			fields[k] = convertAttributeValue(v, logger)
+		}
+	})
 	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
 		switch k {
 		case conventions.AttributeHostName:

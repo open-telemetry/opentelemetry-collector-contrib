@@ -32,6 +32,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 	tests := []struct {
 		name             string
 		logRecordFn      func() pdata.LogRecord
+		logResourceFn    func() pdata.Resource
 		configDataFn     func() *Config
 		wantSplunkEvents []*splunk.Event
 	}{
@@ -47,6 +48,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			logResourceFn: pdata.NewResource,
 			configDataFn: func() *Config {
 				return &Config{
 					Source:     "source",
@@ -70,6 +72,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			logResourceFn: pdata.NewResource,
 			configDataFn: func() *Config {
 				return &Config{
 					Source:     "source",
@@ -89,6 +92,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			logResourceFn: pdata.NewResource,
 			configDataFn: func() *Config {
 				return &Config{
 					Source:     "source",
@@ -105,6 +109,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord := pdata.NewLogRecord()
 				return logRecord
 			},
+			logResourceFn: pdata.NewResource,
 			configDataFn: func() *Config {
 				return &Config{
 					Source:     "source",
@@ -127,6 +132,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			logResourceFn: pdata.NewResource,
 			configDataFn: func() *Config {
 				return &Config{
 					Source:     "source",
@@ -149,6 +155,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			logResourceFn: pdata.NewResource,
 			configDataFn: func() *Config {
 				return &Config{
 					Source:     "source",
@@ -171,6 +178,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			logResourceFn: pdata.NewResource,
 			configDataFn: func() *Config {
 				return &Config{
 					Source:     "source",
@@ -197,6 +205,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			logResourceFn: pdata.NewResource,
 			configDataFn: func() *Config {
 				return &Config{
 					Source:     "source",
@@ -220,6 +229,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			logResourceFn: pdata.NewResource,
 			configDataFn: func() *Config {
 				return &Config{
 					Source:     "source",
@@ -246,6 +256,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			logResourceFn: pdata.NewResource,
 			configDataFn: func() *Config {
 				return &Config{
 					Source:     "source",
@@ -257,11 +268,44 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 					"myhost", "myapp", "myapp-type"),
 			},
 		},
+		{
+			name: "log resource attribute",
+			logRecordFn: func() pdata.LogRecord {
+				logRecord := pdata.NewLogRecord()
+				logRecord.Body().SetStringVal("mylog")
+				logRecord.SetTimestamp(ts)
+				return logRecord
+			},
+			logResourceFn: func() pdata.Resource {
+				attr := map[string]pdata.AttributeValue{
+					"resourceAttr1":                  pdata.NewAttributeValueString("some_string"),
+					splunk.SourcetypeLabel:           pdata.NewAttributeValueString("myapp-type-from-resource-attr"),
+					splunk.IndexLabel:                pdata.NewAttributeValueString("index-resource"),
+					conventions.AttributeServiceName: pdata.NewAttributeValueString("myapp-resource"),
+					conventions.AttributeHostName:    pdata.NewAttributeValueString("myhost-resource"),
+				}
+				resource := pdata.NewResource()
+				resource.Attributes().InitFromMap(attr)
+				return resource
+			},
+			configDataFn: func() *Config {
+				return &Config{}
+			},
+			wantSplunkEvents: func() []*splunk.Event {
+				event := commonLogSplunkEvent("mylog", ts, map[string]interface{}{
+					"service.name": "myapp-resource", "host.name": "myhost-resource", "resourceAttr1": "some_string",
+				}, "myhost-resource", "myapp-resource", "myapp-type-from-resource-attr")
+				event.Index = "index-resource"
+				return []*splunk.Event{
+					event,
+				}
+			}(),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			for _, want := range tt.wantSplunkEvents {
-				got := mapLogRecordToSplunkEvent(tt.logRecordFn(), tt.configDataFn(), logger)
+				got := mapLogRecordToSplunkEvent(tt.logResourceFn(), tt.logRecordFn(), tt.configDataFn(), logger)
 				assert.EqualValues(t, want, got)
 			}
 		})
@@ -297,7 +341,7 @@ func commonLogSplunkEvent(
 }
 
 func Test_emptyLogRecord(t *testing.T) {
-	event := mapLogRecordToSplunkEvent(pdata.NewLogRecord(), &Config{}, zap.NewNop())
+	event := mapLogRecordToSplunkEvent(pdata.NewResource(), pdata.NewLogRecord(), &Config{}, zap.NewNop())
 	assert.Nil(t, event.Time)
 	assert.Equal(t, event.Host, "unknown")
 	assert.Zero(t, event.Source)
