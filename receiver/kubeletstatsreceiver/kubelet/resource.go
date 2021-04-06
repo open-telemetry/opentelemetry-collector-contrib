@@ -26,7 +26,7 @@ func nodeResource(s stats.NodeStats) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: "k8s", // k8s/node
 		Labels: map[string]string{
-			labelNodeName: s.NodeName,
+			conventions.AttributeK8sNodeName: s.NodeName,
 		},
 	}
 }

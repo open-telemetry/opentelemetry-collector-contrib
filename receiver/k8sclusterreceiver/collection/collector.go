@@ -43,14 +43,12 @@ const (
 	containerType = "container"
 
 	// Resource labels keys for UID.
-	k8sKeyNodeUID                  = "k8s.node.uid"
 	k8sKeyNamespaceUID             = "k8s.namespace.uid"
 	k8sKeyReplicationControllerUID = "k8s.replicationcontroller.uid"
 	k8sKeyHPAUID                   = "k8s.hpa.uid"
 	k8sKeyResourceQuotaUID         = "k8s.resourcequota.uid"
 
 	// Resource labels keys for Name.
-	k8sKeyNodeName                  = "k8s.node.name"
 	k8sKeyReplicationControllerName = "k8s.replicationcontroller.name"
 	k8sKeyHPAName                   = "k8s.hpa.name"
 	k8sKeyResourceQuotaName         = "k8s.resourcequota.name"
