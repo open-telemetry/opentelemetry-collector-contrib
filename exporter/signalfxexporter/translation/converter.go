@@ -111,6 +111,8 @@ func (c *MetricsConverter) metricToSfxDataPoints(metric pdata.Metric, extraDimen
 		dps = convertIntHistogram(metric.IntHistogram().DataPoints(), basePoint, extraDimensions)
 	case pdata.MetricDataTypeHistogram:
 		dps = convertHistogram(metric.Histogram().DataPoints(), basePoint, extraDimensions)
+	case pdata.MetricDataTypeSummary:
+		dps = convertSummaryDataPoints(metric.Summary().DataPoints(), metric.Name(), extraDimensions)
 	}
 
 	if c.metricTranslator != nil {
@@ -150,6 +152,60 @@ func labelsToDimensions(labels pdata.StringMap, extraDims []*sfxpb.Dimension) []
 		pos++
 	})
 	return dimensions
+}
+
+func convertSummaryDataPoints(
+	in pdata.SummaryDataPointSlice,
+	name string,
+	extraDims []*sfxpb.Dimension,
+) []*sfxpb.DataPoint {
+	out := make([]*sfxpb.DataPoint, 0, in.Len())
+
+	for i := 0; i < in.Len(); i++ {
+		inDp := in.At(i)
+
+		dims := labelsToDimensions(inDp.LabelsMap(), extraDims)
+		ts := timestampToSignalFx(inDp.Timestamp())
+
+		countPt := sfxpb.DataPoint{
+			Metric:     name + "_count",
+			Timestamp:  ts,
+			Dimensions: dims,
+			MetricType: &sfxMetricTypeCumulativeCounter,
+		}
+		c := int64(inDp.Count())
+		countPt.Value.IntValue = &c
+		out = append(out, &countPt)
+
+		sumPt := sfxpb.DataPoint{
+			Metric:     name,
+			Timestamp:  ts,
+			Dimensions: dims,
+			MetricType: &sfxMetricTypeCumulativeCounter,
+		}
+		sum := inDp.Sum()
+		sumPt.Value.DoubleValue = &sum
+		out = append(out, &sumPt)
+
+		qvs := inDp.QuantileValues()
+		for j := 0; j < qvs.Len(); j++ {
+			qPt := sfxpb.DataPoint{
+				Metric:     name + "_quantile",
+				Timestamp:  ts,
+				MetricType: &sfxMetricTypeGauge,
+			}
+			qv := qvs.At(j)
+			qdim := sfxpb.Dimension{
+				Key:   "quantile",
+				Value: strconv.FormatFloat(qv.Quantile(), 'f', -1, 64),
+			}
+			qPt.Dimensions = append(dims, &qdim)
+			v := qv.Value()
+			qPt.Value.DoubleValue = &v
+			out = append(out, &qPt)
+		}
+	}
+	return out
 }
 
 func convertIntDatapoints(in pdata.IntDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
