@@ -41,7 +41,7 @@ exporters:
         severity: "severity"
 service:
   pipelines:
-    metrics:
+    logs:
       receivers: [ nop ]
       processors: [ nop ]
       exporters: [ loki, loki/allsettings ]
