@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
@@ -56,7 +56,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		factory.CreateDefaultConfig(),
 		nil,
 	)
-	require.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
+	require.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
 	require.Nil(t, traceReceiver)
 }
 

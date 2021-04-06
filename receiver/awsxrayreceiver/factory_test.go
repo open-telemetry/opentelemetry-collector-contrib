@@ -23,9 +23,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -85,7 +85,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		&mockMetricsConsumer{},
 	)
 	assert.NotNil(t, err, "a trace receiver factory should not create a metric receiver")
-	assert.EqualError(t, err, configerror.ErrDataTypeIsNotSupported.Error())
+	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
 }
 
 func stashEnv() []string {
