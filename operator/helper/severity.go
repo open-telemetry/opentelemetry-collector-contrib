@@ -72,6 +72,15 @@ func (m severityMap) find(value interface{}) (entry.Severity, string, error) {
 			return severity, strV, nil
 		}
 		return entry.Default, strV, nil
+	case float64:
+		if v != float64(int(v)) {
+			return entry.Default, "", fmt.Errorf("type %T cannot be a severity unless it is a whole number", v)
+		}
+		strV := strconv.Itoa(int(v))
+		if severity, ok := m[strV]; ok {
+			return severity, strV, nil
+		}
+		return entry.Default, strV, nil
 	case string:
 		if severity, ok := m[strings.ToLower(v)]; ok {
 			return severity, v, nil
