@@ -23,9 +23,9 @@ import (
 type Case struct {
 	Name                 string
 	Config               *SyslogParserConfig
-	InputRecord          interface{}
+	InputBody            interface{}
 	ExpectedTimestamp    time.Time
-	ExpectedRecord       interface{}
+	ExpectedBody         interface{}
 	ExpectedSeverity     entry.Severity
 	ExpectedSeverityText string
 }

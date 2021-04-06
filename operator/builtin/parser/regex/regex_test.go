@@ -67,10 +67,10 @@ func TestRegexParserInvalidType(t *testing.T) {
 
 func TestParserRegex(t *testing.T) {
 	cases := []struct {
-		name         string
-		configure    func(*RegexParserConfig)
-		inputRecord  interface{}
-		outputRecord interface{}
+		name       string
+		configure  func(*RegexParserConfig)
+		inputBody  interface{}
+		outputBody interface{}
 	}{
 		{
 			"RootString",
@@ -108,11 +108,11 @@ func TestParserRegex(t *testing.T) {
 			op.SetOutputs([]operator.Operator{fake})
 
 			entry := entry.New()
-			entry.Record = tc.inputRecord
+			entry.Body = tc.inputBody
 			err = op.Process(context.Background(), entry)
 			require.NoError(t, err)
 
-			fake.ExpectRecord(t, tc.outputRecord)
+			fake.ExpectBody(t, tc.outputBody)
 		})
 	}
 }
@@ -165,8 +165,8 @@ func TestBuildParserRegex(t *testing.T) {
 func TestRegexParserConfig(t *testing.T) {
 	expect := NewRegexParserConfig("test")
 	expect.Regex = "test123"
-	expect.ParseFrom = entry.NewRecordField("from")
-	expect.ParseTo = entry.NewRecordField("to")
+	expect.ParseFrom = entry.NewBodyField("from")
+	expect.ParseTo = entry.NewBodyField("to")
 
 	t.Run("mapstructure", func(t *testing.T) {
 		input := map[string]interface{}{

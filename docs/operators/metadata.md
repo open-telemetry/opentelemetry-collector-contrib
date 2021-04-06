@@ -13,7 +13,7 @@ The `metadata` operator adds attributes to incoming entries.
 | `on_error`   | `send`           | The behavior of the operator if it encounters an error. See [on_error](/docs/types/on_error.md) |
 
 Inside the label values, an [expression](/docs/types/expression.md) surrounded by `EXPR()`
-will be replaced with the evaluated form of the expression. The entry's record can be accessed
+will be replaced with the evaluated form of the expression. The entry's body can be accessed
 with the `$` variable in the expression so attributes can be added dynamically from fields.
 
 ### Example Configurations
@@ -39,7 +39,7 @@ Configuration:
 {
   "timestamp": "2020-06-15T11:15:50.475364-04:00",
   "attributes": {},
-  "record": {
+  "body": {
     "message": "test"
   }
 }
@@ -57,7 +57,7 @@ Configuration:
   "resource": {
     "cluster": "blue"
   },
-  "record": {
+  "body": {
     "message": "test"
   }
 }
@@ -86,7 +86,7 @@ Configuration:
 {
   "timestamp": "2020-06-15T11:15:50.475364-04:00",
   "attributes": {},
-  "record": {
+  "body": {
     "production_location": "us_east",
     "environment": "nonproduction"
   }
@@ -102,7 +102,7 @@ Configuration:
   "attributes": {
     "environment": "dev"
   },
-  "record": {
+  "body": {
     "production_location": "us_east",
     "environment": "nonproduction"
   }

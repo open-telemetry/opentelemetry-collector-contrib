@@ -80,7 +80,7 @@ func TestRouterOperator(t *testing.T) {
 		{
 			"SimpleMatch",
 			&entry.Entry{
-				Record: map[string]interface{}{
+				Body: map[string]interface{}{
 					"message": "test_message",
 				},
 			},
@@ -103,7 +103,7 @@ func TestRouterOperator(t *testing.T) {
 		{
 			"MatchWithAttribute",
 			&entry.Entry{
-				Record: map[string]interface{}{
+				Body: map[string]interface{}{
 					"message": "test_message",
 				},
 			},
@@ -132,7 +132,7 @@ func TestRouterOperator(t *testing.T) {
 		{
 			"MatchEnv",
 			&entry.Entry{
-				Record: map[string]interface{}{
+				Body: map[string]interface{}{
 					"message": "test_message",
 				},
 			},
@@ -155,7 +155,7 @@ func TestRouterOperator(t *testing.T) {
 		{
 			"UseDefault",
 			&entry.Entry{
-				Record: map[string]interface{}{
+				Body: map[string]interface{}{
 					"message": "test_message",
 				},
 			},
@@ -173,7 +173,7 @@ func TestRouterOperator(t *testing.T) {
 		{
 			"MatchBeforeDefault",
 			&entry.Entry{
-				Record: map[string]interface{}{
+				Body: map[string]interface{}{
 					"message": "test_message",
 				},
 			},

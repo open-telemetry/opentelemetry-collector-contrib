@@ -83,19 +83,19 @@ func (f *FakeOutput) Process(ctx context.Context, entry *entry.Entry) error {
 	return nil
 }
 
-// ExpectRecord expects that a record will be received by the fake operator within a second
-// and that it is equal to the given record
-func (f *FakeOutput) ExpectRecord(t testing.TB, record interface{}) {
+// ExpectBody expects that a body will be received by the fake operator within a second
+// and that it is equal to the given body
+func (f *FakeOutput) ExpectBody(t testing.TB, body interface{}) {
 	select {
 	case e := <-f.Received:
-		require.Equal(t, record, e.Record)
+		require.Equal(t, body, e.Body)
 	case <-time.After(time.Second):
 		require.FailNow(t, "Timed out waiting for entry")
 	}
 }
 
 // ExpectEntry expects that an entry will be received by the fake operator within a second
-// and that it is equal to the given record
+// and that it is equal to the given body
 func (f *FakeOutput) ExpectEntry(t testing.TB, expected *entry.Entry) {
 	select {
 	case e := <-f.Received:

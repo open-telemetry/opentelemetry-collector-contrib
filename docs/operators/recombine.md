@@ -35,7 +35,7 @@ Configuration:
   regex: '^(?P<timestamp>[^\s]+) (?P<stream>\w+) (?P<partial>\w) (?P<message>.*)'
 - type: recombine
   combine_field: message
-  is_last_entry: "$record.partial == 'F'"
+  is_last_entry: "$body.partial == 'F'"
 ```
 
 Input file: 
@@ -52,7 +52,7 @@ Output logs:
   {
     "timestamp": "2020-12-04T13:03:38.41149-05:00",
     "severity": 0,
-    "record": {
+    "body": {
       "message": "The content of the log entry 1",
       "partial": "F",
       "stream": "stdout",
@@ -62,7 +62,7 @@ Output logs:
   {
     "timestamp": "2020-12-04T13:03:38.411664-05:00",
     "severity": 0,
-    "record": {
+    "body": {
       "message": "First line of log entry 2\nSecond line of the log entry 2\nLast line of the log entry 2",
       "partial": "P",
       "stream": "stdout",

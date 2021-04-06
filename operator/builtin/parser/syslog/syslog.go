@@ -53,7 +53,7 @@ type SyslogParserConfig struct {
 // Build will build a JSON parser operator.
 func (c SyslogParserConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
 	if c.ParserConfig.TimeParser == nil {
-		parseFromField := entry.NewRecordField("timestamp")
+		parseFromField := entry.NewBodyField("timestamp")
 		c.ParserConfig.TimeParser = &helper.TimeParser{
 			ParseFrom:  &parseFromField,
 			LayoutType: helper.NativeKey,
@@ -242,7 +242,7 @@ var severityText = [...]string{
 	7: "debug",
 }
 
-var severityField = entry.NewRecordField("severity")
+var severityField = entry.NewBodyField("severity")
 
 func promoteSeverity(e *entry.Entry) error {
 	sev, ok := severityField.Delete(e)

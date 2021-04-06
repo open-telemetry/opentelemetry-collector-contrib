@@ -22,7 +22,7 @@ import (
 const (
 	attributesPrefix = "$attributes"
 	resourcePrefix   = "$resource"
-	recordPrefix     = "$record"
+	bodyPrefix       = "$body"
 )
 
 // Field represents a potential field on an entry.
@@ -79,10 +79,10 @@ func fieldFromString(s string) (Field, error) {
 			return Field{}, fmt.Errorf("resource fields cannot be nested")
 		}
 		return Field{ResourceField{split[1]}}, nil
-	case recordPrefix, "$":
-		return Field{RecordField{split[1:]}}, nil
+	case bodyPrefix, "$":
+		return Field{BodyField{split[1:]}}, nil
 	default:
-		return Field{RecordField{split}}, nil
+		return Field{BodyField{split}}, nil
 	}
 }
 

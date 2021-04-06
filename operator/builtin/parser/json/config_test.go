@@ -44,7 +44,7 @@ func TestJSONParserConfig(t *testing.T) {
 			false,
 			func() *JSONParserConfig {
 				cfg := defaultCfg()
-				cfg.ParseFrom = entry.NewRecordField("from")
+				cfg.ParseFrom = entry.NewBodyField("from")
 				return cfg
 			}(),
 		},
@@ -53,7 +53,7 @@ func TestJSONParserConfig(t *testing.T) {
 			false,
 			func() *JSONParserConfig {
 				cfg := defaultCfg()
-				cfg.ParseTo = entry.NewRecordField("log")
+				cfg.ParseTo = entry.NewBodyField("log")
 				return cfg
 			}(),
 		},
@@ -71,7 +71,7 @@ func TestJSONParserConfig(t *testing.T) {
 			false,
 			func() *JSONParserConfig {
 				cfg := defaultCfg()
-				parseField := entry.NewRecordField("timestamp_field")
+				parseField := entry.NewBodyField("timestamp_field")
 				newTime := helper.TimeParser{
 					LayoutType: "strptime",
 					Layout:     "%Y-%m-%d",
@@ -86,7 +86,7 @@ func TestJSONParserConfig(t *testing.T) {
 			false,
 			func() *JSONParserConfig {
 				cfg := defaultCfg()
-				parseField := entry.NewRecordField("severity_field")
+				parseField := entry.NewBodyField("severity_field")
 				severityField := helper.NewSeverityParserConfig()
 				severityField.ParseFrom = &parseField
 				mapping := map[interface{}]interface{}{
@@ -105,7 +105,7 @@ func TestJSONParserConfig(t *testing.T) {
 			false,
 			func() *JSONParserConfig {
 				cfg := defaultCfg()
-				preserve := entry.NewRecordField("aField")
+				preserve := entry.NewBodyField("aField")
 				cfg.PreserveTo = &preserve
 				return cfg
 			}(),

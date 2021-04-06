@@ -51,7 +51,7 @@ func (c *GenerateInputConfig) Build(context operator.BuildContext) ([]operator.O
 		return nil, err
 	}
 
-	c.Entry.Record = recursiveMapInterfaceToMapString(c.Entry.Record)
+	c.Entry.Body = recursiveMapInterfaceToMapString(c.Entry.Body)
 
 	generateInput := &GenerateInput{
 		InputOperator: inputOperator,

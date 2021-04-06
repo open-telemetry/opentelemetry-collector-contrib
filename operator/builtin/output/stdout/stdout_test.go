@@ -48,7 +48,7 @@ func TestStdoutOperator(t *testing.T) {
 	ts := time.Unix(1591042864, 0)
 	e := &entry.Entry{
 		Timestamp: ts,
-		Record:    "test record",
+		Body:      "test body",
 	}
 	err = op.Process(context.Background(), e)
 	require.NoError(t, err)
@@ -56,6 +56,6 @@ func TestStdoutOperator(t *testing.T) {
 	marshalledTimestamp, err := json.Marshal(ts)
 	require.NoError(t, err)
 
-	expected := `{"timestamp":` + string(marshalledTimestamp) + `,"severity":0,"record":"test record"}` + "\n"
+	expected := `{"timestamp":` + string(marshalledTimestamp) + `,"severity":0,"body":"test body"}` + "\n"
 	require.Equal(t, expected, buf.String())
 }

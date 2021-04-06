@@ -30,14 +30,14 @@ Configuration:
 ```
 
 <table>
-<tr><td> Input record </td> <td> Output record </td></tr>
+<tr><td> Input body </td> <td> Output body </td></tr>
 <tr>
 <td>
 
 ```json
 {
   "timestamp": "",
-  "record": {
+  "body": {
     "message": "Host=127.0.0.1, Type=HTTP"
   }
 }
@@ -49,7 +49,7 @@ Configuration:
 ```json
 {
   "timestamp": "",
-  "record": {
+  "body": {
     "host": "127.0.0.1",
     "type": "HTTP"
   }
@@ -72,14 +72,14 @@ Configuration:
 ```
 
 <table>
-<tr><td> Input record </td> <td> Output record </td></tr>
+<tr><td> Input body </td> <td> Output body </td></tr>
 <tr>
 <td>
 
 ```json
 {
   "timestamp": "",
-  "record": {
+  "body": {
     "message": {
       "embedded": "Host=127.0.0.1, Type=HTTP"
     }
@@ -93,7 +93,7 @@ Configuration:
 ```json
 {
   "timestamp": "",
-  "record": {
+  "body": {
     "message": {
       "embedded": "Host=127.0.0.1, Type=HTTP"
     },
@@ -123,14 +123,14 @@ Configuration:
 ```
 
 <table>
-<tr><td> Input record </td> <td> Output record </td></tr>
+<tr><td> Input body </td> <td> Output body </td></tr>
 <tr>
 <td>
 
 ```json
 {
   "timestamp": "",
-  "record": {
+  "body": {
     "message": "Time=2020-01-31, Host=127.0.0.1, Type=HTTP"
   }
 }
@@ -142,7 +142,7 @@ Configuration:
 ```json
 {
   "timestamp": "2020-01-31T00:00:00-00:00",
-  "record": {
+  "body": {
     "host": "127.0.0.1",
     "type": "HTTP"
   }
@@ -159,17 +159,17 @@ Configuration:
 ```yaml
 - type: regex_parser
   regex: '^Host=(?<host>)$'
-  if: '$record.type == "hostname"'
+  if: '$body.type == "hostname"'
 ```
 
 <table>
-<tr><td> Input record </td> <td> Output record </td></tr>
+<tr><td> Input body </td> <td> Output body </td></tr>
 <tr>
 <td>
 
 ```json
 {
-  "record": {
+  "body": {
     "message": "Host=testhost",
     "type": "hostname"
   }
@@ -181,7 +181,7 @@ Configuration:
 
 ```json
 {
-  "record": {
+  "body": {
     "host": "testhost",
     "type": "hostname"
   }
@@ -196,7 +196,7 @@ Configuration:
 
 ```json
 {
-  "record": {
+  "body": {
     "message": "Key=value",
     "type": "keypair"
   }
@@ -208,7 +208,7 @@ Configuration:
 
 ```json
 {
-  "record": {
+  "body": {
     "message": "Key=value",
     "type": "keypair"
   }
@@ -225,17 +225,17 @@ Configuration:
 ```yaml
 - type: regex_parser
   regex: '^Host=(?<host>)$'
-  if: '$record.type == "hostname"'
+  if: '$body.type == "hostname"'
 ```
 
 <table>
-<tr><td> Input record </td> <td> Output record </td></tr>
+<tr><td> Input body </td> <td> Output body </td></tr>
 <tr>
 <td>
 
 ```json
 {
-  "record": {
+  "body": {
     "message": "Host=testhost",
     "type": "hostname"
   }
@@ -247,7 +247,7 @@ Configuration:
 
 ```json
 {
-  "record": {
+  "body": {
     "host": "testhost",
     "type": "hostname"
   }
@@ -262,7 +262,7 @@ Configuration:
 
 ```json
 {
-  "record": {
+  "body": {
     "message": "Key=value",
     "type": "keypair"
   }
@@ -274,7 +274,7 @@ Configuration:
 
 ```json
 {
-  "record": {
+  "body": {
     "message": "Key=value",
     "type": "keypair"
   }

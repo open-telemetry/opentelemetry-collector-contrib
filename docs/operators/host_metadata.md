@@ -32,7 +32,7 @@ Configuration:
 ```json
 {
   "timestamp": "2020-06-15T11:15:50.475364-04:00",
-  "record": {
+  "body": {
     "message": "test"
   }
 }
@@ -48,7 +48,7 @@ Configuration:
     "hostname": "my_host",
     "ip": "0.0.0.0",
   },
-  "record": {
+  "body": {
     "message": "test"
   }
 }

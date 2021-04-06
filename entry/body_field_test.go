@@ -23,7 +23,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-func testRecord() map[string]interface{} {
+func testBody() map[string]interface{} {
 	return map[string]interface{}{
 		"simple_key": "simple_value",
 		"map_key":    nestedMap(),
@@ -36,59 +36,59 @@ func nestedMap() map[string]interface{} {
 	}
 }
 
-func TestRecordFieldGet(t *testing.T) {
+func TestNewBodyFieldGet(t *testing.T) {
 	cases := []struct {
 		name        string
 		field       Field
-		record      interface{}
+		body        interface{}
 		expectedVal interface{}
 		expectedOk  bool
 	}{
 		{
 			"EmptyField",
-			NewRecordField(),
-			testRecord(),
-			testRecord(),
+			NewBodyField(),
+			testBody(),
+			testBody(),
 			true,
 		},
 		{
 			"SimpleField",
-			NewRecordField("simple_key"),
-			testRecord(),
+			NewBodyField("simple_key"),
+			testBody(),
 			"simple_value",
 			true,
 		},
 		{
 			"MapField",
-			NewRecordField("map_key"),
-			testRecord(),
+			NewBodyField("map_key"),
+			testBody(),
 			nestedMap(),
 			true,
 		},
 		{
 			"NestedField",
-			NewRecordField("map_key", "nested_key"),
-			testRecord(),
+			NewBodyField("map_key", "nested_key"),
+			testBody(),
 			"nested_value",
 			true,
 		},
 		{
 			"MissingField",
-			NewRecordField("invalid"),
-			testRecord(),
+			NewBodyField("invalid"),
+			testBody(),
 			nil,
 			false,
 		},
 		{
 			"InvalidField",
-			NewRecordField("simple_key", "nested_key"),
-			testRecord(),
+			NewBodyField("simple_key", "nested_key"),
+			testBody(),
 			nil,
 			false,
 		},
 		{
 			"RawField",
-			NewRecordField(),
+			NewBodyField(),
 			"raw string",
 			"raw string",
 			true,
@@ -98,7 +98,7 @@ func TestRecordFieldGet(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			entry := New()
-			entry.Record = tc.record
+			entry.Body = tc.body
 
 			val, ok := entry.Get(tc.field)
 			if !assert.Equal(t, tc.expectedOk, ok) {
@@ -111,19 +111,19 @@ func TestRecordFieldGet(t *testing.T) {
 	}
 }
 
-func TestRecordFieldDelete(t *testing.T) {
+func TestBodyFieldDelete(t *testing.T) {
 	cases := []struct {
 		name             string
 		field            Field
-		record           interface{}
-		expectedRecord   interface{}
+		body             interface{}
+		expectedBody     interface{}
 		expectedReturned interface{}
 		expectedOk       bool
 	}{
 		{
 			"SimpleKey",
-			NewRecordField("simple_key"),
-			testRecord(),
+			NewBodyField("simple_key"),
+			testBody(),
 			map[string]interface{}{
 				"map_key": nestedMap(),
 			},
@@ -131,8 +131,8 @@ func TestRecordFieldDelete(t *testing.T) {
 			true,
 		},
 		{
-			"EmptyRecordAndField",
-			NewRecordField(),
+			"EmptyBodyAndField",
+			NewBodyField(),
 			map[string]interface{}{},
 			nil,
 			map[string]interface{}{},
@@ -140,24 +140,24 @@ func TestRecordFieldDelete(t *testing.T) {
 		},
 		{
 			"EmptyField",
-			NewRecordField(),
-			testRecord(),
+			NewBodyField(),
+			testBody(),
 			nil,
-			testRecord(),
+			testBody(),
 			true,
 		},
 		{
 			"MissingKey",
-			NewRecordField("missing_key"),
-			testRecord(),
-			testRecord(),
+			NewBodyField("missing_key"),
+			testBody(),
+			testBody(),
 			nil,
 			false,
 		},
 		{
 			"NestedKey",
-			NewRecordField("map_key", "nested_key"),
-			testRecord(),
+			NewBodyField("map_key", "nested_key"),
+			testBody(),
 			map[string]interface{}{
 				"simple_key": "simple_value",
 				"map_key":    map[string]interface{}{},
@@ -167,8 +167,8 @@ func TestRecordFieldDelete(t *testing.T) {
 		},
 		{
 			"MapKey",
-			NewRecordField("map_key"),
-			testRecord(),
+			NewBodyField("map_key"),
+			testBody(),
 			map[string]interface{}{
 				"simple_key": "simple_value",
 			},
@@ -177,9 +177,9 @@ func TestRecordFieldDelete(t *testing.T) {
 		},
 		{
 			"InvalidNestedKey",
-			NewRecordField("simple_key", "missing"),
-			testRecord(),
-			testRecord(),
+			NewBodyField("simple_key", "missing"),
+			testBody(),
+			testBody(),
 			nil,
 			false,
 		},
@@ -188,60 +188,59 @@ func TestRecordFieldDelete(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			entry := New()
-			entry.Record = tc.record
-
+			entry.Body = tc.body
 			entry.Delete(tc.field)
-			assert.Equal(t, tc.expectedRecord, entry.Record)
+			assert.Equal(t, tc.expectedBody, entry.Body)
 		})
 	}
 }
 
-func TestRecordFieldSet(t *testing.T) {
+func TestBodyFieldSet(t *testing.T) {
 	cases := []struct {
 		name        string
 		field       Field
-		record      interface{}
+		body        interface{}
 		setTo       interface{}
 		expectedVal interface{}
 	}{
 		{
 			"OverwriteMap",
-			NewRecordField(),
-			testRecord(),
+			NewBodyField(),
+			testBody(),
 			"new_value",
 			"new_value",
 		},
 		{
 			"OverwriteRaw",
-			NewRecordField(),
+			NewBodyField(),
 			"raw_value",
 			"new_value",
 			"new_value",
 		},
 		{
 			"OverwriteRawWithMap",
-			NewRecordField("embedded", "field"),
+			NewBodyField("embedded", "field"),
 			"raw_value",
 			"new_value",
 			map[string]interface{}{"embedded": map[string]interface{}{"field": "new_value"}},
 		},
 		{
 			"NewMapValue",
-			NewRecordField(),
+			NewBodyField(),
 			map[string]interface{}{},
-			testRecord(),
-			testRecord(),
+			testBody(),
+			testBody(),
 		},
 		{
 			"NewRootField",
-			NewRecordField("new_key"),
+			NewBodyField("new_key"),
 			map[string]interface{}{},
 			"new_value",
 			map[string]interface{}{"new_key": "new_value"},
 		},
 		{
 			"NewNestedField",
-			NewRecordField("new_key", "nested_key"),
+			NewBodyField("new_key", "nested_key"),
 			map[string]interface{}{},
 			"nested_value",
 			map[string]interface{}{
@@ -252,8 +251,8 @@ func TestRecordFieldSet(t *testing.T) {
 		},
 		{
 			"OverwriteNestedMap",
-			NewRecordField("map_key"),
-			testRecord(),
+			NewBodyField("map_key"),
+			testBody(),
 			"new_value",
 			map[string]interface{}{
 				"simple_key": "simple_value",
@@ -262,8 +261,8 @@ func TestRecordFieldSet(t *testing.T) {
 		},
 		{
 			"MergedNestedValue",
-			NewRecordField("map_key"),
-			testRecord(),
+			NewBodyField("map_key"),
+			testBody(),
 			map[string]interface{}{
 				"merged_key": "merged_value",
 			},
@@ -280,89 +279,89 @@ func TestRecordFieldSet(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			entry := New()
-			entry.Record = tc.record
+			entry.Body = tc.body
 			require.NoError(t, entry.Set(tc.field, tc.setTo))
-			assert.Equal(t, tc.expectedVal, entry.Record)
+			assert.Equal(t, tc.expectedVal, entry.Body)
 		})
 	}
 }
 
-func TestRecordFieldParent(t *testing.T) {
+func TestBodyFieldParent(t *testing.T) {
 	t.Run("Simple", func(t *testing.T) {
-		field := RecordField{[]string{"child"}}
-		require.Equal(t, RecordField{[]string{}}, field.Parent())
+		field := BodyField{[]string{"child"}}
+		require.Equal(t, BodyField{[]string{}}, field.Parent())
 	})
 
 	t.Run("Root", func(t *testing.T) {
-		field := RecordField{[]string{}}
-		require.Equal(t, RecordField{[]string{}}, field.Parent())
+		field := BodyField{[]string{}}
+		require.Equal(t, BodyField{[]string{}}, field.Parent())
 	})
 }
 
-func TestRecordFieldChild(t *testing.T) {
-	field := RecordField{[]string{"parent"}}
-	require.Equal(t, RecordField{[]string{"parent", "child"}}, field.Child("child"))
+func TestBodyFieldChild(t *testing.T) {
+	field := BodyField{[]string{"parent"}}
+	require.Equal(t, BodyField{[]string{"parent", "child"}}, field.Child("child"))
 }
 
-func TestRecordFieldMerge(t *testing.T) {
+func TestBodyFieldMerge(t *testing.T) {
 	entry := &Entry{}
-	entry.Record = "raw_value"
-	field := RecordField{[]string{"embedded"}}
+	entry.Body = "raw_value"
+	field := BodyField{[]string{"embedded"}}
 	values := map[string]interface{}{"new": "values"}
 	field.Merge(entry, values)
 	expected := map[string]interface{}{"embedded": values}
-	require.Equal(t, expected, entry.Record)
+	require.Equal(t, expected, entry.Body)
 }
 
-func TestRecordFieldMarshalJSON(t *testing.T) {
-	recordField := RecordField{Keys: []string{"test"}}
-	json, err := recordField.MarshalJSON()
+func TestBodyFieldMarshalJSON(t *testing.T) {
+	bodyField := BodyField{Keys: []string{"test"}}
+	json, err := bodyField.MarshalJSON()
 	require.NoError(t, err)
 	require.Equal(t, []byte(`"test"`), json)
 }
 
-func TestRecordFieldUnmarshalJSON(t *testing.T) {
+func TestBodyFieldUnmarshalJSON(t *testing.T) {
 	fieldString := []byte(`"test"`)
-	var f RecordField
+	var f BodyField
 	err := json.Unmarshal(fieldString, &f)
 	require.NoError(t, err)
-	require.Equal(t, RecordField{Keys: []string{"test"}}, f)
+	require.Equal(t, BodyField{Keys: []string{"test"}}, f)
 }
 
-func TestRecordFieldUnmarshalJSONFailure(t *testing.T) {
+func TestBodyFieldUnmarshalJSONFailure(t *testing.T) {
 	invalidField := []byte(`{"key":"value"}`)
-	var f RecordField
+	var f BodyField
 	err := json.Unmarshal(invalidField, &f)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "the field is not a string: json")
 }
 
-func TestRecordFieldMarshalYAML(t *testing.T) {
-	recordField := RecordField{Keys: []string{"test"}}
-	yaml, err := recordField.MarshalYAML()
+func TestBodyFieldMarshalYAML(t *testing.T) {
+	bodyField := BodyField{Keys: []string{"test"}}
+	yaml, err := bodyField.MarshalYAML()
 	require.NoError(t, err)
 	require.Equal(t, "test", yaml)
 }
 
-func TestRecordFieldUnmarshalYAML(t *testing.T) {
+func TestBodyFieldUnmarshalYAML(t *testing.T) {
 	invalidField := []byte("test")
-	var f RecordField
+	var f BodyField
 	err := yaml.UnmarshalStrict(invalidField, &f)
 	require.NoError(t, err)
-	require.Equal(t, RecordField{Keys: []string{"test"}}, f)
+	require.Equal(t, BodyField{Keys: []string{"test"}}, f)
 }
 
-func TestRecordFieldUnmarshalYAMLFailure(t *testing.T) {
+func TestBodyFieldUnmarshalYAMLFailure(t *testing.T) {
 	invalidField := []byte(`{"key":"value"}`)
-	var f RecordField
+	var f BodyField
 	err := yaml.UnmarshalStrict(invalidField, &f)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "the field is not a string: yaml")
 }
 
-func TestRecordFieldFromJSONDot(t *testing.T) {
+func TestBodyFieldFromJSONDot(t *testing.T) {
 	jsonDot := "$.test"
-	recordField := fromJSONDot(jsonDot)
-	expectedField := RecordField{Keys: []string{"test"}}
-	require.Equal(t, expectedField, recordField)
+	bodyField := fromJSONDot(jsonDot)
+	expectedField := BodyField{Keys: []string{"test"}}
+	require.Equal(t, expectedField, bodyField)
 }

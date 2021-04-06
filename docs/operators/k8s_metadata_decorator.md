@@ -26,14 +26,14 @@ Configuration:
 ```
 
 <table>
-<tr><td> Input record </td> <td> Output record </td></tr>
+<tr><td> Input body </td> <td> Output body </td></tr>
 <tr>
 <td>
 
 ```json
 {
   "timestamp": "",
-  "record": {
+  "body": {
     "namespace": "my-namespace",
     "pod_name": "samplepod-6cdcf6bf9d-f4f9n"
   }
@@ -58,7 +58,7 @@ Configuration:
     "k8s_pod_label/k8s-app": "dashboard-metrics-scraper",
     "k8s_pod_label/pod-template-hash": "5f44bbb8b5"
   },
-  "record": {
+  "body": {
     "namespace": "my-namespace",
     "pod_name": "samplepod-6cdcf6bf9d-f4f9n"
   }

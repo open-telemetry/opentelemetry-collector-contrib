@@ -1,8 +1,8 @@
 ## `restructure` operator
 
-The `restructure` operator facilitates changing the structure of a record by adding, removing, moving, and flattening fields.
+The `restructure` operator facilitates changing the structure of a body by adding, removing, moving, and flattening fields.
 
-The operator is configured with a list of ops, which are small operations that are applied to a record in the order
+The operator is configured with a list of ops, which are small operations that are applied to a body in the order
 they are defined.
 
 ### Configuration Fields
@@ -19,13 +19,13 @@ they are defined.
 
 #### Add
 
-The `add` op adds a field to a record. It must have a `field` key and exactly one of `value` or `value_expr`.
+The `add` op adds a field to a body. It must have a `field` key and exactly one of `value` or `value_expr`.
 
 `field` is a [field](/docs/types/field.md) that will be set to `value` or the result of `value_expr`
 
 `value` is a static string that will be added to each entry at the field defined by `field`
 
-`value_expr` is an [expression](/docs/types/expression.md) with access to the `record` object
+`value_expr` is an [expression](/docs/types/expression.md) with access to the `body` object
 
 Example usage:
 ```yaml
@@ -36,11 +36,11 @@ Example usage:
         value: "val1"
     - add:
         field: "key2"
-        value_expr: 'record["key1"] + "-suffix"'
+        value_expr: 'body["key1"] + "-suffix"'
 ```
 
 <table>
-<tr><td> Input record </td> <td> Output record </td></tr>
+<tr><td> Input body </td> <td> Output body </td></tr>
 <tr>
 <td>
 
@@ -64,7 +64,7 @@ Example usage:
 
 #### Remove
 
-The `remove` op removes a field from a record.
+The `remove` op removes a field from a body.
 
 Example usage:
 ```yaml
@@ -74,7 +74,7 @@ Example usage:
 ```
 
 <table>
-<tr><td> Input record </td> <td> Output record </td></tr>
+<tr><td> Input body </td> <td> Output body </td></tr>
 <tr>
 <td>
 
@@ -112,7 +112,7 @@ Example usage:
 ```
 
 <table>
-<tr><td> Input record </td> <td> Output record </td></tr>
+<tr><td> Input body </td> <td> Output body </td></tr>
 <tr>
 <td>
 
@@ -153,7 +153,7 @@ Example usage:
 ```
 
 <table>
-<tr><td> Input record </td> <td> Output record </td></tr>
+<tr><td> Input body </td> <td> Output body </td></tr>
 <tr>
 <td>
 
@@ -190,7 +190,7 @@ Example usage:
 ```
 
 <table>
-<tr><td> Input record </td> <td> Output record </td></tr>
+<tr><td> Input body </td> <td> Output body </td></tr>
 <tr>
 <td>
 

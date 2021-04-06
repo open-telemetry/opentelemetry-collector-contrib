@@ -35,7 +35,7 @@ pipeline:
   id: my_generator
   type: generator
   output: testoutput
-  record:
+  body:
     message1: {{ .message }}
 `)
 

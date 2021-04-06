@@ -4,15 +4,15 @@ A _Field_ is a reference to a value in a log [entry](/docs/types/field.md).
 
 Many [operators](/docs/operators/README.md) use fields in their configurations. For example, parsers use fields to specify which value to parse and where to write a new value.
 
-Fields are `.`-delimited strings which allow you to select attributes or records on the entry. 
+Fields are `.`-delimited strings which allow you to select attributes or body on the entry. 
 
-Fields can be used to select record, resource, or attribute values. For values on the record, use the prefix `$record` such as `$record.my_value`. To select an attributes, prefix your field with `$attributes` such as with `$attributes.my_attribute`. For resource values, use the prefix `$resource`.
+Fields can be used to select body, resource, or attribute values. For values on the body, use the prefix `$body` such as `$body.my_value`. To select an attributes, prefix your field with `$attributes` such as with `$attributes.my_attribute`. For resource values, use the prefix `$resource`.
 
-If a field contains a dot in it, a field can alternatively use bracket syntax for traversing through a map. For example, to select the key `k8s.cluster.name` on the entry's record, you can use the field `$record["k8s.cluster.name"]`.
+If a field contains a dot in it, a field can alternatively use bracket syntax for traversing through a map. For example, to select the key `k8s.cluster.name` on the entry's body, you can use the field `$body["k8s.cluster.name"]`.
 
-Record fields can be nested arbitrarily deeply, such as `$record.my_value.my_nested_value`.
+Body fields can be nested arbitrarily deeply, such as `$body.my_value.my_nested_value`.
 
-If a field does not start with `$resource`, `$attributes`, or `$record`, then `$record` is assumed. For example, `my_value` is equivalent to `$record.my_value`.
+If a field does not start with `$resource`, `$attributes`, or `$body`, then `$body` is assumed. For example, `my_value` is equivalent to `$body.my_value`.
 
 ## Examples
 
@@ -25,7 +25,7 @@ Config:
     - add:
         field: "key3"
         value: "value3"
-    - remove: "$record.key2.nested_key1"
+    - remove: "$body.key2.nested_key1"
     - add:
         field: "$attributes.my_attribute"
         value: "my_attribute_value"
@@ -40,7 +40,7 @@ Config:
 {
   "timestamp": "",
   "attributes": {},
-  "record": {
+  "body": {
     "key1": "value1",
     "key2": {
       "nested_key1": "nested_value1",
@@ -59,7 +59,7 @@ Config:
   "attributes": {
     "my_attribute": "my_attribute_value"
   },
-  "record": {
+  "body": {
     "key1": "value1",
     "key2": {
       "nested_key2": "nested_value2"
@@ -86,7 +86,7 @@ Given the following entry, we can use fields as follows:
   "attributes": {
     "env": "prod",
   },
-  "record": {
+  "body": {
     "message": "Something happened.",
     "details": {
       "count": 100,
@@ -98,8 +98,8 @@ Given the following entry, we can use fields as follows:
 
 | Field                  | Refers to Value                           |
 | ---                    | ---                                       |
-| $record.message        | `"Something happened."`                   |
+| $body.message        | `"Something happened."`                   |
 | message                | `"Something happened."`                   |
-| $record.details.count  | `100`                                     |
+| $body.details.count  | `100`                                     |
 | $attributes.env        | `"prod"`                                  |
 | $resource.uuid         | `"11112222-3333-4444-5555-666677778888"`  |

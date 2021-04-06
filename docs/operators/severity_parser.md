@@ -1,6 +1,6 @@
 ## `severity_parser` operator
 
-The `severity_parser` operator sets the severity on an entry by parsing a value from the record.
+The `severity_parser` operator sets the severity on an entry by parsing a value from the body.
 
 ### Configuration Fields
 

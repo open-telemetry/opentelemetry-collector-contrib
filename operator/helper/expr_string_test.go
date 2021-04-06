@@ -30,7 +30,7 @@ func TestExprString(t *testing.T) {
 
 	exampleEntry := func() *entry.Entry {
 		e := entry.New()
-		e.Record = map[string]interface{}{
+		e.Body = map[string]interface{}{
 			"test": "value",
 		}
 		e.Resource = map[string]string{

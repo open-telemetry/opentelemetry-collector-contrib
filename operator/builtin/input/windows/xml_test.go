@@ -59,7 +59,7 @@ func TestParseSeverity(t *testing.T) {
 	require.Equal(t, entry.Default, xmlUnknown.parseSeverity())
 }
 
-func TestParseRecord(t *testing.T) {
+func TestParseBody(t *testing.T) {
 	xml := EventXML{
 		EventID: EventID{
 			ID:         1,
@@ -104,5 +104,5 @@ func TestParseRecord(t *testing.T) {
 		"keywords":    []string{"keyword"},
 	}
 
-	require.Equal(t, expected, xml.parseRecord())
+	require.Equal(t, expected, xml.parseBody())
 }

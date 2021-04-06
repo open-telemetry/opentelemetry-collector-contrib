@@ -174,7 +174,7 @@ Note that the default `preset` is in place, and no additional values have been s
 ```json
 {
   "severity": 0,
-  "record": {
+  "body": {
     "severity_field": "ERROR"
   }
 }
@@ -186,7 +186,7 @@ Note that the default `preset` is in place, and no additional values have been s
 ```json
 {
   "severity": 60,
-  "record": {}
+  "body": {}
 }
 ```
 
@@ -214,7 +214,7 @@ Note that the default `preset` is in place, and one additional values has been s
 ```json
 {
   "severity": 0,
-  "record": {
+  "body": {
     "severity_field": "nooo!"
   }
 }
@@ -226,7 +226,7 @@ Note that the default `preset` is in place, and one additional values has been s
 ```json
 {
   "severity": 60,
-  "record": {}
+  "body": {}
 }
 ```
 
@@ -238,7 +238,7 @@ Note that the default `preset` is in place, and one additional values has been s
 ```json
 {
   "severity": 0,
-  "record": {
+  "body": {
     "severity_field": "ERROR"
   }
 }
@@ -250,7 +250,7 @@ Note that the default `preset` is in place, and one additional values has been s
 ```json
 {
   "severity": 60,
-  "record": {}
+  "body": {}
 }
 ```
 
@@ -280,7 +280,7 @@ Configuration:
 ```json
 {
   "severity": 0,
-  "record": {
+  "body": {
     "severity_field": "nooo!"
   }
 }
@@ -292,7 +292,7 @@ Configuration:
 ```json
 {
   "severity": 60,
-  "record": {}
+  "body": {}
 }
 ```
 
@@ -304,7 +304,7 @@ Configuration:
 ```json
 {
   "severity": 0,
-  "record": {
+  "body": {
     "severity_field": "nooooooo"
   }
 }
@@ -316,7 +316,7 @@ Configuration:
 ```json
 {
   "severity": 60,
-  "record": {}
+  "body": {}
 }
 ```
 
@@ -328,7 +328,7 @@ Configuration:
 ```json
 {
   "severity": 0,
-  "record": {
+  "body": {
     "severity_field": "hey"
   }
 }
@@ -340,7 +340,7 @@ Configuration:
 ```json
 {
   "severity": 30,
-  "record": {}
+  "body": {}
 }
 ```
 
@@ -352,7 +352,7 @@ Configuration:
 ```json
 {
   "severity": 0,
-  "record": {
+  "body": {
     "severity_field": 1234
   }
 }
@@ -364,7 +364,7 @@ Configuration:
 ```json
 {
   "severity": 20,
-  "record": {}
+  "body": {}
 }
 ```
 
@@ -376,7 +376,7 @@ Configuration:
 ```json
 {
   "severity": 0,
-  "record": {
+  "body": {
     "severity_field": "unknown"
   }
 }
@@ -388,7 +388,7 @@ Configuration:
 ```json
 {
   "severity": 0,
-  "record": {}
+  "body": {}
 }
 ```
 
@@ -419,7 +419,7 @@ Configuration:
 ```json
 {
   "severity": 0,
-  "record": {
+  "body": {
     "severity_field": 3
   }
 }
@@ -431,7 +431,7 @@ Configuration:
 ```json
 {
   "severity": 60,
-  "record": {}
+  "body": {}
 }
 ```
 
@@ -443,7 +443,7 @@ Configuration:
 ```json
 {
   "severity": 0,
-  "record": {
+  "body": {
     "severity_field": 9
   }
 }
@@ -455,7 +455,7 @@ Configuration:
 ```json
 {
   "severity": 80,
-  "record": {}
+  "body": {}
 }
 ```
 
@@ -467,7 +467,7 @@ Configuration:
 ```json
 {
   "severity": 0,
-  "record": {
+  "body": {
     "severity_field": 12
   }
 }
@@ -479,7 +479,7 @@ Configuration:
 ```json
 {
   "severity": 0,
-  "record": {}
+  "body": {}
 }
 ```
 
@@ -538,7 +538,7 @@ Equivalent Configuration:
 ```json
 {
   "severity": 0,
-  "record": {
+  "body": {
     "severity_field": 302
   }
 }
@@ -550,7 +550,7 @@ Equivalent Configuration:
 ```json
 {
   "severity": 30,
-  "record": {}
+  "body": {}
 }
 ```
 
@@ -562,7 +562,7 @@ Equivalent Configuration:
 ```json
 {
   "severity": 0,
-  "record": {
+  "body": {
     "severity_field": 404
   }
 }
@@ -574,7 +574,7 @@ Equivalent Configuration:
 ```json
 {
   "severity": 60,
-  "record": {}
+  "body": {}
 }
 ```
 
@@ -586,7 +586,7 @@ Equivalent Configuration:
 ```json
 {
   "severity": 0,
-  "record": {
+  "body": {
     "severity_field": 200
   }
 }
@@ -598,7 +598,7 @@ Equivalent Configuration:
 ```json
 {
   "severity": 20,
-  "record": {}
+  "body": {}
 }
 ```
 
@@ -625,7 +625,7 @@ Configuration:
 ```json
 {
   "severity": 0,
-  "record": {
+  "body": {
     "severity_field": "nooo!"
   }
 }
@@ -637,7 +637,7 @@ Configuration:
 ```json
 {
   "severity": 60,
-  "record": {}
+  "body": {}
 }
 ```
 
@@ -649,7 +649,7 @@ Configuration:
 ```json
 {
   "severity": 0,
-  "record": {
+  "body": {
     "severity_field": "ERROR"
   }
 }
@@ -661,7 +661,7 @@ Configuration:
 ```json
 {
   "severity": 0,
-  "record": {}
+  "body": {}
 }
 ```
 

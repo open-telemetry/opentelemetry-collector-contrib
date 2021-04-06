@@ -12,7 +12,7 @@ The `file_input` operator reads logs from files. It will place the lines read in
 | `exclude`              | []               | A list of file glob patterns to exclude from reading                                                               |
 | `poll_interval`        | 200ms            | The duration between filesystem polls                                                                              |
 | `multiline`            |                  | A `multiline` configuration block. See below for details                                                           |
-| `write_to`             | $                | The record [field](/docs/types/field.md) written to when creating a new log entry                                  |
+| `write_to`             | $                | The body [field](/docs/types/field.md) written to when creating a new log entry                                  |
 | `encoding`             | `nop`            | The encoding of the file being read. See the list of supported encodings below for available options               |
 | `include_file_name`    | `true`           | Whether to add the file name as the label `file_name`                                                              |
 | `include_file_path`    | `false`          | Whether to add the file path as the label `file_path`                                                              |
@@ -58,7 +58,7 @@ Configuration:
 ```
 
 <table>
-<tr><td> `./test.log` </td> <td> Output records </td></tr>
+<tr><td> `./test.log` </td> <td> Output bodies </td></tr>
 <tr>
 <td>
 
@@ -99,7 +99,7 @@ Configuration:
 ```
 
 <table>
-<tr><td> `./test.log` </td> <td> Output records </td></tr>
+<tr><td> `./test.log` </td> <td> Output bodies </td></tr>
 <tr>
 <td>
 
