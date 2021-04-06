@@ -61,7 +61,7 @@ func (s *brokerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, err
 func createBrokerScraper(_ context.Context, config Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.ResourceMetricsScraper, error) {
 	client, err := newSaramaClient(config.Brokers, saramaConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create sarama client: %w ", err)
+		return nil, fmt.Errorf("failed to create sarama client: %w", err)
 	}
 	s := brokerScraper{
 		client: client,

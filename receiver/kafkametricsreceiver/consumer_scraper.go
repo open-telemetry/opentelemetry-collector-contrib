@@ -160,15 +160,15 @@ func createConsumerScraper(_ context.Context, config Config, saramaConfig *saram
 	}
 	topicFilter, err := regexp.Compile(config.TopicMatch)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compile topic filter: %w ", err)
+		return nil, fmt.Errorf("failed to compile topic filter: %w", err)
 	}
 	client, err := newSaramaClient(config.Brokers, saramaConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create sarama client: %w ", err)
+		return nil, fmt.Errorf("failed to create sarama client: %w", err)
 	}
 	clusterAdmin, err := newClusterAdmin(config.Brokers, saramaConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create sarama cluster admin: %w ", err)
+		return nil, fmt.Errorf("failed to create sarama cluster admin: %w", err)
 	}
 	s := consumerScraper{
 		client:       client,
