@@ -943,7 +943,7 @@ func expectedFromSummary(name string, ts int64, labelMap map[string]string, coun
 	countPt := int64SFxDataPoint(countName, ts, &sfxMetricTypeCumulativeCounter, labelMap, count)
 	sumPt := doubleSFxDataPoint(name, ts, &sfxMetricTypeCumulativeCounter, labelMap, sumVal)
 	out := []*sfxpb.DataPoint{countPt, sumPt}
-	quantileDimVals := []string{"0.250000", "0.500000", "0.750000", "1.000000"}
+	quantileDimVals := []string{"0.25", "0.5", "0.75", "1"}
 	for i := 0; i < 4; i++ {
 		qDims := map[string]string{"quantile": quantileDimVals[i]}
 		qPt := doubleSFxDataPoint(
@@ -1119,10 +1119,10 @@ func TestConvertSummary(t *testing.T) {
 		assert.Equal(t, "quantile", dim.Key)
 	}
 
-	assert.Equal(t, "0.250000", dps[2].Dimensions[1].Value)
-	assert.Equal(t, "0.500000", dps[3].Dimensions[1].Value)
-	assert.Equal(t, "0.750000", dps[4].Dimensions[1].Value)
-	assert.Equal(t, "1.000000", dps[5].Dimensions[1].Value)
+	assert.Equal(t, "0.25", dps[2].Dimensions[1].Value)
+	assert.Equal(t, "0.5", dps[3].Dimensions[1].Value)
+	assert.Equal(t, "0.75", dps[4].Dimensions[1].Value)
+	assert.Equal(t, "1", dps[5].Dimensions[1].Value)
 
 	println()
 }

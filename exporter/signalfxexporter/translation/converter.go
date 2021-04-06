@@ -197,7 +197,7 @@ func convertSummaryDataPoints(
 			qv := qvs.At(j)
 			qdim := sfxpb.Dimension{
 				Key:   "quantile",
-				Value: strconv.FormatFloat(qv.Quantile(), 'f', 6, 64),
+				Value: strconv.FormatFloat(qv.Quantile(), 'f', -1, 64),
 			}
 			qPt.Dimensions = append(dims, &qdim)
 			v := qv.Value()
