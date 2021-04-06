@@ -41,6 +41,7 @@ type ParserConfig struct {
 	PreserveTo           *entry.Field          `mapstructure:"preserve_to"         json:"preserve_to"         yaml:"preserve_to"`
 	TimeParser           *TimeParser           `mapstructure:"timestamp,omitempty" json:"timestamp,omitempty" yaml:"timestamp,omitempty"`
 	SeverityParserConfig *SeverityParserConfig `mapstructure:"severity,omitempty"  json:"severity,omitempty"  yaml:"severity,omitempty"`
+	TraceParser          *TraceParser          `mapstructure:"trace,omitempty"     json:"trace,omitempty"     yaml:"trace,omitempty"`
 }
 
 // Build will build a parser operator.
@@ -72,6 +73,13 @@ func (c ParserConfig) Build(context operator.BuildContext) (ParserOperator, erro
 		parserOperator.SeverityParser = &severityParser
 	}
 
+	if c.TraceParser != nil {
+		if err := c.TraceParser.Validate(context); err != nil {
+			return ParserOperator{}, err
+		}
+		parserOperator.TraceParser = c.TraceParser
+	}
+
 	return parserOperator, nil
 }
 
@@ -83,6 +91,7 @@ type ParserOperator struct {
 	PreserveTo     *entry.Field
 	TimeParser     *TimeParser
 	SeverityParser *SeverityParser
+	TraceParser    *TraceParser
 }
 
 // ProcessWith will run ParseWith on the entry, then forward the entry on to the next operators.
@@ -154,12 +163,20 @@ func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, pars
 		severityParseErr = p.SeverityParser.Parse(entry)
 	}
 
+	var traceParseErr error
+	if p.TraceParser != nil {
+		traceParseErr = p.TraceParser.Parse(entry)
+	}
+
 	// Handle time or severity parsing errors after attempting to parse both
 	if timeParseErr != nil {
 		return p.HandleEntryError(ctx, entry, errors.Wrap(timeParseErr, "time parser"))
 	}
 	if severityParseErr != nil {
 		return p.HandleEntryError(ctx, entry, errors.Wrap(severityParseErr, "severity parser"))
+	}
+	if traceParseErr != nil {
+		return p.HandleEntryError(ctx, entry, errors.Wrap(traceParseErr, "trace parser"))
 	}
 	return nil
 }

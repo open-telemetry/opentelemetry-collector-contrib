@@ -55,6 +55,9 @@ func TestProcess(t *testing.T) {
 	entry := entry.New()
 	entry.AddAttribute("label", "value")
 	entry.AddResourceKey("resource", "value")
+	entry.TraceId = []byte{0x01}
+	entry.SpanId = []byte{0x01}
+	entry.TraceFlags = []byte{0x01}
 
 	expected := entry.Copy()
 	err = op.Process(context.Background(), entry)
