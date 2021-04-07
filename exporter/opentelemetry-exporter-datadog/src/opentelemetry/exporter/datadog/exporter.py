@@ -63,7 +63,7 @@ class DatadogSpanExporter(SpanExporter):
         service: The service name to be used for the application or use ``DD_SERVICE`` environment variable
         env: Set the application’s environment or use ``DD_ENV`` environment variable
         version: Set the application’s version or use ``DD_VERSION`` environment variable
-        tags: A list of default tags to be added to every span or use ``DD_TAGS`` environment variable
+        tags: A list (formatted as a comma-separated string) of default tags to be added to every span or use ``DD_TAGS`` environment variable
     """
 
     def __init__(
