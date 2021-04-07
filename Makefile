@@ -1,6 +1,6 @@
 include ./Makefile.Common
 
-RUN_CONFIG=local/config.yaml
+RUN_CONFIG?=local/config.yaml
 CMD?=
 OTEL_VERSION=main
 
@@ -157,7 +157,7 @@ install-tools:
 
 .PHONY: run
 run:
-	GO111MODULE=on go run --race ./cmd/otelcontribcol/... --config ${RUN_CONFIG}
+	GO111MODULE=on go run --race ./cmd/otelcontribcol/... --config ${RUN_CONFIG} ${RUN_ARGS}
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
