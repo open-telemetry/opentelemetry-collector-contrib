@@ -4,11 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.17.0] - 2020-04-07
 
 ### Added
-- Added float64 to Severity parser's supported types
+- Trace fields added to `entry.Entry`, and an accompanying `trace` parser ([PR76](https://github.com/open-telemetry/opentelemetry-log-collection/pull/76))
+- Severity parser can parse whole numbers formatted as `float64` ([PR90](https://github.com/open-telemetry/opentelemetry-log-collection/pull/90))
+- Support for `mapstructure` to most configs 
 
+### Changed
+- Rename `entry.Record` to `entry.Body` ([PR88](https://github.com/open-telemetry/opentelemetry-log-collection/pull/88))
 ## [0.16.0] - 2020-03-08
 
 ### Changed
