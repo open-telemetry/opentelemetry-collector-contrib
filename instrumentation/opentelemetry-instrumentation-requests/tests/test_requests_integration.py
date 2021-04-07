@@ -177,10 +177,8 @@ class RequestsIntegrationTestBase(abc.ABC):
     def test_not_recording(self):
         with mock.patch("opentelemetry.trace.INVALID_SPAN") as mock_span:
             RequestsInstrumentor().uninstrument()
-            # original_tracer_provider returns a default tracer provider, which
-            # in turn will return an INVALID_SPAN, which is always not recording
             RequestsInstrumentor().instrument(
-                tracer_provider=self.original_tracer_provider
+                tracer_provider=trace._DefaultTracerProvider()
             )
             mock_span.is_recording.return_value = False
             result = self.perform_request(self.URL)
