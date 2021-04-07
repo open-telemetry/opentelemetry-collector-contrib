@@ -232,11 +232,11 @@ class _InterceptorChannel(grpc.Channel):
 
     def __enter__(self):
         """Enters the runtime context related to the channel object."""
-        raise NotImplementedError()
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exits the runtime context related to the channel object."""
-        raise NotImplementedError()
+        self.close()
 
 
 def intercept_channel(channel, *interceptors):

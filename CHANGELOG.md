@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.19b0](https://github.com/open-telemetry/opentelemetry-python-contrib/releases/tag/v0.19b0) - 2021-03-26
 
+- Implement context methods for `_InterceptorChannel`
+  ([#363](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/363))
+
 ### Changed
 - Rename `IdsGenerator` to `IdGenerator`
   ([#350](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/350))
