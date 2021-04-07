@@ -337,6 +337,23 @@ func convertInto(ent *entry.Entry, dest pdata.LogRecord) {
 	}
 
 	insertToAttributeVal(ent.Body, dest.Body())
+
+	if ent.TraceId != nil {
+		var buffer [16]byte
+		copy(buffer[0:16], ent.TraceId)
+		dest.SetTraceID(pdata.NewTraceID(buffer))
+	}
+	if ent.SpanId != nil {
+		var buffer [8]byte
+		copy(buffer[0:8], ent.SpanId)
+		dest.SetSpanID(pdata.NewSpanID(buffer))
+	}
+	if ent.TraceFlags != nil {
+		flags := dest.Flags()
+		flags = flags & 0xFFFFFF00
+		flags = flags | uint32(ent.TraceFlags[0])
+		dest.SetFlags(flags)
+	}
 }
 
 func insertToAttributeVal(value interface{}, dest pdata.AttributeValue) {
