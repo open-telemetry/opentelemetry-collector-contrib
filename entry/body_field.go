@@ -253,6 +253,9 @@ func toJSONDot(field BodyField) string {
 
 // NewBodyField creates a new field from an ordered array of keys.
 func NewBodyField(keys ...string) Field {
+	if keys == nil {
+		keys = []string{}
+	}
 	return Field{BodyField{
 		Keys: keys,
 	}}
