@@ -168,11 +168,11 @@ func NewKubernetesContainerWriter() *FileLogK8sWriter {
         id: get-format
         routes:
           - output: parser-docker
-            expr: '$$record matches "^\\{"'
+            expr: '$$body matches "^\\{"'
           - output: parser-crio
-            expr: '$$record matches "^[^ Z]+ "'
+            expr: '$$body matches "^[^ Z]+ "'
           - output: parser-containerd
-            expr: '$$record matches "^[^ Z]+Z"'
+            expr: '$$body matches "^[^ Z]+Z"'
       # Parse CRI-O format
       - type: regex_parser
         id: parser-crio
@@ -211,9 +211,9 @@ func NewKubernetesContainerWriter() *FileLogK8sWriter {
           k8s.pod.name: 'EXPR($.pod_name)'
           run_id: 'EXPR($.run_id)'
           k8s.pod.uid: 'EXPR($.uid)'
-      # Clean up log record
+      # Clean up log body
       - type: restructure
-        id: clean-up-log-record
+        id: clean-up-log-body
         ops:
           - move:
               from: log
@@ -253,9 +253,9 @@ func NewKubernetesCRIContainerdWriter() *FileLogK8sWriter {
           k8s.pod.name: 'EXPR($.pod_name)'
           run_id: 'EXPR($.run_id)'
           k8s.pod.uid: 'EXPR($.uid)'
-      # Clean up log record
+      # Clean up log body
       - type: restructure
-        id: clean-up-log-record
+        id: clean-up-log-body
         ops:
           - move:
               from: log
