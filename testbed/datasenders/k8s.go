@@ -215,13 +215,9 @@ func NewKubernetesContainerWriter() *FileLogK8sWriter {
       - type: restructure
         id: clean-up-log-record
         ops:
-          - remove: logtag
-          - remove: stream
-          - remove: container_name
-          - remove: namespace
-          - remove: pod_name
-          - remove: run_id
-          - remove: uid
+          - move:
+              from: log
+              to: $
   `)
 }
 
@@ -261,13 +257,9 @@ func NewKubernetesCRIContainerdWriter() *FileLogK8sWriter {
       - type: restructure
         id: clean-up-log-record
         ops:
-          - remove: logtag
-          - remove: stream
-          - remove: container_name
-          - remove: namespace
-          - remove: pod_name
-          - remove: run_id
-          - remove: uid
+          - move:
+              from: log
+              to: $
   `)
 }
 
