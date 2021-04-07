@@ -10,6 +10,7 @@ require (
 	github.com/observiq/go-syslog/v3 v3.0.2
 	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc
 	github.com/stretchr/testify v1.7.0
+	github.com/vektra/mockery v1.1.2 // indirect
 	go.etcd.io/bbolt v1.3.4
 	go.opentelemetry.io/collector v0.22.0
 	go.uber.org/zap v1.16.0
