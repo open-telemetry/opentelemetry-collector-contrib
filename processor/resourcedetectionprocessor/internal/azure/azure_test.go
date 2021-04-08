@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -39,7 +39,7 @@ func (m *mockProvider) metadata(_ context.Context) (*computeMetadata, error) {
 }
 
 func TestNewDetector(t *testing.T) {
-	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
+	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil, "", func() bool { return true })
 	require.NoError(t, err)
 	assert.NotNil(t, d)
 }
@@ -56,7 +56,12 @@ func TestDetectAzureAvailable(t *testing.T) {
 		VMScaleSetName:    "myScaleset",
 	}, nil)
 
-	detector := &Detector{provider: mp}
+	detector := &Detector{
+		provider: mp,
+		logger:   zap.NewNop(),
+		platform: "myPlatform",
+		envOK:    func() bool { return true },
+	}
 	res, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	mp.AssertExpectations(t)
@@ -64,7 +69,7 @@ func TestDetectAzureAvailable(t *testing.T) {
 
 	expected := internal.NewResource(map[string]interface{}{
 		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
-		conventions.AttributeCloudPlatform: conventions.AttributeCloudPlatformAzureVM,
+		conventions.AttributeCloudPlatform: "myPlatform",
 		conventions.AttributeHostName:      "name",
 		conventions.AttributeCloudRegion:   "location",
 		conventions.AttributeHostID:        "vmID",
@@ -82,8 +87,8 @@ func TestDetectError(t *testing.T) {
 	mp := &mockProvider{}
 	mp.On("metadata").Return(&computeMetadata{}, fmt.Errorf("mock error"))
 
-	detector := &Detector{provider: mp}
+	detector := &Detector{provider: mp, envOK: func() bool { return true }, logger: zap.NewNop()}
 	res, err := detector.Detect(context.Background())
-	assert.Error(t, err)
+	assert.NoError(t, err)
 	assert.True(t, internal.IsEmptyResource(res))
 }
