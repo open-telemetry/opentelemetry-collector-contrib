@@ -92,7 +92,6 @@ func makeStructuredEvents(unix bool) []*HumioStructuredEvents {
 						"attr1": "attrval1",
 						"attr2": "attrval2",
 					},
-					RawString: "str1",
 				},
 			},
 		},
@@ -173,7 +172,7 @@ func TestSendUnstructuredEvents(t *testing.T) {
 
 func TestSendStructuredEventsIso(t *testing.T) {
 	// Arrange
-	expected := `[{"tags":{"tag1":"tagval1","tag2":"tagval2"},"events":[{"timestamp":"2021-03-28T12:30:15+02:00","attributes":{"attr1":"attrval1","attr2":"attrval2"},"rawstring":"str1"}]},{"events":[{"timestamp":"2021-03-28T12:30:15+02:00"},{"timestamp":"2021-03-28T12:30:15+02:00"}]}]`
+	expected := `[{"tags":{"tag1":"tagval1","tag2":"tagval2"},"events":[{"timestamp":"2021-03-28T12:30:15+02:00","attributes":{"attr1":"attrval1","attr2":"attrval2"}}]},{"events":[{"timestamp":"2021-03-28T12:30:15+02:00"},{"timestamp":"2021-03-28T12:30:15+02:00"}]}]`
 	evts := makeStructuredEvents(false)
 
 	// Act
@@ -190,7 +189,7 @@ func TestSendStructuredEventsIso(t *testing.T) {
 
 func TestSendStructuredEventsUnix(t *testing.T) {
 	// Arrange
-	expected := `[{"tags":{"tag1":"tagval1","tag2":"tagval2"},"events":[{"timestamp":1616927415000,"timezone":"Europe/Copenhagen","attributes":{"attr1":"attrval1","attr2":"attrval2"},"rawstring":"str1"}]},{"events":[{"timestamp":1616927415000,"timezone":"Europe/Copenhagen"},{"timestamp":1616927415000,"timezone":"Europe/Copenhagen"}]}]`
+	expected := `[{"tags":{"tag1":"tagval1","tag2":"tagval2"},"events":[{"timestamp":1616927415000,"timezone":"Europe/Copenhagen","attributes":{"attr1":"attrval1","attr2":"attrval2"}}]},{"events":[{"timestamp":1616927415000,"timezone":"Europe/Copenhagen"},{"timestamp":1616927415000,"timezone":"Europe/Copenhagen"}]}]`
 	evts := makeStructuredEvents(true)
 
 	// Act

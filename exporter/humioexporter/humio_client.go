@@ -62,9 +62,6 @@ type HumioStructuredEvent struct {
 
 	// The event payload
 	Attributes interface{}
-
-	// A representation of this event as a string, may be empty to ignore
-	RawString string
 }
 
 // Formats the timestamp in a HumioStructuredEvent as either an ISO string or a
@@ -75,22 +72,18 @@ func (e *HumioStructuredEvent) MarshalJSON() ([]byte, error) {
 			Timestamp  int64       `json:"timestamp"`
 			TimeZone   string      `json:"timezone"`
 			Attributes interface{} `json:"attributes,omitempty"`
-			RawString  string      `json:"rawstring,omitempty"`
 		}{
 			Timestamp:  e.Timestamp.Local().UnixNano() * int64(time.Nanosecond) / int64(time.Millisecond),
 			TimeZone:   e.Timestamp.Location().String(),
 			Attributes: e.Attributes,
-			RawString:  e.RawString,
 		})
 	} else {
 		return json.Marshal(struct {
 			Timestamp  time.Time   `json:"timestamp"`
 			Attributes interface{} `json:"attributes,omitempty"`
-			RawString  string      `json:"rawstring,omitempty"`
 		}{
 			Timestamp:  e.Timestamp,
 			Attributes: e.Attributes,
-			RawString:  e.RawString,
 		})
 	}
 }
