@@ -37,3 +37,8 @@ type Config struct {
 	// Then set this value to ${K8S_NODE_NAME} in the configuration.
 	Node string `mapstructure:"node"`
 }
+
+// Validate checks if the extension configuration is valid
+func (cfg *Config) Validate() error {
+	return cfg.APIConfig.Validate()
+}
