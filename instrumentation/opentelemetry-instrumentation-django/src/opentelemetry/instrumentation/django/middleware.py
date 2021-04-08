@@ -14,6 +14,9 @@
 
 from logging import getLogger
 from time import time
+from typing import Callable
+
+from django.http import HttpRequest, HttpResponse
 
 from opentelemetry.context import attach, detach
 from opentelemetry.instrumentation.django.version import __version__
@@ -24,7 +27,7 @@ from opentelemetry.instrumentation.wsgi import (
     wsgi_getter,
 )
 from opentelemetry.propagate import extract
-from opentelemetry.trace import SpanKind, get_tracer, use_span
+from opentelemetry.trace import Span, SpanKind, get_tracer, use_span
 from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
 
 try:
@@ -61,6 +64,11 @@ class _DjangoMiddleware(MiddlewareMixin):
 
     _traced_request_attrs = get_traced_request_attrs("DJANGO")
     _excluded_urls = get_excluded_urls("DJANGO")
+
+    _otel_request_hook: Callable[[Span, HttpRequest], None] = None
+    _otel_response_hook: Callable[
+        [Span, HttpRequest, HttpResponse], None
+    ] = None
 
     @staticmethod
     def _get_span_name(request):
@@ -125,6 +133,11 @@ class _DjangoMiddleware(MiddlewareMixin):
         request.META[self._environ_span_key] = span
         request.META[self._environ_token] = token
 
+        if _DjangoMiddleware._otel_request_hook:
+            _DjangoMiddleware._otel_request_hook(  # pylint: disable=not-callable
+                span, request
+            )
+
     # pylint: disable=unused-argument
     def process_view(self, request, view_func, *args, **kwargs):
         # Process view is executed before the view function, here we get the
@@ -156,30 +169,30 @@ class _DjangoMiddleware(MiddlewareMixin):
         if self._excluded_urls.url_disabled(request.build_absolute_uri("?")):
             return response
 
-        if (
-            self._environ_activation_key in request.META.keys()
-            and self._environ_span_key in request.META.keys()
-        ):
+        activation = request.META.pop(self._environ_activation_key, None)
+        span = request.META.pop(self._environ_span_key, None)
+
+        if activation and span:
             add_response_attributes(
-                request.META[self._environ_span_key],
+                span,
                 "{} {}".format(response.status_code, response.reason_phrase),
                 response,
             )
 
-            request.META.pop(self._environ_span_key)
-
             exception = request.META.pop(self._environ_exception_key, None)
+            if _DjangoMiddleware._otel_response_hook:
+                _DjangoMiddleware._otel_response_hook(  # pylint: disable=not-callable
+                    span, request, response
+                )
+
             if exception:
-                request.META[self._environ_activation_key].__exit__(
+                activation.__exit__(
                     type(exception),
                     exception,
                     getattr(exception, "__traceback__", None),
                 )
             else:
-                request.META[self._environ_activation_key].__exit__(
-                    None, None, None
-                )
-            request.META.pop(self._environ_activation_key)
+                activation.__exit__(None, None, None)
 
         if self._environ_token in request.META.keys():
             detach(request.environ.get(self._environ_token))

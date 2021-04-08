@@ -18,10 +18,15 @@ from unittest.mock import Mock, patch
 from django import VERSION
 from django.conf import settings
 from django.conf.urls import url
+from django.http import HttpRequest, HttpResponse
 from django.test import Client
 from django.test.utils import setup_test_environment, teardown_test_environment
 
-from opentelemetry.instrumentation.django import DjangoInstrumentor
+from opentelemetry.instrumentation.django import (
+    DjangoInstrumentor,
+    _DjangoMiddleware,
+)
+from opentelemetry.sdk.trace import Span
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.test.wsgitestutil import WsgiTestBase
 from opentelemetry.trace import SpanKind, StatusCode
@@ -268,3 +273,42 @@ class TestMiddleware(TestBase, WsgiTestBase):
         self.assertEqual(span.attributes["path_info"], "/span_name/1234/")
         self.assertEqual(span.attributes["content_type"], "test/ct")
         self.assertNotIn("non_existing_variable", span.attributes)
+
+    def test_hooks(self):
+        request_hook_args = ()
+        response_hook_args = ()
+
+        def request_hook(span, request):
+            nonlocal request_hook_args
+            request_hook_args = (span, request)
+
+        def response_hook(span, request, response):
+            nonlocal response_hook_args
+            response_hook_args = (span, request, response)
+            response["hook-header"] = "set by hook"
+
+        _DjangoMiddleware._otel_request_hook = request_hook
+        _DjangoMiddleware._otel_response_hook = response_hook
+
+        response = Client().get("/span_name/1234/")
+        _DjangoMiddleware._otel_request_hook = (
+            _DjangoMiddleware._otel_response_hook
+        ) = None
+
+        self.assertEqual(response["hook-header"], "set by hook")
+
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 1)
+        span = span_list[0]
+        self.assertEqual(span.attributes["path_info"], "/span_name/1234/")
+
+        self.assertEqual(len(request_hook_args), 2)
+        self.assertEqual(request_hook_args[0].name, span.name)
+        self.assertIsInstance(request_hook_args[0], Span)
+        self.assertIsInstance(request_hook_args[1], HttpRequest)
+
+        self.assertEqual(len(response_hook_args), 3)
+        self.assertEqual(request_hook_args[0], response_hook_args[0])
+        self.assertIsInstance(response_hook_args[1], HttpRequest)
+        self.assertIsInstance(response_hook_args[2], HttpResponse)
+        self.assertEqual(response_hook_args[2], response)

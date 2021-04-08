@@ -45,6 +45,22 @@ will extract path_info and content_type attributes from every traced request and
 
 Django Request object reference: https://docs.djangoproject.com/en/3.1/ref/request-response/#attributes
 
+Request and Response hooks
+***************************
+The instrumentation supports specifying request and response hooks. These are functions that get called back by the instrumentation right after a Span is created for a request
+and right before the span is finished while processing a response. The hooks can be configured as follows:
+
+::
+
+    def request_hook(span, request):
+        pass
+
+    def response_hook(span, request, response):
+        pass
+
+    DjangoInstrumentation().instrument(request_hook=request_hook, response_hook=response_hook)
+
+
 References
 ----------
 
