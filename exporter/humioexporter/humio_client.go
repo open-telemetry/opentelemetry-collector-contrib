@@ -38,16 +38,20 @@ type HumioUnstructuredEvents struct {
 
 // Describes a payload of structured events to send to Humio
 type HumioStructuredEvents struct {
-	Tags   map[string]string      `json:"tags,omitempty"`
-	Events []HumioStructuredEvent `json:"events"`
+	Tags   map[string]string       `json:"tags,omitempty"`
+	Events []*HumioStructuredEvent `json:"events"`
 }
 
 // Describes a single structured event to send to Humio
+// TODO: We can create our own type for "timeinfo" and squash it into the json
+// structure. Then a custom marshaler can determine whether to output ISO or
+// Unix, as well as to suppress timezone (or combine it with the ISO string?)
+// when using ISO format
 type HumioStructuredEvent struct {
-	TimeStamp  time.Time         `json:"timestamp"`          // TODO: Handle both ISO and Unix
-	TimeZone   string            `json:"timezone,omitempty"` // TODO: Does Go have a time zone struct we can use?
-	Attributes map[string]string `json:"attributes,omitempty"`
-	RawString  string            `json:"rawstring,omitempty"`
+	TimeStamp  time.Time   `json:"timestamp"`          // TODO: Handle both ISO and Unix
+	TimeZone   string      `json:"timezone,omitempty"` // TODO: Does Go have a time zone struct we can use?
+	Attributes interface{} `json:"attributes,omitempty"`
+	RawString  string      `json:"rawstring,omitempty"`
 }
 
 // An HTTP client for sending unstructured and structured events to Humio
@@ -103,8 +107,11 @@ func (h *humioClient) sendEvents(ctx context.Context, evts interface{}, u *url.U
 	if err != nil {
 		return err
 	}
+	// Response body needs to both be read to EOF and closed to avoid leaks
+	defer res.Body.Close()
+	io.Copy(io.Discard, res.Body)
 
-	// If an error has occured, determine if it would make sense to retry
+	// If an error has occurred, determine if it would make sense to retry
 	// This check is not exhaustive, but should cover the most common cases
 	if res.StatusCode < http.StatusOK ||
 		res.StatusCode >= http.StatusMultipleChoices {
