@@ -50,7 +50,7 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 		Tracestate:  "tracestate",
 	}
 	cfg.FieldMap.SpanName = "span_name"
-	cfg.FieldMap.TimeFormat = UnixEpochMicroTimeFormat
+	cfg.TimeFormat = UnixEpochMicroTimeFormat
 	cfg.FieldMap.SpanStartTime = "req_start_time"
 	cfg.FieldMap.SpanEndTime = "res_start_time"
 

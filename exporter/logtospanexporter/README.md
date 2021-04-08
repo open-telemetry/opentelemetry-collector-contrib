@@ -21,10 +21,10 @@ The following settings are required:
 - `endpoint` (no default): The OTLP gRPC endpoint (host:port) for sending spans to (e.g. otel-collector:4317). The valid syntax
   is described [here](https://github.com/grpc/grpc/blob/master/doc/naming.md).
   
-- `field_map.span_name` (no default): The name of the attribute containing the span name.
-
-- `field_map.time_format` (no default): The time format of 'span_start_time' and 'span_end_time'. Currently,
+- `time_format` (no default): The time format of `field_map.span_start_time` and `field_map.span_end_time`. Currently,
   'unix_epoch_micro' and 'unix_epoch_nano' are supported.
+
+- `field_map.span_name` (no default): The name of the attribute containing the span name.  
 - `field_map.span_start_time` (no default): The name of the attribute containing the span start time.
 - `field_map.span_end_time` (no default): The name of the attribute containing the span end time.
 
@@ -36,7 +36,6 @@ The following settings can be optionally configured:
   Context 'traceparent' header. Used when `trace_type` is set to 'w3c'.
 - `field_map.w3c.tracestate` (default = `tracestate`): The name of the attribute containing the W3C Trace 
   Context 'tracestate' header. Used when `trace_type` is set to 'w3c'.
-
 - `field_map.ignored` (no default): A list of attributes to not add to the outbound span.
 
 By default, TLS is enabled:
@@ -62,12 +61,12 @@ exporters:
     cert_file: client.crt
     key_file: client.key
     trace_type: "w3c"
+    time_format: 'unix_epoch_micro'
     field_map:
       w3c:
         traceparent: "traceparent"
         tracestate: "tracestate"
       span_name: "span_name"
-      time_format: 'unix_epoch_micro'
       span_start_time: "req_start_time"
       span_end_time: "res_start_time"
       ignored:

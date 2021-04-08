@@ -70,7 +70,7 @@ func createLogToSpanPusher(config *Config, params component.ExporterCreateParams
 					}
 
 					if startTime, ok := log.Attributes().Get(config.FieldMap.SpanStartTime); ok {
-						if ts, err := convertTimestamp(startTime.StringVal(), config.FieldMap.TimeFormat); err == nil {
+						if ts, err := convertTimestamp(startTime.StringVal(), config.TimeFormat); err == nil {
 							span.SetStartTime(ts)
 						}
 					} else {
@@ -79,7 +79,7 @@ func createLogToSpanPusher(config *Config, params component.ExporterCreateParams
 					}
 
 					if endTime, ok := log.Attributes().Get(config.FieldMap.SpanEndTime); ok {
-						if ts, err := convertTimestamp(endTime.StringVal(), config.FieldMap.TimeFormat); err == nil {
+						if ts, err := convertTimestamp(endTime.StringVal(), config.TimeFormat); err == nil {
 							span.SetEndTime(ts)
 						}
 					} else {
@@ -97,7 +97,9 @@ func createLogToSpanPusher(config *Config, params component.ExporterCreateParams
 			}
 		}
 
-		errs = append(errs, tracesExp.ConsumeTraces(ctx, outTraces))
+		if err := tracesExp.ConsumeTraces(ctx, outTraces); err != nil {
+			errs = append(errs, err)
+		}
 
 		return consumererror.CombineErrors(errs)
 	}
