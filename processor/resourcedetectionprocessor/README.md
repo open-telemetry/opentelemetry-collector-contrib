@@ -104,6 +104,11 @@ ec2:
     * azure.vm.scaleset.name (name of the scale set if any)
     * azure.resourcegroup.name (resource group name)
 
+* Azure AKS
+
+  * cloud.provider ("azure")
+  * cloud.platform ("azure_aks")
+
 ## Configuration
 
 ```yaml

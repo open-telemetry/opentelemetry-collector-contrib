@@ -16,11 +16,11 @@ package azure
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -34,12 +34,16 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is an Azure metadata detector
 type Detector struct {
-	provider azureProvider
+	provider Provider
+	logger   *zap.Logger
 }
 
 // NewDetector creates a new Azure metadata detector
-func NewDetector(component.ProcessorCreateParams, internal.DetectorConfig) (internal.Detector, error) {
-	return &Detector{provider: newProvider()}, nil
+func NewDetector(p component.ProcessorCreateParams, cfg internal.DetectorConfig) (internal.Detector, error) {
+	return &Detector{
+		provider: NewProvider(),
+		logger:   p.Logger,
+	}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
@@ -47,9 +51,11 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()
 	attrs := res.Attributes()
 
-	compute, err := d.provider.metadata(ctx)
+	compute, err := d.provider.Metadata(ctx)
 	if err != nil {
-		return res, fmt.Errorf("failed getting metadata: %w", err)
+		d.logger.Debug("Azure detector metadata retrieval failed", zap.Error(err))
+		// return an empty Resource and no error
+		return res, nil
 	}
 
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
