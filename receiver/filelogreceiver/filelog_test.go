@@ -90,19 +90,19 @@ func TestReadStaticFile(t *testing.T) {
 	e1 := entry.New()
 	e1.Timestamp = expectedTimestamp
 	e1.Severity = entry.Info
-	e1.Set(entry.NewRecordField("msg"), "Something routine")
+	e1.Set(entry.NewBodyField("msg"), "Something routine")
 	e1.AddAttribute("file_name", "simple.log")
 
 	e2 := entry.New()
 	e2.Timestamp = expectedTimestamp
 	e2.Severity = entry.Error
-	e2.Set(entry.NewRecordField("msg"), "Something bad happened!")
+	e2.Set(entry.NewBodyField("msg"), "Something bad happened!")
 	e2.AddAttribute("file_name", "simple.log")
 
 	e3 := entry.New()
 	e3.Timestamp = expectedTimestamp
 	e3.Severity = entry.Debug
-	e3.Set(entry.NewRecordField("msg"), "Some details...")
+	e3.Set(entry.NewBodyField("msg"), "Some details...")
 	e3.AddAttribute("file_name", "simple.log")
 
 	expectedLogs := []pdata.Logs{
@@ -189,7 +189,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 		e := entry.New()
 		e.Timestamp = expectedTimestamp
-		e.Set(entry.NewRecordField("msg"), msg)
+		e.Set(entry.NewBodyField("msg"), msg)
 		expectedLogs[i] = stanza.Convert(e)
 	}
 
