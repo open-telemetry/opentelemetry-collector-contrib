@@ -49,7 +49,7 @@ exporters:
         ingest_token: "00000000-0000-0000-0000-0000000000000"
     humio/allsettings:
         ingest_token: "00000000-0000-0000-0000-0000000000000"
-        endpoint: "localhost:8080"
+        endpoint: "http://localhost:8080"
         headers:
             User-Agent: "my-collector"
         disable_service_tag: true

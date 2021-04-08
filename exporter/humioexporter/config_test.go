@@ -79,7 +79,7 @@ func TestLoadAllSettings(t *testing.T) {
 		},
 
 		IngestToken: "00000000-0000-0000-0000-0000000000000",
-		Endpoint:    "localhost:8080",
+		Endpoint:    "http://localhost:8080",
 		Headers: map[string]string{
 			"user-agent": "my-collector",
 		},

@@ -53,7 +53,7 @@ func createDefaultConfig() configmodels.Exporter {
 		RetrySettings: exporterhelper.DefaultRetrySettings(),
 
 		// Settings specific to the Humio exporter
-		Endpoint:          "localhost:8080",
+		Endpoint:          "http://localhost:8080",
 		Tags:              map[string]string{},
 		DisableServiceTag: false,
 		Traces: TracesConfig{
