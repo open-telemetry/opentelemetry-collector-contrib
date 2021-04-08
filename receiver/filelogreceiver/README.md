@@ -15,7 +15,7 @@ Supported pipeline types: logs
 | `include`              | required         | A list of file glob patterns that match the file paths to be read                                                  |
 | `exclude`              | []               | A list of file glob patterns to exclude from reading                                                               |
 | `start_at`             | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`                            |
-| `write_to`             | $record          | The record [field](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/types/field.md) written to when creating a new log entry                                  |
+| `write_to`             | $body            | The body [field](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/types/field.md) written to when creating a new log entry                                  |
 | `multiline`            |                  | A `multiline` configuration block. See below for more details                                                      |
 | `encoding`             | `nop`            | The encoding of the file being read. See the list of supported encodings below for available options               |
 | `include_file_name`    | `true`           | Whether to add the file name as the label `file_name`                                                              |
