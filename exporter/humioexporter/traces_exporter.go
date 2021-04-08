@@ -25,11 +25,11 @@ import (
 type humioTracesExporter struct {
 	config *Config
 	logger *zap.Logger
-	client *humioClient
+	client client
 	wg     sync.WaitGroup
 }
 
-func newTracesExporter(config *Config, logger *zap.Logger, client *humioClient) *humioTracesExporter {
+func newTracesExporter(config *Config, logger *zap.Logger, client client) *humioTracesExporter {
 	return &humioTracesExporter{
 		config: config,
 		logger: logger,

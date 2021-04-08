@@ -95,7 +95,14 @@ func (e *HumioStructuredEvent) MarshalJSON() ([]byte, error) {
 	}
 }
 
-// An HTTP client for sending unstructured and structured events to Humio
+// Abstract interface describing the capabilities of an HTTP client for sending
+// unstructured and structured events
+type client interface {
+	sendUnstructuredEvents(context.Context, []*HumioUnstructuredEvents) error
+	sendStructuredEvents(context.Context, []*HumioStructuredEvents) error
+}
+
+// A concrete HTTP client for sending unstructured and structured events to Humio
 type humioClient struct {
 	config *Config
 	client *http.Client
@@ -103,7 +110,7 @@ type humioClient struct {
 }
 
 // Constructs a new HTTP client for sending payloads to Humio
-func newHumioClient(config *Config, logger *zap.Logger) (*humioClient, error) {
+func newHumioClient(config *Config, logger *zap.Logger) (client, error) {
 	client, err := config.HTTPClientSettings.ToClient()
 	if err != nil {
 		return nil, err
@@ -116,14 +123,18 @@ func newHumioClient(config *Config, logger *zap.Logger) (*humioClient, error) {
 	}, nil
 }
 
+// Send a payload of unstructured events to the corresponding Humio API
 func (h *humioClient) sendUnstructuredEvents(ctx context.Context, evts []*HumioUnstructuredEvents) error {
 	return h.sendEvents(ctx, evts, h.config.unstructuredEndpoint)
 }
 
+// Send a payload of structured events to the corresponding Humio API
 func (h *humioClient) sendStructuredEvents(ctx context.Context, evts []*HumioStructuredEvents) error {
 	return h.sendEvents(ctx, evts, h.config.structuredEndpoint)
 }
 
+// Send a payload of generic events to the specified Humio API. This method should
+// never be called directly
 func (h *humioClient) sendEvents(ctx context.Context, evts interface{}, u *url.URL) error {
 	body, err := encodeBody(evts)
 	if err != nil {
@@ -171,6 +182,7 @@ func (h *humioClient) sendEvents(ctx context.Context, evts interface{}, u *url.U
 	return nil
 }
 
+// Encode the specified payload as json
 func encodeBody(body interface{}) (io.Reader, error) {
 	b, err := json.Marshal(body)
 	if err != nil {
