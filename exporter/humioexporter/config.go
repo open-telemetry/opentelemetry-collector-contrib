@@ -19,6 +19,7 @@ import (
 	"net/url"
 	"path"
 
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -49,27 +50,20 @@ type TracesConfig struct {
 
 // Humio configuration settings
 type Config struct {
-	// Squash ensures fields are correctly decoded in embedded struct
+	// Inherited settings
 	configmodels.ExporterSettings `mapstructure:",squash"`
-
-	// Settings inherited from exporter helper
-	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
+	confighttp.HTTPClientSettings `mapstructure:",squash"`
+	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
 
 	//Ingest token for identifying and authorizing with a Humio repository
 	IngestToken string `mapstructure:"ingest_token"`
-
-	// The base URL on which the Humio backend can be reached
-	Endpoint string `mapstructure:"endpoint"`
 
 	// Endpoint for the unstructured ingest API, created internally
 	unstructuredEndpoint *url.URL
 
 	// Endpoint for the structured ingest API, created internally
 	structuredEndpoint *url.URL
-
-	// User-provided headers to attach in all requests to Humio
-	Headers map[string]string `mapstructure:"headers,omitempty"`
 
 	// Key-value pairs used to target specific data sources for storage inside Humio
 	Tags map[string]string `mapstructure:"tags,omitempty"`

@@ -17,8 +17,10 @@ package humioexporter
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -52,12 +54,16 @@ func createDefaultConfig() configmodels.Exporter {
 		QueueSettings: exporterhelper.DefaultQueueSettings(),
 		RetrySettings: exporterhelper.DefaultRetrySettings(),
 
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Headers: map[string]string{},
+		},
+
 		// Settings specific to the Humio exporter
-		Endpoint:          "http://localhost:8080",
 		Tags:              map[string]string{},
 		DisableServiceTag: false,
 		Traces: TracesConfig{
 			UnixTimestamps:    false,
+			TimeZone:          time.Local.String(),
 			DisableRawstrings: false,
 		},
 	}

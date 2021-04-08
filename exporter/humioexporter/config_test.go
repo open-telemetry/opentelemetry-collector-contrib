@@ -23,8 +23,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -53,6 +55,7 @@ func TestLoadWithDefaults(t *testing.T) {
 	// Arrange / Act
 	actual, expected := loadConfig(t, typeStr)
 	expected.IngestToken = "00000000-0000-0000-0000-0000000000000"
+	expected.Endpoint = "my-humio-host:8080"
 
 	// Assert
 	assert.Equal(t, expected, actual)
@@ -78,11 +81,27 @@ func TestLoadAllSettings(t *testing.T) {
 			MaxElapsedTime:  5 * time.Minute,
 		},
 
-		IngestToken: "00000000-0000-0000-0000-0000000000000",
-		Endpoint:    "http://localhost:8080",
-		Headers: map[string]string{
-			"user-agent": "my-collector",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "my-humio-host:8080",
+			Headers: map[string]string{
+				"user-agent": "my-collector",
+			},
+			Timeout:         10 * time.Second,
+			ReadBufferSize:  4096,
+			WriteBufferSize: 4096,
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure:           false,
+				InsecureSkipVerify: false,
+				ServerName:         "",
+				TLSSetting: configtls.TLSSetting{
+					CAFile:   "server.crt",
+					CertFile: "client.crt",
+					KeyFile:  "client.key",
+				},
+			},
 		},
+
+		IngestToken:       "00000000-0000-0000-0000-0000000000000",
 		DisableServiceTag: true,
 		Tags: map[string]string{
 			"host":        "web_server",
@@ -109,7 +128,9 @@ func TestSanitizeValid(t *testing.T) {
 	//Arrange
 	config := &Config{
 		IngestToken: "token",
-		Endpoint:    "http://localhost:8080",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "http://localhost:8080",
+		},
 	}
 
 	// Act
@@ -137,10 +158,12 @@ func TestSanitizeCustomHeaders(t *testing.T) {
 	//Arrange
 	config := &Config{
 		IngestToken: "token",
-		Endpoint:    "http://localhost:8080",
-		Headers: map[string]string{
-			"User-Agent": "Humio",
-			"Meta":       "Data",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "http://localhost:8080",
+			Headers: map[string]string{
+				"User-Agent": "Humio",
+				"Meta":       "Data",
+			},
 		},
 	}
 
@@ -168,7 +191,9 @@ func TestSanitizeErrors(t *testing.T) {
 			name: "Missing ingest token",
 			config: &Config{
 				IngestToken: "",
-				Endpoint:    "e",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "e",
+				},
 			},
 			wantErr: true,
 		},
@@ -176,15 +201,19 @@ func TestSanitizeErrors(t *testing.T) {
 			name: "Missing endpoint",
 			config: &Config{
 				IngestToken: "t",
-				Endpoint:    "",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "",
+				},
 			},
 			wantErr: true,
 		},
 		{
 			name: "Override tags",
 			config: &Config{
-				IngestToken:       "t",
-				Endpoint:          "e",
+				IngestToken: "t",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "e",
+				},
 				DisableServiceTag: true,
 				Tags:              map[string]string{"k": "v"},
 			},
@@ -193,8 +222,10 @@ func TestSanitizeErrors(t *testing.T) {
 		{
 			name: "Missing custom tags",
 			config: &Config{
-				IngestToken:       "t",
-				Endpoint:          "e",
+				IngestToken: "t",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "e",
+				},
 				DisableServiceTag: true,
 			},
 			wantErr: true,
@@ -203,7 +234,9 @@ func TestSanitizeErrors(t *testing.T) {
 			name: "Unix with time zone",
 			config: &Config{
 				IngestToken: "t",
-				Endpoint:    "e",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "e",
+				},
 				Traces: TracesConfig{
 					UnixTimestamps: true,
 					TimeZone:       "z",
@@ -215,7 +248,9 @@ func TestSanitizeErrors(t *testing.T) {
 			name: "Missing time zone",
 			config: &Config{
 				IngestToken: "t",
-				Endpoint:    "e",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "e",
+				},
 				Traces: TracesConfig{
 					UnixTimestamps: true,
 				},
@@ -226,7 +261,9 @@ func TestSanitizeErrors(t *testing.T) {
 			name: "Error creating URLs",
 			config: &Config{
 				IngestToken: "t",
-				Endpoint:    "\n\t",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "\n\t",
+				},
 			},
 			wantErr: true,
 		},
@@ -252,7 +289,9 @@ func TestGetEndpoint(t *testing.T) {
 
 	c := Config{
 		IngestToken: "t",
-		Endpoint:    "http://localhost:8080",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "http://localhost:8080",
+		},
 	}
 
 	// Act
@@ -265,7 +304,11 @@ func TestGetEndpoint(t *testing.T) {
 
 func TestGetEndpointError(t *testing.T) {
 	// Arrange
-	c := Config{Endpoint: "\n\t"}
+	c := Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "\n\t",
+		},
+	}
 
 	// Act
 	result, err := c.getEndpoint(structuredPath)
