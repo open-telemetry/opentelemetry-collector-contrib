@@ -118,13 +118,13 @@ func TestSanitizeValid(t *testing.T) {
 	// Assert
 	require.NoError(t, err)
 
-	assert.NotNil(t, config.UnstructuredEndpoint)
-	assert.Equal(t, "localhost:8080", config.UnstructuredEndpoint.Host)
-	assert.Equal(t, unstructuredPath, config.UnstructuredEndpoint.Path)
+	assert.NotNil(t, config.unstructuredEndpoint)
+	assert.Equal(t, "localhost:8080", config.unstructuredEndpoint.Host)
+	assert.Equal(t, unstructuredPath, config.unstructuredEndpoint.Path)
 
-	assert.NotNil(t, config.StructuredEndpoint)
-	assert.Equal(t, "localhost:8080", config.StructuredEndpoint.Host)
-	assert.Equal(t, structuredPath, config.StructuredEndpoint.Path)
+	assert.NotNil(t, config.structuredEndpoint)
+	assert.Equal(t, "localhost:8080", config.structuredEndpoint.Host)
+	assert.Equal(t, structuredPath, config.structuredEndpoint.Path)
 
 	assert.Equal(t, map[string]string{
 		"Content-Type":  "application/json",

@@ -63,10 +63,10 @@ type Config struct {
 	Endpoint string `mapstructure:"endpoint"`
 
 	// Endpoint for the unstructured ingest API, created internally
-	UnstructuredEndpoint *url.URL
+	unstructuredEndpoint *url.URL
 
 	// Endpoint for the structured ingest API, created internally
-	StructuredEndpoint *url.URL
+	structuredEndpoint *url.URL
 
 	// User-provided headers to attach in all requests to Humio
 	Headers map[string]string `mapstructure:"headers,omitempty"`
@@ -103,21 +103,21 @@ func (c *Config) sanitize() error {
 	}
 
 	// Ensure that it is possible to construct a URL to access the unstructured ingest API
-	if c.UnstructuredEndpoint == nil {
+	if c.unstructuredEndpoint == nil {
 		endp, err := c.getEndpoint(unstructuredPath)
 		if err != nil {
 			return errors.New("unable to create URL for unstructured ingest API")
 		}
-		c.UnstructuredEndpoint = endp
+		c.unstructuredEndpoint = endp
 	}
 
 	// Ensure that it is possible to construct a URL to access the structured ingest API
-	if c.StructuredEndpoint == nil {
+	if c.structuredEndpoint == nil {
 		endp, err := c.getEndpoint(structuredPath)
 		if err != nil {
 			return errors.New("unable to create URL for structured ingest API")
 		}
-		c.StructuredEndpoint = endp
+		c.structuredEndpoint = endp
 	}
 
 	if c.Headers == nil {
