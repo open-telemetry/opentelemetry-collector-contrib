@@ -111,9 +111,8 @@ func TestLoadAllSettings(t *testing.T) {
 			LogParser: "custom-parser",
 		},
 		Traces: TracesConfig{
-			UnixTimestamps:    true,
-			TimeZone:          "Europe/Copenhagen",
-			DisableRawstrings: true,
+			UnixTimestamps: true,
+			TimeZone:       "Europe/Copenhagen",
 		},
 	}
 

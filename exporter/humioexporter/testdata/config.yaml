@@ -30,7 +30,6 @@ exporters:
     traces:
       unix_timestamps: true
       timezone: "Europe/Copenhagen"
-      disable_rawstrings: true
     sending_queue:
       enabled: false
       num_consumers: 20

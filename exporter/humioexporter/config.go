@@ -43,9 +43,6 @@ type TracesConfig struct {
 
 	// The time zone to use when representing timestamps in Unix time
 	TimeZone string `mapstructure:"timezone"`
-
-	// Whether to attach a raw string representation of traces when exporting events to Humio
-	DisableRawstrings bool `mapstructure:"disable_rawstrings"`
 }
 
 // Humio configuration settings

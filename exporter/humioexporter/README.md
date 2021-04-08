@@ -32,8 +32,6 @@ For exporting structured data (traces), the following configuration options are 
 
 - `unix_timestamps` (default: `false`): Whether to use Unix or ISO 8601 formatted timestamps when exporting data to Humio. If this is set to `true`, timestamps will be represented in milliseconds (Unix time) in UTC.
 - `timezone` (default: host timezone): When using Unix timestamps, this option can be provided to specify the local timezone of the events. If not specified, the local time zone of the host is used instead.
-- `timezone` (no default): When using Unix timestamps, this option <u>must</u> be provided to specify the local timezone of the events.
-- `disable_rawstrings` (default: `false`): Whether to serialize structured traces as raw strings when exporting to Humio. These raw strings will be exported in addition to a structured representation of the trace.
 
 > TODO: Can we control the number of HTTP connections we make to the ingest API? Would it be feasible to open up, say, a hundred connections?
 
@@ -71,5 +69,4 @@ exporters:
         traces:
             unix_timestamps: true
             timezone: "Europe/Copenhagen"
-            disable_rawstrings: true
 ```

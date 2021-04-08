@@ -62,9 +62,8 @@ func createDefaultConfig() configmodels.Exporter {
 		Tags:              map[string]string{},
 		DisableServiceTag: false,
 		Traces: TracesConfig{
-			UnixTimestamps:    false,
-			TimeZone:          time.Local.String(),
-			DisableRawstrings: false,
+			UnixTimestamps: false,
+			TimeZone:       time.Local.String(),
 		},
 	}
 }
