@@ -7,11 +7,20 @@ processors:
 exporters:
   humio:
     ingest_token: "00000000-0000-0000-0000-0000000000000"
+    endpoint: "https://my-humio-host:8080"
   humio/allsettings:
     ingest_token: "00000000-0000-0000-0000-0000000000000"
-    endpoint: "http://localhost:8080"
+    endpoint: "https://my-humio-host:8080"
     headers:
       User-Agent: "my-collector"
+    timeout: 10s
+    insecure: false
+    insecure_skip_verify: false
+    ca_file: server.crt
+    cert_file: client.crt
+    key_file: client.key
+    read_buffer_size: 4096
+    write_buffer_size: 4096
     disable_service_tag: true
     tags:
       host: "web_server"

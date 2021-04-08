@@ -55,7 +55,7 @@ func TestLoadWithDefaults(t *testing.T) {
 	// Arrange / Act
 	actual, expected := loadConfig(t, typeStr)
 	expected.IngestToken = "00000000-0000-0000-0000-0000000000000"
-	expected.Endpoint = "my-humio-host:8080"
+	expected.Endpoint = "https://my-humio-host:8080"
 
 	// Assert
 	assert.Equal(t, expected, actual)
@@ -82,7 +82,7 @@ func TestLoadAllSettings(t *testing.T) {
 		},
 
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: "my-humio-host:8080",
+			Endpoint: "https://my-humio-host:8080",
 			Headers: map[string]string{
 				"user-agent": "my-collector",
 			},

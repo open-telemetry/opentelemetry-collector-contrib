@@ -11,7 +11,7 @@ This exporter requires the following configuration options:
 - `ingest_token` (no default): The token that has been issued in relation to the Humio repository to export data into. This token grants write-only access to a single, specific Humio repository. See [Ingest Tokens](https://docs.humio.com/docs/ingesting-data/ingest-tokens/) for more details.
 - `endpoint` (no default): The base URL on which the Humio backend can be reached, in the form `host:port`.
 
-As defined in the [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings), TLS is enabled by default. Thus, to connect this exporter with a Humio instance on localhost, the following TLS options can be overridden:
+As defined in the [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings), TLS is enabled by default. This can be disabled by overriding the following configuration options:
 
 - `insecure` (default: `false`): Whether to enable client transport security for the exporter's HTTP connection.
 - `insecure_skip_verify` (default: `false`): Whether to skip verifying the server's certificate chain or not.
@@ -37,13 +37,9 @@ For exporting structured data (traces), the following configuration options are 
 
 > TODO: Can we control the number of HTTP connections we make to the ingest API? Would it be feasible to open up, say, a hundred connections?
 
-> TODO: Is there an upper limit to how much data we can send at a time?
+> TODO: Is there an upper limit to how much data we can send at a time? Yes, it is in the docs
 
 > TODO: Do they support gzip compression of payloads, or should we avoid this?
-
-> TODO: Should we also make timeouts configurable?
-
-> TODO: How can we represent the UTC timezone in a format understood by Humio?
 
 ## Advaced Configuration
 This exporter, like many others, includes shared configuration helpers for the following advanced settings:
@@ -59,11 +55,10 @@ Below are two examples of configurations specific to this exporter. For a more a
 exporters:
     humio:
         ingest_token: "00000000-0000-0000-0000-0000000000000"
-        endpoint: "my-humio-host:8080"
+        endpoint: "https://my-humio-host:8080"
     humio/advanced:
         ingest_token: "00000000-0000-0000-0000-0000000000000"
-        endpoint: "localhost:8080"
-        insecure: true
+        endpoint: "http://localhost:8080"
         headers:
             User-Agent: "my-collector"
         timeout: 10s
