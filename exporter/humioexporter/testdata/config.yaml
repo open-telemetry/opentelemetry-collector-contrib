@@ -12,16 +12,16 @@ exporters:
     endpoint: "localhost:8080"
     headers:
       User-Agent: "my-collector"
-    enable_service_tag: false
+    disable_service_tag: true
     tags:
       host: "web_server"
       environment: "production"
     logs:
       log_parser: "custom-parser"
     traces:
-      iso_timestamps: false
+      unix_timestamps: true
       timezone: "Europe/Copenhagen"
-      enable_rawstrings: true
+      disable_rawstrings: true
     sending_queue:
       enabled: false
       num_consumers: 20
@@ -34,7 +34,7 @@ exporters:
 
 service:
   pipelines:
-    metrics:
+    traces:
       receivers: [nop]
       processors: [nop]
       exporters: [humio, humio/allsettings]

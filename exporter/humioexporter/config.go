@@ -37,14 +37,14 @@ type LogsConfig struct {
 
 // Humio configuration settings specific to traces
 type TracesConfig struct {
-	// Whether to use ISO 8601 formatted timestamps, or to fall back to Unix time
-	IsoTimestamps bool `mapstructure:"iso_timestamps"`
+	// Whether to use Unix timestamps, or to fall back to ISO 8601 formatted strings
+	UnixTimestamps bool `mapstructure:"unix_timestamps"`
 
 	// The time zone to use when representing timestamps in Unix time
 	TimeZone string `mapstructure:"timezone"`
 
 	// Whether to attach a raw string representation of traces when exporting events to Humio
-	EnableRawstrings bool `mapstructure:"enable_rawstrings"`
+	DisableRawstrings bool `mapstructure:"disable_rawstrings"`
 }
 
 // Humio configuration settings
@@ -75,7 +75,7 @@ type Config struct {
 	Tags map[string]string `mapstructure:"tags,omitempty"`
 
 	// Whether this exporter should automatically add the service name as a tag
-	EnableServiceTag bool `mapstructure:"enable_service_tag"`
+	DisableServiceTag bool `mapstructure:"disable_service_tag"`
 
 	// Configuration options specific to logs
 	Logs LogsConfig `mapstructure:"logs"`
@@ -94,11 +94,11 @@ func (c *Config) sanitize() error {
 		return errors.New("requires an endpoint")
 	}
 
-	if !c.EnableServiceTag && len(c.Tags) == 0 {
+	if c.DisableServiceTag && len(c.Tags) == 0 {
 		return errors.New("requires at least one custom tag when disabling service tag")
 	}
 
-	if !c.Traces.IsoTimestamps && c.Traces.TimeZone == "" {
+	if c.Traces.UnixTimestamps && c.Traces.TimeZone == "" {
 		return errors.New("requires a time zone when using Unix timestamps")
 	}
 

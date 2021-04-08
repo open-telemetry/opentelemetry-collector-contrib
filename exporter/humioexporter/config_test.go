@@ -83,7 +83,7 @@ func TestLoadAllSettings(t *testing.T) {
 		Headers: map[string]string{
 			"user-agent": "my-collector",
 		},
-		EnableServiceTag: false,
+		DisableServiceTag: true,
 		Tags: map[string]string{
 			"host":        "web_server",
 			"environment": "production",
@@ -92,9 +92,9 @@ func TestLoadAllSettings(t *testing.T) {
 			LogParser: "custom-parser",
 		},
 		Traces: TracesConfig{
-			IsoTimestamps:    false,
-			TimeZone:         "Europe/Copenhagen",
-			EnableRawstrings: true,
+			UnixTimestamps:    true,
+			TimeZone:          "Europe/Copenhagen",
+			DisableRawstrings: true,
 		},
 	}
 
@@ -108,12 +108,8 @@ func TestLoadAllSettings(t *testing.T) {
 func TestSanitizeValid(t *testing.T) {
 	//Arrange
 	config := &Config{
-		IngestToken:      "token",
-		Endpoint:         "http://localhost:8080",
-		EnableServiceTag: true,
-		Traces: TracesConfig{
-			IsoTimestamps: true,
-		},
+		IngestToken: "token",
+		Endpoint:    "http://localhost:8080",
 	}
 
 	// Act
@@ -146,10 +142,6 @@ func TestSanitizeCustomHeaders(t *testing.T) {
 			"User-Agent": "Humio",
 			"Meta":       "Data",
 		},
-		EnableServiceTag: true,
-		Traces: TracesConfig{
-			IsoTimestamps: true,
-		},
 	}
 
 	// Act
@@ -175,61 +167,46 @@ func TestSanitizeErrors(t *testing.T) {
 		{
 			name: "Missing ingest token",
 			config: &Config{
-				IngestToken:      "",
-				Endpoint:         "e",
-				EnableServiceTag: true,
-				Traces: TracesConfig{
-					IsoTimestamps: true,
-				},
+				IngestToken: "",
+				Endpoint:    "e",
 			},
 			wantErr: true,
 		},
 		{
 			name: "Missing endpoint",
 			config: &Config{
-				IngestToken:      "t",
-				Endpoint:         "",
-				EnableServiceTag: true,
-				Traces: TracesConfig{
-					IsoTimestamps: true,
-				},
+				IngestToken: "t",
+				Endpoint:    "",
 			},
 			wantErr: true,
 		},
 		{
 			name: "Override tags",
 			config: &Config{
-				IngestToken:      "t",
-				Endpoint:         "e",
-				EnableServiceTag: false,
-				Tags:             map[string]string{"k": "v"},
-				Traces: TracesConfig{
-					IsoTimestamps: true,
-				},
+				IngestToken:       "t",
+				Endpoint:          "e",
+				DisableServiceTag: true,
+				Tags:              map[string]string{"k": "v"},
 			},
 			wantErr: false,
 		},
 		{
 			name: "Missing custom tags",
 			config: &Config{
-				IngestToken:      "t",
-				Endpoint:         "e",
-				EnableServiceTag: false,
-				Traces: TracesConfig{
-					IsoTimestamps: true,
-				},
+				IngestToken:       "t",
+				Endpoint:          "e",
+				DisableServiceTag: true,
 			},
 			wantErr: true,
 		},
 		{
 			name: "Unix with time zone",
 			config: &Config{
-				IngestToken:      "t",
-				Endpoint:         "e",
-				EnableServiceTag: true,
+				IngestToken: "t",
+				Endpoint:    "e",
 				Traces: TracesConfig{
-					IsoTimestamps: false,
-					TimeZone:      "z",
+					UnixTimestamps: true,
+					TimeZone:       "z",
 				},
 			},
 			wantErr: false,
@@ -237,11 +214,10 @@ func TestSanitizeErrors(t *testing.T) {
 		{
 			name: "Missing time zone",
 			config: &Config{
-				IngestToken:      "t",
-				Endpoint:         "e",
-				EnableServiceTag: true,
+				IngestToken: "t",
+				Endpoint:    "e",
 				Traces: TracesConfig{
-					IsoTimestamps: false,
+					UnixTimestamps: true,
 				},
 			},
 			wantErr: true,
@@ -249,12 +225,8 @@ func TestSanitizeErrors(t *testing.T) {
 		{
 			name: "Error creating URLs",
 			config: &Config{
-				IngestToken:      "t",
-				Endpoint:         "\n\t",
-				EnableServiceTag: true,
-				Traces: TracesConfig{
-					IsoTimestamps: true,
-				},
+				IngestToken: "t",
+				Endpoint:    "\n\t",
 			},
 			wantErr: true,
 		},
@@ -279,12 +251,8 @@ func TestGetEndpoint(t *testing.T) {
 	}
 
 	c := Config{
-		IngestToken:      "t",
-		Endpoint:         "http://localhost:8080",
-		EnableServiceTag: true,
-		Traces: TracesConfig{
-			IsoTimestamps: true,
-		},
+		IngestToken: "t",
+		Endpoint:    "http://localhost:8080",
 	}
 
 	// Act
