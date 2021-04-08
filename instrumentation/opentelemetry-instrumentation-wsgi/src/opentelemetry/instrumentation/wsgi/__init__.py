@@ -157,8 +157,7 @@ def add_response_attributes(
     passed to a PEP3333-conforming start_response callable."""
     if not span.is_recording():
         return
-    status_code, status_text = start_response_status.split(" ", 1)
-    span.set_attribute("http.status_text", status_text)
+    status_code, _ = start_response_status.split(" ", 1)
 
     try:
         status_code = int(status_code)

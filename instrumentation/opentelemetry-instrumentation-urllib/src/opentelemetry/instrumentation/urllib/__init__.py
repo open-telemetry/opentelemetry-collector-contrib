@@ -171,7 +171,6 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
 
                 if span.is_recording():
                     span.set_attribute("http.status_code", code_)
-                    span.set_attribute("http.status_text", result.reason)
                     span.set_status(Status(http_status_to_status_code(code_)))
 
                 ver_ = str(getattr(result, "version", ""))

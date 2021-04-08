@@ -112,7 +112,6 @@ class TestWsgiApplication(WsgiTestBase):
             "http.host": "127.0.0.1",
             "http.flavor": "1.0",
             "http.url": "http://127.0.0.1/",
-            "http.status_text": "OK",
             "http.status_code": 200,
         }
         if http_method is not None:
@@ -337,19 +336,9 @@ class TestWsgiAttributes(unittest.TestCase):
 
     def test_response_attributes(self):
         otel_wsgi.add_response_attributes(self.span, "404 Not Found", {})
-        expected = (
-            mock.call("http.status_code", 404),
-            mock.call("http.status_text", "Not Found"),
-        )
+        expected = (mock.call("http.status_code", 404),)
         self.assertEqual(self.span.set_attribute.call_count, len(expected))
         self.span.set_attribute.assert_has_calls(expected, any_order=True)
-
-    def test_response_attributes_invalid_status_code(self):
-        otel_wsgi.add_response_attributes(self.span, "Invalid Status Code", {})
-        self.assertEqual(self.span.set_attribute.call_count, 1)
-        self.span.set_attribute.assert_called_with(
-            "http.status_text", "Status Code"
-        )
 
 
 if __name__ == "__main__":

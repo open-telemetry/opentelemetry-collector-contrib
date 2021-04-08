@@ -82,7 +82,6 @@ class RequestsIntegrationTestBase(abc.ABC):
                 "http.method": "GET",
                 "http.url": self.URL,
                 "http.status_code": 200,
-                "http.status_text": "OK",
             },
         )
 
@@ -127,7 +126,6 @@ class RequestsIntegrationTestBase(abc.ABC):
         span = self.assert_span()
 
         self.assertEqual(span.attributes.get("http.status_code"), 404)
-        self.assertEqual(span.attributes.get("http.status_text"), "Not Found")
 
         self.assertIs(
             span.status.status_code, trace.StatusCode.ERROR,
@@ -235,7 +233,6 @@ class RequestsIntegrationTestBase(abc.ABC):
                 "http.method": "GET",
                 "http.url": self.URL,
                 "http.status_code": 200,
-                "http.status_text": "OK",
                 "http.response.body": "Hello!",
             },
         )
@@ -304,7 +301,6 @@ class RequestsIntegrationTestBase(abc.ABC):
                 "http.method": "GET",
                 "http.url": self.URL,
                 "http.status_code": 500,
-                "http.status_text": "Internal Server Error",
             },
         )
         self.assertEqual(span.status.status_code, StatusCode.ERROR)

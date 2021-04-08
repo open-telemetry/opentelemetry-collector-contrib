@@ -35,7 +35,6 @@ def expected_attributes(override_attributes):
         "http.host": "localhost",
         "http.target": "/",
         "http.flavor": "1.1",
-        "http.status_text": "OK",
         "http.status_code": 200,
     }
     for key, val in override_attributes.items():
@@ -138,7 +137,6 @@ class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
             {
                 "http.method": "POST",
                 "http.target": "/bye",
-                "http.status_text": "NOT FOUND",
                 "http.status_code": 404,
             }
         )
@@ -157,7 +155,6 @@ class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
             {
                 "http.target": "/hello/500",
                 "http.route": "/hello/<int:helloid>",
-                "http.status_text": "INTERNAL SERVER ERROR",
                 "http.status_code": 500,
             }
         )

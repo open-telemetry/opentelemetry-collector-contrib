@@ -238,8 +238,6 @@ def _finish_span(tracer, handler, error=None):
         return
 
     if ctx.span.is_recording():
-        if reason:
-            ctx.span.set_attribute("http.status_text", reason)
         ctx.span.set_attribute("http.status_code", status_code)
         ctx.span.set_status(
             Status(

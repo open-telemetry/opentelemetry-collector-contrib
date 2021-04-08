@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `opentelemetry-instrumenation-django` now supports request and response hooks.
   ([#407](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/407))
 
+### Removed
+- Remove `http.status_text` from span attributes
+  ([#406](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/406))
+
 ## [0.19b0](https://github.com/open-telemetry/opentelemetry-python-contrib/releases/tag/v0.19b0) - 2021-03-26
 
 - Implement context methods for `_InterceptorChannel`

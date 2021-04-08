@@ -104,7 +104,6 @@ class TestFalconInstrumentation(TestBase):
                 "net.peer.port": "65133",
                 "http.flavor": "1.1",
                 "falcon.resource": "HelloWorldResource",
-                "http.status_text": "Created",
                 "http.status_code": 201,
             },
         )
@@ -129,7 +128,6 @@ class TestFalconInstrumentation(TestBase):
                 "net.peer.ip": "127.0.0.1",
                 "net.peer.port": "65133",
                 "http.flavor": "1.1",
-                "http.status_text": "Not Found",
                 "http.status_code": 404,
             },
         )

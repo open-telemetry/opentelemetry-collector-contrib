@@ -198,9 +198,6 @@ def create_trace_config(
             trace_config_ctx.span.set_attribute(
                 "http.status_code", params.response.status
             )
-            trace_config_ctx.span.set_attribute(
-                "http.status_text", params.response.reason
-            )
         _end_trace(trace_config_ctx)
 
     async def on_request_exception(

@@ -203,7 +203,6 @@ def _apply_response(span: Span, response: urllib3.response.HTTPResponse):
         return
 
     span.set_attribute("http.status_code", response.status)
-    span.set_attribute("http.status_text", response.reason)
     span.set_status(Status(http_status_to_status_code(response.status)))
 
 

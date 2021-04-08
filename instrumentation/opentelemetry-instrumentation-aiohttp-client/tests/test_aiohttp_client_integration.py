@@ -134,7 +134,6 @@ class TestAioHttpIntegration(TestBase):
                                     host, port
                                 ),
                                 "http.status_code": int(status_code),
-                                "http.status_text": status_code.phrase,
                             },
                         )
                     ]
@@ -191,7 +190,6 @@ class TestAioHttpIntegration(TestBase):
                                     host, port, path
                                 ),
                                 "http.status_code": int(HTTPStatus.OK),
-                                "http.status_text": HTTPStatus.OK.phrase,
                             },
                         )
                     ]
@@ -222,7 +220,6 @@ class TestAioHttpIntegration(TestBase):
                             host, port
                         ),
                         "http.status_code": int(HTTPStatus.OK),
-                        "http.status_text": HTTPStatus.OK.phrase,
                     },
                 )
             ]
@@ -361,7 +358,6 @@ class TestAioHttpClientInstrumentor(TestBase):
             span.attributes["http.url"],
         )
         self.assertEqual(200, span.attributes["http.status_code"])
-        self.assertEqual("OK", span.attributes["http.status_text"])
 
     def test_instrument_with_existing_trace_config(self):
         trace_config = aiohttp.TraceConfig()

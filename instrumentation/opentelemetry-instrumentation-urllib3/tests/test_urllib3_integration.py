@@ -72,7 +72,6 @@ class TestURLLib3Instrumentor(TestBase):
             "http.method": "GET",
             "http.url": url,
             "http.status_code": 200,
-            "http.status_text": "OK",
         }
         self.assertEqual(attributes, span.attributes)
 
@@ -127,7 +126,6 @@ class TestURLLib3Instrumentor(TestBase):
 
         span = self.assert_span()
         self.assertEqual(404, span.attributes.get("http.status_code"))
-        self.assertEqual("Not Found", span.attributes.get("http.status_text"))
         self.assertIs(trace.status.StatusCode.ERROR, span.status.status_code)
 
     def test_basic_http_non_default_port(self):

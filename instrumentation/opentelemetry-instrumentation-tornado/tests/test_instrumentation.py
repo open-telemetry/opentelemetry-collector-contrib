@@ -132,7 +132,6 @@ class TestTornadoInstrumentation(TornadoTest):
                 "http.host": "127.0.0.1:" + str(self.get_http_port()),
                 "http.target": "/",
                 "net.peer.ip": "127.0.0.1",
-                "http.status_text": "Created",
                 "http.status_code": 201,
             },
         )
@@ -205,7 +204,6 @@ class TestTornadoInstrumentation(TornadoTest):
                 "http.host": "127.0.0.1:" + str(self.get_http_port()),
                 "http.target": url,
                 "net.peer.ip": "127.0.0.1",
-                "http.status_text": "Created",
                 "http.status_code": 201,
             },
         )
@@ -274,7 +272,6 @@ class TestTornadoInstrumentation(TornadoTest):
                 "http.host": "127.0.0.1:" + str(self.get_http_port()),
                 "http.target": "/missing-url",
                 "net.peer.ip": "127.0.0.1",
-                "http.status_text": "Not Found",
                 "http.status_code": 404,
             },
         )
@@ -318,7 +315,6 @@ class TestTornadoInstrumentation(TornadoTest):
                 "http.host": "127.0.0.1:" + str(self.get_http_port()),
                 "http.target": "/dyna",
                 "net.peer.ip": "127.0.0.1",
-                "http.status_text": "Accepted",
                 "http.status_code": 202,
             },
         )

@@ -150,7 +150,6 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
             if isinstance(result, Response):
                 if span.is_recording():
                     span.set_attribute("http.status_code", result.status_code)
-                    span.set_attribute("http.status_text", result.reason)
                     span.set_status(
                         Status(http_status_to_status_code(result.status_code))
                     )
