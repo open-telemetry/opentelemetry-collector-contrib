@@ -81,7 +81,12 @@ func createTracesExporter(
 		return nil, err
 	}
 
-	exporter := newTracesExporter(cfg, params.Logger)
+	client, err := newHumioClient(cfg, params.Logger)
+	if err != nil {
+		return nil, err
+	}
+
+	exporter := newTracesExporter(cfg, params.Logger, client)
 
 	return exporterhelper.NewTracesExporter(
 		cfg,

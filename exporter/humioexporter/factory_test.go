@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 )
 
@@ -62,6 +63,22 @@ func TestCreateTracesExporter(t *testing.T) {
 				ExporterSettings: config.NewExporterSettings(typeStr),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			desc: "Invalid client configuration",
+			config: &Config{
+				IngestToken: "00000000-0000-0000-0000-0000000000000",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "http://localhost:8080",
+					TLSSetting: configtls.TLSClientSetting{
+						TLSSetting: configtls.TLSSetting{
+							CertFile: "",
+							KeyFile:  "key.key",
+						},
+					},
 				},
 			},
 			wantErr: true,
