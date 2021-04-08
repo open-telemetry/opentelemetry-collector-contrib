@@ -55,3 +55,21 @@ func TestLoadConfig(t *testing.T) {
 		},
 		ext1)
 }
+
+func TestValidate(t *testing.T) {
+	cfg := &Config{
+		ExtensionSettings: &config.ExtensionSettings{
+			TypeVal: "k8s_observer",
+			NameVal: "k8s_observer/1",
+		},
+		Node:      "node-1",
+		APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
+	}
+
+	err := cfg.Validate()
+	require.Nil(t, err)
+
+	cfg.APIConfig.AuthType = "invalid"
+	err = cfg.Validate()
+	require.NotNil(t, err)
+}

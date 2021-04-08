@@ -97,7 +97,7 @@ type MetricDescriptor struct {
 }
 
 // Validate filters out invalid metricDeclarations and metricDescriptors
-func (config *Config) Validate() {
+func (config *Config) Validate() error {
 	validDeclarations := []*MetricDeclaration{}
 	for _, declaration := range config.MetricDeclarations {
 		err := declaration.Init(config.logger)
@@ -121,6 +121,7 @@ func (config *Config) Validate() {
 		}
 	}
 	config.MetricDescriptors = validDescriptors
+	return nil
 }
 
 func newEMFSupportedUnits() map[string]interface{} {
