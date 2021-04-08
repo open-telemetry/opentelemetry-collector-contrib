@@ -33,12 +33,6 @@ For exporting structured data (traces), the following configuration options are 
 - `unix_timestamps` (default: `false`): Whether to use Unix or ISO 8601 formatted timestamps when exporting data to Humio. If this is set to `true`, timestamps will be represented in milliseconds (Unix time) in UTC.
 - `timezone` (default: host timezone): When using Unix timestamps, this option can be provided to specify the local timezone of the events. If not specified, the local time zone of the host is used instead.
 
-> TODO: Can we control the number of HTTP connections we make to the ingest API? Would it be feasible to open up, say, a hundred connections?
-
-> TODO: Is there an upper limit to how much data we can send at a time? Yes, it is in the docs
-
-> TODO: Do they support gzip compression of payloads, or should we avoid this?
-
 ## Advaced Configuration
 This exporter, like many others, includes shared configuration helpers for the following advanced settings:
 

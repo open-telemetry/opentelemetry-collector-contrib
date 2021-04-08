@@ -35,7 +35,7 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithTraces(createTracesExporter),
 		// To be added over time
 		// exporterhelper.WithMetrics(createMetricsExporter),
 		// exporterhelper.WithLogs(createLogsExporter),
@@ -69,7 +69,7 @@ func createDefaultConfig() configmodels.Exporter {
 }
 
 // Creates a new trace exporter for Humio
-func createTraceExporter(
+func createTracesExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
 	config configmodels.Exporter,
@@ -97,19 +97,17 @@ func createTraceExporter(
 }
 
 // Creates a new metrics exporter for Humio
-func createMetricsExporter(
-	ctx context.Context,
-	params component.ExporterCreateParams,
-	config configmodels.Exporter,
-) (component.MetricsExporter, error) {
-	return nil, errors.New("metrics exporter not implemented yet")
-}
+// func createMetricsExporter(
+// 	ctx context.Context,
+// 	params component.ExporterCreateParams,
+// 	config configmodels.Exporter,
+// ) (component.MetricsExporter, error) {
+// }
 
 // Creates a new logs exporter for Humio
-func createLogsExporter(
-	ctx context.Context,
-	params component.ExporterCreateParams,
-	config configmodels.Exporter,
-) (component.LogsExporter, error) {
-	return nil, errors.New("logs exporter not implemented yet")
-}
+// func createLogsExporter(
+// 	ctx context.Context,
+// 	params component.ExporterCreateParams,
+// 	config configmodels.Exporter,
+// ) (component.LogsExporter, error) {
+// }
