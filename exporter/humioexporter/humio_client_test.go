@@ -16,6 +16,7 @@ package humioexporter
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -73,11 +74,8 @@ func makeUnstructuredEvents() []*HumioUnstructuredEvents {
 }
 
 func makeStructuredEvents(unix bool) []*HumioStructuredEvents {
-	var timestamp = time.Date(2021, 3, 28, 12, 30, 15, 0, time.UTC)
-	var timeZone = ""
-	if unix {
-		timeZone = "Europe/Copenhagen"
-	}
+	loc, _ := time.LoadLocation("Europe/Copenhagen")
+	timestamp := time.Date(2021, 3, 28, 12, 30, 15, 0, loc)
 
 	return []*HumioStructuredEvents{
 		// Fully specified
@@ -88,8 +86,8 @@ func makeStructuredEvents(unix bool) []*HumioStructuredEvents {
 			},
 			Events: []*HumioStructuredEvent{
 				{
-					TimeStamp: timestamp,
-					TimeZone:  timeZone,
+					Timestamp: timestamp,
+					AsUnix:    unix,
 					Attributes: map[string]string{
 						"attr1": "attrval1",
 						"attr2": "attrval2",
@@ -102,12 +100,12 @@ func makeStructuredEvents(unix bool) []*HumioStructuredEvents {
 		{
 			Events: []*HumioStructuredEvent{
 				{
-					TimeStamp: timestamp,
-					TimeZone:  timeZone,
+					Timestamp: timestamp,
+					AsUnix:    unix,
 				},
 				{
-					TimeStamp: timestamp,
-					TimeZone:  timeZone,
+					Timestamp: timestamp,
+					AsUnix:    unix,
 				},
 			},
 		},
@@ -135,7 +133,6 @@ func executeRequest(fn func(s *httptest.Server) error) (result requestData) {
 			result.Error = err
 		} else {
 			result.Body = string(body)
-			defer r.Body.Close()
 		}
 	}))
 	defer s.Close()
@@ -177,7 +174,7 @@ func TestSendUnstructuredEvents(t *testing.T) {
 
 func TestSendStructuredEventsIso(t *testing.T) {
 	// Arrange
-	expected := `[{"tags":{"tag1":"tagval1","tag2":"tagval2"},"events":[{"timestamp":"2021-03-28T12:30:15Z","attributes":{"attr1":"attrval1","attr2":"attrval2"},"rawstring":"str1"}]},{"events":[{"timestamp":"2021-03-28T12:30:15Z"},{"timestamp":"2021-03-28T12:30:15Z"}]}]`
+	expected := `[{"tags":{"tag1":"tagval1","tag2":"tagval2"},"events":[{"timestamp":"2021-03-28T12:30:15+02:00","attributes":{"attr1":"attrval1","attr2":"attrval2"},"rawstring":"str1"}]},{"events":[{"timestamp":"2021-03-28T12:30:15+02:00"},{"timestamp":"2021-03-28T12:30:15+02:00"}]}]`
 	evts := makeStructuredEvents(false)
 
 	// Act
@@ -194,7 +191,7 @@ func TestSendStructuredEventsIso(t *testing.T) {
 
 func TestSendStructuredEventsUnix(t *testing.T) {
 	// Arrange
-	expected := `[{"tags":{"tag1":"tagval1","tag2":"tagval2"},"events":[{"timestamp":"1616927415","timezone":"Europe/Copenhagen","attributes":{"attr1":"attrval1","attr2":"attrval2"},"rawstring":"str1"}]},{"events":[{"timestamp":"1616927415","timezone":"Europe/Copenhagen"},{"timestamp":"1616927415","timezone":"Europe/Copenhagen"}]}]`
+	expected := `[{"tags":{"tag1":"tagval1","tag2":"tagval2"},"events":[{"timestamp":1616927415000,"timezone":"Europe/Copenhagen","attributes":{"attr1":"attrval1","attr2":"attrval2"},"rawstring":"str1"}]},{"events":[{"timestamp":1616927415000,"timezone":"Europe/Copenhagen"},{"timestamp":1616927415000,"timezone":"Europe/Copenhagen"}]}]`
 	evts := makeStructuredEvents(true)
 
 	// Act
@@ -233,5 +230,94 @@ func TestSendEventsBadParameters(t *testing.T) {
 	assert.True(t, consumererror.IsPermanent(err))
 }
 
-// TODO: Test JSON marshal error?
-// TODO: Test error codes with test cases
+type problematicStruct struct{}
+
+func (e problematicStruct) MarshalJSON() ([]byte, error) {
+	return nil, errors.New("Fail")
+}
+
+func TestSendStructuredEventsMarshalError(t *testing.T) {
+	// Arrange
+	humio := makeClient(t, "https://localhost:8080")
+	evts := []*HumioStructuredEvents{
+		{
+			Events: []*HumioStructuredEvent{
+				{
+					Timestamp:  time.Now(),
+					Attributes: problematicStruct{},
+				},
+			},
+		},
+	}
+
+	// Act
+	err := humio.sendStructuredEvents(context.Background(), evts)
+
+	// Assert
+	require.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err))
+}
+
+func TestSendEventsStatusCodes(t *testing.T) {
+	// Arrange
+	testCases := []struct {
+		desc     string
+		code     int
+		wantPerm bool
+	}{
+		{
+			desc:     "Retry on Not Found",
+			code:     404,
+			wantPerm: false,
+		},
+		{
+			desc:     "Retry on Request Timeout",
+			code:     404,
+			wantPerm: false,
+		},
+		{
+			desc:     "Retry on Internal Server Error",
+			code:     500,
+			wantPerm: false,
+		},
+		{
+			desc:     "Retry on Service Unavailable",
+			code:     503,
+			wantPerm: false,
+		},
+		{
+			desc:     "Fail on Bad Request",
+			code:     400,
+			wantPerm: true,
+		},
+		{
+			desc:     "Fail on Unauthorized",
+			code:     401,
+			wantPerm: true,
+		},
+		{
+			desc:     "Fail on Forbidden",
+			code:     403,
+			wantPerm: true,
+		},
+	}
+
+	// Act
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			s := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+				rw.WriteHeader(tC.code)
+			}))
+			defer s.Close()
+
+			humio := makeClient(t, s.URL)
+			err := humio.sendUnstructuredEvents(context.Background(), makeUnstructuredEvents())
+
+			// Assert
+			if consumererror.IsPermanent(err) != tC.wantPerm {
+				t.Errorf("SendEvents() permanent = %v, wantPerm %v",
+					consumererror.IsPermanent(err), tC.wantPerm)
+			}
+		})
+	}
+}

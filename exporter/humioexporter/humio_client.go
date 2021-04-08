@@ -30,28 +30,69 @@ import (
 
 // Describes a payload of unstructured events to send to Humio
 type HumioUnstructuredEvents struct {
-	Fields   map[string]string `json:"fields,omitempty"`
-	Tags     map[string]string `json:"tags,omitempty"`
-	Type     string            `json:"type,omitempty"`
-	Messages []string          `json:"messages"`
+	// Key-value pairs to associate with the messages as metadata
+	Fields map[string]string `json:"fields,omitempty"`
+
+	// Tags used to target specific data sources in Humio
+	Tags map[string]string `json:"tags,omitempty"`
+
+	// The name of the parser to handle these messages inside Humio
+	Type string `json:"type,omitempty"`
+
+	// The series of unstructured messages
+	Messages []string `json:"messages"`
 }
 
 // Describes a payload of structured events to send to Humio
 type HumioStructuredEvents struct {
-	Tags   map[string]string       `json:"tags,omitempty"`
+	// Tags used to target specific data sources in Humio
+	Tags map[string]string `json:"tags,omitempty"`
+
+	// The series of structured events
 	Events []*HumioStructuredEvent `json:"events"`
 }
 
 // Describes a single structured event to send to Humio
-// TODO: We can create our own type for "timeinfo" and squash it into the json
-// structure. Then a custom marshaler can determine whether to output ISO or
-// Unix, as well as to suppress timezone (or combine it with the ISO string?)
-// when using ISO format
 type HumioStructuredEvent struct {
-	TimeStamp  time.Time   `json:"timestamp"`          // TODO: Handle both ISO and Unix
-	TimeZone   string      `json:"timezone,omitempty"` // TODO: Does Go have a time zone struct we can use?
-	Attributes interface{} `json:"attributes,omitempty"`
-	RawString  string      `json:"rawstring,omitempty"`
+	// The time where the event occurred
+	Timestamp time.Time
+
+	// Whether to serialize the timestamp as Unix or ISO
+	AsUnix bool
+
+	// The event payload
+	Attributes interface{}
+
+	// A representation of this event as a string, may be empty to ignore
+	RawString string
+}
+
+// Formats the timestamp in a HumioStructuredEvent as either an ISO string or a
+// Unix timestamp in milliseconds with time zone
+func (e *HumioStructuredEvent) MarshalJSON() ([]byte, error) {
+	if e.AsUnix {
+		return json.Marshal(struct {
+			Timestamp  int64       `json:"timestamp"`
+			TimeZone   string      `json:"timezone"`
+			Attributes interface{} `json:"attributes,omitempty"`
+			RawString  string      `json:"rawstring,omitempty"`
+		}{
+			Timestamp:  e.Timestamp.Local().UnixNano() * int64(time.Nanosecond) / int64(time.Millisecond),
+			TimeZone:   e.Timestamp.Location().String(),
+			Attributes: e.Attributes,
+			RawString:  e.RawString,
+		})
+	} else {
+		return json.Marshal(struct {
+			Timestamp  time.Time   `json:"timestamp"`
+			Attributes interface{} `json:"attributes,omitempty"`
+			RawString  string      `json:"rawstring,omitempty"`
+		}{
+			Timestamp:  e.Timestamp,
+			Attributes: e.Attributes,
+			RawString:  e.RawString,
+		})
+	}
 }
 
 // An HTTP client for sending unstructured and structured events to Humio
