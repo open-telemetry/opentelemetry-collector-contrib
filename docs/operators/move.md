@@ -8,7 +8,7 @@ It's configured by passing 'to' and 'from' fields.
 
 | Field      | Default          | Description                                                                                                                                                                                                                              |
 | ---        | ---              | ---                                                                                                                                                                                                                                      |
-| `id`       | `restructure`    | A unique identifier for the operator                                                                                                                                                                                                     |
+| `id`       | `move`    | A unique identifier for the operator                                                                                                                                                                                                     |
 | `output`   | Next in pipeline | The connected operator(s) that will receive all outbound entries                                                                                                                                                                         |
 | `from`      | required       | The [field](/docs/types/field.md)  to move the value out of.   
 | `to`      | required       | The [field](/docs/types/field.md)  to move the value into.
