@@ -16,6 +16,7 @@ package kinesisexporter
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -29,6 +30,8 @@ const (
 	// The default encoding scheme is set to otlpProto
 	defaultEncoding = otlpProto
 )
+
+type creationFunc func(context.Context, component.ExporterCreateParams, configmodels.Exporter) (component.Exporter, error)
 
 // NewFactory creates a factory for Kinesis exporter.
 func NewFactory() component.ExporterFactory {
@@ -61,10 +64,14 @@ func createDefaultConfig() configmodels.Exporter {
 }
 
 func createTraceExporter(
-	_ context.Context,
+	ctx context.Context,
 	params component.ExporterCreateParams,
 	config configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
+	if err := validateParams(ctx, params, config); err != nil {
+		return nil, err
+	}
+
 	c := config.(*Config)
 	exp, err := newExporter(c, params.Logger)
 	if err != nil {
@@ -73,16 +80,20 @@ func createTraceExporter(
 
 	return exporterhelper.NewTraceExporter(
 		c,
+		params.Logger,
 		exp.pushTraces,
 		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithShutdown(exp.shutdown))
 }
 
 func createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	params component.ExporterCreateParams,
 	config configmodels.Exporter,
 ) (component.MetricsExporter, error) {
+	if err := validateParams(ctx, params, config); err != nil {
+		return nil, err
+	}
 	c := config.(*Config)
 	exp, err := newExporter(c, params.Logger)
 	if err != nil {
@@ -91,7 +102,24 @@ func createMetricsExporter(
 
 	return exporterhelper.NewMetricsExporter(
 		c,
+		params.Logger,
 		exp.pushMetrics,
 		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithShutdown(exp.shutdown))
+}
+
+func validateParams(ctx context.Context, params component.ExporterCreateParams, config configmodels.Exporter) error {
+	if config == nil {
+		return errors.New("nil config")
+	}
+
+	if params.Logger == nil {
+		return errors.New("nil logger")
+	}
+
+	if ctx == nil {
+		return errors.New("nil context")
+	}
+
+	return nil
 }
