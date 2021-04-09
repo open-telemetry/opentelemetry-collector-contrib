@@ -132,8 +132,6 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (err error) {
 	gzipBuffer := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthLogs))
 	gzipWriter.Reset(gzipBuffer)
 
-	defer gzipWriter.Close()
-
 	// Callback when each batch is to be sent.
 	send := func(ctx context.Context, buf *bytes.Buffer) (err error) {
 		shouldCompress := buf.Len() >= minCompressionLen && !c.config.DisableCompression
@@ -146,7 +144,7 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (err error) {
 				return fmt.Errorf("failed copying buffer to gzip writer: %v", err)
 			}
 
-			if err = gzipWriter.Flush(); err != nil {
+			if err = gzipWriter.Close(); err != nil {
 				return fmt.Errorf("failed flushing compressed data to gzip writer: %v", err)
 			}
 
