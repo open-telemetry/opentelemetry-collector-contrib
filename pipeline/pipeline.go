@@ -16,11 +16,13 @@ package pipeline
 
 //go:generate mockery --name=^(Pipeline)$ --output=../testutil --outpkg=testutil --case=snake
 
-import "github.com/open-telemetry/opentelemetry-log-collection/operator"
+import (
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
+)
 
 // Pipeline is a collection of connected operators that exchange entries
 type Pipeline interface {
-	Start() error
+	Start(persister operator.Persister) error
 	Stop() error
 	Operators() []operator.Operator
 	Render() ([]byte, error)

@@ -69,7 +69,7 @@ func (f *FakeOutput) Outputs() []operator.Operator { return nil }
 func (f *FakeOutput) SetOutputs(outputs []operator.Operator) error { return nil }
 
 // Start immediately returns nil for a fake output
-func (f *FakeOutput) Start() error { return nil }
+func (f *FakeOutput) Start(_ operator.Persister) error { return nil }
 
 // Stop immediately returns nil for a fake output
 func (f *FakeOutput) Stop() error { return nil }

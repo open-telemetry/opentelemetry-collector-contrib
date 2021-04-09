@@ -87,10 +87,10 @@ func TestPipeline(t *testing.T) {
 		pipeline, err := NewDirectedPipeline([]operator.Operator{})
 		require.NoError(t, err)
 
-		err = pipeline.Start()
+		err = pipeline.Start(testutil.NewMockPersister("test1"))
 		require.NoError(t, err)
 
-		err = pipeline.Start()
+		err = pipeline.Start(testutil.NewMockPersister("test2"))
 		require.NoError(t, err)
 
 		require.NoError(t, pipeline.Stop())
@@ -100,7 +100,7 @@ func TestPipeline(t *testing.T) {
 		pipeline, err := NewDirectedPipeline([]operator.Operator{})
 		require.NoError(t, err)
 
-		err = pipeline.Start()
+		err = pipeline.Start(testutil.NewMockPersister("test3"))
 		require.NoError(t, err)
 
 		require.NoError(t, pipeline.Stop())
@@ -198,6 +198,7 @@ func TestPipelineStartOrder(t *testing.T) {
 	mockOperator1 := testutil.NewMockOperator("operator1")
 	mockOperator2 := testutil.NewMockOperator("operator2")
 	mockOperator3 := testutil.NewMockOperator("operator3")
+	mockPersister := testutil.NewUnscopedMockPersister()
 
 	mockOperator1.On("Outputs").Return([]operator.Operator{mockOperator2})
 	mockOperator2.On("Outputs").Return([]operator.Operator{mockOperator3})
@@ -211,14 +212,14 @@ func TestPipelineStartOrder(t *testing.T) {
 	mockOperator2.On("Logger", mock.Anything).Return(zap.NewNop().Sugar())
 	mockOperator3.On("Logger", mock.Anything).Return(zap.NewNop().Sugar())
 
-	mockOperator1.On("Start").Return(fmt.Errorf("operator 1 failed to start"))
-	mockOperator2.On("Start").Run(func(mock.Arguments) { mock2Started = true }).Return(nil)
-	mockOperator3.On("Start").Run(func(mock.Arguments) { mock3Started = true }).Return(nil)
+	mockOperator1.On("Start", testutil.NewMockPersister(mockOperator1.ID())).Return(fmt.Errorf("operator 1 failed to start"))
+	mockOperator2.On("Start", testutil.NewMockPersister(mockOperator2.ID())).Run(func(mock.Arguments) { mock2Started = true }).Return(nil)
+	mockOperator3.On("Start", testutil.NewMockPersister(mockOperator3.ID())).Run(func(mock.Arguments) { mock3Started = true }).Return(nil)
 
 	pipeline, err := NewDirectedPipeline([]operator.Operator{mockOperator1, mockOperator2, mockOperator3})
 	require.NoError(t, err)
 
-	err = pipeline.Start()
+	err = pipeline.Start(mockPersister)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "operator 1 failed to start")
 	require.True(t, mock2Started)
@@ -231,6 +232,7 @@ func TestPipelineStopOrder(t *testing.T) {
 	mockOperator1 := testutil.NewMockOperator("operator1")
 	mockOperator2 := testutil.NewMockOperator("operator2")
 	mockOperator3 := testutil.NewMockOperator("operator3")
+	mockPersister := testutil.NewUnscopedMockPersister()
 
 	mockOperator1.On("Outputs").Return([]operator.Operator{mockOperator2})
 	mockOperator2.On("Outputs").Return([]operator.Operator{mockOperator3})
@@ -244,9 +246,9 @@ func TestPipelineStopOrder(t *testing.T) {
 	mockOperator2.On("Logger", mock.Anything).Return(zap.NewNop().Sugar())
 	mockOperator3.On("Logger", mock.Anything).Return(zap.NewNop().Sugar())
 
-	mockOperator1.On("Start").Return(nil)
-	mockOperator2.On("Start").Return(nil)
-	mockOperator3.On("Start").Return(nil)
+	mockOperator1.On("Start", testutil.NewMockPersister(mockOperator1.ID())).Return(nil)
+	mockOperator2.On("Start", testutil.NewMockPersister(mockOperator2.ID())).Return(nil)
+	mockOperator3.On("Start", testutil.NewMockPersister(mockOperator3.ID())).Return(nil)
 
 	mockOperator1.On("Stop").Run(func(mock.Arguments) { stopOrder = append(stopOrder, 1) }).Return(nil)
 	mockOperator2.On("Stop").Run(func(mock.Arguments) { stopOrder = append(stopOrder, 2) }).Return(nil)
@@ -255,7 +257,7 @@ func TestPipelineStopOrder(t *testing.T) {
 	pipeline, err := NewDirectedPipeline([]operator.Operator{mockOperator1, mockOperator2, mockOperator3})
 	require.NoError(t, err)
 
-	err = pipeline.Start()
+	err = pipeline.Start(mockPersister)
 	require.NoError(t, err)
 
 	err = pipeline.Stop()

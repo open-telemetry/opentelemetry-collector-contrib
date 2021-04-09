@@ -115,7 +115,7 @@ type TCPInput struct {
 }
 
 // Start will start listening for log entries over tcp.
-func (t *TCPInput) Start() error {
+func (t *TCPInput) Start(_ operator.Persister) error {
 	if err := t.configureListener(); err != nil {
 		return fmt.Errorf("failed to listen on interface: %w", err)
 	}

@@ -129,7 +129,7 @@ pipeline:
 	err = yaml.Unmarshal(pipelineConfig, &pipeline)
 	require.NoError(t, err)
 
-	_, err = pipeline.BuildOperators(operator.NewBuildContext(nil, zaptest.NewLogger(t).Sugar()))
+	_, err = pipeline.BuildOperators(operator.NewBuildContext(zaptest.NewLogger(t).Sugar()))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "reached max plugin depth")
 }

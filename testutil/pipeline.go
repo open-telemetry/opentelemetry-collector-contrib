@@ -51,13 +51,13 @@ func (_m *Pipeline) Render() ([]byte, error) {
 	return r0, r1
 }
 
-// Start provides a mock function with given fields:
-func (_m *Pipeline) Start() error {
-	ret := _m.Called()
+// Start provides a mock function with given fields: persister
+func (_m *Pipeline) Start(persister operator.Persister) error {
+	ret := _m.Called(persister)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func() error); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(operator.Persister) error); ok {
+		r0 = rf(persister)
 	} else {
 		r0 = ret.Error(0)
 	}

@@ -80,7 +80,7 @@ type UDPInput struct {
 }
 
 // Start will start listening for messages on a socket.
-func (u *UDPInput) Start() error {
+func (u *UDPInput) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	u.cancel = cancel
 

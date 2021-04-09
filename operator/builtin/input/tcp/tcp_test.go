@@ -101,7 +101,7 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 			entryChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
 
-		err = tcpInput.Start()
+		err = tcpInput.Start(testutil.NewMockPersister("test"))
 		require.NoError(t, err)
 		defer tcpInput.Stop()
 
@@ -170,7 +170,7 @@ func tlsTCPInputTest(input []byte, expected []string) func(t *testing.T) {
 			entryChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
 
-		err = tcpInput.Start()
+		err = tcpInput.Start(testutil.NewMockPersister("test"))
 		require.NoError(t, err)
 		defer tcpInput.Stop()
 
@@ -299,7 +299,7 @@ func BenchmarkTcpInput(b *testing.B) {
 	tcpInput := op.(*TCPInput)
 	tcpInput.InputOperator.OutputOperators = []operator.Operator{fakeOutput}
 
-	err = tcpInput.Start()
+	err = tcpInput.Start(testutil.NewMockPersister("test"))
 	require.NoError(b, err)
 
 	done := make(chan struct{})

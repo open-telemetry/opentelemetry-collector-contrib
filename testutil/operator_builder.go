@@ -13,15 +13,15 @@ type OperatorBuilder struct {
 }
 
 // Build provides a mock function with given fields: _a0
-func (_m *OperatorBuilder) Build(_a0 operator.BuildContext) (operator.Operator, error) {
+func (_m *OperatorBuilder) Build(_a0 operator.BuildContext) ([]operator.Operator, error) {
 	ret := _m.Called(_a0)
 
-	var r0 operator.Operator
-	if rf, ok := ret.Get(0).(func(operator.BuildContext) operator.Operator); ok {
+	var r0 []operator.Operator
+	if rf, ok := ret.Get(0).(func(operator.BuildContext) []operator.Operator); ok {
 		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(operator.Operator)
+			r0 = ret.Get(0).([]operator.Operator)
 		}
 	}
 

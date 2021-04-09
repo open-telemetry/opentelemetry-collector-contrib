@@ -124,7 +124,7 @@ type RecombineOperator struct {
 	batch []*entry.Entry
 }
 
-func (r *RecombineOperator) Start() error {
+func (r *RecombineOperator) Start(_ operator.Persister) error {
 	return nil
 }
 

@@ -36,7 +36,7 @@ func TestStanzaOperator(t *testing.T) {
 	fake := testutil.NewFakeOutput(t)
 	op.SetOutputs([]operator.Operator{fake})
 
-	require.NoError(t, op.Start())
+	require.NoError(t, op.Start(testutil.NewMockPersister("test")))
 	defer op.Stop()
 
 	bc.Logger.Errorw("test failure", "key", "value")

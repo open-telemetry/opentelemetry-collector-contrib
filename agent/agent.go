@@ -19,13 +19,12 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/database"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 )
 
 // LogAgent is an entity that handles log monitoring.
 type LogAgent struct {
-	database database.Database
 	pipeline pipeline.Pipeline
 
 	startOnce sync.Once
@@ -35,9 +34,9 @@ type LogAgent struct {
 }
 
 // Start will start the log monitoring process
-func (a *LogAgent) Start() (err error) {
+func (a *LogAgent) Start(persister operator.Persister) (err error) {
 	a.startOnce.Do(func() {
-		err = a.pipeline.Start()
+		err = a.pipeline.Start(persister)
 		if err != nil {
 			return
 		}
@@ -49,11 +48,6 @@ func (a *LogAgent) Start() (err error) {
 func (a *LogAgent) Stop() (err error) {
 	a.stopOnce.Do(func() {
 		err = a.pipeline.Stop()
-		if err != nil {
-			return
-		}
-
-		err = a.database.Close()
 		if err != nil {
 			return
 		}

@@ -58,7 +58,7 @@ func SyslogInputTest(t *testing.T, cfg *SyslogInputConfig, tc syslog.Case) {
 	p, err := pipeline.NewDirectedPipeline(ops)
 	require.NoError(t, err)
 
-	err = p.Start()
+	err = p.Start(testutil.NewMockPersister("test"))
 	require.NoError(t, err)
 
 	var conn net.Conn
