@@ -55,10 +55,8 @@ func TestMetricTenants(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			td := pdata.NewMetrics()
 			td.ResourceMetrics().Resize(2)
-			td.ResourceMetrics().At(0).Resource().InitEmpty()
 			td.ResourceMetrics().At(0).Resource().Attributes().InsertString(tc.svcKey, tc.svc1)
 			td.ResourceMetrics().At(0).Resource().Attributes().InsertString(tc.envKey, tc.env1)
-			td.ResourceMetrics().At(1).Resource().InitEmpty()
 			td.ResourceMetrics().At(1).Resource().Attributes().InsertString(tc.svcKey, tc.svc2)
 			td.ResourceMetrics().At(1).Resource().Attributes().InsertString(tc.envKey, tc.env2)
 
@@ -116,10 +114,8 @@ func TestTraceTenants(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			td := pdata.NewTraces()
 			td.ResourceSpans().Resize(2)
-			td.ResourceSpans().At(0).Resource().InitEmpty()
 			td.ResourceSpans().At(0).Resource().Attributes().InsertString(tc.svcKey, tc.svc1)
 			td.ResourceSpans().At(0).Resource().Attributes().InsertString(tc.envKey, tc.env1)
-			td.ResourceSpans().At(1).Resource().InitEmpty()
 			td.ResourceSpans().At(1).Resource().Attributes().InsertString(tc.svcKey, tc.svc2)
 			td.ResourceSpans().At(1).Resource().Attributes().InsertString(tc.envKey, tc.env2)
 
