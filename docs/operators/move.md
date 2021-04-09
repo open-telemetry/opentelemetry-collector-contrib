@@ -2,8 +2,6 @@
 
 The `move` operator moves (or renames) a field from one location to another.
 
-It's configured by passing 'to' and 'from' fields.
-
 ### Configuration Fields
 
 | Field      | Default          | Description                                                                                                                                                                                                                              |
