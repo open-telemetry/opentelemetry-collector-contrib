@@ -32,7 +32,6 @@ func TestOTLPMetricsMarshaller(t *testing.T) {
 	t.Parallel()
 	td := pdata.NewMetrics()
 	td.ResourceMetrics().Resize(1)
-	td.ResourceMetrics().At(0).Resource().InitEmpty()
 	td.ResourceMetrics().At(0).Resource().Attributes().InsertString("foo", "bar")
 	expected, err := td.ToOtlpProtoBytes()
 	require.NoError(t, err)
@@ -48,9 +47,7 @@ func TestOTLPTracesMarshaller(t *testing.T) {
 	t.Parallel()
 	td := pdata.NewTraces()
 	td.ResourceSpans().Resize(1)
-	span := td.ResourceSpans().At(0).Resource()
-	span.InitEmpty()
-	span.Attributes().InsertString("foo", "bar")
+	td.ResourceSpans().At(0).Resource().Attributes().InsertString("foo", "bar")
 
 	expected, err := td.ToOtlpProtoBytes()
 	require.NoError(t, err)

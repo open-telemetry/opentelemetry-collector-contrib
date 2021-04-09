@@ -16,6 +16,8 @@ package awskinesisexporter
 
 import (
 	"context"
+	"errors"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -23,9 +25,9 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr   = "awskinesis"
+	typeStr = "awskinesis"
 	// The default encoding scheme is set to otlpProto
-	otlpProto = "otlp_proto"
+	otlpProto       = "otlp_proto"
 	defaultEncoding = otlpProto
 )
 
@@ -57,19 +59,37 @@ func createDefaultConfig() config.Exporter {
 }
 
 func createTracesExporter(
-	_ context.Context,
+	ctx context.Context,
 	params component.ExporterCreateParams,
 	config config.Exporter,
 ) (component.TracesExporter, error) {
+	if err := validateParams(ctx, params, config); err != nil {
+		return nil, err
+	}
 	c := config.(*Config)
 	return newExporter(c, params.Logger)
 }
 
 func createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	params component.ExporterCreateParams,
 	config config.Exporter,
 ) (component.MetricsExporter, error) {
+	if err := validateParams(ctx, params, config); err != nil {
+		return nil, err
+	}
 	c := config.(*Config)
 	return newExporter(c, params.Logger)
+}
+
+func validateParams(ctx context.Context, params component.ExporterCreateParams, _ config.Exporter) error {
+	if params.Logger == nil {
+		return errors.New("nil logger")
+	}
+
+	if ctx == nil {
+		return errors.New("nil context")
+	}
+
+	return nil
 }

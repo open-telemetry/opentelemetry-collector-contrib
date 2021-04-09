@@ -30,7 +30,7 @@ const (
 	errInvalidContext = "invalid context"
 )
 
-// exporter implements an OpenTelemetry exporter that pushes OpenTelemetry data to AWS Kinesis
+// Exporter implements an OpenTelemetry exporter that pushes OpenTelemetry data to AWS Kinesis
 type Exporter struct {
 	producer   producer
 	logger     *zap.Logger
@@ -39,6 +39,7 @@ type Exporter struct {
 
 var _ component.TracesExporter = (*Exporter)(nil)
 var _ component.MetricsExporter = (*Exporter)(nil)
+
 // newExporter creates a new exporter with the passed in configurations.
 // It starts the AWS session and setups the relevant connections.
 func newExporter(c *Config, logger *zap.Logger) (*Exporter, error) {
@@ -56,10 +57,10 @@ func newExporter(c *Config, logger *zap.Logger) (*Exporter, error) {
 	return &Exporter{producer: pr, marshaller: marshaller, logger: logger}, nil
 }
 
-// start tells the exporter to start. The exporter may prepare for exporting
+// Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
-// with the host after start() has already returned. If error is returned by
-// start() then the collector startup will be aborted.
+// with the host after Start() has already returned. If error is returned by
+// Start() then the collector startup will be aborted.
 func (e *Exporter) Start(ctx context.Context, _ component.Host) error {
 	if ctx == nil || ctx.Err() != nil {
 		return fmt.Errorf(errInvalidContext)
@@ -97,8 +98,7 @@ func (e Exporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	}
 
 	if err = e.producer.put(pBatches, uuid.New().String()); err != nil {
-		tenants := traceTenants(td)
-		e.logger.Error("error exporting span to kinesis", zap.Error(err), zap.Strings("services", tenants))
+		e.logger.Error("error exporting span to kinesis", zap.Error(err))
 		return err
 	}
 

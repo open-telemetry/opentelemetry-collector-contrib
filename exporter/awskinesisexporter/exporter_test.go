@@ -76,9 +76,8 @@ func TestPushingTracesToKinesisQueue(t *testing.T) {
 
 	mockProducer.On("put", mock.Anything, mock.AnythingOfType("string")).Return(nil)
 
-	dropped, err := exp.pushTraces(context.Background(), pdata.NewTraces())
+	err := exp.ConsumeTraces(context.Background(), pdata.NewTraces())
 	require.NoError(t, err)
-	require.Equal(t, 0, dropped)
 }
 
 func TestErrorPushingTracesToKinesisQueue(t *testing.T) {
@@ -93,7 +92,7 @@ func TestErrorPushingTracesToKinesisQueue(t *testing.T) {
 
 	mockProducer.On("put", mock.Anything, mock.AnythingOfType("string")).Return(fmt.Errorf("someerror"))
 
-	_, err := exp.pushTraces(context.Background(), pdata.NewTraces())
+	err := exp.ConsumeTraces(context.Background(), pdata.NewTraces())
 	require.Error(t, err)
 }
 
@@ -109,9 +108,8 @@ func TestPushingMetricsToKinesisQueue(t *testing.T) {
 
 	mockProducer.On("put", mock.Anything, mock.AnythingOfType("string")).Return(nil)
 
-	dropped, err := exp.pushMetrics(context.Background(), pdata.NewMetrics())
+	err := exp.ConsumeMetrics(context.Background(), pdata.NewMetrics())
 	require.NoError(t, err)
-	require.Equal(t, 0, dropped)
 }
 
 func TestErrorPushingMetricsToKinesisQueue(t *testing.T) {
@@ -126,6 +124,6 @@ func TestErrorPushingMetricsToKinesisQueue(t *testing.T) {
 
 	mockProducer.On("put", mock.Anything, mock.AnythingOfType("string")).Return(fmt.Errorf("someerror"))
 
-	_, err := exp.pushMetrics(context.Background(), pdata.NewMetrics())
+	err := exp.ConsumeMetrics(context.Background(), pdata.NewMetrics())
 	require.Error(t, err)
 }
