@@ -203,6 +203,11 @@ func spanToDatadogSpan(s pdata.Span,
 		}
 	}
 
+	// peer.service should always be prioritized for service names when set because it is what the user decided.
+	if peerService, ok := tags[conventions.AttributePeerService]; ok {
+		serviceName = peerService
+	}
+
 	normalizedServiceName := utils.NormalizeServiceName(serviceName)
 
 	//  canonical resource attribute version should override others if it exists
