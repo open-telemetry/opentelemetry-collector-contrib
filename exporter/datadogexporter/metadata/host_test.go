@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/testutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils/cache"
 )
@@ -79,8 +80,6 @@ func TestHostnameFromAttributes(t *testing.T) {
 	// Container ID
 	attrs = testutils.NewAttributeMap(map[string]string{
 		conventions.AttributeContainerID: testContainerID,
-		conventions.AttributeHostID:      testHostID,
-		conventions.AttributeHostName:    testHostName,
 	})
 	hostname, ok = HostnameFromAttributes(attrs)
 	assert.True(t, ok)
@@ -106,6 +105,16 @@ func TestHostnameFromAttributes(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, hostname, testHostName)
 
+	// Azure cloud provider means relying on the Azure function
+	attrs = testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
+		conventions.AttributeHostID:        testHostID,
+		conventions.AttributeHostName:      testHostName,
+	})
+	hostname, ok = HostnameFromAttributes(attrs)
+	assert.True(t, ok)
+	assert.Equal(t, hostname, testHostName)
+
 	// Host Id takes preference
 	attrs = testutils.NewAttributeMap(map[string]string{
 		conventions.AttributeHostID:   testHostID,
@@ -120,6 +129,39 @@ func TestHostnameFromAttributes(t *testing.T) {
 	hostname, ok = HostnameFromAttributes(attrs)
 	assert.False(t, ok)
 	assert.Empty(t, hostname)
+}
+
+func TestGetClusterName(t *testing.T) {
+	// OpenTelemetry convention
+	attrs := testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeK8sCluster: testClusterName,
+	})
+	cluster, ok := getClusterName(attrs)
+	assert.True(t, ok)
+	assert.Equal(t, cluster, testClusterName)
+
+	// Azure
+	attrs = testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
+		azure.AttributeResourceGroupName:   "MC_aks-kenafeh_aks-kenafeh-eu_westeurope",
+	})
+	cluster, ok = getClusterName(attrs)
+	assert.True(t, ok)
+	assert.Equal(t, cluster, "aks-kenafeh-eu")
+
+	// AWS
+	attrs = testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeCloudProvider:          conventions.AttributeCloudProviderAWS,
+		"ec2.tag.kubernetes.io/cluster/clustername": "dummy_value",
+	})
+	cluster, ok = getClusterName(attrs)
+	assert.True(t, ok)
+	assert.Equal(t, cluster, "clustername")
+
+	// None
+	attrs = testutils.NewAttributeMap(map[string]string{})
+	_, ok = getClusterName(attrs)
+	assert.False(t, ok)
 }
 
 func TestHostnameKubernetes(t *testing.T) {
@@ -156,5 +198,5 @@ func TestHostnameKubernetes(t *testing.T) {
 	hostname, ok = HostnameFromAttributes(attrs)
 	assert.True(t, ok)
 	// cluster name gets ignored, fallback to next option
-	assert.Equal(t, hostname, testContainerID)
+	assert.Equal(t, hostname, testHostID)
 }

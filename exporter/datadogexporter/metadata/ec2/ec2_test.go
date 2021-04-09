@@ -81,3 +81,14 @@ func TestHostInfoFromAttributes(t *testing.T) {
 	assert.Equal(t, hostInfo.EC2Hostname, testIP)
 	assert.ElementsMatch(t, hostInfo.EC2Tags, []string{"tag1:val1", "tag2:val2"})
 }
+
+func TestClusterNameFromAttributes(t *testing.T) {
+	cluster, ok := ClusterNameFromAttributes(testutils.NewAttributeMap(map[string]string{
+		"ec2.tag.kubernetes.io/cluster/clustername": "dummy_value",
+	}))
+	assert.True(t, ok)
+	assert.Equal(t, cluster, "clustername")
+
+	_, ok = ClusterNameFromAttributes(testutils.NewAttributeMap(map[string]string{}))
+	assert.False(t, ok)
+}
