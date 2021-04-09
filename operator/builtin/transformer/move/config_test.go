@@ -34,7 +34,7 @@ type configTestCase struct {
 }
 
 // test unmarshalling of values into config struct
-func TestMoveGoldenConfig(t *testing.T) {
+func TestGoldenConfig(t *testing.T) {
 	cases := []configTestCase{
 		{
 			"MoveBodyToBody",
