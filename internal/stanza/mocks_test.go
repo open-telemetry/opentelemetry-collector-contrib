@@ -17,6 +17,8 @@ package stanza
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
+	"time"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
@@ -71,21 +73,31 @@ func (o *UnstartableOperator) Process(ctx context.Context, entry *entry.Entry) e
 }
 
 type mockLogsConsumer struct {
-	received int
+	received int32
 }
 
 func (m *mockLogsConsumer) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	m.received++
+	atomic.AddInt32(&m.received, 1)
 	return nil
 }
 
+func (m *mockLogsConsumer) Received() int {
+	ret := atomic.LoadInt32(&m.received)
+	return int(ret)
+}
+
 type mockLogsRejecter struct {
-	rejected int
+	rejected int32
 }
 
 func (m *mockLogsRejecter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	m.rejected++
+	atomic.AddInt32(&m.rejected, 1)
 	return fmt.Errorf("no")
+}
+
+func (m *mockLogsRejecter) Rejected() int {
+	ret := atomic.LoadInt32(&m.rejected)
+	return int(ret)
 }
 
 const testType = "test"
@@ -108,6 +120,10 @@ func (f TestReceiverType) CreateDefaultConfig() config.Receiver {
 				NameVal: testType,
 			},
 			Operators: OperatorConfigs{},
+			Converter: ConverterConfig{
+				MaxFlushCount: 1,
+				FlushInterval: 100 * time.Millisecond,
+			},
 		},
 		Input: InputConfig{},
 	}
