@@ -92,7 +92,6 @@ func (c JournaldInputConfig) Build(buildContext operator.BuildContext) ([]operat
 
 	journaldInput := &JournaldInput{
 		InputOperator: inputOperator,
-		persist:       helper.NewScopedDBPersister(buildContext.Database, c.ID()),
 		newCmd: func(ctx context.Context, cursor []byte) cmd {
 			if cursor != nil {
 				args = append(args, "--after-cursor", string(cursor))
@@ -110,10 +109,10 @@ type JournaldInput struct {
 
 	newCmd func(ctx context.Context, cursor []byte) cmd
 
-	persist helper.Persister
-	json    jsoniter.API
-	cancel  context.CancelFunc
-	wg      sync.WaitGroup
+	persister operator.Persister
+	json      jsoniter.API
+	cancel    context.CancelFunc
+	wg        sync.WaitGroup
 }
 
 type cmd interface {
@@ -124,17 +123,17 @@ type cmd interface {
 var lastReadCursorKey = "lastReadCursor"
 
 // Start will start generating log entries.
-func (operator *JournaldInput) Start() error {
+func (operator *JournaldInput) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	operator.cancel = cancel
 
-	err := operator.persist.Load()
+	// Start from a cursor if there is a saved offset
+	cursor, err := persister.Get(ctx, lastReadCursorKey)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get journalctl state: %s", err)
 	}
 
-	// Start from a cursor if there is a saved offset
-	cursor := operator.persist.Get(lastReadCursorKey)
+	operator.persister = persister
 
 	// Start journalctl
 	cmd := operator.newCmd(ctx, cursor)
@@ -147,25 +146,10 @@ func (operator *JournaldInput) Start() error {
 		return fmt.Errorf("start journalctl: %s", err)
 	}
 
-	// Start a goroutine to periodically flush the offsets
-	operator.wg.Add(1)
-	go func() {
-		defer operator.wg.Done()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(time.Second):
-				operator.syncOffsets()
-			}
-		}
-	}()
-
 	// Start the reader goroutine
 	operator.wg.Add(1)
 	go func() {
 		defer operator.wg.Done()
-		defer operator.syncOffsets()
 
 		stdoutBuf := bufio.NewReader(stdout)
 
@@ -183,7 +167,9 @@ func (operator *JournaldInput) Start() error {
 				operator.Warnw("Failed to parse journal entry", zap.Error(err))
 				continue
 			}
-			operator.persist.Set(lastReadCursorKey, []byte(cursor))
+			if err := operator.persister.Set(ctx, lastReadCursorKey, []byte(cursor)); err != nil {
+				operator.Warnw("Failed to set offset", zap.Error(err))
+			}
 			operator.Write(ctx, entry)
 		}
 	}()
@@ -232,13 +218,6 @@ func (operator *JournaldInput) parseJournalEntry(line []byte) (*entry.Entry, str
 
 	entry.Timestamp = time.Unix(0, timestampInt*1000) // in microseconds
 	return entry, cursorString, nil
-}
-
-func (operator *JournaldInput) syncOffsets() {
-	err := operator.persist.Sync()
-	if err != nil {
-		operator.Errorw("Failed to sync offsets", zap.Error(err))
-	}
 }
 
 // Stop will stop generating logs.

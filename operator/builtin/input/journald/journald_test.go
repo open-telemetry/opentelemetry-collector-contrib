@@ -67,7 +67,7 @@ func TestInputJournald(t *testing.T) {
 		return &fakeJournaldCmd{}
 	}
 
-	err = op.Start()
+	err = op.Start(testutil.NewMockPersister("test"))
 	require.NoError(t, err)
 	defer op.Stop()
 

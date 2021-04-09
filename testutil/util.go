@@ -15,13 +15,13 @@
 package testutil
 
 import (
+	context "context"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
-	"go.etcd.io/bbolt"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/logger"
@@ -43,38 +43,48 @@ func NewTempDir(t testing.TB) string {
 	return tempDir
 }
 
-// NewTestDatabase will return a new database for testing
-func NewTestDatabase(t testing.TB) *bbolt.DB {
-	tempDir, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Errorf(err.Error())
-		t.FailNow()
-	}
-
-	t.Cleanup(func() {
-		os.RemoveAll(tempDir)
-	})
-
-	db, err := bbolt.Open(filepath.Join(tempDir, "test.db"), 0666, nil)
-	if err != nil {
-		t.Errorf(err.Error())
-		t.FailNow()
-	}
-
-	t.Cleanup(func() {
-		db.Close()
-	})
-
-	return db
-}
-
 // NewBuildContext will return a new build context for testing
 func NewBuildContext(t testing.TB) operator.BuildContext {
 	return operator.BuildContext{
-		Database:  NewTestDatabase(t),
 		Logger:    logger.New(zaptest.NewLogger(t).Sugar()),
 		Namespace: "$",
 	}
+}
+
+type mockPersister struct {
+	data    map[string][]byte
+	dataMux sync.Mutex
+}
+
+func (p *mockPersister) Get(ctx context.Context, k string) ([]byte, error) {
+	p.dataMux.Lock()
+	defer p.dataMux.Unlock()
+	return p.data[k], nil
+}
+
+func (p *mockPersister) Set(ctx context.Context, k string, v []byte) error {
+	p.dataMux.Lock()
+	defer p.dataMux.Unlock()
+	p.data[k] = v
+	return nil
+}
+
+func (p *mockPersister) Delete(ctx context.Context, k string) error {
+	p.dataMux.Lock()
+	defer p.dataMux.Unlock()
+	delete(p.data, k)
+	return nil
+}
+
+// NewUnscopedMockPersister will return a new persister for testing
+func NewUnscopedMockPersister() operator.Persister {
+	data := make(map[string][]byte)
+	return &mockPersister{data: data}
+}
+
+// NewMockPersister will return a new persister for testing
+func NewMockPersister(scope string) operator.Persister {
+	return operator.NewScopedPersister(scope, NewUnscopedMockPersister())
 }
 
 // Trim removes white space from the lines of a string

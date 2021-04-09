@@ -91,7 +91,7 @@ type K8sEvents struct {
 }
 
 // Start implements the operator.Operator interface
-func (k *K8sEvents) Start() error {
+func (k *K8sEvents) Start(_ operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	k.cancel = cancel
 

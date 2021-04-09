@@ -103,7 +103,7 @@ func (p *BasicOperator) Logger() *zap.SugaredLogger {
 }
 
 // Start will start the operator.
-func (p *BasicOperator) Start() error {
+func (p *BasicOperator) Start(_ operator.Persister) error {
 	return nil
 }
 

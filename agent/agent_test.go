@@ -27,48 +27,46 @@ import (
 func TestStartAgentSuccess(t *testing.T) {
 	logger := zap.NewNop().Sugar()
 	pipeline := &testutil.Pipeline{}
-	pipeline.On("Start").Return(nil)
+	persister := testutil.NewMockPersister("test")
+	pipeline.On("Start", persister).Return(nil)
 
 	agent := LogAgent{
 		SugaredLogger: logger,
 		pipeline:      pipeline,
 	}
-	err := agent.Start()
+	err := agent.Start(persister)
 	require.NoError(t, err)
-	pipeline.AssertCalled(t, "Start")
+	pipeline.AssertCalled(t, "Start", persister)
 }
 
 func TestStartAgentFailure(t *testing.T) {
 	logger := zap.NewNop().Sugar()
 	pipeline := &testutil.Pipeline{}
+	persister := testutil.NewMockPersister("test")
 	failure := fmt.Errorf("failed to start pipeline")
-	pipeline.On("Start").Return(failure)
+	pipeline.On("Start", persister).Return(failure)
 
 	agent := LogAgent{
 		SugaredLogger: logger,
 		pipeline:      pipeline,
 	}
-	err := agent.Start()
+	err := agent.Start(persister)
 	require.Error(t, err, failure)
-	pipeline.AssertCalled(t, "Start")
+	pipeline.AssertCalled(t, "Start", persister)
 }
 
 func TestStopAgentSuccess(t *testing.T) {
 	logger := zap.NewNop().Sugar()
 	pipeline := &testutil.Pipeline{}
 	pipeline.On("Stop").Return(nil)
-	database := &testutil.Database{}
-	database.On("Close").Return(nil)
 
 	agent := LogAgent{
 		SugaredLogger: logger,
 		pipeline:      pipeline,
-		database:      database,
 	}
 	err := agent.Stop()
 	require.NoError(t, err)
 	pipeline.AssertCalled(t, "Stop")
-	database.AssertCalled(t, "Close")
 }
 
 func TestStopAgentPipelineFailure(t *testing.T) {
@@ -76,35 +74,12 @@ func TestStopAgentPipelineFailure(t *testing.T) {
 	pipeline := &testutil.Pipeline{}
 	failure := fmt.Errorf("failed to start pipeline")
 	pipeline.On("Stop").Return(failure)
-	database := &testutil.Database{}
-	database.On("Close").Return(nil)
 
 	agent := LogAgent{
 		SugaredLogger: logger,
 		pipeline:      pipeline,
-		database:      database,
 	}
 	err := agent.Stop()
 	require.Error(t, err, failure)
 	pipeline.AssertCalled(t, "Stop")
-	database.AssertNotCalled(t, "Close")
-}
-
-func TestStopAgentDatabaseFailure(t *testing.T) {
-	logger := zap.NewNop().Sugar()
-	pipeline := &testutil.Pipeline{}
-	pipeline.On("Stop").Return(nil)
-	database := &testutil.Database{}
-	failure := fmt.Errorf("failed to close database")
-	database.On("Close").Return(failure)
-
-	agent := LogAgent{
-		SugaredLogger: logger,
-		pipeline:      pipeline,
-		database:      database,
-	}
-	err := agent.Stop()
-	require.Error(t, err, failure)
-	pipeline.AssertCalled(t, "Stop")
-	database.AssertCalled(t, "Close")
 }

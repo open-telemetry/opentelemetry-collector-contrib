@@ -69,7 +69,7 @@ type Input struct {
 }
 
 // Start will start reading incoming stanza logs.
-func (i *Input) Start() error {
+func (i *Input) Start(_ operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	i.cancel = cancel
 	i.startReading(ctx)

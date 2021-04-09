@@ -20,13 +20,11 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/database"
 	"github.com/open-telemetry/opentelemetry-log-collection/logger"
 )
 
 // BuildContext supplies contextual resources when building an operator.
 type BuildContext struct {
-	Database         database.Database
 	Parameters       map[string]interface{}
 	Logger           *logger.Logger
 	Namespace        string
@@ -69,7 +67,6 @@ func (bc BuildContext) WithIncrementedDepth() BuildContext {
 // Copy creates a copy of the build context
 func (bc BuildContext) Copy() BuildContext {
 	return BuildContext{
-		Database:         bc.Database,
 		Parameters:       bc.Parameters,
 		Logger:           bc.Logger,
 		Namespace:        bc.Namespace,
@@ -80,9 +77,8 @@ func (bc BuildContext) Copy() BuildContext {
 
 // NewBuildContext creates a new build context with the given database, logger, and the
 // default namespace
-func NewBuildContext(db database.Database, lg *zap.SugaredLogger) BuildContext {
+func NewBuildContext(lg *zap.SugaredLogger) BuildContext {
 	return BuildContext{
-		Database:         db,
 		Parameters:       nil,
 		Logger:           logger.New(lg),
 		Namespace:        "$",

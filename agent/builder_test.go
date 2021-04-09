@@ -15,8 +15,6 @@
 package agent
 
 import (
-	"io/ioutil"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -29,58 +27,15 @@ func TestBuildAgentSuccess(t *testing.T) {
 	mockCfg := Config{}
 	mockLogger := zap.NewNop().Sugar()
 	mockPluginDir := "/some/path/plugins"
-	mockDatabaseFile := filepath.Join(testutil.NewTempDir(t), "test.db")
-	mockNamespace := "mynamespace"
 	mockOutput := testutil.NewFakeOutput(t)
 
 	agent, err := NewBuilder(mockLogger).
 		WithConfig(&mockCfg).
 		WithPluginDir(mockPluginDir).
 		WithDefaultOutput(mockOutput).
-		WithDatabaseFile(mockDatabaseFile, mockNamespace).
 		Build()
 	require.NoError(t, err)
 	require.Equal(t, mockLogger, agent.SugaredLogger)
-}
-
-func TestBuildAgentFailureOnDatabase(t *testing.T) {
-	tempDir := testutil.NewTempDir(t)
-	invalidDatabaseFile := filepath.Join(tempDir, "test.db")
-	err := ioutil.WriteFile(invalidDatabaseFile, []byte("invalid"), 0755)
-	require.NoError(t, err)
-
-	mockCfg := Config{}
-	mockLogger := zap.NewNop().Sugar()
-	mockPluginDir := "/some/path/plugins"
-	mockDatabaseFile := invalidDatabaseFile
-	mockNamespace := "mynamespace"
-	mockOutput := testutil.NewFakeOutput(t)
-
-	agent, err := NewBuilder(mockLogger).
-		WithConfig(&mockCfg).
-		WithPluginDir(mockPluginDir).
-		WithDatabaseFile(mockDatabaseFile, mockNamespace).
-		WithDefaultOutput(mockOutput).
-		Build()
-	require.Error(t, err)
-	require.Nil(t, agent)
-}
-
-func TestBuildAgentFailureOnNamespace(t *testing.T) {
-	mockCfg := Config{}
-	mockLogger := zap.NewNop().Sugar()
-	mockPluginDir := "/some/path/plugins"
-	mockDatabaseFile := filepath.Join(testutil.NewTempDir(t), "test.db")
-	mockNamespace := ""
-	mockOutput := testutil.NewFakeOutput(t)
-
-	_, err := NewBuilder(mockLogger).
-		WithConfig(&mockCfg).
-		WithPluginDir(mockPluginDir).
-		WithDatabaseFile(mockDatabaseFile, mockNamespace).
-		WithDefaultOutput(mockOutput).
-		Build()
-	require.Error(t, err)
 }
 
 func TestBuildAgentFailureOnPluginRegistry(t *testing.T) {

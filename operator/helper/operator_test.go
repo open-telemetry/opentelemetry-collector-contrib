@@ -113,7 +113,7 @@ func TestBasicOperatorStart(t *testing.T) {
 		OperatorID:   "test-id",
 		OperatorType: "test-type",
 	}
-	err := operator.Start()
+	err := operator.Start(testutil.NewMockPersister("test"))
 	require.NoError(t, err)
 }
 

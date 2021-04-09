@@ -67,7 +67,7 @@ type StdinInput struct {
 }
 
 // Start will start generating log entries.
-func (g *StdinInput) Start() error {
+func (g *StdinInput) Start(_ operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	g.cancel = cancel
 
