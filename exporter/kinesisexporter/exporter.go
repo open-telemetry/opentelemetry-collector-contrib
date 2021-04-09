@@ -88,27 +88,29 @@ func (e *exporter) pushTraces(ctx context.Context, td pdata.Traces) (int, error)
 	}
 
 	if err = e.producer.put(pBatches, uuid.New().String()); err != nil {
-		e.logger.Error("error exporting span to kinesis", zap.Error(err))
+		tenants := traceTenants(td)
+		e.logger.Error("error exporting span to kinesis", zap.Error(err), zap.Strings("services", tenants))
 		return td.SpanCount(), err
 	}
 
 	return 0, nil
 }
 
-func (e *exporter) pushMetrics(ctx context.Context, td pdata.Metrics) (int, error) {
+func (e *exporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
 	if ctx == nil || ctx.Err() != nil {
 		return 0, fmt.Errorf(errInvalidContext)
 	}
 
-	pBatches, err := e.marshaller.MarshalMetrics(td)
+	pBatches, err := e.marshaller.MarshalMetrics(md)
 	if err != nil {
 		e.logger.Error("error translating metrics batch", zap.Error(err))
-		return td.MetricCount(), consumererror.Permanent(err)
+		return md.MetricCount(), consumererror.Permanent(err)
 	}
 
 	if err = e.producer.put(pBatches, uuid.New().String()); err != nil {
-		e.logger.Error("error exporting metrics to kinesis", zap.Error(err))
-		return td.MetricCount(), err
+		tenants := metricTenants(md)
+		e.logger.Error("error exporting metrics to kinesis", zap.Error(err), zap.Strings("services", tenants))
+		return md.MetricCount(), err
 	}
 
 	return 0, nil
