@@ -97,19 +97,20 @@ func (e Exporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	}
 
 	if err = e.producer.put(pBatches, uuid.New().String()); err != nil {
-		e.logger.Error("error exporting span to kinesis", zap.Error(err))
+		tenants := traceTenants(td)
+		e.logger.Error("error exporting span to kinesis", zap.Error(err), zap.Strings("services", tenants))
 		return err
 	}
 
 	return nil
 }
 
-func (e Exporter) ConsumeMetrics(ctx context.Context, td pdata.Metrics) error {
+func (e Exporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	if ctx == nil || ctx.Err() != nil {
 		return fmt.Errorf(errInvalidContext)
 	}
 
-	pBatches, err := e.marshaller.MarshalMetrics(td)
+	pBatches, err := e.marshaller.MarshalMetrics(md)
 	if err != nil {
 		e.logger.Error("error translating metrics batch", zap.Error(err))
 		return consumererror.Permanent(err)
