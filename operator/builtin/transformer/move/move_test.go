@@ -34,7 +34,7 @@ type processTestCase struct {
 	output    func() *entry.Entry
 }
 
-func TestMoveProcess(t *testing.T) {
+func TestProcessAndBuild(t *testing.T) {
 	newTestEntry := func() *entry.Entry {
 		e := entry.New()
 		e.Timestamp = time.Unix(1586632809, 0)
@@ -316,10 +316,10 @@ func TestMoveProcess(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run("BuildandProcess/"+tc.name, func(t *testing.T) {
-			cfgFromMapstructure := tc.op
-			cfgFromMapstructure.OutputIDs = []string{"fake"}
-			cfgFromMapstructure.OnError = "drop"
-			ops, err := cfgFromMapstructure.Build(testutil.NewBuildContext(t))
+			cfg := tc.op
+			cfg.OutputIDs = []string{"fake"}
+			cfg.OnError = "drop"
+			ops, err := cfg.Build(testutil.NewBuildContext(t))
 			require.NoError(t, err)
 			op := ops[0]
 
