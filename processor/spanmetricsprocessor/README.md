@@ -89,21 +89,22 @@ exporters:
     endpoint: "0.0.0.0:8889"
     namespace: promexample
 
-pipelines:
-  traces:
-    receivers: [jaeger]
-    processors: [spanmetrics, batch]
-    exporters: [jaeger]
+service:
+  pipelines:
+    traces:
+      receivers: [jaeger]
+      processors: [spanmetrics, batch]
+      exporters: [jaeger]
 
-  # The exporter name must match the metrics_exporter name.
-  # The receiver is just a dummy and never used; added to pass validation requiring at least one receiver in a pipeline.
-  metrics/spanmetrics:
-    receivers: [otlp/spanmetrics]
-    exporters: [otlp/spanmetrics]
+    # The exporter name must match the metrics_exporter name.
+    # The receiver is just a dummy and never used; added to pass validation requiring at least one receiver in a pipeline.
+    metrics/spanmetrics:
+      receivers: [otlp/spanmetrics]
+      exporters: [otlp/spanmetrics]
 
-  metrics:
-    receivers: [otlp]
-    exporters: [prometheus]
+    metrics:
+      receivers: [otlp]
+      exporters: [prometheus]
 ```
 
 The full list of settings exposed for this processor are documented [here](./config.go) with detailed sample configuration [here](./testdata).
