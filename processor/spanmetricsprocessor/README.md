@@ -69,6 +69,7 @@ receivers:
         endpoint: "localhost:55677"
 
 processors:
+  batch:
   spanmetrics:
     metrics_exporter: otlp/spanmetrics
     latency_histogram_buckets: [2ms, 6ms, 10ms, 100ms, 250ms]
