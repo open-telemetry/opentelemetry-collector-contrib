@@ -100,7 +100,7 @@ func (c *Config) sanitize() error {
 	}
 
 	if len(errs) > 0 {
-		return consumererror.CombineErrors(errs)
+		return consumererror.Combine(errs)
 	}
 
 	return nil

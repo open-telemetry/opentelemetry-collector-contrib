@@ -8,15 +8,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 )
 
 func TestFactory_TestType(t *testing.T) {
 	f := NewFactory()
-	assert.Equal(t, f.Type(), configmodels.Type(typeStr))
+	assert.Equal(t, f.Type(), config.Type(typeStr))
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {

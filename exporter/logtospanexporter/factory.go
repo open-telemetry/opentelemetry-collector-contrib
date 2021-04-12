@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	otlp "go.opentelemetry.io/collector/exporter/otlpexporter"
 )
@@ -24,14 +24,14 @@ func NewFactory() component.ExporterFactory {
 	}
 }
 
-func (f *logToSpanFactory) Type() configmodels.Type {
+func (f *logToSpanFactory) Type() config.Type {
 	return typeStr
 }
 
 func (f *logToSpanFactory) CreateLogsExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
-	config configmodels.Exporter) (component.LogsExporter, error) {
+	config config.Exporter) (component.LogsExporter, error) {
 
 	cfg := config.(*Config)
 
@@ -63,20 +63,20 @@ func (f *logToSpanFactory) CreateLogsExporter(
 func (f *logToSpanFactory) CreateMetricsExporter(
 	context.Context,
 	component.ExporterCreateParams,
-	configmodels.Exporter) (component.MetricsExporter, error) {
+	config.Exporter) (component.MetricsExporter, error) {
 
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
 func (f *logToSpanFactory) CreateTracesExporter(
 	context.Context,
 	component.ExporterCreateParams,
-	configmodels.Exporter) (component.TracesExporter, error) {
+	config.Exporter) (component.TracesExporter, error) {
 
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return nil, componenterror.ErrDataTypeIsNotSupported
 }
 
-func (f *logToSpanFactory) CreateDefaultConfig() configmodels.Exporter {
+func (f *logToSpanFactory) CreateDefaultConfig() config.Exporter {
 	cfg := &Config{
 		Config: *f.ExporterFactory.CreateDefaultConfig().(*otlp.Config),
 	}
