@@ -295,7 +295,55 @@ func TestProcessAndBuild(t *testing.T) {
 			nil,
 		},
 		{
+			"ReplaceBodyObj",
+			false,
+			func() *MoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.From = entry.NewBodyField("wrapper")
+				cfg.To = entry.NewBodyField()
+				return cfg
+			}(),
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Body = map[string]interface{}{
+					"wrapper": map[string]interface{}{
+						"key": "val",
+						"nested": map[string]interface{}{
+							"nestedkey": "nestedval",
+						},
+					},
+				}
+				return e
+			},
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Body = map[string]interface{}{
+					"key": "val",
+					"nested": map[string]interface{}{
+						"nestedkey": "nestedval",
+					},
+				}
+				return e
+			},
+		},
+		{
 			"ReplaceBodyString",
+			false,
+			func() *MoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.From = entry.NewBodyField("key")
+				cfg.To = entry.NewBodyField()
+				return cfg
+			}(),
+			newTestEntry,
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Body = "val"
+				return e
+			},
+		},
+		{
+			"MergeObjToBody",
 			false,
 			func() *MoveOperatorConfig {
 				cfg := defaultCfg()
@@ -307,8 +355,8 @@ func TestProcessAndBuild(t *testing.T) {
 			func() *entry.Entry {
 				e := newTestEntry()
 				e.Body = map[string]interface{}{
-					"nestedkey": "nestedval",
 					"key":       "val",
+					"nestedkey": "nestedval",
 				}
 				return e
 			},
