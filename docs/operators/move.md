@@ -226,3 +226,54 @@ Remove a layer from the body
 </tr>
 </table>
 
+<hr>
+
+Merge a layer to the body
+```yaml
+- type: move
+    from: object
+    to: $body
+```
+
+<table>
+<tr><td> Input Entry</td> <td> Output Entry </td></tr>
+<tr>
+<td>
+
+```json
+{
+  "resource": { },
+  "attributes": { },  
+  "body": {
+    "firstTimestamp": "2020-08-13T16:43:57Z",
+    "object": {
+      "apiVersion": "v1",
+      "name": "stanza-g6rzd",
+      "uid": "47d965e6-4bb3-4c58-a089-1a8b16bf21b0"
+    },
+    "lastTimestamp": "2020-08-13T16:43:57Z",
+  }
+}
+```
+
+</td>
+<td>
+
+```json
+{
+  "resource": { },
+  "attributes": { },  
+  "body": {
+    "firstTimestamp": "2020-08-13T16:43:57Z",
+    "apiVersion": "v1",
+    "name": "stanza-g6rzd",
+    "uid": "47d965e6-4bb3-4c58-a089-1a8b16bf21b0",
+    "lastTimestamp": "2020-08-13T16:43:57Z",
+  }
+}
+```
+
+</td>
+</tr>
+</table>
+
