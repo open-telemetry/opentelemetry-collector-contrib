@@ -38,12 +38,13 @@ func TestLoadConfig(t *testing.T) {
 	require.Equal(t, 1, len(cfg.Receivers))
 
 	r := cfg.Receivers[typeStr].(*Config)
+	testLabels := map[string]string{"test_label": "test_val"}
 	assert.Equal(t, &Config{
 		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(typeStr),
 		Brokers:                   []string{"10.10.10.10:9092"},
 		ProtocolVersion:           "2.0.0",
-		TopicMatch:                "test_*",
-		GroupMatch:                "test_*",
+		TopicMatch:                "test_\\w+",
+		GroupMatch:                "test_\\w+",
 		Authentication: kafkaexporter.Authentication{
 			TLS: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
@@ -55,5 +56,6 @@ func TestLoadConfig(t *testing.T) {
 		},
 		ClientID: defaultClientID,
 		Scrapers: []string{"brokers", "topics", "consumers"},
+		Labels:   testLabels,
 	}, r)
 }

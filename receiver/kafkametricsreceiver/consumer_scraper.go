@@ -36,6 +36,7 @@ type consumerScraper struct {
 	groupFilter  *regexp.Regexp
 	topicFilter  *regexp.Regexp
 	clusterAdmin sarama.ClusterAdmin
+	config       Config
 }
 
 func (s *consumerScraper) Name() string {
@@ -55,6 +56,7 @@ func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, e
 		Timestamp:                  time.Now(),
 		MetricFactoriesByName:      metadata.M.FactoriesByName(),
 		InstrumentationLibraryName: InstrumentationLibName,
+		Labels:                     s.config.Labels,
 	}
 
 	cgs, listErr := s.clusterAdmin.ListConsumerGroups()
@@ -176,6 +178,7 @@ func createConsumerScraper(_ context.Context, config Config, saramaConfig *saram
 		groupFilter:  groupFilter,
 		topicFilter:  topicFilter,
 		clusterAdmin: clusterAdmin,
+		config:       config,
 	}
 	return scraperhelper.NewResourceMetricsScraper(
 		s.Name(),

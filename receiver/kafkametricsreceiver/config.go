@@ -43,4 +43,7 @@ type Config struct {
 
 	// ClientID is the id associated with the consumer that reads from topics in kafka.
 	ClientID string `mapstructure:"client_id"`
+
+	// Labels are any additional labels to be added to the collected metrics
+	Labels map[string]string `mapstructure:"labels"`
 }
