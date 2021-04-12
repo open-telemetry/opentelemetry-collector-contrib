@@ -15,6 +15,7 @@
 package groupbytraceprocessor
 
 import (
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -245,11 +246,114 @@ func TestEventUnknownType(t *testing.T) {
 	wg.Wait()
 }
 
+func TestEventTracePerWorker(t *testing.T) {
+	for _, tt := range []struct {
+		casename  string
+		traceID   [16]byte
+		errString string
+	}{
+		{
+			casename:  "invalid traceID",
+			errString: "eventmachine consume failed:",
+		},
+
+		{
+			casename: "traceID 1",
+			traceID:  [16]byte{1},
+		},
+
+		{
+			casename: "traceID 2",
+			traceID:  [16]byte{2},
+		},
+
+		{
+			casename: "traceID 3",
+			traceID:  [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+		},
+	} {
+		t.Run(tt.casename, func(t *testing.T) {
+			em := newEventMachine(logger, 200, 100, 1_000)
+
+			var wg sync.WaitGroup
+			var workerForTrace *eventMachineWorker
+			em.onTraceReceived = func(td tracesWithID, w *eventMachineWorker) error {
+				workerForTrace = w
+				w.fire(event{
+					typ:     traceExpired,
+					payload: pdata.NewTraceID([16]byte{1}),
+				})
+				return nil
+			}
+			em.onTraceExpired = func(id pdata.TraceID, w *eventMachineWorker) error {
+				assert.Equal(t, workerForTrace, w)
+				wg.Done()
+				return nil
+			}
+			em.startInBackground()
+			defer em.shutdown()
+
+			td := pdata.NewTraces()
+			td.ResourceSpans().Resize(1)
+			td.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
+			if tt.traceID != [16]byte{} {
+				td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+				span := pdata.NewSpan()
+				span.SetTraceID(pdata.NewTraceID(tt.traceID))
+				span.CopyTo(td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0))
+			}
+
+			// test
+			wg.Add(1)
+			err := em.consume(td)
+
+			// verify
+			if tt.errString == "" {
+				require.NoError(t, err)
+			} else {
+				wg.Done()
+				require.Truef(t, strings.HasPrefix(err.Error(), tt.errString), "error should have prefix %q", tt.errString)
+			}
+
+			wg.Wait()
+		})
+	}
+}
+
+func TestEventConsumeConsistency(t *testing.T) {
+	for _, tt := range []struct {
+		casename string
+		traceID  [16]byte
+	}{
+		{
+			casename: "trace 1",
+			traceID:  [16]byte{1, 2, 3, 4},
+		},
+
+		{
+			casename: "trace 2",
+			traceID:  [16]byte{2, 3, 4, 5},
+		},
+	} {
+		t.Run(tt.casename, func(t *testing.T) {
+			realTraceID := workerIndexForTraceID(pdata.NewTraceID(tt.traceID), 100)
+			var wg sync.WaitGroup
+			for i := 0; i < 50; i++ {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					for j := 0; j < 30; j++ {
+						assert.Equal(t, realTraceID, workerIndexForTraceID(pdata.NewTraceID(tt.traceID), 100))
+					}
+				}()
+			}
+			wg.Wait()
+		})
+	}
+}
+
 func TestEventShutdown(t *testing.T) {
 	// prepare
-	logger, err := zap.NewDevelopment()
-	require.NoError(t, err)
-
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
@@ -328,8 +432,6 @@ func TestPeriodicMetrics(t *testing.T) {
 	// try to be nice with the next consumer (test)
 	defer view.Unregister(views...)
 
-	logger, err := zap.NewDevelopment()
-	require.NoError(t, err)
 	em := newEventMachine(logger, 50, 1, 1_000)
 	em.metricsCollectionInterval = time.Millisecond
 

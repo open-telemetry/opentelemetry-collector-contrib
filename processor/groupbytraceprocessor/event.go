@@ -67,8 +67,8 @@ type tracesWithID struct {
 	td pdata.Traces
 }
 
-// eventMachine is a simple machine that accepts events in a typically non-blocking manner,
-// processing the events serially, to ensure that data at the consumer is consistent.
+// eventMachine is a machine that accepts events in a typically non-blocking manner,
+// processing the events serially per worker scope, to ensure that data at the consumer is consistent.
 // Just like the machine itself is non-blocking, consumers are expected to also not block
 // on the callbacks, otherwise, events might pile up. When enough events are piled up, firing an
 // event will block until enough capacity is available to accept the events.
@@ -112,7 +112,7 @@ func newEventMachine(logger *zap.Logger, bufferSize int, numWorkers int, numTrac
 }
 
 func (em *eventMachine) startInBackground() {
-	em.start()
+	em.startWorkers()
 	go em.periodicMetrics()
 }
 
@@ -141,7 +141,7 @@ func (em *eventMachine) periodicMetrics() {
 	})
 }
 
-func (em *eventMachine) start() {
+func (em *eventMachine) startWorkers() {
 	for _, worker := range em.workers {
 		go worker.start()
 	}
@@ -220,6 +220,7 @@ func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 	}
 }
 
+// consume takes a single trace and routes it to one of the workers.
 func (em *eventMachine) consume(td pdata.Traces) error {
 	traceID, err := getTraceID(td)
 	if err != nil {
@@ -228,19 +229,28 @@ func (em *eventMachine) consume(td pdata.Traces) error {
 
 	var bucket uint64
 	if len(em.workers) != 1 {
-		hash := hashPool.Get().(*maphash.Hash)
-		defer hashPool.Put(hash)
-
-		bytes := traceID.Bytes()
-		hash.Write(bytes[:])
-		bucket = hash.Sum64() % uint64(len(em.workers))
+		bucket = workerIndexForTraceID(traceID, len(em.workers))
 	}
+
+	em.logger.Debug("scheduled trace to worker", zap.Uint64("id", bucket))
 
 	em.workers[bucket].fire(event{
 		typ:     traceReceived,
 		payload: tracesWithID{id: traceID, td: td},
 	})
 	return nil
+}
+
+func workerIndexForTraceID(traceID pdata.TraceID, numWorkers int) uint64 {
+	hash := hashPool.Get().(*maphash.Hash)
+	defer func() {
+		hash.Reset()
+		hashPool.Put(hash)
+	}()
+
+	bytes := traceID.Bytes()
+	hash.Write(bytes[:])
+	return hash.Sum64() % uint64(numWorkers)
 }
 
 func (em *eventMachine) shutdown() {

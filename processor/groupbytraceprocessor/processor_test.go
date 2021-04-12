@@ -43,7 +43,7 @@ func TestTraceIsDispatchedAfterDuration(t *testing.T) {
 	config := Config{
 		WaitDuration: time.Nanosecond,
 		NumTraces:    10,
-		NumWorkers:   1,
+		NumWorkers:   4,
 	}
 	mockProcessor := &mockProcessor{
 		onTraces: func(ctx context.Context, received pdata.Traces) error {
@@ -192,8 +192,8 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 	// prepare
 	config := Config{
 		WaitDuration: time.Second, // we are not waiting for this whole time
-		NumTraces:    5,
-		NumWorkers:   1,
+		NumTraces:    8,
+		NumWorkers:   4,
 	}
 	st := &mockStorage{
 		onGet: func(pdata.TraceID) ([]pdata.ResourceSpans, error) {
@@ -217,7 +217,7 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 
 	// test
 	// we trigger this manually, instead of waiting the whole duration
-	err = p.markAsReleased(traceID, p.eventMachine.workers[0].fire)
+	err = p.markAsReleased(traceID, p.eventMachine.workers[workerIndexForTraceID(traceID, config.NumWorkers)].fire)
 
 	// verify
 	assert.Error(t, err)
@@ -227,8 +227,8 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 	// prepare
 	config := Config{
 		WaitDuration: time.Second, // we are not waiting for this whole time
-		NumTraces:    5,
-		NumWorkers:   1,
+		NumTraces:    8,
+		NumWorkers:   4,
 	}
 	expectedError := errors.New("some unexpected error")
 	st := &mockStorage{
@@ -253,7 +253,7 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 
 	// test
 	// we trigger this manually, instead of waiting the whole duration
-	err = p.markAsReleased(traceID, p.eventMachine.workers[0].fire)
+	err = p.markAsReleased(traceID, p.eventMachine.workers[workerIndexForTraceID(traceID, config.NumWorkers)].fire)
 
 	// verify
 	assert.True(t, errors.Is(err, expectedError))
@@ -301,8 +301,8 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	config := Config{
 		WaitDuration: 50 * time.Millisecond,
-		NumTraces:    5,
-		NumWorkers:   1,
+		NumTraces:    8,
+		NumWorkers:   4,
 	}
 	st := newMemoryStorage()
 
@@ -348,8 +348,8 @@ func TestTraceErrorFromStorageWhileProcessingSecondTrace(t *testing.T) {
 	// prepare
 	config := Config{
 		WaitDuration: time.Second, // we are not waiting for this whole time
-		NumTraces:    5,
-		NumWorkers:   1,
+		NumTraces:    8,
+		NumWorkers:   4,
 	}
 	st := &mockStorage{}
 	next := &mockProcessor{}
@@ -370,7 +370,7 @@ func TestTraceErrorFromStorageWhileProcessingSecondTrace(t *testing.T) {
 	batch := batchpersignal.SplitTraces(trace)
 
 	// test
-	err := p.onTraceReceived(tracesWithID{id: traceID, td: batch[0]}, p.eventMachine.workers[0])
+	err := p.eventMachine.consume(batch[0])
 	assert.NoError(t, err)
 
 	expectedError := errors.New("some unexpected error")
@@ -379,7 +379,9 @@ func TestTraceErrorFromStorageWhileProcessingSecondTrace(t *testing.T) {
 	}
 
 	// processing another batch for the same trace takes a slightly different code path
-	err = p.onTraceReceived(tracesWithID{id: traceID, td: batch[0]}, p.eventMachine.workers[0])
+	err = p.onTraceReceived(tracesWithID{id: traceID, td: batch[0]},
+		p.eventMachine.workers[workerIndexForTraceID(traceID, config.NumWorkers)],
+	)
 
 	// verify
 	assert.True(t, errors.Is(err, expectedError))
@@ -389,8 +391,8 @@ func TestErrorFromStorageWhileRemovingTrace(t *testing.T) {
 	// prepare
 	config := Config{
 		WaitDuration: time.Second, // we are not waiting for this whole time
-		NumTraces:    5,
-		NumWorkers:   1,
+		NumTraces:    8,
+		NumWorkers:   4,
 	}
 	expectedError := errors.New("some unexpected error")
 	st := &mockStorage{
@@ -416,8 +418,8 @@ func TestTraceNotFoundWhileRemovingTrace(t *testing.T) {
 	// prepare
 	config := Config{
 		WaitDuration: time.Second, // we are not waiting for this whole time
-		NumTraces:    5,
-		NumWorkers:   1,
+		NumTraces:    8,
+		NumWorkers:   4,
 	}
 	st := &mockStorage{
 		onDelete: func(pdata.TraceID) ([]pdata.ResourceSpans, error) {
@@ -444,8 +446,8 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 
 	config := Config{
 		WaitDuration: time.Nanosecond, // we are not waiting for this whole time
-		NumTraces:    5,
-		NumWorkers:   1,
+		NumTraces:    8,
+		NumWorkers:   4,
 	}
 	st := newMemoryStorage()
 	next := &mockProcessor{
@@ -484,8 +486,8 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 	// test
 	wg.Add(2)
 
-	p.onTraceReceived(tracesWithID{id: traceID, td: firstTrace}, p.eventMachine.workers[0])
-	p.onTraceReceived(tracesWithID{id: secondTraceID, td: secondTrace}, p.eventMachine.workers[0])
+	p.eventMachine.consume(firstTrace)
+	p.eventMachine.consume(secondTrace)
 
 	wg.Wait()
 
@@ -591,8 +593,8 @@ func TestErrorOnProcessResourceSpansContinuesProcessing(t *testing.T) {
 	// prepare
 	config := Config{
 		WaitDuration: time.Second, // we are not waiting for this whole time
-		NumTraces:    5,
-		NumWorkers:   1,
+		NumTraces:    8,
+		NumWorkers:   4,
 	}
 	st := &mockStorage{}
 	next := &mockProcessor{}
@@ -643,10 +645,16 @@ func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 	config := Config{
 		WaitDuration: 50 * time.Millisecond,
 		NumTraces:    defaultNumTraces,
-		NumWorkers:   2 * defaultNumWorkers,
+		NumWorkers:   4 * defaultNumWorkers,
 	}
 	st := newMemoryStorage()
-	next := &mockProcessor{}
+
+	// For each input trace there are always <= 2 events in the machine simultaneously.
+	semaphoreCh := make(chan struct{}, bufferSize/2)
+	next := &mockProcessor{onTraces: func(context.Context, pdata.Traces) error {
+		<-semaphoreCh
+		return nil
+	}}
 
 	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	require.NotNil(b, p)

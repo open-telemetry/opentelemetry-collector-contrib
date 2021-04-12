@@ -32,13 +32,14 @@ import (
 // groupByTraceProcessor is a processor that keeps traces in memory for a given duration, with the expectation
 // that the trace will be complete once this duration expires. After the duration, the trace is sent to the next consumer.
 // This processor uses a buffered event machine, which converts operations into events for non-blocking processing, but
-// keeping all operations serialized. This ensures that we don't need locks but that the state is consistent across go routines.
-// Each in-flight trace is registered with a go routine, which will be called after the given duration and dispatched to the event
+// keeping all operations serialized per worker scope. This ensures that we don't need locks but that the state is consistent across go routines.
+// Initially, all incoming batches are split into different traces and distributed among workers by a hash of traceID in eventMachine.consume method.
+// Afterwards, the trace is registered with a go routine, which will be called after the given duration and dispatched to the event
 // machine for further processing.
 // The typical data flow looks like this:
-// ConsumeTraces -> event(traceReceived) -> onTraceReceived -> AfterFunc(duration, event(traceExpired)) -> onTraceExpired
+// ConsumeTraces -> eventMachine.consume(trace) -> event(traceReceived) -> onTraceReceived -> AfterFunc(duration, event(traceExpired)) -> onTraceExpired
 // async markAsReleased -> event(traceReleased) -> onTraceReleased -> nextConsumer
-// This processor uses also a ring buffer to hold the in-flight trace IDs, so that we don't hold more than the given maximum number
+// Each worker in the eventMachine also uses a ring buffer to hold the in-flight trace IDs, so that we don't hold more than the given maximum number
 // of traces in memory/storage. Items that are evicted from the buffer are discarded without warning.
 type groupByTraceProcessor struct {
 	nextConsumer consumer.Traces
@@ -53,6 +54,8 @@ type groupByTraceProcessor struct {
 }
 
 var _ component.TracesProcessor = (*groupByTraceProcessor)(nil)
+
+const bufferSize = 10_000
 
 // newGroupByTraceProcessor returns a new processor.
 func newGroupByTraceProcessor(logger *zap.Logger, st storage, nextConsumer consumer.Traces, config Config) *groupByTraceProcessor {
@@ -110,6 +113,8 @@ func (sp *groupByTraceProcessor) Shutdown(_ context.Context) error {
 func (sp *groupByTraceProcessor) onTraceReceived(trace tracesWithID, worker *eventMachineWorker) error {
 	traceID := trace.id
 	if worker.buffer.contains(traceID) {
+		sp.logger.Debug("trace is already in memory storage")
+
 		// it exists in memory already, just append the spans to the trace in the storage
 		if err := sp.addSpans(traceID, trace.td); err != nil {
 			return fmt.Errorf("couldn't add spans to existing trace: %w", err)
@@ -210,8 +215,10 @@ func (sp *groupByTraceProcessor) onTraceReleased(rss []pdata.ResourceSpans) erro
 	for _, rs := range rss {
 		trace.ResourceSpans().Append(rs)
 	}
-	stats.Record(context.Background(), mReleasedSpans.M(int64(trace.SpanCount())))
-	stats.Record(context.Background(), mReleasedTraces.M(1))
+	stats.Record(context.Background(),
+		mReleasedSpans.M(int64(trace.SpanCount())),
+		mReleasedTraces.M(1),
+	)
 
 	// Do async consuming not to block event worker
 	go func() {
