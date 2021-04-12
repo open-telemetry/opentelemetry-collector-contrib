@@ -30,9 +30,9 @@ const (
 	metadataEndpoint = "http://169.254.169.254/metadata/instance/compute"
 )
 
-// azureProvider gets metadata from the Azure IMDS
-type azureProvider interface {
-	metadata(ctx context.Context) (*computeMetadata, error)
+// Provider gets metadata from the Azure IMDS
+type Provider interface {
+	Metadata(context.Context) (*ComputeMetadata, error)
 }
 
 type azureProviderImpl struct {
@@ -40,16 +40,16 @@ type azureProviderImpl struct {
 	client   *http.Client
 }
 
-// newProvider creates a new metadata provider
-func newProvider() azureProvider {
+// NewProvider creates a new metadata provider
+func NewProvider() Provider {
 	return &azureProviderImpl{
 		endpoint: metadataEndpoint,
 		client:   &http.Client{},
 	}
 }
 
-// computeMetadata is the Azure IMDS compute metadata response format
-type computeMetadata struct {
+// ComputeMetadata is the Azure IMDS compute metadata response format
+type ComputeMetadata struct {
 	Location          string `json:"location"`
 	Name              string `json:"name"`
 	VMID              string `json:"vmID"`
@@ -59,8 +59,8 @@ type computeMetadata struct {
 	VMScaleSetName    string `json:"vmScaleSetName"`
 }
 
-// queryEndpointWithContext queries a given endpoint and parses the output to the Azure IMDS format
-func (p *azureProviderImpl) metadata(ctx context.Context) (*computeMetadata, error) {
+// Metadata queries a given endpoint and parses the output to the Azure IMDS format
+func (p *azureProviderImpl) Metadata(ctx context.Context) (*ComputeMetadata, error) {
 	const (
 		// API version used
 		apiVersionKey = "api-version"
@@ -96,7 +96,7 @@ func (p *azureProviderImpl) metadata(ctx context.Context) (*computeMetadata, err
 		return nil, fmt.Errorf("failed to read Azure IMDS reply: %v", err)
 	}
 
-	var metadata *computeMetadata
+	var metadata *ComputeMetadata
 	err = json.Unmarshal(respBody, &metadata)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode Azure IMDS reply: %v", err)
