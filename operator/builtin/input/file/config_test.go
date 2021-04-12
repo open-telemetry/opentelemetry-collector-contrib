@@ -81,6 +81,33 @@ func TestConfig(t *testing.T) {
 			}(),
 		},
 		{
+			"include_glob_double_asterisk",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.Include = append(cfg.Include, "**.log")
+				return cfg
+			}(),
+		},
+		{
+			"include_glob_double_asterisk_nested",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.Include = append(cfg.Include, "directory/**/*.log")
+				return cfg
+			}(),
+		},
+		{
+			"include_glob_double_asterisk_prefix",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.Include = append(cfg.Include, "**/directory/**/*.log")
+				return cfg
+			}(),
+		},
+		{
 			"include_inline",
 			false,
 			func() *InputConfig {
@@ -121,6 +148,36 @@ func TestConfig(t *testing.T) {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "*.log")
 				cfg.Exclude = append(cfg.Exclude, "not*.log")
+				return cfg
+			}(),
+		},
+		{
+			"exclude_glob_double_asterisk",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.Include = append(cfg.Include, "*.log")
+				cfg.Exclude = append(cfg.Exclude, "not**.log")
+				return cfg
+			}(),
+		},
+		{
+			"exclude_glob_double_asterisk_nested",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.Include = append(cfg.Include, "*.log")
+				cfg.Exclude = append(cfg.Exclude, "directory/**/not*.log")
+				return cfg
+			}(),
+		},
+		{
+			"exclude_glob_double_asterisk_prefix",
+			false,
+			func() *InputConfig {
+				cfg := defaultCfg()
+				cfg.Include = append(cfg.Include, "*.log")
+				cfg.Exclude = append(cfg.Exclude, "**/directory/**/not*.log")
 				return cfg
 			}(),
 		},

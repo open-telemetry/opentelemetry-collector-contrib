@@ -25,6 +25,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/bmatcuk/doublestar/v3"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -187,7 +188,7 @@ func getMatches(includes, excludes []string) []string {
 	INCLUDE:
 		for _, match := range matches {
 			for _, exclude := range excludes {
-				if itMatches, _ := filepath.Match(exclude, match); itMatches {
+				if itMatches, _ := doublestar.PathMatch(exclude, match); itMatches {
 					continue INCLUDE
 				}
 			}
