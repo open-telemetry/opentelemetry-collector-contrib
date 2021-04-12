@@ -143,11 +143,12 @@ func createMetricsExporter(
 func loadDefaultTranslationRules() ([]translation.Rule, error) {
 	cfg := Config{}
 
-	v := config.NewViper()
-	v.SetConfigType("yaml")
-	v.ReadConfig(strings.NewReader(translation.DefaultTranslationRulesYaml))
-	err := v.UnmarshalExact(&cfg)
+	cp, err := config.NewParserFromBuffer(strings.NewReader(translation.DefaultTranslationRulesYaml))
 	if err != nil {
+		return nil, err
+	}
+
+	if err = cp.UnmarshalExact(&cfg); err != nil {
 		return nil, fmt.Errorf("failed to load default translation rules: %v", err)
 	}
 
@@ -169,11 +170,12 @@ func setDefaultExcludes(cfg *Config) error {
 func loadDefaultExcludes() ([]dpfilters.MetricFilter, error) {
 	cfg := Config{}
 
-	v := config.NewViper()
-	v.SetConfigType("yaml")
-	v.ReadConfig(strings.NewReader(translation.DefaultExcludeMetricsYaml))
-	err := v.UnmarshalExact(&cfg)
+	v, err := config.NewParserFromBuffer(strings.NewReader(translation.DefaultExcludeMetricsYaml))
 	if err != nil {
+		return nil, err
+	}
+
+	if err = v.UnmarshalExact(&cfg); err != nil {
 		return nil, fmt.Errorf("failed to load default exclude metrics: %v", err)
 	}
 

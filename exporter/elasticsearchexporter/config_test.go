@@ -40,8 +40,10 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Exporters), 2)
 
+	defaultCfg := factory.CreateDefaultConfig()
+	defaultCfg.(*Config).Endpoints = []string{"https://elastic.example.com:9200"}
 	r0 := cfg.Exporters["elasticsearch"]
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
+	assert.Equal(t, r0, defaultCfg)
 
 	r1 := cfg.Exporters["elasticsearch/customname"].(*Config)
 	assert.Equal(t, r1, &Config{

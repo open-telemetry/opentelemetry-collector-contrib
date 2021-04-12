@@ -106,11 +106,11 @@ func (cfg *Config) Unmarshal(componentParser *config.Parser) error {
 
 	// custom unmarhalling is required to get []kubelet.MetricGroup, the default
 	// unmarshaller only supports string slices.
-	if !componentParser.Viper().IsSet(metricGroupsConfig) {
+	if !componentParser.IsSet(metricGroupsConfig) {
 		cfg.MetricGroupsToCollect = defaultMetricGroups
 		return nil
 	}
-	mgs := componentParser.Viper().Get(metricGroupsConfig)
+	mgs := componentParser.Get(metricGroupsConfig)
 
 	out, err := yaml.Marshal(mgs)
 	if err != nil {
