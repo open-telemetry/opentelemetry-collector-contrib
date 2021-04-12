@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
 
 const (
@@ -53,8 +55,9 @@ func createDefaultConfig() config.Receiver {
 			Endpoint:  defaultBindEndpoint,
 			Transport: defaultTransport,
 		},
-		AggregationInterval: defaultAggregationInterval,
-		EnableMetricType:    defaultEnableMetricType,
+		AggregationInterval:   defaultAggregationInterval,
+		EnableMetricType:      defaultEnableMetricType,
+		TimerHistogramMapping: []protocol.TimerHistogramMapping{{Match: "*", StatsdType: "timer", ObserverType: "gauge"}, {Match: "*", StatsdType: "histogram", ObserverType: "gauge"}},
 	}
 }
 
@@ -65,5 +68,9 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	c := cfg.(*Config)
+	err := c.validate()
+	if err != nil {
+		return nil, err
+	}
 	return New(params.Logger, *c, consumer)
 }

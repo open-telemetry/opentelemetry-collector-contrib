@@ -14,13 +14,11 @@
 
 package protocol
 
-import (
-	"go.opentelemetry.io/collector/consumer/pdata"
-)
-
-// Parser is something that can map input StatsD strings to OTLP Metric representations.
-type Parser interface {
-	Initialize(enableMetricType bool, sendTimerHistogram []TimerHistogramMapping) error
-	GetMetrics() pdata.Metrics
-	Aggregate(line string) error
+func Contains(slice []string, element string) bool {
+	for _, val := range slice {
+		if val == element {
+			return true
+		}
+	}
+	return false
 }
