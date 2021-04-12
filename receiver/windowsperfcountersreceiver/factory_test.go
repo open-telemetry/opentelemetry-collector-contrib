@@ -37,7 +37,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	cfg.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
 
-	assert.NoError(t, cfg.(*Config).validate())
+	assert.NoError(t, cfg.Validate())
 }
 
 func TestCreateTraceReceiver(t *testing.T) {

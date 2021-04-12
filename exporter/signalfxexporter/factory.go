@@ -21,7 +21,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -49,7 +48,6 @@ func NewFactory() component.ExporterFactory {
 		exporterhelper.WithMetrics(createMetricsExporter),
 		exporterhelper.WithLogs(createLogsExporter),
 		exporterhelper.WithTraces(createTraceExporter),
-		exporterhelper.WithCustomUnmarshaler(customUnmarshaler),
 	)
 }
 
@@ -66,27 +64,6 @@ func createDefaultConfig() config.Exporter {
 		Correlation:                   correlation.DefaultConfig(),
 		NonAlphanumericDimensionChars: "_-.",
 	}
-}
-
-func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) (err error) {
-	if componentViperSection == nil {
-		// Nothing to do if there is no config given.
-		return nil
-	}
-
-	if err = componentViperSection.Unmarshal(intoCfg); err != nil {
-		return err
-	}
-
-	config := intoCfg.(*Config)
-
-	// If translations_config is not set in the config, set it to the defaults and return.
-	if !componentViperSection.IsSet(translationRulesConfigKey) {
-		config.TranslationRules, err = loadDefaultTranslationRules()
-		return err
-	}
-
-	return nil
 }
 
 func createTraceExporter(
