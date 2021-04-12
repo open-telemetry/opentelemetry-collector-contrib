@@ -26,7 +26,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 )
 
-const TypeStr = "aks"
+const (
+	TypeStr = "aks"
+
+	// Environment variable that is set when running on Kubernetes
+	kubernetesServiceHostEnvVar = "KUBERNETES_SERVICE_HOST"
+)
 
 type Detector struct {
 	provider azure.Provider
@@ -57,8 +62,6 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 }
 
 func onK8s() bool {
-	// Environment variable that is set when running on Kubernetes
-	const kubernetesServiceHostEnvVar = "KUBERNETES_SERVICE_HOST"
 	return os.Getenv(kubernetesServiceHostEnvVar) != ""
 }
 
