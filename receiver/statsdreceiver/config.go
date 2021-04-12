@@ -15,16 +15,69 @@
 package statsdreceiver
 
 import (
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
 
 // Config defines configuration for StatsD receiver.
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"`
-	NetAddr                 confignet.NetAddr `mapstructure:",squash"`
-	AggregationInterval     time.Duration     `mapstructure:"aggregation_interval"`
-	EnableMetricType        bool              `mapstructure:"enable_metric_type"`
+	NetAddr                 confignet.NetAddr                `mapstructure:",squash"`
+	AggregationInterval     time.Duration                    `mapstructure:"aggregation_interval"`
+	EnableMetricType        bool                             `mapstructure:"enable_metric_type"`
+	TimerHistogramMapping   []protocol.TimerHistogramMapping `mapstructure:"timer_histogram_mapping"`
+}
+
+func (c *Config) validate() error {
+
+	var errors []error
+	supportMatch := []string{"*"}
+	supportedStatsdType := []string{"timing", "timer", "histogram"}
+	supportedObserverType := []string{"gauge"}
+
+	if c.AggregationInterval <= 0 {
+		errors = append(errors, fmt.Errorf("aggregation_interval must be a positive duration"))
+	}
+
+	var TimerHistogramMappingMissingObjectName bool
+	for _, eachMap := range c.TimerHistogramMapping {
+		if eachMap.Match == "" {
+			TimerHistogramMappingMissingObjectName = true
+			break
+		}
+
+		if !protocol.Contains(supportMatch, eachMap.Match) {
+			errors = append(errors, fmt.Errorf("match is not supported: %s", eachMap.Match))
+		}
+
+		if eachMap.StatsdType == "" {
+			TimerHistogramMappingMissingObjectName = true
+			break
+		}
+
+		if !protocol.Contains(supportedStatsdType, eachMap.StatsdType) {
+			errors = append(errors, fmt.Errorf("statsd_type is not supported: %s", eachMap.StatsdType))
+		}
+
+		if eachMap.ObserverType == "" {
+			TimerHistogramMappingMissingObjectName = true
+			break
+		}
+
+		if !protocol.Contains(supportedObserverType, eachMap.ObserverType) {
+			errors = append(errors, fmt.Errorf("observer_type is not supported: %s", eachMap.ObserverType))
+		}
+	}
+
+	if TimerHistogramMappingMissingObjectName {
+		errors = append(errors, fmt.Errorf("must specify object name for all TimerHistogramMappings"))
+	}
+
+	return consumererror.Combine(errors)
 }
