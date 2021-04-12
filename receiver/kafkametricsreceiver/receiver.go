@@ -26,14 +26,20 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	allScrapers = map[string]func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.ResourceMetricsScraper, error){
-		"brokers": createBrokerScraper,
-		"topics":  createTopicsScraper,
-	}
+const (
+	InstrumentationLibName = "otelcol/kafkametrics"
+	brokersScraperName     = "brokers"
+	topicsScraperName      = "topics"
+	consumersScraperName   = "consumers"
 )
 
-const InstrumentationLibName = "otelcol/kafkametrics"
+var (
+	allScrapers = map[string]func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.ResourceMetricsScraper, error){
+		brokersScraperName:   createBrokerScraper,
+		topicsScraperName:    createTopicsScraper,
+		consumersScraperName: createConsumerScraper,
+	}
+)
 
 var newMetricsReceiver = func(
 	ctx context.Context,
