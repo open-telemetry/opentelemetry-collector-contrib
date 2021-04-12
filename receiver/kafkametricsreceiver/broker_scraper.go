@@ -52,7 +52,6 @@ func (s *brokerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, err
 		Timestamp:                  time.Now(),
 		MetricFactoriesByName:      metadata.M.FactoriesByName(),
 		InstrumentationLibraryName: InstrumentationLibName,
-		Labels:                     s.config.Labels,
 	}
 	metrics.AddGaugeDataPoint(metadata.M.KafkaBrokers.Name(), int64(len(brokers)))
 

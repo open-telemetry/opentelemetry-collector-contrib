@@ -13,8 +13,6 @@ receivers:
         key_file: key.pem
     topic_match: test_\w+
     group_match: test_\w+
-    labels:
-      test_label: test_val
 
 processors:
   nop:

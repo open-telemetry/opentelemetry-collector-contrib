@@ -83,6 +83,4 @@ receivers:
         cert_file: cert.pem
         key_file: key.pem
     collection_interval: 5s
-    labels:
-      test_label: test_val
 ```
