@@ -22,7 +22,6 @@ Optional Settings (with defaults):
 - `group_match` (default = .*): regex pattern of consumer groups to filter on for metrics.
 - `client_id` (default = otel-metrics-receiver): consumer client id
 - `collection_interval` (default = 1m): frequency of metric collection/scraping.
-- `labels` (default none): list of additional labels to be applied to metrics. This should be in `key:value` format.
 - `auth` (default none)
     - `plain_text`
         - `username`: The username to use.
@@ -65,7 +64,6 @@ receivers:
 2) Configuration with more optional settings:
 
 For this example:
-- All metric datapoint will include a `test_label` with value `test_val`
 - collection interval is 5 secs.
 
 ```yaml
