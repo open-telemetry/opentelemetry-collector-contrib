@@ -10,9 +10,27 @@ exporters:
     api_key: "test-apikey"
     dataset: "test-dataset"
     api_url: "https://api.testhost.io"
+    sending_queue:
+      enabled: true
+      num_consumers: 1
+      queue_size: 1
+    retry_on_failure:
+      enabled: true
+      initial_interval: 10s
+      max_interval: 60s
+      max_elapsed_time: 120s
   honeycomb/sample_rate:
     sample_rate: 5 # deprecated but left to ensure existing configs do not break
     sample_rate_attribute: "custom.sample_rate"
+    sending_queue:
+      enabled: true
+      num_consumers: 1
+      queue_size: 1
+    retry_on_failure:
+      enabled: true
+      initial_interval: 10s
+      max_interval: 60s
+      max_elapsed_time: 120s
 
 service:
   pipelines:
