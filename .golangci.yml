@@ -97,14 +97,14 @@ linters:
   disable:
     - errcheck
   enable:
+    - exportloopref
     - gofmt
     - goimports
     - golint
     - gosec
     - govet
-    - staticcheck
     - misspell
-    - scopelint
+    - staticcheck
     - unconvert
     - unparam
 
@@ -112,9 +112,6 @@ issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
     # Exclude some linters from running on tests files.
-    - path: _test\.go
-      linters:
-        - scopelint
     - text: "G404:"
       linters:
         - gosec
