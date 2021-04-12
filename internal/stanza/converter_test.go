@@ -210,7 +210,6 @@ func TestAllConvertedEntriesAreSentAndReceivedWithinAnExpectedTimeDuration(t *te
 		entries            int
 		maxFlushCount      uint
 		flushInterval      time.Duration
-		flushTimeTolerance time.Duration
 		expectedNumFlushes int
 	}{
 		{
@@ -218,21 +217,18 @@ func TestAllConvertedEntriesAreSentAndReceivedWithinAnExpectedTimeDuration(t *te
 			maxFlushCount:      20,
 			expectedNumFlushes: 1,
 			flushInterval:      100 * time.Millisecond,
-			flushTimeTolerance: 10 * time.Millisecond,
 		},
 		{
 			entries:            50,
 			maxFlushCount:      51,
 			expectedNumFlushes: 1,
 			flushInterval:      100 * time.Millisecond,
-			flushTimeTolerance: 10 * time.Millisecond,
 		},
 		{
 			entries:            500,
 			maxFlushCount:      501,
 			expectedNumFlushes: 1,
 			flushInterval:      100 * time.Millisecond,
-			flushTimeTolerance: 25 * time.Millisecond,
 		},
 	}
 
@@ -275,8 +271,11 @@ func TestAllConvertedEntriesAreSentAndReceivedWithinAnExpectedTimeDuration(t *te
 						break forLoop
 					}
 
-					tFlushed := time.Now()
-					assert.WithinDuration(t, start.Add(tc.flushInterval), tFlushed, tc.flushTimeTolerance)
+					assert.WithinDuration(t,
+						start.Add(tc.flushInterval),
+						time.Now(),
+						tc.flushInterval,
+					)
 
 					actualFlushCount++
 
