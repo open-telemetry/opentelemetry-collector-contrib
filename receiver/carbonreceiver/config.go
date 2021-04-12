@@ -15,6 +15,7 @@
 package carbonreceiver
 
 import (
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
@@ -30,6 +31,8 @@ const (
 	parserConfigSection = "parser"
 )
 
+var _ config.CustomUnmarshable = (*Config)(nil)
+
 // Config defines configuration for the Carbon receiver.
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"`
@@ -43,4 +46,37 @@ type Config struct {
 	// Parser specifies a parser and the respective configuration to be used
 	// by the receiver.
 	Parser *protocol.Config `mapstructure:"parser"`
+}
+
+func (cfg *Config) Unmarshal(componentParser *config.Parser) (err error) {
+	if componentParser == nil {
+		// The section is empty nothing to do, using the default config.
+		return nil
+	}
+
+	// Unmarshal but not exact yet so the different keys under config do not
+	// trigger errors, this is needed so that the types of protocol and transport
+	// are read.
+	if err := componentParser.Unmarshal(cfg); err != nil {
+		return err
+	}
+
+	// Unmarshal the protocol, so the type of config can be properly set.
+	vParserCfg := componentParser.Viper().Sub(parserConfigSection)
+	if vParserCfg != nil {
+		if err := protocol.LoadParserConfig(vParserCfg, cfg.Parser); err != nil {
+			return fmt.Errorf(
+				"error on %q section for %s: %v",
+				parserConfigSection,
+				cfg.Name(),
+				err)
+		}
+	}
+
+	// Unmarshal exact to validate the config keys.
+	if err := componentParser.UnmarshalExact(cfg); err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -33,6 +33,8 @@ const (
 	translationRulesConfigKey = "translation_rules"
 )
 
+var _ config.CustomUnmarshable = (*Config)(nil)
+
 // Config defines configuration for SignalFx exporter.
 type Config struct {
 	*config.ExporterSettings       `mapstructure:"-"`
@@ -177,4 +179,23 @@ func (cfg *Config) getAPIURL() (*url.URL, error) {
 		return url.Parse(fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm))
 	}
 	return url.Parse(cfg.APIURL)
+}
+
+func (cfg *Config) Unmarshal(componentParser *config.Parser) (err error) {
+	if componentParser == nil {
+		// Nothing to do if there is no config given.
+		return nil
+	}
+
+	if err = componentParser.Unmarshal(cfg); err != nil {
+		return err
+	}
+
+	// If translations_config is not set in the config, set it to the defaults and return.
+	if !componentParser.Viper().IsSet(translationRulesConfigKey) {
+		cfg.TranslationRules, err = loadDefaultTranslationRules()
+		return err
+	}
+
+	return nil
 }

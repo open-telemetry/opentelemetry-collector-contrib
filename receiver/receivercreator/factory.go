@@ -16,10 +16,7 @@ package receivercreator
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/spf13/cast"
-	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -40,7 +37,6 @@ func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithCustomUnmarshaler(customUnmarshaler),
 		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
@@ -73,49 +69,4 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	return newReceiverCreator(params, cfg.(*Config), consumer)
-}
-
-func customUnmarshaler(sourceViperSection *viper.Viper, intoCfg interface{}) error {
-	if sourceViperSection == nil {
-		// Nothing to do if there is no config given.
-		return nil
-	}
-	cp := config.ParserFromViper(sourceViperSection)
-	c := intoCfg.(*Config)
-
-	if err := cp.Unmarshal(&c); err != nil {
-		return err
-	}
-
-	receiversCfg, err := cp.Sub(receiversConfigKey)
-	if err != nil {
-		return fmt.Errorf("unable to extract key %v: %v", receiversConfigKey, err)
-	}
-
-	receiversSettings := cast.ToStringMap(cp.Get(receiversConfigKey))
-	for subreceiverKey := range receiversSettings {
-		subreceiverSection, err := receiversCfg.Sub(subreceiverKey)
-		if err != nil {
-			return fmt.Errorf("unable to extract subreceiver key %v: %v", subreceiverKey, err)
-		}
-		cfgSection := cast.ToStringMap(subreceiverSection.Get(configKey))
-		subreceiver, err := newReceiverTemplate(subreceiverKey, cfgSection)
-		if err != nil {
-			return err
-		}
-
-		// Unmarshals receiver_creator configuration like rule.
-		if err = subreceiverSection.Unmarshal(&subreceiver); err != nil {
-			return fmt.Errorf("failed to deserialize sub-receiver %q: %s", subreceiverKey, err)
-		}
-
-		subreceiver.rule, err = newRule(subreceiver.Rule)
-		if err != nil {
-			return fmt.Errorf("subreceiver %q rule is invalid: %v", subreceiverKey, err)
-		}
-
-		c.receiverTemplates[subreceiverKey] = subreceiver
-	}
-
-	return nil
 }
