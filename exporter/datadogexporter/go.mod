@@ -22,7 +22,7 @@ require (
 	github.com/zorkian/go-datadog-api v2.29.0+incompatible // indirect
 	go.opentelemetry.io/collector v0.24.1-0.20210412144545-a31ad5bf6c33
 	go.uber.org/zap v1.16.0
-	gopkg.in/DataDog/dd-trace-go.v1 v1.29.1
+	gopkg.in/DataDog/dd-trace-go.v1 v1.29.2
 	gopkg.in/ini.v1 v1.57.0 // indirect
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
 )
