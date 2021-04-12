@@ -79,7 +79,7 @@ func TestLoadConfig_Error(t *testing.T) {
 	}
 
 	const (
-		errorPrefix                   = "error reading receivers configuration for windowsperfcounters"
+		errorPrefix                   = "receiver \"windowsperfcounters\" has invalid configuration"
 		negativeCollectionIntervalErr = "collection_interval must be a positive duration"
 		noPerfCountersErr             = "must specify at least one perf counter"
 		noObjectNameErr               = "must specify object name for all perf counters"

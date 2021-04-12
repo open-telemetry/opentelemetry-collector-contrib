@@ -16,16 +16,13 @@ package kubeletstatsreceiver
 
 import (
 	"context"
-	"fmt"
 	"time"
 
-	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
@@ -47,7 +44,6 @@ func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithCustomUnmarshaler(customUnmarshaller),
 		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
@@ -82,39 +78,6 @@ func createMetricsReceiver(
 	}
 
 	return newReceiver(rOptions, params.Logger, rest, consumer), nil
-}
-
-func customUnmarshaller(sourceViperSection *viper.Viper, intoCfg interface{}) error {
-	if sourceViperSection == nil {
-		// Nothing to do if there is no config given.
-		return nil
-	}
-
-	if err := sourceViperSection.Unmarshal(intoCfg); err != nil {
-		return err
-	}
-
-	config := intoCfg.(*Config)
-
-	// custom unmarhalling is required to get []kubelet.MetricGroup, the default
-	// unmarshaller only supports string slices.
-	if !sourceViperSection.IsSet(metricGroupsConfig) {
-		config.MetricGroupsToCollect = defaultMetricGroups
-		return nil
-	}
-	mgs := sourceViperSection.Get(metricGroupsConfig)
-
-	out, err := yaml.Marshal(mgs)
-	if err != nil {
-		return fmt.Errorf("failed to marshal %s to yaml: %w", metricGroupsConfig, err)
-	}
-
-	err = yaml.UnmarshalStrict(out, &config.MetricGroupsToCollect)
-	if err != nil {
-		return fmt.Errorf("failed to retrieve %s: %w", metricGroupsConfig, err)
-	}
-
-	return nil
 }
 
 func restClient(logger *zap.Logger, cfg *Config) (kubelet.RestClient, error) {

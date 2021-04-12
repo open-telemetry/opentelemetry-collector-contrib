@@ -17,7 +17,6 @@ package windowsperfcountersreceiver
 import (
 	"time"
 
-	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -34,18 +33,7 @@ func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver),
-		receiverhelper.WithCustomUnmarshaler(customUnmarshaler))
-}
-
-// customUnmarshaler returns custom unmarshaler for this config.
-func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) error {
-	err := componentViperSection.Unmarshal(intoCfg)
-	if err != nil {
-		return err
-	}
-
-	return intoCfg.(*Config).validate()
+		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
 // createDefaultConfig creates the default configuration for receiver.

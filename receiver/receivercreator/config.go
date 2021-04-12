@@ -15,6 +15,9 @@
 package receivercreator
 
 import (
+	"fmt"
+
+	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configparser"
 
@@ -74,6 +77,8 @@ func newReceiverTemplate(name string, config userConfigMap) (receiverTemplate, e
 	}, nil
 }
 
+var _ config.CustomUnmarshable = (*Config)(nil)
+
 // Config defines configuration for receiver_creator.
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"`
@@ -83,4 +88,47 @@ type Config struct {
 	// ResourceAttributes is a map of default resource attributes to add to each resource
 	// object received by this receiver from dynamically created receivers.
 	ResourceAttributes resourceAttributes `mapstructure:"resource_attributes"`
+}
+
+func (cfg *Config) Unmarshal(componentParser *config.Parser) error {
+	if componentParser == nil {
+		// Nothing to do if there is no config given.
+		return nil
+	}
+
+	if err := componentParser.Unmarshal(cfg); err != nil {
+		return err
+	}
+
+	receiversCfg, err := componentParser.Sub(receiversConfigKey)
+	if err != nil {
+		return fmt.Errorf("unable to extract key %v: %v", receiversConfigKey, err)
+	}
+
+	receiversSettings := cast.ToStringMap(componentParser.Get(receiversConfigKey))
+	for subreceiverKey := range receiversSettings {
+		subreceiverSection, err := receiversCfg.Sub(subreceiverKey)
+		if err != nil {
+			return fmt.Errorf("unable to extract subreceiver key %v: %v", subreceiverKey, err)
+		}
+		cfgSection := cast.ToStringMap(subreceiverSection.Get(configKey))
+		subreceiver, err := newReceiverTemplate(subreceiverKey, cfgSection)
+		if err != nil {
+			return err
+		}
+
+		// Unmarshals receiver_creator configuration like rule.
+		if err = subreceiverSection.Unmarshal(&subreceiver); err != nil {
+			return fmt.Errorf("failed to deserialize sub-receiver %q: %s", subreceiverKey, err)
+		}
+
+		subreceiver.rule, err = newRule(subreceiver.Rule)
+		if err != nil {
+			return fmt.Errorf("subreceiver %q rule is invalid: %v", subreceiverKey, err)
+		}
+
+		cfg.receiverTemplates[subreceiverKey] = subreceiver
+	}
+
+	return nil
 }

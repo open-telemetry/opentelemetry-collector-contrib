@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
+	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -91,4 +92,34 @@ func getMapFromSlice(collect []kubelet.MetricGroup) (map[kubelet.MetricGroup]boo
 	}
 
 	return out, nil
+}
+
+func (cfg *Config) Unmarshal(componentParser *config.Parser) error {
+	if componentParser == nil {
+		// Nothing to do if there is no config given.
+		return nil
+	}
+
+	if err := componentParser.Unmarshal(cfg); err != nil {
+		return err
+	}
+
+	// custom unmarhalling is required to get []kubelet.MetricGroup, the default
+	// unmarshaller only supports string slices.
+	if !componentParser.Viper().IsSet(metricGroupsConfig) {
+		cfg.MetricGroupsToCollect = defaultMetricGroups
+		return nil
+	}
+	mgs := componentParser.Viper().Get(metricGroupsConfig)
+
+	out, err := yaml.Marshal(mgs)
+	if err != nil {
+		return fmt.Errorf("failed to marshal %s to yaml: %w", metricGroupsConfig, err)
+	}
+
+	if err = yaml.UnmarshalStrict(out, &cfg.MetricGroupsToCollect); err != nil {
+		return fmt.Errorf("failed to retrieve %s: %w", metricGroupsConfig, err)
+	}
+
+	return nil
 }
