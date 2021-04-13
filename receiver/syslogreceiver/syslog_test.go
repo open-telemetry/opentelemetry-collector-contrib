@@ -52,7 +52,7 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 	sink := new(consumertest.LogsSink)
 	rcvr, err := f.CreateLogsReceiver(context.Background(), params, cfg, sink)
 	require.NoError(t, err)
-	require.NoError(t, rcvr.Start(context.Background(), &testHost{t: t}))
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
 	var conn net.Conn
 	if cfg.Input["tcp"] != nil {
@@ -175,16 +175,4 @@ func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
 	return func() bool {
 		return sink.LogRecordsCount() == expected
 	}
-}
-
-type testHost struct {
-	component.Host
-	t *testing.T
-}
-
-var _ component.Host = (*testHost)(nil)
-
-// ReportFatalError causes the test to be run to fail.
-func (h *testHost) ReportFatalError(err error) {
-	h.t.Fatalf("receiver reported a fatal error: %v", err)
 }

@@ -55,6 +55,16 @@ func TestLog10kDPS(t *testing.T) {
 			},
 		},
 		{
+			name:     "filelog checkpoints",
+			sender:   datasenders.NewFileLogWriter(),
+			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 30,
+				ExpectedMaxRAM: 85,
+			},
+			extensions: datasenders.NewLocalFileStorageExtension(),
+		},
+		{
 			name:     "kubernetes containers",
 			sender:   datasenders.NewKubernetesContainerWriter(),
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),

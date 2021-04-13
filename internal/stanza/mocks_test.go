@@ -17,6 +17,7 @@ package stanza
 import (
 	"context"
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -63,7 +64,7 @@ func (c *UnstartableConfig) Build(context operator.BuildContext) ([]operator.Ope
 }
 
 // Start will return an error
-func (o *UnstartableOperator) Start() error {
+func (o *UnstartableOperator) Start(_ operator.Persister) error {
 	return fmt.Errorf("something very unusual happened")
 }
 
@@ -146,4 +147,41 @@ func (f TestReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Conf
 		return nil, fmt.Errorf("Unknown input type")
 	}
 	return &operator.Config{Builder: NewUnstartableConfig()}, nil
+}
+
+func newMockPersister() *persister {
+	return &persister{
+		client: newMockClient(),
+	}
+}
+
+type mockClient struct {
+	cache    map[string][]byte
+	cacheMux sync.Mutex
+}
+
+func newMockClient() *mockClient {
+	return &mockClient{
+		cache: make(map[string][]byte),
+	}
+}
+
+func (p *mockClient) Get(_ context.Context, key string) ([]byte, error) {
+	p.cacheMux.Lock()
+	defer p.cacheMux.Unlock()
+	return p.cache[key], nil
+}
+
+func (p *mockClient) Set(_ context.Context, key string, value []byte) error {
+	p.cacheMux.Lock()
+	defer p.cacheMux.Unlock()
+	p.cache[key] = value
+	return nil
+}
+
+func (p *mockClient) Delete(_ context.Context, key string) error {
+	p.cacheMux.Lock()
+	defer p.cacheMux.Unlock()
+	delete(p.cache, key)
+	return nil
 }
