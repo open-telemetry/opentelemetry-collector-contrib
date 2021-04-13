@@ -29,18 +29,21 @@ import (
 )
 
 var (
-	tagGrpcStatusCode, _    = tag.NewKey("grpc_response_code")
-	tagHTTPStatusCode, _    = tag.NewKey("http_status_code")
-	tagRequestUserAgent, _  = tag.NewKey("user_agent")
-	tagAPIKey, _            = tag.NewKey("api_key")
-	tagDataType, _          = tag.NewKey("data_type")
-	tagMetricType, _        = tag.NewKey("metric_type")
-	tagMetricTemporality, _ = tag.NewKey("metric_temporality")
-	tagHasSpanEvents, _     = tag.NewKey("has_span_events")
-	tagHasSpanLinks, _      = tag.NewKey("has_span_links")
-	tagKeys                 = []tag.Key{tagGrpcStatusCode, tagHTTPStatusCode, tagRequestUserAgent, tagAPIKey, tagDataType}
-	metricMetadataTagKeys   = []tag.Key{tagGrpcStatusCode, tagHTTPStatusCode, tagRequestUserAgent, tagAPIKey, tagDataType, tagMetricType, tagMetricTemporality}
-	spanMetadataTagKeys     = []tag.Key{tagGrpcStatusCode, tagHTTPStatusCode, tagRequestUserAgent, tagAPIKey, tagDataType, tagHasSpanEvents, tagHasSpanLinks}
+	tagGrpcStatusCode, _     = tag.NewKey("grpc_response_code")
+	tagHTTPStatusCode, _     = tag.NewKey("http_status_code")
+	tagRequestUserAgent, _   = tag.NewKey("user_agent")
+	tagAPIKey, _             = tag.NewKey("api_key")
+	tagDataType, _           = tag.NewKey("data_type")
+	tagMetricType, _         = tag.NewKey("metric_type")
+	tagMetricTemporality, _  = tag.NewKey("metric_temporality")
+	tagHasSpanEvents, _      = tag.NewKey("has_span_events")
+	tagHasSpanLinks, _       = tag.NewKey("has_span_links")
+	tagAttributeLocation, _  = tag.NewKey("attribute_location")
+	tagAttributeValueType, _ = tag.NewKey("attribute_type")
+	tagKeys                  = []tag.Key{tagGrpcStatusCode, tagHTTPStatusCode, tagRequestUserAgent, tagAPIKey, tagDataType}
+	metricMetadataTagKeys    = []tag.Key{tagGrpcStatusCode, tagHTTPStatusCode, tagRequestUserAgent, tagAPIKey, tagDataType, tagMetricType, tagMetricTemporality}
+	spanMetadataTagKeys      = []tag.Key{tagGrpcStatusCode, tagHTTPStatusCode, tagRequestUserAgent, tagAPIKey, tagDataType, tagHasSpanEvents, tagHasSpanLinks}
+	attributeMetadataTagKeys = []tag.Key{tagGrpcStatusCode, tagHTTPStatusCode, tagRequestUserAgent, tagAPIKey, tagDataType, tagAttributeLocation, tagAttributeValueType}
 
 	statRequestCount         = stats.Int64("newrelicexporter_request_count", "Number of requests processed", stats.UnitDimensionless)
 	statOutputDatapointCount = stats.Int64("newrelicexporter_output_datapoint_count", "Number of data points sent to the HTTP API", stats.UnitDimensionless)
@@ -48,6 +51,7 @@ var (
 	statExternalTime         = stats.Float64("newrelicexporter_external_time", "Wall clock time (seconds) spent sending data to the HTTP API", stats.UnitSeconds)
 	statMetricMetadata       = stats.Int64("newrelicexporter_metric_metadata_count", "Number of metrics processed", stats.UnitDimensionless)
 	statSpanMetadata         = stats.Int64("newrelicexporter_span_metadata_count", "Number of spans processed", stats.UnitDimensionless)
+	statAttributeMetadata    = stats.Int64("newrelicexporter_attribute_metadata_count", "Number of attributes processed", stats.UnitDimensionless)
 )
 
 // MetricViews return metric views for Kafka receiver.
@@ -59,6 +63,7 @@ func MetricViews() []*view.View {
 		buildView(tagKeys, statExternalTime, view.Sum()),
 		buildView(metricMetadataTagKeys, statMetricMetadata, view.Sum()),
 		buildView(spanMetadataTagKeys, statSpanMetadata, view.Sum()),
+		buildView(attributeMetadataTagKeys, statAttributeMetadata, view.Sum()),
 	}
 }
 
@@ -82,6 +87,34 @@ type spanStatsKey struct {
 	hasLinks  bool
 }
 
+type attributeLocation int
+
+const (
+	attributeLocationResource attributeLocation = iota
+	attributeLocationSpan
+	attributeLocationSpanEvent
+	attributeLocationLog
+)
+
+func (al attributeLocation) String() string {
+	switch al {
+	case attributeLocationResource:
+		return "resource"
+	case attributeLocationSpan:
+		return "span"
+	case attributeLocationSpanEvent:
+		return "span_event"
+	case attributeLocationLog:
+		return "log"
+	}
+	return ""
+}
+
+type attributeStatsKey struct {
+	location      attributeLocation
+	attributeType pdata.AttributeValueType
+}
+
 type exportMetadata struct {
 	// Metric tags
 	grpcResponseCode codes.Code // The gRPC response code
@@ -91,12 +124,13 @@ type exportMetadata struct {
 	dataType         string     // The type of data being recorded
 
 	// Metric values
-	dataInputCount      int                    // Number of resource spans in the request
-	dataOutputCount     int                    // Number of spans sent to the trace API
-	exporterTime        time.Duration          // Total time spent in the newrelic exporter
-	externalDuration    time.Duration          // Time spent sending to the trace API
-	metricMetadataCount map[metricStatsKey]int // Number of metrics by type and temporality
-	spanMetadataCount   map[spanStatsKey]int   // Number of spans by whether or not they have events or links
+	dataInputCount         int                       // Number of resource spans in the request
+	dataOutputCount        int                       // Number of spans sent to the trace API
+	exporterTime           time.Duration             // Total time spent in the newrelic exporter
+	externalDuration       time.Duration             // Time spent sending to the trace API
+	metricMetadataCount    map[metricStatsKey]int    // Number of metrics by type and temporality
+	spanMetadataCount      map[spanStatsKey]int      // Number of spans by whether or not they have events or links
+	attributeMetadataCount map[attributeStatsKey]int // Number of attributes by location and type
 }
 
 func newTraceMetadata(ctx context.Context) exportMetadata {
@@ -120,11 +154,12 @@ func initMetadata(ctx context.Context, dataType string) exportMetadata {
 	}
 
 	return exportMetadata{
-		userAgent:           userAgent,
-		apiKey:              "not_present",
-		dataType:            dataType,
-		metricMetadataCount: make(map[metricStatsKey]int),
-		spanMetadataCount:   make(map[spanStatsKey]int),
+		userAgent:              userAgent,
+		apiKey:                 "not_present",
+		dataType:               dataType,
+		metricMetadataCount:    make(map[metricStatsKey]int, 8*3 /* 8 metric types by 3 temporarilities */),
+		spanMetadataCount:      make(map[spanStatsKey]int, 2*2 /* combinations of the 2 bool key values */),
+		attributeMetadataCount: make(map[attributeStatsKey]int, 3*7 /* spans can have 7 value types in 4 different locations */),
 	}
 }
 
@@ -177,6 +212,23 @@ func (d exportMetadata) recordMetrics(ctx context.Context) error {
 			spanMetadataTagMutators[len(spanMetadataTagMutators)-1] = hasSpanLinksTag
 
 			e := stats.RecordWithTags(ctx, spanMetadataTagMutators, statSpanMetadata.M(int64(v)))
+			if e != nil {
+				errors = append(errors, e)
+			}
+		}
+	}
+
+	if len(d.attributeMetadataCount) > 0 {
+		attributeMetadataMutators := make([]tag.Mutator, len(tags)+2)
+		copy(attributeMetadataMutators, tags)
+		for k, v := range d.attributeMetadataCount {
+			locationTag := tag.Insert(tagAttributeLocation, k.location.String())
+			attributeMetadataMutators[len(attributeMetadataMutators)-2] = locationTag
+
+			typeTag := tag.Insert(tagAttributeValueType, k.attributeType.String())
+			attributeMetadataMutators[len(attributeMetadataMutators)-1] = typeTag
+
+			e := stats.RecordWithTags(ctx, attributeMetadataMutators, statAttributeMetadata.M(int64(v)))
 			if e != nil {
 				errors = append(errors, e)
 			}

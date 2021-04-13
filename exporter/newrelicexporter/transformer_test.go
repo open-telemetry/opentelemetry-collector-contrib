@@ -42,12 +42,35 @@ func TestCommonAttributes(t *testing.T) {
 	ilm.SetName("test name")
 	ilm.SetVersion("test version")
 
-	commonAttrs := newTransformer(startInfo, nil).CommonAttributes(resource, ilm)
+	details := newTraceMetadata(context.TODO())
+	commonAttrs := newTransformer(startInfo, &details).CommonAttributes(resource, ilm)
 	assert.Equal(t, "the-collector", commonAttrs[collectorNameKey])
 	assert.Equal(t, "0.0.1", commonAttrs[collectorVersionKey])
 	assert.Equal(t, "R1", commonAttrs["resource"])
 	assert.Equal(t, "test name", commonAttrs[instrumentationNameKey])
 	assert.Equal(t, "test version", commonAttrs[instrumentationVersionKey])
+
+	assert.Equal(t, 1, len(details.attributeMetadataCount))
+	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationResource, attributeType: pdata.AttributeValueSTRING}])
+}
+
+func TestDoesNotCaptureResourceAttributeMetadata(t *testing.T) {
+	startInfo := &component.ApplicationStartInfo{
+		ExeName: "the-collector",
+		Version: "0.0.1",
+	}
+
+	resource := pdata.NewResource()
+
+	ilm := pdata.NewInstrumentationLibrary()
+	ilm.SetName("test name")
+	ilm.SetVersion("test version")
+
+	details := newTraceMetadata(context.TODO())
+	commonAttrs := newTransformer(startInfo, &details).CommonAttributes(resource, ilm)
+
+	assert.Greater(t, len(commonAttrs), 0)
+	assert.Equal(t, 0, len(details.attributeMetadataCount))
 }
 
 func TestCaptureSpanMetadata(t *testing.T) {
@@ -122,6 +145,48 @@ func TestCaptureSpanMetadata(t *testing.T) {
 			assert.Equal(t, 1, details.spanMetadataCount[test.wantKey])
 		})
 	}
+}
+
+func TestCaptureSpanAttributeMetadata(t *testing.T) {
+	details := newTraceMetadata(context.TODO())
+	transform := newTransformer(nil, &details)
+
+	se := pdata.NewSpanEvent()
+	se.Attributes().InsertBool("testattr", true)
+
+	s := pdata.NewSpan()
+	s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 2}))
+	s.SetParentSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	s.SetName("test span")
+	s.Events().Append(se)
+	s.Attributes().InsertInt("spanattr", 42)
+
+	_, err := transform.Span(s)
+
+	require.NoError(t, err)
+	assert.Equal(t, 2, len(details.attributeMetadataCount))
+	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationSpan, attributeType: pdata.AttributeValueINT}])
+	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationSpanEvent, attributeType: pdata.AttributeValueBOOL}])
+}
+
+func TestDoesNotCaptureSpanAttributeMetadata(t *testing.T) {
+	details := newTraceMetadata(context.TODO())
+	transform := newTransformer(nil, &details)
+
+	se := pdata.NewSpanEvent()
+
+	s := pdata.NewSpan()
+	s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 2}))
+	s.SetParentSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	s.SetName("test span")
+	s.Events().Append(se)
+
+	_, err := transform.Span(s)
+
+	require.NoError(t, err)
+	assert.Equal(t, 0, len(details.attributeMetadataCount))
 }
 
 func TestTransformSpan(t *testing.T) {
@@ -706,9 +771,38 @@ func TestTransformer_Log(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			transform := newTransformer(nil, nil)
+			details := newLogMetadata(context.TODO())
+			transform := newTransformer(nil, &details)
 			got, _ := transform.Log(test.logFunc())
 			assert.EqualValues(t, test.want, got)
 		})
 	}
+}
+
+func TestCaptureLogAttributeMetadata(t *testing.T) {
+	log := pdata.NewLogRecord()
+	log.SetName("bloopbleep")
+	log.Attributes().InsertString("foo", "bar")
+	log.Body().SetStringVal("Hello World")
+
+	details := newLogMetadata(context.TODO())
+	transform := newTransformer(nil, &details)
+	_, err := transform.Log(log)
+
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(details.attributeMetadataCount))
+	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationLog, attributeType: pdata.AttributeValueSTRING}])
+}
+
+func TestDoesNotCaptureLogAttributeMetadata(t *testing.T) {
+	log := pdata.NewLogRecord()
+	log.SetName("bloopbleep")
+	log.Body().SetStringVal("Hello World")
+
+	details := newLogMetadata(context.TODO())
+	transform := newTransformer(nil, &details)
+	_, err := transform.Log(log)
+
+	require.NoError(t, err)
+	assert.Equal(t, 0, len(details.attributeMetadataCount))
 }

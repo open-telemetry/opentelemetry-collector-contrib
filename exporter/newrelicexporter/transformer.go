@@ -61,7 +61,9 @@ func newTransformer(startInfo *component.ApplicationStartInfo, details *exportMe
 }
 
 func (t *transformer) CommonAttributes(resource pdata.Resource, lib pdata.InstrumentationLibrary) map[string]interface{} {
-	commonAttrs := tracetranslator.AttributeMapToMap(resource.Attributes())
+	resourceAttrs := resource.Attributes()
+	commonAttrs := tracetranslator.AttributeMapToMap(resourceAttrs)
+	t.TrackAttributes(attributeLocationResource, resourceAttrs)
 
 	if n := lib.Name(); n != "" {
 		commonAttrs[instrumentationNameKey] = n
@@ -121,14 +123,16 @@ func (t *transformer) Log(log pdata.LogRecord) (telemetry.Log, error) {
 		message = log.Name()
 	}
 
-	attrs := make(map[string]interface{}, log.Attributes().Len()+5)
+	logAttrs := log.Attributes()
+	attrs := make(map[string]interface{}, logAttrs.Len()+5)
 
-	for k, v := range tracetranslator.AttributeMapToMap(log.Attributes()) {
+	for k, v := range tracetranslator.AttributeMapToMap(logAttrs) {
 		// Only include attribute if not an override attribute
 		if _, isOverrideKey := t.OverrideAttributes[k]; !isOverrideKey {
 			attrs[k] = v
 		}
 	}
+	t.TrackAttributes(attributeLocationLog, logAttrs)
 
 	attrs["name"] = log.Name()
 	if !log.TraceID().IsEmpty() {
@@ -155,7 +159,8 @@ func (t *transformer) Log(log pdata.LogRecord) (telemetry.Log, error) {
 }
 
 func (t *transformer) SpanAttributes(span pdata.Span) map[string]interface{} {
-	length := span.Attributes().Len()
+	spanAttrs := span.Attributes()
+	length := spanAttrs.Len()
 
 	var hasStatusCode, hasStatusDesc bool
 	s := span.Status()
@@ -189,12 +194,13 @@ func (t *transformer) SpanAttributes(span pdata.Span) map[string]interface{} {
 		attrs[spanKindKey] = strings.ToLower(kind)
 	}
 
-	for k, v := range tracetranslator.AttributeMapToMap(span.Attributes()) {
+	for k, v := range tracetranslator.AttributeMapToMap(spanAttrs) {
 		// Only include attribute if not an override attribute
 		if _, isOverrideKey := t.OverrideAttributes[k]; !isOverrideKey {
 			attrs[k] = v
 		}
 	}
+	t.TrackAttributes(attributeLocationSpan, spanAttrs)
 
 	return attrs
 }
@@ -210,11 +216,13 @@ func (t *transformer) SpanEvents(span pdata.Span) []telemetry.Event {
 
 	for i := 0; i < length; i++ {
 		event := span.Events().At(i)
+		eventAttrs := event.Attributes()
 		events[i] = telemetry.Event{
 			EventType:  event.Name(),
 			Timestamp:  event.Timestamp().AsTime(),
-			Attributes: tracetranslator.AttributeMapToMap(event.Attributes()),
+			Attributes: tracetranslator.AttributeMapToMap(eventAttrs),
 		}
+		t.TrackAttributes(attributeLocationSpanEvent, eventAttrs)
 	}
 	return events
 }
@@ -416,4 +424,11 @@ func (t *transformer) MetricAttributes(baseAttributes map[string]interface{}, at
 	})
 
 	return rawMap
+}
+
+func (t *transformer) TrackAttributes(location attributeLocation, attributeMap pdata.AttributeMap) {
+	attributeMap.ForEach(func(k string, v pdata.AttributeValue) {
+		statsKey := attributeStatsKey{location: location, attributeType: v.Type()}
+		t.details.attributeMetadataCount[statsKey]++
+	})
 }

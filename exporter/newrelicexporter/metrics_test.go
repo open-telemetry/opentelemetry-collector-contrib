@@ -38,6 +38,8 @@ func TestMetricViews(t *testing.T) {
 			assert.Equal(t, metricMetadataTagKeys, curView.TagKeys)
 		} else if curView.Name == "newrelicexporter_span_metadata_count" {
 			assert.Equal(t, spanMetadataTagKeys, curView.TagKeys)
+		} else if curView.Name == "newrelicexporter_attribute_metadata_count" {
+			assert.Equal(t, attributeMetadataTagKeys, curView.TagKeys)
 		} else {
 			assert.Equal(t, tagKeys, curView.TagKeys)
 		}
@@ -267,6 +269,105 @@ func TestDoesNotRecordSpanMetadata(t *testing.T) {
 	}
 	// No results should have been recorded
 	assert.Equal(t, 0, len(rows))
+}
+
+func TestRecordAttributeMetadata(t *testing.T) {
+	view.Unregister(MetricViews()...)
+	if err := view.Register(MetricViews()...); err != nil {
+		t.Fail()
+	}
+
+	detail := exportMetadata{
+		grpcResponseCode: codes.OK,
+		httpStatusCode:   200,
+		apiKey:           "shhh",
+		userAgent:        "secret agent",
+		dataType:         "data",
+		dataInputCount:   2,
+		exporterTime:     100,
+		dataOutputCount:  20,
+		externalDuration: 50,
+		attributeMetadataCount: map[attributeStatsKey]int{
+			{attributeType: pdata.AttributeValueARRAY, location: attributeLocationResource}:   1,
+			{attributeType: pdata.AttributeValueBOOL, location: attributeLocationSpan}:        1,
+			{attributeType: pdata.AttributeValueMAP, location: attributeLocationSpanEvent}:    1,
+			{attributeType: pdata.AttributeValueDOUBLE, location: attributeLocationLog}:       1,
+			{attributeType: pdata.AttributeValueINT, location: attributeLocationResource}:     1,
+			{attributeType: pdata.AttributeValueNULL, location: attributeLocationSpan}:        1,
+			{attributeType: pdata.AttributeValueSTRING, location: attributeLocationSpanEvent}: 1,
+		},
+	}
+
+	if err := detail.recordMetrics(context.TODO()); err != nil {
+		t.Fail()
+	}
+
+	rows, err := view.RetrieveData(statAttributeMetadata.Name())
+	if err != nil {
+		t.Fail()
+	}
+	// Check that the measurement has the right number of results recorded
+	assert.Equal(t, len(detail.attributeMetadataCount), len(rows))
+	for _, row := range rows {
+		// Confirm each row has data and has the required tag keys
+		assert.True(t, row.Data != nil)
+		assert.Equal(t, len(attributeMetadataTagKeys), len(row.Tags))
+		for _, rowTag := range row.Tags {
+			assert.Contains(t, attributeMetadataTagKeys, rowTag.Key)
+		}
+	}
+}
+
+func TestDoesNotRecordAttributeMetadata(t *testing.T) {
+	view.Unregister(MetricViews()...)
+	if err := view.Register(MetricViews()...); err != nil {
+		t.Fail()
+	}
+
+	detail := exportMetadata{
+		grpcResponseCode: codes.OK,
+		httpStatusCode:   200,
+		apiKey:           "shhh",
+		userAgent:        "secret agent",
+		dataType:         "metric",
+		dataInputCount:   2,
+		exporterTime:     100,
+		dataOutputCount:  20,
+		externalDuration: 50,
+	}
+
+	if err := detail.recordMetrics(context.TODO()); err != nil {
+		t.Fail()
+	}
+
+	rows, err := view.RetrieveData(statAttributeMetadata.Name())
+	if err != nil {
+		t.Fail()
+	}
+	// No results should have been recorded
+	assert.Equal(t, 0, len(rows))
+}
+
+func TestAttributeLocationString(t *testing.T) {
+	locations := []attributeLocation{
+		attributeLocationResource,
+		attributeLocationSpan,
+		attributeLocationSpanEvent,
+		attributeLocationLog,
+		99,
+	}
+
+	expectedStrings := []string{
+		"resource",
+		"span",
+		"span_event",
+		"log",
+		"",
+	}
+
+	for i := 0; i < len(locations); i++ {
+		assert.Equal(t, expectedStrings[i], locations[i].String())
+	}
 }
 
 func TestSanitizeApiKeyForLogging(t *testing.T) {
