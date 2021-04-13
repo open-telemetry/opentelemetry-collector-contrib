@@ -19,7 +19,6 @@ import (
 
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configparser"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -35,10 +34,8 @@ const (
 
 // receiverConfig describes a receiver instance with a default config.
 type receiverConfig struct {
-	// fullName is the full subreceiver name (ie <receiver type>/<id>).
-	fullName string
-	// typeStr is set based on the configured receiver name.
-	typeStr config.Type
+	// id is the id of the subreceiver (ie <receiver type>/<id>).
+	id config.ComponentID
 	// config is the map configured by the user in the config file. It is the contents of the map from
 	// the "config" section. The keys and values are arbitrarily configured by the user.
 	config userConfigMap
@@ -62,17 +59,16 @@ type resourceAttributes map[observer.EndpointType]map[string]string
 
 // newReceiverTemplate creates a receiverTemplate instance from the full name of a subreceiver
 // and its arbitrary config map values.
-func newReceiverTemplate(name string, config userConfigMap) (receiverTemplate, error) {
-	typeStr, fullName, err := configparser.DecodeTypeAndName(name)
+func newReceiverTemplate(name string, cfg userConfigMap) (receiverTemplate, error) {
+	id, err := config.IDFromString(name)
 	if err != nil {
 		return receiverTemplate{}, err
 	}
 
 	return receiverTemplate{
 		receiverConfig: receiverConfig{
-			typeStr:  typeStr,
-			fullName: fullName,
-			config:   config,
+			id:     id,
+			config: cfg,
 		},
 	}, nil
 }

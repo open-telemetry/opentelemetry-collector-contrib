@@ -4,5 +4,5 @@ go 1.14
 
 require (
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.24.1-0.20210412223022-a17ee13a0052
+	go.opentelemetry.io/collector v0.24.1-0.20210413190433-b428785cfdc9
 )

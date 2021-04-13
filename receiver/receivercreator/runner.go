@@ -48,10 +48,10 @@ func (run *receiverRunner) start(
 	discoveredConfig userConfigMap,
 	nextConsumer consumer.Metrics,
 ) (component.Receiver, error) {
-	factory := run.host.GetFactory(component.KindReceiver, receiver.typeStr)
+	factory := run.host.GetFactory(component.KindReceiver, receiver.id.Type())
 
 	if factory == nil {
-		return nil, fmt.Errorf("unable to lookup factory for receiver %q", receiver.typeStr)
+		return nil, fmt.Errorf("unable to lookup factory for receiver %q", receiver.id.String())
 	}
 
 	receiverFactory := factory.(component.ReceiverFactory)
@@ -96,13 +96,13 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 		return nil, fmt.Errorf("failed to merge template config from discovered runtime values: %v", err)
 	}
 
-	receiverConfig, err := configparser.LoadReceiver(mergedConfig, receiver.fullName, factory)
+	receiverConfig, err := configparser.LoadReceiver(mergedConfig, receiver.id, factory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template config: %v", err)
 	}
 	// Sets dynamically created receiver to something like receiver_creator/1/redis{endpoint="localhost:6380"}.
 	// TODO: Need to make sure this is unique (just endpoint is probably not totally sufficient).
-	receiverConfig.SetName(fmt.Sprintf("%s/%s{endpoint=%q}", run.idNamespace, receiver.fullName, cast.ToString(mergedConfig.Get(endpointConfigKey))))
+	receiverConfig.SetName(fmt.Sprintf("%s/%s{endpoint=%q}", run.idNamespace, receiver.id.String(), cast.ToString(mergedConfig.Get(endpointConfigKey))))
 	return receiverConfig, nil
 }
 

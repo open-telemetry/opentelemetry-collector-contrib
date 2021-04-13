@@ -49,7 +49,7 @@ var _ runner = (*mockRunner)(nil)
 
 func TestOnAdd(t *testing.T) {
 	runner := &mockRunner{}
-	rcvrCfg := receiverConfig{typeStr: config.Type("name"), config: userConfigMap{"foo": "bar"}, fullName: "name/1"}
+	rcvrCfg := receiverConfig{id: config.MustIDFromString("name/1"), config: userConfigMap{"foo": "bar"}}
 	cfg := createDefaultConfig().(*Config)
 	cfg.receiverTemplates = map[string]receiverTemplate{
 		"name/1": {rcvrCfg, "", newRuleOrPanic(`type == "port"`)},
@@ -99,7 +99,7 @@ func TestOnRemove(t *testing.T) {
 
 func TestOnChange(t *testing.T) {
 	runner := &mockRunner{}
-	rcvrCfg := receiverConfig{typeStr: config.Type("name"), config: userConfigMap{"foo": "bar"}, fullName: "name/1"}
+	rcvrCfg := receiverConfig{id: config.MustIDFromString("name/1"), config: userConfigMap{"foo": "bar"}}
 	oldRcvr := &nopWithEndpointReceiver{}
 	newRcvr := &nopWithEndpointReceiver{}
 	cfg := createDefaultConfig().(*Config)
@@ -135,7 +135,7 @@ func TestDynamicConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.receiverTemplates = map[string]receiverTemplate{
 		"name/1": {
-			receiverConfig: receiverConfig{typeStr: config.Type("name"), config: userConfigMap{"endpoint": "`endpoint`:6379"}, fullName: "name/1"},
+			receiverConfig: receiverConfig{id: config.MustIDFromString("name/1"), config: userConfigMap{"endpoint": "`endpoint`:6379"}},
 			Rule:           `type == "pod"`,
 			rule:           newRuleOrPanic("type == \"pod\""),
 		},
@@ -149,9 +149,8 @@ func TestDynamicConfig(t *testing.T) {
 	runner.On(
 		"start",
 		receiverConfig{
-			fullName: "name/1",
-			typeStr:  "name",
-			config:   userConfigMap{endpointConfigKey: "localhost:6379"},
+			id:     config.MustIDFromString("name/1"),
+			config: userConfigMap{endpointConfigKey: "localhost:6379"},
 		},
 		userConfigMap{},
 		mock.IsType(&resourceEnhancer{}),
