@@ -24,10 +24,13 @@ from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
 from .app import make_app
 
 
-class TestFalconInstrumentation(TestBase):
+class TestFalconBase(TestBase):
     def setUp(self):
         super().setUp()
-        FalconInstrumentor().instrument()
+        FalconInstrumentor().instrument(
+            request_hook=getattr(self, "request_hook", None),
+            response_hook=getattr(self, "response_hook", None),
+        )
         self.app = make_app()
         # pylint: disable=protected-access
         self.env_patch = patch.dict(
@@ -64,6 +67,8 @@ class TestFalconInstrumentation(TestBase):
         self.exclude_patch.stop()
         self.traced_patch.stop()
 
+
+class TestFalconInstrumentation(TestFalconBase):
     def test_get(self):
         self._test_method("GET")
 
@@ -204,3 +209,22 @@ class TestFalconInstrumentation(TestBase):
             self.assertTrue(mock_span.is_recording.called)
             self.assertFalse(mock_span.set_attribute.called)
             self.assertFalse(mock_span.set_status.called)
+
+
+class TestFalconInstrumentationHooks(TestFalconBase):
+    # pylint: disable=no-self-use
+    def request_hook(self, span, req):
+        span.set_attribute("request_hook_attr", "value from hook")
+
+    def response_hook(self, span, req, resp):
+        span.update_name("set from hook")
+
+    def test_hooks(self):
+        self.client().simulate_get(path="/hello?q=abc")
+        span = self.memory_exporter.get_finished_spans()[0]
+
+        self.assertEqual(span.name, "set from hook")
+        self.assertIn("request_hook_attr", span.attributes)
+        self.assertEqual(
+            span.attributes["request_hook_attr"], "value from hook"
+        )

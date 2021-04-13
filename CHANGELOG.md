@@ -21,6 +21,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#299](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/299))
 - `opentelemetry-instrumenation-django` now supports request and response hooks.
   ([#407](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/407))
+- `opentelemetry-instrumentation-falcon` FalconInstrumentor now supports request/response hooks.
+  ([#415](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/415))
+
+### Removed
+- Remove `http.status_text` from span attributes
+  ([#406](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/406))
+
+### Removed
+- Remove `http.status_text` from span attributes
+  ([#406](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/406))
 
 ### Removed
 - Remove `http.status_text` from span attributes

@@ -21,6 +21,36 @@ it supports falcon-specific features such as:
 * The ``falcon.resource`` Span attribute is set so the matched resource.
 * Error from Falcon resources are properly caught and recorded.
 
+Configuration
+-------------
+
+Exclude lists
+*************
+To exclude certain URLs from being tracked, set the environment variable ``OTEL_PYTHON_FALCON_EXCLUDED_URLS`` with comma delimited regexes representing which URLs to exclude.
+
+For example,
+
+::
+
+    export OTEL_PYTHON_FALCON_EXCLUDED_URLS="client/.*/info,healthcheck"
+
+will exclude requests such as ``https://site/client/123/info`` and ``https://site/xyz/healthcheck``.
+
+Request attributes
+********************
+To extract certain attributes from Falcon's request object and use them as span attributes, set the environment variable ``OTEL_PYTHON_FALCON_TRACED_REQUEST_ATTRS`` to a comma
+delimited list of request attribute names.
+
+For example,
+
+::
+
+    export OTEL_PYTHON_FALCON_TRACED_REQUEST_ATTRS='query_string,uri_template'
+
+will extract query_string and uri_template attributes from every traced request and add them as span attritbues.
+
+Falcon Request object reference: https://falcon.readthedocs.io/en/stable/api/request_and_response.html#id1
+
 Usage
 -----
 
@@ -39,10 +69,27 @@ Usage
 
     app.add_route('/hello', HelloWorldResource())
 
+
+Request and Response hooks
+***************************
+The instrumentation supports specifying request and response hooks. These are functions that get called back by the instrumentation right after a Span is created for a request
+and right before the span is finished while processing a response. The hooks can be configured as follows:
+
+::
+
+    def request_hook(span, req):
+        pass
+
+    def response_hook(span, req, resp):
+        pass
+
+    FalconInstrumentation().instrument(request_hook=request_hook, response_hook=response_hook)
+
 API
 ---
 """
 
+from functools import partial
 from logging import getLogger
 from sys import exc_info
 
@@ -83,7 +130,7 @@ class FalconInstrumentor(BaseInstrumentor):
 
     def _instrument(self, **kwargs):
         self._original_falcon_api = falcon.API
-        falcon.API = _InstrumentedFalconAPI
+        falcon.API = partial(_InstrumentedFalconAPI, **kwargs)
 
     def _uninstrument(self, **kwargs):
         falcon.API = self._original_falcon_api
@@ -91,13 +138,17 @@ class FalconInstrumentor(BaseInstrumentor):
 
 class _InstrumentedFalconAPI(falcon.API):
     def __init__(self, *args, **kwargs):
+        # inject trace middleware
         middlewares = kwargs.pop("middleware", [])
         if not isinstance(middlewares, (list, tuple)):
             middlewares = [middlewares]
 
         self._tracer = trace.get_tracer(__name__, __version__)
         trace_middleware = _TraceMiddleware(
-            self._tracer, kwargs.get("traced_request_attributes")
+            self._tracer,
+            kwargs.pop("traced_request_attributes", None),
+            kwargs.pop("request_hook", None),
+            kwargs.pop("response_hook", None),
         )
         middlewares.insert(0, trace_middleware)
         kwargs["middleware"] = middlewares
@@ -148,12 +199,23 @@ class _InstrumentedFalconAPI(falcon.API):
 class _TraceMiddleware:
     # pylint:disable=R0201,W0613
 
-    def __init__(self, tracer=None, traced_request_attrs=None):
+    def __init__(
+        self,
+        tracer=None,
+        traced_request_attrs=None,
+        request_hook=None,
+        response_hook=None,
+    ):
         self.tracer = tracer
         self._traced_request_attrs = _traced_request_attrs
+        self._request_hook = request_hook
+        self._response_hook = response_hook
 
     def process_request(self, req, resp):
         span = req.env.get(_ENVIRON_SPAN_KEY)
+        if span and self._request_hook:
+            self._request_hook(span, req)
+
         if not span or not span.is_recording():
             return
 
@@ -178,6 +240,7 @@ class _TraceMiddleware:
         self, req, resp, resource, req_succeeded=None
     ):  # pylint:disable=R0201
         span = req.env.get(_ENVIRON_SPAN_KEY)
+
         if not span or not span.is_recording():
             return
 
@@ -209,3 +272,6 @@ class _TraceMiddleware:
                     description=reason,
                 )
             )
+
+        if self._response_hook:
+            self._response_hook(span, req, resp)

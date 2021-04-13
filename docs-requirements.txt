@@ -25,6 +25,7 @@ boto~=2.0
 botocore~=1.0
 celery>=4.0
 flask~=1.0
+falcon~=2.0
 grpcio~=1.27
 mysql-connector-python~=8.0
 pymongo~=3.1
