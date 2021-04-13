@@ -11,8 +11,6 @@ exporters:
   humio/allsettings:
     ingest_token: "00000000-0000-0000-0000-0000000000000"
     endpoint: "https://my-humio-host:8080"
-    headers:
-      User-Agent: "my-collector"
     timeout: 10s
     insecure: false
     insecure_skip_verify: false

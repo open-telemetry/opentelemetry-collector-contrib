@@ -1,4 +1,4 @@
-// Copyright 2021, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -30,7 +30,7 @@ const (
 	typeStr = "humio"
 )
 
-// Creates an exporter factory for Humio
+// NewFactory creates an exporter factory for Humio
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
@@ -43,12 +43,9 @@ func NewFactory() component.ExporterFactory {
 }
 
 // Provides a struct with default values for all relevant configuration settings
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
+		ExporterSettings: config.NewExporterSettings(typeStr),
 
 		// Default settings inherited from exporter helper
 		QueueSettings: exporterhelper.DefaultQueueSettings(),
@@ -72,7 +69,7 @@ func createDefaultConfig() configmodels.Exporter {
 func createTracesExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
-	config configmodels.Exporter,
+	config config.Exporter,
 ) (component.TracesExporter, error) {
 	if config == nil {
 		return nil, errors.New("missing config")
@@ -80,7 +77,7 @@ func createTracesExporter(
 	cfg := config.(*Config)
 
 	// Fail fast if the configurations are invalid
-	if err := cfg.sanitize(); err != nil {
+	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
 
@@ -95,19 +92,3 @@ func createTracesExporter(
 		exporterhelper.WithShutdown(exporter.shutdown),
 	)
 }
-
-// Creates a new metrics exporter for Humio
-// func createMetricsExporter(
-// 	ctx context.Context,
-// 	params component.ExporterCreateParams,
-// 	config configmodels.Exporter,
-// ) (component.MetricsExporter, error) {
-// }
-
-// Creates a new logs exporter for Humio
-// func createLogsExporter(
-// 	ctx context.Context,
-// 	params component.ExporterCreateParams,
-// 	config configmodels.Exporter,
-// ) (component.LogsExporter, error) {
-// }

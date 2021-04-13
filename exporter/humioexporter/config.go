@@ -1,4 +1,4 @@
-// Copyright 2021, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import (
 	"net/url"
 	"path"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -30,13 +30,13 @@ const (
 	structuredPath   = basePath + "humio-structured"
 )
 
-// Humio configuration settings specific to logs
+// LogsConfig represents the Humio configuration settings specific to logs
 type LogsConfig struct {
 	// The name of a custom log parser to use, if no parser is associated with the ingest token
 	LogParser string `mapstructure:"log_parser"`
 }
 
-// Humio configuration settings specific to traces
+// TracesConfig represents the Humio configuration settings specific to traces
 type TracesConfig struct {
 	// Whether to use Unix timestamps, or to fall back to ISO 8601 formatted strings
 	UnixTimestamps bool `mapstructure:"unix_timestamps"`
@@ -45,10 +45,10 @@ type TracesConfig struct {
 	TimeZone string `mapstructure:"timezone"`
 }
 
-// Humio configuration settings
+// Config represents the Humio configuration settings
 type Config struct {
 	// Inherited settings
-	configmodels.ExporterSettings `mapstructure:",squash"`
+	*config.ExporterSettings      `mapstructure:"-"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
@@ -75,8 +75,8 @@ type Config struct {
 	Traces TracesConfig `mapstructure:"traces"`
 }
 
-// Ensure that a valid configuration has been provided, such that we can fail early
-func (c *Config) sanitize() error {
+// Validate ensures that a valid configuration has been provided, such that we can fail early
+func (c *Config) Validate() error {
 	if c.IngestToken == "" {
 		return errors.New("requires an ingest_token")
 	}
@@ -115,10 +115,18 @@ func (c *Config) sanitize() error {
 		c.Headers = make(map[string]string)
 	}
 
-	// We require these headers in addition to the ones provided by the user
-	// The user cannot override these headers
-	c.Headers["Content-Type"] = "application/json"
-	c.Headers["Authorization"] = "Bearer " + c.IngestToken
+	// We require these headers, which should not be overwritten by the user
+	if contentType, ok := c.Headers["Content-Type"]; ok && contentType != "application/json" {
+		return errors.New("the Content-Type must be application/json, which is also the default for this header")
+	} else {
+		c.Headers["Content-Type"] = "application/json"
+	}
+
+	if _, ok := c.Headers["Authorization"]; ok {
+		return errors.New("the Authorization header must not be overwritten, since it is automatically generated from the ingest token")
+	} else {
+		c.Headers["Authorization"] = "Bearer " + c.IngestToken
+	}
 
 	// Fallback User-Agent if not overridden by user
 	if _, ok := c.Headers["User-Agent"]; !ok {

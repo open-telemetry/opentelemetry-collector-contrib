@@ -1,4 +1,4 @@
-// Copyright 2021, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
@@ -27,7 +28,7 @@ import (
 
 func TestPushTraceData(t *testing.T) {
 	// Arrange
-	exp := newTracesExporter(&Config{}, zap.NewNop())
+	exp := newTracesExporter(&Config{ExporterSettings: config.NewExporterSettings(typeStr)}, zap.NewNop())
 
 	// Act
 	err := exp.pushTraceData(context.Background(), pdata.NewTraces())
@@ -38,7 +39,7 @@ func TestPushTraceData(t *testing.T) {
 
 func TestShutdown(t *testing.T) {
 	// Arrange
-	exp := newTracesExporter(&Config{}, zap.NewNop())
+	exp := newTracesExporter(&Config{ExporterSettings: config.NewExporterSettings(typeStr)}, zap.NewNop())
 
 	// Act
 	err := exp.shutdown(context.Background())

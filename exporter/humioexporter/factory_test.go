@@ -1,4 +1,4 @@
-// Copyright 2021, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 )
 
@@ -32,7 +32,7 @@ func newHumioFactory(t *testing.T) component.ExporterFactory {
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[config.Type(typeStr)] = factory
 
 	return factory
 }
@@ -42,13 +42,14 @@ func TestCreateTracesExporter(t *testing.T) {
 	factory := newHumioFactory(t)
 	testCases := []struct {
 		desc    string
-		config  configmodels.Exporter
+		config  config.Exporter
 		wantErr bool
 	}{
 		{
 			desc: "Valid trace configuration",
 			config: &Config{
-				IngestToken: "00000000-0000-0000-0000-0000000000000",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				IngestToken:      "00000000-0000-0000-0000-0000000000000",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
 				},
@@ -58,6 +59,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			desc: "Invalid trace configuration",
 			config: &Config{
+				ExporterSettings: config.NewExporterSettings(typeStr),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
 				},

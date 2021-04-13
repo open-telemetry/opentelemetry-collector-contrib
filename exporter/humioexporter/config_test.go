@@ -1,4 +1,4 @@
-// Copyright 2021, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,21 +23,21 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Helper method to handle boilerplate of loading configuration from file
-func loadConfig(t *testing.T, name string) (configmodels.Exporter, *Config) {
+func loadConfig(t *testing.T, name string) (config.Exporter, *Config) {
 	// Initialize exporter factory
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[config.Type(typeStr)] = factory
 
 	// Load configurations
 	config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
@@ -64,8 +64,8 @@ func TestLoadWithDefaults(t *testing.T) {
 func TestLoadAllSettings(t *testing.T) {
 	// Arrange
 	expected := &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
+		ExporterSettings: &config.ExporterSettings{
+			TypeVal: config.Type(typeStr),
 			NameVal: typeStr + "/allsettings",
 		},
 
@@ -82,10 +82,8 @@ func TestLoadAllSettings(t *testing.T) {
 		},
 
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: "https://my-humio-host:8080",
-			Headers: map[string]string{
-				"user-agent": "my-collector",
-			},
+			Endpoint:        "https://my-humio-host:8080",
+			Headers:         map[string]string{},
 			Timeout:         10 * time.Second,
 			ReadBufferSize:  4096,
 			WriteBufferSize: 4096,
@@ -123,17 +121,18 @@ func TestLoadAllSettings(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func TestSanitizeValid(t *testing.T) {
+func TestValidateValid(t *testing.T) {
 	//Arrange
 	config := &Config{
-		IngestToken: "token",
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		IngestToken:      "token",
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://localhost:8080",
 		},
 	}
 
 	// Act
-	err := config.sanitize()
+	err := config.Validate()
 
 	// Assert
 	require.NoError(t, err)
@@ -153,21 +152,22 @@ func TestSanitizeValid(t *testing.T) {
 	}, config.Headers)
 }
 
-func TestSanitizeCustomHeaders(t *testing.T) {
+func TestValidateCustomHeaders(t *testing.T) {
 	//Arrange
 	config := &Config{
-		IngestToken: "token",
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		IngestToken:      "token",
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://localhost:8080",
 			Headers: map[string]string{
-				"User-Agent": "Humio",
-				"Meta":       "Data",
+				"User-Agent":   "Humio",
+				"Content-Type": "application/json",
 			},
 		},
 	}
 
 	// Act
-	err := config.sanitize()
+	err := config.Validate()
 
 	// Assert
 	require.NoError(t, err)
@@ -175,11 +175,10 @@ func TestSanitizeCustomHeaders(t *testing.T) {
 		"Content-Type":  "application/json",
 		"Authorization": "Bearer token",
 		"User-Agent":    "Humio",
-		"Meta":          "Data",
 	}, config.Headers)
 }
 
-func TestSanitizeErrors(t *testing.T) {
+func TestValidateErrors(t *testing.T) {
 	// Arrange
 	testCases := []struct {
 		desc    string
@@ -189,7 +188,8 @@ func TestSanitizeErrors(t *testing.T) {
 		{
 			desc: "Missing ingest token",
 			config: &Config{
-				IngestToken: "",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				IngestToken:      "",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "e",
 				},
@@ -199,7 +199,8 @@ func TestSanitizeErrors(t *testing.T) {
 		{
 			desc: "Missing endpoint",
 			config: &Config{
-				IngestToken: "t",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				IngestToken:      "t",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "",
 				},
@@ -209,7 +210,8 @@ func TestSanitizeErrors(t *testing.T) {
 		{
 			desc: "Override tags",
 			config: &Config{
-				IngestToken: "t",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				IngestToken:      "t",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "e",
 				},
@@ -221,7 +223,8 @@ func TestSanitizeErrors(t *testing.T) {
 		{
 			desc: "Missing custom tags",
 			config: &Config{
-				IngestToken: "t",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				IngestToken:      "t",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "e",
 				},
@@ -232,7 +235,8 @@ func TestSanitizeErrors(t *testing.T) {
 		{
 			desc: "Unix with time zone",
 			config: &Config{
-				IngestToken: "t",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				IngestToken:      "t",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "e",
 				},
@@ -246,7 +250,8 @@ func TestSanitizeErrors(t *testing.T) {
 		{
 			desc: "Missing time zone",
 			config: &Config{
-				IngestToken: "t",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				IngestToken:      "t",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "e",
 				},
@@ -259,9 +264,38 @@ func TestSanitizeErrors(t *testing.T) {
 		{
 			desc: "Error creating URLs",
 			config: &Config{
-				IngestToken: "t",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				IngestToken:      "t",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "\n\t",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			desc: "Invalid Content-Type header",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				IngestToken:      "t",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "e",
+					Headers: map[string]string{
+						"Content-Type": "text/plain",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			desc: "User-provided Authorization header",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				IngestToken:      "t",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "e",
+					Headers: map[string]string{
+						"Authorization": "Bearer mytoken",
+					},
 				},
 			},
 			wantErr: true,
@@ -271,8 +305,8 @@ func TestSanitizeErrors(t *testing.T) {
 	// Act / Assert
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			if err := tC.config.sanitize(); (err != nil) != tC.wantErr {
-				t.Errorf("Config.sanitize() error = %v, wantErr %v", err, tC.wantErr)
+			if err := tC.config.Validate(); (err != nil) != tC.wantErr {
+				t.Errorf("Config.Validate() error = %v, wantErr %v", err, tC.wantErr)
 			}
 		})
 	}
