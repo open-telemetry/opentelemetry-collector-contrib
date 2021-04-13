@@ -118,15 +118,13 @@ func (c *Config) Validate() error {
 	// We require these headers, which should not be overwritten by the user
 	if contentType, ok := c.Headers["Content-Type"]; ok && contentType != "application/json" {
 		return errors.New("the Content-Type must be application/json, which is also the default for this header")
-	} else {
-		c.Headers["Content-Type"] = "application/json"
 	}
+	c.Headers["Content-Type"] = "application/json"
 
 	if _, ok := c.Headers["Authorization"]; ok {
 		return errors.New("the Authorization header must not be overwritten, since it is automatically generated from the ingest token")
-	} else {
-		c.Headers["Authorization"] = "Bearer " + c.IngestToken
 	}
+	c.Headers["Authorization"] = "Bearer " + c.IngestToken
 
 	// Fallback User-Agent if not overridden by user
 	if _, ok := c.Headers["User-Agent"]; !ok {
