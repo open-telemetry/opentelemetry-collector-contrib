@@ -9,35 +9,32 @@ This exporter supports sending trace and metric data to [New Relic](https://newr
 
 ## Configuration
 
-The following configuration options are supported:
+The following common configuration options are supported:
 
 * One or both of the following are required:
   * `apikey`: Your New Relic [Insights Insert API Key](https://docs.newrelic.com/docs/insights/insights-data-sources/custom-data/send-custom-events-event-api#register).
   * `api_key_header`: Request header to read New Relic [Insights Insert API Key](https://docs.newrelic.com/docs/insights/insights-data-sources/custom-data/send-custom-events-event-api#register) from.
 * `timeout` (Optional): Amount of time spent attempting a request before abandoning and dropping data. Default is 15 seconds.
-* `common_attributes` (Optional): Attributes to apply to all metrics sent.
-* `metrics_host_override` (Optional): Overrides the endpoint to send metrics.
-  The endpoint defaults to New Relic's US data centers. For other use cases
-  refer to
-  [OpenTelemetry: Advanced configuration](https://docs.newrelic.com/docs/integrations/open-source-telemetry-integrations/opentelemetry/opentelemetry-advanced-configuration#h2-change-endpoints).
-* `spans_host_override` (Optional): Overrides the endpoint to send spans.
-  The endpoint defaults to New Relic's US data centers. For other use cases
-  refer to
-  [OpenTelemetry: Advanced configuration](https://docs.newrelic.com/docs/integrations/open-source-telemetry-integrations/opentelemetry/opentelemetry-advanced-configuration#h2-change-endpoints).
+* `host_override` (Optional per-data-type, see example): Overrides the host to
+  which data is sent. The URL will be generated in the form:
+  https://\$host/\$path. The path component **CANNOT** be overridden.
+
+The configuration also supports configuring by data type. This is expected to be used for `host_override` cases.
 
 Example:
-
 ```yaml
 exporters:
   newrelic:
     apikey: super-secret-api-key
     timeout: 30s
-    common_attributes:
-      server: prod-server-01
-      ready_to_rock: true
-      volume: 11
-```
 
+    traces:
+        host_override: trace-api.newrelic.com
+    metrics:
+        host_override: metric-api.newrelic.com
+    logs:
+        host_override: log-api.newrelic.com
+```
 
 ## Find and use your data
 
@@ -45,6 +42,7 @@ Once the exporter is sending data you can start to explore your data in New Reli
 
 - Metric data: see [Metric API docs](https://docs.newrelic.com/docs/data-ingest-apis/get-data-new-relic/metric-api/introduction-metric-api#find-data).
 - Trace/span data: see [Trace API docs](https://docs.newrelic.com/docs/understand-dependencies/distributed-tracing/trace-api/introduction-trace-api#view-data).
+- Log data: see [Log docs](https://docs.newrelic.com/docs/logs/log-management/ui-data/explore-your-data-log-analytics)
 
 For general querying information, see:
 
