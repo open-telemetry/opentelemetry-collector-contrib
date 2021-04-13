@@ -187,10 +187,11 @@ func runLogMock(initialContext context.Context, plogs pdata.Logs, cfg mockConfig
 	return m, nil
 }
 
-func testTraceData(t *testing.T, expected []Batch, resource *resourcepb.Resource, spans []*tracepb.Span, useAPIKeyHeader bool) {
+func testTraceData(t *testing.T, expected []Batch, resource *resourcepb.Resource, spans []*tracepb.Span, apiKey string) {
 	ctx := context.Background()
+	useAPIKeyHeader := apiKey != ""
 	if useAPIKeyHeader {
-		ctx = metadata.NewIncomingContext(ctx, metadata.MD{"api-key": []string{"a1b2c3d4"}})
+		ctx = metadata.NewIncomingContext(ctx, metadata.MD{"api-key": []string{apiKey}})
 	}
 
 	m, err := runTraceMock(ctx, internaldata.OCToTraces(nil, resource, spans), mockConfig{useAPIKeyHeader: useAPIKeyHeader})
@@ -198,10 +199,11 @@ func testTraceData(t *testing.T, expected []Batch, resource *resourcepb.Resource
 	assert.Equal(t, expected, m.Batches)
 }
 
-func testMetricData(t *testing.T, expected []Batch, md internaldata.MetricsData, useAPIKeyHeader bool) {
+func testMetricData(t *testing.T, expected []Batch, md internaldata.MetricsData, apiKey string) {
 	ctx := context.Background()
+	useAPIKeyHeader := apiKey != ""
 	if useAPIKeyHeader {
-		ctx = metadata.NewIncomingContext(ctx, metadata.MD{"api-key": []string{"a1b2c3d4"}})
+		ctx = metadata.NewIncomingContext(ctx, metadata.MD{"api-key": []string{apiKey}})
 	}
 
 	m, err := runMetricMock(ctx, internaldata.OCToMetrics(md), mockConfig{useAPIKeyHeader: useAPIKeyHeader})
@@ -209,10 +211,11 @@ func testMetricData(t *testing.T, expected []Batch, md internaldata.MetricsData,
 	assert.Equal(t, expected, m.Batches)
 }
 
-func testLogData(t *testing.T, expected []Batch, logs pdata.Logs, useAPIKeyHeader bool) {
+func testLogData(t *testing.T, expected []Batch, logs pdata.Logs, apiKey string) {
 	ctx := context.Background()
+	useAPIKeyHeader := apiKey != ""
 	if useAPIKeyHeader {
-		ctx = metadata.NewIncomingContext(ctx, metadata.MD{"api-key": []string{"a1b2c3d4"}})
+		ctx = metadata.NewIncomingContext(ctx, metadata.MD{"api-key": []string{apiKey}})
 	}
 
 	l, err := runLogMock(ctx, logs, mockConfig{useAPIKeyHeader: useAPIKeyHeader})
@@ -347,8 +350,9 @@ func TestExportTraceDataMinimum(t *testing.T) {
 		},
 	}
 
-	testTraceData(t, expected, nil, spans, false)
-	testTraceData(t, expected, nil, spans, true)
+	testTraceData(t, expected, nil, spans, "")
+	testTraceData(t, expected, nil, spans, "api-key")
+	testTraceData(t, expected, nil, spans, "NRII-api-key")
 }
 
 func TestExportTraceDataFullTrace(t *testing.T) {
@@ -420,8 +424,9 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 		},
 	}
 
-	testTraceData(t, expected, resource, spans, false)
-	testTraceData(t, expected, resource, spans, true)
+	testTraceData(t, expected, resource, spans, "")
+	testTraceData(t, expected, resource, spans, "api-key")
+	testTraceData(t, expected, resource, spans, "NRII-api-key")
 }
 
 func TestExportMetricDataMinimal(t *testing.T) {
@@ -487,8 +492,9 @@ func TestExportMetricDataMinimal(t *testing.T) {
 		},
 	}
 
-	testMetricData(t, expected, md, true)
-	testMetricData(t, expected, md, false)
+	testMetricData(t, expected, md, "NRII-api-key")
+	testMetricData(t, expected, md, "api-key")
+	testMetricData(t, expected, md, "")
 }
 
 func TestExportMetricDataFull(t *testing.T) {
@@ -652,8 +658,9 @@ func TestExportMetricDataFull(t *testing.T) {
 		},
 	}
 
-	testMetricData(t, expected, md, false)
-	testMetricData(t, expected, md, true)
+	testMetricData(t, expected, md, "")
+	testMetricData(t, expected, md, "api-key")
+	testMetricData(t, expected, md, "NRII-api-key")
 }
 
 func TestExportLogs(t *testing.T) {
@@ -696,6 +703,7 @@ func TestExportLogs(t *testing.T) {
 		},
 	}
 
-	testLogData(t, expected, logs, false)
-	testLogData(t, expected, logs, true)
+	testLogData(t, expected, logs, "")
+	testLogData(t, expected, logs, "api-key")
+	testLogData(t, expected, logs, "NRII-api-key")
 }
