@@ -71,6 +71,9 @@ class _OpenTelemetryServicerContext(grpc.ServicerContext):
         self.details = None
         super().__init__()
 
+    def __getattr__(self, attr):
+        return getattr(self._servicer_context, attr)
+
     def is_active(self, *args, **kwargs):
         return self._servicer_context.is_active(*args, **kwargs)
 
