@@ -90,7 +90,8 @@ func newTraceExporter(
 			return err
 		},
 		exporterhelper.WithShutdown(func(context.Context) error {
-			return logger.Sync()
+			_ = logger.Sync()
+			return nil
 		}),
 	)
 }
