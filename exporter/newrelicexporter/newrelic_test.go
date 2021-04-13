@@ -16,6 +16,7 @@ package newrelicexporter
 
 import (
 	"context"
+	"net/http"
 	"net/url"
 	"strings"
 	"testing"
@@ -73,7 +74,7 @@ func runTraceMock(initialContext context.Context, ptrace pdata.Traces, cfg mockC
 	if cfg.useAPIKeyHeader {
 		c.CommonConfig.APIKeyHeader = "api-key"
 	} else {
-		c.CommonConfig.APIKey = "1"
+		c.CommonConfig.APIKey = "NRII-1"
 	}
 	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
 	params := component.ExporterCreateParams{Logger: zap.NewNop(), ApplicationStartInfo: component.ApplicationStartInfo{
@@ -120,7 +121,7 @@ func runMetricMock(initialContext context.Context, pmetrics pdata.Metrics, cfg m
 	if cfg.useAPIKeyHeader {
 		c.CommonConfig.APIKeyHeader = "api-key"
 	} else {
-		c.CommonConfig.APIKey = "1"
+		c.CommonConfig.APIKey = "NRII-1"
 	}
 	c.MetricsConfig.insecure, c.MetricsConfig.HostOverride = true, u.Host
 	params := component.ExporterCreateParams{Logger: zap.NewNop(), ApplicationStartInfo: component.ApplicationStartInfo{
@@ -167,7 +168,7 @@ func runLogMock(initialContext context.Context, plogs pdata.Logs, cfg mockConfig
 	if cfg.useAPIKeyHeader {
 		c.CommonConfig.APIKeyHeader = "api-key"
 	} else {
-		c.CommonConfig.APIKey = "1"
+		c.CommonConfig.APIKey = "NRII-1"
 	}
 	c.LogsConfig.insecure, c.LogsConfig.HostOverride = true, u.Host
 	params := component.ExporterCreateParams{Logger: zap.NewNop(), ApplicationStartInfo: component.ApplicationStartInfo{
@@ -197,6 +198,13 @@ func testTraceData(t *testing.T, expected []Batch, resource *resourcepb.Resource
 	m, err := runTraceMock(ctx, internaldata.OCToTraces(nil, resource, spans), mockConfig{useAPIKeyHeader: useAPIKeyHeader})
 	require.NoError(t, err)
 	assert.Equal(t, expected, m.Batches)
+	if !useAPIKeyHeader {
+		assert.Equal(t, []string{"NRII-1"}, m.Header[http.CanonicalHeaderKey("api-key")])
+	} else if strings.HasPrefix(apiKey, "NRII-") {
+		assert.Equal(t, []string{apiKey}, m.Header[http.CanonicalHeaderKey("api-key")])
+	} else {
+		assert.Equal(t, []string{apiKey}, m.Header[http.CanonicalHeaderKey("x-license-key")])
+	}
 }
 
 func testMetricData(t *testing.T, expected []Batch, md internaldata.MetricsData, apiKey string) {

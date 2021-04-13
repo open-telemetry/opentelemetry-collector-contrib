@@ -61,6 +61,7 @@ type Log struct {
 
 // Mock caches decompressed request bodies
 type Mock struct {
+	Header     http.Header
 	Batches    []Batch
 	StatusCode int
 }
@@ -106,6 +107,8 @@ func (c *Mock) Server() *httptest.Server {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+
+		c.Header = r.Header
 
 		w.WriteHeader(c.StatusCode)
 	}))

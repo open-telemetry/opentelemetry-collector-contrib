@@ -47,6 +47,16 @@ type exporter struct {
 type factoryBuilder func(options ...telemetry.ClientOption) (telemetry.RequestFactory, error)
 type batchBuilder func() ([]telemetry.Batch, error)
 
+func clientOptionForAPIKey(apiKey string) telemetry.ClientOption {
+	if apiKey != "" {
+		if strings.HasPrefix(apiKey, "NRII-") {
+			return telemetry.WithInsertKey(apiKey)
+		}
+		return telemetry.WithLicenseKey(apiKey)
+	}
+	return nil
+}
+
 func clientOptions(info *component.ApplicationStartInfo, apiKey string, apiKeyHeader string, hostOverride string, insecure bool) []telemetry.ClientOption {
 	userAgent := product
 	if info.Version != "" {
@@ -57,7 +67,7 @@ func clientOptions(info *component.ApplicationStartInfo, apiKey string, apiKeyHe
 	userAgent += " " + info.ExeName
 	options := []telemetry.ClientOption{telemetry.WithUserAgent(userAgent)}
 	if apiKey != "" {
-		options = append(options, telemetry.WithInsertKey(apiKey))
+		options = append(options, clientOptionForAPIKey(apiKey))
 	} else if apiKeyHeader != "" {
 		options = append(options, telemetry.WithNoDefaultKey())
 	}
@@ -312,13 +322,10 @@ func (e exporter) export(
 	batches, mapEntryErrors := buildBatches()
 
 	var options []telemetry.ClientOption
-	if apiKey != "" {
-		if strings.HasPrefix(apiKey, "NRII-") {
-			options = append(options, telemetry.WithInsertKey(apiKey))
-		} else {
-			options = append(options, telemetry.WithLicenseKey(apiKey))
-		}
+	if option := clientOptionForAPIKey(apiKey); option != nil {
+		options = append(options, option)
 	}
+
 	req, err := e.requestFactory.BuildRequest(batches, options...)
 	if err != nil {
 		e.logger.Error("Failed to build data map", zap.Error(err))
