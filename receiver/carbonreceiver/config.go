@@ -48,7 +48,7 @@ type Config struct {
 	Parser *protocol.Config `mapstructure:"parser"`
 }
 
-func (cfg *Config) Unmarshal(componentParser *config.Parser) (err error) {
+func (cfg *Config) Unmarshal(componentParser *config.Parser) error {
 	if componentParser == nil {
 		// The section is empty nothing to do, using the default config.
 		return nil
@@ -62,15 +62,17 @@ func (cfg *Config) Unmarshal(componentParser *config.Parser) (err error) {
 	}
 
 	// Unmarshal the protocol, so the type of config can be properly set.
-	vParserCfg := componentParser.Viper().Sub(parserConfigSection)
-	if vParserCfg != nil {
-		if err := protocol.LoadParserConfig(vParserCfg, cfg.Parser); err != nil {
-			return fmt.Errorf(
-				"error on %q section for %s: %v",
-				parserConfigSection,
-				cfg.Name(),
-				err)
-		}
+	vParserCfg, errSub := componentParser.Sub(parserConfigSection)
+	if errSub != nil {
+		return errSub
+	}
+
+	if err := protocol.LoadParserConfig(vParserCfg, cfg.Parser); err != nil {
+		return fmt.Errorf(
+			"error on %q section for %s: %v",
+			parserConfigSection,
+			cfg.Name(),
+			err)
 	}
 
 	// Unmarshal exact to validate the config keys.

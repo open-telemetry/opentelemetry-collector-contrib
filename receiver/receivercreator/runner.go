@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configparser"
@@ -83,25 +84,25 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
 ) (config.Receiver, error) {
-	mergedConfig := config.NewViper()
+	mergedConfig := config.NewParser()
 
 	// Merge in the config values specified in the config file.
-	if err := mergedConfig.MergeConfigMap(receiver.config); err != nil {
+	if err := mergedConfig.MergeStringMap(receiver.config); err != nil {
 		return nil, fmt.Errorf("failed to merge template config from config file: %v", err)
 	}
 
 	// Merge in discoveredConfig containing values discovered at runtime.
-	if err := mergedConfig.MergeConfigMap(discoveredConfig); err != nil {
+	if err := mergedConfig.MergeStringMap(discoveredConfig); err != nil {
 		return nil, fmt.Errorf("failed to merge template config from discovered runtime values: %v", err)
 	}
 
-	receiverConfig, err := configparser.LoadReceiver(config.ParserFromViper(mergedConfig), receiver.fullName, factory)
+	receiverConfig, err := configparser.LoadReceiver(mergedConfig, receiver.fullName, factory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template config: %v", err)
 	}
 	// Sets dynamically created receiver to something like receiver_creator/1/redis{endpoint="localhost:6380"}.
 	// TODO: Need to make sure this is unique (just endpoint is probably not totally sufficient).
-	receiverConfig.SetName(fmt.Sprintf("%s/%s{endpoint=%q}", run.idNamespace, receiver.fullName, mergedConfig.GetString(endpointConfigKey)))
+	receiverConfig.SetName(fmt.Sprintf("%s/%s{endpoint=%q}", run.idNamespace, receiver.fullName, cast.ToString(mergedConfig.Get(endpointConfigKey))))
 	return receiverConfig, nil
 }
 
