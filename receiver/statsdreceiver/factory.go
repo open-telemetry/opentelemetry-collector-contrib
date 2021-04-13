@@ -19,10 +19,12 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
 
 const (
@@ -43,27 +45,32 @@ func NewFactory() component.ReceiverFactory {
 	)
 }
 
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: configmodels.Type(typeStr),
+		ReceiverSettings: config.ReceiverSettings{
+			TypeVal: config.Type(typeStr),
 			NameVal: typeStr,
 		},
 		NetAddr: confignet.NetAddr{
 			Endpoint:  defaultBindEndpoint,
 			Transport: defaultTransport,
 		},
-		AggregationInterval: defaultAggregationInterval,
-		EnableMetricType:    defaultEnableMetricType,
+		AggregationInterval:   defaultAggregationInterval,
+		EnableMetricType:      defaultEnableMetricType,
+		TimerHistogramMapping: []protocol.TimerHistogramMapping{{Match: "*", StatsdType: "timer", ObserverType: "gauge"}, {Match: "*", StatsdType: "histogram", ObserverType: "gauge"}},
 	}
 }
 
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
+	cfg config.Receiver,
+	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	c := cfg.(*Config)
+	err := c.validate()
+	if err != nil {
+		return nil, err
+	}
 	return New(params.Logger, *c, consumer)
 }

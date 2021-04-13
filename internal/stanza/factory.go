@@ -20,17 +20,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/agent"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 // LogReceiverType is the interface used by stanza-based log receivers
 type LogReceiverType interface {
-	Type() configmodels.Type
-	CreateDefaultConfig() configmodels.Receiver
-	BaseConfig(configmodels.Receiver) BaseConfig
-	DecodeInputConfig(configmodels.Receiver) (*operator.Config, error)
+	Type() config.Type
+	CreateDefaultConfig() config.Receiver
+	BaseConfig(config.Receiver) BaseConfig
+	DecodeInputConfig(config.Receiver) (*operator.Config, error)
 }
 
 // NewFactory creates a factory for a Stanza-based receiver
@@ -46,8 +46,8 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 	return func(
 		ctx context.Context,
 		params component.ReceiverCreateParams,
-		cfg configmodels.Receiver,
-		nextConsumer consumer.LogsConsumer,
+		cfg config.Receiver,
+		nextConsumer consumer.Logs,
 	) (component.LogsReceiver, error) {
 		inputCfg, err := logReceiverType.DecodeInputConfig(cfg)
 		if err != nil {
@@ -71,11 +71,23 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 			return nil, err
 		}
 
+		opts := []ConverterOption{
+			WithLogger(params.Logger),
+		}
+		if baseCfg.Converter.MaxFlushCount > 0 {
+			opts = append(opts, WithMaxFlushCount(baseCfg.Converter.MaxFlushCount))
+		}
+		if baseCfg.Converter.FlushInterval > 0 {
+			opts = append(opts, WithFlushInterval(baseCfg.Converter.FlushInterval))
+		}
+		converter := NewConverter(opts...)
+
 		return &receiver{
-			agent:    logAgent,
-			emitter:  emitter,
-			consumer: nextConsumer,
-			logger:   params.Logger,
+			agent:     logAgent,
+			emitter:   emitter,
+			consumer:  nextConsumer,
+			logger:    params.Logger,
+			converter: converter,
 		}, nil
 	}
 }

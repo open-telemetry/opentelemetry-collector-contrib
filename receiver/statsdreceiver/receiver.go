@@ -42,7 +42,7 @@ type statsdReceiver struct {
 	server       transport.Server
 	reporter     transport.Reporter
 	parser       protocol.Parser
-	nextConsumer consumer.MetricsConsumer
+	nextConsumer consumer.Metrics
 	cancel       context.CancelFunc
 
 	startOnce sync.Once
@@ -53,7 +53,7 @@ type statsdReceiver struct {
 func New(
 	logger *zap.Logger,
 	config Config,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
@@ -99,7 +99,7 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 		var transferChan = make(chan string, 10)
 		ticker := time.NewTicker(r.config.AggregationInterval)
 		err = nil
-		r.parser.Initialize(r.config.EnableMetricType)
+		r.parser.Initialize(r.config.EnableMetricType, r.config.TimerHistogramMapping)
 		go func() {
 			err = r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter, transferChan)
 			if err != nil {
@@ -140,7 +140,7 @@ func (r *statsdReceiver) Shutdown(context.Context) error {
 	return err
 }
 
-func (r *statsdReceiver) Flush(ctx context.Context, metrics pdata.Metrics, nextConsumer consumer.MetricsConsumer) error {
+func (r *statsdReceiver) Flush(ctx context.Context, metrics pdata.Metrics, nextConsumer consumer.Metrics) error {
 	error := nextConsumer.ConsumeMetrics(ctx, metrics)
 	if error != nil {
 		return error

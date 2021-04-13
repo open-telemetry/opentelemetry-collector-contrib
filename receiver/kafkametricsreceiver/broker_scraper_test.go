@@ -56,7 +56,7 @@ func TestBrokerShutdown_closed(t *testing.T) {
 
 func TestBrokerScraper_Name(t *testing.T) {
 	s := brokerScraper{}
-	assert.Equal(t, s.Name(), "brokers")
+	assert.Equal(t, s.Name(), brokersScraperName)
 }
 
 func TestBrokerScraper_createBrokerScraper(t *testing.T) {
@@ -79,10 +79,6 @@ func TestBrokerScraper_createBrokerScraper_handles_client_error(t *testing.T) {
 
 func TestBrokerScraper_scrape(t *testing.T) {
 	client := newMockClient()
-	r := sarama.NewBroker(testBroker)
-	testBrokers := make([]*sarama.Broker, 1)
-	testBrokers[0] = r
-	client.brokers = testBrokers
 	client.Mock.On("Brokers").Return(testBrokers)
 	bs := brokerScraper{
 		client: client,

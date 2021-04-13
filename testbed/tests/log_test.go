@@ -23,10 +23,12 @@ import (
 	"go.opentelemetry.io/collector/testbed/testbed"
 	scenarios "go.opentelemetry.io/collector/testbed/tests"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
 )
 
 func TestLog10kDPS(t *testing.T) {
+	flw := datasenders.NewFluentBitFileLogWriter(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	tests := []struct {
 		name         string
 		sender       testbed.DataSender
@@ -39,7 +41,7 @@ func TestLog10kDPS(t *testing.T) {
 			sender:   testbed.NewOTLPLogsDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 26,
+				ExpectedMaxCPU: 30,
 				ExpectedMaxRAM: 82,
 			},
 		},
@@ -85,6 +87,52 @@ func TestLog10kDPS(t *testing.T) {
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 100,
+				ExpectedMaxRAM: 150,
+			},
+		},
+		{
+			name:     "syslog-udp",
+			sender:   datasenders.NewSyslogWriter("udp", testbed.DefaultHost, testbed.GetAvailablePort(t), 1),
+			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 80,
+				ExpectedMaxRAM: 150,
+			},
+		},
+		{
+			name:     "syslog-tcp-batch-1",
+			sender:   datasenders.NewSyslogWriter("tcp", testbed.DefaultHost, testbed.GetAvailablePort(t), 1),
+			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 80,
+				ExpectedMaxRAM: 150,
+			},
+		},
+		{
+			name:     "syslog-tcp-batch-100",
+			sender:   datasenders.NewSyslogWriter("tcp", testbed.DefaultHost, testbed.GetAvailablePort(t), 100),
+			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 80,
+				ExpectedMaxRAM: 150,
+			},
+		},
+		{
+			name:     "FluentBitToOTLP",
+			sender:   flw,
+			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 50,
+				ExpectedMaxRAM: 155,
+			},
+			extensions: flw.Extensions(),
+		},
+		{
+			name:     "FluentForward-SplunkHEC",
+			sender:   datasenders.NewFluentLogsForwarder(t, testbed.GetAvailablePort(t)),
+			receiver: datareceivers.NewSplunkHECDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 60,
 				ExpectedMaxRAM: 150,
 			},
 		},

@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 
@@ -34,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[configmodels.Type(typeStr)] = factory
+	factories.Receivers[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -50,8 +50,8 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers["carbon/receiver_settings"].(*Config)
 	assert.Equal(t,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(typeStr),
+			ReceiverSettings: config.ReceiverSettings{
+				TypeVal: config.Type(typeStr),
 				NameVal: "carbon/receiver_settings",
 			},
 			NetAddr: confignet.NetAddr{
@@ -69,8 +69,8 @@ func TestLoadConfig(t *testing.T) {
 	r2 := cfg.Receivers["carbon/regex"].(*Config)
 	assert.Equal(t,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(typeStr),
+			ReceiverSettings: config.ReceiverSettings{
+				TypeVal: config.Type(typeStr),
 				NameVal: "carbon/regex",
 			},
 			NetAddr: confignet.NetAddr{

@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
-	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -107,14 +106,14 @@ func TestCloseStopsPoller(t *testing.T) {
 	err = p.Close()
 	assert.NoError(t, err, "should be able to close the poller")
 
-	testutil.WaitFor(t, func() bool {
+	assert.Eventuallyf(t, func() bool {
 		select {
 		case _, open := <-segChan:
 			return !open
 		default:
 			return false
 		}
-	}, "output channel should be closed")
+	}, 10*time.Second, 5*time.Millisecond, "output channel should be closed")
 
 	err = p.(*poller).udpSock.Close()
 	assert.Error(t, err, "a socket should not be closed twice")
@@ -135,7 +134,7 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 	err = writePacket(t, addr, string(rawData))
 	assert.NoError(t, err, "can not write packet in the TestSuccessfullyPollPacket case")
 
-	testutil.WaitFor(t, func() bool {
+	assert.Eventuallyf(t, func() bool {
 		select {
 		case seg, open := <-p.(*poller).segChan:
 			obsreport.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, 1, nil)
@@ -143,7 +142,7 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 		default:
 			return false
 		}
-	}, "poller should return parsed segment")
+	}, 10*time.Second, 5*time.Millisecond, "poller should return parsed segment")
 
 	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 1, 0)
 }
@@ -161,7 +160,7 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 	rawData := []byte(`{"format": "json", "version": 1}`) // no separator
 	err = writePacket(t, addr, string(rawData))
 	assert.NoError(t, err, "can not write packet in the TestIncompletePacketNoSeparator case")
-	testutil.WaitFor(t, func() bool {
+	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
 		lastEntry := logs[len(logs)-1]
 		var errRecv *internalErr.ErrRecoverable
@@ -172,7 +171,7 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 				errors.Unwrap(
 					lastEntry.Context[0].Interface.(error)).Error(),
 				fmt.Sprintf("unable to split incoming data as header and segment, incoming bytes: %v", rawData)) == 0
-	}, "poller should reject segment")
+	}, 10*time.Second, 5*time.Millisecond, "poller should reject segment")
 
 	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
 }
@@ -190,13 +189,13 @@ func TestIncompletePacketNoBody(t *testing.T) {
 	rawData := []byte(`{"format": "json", "version": 1}` + "\n") // no body
 	err = writePacket(t, addr, string(rawData))
 	assert.NoError(t, err, "can not write packet in the TestIncompletePacketNoBody case")
-	testutil.WaitFor(t, func() bool {
+	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
 		lastEntry := logs[len(logs)-1]
 		return strings.Contains(lastEntry.Message, "Missing body") &&
 			lastEntry.Context[0].String == "json" &&
 			lastEntry.Context[1].Integer == 1
-	}, "poller should log missing body")
+	}, 10*time.Second, 5*time.Millisecond, "poller should log missing body")
 
 	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
 }
@@ -214,7 +213,7 @@ func TestNonJsonHeader(t *testing.T) {
 	// the header (i.e. the portion before \n) is invalid
 	err = writePacket(t, addr, "nonJson\nBody")
 	assert.NoError(t, err, "can not write packet in the TestNonJsonHeader case")
-	testutil.WaitFor(t, func() bool {
+	assert.Eventuallyf(t, func() bool {
 		var errRecv *internalErr.ErrRecoverable
 		logs := recordedLogs.All()
 		lastEntry := logs[len(logs)-1]
@@ -225,7 +224,7 @@ func TestNonJsonHeader(t *testing.T) {
 			errors.As(lastEntry.Context[0].Interface.(error), &errRecv) &&
 			strings.Contains(lastEntry.Context[0].Interface.(error).Error(),
 				"invalid character 'o'")
-	}, "poller should reject segment")
+	}, 10*time.Second, 5*time.Millisecond, "poller should reject segment")
 
 	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
 }
@@ -245,7 +244,7 @@ func TestJsonInvalidHeader(t *testing.T) {
 	err = writePacket(t, addr,
 		fmt.Sprintf(`{"format": "%s", "version": 1}`, randString.String())+"\nBody")
 	assert.NoError(t, err, "can not write packet in the TestJsonInvalidHeader case")
-	testutil.WaitFor(t, func() bool {
+	assert.Eventuallyf(t, func() bool {
 		var errRecv *internalErr.ErrRecoverable
 		logs := recordedLogs.All()
 		lastEntry := logs[len(logs)-1]
@@ -260,7 +259,7 @@ func TestJsonInvalidHeader(t *testing.T) {
 					Version: 1,
 				},
 			)
-	}, "poller should reject segment")
+	}, 10*time.Second, 5*time.Millisecond, "poller should reject segment")
 
 	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
 }
@@ -288,7 +287,7 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 	longLivedCtx := obsreport.ReceiverContext(context.Background(), receiverName, Transport)
 	p.Start(longLivedCtx)
 
-	testutil.WaitFor(t, func() bool {
+	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
 		lastEntry := logs[len(logs)-1]
 		var errIrrecv *internalErr.ErrIrrecoverable
@@ -296,7 +295,7 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 			lastEntry.Context[0].Type == zapcore.ErrorType &&
 			errors.As(lastEntry.Context[0].Interface.(error), &errIrrecv) &&
 			errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error() == randErrStr.String()
-	}, "poller should exit due to irrecoverable net read error")
+	}, 10*time.Second, 5*time.Millisecond, "poller should exit due to irrecoverable net read error")
 
 	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
 }
@@ -325,7 +324,7 @@ func TestSocketReadTemporaryNetError(t *testing.T) {
 	longLivedCtx := obsreport.ReceiverContext(context.Background(), receiverName, Transport)
 	p.Start(longLivedCtx)
 
-	testutil.WaitFor(t, func() bool {
+	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
 		lastEntry := logs[len(logs)-1]
 		var errRecv *internalErr.ErrRecoverable
@@ -333,7 +332,7 @@ func TestSocketReadTemporaryNetError(t *testing.T) {
 			lastEntry.Context[0].Type == zapcore.ErrorType &&
 			errors.As(lastEntry.Context[0].Interface.(error), &errRecv) &&
 			errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error() == randErrStr.String()
-	}, "poller should encounter net read error")
+	}, 10*time.Second, 5*time.Millisecond, "poller should encounter net read error")
 
 	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
 }
@@ -360,7 +359,7 @@ func TestSocketGenericReadError(t *testing.T) {
 	longLivedCtx := obsreport.ReceiverContext(context.Background(), receiverName, Transport)
 	p.Start(longLivedCtx)
 
-	testutil.WaitFor(t, func() bool {
+	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
 		lastEntry := logs[len(logs)-1]
 		var errRecv *internalErr.ErrRecoverable
@@ -368,7 +367,7 @@ func TestSocketGenericReadError(t *testing.T) {
 			lastEntry.Context[0].Type == zapcore.ErrorType &&
 			errors.As(lastEntry.Context[0].Interface.(error), &errRecv) &&
 			errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error() == randErrStr.String()
-	}, "poller should encounter generic socket read error")
+	}, 10*time.Second, 5*time.Millisecond, "poller should encounter generic socket read error")
 
 	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
 }

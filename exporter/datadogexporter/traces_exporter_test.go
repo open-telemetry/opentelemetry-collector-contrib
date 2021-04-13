@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	otelconfig "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
@@ -61,6 +62,7 @@ func testTraceExporterHelper(td pdata.Traces, t *testing.T) []string {
 
 	defer server.Close()
 	cfg := config.Config{
+		ExporterSettings: otelconfig.NewExporterSettings(typeStr),
 		API: config.APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},

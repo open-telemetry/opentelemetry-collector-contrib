@@ -46,7 +46,7 @@ func TestSequentialTraceArrival(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTraceProcessor(zap.NewNop(), consumertest.NewTracesNop(), cfg)
+	sp, _ := newTraceProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		tsp.ConsumeTraces(context.Background(), batch)
@@ -70,7 +70,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTraceProcessor(zap.NewNop(), consumertest.NewTracesNop(), cfg)
+	sp, _ := newTraceProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		// Add the same traceId twice.
@@ -104,7 +104,7 @@ func TestSequentialTraceMapSize(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTraceProcessor(zap.NewNop(), consumertest.NewTracesNop(), cfg)
+	sp, _ := newTraceProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		tsp.ConsumeTraces(context.Background(), batch)
@@ -127,7 +127,7 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTraceProcessor(zap.NewNop(), consumertest.NewTracesNop(), cfg)
+	sp, _ := newTraceProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		wg.Add(1)

@@ -70,9 +70,9 @@ func getResourceForNode(node *corev1.Node) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
-			k8sKeyNodeUID:                   string(node.UID),
-			k8sKeyNodeName:                  node.Name,
-			conventions.AttributeK8sCluster: node.ClusterName,
+			conventions.AttributeK8sNodeUID:  string(node.UID),
+			conventions.AttributeK8sNodeName: node.Name,
+			conventions.AttributeK8sCluster:  node.ClusterName,
 		},
 	}
 }
@@ -97,13 +97,13 @@ func nodeConditionValue(node *corev1.Node, condType corev1.NodeConditionType) in
 func getMetadataForNode(node *corev1.Node) map[metadataPkg.ResourceID]*KubernetesMetadata {
 	metadata := util.MergeStringMaps(map[string]string{}, node.Labels)
 
-	metadata[k8sKeyNodeName] = node.Name
+	metadata[conventions.AttributeK8sNodeName] = node.Name
 	metadata[nodeCreationTime] = node.GetCreationTimestamp().Format(time.RFC3339)
 
 	nodeID := metadataPkg.ResourceID(node.UID)
 	return map[metadataPkg.ResourceID]*KubernetesMetadata{
 		nodeID: {
-			resourceIDKey: k8sKeyNodeUID,
+			resourceIDKey: conventions.AttributeK8sNodeUID,
 			resourceID:    nodeID,
 			metadata:      metadata,
 		},

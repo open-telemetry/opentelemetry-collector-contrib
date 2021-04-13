@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.uber.org/zap"
 )
 
 var (
@@ -168,7 +169,7 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			inputLogs := someComplexLogs(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount)
 			inputTraces := someComplexTraces(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount)
 
-			gap, err := createGroupByAttrsProcessor(logger, []string{"commonGroupedAttr"})
+			gap, err := createGroupByAttrsProcessor(zap.NewNop(), []string{"commonGroupedAttr"})
 			require.NoError(t, err)
 
 			processedLogs, err := gap.ProcessLogs(context.Background(), inputLogs)
@@ -250,7 +251,7 @@ func TestAttributeGrouping(t *testing.T) {
 			logs := someLogs(attrMap, tt.count)
 			spans := someSpans(attrMap, tt.count)
 
-			gap, err := createGroupByAttrsProcessor(logger, tt.groupByKeys)
+			gap, err := createGroupByAttrsProcessor(zap.NewNop(), tt.groupByKeys)
 			require.NoError(t, err)
 
 			expectedResource := prepareResource(attrMap, tt.groupByKeys)

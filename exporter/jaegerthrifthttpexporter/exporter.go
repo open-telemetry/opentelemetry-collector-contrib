@@ -25,7 +25,7 @@ import (
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -44,7 +44,7 @@ const defaultHTTPTimeout = time.Second * 5
 // The timeout is used to set the timeout for the HTTP requests, if the
 // value is equal or smaller than zero the default of 5 seconds is used.
 func newTraceExporter(
-	config configmodels.Exporter,
+	config config.Exporter,
 	params component.ExporterCreateParams,
 	httpAddress string,
 	headers map[string]string,

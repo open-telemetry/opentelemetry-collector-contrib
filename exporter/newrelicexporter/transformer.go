@@ -31,16 +31,17 @@ import (
 )
 
 const (
-	unitAttrKey               = "unit"
-	descriptionAttrKey        = "description"
-	collectorNameKey          = "collector.name"
-	collectorVersionKey       = "collector.version"
-	instrumentationNameKey    = "instrumentation.name"
-	instrumentationVersionKey = "instrumentation.version"
-	statusCodeKey             = "otel.status_code"
-	statusDescriptionKey      = "otel.status_description"
-	spanKindKey               = "span.kind"
-	serviceNameKey            = "service.name"
+	unitAttrKey                    = "unit"
+	descriptionAttrKey             = "description"
+	collectorNameKey               = "collector.name"
+	collectorVersionKey            = "collector.version"
+	instrumentationNameKey         = "instrumentation.name"
+	instrumentationVersionKey      = "instrumentation.version"
+	instrumentationProviderAttrKey = "instrumentation.provider"
+	statusCodeKey                  = "otel.status_code"
+	statusDescriptionKey           = "otel.status_description"
+	spanKindKey                    = "span.kind"
+	serviceNameKey                 = "service.name"
 )
 
 // TODO (MrAlias): unify this with the traceTransformer when the metric data
@@ -77,7 +78,7 @@ var (
 )
 
 func (t *traceTransformer) Span(span pdata.Span) (telemetry.Span, error) {
-	startTime := span.StartTime().AsTime()
+	startTime := span.StartTimestamp().AsTime()
 	sp := telemetry.Span{
 		// HexString validates the IDs, it will be an empty string if invalid.
 		ID:         span.SpanID().HexString(),
@@ -85,7 +86,7 @@ func (t *traceTransformer) Span(span pdata.Span) (telemetry.Span, error) {
 		ParentID:   span.ParentSpanID().HexString(),
 		Name:       span.Name(),
 		Timestamp:  startTime,
-		Duration:   span.EndTime().AsTime().Sub(startTime),
+		Duration:   span.EndTimestamp().AsTime().Sub(startTime),
 		Attributes: t.SpanAttributes(span),
 		Events:     t.SpanEvents(span),
 	}
@@ -148,6 +149,7 @@ func (t *traceTransformer) SpanAttributes(span pdata.Span) map[string]interface{
 	// (overrides any existing)
 	attrs[collectorNameKey] = name
 	attrs[collectorVersionKey] = version
+	attrs[instrumentationProviderAttrKey] = "opentelemetry"
 
 	return attrs
 }
@@ -220,7 +222,7 @@ func (t *metricTransformer) Metric(metric *metricspb.Metric) ([]telemetry.Metric
 			}
 		}
 	}
-	return metrics, consumererror.CombineErrors(errs)
+	return metrics, consumererror.Combine(errs)
 }
 
 func (t *metricTransformer) MetricAttributes(metric *metricspb.Metric) map[string]interface{} {

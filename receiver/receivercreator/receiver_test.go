@@ -28,8 +28,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -51,7 +51,7 @@ type mockMetricsConsumer struct {
 	TotalMetrics int
 }
 
-var _ consumer.MetricsConsumer = &mockMetricsConsumer{}
+var _ consumer.Metrics = &mockMetricsConsumer{}
 
 func (p *mockMetricsConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	p.Metrics = append(p.Metrics, md)
@@ -80,8 +80,8 @@ var _ observer.Observable = (*mockObserver)(nil)
 
 func TestMockedEndToEnd(t *testing.T) {
 	host, cfg := exampleCreatorFactory(t)
-	host.extensions = map[configmodels.NamedEntity]component.Extension{
-		&configmodels.ExtensionSettings{
+	host.extensions = map[config.NamedEntity]component.Extension{
+		&config.ExtensionSettings{
 			TypeVal: "mock_observer",
 			NameVal: "mock_observer",
 		}: &mockObserver{},
@@ -138,7 +138,7 @@ func TestMockedEndToEnd(t *testing.T) {
 				},
 			},
 		})
-		assert.NoError(t, example.MetricsConsumer.ConsumeMetrics(context.Background(), md))
+		assert.NoError(t, example.ConsumeMetrics(context.Background(), md))
 	}
 
 	// TODO: Will have to rework once receivers are started asynchronously to Start().

@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
@@ -29,8 +29,8 @@ import (
 
 var (
 	wantReceiver2 = &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: configmodels.Type("prometheus_exec"),
+		ReceiverSettings: config.ReceiverSettings{
+			TypeVal: config.Type("prometheus_exec"),
 			NameVal: "prometheus_exec/test",
 		},
 		ScrapeInterval: 60 * time.Second,
@@ -42,8 +42,8 @@ var (
 	}
 
 	wantReceiver3 = &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: configmodels.Type("prometheus_exec"),
+		ReceiverSettings: config.ReceiverSettings{
+			TypeVal: config.Type("prometheus_exec"),
 			NameVal: "prometheus_exec/test2",
 		},
 		ScrapeInterval: 90 * time.Second,
@@ -54,8 +54,8 @@ var (
 	}
 
 	wantReceiver4 = &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: configmodels.Type("prometheus_exec"),
+		ReceiverSettings: config.ReceiverSettings{
+			TypeVal: config.Type("prometheus_exec"),
 			NameVal: "prometheus_exec/end_to_end_test/1",
 		},
 		ScrapeInterval: 100 * time.Millisecond,
@@ -76,8 +76,8 @@ var (
 	}
 
 	wantReceiver5 = &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: configmodels.Type("prometheus_exec"),
+		ReceiverSettings: config.ReceiverSettings{
+			TypeVal: config.Type("prometheus_exec"),
 			NameVal: "prometheus_exec/end_to_end_test/2",
 		},
 		ScrapeInterval: 100 * time.Millisecond,
@@ -94,7 +94,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	receiverType := "prometheus_exec"
-	factories.Receivers[configmodels.Type(receiverType)] = factory
+	factories.Receivers[config.Type(receiverType)] = factory
 
 	config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 

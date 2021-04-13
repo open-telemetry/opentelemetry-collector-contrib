@@ -20,8 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 )
@@ -37,7 +37,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	cfg.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
 
-	assert.NoError(t, cfg.(*Config).validate())
+	assert.NoError(t, cfg.Validate())
 }
 
 func TestCreateTraceReceiver(t *testing.T) {
@@ -45,9 +45,9 @@ func TestCreateTraceReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
 
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
 
-	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
+	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, tReceiver)
 }
 
@@ -56,8 +56,8 @@ func TestCreateLogsReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
 
-	tReceiver, err := factory.CreateLogsReceiver(context.Background(), creationParams, cfg, consumertest.NewLogsNop())
+	tReceiver, err := factory.CreateLogsReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
 
-	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
+	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, tReceiver)
 }

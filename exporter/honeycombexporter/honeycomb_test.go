@@ -33,6 +33,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -102,6 +103,7 @@ func testTraceExporter(td pdata.Traces, t *testing.T, cfg *Config) []honeycombDa
 
 func baseConfig() *Config {
 	return &Config{
+		ExporterSettings:    config.NewExporterSettings(typeStr),
 		APIKey:              "test",
 		Dataset:             "test",
 		Debug:               false,

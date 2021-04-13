@@ -68,7 +68,7 @@ func TestNewProcessor(t *testing.T) {
 			cfg.Dimensions = tc.dimensions
 
 			// Test
-			traceProcessor, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
+			traceProcessor, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
 			smp := traceProcessor.(*processorImp)
 
 			// Verify

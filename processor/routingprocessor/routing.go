@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
@@ -45,7 +45,7 @@ type processorImp struct {
 }
 
 // Crete new processor
-func newProcessor(logger *zap.Logger, cfg configmodels.Exporter) (*processorImp, error) {
+func newProcessor(logger *zap.Logger, cfg config.Exporter) (*processorImp, error) {
 	logger.Info("building processor")
 
 	oCfg := cfg.(*Config)
@@ -78,7 +78,7 @@ func (e *processorImp) Start(_ context.Context, host component.Host) error {
 	// first, let's build a map of exporter names with the exporter instances
 	source := host.GetExporters()
 	availableExporters := map[string]component.TracesExporter{}
-	for k, exp := range source[configmodels.TracesDataType] {
+	for k, exp := range source[config.TracesDataType] {
 		traceExp, ok := exp.(component.TracesExporter)
 		if !ok {
 			return fmt.Errorf("the exporter %q isn't a trace exporter", k.Name())

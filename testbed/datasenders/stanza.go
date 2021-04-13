@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -31,7 +32,6 @@ import (
 // and generalize as FileLogWriter.
 
 type FileLogWriter struct {
-	testbed.DataSenderBase
 	file *os.File
 }
 
@@ -134,6 +134,6 @@ func (f *FileLogWriter) ProtocolName() string {
 	return "filelog"
 }
 
-func (f *FileLogWriter) GetEndpoint() string {
-	return ""
+func (f *FileLogWriter) GetEndpoint() net.Addr {
+	return nil
 }

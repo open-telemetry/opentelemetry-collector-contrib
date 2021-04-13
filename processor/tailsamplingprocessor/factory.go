@@ -21,7 +21,7 @@ import (
 
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
@@ -47,22 +47,19 @@ func NewFactory() component.ProcessorFactory {
 		processorhelper.WithTraces(createTraceProcessor))
 }
 
-func createDefaultConfig() configmodels.Processor {
+func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
-		DecisionWait: 30 * time.Second,
-		NumTraces:    50000,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		DecisionWait:      30 * time.Second,
+		NumTraces:         50000,
 	}
 }
 
 func createTraceProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.TracesConsumer,
+	cfg config.Processor,
+	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	tCfg := cfg.(*Config)
 	return newTraceProcessor(params.Logger, nextConsumer, *tCfg)

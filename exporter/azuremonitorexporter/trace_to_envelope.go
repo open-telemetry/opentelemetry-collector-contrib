@@ -74,7 +74,7 @@ func spanToEnvelope(
 
 	envelope := contracts.NewEnvelope()
 	envelope.Tags = make(map[string]string)
-	envelope.Time = toTime(span.StartTime()).Format(time.RFC3339Nano)
+	envelope.Time = toTime(span.StartTimestamp()).Format(time.RFC3339Nano)
 	envelope.Tags[contracts.OperationId] = span.TraceID().HexString()
 	envelope.Tags[contracts.OperationParentId] = span.ParentSpanID().HexString()
 
@@ -577,8 +577,8 @@ func copyAndExtractMessagingAttributes(
 }
 
 func formatSpanDuration(span pdata.Span) string {
-	startTime := toTime(span.StartTime())
-	endTime := toTime(span.EndTime())
+	startTime := toTime(span.StartTimestamp())
+	endTime := toTime(span.EndTimestamp())
 	return formatDuration(endTime.Sub(startTime))
 }
 

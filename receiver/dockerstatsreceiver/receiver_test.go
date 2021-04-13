@@ -19,11 +19,13 @@ package dockerstatsreceiver
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
@@ -75,7 +77,7 @@ func TestErrorsInStart(t *testing.T) {
 	// out of order modification to trigger client creation failure
 	config.Endpoint = "..not/a/valid/endpoint"
 
-	host := componenttest.NewErrorWaitingHost()
+	host := newErrorWaitingHost()
 	err = receiver.Start(context.Background(), host)
 	require.Error(t, err)
 
@@ -84,10 +86,35 @@ func TestErrorsInStart(t *testing.T) {
 	err = receiver.Start(context.Background(), host)
 	assert.Nil(t, err)
 
-	received, err := host.WaitForFatalError(500 * time.Millisecond)
-	require.True(t, received)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "context deadline exceeded")
+	<-time.After(500 * time.Millisecond)
+	hostErr := host.getErr()
+	require.Error(t, hostErr)
+	assert.Contains(t, hostErr.Error(), "context deadline exceeded")
 
-	require.Nil(t, receiver.Shutdown(context.Background()))
+	require.NoError(t, receiver.Shutdown(context.Background()))
+}
+
+type errorWaitingHost struct {
+	component.Host
+	sync.Mutex
+	err error
+}
+
+// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
+func newErrorWaitingHost() *errorWaitingHost {
+	return &errorWaitingHost{
+		Host: componenttest.NewNopHost(),
+	}
+}
+
+func (aneh *errorWaitingHost) ReportFatalError(err error) {
+	aneh.Lock()
+	defer aneh.Unlock()
+	aneh.err = err
+}
+
+func (aneh *errorWaitingHost) getErr() error {
+	aneh.Lock()
+	defer aneh.Unlock()
+	return aneh.err
 }

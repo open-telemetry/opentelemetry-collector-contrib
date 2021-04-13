@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
@@ -29,7 +30,7 @@ import (
 // SFxMetricsDataSender implements MetricDataSender for SignalFx metrics protocol.
 type SFxMetricsDataSender struct {
 	testbed.DataSenderBase
-	consumer.MetricsConsumer
+	consumer.Metrics
 }
 
 // Ensure SFxMetricsDataSender implements MetricDataSenderOld.
@@ -48,13 +49,14 @@ func NewSFxMetricDataSender(port int) *SFxMetricsDataSender {
 
 // Start the sender.
 func (sf *SFxMetricsDataSender) Start() error {
+	factory := signalfxexporter.NewFactory()
 	cfg := &signalfxexporter.Config{
-		IngestURL:   fmt.Sprintf("http://%s/v2/datapoint", sf.GetEndpoint()),
-		APIURL:      "http://localhost",
-		AccessToken: "access_token",
+		ExporterSettings: config.NewExporterSettings(factory.Type()),
+		IngestURL:        fmt.Sprintf("http://%s/v2/datapoint", sf.GetEndpoint()),
+		APIURL:           "http://localhost",
+		AccessToken:      "access_token",
 	}
 
-	factory := signalfxexporter.NewFactory()
 	params := component.ExporterCreateParams{Logger: zap.L()}
 	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 
@@ -62,7 +64,7 @@ func (sf *SFxMetricsDataSender) Start() error {
 		return err
 	}
 
-	sf.MetricsConsumer = exporter
+	sf.Metrics = exporter
 	return nil
 }
 

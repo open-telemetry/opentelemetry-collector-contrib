@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/jaegerexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -46,12 +46,9 @@ func TestLoadConfig(t *testing.T) {
 	parsed := cfg.Processors["routing"]
 	assert.Equal(t, parsed,
 		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
-				NameVal: "routing",
-				TypeVal: "routing",
-			},
-			DefaultExporters: []string{"otlp"},
-			FromAttribute:    "X-Tenant",
+			ProcessorSettings: config.NewProcessorSettings(typeStr),
+			DefaultExporters:  []string{"otlp"},
+			FromAttribute:     "X-Tenant",
 			Table: []RoutingTableItem{
 				{
 					Value:     "acme",

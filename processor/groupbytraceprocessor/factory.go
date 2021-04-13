@@ -21,14 +21,14 @@ import (
 
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 const (
 	// typeStr is the value of "type" for this processor in the configuration.
-	typeStr configmodels.Type = "groupbytrace"
+	typeStr config.Type = "groupbytrace"
 )
 
 var (
@@ -53,14 +53,11 @@ func NewFactory() component.ProcessorFactory {
 }
 
 // createDefaultConfig creates the default configuration for the processor.
-func createDefaultConfig() configmodels.Processor {
+func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: string(typeStr),
-		},
-		NumTraces:    defaultNumTraces,
-		WaitDuration: defaultWaitDuration,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		NumTraces:         defaultNumTraces,
+		WaitDuration:      defaultWaitDuration,
 
 		// not supported for now
 		DiscardOrphans: defaultDiscardOrphans,
@@ -72,8 +69,8 @@ func createDefaultConfig() configmodels.Processor {
 func createTraceProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.TracesConsumer) (component.TracesProcessor, error) {
+	cfg config.Processor,
+	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 
 	oCfg := cfg.(*Config)
 

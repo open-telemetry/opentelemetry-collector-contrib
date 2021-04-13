@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
@@ -34,17 +34,14 @@ import (
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	pType := factory.Type()
-	assert.Equal(t, pType, configmodels.Type("metricstransform"))
+	assert.Equal(t, pType, config.Type("metricstransform"))
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			NameVal: typeStr,
-			TypeVal: typeStr,
-		},
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
 	})
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
@@ -136,7 +133,7 @@ func TestCreateProcessors(t *testing.T) {
 					context.Background(),
 					component.ProcessorCreateParams{Logger: zap.NewNop()},
 					cfg,
-					consumertest.NewTracesNop())
+					consumertest.NewNop())
 				// Not implemented error
 				assert.Error(t, tErr)
 				assert.Nil(t, tp)
@@ -145,7 +142,7 @@ func TestCreateProcessors(t *testing.T) {
 					context.Background(),
 					component.ProcessorCreateParams{Logger: zap.NewNop()},
 					cfg,
-					consumertest.NewMetricsNop())
+					consumertest.NewNop())
 				if test.succeed {
 					assert.NotNil(t, mp)
 					assert.NoError(t, mErr)

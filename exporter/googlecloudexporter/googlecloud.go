@@ -238,7 +238,7 @@ func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) error 
 	if err != nil {
 		errs = append(errs, err)
 	}
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 func numPoints(metrics []*metricspb.Metric) int {

@@ -101,8 +101,8 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 						splunkMetrics = append(splunkMetrics, sm)
 					}
-				case pdata.MetricDataTypeDoubleHistogram:
-					pts := tm.DoubleHistogram().DataPoints()
+				case pdata.MetricDataTypeHistogram:
+					pts := tm.Histogram().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
 						bounds := dataPt.ExplicitBounds()

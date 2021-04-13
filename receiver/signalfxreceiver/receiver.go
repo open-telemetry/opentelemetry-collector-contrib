@@ -83,8 +83,8 @@ type sfxReceiver struct {
 	sync.Mutex
 	logger          *zap.Logger
 	config          *Config
-	metricsConsumer consumer.MetricsConsumer
-	logsConsumer    consumer.LogsConsumer
+	metricsConsumer consumer.Metrics
+	logsConsumer    consumer.Logs
 	server          *http.Server
 
 	startOnce sync.Once
@@ -106,14 +106,14 @@ func newReceiver(
 	return r
 }
 
-func (r *sfxReceiver) RegisterMetricsConsumer(mc consumer.MetricsConsumer) {
+func (r *sfxReceiver) RegisterMetricsConsumer(mc consumer.Metrics) {
 	r.Lock()
 	defer r.Unlock()
 
 	r.metricsConsumer = mc
 }
 
-func (r *sfxReceiver) RegisterLogsConsumer(lc consumer.LogsConsumer) {
+func (r *sfxReceiver) RegisterLogsConsumer(lc consumer.Logs) {
 	r.Lock()
 	defer r.Unlock()
 
@@ -155,7 +155,7 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 		r.server.WriteTimeout = defaultServerTimeout
 
 		go func() {
-			if errHTTP := r.server.Serve(ln); errHTTP != nil {
+			if errHTTP := r.server.Serve(ln); errHTTP != http.ErrServerClosed {
 				host.ReportFatalError(errHTTP)
 			}
 		}()

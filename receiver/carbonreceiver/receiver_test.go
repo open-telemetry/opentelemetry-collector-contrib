@@ -17,9 +17,8 @@ package carbonreceiver
 import (
 	"context"
 	"errors"
-	"net"
+	"fmt"
 	"runtime"
-	"strconv"
 	"testing"
 	"time"
 
@@ -27,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -44,7 +43,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 	type args struct {
 		config       Config
-		nextConsumer consumer.MetricsConsumer
+		nextConsumer consumer.Metrics
 	}
 	tests := []struct {
 		name    string
@@ -55,7 +54,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "default_config",
 			args: args{
 				config:       *defaultConfig,
-				nextConsumer: consumertest.NewMetricsNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 		},
 		{
@@ -69,7 +68,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 					},
 					TCPIdleTimeout: defaultConfig.TCPIdleTimeout,
 				},
-				nextConsumer: consumertest.NewMetricsNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 		},
 		{
@@ -83,9 +82,9 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "empty_endpoint",
 			args: args{
 				config: Config{
-					ReceiverSettings: configmodels.ReceiverSettings{},
+					ReceiverSettings: config.ReceiverSettings{},
 				},
-				nextConsumer: consumertest.NewMetricsNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 			wantErr: errEmptyEndpoint,
 		},
@@ -93,7 +92,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "invalid_transport",
 			args: args{
 				config: Config{
-					ReceiverSettings: configmodels.ReceiverSettings{
+					ReceiverSettings: config.ReceiverSettings{
 						NameVal: "invalid_transport_rcv",
 					},
 					NetAddr: confignet.NetAddr{
@@ -105,7 +104,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 						Config: &protocol.PlaintextConfig{},
 					},
 				},
-				nextConsumer: consumertest.NewMetricsNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 			wantErr: errors.New("unsupported transport \"unknown_transp\" for receiver \"invalid_transport_rcv\""),
 		},
@@ -113,7 +112,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "regex_parser",
 			args: args{
 				config: Config{
-					ReceiverSettings: configmodels.ReceiverSettings{
+					ReceiverSettings: config.ReceiverSettings{
 						NameVal: "regex_parser_rcv",
 					},
 					NetAddr: confignet.NetAddr{
@@ -131,14 +130,14 @@ func Test_carbonreceiver_New(t *testing.T) {
 						},
 					},
 				},
-				nextConsumer: consumertest.NewMetricsNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 		},
 		{
 			name: "negative_tcp_idle_timeout",
 			args: args{
 				config: Config{
-					ReceiverSettings: configmodels.ReceiverSettings{
+					ReceiverSettings: config.ReceiverSettings{
 						NameVal: "negative_tcp_idle_timeout",
 					},
 					NetAddr: confignet.NetAddr{
@@ -151,7 +150,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 						Config: &protocol.PlaintextConfig{},
 					},
 				},
-				nextConsumer: consumertest.NewMetricsNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 			wantErr: errors.New("invalid idle timeout: -1s"),
 		},
@@ -171,12 +170,8 @@ func Test_carbonreceiver_New(t *testing.T) {
 }
 
 func Test_carbonreceiver_EndToEnd(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-	host, portStr, err := net.SplitHostPort(addr)
-	require.NoError(t, err)
-	port, err := strconv.Atoi(portStr)
-	require.NoError(t, err)
-
+	host := "localhost"
+	port := int(testutil.GetAvailablePort(t))
 	tests := []struct {
 		name     string
 		configFn func() *Config
@@ -210,7 +205,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.configFn()
-			cfg.Endpoint = addr
+			cfg.Endpoint = fmt.Sprintf("%s:%d", host, port)
 			sink := new(consumertest.MetricsSink)
 			rcv, err := New(zap.NewNop(), *cfg, sink)
 			require.NoError(t, err)

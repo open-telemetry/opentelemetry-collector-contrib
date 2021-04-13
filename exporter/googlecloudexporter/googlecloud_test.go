@@ -16,7 +16,6 @@ package googlecloudexporter
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"testing"
 	"time"
@@ -26,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
@@ -66,17 +66,19 @@ func TestGoogleCloudTraceExport(t *testing.T) {
 		{
 			name: "Standard",
 			cfg: &Config{
-				ProjectID:   "idk",
-				Endpoint:    "127.0.0.1:8080",
-				UseInsecure: true,
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				ProjectID:        "idk",
+				Endpoint:         "127.0.0.1:8080",
+				UseInsecure:      true,
 			},
 		},
 		{
 			name: "Standard_WithoutSendingQueue",
 			cfg: &Config{
-				ProjectID:   "idk",
-				Endpoint:    "127.0.0.1:8080",
-				UseInsecure: true,
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				ProjectID:        "idk",
+				Endpoint:         "127.0.0.1:8080",
+				UseInsecure:      true,
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled: false,
 				},
@@ -118,13 +120,13 @@ func TestGoogleCloudTraceExport(t *testing.T) {
 			ispans.Spans().Resize(1)
 			span := ispans.Spans().At(0)
 			span.SetName(spanName)
-			span.SetStartTime(pdata.TimestampFromTime(testTime))
+			span.SetStartTimestamp(pdata.TimestampFromTime(testTime))
 			err = sde.ConsumeTraces(context.Background(), traces)
 			assert.NoError(t, err)
 
 			r := <-reqCh
 			assert.Len(t, r.Spans, 1)
-			assert.Equal(t, fmt.Sprintf("Span.internal-%s", spanName), r.Spans[0].GetDisplayName().Value)
+			assert.Equal(t, spanName, r.Spans[0].GetDisplayName().Value)
 			assert.Equal(t, timestamppb.New(testTime), r.Spans[0].StartTime)
 		})
 	}
@@ -186,10 +188,11 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 	}
 
 	sde, err := newGoogleCloudMetricsExporter(&Config{
-		ProjectID:   "idk",
-		Endpoint:    "127.0.0.1:8080",
-		UserAgent:   "MyAgent {{version}}",
-		UseInsecure: true,
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		ProjectID:        "idk",
+		Endpoint:         "127.0.0.1:8080",
+		UserAgent:        "MyAgent {{version}}",
+		UseInsecure:      true,
 		GetClientOptions: func() []option.ClientOption {
 			return clientOptions
 		},
@@ -208,9 +211,9 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 		Resource: &resourcepb.Resource{
 			Type: "host",
 			Labels: map[string]string{
-				"cloud.zone":       "us-central1",
-				"host.name":        "foo",
-				"k8s.cluster.name": "test",
+				"cloud.availability_zone": "us-central1",
+				"host.name":               "foo",
+				"k8s.cluster.name":        "test",
 				"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
 			},
 		},
@@ -255,9 +258,9 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 	md.Metrics[2].Resource = &resourcepb.Resource{
 		Type: "host",
 		Labels: map[string]string{
-			"cloud.zone":       "us-central1",
-			"host.name":        "bar",
-			"k8s.cluster.name": "test",
+			"cloud.availability_zone": "us-central1",
+			"host.name":               "bar",
+			"k8s.cluster.name":        "test",
 			"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
 		},
 	}

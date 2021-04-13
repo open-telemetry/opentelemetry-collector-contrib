@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -37,9 +39,27 @@ func TestCreateReceiver(t *testing.T) {
 	cfg.NetAddr.Endpoint = "localhost:0" // Endpoint is required, not going to be used here.
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	tReceiver, err := createMetricsReceiver(context.Background(), params, cfg, consumertest.NewMetricsNop())
+	tReceiver, err := createMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "receiver creation failed")
+}
+
+func TestCreateReceiverWithConfigErr(t *testing.T) {
+	cfg := &Config{
+		AggregationInterval: -1,
+		TimerHistogramMapping: []protocol.TimerHistogramMapping{
+			{Match: "*", StatsdType: "timing", ObserverType: "gauge"},
+		},
+	}
+	receiver, err := createMetricsReceiver(
+		context.Background(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		cfg,
+		consumertest.NewNop(),
+	)
+	assert.Error(t, err, "aggregation_interval must be a positive duration")
+	assert.Nil(t, receiver)
+
 }
 
 func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {

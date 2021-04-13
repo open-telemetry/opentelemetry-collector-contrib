@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -514,6 +515,7 @@ func simpleTraceWithID(id pdata.TraceID) pdata.Traces {
 
 func simpleConfig() *Config {
 	return &Config{
+		ExporterSettings: config.NewExporterSettings(typeStr),
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
 		},
@@ -527,14 +529,14 @@ type mockTracesExporter struct {
 
 func newMockTracesExporter(consumeTracesFn func(ctx context.Context, td pdata.Traces) error) component.TracesExporter {
 	return &mockTracesExporter{
-		Component:       componenthelper.NewComponent(componenthelper.DefaultComponentSettings()),
+		Component:       componenthelper.New(),
 		ConsumeTracesFn: consumeTracesFn,
 	}
 }
 
 func newNopMockTracesExporter() component.TracesExporter {
 	return &mockTracesExporter{
-		Component: componenthelper.NewComponent(componenthelper.DefaultComponentSettings()),
+		Component: componenthelper.New(),
 		ConsumeTracesFn: func(ctx context.Context, td pdata.Traces) error {
 			return nil
 		},

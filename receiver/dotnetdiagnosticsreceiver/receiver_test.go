@@ -38,7 +38,7 @@ func TestReceiverBlobData(t *testing.T) {
 	ctx := context.Background()
 	r, err := NewReceiver(
 		ctx,
-		consumertest.NewMetricsNop(),
+		consumertest.NewNop(),
 		func() (io.ReadWriter, error) {
 			return rw, nil
 		},
@@ -65,7 +65,7 @@ func TestReceiverBlobData_ParsingError(t *testing.T) {
 	obs, logs := observer.New(zap.WarnLevel)
 	r, err := NewReceiver(
 		ctx,
-		consumertest.NewMetricsNop(),
+		consumertest.NewNop(),
 		func() (io.ReadWriter, error) {
 			return rw, nil
 		},
@@ -100,7 +100,7 @@ func testErrOnReceiverStart(t *testing.T, connect func() (io.ReadWriter, error),
 	ctx := context.Background()
 	r, err := NewReceiver(
 		ctx,
-		consumertest.NewMetricsNop(),
+		consumertest.NewNop(),
 		connect,
 		nil,
 		1,
@@ -125,7 +125,7 @@ func testReceiverReadErr(i int) error {
 	ctx := context.Background()
 	r, _ := NewReceiver(
 		ctx,
-		consumertest.NewMetricsNop(),
+		consumertest.NewNop(),
 		func() (io.ReadWriter, error) {
 			return rw, nil
 		},

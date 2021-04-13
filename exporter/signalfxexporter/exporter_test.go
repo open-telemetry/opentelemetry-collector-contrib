@@ -35,6 +35,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -62,31 +63,35 @@ func TestNew(t *testing.T) {
 		{
 			name: "bad config fails",
 			config: &Config{
-				APIURL: "abc",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				APIURL:           "abc",
 			},
 			wantErr: true,
 		},
 		{
 			name: "fails to create metrics converter",
 			config: &Config{
-				AccessToken:    "test",
-				Realm:          "realm",
-				ExcludeMetrics: []dpfilters.MetricFilter{{}},
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				AccessToken:      "test",
+				Realm:            "realm",
+				ExcludeMetrics:   []dpfilters.MetricFilter{{}},
 			},
 			wantErr: true,
 		},
 		{
 			name: "successfully create exporter",
 			config: &Config{
-				AccessToken:     "someToken",
-				Realm:           "xyz",
-				TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
-				Headers:         nil,
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				AccessToken:      "someToken",
+				Realm:            "xyz",
+				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
+				Headers:          nil,
 			},
 		},
 		{
 			name: "create exporter with host metadata syncer",
 			config: &Config{
+				ExporterSettings: config.NewExporterSettings(typeStr),
 				AccessToken:      "someToken",
 				Realm:            "xyz",
 				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
@@ -456,25 +461,26 @@ func TestNewEventExporter(t *testing.T) {
 	assert.EqualError(t, err, "nil config")
 	assert.Nil(t, got)
 
-	config := &Config{
-		AccessToken:     "someToken",
-		IngestURL:       "asdf://:%",
-		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
-		Headers:         nil,
+	cfg := &Config{
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		AccessToken:      "someToken",
+		IngestURL:        "asdf://:%",
+		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
+		Headers:          nil,
 	}
 
-	got, err = newEventExporter(config, zap.NewNop())
+	got, err = newEventExporter(cfg, zap.NewNop())
 	assert.NotNil(t, err)
 	assert.Nil(t, got)
 
-	config = &Config{
+	cfg = &Config{
 		AccessToken:     "someToken",
 		Realm:           "xyz",
 		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
 		Headers:         nil,
 	}
 
-	got, err = newEventExporter(config, zap.NewNop())
+	got, err = newEventExporter(cfg, zap.NewNop())
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 

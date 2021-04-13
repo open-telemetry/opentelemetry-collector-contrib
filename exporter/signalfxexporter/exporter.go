@@ -38,13 +38,13 @@ import (
 // TODO: Find a place for this to be shared.
 type baseMetricsExporter struct {
 	component.Component
-	consumer.MetricsConsumer
+	consumer.Metrics
 }
 
 // TODO: Find a place for this to be shared.
 type baseLogsExporter struct {
 	component.Component
-	consumer.LogsConsumer
+	consumer.Logs
 }
 
 type signalfMetadataExporter struct {

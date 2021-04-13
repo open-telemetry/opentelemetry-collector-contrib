@@ -14,7 +14,7 @@
 
 // Package gce provides a detector that loads resource information from
 // the GCE metatdata
-package gce // import "cloud.google.com/go/compute/metadata"
+package gce
 
 import (
 	"context"
@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 )
 
 const (
@@ -34,11 +35,11 @@ const (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
-	metadata gceMetadata
+	metadata gcp.Metadata
 }
 
 func NewDetector(component.ProcessorCreateParams, internal.DetectorConfig) (internal.Detector, error) {
-	return &Detector{metadata: &gceMetadataImpl{}}, nil
+	return &Detector{metadata: &gcp.MetadataImpl{}}, nil
 }
 
 func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
@@ -53,12 +54,12 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	var errors []error
 	errors = append(errors, d.initializeCloudAttributes(attr)...)
 	errors = append(errors, d.initializeHostAttributes(attr)...)
-	return res, consumererror.CombineErrors(errors)
+	return res, consumererror.Combine(errors)
 }
 
 func (d *Detector) initializeCloudAttributes(attr pdata.AttributeMap) []error {
 	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
-	attr.InsertString(conventions.AttributeCloudInfrastructureService, conventions.AttributeCloudProviderGCPComputeEngine)
+	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPComputeEngine)
 
 	var errors []error
 
@@ -73,7 +74,7 @@ func (d *Detector) initializeCloudAttributes(attr pdata.AttributeMap) []error {
 	if err != nil {
 		errors = append(errors, err)
 	} else {
-		attr.InsertString(conventions.AttributeCloudZone, zone)
+		attr.InsertString(conventions.AttributeCloudAvailabilityZone, zone)
 	}
 
 	return errors

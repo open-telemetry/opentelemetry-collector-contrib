@@ -102,8 +102,8 @@ func TestEncodeMetrics(t *testing.T) {
 	doubleSum.DataPoints().At(2).LabelsMap().InitFromMap(map[string]string{"k2": "v"})
 
 	// Histograms are currently not supported, and will be ignored.
-	metric = appendMetric("double_histogram_metric", pdata.MetricDataTypeDoubleHistogram)
-	metric.DoubleHistogram().DataPoints().Resize(1)
+	metric = appendMetric("double_histogram_metric", pdata.MetricDataTypeHistogram)
+	metric.Histogram().DataPoints().Resize(1)
 	expectDropped++
 	metric = appendMetric("int_histogram_metric", pdata.MetricDataTypeIntHistogram)
 	metric.IntHistogram().DataPoints().Resize(1)

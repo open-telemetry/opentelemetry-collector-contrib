@@ -20,7 +20,7 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
@@ -38,20 +38,17 @@ func NewFactory() component.ExporterFactory {
 		exporterhelper.WithTraces(createTraceExporter))
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		Timeout: defaultHTTPTimeout,
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		Timeout:          defaultHTTPTimeout,
 	}
 }
 
 func createTraceExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
-	config configmodels.Exporter,
+	config config.Exporter,
 ) (component.TracesExporter, error) {
 
 	expCfg := config.(*Config)

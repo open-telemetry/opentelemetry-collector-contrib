@@ -48,6 +48,17 @@ var portEndpoint = observer.Endpoint{
 	},
 }
 
+var hostportEndpoint = observer.Endpoint{
+	ID:     "port-1",
+	Target: "localhost:1234",
+	Details: &observer.HostPort{
+		ProcessName: "splunk",
+		Command:     "./splunk",
+		Port:        1234,
+		Transport:   observer.ProtocolTCP,
+	},
+}
+
 var unsupportedEndpoint = observer.Endpoint{
 	ID:      "endpoint-1",
 	Target:  "localhost:1234",

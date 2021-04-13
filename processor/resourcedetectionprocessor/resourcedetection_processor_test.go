@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -61,62 +62,62 @@ func TestResourceProcessor(t *testing.T) {
 			name:     "Resource is not overridden",
 			override: false,
 			sourceResource: internal.NewResource(map[string]interface{}{
-				"type":           "original-type",
-				"original-label": "original-value",
-				"cloud.zone":     "original-zone",
+				"type":                    "original-type",
+				"original-label":          "original-value",
+				"cloud.availability_zone": "original-zone",
 			}),
 			detectedResource: internal.NewResource(map[string]interface{}{
-				"cloud.zone":       "will-be-ignored",
-				"k8s.cluster.name": "k8s-cluster",
-				"host.name":        "k8s-node",
-				"bool":             true,
-				"int":              int64(100),
-				"double":           0.1,
+				"cloud.availability_zone": "will-be-ignored",
+				"k8s.cluster.name":        "k8s-cluster",
+				"host.name":               "k8s-node",
+				"bool":                    true,
+				"int":                     int64(100),
+				"double":                  0.1,
 			}),
 			expectedResource: internal.NewResource(map[string]interface{}{
-				"type":             "original-type",
-				"original-label":   "original-value",
-				"cloud.zone":       "original-zone",
-				"k8s.cluster.name": "k8s-cluster",
-				"host.name":        "k8s-node",
-				"bool":             true,
-				"int":              int64(100),
-				"double":           0.1,
+				"type":                    "original-type",
+				"original-label":          "original-value",
+				"cloud.availability_zone": "original-zone",
+				"k8s.cluster.name":        "k8s-cluster",
+				"host.name":               "k8s-node",
+				"bool":                    true,
+				"int":                     int64(100),
+				"double":                  0.1,
 			}),
 		},
 		{
 			name:     "Resource is overridden",
 			override: true,
 			sourceResource: internal.NewResource(map[string]interface{}{
-				"type":           "original-type",
-				"original-label": "original-value",
-				"cloud.zone":     "will-be-overridden",
+				"type":                    "original-type",
+				"original-label":          "original-value",
+				"cloud.availability_zone": "will-be-overridden",
 			}),
 			detectedResource: internal.NewResource(map[string]interface{}{
-				"cloud.zone":       "zone-1",
-				"k8s.cluster.name": "k8s-cluster",
-				"host.name":        "k8s-node",
+				"cloud.availability_zone": "zone-1",
+				"k8s.cluster.name":        "k8s-cluster",
+				"host.name":               "k8s-node",
 			}),
 			expectedResource: internal.NewResource(map[string]interface{}{
-				"type":             "original-type",
-				"original-label":   "original-value",
-				"cloud.zone":       "zone-1",
-				"k8s.cluster.name": "k8s-cluster",
-				"host.name":        "k8s-node",
+				"type":                    "original-type",
+				"original-label":          "original-value",
+				"cloud.availability_zone": "zone-1",
+				"k8s.cluster.name":        "k8s-cluster",
+				"host.name":               "k8s-node",
 			}),
 		},
 		{
 			name: "Empty detected resource",
 			sourceResource: internal.NewResource(map[string]interface{}{
-				"type":           "original-type",
-				"original-label": "original-value",
-				"cloud.zone":     "original-zone",
+				"type":                    "original-type",
+				"original-label":          "original-value",
+				"cloud.availability_zone": "original-zone",
 			}),
 			detectedResource: internal.NewResource(map[string]interface{}{}),
 			expectedResource: internal.NewResource(map[string]interface{}{
-				"type":           "original-type",
-				"original-label": "original-value",
-				"cloud.zone":     "original-zone",
+				"type":                    "original-type",
+				"original-label":          "original-value",
+				"cloud.availability_zone": "original-zone",
 			}),
 		},
 		{
@@ -140,9 +141,9 @@ func TestResourceProcessor(t *testing.T) {
 		{
 			name: "Detection error",
 			sourceResource: internal.NewResource(map[string]interface{}{
-				"type":           "original-type",
-				"original-label": "original-value",
-				"cloud.zone":     "original-zone",
+				"type":                    "original-type",
+				"original-label":          "original-value",
+				"cloud.availability_zone": "original-zone",
 			}),
 			detectedError:      errors.New("err1"),
 			expectedStartError: "err1",
@@ -169,7 +170,12 @@ func TestResourceProcessor(t *testing.T) {
 				tt.detectorKeys = []string{"mock"}
 			}
 
-			cfg := &Config{Override: tt.override, Detectors: tt.detectorKeys, Timeout: time.Second}
+			cfg := &Config{
+				ProcessorSettings: config.NewProcessorSettings(typeStr),
+				Override:          tt.override,
+				Detectors:         tt.detectorKeys,
+				Timeout:           time.Second,
+			}
 
 			// Test trace consuner
 			ttn := new(consumertest.TracesSink)

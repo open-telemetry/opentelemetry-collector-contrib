@@ -24,7 +24,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -49,7 +49,7 @@ type traceExporterImp struct {
 }
 
 // Create new traces exporter
-func newTracesExporter(params component.ExporterCreateParams, cfg configmodels.Exporter) (*traceExporterImp, error) {
+func newTracesExporter(params component.ExporterCreateParams, cfg config.Exporter) (*traceExporterImp, error) {
 	exporterFactory := otlpexporter.NewFactory()
 
 	tmplParams := component.ExporterCreateParams{
@@ -73,6 +73,7 @@ func newTracesExporter(params component.ExporterCreateParams, cfg configmodels.E
 
 func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
 	oCfg := cfg.Protocol.OTLP
+	oCfg.ExporterSettings = config.NewExporterSettings("otlp")
 	oCfg.Endpoint = endpoint
 	return oCfg
 }
@@ -100,7 +101,7 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td pdata.Traces) e
 		}
 	}
 
-	return consumererror.CombineErrors(errors)
+	return consumererror.Combine(errors)
 }
 
 func (e *traceExporterImp) consumeTrace(ctx context.Context, td pdata.Traces) error {

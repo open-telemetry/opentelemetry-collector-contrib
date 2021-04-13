@@ -17,12 +17,12 @@
 package metadata
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // Type is the component type name.
-const Type configmodels.Type = "memcachedreceiver"
+const Type config.Type = "memcachedreceiver"
 
 // MetricIntf is an interface to generically interact with generated metric.
 type MetricIntf interface {

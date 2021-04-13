@@ -35,7 +35,7 @@ type Server interface {
 	// the Parser and passed to the next consumer.
 	ListenAndServe(
 		p protocol.Parser,
-		mc consumer.MetricsConsumer,
+		mc consumer.Metrics,
 		r Reporter,
 		transferChan chan<- string,
 	) error

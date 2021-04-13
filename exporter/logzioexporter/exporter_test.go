@@ -31,6 +31,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -96,8 +97,9 @@ func TestNullTokenConfig(tester *testing.T) {
 
 func TestEmptyNode(tester *testing.T) {
 	cfg := Config{
-		TracesToken: "test",
-		Region:      "eu",
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		TracesToken:      "test",
+		Region:           "eu",
 	}
 	testTraceExporter(internaldata.OCToTraces(nil, nil, nil), tester, &cfg)
 }
@@ -141,9 +143,10 @@ func TestPushTraceData(tester *testing.T) {
 		rw.WriteHeader(http.StatusOK)
 	}))
 	cfg := Config{
-		TracesToken:    "test",
-		Region:         "eu",
-		CustomEndpoint: server.URL,
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		TracesToken:      "test",
+		Region:           "eu",
+		CustomEndpoint:   server.URL,
 	}
 	defer server.Close()
 
@@ -172,9 +175,10 @@ func TestPushTraceData(tester *testing.T) {
 
 func TestPushMetricsData(tester *testing.T) {
 	cfg := Config{
-		MetricsToken:   "test",
-		Region:         "eu",
-		CustomEndpoint: "url",
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		MetricsToken:     "test",
+		Region:           "eu",
+		CustomEndpoint:   "url",
 	}
 	md := pdata.NewMetrics()
 

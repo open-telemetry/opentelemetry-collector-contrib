@@ -84,8 +84,8 @@ func (e *traceExporter) pushTraceData(ctx context.Context, traces pdata.Traces) 
 
 				out.Name = span.Name()
 				out.Kind = spanKind(span.Kind())
-				out.StartTime = int64(span.StartTime())
-				out.EndTime = int64(span.EndTime())
+				out.StartTime = int64(span.StartTimestamp())
+				out.EndTime = int64(span.EndTimestamp())
 
 				out.Resource = resource
 				out.Attrs = e.keyValueSlice(span.Attributes())

@@ -240,7 +240,7 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]pdata.LogRecord, 
 	}
 
 	if len(errs) > 0 {
-		return droppedRecords, consumererror.CombineErrors(errs)
+		return droppedRecords, consumererror.Combine(errs)
 	}
 	return droppedRecords, nil
 }
@@ -304,7 +304,7 @@ func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, er
 	}
 
 	if len(errs) > 0 {
-		return droppedRecords, consumererror.CombineErrors(errs)
+		return droppedRecords, consumererror.Combine(errs)
 	}
 	return droppedRecords, nil
 }
@@ -347,7 +347,7 @@ func (s *sender) appendAndSend(
 	}
 
 	if len(errors) > 0 {
-		return ar, consumererror.CombineErrors(errors)
+		return ar, consumererror.Combine(errors)
 	}
 	return ar, nil
 }

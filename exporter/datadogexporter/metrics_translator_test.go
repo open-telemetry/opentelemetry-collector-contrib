@@ -467,9 +467,9 @@ func TestMapIntHistogramMetrics(t *testing.T) {
 	)
 }
 
-func TestMapDoubleHistogramMetrics(t *testing.T) {
+func TestMapHistogramMetrics(t *testing.T) {
 	ts := pdata.TimestampFromTime(time.Now())
-	slice := pdata.NewDoubleHistogramDataPointSlice()
+	slice := pdata.NewHistogramDataPointSlice()
 	slice.Resize(1)
 	point := slice.At(0)
 	point.SetCount(20)
@@ -488,12 +488,12 @@ func TestMapDoubleHistogramMetrics(t *testing.T) {
 	}
 
 	assert.ElementsMatch(t,
-		mapDoubleHistogramMetrics("doubleHist.test", slice, false, []string{}), // No buckets
+		mapHistogramMetrics("doubleHist.test", slice, false, []string{}), // No buckets
 		noBuckets,
 	)
 
 	assert.ElementsMatch(t,
-		mapDoubleHistogramMetrics("doubleHist.test", slice, true, []string{}), // buckets
+		mapHistogramMetrics("doubleHist.test", slice, true, []string{}), // buckets
 		append(noBuckets, buckets...),
 	)
 
@@ -509,12 +509,12 @@ func TestMapDoubleHistogramMetrics(t *testing.T) {
 	}
 
 	assert.ElementsMatch(t,
-		mapDoubleHistogramMetrics("doubleHist.test", slice, false, []string{"attribute_tag:attribute_value"}), // No buckets
+		mapHistogramMetrics("doubleHist.test", slice, false, []string{"attribute_tag:attribute_value"}), // No buckets
 		noBucketsAttributeTags,
 	)
 
 	assert.ElementsMatch(t,
-		mapDoubleHistogramMetrics("doubleHist.test", slice, true, []string{"attribute_tag:attribute_value"}), // buckets
+		mapHistogramMetrics("doubleHist.test", slice, true, []string{"attribute_tag:attribute_value"}), // buckets
 		append(noBucketsAttributeTags, bucketsAttributeTags...),
 	)
 }
@@ -633,11 +633,11 @@ func createTestMetrics() pdata.Metrics {
 	dpIntHist.SetBucketCounts([]uint64{2, 18})
 	dpIntHist.SetTimestamp(seconds(0))
 
-	// DoubleHistogram
+	// Histogram
 	met = metricsArray.At(6)
 	met.SetName("double.histogram")
-	met.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-	dpsDoubleHist := met.DoubleHistogram().DataPoints()
+	met.SetDataType(pdata.MetricDataTypeHistogram)
+	dpsDoubleHist := met.Histogram().DataPoints()
 	dpsDoubleHist.Resize(1)
 	dpDoubleHist := dpsDoubleHist.At(0)
 	dpDoubleHist.SetCount(20)

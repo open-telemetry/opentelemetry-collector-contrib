@@ -21,17 +21,20 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/elasticbeanstalk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/gce"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/gke"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
@@ -54,13 +57,16 @@ type factory struct {
 // NewFactory creates a new factory for ResourceDetection processor.
 func NewFactory() component.ProcessorFactory {
 	resourceProviderFactory := internal.NewProviderFactory(map[internal.DetectorType]internal.DetectorFactory{
-		env.TypeStr:              env.NewDetector,
-		system.TypeStr:           system.NewDetector,
-		gce.TypeStr:              gce.NewDetector,
+		aks.TypeStr:              aks.NewDetector,
+		azure.TypeStr:            azure.NewDetector,
 		ec2.TypeStr:              ec2.NewDetector,
 		ecs.TypeStr:              ecs.NewDetector,
+		eks.TypeStr:              eks.NewDetector,
 		elasticbeanstalk.TypeStr: elasticbeanstalk.NewDetector,
-		azure.TypeStr:            azure.NewDetector,
+		env.TypeStr:              env.NewDetector,
+		gce.TypeStr:              gce.NewDetector,
+		gke.TypeStr:              gke.NewDetector,
+		system.TypeStr:           system.NewDetector,
 	})
 
 	f := &factory{
@@ -77,27 +83,24 @@ func NewFactory() component.ProcessorFactory {
 }
 
 // Type gets the type of the Option config created by this factory.
-func (*factory) Type() configmodels.Type {
+func (*factory) Type() config.Type {
 	return typeStr
 }
 
-func createDefaultConfig() configmodels.Processor {
+func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
-		Detectors: []string{env.TypeStr},
-		Timeout:   5 * time.Second,
-		Override:  true,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		Detectors:         []string{env.TypeStr},
+		Timeout:           5 * time.Second,
+		Override:          true,
 	}
 }
 
 func (f *factory) createTraceProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.TracesConsumer,
+	cfg config.Processor,
+	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	rdp, err := f.getResourceDetectionProcessor(params, cfg)
 	if err != nil {
@@ -115,8 +118,8 @@ func (f *factory) createTraceProcessor(
 func (f *factory) createMetricsProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.MetricsConsumer,
+	cfg config.Processor,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	rdp, err := f.getResourceDetectionProcessor(params, cfg)
 	if err != nil {
@@ -134,8 +137,8 @@ func (f *factory) createMetricsProcessor(
 func (f *factory) createLogsProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.LogsConsumer,
+	cfg config.Processor,
+	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	rdp, err := f.getResourceDetectionProcessor(params, cfg)
 	if err != nil {
@@ -152,7 +155,7 @@ func (f *factory) createLogsProcessor(
 
 func (f *factory) getResourceDetectionProcessor(
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
+	cfg config.Processor,
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
 

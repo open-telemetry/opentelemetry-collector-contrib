@@ -22,14 +22,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
 func TestFactory(t *testing.T) {
 	f := NewFactory()
-	require.Equal(t, configmodels.Type("zookeeper"), f.Type())
+	require.Equal(t, config.Type("zookeeper"), f.Type())
 
 	cfg := f.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
@@ -41,7 +41,7 @@ func TestFactory(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		config  configmodels.Receiver
+		config  config.Receiver
 		wantErr bool
 	}{
 		{

@@ -2,6 +2,87 @@
 
 ## Unreleased
 
+## v0.24.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.24.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.24.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+
+- `fluentbit` extension and `fluentforward` receiver moved from opentelemetry-collector
+
+## 💡 Enhancements 💡
+
+- Check `NO_WINDOWS_SERVICE` environment variable to force interactive mode on Windows (#2819)
+- `resourcedetection `processor:
+  - Add task revision to ECS resource detector (#2814)
+  - Add GKE detector (#2821)
+  - Add Amazon EKS detector (#2820)
+  - Add `VMScaleSetName` field to Azure detector (#2890)
+- `awsemf` exporter:
+  - Add `parse_json_encoded_attr_values` config option to decode json-encoded strings in attribute values (#2827)
+  - Add `output_destination` config option to support AWS Lambda (#2720)
+- `googlecloud` exporter: Handle `cloud.availability_zone` semantic convention (#2893)
+- `newrelic` exporter: Add `instrumentation.provider` to default attributes (#2900)
+- Set unprivileged user to container image (#2925)
+- `splunkhec` exporter: Add `max_content_length_logs` config option to send log data in payloads less than max content length (#2524)
+- `k8scluster` and `kubeletstats` receiver: Replace package constants in favor of constants from conventions in core (#2996)
+
+## 🧰 Bug fixes 🧰
+
+- `spanmetrics` processor:
+  - Rename `calls` metric to `calls_total` and set `IsMonotonic` to true (#2837)
+  - Validate duplicate dimensions at start (#2844)
+- `awsemf` exporter: Calculate delta instead of rate for cumulative metrics (#2512)
+- `signalfx` exporter:
+  - Remove more unnecessary translation rules (#2889)
+  - Implement summary type (#2998)
+- `awsxray` exporter: Remove translation to HTTP status from OC status (#2978)
+- `awsprometheusremotewrite` exporter: Close HTTP body after RoundTrip (#2955)
+- `splunkhec` exporter: Add ResourceAttributes to Splunk Event (#2843)
+
+## v0.23.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.23.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.23.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+
+- `groupbyattrs` processor to group the records by provided attributes
+- `dotnetdiagnostics` receiver to read metrics from .NET processes
+
+## 🛑 Breaking changes 🛑
+
+- `stackdriver` exporter marked as deprecated and renamed to `googlecloud`
+- Change the rule expression in receiver creator for matching endpoints types from `type.port`, `type.hostport` and `type.pod` to `type == "port"`, `type == "hostport"` and `type == "pod"` (#2661)
+
+## 💡 Enhancements 💡
+
+- `loadbalancing` exporter: Add support for logs (#2470)
+- `sumologic` exporter: Add carbon formatter (#2562)
+- `awsecscontainermetrics` receiver: Add new metric for stopped container (#2383)
+- `awsemf` exporter:
+  - Send EMF logs in batches (#2572)
+  - Add prometheus type field for CloudWatch compatibility (#2689)
+- `signalfx` exporter:
+  - Add resource attributes to events (#2631)
+  - Add translation rule to drop dimensions (#2660)
+  - Remove temporary host translation workaround (#2652)
+  - Remove unnecessary default translation rules (#2672)
+  - Update `exclude_metrics` option so that the default exclude rules can be overridden by setting the option to `[]` (#2737)
+- `awsprometheusremotewrite` exporter: Add support for given IAM roles (#2675)
+- `statsd` receiver: Change to use OpenTelemetry type instead of OpenCensus type (#2733)
+- `resourcedetection` processor: Add missing entries for `cloud.infrastructure_service` (#2777)
+
+## 🧰 Bug fixes 🧰
+
+- `dynatrace` exporter: Serialize each datapoint into separate line (#2618)
+- `splunkhec` exporter: Retain all otel attributes (#2712)
+- `newrelic` exporter: Fix default metric URL (#2739)
+- `googlecloud` exporter: Add host.name label if hostname is present in node (#2711)
+
 ## v0.22.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.22.0 (Beta) 🎉

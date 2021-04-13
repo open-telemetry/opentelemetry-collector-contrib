@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -40,12 +40,14 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Exporters), 2)
 
+	defaultCfg := factory.CreateDefaultConfig()
+	defaultCfg.(*Config).Endpoints = []string{"https://elastic.example.com:9200"}
 	r0 := cfg.Exporters["elasticsearch"]
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
+	assert.Equal(t, r0, defaultCfg)
 
 	r1 := cfg.Exporters["elasticsearch/customname"].(*Config)
 	assert.Equal(t, r1, &Config{
-		ExporterSettings: configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "elasticsearch/customname"},
+		ExporterSettings: &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "elasticsearch/customname"},
 		Endpoints:        []string{"https://elastic.example.com:9200"},
 		CloudID:          "TRNMxjXlNJEt",
 		Index:            "myindex",

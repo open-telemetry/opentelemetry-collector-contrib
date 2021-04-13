@@ -120,8 +120,8 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) ([]string, int) {
 					l = serialization.SerializeDoubleDataPoints(name, metric.DoubleSum().DataPoints(), e.cfg.Tags)
 				case pdata.MetricDataTypeIntHistogram:
 					l = serialization.SerializeIntHistogramMetrics(name, metric.IntHistogram().DataPoints(), e.cfg.Tags)
-				case pdata.MetricDataTypeDoubleHistogram:
-					l = serialization.SerializeDoubleHistogramMetrics(name, metric.DoubleHistogram().DataPoints(), e.cfg.Tags)
+				case pdata.MetricDataTypeHistogram:
+					l = serialization.SerializeHistogramMetrics(name, metric.Histogram().DataPoints(), e.cfg.Tags)
 				}
 				lines = append(lines, l...)
 				e.logger.Debug(fmt.Sprintf("Exporting type %s, Name: %s, len: %d ", metric.DataType().String(), name, len(l)))

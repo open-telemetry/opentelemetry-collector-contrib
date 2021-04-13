@@ -24,28 +24,42 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-func logDataToSplunk(logger *zap.Logger, ld pdata.Logs, config *Config) []*splunk.Event {
-	var splunkEvents []*splunk.Event
-	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
-		ills := rls.At(i).InstrumentationLibraryLogs()
-		for j := 0; j < ills.Len(); j++ {
-			logs := ills.At(j).Logs()
-			for k := 0; k < logs.Len(); k++ {
-				splunkEvents = append(splunkEvents, mapLogRecordToSplunkEvent(logs.At(k), config, logger))
-			}
-		}
-	}
-
-	return splunkEvents
+// Composite index of a log record in pdata.Logs.
+type logIndex struct {
+	// Index in orig list (i.e. root parent index).
+	resource int
+	// Index in InstrumentationLibraryLogs list (i.e. immediate parent index).
+	library int
+	// Index in Logs list (i.e. the log record index).
+	record int
 }
 
-func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
+func (i *logIndex) zero() bool {
+	return i.resource == 0 && i.library == 0 && i.record == 0
+}
+
+func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
 	host := unknownHostName
 	source := config.Source
 	sourcetype := config.SourceType
 	index := config.Index
 	fields := map[string]interface{}{}
+	res.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		switch k {
+		case conventions.AttributeHostName:
+			host = v.StringVal()
+			fields[k] = v.StringVal()
+		case conventions.AttributeServiceName:
+			source = v.StringVal()
+			fields[k] = v.StringVal()
+		case splunk.SourcetypeLabel:
+			sourcetype = v.StringVal()
+		case splunk.IndexLabel:
+			index = v.StringVal()
+		default:
+			fields[k] = convertAttributeValue(v, logger)
+		}
+	})
 	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
 		switch k {
 		case conventions.AttributeHostName:

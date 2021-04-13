@@ -164,8 +164,8 @@ func TestAllFailed(t *testing.T) {
 	err := test.exp.pushLogsData(context.Background(), logs)
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 
-	partial, ok := err.(consumererror.PartialError)
-	require.True(t, ok)
+	var partial consumererror.Logs
+	require.True(t, consumererror.AsLogs(err, &partial))
 	assert.Equal(t, logs, partial.GetLogs())
 }
 
@@ -197,8 +197,8 @@ func TestPartiallyFailed(t *testing.T) {
 	err = test.exp.pushLogsData(context.Background(), logs)
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 
-	partial, ok := err.(consumererror.PartialError)
-	require.True(t, ok)
+	var partial consumererror.Logs
+	require.True(t, consumererror.AsLogs(err, &partial))
 	assert.Equal(t, expected, partial.GetLogs())
 }
 
@@ -333,8 +333,8 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 	err := test.exp.pushMetricsData(context.Background(), metrics)
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 
-	partial, ok := err.(consumererror.PartialError)
-	require.True(t, ok)
+	var partial consumererror.Metrics
+	require.True(t, consumererror.AsMetrics(err, &partial))
 	assert.Equal(t, metrics, partial.GetMetrics())
 }
 
@@ -370,8 +370,8 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 	err := test.exp.pushMetricsData(context.Background(), metrics)
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 
-	partial, ok := err.(consumererror.PartialError)
-	require.True(t, ok)
+	var partial consumererror.Metrics
+	require.True(t, consumererror.AsMetrics(err, &partial))
 	assert.Equal(t, expected, partial.GetMetrics())
 }
 
@@ -436,8 +436,8 @@ gauge_metric_name{foo="bar",key2="value2",remote_name="156955",url="http://anoth
 	err = test.exp.pushMetricsData(context.Background(), metrics)
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 
-	partial, ok := err.(consumererror.PartialError)
-	require.True(t, ok)
+	var partial consumererror.Metrics
+	require.True(t, consumererror.AsMetrics(err, &partial))
 	assert.Equal(t, expected, partial.GetMetrics())
 }
 

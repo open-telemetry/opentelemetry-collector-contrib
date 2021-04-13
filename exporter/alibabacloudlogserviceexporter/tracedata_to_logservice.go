@@ -72,7 +72,7 @@ func resourceSpansToLogServiceData(resourceSpans pdata.ResourceSpans) []*sls.Log
 }
 
 func spanToLogServiceData(span pdata.Span, resourceContents, instrumentationLibraryContents []*sls.LogContent) *sls.Log {
-	timeNano := int64(span.EndTime())
+	timeNano := int64(span.EndTimestamp())
 	if timeNano == 0 {
 		timeNano = time.Now().UnixNano()
 	}
@@ -124,15 +124,15 @@ func spanToLogServiceData(span pdata.Span, resourceContents, instrumentationLibr
 	})
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(startTimeField),
-		Value: proto.String(strconv.FormatUint(uint64(span.StartTime()/1000), 10)),
+		Value: proto.String(strconv.FormatUint(uint64(span.StartTimestamp()/1000), 10)),
 	})
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(endTimeField),
-		Value: proto.String(strconv.FormatUint(uint64(span.EndTime()/1000), 10)),
+		Value: proto.String(strconv.FormatUint(uint64(span.EndTimestamp()/1000), 10)),
 	})
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(durationField),
-		Value: proto.String(strconv.FormatUint(uint64((span.EndTime()-span.StartTime())/1000), 10)),
+		Value: proto.String(strconv.FormatUint(uint64((span.EndTimestamp()-span.StartTimestamp())/1000), 10)),
 	})
 	attributeMap := tracetranslator.AttributeMapToMap(span.Attributes())
 	attributeJSONBytes, _ := json.Marshal(attributeMap)

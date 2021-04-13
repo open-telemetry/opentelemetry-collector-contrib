@@ -38,7 +38,7 @@ func addAWSToResource(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
 	// based on https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html#api-segmentdocuments-aws
 	// it's possible to have all ec2, ecs and beanstalk fields at the same time.
 	if ec2 := aws.EC2; ec2 != nil {
-		addString(ec2.AvailabilityZone, conventions.AttributeCloudZone, attrs)
+		addString(ec2.AvailabilityZone, conventions.AttributeCloudAvailabilityZone, attrs)
 		addString(ec2.InstanceID, conventions.AttributeHostID, attrs)
 		addString(ec2.InstanceSize, conventions.AttributeHostType, attrs)
 		addString(ec2.AmiID, conventions.AttributeHostImageID, attrs)
@@ -46,7 +46,7 @@ func addAWSToResource(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
 
 	if ecs := aws.ECS; ecs != nil {
 		addString(ecs.ContainerName, conventions.AttributeContainerName, attrs)
-		addString(ecs.AvailabilityZone, conventions.AttributeCloudZone, attrs)
+		addString(ecs.AvailabilityZone, conventions.AttributeCloudAvailabilityZone, attrs)
 		addString(ecs.ContainerID, conventions.AttributeContainerID, attrs)
 	}
 

@@ -83,7 +83,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	histDP.SetBucketCounts(histCounts)
 	labels.CopyTo(histDP.LabelsMap())
 
-	doubleHistDP := pdata.NewDoubleHistogramDataPoint()
+	doubleHistDP := pdata.NewHistogramDataPoint()
 	doubleHistDP.SetTimestamp(ts)
 	doubleHistDP.SetCount(16)
 	doubleHistDP.SetSum(100.0)
@@ -96,6 +96,27 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	histDPNoBuckets.SetSum(10)
 	histDPNoBuckets.SetTimestamp(ts)
 	labels.CopyTo(histDPNoBuckets.LabelsMap())
+
+	summaryDP := pdata.NewSummaryDataPoint()
+	summaryDP.SetTimestamp(ts)
+	const summarySumVal = 123.4
+	summaryDP.SetSum(summarySumVal)
+	const summaryCountVal = 111
+	summaryDP.SetCount(summaryCountVal)
+	qvs := summaryDP.QuantileValues()
+	qvs.Resize(4)
+	for i := 0; i < qvs.Len(); i++ {
+		qv := qvs.At(i)
+		qv.SetQuantile(0.25 * float64(i+1))
+		qv.SetValue(float64(i))
+	}
+	labels.CopyTo(summaryDP.LabelsMap())
+
+	emptySummaryDP := pdata.NewSummaryDataPoint()
+	emptySummaryDP.SetTimestamp(ts)
+	emptySummaryDP.SetSum(summarySumVal)
+	emptySummaryDP.SetCount(summaryCountVal)
+	labels.CopyTo(emptySummaryDP.LabelsMap())
 
 	tests := []struct {
 		name              string
@@ -457,8 +478,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				{
 					m := ilm.Metrics().At(1)
 					m.SetName("double_histo")
-					m.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-					m.DoubleHistogram().DataPoints().Append(doubleHistDP)
+					m.SetDataType(pdata.MetricDataTypeHistogram)
+					m.Histogram().DataPoints().Append(doubleHistDP)
 				}
 
 				{
@@ -471,18 +492,18 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				{
 					m := ilm.Metrics().At(3)
 					m.SetName("double_delta_histo")
-					m.SetDataType(pdata.MetricDataTypeDoubleHistogram)
-					m.DoubleHistogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-					m.DoubleHistogram().DataPoints().Append(doubleHistDP)
+					m.SetDataType(pdata.MetricDataTypeHistogram)
+					m.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+					m.Histogram().DataPoints().Append(doubleHistDP)
 				}
 
 				return out
 			},
 			wantSfxDataPoints: mergeDPs(
 				expectedFromIntHistogram("int_histo", tsMSecs, labelMap, histDP, false),
-				expectedFromDoubleHistogram("double_histo", tsMSecs, labelMap, doubleHistDP, false),
+				expectedFromHistogram("double_histo", tsMSecs, labelMap, doubleHistDP, false),
 				expectedFromIntHistogram("int_delta_histo", tsMSecs, labelMap, histDP, true),
-				expectedFromDoubleHistogram("double_delta_histo", tsMSecs, labelMap, doubleHistDP, true),
+				expectedFromHistogram("double_delta_histo", tsMSecs, labelMap, doubleHistDP, true),
 			),
 		},
 		{
@@ -503,6 +524,44 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				return out
 			},
 			wantSfxDataPoints: expectedFromIntHistogram("no_bucket_histo", tsMSecs, labelMap, histDPNoBuckets, false),
+		},
+		{
+			name: "summaries",
+			metricsDataFn: func() pdata.ResourceMetrics {
+				out := pdata.NewResourceMetrics()
+				out.InstrumentationLibraryMetrics().Resize(1)
+				ilm := out.InstrumentationLibraryMetrics().At(0)
+				ilm.Metrics().Resize(1)
+
+				{
+					m := ilm.Metrics().At(0)
+					m.SetName("summary")
+					m.SetDataType(pdata.MetricDataTypeSummary)
+					m.Summary().DataPoints().Append(summaryDP)
+				}
+
+				return out
+			},
+			wantSfxDataPoints: expectedFromSummary("summary", tsMSecs, labelMap, summaryCountVal, summarySumVal),
+		},
+		{
+			name: "empty_summary",
+			metricsDataFn: func() pdata.ResourceMetrics {
+				out := pdata.NewResourceMetrics()
+				out.InstrumentationLibraryMetrics().Resize(1)
+				ilm := out.InstrumentationLibraryMetrics().At(0)
+				ilm.Metrics().Resize(1)
+
+				{
+					m := ilm.Metrics().At(0)
+					m.SetName("empty_summary")
+					m.SetDataType(pdata.MetricDataTypeSummary)
+					m.Summary().DataPoints().Append(emptySummaryDP)
+				}
+
+				return out
+			},
+			wantSfxDataPoints: expectedFromEmptySummary("empty_summary", tsMSecs, labelMap, summaryCountVal, summarySumVal),
 		},
 		{
 			name: "with_exclude_metrics_filter",
@@ -642,7 +701,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c, err := NewMetricsConverter(logger, nil, tt.excludeMetrics, tt.includeMetrics, "")
 			require.NoError(t, err)
-			gotSfxDataPoints := c.MetricDataToSignalFxV2(tt.metricsDataFn())
+			md := tt.metricsDataFn()
+			gotSfxDataPoints := c.MetricDataToSignalFxV2(md)
 			// Sort SFx dimensions since they are built from maps and the order
 			// of those is not deterministic.
 			sortDimensions(tt.wantSfxDataPoints)
@@ -835,11 +895,11 @@ func expectedFromIntHistogram(
 	return dps
 }
 
-func expectedFromDoubleHistogram(
+func expectedFromHistogram(
 	metricName string,
 	ts int64,
 	dims map[string]string,
-	histDP pdata.DoubleHistogramDataPoint,
+	histDP pdata.HistogramDataPoint,
 	isDelta bool,
 ) []*sfxpb.DataPoint {
 	buckets := histDP.BucketCounts()
@@ -876,6 +936,33 @@ func expectedFromDoubleHistogram(
 			dimsCopy,
 			int64(buckets[len(buckets)-1])))
 	return dps
+}
+
+func expectedFromSummary(name string, ts int64, labelMap map[string]string, count int64, sumVal float64) []*sfxpb.DataPoint {
+	countName := name + "_count"
+	countPt := int64SFxDataPoint(countName, ts, &sfxMetricTypeCumulativeCounter, labelMap, count)
+	sumPt := doubleSFxDataPoint(name, ts, &sfxMetricTypeCumulativeCounter, labelMap, sumVal)
+	out := []*sfxpb.DataPoint{countPt, sumPt}
+	quantileDimVals := []string{"0.25", "0.5", "0.75", "1"}
+	for i := 0; i < 4; i++ {
+		qDims := map[string]string{"quantile": quantileDimVals[i]}
+		qPt := doubleSFxDataPoint(
+			name+"_quantile",
+			ts,
+			&sfxMetricTypeGauge,
+			util.MergeStringMaps(labelMap, qDims),
+			float64(i),
+		)
+		out = append(out, qPt)
+	}
+	return out
+}
+
+func expectedFromEmptySummary(name string, ts int64, labelMap map[string]string, count int64, sumVal float64) []*sfxpb.DataPoint {
+	countName := name + "_count"
+	countPt := int64SFxDataPoint(countName, ts, &sfxMetricTypeCumulativeCounter, labelMap, count)
+	sumPt := doubleSFxDataPoint(name, ts, &sfxMetricTypeCumulativeCounter, labelMap, sumVal)
+	return []*sfxpb.DataPoint{countPt, sumPt}
 }
 
 func mergeDPs(dps ...[]*sfxpb.DataPoint) []*sfxpb.DataPoint {
@@ -969,4 +1056,79 @@ func TestMetricsConverter_ConvertDimension(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConvertSummary(t *testing.T) {
+	extraDims := []*sfxpb.Dimension{{
+		Key:   "dim1",
+		Value: "val1",
+	}}
+	summarys := pdata.NewSummaryDataPointSlice()
+	summarys.Resize(1)
+	summary := summarys.At(0)
+	const count = 42
+	summary.SetCount(count)
+	const sum = 10.0
+	summary.SetSum(sum)
+	const startTime = 55 * 1e6
+	summary.SetStartTimestamp(pdata.Timestamp(startTime))
+	timestamp := 111 * 1e6
+	summary.SetTimestamp(pdata.Timestamp(timestamp))
+	qvs := summary.QuantileValues()
+	qvs.Resize(4)
+	for i := 0; i < qvs.Len(); i++ {
+		qv := qvs.At(i)
+		qv.SetQuantile(0.25 * float64(i+1))
+		qv.SetValue(float64(i))
+	}
+	dps := convertSummaryDataPoints(summarys, "metric_name", extraDims)
+
+	pt := dps[0]
+	assert.Equal(t, sfxpb.MetricType_CUMULATIVE_COUNTER, *pt.MetricType)
+	assert.Equal(t, int64(111), pt.Timestamp)
+	assert.Equal(t, "metric_name_count", pt.Metric)
+	assert.Equal(t, int64(count), pt.Value.GetIntValue())
+	assert.Equal(t, 1, len(pt.Dimensions))
+	assertHasExtraDim(t, pt)
+
+	pt = dps[1]
+	assert.Equal(t, sfxpb.MetricType_CUMULATIVE_COUNTER, *pt.MetricType)
+	assert.Equal(t, int64(111), pt.Timestamp)
+	assert.Equal(t, "metric_name", pt.Metric)
+	assert.Equal(t, sum, pt.Value.GetDoubleValue())
+	assert.Equal(t, 1, len(pt.Dimensions))
+	assertHasExtraDim(t, pt)
+
+	pt = dps[2]
+	assert.Equal(t, sfxpb.MetricType_GAUGE, *pt.MetricType)
+	assert.Equal(t, int64(111), pt.Timestamp)
+	assert.Equal(t, "metric_name_quantile", pt.Metric)
+	assert.Equal(t, 0.0, pt.Value.GetDoubleValue())
+	assert.Equal(t, 2, len(pt.Dimensions))
+	dim := pt.Dimensions[1]
+	assert.Equal(t, "quantile", dim.Key)
+
+	for i := 0; i < 4; i++ {
+		pt = dps[i+2]
+		assert.Equal(t, sfxpb.MetricType_GAUGE, *pt.MetricType)
+		assert.Equal(t, int64(111), pt.Timestamp)
+		assert.Equal(t, "metric_name_quantile", pt.Metric)
+		assert.EqualValues(t, i, pt.Value.GetDoubleValue())
+		assert.Equal(t, 2, len(pt.Dimensions))
+		dim = pt.Dimensions[1]
+		assert.Equal(t, "quantile", dim.Key)
+	}
+
+	assert.Equal(t, "0.25", dps[2].Dimensions[1].Value)
+	assert.Equal(t, "0.5", dps[3].Dimensions[1].Value)
+	assert.Equal(t, "0.75", dps[4].Dimensions[1].Value)
+	assert.Equal(t, "1", dps[5].Dimensions[1].Value)
+
+	println()
+}
+
+func assertHasExtraDim(t *testing.T, pt *sfxpb.DataPoint) {
+	extraDim := pt.Dimensions[0]
+	assert.Equal(t, "dim1", extraDim.Key)
+	assert.Equal(t, "val1", extraDim.Value)
 }

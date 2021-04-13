@@ -22,6 +22,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -29,9 +30,10 @@ import (
 
 func TestNewMetricsExporter(t *testing.T) {
 	got, err := newMetricsExporter(zap.NewNop(), &Config{
-		Endpoint: "us-west-1.log.aliyuncs.com",
-		Project:  "demo-project",
-		Logstore: "demo-logstore",
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		Endpoint:         "us-west-1.log.aliyuncs.com",
+		Project:          "demo-project",
+		Logstore:         "demo-logstore",
 	})
 	assert.NoError(t, err)
 	require.NotNil(t, got)

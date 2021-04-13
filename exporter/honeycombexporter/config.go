@@ -14,10 +14,13 @@
 
 package honeycombexporter
 
-import "go.opentelemetry.io/collector/config/configmodels"
+import (
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+)
 
 type Config struct {
-	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	*config.ExporterSettings `mapstructure:"-"`
 	// APIKey is the authentication token associated with the Honeycomb account.
 	APIKey string `mapstructure:"api_key"`
 	// Dataset is the Honeycomb dataset to send events to.
@@ -31,4 +34,8 @@ type Config struct {
 	SampleRateAttribute string `mapstructure:"sample_rate_attribute"`
 	// Debug enables more verbose logging from the Honeycomb SDK. It defaults to false.
 	Debug bool `mapstructure:"debug"`
+	// RetrySettings helps configure retry on traces which failed to send
+	exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
+	// QueueSettings enable queued processing
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
 }

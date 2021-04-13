@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,19 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gce
+package observ
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
-func TestGCEMetadata(t *testing.T) {
-	metadata := &gceMetadataImpl{}
-	metadata.OnGCE()
-	metadata.ProjectID()
-	metadata.Zone()
-	metadata.Hostname()
-	metadata.InstanceID()
-	metadata.InstanceName()
-	metadata.Get("")
+func TestViews(t *testing.T) {
+	require.Equal(t, len(MetricViews()), 5)
 }

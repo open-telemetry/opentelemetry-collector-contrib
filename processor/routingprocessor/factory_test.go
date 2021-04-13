@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
@@ -34,12 +34,9 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	factory := NewFactory()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	cfg := &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			NameVal: "routing",
-			TypeVal: "routing",
-		},
-		DefaultExporters: []string{"otlp"},
-		FromAttribute:    "X-Tenant",
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		DefaultExporters:  []string{"otlp"},
+		FromAttribute:     "X-Tenant",
 		Table: []RoutingTableItem{
 			{
 				Value:     "acme",
@@ -49,7 +46,7 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
+	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
 
 	// verify
 	assert.Nil(t, err)
@@ -63,7 +60,7 @@ func TestFailOnEmptyConfiguration(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	// test
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
+	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
 
 	// verify
 	assert.Error(t, err)
@@ -75,12 +72,9 @@ func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 	factory := NewFactory()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	cfg := &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			NameVal: "routing",
-			TypeVal: "routing",
-		},
-		DefaultExporters: []string{"otlp"},
-		FromAttribute:    "X-Tenant",
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		DefaultExporters:  []string{"otlp"},
+		FromAttribute:     "X-Tenant",
 		Table: []RoutingTableItem{
 			{
 				Value: "acme",
@@ -89,7 +83,7 @@ func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
+	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
 
 	// verify
 	assert.True(t, errors.Is(err, errNoExporters))
@@ -101,17 +95,14 @@ func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
 	factory := NewFactory()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	cfg := &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			NameVal: "routing",
-			TypeVal: "routing",
-		},
-		DefaultExporters: []string{"otlp"},
-		FromAttribute:    "X-Tenant",
-		Table:            []RoutingTableItem{},
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		DefaultExporters:  []string{"otlp"},
+		FromAttribute:     "X-Tenant",
+		Table:             []RoutingTableItem{},
 	}
 
 	// test
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
+	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
 
 	// verify
 	assert.True(t, errors.Is(err, errNoTableItems))
@@ -123,11 +114,8 @@ func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 	factory := NewFactory()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	cfg := &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			NameVal: "routing",
-			TypeVal: "routing",
-		},
-		DefaultExporters: []string{"otlp"},
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		DefaultExporters:  []string{"otlp"},
 		Table: []RoutingTableItem{
 			{
 				Value:     "acme",
@@ -137,7 +125,7 @@ func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
+	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
 
 	// verify
 	assert.True(t, errors.Is(err, errNoMissingFromAttribute))
@@ -149,12 +137,9 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	factory := NewFactory()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	cfg := &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			NameVal: "routing",
-			TypeVal: "routing",
-		},
-		DefaultExporters: []string{"otlp"},
-		FromAttribute:    "X-Tenant",
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		DefaultExporters:  []string{"otlp"},
+		FromAttribute:     "X-Tenant",
 		Table: []RoutingTableItem{
 			{
 				Value:     "acme",
@@ -162,7 +147,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 			},
 		},
 	}
-	next, err := processorhelper.NewTraceProcessor(cfg, consumertest.NewTracesNop(), &mockProcessor{})
+	next, err := processorhelper.NewTraceProcessor(cfg, consumertest.NewNop(), &mockProcessor{})
 	require.NoError(t, err)
 
 	// test
@@ -178,12 +163,9 @@ func TestShutdown(t *testing.T) {
 	factory := NewFactory()
 	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
 	cfg := &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			NameVal: "routing",
-			TypeVal: "routing",
-		},
-		DefaultExporters: []string{"otlp"},
-		FromAttribute:    "X-Tenant",
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		DefaultExporters:  []string{"otlp"},
+		FromAttribute:     "X-Tenant",
 		Table: []RoutingTableItem{
 			{
 				Value:     "acme",
@@ -192,7 +174,7 @@ func TestShutdown(t *testing.T) {
 		},
 	}
 
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
+	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
 	require.Nil(t, err)
 	require.NotNil(t, exp)
 

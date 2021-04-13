@@ -219,7 +219,7 @@ func mapIntHistogramMetrics(name string, slice pdata.IntHistogramDataPointSlice,
 // mapIntHistogramMetrics maps double histogram metrics slices to Datadog metrics
 //
 // see mapIntHistogramMetrics docs for further details.
-func mapDoubleHistogramMetrics(name string, slice pdata.DoubleHistogramDataPointSlice, buckets bool, attrTags []string) []datadog.Metric {
+func mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, buckets bool, attrTags []string) []datadog.Metric {
 	// Allocate assuming none are nil and no buckets
 	ms := make([]datadog.Metric, 0, 2*slice.Len())
 	for i := 0; i < slice.Len(); i++ {
@@ -300,8 +300,8 @@ func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, md pdata.Metri
 					}
 				case pdata.MetricDataTypeIntHistogram:
 					datapoints = mapIntHistogramMetrics(md.Name(), md.IntHistogram().DataPoints(), cfg.Buckets, attributeTags)
-				case pdata.MetricDataTypeDoubleHistogram:
-					datapoints = mapDoubleHistogramMetrics(md.Name(), md.DoubleHistogram().DataPoints(), cfg.Buckets, attributeTags)
+				case pdata.MetricDataTypeHistogram:
+					datapoints = mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), cfg.Buckets, attributeTags)
 				}
 
 				// Try to get host from resource

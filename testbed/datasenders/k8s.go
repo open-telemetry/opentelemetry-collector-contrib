@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -29,7 +30,6 @@ import (
 
 // FileLogK8sWriter represents abstract container k8s writer
 type FileLogK8sWriter struct {
-	testbed.DataSenderBase
 	file   *os.File
 	config string
 }
@@ -149,8 +149,8 @@ func (f *FileLogK8sWriter) ProtocolName() string {
 	return "filelog"
 }
 
-func (f *FileLogK8sWriter) GetEndpoint() string {
-	return ""
+func (f *FileLogK8sWriter) GetEndpoint() net.Addr {
+	return nil
 }
 
 // NewKubernetesContainerWriter returns FileLogK8sWriter with configuration
@@ -168,11 +168,11 @@ func NewKubernetesContainerWriter() *FileLogK8sWriter {
         id: get-format
         routes:
           - output: parser-docker
-            expr: '$$record matches "^\\{"'
+            expr: '$$body matches "^\\{"'
           - output: parser-crio
-            expr: '$$record matches "^[^ Z]+ "'
+            expr: '$$body matches "^[^ Z]+ "'
           - output: parser-containerd
-            expr: '$$record matches "^[^ Z]+Z"'
+            expr: '$$body matches "^[^ Z]+Z"'
       # Parse CRI-O format
       - type: regex_parser
         id: parser-crio
@@ -211,17 +211,13 @@ func NewKubernetesContainerWriter() *FileLogK8sWriter {
           k8s.pod.name: 'EXPR($.pod_name)'
           run_id: 'EXPR($.run_id)'
           k8s.pod.uid: 'EXPR($.uid)'
-      # Clean up log record
+      # Clean up log body
       - type: restructure
-        id: clean-up-log-record
+        id: clean-up-log-body
         ops:
-          - remove: logtag
-          - remove: stream
-          - remove: container_name
-          - remove: namespace
-          - remove: pod_name
-          - remove: run_id
-          - remove: uid
+          - move:
+              from: log
+              to: $
   `)
 }
 
@@ -257,17 +253,13 @@ func NewKubernetesCRIContainerdWriter() *FileLogK8sWriter {
           k8s.pod.name: 'EXPR($.pod_name)'
           run_id: 'EXPR($.run_id)'
           k8s.pod.uid: 'EXPR($.uid)'
-      # Clean up log record
+      # Clean up log body
       - type: restructure
-        id: clean-up-log-record
+        id: clean-up-log-body
         ops:
-          - remove: logtag
-          - remove: stream
-          - remove: container_name
-          - remove: namespace
-          - remove: pod_name
-          - remove: run_id
-          - remove: uid
+          - move:
+              from: log
+              to: $
   `)
 }
 

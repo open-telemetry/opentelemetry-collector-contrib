@@ -73,7 +73,7 @@ func NewTCPServer(
 
 func (t *tcpServer) ListenAndServe(
 	parser protocol.Parser,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 	reporter Reporter,
 ) error {
 	if parser == nil || nextConsumer == nil || reporter == nil {
@@ -140,7 +140,7 @@ func (t *tcpServer) Close() error {
 
 func (t *tcpServer) handleConnection(
 	p protocol.Parser,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 	conn net.Conn,
 ) {
 	defer conn.Close()

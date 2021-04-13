@@ -45,6 +45,13 @@ func (mr *resourceMapper) mapResource(res *resource.Resource) *monitoredrespb.Mo
 		return result
 	}
 
+	// cloud.zone was renamed to cloud.availability_zone in the semantic conventions.
+	// Accept either, for backwards compatibility.
+	availabilityZone, ok := res.Labels["cloud.availability_zone"]
+	if ok {
+		res.Labels["cloud.zone"] = availabilityZone
+	}
+
 	// Keep original behavior by default
 	return stackdriver.DefaultMapResource(res)
 }

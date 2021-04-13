@@ -17,11 +17,11 @@ package redisreceiver
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
-type config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
+type Config struct {
+	config.ReceiverSettings `mapstructure:",squash"`
 	// TODO: Use one of the configs from core.
 	// The target endpoint.
 	Endpoint string `mapstructure:"endpoint"`

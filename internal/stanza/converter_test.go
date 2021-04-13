@@ -15,28 +15,72 @@
 package stanza
 
 import (
+	"context"
 	"fmt"
+	"strconv"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func BenchmarkConvertSimple(b *testing.B) {
+	b.StopTimer()
+	ent := entry.New()
+	b.StartTimer()
+
 	for i := 0; i < b.N; i++ {
-		Convert(entry.New())
+		convert(ent)
 	}
 }
 
 func BenchmarkConvertComplex(b *testing.B) {
+	b.StopTimer()
+	ent := complexEntry()
+	b.StartTimer()
+
 	for i := 0; i < b.N; i++ {
-		b.StopTimer()
-		e := complexEntry()
-		b.StartTimer()
-		Convert(e)
+		convert(ent)
 	}
+}
+
+func complexEntries(count int) []*entry.Entry {
+	ret := make([]*entry.Entry, count)
+	for i := int64(0); i < int64(count); i++ {
+		e := entry.New()
+		e.Severity = entry.Error
+		e.AddResourceKey("type", "global")
+		e.Resource = map[string]string{
+			"host": "host",
+		}
+		e.Body = map[string]interface{}{
+			"bool":   true,
+			"int":    123,
+			"double": 12.34,
+			"string": "hello",
+			"bytes":  []byte("asdf"),
+			"object": map[string]interface{}{
+				"bool":   true,
+				"int":    123,
+				"double": 12.34,
+				"string": "hello",
+				"bytes":  []byte("asdf"),
+				"object": map[string]interface{}{
+					"bool":   true,
+					"int":    123,
+					"double": 12.34,
+					"string": "hello",
+					"bytes":  []byte("asdf"),
+				},
+			},
+		}
+		ret[i] = e
+	}
+	return ret
 }
 
 func complexEntry() *entry.Entry {
@@ -45,7 +89,7 @@ func complexEntry() *entry.Entry {
 	e.AddResourceKey("type", "global")
 	e.AddAttribute("one", "two")
 	e.AddAttribute("two", "three")
-	e.Record = map[string]interface{}{
+	e.Body = map[string]interface{}{
 		"bool":   true,
 		"int":    123,
 		"double": 12.34,
@@ -69,8 +113,218 @@ func complexEntry() *entry.Entry {
 	return e
 }
 
-func TestConvertMetadata(t *testing.T) {
+func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
+	t.Parallel()
 
+	testcases := []struct {
+		entries            int
+		maxFlushCount      uint
+		expectedNumFlushes int
+	}{
+		{
+			entries:            10,
+			maxFlushCount:      10,
+			expectedNumFlushes: 1,
+		},
+		{
+			entries:            10,
+			maxFlushCount:      3,
+			expectedNumFlushes: 4,
+		},
+		{
+			entries:            100,
+			maxFlushCount:      20,
+			expectedNumFlushes: 5,
+		},
+	}
+
+	for i, tc := range testcases {
+		tc := tc
+
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			t.Parallel()
+
+			converter := NewConverter(
+				WithMaxFlushCount(tc.maxFlushCount),
+				WithFlushInterval(10*time.Millisecond), // To minimize time spent in test
+			)
+			converter.Start()
+			defer converter.Stop()
+
+			go func() {
+				for _, ent := range complexEntries(tc.entries) {
+					assert.NoError(t, converter.Batch(ent))
+				}
+			}()
+
+			var (
+				actualCount      int
+				actualFlushCount int
+				timeoutTimer     = time.NewTimer(10 * time.Second)
+				ch               = converter.OutChannel()
+			)
+			defer timeoutTimer.Stop()
+
+		forLoop:
+			for {
+				if tc.entries == actualCount {
+					break
+				}
+
+				select {
+				case pLogs, ok := <-ch:
+					if !ok {
+						break forLoop
+					}
+
+					actualFlushCount++
+
+					rLogs := pLogs.ResourceLogs()
+					require.Equal(t, 1, rLogs.Len())
+
+					rLog := rLogs.At(0)
+					ills := rLog.InstrumentationLibraryLogs()
+					require.Equal(t, 1, ills.Len())
+
+					ill := ills.At(0)
+
+					actualCount += ill.Logs().Len()
+
+				case <-timeoutTimer.C:
+					break forLoop
+				}
+			}
+
+			assert.Equal(t, tc.expectedNumFlushes, actualFlushCount)
+			assert.Equal(t, tc.entries, actualCount,
+				"didn't receive expected number of entries after conversion",
+			)
+		})
+	}
+}
+
+func TestAllConvertedEntriesAreSentAndReceivedWithinAnExpectedTimeDuration(t *testing.T) {
+	t.Parallel()
+
+	testcases := []struct {
+		entries            int
+		maxFlushCount      uint
+		flushInterval      time.Duration
+		expectedNumFlushes int
+	}{
+		{
+			entries:            10,
+			maxFlushCount:      20,
+			expectedNumFlushes: 1,
+			flushInterval:      100 * time.Millisecond,
+		},
+		{
+			entries:            50,
+			maxFlushCount:      51,
+			expectedNumFlushes: 1,
+			flushInterval:      100 * time.Millisecond,
+		},
+		{
+			entries:            500,
+			maxFlushCount:      501,
+			expectedNumFlushes: 1,
+			flushInterval:      100 * time.Millisecond,
+		},
+	}
+
+	for i, tc := range testcases {
+		tc := tc
+
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			t.Parallel()
+
+			converter := NewConverter(
+				WithMaxFlushCount(tc.maxFlushCount),
+				WithFlushInterval(tc.flushInterval),
+			)
+			converter.Start()
+			defer converter.Stop()
+
+			go func() {
+				for _, ent := range complexEntries(tc.entries) {
+					assert.NoError(t, converter.Batch(ent))
+				}
+			}()
+
+			var (
+				actualCount      int
+				actualFlushCount int
+				timeoutTimer     = time.NewTimer(10 * time.Second)
+				ch               = converter.OutChannel()
+			)
+			defer timeoutTimer.Stop()
+
+		forLoop:
+			for start := time.Now(); ; start = time.Now() {
+				if tc.entries == actualCount {
+					break
+				}
+
+				select {
+				case pLogs, ok := <-ch:
+					if !ok {
+						break forLoop
+					}
+
+					assert.WithinDuration(t,
+						start.Add(tc.flushInterval),
+						time.Now(),
+						tc.flushInterval,
+					)
+
+					actualFlushCount++
+
+					rLogs := pLogs.ResourceLogs()
+					require.Equal(t, 1, rLogs.Len())
+
+					rLog := rLogs.At(0)
+					ills := rLog.InstrumentationLibraryLogs()
+					require.Equal(t, 1, ills.Len())
+
+					ill := ills.At(0)
+
+					actualCount += ill.Logs().Len()
+
+				case <-timeoutTimer.C:
+					break forLoop
+				}
+			}
+
+			assert.Equal(t, tc.expectedNumFlushes, actualFlushCount)
+			assert.Equal(t, tc.entries, actualCount,
+				"didn't receive expected number of entries after conversion",
+			)
+		})
+	}
+}
+
+func TestConverterCancelledContextCancellsTheFlush(t *testing.T) {
+	converter := NewConverter(
+		WithMaxFlushCount(1),
+		WithFlushInterval(time.Millisecond),
+	)
+	converter.Start()
+	defer converter.Stop()
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	go func() {
+		defer wg.Done()
+		logs := convertEntries(complexEntries(1))
+		assert.Error(t, converter.flush(ctx, []pdata.Logs{logs}))
+	}()
+	wg.Wait()
+}
+
+func TestConvertMetadata(t *testing.T) {
 	now := time.Now()
 
 	e := entry.New()
@@ -78,62 +332,47 @@ func TestConvertMetadata(t *testing.T) {
 	e.Severity = entry.Error
 	e.AddResourceKey("type", "global")
 	e.AddAttribute("one", "two")
-	e.Record = true
+	e.Body = true
 
-	result := Convert(e)
+	result := convert(e)
 
-	resourceLogs := result.ResourceLogs()
-	require.Equal(t, 1, resourceLogs.Len(), "expected 1 resource")
-
-	libLogs := resourceLogs.At(0).InstrumentationLibraryLogs()
-	require.Equal(t, 1, libLogs.Len(), "expected 1 library")
-
-	logSlice := libLogs.At(0).Logs()
-	require.Equal(t, 1, logSlice.Len(), "expected 1 log")
-
-	log := logSlice.At(0)
-	require.Equal(t, now.UnixNano(), int64(log.Timestamp()))
-
-	require.Equal(t, pdata.SeverityNumberERROR, log.SeverityNumber())
-	require.Equal(t, "Error", log.SeverityText())
-
-	atts := log.Attributes()
+	atts := result.Attributes()
 	require.Equal(t, 1, atts.Len(), "expected 1 attribute")
 	attVal, ok := atts.Get("one")
 	require.True(t, ok, "expected label with key 'one'")
 	require.Equal(t, "two", attVal.StringVal(), "expected label to have value 'two'")
 
-	bod := log.Body()
+	bod := result.Body()
 	require.Equal(t, pdata.AttributeValueBOOL, bod.Type())
 	require.True(t, bod.BoolVal())
 }
 
 func TestConvertSimpleBody(t *testing.T) {
 
-	require.True(t, recordToBody(true).BoolVal())
-	require.False(t, recordToBody(false).BoolVal())
+	require.True(t, anyToBody(true).BoolVal())
+	require.False(t, anyToBody(false).BoolVal())
 
-	require.Equal(t, "string", recordToBody("string").StringVal())
-	require.Equal(t, "bytes", recordToBody([]byte("bytes")).StringVal())
+	require.Equal(t, "string", anyToBody("string").StringVal())
+	require.Equal(t, "bytes", anyToBody([]byte("bytes")).StringVal())
 
-	require.Equal(t, int64(1), recordToBody(1).IntVal())
-	require.Equal(t, int64(1), recordToBody(int8(1)).IntVal())
-	require.Equal(t, int64(1), recordToBody(int16(1)).IntVal())
-	require.Equal(t, int64(1), recordToBody(int32(1)).IntVal())
-	require.Equal(t, int64(1), recordToBody(int64(1)).IntVal())
+	require.Equal(t, int64(1), anyToBody(1).IntVal())
+	require.Equal(t, int64(1), anyToBody(int8(1)).IntVal())
+	require.Equal(t, int64(1), anyToBody(int16(1)).IntVal())
+	require.Equal(t, int64(1), anyToBody(int32(1)).IntVal())
+	require.Equal(t, int64(1), anyToBody(int64(1)).IntVal())
 
-	require.Equal(t, int64(1), recordToBody(uint(1)).IntVal())
-	require.Equal(t, int64(1), recordToBody(uint8(1)).IntVal())
-	require.Equal(t, int64(1), recordToBody(uint16(1)).IntVal())
-	require.Equal(t, int64(1), recordToBody(uint32(1)).IntVal())
-	require.Equal(t, int64(1), recordToBody(uint64(1)).IntVal())
+	require.Equal(t, int64(1), anyToBody(uint(1)).IntVal())
+	require.Equal(t, int64(1), anyToBody(uint8(1)).IntVal())
+	require.Equal(t, int64(1), anyToBody(uint16(1)).IntVal())
+	require.Equal(t, int64(1), anyToBody(uint32(1)).IntVal())
+	require.Equal(t, int64(1), anyToBody(uint64(1)).IntVal())
 
-	require.Equal(t, float64(1), recordToBody(float32(1)).DoubleVal())
-	require.Equal(t, float64(1), recordToBody(float64(1)).DoubleVal())
+	require.Equal(t, float64(1), anyToBody(float32(1)).DoubleVal())
+	require.Equal(t, float64(1), anyToBody(float64(1)).DoubleVal())
 }
 
 func TestConvertMapBody(t *testing.T) {
-	structuredRecord := map[string]interface{}{
+	structuredBody := map[string]interface{}{
 		"true":    true,
 		"false":   false,
 		"string":  "string",
@@ -152,7 +391,7 @@ func TestConvertMapBody(t *testing.T) {
 		"float64": float64(1),
 	}
 
-	result := recordToBody(structuredRecord).MapVal()
+	result := anyToBody(structuredBody).MapVal()
 
 	v, _ := result.Get("true")
 	require.True(t, v.BoolVal())
@@ -174,7 +413,7 @@ func TestConvertMapBody(t *testing.T) {
 }
 
 func TestConvertArrayBody(t *testing.T) {
-	structuredRecord := []interface{}{
+	structuredBody := []interface{}{
 		true,
 		false,
 		"string",
@@ -195,7 +434,7 @@ func TestConvertArrayBody(t *testing.T) {
 		map[string]interface{}{"one": 1, "yes": true},
 	}
 
-	result := recordToBody(structuredRecord).ArrayVal()
+	result := anyToBody(structuredBody).ArrayVal()
 
 	require.True(t, result.At(0).BoolVal())
 	require.False(t, result.At(1).BoolVal())
@@ -229,20 +468,20 @@ func TestConvertArrayBody(t *testing.T) {
 
 func TestConvertUnknownBody(t *testing.T) {
 	unknownType := map[string]int{"0": 0, "1": 1}
-	require.Equal(t, fmt.Sprintf("%v", unknownType), recordToBody(unknownType).StringVal())
+	require.Equal(t, fmt.Sprintf("%v", unknownType), anyToBody(unknownType).StringVal())
 }
 
 func TestConvertNestedMapBody(t *testing.T) {
 
 	unknownType := map[string]int{"0": 0, "1": 1}
 
-	structuredRecord := map[string]interface{}{
+	structuredBody := map[string]interface{}{
 		"array":   []interface{}{0, 1},
 		"map":     map[string]interface{}{"0": 0, "1": "one"},
 		"unknown": unknownType,
 	}
 
-	result := recordToBody(structuredRecord).MapVal()
+	result := anyToBody(structuredBody).MapVal()
 
 	arrayAttVal, _ := result.Get("array")
 	a := arrayAttVal.ArrayVal()
@@ -260,14 +499,14 @@ func TestConvertNestedMapBody(t *testing.T) {
 	require.Equal(t, fmt.Sprintf("%v", unknownType), unknownAttVal.StringVal())
 }
 
-func recordToBody(record interface{}) pdata.AttributeValue {
+func anyToBody(body interface{}) pdata.AttributeValue {
 	entry := entry.New()
-	entry.Record = record
+	entry.Body = body
 	return convertAndDrill(entry).Body()
 }
 
 func convertAndDrill(entry *entry.Entry) pdata.LogRecord {
-	return Convert(entry).ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0)
+	return convert(entry)
 }
 
 func TestConvertSeverity(t *testing.T) {

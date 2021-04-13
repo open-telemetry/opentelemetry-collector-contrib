@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -32,11 +32,11 @@ import (
 type mockHostFactories struct {
 	component.Host
 	factories  component.Factories
-	extensions map[configmodels.NamedEntity]component.Extension
+	extensions map[config.NamedEntity]component.Extension
 }
 
 // GetFactory of the specified kind. Returns the factory for a component type.
-func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType configmodels.Type) component.Factory {
+func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType config.Type) component.Factory {
 	switch kind {
 	case component.KindReceiver:
 		return mh.factories.Receivers[componentType]
@@ -50,18 +50,18 @@ func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType confi
 	return nil
 }
 
-func (mh *mockHostFactories) GetExtensions() map[configmodels.NamedEntity]component.Extension {
+func (mh *mockHostFactories) GetExtensions() map[config.NamedEntity]component.Extension {
 	return mh.extensions
 }
 
-func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *configmodels.Config) {
+func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *config.Config) {
 	factories, err := componenttest.NopFactories()
 	require.Nil(t, err)
 
-	factories.Receivers[configmodels.Type("nop")] = &nopWithEndpointFactory{ReceiverFactory: componenttest.NewNopReceiverFactory()}
+	factories.Receivers[config.Type("nop")] = &nopWithEndpointFactory{ReceiverFactory: componenttest.NewNopReceiverFactory()}
 
 	factory := NewFactory()
-	factories.Receivers[configmodels.Type(typeStr)] = factory
+	factories.Receivers[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -84,18 +84,20 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers["receiver_creator/1"].(*Config)
 
 	assert.NotNil(t, r1)
-	assert.Len(t, r1.receiverTemplates, 1)
+	assert.Len(t, r1.receiverTemplates, 2)
+	assert.Contains(t, r1.receiverTemplates, "examplereceiver/1")
+	assert.Equal(t, `type == "port"`, r1.receiverTemplates["examplereceiver/1"].Rule)
 	assert.Contains(t, r1.receiverTemplates, "nop/1")
-	assert.Equal(t, `type.port`, r1.receiverTemplates["nop/1"].Rule)
+	assert.Equal(t, `type == "port"`, r1.receiverTemplates["nop/1"].Rule)
 	assert.Equal(t, userConfigMap{
 		endpointConfigKey: "localhost:12345",
 	}, r1.receiverTemplates["nop/1"].config)
-	assert.Equal(t, []configmodels.Type{"mock_observer"}, r1.WatchObservers)
+	assert.Equal(t, []config.Type{"mock_observer"}, r1.WatchObservers)
 }
 
 type nopWithEndpointConfig struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
-	Endpoint                      string `mapstructure:"endpoint"`
+	config.ReceiverSettings `mapstructure:",squash"`
+	Endpoint                string `mapstructure:"endpoint"`
 }
 
 type nopWithEndpointFactory struct {
@@ -104,12 +106,12 @@ type nopWithEndpointFactory struct {
 
 type nopWithEndpointReceiver struct {
 	component.Component
-	consumer.MetricsConsumer
+	consumer.Metrics
 }
 
-func (*nopWithEndpointFactory) CreateDefaultConfig() configmodels.Receiver {
+func (*nopWithEndpointFactory) CreateDefaultConfig() config.Receiver {
 	return &nopWithEndpointConfig{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: "nop",
 		},
 	}
@@ -118,10 +120,10 @@ func (*nopWithEndpointFactory) CreateDefaultConfig() configmodels.Receiver {
 func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	ctx context.Context,
 	_ component.ReceiverCreateParams,
-	_ configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumer) (component.MetricsReceiver, error) {
+	_ config.Receiver,
+	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	return &nopWithEndpointReceiver{
-		Component:       componenthelper.NewComponent(componenthelper.DefaultComponentSettings()),
-		MetricsConsumer: nextConsumer,
+		Component: componenthelper.New(),
+		Metrics:   nextConsumer,
 	}, nil
 }

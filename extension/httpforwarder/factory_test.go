@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 )
@@ -32,11 +32,11 @@ import (
 func TestFactory(t *testing.T) {
 	f := NewFactory()
 	expectType := "http_forwarder"
-	require.Equal(t, configmodels.Type(expectType), f.Type())
+	require.Equal(t, config.Type(expectType), f.Type())
 
 	cfg := f.CreateDefaultConfig().(*Config)
 	require.Equal(t, expectType, cfg.Name())
-	require.Equal(t, configmodels.Type(expectType), cfg.Type())
+	require.Equal(t, config.Type(expectType), cfg.Type())
 	require.Equal(t, ":6060", cfg.Ingress.Endpoint)
 	require.Equal(t, 10*time.Second, cfg.Egress.Timeout)
 

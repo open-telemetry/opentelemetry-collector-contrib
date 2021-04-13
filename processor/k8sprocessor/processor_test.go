@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -36,7 +36,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
-func newTraceProcessor(cfg configmodels.Processor, next consumer.TracesConsumer, options ...Option) (component.TracesProcessor, error) {
+func newTraceProcessor(cfg config.Processor, next consumer.Traces, options ...Option) (component.TracesProcessor, error) {
 	opts := append(options, withKubeClientProvider(newFakeClient))
 	return createTraceProcessorWithOptions(
 		context.Background(),
@@ -47,7 +47,7 @@ func newTraceProcessor(cfg configmodels.Processor, next consumer.TracesConsumer,
 	)
 }
 
-func newMetricsProcessor(cfg configmodels.Processor, nextMetricsConsumer consumer.MetricsConsumer, options ...Option) (component.MetricsProcessor, error) {
+func newMetricsProcessor(cfg config.Processor, nextMetricsConsumer consumer.Metrics, options ...Option) (component.MetricsProcessor, error) {
 	opts := append(options, withKubeClientProvider(newFakeClient))
 	return createMetricsProcessorWithOptions(
 		context.Background(),
@@ -58,7 +58,7 @@ func newMetricsProcessor(cfg configmodels.Processor, nextMetricsConsumer consume
 	)
 }
 
-func newLogsProcessor(cfg configmodels.Processor, nextLogsConsumer consumer.LogsConsumer, options ...Option) (component.LogsProcessor, error) {
+func newLogsProcessor(cfg config.Processor, nextLogsConsumer consumer.Logs, options ...Option) (component.LogsProcessor, error) {
 	opts := append(options, withKubeClientProvider(newFakeClient))
 	return createLogsProcessorWithOptions(
 		context.Background(),
@@ -102,7 +102,7 @@ type multiTest struct {
 
 func newMultiTest(
 	t *testing.T,
-	cfg configmodels.Processor,
+	cfg config.Processor,
 	errFunc func(err error),
 	options ...Option,
 ) *multiTest {
@@ -882,7 +882,7 @@ func TestRealClient(t *testing.T) {
 func TestCapabilities(t *testing.T) {
 	p, err := newTraceProcessor(
 		NewFactory().CreateDefaultConfig(),
-		consumertest.NewTracesNop(),
+		consumertest.NewNop(),
 	)
 	assert.NoError(t, err)
 	caps := p.GetCapabilities()
@@ -893,7 +893,7 @@ func TestStartStop(t *testing.T) {
 	var kp *kubernetesprocessor
 	p, err := newTraceProcessor(
 		NewFactory().CreateDefaultConfig(),
-		consumertest.NewTracesNop(),
+		consumertest.NewNop(),
 		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)

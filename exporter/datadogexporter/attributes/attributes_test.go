@@ -32,12 +32,18 @@ func TestTagsFromAttributes(t *testing.T) {
 		conventions.AttributeProcessID:             pdata.NewAttributeValueInt(1),
 		conventions.AttributeProcessOwner:          pdata.NewAttributeValueString("root"),
 		conventions.AttributeOSType:                pdata.NewAttributeValueString("LINUX"),
+		conventions.AttributeK8sDaemonSet:          pdata.NewAttributeValueString("daemon_set_name"),
+		conventions.AttributeAWSECSClusterARN:      pdata.NewAttributeValueString("cluster_arn"),
+		"tags.datadoghq.com/service":               pdata.NewAttributeValueString("service_name"),
 	}
 	attrs := pdata.NewAttributeMap().InitFromMap(attributeMap)
 
-	assert.Equal(t, []string{
+	assert.ElementsMatch(t, []string{
 		fmt.Sprintf("%s:%s", conventions.AttributeProcessExecutableName, "otelcol"),
 		fmt.Sprintf("%s:%s", conventions.AttributeOSType, "LINUX"),
+		fmt.Sprintf("%s:%s", "kube_daemon_set", "daemon_set_name"),
+		fmt.Sprintf("%s:%s", "ecs_cluster_name", "cluster_arn"),
+		fmt.Sprintf("%s:%s", "service", "service_name"),
 	}, TagsFromAttributes(attrs))
 }
 

@@ -27,8 +27,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -112,12 +112,9 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 	config := &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		AccessToken: "testToken",
-		Realm:       "us1",
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		AccessToken:      "testToken",
+		Realm:            "us1",
 		Headers: map[string]string{
 			"added-entry": "added value",
 			"dot.test":    "test",
@@ -139,24 +136,18 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "negative_duration",
 			config: &Config{
-				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: configmodels.Type(typeStr),
-					NameVal: typeStr,
-				},
-				AccessToken:     "testToken",
-				Realm:           "lab",
-				TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: -2 * time.Second},
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				AccessToken:      "testToken",
+				Realm:            "lab",
+				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: -2 * time.Second},
 			},
 			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"timeout\"",
 		},
 		{
 			name: "empty_realm_and_urls",
 			config: &Config{
-				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: configmodels.Type(typeStr),
-					NameVal: typeStr,
-				},
-				AccessToken: "testToken",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				AccessToken:      "testToken",
 			},
 			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
 				" or \"ingest_url\" and \"api_url\" should be explicitly set",
@@ -164,12 +155,9 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "empty_realm_and_api_url",
 			config: &Config{
-				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: configmodels.Type(typeStr),
-					NameVal: typeStr,
-				},
-				AccessToken: "testToken",
-				IngestURL:   "http://localhost:123",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				AccessToken:      "testToken",
+				IngestURL:        "http://localhost:123",
 			},
 			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
 				" or \"ingest_url\" and \"api_url\" should be explicitly set",
@@ -210,31 +198,6 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.True(t, ok, "memory.utilization metric not found")
 	require.Equal(t, 1, len(dps))
 	require.Equal(t, 40.0, *dps[0].Value.DoubleValue)
-
-	// system.disk.operations dimension rename
-	dps, ok = metrics["system.disk.operations"]
-	require.True(t, ok, "system.disk.operations metrics not found")
-	require.Equal(t, 8, len(dps))
-	require.Equal(t, int64(4e3), *dps[0].Value.IntValue)
-	require.Equal(t, "direction", dps[0].Dimensions[1].Key)
-	require.Equal(t, "read", dps[0].Dimensions[1].Value)
-	require.Equal(t, "disk", dps[0].Dimensions[2].Key)
-	require.Equal(t, "sda1", dps[0].Dimensions[2].Value)
-	require.Equal(t, int64(6e3), *dps[1].Value.IntValue)
-	require.Equal(t, "direction", dps[1].Dimensions[1].Key)
-	require.Equal(t, "read", dps[1].Dimensions[1].Value)
-	require.Equal(t, "disk", dps[1].Dimensions[2].Key)
-	require.Equal(t, "sda2", dps[1].Dimensions[2].Value)
-	require.Equal(t, int64(1e3), *dps[2].Value.IntValue)
-	require.Equal(t, "direction", dps[2].Dimensions[1].Key)
-	require.Equal(t, "write", dps[2].Dimensions[1].Value)
-	require.Equal(t, "disk", dps[2].Dimensions[2].Key)
-	require.Equal(t, "sda1", dps[2].Dimensions[2].Value)
-	require.Equal(t, int64(5e3), *dps[3].Value.IntValue)
-	require.Equal(t, "direction", dps[3].Dimensions[1].Key)
-	require.Equal(t, "write", dps[3].Dimensions[1].Value)
-	require.Equal(t, "disk", dps[3].Dimensions[2].Key)
-	require.Equal(t, "sda2", dps[3].Dimensions[2].Value)
 
 	// system.network.operations.total new metric calculation
 	dps, ok = metrics["system.disk.operations.total"]
@@ -292,12 +255,9 @@ func TestDefaultTranslationRules(t *testing.T) {
 
 func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		AccessToken: "testToken",
-		Realm:       "us1",
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		AccessToken:      "testToken",
+		Realm:            "us1",
 	}
 
 	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
@@ -310,12 +270,9 @@ func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
 
 func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		AccessToken: "testToken",
-		Realm:       "us1",
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		AccessToken:      "testToken",
+		Realm:            "us1",
 		ExcludeMetrics: []dpfilters.MetricFilter{
 			{
 				MetricNames: []string{"metric1"},
@@ -333,13 +290,10 @@ func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 
 func TestCreateMetricsExporterWithEmptyExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		AccessToken:    "testToken",
-		Realm:          "us1",
-		ExcludeMetrics: []dpfilters.MetricFilter{},
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		AccessToken:      "testToken",
+		Realm:            "us1",
+		ExcludeMetrics:   []dpfilters.MetricFilter{},
 	}
 
 	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)

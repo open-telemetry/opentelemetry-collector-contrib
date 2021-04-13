@@ -35,7 +35,7 @@ import (
 // TODO: Find a place for this to be shared.
 type baseTracesExporter struct {
 	component.Component
-	consumer.TracesConsumer
+	consumer.Traces
 }
 
 // sapmExporter is a wrapper struct of SAPM exporter
@@ -92,8 +92,8 @@ func newSAPMTraceExporter(cfg *Config, params component.ExporterCreateParams) (c
 	// this ensures that we get batches of data for the same token when pushing to the backend.
 	if cfg.AccessTokenPassthrough {
 		te = &baseTracesExporter{
-			Component:      te,
-			TracesConsumer: batchperresourceattr.NewBatchPerResourceTraces(splunk.SFxAccessTokenLabel, te),
+			Component: te,
+			Traces:    batchperresourceattr.NewBatchPerResourceTraces(splunk.SFxAccessTokenLabel, te),
 		}
 	}
 	return te, nil

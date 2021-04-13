@@ -36,6 +36,8 @@ func TestTraceExport(t *testing.T) {
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
 	assert.NotNil(t, err)
+	err = traceExporter.Shutdown(ctx)
+	assert.Nil(t, err)
 }
 
 func BenchmarkForTraceExporter(b *testing.B) {
@@ -93,7 +95,7 @@ func constructResource() pdata.Resource {
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
 	attrs.InsertString(semconventions.AttributeCloudAccount, "999999998")
 	attrs.InsertString(semconventions.AttributeCloudRegion, "us-west-2")
-	attrs.InsertString(semconventions.AttributeCloudZone, "us-west-1b")
+	attrs.InsertString(semconventions.AttributeCloudAvailabilityZone, "us-west-1b")
 	attrs.CopyTo(resource.Attributes())
 	return resource
 }
@@ -113,8 +115,8 @@ func constructHTTPClientSpan() pdata.Span {
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindCLIENT)
-	span.SetStartTime(pdata.TimestampFromTime(startTime))
-	span.SetEndTime(pdata.TimestampFromTime(endTime))
+	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(0)
@@ -141,8 +143,8 @@ func constructHTTPServerSpan() pdata.Span {
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindSERVER)
-	span.SetStartTime(pdata.TimestampFromTime(startTime))
-	span.SetEndTime(pdata.TimestampFromTime(endTime))
+	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(0)

@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
@@ -27,9 +28,10 @@ import (
 func TestNewTraceExporter(t *testing.T) {
 
 	got, err := newTraceExporter(zap.NewNop(), &Config{
-		Endpoint: "cn-hangzhou.log.aliyuncs.com",
-		Project:  "demo-project",
-		Logstore: "demo-logstore",
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		Endpoint:         "cn-hangzhou.log.aliyuncs.com",
+		Project:          "demo-project",
+		Logstore:         "demo-logstore",
 	})
 	assert.NoError(t, err)
 	require.NotNil(t, got)

@@ -20,9 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 )
@@ -37,24 +36,19 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:1" // Endpoint is required, not going to be used here.
 
-	mockLogsConsumer := consumertest.NewLogsNop()
+	mockLogsConsumer := consumertest.NewNop()
 	lReceiver, err := createLogsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, mockLogsConsumer)
 	assert.Nil(t, err, "receiver creation failed")
 	assert.NotNil(t, lReceiver, "receiver creation failed")
 
-	mockMetricsConsumer := consumertest.NewMetricsNop()
+	mockMetricsConsumer := consumertest.NewNop()
 	mReceiver, err := createMetricsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, mockMetricsConsumer)
 	assert.Nil(t, err, "receiver creation failed")
 	assert.NotNil(t, mReceiver, "receiver creation failed")
-
-	mockTracesConsumer := consumertest.NewTracesNop()
-	tReceiver, err := createTraceReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, mockTracesConsumer)
-	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
-	assert.Nil(t, tReceiver)
 }
 
 func TestFactoryType(t *testing.T) {
-	assert.Equal(t, configmodels.Type("splunk_hec"), NewFactory().Type())
+	assert.Equal(t, config.Type("splunk_hec"), NewFactory().Type())
 }
 
 func TestValidate(t *testing.T) {
@@ -83,7 +77,7 @@ func TestCreateMetricsReceiverWithBadConfig(t *testing.T) {
 	cfg.Endpoint = "localhost:1"
 	cfg.Path = " *[* "
 
-	mReceiver, err := createMetricsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewMetricsNop())
+	mReceiver, err := createMetricsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewNop())
 	assert.EqualError(t, err, "unexpected end of input")
 	assert.Nil(t, mReceiver, "receiver creation failed")
 }
@@ -93,7 +87,7 @@ func TestCreateLogsReceiverWithBadConfig(t *testing.T) {
 	cfg.Endpoint = "localhost:1"
 	cfg.Path = " *[* "
 
-	mReceiver, err := createLogsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewLogsNop())
+	mReceiver, err := createLogsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewNop())
 	assert.EqualError(t, err, "unexpected end of input")
 	assert.Nil(t, mReceiver, "receiver creation failed")
 }
@@ -111,7 +105,7 @@ func TestCreateBadEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:abc"
 
-	mockLogsConsumer := consumertest.NewLogsNop()
+	mockLogsConsumer := consumertest.NewNop()
 	mReceiver, err := createLogsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, mockLogsConsumer)
 	assert.EqualError(t, err, "endpoint port is not a number: strconv.ParseInt: parsing \"abc\": invalid syntax")
 	assert.Nil(t, mReceiver, "receiver creation failed")

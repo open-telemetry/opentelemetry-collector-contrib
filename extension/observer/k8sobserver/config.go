@@ -15,15 +15,15 @@
 package k8sobserver
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 // Config defines configuration for k8s attributes processor.
 type Config struct {
-	configmodels.ExtensionSettings `mapstructure:",squash"`
-	k8sconfig.APIConfig            `mapstructure:",squash"`
+	*config.ExtensionSettings `mapstructure:"-"`
+	k8sconfig.APIConfig       `mapstructure:",squash"`
 
 	// Node should be set to the node name to limit discovered endpoints to. For example, node name can
 	// be set using the downward API inside the collector pod spec as follows:
@@ -36,4 +36,9 @@ type Config struct {
 	//
 	// Then set this value to ${K8S_NODE_NAME} in the configuration.
 	Node string `mapstructure:"node"`
+}
+
+// Validate checks if the extension configuration is valid
+func (cfg *Config) Validate() error {
+	return cfg.APIConfig.Validate()
 }

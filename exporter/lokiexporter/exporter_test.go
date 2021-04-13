@@ -169,7 +169,8 @@ func TestExporter_pushLogData(t *testing.T) {
 			testServer:       true,
 			genLogsFunc:      genericGenLogsFunc,
 			errFunc: func(err error) {
-				e := err.(consumererror.PartialError)
+				var e consumererror.Logs
+				consumererror.AsLogs(err, &e)
 				require.Equal(t, 10, e.GetLogs().LogRecordCount())
 			},
 		},
@@ -181,7 +182,8 @@ func TestExporter_pushLogData(t *testing.T) {
 			testServer:       false,
 			genLogsFunc:      genericGenLogsFunc,
 			errFunc: func(err error) {
-				e := err.(consumererror.PartialError)
+				var e consumererror.Logs
+				consumererror.AsLogs(err, &e)
 				require.Equal(t, 10, e.GetLogs().LogRecordCount())
 			},
 		},

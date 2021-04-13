@@ -26,9 +26,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
@@ -67,22 +68,22 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 		_, err = conn.Write([]byte(msg))
 		require.NoError(t, err)
 	}
-	conn.Close()
+	require.NoError(t, conn.Close())
 
 	require.Eventually(t, expectNLogs(sink, numLogs), 2*time.Second, time.Millisecond)
 	require.NoError(t, rcvr.Shutdown(context.Background()))
+	require.Len(t, sink.AllLogs(), 1)
+
+	resourceLogs := sink.AllLogs()[0].ResourceLogs().At(0)
+	logs := resourceLogs.InstrumentationLibraryLogs().At(0).Logs()
+
 	for i := 0; i < numLogs; i++ {
-		origs := *(sink.AllLogs()[i].InternalRep().Orig)
-		log := origs[0].InstrumentationLibraryLogs[0].GetLogs()[0]
-		kvs := log.Body.GetKvlistValue().GetValues()
-		require.Equal(t, log.GetTimeUnixNano(), uint64(1614470402003000000+i*60*1000*1000*1000))
-		msg := ""
-		for _, kv := range kvs {
-			if kv.Key == "message" {
-				msg = kv.Value.GetStringValue()
-			}
-		}
-		require.Equal(t, msg, fmt.Sprintf("test msg %d", i))
+		log := logs.At(i)
+
+		require.Equal(t, log.Timestamp(), pdata.Timestamp(1614470402003000000+i*60*1000*1000*1000))
+		msg, ok := log.Body().MapVal().Get("message")
+		require.True(t, ok)
+		require.Equal(t, msg.StringVal(), fmt.Sprintf("test msg %d", i))
 	}
 }
 
@@ -91,7 +92,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[configmodels.Type(typeStr)] = factory
+	factories.Receivers[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -105,11 +106,14 @@ func TestLoadConfig(t *testing.T) {
 func testdataConfigYamlAsMap() *SysLogConfig {
 	return &SysLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "syslog",
 				NameVal: "syslog",
 			},
 			Operators: stanza.OperatorConfigs{},
+			Converter: stanza.ConverterConfig{
+				FlushInterval: 100 * time.Millisecond,
+			},
 		},
 		Input: stanza.InputConfig{
 			"tcp": map[string]interface{}{
@@ -123,11 +127,14 @@ func testdataConfigYamlAsMap() *SysLogConfig {
 func testdataUDPConfig() *SysLogConfig {
 	return &SysLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "syslog",
 				NameVal: "syslog",
 			},
 			Operators: stanza.OperatorConfigs{},
+			Converter: stanza.ConverterConfig{
+				FlushInterval: 100 * time.Millisecond,
+			},
 		},
 		Input: stanza.InputConfig{
 			"udp": map[string]interface{}{
@@ -146,7 +153,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 	factory := NewFactory()
 	badCfg := &SysLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "syslog",
 				NameVal: "syslog",
 			},

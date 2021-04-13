@@ -19,16 +19,16 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	pType := factory.Type()
-	assert.Equal(t, pType, configmodels.Type("sumologic"))
+	assert.Equal(t, pType, config.Type("sumologic"))
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -38,10 +38,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	qs.Enabled = false
 
 	assert.Equal(t, cfg, &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			NameVal: typeStr,
-			TypeVal: typeStr,
-		},
+		ExporterSettings:   config.NewExporterSettings(typeStr),
 		CompressEncoding:   "gzip",
 		MaxRequestBodySize: 1_048_576,
 		LogFormat:          "json",

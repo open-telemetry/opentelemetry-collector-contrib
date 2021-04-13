@@ -74,8 +74,8 @@ foo=bar metric=sum_metric_double_test  1238.1 1608424699`
 	assert.Equal(t, expected, result)
 }
 
-func TestCarbonMetricDataTypeDoubleSummary(t *testing.T) {
-	metric := exampleDoubleSummaryMetric()
+func TestCarbonMetricDataTypeSummary(t *testing.T) {
+	metric := exampleSummaryMetric()
 
 	result := carbon2Metric2String(metric)
 	expected := ``
@@ -90,8 +90,8 @@ func TestCarbonMetricDataTypeIntHistogram(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
-func TestCarbonMetricDataTypeDoubleHistogram(t *testing.T) {
-	metric := exampleDoubleHistogramMetric()
+func TestCarbonMetricDataTypeHistogram(t *testing.T) {
+	metric := exampleHistogramMetric()
 
 	result := carbon2Metric2String(metric)
 	expected := ``

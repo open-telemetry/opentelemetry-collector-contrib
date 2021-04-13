@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
@@ -50,7 +50,7 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers["windowsperfcounters/customname"].(*Config)
 	expectedConfig := &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "windowsperfcounters/customname",
 			},
@@ -79,7 +79,7 @@ func TestLoadConfig_Error(t *testing.T) {
 	}
 
 	const (
-		errorPrefix                   = "error reading receivers configuration for windowsperfcounters"
+		errorPrefix                   = "receiver \"windowsperfcounters\" has invalid configuration"
 		negativeCollectionIntervalErr = "collection_interval must be a positive duration"
 		noPerfCountersErr             = "must specify at least one perf counter"
 		noObjectNameErr               = "must specify object name for all perf counters"

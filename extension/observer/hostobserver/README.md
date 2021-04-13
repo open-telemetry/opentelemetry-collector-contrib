@@ -22,7 +22,7 @@ Endpoint variables exposed by this observer are as follows.
 
 | Variable  | Description                                                                                |
 |-----------|--------------------------------------------------------------------------------------------|
-| type.port | `true`                                                                                     |
+| type      | `"port"`                                                                                     |
 | name      | name of the process associated to the port                                                 |
 | port      | port number                                                                                |
 | command   | full command used to invoke this process, including the executable itself at the beginning |

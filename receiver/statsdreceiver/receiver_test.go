@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -43,7 +43,7 @@ func Test_statsdreceiver_New(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 	type args struct {
 		config       Config
-		nextConsumer consumer.MetricsConsumer
+		nextConsumer consumer.Metrics
 	}
 	tests := []struct {
 		name    string
@@ -67,7 +67,7 @@ func Test_statsdreceiver_New(t *testing.T) {
 						Transport: "unknown",
 					},
 				},
-				nextConsumer: consumertest.NewMetricsNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 			wantErr: errors.New("unsupported transport \"unknown\" for receiver \"statsd\""),
 		},
@@ -83,7 +83,7 @@ func Test_statsdreceiver_New(t *testing.T) {
 func TestStatsdReceiver_Flush(t *testing.T) {
 	ctx := context.Background()
 	cfg := createDefaultConfig().(*Config)
-	nextConsumer := consumertest.NewMetricsNop()
+	nextConsumer := consumertest.NewNop()
 	rcv, err := New(zap.NewNop(), *cfg, nextConsumer)
 	assert.NoError(t, err)
 	r := rcv.(*statsdReceiver)
@@ -109,8 +109,8 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 			name: "default_config with 9s interval",
 			configFn: func() *Config {
 				return &Config{
-					ReceiverSettings: configmodels.ReceiverSettings{
-						TypeVal: configmodels.Type(typeStr),
+					ReceiverSettings: config.ReceiverSettings{
+						TypeVal: config.Type(typeStr),
 						NameVal: typeStr,
 					},
 					NetAddr: confignet.NetAddr{

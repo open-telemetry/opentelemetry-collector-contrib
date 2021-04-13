@@ -27,15 +27,15 @@ import (
 
 type redisReceiver struct {
 	logger         *zap.Logger
-	config         *config
-	consumer       consumer.MetricsConsumer
+	config         *Config
+	consumer       consumer.Metrics
 	intervalRunner *interval.Runner
 }
 
 func newRedisReceiver(
 	logger *zap.Logger,
-	config *config,
-	consumer consumer.MetricsConsumer,
+	config *Config,
+	consumer consumer.Metrics,
 ) *redisReceiver {
 	return &redisReceiver{
 		logger:   logger,

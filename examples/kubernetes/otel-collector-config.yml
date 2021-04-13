@@ -14,11 +14,11 @@ receivers:
         id: get-format
         routes:
           - output: parser-docker
-            expr: '$$record matches "^\\{"'
+            expr: '$$body matches "^\\{"'
           - output: parser-crio
-            expr: '$$record matches "^[^ Z]+ "'
+            expr: '$$body matches "^[^ Z]+ "'
           - output: parser-containerd
-            expr: '$$record matches "^[^ Z]+Z"'
+            expr: '$$body matches "^[^ Z]+Z"'
       # Parse CRI-O format
       - type: regex_parser
         id: parser-crio
@@ -57,17 +57,13 @@ receivers:
           k8s.pod.name: 'EXPR($.pod_name)'
           run_id: 'EXPR($.run_id)'
           k8s.pod.uid: 'EXPR($.uid)'
-      # Clean up log record
+      # Clean up log body
       - type: restructure
-        id: clean-up-log-record
+        id: clean-up-log-body
         ops:
-          - remove: logtag
-          - remove: stream
-          - remove: container_name
-          - remove: namespace
-          - remove: pod_name
-          - remove: run_id
-          - remove: uid
+          - move:
+              from: log
+              to: $
 exporters:
   logging:
     loglevel: debug

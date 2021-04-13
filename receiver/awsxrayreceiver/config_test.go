@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[configmodels.Type(awsxray.TypeStr)] = factory
+	factories.Receivers[config.Type(awsxray.TypeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -54,8 +54,8 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers[awsxray.TypeStr+"/udp_endpoint"].(*Config)
 	assert.Equal(t,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(awsxray.TypeStr),
+			ReceiverSettings: config.ReceiverSettings{
+				TypeVal: config.Type(awsxray.TypeStr),
 				NameVal: awsxray.TypeStr + "/udp_endpoint",
 			},
 			NetAddr: confignet.NetAddr{
@@ -82,8 +82,8 @@ func TestLoadConfig(t *testing.T) {
 	r2 := cfg.Receivers[awsxray.TypeStr+"/proxy_server"].(*Config)
 	assert.Equal(t,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(awsxray.TypeStr),
+			ReceiverSettings: config.ReceiverSettings{
+				TypeVal: config.Type(awsxray.TypeStr),
 				NameVal: awsxray.TypeStr + "/proxy_server",
 			},
 			NetAddr: confignet.NetAddr{
