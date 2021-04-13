@@ -56,10 +56,10 @@ func TestHappyCase(t *testing.T) {
 	assert.NoError(t, err, "NewServer should succeed")
 	defer srv.Close()
 
-	testutil.WaitFor(t, func() bool {
+	assert.Eventuallyf(t, func() bool {
 		_, err := net.DialTimeout("tcp", tcpAddr, time.Second)
 		return err == nil
-	}, "port should eventually be accessible")
+	}, 10*time.Second, 5*time.Millisecond, "port should eventually be accessible")
 
 	logs := recordedLogs.All()
 	lastEntry := logs[0]
