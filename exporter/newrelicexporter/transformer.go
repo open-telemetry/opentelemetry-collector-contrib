@@ -21,9 +21,8 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
-
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )

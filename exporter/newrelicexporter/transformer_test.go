@@ -20,12 +20,11 @@ import (
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
-
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
