@@ -28,7 +28,7 @@ const (
 	typeStr           = "kafkametrics"
 	defaultBroker     = "localhost:9092"
 	defaultGroupMatch = ".*"
-	defaultTopicMatch = ".*"
+	defaultTopicMatch = "^[^_].*$"
 	defaultClientID   = "otel-metrics-receiver"
 )
 

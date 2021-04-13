@@ -9,11 +9,13 @@ labels:
     description: The ID (string) of a consumer group
 
 metrics:
+#  brokers scraper
   kafka.brokers:
     description: Number of brokers in the cluster.
     unit: "{brokers}"
     data:
       type: int gauge
+#  topics scraper
   kafka.topic.partitions:
     description: Number of partitions in topic.
     unit: "{partitions}"
@@ -44,6 +46,7 @@ metrics:
     data:
       type: int gauge
     labels: [topic, partition]
+#  consumers scraper
   kafka.consumer_group.members:
     description: Count of members in the consumer group
     unit: "{members}"
