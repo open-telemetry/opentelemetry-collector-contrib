@@ -12,12 +12,14 @@ Required settings (no defaults):
     - `topics`
     - `consumers`
     - `brokers`
+    
+Metrics collected by the associated scraper are listed [here](metadata.yaml)
 
 Optional Settings (with defaults):
 
 - `brokers` (default = localhost:9092): the list of brokers to read from.
-- `topic_match` (default = *): regex pattern of topics to filter for metrics collection.
-- `group_match` (default = *): regex pattern of consumer groups to filter on for metrics.
+- `topic_match` (default = ^[^_].*$): regex pattern of topics to filter on metrics collection. The default filter excludes internal topics (starting with `_`).
+- `group_match` (default = .*): regex pattern of consumer groups to filter on for metrics.
 - `client_id` (default = otel-metrics-receiver): consumer client id
 - `collection_interval` (default = 1m): frequency of metric collection/scraping.
 - `auth` (default none)
@@ -47,7 +49,7 @@ Optional Settings (with defaults):
 
 ## Examples:
 
-Basic configuration with all scrapers:
+1) Basic configuration with all scrapers:
 
 ```yaml
 receivers:
@@ -57,4 +59,26 @@ receivers:
       - brokers
       - topics
       - consumers
+```
+
+2) Configuration with more optional settings:
+
+For this example:
+- collection interval is 5 secs.
+
+```yaml
+receivers:
+  kafkametrics:
+    brokers: 10.10.10.10:9092
+    protocol_version: 2.0.0
+    scrapers:
+      - brokers
+      - topics
+      - consumers
+    auth:
+      tls:
+        ca_file: ca.pem
+        cert_file: cert.pem
+        key_file: key.pem
+    collection_interval: 5s
 ```
