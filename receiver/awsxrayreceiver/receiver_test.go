@@ -26,6 +26,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
@@ -186,14 +187,14 @@ func TestCantStopAnInstanceTwice(t *testing.T) {
 		close(pollerStops)
 	}()
 
-	testutil.WaitFor(t, func() bool {
+	assert.Eventuallyf(t, func() bool {
 		select {
 		case _, open := <-pollerStops:
 			return !open
 		default:
 			return false
 		}
-	}, "poller is not stopped")
+	}, 10*time.Second, 5*time.Millisecond, "poller is not stopped")
 
 	err = rcvr.Shutdown(context.Background())
 	assert.True(t, errors.Is(err, componenterror.ErrAlreadyStopped), "should not stop receiver instance twice")
@@ -226,10 +227,10 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 
 	sink := rcvr.(*xrayReceiver).consumer.(*consumertest.TracesSink)
 
-	testutil.WaitFor(t, func() bool {
+	assert.Eventuallyf(t, func() bool {
 		got := sink.AllTraces()
 		return len(got) == 1
-	}, "consumer should eventually get the X-Ray span")
+	}, 10*time.Second, 5*time.Millisecond, "consumer should eventually get the X-Ray span")
 
 	obsreporttest.CheckReceiverTracesViews(t, receiverName, udppoller.Transport, 18, 0)
 }
@@ -251,12 +252,12 @@ func TestTranslatorErrorsOut(t *testing.T) {
 	err = writePacket(t, addr, segmentHeader+"invalidSegment")
 	assert.NoError(t, err, "can not write packet in the "+receiverName+" case")
 
-	testutil.WaitFor(t, func() bool {
+	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
 		fmt.Println(logs)
 		return len(logs) > 0 && strings.Contains(logs[len(logs)-1].Message,
 			"X-Ray segment to OT traces conversion failed")
-	}, "poller should log warning because consumer errored out")
+	}, 10*time.Second, 5*time.Millisecond, "poller should log warning because consumer errored out")
 
 	obsreporttest.CheckReceiverTracesViews(t, receiverName, udppoller.Transport, 0, 1)
 }
@@ -283,11 +284,11 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 	err = writePacket(t, addr, segmentHeader+string(content))
 	assert.NoError(t, err, "can not write packet")
 
-	testutil.WaitFor(t, func() bool {
+	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
 		return len(logs) > 0 && strings.Contains(logs[len(logs)-1].Message,
 			"Trace consumer errored out")
-	}, "poller should log warning because consumer errored out")
+	}, 10*time.Second, 5*time.Millisecond, "poller should log warning because consumer errored out")
 
 	obsreporttest.CheckReceiverTracesViews(t, receiverName, udppoller.Transport, 0, 1)
 }
