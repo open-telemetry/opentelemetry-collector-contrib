@@ -259,6 +259,19 @@ func TestExportTraceWithNot202StatusCode(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestExportTraceWithBadPayload(t *testing.T) {
+	ptrace := internaldata.OCToTraces(nil, nil,
+		[]*tracepb.Span{
+			{
+				SpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
+				Name:   &tracepb.TruncatableString{Value: "a"},
+			},
+		})
+
+	_, err := runTraceMock(context.Background(), ptrace, mockConfig{statusCode: 400})
+	require.Error(t, err)
+}
+
 func TestExportTraceWithInvalidMetadata(t *testing.T) {
 	ptrace := internaldata.OCToTraces(nil, nil,
 		[]*tracepb.Span{
