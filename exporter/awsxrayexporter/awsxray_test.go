@@ -36,6 +36,8 @@ func TestTraceExport(t *testing.T) {
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
 	assert.NotNil(t, err)
+	err = traceExporter.Shutdown(ctx)
+	assert.Nil(t, err)
 }
 
 func BenchmarkForTraceExporter(b *testing.B) {
