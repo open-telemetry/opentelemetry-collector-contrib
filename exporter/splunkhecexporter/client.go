@@ -60,7 +60,7 @@ func (c *client) pushMetricsData(
 		return nil
 	}
 
-	body, compressed, err := encodeBody(&c.zippers, splunkDataPoints, c.config.DisableCompression)
+	body, compressed, err := encodeBodyEvents(&c.zippers, splunkDataPoints, c.config.DisableCompression)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
@@ -328,19 +328,6 @@ func encodeBodyEvents(zippers *sync.Pool, evs []*splunk.Event, disableCompressio
 	buf := new(bytes.Buffer)
 	encoder := json.NewEncoder(buf)
 	for _, e := range evs {
-		err := encoder.Encode(e)
-		if err != nil {
-			return nil, false, err
-		}
-		buf.WriteString("\r\n\r\n")
-	}
-	return getReader(zippers, buf, disableCompression)
-}
-
-func encodeBody(zippers *sync.Pool, dps []*splunk.Event, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
-	buf := new(bytes.Buffer)
-	encoder := json.NewEncoder(buf)
-	for _, e := range dps {
 		err := encoder.Encode(e)
 		if err != nil {
 			return nil, false, err
