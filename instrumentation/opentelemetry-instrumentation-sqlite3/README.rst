@@ -18,4 +18,5 @@ References
 ----------
 * `OpenTelemetry SQLite3 Instrumentation <https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/sqlite3/sqlite3.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_
+* `OpenTelemetry Python Examples <https://github.com/open-telemetry/opentelemetry-python/tree/main/docs/examples>`_
 

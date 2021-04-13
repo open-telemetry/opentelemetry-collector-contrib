@@ -16,3 +16,10 @@ Installation
 ::
 
      pip install opentelemetry-instrumentation-grpc
+
+
+References
+----------
+
+* `OpenTelemetry Project <https://opentelemetry.io/>`_
+* `OpenTelemetry Python Examples <https://github.com/open-telemetry/opentelemetry-python/tree/main/docs/examples>`_

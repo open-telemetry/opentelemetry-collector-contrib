@@ -22,4 +22,5 @@ References
 ----------
 * `OpenTelemetry MySQL Instrumentation <https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/mysql/mysql.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_
+* `OpenTelemetry Python Examples <https://github.com/open-telemetry/opentelemetry-python/tree/main/docs/examples>`_
 

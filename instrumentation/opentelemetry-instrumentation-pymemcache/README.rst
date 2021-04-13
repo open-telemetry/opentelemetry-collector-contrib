@@ -18,3 +18,4 @@ References
 ----------
 * `OpenTelemetry Pymemcache Instrumentation <https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/pymemcache/pymemcache.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_
+* `OpenTelemetry Python Examples <https://github.com/open-telemetry/opentelemetry-python/tree/main/docs/examples>`_

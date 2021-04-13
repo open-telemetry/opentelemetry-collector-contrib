@@ -60,3 +60,4 @@ References
 
 * `OpenTelemetry Project <https://opentelemetry.io/>`_
 * `aiohttp client Tracing <https://docs.aiohttp.org/en/stable/tracing_reference.html>`_
+* `OpenTelemetry Python Examples <https://github.com/open-telemetry/opentelemetry-python/tree/main/docs/examples>`_
