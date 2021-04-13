@@ -6,6 +6,7 @@ processors:
 
 exporters:
   elasticsearch:
+    endpoints: [https://elastic.example.com:9200]
   elasticsearch/customname:
     endpoints: [https://elastic.example.com:9200]
     cloudid: TRNMxjXlNJEt

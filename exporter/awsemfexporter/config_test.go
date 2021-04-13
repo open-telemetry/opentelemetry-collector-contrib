@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, 3, len(cfg.Exporters))
 
 	r0 := cfg.Exporters["awsemf"]
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
+	assert.Equal(t, factory.CreateDefaultConfig(), r0)
 
 	r1 := cfg.Exporters["awsemf/1"].(*Config)
 	r1.Validate()

@@ -192,7 +192,7 @@ func (cfg *Config) Unmarshal(componentParser *config.Parser) (err error) {
 	}
 
 	// If translations_config is not set in the config, set it to the defaults and return.
-	if !componentParser.Viper().IsSet(translationRulesConfigKey) {
+	if !componentParser.IsSet(translationRulesConfigKey) {
 		cfg.TranslationRules, err = loadDefaultTranslationRules()
 		return err
 	}
