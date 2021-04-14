@@ -134,19 +134,19 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/internal/aws"
+    directory: "/internal/aws/metrics"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/internal/awsxray"
+    directory: "/internal/aws/xray"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/internal/awsxray/testdata/sampleapp"
+    directory: "/internal/aws/xray/testdata/sampleapp"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/internal/awsxray/testdata/sampleserver"
+    directory: "/internal/aws/xray/testdata/sampleserver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

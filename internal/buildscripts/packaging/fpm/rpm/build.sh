@@ -8,6 +8,7 @@ VERSION="${1:-}"
 ARCH="${2:-"amd64"}"
 OUTPUT_DIR="${3:-"$REPO_DIR/dist/"}"
 OTELCONTRIBCOL_PATH="$REPO_DIR/bin/otelcontribcol_linux_$ARCH"
+CONFIG_PATH="$REPO_DIR/examples/tracing/otel-collector-config.yml"
 
 . $SCRIPT_DIR/../common.sh
 
@@ -32,4 +33,5 @@ fpm -s dir -t rpm -n $PKG_NAME -v ${VERSION#v} -f -p "$OUTPUT_DIR" \
     --after-install "$POSTINSTALL_PATH" \
     --pre-uninstall "$PREUNINSTALL_PATH" \
     $SERVICE_PATH=/lib/systemd/system/$SERVICE_NAME.service \
-    $OTELCONTRIBCOL_PATH=/usr/bin/otelcontribcol
+    $OTELCONTRIBCOL_PATH=/usr/bin/otelcontribcol \
+    $CONFIG_PATH=/etc/otel-collector/config.yaml

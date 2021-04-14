@@ -29,7 +29,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws"
+	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 )
 
 func generateTestIntGauge(name string) *metricspb.Metric {
