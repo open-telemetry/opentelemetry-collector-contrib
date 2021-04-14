@@ -1,4 +1,4 @@
-// Copyright 2021, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,14 +21,13 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.uber.org/zap"
 )
 
-// Describes a payload of unstructured events to send to Humio
+// HumioUnstructuredEvents represents a payload of multiple unstructured events (strings) to send to Humio
 type HumioUnstructuredEvents struct {
 	// Key-value pairs to associate with the messages as metadata
 	Fields map[string]string `json:"fields,omitempty"`
@@ -43,7 +42,7 @@ type HumioUnstructuredEvents struct {
 	Messages []string `json:"messages"`
 }
 
-// Describes a payload of structured events to send to Humio
+// HumioStructuredEvents represents a payload of multiple structured events to send to Humio
 type HumioStructuredEvents struct {
 	// Tags used to target specific data sources in Humio
 	Tags map[string]string `json:"tags,omitempty"`
@@ -52,7 +51,7 @@ type HumioStructuredEvents struct {
 	Events []*HumioStructuredEvent `json:"events"`
 }
 
-// Describes a single structured event to send to Humio
+// HumioStructuredEvent represents a single structured event to send to Humio
 type HumioStructuredEvent struct {
 	// The time where the event occurred
 	Timestamp time.Time
@@ -64,7 +63,7 @@ type HumioStructuredEvent struct {
 	Attributes interface{}
 }
 
-// Formats the timestamp in a HumioStructuredEvent as either an ISO string or a
+// MarshalJSON formats the timestamp in a HumioStructuredEvent as either an ISO string or a
 // Unix timestamp in milliseconds with time zone
 func (e *HumioStructuredEvent) MarshalJSON() ([]byte, error) {
 	if e.AsUnix {
@@ -77,20 +76,20 @@ func (e *HumioStructuredEvent) MarshalJSON() ([]byte, error) {
 			TimeZone:   e.Timestamp.Location().String(),
 			Attributes: e.Attributes,
 		})
-	} else {
-		return json.Marshal(struct {
-			Timestamp  time.Time   `json:"timestamp"`
-			Attributes interface{} `json:"attributes,omitempty"`
-		}{
-			Timestamp:  e.Timestamp,
-			Attributes: e.Attributes,
-		})
 	}
+
+	return json.Marshal(struct {
+		Timestamp  time.Time   `json:"timestamp"`
+		Attributes interface{} `json:"attributes,omitempty"`
+	}{
+		Timestamp:  e.Timestamp,
+		Attributes: e.Attributes,
+	})
 }
 
 // Abstract interface describing the capabilities of an HTTP client for sending
 // unstructured and structured events
-type client interface {
+type exporterClient interface {
 	sendUnstructuredEvents(context.Context, []*HumioUnstructuredEvents) error
 	sendStructuredEvents(context.Context, []*HumioStructuredEvents) error
 }
@@ -103,7 +102,7 @@ type humioClient struct {
 }
 
 // Constructs a new HTTP client for sending payloads to Humio
-func newHumioClient(config *Config, logger *zap.Logger) (client, error) {
+func newHumioClient(config *Config, logger *zap.Logger) (exporterClient, error) {
 	client, err := config.HTTPClientSettings.ToClient()
 	if err != nil {
 		return nil, err
@@ -118,17 +117,17 @@ func newHumioClient(config *Config, logger *zap.Logger) (client, error) {
 
 // Send a payload of unstructured events to the corresponding Humio API
 func (h *humioClient) sendUnstructuredEvents(ctx context.Context, evts []*HumioUnstructuredEvents) error {
-	return h.sendEvents(ctx, evts, h.config.unstructuredEndpoint)
+	return h.sendEvents(ctx, evts, h.config.unstructuredEndpoint.String())
 }
 
 // Send a payload of structured events to the corresponding Humio API
 func (h *humioClient) sendStructuredEvents(ctx context.Context, evts []*HumioStructuredEvents) error {
-	return h.sendEvents(ctx, evts, h.config.structuredEndpoint)
+	return h.sendEvents(ctx, evts, h.config.structuredEndpoint.String())
 }
 
 // Send a payload of generic events to the specified Humio API. This method should
 // never be called directly
-func (h *humioClient) sendEvents(ctx context.Context, evts interface{}, u *url.URL) error {
+func (h *humioClient) sendEvents(ctx context.Context, evts interface{}, url string) error {
 	body, err := encodeBody(evts)
 	if err != nil {
 		return consumererror.Permanent(err)
@@ -137,7 +136,7 @@ func (h *humioClient) sendEvents(ctx context.Context, evts interface{}, u *url.U
 	req, err := http.NewRequestWithContext(
 		ctx,
 		"POST",
-		u.String(),
+		url,
 		body,
 	)
 	if err != nil {

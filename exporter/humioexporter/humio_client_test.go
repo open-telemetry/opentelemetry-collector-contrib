@@ -1,4 +1,4 @@
-// Copyright 2021, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,19 +25,21 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.uber.org/zap"
 )
 
-func makeClient(t *testing.T, host string) client {
+func makeClient(t *testing.T, host string) exporterClient {
 	cfg := &Config{
-		IngestToken: "token",
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		IngestToken:      "token",
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: host,
 		},
 	}
-	err := cfg.sanitize()
+	err := cfg.Validate()
 	require.NoError(t, err)
 
 	client, err := newHumioClient(cfg, zap.NewNop())
@@ -221,7 +223,7 @@ func TestSendEventsBadParameters(t *testing.T) {
 	humio := makeClient(t, "https://localhost:8080")
 
 	// Act
-	err := humio.sendStructuredEvents(nil, nil)
+	err := humio.(*humioClient).sendEvents(context.Background(), nil, "\n")
 
 	// Assert
 	require.Error(t, err)

@@ -16,8 +16,10 @@ package humioexporter
 
 import (
 	"context"
+	"errors"
 	"sync"
 
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
@@ -25,11 +27,11 @@ import (
 type humioTracesExporter struct {
 	config *Config
 	logger *zap.Logger
-	client client
+	client exporterClient
 	wg     sync.WaitGroup
 }
 
-func newTracesExporter(config *Config, logger *zap.Logger, client client) *humioTracesExporter {
+func newTracesExporter(config *Config, logger *zap.Logger, client exporterClient) *humioTracesExporter {
 	return &humioTracesExporter{
 		config: config,
 		logger: logger,
@@ -42,8 +44,9 @@ func (e *humioTracesExporter) pushTraceData(ctx context.Context, td pdata.Traces
 	defer e.wg.Done()
 
 	// TODO: Transform to Humio event structure
+	// TODO: Send events to Humio
 
-	return e.client.sendStructuredEvents(ctx, nil)
+	return consumererror.Permanent(errors.New("Not implemented yet"))
 }
 
 func (e *humioTracesExporter) shutdown(context.Context) error {

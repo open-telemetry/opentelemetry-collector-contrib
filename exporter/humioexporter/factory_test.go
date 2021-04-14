@@ -70,7 +70,8 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			desc: "Invalid client configuration",
 			config: &Config{
-				IngestToken: "00000000-0000-0000-0000-0000000000000",
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				IngestToken:      "00000000-0000-0000-0000-0000000000000",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
 					TLSSetting: configtls.TLSClientSetting{

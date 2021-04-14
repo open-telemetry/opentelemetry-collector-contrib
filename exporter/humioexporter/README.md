@@ -52,8 +52,6 @@ exporters:
         tags:
             host: "web_server"
             environment: "production"
-        logs:
-            log_parser: "custom-parser"
         traces:
             unix_timestamps: true
             timezone: "Europe/Copenhagen"
