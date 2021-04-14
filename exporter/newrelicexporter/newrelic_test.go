@@ -437,6 +437,27 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	testTraceData(t, expected, resource, spans, "NRII-api-key")
 }
 
+func TestExportMetricUnsupported(t *testing.T) {
+	m := pdata.NewMetric()
+	m.SetDataType(pdata.MetricDataTypeHistogram)
+	dp := pdata.NewHistogramDataPoint()
+	dp.SetCount(1)
+	dp.SetSum(1)
+	dp.SetTimestamp(pdata.TimestampFromTime(time.Now()))
+	m.Histogram().DataPoints().Append(dp)
+
+	ms := pdata.NewMetrics()
+	rm := pdata.NewResourceMetrics()
+	ilm := pdata.NewInstrumentationLibraryMetrics()
+	ilm.Metrics().Append(m)
+	rm.InstrumentationLibraryMetrics().Append(ilm)
+	ms.ResourceMetrics().Append(rm)
+
+	_, err := runMetricMock(context.Background(), ms, mockConfig{useAPIKeyHeader: false})
+	var unsupportedErr *errUnsupportedMetricType
+	assert.ErrorAs(t, err, &unsupportedErr, "error was not the expected unsupported metric type error")
+}
+
 func TestExportMetricDataMinimal(t *testing.T) {
 	desc := "physical property of matter that quantitatively expresses hot and cold"
 	unit := "K"
