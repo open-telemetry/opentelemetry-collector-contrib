@@ -219,7 +219,7 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	addr, rcvr, _ := createAndOptionallyStartReceiver(t, receiverName, nil, true)
 	defer rcvr.Shutdown(context.Background())
 
-	content, err := ioutil.ReadFile(path.Join("../../internal/awsxray", "testdata", "ddbSample.txt"))
+	content, err := ioutil.ReadFile(path.Join("../../internal/aws/xray", "testdata", "ddbSample.txt"))
 	assert.NoError(t, err, "can not read raw segment")
 
 	err = writePacket(t, addr, segmentHeader+string(content))
@@ -278,7 +278,7 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 		true)
 	defer rcvr.Shutdown(context.Background())
 
-	content, err := ioutil.ReadFile(path.Join("../../internal/awsxray", "testdata", "serverSample.txt"))
+	content, err := ioutil.ReadFile(path.Join("../../internal/aws/xray", "testdata", "serverSample.txt"))
 	assert.NoError(t, err, "can not read raw segment")
 
 	err = writePacket(t, addr, segmentHeader+string(content))

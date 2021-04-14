@@ -37,7 +37,7 @@
             "deployment_id": 32,
             "version_label": "app-5a56-170119_190650-stage-170119_190650"
         },
-        "account_id": "620297135128"
+        "account_id": "000000000000"
     },
     "service": {
         "compiler_version": "go1.14.6",
