@@ -1,0 +1,28 @@
+dist:
+  name: otelcol-sumo
+  description: Sumo Logic OpenTelemetry Collector distribution
+
+  # the module name for the new distribution, following Go mod conventions. Optional, but recommended.
+  module: github.com/SumoLogic/opentelemetry-collector-builder
+
+  otelcol_version: 0.24.0 # the OpenTelemetry Collector version to use as base for the distribution.
+  output_path: ./cmd/ # the path to write the output (sources and binary).
+
+processors:
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor v0.24.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor v0.24.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/processor/sourceprocessor v0.24.0"
+
+exporters:
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.24.0"
+
+# Replacement paths are relative to the output_path (location of source files)
+replaces:
+  - github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor => ./../../processor/cascadingfilterprocessor
+
+  - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor => ./../../processor/k8sprocessor
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ./../../internal/k8sconfig
+
+  - github.com/open-telemetry/opentelemetry-collector-contrib/processor/sourceprocessor => ./../../processor/sourceprocessor
+
+  - go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector v0.24.0-sumo
