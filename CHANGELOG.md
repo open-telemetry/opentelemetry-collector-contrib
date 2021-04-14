@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#387](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/387))
 - Update redis instrumentation to follow semantic conventions
   ([#403](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/403))
+- `opentelemetry-instrumentation-wsgi` Replaced `name_callback` with `request_hook`
+   and `response_hook` callbacks.
+  ([#424](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/424))
 - Update gRPC instrumentation to better wrap server context
   ([#420](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/420))
 
@@ -37,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Remove `http.status_text` from span attributes
   ([#406](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/406))
+
 
 ## [0.19b0](https://github.com/open-telemetry/opentelemetry-python-contrib/releases/tag/v0.19b0) - 2021-03-26
 

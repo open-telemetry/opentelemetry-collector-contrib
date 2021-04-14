@@ -186,21 +186,26 @@ class OpenTelemetryMiddleware:
 
     Args:
         wsgi: The WSGI application callable to forward requests to.
-        name_callback: Callback which calculates a generic span name for an
-                       incoming HTTP request based on the PEP3333 WSGI environ.
-                       Optional: Defaults to get_default_span_name.
+        request_hook: Optional callback which is called with the server span and WSGI
+                      environ object for every incoming request.
+        response_hook: Optional callback which is called with the server span,
+                       WSGI environ, status_code and response_headers for every
+                       incoming request.
     """
 
-    def __init__(self, wsgi, name_callback=get_default_span_name):
+    def __init__(self, wsgi, request_hook=None, response_hook=None):
         self.wsgi = wsgi
         self.tracer = trace.get_tracer(__name__, __version__)
-        self.name_callback = name_callback
+        self.request_hook = request_hook
+        self.response_hook = response_hook
 
     @staticmethod
-    def _create_start_response(span, start_response):
+    def _create_start_response(span, start_response, response_hook):
         @functools.wraps(start_response)
         def _start_response(status, response_headers, *args, **kwargs):
             add_response_attributes(span, status, response_headers)
+            if response_hook:
+                response_hook(status, response_headers)
             return start_response(status, response_headers, *args, **kwargs)
 
         return _start_response
@@ -214,18 +219,24 @@ class OpenTelemetryMiddleware:
         """
 
         token = context.attach(extract(environ, getter=wsgi_getter))
-        span_name = self.name_callback(environ)
 
         span = self.tracer.start_span(
-            span_name,
+            get_default_span_name(environ),
             kind=trace.SpanKind.SERVER,
             attributes=collect_request_attributes(environ),
         )
 
+        if self.request_hook:
+            self.request_hook(span, environ)
+
+        response_hook = self.response_hook
+        if response_hook:
+            response_hook = functools.partial(response_hook, span, environ)
+
         try:
             with trace.use_span(span):
                 start_response = self._create_start_response(
-                    span, start_response
+                    span, start_response, response_hook
                 )
                 iterable = self.wsgi(environ, start_response)
                 return _end_span_after_iterating(
