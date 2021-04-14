@@ -40,9 +40,6 @@ type LogsConfig struct {
 type TracesConfig struct {
 	// Whether to use Unix timestamps, or to fall back to ISO 8601 formatted strings
 	UnixTimestamps bool `mapstructure:"unix_timestamps"`
-
-	// The time zone to use when representing timestamps in Unix time
-	TimeZone string `mapstructure:"timezone"`
 }
 
 // Config represents the Humio configuration settings
@@ -90,10 +87,6 @@ func (c *Config) Validate() error {
 
 	if c.DisableServiceTag && len(c.Tags) == 0 {
 		return errors.New("requires at least one custom tag when disabling service tag")
-	}
-
-	if c.Traces.UnixTimestamps && c.Traces.TimeZone == "" {
-		return errors.New("requires a time zone when using Unix timestamps")
 	}
 
 	// Ensure that it is possible to construct a URL to access the unstructured ingest API

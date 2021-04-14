@@ -115,7 +115,6 @@ func TestLoadAllSettings(t *testing.T) {
 		},
 		Traces: TracesConfig{
 			UnixTimestamps: true,
-			TimeZone:       "Europe/Copenhagen",
 		},
 	}
 
@@ -264,7 +263,7 @@ func TestValidateErrors(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			desc: "Unix with time zone",
+			desc: "Unix time",
 			config: &Config{
 				ExporterSettings: config.NewExporterSettings(typeStr),
 				IngestToken:      "t",
@@ -273,24 +272,9 @@ func TestValidateErrors(t *testing.T) {
 				},
 				Traces: TracesConfig{
 					UnixTimestamps: true,
-					TimeZone:       "z",
 				},
 			},
 			wantErr: false,
-		},
-		{
-			desc: "Missing time zone",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
-				IngestToken:      "t",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "e",
-				},
-				Traces: TracesConfig{
-					UnixTimestamps: true,
-				},
-			},
-			wantErr: true,
 		},
 		{
 			desc: "Error creating URLs",

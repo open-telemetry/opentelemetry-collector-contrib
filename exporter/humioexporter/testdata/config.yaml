@@ -28,7 +28,6 @@ exporters:
       log_parser: "custom-parser"
     traces:
       unix_timestamps: true
-      timezone: "Europe/Copenhagen"
     sending_queue:
       enabled: false
       num_consumers: 20

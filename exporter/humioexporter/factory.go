@@ -17,7 +17,6 @@ package humioexporter
 import (
 	"context"
 	"errors"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -36,9 +35,6 @@ func NewFactory() component.ExporterFactory {
 		typeStr,
 		createDefaultConfig,
 		exporterhelper.WithTraces(createTracesExporter),
-		// To be added over time
-		// exporterhelper.WithMetrics(createMetricsExporter),
-		// exporterhelper.WithLogs(createLogsExporter),
 	)
 }
 
@@ -61,7 +57,6 @@ func createDefaultConfig() config.Exporter {
 		DisableServiceTag:  false,
 		Traces: TracesConfig{
 			UnixTimestamps: false,
-			TimeZone:       time.Local.String(),
 		},
 	}
 }

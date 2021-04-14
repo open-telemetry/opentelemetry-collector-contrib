@@ -27,8 +27,7 @@ In addition, the following global configuration options can be overridden:
 ### Traces
 For exporting structured data (traces), the following configuration options are available:
 
-- `unix_timestamps` (default: `false`): Whether to use Unix or ISO 8601 formatted timestamps when exporting data to Humio. If this is set to `true`, timestamps will be represented in milliseconds (Unix time) in UTC.
-- `timezone` (default: host timezone): When using Unix timestamps, this option can be provided to specify the local timezone of the events. If not specified, the local time zone of the host is used instead. An example is `Europe/Copenhagen`.
+- `unix_timestamps` (default: `false`): Whether to use Unix or ISO 8601 formatted timestamps when exporting data to Humio. If this is set to `true`, timestamps will be represented in milliseconds (Unix time) in UTC, and the time zone of the event is stored separately in the payload sent to Humio.
 
 ## Advaced Configuration
 This exporter, like many others, includes shared configuration helpers for the following advanced settings:
@@ -56,5 +55,4 @@ exporters:
             environment: "production"
         traces:
             unix_timestamps: true
-            timezone: "Europe/Copenhagen"
 ```
