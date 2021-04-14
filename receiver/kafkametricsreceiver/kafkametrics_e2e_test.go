@@ -18,7 +18,6 @@ package kafkametricsreceiver
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -56,8 +55,8 @@ func TestIntegrationSingleNode(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Scrapers = []string{
-		"consumers",
 		"brokers",
+		"consumers",
 		"topics",
 	}
 	cfg.Brokers = []string{kafkaAddress}
@@ -67,16 +66,14 @@ func TestIntegrationSingleNode(t *testing.T) {
 
 	var receiver component.MetricsReceiver
 	var err error
-	t.Logf("waiting to connect to kafka...")
-	require.Eventuallyf(t,
-		func() bool {
-			receiver, err = f.CreateMetricsReceiver(context.Background(), params, cfg, consumer)
-			return err == nil
-		}, 30*time.Second, 5*time.Second,
-		fmt.Sprintf("failed to create metrics receiver. %v", err),
-	)
-	t.Logf("connected to kafka")
-	require.NoError(t, receiver.Start(context.Background(), &testHost{t: t}))
+	receiver, err = f.CreateMetricsReceiver(context.Background(), params, cfg, consumer)
+	if err != nil {
+		t.Errorf("failed to create receiver: %w", err)
+	}
+	require.Eventuallyf(t, func() bool {
+		err = receiver.Start(context.Background(), &testHost{t: t})
+		return err == nil
+	}, 30*time.Second, 5*time.Second, "failed to start receiver")
 	t.Logf("waiting for metrics...")
 	require.Eventuallyf(t,
 		func() bool {
