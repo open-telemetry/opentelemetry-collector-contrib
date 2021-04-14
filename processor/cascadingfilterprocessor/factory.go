@@ -20,12 +20,12 @@ import (
 
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor/config"
+	cfconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor/config"
 )
 
 const (
@@ -48,9 +48,9 @@ func NewFactory() component.ProcessorFactory {
 		processorhelper.WithTraces(createTraceProcessor))
 }
 
-func createDefaultConfig() configmodels.Processor {
-	return &config.Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+func createDefaultConfig() config.Processor {
+	return &cfconfig.Config{
+		ProcessorSettings: &config.ProcessorSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -64,9 +64,9 @@ func createDefaultConfig() configmodels.Processor {
 func createTraceProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.TracesConsumer,
+	cfg config.Processor,
+	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
-	tCfg := cfg.(*config.Config)
+	tCfg := cfg.(*cfconfig.Config)
 	return newTraceProcessor(params.Logger, nextConsumer, *tCfg)
 }

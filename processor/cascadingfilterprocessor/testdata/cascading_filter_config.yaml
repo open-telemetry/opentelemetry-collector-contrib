@@ -1,8 +1,8 @@
 receivers:
-  examplereceiver:
+  nop:
 
 exporters:
-  exampleexporter:
+  nop:
 
 processors:
   cascading_filter:
@@ -56,6 +56,6 @@ processors:
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors: [cascading_filter]
-      exporters: [exampleexporter]
+      exporters: [nop]

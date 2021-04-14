@@ -34,6 +34,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.24.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.0.0-00010101000000-000000000000
@@ -72,7 +73,7 @@ require (
 	golang.org/x/sys v0.0.0-20210403161142-5e06dd20ab57
 )
 
-replace go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector v0.22.0-sumo
+replace go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector v0.24.0-sumo
 
 replace github.com/influxdata/telegraf => github.com/sumologic/telegraf v1.17.3-sumo
 

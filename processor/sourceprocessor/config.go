@@ -15,12 +15,12 @@
 package sourceprocessor
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Config defines configuration for Source processor.
 type Config struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
+	*config.ProcessorSettings `mapstructure:"-"`
 
 	Collector                 string `mapstructure:"collector"`
 	Source                    string `mapstructure:"source"`

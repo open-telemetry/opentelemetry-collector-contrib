@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/config"
+	tsconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/config"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -44,46 +44,46 @@ func TestLoadConfig(t *testing.T) {
 	namePatternValue := "foo.*"
 
 	assert.Equal(t, cfg.Processors["tail_sampling"],
-		&Config{
+		&tsconfig.Config{
 			ProcessorSettings:       config.NewProcessorSettings(typeStr),
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,
 			ExpectedNewTracesPerSec: 10,
-			PolicyCfgs: []config.PolicyCfg{
+			PolicyCfgs: []tsconfig.PolicyCfg{
 				{
 					Name: "test-policy-1",
-					Type: config.AlwaysSample,
+					Type: tsconfig.AlwaysSample,
 				},
 				{
 					Name:                "test-policy-2",
-					Type:                config.NumericAttribute,
-					NumericAttributeCfg: config.NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+					Type:                tsconfig.NumericAttribute,
+					NumericAttributeCfg: tsconfig.NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
 				},
 				{
 					Name:               "test-policy-3",
-					Type:               config.StringAttribute,
-					StringAttributeCfg: config.StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
+					Type:               tsconfig.StringAttribute,
+					StringAttributeCfg: tsconfig.StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
 				},
 				{
 					Name:            "test-policy-4",
-					Type:            config.RateLimiting,
-					RateLimitingCfg: config.RateLimitingCfg{SpansPerSecond: 35},
+					Type:            tsconfig.RateLimiting,
+					RateLimitingCfg: tsconfig.RateLimitingCfg{SpansPerSecond: 35},
 				},
 				{
 					Name:           "test-policy-5",
-					Type:           config.Cascading,
+					Type:           tsconfig.Cascading,
 					SpansPerSecond: 1000,
-					Rules: []config.CascadingRuleCfg{
+					Rules: []tsconfig.CascadingRuleCfg{
 						{
 							Name:           "num",
 							SpansPerSecond: 123,
-							NumericAttributeCfg: &config.NumericAttributeCfg{
+							NumericAttributeCfg: &tsconfig.NumericAttributeCfg{
 								Key: "key1", MinValue: 50, MaxValue: 100},
 						},
 						{
 							Name:           "dur",
 							SpansPerSecond: 50,
-							PropertiesCfg: &config.PropertiesCfg{
+							PropertiesCfg: &tsconfig.PropertiesCfg{
 								MinDurationMicros: &minDurationValue,
 							},
 						},
@@ -95,8 +95,8 @@ func TestLoadConfig(t *testing.T) {
 				},
 				{
 					Name: "test-policy-6",
-					Type: config.Properties,
-					PropertiesCfg: config.PropertiesCfg{
+					Type: tsconfig.Properties,
+					PropertiesCfg: tsconfig.PropertiesCfg{
 						NamePattern:       &namePatternValue,
 						MinDurationMicros: &minDurationValue,
 						MinNumberOfSpans:  &minSpansValue,

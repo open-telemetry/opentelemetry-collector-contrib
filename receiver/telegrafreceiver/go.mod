@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/influxdata/telegraf v1.17.3
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.22.0
+	go.opentelemetry.io/collector v0.24.0
 	go.uber.org/zap v1.16.0
 )
 

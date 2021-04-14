@@ -10,4 +10,4 @@ require (
 	go.uber.org/zap v1.16.0
 )
 
-replace go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector v0.22.0-sumo
+replace go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector v0.24.0-sumo

@@ -56,7 +56,7 @@ type traceKey [16]byte
 // policy to sample traces.
 type cascadingFilterSpanProcessor struct {
 	ctx             context.Context
-	nextConsumer    consumer.TracesConsumer
+	nextConsumer    consumer.Traces
 	start           sync.Once
 	maxNumTraces    uint64
 	policies        []*Policy
@@ -81,7 +81,7 @@ const (
 
 // newTraceProcessor returns a processor.TraceProcessor that will perform Cascading Filter according to the given
 // configuration.
-func newTraceProcessor(logger *zap.Logger, nextConsumer consumer.TracesConsumer, cfg config.Config) (component.TracesProcessor, error) {
+func newTraceProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg config.Config) (component.TracesProcessor, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
@@ -89,7 +89,7 @@ func newTraceProcessor(logger *zap.Logger, nextConsumer consumer.TracesConsumer,
 	return newCascadingFilterSpanProcessor(logger, nextConsumer, cfg)
 }
 
-func newCascadingFilterSpanProcessor(logger *zap.Logger, nextConsumer consumer.TracesConsumer, cfg config.Config) (*cascadingFilterSpanProcessor, error) {
+func newCascadingFilterSpanProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg config.Config) (*cascadingFilterSpanProcessor, error) {
 	numDecisionBatches := uint64(cfg.DecisionWait.Seconds())
 	inBatcher, err := idbatcher.New(numDecisionBatches, cfg.ExpectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
 	if err != nil {

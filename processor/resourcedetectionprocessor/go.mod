@@ -20,3 +20,5 @@ require (
 	go.uber.org/zap v1.16.0
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )
+
+replace go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector v0.24.0-sumo

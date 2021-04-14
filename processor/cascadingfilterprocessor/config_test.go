@@ -22,14 +22,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor/config"
+	cfconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor/config"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -45,8 +45,8 @@ func TestLoadConfig(t *testing.T) {
 	namePatternValue := "foo.*"
 
 	assert.Equal(t, cfg.Processors["cascading_filter"],
-		&config.Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
+		&cfconfig.Config{
+			ProcessorSettings: &config.ProcessorSettings{
 				TypeVal: "cascading_filter",
 				NameVal: "cascading_filter",
 			},
@@ -55,17 +55,17 @@ func TestLoadConfig(t *testing.T) {
 			ExpectedNewTracesPerSec:     10,
 			SpansPerSecond:              1000,
 			ProbabilisticFilteringRatio: &probFilteringRatio,
-			PolicyCfgs: []config.PolicyCfg{
+			PolicyCfgs: []cfconfig.PolicyCfg{
 				{
 					Name: "test-policy-1",
 				},
 				{
 					Name:                "test-policy-2",
-					NumericAttributeCfg: &config.NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+					NumericAttributeCfg: &cfconfig.NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
 				},
 				{
 					Name:               "test-policy-3",
-					StringAttributeCfg: &config.StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
+					StringAttributeCfg: &cfconfig.StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
 				},
 				{
 					Name:           "test-policy-4",
@@ -74,7 +74,7 @@ func TestLoadConfig(t *testing.T) {
 				{
 					Name:           "test-policy-5",
 					SpansPerSecond: 123,
-					NumericAttributeCfg: &config.NumericAttributeCfg{
+					NumericAttributeCfg: &cfconfig.NumericAttributeCfg{
 						Key: "key1", MinValue: 50, MaxValue: 100},
 					InvertMatch: true,
 				},
@@ -82,11 +82,11 @@ func TestLoadConfig(t *testing.T) {
 					Name:           "test-policy-6",
 					SpansPerSecond: 50,
 
-					PropertiesCfg: config.PropertiesCfg{MinDuration: &minDurationValue},
+					PropertiesCfg: cfconfig.PropertiesCfg{MinDuration: &minDurationValue},
 				},
 				{
 					Name: "test-policy-7",
-					PropertiesCfg: config.PropertiesCfg{
+					PropertiesCfg: cfconfig.PropertiesCfg{
 						NamePattern:      &namePatternValue,
 						MinDuration:      &minDurationValue,
 						MinNumberOfSpans: &minSpansValue,

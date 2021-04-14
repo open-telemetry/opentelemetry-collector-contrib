@@ -21,7 +21,7 @@ import (
 	telegrafagent "github.com/influxdata/telegraf/agent"
 	telegrafconfig "github.com/influxdata/telegraf/config"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
@@ -40,10 +40,10 @@ func NewFactory() component.ReceiverFactory {
 	)
 }
 
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: configmodels.Type(typeStr),
+		ReceiverSettings: &config.ReceiverSettings{
+			TypeVal: config.Type(typeStr),
 			NameVal: typeStr,
 		},
 		SeparateField: false,
@@ -54,8 +54,8 @@ func createDefaultConfig() configmodels.Receiver {
 func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumer,
+	cfg config.Receiver,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	tCfg, ok := cfg.(*Config)
 	if !ok {

@@ -1,5 +1,5 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
   # The following specifies an empty source - it will have no effect on trace or metrics data.
@@ -26,12 +26,12 @@ processors:
     source_host_key: "source_host"
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors: [source/2]
-      exporters: [exampleexporter]
+      exporters: [nop]
 

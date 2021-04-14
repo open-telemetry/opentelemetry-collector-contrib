@@ -110,8 +110,8 @@ func (df *spanPropertiesFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (Dec
 					}
 
 					if df.minDurationMicros != nil {
-						startTs := tsToMicros(span.StartTime())
-						endTs := tsToMicros(span.EndTime())
+						startTs := tsToMicros(span.StartTimestamp())
+						endTs := tsToMicros(span.EndTimestamp())
 
 						if minStartTime == 0 {
 							minStartTime = startTs

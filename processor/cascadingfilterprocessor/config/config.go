@@ -17,7 +17,7 @@ package config
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // PolicyCfg holds the common configuration to all policies.
@@ -68,7 +68,7 @@ type StringAttributeCfg struct {
 
 // Config holds the configuration for cascading-filter-based sampling.
 type Config struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
+	*config.ProcessorSettings `mapstructure:"-"`
 	// DecisionWait is the desired wait time from the arrival of the first span of
 	// trace until the decision about sampling it or not is evaluated.
 	DecisionWait time.Duration `mapstructure:"decision_wait"`

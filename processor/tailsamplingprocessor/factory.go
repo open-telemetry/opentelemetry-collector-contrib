@@ -50,7 +50,7 @@ func NewFactory() component.ProcessorFactory {
 }
 
 func createDefaultConfig() config.Processor {
-	return &Config{
+	return &tsconfig.Config{
 		ProcessorSettings: config.NewProcessorSettings(typeStr),
 		DecisionWait:      30 * time.Second,
 		NumTraces:         50000,

@@ -104,8 +104,8 @@ func (pe *policyEvaluator) evaluateRules(_ pdata.TraceID, trace *TraceData) Deci
 					}
 
 					if pe.minDuration != nil {
-						startTs := tsToMicros(span.StartTime())
-						endTs := tsToMicros(span.EndTime())
+						startTs := tsToMicros(span.StartTimestamp())
+						endTs := tsToMicros(span.EndTimestamp())
 
 						if minStartTime == 0 {
 							minStartTime = startTs

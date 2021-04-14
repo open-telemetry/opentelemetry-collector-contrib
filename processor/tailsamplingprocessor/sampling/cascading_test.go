@@ -31,8 +31,8 @@ func fillSpan(span *pdata.Span, durationMicros int64) {
 	startTime := nowTs - durationMicros*1000
 
 	span.Attributes().InsertInt("foo", 55)
-	span.SetStartTime(pdata.Timestamp(startTime))
-	span.SetEndTime(pdata.Timestamp(nowTs))
+	span.SetStartTimestamp(pdata.Timestamp(startTime))
+	span.SetEndTimestamp(pdata.Timestamp(nowTs))
 }
 
 func createTrace(numSpans int, durationMicros int64) *TraceData {

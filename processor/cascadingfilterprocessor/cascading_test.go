@@ -21,26 +21,26 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
-	tsconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor/config"
+	cfconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor/sampling"
 )
 
 var testValue = 10 * time.Millisecond
-var cfg = tsconfig.Config{
-	ProcessorSettings:       configmodels.ProcessorSettings{},
+var cfg = cfconfig.Config{
+	ProcessorSettings:       &config.ProcessorSettings{},
 	DecisionWait:            2 * time.Second,
 	NumTraces:               100,
 	ExpectedNewTracesPerSec: 100,
 	SpansPerSecond:          1000,
-	PolicyCfgs: []tsconfig.PolicyCfg{
+	PolicyCfgs: []cfconfig.PolicyCfg{
 		{
 			Name:           "duration",
 			SpansPerSecond: 10,
-			PropertiesCfg: tsconfig.PropertiesCfg{
+			PropertiesCfg: cfconfig.PropertiesCfg{
 				MinDuration: &testValue,
 			},
 		},
@@ -56,8 +56,8 @@ func fillSpan(span *pdata.Span, durationMicros int64) {
 	startTime := nowTs - durationMicros*1000
 
 	span.Attributes().InsertInt("foo", 55)
-	span.SetStartTime(pdata.Timestamp(startTime))
-	span.SetEndTime(pdata.Timestamp(nowTs))
+	span.SetStartTimestamp(pdata.Timestamp(startTime))
+	span.SetEndTimestamp(pdata.Timestamp(nowTs))
 }
 
 func createTrace(fsp *cascadingFilterSpanProcessor, numSpans int, durationMicros int64) *sampling.TraceData {

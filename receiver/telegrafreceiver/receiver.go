@@ -35,7 +35,7 @@ type telegrafreceiver struct {
 	cancel    context.CancelFunc
 
 	agent           *telegrafagent.Agent
-	consumer        consumer.MetricsConsumer
+	consumer        consumer.Metrics
 	logger          *zap.Logger
 	metricConverter MetricConverter
 }
