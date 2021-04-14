@@ -20,10 +20,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 )
 
 func TestMetricViews(t *testing.T) {
@@ -374,4 +376,49 @@ func TestSanitizeApiKeyForLogging(t *testing.T) {
 	assert.Equal(t, "", sanitizeAPIKeyForLogging(""))
 	assert.Equal(t, "foo", sanitizeAPIKeyForLogging("foo"))
 	assert.Equal(t, "foobarba", sanitizeAPIKeyForLogging("foobarbazqux"))
+}
+
+func TestMetadataHasDefaultValuesSet(t *testing.T) {
+	m := initMetadata(context.Background(), "testdatatype")
+
+	assert.Equal(t, "not_present", m.userAgent)
+	assert.Equal(t, "not_present", m.apiKey)
+	assert.Equal(t, "testdatatype", m.dataType)
+	assert.NotNil(t, m.metricMetadataCount)
+	assert.NotNil(t, m.spanMetadataCount)
+	assert.NotNil(t, m.attributeMetadataCount)
+}
+
+func TestMetadataHasUserAgentWhenAvailable(t *testing.T) {
+	ctx := metadata.NewIncomingContext(context.Background(), metadata.MD{"user-agent": []string{"testuseragent"}})
+
+	m := initMetadata(ctx, "testdatatype")
+
+	assert.Equal(t, "testuseragent", m.userAgent)
+}
+
+func TestErrorsAreCombinedIntoSingleError(t *testing.T) {
+	view.Unregister(MetricViews()...)
+	if err := view.Register(MetricViews()...); err != nil {
+		t.Fail()
+	}
+
+	ctx := metadata.NewIncomingContext(context.Background(), metadata.MD{"user-agent": []string{"testuseragent"}})
+
+	// Tag values with length > 255 will generate an error when recording metrics
+	b := make([]byte, 300)
+	for i := 0; i < 300; i++ {
+		b[i] = 'a'
+	}
+	reallyLongDataType := string(b)
+	m := initMetadata(ctx, reallyLongDataType)
+	m.metricMetadataCount[metricStatsKey{}]++
+	m.spanMetadataCount[spanStatsKey{}]++
+	m.attributeMetadataCount[attributeStatsKey{}]++
+
+	err := m.recordMetrics(ctx)
+
+	require.Error(t, err)
+	// The bad tag value should result in 4 errors for each metric and there are 4 metrics
+	assert.Equal(t, 8, len(strings.Split(err.Error(), ";")))
 }
