@@ -31,8 +31,17 @@ type systemMetadata interface {
 
 type systemMetadataImpl struct{}
 
+// goosToOSType maps a runtime.GOOS-like value to os.type style.
+func goosToOSType(goos string) string {
+	switch goos {
+	case "dragonfly":
+		return "DRAGONFLYBSD"
+	}
+	return strings.ToUpper(goos)
+}
+
 func (*systemMetadataImpl) OSType() (string, error) {
-	return strings.ToUpper(runtime.GOOS), nil
+	return goosToOSType(runtime.GOOS), nil
 }
 
 func (*systemMetadataImpl) FQDN() (string, error) {
