@@ -16,11 +16,13 @@ package humioexporter
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -96,9 +98,10 @@ type exporterClient interface {
 
 // A concrete HTTP client for sending unstructured and structured events to Humio
 type humioClient struct {
-	config *Config
-	client *http.Client
-	logger *zap.Logger
+	config   *Config
+	client   *http.Client
+	gzipPool *sync.Pool
+	logger   *zap.Logger
 }
 
 // Constructs a new HTTP client for sending payloads to Humio
@@ -111,6 +114,9 @@ func newHumioClient(config *Config, logger *zap.Logger) (exporterClient, error) 
 	return &humioClient{
 		config: config,
 		client: client,
+		gzipPool: &sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
 		logger: logger,
 	}, nil
 }
@@ -128,7 +134,7 @@ func (h *humioClient) sendStructuredEvents(ctx context.Context, evts []*HumioStr
 // Send a payload of generic events to the specified Humio API. This method should
 // never be called directly
 func (h *humioClient) sendEvents(ctx context.Context, evts interface{}, url string) error {
-	body, err := encodeBody(evts)
+	body, err := h.encodeBody(evts)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
@@ -175,11 +181,35 @@ func (h *humioClient) sendEvents(ctx context.Context, evts interface{}, url stri
 }
 
 // Encode the specified payload as json
-func encodeBody(body interface{}) (io.Reader, error) {
+func (h *humioClient) encodeBody(body interface{}) (io.Reader, error) {
 	b, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 
-	return bytes.NewReader(b), nil
+	if h.config.DisableCompression {
+		return bytes.NewReader(b), nil
+	}
+	return h.compressBody(b)
+}
+
+func (h *humioClient) compressBody(body []byte) (io.Reader, error) {
+	gzipper := h.gzipPool.Get().(*gzip.Writer)
+	defer h.gzipPool.Put(gzipper)
+
+	// Must reset writer because we reuse it
+	b := new(bytes.Buffer)
+	gzipper.Reset(b)
+
+	_, err := gzipper.Write(body)
+	if err != nil {
+		return nil, err
+	}
+
+	err = gzipper.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }

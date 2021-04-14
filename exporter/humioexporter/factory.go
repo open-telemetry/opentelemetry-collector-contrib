@@ -56,8 +56,9 @@ func createDefaultConfig() config.Exporter {
 		},
 
 		// Settings specific to the Humio exporter
-		Tags:              map[string]string{},
-		DisableServiceTag: false,
+		DisableCompression: false,
+		Tags:               map[string]string{},
+		DisableServiceTag:  false,
 		Traces: TracesConfig{
 			UnixTimestamps: false,
 			TimeZone:       time.Local.String(),

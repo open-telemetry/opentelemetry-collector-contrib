@@ -15,7 +15,10 @@
 package humioexporter
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -31,10 +34,11 @@ import (
 	"go.uber.org/zap"
 )
 
-func makeClient(t *testing.T, host string) exporterClient {
+func makeClient(t *testing.T, host string, compression bool) exporterClient {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
-		IngestToken:      "token",
+		ExporterSettings:   config.NewExporterSettings(typeStr),
+		IngestToken:        "token",
+		DisableCompression: !compression,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: host,
 		},
@@ -149,7 +153,7 @@ func executeRequest(fn func(s *httptest.Server) error) (result requestData) {
 
 func TestNewHumioClient(t *testing.T) {
 	// Arrange / Act
-	c := makeClient(t, "http://localhost:8080")
+	c := makeClient(t, "http://localhost:8080", true)
 
 	// Assert
 	assert.NotNil(t, c)
@@ -162,7 +166,7 @@ func TestSendUnstructuredEvents(t *testing.T) {
 
 	// Act
 	result := executeRequest(func(s *httptest.Server) error {
-		humio := makeClient(t, s.URL)
+		humio := makeClient(t, s.URL, false)
 		return humio.sendUnstructuredEvents(context.Background(), evts)
 	})
 
@@ -179,7 +183,7 @@ func TestSendStructuredEventsIso(t *testing.T) {
 
 	// Act
 	result := executeRequest(func(s *httptest.Server) error {
-		humio := makeClient(t, s.URL)
+		humio := makeClient(t, s.URL, false)
 		return humio.sendStructuredEvents(context.Background(), evts)
 	})
 
@@ -196,7 +200,7 @@ func TestSendStructuredEventsUnix(t *testing.T) {
 
 	// Act
 	result := executeRequest(func(s *httptest.Server) error {
-		humio := makeClient(t, s.URL)
+		humio := makeClient(t, s.URL, false)
 		return humio.sendStructuredEvents(context.Background(), evts)
 	})
 
@@ -206,9 +210,34 @@ func TestSendStructuredEventsUnix(t *testing.T) {
 	assert.Equal(t, expected, result.Body)
 }
 
+func TestSendEventsCompressed(t *testing.T) {
+	// Arrange
+	evts := makeStructuredEvents(true)
+	payload, err := json.Marshal(evts)
+	require.NoError(t, err)
+
+	expected := new(bytes.Buffer)
+	writer := gzip.NewWriter(expected)
+	_, err = writer.Write(payload)
+	require.NoError(t, err)
+	err = writer.Close()
+	require.NoError(t, err)
+
+	// Act
+	result := executeRequest(func(s *httptest.Server) error {
+		humio := makeClient(t, s.URL, true)
+		return humio.sendStructuredEvents(context.Background(), evts)
+	})
+
+	// Assert
+	require.NoError(t, result.Error)
+	assert.Equal(t, "/api/v1/ingest/humio-structured", result.Path)
+	assert.Equal(t, expected.String(), result.Body)
+}
+
 func TestSendEventsNoConnection(t *testing.T) {
 	// Arrange
-	humio := makeClient(t, "https://localhost:8080")
+	humio := makeClient(t, "https://localhost:8080", true)
 
 	// Act
 	err := humio.sendStructuredEvents(context.Background(), makeStructuredEvents(false))
@@ -220,7 +249,7 @@ func TestSendEventsNoConnection(t *testing.T) {
 
 func TestSendEventsBadParameters(t *testing.T) {
 	// Arrange
-	humio := makeClient(t, "https://localhost:8080")
+	humio := makeClient(t, "https://localhost:8080", true)
 
 	// Act
 	err := humio.(*humioClient).sendEvents(context.Background(), nil, "\n")
@@ -238,7 +267,7 @@ func (e problematicStruct) MarshalJSON() ([]byte, error) {
 
 func TestSendStructuredEventsMarshalError(t *testing.T) {
 	// Arrange
-	humio := makeClient(t, "https://localhost:8080")
+	humio := makeClient(t, "https://localhost:8080", true)
 	evts := []*HumioStructuredEvents{
 		{
 			Events: []*HumioStructuredEvent{
@@ -310,7 +339,7 @@ func TestSendEventsStatusCodes(t *testing.T) {
 			}))
 			defer s.Close()
 
-			humio := makeClient(t, s.URL)
+			humio := makeClient(t, s.URL, true)
 			err := humio.sendUnstructuredEvents(context.Background(), makeUnstructuredEvents())
 
 			// Assert

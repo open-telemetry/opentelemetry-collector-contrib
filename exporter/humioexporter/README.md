@@ -20,6 +20,7 @@ As defined in the [TLS Configuration Settings](https://github.com/open-telemetry
 
 In addition, the following global configuration options can be overridden:
 
+- `disable_compression` (default: `false`): Whether to stop compressing payloads with gzip before sending them to Humio. This should only be disabled if compression can be shown to have a negative impact on performance in your specific deployment.
 - `tags` (no default): A series of key-value pairs used to target specific Data Sources for storage inside a Humio repository. Refer to [Humio Tagging](https://docs.humio.com/docs/parsers/tagging/) for more details.
 - `disable_service_tag` (default: `false`): By default, the service name will be used to tag all exported events in addition to user-provided tags. If disabled, only the user-provided tags will be used. However, at least one tag _must_ be specified.
 
@@ -48,6 +49,7 @@ exporters:
         ingest_token: "00000000-0000-0000-0000-0000000000000"
         endpoint: "http://localhost:8080"
         timeout: 10s
+        disable_compression: true
         disable_service_tag: true
         tags:
             host: "web_server"

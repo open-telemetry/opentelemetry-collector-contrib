@@ -62,6 +62,9 @@ type Config struct {
 	// Endpoint for the structured ingest API, created internally
 	structuredEndpoint *url.URL
 
+	// Whether gzip compression should be disabled when sending data to Humio
+	DisableCompression bool `mapstructure:"disable_compression"`
+
 	// Key-value pairs used to target specific data sources for storage inside Humio
 	Tags map[string]string `mapstructure:"tags,omitempty"`
 

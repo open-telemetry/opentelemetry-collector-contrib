@@ -103,8 +103,9 @@ func TestLoadAllSettings(t *testing.T) {
 			},
 		},
 
-		IngestToken:       "00000000-0000-0000-0000-0000000000000",
-		DisableServiceTag: true,
+		IngestToken:        "00000000-0000-0000-0000-0000000000000",
+		DisableCompression: true,
+		DisableServiceTag:  true,
 		Tags: map[string]string{
 			"host":        "web_server",
 			"environment": "production",
