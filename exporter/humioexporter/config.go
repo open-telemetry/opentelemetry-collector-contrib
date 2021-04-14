@@ -129,6 +129,13 @@ func (c *Config) Validate() error {
 	}
 	c.Headers["Authorization"] = "Bearer " + c.IngestToken
 
+	if enc, ok := c.Headers["Content-Encoding"]; ok && (c.DisableCompression || enc != "gzip") {
+		return errors.New("the Content-Encoding header must be gzip when using compression, and empty when compression is disabled")
+	}
+	if !c.DisableCompression {
+		c.Headers["Content-Encoding"] = "gzip"
+	}
+
 	// Fallback User-Agent if not overridden by user
 	if _, ok := c.Headers["User-Agent"]; !ok {
 		c.Headers["User-Agent"] = "opentelemetry-collector-contrib Humio"

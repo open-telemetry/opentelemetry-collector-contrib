@@ -151,9 +151,10 @@ func TestValidateValid(t *testing.T) {
 	assert.Equal(t, structuredPath, config.structuredEndpoint.Path)
 
 	assert.Equal(t, map[string]string{
-		"Content-Type":  "application/json",
-		"Authorization": "Bearer token",
-		"User-Agent":    "opentelemetry-collector-contrib Humio",
+		"Content-Type":     "application/json",
+		"Content-Encoding": "gzip",
+		"Authorization":    "Bearer token",
+		"User-Agent":       "opentelemetry-collector-contrib Humio",
 	}, config.Headers)
 }
 
@@ -165,9 +166,34 @@ func TestValidateCustomHeaders(t *testing.T) {
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://localhost:8080",
 			Headers: map[string]string{
-				"User-Agent":   "Humio",
-				"Content-Type": "application/json",
+				"User-Agent":       "Humio",
+				"Content-Type":     "application/json",
+				"Content-Encoding": "gzip",
 			},
+		},
+	}
+
+	// Act
+	err := config.Validate()
+
+	// Assert
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"Content-Type":     "application/json",
+		"Content-Encoding": "gzip",
+		"Authorization":    "Bearer token",
+		"User-Agent":       "Humio",
+	}, config.Headers)
+}
+
+func TestValidateNoCompression(t *testing.T) {
+	//Arrange
+	config := &Config{
+		ExporterSettings:   config.NewExporterSettings(typeStr),
+		IngestToken:        "token",
+		DisableCompression: true,
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "http://localhost:8080",
 		},
 	}
 
@@ -179,7 +205,7 @@ func TestValidateCustomHeaders(t *testing.T) {
 	assert.Equal(t, map[string]string{
 		"Content-Type":  "application/json",
 		"Authorization": "Bearer token",
-		"User-Agent":    "Humio",
+		"User-Agent":    "opentelemetry-collector-contrib Humio",
 	}, config.Headers)
 }
 
@@ -300,6 +326,35 @@ func TestValidateErrors(t *testing.T) {
 					Endpoint: "e",
 					Headers: map[string]string{
 						"Authorization": "Bearer mytoken",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			desc: "Invalid content encoding",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				IngestToken:      "t",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "e",
+					Headers: map[string]string{
+						"Content-Encoding": "compress",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			desc: "Content encoding without compression",
+			config: &Config{
+				ExporterSettings:   config.NewExporterSettings(typeStr),
+				IngestToken:        "t",
+				DisableCompression: true,
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "e",
+					Headers: map[string]string{
+						"Content-Encoding": "gzip",
 					},
 				},
 			},
