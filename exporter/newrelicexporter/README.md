@@ -26,7 +26,7 @@ exporters:
     timeout: 30s
 ```
 
-Configuration option can be overriden by telemetry signal (i.e., traces,
+Configuration option can be overridden by telemetry signal (i.e., traces,
 metrics, and logs). This is especially important if you need to use the
 `host_override` option because the exporter defaults to sending data to New
 Relic's US data centers. For other use cases refer to
