@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/translator/conventions"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -21,21 +23,18 @@ func createLogToSpanPusher(config *Config, params component.ExporterCreateParams
 	config.FieldMap.Ignored = append(
 		config.FieldMap.Ignored,
 		// These fields are used to create a span and don't provide additional value as span attributes.
+		config.FieldMap.ServiceName,
 		config.FieldMap.SpanStartTime,
 		config.FieldMap.SpanEndTime,
-		config.FieldMap.SpanName,
 		config.FieldMap.W3CTraceContextFields.Traceparent,
 		config.FieldMap.W3CTraceContextFields.Tracestate)
 
 	return func(ctx context.Context, ld pdata.Logs) error {
 		outTraces := pdata.NewTraces()
-		outTraces.ResourceSpans().Resize(1)
-		outRs := outTraces.ResourceSpans().At(0)
-		outRs.InstrumentationLibrarySpans().Resize(1)
-		outIls := outRs.InstrumentationLibrarySpans().At(0)
 
-		outIls.InstrumentationLibrary().SetName(ilName)
-		outIls.InstrumentationLibrary().SetVersion(params.ApplicationStartInfo.Version)
+		defaultSpanSlice := pdata.NewSpanSlice()
+		// Span groups based on the ServiceName found in log message.
+		spanGroups := map[string]*pdata.SpanSlice{tracetranslator.ResourceNoServiceName: &defaultSpanSlice}
 
 		var errs []error
 
@@ -47,54 +46,38 @@ func createLogToSpanPusher(config *Config, params component.ExporterCreateParams
 				for k := 0; k < logs.Len(); k++ {
 					log := logs.At(k)
 
-					spc, err := extractSpanContext(log, config)
+					serviceName, span, err := convertLogToSpan(&log, config)
 					if err != nil {
-						// TODO: add custom metric and log?
 						continue
 					}
 
-					if !spc.IsSampled() {
-						// TODO: add custom metric?
+					if spanGroup, ok := spanGroups[serviceName]; !ok {
+						spanGroup.Append(*span)
 						continue
 					}
 
-					span := pdata.NewSpan()
-					span.SetTraceID(pdata.NewTraceID(spc.TraceID()))
-					span.SetSpanID(pdata.NewSpanID(spc.SpanID()))
-					span.SetKind(pdata.SpanKindSERVER)
-
-					if name, ok := log.Attributes().Get(config.FieldMap.SpanName); ok {
-						span.SetName(name.StringVal())
-					} else {
-						// TODO: Should we exit? Default name?
-					}
-
-					if startTime, ok := log.Attributes().Get(config.FieldMap.SpanStartTime); ok {
-						if ts, err := convertTimestamp(startTime.StringVal(), config.TimeFormat); err == nil {
-							span.SetStartTimestamp(ts)
-						}
-					} else {
-						// TODO: add custom metric and log?
-						continue
-					}
-
-					if endTime, ok := log.Attributes().Get(config.FieldMap.SpanEndTime); ok {
-						if ts, err := convertTimestamp(endTime.StringVal(), config.TimeFormat); err == nil {
-							span.SetEndTimestamp(ts)
-						}
-					} else {
-						// TODO: add custom metric and log?
-						continue
-					}
-
-					log.Attributes().CopyTo(span.Attributes())
-					for k := range config.FieldMap.Ignored {
-						_ = span.Attributes().Delete(config.FieldMap.Ignored[k])
-					}
-
-					outIls.Spans().Append(span)
+					sps := pdata.NewSpanSlice()
+					sps.Append(*span)
+					spanGroups[serviceName] = &sps
 				}
 			}
+		}
+
+		outTraces.ResourceSpans().Resize(len(spanGroups))
+
+		sgi := 0
+		for serviceName, v := range spanGroups {
+			outRs := outTraces.ResourceSpans().At(sgi)
+			outRs.Resource().Attributes().InsertString(conventions.AttributeServiceName, serviceName)
+			outRs.InstrumentationLibrarySpans().Resize(1)
+			outIls := outRs.InstrumentationLibrarySpans().At(0)
+
+			outIls.InstrumentationLibrary().SetName(ilName)
+			outIls.InstrumentationLibrary().SetVersion(params.ApplicationStartInfo.Version)
+
+			v.CopyTo(outIls.Spans())
+
+			sgi++
 		}
 
 		if err := tracesExp.ConsumeTraces(ctx, outTraces); err != nil {
@@ -103,6 +86,73 @@ func createLogToSpanPusher(config *Config, params component.ExporterCreateParams
 
 		return consumererror.Combine(errs)
 	}
+}
+
+func convertLogToSpan(log *pdata.LogRecord, config *Config) (string, *pdata.Span, error) {
+	spc, err := extractSpanContext(log, config)
+	if err != nil {
+		return "", nil, err
+	}
+
+	if !spc.IsSampled() {
+		// TODO: add custom metric?
+		return "", nil, fmt.Errorf("trace not sampled")
+	}
+
+	span := pdata.NewSpan()
+	span.SetTraceID(pdata.NewTraceID(spc.TraceID()))
+	span.SetSpanID(pdata.NewSpanID(spc.SpanID()))
+
+	if _, ok := log.Attributes().Get(config.FieldMap.SpanKind); ok {
+		// span.SetKind()
+	} else {
+		span.SetKind(pdata.SpanKindSERVER)
+	}
+
+	spanName, ok := log.Attributes().Get(config.FieldMap.SpanName)
+	if !ok {
+		return "", nil, fmt.Errorf("%s was not found in log attributes", config.FieldMap.SpanName)
+	}
+	span.SetName(spanName.StringVal())
+
+	sts, err := timestampFromField(log, config.FieldMap.SpanStartTime, config.TimeFormat)
+	if err != nil {
+		// TODO: add custom metric?
+		return "", nil, err
+	}
+	span.SetStartTimestamp(sts)
+
+	ets, err := timestampFromField(log, config.FieldMap.SpanEndTime, config.TimeFormat)
+	if err != nil {
+		// TODO: add custom metric?
+		return "", nil, err
+	}
+	span.SetEndTimestamp(ets)
+
+	log.Attributes().CopyTo(span.Attributes())
+	for k := range config.FieldMap.Ignored {
+		_ = span.Attributes().Delete(config.FieldMap.Ignored[k])
+	}
+
+	serviceName, ok := log.Attributes().Get(config.FieldMap.ServiceName)
+	if !ok {
+		return tracetranslator.ResourceNoServiceName, &span, nil
+	}
+
+	return serviceName.StringVal(), &span, nil
+}
+
+func timestampFromField(log *pdata.LogRecord, fieldName string, format TimeFormat) (pdata.Timestamp, error) {
+	if startTime, ok := log.Attributes().Get(fieldName); ok {
+		ts, err := convertTimestamp(startTime.StringVal(), format)
+		if err != nil {
+			return 0, err
+		}
+
+		return ts, nil
+	}
+
+	return 0, fmt.Errorf("%s not found in log attributes", fieldName)
 }
 
 func convertTimestamp(timestamp string, format TimeFormat) (pdata.Timestamp, error) {
@@ -121,21 +171,21 @@ func convertTimestamp(timestamp string, format TimeFormat) (pdata.Timestamp, err
 }
 
 const (
-	traceparentHeader = "traceparent"
-	tracestateHeader  = "tracestate"
+	w3cTraceparentHeader = "traceparent"
+	w3cTracestateHeader  = "tracestate"
 )
 
-func extractSpanContext(log pdata.LogRecord, config *Config) (*trace.SpanContext, error) {
+func extractSpanContext(log *pdata.LogRecord, config *Config) (*trace.SpanContext, error) {
 	switch config.TraceType {
 	case W3CTraceType:
 		// TODO: Determine better way to reuse existing libs for trace context.
 		hc := propagation.HeaderCarrier{}
 		if traceparent, ok := log.Attributes().Get(config.FieldMap.W3CTraceContextFields.Traceparent); ok {
-			hc.Set(traceparentHeader, traceparent.StringVal())
+			hc.Set(w3cTraceparentHeader, traceparent.StringVal())
 		}
 
 		if tracestate, ok := log.Attributes().Get(config.FieldMap.W3CTraceContextFields.Tracestate); ok {
-			hc.Set(tracestateHeader, tracestate.StringVal())
+			hc.Set(w3cTracestateHeader, tracestate.StringVal())
 		}
 
 		tc := propagation.TraceContext{}

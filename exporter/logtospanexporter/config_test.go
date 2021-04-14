@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	otlp "go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -66,6 +67,7 @@ func TestLoadConfig(t *testing.T) {
 			SpanName:      "span_name",
 			SpanStartTime: "req_start_time",
 			SpanEndTime:   "res_start_time",
+			ServiceName:   conventions.AttributeServiceName,
 			Ignored:       []string{"fluent.tag"},
 		},
 	}

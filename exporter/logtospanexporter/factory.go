@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	otlp "go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 const typeStr = "logtospan" // The value of "type" key in configuration.
@@ -91,6 +92,7 @@ func (f *logToSpanFactory) CreateDefaultConfig() config.Exporter {
 			Traceparent: "traceparent",
 			Tracestate:  "tracestate",
 		},
+		ServiceName: conventions.AttributeServiceName,
 	}
 
 	cfg.Headers["User-Agent"] = "otel-collector-contrib {{version}}"

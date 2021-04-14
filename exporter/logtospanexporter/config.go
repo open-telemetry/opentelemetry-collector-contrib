@@ -32,8 +32,14 @@ type FieldMap struct {
 	// W3CTraceContextFields defines the log fields used for the W3C Trace Context
 	W3CTraceContextFields W3CTraceContextFields `mapstructure:"w3c"`
 
+	// ServiceName defines the name of the attribute containing the service name where the span originated.
+	ServiceName string `mapstructure:"service_name"`
+
 	// SpanName defines the name of attribute containing the name of the span.
 	SpanName string `mapstructure:"span_name"`
+
+	// SpanKind defines the name of attribute containing the span kind.
+	SpanKind string `mapstructure:"span_kind"`
 
 	// SpanStartTime defines the name of the attribute containing the start time of the span.
 	SpanStartTime string `mapstructure:"span_start_time"`

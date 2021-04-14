@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/testutil"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 )
 
@@ -38,6 +39,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, ocfg.FieldMap.SpanName, "")
 	assert.Equal(t, ocfg.FieldMap.SpanStartTime, "")
 	assert.Equal(t, ocfg.FieldMap.SpanEndTime, "")
+	assert.Equal(t, ocfg.FieldMap.ServiceName, conventions.AttributeServiceName)
 }
 
 func TestFactory_CreateLogsExporter(t *testing.T) {
