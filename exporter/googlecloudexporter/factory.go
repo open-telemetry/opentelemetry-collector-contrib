@@ -43,7 +43,7 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithTraces(createTracesExporter),
 		exporterhelper.WithMetrics(createMetricsExporter),
 	)
 }
@@ -59,13 +59,13 @@ func createDefaultConfig() config.Exporter {
 	}
 }
 
-// createTraceExporter creates a trace exporter based on this config.
-func createTraceExporter(
+// createTracesExporter creates a trace exporter based on this config.
+func createTracesExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	cfg config.Exporter) (component.TracesExporter, error) {
 	eCfg := cfg.(*Config)
-	return newGoogleCloudTraceExporter(eCfg, params)
+	return newGoogleCloudTracesExporter(eCfg, params)
 }
 
 // createMetricsExporter creates a metrics exporter based on this config.

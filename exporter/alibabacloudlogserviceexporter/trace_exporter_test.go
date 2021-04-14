@@ -25,9 +25,9 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestNewTraceExporter(t *testing.T) {
+func TestNewTracesExporter(t *testing.T) {
 
-	got, err := newTraceExporter(zap.NewNop(), &Config{
+	got, err := newTracesExporter(zap.NewNop(), &Config{
 		ExporterSettings: config.NewExporterSettings(typeStr),
 		Endpoint:         "cn-hangzhou.log.aliyuncs.com",
 		Project:          "demo-project",
@@ -49,9 +49,9 @@ func TestNewTraceExporter(t *testing.T) {
 	assert.Nil(t, got.Shutdown(context.Background()))
 }
 
-func TestNewFailsWithEmptyTraceExporterName(t *testing.T) {
+func TestNewFailsWithEmptyTracesExporterName(t *testing.T) {
 
-	got, err := newTraceExporter(zap.NewNop(), &Config{})
+	got, err := newTracesExporter(zap.NewNop(), &Config{})
 	assert.Error(t, err)
 	require.Nil(t, got)
 }

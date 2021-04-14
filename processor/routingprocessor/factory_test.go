@@ -147,7 +147,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 			},
 		},
 	}
-	next, err := processorhelper.NewTraceProcessor(cfg, consumertest.NewNop(), &mockProcessor{})
+	next, err := processorhelper.NewTracesProcessor(cfg, consumertest.NewNop(), &mockProcessor{})
 	require.NoError(t, err)
 
 	// test

@@ -47,7 +47,7 @@ func NewFactory() component.ExporterFactory {
 		createDefaultConfig,
 		exporterhelper.WithMetrics(createMetricsExporter),
 		exporterhelper.WithLogs(createLogsExporter),
-		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithTraces(createTracesExporter),
 	)
 }
 
@@ -66,7 +66,7 @@ func createDefaultConfig() config.Exporter {
 	}
 }
 
-func createTraceExporter(
+func createTracesExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	eCfg config.Exporter,
@@ -87,7 +87,7 @@ func createTraceExporter(
 	params.Logger.Info("Correlation tracking enabled", zap.String("endpoint", corrCfg.Endpoint))
 	tracker := correlation.NewTracker(corrCfg, cfg.AccessToken, params)
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		cfg,
 		params.Logger,
 		tracker.AddSpans,

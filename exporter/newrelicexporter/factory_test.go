@@ -42,7 +42,7 @@ func TestCreateExporterWithAPIKey(t *testing.T) {
 	nrConfig.APIKey = "a1b2c3d4"
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
-	te, err := createTraceExporter(context.Background(), params, nrConfig)
+	te, err := createTracesExporter(context.Background(), params, nrConfig)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
@@ -57,7 +57,7 @@ func TestCreateExporterWithAPIKeyHeader(t *testing.T) {
 	nrConfig.APIKeyHeader = "x-nr-key"
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
-	te, err := createTraceExporter(context.Background(), params, nrConfig)
+	te, err := createTracesExporter(context.Background(), params, nrConfig)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
@@ -73,7 +73,7 @@ func TestCreateExporterWithAPIKeyAndAPIKeyHeader(t *testing.T) {
 	nrConfig.APIKeyHeader = "x-nr-key"
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
-	te, err := createTraceExporter(context.Background(), params, nrConfig)
+	te, err := createTracesExporter(context.Background(), params, nrConfig)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
@@ -87,7 +87,7 @@ func TestCreateExporterErrorWithoutAPIKeyOrAPIKeyHeader(t *testing.T) {
 	nrConfig := cfg.(*Config)
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
-	te, err := createTraceExporter(context.Background(), params, nrConfig)
+	te, err := createTracesExporter(context.Background(), params, nrConfig)
 	assert.NotNil(t, err)
 	assert.Nil(t, te)
 
@@ -95,9 +95,9 @@ func TestCreateExporterErrorWithoutAPIKeyOrAPIKeyHeader(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, me)
 }
-func TestCreateTraceExporterError(t *testing.T) {
+func TestCreateTracesExporterError(t *testing.T) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := createTraceExporter(context.Background(), params, nil)
+	_, err := createTracesExporter(context.Background(), params, nil)
 	assert.Error(t, err)
 }
 

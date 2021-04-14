@@ -336,7 +336,7 @@ func CreateSentryExporter(config *Config, params component.ExporterCreateParams)
 		transport: transport,
 	}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		config,
 		params.Logger,
 		s.pushTraceData,

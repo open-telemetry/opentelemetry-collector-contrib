@@ -29,7 +29,7 @@ type traceExporter struct {
 	upexp  *spanexp.Exporter
 }
 
-func newTraceExporter(cfg *Config, logger *zap.Logger) (*traceExporter, error) {
+func newTracesExporter(cfg *Config, logger *zap.Logger) (*traceExporter, error) {
 	if cfg.HTTPClientSettings.Endpoint != "" {
 		logger.Warn("uptraceexporter: endpoint is not supported; use dsn instead")
 	}

@@ -83,7 +83,7 @@ func createTracesExporter(
 
 	exporter := newTracesExporter(cfg, params.Logger)
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		cfg,
 		params.Logger,
 		exporter.pushTraceData,

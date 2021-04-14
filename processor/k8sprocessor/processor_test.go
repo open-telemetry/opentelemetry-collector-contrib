@@ -36,9 +36,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
-func newTraceProcessor(cfg config.Processor, next consumer.Traces, options ...Option) (component.TracesProcessor, error) {
+func newTracesProcessor(cfg config.Processor, next consumer.Traces, options ...Option) (component.TracesProcessor, error) {
 	opts := append(options, withKubeClientProvider(newFakeClient))
-	return createTraceProcessorWithOptions(
+	return createTracesProcessorWithOptions(
 		context.Background(),
 		component.ProcessorCreateParams{Logger: zap.NewNop()},
 		cfg,
@@ -113,7 +113,7 @@ func newMultiTest(
 		nextLogs:    new(consumertest.LogsSink),
 	}
 
-	tp, err := newTraceProcessor(cfg, m.nextTrace, append(options, withExtractKubernetesProcessorInto(&m.kpTrace))...)
+	tp, err := newTracesProcessor(cfg, m.nextTrace, append(options, withExtractKubernetesProcessorInto(&m.kpTrace))...)
 	if errFunc == nil {
 		assert.NotNil(t, tp)
 		require.NoError(t, err)
@@ -854,7 +854,7 @@ func TestPassthroughStart(t *testing.T) {
 	next := new(consumertest.TracesSink)
 	opts := []Option{WithPassthrough()}
 
-	p, err := newTraceProcessor(
+	p, err := newTracesProcessor(
 		NewFactory().CreateDefaultConfig(),
 		next,
 		opts...,
@@ -880,7 +880,7 @@ func TestRealClient(t *testing.T) {
 }
 
 func TestCapabilities(t *testing.T) {
-	p, err := newTraceProcessor(
+	p, err := newTracesProcessor(
 		NewFactory().CreateDefaultConfig(),
 		consumertest.NewNop(),
 	)
@@ -891,7 +891,7 @@ func TestCapabilities(t *testing.T) {
 
 func TestStartStop(t *testing.T) {
 	var kp *kubernetesprocessor
-	p, err := newTraceProcessor(
+	p, err := newTracesProcessor(
 		NewFactory().CreateDefaultConfig(),
 		consumertest.NewNop(),
 		withExtractKubernetesProcessorInto(&kp),

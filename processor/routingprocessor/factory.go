@@ -33,7 +33,7 @@ func NewFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTraceProcessor),
+		processorhelper.WithTraces(createTracesProcessor),
 	)
 }
 
@@ -43,7 +43,7 @@ func createDefaultConfig() config.Processor {
 	}
 }
 
-func createTraceProcessor(_ context.Context, params component.ProcessorCreateParams, cfg config.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
+func createTracesProcessor(_ context.Context, params component.ProcessorCreateParams, cfg config.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 	_, ok := nextConsumer.(component.Processor)
 	if ok {
 		params.Logger.Warn("another processor has been defined after the routing processor: it will NOT receive any data!")
