@@ -40,10 +40,14 @@ func loadConfig(t *testing.T, name string) (config.Exporter, *Config) {
 	factories.Exporters[config.Type(typeStr)] = factory
 
 	// Load configurations
-	config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 	require.NoError(t, err)
-	require.NotNil(t, config)
-	actual := config.Exporters[name]
+	require.NotNil(t, cfg)
+	actual := cfg.Exporters[name]
+	// TODO: Remove this, when Validate is fixed. A validate function should not mutate the config.
+	actual.(*Config).structuredEndpoint = nil
+	actual.(*Config).unstructuredEndpoint = nil
+	actual.(*Config).Headers = map[string]string{}
 
 	def := factory.CreateDefaultConfig().(*Config)
 	require.NotNil(t, def)

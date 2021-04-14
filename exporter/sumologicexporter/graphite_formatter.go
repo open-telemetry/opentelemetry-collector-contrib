@@ -129,9 +129,9 @@ func (gf *graphiteFormatter) metric2String(record metricPair) string {
 			nextLines = append(nextLines, gf.doubleRecord(fs, name, dps.At(i)))
 		}
 	// Skip complex metrics
-	case pdata.MetricDataTypeDoubleHistogram:
+	case pdata.MetricDataTypeHistogram:
 	case pdata.MetricDataTypeIntHistogram:
-	case pdata.MetricDataTypeDoubleSummary:
+	case pdata.MetricDataTypeSummary:
 	}
 
 	return strings.Join(nextLines, "\n")

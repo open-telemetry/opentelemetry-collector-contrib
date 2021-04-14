@@ -121,11 +121,11 @@ my_cluster.default.some_pod.sum_metric_double_test 1238.1 1608424699`
 	assert.Equal(t, expected, result)
 }
 
-func TestGraphiteMetricDataTypeDoubleSummary(t *testing.T) {
+func TestGraphiteMetricDataTypeSummary(t *testing.T) {
 	gf, err := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 	require.NoError(t, err)
 
-	metric := exampleDoubleSummaryMetric()
+	metric := exampleSummaryMetric()
 	metric.attributes.InsertString("cluster", "my_cluster")
 	metric.attributes.InsertString("namespace", "default")
 	metric.attributes.InsertString("pod", "some pod")
@@ -149,11 +149,11 @@ func TestGraphiteMetricDataTypeIntHistogram(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
-func TestGraphiteMetricDataTypeDoubleHistogram(t *testing.T) {
+func TestGraphiteMetricDataTypeHistogram(t *testing.T) {
 	gf, err := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 	require.NoError(t, err)
 
-	metric := exampleDoubleHistogramMetric()
+	metric := exampleHistogramMetric()
 	metric.attributes.InsertString("cluster", "my_cluster")
 	metric.attributes.InsertString("namespace", "default")
 	metric.attributes.InsertString("pod", "some pod")
