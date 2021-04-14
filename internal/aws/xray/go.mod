@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray
+module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray
 
 go 1.14
 
