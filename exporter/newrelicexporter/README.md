@@ -15,25 +15,38 @@ The following common configuration options are supported:
   * `apikey`: Your New Relic [Insights Insert API Key](https://docs.newrelic.com/docs/insights/insights-data-sources/custom-data/send-custom-events-event-api#register).
   * `api_key_header`: Request header to read New Relic [Insights Insert API Key](https://docs.newrelic.com/docs/insights/insights-data-sources/custom-data/send-custom-events-event-api#register) from.
 * `timeout` (Optional): Amount of time spent attempting a request before abandoning and dropping data. Default is 15 seconds.
-* `host_override` (Optional per-data-type, see example): Overrides the host to
-  which data is sent. The URL will be generated in the form:
-  https://\$host/\$path. The path component **CANNOT** be overridden.
+* `host_override` (Optional): Overrides the host to which data is sent. The URL will be generated in the form:
+  https://\$host/\$path. Only set the the host portion of the URL. The path component **CANNOT** be overridden.
 
-The configuration also supports configuring by data type. This is expected to be used for `host_override` cases.
+**Basic example:**
+```yaml
+exporters:
+  newrelic:
+    apikey: super-secret-api-key
+    timeout: 30s
+```
 
-Example:
+Configuration option can be overriden by telemetry signal (i.e., traces,
+metrics, and logs). This is especially important if you need to use the
+`host_override` option because the exporter defaults to sending data to New
+Relic's US data centers. For other use cases refer to
+[OpenTelemetry: Advanced configuration](https://docs.newrelic.com/docs/integrations/open-source-telemetry-integrations/opentelemetry/opentelemetry-advanced-configuration#h2-change-endpoints).
+
+**Example of overriding options by telemetry signal:**
 ```yaml
 exporters:
   newrelic:
     apikey: super-secret-api-key
     timeout: 30s
 
-    traces:
-        host_override: trace-api.newrelic.com
-    metrics:
-        host_override: metric-api.newrelic.com
-    logs:
-        host_override: log-api.newrelic.com
+  # host_override is set to send data to New Relic's EU data centers.
+  traces:
+    host_override: trace-api.eu.newrelic.com
+    timeout: 20s
+  metrics:
+    host_override: metric-api.eu.newrelic.com
+  logs:
+    host_override: log-api.eu.newrelic.com
 ```
 
 ## Find and use your data
