@@ -36,7 +36,7 @@ func (rdp *resourceDetectionProcessor) Start(ctx context.Context, _ component.Ho
 	return err
 }
 
-// ProcessTraces implements the TraceProcessor interface
+// ProcessTraces implements the TracesProcessor interface
 func (rdp *resourceDetectionProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {

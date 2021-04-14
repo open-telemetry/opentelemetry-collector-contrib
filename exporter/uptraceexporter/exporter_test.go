@@ -33,28 +33,28 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/uptraceexporter/testdata"
 )
 
-func TestNewTraceExporterEmptyConfig(t *testing.T) {
+func TestNewTracesExporterEmptyConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	exp, err := newTraceExporter(cfg, zap.NewNop())
+	exp, err := newTracesExporter(cfg, zap.NewNop())
 	require.Error(t, err)
 	require.Nil(t, exp)
 }
 
-func TestNewTraceExporterEndpoint(t *testing.T) {
+func TestNewTracesExporterEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = "_"
-	exp, err := newTraceExporter(cfg, zap.NewNop())
+	exp, err := newTracesExporter(cfg, zap.NewNop())
 	require.Error(t, err)
 	require.Nil(t, exp)
 }
 
-func TestTraceExporterEmptyTraces(t *testing.T) {
+func TestTracesExporterEmptyTraces(t *testing.T) {
 	ctx := context.Background()
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.DSN = "https://key@api.uptrace.dev/1"
 
-	exp, err := newTraceExporter(cfg, zap.NewNop())
+	exp, err := newTracesExporter(cfg, zap.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
@@ -65,7 +65,7 @@ func TestTraceExporterEmptyTraces(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestTraceExporterGenTraces(t *testing.T) {
+func TestTracesExporterGenTraces(t *testing.T) {
 	type In struct {
 		Spans []spanexp.Span `msgpack:"spans"`
 	}
@@ -95,7 +95,7 @@ func TestTraceExporterGenTraces(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.DSN = fmt.Sprintf("%s://key@%s/1", u.Scheme, u.Host)
 
-	exp, err := newTraceExporter(cfg, zap.NewNop())
+	exp, err := newTracesExporter(cfg, zap.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 

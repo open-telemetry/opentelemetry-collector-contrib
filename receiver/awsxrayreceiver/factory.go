@@ -33,7 +33,7 @@ func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		awsxray.TypeStr,
 		createDefaultConfig,
-		receiverhelper.WithTraces(createTraceReceiver))
+		receiverhelper.WithTraces(createTracesReceiver))
 }
 
 func createDefaultConfig() config.Receiver {
@@ -55,7 +55,7 @@ func createDefaultConfig() config.Receiver {
 	}
 }
 
-func createTraceReceiver(
+func createTracesReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg config.Receiver,

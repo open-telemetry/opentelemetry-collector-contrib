@@ -88,7 +88,7 @@ func TestDefaultRouteIsUsedWhenRouteCantBeDetermined(t *testing.T) {
 					FromAttribute: "X-Tenant",
 				},
 				logger: zap.NewNop(),
-				defaultTraceExporters: []component.TracesExporter{
+				defaultTracesExporters: []component.TracesExporter{
 					&mockExporter{
 						ConsumeTracesFunc: func(context.Context, pdata.Traces) error {
 							wg.Done()

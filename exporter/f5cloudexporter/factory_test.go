@@ -83,7 +83,7 @@ func TestFactory_CreateMetricsExporterInvalidConfig(t *testing.T) {
 	require.Nil(t, oexp)
 }
 
-func TestFactory_CreateTraceExporter(t *testing.T) {
+func TestFactory_CreateTracesExporter(t *testing.T) {
 	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
@@ -106,7 +106,7 @@ func TestFactory_CreateTraceExporter(t *testing.T) {
 	require.Equal(t, "opentelemetry-collector-contrib 0.0.0", cfg.Headers["User-Agent"])
 }
 
-func Test_Factory_CreateTraceExporterInvalidConfig(t *testing.T) {
+func Test_Factory_CreateTracesExporterInvalidConfig(t *testing.T) {
 	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 

@@ -38,7 +38,7 @@ func NewFactory() component.ExporterFactory {
 		typeStr,
 		createDefaultConfig,
 		exporterhelper.WithMetrics(createMetricsExporter),
-		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithTraces(createTracesExporter),
 	)
 }
 
@@ -132,8 +132,8 @@ func createMetricsExporter(
 	)
 }
 
-// createTraceExporter creates a trace exporter based on this config.
-func createTraceExporter(
+// createTracesExporter creates a trace exporter based on this config.
+func createTracesExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
 	c config.Exporter,
@@ -163,10 +163,10 @@ func createTraceExporter(
 			return nil
 		}
 	} else {
-		pushTracesFn = newTraceExporter(ctx, params, cfg).pushTraceData
+		pushTracesFn = newTracesExporter(ctx, params, cfg).pushTraceData
 	}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		cfg,
 		params.Logger,
 		pushTracesFn,

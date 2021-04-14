@@ -40,8 +40,8 @@ type processorImp struct {
 	logger *zap.Logger
 	config Config
 
-	defaultTraceExporters []component.TracesExporter
-	traceExporters        map[string][]component.TracesExporter
+	defaultTracesExporters []component.TracesExporter
+	traceExporters         map[string][]component.TracesExporter
 }
 
 // Crete new processor
@@ -107,7 +107,7 @@ func (e *processorImp) registerExportersForDefaultRoute(available map[string]com
 		if !ok {
 			return fmt.Errorf("error registering default exporter %q: %w", exp, errExporterNotFound)
 		}
-		e.defaultTraceExporters = append(e.defaultTraceExporters, v)
+		e.defaultTracesExporters = append(e.defaultTracesExporters, v)
 	}
 
 	return nil
@@ -133,12 +133,12 @@ func (e *processorImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error
 	value := e.extractValueFromContext(ctx)
 	if len(value) == 0 {
 		// the attribute's value hasn't been found, send data to the default exporter
-		return e.pushDataToExporters(ctx, td, e.defaultTraceExporters)
+		return e.pushDataToExporters(ctx, td, e.defaultTracesExporters)
 	}
 
 	if _, ok := e.traceExporters[value]; !ok {
 		// the value has been found, but there are no exporters for the value
-		return e.pushDataToExporters(ctx, td, e.defaultTraceExporters)
+		return e.pushDataToExporters(ctx, td, e.defaultTracesExporters)
 	}
 
 	// found the appropriate router, using it

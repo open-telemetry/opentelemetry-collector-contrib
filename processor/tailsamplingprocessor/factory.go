@@ -44,7 +44,7 @@ func NewFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTraceProcessor))
+		processorhelper.WithTraces(createTracesProcessor))
 }
 
 func createDefaultConfig() config.Processor {
@@ -55,12 +55,12 @@ func createDefaultConfig() config.Processor {
 	}
 }
 
-func createTraceProcessor(
+func createTracesProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	tCfg := cfg.(*Config)
-	return newTraceProcessor(params.Logger, nextConsumer, *tCfg)
+	return newTracesProcessor(params.Logger, nextConsumer, *tCfg)
 }

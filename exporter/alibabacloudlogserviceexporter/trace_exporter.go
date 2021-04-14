@@ -24,8 +24,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// newTraceExporter return a new LogSerice trace exporter.
-func newTraceExporter(logger *zap.Logger, cfg config.Exporter) (component.TracesExporter, error) {
+// newTracesExporter return a new LogSerice trace exporter.
+func newTracesExporter(logger *zap.Logger, cfg config.Exporter) (component.TracesExporter, error) {
 
 	l := &logServiceTraceSender{
 		logger: logger,
@@ -36,7 +36,7 @@ func newTraceExporter(logger *zap.Logger, cfg config.Exporter) (component.Traces
 		return nil, err
 	}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		cfg,
 		logger,
 		l.pushTraceData)

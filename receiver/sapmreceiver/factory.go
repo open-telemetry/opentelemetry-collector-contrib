@@ -42,7 +42,7 @@ func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithTraces(createTraceReceiver))
+		receiverhelper.WithTraces(createTracesReceiver))
 }
 
 func createDefaultConfig() config.Receiver {
@@ -85,7 +85,7 @@ func (rCfg *Config) validate() error {
 }
 
 // CreateTracesReceiver creates a trace receiver based on provided config.
-func createTraceReceiver(
+func createTracesReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg config.Receiver,

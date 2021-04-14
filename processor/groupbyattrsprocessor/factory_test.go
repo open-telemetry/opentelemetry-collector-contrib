@@ -40,7 +40,7 @@ func TestCreateTestProcessor(t *testing.T) {
 		Logger: zap.NewNop(),
 	}
 
-	tp, err := createTraceProcessor(context.Background(), params, cfg, consumertest.NewNop())
+	tp, err := createTracesProcessor(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 	assert.Equal(t, true, tp.GetCapabilities().MutatesConsumedData)
