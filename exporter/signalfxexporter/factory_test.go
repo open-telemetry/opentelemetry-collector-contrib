@@ -61,7 +61,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	c.AccessToken = "access_token"
 	c.Realm = "us0"
 
-	_, err := createTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+	_, err := createTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	assert.NoError(t, err)
 }
 
@@ -70,7 +70,7 @@ func TestCreateTracesExporterNoAccessToken(t *testing.T) {
 	c := cfg.(*Config)
 	c.Realm = "us0"
 
-	_, err := createTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+	_, err := createTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	assert.EqualError(t, err, "access_token is required")
 }
 

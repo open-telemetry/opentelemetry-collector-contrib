@@ -71,7 +71,7 @@ func TestNewTracesExporter(t *testing.T) {
 	}
 }
 
-func TestTraceExporterStart(t *testing.T) {
+func TestTracesExporterStart(t *testing.T) {
 	for _, tt := range []struct {
 		desc string
 		te   *traceExporterImp
@@ -128,7 +128,7 @@ func TestTraceExporterStart(t *testing.T) {
 	}
 }
 
-func TestTraceExporterShutdown(t *testing.T) {
+func TestTracesExporterShutdown(t *testing.T) {
 	// prepare
 	config := simpleConfig()
 	params := component.ExporterCreateParams{

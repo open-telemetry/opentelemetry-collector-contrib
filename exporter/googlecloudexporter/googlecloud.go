@@ -88,7 +88,7 @@ func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
 	return copts, nil
 }
 
-func newGoogleCloudTraceExporter(cfg *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
+func newGoogleCloudTracesExporter(cfg *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
 	setVersionInUserAgent(cfg, params.ApplicationStartInfo.Version)
 
 	topts := []cloudtrace.Option{
@@ -109,7 +109,7 @@ func newGoogleCloudTraceExporter(cfg *Config, params component.ExporterCreatePar
 
 	tExp := &traceExporter{texporter: exp}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		cfg,
 		params.Logger,
 		tExp.pushTraces,

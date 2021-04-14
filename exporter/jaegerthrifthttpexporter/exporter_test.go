@@ -44,7 +44,7 @@ func TestNew(t *testing.T) {
 		timeout:     10 * time.Nanosecond,
 	}
 
-	got, err := newTraceExporter(ar.config, component.ExporterCreateParams{Logger: zap.NewNop()}, ar.httpAddress, ar.headers, ar.timeout)
+	got, err := newTracesExporter(ar.config, component.ExporterCreateParams{Logger: zap.NewNop()}, ar.httpAddress, ar.headers, ar.timeout)
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 
@@ -58,7 +58,7 @@ func TestNewFailsWithEmptyExporterName(t *testing.T) {
 		httpAddress: testHTTPAddress,
 	}
 
-	got, err := newTraceExporter(ar.config, component.ExporterCreateParams{Logger: zap.NewNop()}, ar.httpAddress, ar.headers, ar.timeout)
+	got, err := newTracesExporter(ar.config, component.ExporterCreateParams{Logger: zap.NewNop()}, ar.httpAddress, ar.headers, ar.timeout)
 	assert.EqualError(t, err, "nil config")
 	assert.Nil(t, got)
 }

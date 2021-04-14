@@ -70,7 +70,7 @@ func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*
 	}, nil
 }
 
-func newLogzioTraceExporter(config *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
+func newLogzioTracesExporter(config *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
 	exporter, err := newLogzioExporter(config, params)
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func newLogzioTraceExporter(config *Config, params component.ExporterCreateParam
 		return nil, err
 	}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		config,
 		params.Logger,
 		exporter.pushTraceData,

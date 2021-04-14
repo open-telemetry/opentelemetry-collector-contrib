@@ -99,7 +99,7 @@ func TestGoogleCloudTraceExport(t *testing.T) {
 			go srv.Serve(lis)
 
 			createParams := component.ExporterCreateParams{Logger: zap.NewNop(), ApplicationStartInfo: component.ApplicationStartInfo{Version: "v0.0.1"}}
-			sde, err := newGoogleCloudTraceExporter(test.cfg, createParams)
+			sde, err := newGoogleCloudTracesExporter(test.cfg, createParams)
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
 				return

@@ -85,7 +85,7 @@ func newMetricsExporter(l *zap.Logger, c config.Exporter) (*exporter, error) {
 	}, nil
 }
 
-func newTraceExporter(l *zap.Logger, c config.Exporter) (*exporter, error) {
+func newTracesExporter(l *zap.Logger, c config.Exporter) (*exporter, error) {
 	nrConfig, ok := c.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config: %#v", c)

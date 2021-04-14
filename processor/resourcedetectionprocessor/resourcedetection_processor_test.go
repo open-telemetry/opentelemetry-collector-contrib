@@ -179,7 +179,7 @@ func TestResourceProcessor(t *testing.T) {
 
 			// Test trace consuner
 			ttn := new(consumertest.TracesSink)
-			rtp, err := factory.createTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, ttn)
+			rtp, err := factory.createTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, ttn)
 
 			if tt.expectedNewError != "" {
 				assert.EqualError(t, err, tt.expectedNewError)

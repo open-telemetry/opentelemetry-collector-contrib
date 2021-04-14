@@ -35,7 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-func TestCreateTraceExporter(t *testing.T) {
+func TestCreateTracesExporter(t *testing.T) {
 	config := &Config{
 		ExporterSettings:   &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "sapm/customname"},
 		Endpoint:           "test-endpoint",
@@ -49,17 +49,17 @@ func TestCreateTraceExporter(t *testing.T) {
 	}
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
-	te, err := newSAPMTraceExporter(config, params)
+	te, err := newSAPMTracesExporter(config, params)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
 	assert.NoError(t, te.Shutdown(context.Background()), "trace exporter shutdown failed")
 }
 
-func TestCreateTraceExporterWithInvalidConfig(t *testing.T) {
+func TestCreateTracesExporterWithInvalidConfig(t *testing.T) {
 	config := &Config{}
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	te, err := newSAPMTraceExporter(config, params)
+	te, err := newSAPMTracesExporter(config, params)
 	require.Error(t, err)
 	assert.Nil(t, te)
 }

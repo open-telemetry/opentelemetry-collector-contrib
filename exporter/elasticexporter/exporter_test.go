@@ -32,7 +32,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestTraceExporter(t *testing.T) {
+func TestTracesExporter(t *testing.T) {
 	cleanup, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer cleanup()

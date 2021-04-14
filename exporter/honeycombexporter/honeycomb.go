@@ -68,9 +68,9 @@ type link struct {
 	AnnotationType string `json:"meta.annotation_type"`
 }
 
-// newHoneycombTraceExporter creates and returns a new honeycombExporter. It
-// wraps the exporter in the component.TraceExporterOld helper method.
-func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (*honeycombExporter, error) {
+// newHoneycombTracesExporter creates and returns a new honeycombExporter. It
+// wraps the exporter in the component.TracesExporterOld helper method.
+func newHoneycombTracesExporter(cfg *Config, logger *zap.Logger) (*honeycombExporter, error) {
 	libhoneyConfig := libhoney.Config{
 		WriteKey: cfg.APIKey,
 		Dataset:  cfg.Dataset,

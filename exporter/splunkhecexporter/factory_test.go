@@ -48,27 +48,27 @@ func TestCreateMetricsExporterNoConfig(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestCreateTraceExporter(t *testing.T) {
+func TestCreateTracesExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := createTraceExporter(context.Background(), params, cfg)
+	_, err := createTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 }
 
-func TestCreateTraceExporterNoConfig(t *testing.T) {
+func TestCreateTracesExporterNoConfig(t *testing.T) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := createTraceExporter(context.Background(), params, nil)
+	_, err := createTracesExporter(context.Background(), params, nil)
 	assert.Error(t, err)
 }
 
-func TestCreateTraceExporterInvalidEndpoint(t *testing.T) {
+func TestCreateTracesExporterInvalidEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "urn:something:12345"
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := createTraceExporter(context.Background(), params, cfg)
+	_, err := createTracesExporter(context.Background(), params, cfg)
 	assert.Error(t, err)
 }
 

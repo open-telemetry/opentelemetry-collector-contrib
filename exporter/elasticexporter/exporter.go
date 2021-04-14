@@ -36,7 +36,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter/internal/translator/elastic"
 )
 
-func newElasticTraceExporter(
+func newElasticTracesExporter(
 	params component.ExporterCreateParams,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
@@ -44,7 +44,7 @@ func newElasticTraceExporter(
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elastic APM trace exporter: %v", err)
 	}
-	return exporterhelper.NewTraceExporter(cfg, params.Logger, func(ctx context.Context, traces pdata.Traces) error {
+	return exporterhelper.NewTracesExporter(cfg, params.Logger, func(ctx context.Context, traces pdata.Traces) error {
 		var errs []error
 		resourceSpansSlice := traces.ResourceSpans()
 		for i := 0; i < resourceSpansSlice.Len(); i++ {

@@ -31,7 +31,7 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithTraces(createTracesExporter),
 		exporterhelper.WithMetrics(createMetricsExporter))
 }
 
@@ -43,19 +43,19 @@ func createDefaultConfig() config.Exporter {
 }
 
 // CreateTracesExporter creates a New Relic trace exporter for this configuration.
-func createTraceExporter(
+func createTracesExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
-	exp, err := newTraceExporter(params.Logger, cfg)
+	exp, err := newTracesExporter(params.Logger, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	// The logger is only used in a disabled queuedRetrySender, which noisily logs at
 	// the error level when it is disabled and errors occur.
-	return exporterhelper.NewTraceExporter(cfg, zap.NewNop(), exp.pushTraceData,
+	return exporterhelper.NewTracesExporter(cfg, zap.NewNop(), exp.pushTraceData,
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: cfg.(*Config).Timeout}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}))
