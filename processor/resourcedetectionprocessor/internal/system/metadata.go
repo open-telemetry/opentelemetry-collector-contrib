@@ -15,6 +15,7 @@
 package system
 
 import (
+	"os"
 	"runtime"
 	"strings"
 
@@ -22,6 +23,9 @@ import (
 )
 
 type systemMetadata interface {
+	// Hostname returns the OS hostname
+	Hostname() (string, error)
+
 	// FQDN returns the fully qualified domain name
 	FQDN() (string, error)
 
@@ -46,4 +50,8 @@ func (*systemMetadataImpl) OSType() (string, error) {
 
 func (*systemMetadataImpl) FQDN() (string, error) {
 	return fqdn.FqdnHostname()
+}
+
+func (*systemMetadataImpl) Hostname() (string, error) {
+	return os.Hostname()
 }
