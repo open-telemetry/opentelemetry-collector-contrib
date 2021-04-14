@@ -349,6 +349,8 @@ func convertInto(ent *entry.Entry, dest pdata.LogRecord) {
 		dest.SetSpanID(pdata.NewSpanID(buffer))
 	}
 	if ent.TraceFlags != nil {
+		// The 8 least significant bits are the trace flags as defined in W3C Trace
+		// Context specification. Don't override the 24 reserved bits.
 		flags := dest.Flags()
 		flags = flags & 0xFFFFFF00
 		flags = flags | uint32(ent.TraceFlags[0])
