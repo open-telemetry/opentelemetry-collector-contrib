@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
-	github.com/docker/docker v20.10.4+incompatible
+	github.com/docker/docker v20.10.6+incompatible
 	github.com/gobwas/glob v0.2.3
 	github.com/golang/protobuf v1.5.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
