@@ -113,7 +113,7 @@ func TestDetectError(t *testing.T) {
 	mdOSType.On("FQDN").Return("fqdn", nil)
 	mdOSType.On("OSType").Return("", errors.New("err"))
 
-	detector = &Detector{provider: mdOSType}
+	detector = &Detector{provider: mdOSType, logger: zap.NewNop()}
 	res, err = detector.Detect(context.Background())
 	assert.Error(t, err)
 	assert.True(t, internal.IsEmptyResource(res))
