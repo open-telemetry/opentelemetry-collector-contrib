@@ -10,11 +10,16 @@ Empty string means no compression
 - `max_request_body_size` (optional): Max HTTP request body size in bytes before compression (if applied). By default `1_048_576` (1MB) is used.
 - `metadata_attributes` (optional): List of regexes for attributes which should be send as metadata
 - `log_format` (optional) (logs only): Format to use when sending logs to Sumo. (default `json`) (possible values: `json`, `text`)
-- `metric_format` (optional) (metrics only): Format of the metrics to be sent (default is `prometheus`) (possible values: `carbon2`, `prometheus`)
-  `carbon2` and `graphite` are going to be supported soon.
+- `metric_format` (optional) (metrics only): Format of the metrics to be sent (default is `prometheus`) (possible values: `carbon2`, `graphite`, `prometheus`).
+- `graphite_template` (default=`%{_metric_}`) (optional) (metrics only): Template for Graphite format.
+[Source templates](#source-templates) are going to be applied.
+Applied only if `metric_format` is set to `graphite`.
 - `source_category` (optional): Desired source category. Useful if you want to override the source category configured for the source.
+[Source templates](#source-templates) are going to be applied.
 - `source_name` (optional): Desired source name. Useful if you want to override the source name configured for the source.
+[Source templates](#source-templates) are going to be applied.
 - `source_host` (optional): Desired host name. Useful if you want to override the source host configured for the source.
+[Source templates](#source-templates) are going to be applied.
 - `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.
 Maximum connection timeout is 55s.
 - `retry_on_failure`
@@ -30,7 +35,15 @@ Maximum connection timeout is 55s.
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds.
 
-Example:
+## Source Templates
+
+You can specify a template with an attribute for `source_category`, `source_name`, `source_host` or `graphite_template` using `%{attr_name}`.
+
+For example, when there is an attribute `my_attr`: `my_value`, `metrics/%{my_attr}` would be expanded to `metrics/my_value`.
+
+For `graphite_template`, in addition to above, `%{_metric_}` is going to be replaced with metric name.
+
+## Example Configuration
 
 ```yaml
 exporters:

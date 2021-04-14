@@ -51,6 +51,7 @@ type sender struct {
 	sources             sourceFormats
 	compressor          compressor
 	prometheusFormatter prometheusFormatter
+	graphiteFormatter   graphiteFormatter
 }
 
 const (
@@ -69,6 +70,7 @@ const (
 	contentTypeLogs       string = "application/x-www-form-urlencoded"
 	contentTypePrometheus string = "application/vnd.sumologic.prometheus"
 	contentTypeCarbon2    string = "application/vnd.sumologic.carbon2"
+	contentTypeGraphite   string = "application/vnd.sumologic.graphite"
 
 	contentEncodingGzip    string = "gzip"
 	contentEncodingDeflate string = "deflate"
@@ -87,6 +89,7 @@ func newSender(
 	s sourceFormats,
 	c compressor,
 	pf prometheusFormatter,
+	gf graphiteFormatter,
 ) *sender {
 	return &sender{
 		config:              cfg,
@@ -95,6 +98,7 @@ func newSender(
 		sources:             s,
 		compressor:          c,
 		prometheusFormatter: pf,
+		graphiteFormatter:   gf,
 	}
 }
 
@@ -144,6 +148,8 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, body io.Reader
 			req.Header.Add(headerContentType, contentTypePrometheus)
 		case Carbon2Format:
 			req.Header.Add(headerContentType, contentTypeCarbon2)
+		case GraphiteFormat:
+			req.Header.Add(headerContentType, contentTypeGraphite)
 		default:
 			return fmt.Errorf("unsupported metrics format: %s", s.config.MetricFormat)
 		}
@@ -263,6 +269,8 @@ func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, er
 			formattedLine = s.prometheusFormatter.metric2String(record)
 		case Carbon2Format:
 			formattedLine = carbon2Metric2String(record)
+		case GraphiteFormat:
+			formattedLine = s.graphiteFormatter.metric2String(record)
 		default:
 			err = fmt.Errorf("unexpected metric format: %s", s.config.MetricFormat)
 		}
