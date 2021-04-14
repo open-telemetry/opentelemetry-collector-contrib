@@ -18,6 +18,7 @@ package kafkametricsreceiver
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -73,7 +74,7 @@ func TestIntegrationSingleNode(t *testing.T) {
 	require.Eventuallyf(t, func() bool {
 		err = receiver.Start(context.Background(), &testHost{t: t})
 		return err == nil
-	}, 30*time.Second, 5*time.Second, "failed to start receiver")
+	}, 30*time.Second, 5*time.Second, fmt.Sprintf("failed to start metrics receiver. %v", err))
 	t.Logf("waiting for metrics...")
 	require.Eventuallyf(t,
 		func() bool {
