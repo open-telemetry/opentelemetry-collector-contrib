@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"sync"
 	"time"
@@ -159,7 +160,7 @@ func (h *humioClient) sendEvents(ctx context.Context, evts interface{}, url stri
 	}
 	// Response body needs to both be read to EOF and closed to avoid leaks
 	defer res.Body.Close()
-	io.Copy(io.Discard, res.Body)
+	io.Copy(ioutil.Discard, res.Body)
 
 	// If an error has occurred, determine if it would make sense to retry
 	// This check is not exhaustive, but should cover the most common cases

@@ -20,7 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -132,7 +132,7 @@ func executeRequest(fn func(s *httptest.Server) error) (result requestData) {
 	// store it in "result"
 	s := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		result.Path = r.URL.Path
-		body, err := io.ReadAll(r.Body)
+		body, err := ioutil.ReadAll(r.Body)
 
 		if err != nil {
 			result.Error = err
