@@ -68,7 +68,7 @@ def _hydrate_span_from_args(connection, query, parameters) -> dict:
     addr = getattr(connection, "_addr", None)
     if isinstance(addr, tuple):
         span_attributes["net.peer.name"] = addr[0]
-        span_attributes["net.peer.ip"] = addr[1]
+        span_attributes["net.peer.port"] = addr[1]
         span_attributes["net.transport"] = "IP.TCP"
     elif isinstance(addr, str):
         span_attributes["net.peer.name"] = addr

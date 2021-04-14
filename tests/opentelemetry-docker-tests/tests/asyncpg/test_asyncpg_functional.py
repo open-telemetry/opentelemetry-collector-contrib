@@ -46,7 +46,7 @@ class TestFunctionalAsyncPG(TestBase):
         self.assertEqual(span.attributes["db.name"], POSTGRES_DB_NAME)
         self.assertEqual(span.attributes["db.user"], POSTGRES_USER)
         self.assertEqual(span.attributes["net.peer.name"], POSTGRES_HOST)
-        self.assertEqual(span.attributes["net.peer.ip"], POSTGRES_PORT)
+        self.assertEqual(span.attributes["net.peer.port"], POSTGRES_PORT)
 
     def test_instrumented_execute_method_without_arguments(self, *_, **__):
         async_call(self._connection.execute("SELECT 42;"))
@@ -148,7 +148,7 @@ class TestFunctionalAsyncPG_CaptureParameters(TestBase):
         self.assertEqual(span.attributes["db.name"], POSTGRES_DB_NAME)
         self.assertEqual(span.attributes["db.user"], POSTGRES_USER)
         self.assertEqual(span.attributes["net.peer.name"], POSTGRES_HOST)
-        self.assertEqual(span.attributes["net.peer.ip"], POSTGRES_PORT)
+        self.assertEqual(span.attributes["net.peer.port"], POSTGRES_PORT)
 
     def test_instrumented_execute_method_with_arguments(self, *_, **__):
         async_call(self._connection.execute("SELECT $1;", "1"))
