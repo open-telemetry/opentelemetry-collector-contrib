@@ -190,3 +190,130 @@ func TestTask_MappedPort(t *testing.T) {
 		}
 	})
 }
+
+func TestTask_AddMatchedContainer(t *testing.T) {
+	t.Run("different container", func(t *testing.T) {
+		task := Task{
+			Matched: []MatchedContainer{
+				{
+					ContainerIndex: 0,
+					Targets: []MatchedTarget{
+						{
+							MatcherType: MatcherTypeService,
+							Port:        1,
+						},
+					},
+				},
+			},
+		}
+
+		task.AddMatchedContainer(MatchedContainer{
+			ContainerIndex: 1,
+			Targets: []MatchedTarget{
+				{
+					MatcherType: MatcherTypeDockerLabel,
+					Port:        2,
+				},
+			},
+		})
+		assert.Equal(t, []MatchedContainer{
+			{
+				ContainerIndex: 0,
+				Targets: []MatchedTarget{
+					{
+						MatcherType: MatcherTypeService,
+						Port:        1,
+					},
+				},
+			},
+			{
+				ContainerIndex: 1,
+				Targets: []MatchedTarget{
+					{
+						MatcherType: MatcherTypeDockerLabel,
+						Port:        2,
+					},
+				},
+			},
+		}, task.Matched)
+	})
+
+	t.Run("same container different metris path", func(t *testing.T) {
+		task := Task{
+			Matched: []MatchedContainer{
+				{
+					ContainerIndex: 0,
+					Targets: []MatchedTarget{
+						{
+							MatcherType: MatcherTypeService,
+							Port:        1,
+						},
+					},
+				},
+			},
+		}
+		task.AddMatchedContainer(MatchedContainer{
+			ContainerIndex: 0,
+			Targets: []MatchedTarget{
+				{
+					MatcherType: MatcherTypeTaskDefinition,
+					Port:        1,
+					MetricsPath: "/metrics2",
+				},
+			},
+		})
+		assert.Equal(t, []MatchedContainer{
+			{
+				ContainerIndex: 0,
+				Targets: []MatchedTarget{
+					{
+						MatcherType: MatcherTypeService,
+						Port:        1,
+					},
+					{
+						MatcherType: MatcherTypeTaskDefinition,
+						Port:        1,
+						MetricsPath: "/metrics2",
+					},
+				},
+			},
+		}, task.Matched)
+	})
+
+	t.Run("same container same metrics path", func(t *testing.T) {
+		task := Task{
+			Matched: []MatchedContainer{
+				{
+					ContainerIndex: 0,
+					Targets: []MatchedTarget{
+						{
+							MatcherType: MatcherTypeService,
+							Port:        1,
+						},
+					},
+				},
+			},
+		}
+		task.AddMatchedContainer(MatchedContainer{
+			ContainerIndex: 0,
+			Targets: []MatchedTarget{
+				{
+					MatcherType: MatcherTypeTaskDefinition,
+					Port:        1,
+					MetricsPath: "",
+				},
+			},
+		})
+		assert.Equal(t, []MatchedContainer{
+			{
+				ContainerIndex: 0,
+				Targets: []MatchedTarget{
+					{
+						MatcherType: MatcherTypeService,
+						Port:        1,
+					},
+				},
+			},
+		}, task.Matched)
+	})
+}

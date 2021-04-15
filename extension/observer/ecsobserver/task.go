@@ -32,6 +32,18 @@ type Task struct {
 	Matched    []MatchedContainer
 }
 
+// AddMatchedContainer tries to add a new matched container.
+// If the container already exists will merge targets within one container (i.e. different port/metrics path).
+func (t *Task) AddMatchedContainer(newContainer MatchedContainer) {
+	for i, oldContainer := range t.Matched {
+		if oldContainer.ContainerIndex == newContainer.ContainerIndex {
+			t.Matched[i].MergeTargets(newContainer.Targets)
+			return
+		}
+	}
+	t.Matched = append(t.Matched, newContainer)
+}
+
 func (t *Task) TaskTags() map[string]string {
 	if len(t.Task.Tags) == 0 {
 		return nil
