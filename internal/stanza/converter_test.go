@@ -117,24 +117,20 @@ func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
 	t.Parallel()
 
 	testcases := []struct {
-		entries            int
-		maxFlushCount      uint
-		expectedNumFlushes int
+		entries       int
+		maxFlushCount uint
 	}{
 		{
-			entries:            10,
-			maxFlushCount:      10,
-			expectedNumFlushes: 1,
+			entries:       10,
+			maxFlushCount: 10,
 		},
 		{
-			entries:            10,
-			maxFlushCount:      3,
-			expectedNumFlushes: 4,
+			entries:       10,
+			maxFlushCount: 3,
 		},
 		{
-			entries:            100,
-			maxFlushCount:      20,
-			expectedNumFlushes: 5,
+			entries:       100,
+			maxFlushCount: 20,
 		},
 	}
 
@@ -190,12 +186,15 @@ func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
 
 					actualCount += ill.Logs().Len()
 
+					assert.LessOrEqual(t, uint(ill.Logs().Len()), tc.maxFlushCount,
+						"Received more log records in one flush than configured by maxFlushCount",
+					)
+
 				case <-timeoutTimer.C:
 					break forLoop
 				}
 			}
 
-			assert.Equal(t, tc.expectedNumFlushes, actualFlushCount)
 			assert.Equal(t, tc.entries, actualCount,
 				"didn't receive expected number of entries after conversion",
 			)
@@ -207,28 +206,29 @@ func TestAllConvertedEntriesAreSentAndReceivedWithinAnExpectedTimeDuration(t *te
 	t.Parallel()
 
 	testcases := []struct {
-		entries            int
-		maxFlushCount      uint
-		flushInterval      time.Duration
-		expectedNumFlushes int
+		entries       int
+		maxFlushCount uint
+		flushInterval time.Duration
 	}{
 		{
-			entries:            10,
-			maxFlushCount:      20,
-			expectedNumFlushes: 1,
-			flushInterval:      100 * time.Millisecond,
+			entries:       10,
+			maxFlushCount: 20,
+			flushInterval: 100 * time.Millisecond,
 		},
 		{
-			entries:            50,
-			maxFlushCount:      51,
-			expectedNumFlushes: 1,
-			flushInterval:      100 * time.Millisecond,
+			entries:       50,
+			maxFlushCount: 51,
+			flushInterval: 100 * time.Millisecond,
 		},
 		{
-			entries:            500,
-			maxFlushCount:      501,
-			expectedNumFlushes: 1,
-			flushInterval:      100 * time.Millisecond,
+			entries:       500,
+			maxFlushCount: 501,
+			flushInterval: 100 * time.Millisecond,
+		},
+		{
+			entries:       500,
+			maxFlushCount: 100,
+			flushInterval: 100 * time.Millisecond,
 		},
 	}
 
@@ -290,12 +290,15 @@ func TestAllConvertedEntriesAreSentAndReceivedWithinAnExpectedTimeDuration(t *te
 
 					actualCount += ill.Logs().Len()
 
+					assert.LessOrEqual(t, uint(ill.Logs().Len()), tc.maxFlushCount,
+						"Received more log records in one flush than configured by maxFlushCount",
+					)
+
 				case <-timeoutTimer.C:
 					break forLoop
 				}
 			}
 
-			assert.Equal(t, tc.expectedNumFlushes, actualFlushCount)
 			assert.Equal(t, tc.entries, actualCount,
 				"didn't receive expected number of entries after conversion",
 			)
