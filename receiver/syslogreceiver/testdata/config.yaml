@@ -5,6 +5,7 @@ receivers:
     protocol: rfc5424
     converter:
       flush_interval: 100ms
+      worker_count: 1
 
 processors:
   nop:

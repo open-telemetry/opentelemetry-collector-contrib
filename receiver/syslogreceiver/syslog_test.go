@@ -110,6 +110,7 @@ func testdataConfigYamlAsMap() *SysLogConfig {
 			Operators:        stanza.OperatorConfigs{},
 			Converter: stanza.ConverterConfig{
 				FlushInterval: 100 * time.Millisecond,
+				WorkerCount:   1,
 			},
 		},
 		Input: stanza.InputConfig{
@@ -128,6 +129,7 @@ func testdataUDPConfig() *SysLogConfig {
 			Operators:        stanza.OperatorConfigs{},
 			Converter: stanza.ConverterConfig{
 				FlushInterval: 100 * time.Millisecond,
+				WorkerCount:   1,
 			},
 		},
 		Input: stanza.InputConfig{
