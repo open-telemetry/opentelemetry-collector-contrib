@@ -20,6 +20,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 const (
@@ -37,17 +39,8 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings:      config.NewExporterSettings(typeStr),
-		NumberOfWorkers:       8,
-		Endpoint:              "",
-		RequestTimeoutSeconds: 30,
-		MaxRetries:            2,
-		NoVerifySSL:           false,
-		ProxyAddress:          "",
-		Region:                "",
-		LocalMode:             false,
-		ResourceARN:           "",
-		RoleARN:               "",
+		ExporterSettings:   config.NewExporterSettings(typeStr),
+		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 	}
 }
 
@@ -57,5 +50,5 @@ func createTracesExporter(
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	eCfg := cfg.(*Config)
-	return newTracesExporter(eCfg, params, &Conn{})
+	return newTracesExporter(eCfg, params, &awsutil.Conn{})
 }

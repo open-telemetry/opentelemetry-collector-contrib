@@ -20,6 +20,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 const (
@@ -39,16 +41,10 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings:                config.NewExporterSettings(typeStr),
+		AWSSessionSettings:              awsutil.CreateDefaultSessionConfig(),
 		LogGroupName:                    "",
 		LogStreamName:                   "",
 		Namespace:                       "",
-		Endpoint:                        "",
-		RequestTimeoutSeconds:           30,
-		MaxRetries:                      1,
-		NoVerifySSL:                     false,
-		ProxyAddress:                    "",
-		Region:                          "",
-		RoleARN:                         "",
 		DimensionRollupOption:           "ZeroAndSingleDimensionRollup",
 		ParseJSONEncodedAttributeValues: make([]string, 0),
 		MetricDeclarations:              make([]*MetricDeclaration, 0),
