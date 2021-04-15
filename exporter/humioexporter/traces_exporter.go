@@ -27,16 +27,16 @@ import (
 
 // HumioLink represents a relation between two spans
 type HumioLink struct {
-	TraceId    string `json:"trace_id"`
-	SpanId     string `json:"span_id"`
+	TraceID    string `json:"trace_id"`
+	SpanID     string `json:"span_id"`
 	TraceState string `json:"state,omitempty"`
 }
 
 // HumioSpan represents a span as it is stored inside Humio
 type HumioSpan struct {
-	TraceId           string                 `json:"trace_id"`
-	SpanId            string                 `json:"span_id"`
-	ParentSpanId      string                 `json:"parent_id,omitempty"`
+	TraceID           string                 `json:"trace_id"`
+	SpanID            string                 `json:"span_id"`
+	ParentSpanID      string                 `json:"parent_id,omitempty"`
 	Name              string                 `json:"name"`
 	Kind              string                 `json:"kind"`
 	Start             int64                  `json:"start"`
@@ -81,7 +81,7 @@ func (e *humioTracesExporter) pushTraceData(ctx context.Context, td pdata.Traces
 		return err
 	}
 
-	// Succeccfully sent some traces, report any subset that failed conversion (if any).
+	// Successfully sent some traces, report any subset that failed conversion (if any).
 	// While we know that retrying will be unsuccessful, raising a permanent error at
 	// this time will cause the queued retry middleware to assume that all the spans
 	// failed conversion (which is not the case), resulting an incorrect metric being
@@ -93,7 +93,7 @@ func (e *humioTracesExporter) pushTraceData(ctx context.Context, td pdata.Traces
 }
 
 func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStructuredEvents, error) {
-	results := make([]*HumioStructuredEvents, 0, td.ResourceSpans().Len())
+	organizer := newTagOrganizer(e.cfg.Tag, tagFromSpan)
 	var droppedTraces []pdata.ResourceSpans
 
 	resSpans := td.ResourceSpans()
@@ -101,16 +101,10 @@ func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStru
 		resSpan := resSpans.At(i)
 		r := resSpan.Resource()
 
-		serviceName := ""
-		if sName, ok := r.Attributes().Get(conventions.AttributeServiceName); ok {
-			serviceName = sName.StringVal()
-		} else {
-			// This is how we handle failed spans, which we may extend over time
+		if _, ok := r.Attributes().Get(conventions.AttributeServiceName); !ok {
 			droppedTraces = append(droppedTraces, resSpan)
 			continue
 		}
-
-		evts := make([]*HumioStructuredEvent, 0, resSpan.InstrumentationLibrarySpans().Len())
 
 		instSpans := resSpan.InstrumentationLibrarySpans()
 		for j := 0; j < instSpans.Len(); j++ {
@@ -120,18 +114,12 @@ func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStru
 			otelSpans := instSpan.Spans()
 			for k := 0; k < otelSpans.Len(); k++ {
 				otelSpan := otelSpans.At(k)
-				evts = append(evts, e.spanToHumioEvent(otelSpan, lib, r))
+				organizer.consume(e.spanToHumioEvent(otelSpan, lib, r))
 			}
 		}
-
-		// TODO: More user control and adherence to conventions for tags
-		results = append(results, &HumioStructuredEvents{
-			Tags: map[string]string{
-				"service": serviceName,
-			},
-			Events: evts,
-		})
 	}
+
+	results := organizer.asEvents()
 
 	if len(droppedTraces) > 0 {
 		dropped := pdata.NewTraces()
@@ -168,9 +156,9 @@ func (e *humioTracesExporter) spanToHumioEvent(span pdata.Span, inst pdata.Instr
 		Timestamp: span.StartTimestamp().AsTime(),
 		AsUnix:    e.cfg.Traces.UnixTimestamps,
 		Attributes: &HumioSpan{
-			TraceId:           span.TraceID().HexString(),
-			SpanId:            span.SpanID().HexString(),
-			ParentSpanId:      span.ParentSpanID().HexString(),
+			TraceID:           span.TraceID().HexString(),
+			SpanID:            span.SpanID().HexString(),
+			ParentSpanID:      span.ParentSpanID().HexString(),
 			Name:              span.Name(),
 			Kind:              span.Kind().String(),
 			Start:             span.StartTimestamp().AsTime().UnixNano(),
@@ -189,8 +177,8 @@ func toHumioLinks(pLinks pdata.SpanLinkSlice) []*HumioLink {
 	for i := 0; i < pLinks.Len(); i++ {
 		link := pLinks.At(i)
 		links = append(links, &HumioLink{
-			TraceId:    link.TraceID().HexString(),
-			SpanId:     link.SpanID().HexString(),
+			TraceID:    link.TraceID().HexString(),
+			SpanID:     link.SpanID().HexString(),
 			TraceState: string(link.TraceState()),
 		})
 	}
@@ -198,7 +186,7 @@ func toHumioLinks(pLinks pdata.SpanLinkSlice) []*HumioLink {
 }
 
 func toHumioAttributes(attrMaps ...pdata.AttributeMap) map[string]interface{} {
-	attr := make(map[string]interface{}, 0)
+	attr := make(map[string]interface{})
 	for _, attrMap := range attrMaps {
 		attrMap.ForEach(func(k string, v pdata.AttributeValue) {
 			attr[k] = toHumioAttributeValue(v)
@@ -230,6 +218,19 @@ func toHumioAttributeValue(rawVal pdata.AttributeValue) interface{} {
 
 	// Also handles AttributeValueNULL
 	return nil
+}
+
+func tagFromSpan(evt *HumioStructuredEvent, strategy Tagger) string {
+	switch strategy {
+	case TagTraceID:
+		return evt.Attributes.(*HumioSpan).TraceID
+
+	case TagServiceName:
+		return evt.Attributes.(*HumioSpan).ServiceName
+
+	default: // TagNone
+		return ""
+	}
 }
 
 func (e *humioTracesExporter) shutdown(context.Context) error {

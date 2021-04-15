@@ -29,14 +29,14 @@ import (
 	"go.uber.org/zap"
 )
 
-func createSpanId(stringVal string) [8]byte {
+func createSpanID(stringVal string) [8]byte {
 	var id [8]byte
 	b, _ := hex.DecodeString(stringVal)
 	copy(id[:], b)
 	return id
 }
 
-func createTraceId(stringVal string) [16]byte {
+func createTraceID(stringVal string) [16]byte {
 	var id [16]byte
 	b, _ := hex.DecodeString(stringVal)
 	copy(id[:], b)
@@ -227,8 +227,8 @@ func TestTracesToHumioEvents_CombinesInstrumentation(t *testing.T) {
 func TestSpanToHumioEvent(t *testing.T) {
 	// Arrange
 	span := pdata.NewSpan()
-	span.SetTraceID(pdata.NewTraceID(createTraceId("10")))
-	span.SetSpanID(pdata.NewSpanID(createSpanId("20")))
+	span.SetTraceID(pdata.NewTraceID(createTraceID("10")))
+	span.SetSpanID(pdata.NewSpanID(createSpanID("20")))
 	span.SetName("span")
 	span.SetKind(pdata.SpanKindSERVER)
 	span.SetStartTimestamp(pdata.TimestampFromTime(
@@ -252,9 +252,9 @@ func TestSpanToHumioEvent(t *testing.T) {
 		Timestamp: time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC),
 		AsUnix:    true,
 		Attributes: &HumioSpan{
-			TraceId:           "10000000000000000000000000000000",
-			SpanId:            "2000000000000000",
-			ParentSpanId:      "",
+			TraceID:           "10000000000000000000000000000000",
+			SpanID:            "2000000000000000",
+			ParentSpanID:      "",
 			Name:              "span",
 			Kind:              "SPAN_KIND_SERVER",
 			Start:             time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC).UnixNano(),
@@ -308,25 +308,25 @@ func TestToHumioLinks(t *testing.T) {
 	// Arrange
 	slice := pdata.NewSpanLinkSlice()
 	link1 := pdata.NewSpanLink()
-	link1.SetTraceID(pdata.NewTraceID(createTraceId("11")))
-	link1.SetSpanID(pdata.NewSpanID(createSpanId("22")))
+	link1.SetTraceID(pdata.NewTraceID(createTraceID("11")))
+	link1.SetSpanID(pdata.NewSpanID(createSpanID("22")))
 	link1.SetTraceState("state1")
 	slice.Append(link1)
 
 	link2 := pdata.NewSpanLink()
-	link2.SetTraceID(pdata.NewTraceID(createTraceId("33")))
-	link2.SetSpanID(pdata.NewSpanID(createSpanId("44")))
+	link2.SetTraceID(pdata.NewTraceID(createTraceID("33")))
+	link2.SetSpanID(pdata.NewSpanID(createSpanID("44")))
 	slice.Append(link2)
 
 	expected := []*HumioLink{
 		{
-			TraceId:    "11000000000000000000000000000000",
-			SpanId:     "2200000000000000",
+			TraceID:    "11000000000000000000000000000000",
+			SpanID:     "2200000000000000",
 			TraceState: "state1",
 		},
 		{
-			TraceId:    "33000000000000000000000000000000",
-			SpanId:     "4400000000000000",
+			TraceID:    "33000000000000000000000000000000",
+			SpanID:     "4400000000000000",
 			TraceState: "",
 		},
 	}

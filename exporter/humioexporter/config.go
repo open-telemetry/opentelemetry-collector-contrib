@@ -31,33 +31,6 @@ const (
 	structuredPath   = basePath + "humio-structured"
 )
 
-// Definition of tagging strategies
-type tag string
-
-const (
-	// None disables tagging of payloads to Humio
-	TagNone tag = "none"
-
-	// TraceID tags payloads to Humio using the trace ID, or an empty string if
-	// the trace ID is missing
-	TagTraceID tag = "trace_id"
-
-	// ServiceName tags payloads to Humio using the service name, or an empty
-	// string if it is missing
-	TagServiceName tag = "service_name"
-)
-
-// Tagger represents a tagging strategy understood by the Humio exporter
-type Tagger interface {
-	Tag() tag
-}
-
-// Tag returns the underlying representation of the tagging strategy. This
-// exists to ensure that strategies implement the Tagger interface
-func (t tag) Tag() tag {
-	return t
-}
-
 // LogsConfig represents the Humio configuration settings specific to logs
 type LogsConfig struct {
 	//Ingest token for identifying and authorizing with a Humio repository
