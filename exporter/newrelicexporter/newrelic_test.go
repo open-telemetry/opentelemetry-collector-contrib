@@ -773,7 +773,7 @@ func testUserAgentContainsCollectorInfo(t *testing.T, version string, gitHash st
 	}
 	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
 	params := component.ExporterCreateParams{Logger: zap.NewNop(), ApplicationStartInfo: component.ApplicationStartInfo{
-		ExeName: testCollectorName,
+		ExeName: exeName,
 		Version: version,
 		GitHash: gitHash,
 	}}
