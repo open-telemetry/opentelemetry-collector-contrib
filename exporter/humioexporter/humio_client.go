@@ -99,21 +99,21 @@ type exporterClient interface {
 
 // A concrete HTTP client for sending unstructured and structured events to Humio
 type humioClient struct {
-	config   *Config
+	cfg      *Config
 	client   *http.Client
 	gzipPool *sync.Pool
 	logger   *zap.Logger
 }
 
 // Constructs a new HTTP client for sending payloads to Humio
-func newHumioClient(config *Config, logger *zap.Logger) (exporterClient, error) {
-	client, err := config.HTTPClientSettings.ToClient()
+func newHumioClient(cfg *Config, logger *zap.Logger) (exporterClient, error) {
+	client, err := cfg.HTTPClientSettings.ToClient()
 	if err != nil {
 		return nil, err
 	}
 
 	return &humioClient{
-		config: config,
+		cfg:    cfg,
 		client: client,
 		gzipPool: &sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
@@ -124,12 +124,12 @@ func newHumioClient(config *Config, logger *zap.Logger) (exporterClient, error) 
 
 // Send a payload of unstructured events to the corresponding Humio API
 func (h *humioClient) sendUnstructuredEvents(ctx context.Context, evts []*HumioUnstructuredEvents) error {
-	return h.sendEvents(ctx, evts, h.config.unstructuredEndpoint.String())
+	return h.sendEvents(ctx, evts, h.cfg.unstructuredEndpoint.String())
 }
 
 // Send a payload of structured events to the corresponding Humio API
 func (h *humioClient) sendStructuredEvents(ctx context.Context, evts []*HumioStructuredEvents) error {
-	return h.sendEvents(ctx, evts, h.config.structuredEndpoint.String())
+	return h.sendEvents(ctx, evts, h.cfg.structuredEndpoint.String())
 }
 
 // Send a payload of generic events to the specified Humio API. This method should
@@ -150,7 +150,7 @@ func (h *humioClient) sendEvents(ctx context.Context, evts interface{}, url stri
 		return consumererror.Permanent(err)
 	}
 
-	for h, v := range h.config.Headers {
+	for h, v := range h.cfg.Headers {
 		req.Header.Set(h, v)
 	}
 
@@ -188,7 +188,7 @@ func (h *humioClient) encodeBody(body interface{}) (io.Reader, error) {
 		return nil, err
 	}
 
-	if h.config.DisableCompression {
+	if h.cfg.DisableCompression {
 		return bytes.NewReader(b), nil
 	}
 	return h.compressBody(b)

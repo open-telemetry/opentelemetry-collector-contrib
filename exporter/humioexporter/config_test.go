@@ -44,10 +44,6 @@ func loadConfig(t *testing.T, name string) (config.Exporter, *Config) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	actual := cfg.Exporters[name]
-	// TODO: Remove this, when Validate is fixed. A validate function should not mutate the config.
-	actual.(*Config).structuredEndpoint = nil
-	actual.(*Config).unstructuredEndpoint = nil
-	actual.(*Config).Headers = map[string]string{}
 
 	def := factory.CreateDefaultConfig().(*Config)
 	require.NotNil(t, def)
@@ -125,99 +121,55 @@ func TestLoadAllSettings(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func TestValidateValid(t *testing.T) {
-	//Arrange
-	config := &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
-		IngestToken:      "token",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: "http://localhost:8080",
-		},
-	}
-
-	// Act
-	err := config.Validate()
-
-	// Assert
-	require.NoError(t, err)
-
-	assert.NotNil(t, config.unstructuredEndpoint)
-	assert.Equal(t, "localhost:8080", config.unstructuredEndpoint.Host)
-	assert.Equal(t, unstructuredPath, config.unstructuredEndpoint.Path)
-
-	assert.NotNil(t, config.structuredEndpoint)
-	assert.Equal(t, "localhost:8080", config.structuredEndpoint.Host)
-	assert.Equal(t, structuredPath, config.structuredEndpoint.Path)
-
-	assert.Equal(t, map[string]string{
-		"Content-Type":     "application/json",
-		"Content-Encoding": "gzip",
-		"Authorization":    "Bearer token",
-		"User-Agent":       "opentelemetry-collector-contrib Humio",
-	}, config.Headers)
-}
-
-func TestValidateCustomHeaders(t *testing.T) {
-	//Arrange
-	config := &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
-		IngestToken:      "token",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: "http://localhost:8080",
-			Headers: map[string]string{
-				"User-Agent":       "Humio",
-				"Content-Type":     "application/json",
-				"Content-Encoding": "gzip",
-			},
-		},
-	}
-
-	// Act
-	err := config.Validate()
-
-	// Assert
-	require.NoError(t, err)
-	assert.Equal(t, map[string]string{
-		"Content-Type":     "application/json",
-		"Content-Encoding": "gzip",
-		"Authorization":    "Bearer token",
-		"User-Agent":       "Humio",
-	}, config.Headers)
-}
-
-func TestValidateNoCompression(t *testing.T) {
-	//Arrange
-	config := &Config{
-		ExporterSettings:   config.NewExporterSettings(typeStr),
-		IngestToken:        "token",
-		DisableCompression: true,
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: "http://localhost:8080",
-		},
-	}
-
-	// Act
-	err := config.Validate()
-
-	// Assert
-	require.NoError(t, err)
-	assert.Equal(t, map[string]string{
-		"Content-Type":  "application/json",
-		"Authorization": "Bearer token",
-		"User-Agent":    "opentelemetry-collector-contrib Humio",
-	}, config.Headers)
-}
-
-func TestValidateErrors(t *testing.T) {
+func TestValidate(t *testing.T) {
 	// Arrange
 	testCases := []struct {
 		desc    string
-		config  *Config
+		cfg     *Config
 		wantErr bool
 	}{
 		{
+			desc: "Valid minimal configuration",
+			cfg: &Config{
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				IngestToken:      "token",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "http://localhost:8080",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			desc: "Valid custom headers",
+			cfg: &Config{
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				IngestToken:      "token",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "http://localhost:8080",
+					Headers: map[string]string{
+						"User-Agent":       "Humio",
+						"Content-Type":     "application/json",
+						"Content-Encoding": "gzip",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			desc: "Valid compression disabled",
+			cfg: &Config{
+				ExporterSettings:   config.NewExporterSettings(typeStr),
+				IngestToken:        "token",
+				DisableCompression: true,
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "http://localhost:8080",
+				},
+			},
+			wantErr: false,
+		},
+		{
 			desc: "Missing ingest token",
-			config: &Config{
+			cfg: &Config{
 				ExporterSettings: config.NewExporterSettings(typeStr),
 				IngestToken:      "",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -228,7 +180,7 @@ func TestValidateErrors(t *testing.T) {
 		},
 		{
 			desc: "Missing endpoint",
-			config: &Config{
+			cfg: &Config{
 				ExporterSettings: config.NewExporterSettings(typeStr),
 				IngestToken:      "t",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -239,7 +191,7 @@ func TestValidateErrors(t *testing.T) {
 		},
 		{
 			desc: "Override tags",
-			config: &Config{
+			cfg: &Config{
 				ExporterSettings: config.NewExporterSettings(typeStr),
 				IngestToken:      "t",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -252,7 +204,7 @@ func TestValidateErrors(t *testing.T) {
 		},
 		{
 			desc: "Missing custom tags",
-			config: &Config{
+			cfg: &Config{
 				ExporterSettings: config.NewExporterSettings(typeStr),
 				IngestToken:      "t",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -264,7 +216,7 @@ func TestValidateErrors(t *testing.T) {
 		},
 		{
 			desc: "Unix time",
-			config: &Config{
+			cfg: &Config{
 				ExporterSettings: config.NewExporterSettings(typeStr),
 				IngestToken:      "t",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -278,7 +230,7 @@ func TestValidateErrors(t *testing.T) {
 		},
 		{
 			desc: "Error creating URLs",
-			config: &Config{
+			cfg: &Config{
 				ExporterSettings: config.NewExporterSettings(typeStr),
 				IngestToken:      "t",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -289,7 +241,7 @@ func TestValidateErrors(t *testing.T) {
 		},
 		{
 			desc: "Invalid Content-Type header",
-			config: &Config{
+			cfg: &Config{
 				ExporterSettings: config.NewExporterSettings(typeStr),
 				IngestToken:      "t",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -303,7 +255,7 @@ func TestValidateErrors(t *testing.T) {
 		},
 		{
 			desc: "User-provided Authorization header",
-			config: &Config{
+			cfg: &Config{
 				ExporterSettings: config.NewExporterSettings(typeStr),
 				IngestToken:      "t",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -317,7 +269,7 @@ func TestValidateErrors(t *testing.T) {
 		},
 		{
 			desc: "Invalid content encoding",
-			config: &Config{
+			cfg: &Config{
 				ExporterSettings: config.NewExporterSettings(typeStr),
 				IngestToken:      "t",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -331,7 +283,7 @@ func TestValidateErrors(t *testing.T) {
 		},
 		{
 			desc: "Content encoding without compression",
-			config: &Config{
+			cfg: &Config{
 				ExporterSettings:   config.NewExporterSettings(typeStr),
 				IngestToken:        "t",
 				DisableCompression: true,
@@ -349,11 +301,93 @@ func TestValidateErrors(t *testing.T) {
 	// Act / Assert
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			if err := tC.config.Validate(); (err != nil) != tC.wantErr {
+			if err := tC.cfg.Validate(); (err != nil) != tC.wantErr {
 				t.Errorf("Config.Validate() error = %v, wantErr %v", err, tC.wantErr)
 			}
 		})
 	}
+}
+
+func TestSanitizeValid(t *testing.T) {
+	//Arrange
+	cfg := &Config{
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		IngestToken:      "token",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "http://localhost:8080",
+		},
+	}
+
+	// Act
+	err := cfg.sanitize()
+
+	// Assert
+	require.NoError(t, err)
+	assert.NotNil(t, cfg.unstructuredEndpoint)
+	assert.Equal(t, "localhost:8080", cfg.unstructuredEndpoint.Host)
+	assert.Equal(t, unstructuredPath, cfg.unstructuredEndpoint.Path)
+
+	assert.NotNil(t, cfg.structuredEndpoint)
+	assert.Equal(t, "localhost:8080", cfg.structuredEndpoint.Host)
+	assert.Equal(t, structuredPath, cfg.structuredEndpoint.Path)
+
+	assert.Equal(t, map[string]string{
+		"Content-Type":     "application/json",
+		"Content-Encoding": "gzip",
+		"Authorization":    "Bearer token",
+		"User-Agent":       "opentelemetry-collector-contrib Humio",
+	}, cfg.Headers)
+}
+
+func TestSanitizeCustomHeaders(t *testing.T) {
+	//Arrange
+	cfg := &Config{
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		IngestToken:      "token",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "http://localhost:8080",
+			Headers: map[string]string{
+				"User-Agent":       "Humio",
+				"Content-Type":     "application/json",
+				"Content-Encoding": "gzip",
+			},
+		},
+	}
+
+	// Act
+	err := cfg.sanitize()
+
+	// Assert
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"Content-Type":     "application/json",
+		"Content-Encoding": "gzip",
+		"Authorization":    "Bearer token",
+		"User-Agent":       "Humio",
+	}, cfg.Headers)
+}
+
+func TestSanitizeNoCompression(t *testing.T) {
+	//Arrange
+	cfg := &Config{
+		ExporterSettings:   config.NewExporterSettings(typeStr),
+		IngestToken:        "token",
+		DisableCompression: true,
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "http://localhost:8080",
+		},
+	}
+
+	// Act
+	err := cfg.sanitize()
+
+	// Assert
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"Content-Type":  "application/json",
+		"Authorization": "Bearer token",
+		"User-Agent":    "opentelemetry-collector-contrib Humio",
+	}, cfg.Headers)
 }
 
 func TestGetEndpoint(t *testing.T) {
@@ -364,7 +398,7 @@ func TestGetEndpoint(t *testing.T) {
 		Path:   structuredPath,
 	}
 
-	c := Config{
+	cfg := Config{
 		IngestToken: "t",
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://localhost:8080",
@@ -372,7 +406,7 @@ func TestGetEndpoint(t *testing.T) {
 	}
 
 	// Act
-	actual, err := c.getEndpoint(structuredPath)
+	actual, err := cfg.getEndpoint(structuredPath)
 
 	// Assert
 	require.NoError(t, err)
@@ -381,14 +415,14 @@ func TestGetEndpoint(t *testing.T) {
 
 func TestGetEndpointError(t *testing.T) {
 	// Arrange
-	c := Config{
+	cfg := Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "\n\t",
 		},
 	}
 
 	// Act
-	result, err := c.getEndpoint(structuredPath)
+	result, err := cfg.getEndpoint(structuredPath)
 
 	// Assert
 	require.Error(t, err)

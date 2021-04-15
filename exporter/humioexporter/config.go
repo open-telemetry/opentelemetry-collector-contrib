@@ -16,6 +16,7 @@ package humioexporter
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"path"
 
@@ -89,47 +90,49 @@ func (c *Config) Validate() error {
 		return errors.New("requires at least one custom tag when disabling service tag")
 	}
 
-	// Ensure that it is possible to construct a URL to access the unstructured ingest API
-	if c.unstructuredEndpoint == nil {
-		endp, err := c.getEndpoint(unstructuredPath)
-		if err != nil {
-			return errors.New("unable to create URL for unstructured ingest API")
-		}
-		c.unstructuredEndpoint = endp
-	}
-
-	// Ensure that it is possible to construct a URL to access the structured ingest API
-	if c.structuredEndpoint == nil {
-		endp, err := c.getEndpoint(structuredPath)
-		if err != nil {
-			return errors.New("unable to create URL for structured ingest API")
-		}
-		c.structuredEndpoint = endp
-	}
-
-	if c.Headers == nil {
-		c.Headers = make(map[string]string)
+	// Ensure that it is possible to construct URLs to access the ingest API
+	if _, err := c.getEndpoint(unstructuredPath); err != nil {
+		return fmt.Errorf("unable to create URL for unstructured ingest API, endpoint %s is invalid", c.Endpoint)
 	}
 
 	// We require these headers, which should not be overwritten by the user
 	if contentType, ok := c.Headers["Content-Type"]; ok && contentType != "application/json" {
 		return errors.New("the Content-Type must be application/json, which is also the default for this header")
 	}
-	c.Headers["Content-Type"] = "application/json"
 
 	if _, ok := c.Headers["Authorization"]; ok {
 		return errors.New("the Authorization header must not be overwritten, since it is automatically generated from the ingest token")
 	}
-	c.Headers["Authorization"] = "Bearer " + c.IngestToken
 
 	if enc, ok := c.Headers["Content-Encoding"]; ok && (c.DisableCompression || enc != "gzip") {
 		return errors.New("the Content-Encoding header must be gzip when using compression, and empty when compression is disabled")
 	}
+
+	return nil
+}
+
+// Sanitize ensures that the correct headers are inserted and that a url for each endpoint is obtainable
+func (c *Config) sanitize() error {
+	structured, errS := c.getEndpoint(structuredPath)
+	unstructured, errU := c.getEndpoint(unstructuredPath)
+
+	if errS != nil || errU != nil {
+		return fmt.Errorf("badly formatted endpoint %s", c.Endpoint)
+	}
+	c.structuredEndpoint = structured
+	c.unstructuredEndpoint = unstructured
+
+	if c.Headers == nil {
+		c.Headers = make(map[string]string)
+	}
+
+	c.Headers["Content-Type"] = "application/json"
+	c.Headers["Authorization"] = "Bearer " + c.IngestToken
+
 	if !c.DisableCompression {
 		c.Headers["Content-Encoding"] = "gzip"
 	}
 
-	// Fallback User-Agent if not overridden by user
 	if _, ok := c.Headers["User-Agent"]; !ok {
 		c.Headers["User-Agent"] = "opentelemetry-collector-contrib Humio"
 	}

@@ -43,12 +43,12 @@ func TestCreateTracesExporter(t *testing.T) {
 	factory := newHumioFactory(t)
 	testCases := []struct {
 		desc    string
-		config  config.Exporter
+		cfg     config.Exporter
 		wantErr bool
 	}{
 		{
 			desc: "Valid trace configuration",
-			config: &Config{
+			cfg: &Config{
 				ExporterSettings: config.NewExporterSettings(typeStr),
 				IngestToken:      "00000000-0000-0000-0000-0000000000000",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -58,18 +58,18 @@ func TestCreateTracesExporter(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			desc: "Invalid trace configuration",
-			config: &Config{
+			desc: "Unsanitizable trace configuration",
+			cfg: &Config{
 				ExporterSettings: config.NewExporterSettings(typeStr),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "http://localhost:8080",
+					Endpoint: "\n",
 				},
 			},
 			wantErr: true,
 		},
 		{
 			desc: "Invalid client configuration",
-			config: &Config{
+			cfg: &Config{
 				ExporterSettings: config.NewExporterSettings(typeStr),
 				IngestToken:      "00000000-0000-0000-0000-0000000000000",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -86,7 +86,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			desc:    "Missing configuration",
-			config:  nil,
+			cfg:     nil,
 			wantErr: true,
 		},
 	}
@@ -97,7 +97,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			exp, err := factory.CreateTracesExporter(
 				context.Background(),
 				component.ExporterCreateParams{Logger: zap.NewNop()},
-				tC.config,
+				tC.cfg,
 			)
 
 			if (err != nil) != tC.wantErr {

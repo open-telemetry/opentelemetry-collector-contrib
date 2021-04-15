@@ -46,6 +46,9 @@ func makeClient(t *testing.T, host string, compression bool) exporterClient {
 	err := cfg.Validate()
 	require.NoError(t, err)
 
+	err = cfg.sanitize()
+	require.NoError(t, err)
+
 	client, err := newHumioClient(cfg, zap.NewNop())
 	require.NoError(t, err)
 	return client

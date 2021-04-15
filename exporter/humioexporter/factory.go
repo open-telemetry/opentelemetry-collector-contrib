@@ -72,8 +72,7 @@ func createTracesExporter(
 	}
 	cfg := config.(*Config)
 
-	// Fail fast if the configurations are invalid
-	if err := cfg.Validate(); err != nil {
+	if err := cfg.sanitize(); err != nil {
 		return nil, err
 	}
 
