@@ -3,7 +3,7 @@ Exports data to Humio using JSON over the HTTP [Ingest API](https://docs.humio.c
 
 Supported pipeline types: traces (with metrics and logs to follow soon)
 
-> :construction: This exporter is currently intended for evaluation purposes only!
+> :construction: This exporter is currently intended for evaluation purposes only! It has yet to be enabled in the build.
 
 ## Getting Started
 This exporter requires the following configuration options:
