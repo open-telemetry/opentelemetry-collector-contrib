@@ -310,10 +310,10 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3","service.name":"myapp"}}` + "\n\r\n\r\n",
 				},
 				numBatches: 1,
 			},
@@ -328,10 +328,10 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
-					`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
-					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
-					`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3","service.name":"myapp"}}` + "\n\r\n\r\n",
 				},
 				numBatches: 4,
 			},
@@ -341,15 +341,15 @@ func TestReceiveLogs(t *testing.T) {
 			logs: createLogData(1, 1, 4),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.MaxContentLengthLogs = 400
+				cfg.MaxContentLengthLogs = 448
 				return cfg
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
-					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3","service.name":"myapp"}}` + "\n\r\n\r\n",
 				},
 				numBatches: 2,
 			},
@@ -362,49 +362,49 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_4","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_5","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_6","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_7","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_8","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_9","service.name":"myapp"}}` + "\n\r\n\r\n",
 				},
 				numBatches: 1,
 				compressed: true,
 			},
 		},
 		{
-			name: "2 compressed batches - 1652 bytes each, make sure the log size is more than minCompressionLen=1500 to trigger compression",
+			name: "2 compressed batches - 1916 bytes each, make sure the log size is more than minCompressionLen=1500 to trigger compression",
 			logs: createLogData(1, 1, 18), // comes to HEC events payload size - 1837 bytes
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.MaxContentLengthLogs = 1700
+				cfg.MaxContentLengthLogs = 1916
 				return cfg
 			}(),
 			want: wantType{
 				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
-					`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.01,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.011,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.012,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.013,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.014,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.015,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.016,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n" +
-						`{"time":0.017,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_0","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_1","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_2","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_3","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_4","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_5","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_6","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_7","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_8","service.name":"myapp"}}` + "\n\r\n\r\n",
+					`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_9","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.01,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_10","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.011,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_11","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.012,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_12","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.013,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_13","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.014,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_14","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.015,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_15","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.016,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_16","service.name":"myapp"}}` + "\n\r\n\r\n" +
+						`{"time":0.017,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","host.name":"myhost","otlp.log.name":"0_0_17","service.name":"myapp"}}` + "\n\r\n\r\n",
 				},
 				numBatches: 2,
 				compressed: true,
