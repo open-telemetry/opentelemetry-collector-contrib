@@ -402,7 +402,7 @@ func insertToAttributeVal(value interface{}, dest pdata.AttributeValue) {
 func toAttributeMap(obsMap map[string]interface{}) pdata.AttributeValue {
 	attVal := pdata.NewAttributeValueMap()
 	attMap := attVal.MapVal()
-	attMap.InitEmptyWithCapacity(len(obsMap))
+	attMap.EnsureCapacity(len(obsMap))
 	for k, v := range obsMap {
 		switch t := v.(type) {
 		case bool:

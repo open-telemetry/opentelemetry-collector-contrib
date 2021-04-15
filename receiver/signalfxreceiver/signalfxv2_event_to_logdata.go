@@ -38,7 +38,8 @@ func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs pdata.LogSlice) {
 		lr.SetTimestamp(pdata.Timestamp(event.Timestamp * 1e6))
 
 		attrs := lr.Attributes()
-		attrs.InitEmptyWithCapacity(1 + len(event.Dimensions) + len(event.Properties))
+		attrs.Clear()
+		attrs.EnsureCapacity(1 + len(event.Dimensions) + len(event.Properties))
 
 		if event.Category != nil {
 			attrs.InsertInt(splunk.SFxEventCategoryKey, int64(*event.Category))
@@ -56,7 +57,7 @@ func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs pdata.LogSlice) {
 		if len(event.Properties) > 0 {
 			propMapVal := pdata.NewAttributeValueMap()
 			propMap := propMapVal.MapVal()
-			propMap.InitEmptyWithCapacity(len(event.Properties))
+			propMap.EnsureCapacity(len(event.Properties))
 
 			for _, prop := range event.Properties {
 				// No way to tell what value type is without testing each

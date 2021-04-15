@@ -193,7 +193,8 @@ func fillInLabels(
 	dimensions []*sfxpb.Dimension,
 	labels pdata.StringMap,
 ) {
-	labels.InitEmptyWithCapacity(len(dimensions))
+	labels.Clear()
+	labels.EnsureCapacity(len(dimensions))
 
 	for _, dim := range dimensions {
 		if dim == nil {

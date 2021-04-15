@@ -54,7 +54,7 @@ func TestTracesExporter(t *testing.T) {
 
 	err = te.ConsumeTraces(context.Background(), traces)
 	assert.NoError(t, err)
-	obsreporttest.CheckExporterTracesViews(t, "elastic", 1, 0)
+	obsreporttest.CheckExporterTraces(t, "elastic", 1, 0)
 
 	payloads := recorder.Payloads()
 	require.Len(t, payloads.Transactions, 1)
@@ -81,7 +81,7 @@ func TestMetricsExporter(t *testing.T) {
 	payloads := recorder.Payloads()
 	require.Len(t, payloads.Metrics, 2)
 	assert.Contains(t, payloads.Metrics[0].Samples, "foobar")
-	obsreporttest.CheckExporterMetricsViews(t, "elastic", 2, 0)
+	obsreporttest.CheckExporterMetrics(t, "elastic", 2, 0)
 
 	assert.NoError(t, me.Shutdown(context.Background()))
 }
@@ -103,7 +103,7 @@ func TestMetricsExporterSendError(t *testing.T) {
 
 	err = me.ConsumeMetrics(context.Background(), sampleMetrics())
 	assert.Error(t, err)
-	obsreporttest.CheckExporterMetricsViews(t, "elastic", 0, 2)
+	obsreporttest.CheckExporterMetrics(t, "elastic", 0, 2)
 
 	assert.NoError(t, me.Shutdown(context.Background()))
 }
