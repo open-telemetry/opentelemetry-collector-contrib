@@ -15,6 +15,8 @@
 package ecsobserver
 
 import (
+	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
@@ -41,6 +43,7 @@ func (t *Task) TaskTags() map[string]string {
 	return tags
 }
 
+// EC2Tags returns ec2 instance tags as it is. Sanitize to prometheus label format is done during export.
 // NOTE: the tag to string conversion is duplicated because the Tag struct is defined in each service's own API package.
 // i.e. services don't import a common package that includes tag definition.
 func (t *Task) EC2Tags() map[string]string {
@@ -64,4 +67,68 @@ func (t *Task) ContainerLabels(containerIndex int) map[string]string {
 		labels[k] = aws.StringValue(v)
 	}
 	return labels
+}
+
+// PrivateIP returns private ip address based on network mode.
+// EC2 launch type can use hsot/brige mode and the private ip is the EC2 instance's ip.
+// awsvpc has its own ip regardless of launch type.
+func (t *Task) PrivateIP() (string, error) {
+	arn := aws.StringValue(t.Task.TaskArn)
+	switch aws.StringValue(t.Definition.NetworkMode) {
+	// Default network mode is bridge on EC2
+	case "", ecs.NetworkModeHost, ecs.NetworkModeBridge:
+		if t.EC2 == nil {
+			return "", fmt.Errorf("task has no network mode and no ec2 info %s", arn)
+		}
+		return aws.StringValue(t.EC2.PrivateIpAddress), nil
+	case ecs.NetworkModeAwsvpc:
+		for _, v := range t.Task.Attachments {
+			if aws.StringValue(v.Type) == "ElasticNetworkInterface" {
+				for _, d := range v.Details {
+					if aws.StringValue(d.Name) == "privateIPv4Address" {
+						return aws.StringValue(d.Value), nil
+					}
+				}
+			}
+		}
+		return "", fmt.Errorf("private ipv4 address not found for awsvpc on task %s", arn)
+	case ecs.NetworkModeNone:
+		return "", fmt.Errorf("task has none network mode %s", arn)
+	default:
+		return "", fmt.Errorf("unknown task network mode %q for task %s", aws.StringValue(t.Definition.NetworkMode), arn)
+	}
+}
+
+// MappedPort returns 'external' port based on network mode.
+// EC2 bridge gets random host port while EC2 host/awsvpc uses whatever specified by user.
+func (t *Task) MappedPort(def *ecs.ContainerDefinition, containerPort int64) (int64, error) {
+	arn := aws.StringValue(t.Task.TaskArn)
+	mode := aws.StringValue(t.Definition.NetworkMode)
+	switch mode {
+	case ecs.NetworkModeNone:
+		return 0, fmt.Errorf("task has none network mode %s", arn)
+	case ecs.NetworkModeHost, ecs.NetworkModeAwsvpc:
+		// taskDefinition->containerDefinitions->portMappings
+		for _, v := range def.PortMappings {
+			if containerPort == aws.Int64Value(v.ContainerPort) {
+				return aws.Int64Value(v.HostPort), nil
+			}
+		}
+		return 0, fmt.Errorf("port %d not found for network mode %s", containerPort, mode)
+	case "", ecs.NetworkModeBridge:
+		//  task->containers->networkBindings
+		for _, c := range t.Task.Containers {
+			if aws.StringValue(def.Name) == aws.StringValue(c.Name) {
+				for _, b := range c.NetworkBindings {
+					if containerPort == aws.Int64Value(b.ContainerPort) {
+						return aws.Int64Value(b.HostPort), nil
+					}
+				}
+			}
+		}
+		return 0, fmt.Errorf("port %d not found for network mode %s", containerPort, mode)
+	default:
+		return 0, fmt.Errorf("port %d not found for container %s on task %s",
+			containerPort, aws.StringValue(def.Name), arn)
+	}
 }
