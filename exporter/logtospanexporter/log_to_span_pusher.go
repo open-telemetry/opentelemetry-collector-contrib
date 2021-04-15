@@ -103,8 +103,21 @@ func convertLogToSpan(log *pdata.LogRecord, config *Config) (string, *pdata.Span
 	span.SetTraceID(pdata.NewTraceID(spc.TraceID()))
 	span.SetSpanID(pdata.NewSpanID(spc.SpanID()))
 
-	if _, ok := log.Attributes().Get(config.FieldMap.SpanKind); ok {
-		// span.SetKind()
+	if spanKind, ok := log.Attributes().Get(config.FieldMap.SpanKind); ok {
+		switch spanKind.StringVal() {
+		case "server":
+			span.SetKind(pdata.SpanKindSERVER)
+		case "client":
+			span.SetKind(pdata.SpanKindCLIENT)
+		case "consumer":
+			span.SetKind(pdata.SpanKindCONSUMER)
+		case "producer":
+			span.SetKind(pdata.SpanKindPRODUCER)
+		case "internal":
+			span.SetKind(pdata.SpanKindINTERNAL)
+		default:
+			span.SetKind(pdata.SpanKindSERVER)
+		}
 	} else {
 		span.SetKind(pdata.SpanKindSERVER)
 	}
