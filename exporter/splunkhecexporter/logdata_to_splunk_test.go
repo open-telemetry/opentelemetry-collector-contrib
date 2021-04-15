@@ -61,6 +61,31 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			},
 		},
 		{
+			name: "with_name",
+			logRecordFn: func() pdata.LogRecord {
+				logRecord := pdata.NewLogRecord()
+				logRecord.SetName("my very own name")
+				logRecord.Body().SetStringVal("mylog")
+				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
+				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
+				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().InsertString("custom", "custom")
+				logRecord.SetTimestamp(ts)
+				return logRecord
+			},
+			logResourceFn: pdata.NewResource,
+			configDataFn: func() *Config {
+				return &Config{
+					Source:     "source",
+					SourceType: "sourcetype",
+				}
+			},
+			wantSplunkEvents: []*splunk.Event{
+				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "service.name": "myapp", "host.name": "myhost", "otlp.log.name": "my very own name"},
+					"myhost", "myapp", "myapp-type"),
+			},
+		},
+		{
 			name: "non-string attribute",
 			logRecordFn: func() pdata.LogRecord {
 				logRecord := pdata.NewLogRecord()
