@@ -16,6 +16,7 @@ package newrelicexporter
 
 import (
 	"context"
+	"math"
 	"net/http"
 	"net/url"
 	"strings"
@@ -28,6 +29,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -735,4 +737,289 @@ func TestExportLogs(t *testing.T) {
 	testLogData(t, expected, logs, "")
 	testLogData(t, expected, logs, "api-key")
 	testLogData(t, expected, logs, "NRII-api-key")
+}
+
+func TestCreatesClientOptionWithVersionInUserAgent(t *testing.T) {
+	testUserAgentContainsCollectorInfo(t, testCollectorVersion, "githash", testCollectorName, "NewRelic-OpenTelemetry-Collector/v1.2.3 TestCollector")
+	testUserAgentContainsCollectorInfo(t, "", "githash", testCollectorName, "NewRelic-OpenTelemetry-Collector/githash TestCollector")
+}
+
+func testUserAgentContainsCollectorInfo(t *testing.T, version string, gitHash string, exeName string, expectedUserAgentSubstring string) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	m := &Mock{
+		Batches:    make([]Batch, 0, 1),
+		StatusCode: 202,
+	}
+
+	cfg := mockConfig{useAPIKeyHeader: false}
+
+	srv := m.Server()
+	defer srv.Close()
+
+	f := NewFactory()
+	c := f.CreateDefaultConfig().(*Config)
+	urlString := srv.URL
+	if cfg.serverURL != "" {
+		urlString = cfg.serverURL
+	}
+	u, _ := url.Parse(urlString)
+
+	if cfg.useAPIKeyHeader {
+		c.CommonConfig.APIKeyHeader = "api-key"
+	} else {
+		c.CommonConfig.APIKey = "NRII-1"
+	}
+	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
+	params := component.ExporterCreateParams{Logger: zap.NewNop(), ApplicationStartInfo: component.ApplicationStartInfo{
+		ExeName: testCollectorName,
+		Version: version,
+		GitHash: gitHash,
+	}}
+	exp, err := f.CreateTracesExporter(context.Background(), params, c)
+	require.NoError(t, err)
+
+	s := pdata.NewSpan()
+	s.SetName("root")
+	s.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	ils := pdata.NewInstrumentationLibrarySpans()
+	ils.Spans().Append(s)
+	rs := pdata.NewResourceSpans()
+	rs.InstrumentationLibrarySpans().Append(ils)
+	ptrace := pdata.NewTraces()
+	ptrace.ResourceSpans().Append(rs)
+
+	err = exp.ConsumeTraces(ctx, ptrace)
+	require.NoError(t, err)
+	err = exp.Shutdown(ctx)
+	require.NoError(t, err)
+
+	assert.Contains(t, m.Header[http.CanonicalHeaderKey("user-agent")][0], expectedUserAgentSubstring)
+}
+
+func TestBadSpanResourceGeneratesError(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	m := &Mock{
+		Batches:    make([]Batch, 0, 1),
+		StatusCode: 202,
+	}
+
+	cfg := mockConfig{useAPIKeyHeader: false}
+
+	srv := m.Server()
+	defer srv.Close()
+
+	f := NewFactory()
+	c := f.CreateDefaultConfig().(*Config)
+	urlString := srv.URL
+	if cfg.serverURL != "" {
+		urlString = cfg.serverURL
+	}
+	u, _ := url.Parse(urlString)
+
+	if cfg.useAPIKeyHeader {
+		c.CommonConfig.APIKeyHeader = "api-key"
+	} else {
+		c.CommonConfig.APIKey = "NRII-1"
+	}
+	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
+	params := component.ExporterCreateParams{Logger: zap.NewNop(), ApplicationStartInfo: component.ApplicationStartInfo{
+		ExeName: testCollectorName,
+		Version: testCollectorVersion,
+	}}
+	exp, err := f.CreateTracesExporter(context.Background(), params, c)
+	require.NoError(t, err)
+
+	s := pdata.NewSpan()
+	s.SetName("root")
+	s.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	ils := pdata.NewInstrumentationLibrarySpans()
+	ils.Spans().Append(s)
+	rs := pdata.NewResourceSpans()
+	rs.InstrumentationLibrarySpans().Append(ils)
+	rs.Resource().Attributes().InsertDouble("badattribute", math.Inf(1))
+	ptrace := pdata.NewTraces()
+	ptrace.ResourceSpans().Append(rs)
+
+	errorFromConsumeTraces := exp.ConsumeTraces(ctx, ptrace)
+
+	err = exp.Shutdown(ctx)
+	require.NoError(t, err)
+
+	require.Error(t, errorFromConsumeTraces)
+}
+
+func TestBadMetricResourceGeneratesError(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	m := &Mock{
+		Batches:    make([]Batch, 0, 1),
+		StatusCode: 202,
+	}
+
+	cfg := mockConfig{useAPIKeyHeader: false}
+
+	srv := m.Server()
+	defer srv.Close()
+
+	f := NewFactory()
+	c := f.CreateDefaultConfig().(*Config)
+	urlString := srv.URL
+	if cfg.serverURL != "" {
+		urlString = cfg.serverURL
+	}
+	u, _ := url.Parse(urlString)
+
+	if cfg.useAPIKeyHeader {
+		c.CommonConfig.APIKeyHeader = "api-key"
+	} else {
+		c.CommonConfig.APIKey = "NRII-1"
+	}
+	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
+	params := component.ExporterCreateParams{Logger: zap.NewNop(), ApplicationStartInfo: component.ApplicationStartInfo{
+		ExeName: testCollectorName,
+		Version: testCollectorVersion,
+	}}
+	exp, err := f.CreateMetricsExporter(context.Background(), params, c)
+	require.NoError(t, err)
+
+	metric := pdata.NewMetric()
+	metric.SetName("testmetric")
+	ilm := pdata.NewInstrumentationLibraryMetrics()
+	ilm.Metrics().Append(metric)
+	rm := pdata.NewResourceMetrics()
+	rm.InstrumentationLibraryMetrics().Append(ilm)
+	rm.Resource().Attributes().InsertDouble("badattribute", math.Inf(1))
+	md := pdata.NewMetrics()
+	md.ResourceMetrics().Append(rm)
+
+	errorFromConsumeMetrics := exp.ConsumeMetrics(ctx, md)
+
+	err = exp.Shutdown(ctx)
+	require.NoError(t, err)
+
+	require.Error(t, errorFromConsumeMetrics)
+}
+
+func TestBadLogResourceGeneratesError(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	m := &Mock{
+		Batches:    make([]Batch, 0, 1),
+		StatusCode: 202,
+	}
+
+	cfg := mockConfig{useAPIKeyHeader: false}
+
+	srv := m.Server()
+	defer srv.Close()
+
+	f := NewFactory()
+	c := f.CreateDefaultConfig().(*Config)
+	urlString := srv.URL
+	if cfg.serverURL != "" {
+		urlString = cfg.serverURL
+	}
+	u, _ := url.Parse(urlString)
+
+	if cfg.useAPIKeyHeader {
+		c.CommonConfig.APIKeyHeader = "api-key"
+	} else {
+		c.CommonConfig.APIKey = "NRII-1"
+	}
+	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
+	params := component.ExporterCreateParams{Logger: zap.NewNop(), ApplicationStartInfo: component.ApplicationStartInfo{
+		ExeName: testCollectorName,
+		Version: testCollectorVersion,
+	}}
+	exp, err := f.CreateLogsExporter(context.Background(), params, c)
+	require.NoError(t, err)
+
+	log := pdata.NewLogRecord()
+	ill := pdata.NewInstrumentationLibraryLogs()
+	ill.Logs().Append(log)
+	rl := pdata.NewResourceLogs()
+	rl.InstrumentationLibraryLogs().Append(ill)
+	rl.Resource().Attributes().InsertDouble("badattribute", math.Inf(1))
+	ld := pdata.NewLogs()
+	ld.ResourceLogs().Append(rl)
+
+	errorFromConsumeLogs := exp.ConsumeLogs(ctx, ld)
+
+	err = exp.Shutdown(ctx)
+	require.NoError(t, err)
+
+	require.Error(t, errorFromConsumeLogs)
+}
+
+func TestFailureToRecordMetricsDoesNotAffectExportingData(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	if err := view.Register(MetricViews()...); err != nil {
+		t.Fail()
+	}
+	defer view.Unregister(MetricViews()...)
+
+	m := &Mock{
+		Batches:    make([]Batch, 0, 1),
+		StatusCode: 202,
+	}
+
+	cfg := mockConfig{useAPIKeyHeader: false}
+
+	srv := m.Server()
+	defer srv.Close()
+
+	f := NewFactory()
+	c := f.CreateDefaultConfig().(*Config)
+	urlString := srv.URL
+	if cfg.serverURL != "" {
+		urlString = cfg.serverURL
+	}
+	u, _ := url.Parse(urlString)
+
+	if cfg.useAPIKeyHeader {
+		c.CommonConfig.APIKeyHeader = "api-key"
+	} else {
+		c.CommonConfig.APIKey = "NRII-1"
+	}
+	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
+
+	params := component.ExporterCreateParams{Logger: zap.NewNop(), ApplicationStartInfo: component.ApplicationStartInfo{
+		ExeName: testCollectorName,
+		Version: testCollectorVersion,
+	}}
+	exp, err := f.CreateTracesExporter(context.Background(), params, c)
+	require.NoError(t, err)
+
+	s := pdata.NewSpan()
+	s.SetName("root")
+	s.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	ils := pdata.NewInstrumentationLibrarySpans()
+	ils.Spans().Append(s)
+	rs := pdata.NewResourceSpans()
+	rs.InstrumentationLibrarySpans().Append(ils)
+	ptrace := pdata.NewTraces()
+	ptrace.ResourceSpans().Append(rs)
+
+	// Create a long string so that the user-agent will be too long and cause RecordMetric to fail
+	b := make([]byte, 300)
+	for i := 0; i < 300; i++ {
+		b[i] = 'a'
+	}
+	consumeCtx := metadata.NewIncomingContext(context.Background(), metadata.MD{"user-agent": []string{string(b)}})
+	err = exp.ConsumeTraces(consumeCtx, ptrace)
+	require.NoError(t, err)
+	err = exp.Shutdown(ctx)
+	require.NoError(t, err)
+
+	assert.Contains(t, m.Header[http.CanonicalHeaderKey("user-agent")][0], testCollectorName)
 }
