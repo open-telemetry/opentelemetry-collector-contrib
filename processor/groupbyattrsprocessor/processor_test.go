@@ -56,7 +56,7 @@ func prepareResource(attrMap pdata.AttributeMap, selectedKeys []string) pdata.Re
 
 func filterAttributeMap(attrMap pdata.AttributeMap, selectedKeys []string) pdata.AttributeMap {
 	filteredAttrMap := pdata.NewAttributeMap()
-	filteredAttrMap.InitEmptyWithCapacity(10)
+	filteredAttrMap.EnsureCapacity(10)
 	for _, key := range selectedKeys {
 		val, _ := attrMap.Get(key)
 		filteredAttrMap.Insert(key, val)

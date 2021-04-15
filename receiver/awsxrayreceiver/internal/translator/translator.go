@@ -127,7 +127,8 @@ func populateSpan(
 	span *pdata.Span) error {
 
 	attrs := span.Attributes()
-	attrs.InitEmptyWithCapacity(initAttrCapacity)
+	attrs.Clear()
+	attrs.EnsureCapacity(initAttrCapacity)
 
 	err := addNameAndNamespace(seg, span)
 	if err != nil {
@@ -204,7 +205,8 @@ func populateSpan(
 func populateResource(seg *awsxray.Segment, rs *pdata.Resource) {
 	// allocate a new attribute map within the Resource in the pdata.ResourceSpans allocated above
 	attrs := rs.Attributes()
-	attrs.InitEmptyWithCapacity(initAttrCapacity)
+	attrs.Clear()
+	attrs.EnsureCapacity(initAttrCapacity)
 
 	addAWSToResource(seg.AWS, &attrs)
 	addSdkToResource(seg, &attrs)

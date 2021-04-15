@@ -232,7 +232,7 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 		return len(got) == 1
 	}, 10*time.Second, 5*time.Millisecond, "consumer should eventually get the X-Ray span")
 
-	obsreporttest.CheckReceiverTracesViews(t, receiverName, udppoller.Transport, 18, 0)
+	obsreporttest.CheckReceiverTraces(t, receiverName, udppoller.Transport, 18, 0)
 }
 
 func TestTranslatorErrorsOut(t *testing.T) {
@@ -259,7 +259,7 @@ func TestTranslatorErrorsOut(t *testing.T) {
 			"X-Ray segment to OT traces conversion failed")
 	}, 10*time.Second, 5*time.Millisecond, "poller should log warning because consumer errored out")
 
-	obsreporttest.CheckReceiverTracesViews(t, receiverName, udppoller.Transport, 0, 1)
+	obsreporttest.CheckReceiverTraces(t, receiverName, udppoller.Transport, 0, 1)
 }
 
 func TestSegmentsConsumerErrorsOut(t *testing.T) {
@@ -290,7 +290,7 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 			"Trace consumer errored out")
 	}, 10*time.Second, 5*time.Millisecond, "poller should log warning because consumer errored out")
 
-	obsreporttest.CheckReceiverTracesViews(t, receiverName, udppoller.Transport, 0, 1)
+	obsreporttest.CheckReceiverTraces(t, receiverName, udppoller.Transport, 0, 1)
 }
 
 func TestPollerCloseError(t *testing.T) {
