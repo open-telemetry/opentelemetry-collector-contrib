@@ -64,7 +64,7 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 
 	err := initializeAttributeMap(res.Attributes(), labels)
 	if err != nil {
-		res.Attributes().InitEmptyWithCapacity(0)
+		res.Attributes().Clear()
 		return res, err
 	}
 

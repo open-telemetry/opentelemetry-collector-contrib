@@ -993,7 +993,8 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 	if len(resourceAttrs) > 0 {
 		rs.Resource().Attributes().InitFromMap(resourceAttrs)
 	} else {
-		rs.Resource().Attributes().InitEmptyWithCapacity(initAttrCapacity)
+		rs.Resource().Attributes().Clear()
+		rs.Resource().Attributes().EnsureCapacity(initAttrCapacity)
 	}
 
 	if len(propsPerSpan) == 0 {
@@ -1035,7 +1036,8 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 		if len(props.attrs) > 0 {
 			sp.Attributes().InitFromMap(props.attrs)
 		} else {
-			sp.Attributes().InitEmptyWithCapacity(initAttrCapacity)
+			sp.Attributes().Clear()
+			sp.Attributes().EnsureCapacity(initAttrCapacity)
 		}
 	}
 	return &rs
@@ -1079,8 +1081,8 @@ func compare2ResourceSpans(t *testing.T, testCase string, exp, act *pdata.Resour
 			actS.Attributes().Sort(),
 			fmt.Sprintf("%s: span[%s].Attributes() differ", testCase, expS.SpanID().HexString()),
 		)
-		expS.Attributes().InitEmptyWithCapacity(0)
-		actS.Attributes().InitEmptyWithCapacity(0)
+		expS.Attributes().Clear()
+		actS.Attributes().Clear()
 
 		expEvts := expS.Events()
 		actEvts := actS.Events()
@@ -1101,8 +1103,8 @@ func compare2ResourceSpans(t *testing.T, testCase string, exp, act *pdata.Resour
 				fmt.Sprintf("%s: span[%s], event[%d].Attributes() differ",
 					testCase, expS.SpanID().HexString(), j),
 			)
-			expEvt.Attributes().InitEmptyWithCapacity(0)
-			actEvt.Attributes().InitEmptyWithCapacity(0)
+			expEvt.Attributes().Clear()
+			actEvt.Attributes().Clear()
 		}
 	}
 

@@ -45,7 +45,7 @@ func TestTags2StringNoLabels(t *testing.T) {
 	require.NoError(t, err)
 
 	mp := exampleIntMetric()
-	mp.attributes.InitEmptyWithCapacity(0)
+	mp.attributes.Clear()
 	assert.Equal(t, prometheusTags(""), f.tags2String(mp.attributes, pdata.NewStringMap()))
 }
 
@@ -66,7 +66,7 @@ func TestTags2StringNoAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	mp := exampleIntMetric()
-	mp.attributes.InitEmptyWithCapacity(0)
+	mp.attributes.Clear()
 	assert.Equal(t, prometheusTags(""), f.tags2String(pdata.NewAttributeMap(), pdata.NewStringMap()))
 }
 

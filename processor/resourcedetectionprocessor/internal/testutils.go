@@ -30,7 +30,8 @@ func NewAttributeMap(mp map[string]interface{}) pdata.AttributeMap {
 }
 
 func fillAttributeMap(mp map[string]interface{}, attr pdata.AttributeMap) {
-	attr.InitEmptyWithCapacity(len(mp))
+	attr.Clear()
+	attr.EnsureCapacity(len(mp))
 	for k, v := range mp {
 		switch t := v.(type) {
 		case bool:

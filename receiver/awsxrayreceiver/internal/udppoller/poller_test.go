@@ -144,7 +144,7 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 		}
 	}, 10*time.Second, 5*time.Millisecond, "poller should return parsed segment")
 
-	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 1, 0)
+	obsreporttest.CheckReceiverTraces(t, receiverName, Transport, 1, 0)
 }
 
 func TestIncompletePacketNoSeparator(t *testing.T) {
@@ -173,7 +173,7 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 				fmt.Sprintf("unable to split incoming data as header and segment, incoming bytes: %v", rawData)) == 0
 	}, 10*time.Second, 5*time.Millisecond, "poller should reject segment")
 
-	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
+	obsreporttest.CheckReceiverTraces(t, receiverName, Transport, 0, 1)
 }
 
 func TestIncompletePacketNoBody(t *testing.T) {
@@ -197,7 +197,7 @@ func TestIncompletePacketNoBody(t *testing.T) {
 			lastEntry.Context[1].Integer == 1
 	}, 10*time.Second, 5*time.Millisecond, "poller should log missing body")
 
-	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
+	obsreporttest.CheckReceiverTraces(t, receiverName, Transport, 0, 1)
 }
 
 func TestNonJsonHeader(t *testing.T) {
@@ -226,7 +226,7 @@ func TestNonJsonHeader(t *testing.T) {
 				"invalid character 'o'")
 	}, 10*time.Second, 5*time.Millisecond, "poller should reject segment")
 
-	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
+	obsreporttest.CheckReceiverTraces(t, receiverName, Transport, 0, 1)
 }
 
 func TestJsonInvalidHeader(t *testing.T) {
@@ -261,7 +261,7 @@ func TestJsonInvalidHeader(t *testing.T) {
 			)
 	}, 10*time.Second, 5*time.Millisecond, "poller should reject segment")
 
-	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
+	obsreporttest.CheckReceiverTraces(t, receiverName, Transport, 0, 1)
 }
 
 func TestSocketReadIrrecoverableNetError(t *testing.T) {
@@ -297,7 +297,7 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 			errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error() == randErrStr.String()
 	}, 10*time.Second, 5*time.Millisecond, "poller should exit due to irrecoverable net read error")
 
-	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
+	obsreporttest.CheckReceiverTraces(t, receiverName, Transport, 0, 1)
 }
 
 func TestSocketReadTemporaryNetError(t *testing.T) {
@@ -334,7 +334,7 @@ func TestSocketReadTemporaryNetError(t *testing.T) {
 			errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error() == randErrStr.String()
 	}, 10*time.Second, 5*time.Millisecond, "poller should encounter net read error")
 
-	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
+	obsreporttest.CheckReceiverTraces(t, receiverName, Transport, 0, 1)
 }
 
 func TestSocketGenericReadError(t *testing.T) {
@@ -369,7 +369,7 @@ func TestSocketGenericReadError(t *testing.T) {
 			errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error() == randErrStr.String()
 	}, 10*time.Second, 5*time.Millisecond, "poller should encounter generic socket read error")
 
-	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
+	obsreporttest.CheckReceiverTraces(t, receiverName, Transport, 0, 1)
 }
 
 type mockNetError struct {
