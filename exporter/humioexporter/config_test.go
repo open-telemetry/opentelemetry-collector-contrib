@@ -61,6 +61,19 @@ func TestLoadWithDefaults(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
+func TestLoadInvalid(t *testing.T) {
+	// Initialize exporter factory
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[config.Type(typeStr)] = factory
+
+	// Load configurations
+	_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "invalid.yaml"), factories)
+	require.Error(t, err)
+}
+
 func TestLoadAllSettings(t *testing.T) {
 	// Arrange
 	expected := &Config{
@@ -147,9 +160,9 @@ func TestValidate(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
 					Headers: map[string]string{
-						"User-Agent":       "Humio",
-						"Content-Type":     "application/json",
-						"Content-Encoding": "gzip",
+						"user-agent":       "Humio",
+						"content-type":     "application/json",
+						"content-encoding": "gzip",
 					},
 				},
 			},
@@ -247,7 +260,7 @@ func TestValidate(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "e",
 					Headers: map[string]string{
-						"Content-Type": "text/plain",
+						"content-type": "text/plain",
 					},
 				},
 			},
@@ -261,7 +274,7 @@ func TestValidate(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "e",
 					Headers: map[string]string{
-						"Authorization": "Bearer mytoken",
+						"authorization": "Bearer mytoken",
 					},
 				},
 			},
@@ -275,7 +288,7 @@ func TestValidate(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "e",
 					Headers: map[string]string{
-						"Content-Encoding": "compress",
+						"content-encoding": "compress",
 					},
 				},
 			},
@@ -290,7 +303,7 @@ func TestValidate(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "e",
 					Headers: map[string]string{
-						"Content-Encoding": "gzip",
+						"content-encoding": "gzip",
 					},
 				},
 			},
@@ -332,10 +345,10 @@ func TestSanitizeValid(t *testing.T) {
 	assert.Equal(t, structuredPath, cfg.structuredEndpoint.Path)
 
 	assert.Equal(t, map[string]string{
-		"Content-Type":     "application/json",
-		"Content-Encoding": "gzip",
-		"Authorization":    "Bearer token",
-		"User-Agent":       "opentelemetry-collector-contrib Humio",
+		"content-type":     "application/json",
+		"content-encoding": "gzip",
+		"authorization":    "Bearer token",
+		"user-agent":       "opentelemetry-collector-contrib Humio",
 	}, cfg.Headers)
 }
 
@@ -347,9 +360,9 @@ func TestSanitizeCustomHeaders(t *testing.T) {
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://localhost:8080",
 			Headers: map[string]string{
-				"User-Agent":       "Humio",
-				"Content-Type":     "application/json",
-				"Content-Encoding": "gzip",
+				"user-agent":       "Humio",
+				"content-type":     "application/json",
+				"content-encoding": "gzip",
 			},
 		},
 	}
@@ -360,10 +373,10 @@ func TestSanitizeCustomHeaders(t *testing.T) {
 	// Assert
 	require.NoError(t, err)
 	assert.Equal(t, map[string]string{
-		"Content-Type":     "application/json",
-		"Content-Encoding": "gzip",
-		"Authorization":    "Bearer token",
-		"User-Agent":       "Humio",
+		"content-type":     "application/json",
+		"content-encoding": "gzip",
+		"authorization":    "Bearer token",
+		"user-agent":       "Humio",
 	}, cfg.Headers)
 }
 
@@ -384,9 +397,9 @@ func TestSanitizeNoCompression(t *testing.T) {
 	// Assert
 	require.NoError(t, err)
 	assert.Equal(t, map[string]string{
-		"Content-Type":  "application/json",
-		"Authorization": "Bearer token",
-		"User-Agent":    "opentelemetry-collector-contrib Humio",
+		"content-type":  "application/json",
+		"authorization": "Bearer token",
+		"user-agent":    "opentelemetry-collector-contrib Humio",
 	}, cfg.Headers)
 }
 

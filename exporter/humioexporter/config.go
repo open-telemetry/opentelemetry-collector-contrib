@@ -96,15 +96,15 @@ func (c *Config) Validate() error {
 	}
 
 	// We require these headers, which should not be overwritten by the user
-	if contentType, ok := c.Headers["Content-Type"]; ok && contentType != "application/json" {
+	if contentType, ok := c.Headers["content-type"]; ok && contentType != "application/json" {
 		return errors.New("the Content-Type must be application/json, which is also the default for this header")
 	}
 
-	if _, ok := c.Headers["Authorization"]; ok {
+	if _, ok := c.Headers["authorization"]; ok {
 		return errors.New("the Authorization header must not be overwritten, since it is automatically generated from the ingest token")
 	}
 
-	if enc, ok := c.Headers["Content-Encoding"]; ok && (c.DisableCompression || enc != "gzip") {
+	if enc, ok := c.Headers["content-encoding"]; ok && (c.DisableCompression || enc != "gzip") {
 		return errors.New("the Content-Encoding header must be gzip when using compression, and empty when compression is disabled")
 	}
 
@@ -126,15 +126,15 @@ func (c *Config) sanitize() error {
 		c.Headers = make(map[string]string)
 	}
 
-	c.Headers["Content-Type"] = "application/json"
-	c.Headers["Authorization"] = "Bearer " + c.IngestToken
+	c.Headers["content-type"] = "application/json"
+	c.Headers["authorization"] = "Bearer " + c.IngestToken
 
 	if !c.DisableCompression {
-		c.Headers["Content-Encoding"] = "gzip"
+		c.Headers["content-encoding"] = "gzip"
 	}
 
-	if _, ok := c.Headers["User-Agent"]; !ok {
-		c.Headers["User-Agent"] = "opentelemetry-collector-contrib Humio"
+	if _, ok := c.Headers["user-agent"]; !ok {
+		c.Headers["user-agent"] = "opentelemetry-collector-contrib Humio"
 	}
 
 	return nil
