@@ -6,11 +6,11 @@ processors:
 
 exporters:
   humio:
-    ingest_token: "00000000-0000-0000-0000-0000000000000"
-    endpoint: "https://my-humio-host:8080"
+    endpoint: https://cloud.humio.com/
+    traces:
+      ingest_token: 00000000-0000-0000-0000-0000000000000
   humio/allsettings:
-    ingest_token: "00000000-0000-0000-0000-0000000000000"
-    endpoint: "https://my-humio-host:8080"
+    endpoint: http://localhost:8080/
     timeout: 10s
     insecure: false
     insecure_skip_verify: false
@@ -20,13 +20,12 @@ exporters:
     read_buffer_size: 4096
     write_buffer_size: 4096
     disable_compression: true
-    disable_service_tag: true
-    tags:
-      host: "web_server"
-      environment: "production"
+    tag: trace_id
     logs:
-      log_parser: "custom-parser"
+      ingest_token: 00000000-0000-0000-0000-0000000000000
+      log_parser: custom-parser
     traces:
+      ingest_token: 00000000-0000-0000-0000-0000000000001
       unix_timestamps: true
     sending_queue:
       enabled: false
