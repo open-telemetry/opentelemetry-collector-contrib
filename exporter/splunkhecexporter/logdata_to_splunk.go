@@ -44,8 +44,9 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 	sourcetype := config.SourceType
 	index := config.Index
 	fields := map[string]interface{}{}
-	fields[splunk.NameLabel] = lr.Name()
-
+	if lr.Name() != "" {
+		fields[splunk.NameLabel] = lr.Name()
+	}
 	res.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
 		switch k {
 		case conventions.AttributeHostName:
