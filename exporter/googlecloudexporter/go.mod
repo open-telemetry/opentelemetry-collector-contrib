@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter
 
-go 1.14
+go 1.15
 
 require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.5

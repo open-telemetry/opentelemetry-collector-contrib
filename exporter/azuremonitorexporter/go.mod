@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter
 
-go 1.14
+go 1.15
 
 require (
 	code.cloudfoundry.org/clock v1.0.0 // indirect

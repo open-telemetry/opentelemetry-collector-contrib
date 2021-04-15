@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor
 
-go 1.14
+go 1.15
 
 require (
 	github.com/pelletier/go-toml v1.8.0 // indirect
