@@ -62,17 +62,18 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logg
 	}
 
 	if mapVal, ok := attrs.Get(splunk.SFxEventPropertiesKey); ok && mapVal.Type() == pdata.AttributeValueMAP {
-		mapVal.MapVal().ForEach(func(k string, v pdata.AttributeValue) {
+		mapVal.MapVal().Range(func(k string, v pdata.AttributeValue) bool {
 			val, err := attributeValToPropertyVal(v)
 			if err != nil {
 				logger.Debug("Failed to convert log record property value to SignalFx property value", zap.Error(err), zap.String("key", k))
-				return
+				return true
 			}
 
 			event.Properties = append(event.Properties, &sfxpb.Property{
 				Key:   k,
 				Value: val,
 			})
+			return true
 		})
 	}
 	attrs.Delete(splunk.SFxEventPropertiesKey)
@@ -80,27 +81,29 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logg
 	// keep a record of Resource attributes to add as dimensions
 	// so as not to modify LogRecord attributes
 	resourceAttrsForDimensions := pdata.NewAttributeMap()
-	resourceAttrs.ForEach(func(k string, v pdata.AttributeValue) {
+	resourceAttrs.Range(func(k string, v pdata.AttributeValue) bool {
 		// LogRecord attribute takes priority
 		if _, ok := attrs.Get(k); !ok {
 			resourceAttrsForDimensions.Insert(k, v)
 		}
+		return true
 	})
 
-	addDimension := func(k string, v pdata.AttributeValue) {
+	addDimension := func(k string, v pdata.AttributeValue) bool {
 		if v.Type() != pdata.AttributeValueSTRING {
 			logger.Debug("Failed to convert log record or resource attribute value to SignalFx property value, key is not a string", zap.String("key", k))
-			return
+			return true
 		}
 
 		event.Dimensions = append(event.Dimensions, &sfxpb.Dimension{
 			Key:   k,
 			Value: v.StringVal(),
 		})
+		return true
 	}
 
-	resourceAttrsForDimensions.ForEach(addDimension)
-	attrs.ForEach(addDimension)
+	resourceAttrsForDimensions.Range(addDimension)
+	attrs.Range(addDimension)
 
 	event.EventType = lr.Name()
 	// Convert nanoseconds to nearest milliseconds, which is the unit of

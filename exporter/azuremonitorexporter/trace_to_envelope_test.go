@@ -732,27 +732,27 @@ func assertAttributesCopiedToPropertiesOrMeasurements(
 	properties map[string]string,
 	measurements map[string]float64) {
 
-	attributeMap.ForEach(
-		func(k string, v pdata.AttributeValue) {
-			switch v.Type() {
-			case pdata.AttributeValueSTRING:
-				p, exists := properties[k]
-				assert.True(t, exists)
-				assert.Equal(t, v.StringVal(), p)
-			case pdata.AttributeValueBOOL:
-				p, exists := properties[k]
-				assert.True(t, exists)
-				assert.Equal(t, strconv.FormatBool(v.BoolVal()), p)
-			case pdata.AttributeValueINT:
-				m, exists := measurements[k]
-				assert.True(t, exists)
-				assert.Equal(t, float64(v.IntVal()), m)
-			case pdata.AttributeValueDOUBLE:
-				m, exists := measurements[k]
-				assert.True(t, exists)
-				assert.Equal(t, v.DoubleVal(), m)
-			}
-		})
+	attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+		switch v.Type() {
+		case pdata.AttributeValueSTRING:
+			p, exists := properties[k]
+			assert.True(t, exists)
+			assert.Equal(t, v.StringVal(), p)
+		case pdata.AttributeValueBOOL:
+			p, exists := properties[k]
+			assert.True(t, exists)
+			assert.Equal(t, strconv.FormatBool(v.BoolVal()), p)
+		case pdata.AttributeValueINT:
+			m, exists := measurements[k]
+			assert.True(t, exists)
+			assert.Equal(t, float64(v.IntVal()), m)
+		case pdata.AttributeValueDOUBLE:
+			m, exists := measurements[k]
+			assert.True(t, exists)
+			assert.Equal(t, v.DoubleVal(), m)
+		}
+		return true
+	})
 }
 
 /*

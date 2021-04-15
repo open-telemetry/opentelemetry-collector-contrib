@@ -15,7 +15,7 @@ require (
 	github.com/onsi/gomega v1.10.2 // indirect
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.24.1-0.20210415171520-9ff58cbcbdb1
+	go.opentelemetry.io/collector v0.24.1-0.20210415212744-f6074afdb426
 	go.uber.org/zap v1.16.0
 	google.golang.org/genproto v0.0.0-20210302174412-5ede27ff9881
 	google.golang.org/grpc v1.37.0

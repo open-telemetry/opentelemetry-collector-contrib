@@ -39,7 +39,7 @@ func newFields(attrMap pdata.AttributeMap) fields {
 // string returns fields as ordered key=value string with `, ` as separator
 func (f fields) string() string {
 	returnValue := make([]string, 0, f.orig.Len())
-	f.orig.ForEach(func(k string, v pdata.AttributeValue) {
+	f.orig.Range(func(k string, v pdata.AttributeValue) bool {
 		returnValue = append(
 			returnValue,
 			fmt.Sprintf(
@@ -48,6 +48,7 @@ func (f fields) string() string {
 				f.sanitizeField(tracetranslator.AttributeValueToString(v, false)),
 			),
 		)
+		return true
 	})
 	sort.Strings(returnValue)
 

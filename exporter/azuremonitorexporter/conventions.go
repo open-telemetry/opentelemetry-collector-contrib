@@ -45,7 +45,7 @@ type NetworkAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *NetworkAttributes) MapAttribute(k string, v pdata.AttributeValue) {
+func (attrs *NetworkAttributes) MapAttribute(k string, v pdata.AttributeValue) bool {
 	switch k {
 	case conventions.AttributeNetTransport:
 		attrs.NetTransport = v.StringVal()
@@ -66,6 +66,7 @@ func (attrs *NetworkAttributes) MapAttribute(k string, v pdata.AttributeValue) {
 	case conventions.AttributeNetHostName:
 		attrs.NetHostName = v.StringVal()
 	}
+	return true
 }
 
 // HTTPAttributes is the set of known attributes for HTTP Spans
@@ -97,7 +98,7 @@ type HTTPAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *HTTPAttributes) MapAttribute(k string, v pdata.AttributeValue) {
+func (attrs *HTTPAttributes) MapAttribute(k string, v pdata.AttributeValue) bool {
 	switch k {
 	case conventions.AttributeHTTPMethod:
 		attrs.HTTPMethod = v.StringVal()
@@ -146,6 +147,8 @@ func (attrs *HTTPAttributes) MapAttribute(k string, v pdata.AttributeValue) {
 	default:
 		attrs.NetworkAttributes.MapAttribute(k, v)
 	}
+
+	return true
 }
 
 // RPCAttributes is the set of known attributes for RPC Spans
@@ -158,7 +161,7 @@ type RPCAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *RPCAttributes) MapAttribute(k string, v pdata.AttributeValue) {
+func (attrs *RPCAttributes) MapAttribute(k string, v pdata.AttributeValue) bool {
 	switch k {
 	case conventions.AttributeRPCSystem:
 		attrs.RPCSystem = v.StringVal()
@@ -172,6 +175,7 @@ func (attrs *RPCAttributes) MapAttribute(k string, v pdata.AttributeValue) {
 	default:
 		attrs.NetworkAttributes.MapAttribute(k, v)
 	}
+	return true
 }
 
 // DatabaseAttributes is the set of known attributes for Database Spans
@@ -192,7 +196,7 @@ type DatabaseAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *DatabaseAttributes) MapAttribute(k string, v pdata.AttributeValue) {
+func (attrs *DatabaseAttributes) MapAttribute(k string, v pdata.AttributeValue) bool {
 	switch k {
 	case conventions.AttributeDBSystem:
 		attrs.DBSystem = v.StringVal()
@@ -220,6 +224,7 @@ func (attrs *DatabaseAttributes) MapAttribute(k string, v pdata.AttributeValue) 
 	default:
 		attrs.NetworkAttributes.MapAttribute(k, v)
 	}
+	return true
 }
 
 // MessagingAttributes is the set of known attributes for Messaging Spans
@@ -240,7 +245,7 @@ type MessagingAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *MessagingAttributes) MapAttribute(k string, v pdata.AttributeValue) {
+func (attrs *MessagingAttributes) MapAttribute(k string, v pdata.AttributeValue) bool {
 	switch k {
 	case conventions.AttributeMessagingSystem:
 		attrs.MessagingSystem = v.StringVal()
@@ -274,6 +279,7 @@ func (attrs *MessagingAttributes) MapAttribute(k string, v pdata.AttributeValue)
 	default:
 		attrs.NetworkAttributes.MapAttribute(k, v)
 	}
+	return true
 }
 
 // Tries to return the value of the attribute as an int64

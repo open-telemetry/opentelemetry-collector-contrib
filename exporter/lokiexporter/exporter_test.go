@@ -61,8 +61,9 @@ func createLogData(numberOfLogs int, attributes pdata.AttributeMap) pdata.Logs {
 		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := pdata.NewLogRecord()
 		logRecord.Body().SetStringVal("mylog")
-		attributes.ForEach(func(k string, v pdata.AttributeValue) {
+		attributes.Range(func(k string, v pdata.AttributeValue) bool {
 			logRecord.Attributes().Insert(k, v)
+			return true
 		})
 		logRecord.SetTimestamp(ts)
 

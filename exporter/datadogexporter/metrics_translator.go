@@ -33,12 +33,13 @@ import (
 // getTags maps a stringMap into a slice of Datadog tags
 func getTags(labels pdata.StringMap) []string {
 	tags := make([]string, 0, labels.Len())
-	labels.ForEach(func(key string, value string) {
+	labels.Range(func(key string, value string) bool {
 		if value == "" {
 			// Tags can't end with ":" so we replace empty values with "n/a"
 			value = "n/a"
 		}
 		tags = append(tags, fmt.Sprintf("%s:%s", key, value))
+		return true
 	})
 	return tags
 }
