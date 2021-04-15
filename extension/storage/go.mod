@@ -1,5 +1,5 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage
 
-go 1.14
+go 1.15
 
 require go.opentelemetry.io/collector v0.24.1-0.20210414213607-0f75efa9f327
