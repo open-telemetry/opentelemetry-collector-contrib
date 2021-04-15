@@ -117,10 +117,12 @@ func TestPushTraceData(t *testing.T) {
 
 func TestPushTraceData_PermanentOnCompleteFailure(t *testing.T) {
 	// Arrange
-	// We do not export traces with missing service names, for instance
+	// We do not export spans with missing service names, so this span should
+	// fail exporting
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Append(pdata.NewResourceSpans())
-	traces.ResourceSpans().Append(pdata.NewResourceSpans())
+	traces.ResourceSpans().Resize(1)
+	traces.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
+	traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
 
 	exp := newTracesExporter(&Config{}, zap.NewNop(), &clientMock{})
 
@@ -134,11 +136,16 @@ func TestPushTraceData_PermanentOnCompleteFailure(t *testing.T) {
 
 func TestPushTraceData_TransientOnPartialFailure(t *testing.T) {
 	// Arrange
+	// Prepare a valid span with a service name...
 	traces := pdata.NewTraces()
-	res1 := pdata.NewResourceSpans()
-	res1.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service1")
-	traces.ResourceSpans().Append(res1)
-	traces.ResourceSpans().Append(pdata.NewResourceSpans())
+	traces.ResourceSpans().Resize(2)
+	traces.ResourceSpans().At(0).Resource().Attributes().InsertString(conventions.AttributeServiceName, "service1")
+	traces.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
+	traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+
+	// ...and one without (partial failure)
+	traces.ResourceSpans().At(1).InstrumentationLibrarySpans().Resize(1)
+	traces.ResourceSpans().At(1).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
 
 	exp := newTracesExporter(&Config{}, zap.NewNop(), &clientMock{
 		func() error { return nil },
@@ -158,70 +165,50 @@ func TestPushTraceData_TransientOnPartialFailure(t *testing.T) {
 	assert.Equal(t, 1, tErr.GetTraces().ResourceSpans().Len())
 }
 
-func TestTracesToHumioEvents_OnePerValidResource(t *testing.T) {
+func TestTracesToHumioEvents_OrganizedByTags(t *testing.T) {
 	// Arrange
 	traces := pdata.NewTraces()
 
+	// Three spans for the same service-A across two different resources, as
+	// well a span from a separate service-B
 	res1 := pdata.NewResourceSpans()
-	res1.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service1")
+	res1.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service-A")
+	res1.InstrumentationLibrarySpans().Resize(1)
+	res1.InstrumentationLibrarySpans().At(0).Spans().Resize(2)
 	traces.ResourceSpans().Append(res1)
 
 	res2 := pdata.NewResourceSpans()
-	res2.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service2")
+	res2.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service-A")
+	res2.InstrumentationLibrarySpans().Resize(1)
+	res2.InstrumentationLibrarySpans().At(0).Spans().Resize(1)
 	traces.ResourceSpans().Append(res2)
 
-	traces.ResourceSpans().Append(pdata.NewResourceSpans())
+	res3 := pdata.NewResourceSpans()
+	res3.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service-B")
+	res3.InstrumentationLibrarySpans().Resize(1)
+	res3.InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+	traces.ResourceSpans().Append(res3)
 
-	exp := newTracesExporter(&Config{}, zap.NewNop(), &clientMock{})
-
-	// Act
-	actual, err := exp.tracesToHumioEvents(traces)
-
-	// Assert
-	assert.Equal(t, 2, len(actual))
-	assert.False(t, consumererror.IsPermanent(err))
-
-	tErr := consumererror.Traces{}
-	if ok := consumererror.AsTraces(err, &tErr); !ok {
-		assert.Fail(t, "TracesToHumioEvents did not return a Traces error")
-	}
-	assert.Equal(t, 1, tErr.GetTraces().ResourceSpans().Len())
-}
-
-func TestTracesToHumioEvents_CombinesInstrumentation(t *testing.T) {
-	// Arrange
-	traces := pdata.NewTraces()
-
-	res := pdata.NewResourceSpans()
-	res.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service1")
-	traces.ResourceSpans().Append(res)
-
-	inst1 := pdata.NewInstrumentationLibrarySpans()
-	inst1.InstrumentationLibrary().SetName("lib1")
-	inst1.InstrumentationLibrary().SetVersion("1.0")
-	inst1.Spans().Append(pdata.NewSpan())
-	inst1.Spans().Append(pdata.NewSpan())
-	res.InstrumentationLibrarySpans().Append(inst1)
-
-	inst2 := pdata.NewInstrumentationLibrarySpans()
-	inst2.InstrumentationLibrary().SetName("lib2")
-	inst2.InstrumentationLibrary().SetVersion("2.0")
-	inst2.Spans().Append(pdata.NewSpan())
-	res.InstrumentationLibrarySpans().Append(inst2)
-
-	exp := newTracesExporter(&Config{}, zap.NewNop(), &clientMock{})
+	// Organize by service name
+	exp := newTracesExporter(&Config{
+		Tag: TagServiceName,
+	}, zap.NewNop(), &clientMock{})
 
 	// Act
 	actual, err := exp.tracesToHumioEvents(traces)
 
 	// Assert
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(actual))
-	assert.Equal(t, map[string]string{
-		"service": "service1",
-	}, actual[0].Tags)
+	assert.Len(t, actual, 2)
+	for _, group := range actual {
+		assert.Contains(t, group.Tags, string(TagServiceName))
 
-	assert.Equal(t, 3, len(actual[0].Events))
+		if group.Tags[string(TagServiceName)] == "service-A" {
+			assert.Len(t, group.Events, 3)
+		} else {
+			assert.Len(t, group.Events, 1)
+		}
+	}
 }
 
 func TestSpanToHumioEvent(t *testing.T) {
