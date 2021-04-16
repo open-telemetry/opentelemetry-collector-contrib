@@ -138,3 +138,17 @@ func (f *FileLogWriter) ProtocolName() string {
 func (f *FileLogWriter) GetEndpoint() net.Addr {
 	return nil
 }
+
+func NewLocalFileStorageExtension() map[string]string {
+	tempDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		panic("failed to create temp storage dir")
+	}
+
+	return map[string]string{
+		"file_storage": fmt.Sprintf(`
+  file_storage:
+    directory: %s
+`, tempDir),
+	}
+}

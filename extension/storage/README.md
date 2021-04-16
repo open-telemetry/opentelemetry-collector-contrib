@@ -14,6 +14,3 @@ Set(string, []byte) error
 Delete(string) error
 ```
 Note: All methods should return error only if a problem occurred. (For example, if a file is no longer accessible, or if a remote service is unavailable.)
-
-# TODO Sample code
-- Document component expectations

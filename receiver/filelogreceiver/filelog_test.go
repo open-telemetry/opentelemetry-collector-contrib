@@ -106,7 +106,7 @@ func TestReadStaticFile(t *testing.T) {
 
 	rcvr, err := f.CreateLogsReceiver(context.Background(), params, cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
-	require.NoError(t, rcvr.Start(context.Background(), &testHost{t: t}))
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Build the expected set by using stanza.Converter to translate entries
 	// to pdata Logs.
@@ -203,7 +203,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 	rcvr, err := f.CreateLogsReceiver(context.Background(), params, cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
-	require.NoError(t, rcvr.Start(context.Background(), &testHost{t: t}))
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
 	for i := 0; i < numLogs; i++ {
 		msg := fmt.Sprintf("This is a simple log line with the number %3d", i)
@@ -273,18 +273,6 @@ func newTempDir(t *testing.T) string {
 
 func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
 	return func() bool { return sink.LogRecordsCount() == expected }
-}
-
-type testHost struct {
-	component.Host
-	t *testing.T
-}
-
-var _ component.Host = (*testHost)(nil)
-
-// ReportFatalError causes the test to be run to fail.
-func (h *testHost) ReportFatalError(err error) {
-	h.t.Fatalf("receiver reported a fatal error: %v", err)
 }
 
 func testdataConfigYamlAsMap() *FileLogConfig {

@@ -39,3 +39,8 @@ func (c nopClient) Set(context.Context, string, []byte) error {
 func (c nopClient) Delete(context.Context, string) error {
 	return nil // no problem
 }
+
+// Close does nothing and returns nil
+func (c nopClient) Close(context.Context) error {
+	return nil
+}
