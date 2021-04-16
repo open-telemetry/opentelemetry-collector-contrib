@@ -19,7 +19,3 @@ list-stability-tests:
 .PHONY: run-stability-tests
 run-stability-tests:
 	TESTCASE_DURATION=1h TEST_ARGS="$${TEST_ARGS} -timeout 70m" TESTS_DIR=stabilitytests ./runtests.sh
-
-.PHONY: install-tools
-install-tools:
-	go install github.com/jstemmer/go-junit-report
