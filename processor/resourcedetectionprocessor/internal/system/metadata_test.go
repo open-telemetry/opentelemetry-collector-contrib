@@ -15,9 +15,15 @@
 package system
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
+	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGOOSToOsType(t *testing.T) {
@@ -25,4 +31,33 @@ func TestGOOSToOsType(t *testing.T) {
 	assert.Equal(t, "LINUX", goosToOSType("linux"))
 	assert.Equal(t, "WINDOWS", goosToOSType("windows"))
 	assert.Equal(t, "DRAGONFLYBSD", goosToOSType("dragonfly"))
+}
+
+func TestDockerError(t *testing.T) {
+	_, err := newDockerMetadata(client.WithHost("invalidHost"))
+	assert.Error(t, err)
+}
+
+func TestDocker(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, `{
+			"OSType":"linux",
+			"Name":"hostname"
+		}`)
+	}))
+	defer ts.Close()
+
+	provider, err := newDockerMetadata(client.WithHost(ts.URL))
+	require.NoError(t, err)
+
+	_, err = provider.FQDN(context.Background())
+	assert.Error(t, err)
+
+	hostname, err := provider.Hostname(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, "hostname", hostname)
+
+	osType, err := provider.OSType(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, "LINUX", osType)
 }

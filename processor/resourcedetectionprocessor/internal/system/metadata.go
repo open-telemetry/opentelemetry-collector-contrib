@@ -67,8 +67,9 @@ type dockerMetadataImpl struct {
 	dockerClient *client.Client
 }
 
-func newDockerMetadata() (systemMetadata, error) {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+func newDockerMetadata(opts ...client.Opt) (systemMetadata, error) {
+	opts = append(opts, client.FromEnv, client.WithAPIVersionNegotiation())
+	cli, err := client.NewClientWithOpts(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("could not initialize Docker client: %w", err)
 	}
