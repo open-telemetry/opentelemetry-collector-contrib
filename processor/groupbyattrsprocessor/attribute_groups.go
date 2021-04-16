@@ -110,7 +110,7 @@ func resourceMatches(res pdata.Resource, baseResource pdata.Resource, recordAttr
 	matchedBaseAttrs := 0
 	matchedRecordAttrs := 0
 
-	res.Attributes().ForEach(func(k1 string, v1 pdata.AttributeValue) {
+	res.Attributes().Range(func(k1 string, v1 pdata.AttributeValue) bool {
 		if matching {
 			// Prioritize span-level attributes over resource attributes
 			v2, recordAttrFound := recordAttrs.Get(k1)
@@ -118,7 +118,7 @@ func resourceMatches(res pdata.Resource, baseResource pdata.Resource, recordAttr
 				matchedRecordAttrs++
 				if !v1.Equal(v2) {
 					matching = false
-					return
+					return true
 				}
 			}
 
@@ -127,7 +127,7 @@ func resourceMatches(res pdata.Resource, baseResource pdata.Resource, recordAttr
 				matchedBaseAttrs++
 				if !v1.Equal(v2) {
 					matching = false
-					return
+					return true
 				}
 			}
 
@@ -135,6 +135,7 @@ func resourceMatches(res pdata.Resource, baseResource pdata.Resource, recordAttr
 				matching = false
 			}
 		}
+		return true
 	})
 
 	if matchedBaseAttrs != baseAttrs.Len() || matchedRecordAttrs != recordAttrs.Len() {
@@ -154,8 +155,9 @@ func (sgba *spansGroupedByAttrs) attributeGroup(baseResource pdata.Resource, rec
 
 		// This prioritizes span attributes over resource attributes, if they overlap
 		attrs := res.Resource().Attributes()
-		recordAttrs.ForEach(func(k string, v pdata.AttributeValue) {
+		recordAttrs.Range(func(k string, v pdata.AttributeValue) bool {
 			attrs.Upsert(k, v)
+			return true
 		})
 
 		*sgba = append(*sgba, res)
@@ -173,8 +175,9 @@ func (lgba *logsGroupedByAttrs) attributeGroup(baseResource pdata.Resource, reco
 
 		// This prioritizes log attributes over resource attributes, if they overlap
 		attrs := res.Resource().Attributes()
-		recordAttrs.ForEach(func(k string, v pdata.AttributeValue) {
+		recordAttrs.Range(func(k string, v pdata.AttributeValue) bool {
 			attrs.Upsert(k, v)
+			return true
 		})
 
 		*lgba = append(*lgba, res)

@@ -41,7 +41,7 @@ func makeHTTP(span pdata.Span) (map[string]string, *awsxray.HTTPData) {
 	hasHTTP := false
 	hasHTTPRequestURLAttributes := false
 
-	span.Attributes().ForEach(func(key string, value pdata.AttributeValue) {
+	span.Attributes().Range(func(key string, value pdata.AttributeValue) bool {
 		switch key {
 		case semconventions.AttributeHTTPMethod:
 			info.Request.Method = awsxray.String(value.StringVal())
@@ -103,6 +103,7 @@ func makeHTTP(span pdata.Span) (map[string]string, *awsxray.HTTPData) {
 		default:
 			filtered[key] = value.StringVal()
 		}
+		return true
 	})
 
 	if !hasHTTP {

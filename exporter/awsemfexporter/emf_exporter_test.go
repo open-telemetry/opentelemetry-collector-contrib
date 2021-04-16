@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -627,4 +628,20 @@ func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
 	assert.NotNil(t, expCfg.logger)
+}
+
+func stashEnv() []string {
+	env := os.Environ()
+	os.Clearenv()
+
+	return env
+}
+
+func popEnv(env []string) {
+	os.Clearenv()
+
+	for _, e := range env {
+		p := strings.SplitN(e, "=", 2)
+		os.Setenv(p[0], p[1])
+	}
 }

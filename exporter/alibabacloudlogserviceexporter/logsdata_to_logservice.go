@@ -94,11 +94,12 @@ func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
 	}
 
 	fields := map[string]interface{}{}
-	attrs.ForEach(func(k string, v pdata.AttributeValue) {
+	attrs.Range(func(k string, v pdata.AttributeValue) bool {
 		if k == conventions.AttributeServiceName || k == conventions.AttributeHostName {
-			return
+			return true
 		}
 		fields[k] = tracetranslator.AttributeValueToString(v, false)
+		return true
 	})
 	attributeBuffer, _ := json.Marshal(fields)
 	logContents[2] = &sls.LogContent{
@@ -159,8 +160,9 @@ func mapLogRecordToLogService(lr pdata.LogRecord,
 	})
 
 	fields := map[string]interface{}{}
-	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		fields[k] = tracetranslator.AttributeValueToString(v, false)
+		return true
 	})
 	attributeBuffer, _ := json.Marshal(fields)
 	contentsBuffer = append(contentsBuffer, sls.LogContent{

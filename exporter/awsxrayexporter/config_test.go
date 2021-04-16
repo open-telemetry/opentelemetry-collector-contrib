@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -46,18 +48,20 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Exporters["awsxray/customname"].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ExporterSettings:      &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "awsxray/customname"},
-			NumberOfWorkers:       8,
-			Endpoint:              "",
-			RequestTimeoutSeconds: 30,
-			MaxRetries:            2,
-			NoVerifySSL:           false,
-			ProxyAddress:          "",
-			Region:                "eu-west-1",
-			LocalMode:             false,
-			ResourceARN:           "arn:aws:ec2:us-east1:123456789:instance/i-293hiuhe0u",
-			RoleARN:               "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole",
-			IndexedAttributes:     []string{"indexed_attr_0", "indexed_attr_1"},
-			IndexAllAttributes:    false,
+			ExporterSettings: &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "awsxray/customname"},
+			AWSSessionSettings: awsutil.AWSSessionSettings{
+				NumberOfWorkers:       8,
+				Endpoint:              "",
+				RequestTimeoutSeconds: 30,
+				MaxRetries:            2,
+				NoVerifySSL:           false,
+				ProxyAddress:          "",
+				Region:                "eu-west-1",
+				LocalMode:             false,
+				ResourceARN:           "arn:aws:ec2:us-east1:123456789:instance/i-293hiuhe0u",
+				RoleARN:               "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole",
+			},
+			IndexedAttributes:  []string{"indexed_attr_0", "indexed_attr_1"},
+			IndexAllAttributes: false,
 		})
 }

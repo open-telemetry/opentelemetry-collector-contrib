@@ -38,7 +38,7 @@ func carbon2TagString(record metricPair) string {
 	}
 
 	returnValue := make([]string, 0, length)
-	record.attributes.ForEach(func(k string, v pdata.AttributeValue) {
+	record.attributes.Range(func(k string, v pdata.AttributeValue) bool {
 		if k == "name" || k == "unit" {
 			k = fmt.Sprintf("_%s", k)
 		}
@@ -47,6 +47,7 @@ func carbon2TagString(record metricPair) string {
 			sanitizeCarbonString(k),
 			sanitizeCarbonString(tracetranslator.AttributeValueToString(v, false)),
 		))
+		return true
 	})
 
 	returnValue = append(returnValue, fmt.Sprintf("metric=%s", sanitizeCarbonString(record.metric.Name())))

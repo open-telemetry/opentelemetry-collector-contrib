@@ -123,14 +123,15 @@ func serializeLine(name, tagline, valueline string, timestamp pdata.Timestamp) s
 
 func serializeTags(labels pdata.StringMap, exporterTags []string) string {
 	tags := append([]string{}, exporterTags...)
-	labels.ForEach(func(k string, v string) {
+	labels.Range(func(k string, v string) bool {
 		key, err := NormalizeString(strings.ToLower(k), maxDimKeyLen)
 		if err != nil {
-			return
+			return true
 		}
 		value := escapeDimension(v)
 		tag := key + "=" + value
 		tags = append(tags, tag)
+		return true
 	})
 
 	tagline := ""

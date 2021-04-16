@@ -28,6 +28,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 func TestTraceExport(t *testing.T) {
@@ -61,8 +63,7 @@ func initializeTracesExporter() component.TracesExporter {
 	config := factory.CreateDefaultConfig()
 	config.(*Config).Region = "us-east-1"
 	config.(*Config).LocalMode = true
-	mconn := new(mockConn)
-	mconn.sn, _ = getDefaultSession(logger)
+	mconn := new(awsutil.Conn)
 	traceExporter, err := newTracesExporter(config, component.ExporterCreateParams{Logger: logger}, mconn)
 	if err != nil {
 		panic(err)

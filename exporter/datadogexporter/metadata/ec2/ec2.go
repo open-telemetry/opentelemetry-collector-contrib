@@ -115,11 +115,12 @@ func HostInfoFromAttributes(attrs pdata.AttributeMap) (hostInfo *HostInfo) {
 		hostInfo.EC2Hostname = hostName.StringVal()
 	}
 
-	attrs.ForEach(func(k string, v pdata.AttributeValue) {
+	attrs.Range(func(k string, v pdata.AttributeValue) bool {
 		if strings.HasPrefix(k, ec2TagPrefix) {
 			tag := fmt.Sprintf("%s:%s", strings.TrimPrefix(k, ec2TagPrefix), v.StringVal())
 			hostInfo.EC2Tags = append(hostInfo.EC2Tags, tag)
 		}
+		return true
 	})
 
 	return
@@ -129,11 +130,12 @@ func HostInfoFromAttributes(attrs pdata.AttributeMap) (hostInfo *HostInfo) {
 func ClusterNameFromAttributes(attrs pdata.AttributeMap) (clusterName string, ok bool) {
 	// Get cluster name from tag keys
 	// https://github.com/DataDog/datadog-agent/blob/1c94b11/pkg/util/ec2/ec2.go#L238
-	attrs.ForEach(func(k string, _ pdata.AttributeValue) {
+	attrs.Range(func(k string, _ pdata.AttributeValue) bool {
 		if strings.HasPrefix(k, clusterTagPrefix) {
 			clusterName = strings.Split(k, "/")[2]
 			ok = true
 		}
+		return true
 	})
 	return
 }
