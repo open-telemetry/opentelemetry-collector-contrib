@@ -1,0 +1,23 @@
+# NOTE: This is an invalid configuration used to test that such cases are caught
+# Do not use this configuration
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  humio:
+    ingest_token: "00000000-0000-0000-0000-0000000000000"
+    endpoint: "https://my-humio-host:8080"
+    disable_compression: true
+    headers:
+      Content-Encoding: compress
+
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [humio]

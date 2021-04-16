@@ -19,6 +19,7 @@ exporters:
     key_file: client.key
     read_buffer_size: 4096
     write_buffer_size: 4096
+    disable_compression: true
     disable_service_tag: true
     tags:
       host: "web_server"
@@ -27,7 +28,6 @@ exporters:
       log_parser: "custom-parser"
     traces:
       unix_timestamps: true
-      timezone: "Europe/Copenhagen"
     sending_queue:
       enabled: false
       num_consumers: 20

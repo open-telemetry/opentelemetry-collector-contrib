@@ -28,7 +28,7 @@ import (
 
 func TestPushTraceData(t *testing.T) {
 	// Arrange
-	exp := newTracesExporter(&Config{ExporterSettings: config.NewExporterSettings(typeStr)}, zap.NewNop())
+	exp := newTracesExporter(&Config{ExporterSettings: config.NewExporterSettings(typeStr)}, zap.NewNop(), nil)
 
 	// Act
 	err := exp.pushTraceData(context.Background(), pdata.NewTraces())
@@ -39,7 +39,7 @@ func TestPushTraceData(t *testing.T) {
 
 func TestShutdown(t *testing.T) {
 	// Arrange
-	exp := newTracesExporter(&Config{ExporterSettings: config.NewExporterSettings(typeStr)}, zap.NewNop())
+	exp := newTracesExporter(&Config{ExporterSettings: config.NewExporterSettings(typeStr)}, zap.NewNop(), nil)
 
 	// Act
 	err := exp.shutdown(context.Background())

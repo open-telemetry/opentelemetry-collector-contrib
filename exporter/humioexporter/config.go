@@ -16,6 +16,7 @@ package humioexporter
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"path"
 
@@ -40,9 +41,6 @@ type LogsConfig struct {
 type TracesConfig struct {
 	// Whether to use Unix timestamps, or to fall back to ISO 8601 formatted strings
 	UnixTimestamps bool `mapstructure:"unix_timestamps"`
-
-	// The time zone to use when representing timestamps in Unix time
-	TimeZone string `mapstructure:"timezone"`
 }
 
 // Config represents the Humio configuration settings
@@ -61,6 +59,9 @@ type Config struct {
 
 	// Endpoint for the structured ingest API, created internally
 	structuredEndpoint *url.URL
+
+	// Whether gzip compression should be disabled when sending data to Humio
+	DisableCompression bool `mapstructure:"disable_compression"`
 
 	// Key-value pairs used to target specific data sources for storage inside Humio
 	Tags map[string]string `mapstructure:"tags,omitempty"`
@@ -89,46 +90,51 @@ func (c *Config) Validate() error {
 		return errors.New("requires at least one custom tag when disabling service tag")
 	}
 
-	if c.Traces.UnixTimestamps && c.Traces.TimeZone == "" {
-		return errors.New("requires a time zone when using Unix timestamps")
+	// Ensure that it is possible to construct URLs to access the ingest API
+	if _, err := c.getEndpoint(unstructuredPath); err != nil {
+		return fmt.Errorf("unable to create URL for unstructured ingest API, endpoint %s is invalid", c.Endpoint)
 	}
 
-	// Ensure that it is possible to construct a URL to access the unstructured ingest API
-	if c.unstructuredEndpoint == nil {
-		endp, err := c.getEndpoint(unstructuredPath)
-		if err != nil {
-			return errors.New("unable to create URL for unstructured ingest API")
-		}
-		c.unstructuredEndpoint = endp
+	// We require these headers, which should not be overwritten by the user
+	if contentType, ok := c.Headers["content-type"]; ok && contentType != "application/json" {
+		return errors.New("the Content-Type must be application/json, which is also the default for this header")
 	}
 
-	// Ensure that it is possible to construct a URL to access the structured ingest API
-	if c.structuredEndpoint == nil {
-		endp, err := c.getEndpoint(structuredPath)
-		if err != nil {
-			return errors.New("unable to create URL for structured ingest API")
-		}
-		c.structuredEndpoint = endp
+	if _, ok := c.Headers["authorization"]; ok {
+		return errors.New("the Authorization header must not be overwritten, since it is automatically generated from the ingest token")
 	}
+
+	if enc, ok := c.Headers["content-encoding"]; ok && (c.DisableCompression || enc != "gzip") {
+		return errors.New("the Content-Encoding header must be gzip when using compression, and empty when compression is disabled")
+	}
+
+	return nil
+}
+
+// Sanitize ensures that the correct headers are inserted and that a url for each endpoint is obtainable
+func (c *Config) sanitize() error {
+	structured, errS := c.getEndpoint(structuredPath)
+	unstructured, errU := c.getEndpoint(unstructuredPath)
+
+	if errS != nil || errU != nil {
+		return fmt.Errorf("badly formatted endpoint %s", c.Endpoint)
+	}
+	c.structuredEndpoint = structured
+	c.unstructuredEndpoint = unstructured
 
 	if c.Headers == nil {
 		c.Headers = make(map[string]string)
 	}
 
-	// We require these headers, which should not be overwritten by the user
-	if contentType, ok := c.Headers["Content-Type"]; ok && contentType != "application/json" {
-		return errors.New("the Content-Type must be application/json, which is also the default for this header")
-	}
-	c.Headers["Content-Type"] = "application/json"
+	c.Headers["content-type"] = "application/json"
+	c.Headers["authorization"] = "Bearer " + c.IngestToken
 
-	if _, ok := c.Headers["Authorization"]; ok {
-		return errors.New("the Authorization header must not be overwritten, since it is automatically generated from the ingest token")
+	if !c.DisableCompression {
+		c.Headers["content-encoding"] = "gzip"
 	}
-	c.Headers["Authorization"] = "Bearer " + c.IngestToken
 
-	// Fallback User-Agent if not overridden by user
-	if _, ok := c.Headers["User-Agent"]; !ok {
-		c.Headers["User-Agent"] = "opentelemetry-collector-contrib Humio"
+	if _, ok := c.Headers["user-agent"]; !ok {
+		c.Headers["user-agent"] = "opentelemetry-collector-contrib Humio"
 	}
 
 	return nil
