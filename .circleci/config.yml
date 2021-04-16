@@ -60,9 +60,6 @@ commands:
       - run:
           name: Install tools
           command: make install-tools
-      - run:
-          name: Install testbed tools
-          command: make -C testbed install-tools
       - save_module_cache
 
   setup_go:
