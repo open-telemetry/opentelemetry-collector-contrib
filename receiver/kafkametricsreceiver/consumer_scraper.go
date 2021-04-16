@@ -52,6 +52,9 @@ func (s *consumerScraper) start(context.Context, component.Host) error {
 	}
 	clusterAdmin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
 	if err != nil {
+		if client != nil {
+			_ = client.Close()
+		}
 		return fmt.Errorf("failed to create cluster admin while starting consumer scraper: %w", err)
 	}
 	s.client = client

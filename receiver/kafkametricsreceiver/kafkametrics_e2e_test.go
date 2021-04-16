@@ -68,9 +68,7 @@ func TestIntegrationSingleNode(t *testing.T) {
 	var receiver component.MetricsReceiver
 	var err error
 	receiver, err = f.CreateMetricsReceiver(context.Background(), params, cfg, consumer)
-	if err != nil {
-		t.Errorf("failed to create receiver: %w", err)
-	}
+	require.NoError(t, err, "failed to create receiver")
 	require.Eventuallyf(t, func() bool {
 		err = receiver.Start(context.Background(), &testHost{t: t})
 		return err == nil

@@ -78,7 +78,12 @@ func TestConsumerScraper_startScraper_handles_client_error(t *testing.T) {
 }
 
 func TestConsumerScraper_startScraper_handles_clusterAdmin_error(t *testing.T) {
-	newSaramaClient = mockNewSaramaClient
+	newSaramaClient = func(addrs []string, conf *sarama.Config) (sarama.Client, error) {
+		client := newMockClient()
+		client.Mock.
+			On("Close").Return(nil)
+		return client, nil
+	}
 	newClusterAdmin = func(addrs []string, conf *sarama.Config) (sarama.ClusterAdmin, error) {
 		return nil, fmt.Errorf("new cluster admin failed")
 	}
