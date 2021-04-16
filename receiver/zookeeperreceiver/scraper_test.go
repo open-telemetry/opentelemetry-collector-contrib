@@ -243,8 +243,9 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			for i := 0; i < tt.expectedNumResourceMetrics; i++ {
 				resource := got.At(i).Resource()
 				require.Equal(t, len(tt.expectedResourceAttributes), resource.Attributes().Len())
-				resource.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+				resource.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 					require.Equal(t, tt.expectedResourceAttributes[k], v.StringVal())
+					return true
 				})
 
 				ilms := got.At(0).InstrumentationLibraryMetrics()

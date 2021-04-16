@@ -106,7 +106,7 @@ func (f *FluentBitFileLogWriter) convertLogToJSON(lr pdata.LogRecord) []byte {
 	}
 	rec["log"] = lr.Body().StringVal()
 
-	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		switch v.Type() {
 		case pdata.AttributeValueSTRING:
 			rec[k] = v.StringVal()
@@ -119,6 +119,7 @@ func (f *FluentBitFileLogWriter) convertLogToJSON(lr pdata.LogRecord) []byte {
 		default:
 			panic("missing case")
 		}
+		return true
 	})
 	b, err := json.Marshal(rec)
 	if err != nil {

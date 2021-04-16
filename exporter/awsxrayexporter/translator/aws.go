@@ -77,7 +77,7 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 	)
 
 	filtered := make(map[string]string)
-	resource.Attributes().ForEach(func(key string, value pdata.AttributeValue) {
+	resource.Attributes().Range(func(key string, value pdata.AttributeValue) bool {
 		switch key {
 		case semconventions.AttributeCloudProvider:
 			cloud = value.StringVal()
@@ -132,6 +132,7 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 		case awsLogGroupArns:
 			logGroupArns = value.ArrayVal()
 		}
+		return true
 	})
 
 	for key, value := range attributes {

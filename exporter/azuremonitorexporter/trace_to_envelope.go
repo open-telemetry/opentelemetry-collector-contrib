@@ -116,7 +116,10 @@ func spanToEnvelope(
 	resourceAttributes := resource.Attributes()
 
 	// Copy all the resource labels into the base data properties. Resource values are always strings
-	resourceAttributes.ForEach(func(k string, v pdata.AttributeValue) { dataProperties[k] = v.StringVal() })
+	resourceAttributes.Range(func(k string, v pdata.AttributeValue) bool {
+		dataProperties[k] = v.StringVal()
+		return true
+	})
 
 	// Copy the instrumentation properties
 	if instrumentationLibrary.Name() != "" {
@@ -493,14 +496,13 @@ func copyAndMapAttributes(
 	measurements map[string]float64,
 	mappingFunc func(k string, v pdata.AttributeValue)) {
 
-	attributeMap.ForEach(
-		func(k string, v pdata.AttributeValue) {
-			setAttributeValueAsPropertyOrMeasurement(k, v, properties, measurements)
-
-			if mappingFunc != nil {
-				mappingFunc(k, v)
-			}
-		})
+	attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+		setAttributeValueAsPropertyOrMeasurement(k, v, properties, measurements)
+		if mappingFunc != nil {
+			mappingFunc(k, v)
+		}
+		return true
+	})
 }
 
 // Copies all attributes to either properties or measurements without any kind of mapping to a known set of attributes

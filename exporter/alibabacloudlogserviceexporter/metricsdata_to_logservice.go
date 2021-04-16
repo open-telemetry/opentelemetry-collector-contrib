@@ -163,11 +163,12 @@ func min(l, r int) int {
 
 func resourceToMetricLabels(labels *KeyValues, resource pdata.Resource) {
 	attrs := resource.Attributes()
-	attrs.ForEach(func(k string, v pdata.AttributeValue) {
+	attrs.Range(func(k string, v pdata.AttributeValue) bool {
 		labels.keyValues = append(labels.keyValues, KeyValue{
 			Key:   k,
 			Value: tracetranslator.AttributeValueToString(v, false),
 		})
+		return true
 	})
 }
 
@@ -176,8 +177,9 @@ func intMetricsToLogs(name string, data pdata.IntDataPointSlice, defaultLabels K
 		dataPoint := data.At(i)
 		labelsMap := dataPoint.LabelsMap()
 		labels := defaultLabels.Clone()
-		labelsMap.ForEach(func(k string, v string) {
+		labelsMap.Range(func(k string, v string) bool {
 			labels.Append(k, v)
+			return true
 		})
 		logs = append(logs, newMetricLogFromRaw(name,
 			labels,
@@ -192,8 +194,9 @@ func doubleMetricsToLogs(name string, data pdata.DoubleDataPointSlice, defaultLa
 		dataPoint := data.At(i)
 		labelsMap := dataPoint.LabelsMap()
 		labels := defaultLabels.Clone()
-		labelsMap.ForEach(func(k string, v string) {
+		labelsMap.Range(func(k string, v string) bool {
 			labels.Append(k, v)
+			return true
 		})
 		logs = append(logs, newMetricLogFromRaw(name,
 			labels,
@@ -208,8 +211,9 @@ func intHistogramMetricsToLogs(name string, data pdata.IntHistogramDataPointSlic
 		dataPoint := data.At(i)
 		labelsMap := dataPoint.LabelsMap()
 		labels := defaultLabels.Clone()
-		labelsMap.ForEach(func(k string, v string) {
+		labelsMap.Range(func(k string, v string) bool {
 			labels.Append(k, v)
+			return true
 		})
 		logs = append(logs, newMetricLogFromRaw(name+"_sum",
 			labels,
@@ -255,8 +259,9 @@ func doubleHistogramMetricsToLogs(name string, data pdata.HistogramDataPointSlic
 		dataPoint := data.At(i)
 		labelsMap := dataPoint.LabelsMap()
 		labels := defaultLabels.Clone()
-		labelsMap.ForEach(func(k string, v string) {
+		labelsMap.Range(func(k string, v string) bool {
 			labels.Append(k, v)
+			return true
 		})
 		logs = append(logs, newMetricLogFromRaw(name+"_sum",
 			labels,
@@ -302,8 +307,9 @@ func doubleSummaryMetricsToLogs(name string, data pdata.SummaryDataPointSlice, d
 		dataPoint := data.At(i)
 		labelsMap := dataPoint.LabelsMap()
 		labels := defaultLabels.Clone()
-		labelsMap.ForEach(func(k string, v string) {
+		labelsMap.Range(func(k string, v string) bool {
 			labels.Append(k, v)
+			return true
 		})
 		logs = append(logs, newMetricLogFromRaw(name+"_sum",
 			labels,

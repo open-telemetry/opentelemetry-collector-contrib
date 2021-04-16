@@ -120,11 +120,12 @@ func asTime(in pdata.Timestamp) model.Time {
 func asStringMap(in pdata.StringMap) model.StringMap {
 	var out model.StringMap
 	in.Sort()
-	in.ForEach(func(k string, v string) {
+	in.Range(func(k string, v string) bool {
 		out = append(out, model.StringMapItem{
 			Key:   k,
 			Value: v,
 		})
+		return true
 	})
 	return out
 }

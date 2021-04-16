@@ -287,8 +287,9 @@ func oCensusResource(res pdata.Resource) *resourcepb.Resource {
 	}
 
 	mp := make(map[string]string, res.Attributes().Len())
-	res.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+	res.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		mp[k] = v.StringVal()
+		return true
 	})
 
 	return &resourcepb.Resource{Labels: mp}

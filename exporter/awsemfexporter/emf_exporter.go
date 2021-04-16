@@ -118,8 +118,9 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) err
 		rm := rms.At(i)
 		am := rm.Resource().Attributes()
 		if am.Len() > 0 {
-			am.ForEach(func(k string, v pdata.AttributeValue) {
+			am.Range(func(k string, v pdata.AttributeValue) bool {
 				labels[k] = v.StringVal()
+				return true
 			})
 		}
 	}

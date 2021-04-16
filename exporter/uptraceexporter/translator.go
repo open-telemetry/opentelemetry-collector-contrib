@@ -55,7 +55,7 @@ func statusCode(status pdata.StatusCode) string {
 func (e *traceExporter) keyValueSlice(attrs pdata.AttributeMap) spanexp.KeyValueSlice {
 	out := make(spanexp.KeyValueSlice, 0, attrs.Len())
 
-	attrs.ForEach(func(key string, value pdata.AttributeValue) {
+	attrs.Range(func(key string, value pdata.AttributeValue) bool {
 		switch value.Type() {
 		case pdata.AttributeValueSTRING:
 			out = append(out, attribute.String(key, value.StringVal()))
@@ -85,6 +85,7 @@ func (e *traceExporter) keyValueSlice(attrs pdata.AttributeMap) spanexp.KeyValue
 			e.logger.Warn("uptraceexporter: unsupported attribute value type",
 				zap.String("type", value.Type().String()))
 		}
+		return true
 	})
 
 	return out
@@ -128,8 +129,9 @@ func (e *traceExporter) uptraceLinks(links pdata.SpanLinkSlice) []spanexp.Link {
 
 func mapLabelValue(m pdata.AttributeMap) (attribute.Value, bool) {
 	out := make(map[string]interface{}, m.Len())
-	m.ForEach(func(key string, val pdata.AttributeValue) {
+	m.Range(func(key string, val pdata.AttributeValue) bool {
 		out[key] = attrAsInterface(val)
+		return true
 	})
 	return jsonLabelValue(out)
 }
@@ -215,8 +217,9 @@ func attrAsInterface(val pdata.AttributeValue) interface{} {
 		return val.BoolVal()
 	case pdata.AttributeValueMAP:
 		out := map[string]interface{}{}
-		val.MapVal().ForEach(func(key string, val pdata.AttributeValue) {
+		val.MapVal().Range(func(key string, val pdata.AttributeValue) bool {
 			out[key] = attrAsInterface(val)
+			return true
 		})
 		return out
 	case pdata.AttributeValueARRAY:

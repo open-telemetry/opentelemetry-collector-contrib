@@ -113,7 +113,7 @@ func (f *FileLogK8sWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
 		sb.WriteString(lr.Body().StringVal())
 	}
 
-	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		sb.WriteString(" ")
 		sb.WriteString(k)
 		sb.WriteString("=")
@@ -129,6 +129,7 @@ func (f *FileLogK8sWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
 		default:
 			panic("missing case")
 		}
+		return true
 	})
 
 	return []byte(sb.String())

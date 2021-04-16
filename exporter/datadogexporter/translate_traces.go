@@ -283,8 +283,9 @@ func resourceToDatadogServiceNameAndAttributeMap(
 		return tracetranslator.ResourceNoServiceName, datadogTags
 	}
 
-	attrs.ForEach(func(k string, v pdata.AttributeValue) {
+	attrs.Range(func(k string, v pdata.AttributeValue) bool {
 		datadogTags[k] = tracetranslator.AttributeValueToString(v, false)
+		return true
 	})
 
 	serviceName = extractDatadogServiceName(datadogTags)
@@ -320,9 +321,9 @@ func aggregateSpanTags(span pdata.Span, datadogTags map[string]string) map[strin
 		spanTags[key] = val
 	}
 
-	span.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+	span.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		spanTags[k] = tracetranslator.AttributeValueToString(v, false)
-
+		return true
 	})
 
 	spanTags[tagContainersTags] = buildDatadogContainerTags(spanTags)

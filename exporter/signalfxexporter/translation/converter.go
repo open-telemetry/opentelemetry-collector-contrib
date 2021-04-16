@@ -145,11 +145,12 @@ func labelsToDimensions(labels pdata.StringMap, extraDims []*sfxpb.Dimension) []
 	}
 	dimensionsValue := make([]sfxpb.Dimension, labels.Len())
 	pos := 0
-	labels.ForEach(func(k string, v string) {
+	labels.Range(func(k string, v string) bool {
 		dimensionsValue[pos].Key = k
 		dimensionsValue[pos].Value = v
 		dimensions = append(dimensions, &dimensionsValue[pos])
 		pos++
+		return true
 	})
 	return dimensions
 }
@@ -448,16 +449,17 @@ func resourceToDimensions(res pdata.Resource) []*sfxpb.Dimension {
 		})
 	}
 
-	res.Attributes().ForEach(func(k string, val pdata.AttributeValue) {
+	res.Attributes().Range(func(k string, val pdata.AttributeValue) bool {
 		// Never send the SignalFX token
 		if k == splunk.SFxAccessTokenLabel {
-			return
+			return true
 		}
 
 		dims = append(dims, &sfxpb.Dimension{
 			Key:   k,
 			Value: tracetranslator.AttributeValueToString(val, false),
 		})
+		return true
 	})
 
 	return dims

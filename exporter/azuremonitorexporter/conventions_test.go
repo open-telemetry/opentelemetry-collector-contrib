@@ -52,7 +52,7 @@ func TestHTTPAttributeMapping(t *testing.T) {
 	appendToAttributeMap(attributeMap, getNetworkAttributes())
 
 	httpAttributes := &HTTPAttributes{}
-	attributeMap.ForEach(httpAttributes.MapAttribute)
+	attributeMap.Range(httpAttributes.MapAttribute)
 
 	assert.Equal(t, conventions.AttributeHTTPMethod, httpAttributes.HTTPMethod)
 	assert.Equal(t, conventions.AttributeHTTPURL, httpAttributes.HTTPURL)
@@ -88,7 +88,7 @@ func TestRPCPAttributeMapping(t *testing.T) {
 	appendToAttributeMap(attributeMap, getNetworkAttributes())
 
 	rpcAttributes := &RPCAttributes{}
-	attributeMap.ForEach(rpcAttributes.MapAttribute)
+	attributeMap.Range(rpcAttributes.MapAttribute)
 
 	assert.Equal(t, conventions.AttributeRPCSystem, rpcAttributes.RPCSystem)
 	assert.Equal(t, conventions.AttributeRPCService, rpcAttributes.RPCService)
@@ -119,7 +119,7 @@ func TestDatabaseAttributeMapping(t *testing.T) {
 	appendToAttributeMap(attributeMap, getNetworkAttributes())
 
 	databaseAttributes := &DatabaseAttributes{}
-	attributeMap.ForEach(databaseAttributes.MapAttribute)
+	attributeMap.Range(databaseAttributes.MapAttribute)
 
 	assert.Equal(t, conventions.AttributeDBSystem, databaseAttributes.DBSystem)
 	assert.Equal(t, conventions.AttributeDBConnectionString, databaseAttributes.DBConnectionString)
@@ -157,7 +157,7 @@ func TestMessagingAttributeMapping(t *testing.T) {
 	appendToAttributeMap(attributeMap, getNetworkAttributes())
 
 	messagingAttributes := &MessagingAttributes{}
-	attributeMap.ForEach(messagingAttributes.MapAttribute)
+	attributeMap.Range(messagingAttributes.MapAttribute)
 
 	assert.Equal(t, conventions.AttributeMessagingSystem, messagingAttributes.MessagingSystem)
 	assert.Equal(t, conventions.AttributeMessagingDestination, messagingAttributes.MessagingDestination)
@@ -185,7 +185,7 @@ func TestAttributeMappingWithSomeBadValues(t *testing.T) {
 	attributeMap.InitFromMap(values)
 
 	attrs := &NetworkAttributes{}
-	attributeMap.ForEach(attrs.MapAttribute)
+	attributeMap.Range(attrs.MapAttribute)
 
 	// unset from default
 	assert.Equal(t, int64(0), attrs.NetPeerPort)

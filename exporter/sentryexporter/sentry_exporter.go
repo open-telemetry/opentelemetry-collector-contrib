@@ -270,7 +270,7 @@ func generateTagsFromResource(resource pdata.Resource) map[string]string {
 func generateTagsFromAttributes(attrs pdata.AttributeMap) map[string]string {
 	tags := make(map[string]string)
 
-	attrs.ForEach(func(key string, attr pdata.AttributeValue) {
+	attrs.Range(func(key string, attr pdata.AttributeValue) bool {
 		switch attr.Type() {
 		case pdata.AttributeValueSTRING:
 			tags[key] = attr.StringVal()
@@ -281,6 +281,7 @@ func generateTagsFromAttributes(attrs pdata.AttributeMap) map[string]string {
 		case pdata.AttributeValueINT:
 			tags[key] = strconv.FormatInt(attr.IntVal(), 10)
 		}
+		return true
 	})
 
 	return tags

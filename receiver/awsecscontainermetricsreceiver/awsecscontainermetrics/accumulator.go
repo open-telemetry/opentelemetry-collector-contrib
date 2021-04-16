@@ -36,8 +36,9 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 	for _, containerMetadata := range metadata.Containers {
 
 		containerResource := containerResource(containerMetadata)
-		taskResource.Attributes().ForEach(func(k string, av pdata.AttributeValue) {
+		taskResource.Attributes().Range(func(k string, av pdata.AttributeValue) bool {
 			containerResource.Attributes().Upsert(k, av)
+			return true
 		})
 
 		stats, ok := containerStatsMap[containerMetadata.DockerID]

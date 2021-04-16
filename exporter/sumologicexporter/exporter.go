@@ -185,11 +185,10 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 
 				// copy resource attributes into logs attributes
 				// log attributes have precedence over resource attributes
-				rl.Resource().Attributes().ForEach(
-					func(k string, v pdata.AttributeValue) {
-						log.Attributes().Insert(k, v)
-					},
-				)
+				rl.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+					log.Attributes().Insert(k, v)
+					return true
+				})
 
 				currentMetadata = sdr.filter.filterIn(log.Attributes())
 

@@ -70,7 +70,7 @@ func TagsFromAttributes(attrs pdata.AttributeMap) []string {
 	var processAttributes processAttributes
 	var systemAttributes systemAttributes
 
-	attrs.ForEach(func(key string, value pdata.AttributeValue) {
+	attrs.Range(func(key string, value pdata.AttributeValue) bool {
 		switch key {
 		// Process attributes
 		case conventions.AttributeProcessExecutableName:
@@ -100,6 +100,7 @@ func TagsFromAttributes(attrs pdata.AttributeMap) []string {
 		if datadogKey, found := kubernetesMapping[key]; found && value.StringVal() != "" {
 			tags = append(tags, fmt.Sprintf("%s:%s", datadogKey, value.StringVal()))
 		}
+		return true
 	})
 
 	tags = append(tags, processAttributes.extractTags()...)
