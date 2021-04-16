@@ -142,6 +142,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/internal/aws/awsutil"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/internal/aws/xray/testdata/sampleapp"
     schedule:
       interval: "weekly"

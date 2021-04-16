@@ -30,6 +30,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 const (
@@ -66,7 +68,7 @@ func New(
 	expConfig.logger = logger
 
 	// create AWS session
-	awsConfig, session, err := GetAWSConfigSession(logger, &Conn{}, expConfig)
+	awsConfig, session, err := awsutil.GetAWSConfigSession(logger, &awsutil.Conn{}, &expConfig.AWSSessionSettings)
 	if err != nil {
 		return nil, err
 	}
