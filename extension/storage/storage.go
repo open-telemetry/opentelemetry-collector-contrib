@@ -32,8 +32,16 @@ type Extension interface {
 	GetClient(context.Context, component.Kind, config.NamedEntity) (Client, error)
 }
 
-// Client is the interface that storage clients must implement
-// All methods should return error only if a problem occurred
+/*
+  Client is the interface that storage clients must implement
+  All methods should return error only if a problem occurred.
+  This mirrors the behavior of a golang map:
+    - Set doesn't error if a key already exists - it just overwrites the value.
+    - Get doesn't error if a key is not found - it just returns nil.
+    - Delete doesn't error if the key doesn't exist - it just no-ops.
+  This also provides a way to differentiate data operations
+    [overwrite | not-found | no-op] from "real" problems
+*/
 type Client interface {
 
 	// Get will retrieve data from storage that corresponds to the
