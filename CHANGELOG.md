@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#407](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/407))
 - `opentelemetry-instrumentation-falcon` FalconInstrumentor now supports request/response hooks.
   ([#415](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/415))
+- `opentelemetry-instrumentation-tornado` Add request/response hooks.
+  ([#426](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/426))
 
 ### Removed
 - Remove `http.status_text` from span attributes
