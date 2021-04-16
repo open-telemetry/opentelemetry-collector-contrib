@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -34,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	receiverType := "k8s_cluster"
-	factories.Receivers[configmodels.Type(receiverType)] = factory
+	factories.Receivers[config.Type(receiverType)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -50,8 +50,8 @@ func TestLoadConfig(t *testing.T) {
 	r2 := cfg.Receivers["k8s_cluster/all_settings"].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(receiverType),
+			ReceiverSettings: config.ReceiverSettings{
+				TypeVal: config.Type(receiverType),
 				NameVal: "k8s_cluster/all_settings",
 			},
 			CollectionInterval:         30 * time.Second,
@@ -65,8 +65,8 @@ func TestLoadConfig(t *testing.T) {
 	r3 := cfg.Receivers["k8s_cluster/partial_settings"].(*Config)
 	assert.Equal(t, r3,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(receiverType),
+			ReceiverSettings: config.ReceiverSettings{
+				TypeVal: config.Type(receiverType),
 				NameVal: "k8s_cluster/partial_settings",
 			},
 			CollectionInterval:         30 * time.Second,

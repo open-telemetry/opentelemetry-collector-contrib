@@ -17,6 +17,7 @@ package system
 import (
 	"context"
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 
@@ -25,8 +26,11 @@ import (
 )
 
 type systemMetadata interface {
-	// Hostname returns the hostname or fully qualified domain name
+	// Hostname returns the OS hostname
 	Hostname(context.Context) (string, error)
+
+	// FQDN returns the fully qualified domain name
+	FQDN(context.Context) (string, error)
 
 	// OSType returns the host operating system
 	OSType(context.Context) (string, error)
@@ -38,12 +42,25 @@ func newSystemMetadata() systemMetadata {
 
 type systemMetadataImpl struct{}
 
-func (*systemMetadataImpl) Hostname(context.Context) (string, error) {
-	return fqdn.FqdnHostname()
+// goosToOSType maps a runtime.GOOS-like value to os.type style.
+func goosToOSType(goos string) string {
+	switch goos {
+	case "dragonfly":
+		return "DRAGONFLYBSD"
+	}
+	return strings.ToUpper(goos)
 }
 
 func (*systemMetadataImpl) OSType(context.Context) (string, error) {
-	return strings.ToUpper(runtime.GOOS), nil
+	return goosToOSType(runtime.GOOS), nil
+}
+
+func (*systemMetadataImpl) FQDN(context.Context) (string, error) {
+	return fqdn.FqdnHostname()
+}
+
+func (*systemMetadataImpl) Hostname(context.Context) (string, error) {
+	return os.Hostname()
 }
 
 type dockerMetadataImpl struct {
@@ -56,6 +73,10 @@ func newDockerMetadata() (systemMetadata, error) {
 		return nil, fmt.Errorf("could not initialize Docker client: %w", err)
 	}
 	return &dockerMetadataImpl{dockerClient: cli}, nil
+}
+
+func (d *dockerMetadataImpl) FQDN(ctx context.Context) (string, error) {
+	return "", fmt.Errorf("FQDN is not available on Docker")
 }
 
 func (d *dockerMetadataImpl) Hostname(ctx context.Context) (string, error) {
@@ -71,5 +92,5 @@ func (d *dockerMetadataImpl) OSType(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch Docker OS type: %w", err)
 	}
-	return info.OSType, nil
+	return goosToOSType(info.OSType), nil
 }

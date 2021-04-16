@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -34,7 +35,8 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	systemProvider systemMetadata
+	provider systemMetadata
+	logger   *zap.Logger
 }
 
 // Config defines user-specified configurations unique to the system detector
@@ -44,7 +46,7 @@ type Config struct {
 }
 
 // NewDetector creates a new system metadata detector
-func NewDetector(_ component.ProcessorCreateParams, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p component.ProcessorCreateParams, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
 	if cfg.Docker {
@@ -53,10 +55,10 @@ func NewDetector(_ component.ProcessorCreateParams, dcfg internal.DetectorConfig
 			return nil, fmt.Errorf("failed creating detector: %w", err)
 		}
 
-		return &Detector{systemProvider: dockerProvider}, nil
+		return &Detector{provider: dockerProvider, logger: p.Logger}, nil
 	}
 
-	return &Detector{systemProvider: newSystemMetadata()}, nil
+	return &Detector{provider: newSystemMetadata(), logger: p.Logger}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
@@ -64,14 +66,19 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()
 	attrs := res.Attributes()
 
-	osType, err := d.systemProvider.OSType(ctx)
+	osType, err := d.provider.OSType(ctx)
 	if err != nil {
 		return res, fmt.Errorf("failed getting OS type: %w", err)
 	}
 
-	hostname, err := d.systemProvider.Hostname(ctx)
+	hostname, err := d.provider.FQDN(ctx)
 	if err != nil {
-		return res, fmt.Errorf("failed getting hostname: %w", err)
+		// Fallback to OS hostname
+		d.logger.Debug("FQDN query failed, falling back to OS hostname", zap.Error(err))
+		hostname, err = d.provider.Hostname(ctx)
+		if err != nil {
+			return res, fmt.Errorf("failed getting OS hostname: %w", err)
+		}
 	}
 
 	attrs.InsertString(conventions.AttributeHostName, hostname)

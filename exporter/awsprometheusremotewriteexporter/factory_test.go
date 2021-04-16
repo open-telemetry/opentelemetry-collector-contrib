@@ -22,16 +22,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 )
 
 func TestType(t *testing.T) {
 	af := NewFactory()
-	assert.Equal(t, af.Type(), configmodels.Type(typeStr))
+	assert.Equal(t, af.Type(), config.Type(typeStr))
 }
 
 //Tests whether or not the default Exporter factory can instantiate a properly interfaced Exporter with default conditions
@@ -73,7 +73,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		cfg         configmodels.Exporter
+		cfg         config.Exporter
 		params      component.ExporterCreateParams
 		returnError bool
 	}{

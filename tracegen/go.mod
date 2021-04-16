@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/tracegen
 
-go 1.14
+go 1.15
 
 require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2
@@ -11,5 +11,5 @@ require (
 	go.opentelemetry.io/otel/trace v0.19.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
-	google.golang.org/grpc v1.36.0
+	google.golang.org/grpc v1.37.0
 )

@@ -15,7 +15,7 @@
 package awsemfexporter
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
@@ -28,7 +28,7 @@ var (
 
 // Config defines configuration for AWS EMF exporter.
 type Config struct {
-	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	*config.ExporterSettings `mapstructure:"-"`
 	// LogGroupName is the name of CloudWatch log group which defines group of log streams
 	// that share the same retention, monitoring, and access control settings.
 	LogGroupName string `mapstructure:"log_group_name"`
@@ -97,7 +97,7 @@ type MetricDescriptor struct {
 }
 
 // Validate filters out invalid metricDeclarations and metricDescriptors
-func (config *Config) Validate() {
+func (config *Config) Validate() error {
 	validDeclarations := []*MetricDeclaration{}
 	for _, declaration := range config.MetricDeclarations {
 		err := declaration.Init(config.logger)
@@ -121,6 +121,7 @@ func (config *Config) Validate() {
 		}
 	}
 	config.MetricDescriptors = validDescriptors
+	return nil
 }
 
 func newEMFSupportedUnits() map[string]interface{} {

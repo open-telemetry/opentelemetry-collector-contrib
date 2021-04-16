@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -87,8 +87,8 @@ func TestProcessorStart(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
-			exporters := map[configmodels.DataType]map[configmodels.NamedEntity]component.Exporter{
-				configmodels.MetricsDataType: {
+			exporters := map[config.DataType]map[config.NamedEntity]component.Exporter{
+				config.MetricsDataType: {
 					otlpConfig: tc.exporter,
 				},
 			}
@@ -101,7 +101,7 @@ func TestProcessorStart(t *testing.T) {
 			cfg.MetricsExporter = tc.metricsExporter
 
 			procCreationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-			traceProcessor, err := factory.CreateTracesProcessor(context.Background(), procCreationParams, cfg, consumertest.NewTracesNop())
+			traceProcessor, err := factory.CreateTracesProcessor(context.Background(), procCreationParams, cfg, consumertest.NewNop())
 			require.NoError(t, err)
 
 			// Test
@@ -320,7 +320,7 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 
 		dp := dps.At(0)
 		assert.Equal(t, int64(1), dp.Value(), "There should only be one metric per Service/operation/kind combination")
-		assert.NotZero(t, dp.StartTime(), "StartTimestamp should be set")
+		assert.NotZero(t, dp.StartTimestamp(), "StartTimestamp should be set")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
 		verifyMetricLabels(dp, t, seenMetricIDs)
@@ -453,8 +453,8 @@ func buildSpan(span span) pdata.Span {
 	s.SetKind(span.kind)
 	s.Status().SetCode(span.statusCode)
 	now := time.Now()
-	s.SetStartTime(pdata.TimestampFromTime(now))
-	s.SetEndTime(pdata.TimestampFromTime(now.Add(sampleLatencyDuration)))
+	s.SetStartTimestamp(pdata.TimestampFromTime(now))
+	s.SetEndTimestamp(pdata.TimestampFromTime(now.Add(sampleLatencyDuration)))
 	s.Attributes().InsertString(stringAttrName, "stringAttrValue")
 	s.Attributes().InsertInt(intAttrName, 99)
 	s.Attributes().InsertDouble(doubleAttrName, 99.99)
@@ -468,10 +468,7 @@ func buildSpan(span span) pdata.Span {
 func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExporter, component.TracesExporter) {
 	otlpExpFactory := otlpexporter.NewFactory()
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			NameVal: "otlp",
-			TypeVal: "otlp",
-		},
+		ExporterSettings: config.NewExporterSettings("otlp"),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},

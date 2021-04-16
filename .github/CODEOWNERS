@@ -45,7 +45,7 @@ exporter/uptraceexporter/                            @open-telemetry/collector-c
 extension/httpforwarder/                             @open-telemetry/collector-contrib-approvers @asuresh4
 extension/observer/                                  @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp
 
-internal/awsxray/                                    @open-telemetry/collector-contrib-approvers @anuraaga @mxiamxia
+internal/aws/                                        @open-telemetry/collector-contrib-approvers @anuraaga @mxiamxia
 internal/k8sconfig/                                  @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
 internal/splunk/                                     @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
 internal/stanza/                                     @open-telemetry/collector-contrib-approvers @djaglowski
@@ -59,6 +59,7 @@ processor/metricstransformprocessor/                 @open-telemetry/collector-c
 processor/resourcedetectionprocessor/                @open-telemetry/collector-contrib-approvers @jrcamp @pmm-sumo @anuraaga @dashpole
 processor/resourcedetectionprocessor/internal/azure  @open-telemetry/collector-contrib-approvers @mx-psi
 processor/routingprocessor/                          @open-telemetry/collector-contrib-approvers @jpkrohling
+processor/spanmetricsprocessor/                      @open-telemetry/collector-contrib-approvers @albertteoh
 processor/tailsamplingprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
 
 receiver/awsecscontainermetricsreceiver/             @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga

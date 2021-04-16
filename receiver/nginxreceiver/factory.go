@@ -21,8 +21,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -40,10 +40,10 @@ func NewFactory() component.ReceiverFactory {
 		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
-func createDefaultConfig() configmodels.Receiver {
-	return &config{
+func createDefaultConfig() config.Receiver {
+	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: typeStr,
 			},
@@ -59,10 +59,10 @@ func createDefaultConfig() configmodels.Receiver {
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
-	rConf configmodels.Receiver,
+	rConf config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	cfg := rConf.(*config)
+	cfg := rConf.(*Config)
 
 	ns := newNginxScraper(params.Logger, cfg)
 	scraper := scraperhelper.NewResourceMetricsScraper(typeStr, ns.scrape)

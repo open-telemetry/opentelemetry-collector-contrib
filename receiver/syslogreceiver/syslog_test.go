@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -68,13 +68,17 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 		_, err = conn.Write([]byte(msg))
 		require.NoError(t, err)
 	}
-	conn.Close()
+	require.NoError(t, conn.Close())
 
 	require.Eventually(t, expectNLogs(sink, numLogs), 2*time.Second, time.Millisecond)
 	require.NoError(t, rcvr.Shutdown(context.Background()))
+	require.Len(t, sink.AllLogs(), 1)
+
+	resourceLogs := sink.AllLogs()[0].ResourceLogs().At(0)
+	logs := resourceLogs.InstrumentationLibraryLogs().At(0).Logs()
+
 	for i := 0; i < numLogs; i++ {
-		logs := sink.AllLogs()[i]
-		log := logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0)
+		log := logs.At(i)
 
 		require.Equal(t, log.Timestamp(), pdata.Timestamp(1614470402003000000+i*60*1000*1000*1000))
 		msg, ok := log.Body().MapVal().Get("message")
@@ -88,7 +92,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[configmodels.Type(typeStr)] = factory
+	factories.Receivers[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -102,11 +106,14 @@ func TestLoadConfig(t *testing.T) {
 func testdataConfigYamlAsMap() *SysLogConfig {
 	return &SysLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "syslog",
 				NameVal: "syslog",
 			},
 			Operators: stanza.OperatorConfigs{},
+			Converter: stanza.ConverterConfig{
+				FlushInterval: 100 * time.Millisecond,
+			},
 		},
 		Input: stanza.InputConfig{
 			"tcp": map[string]interface{}{
@@ -120,11 +127,14 @@ func testdataConfigYamlAsMap() *SysLogConfig {
 func testdataUDPConfig() *SysLogConfig {
 	return &SysLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "syslog",
 				NameVal: "syslog",
 			},
 			Operators: stanza.OperatorConfigs{},
+			Converter: stanza.ConverterConfig{
+				FlushInterval: 100 * time.Millisecond,
+			},
 		},
 		Input: stanza.InputConfig{
 			"udp": map[string]interface{}{
@@ -143,7 +153,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 	factory := NewFactory()
 	badCfg := &SysLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "syslog",
 				NameVal: "syslog",
 			},

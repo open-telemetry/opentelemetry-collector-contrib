@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter
 
-go 1.14
+go 1.15
 
 require (
 	github.com/armon/go-metrics v0.3.3 // indirect
@@ -12,9 +12,9 @@ require (
 	github.com/onsi/gomega v1.10.2 // indirect
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.23.1-0.20210326174743-acb3ae141cae
+	go.opentelemetry.io/collector v0.24.1-0.20210415171520-9ff58cbcbdb1
 	go.uber.org/zap v1.16.0
-	golang.org/x/oauth2 v0.0.0-20210313182246-cd4f82c27b84
-	google.golang.org/api v0.43.0
+	golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602
+	google.golang.org/api v0.44.0
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )

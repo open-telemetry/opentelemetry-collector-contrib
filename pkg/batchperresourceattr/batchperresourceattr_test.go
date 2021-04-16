@@ -48,7 +48,7 @@ func TestSplitTracesReturnError(t *testing.T) {
 	fillResourceSpans(inBatch.ResourceSpans().At(1), "attr_key", pdata.NewAttributeValueString("1"))
 
 	err := errors.New("test_error")
-	bpr := NewBatchPerResourceTraces("attr_key", consumertest.NewTracesErr(err))
+	bpr := NewBatchPerResourceTraces("attr_key", consumertest.NewErr(err))
 	assert.Equal(t, err, bpr.ConsumeTraces(context.Background(), inBatch))
 }
 
@@ -114,7 +114,7 @@ func TestSplitMetricsReturnError(t *testing.T) {
 	fillResourceMetrics(inBatch.ResourceMetrics().At(1), "attr_key", pdata.NewAttributeValueString("1"))
 
 	err := errors.New("test_error")
-	bpr := NewBatchPerResourceMetrics("attr_key", consumertest.NewMetricsErr(err))
+	bpr := NewBatchPerResourceMetrics("attr_key", consumertest.NewErr(err))
 	assert.Equal(t, err, bpr.ConsumeMetrics(context.Background(), inBatch))
 }
 
@@ -180,7 +180,7 @@ func TestSplitLogsReturnError(t *testing.T) {
 	fillResourceLogs(inBatch.ResourceLogs().At(1), "attr_key", pdata.NewAttributeValueString("1"))
 
 	err := errors.New("test_error")
-	bpr := NewBatchPerResourceLogs("attr_key", consumertest.NewLogsErr(err))
+	bpr := NewBatchPerResourceLogs("attr_key", consumertest.NewErr(err))
 	assert.Equal(t, err, bpr.ConsumeLogs(context.Background(), inBatch))
 }
 
@@ -341,7 +341,7 @@ func BenchmarkBatchPerResourceTraces(b *testing.B) {
 	for i := 0; i < 64; i++ {
 		fillResourceSpans(rss.At(i), "attr_key", pdata.NewAttributeValueString(strconv.Itoa(i%8)))
 	}
-	bpr := NewBatchPerResourceTraces("attr_key", consumertest.NewTracesNop())
+	bpr := NewBatchPerResourceTraces("attr_key", consumertest.NewNop())
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -357,7 +357,7 @@ func BenchmarkBatchPerResourceMetrics(b *testing.B) {
 	for i := 0; i < 64; i++ {
 		fillResourceMetrics(inBatch.ResourceMetrics().At(i), "attr_key", pdata.NewAttributeValueString(strconv.Itoa(i%8)))
 	}
-	bpr := NewBatchPerResourceMetrics("attr_key", consumertest.NewMetricsNop())
+	bpr := NewBatchPerResourceMetrics("attr_key", consumertest.NewNop())
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -373,7 +373,7 @@ func BenchmarkBatchPerResourceLogs(b *testing.B) {
 	for i := 0; i < 64; i++ {
 		fillResourceLogs(inBatch.ResourceLogs().At(i), "attr_key", pdata.NewAttributeValueString(strconv.Itoa(i%8)))
 	}
-	bpr := NewBatchPerResourceLogs("attr_key", consumertest.NewLogsNop())
+	bpr := NewBatchPerResourceLogs("attr_key", consumertest.NewNop())
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {

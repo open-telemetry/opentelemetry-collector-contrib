@@ -99,7 +99,7 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 		var transferChan = make(chan string, 10)
 		ticker := time.NewTicker(r.config.AggregationInterval)
 		err = nil
-		r.parser.Initialize(r.config.EnableMetricType)
+		r.parser.Initialize(r.config.EnableMetricType, r.config.TimerHistogramMapping)
 		go func() {
 			err = r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter, transferChan)
 			if err != nil {

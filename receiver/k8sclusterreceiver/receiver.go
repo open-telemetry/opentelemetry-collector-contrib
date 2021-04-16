@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -51,7 +51,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 
 	exporters := host.GetExporters()
 	if err := kr.resourceWatcher.setupMetadataExporters(
-		exporters[configmodels.MetricsDataType], kr.config.MetadataExporters); err != nil {
+		exporters[config.MetricsDataType], kr.config.MetadataExporters); err != nil {
 		return err
 	}
 

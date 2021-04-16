@@ -185,8 +185,8 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 		Description:    description,
 		Op:             op,
 		Tags:           tags,
-		StartTimestamp: unixNanoToTime(span.StartTime()),
-		EndTimestamp:   unixNanoToTime(span.EndTime()),
+		StartTimestamp: unixNanoToTime(span.StartTimestamp()),
+		EndTimestamp:   unixNanoToTime(span.EndTimestamp()),
 		Status:         status,
 	}
 
@@ -336,7 +336,7 @@ func CreateSentryExporter(config *Config, params component.ExporterCreateParams)
 		transport: transport,
 	}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		config,
 		params.Logger,
 		s.pushTraceData,

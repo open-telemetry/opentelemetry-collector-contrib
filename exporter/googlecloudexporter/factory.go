@@ -21,7 +21,7 @@ import (
 
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -43,39 +43,36 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithTraces(createTracesExporter),
 		exporterhelper.WithMetrics(createMetricsExporter),
 	)
 }
 
 // createDefaultConfig creates the default configuration for exporter.
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
-		RetrySettings:   exporterhelper.DefaultRetrySettings(),
-		QueueSettings:   exporterhelper.DefaultQueueSettings(),
-		UserAgent:       "opentelemetry-collector-contrib {{version}}",
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		UserAgent:        "opentelemetry-collector-contrib {{version}}",
 	}
 }
 
-// createTraceExporter creates a trace exporter based on this config.
-func createTraceExporter(
+// createTracesExporter creates a trace exporter based on this config.
+func createTracesExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter) (component.TracesExporter, error) {
+	cfg config.Exporter) (component.TracesExporter, error) {
 	eCfg := cfg.(*Config)
-	return newGoogleCloudTraceExporter(eCfg, params)
+	return newGoogleCloudTracesExporter(eCfg, params)
 }
 
 // createMetricsExporter creates a metrics exporter based on this config.
 func createMetricsExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter) (component.MetricsExporter, error) {
+	cfg config.Exporter) (component.MetricsExporter, error) {
 	eCfg := cfg.(*Config)
 	return newGoogleCloudMetricsExporter(eCfg, params)
 }

@@ -19,7 +19,7 @@ import (
 
 	awskinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -34,15 +34,12 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter))
+		exporterhelper.WithTraces(createTracesExporter))
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ExporterSettings: config.NewExporterSettings(typeStr),
 		AWS: AWSConfig{
 			Region: "us-west-2",
 		},
@@ -62,10 +59,10 @@ func createDefaultConfig() configmodels.Exporter {
 	}
 }
 
-func createTraceExporter(
+func createTracesExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	config configmodels.Exporter,
+	config config.Exporter,
 ) (component.TracesExporter, error) {
 	c := config.(*Config)
 	k, err := awskinesis.NewExporter(&awskinesis.Options{

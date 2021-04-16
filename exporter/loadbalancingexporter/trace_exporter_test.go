@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -70,7 +71,7 @@ func TestNewTracesExporter(t *testing.T) {
 	}
 }
 
-func TestTraceExporterStart(t *testing.T) {
+func TestTracesExporterStart(t *testing.T) {
 	for _, tt := range []struct {
 		desc string
 		te   *traceExporterImp
@@ -127,7 +128,7 @@ func TestTraceExporterStart(t *testing.T) {
 	}
 }
 
-func TestTraceExporterShutdown(t *testing.T) {
+func TestTracesExporterShutdown(t *testing.T) {
 	// prepare
 	config := simpleConfig()
 	params := component.ExporterCreateParams{
@@ -514,6 +515,7 @@ func simpleTraceWithID(id pdata.TraceID) pdata.Traces {
 
 func simpleConfig() *Config {
 	return &Config{
+		ExporterSettings: config.NewExporterSettings(typeStr),
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
 		},

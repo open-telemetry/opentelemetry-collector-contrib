@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
@@ -31,6 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/elasticbeanstalk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/gce"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/gke"
@@ -56,6 +57,7 @@ type factory struct {
 // NewFactory creates a new factory for ResourceDetection processor.
 func NewFactory() component.ProcessorFactory {
 	resourceProviderFactory := internal.NewProviderFactory(map[internal.DetectorType]internal.DetectorFactory{
+		aks.TypeStr:              aks.NewDetector,
 		azure.TypeStr:            azure.NewDetector,
 		ec2.TypeStr:              ec2.NewDetector,
 		ecs.TypeStr:              ecs.NewDetector,
@@ -75,32 +77,29 @@ func NewFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(f.createTraceProcessor),
+		processorhelper.WithTraces(f.createTracesProcessor),
 		processorhelper.WithMetrics(f.createMetricsProcessor),
 		processorhelper.WithLogs(f.createLogsProcessor))
 }
 
 // Type gets the type of the Option config created by this factory.
-func (*factory) Type() configmodels.Type {
+func (*factory) Type() config.Type {
 	return typeStr
 }
 
-func createDefaultConfig() configmodels.Processor {
+func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
-		Detectors: []string{env.TypeStr},
-		Timeout:   5 * time.Second,
-		Override:  true,
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		Detectors:         []string{env.TypeStr},
+		Timeout:           5 * time.Second,
+		Override:          true,
 	}
 }
 
-func (f *factory) createTraceProcessor(
+func (f *factory) createTracesProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
+	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	rdp, err := f.getResourceDetectionProcessor(params, cfg)
@@ -108,7 +107,7 @@ func (f *factory) createTraceProcessor(
 		return nil, err
 	}
 
-	return processorhelper.NewTraceProcessor(
+	return processorhelper.NewTracesProcessor(
 		cfg,
 		nextConsumer,
 		rdp,
@@ -119,7 +118,7 @@ func (f *factory) createTraceProcessor(
 func (f *factory) createMetricsProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
+	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	rdp, err := f.getResourceDetectionProcessor(params, cfg)
@@ -138,7 +137,7 @@ func (f *factory) createMetricsProcessor(
 func (f *factory) createLogsProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
+	cfg config.Processor,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	rdp, err := f.getResourceDetectionProcessor(params, cfg)
@@ -156,7 +155,7 @@ func (f *factory) createLogsProcessor(
 
 func (f *factory) getResourceDetectionProcessor(
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
+	cfg config.Processor,
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
 

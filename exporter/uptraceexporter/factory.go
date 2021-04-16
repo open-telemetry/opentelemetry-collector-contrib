@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -34,15 +34,12 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter))
+		exporterhelper.WithTraces(createTracesExporter))
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
+		ExporterSettings: config.NewExporterSettings(typeStr),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "", // not used
 			Timeout:  30 * time.Second,
@@ -57,19 +54,19 @@ func createDefaultConfig() configmodels.Exporter {
 	}
 }
 
-func createTraceExporter(
+func createTracesExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	oCfg := cfg.(*Config)
 
-	exporter, err := newTraceExporter(oCfg, params.Logger)
+	exporter, err := newTracesExporter(oCfg, params.Logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		cfg,
 		params.Logger,
 		exporter.pushTraceData,

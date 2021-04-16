@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
@@ -65,17 +66,19 @@ func TestGoogleCloudTraceExport(t *testing.T) {
 		{
 			name: "Standard",
 			cfg: &Config{
-				ProjectID:   "idk",
-				Endpoint:    "127.0.0.1:8080",
-				UseInsecure: true,
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				ProjectID:        "idk",
+				Endpoint:         "127.0.0.1:8080",
+				UseInsecure:      true,
 			},
 		},
 		{
 			name: "Standard_WithoutSendingQueue",
 			cfg: &Config{
-				ProjectID:   "idk",
-				Endpoint:    "127.0.0.1:8080",
-				UseInsecure: true,
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				ProjectID:        "idk",
+				Endpoint:         "127.0.0.1:8080",
+				UseInsecure:      true,
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled: false,
 				},
@@ -96,7 +99,7 @@ func TestGoogleCloudTraceExport(t *testing.T) {
 			go srv.Serve(lis)
 
 			createParams := component.ExporterCreateParams{Logger: zap.NewNop(), ApplicationStartInfo: component.ApplicationStartInfo{Version: "v0.0.1"}}
-			sde, err := newGoogleCloudTraceExporter(test.cfg, createParams)
+			sde, err := newGoogleCloudTracesExporter(test.cfg, createParams)
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
 				return
@@ -117,7 +120,7 @@ func TestGoogleCloudTraceExport(t *testing.T) {
 			ispans.Spans().Resize(1)
 			span := ispans.Spans().At(0)
 			span.SetName(spanName)
-			span.SetStartTime(pdata.TimestampFromTime(testTime))
+			span.SetStartTimestamp(pdata.TimestampFromTime(testTime))
 			err = sde.ConsumeTraces(context.Background(), traces)
 			assert.NoError(t, err)
 
@@ -185,10 +188,11 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 	}
 
 	sde, err := newGoogleCloudMetricsExporter(&Config{
-		ProjectID:   "idk",
-		Endpoint:    "127.0.0.1:8080",
-		UserAgent:   "MyAgent {{version}}",
-		UseInsecure: true,
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		ProjectID:        "idk",
+		Endpoint:         "127.0.0.1:8080",
+		UserAgent:        "MyAgent {{version}}",
+		UseInsecure:      true,
 		GetClientOptions: func() []option.ClientOption {
 			return clientOptions
 		},

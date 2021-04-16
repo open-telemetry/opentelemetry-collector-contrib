@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
+	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
 func addSQLToSpan(sql *awsxray.SQLData, attrs *pdata.AttributeMap) error {

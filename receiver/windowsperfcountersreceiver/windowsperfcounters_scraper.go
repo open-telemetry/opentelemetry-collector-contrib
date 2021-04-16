@@ -49,7 +49,7 @@ type scraper struct {
 }
 
 func newScraper(cfg *Config, logger *zap.Logger) (*scraper, error) {
-	if err := cfg.validate(); err != nil {
+	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
 

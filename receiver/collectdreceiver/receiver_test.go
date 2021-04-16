@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
@@ -66,7 +65,7 @@ func TestNewReceiver(t *testing.T) {
 				addr:         ":0",
 				timeout:      defaultTimeout,
 				attrsPrefix:  "default_attr_",
-				nextConsumer: consumertest.NewMetricsNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 		},
 	}
@@ -191,9 +190,9 @@ func TestCollectDServer(t *testing.T) {
 				return
 			}
 
-			testutil.WaitFor(t, func() bool {
+			assert.Eventually(t, func() bool {
 				return len(sink.AllMetrics()) == 1
-			})
+			}, 10*time.Second, 5*time.Millisecond)
 			mds := sink.AllMetrics()
 			require.Len(t, mds, 1)
 			got := internaldata.MetricsToOC(mds[0])

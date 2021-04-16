@@ -17,12 +17,14 @@ package stanza
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
+	"time"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/noop"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -71,21 +73,31 @@ func (o *UnstartableOperator) Process(ctx context.Context, entry *entry.Entry) e
 }
 
 type mockLogsConsumer struct {
-	received int
+	received int32
 }
 
 func (m *mockLogsConsumer) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	m.received++
+	atomic.AddInt32(&m.received, 1)
 	return nil
 }
 
+func (m *mockLogsConsumer) Received() int {
+	ret := atomic.LoadInt32(&m.received)
+	return int(ret)
+}
+
 type mockLogsRejecter struct {
-	rejected int
+	rejected int32
 }
 
 func (m *mockLogsRejecter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	m.rejected++
+	atomic.AddInt32(&m.rejected, 1)
 	return fmt.Errorf("no")
+}
+
+func (m *mockLogsRejecter) Rejected() int {
+	ret := atomic.LoadInt32(&m.rejected)
+	return int(ret)
 }
 
 const testType = "test"
@@ -96,28 +108,32 @@ type TestConfig struct {
 }
 type TestReceiverType struct{}
 
-func (f TestReceiverType) Type() configmodels.Type {
-	return configmodels.Type(testType)
+func (f TestReceiverType) Type() config.Type {
+	return config.Type(testType)
 }
 
-func (f TestReceiverType) CreateDefaultConfig() configmodels.Receiver {
+func (f TestReceiverType) CreateDefaultConfig() config.Receiver {
 	return &TestConfig{
 		BaseConfig: BaseConfig{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(testType),
+			ReceiverSettings: config.ReceiverSettings{
+				TypeVal: config.Type(testType),
 				NameVal: testType,
 			},
 			Operators: OperatorConfigs{},
+			Converter: ConverterConfig{
+				MaxFlushCount: 1,
+				FlushInterval: 100 * time.Millisecond,
+			},
 		},
 		Input: InputConfig{},
 	}
 }
 
-func (f TestReceiverType) BaseConfig(cfg configmodels.Receiver) BaseConfig {
+func (f TestReceiverType) BaseConfig(cfg config.Receiver) BaseConfig {
 	return cfg.(*TestConfig).BaseConfig
 }
 
-func (f TestReceiverType) DecodeInputConfig(cfg configmodels.Receiver) (*operator.Config, error) {
+func (f TestReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
 	testConfig := cfg.(*TestConfig)
 
 	// Allow tests to run without implementing input config

@@ -35,7 +35,7 @@ var _ component.MetricsReceiver = (*jmxMetricReceiver)(nil)
 
 type jmxMetricReceiver struct {
 	logger       *zap.Logger
-	config       *config
+	config       *Config
 	subprocess   *subprocess.Subprocess
 	params       component.ReceiverCreateParams
 	otlpReceiver component.MetricsReceiver
@@ -44,7 +44,7 @@ type jmxMetricReceiver struct {
 
 func newJMXMetricReceiver(
 	params component.ReceiverCreateParams,
-	config *config,
+	config *Config,
 	nextConsumer consumer.Metrics,
 ) *jmxMetricReceiver {
 	return &jmxMetricReceiver{

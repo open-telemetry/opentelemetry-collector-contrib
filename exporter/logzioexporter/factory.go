@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -29,26 +29,23 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter))
+		exporterhelper.WithTraces(createTracesExporter))
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		Region:      "",
-		TracesToken: "",
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		Region:           "",
+		TracesToken:      "",
 	}
 }
 
-func createTraceExporter(_ context.Context, params component.ExporterCreateParams, cfg configmodels.Exporter) (component.TracesExporter, error) {
+func createTracesExporter(_ context.Context, params component.ExporterCreateParams, cfg config.Exporter) (component.TracesExporter, error) {
 	config := cfg.(*Config)
-	return newLogzioTraceExporter(config, params)
+	return newLogzioTracesExporter(config, params)
 }
 
-func createMetricsExporter(_ context.Context, params component.ExporterCreateParams, cfg configmodels.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(_ context.Context, params component.ExporterCreateParams, cfg config.Exporter) (component.MetricsExporter, error) {
 	config := cfg.(*Config)
 	return newLogzioMetricsExporter(config, params)
 }

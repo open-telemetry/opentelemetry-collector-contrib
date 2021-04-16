@@ -21,7 +21,7 @@ import (
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
@@ -42,7 +42,7 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(f.createTraceExporter))
+		exporterhelper.WithTraces(f.createTracesExporter))
 }
 
 // Implements the interface from go.opentelemetry.io/collector/exporter/factory.go
@@ -50,22 +50,19 @@ type factory struct {
 	tChannel transportChannel
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
+		ExporterSettings: config.NewExporterSettings(typeStr),
 		Endpoint:         defaultEndpoint,
 		MaxBatchSize:     1024,
 		MaxBatchInterval: 10 * time.Second,
 	}
 }
 
-func (f *factory) createTraceExporter(
+func (f *factory) createTracesExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	exporterConfig, ok := cfg.(*Config)
 
@@ -74,7 +71,7 @@ func (f *factory) createTraceExporter(
 	}
 
 	tc := f.getTransportChannel(exporterConfig, params.Logger)
-	return newTraceExporter(exporterConfig, tc, params.Logger)
+	return newTracesExporter(exporterConfig, tc, params.Logger)
 }
 
 // Configures the transport channel.

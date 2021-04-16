@@ -17,7 +17,7 @@ package k8sclusterreceiver
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	k8s "k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -25,8 +25,8 @@ import (
 
 // Config defines configuration for kubernetes cluster receiver.
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
-	k8sconfig.APIConfig           `mapstructure:",squash"`
+	config.ReceiverSettings `mapstructure:",squash"`
+	k8sconfig.APIConfig     `mapstructure:",squash"`
 
 	// Collection interval for metrics.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
@@ -39,6 +39,10 @@ type Config struct {
 
 	// For mocking.
 	makeClient func(apiConf k8sconfig.APIConfig) (k8s.Interface, error)
+}
+
+func (cfg *Config) Validate() error {
+	return cfg.APIConfig.Validate()
 }
 
 func (cfg *Config) getK8sClient() (k8s.Interface, error) {

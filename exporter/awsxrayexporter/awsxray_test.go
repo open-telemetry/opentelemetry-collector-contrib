@@ -31,15 +31,17 @@ import (
 )
 
 func TestTraceExport(t *testing.T) {
-	traceExporter := initializeTraceExporter()
+	traceExporter := initializeTracesExporter()
 	ctx := context.Background()
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
 	assert.NotNil(t, err)
+	err = traceExporter.Shutdown(ctx)
+	assert.Nil(t, err)
 }
 
-func BenchmarkForTraceExporter(b *testing.B) {
-	traceExporter := initializeTraceExporter()
+func BenchmarkForTracesExporter(b *testing.B) {
+	traceExporter := initializeTracesExporter()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
 		ctx := context.Background()
@@ -49,7 +51,7 @@ func BenchmarkForTraceExporter(b *testing.B) {
 	}
 }
 
-func initializeTraceExporter() component.TracesExporter {
+func initializeTracesExporter() component.TracesExporter {
 	os.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
 	os.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
 	os.Setenv("AWS_DEFAULT_REGION", "us-east-1")
@@ -61,7 +63,7 @@ func initializeTraceExporter() component.TracesExporter {
 	config.(*Config).LocalMode = true
 	mconn := new(mockConn)
 	mconn.sn, _ = getDefaultSession(logger)
-	traceExporter, err := newTraceExporter(config, component.ExporterCreateParams{Logger: logger}, mconn)
+	traceExporter, err := newTracesExporter(config, component.ExporterCreateParams{Logger: logger}, mconn)
 	if err != nil {
 		panic(err)
 	}
@@ -113,8 +115,8 @@ func constructHTTPClientSpan() pdata.Span {
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindCLIENT)
-	span.SetStartTime(pdata.TimestampFromTime(startTime))
-	span.SetEndTime(pdata.TimestampFromTime(endTime))
+	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(0)
@@ -141,8 +143,8 @@ func constructHTTPServerSpan() pdata.Span {
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindSERVER)
-	span.SetStartTime(pdata.TimestampFromTime(startTime))
-	span.SetEndTime(pdata.TimestampFromTime(endTime))
+	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(0)

@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver
 
-go 1.14
+go 1.15
 
 require (
 	github.com/gorilla/mux v1.8.0
@@ -9,7 +9,7 @@ require (
 	github.com/signalfx/sapm-proto v0.7.0
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.23.1-0.20210326174743-acb3ae141cae
+	go.opentelemetry.io/collector v0.24.1-0.20210415171520-9ff58cbcbdb1
 	go.uber.org/zap v1.16.0
 )
 

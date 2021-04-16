@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver
 
-go 1.14
+go 1.15
 
 require (
 	github.com/armon/go-metrics v0.3.3 // indirect
@@ -14,7 +14,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.0.0-00010101000000-000000000000
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.23.1-0.20210326174743-acb3ae141cae
+	go.opentelemetry.io/collector v0.24.1-0.20210415171520-9ff58cbcbdb1
 	go.uber.org/zap v1.16.0
 	gopkg.in/ini.v1 v1.57.0 // indirect
 	k8s.io/api v0.20.5

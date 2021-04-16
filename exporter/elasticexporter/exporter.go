@@ -27,7 +27,7 @@ import (
 	"go.elastic.co/apm/transport"
 	"go.elastic.co/fastjson"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -36,15 +36,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter/internal/translator/elastic"
 )
 
-func newElasticTraceExporter(
+func newElasticTracesExporter(
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	exporter, err := newElasticExporter(cfg.(*Config), params.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elastic APM trace exporter: %v", err)
 	}
-	return exporterhelper.NewTraceExporter(cfg, params.Logger, func(ctx context.Context, traces pdata.Traces) error {
+	return exporterhelper.NewTracesExporter(cfg, params.Logger, func(ctx context.Context, traces pdata.Traces) error {
 		var errs []error
 		resourceSpansSlice := traces.ResourceSpans()
 		for i := 0; i < resourceSpansSlice.Len(); i++ {
@@ -60,7 +60,7 @@ func newElasticTraceExporter(
 
 func newElasticMetricsExporter(
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	exporter, err := newElasticExporter(cfg.(*Config), params.Logger)
 	if err != nil {

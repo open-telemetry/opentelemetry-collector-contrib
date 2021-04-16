@@ -20,7 +20,7 @@ import (
 	"net/url"
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/correlation"
@@ -33,9 +33,11 @@ const (
 	translationRulesConfigKey = "translation_rules"
 )
 
+var _ config.CustomUnmarshable = (*Config)(nil)
+
 // Config defines configuration for SignalFx exporter.
 type Config struct {
-	configmodels.ExporterSettings  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	*config.ExporterSettings       `mapstructure:"-"`
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
@@ -177,4 +179,23 @@ func (cfg *Config) getAPIURL() (*url.URL, error) {
 		return url.Parse(fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm))
 	}
 	return url.Parse(cfg.APIURL)
+}
+
+func (cfg *Config) Unmarshal(componentParser *config.Parser) (err error) {
+	if componentParser == nil {
+		// Nothing to do if there is no config given.
+		return nil
+	}
+
+	if err = componentParser.Unmarshal(cfg); err != nil {
+		return err
+	}
+
+	// If translations_config is not set in the config, set it to the defaults and return.
+	if !componentParser.IsSet(translationRulesConfigKey) {
+		cfg.TranslationRules, err = loadDefaultTranslationRules()
+		return err
+	}
+
+	return nil
 }

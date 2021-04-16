@@ -46,7 +46,7 @@ func TestReceiver(t *testing.T) {
 	metricsReceiver, err := New(
 		zap.NewNop(),
 		cfg,
-		consumertest.NewMetricsNop(),
+		consumertest.NewNop(),
 		&fakeRestClient{},
 	)
 
@@ -101,7 +101,7 @@ func TestCollectDataFromEndpointWithConsumerError(t *testing.T) {
 	metricsReceiver, err := New(
 		zap.NewNop(),
 		cfg,
-		consumertest.NewMetricsErr(errors.New("Test Error for Metrics Consumer")),
+		consumertest.NewErr(errors.New("Test Error for Metrics Consumer")),
 		&fakeRestClient{},
 	)
 

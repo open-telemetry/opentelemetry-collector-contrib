@@ -25,10 +25,10 @@ import (
 	"time"
 
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/config"
+	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 	"go.uber.org/zap"
@@ -97,7 +97,7 @@ func newPromExecReceiver(params component.ReceiverCreateParams, config *Config, 
 
 // getPromReceiverConfig returns the Prometheus receiver config
 func getPromReceiverConfig(cfg *Config) *prometheusreceiver.Config {
-	scrapeConfig := &config.ScrapeConfig{}
+	scrapeConfig := &promconfig.ScrapeConfig{}
 
 	scrapeConfig.ScrapeInterval = model.Duration(cfg.ScrapeInterval)
 	scrapeConfig.ScrapeTimeout = model.Duration(defaultScrapeTimeout)
@@ -118,15 +118,15 @@ func getPromReceiverConfig(cfg *Config) *prometheusreceiver.Config {
 		},
 	}
 
-	receiverSettings := &configmodels.ReceiverSettings{
+	receiverSettings := &config.ReceiverSettings{
 		TypeVal: typeStr,
 		NameVal: cfg.Name(),
 	}
 
 	return &prometheusreceiver.Config{
 		ReceiverSettings: *receiverSettings,
-		PrometheusConfig: &config.Config{
-			ScrapeConfigs: []*config.ScrapeConfig{scrapeConfig},
+		PrometheusConfig: &promconfig.Config{
+			ScrapeConfigs: []*promconfig.ScrapeConfig{scrapeConfig},
 		},
 	}
 }

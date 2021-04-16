@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws"
+	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 )
 
 // GroupedMetric defines set of metrics with same namespace, timestamp and labels

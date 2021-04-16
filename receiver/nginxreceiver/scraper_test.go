@@ -40,7 +40,7 @@ Reading: 6 Writing: 179 Waiting: 106
 		}
 		rw.WriteHeader(404)
 	}))
-	sc := newNginxScraper(zap.NewNop(), &config{
+	sc := newNginxScraper(zap.NewNop(), &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: nginxMock.URL + "/status",
 		},
@@ -99,7 +99,7 @@ func TestScraperError(t *testing.T) {
 		rw.WriteHeader(404)
 	}))
 	t.Run("404", func(t *testing.T) {
-		sc := newNginxScraper(zap.NewNop(), &config{
+		sc := newNginxScraper(zap.NewNop(), &Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: nginxMock.URL + "/badpath",
 			},
@@ -110,7 +110,7 @@ func TestScraperError(t *testing.T) {
 	})
 
 	t.Run("parse error", func(t *testing.T) {
-		sc := newNginxScraper(zap.NewNop(), &config{
+		sc := newNginxScraper(zap.NewNop(), &Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: nginxMock.URL + "/status",
 			},

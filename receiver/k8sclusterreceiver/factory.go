@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
@@ -36,9 +36,9 @@ const (
 
 var defaultNodeConditionsToReport = []string{"Ready"}
 
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -51,7 +51,7 @@ func createDefaultConfig() configmodels.Receiver {
 }
 
 func createMetricsReceiver(
-	_ context.Context, params component.ReceiverCreateParams, cfg configmodels.Receiver,
+	_ context.Context, params component.ReceiverCreateParams, cfg config.Receiver,
 	consumer consumer.Metrics) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)
 

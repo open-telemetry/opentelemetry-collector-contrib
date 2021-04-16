@@ -34,6 +34,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
@@ -78,7 +79,7 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 			name: "default_endpoint",
 			args: args{
 				config:       *defaultConfig,
-				logsConsumer: consumertest.NewLogsNop(),
+				logsConsumer: consumertest.NewNop(),
 			},
 		},
 		{
@@ -89,7 +90,7 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 						Endpoint: "localhost:1234",
 					},
 				},
-				logsConsumer: consumertest.NewLogsNop(),
+				logsConsumer: consumertest.NewNop(),
 			},
 		},
 	}
@@ -138,7 +139,7 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 			name: "default_endpoint",
 			args: args{
 				config:          *defaultConfig,
-				metricsConsumer: consumertest.NewMetricsNop(),
+				metricsConsumer: consumertest.NewNop(),
 			},
 		},
 		{
@@ -149,7 +150,7 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 						Endpoint: "localhost:1234",
 					},
 				},
-				metricsConsumer: consumertest.NewMetricsNop(),
+				metricsConsumer: consumertest.NewNop(),
 			},
 		},
 	}
@@ -336,7 +337,7 @@ func Test_consumer_err(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 	config.initialize()
-	rcv, err := NewLogsReceiver(zap.NewNop(), *config, consumertest.NewLogsErr(errors.New("bad consumer")))
+	rcv, err := NewLogsReceiver(zap.NewNop(), *config, consumertest.NewErr(errors.New("bad consumer")))
 	assert.NoError(t, err)
 
 	r := rcv.(*splunkReceiver)
@@ -364,7 +365,7 @@ func Test_consumer_err_metrics(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint\
 	config.initialize()
-	rcv, err := NewMetricsReceiver(zap.NewNop(), *config, consumertest.NewMetricsErr(errors.New("bad consumer")))
+	rcv, err := NewMetricsReceiver(zap.NewNop(), *config, consumertest.NewErr(errors.New("bad consumer")))
 	assert.NoError(t, err)
 
 	r := rcv.(*splunkReceiver)
@@ -561,9 +562,9 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config := createDefaultConfig().(*Config)
-			config.Endpoint = "localhost:0"
-			config.initialize()
+			cfg := createDefaultConfig().(*Config)
+			cfg.Endpoint = "localhost:0"
+			cfg.initialize()
 
 			receivedSplunkLogs := make(chan []byte)
 			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -576,6 +577,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 
 			factory := splunkhecexporter.NewFactory()
 			exporterConfig := splunkhecexporter.Config{
+				ExporterSettings:   config.NewExporterSettings("splunkhec"),
 				Token:              "ignored",
 				SourceType:         "defaultsourcetype",
 				Index:              "defaultindex",
@@ -588,7 +590,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			}, &exporterConfig)
 			exporter.Start(context.Background(), nil)
 			assert.NoError(t, err)
-			rcv, err := NewLogsReceiver(zap.NewNop(), *config, exporter)
+			rcv, err := NewLogsReceiver(zap.NewNop(), *cfg, exporter)
 			assert.NoError(t, err)
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6
@@ -659,9 +661,9 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config := createDefaultConfig().(*Config)
-			config.Endpoint = "localhost:0"
-			config.initialize()
+			cfg := createDefaultConfig().(*Config)
+			cfg.Endpoint = "localhost:0"
+			cfg.initialize()
 
 			receivedSplunkMetrics := make(chan []byte)
 			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -674,6 +676,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 
 			factory := splunkhecexporter.NewFactory()
 			exporterConfig := splunkhecexporter.Config{
+				ExporterSettings:   config.NewExporterSettings("splunkhec"),
 				Token:              "ignored",
 				SourceType:         "defaultsourcetype",
 				Index:              "defaultindex",
@@ -686,7 +689,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			}, &exporterConfig)
 			exporter.Start(context.Background(), nil)
 			assert.NoError(t, err)
-			rcv, err := NewMetricsReceiver(zap.NewNop(), *config, exporter)
+			rcv, err := NewMetricsReceiver(zap.NewNop(), *cfg, exporter)
 			assert.NoError(t, err)
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6

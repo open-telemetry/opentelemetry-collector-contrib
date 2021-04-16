@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
+	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
 // AWS X-Ray acceptable values for origin field.
@@ -97,8 +97,8 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 	}
 
 	var (
-		startTime                              = timestampToFloatSeconds(span.StartTime())
-		endTime                                = timestampToFloatSeconds(span.EndTime())
+		startTime                              = timestampToFloatSeconds(span.StartTimestamp())
+		endTime                                = timestampToFloatSeconds(span.EndTimestamp())
 		httpfiltered, http                     = makeHTTP(span)
 		isError, isFault, causefiltered, cause = makeCause(span, httpfiltered, resource)
 		origin                                 = determineAwsOrigin(resource)

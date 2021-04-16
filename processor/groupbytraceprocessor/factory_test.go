@@ -42,7 +42,7 @@ func TestCreateTestProcessor(t *testing.T) {
 	next := &mockProcessor{}
 
 	// test
-	p, err := createTraceProcessor(context.Background(), params, c, next)
+	p, err := createTracesProcessor(context.Background(), params, c, next)
 
 	// verify
 	assert.NoError(t, err)

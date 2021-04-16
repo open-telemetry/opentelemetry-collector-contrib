@@ -21,7 +21,7 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	prw "go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter"
 )
 
@@ -36,16 +36,16 @@ func NewFactory() component.ExporterFactory {
 	return &awsFactory{ExporterFactory: prw.NewFactory()}
 }
 
-func (af *awsFactory) Type() configmodels.Type {
+func (af *awsFactory) Type() config.Type {
 	return typeStr
 }
 
 func (af *awsFactory) CreateMetricsExporter(ctx context.Context, params component.ExporterCreateParams,
-	cfg configmodels.Exporter) (component.MetricsExporter, error) {
+	cfg config.Exporter) (component.MetricsExporter, error) {
 	return af.ExporterFactory.CreateMetricsExporter(ctx, params, &cfg.(*Config).Config)
 }
 
-func (af *awsFactory) CreateDefaultConfig() configmodels.Exporter {
+func (af *awsFactory) CreateDefaultConfig() config.Exporter {
 	cfg := &Config{
 		Config: *af.ExporterFactory.CreateDefaultConfig().(*prw.Config),
 		AuthConfig: AuthConfig{

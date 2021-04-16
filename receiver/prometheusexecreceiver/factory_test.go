@@ -25,9 +25,9 @@ import (
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 	"go.uber.org/zap"
@@ -46,27 +46,27 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 
 	factory := NewFactory()
 	receiverType := "prometheus_exec"
-	factories.Receivers[configmodels.Type(receiverType)] = factory
+	factories.Receivers[config.Type(receiverType)] = factory
 
-	config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	assert.NoError(t, err)
-	assert.NotNil(t, config)
+	assert.NotNil(t, cfg)
 
-	receiver := config.Receivers[receiverType]
+	receiver := cfg.Receivers[receiverType]
 
 	// Test CreateTracesReceiver
 	traceReceiver, err = factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, receiver, nil)
 
 	assert.Equal(t, nil, traceReceiver)
-	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
+	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
 
 	// Test CreateMetricsReceiver error because of lack of command
 	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, receiver, nil)
 	assert.NotNil(t, err)
 
 	// Test CreateMetricsReceiver
-	receiver = config.Receivers["prometheus_exec/test"]
+	receiver = cfg.Receivers["prometheus_exec/test"]
 	metricReceiver, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, receiver, nil)
 	assert.Equal(t, nil, err)
 
@@ -75,7 +75,7 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 		config:   receiver.(*Config),
 		consumer: nil,
 		promReceiverConfig: &prometheusreceiver.Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "prometheus_exec",
 				NameVal: "prometheus_exec/test",
 			},

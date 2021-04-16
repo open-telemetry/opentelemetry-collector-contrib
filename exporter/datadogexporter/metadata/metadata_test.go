@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/testutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils/cache"
 )
@@ -124,6 +125,20 @@ func TestMetadataFromAttributes(t *testing.T) {
 	assert.ElementsMatch(t, metadataGCP.Meta.HostAliases, []string{"host-id"})
 	assert.ElementsMatch(t, metadataGCP.Tags.GCP,
 		[]string{"instance-id:host-id", "zone:cloud-zone", "instance-type:host-type"})
+
+	// Azure
+	attrsAzure := testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
+		conventions.AttributeHostName:      "azure-host-name",
+		conventions.AttributeCloudRegion:   "location",
+		conventions.AttributeHostID:        "azure-vm-id",
+		conventions.AttributeCloudAccount:  "subscriptionID",
+		azure.AttributeResourceGroupName:   "resourceGroup",
+	})
+	metadataAzure := metadataFromAttributes(attrsAzure)
+	assert.Equal(t, metadataAzure.InternalHostname, "azure-host-name")
+	assert.Equal(t, metadataAzure.Meta.Hostname, "azure-host-name")
+	assert.ElementsMatch(t, metadataAzure.Meta.HostAliases, []string{"azure-vm-id"})
 
 	// Other
 	attrsOther := testutils.NewAttributeMap(map[string]string{

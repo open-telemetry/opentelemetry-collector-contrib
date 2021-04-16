@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/examples/federation/prom-counter
 
-go 1.14
+go 1.15
 
 require (
 	go.opentelemetry.io/otel v0.19.0

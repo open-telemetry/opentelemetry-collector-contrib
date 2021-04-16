@@ -32,7 +32,7 @@ func TestFieldsAsString(t *testing.T) {
 }
 
 func TestFieldsSanitization(t *testing.T) {
-	expected := "key1=value_1, key3=value_3, key__2=valu_e_2"
+	expected := "key1=value_1, key3=value_3, key:_2=valu_e:2"
 	flds := fieldsFromMap(map[string]string{
 		"key1":   "value,1",
 		"key3":   "value\n3",

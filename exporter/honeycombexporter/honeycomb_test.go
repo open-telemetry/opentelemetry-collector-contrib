@@ -33,6 +33,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -79,7 +80,7 @@ func testingServer(callback func(data []honeycombData)) *httptest.Server {
 	}))
 }
 
-func testTraceExporter(td pdata.Traces, t *testing.T, cfg *Config) []honeycombData {
+func testTracesExporter(td pdata.Traces, t *testing.T, cfg *Config) []honeycombData {
 	var got []honeycombData
 	server := testingServer(func(data []honeycombData) {
 		got = append(got, data...)
@@ -89,7 +90,7 @@ func testTraceExporter(td pdata.Traces, t *testing.T, cfg *Config) []honeycombDa
 	cfg.APIURL = server.URL
 
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exporter, err := createTraceExporter(context.Background(), params, cfg)
+	exporter, err := createTracesExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -102,6 +103,7 @@ func testTraceExporter(td pdata.Traces, t *testing.T, cfg *Config) []honeycombDa
 
 func baseConfig() *Config {
 	return &Config{
+		ExporterSettings:    config.NewExporterSettings(typeStr),
 		APIKey:              "test",
 		Dataset:             "test",
 		Debug:               false,
@@ -207,7 +209,7 @@ func TestExporter(t *testing.T) {
 			},
 		},
 	}
-	got := testTraceExporter(internaldata.OCToTraces(td.Node, td.Resource, td.Spans), t, baseConfig())
+	got := testTracesExporter(internaldata.OCToTraces(td.Node, td.Resource, td.Spans), t, baseConfig())
 	want := []honeycombData{
 		{
 			Data: map[string]interface{}{
@@ -350,7 +352,7 @@ func TestSpanKinds(t *testing.T) {
 
 			instrLibrarySpans.Spans().At(0).SetKind(kind)
 
-			got := testTraceExporter(td, t, baseConfig())
+			got := testTracesExporter(td, t, baseConfig())
 
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("otel span: (-want +got):\n%s", diff)
@@ -435,7 +437,7 @@ func TestSampleRateAttribute(t *testing.T) {
 	cfg := baseConfig()
 	cfg.SampleRateAttribute = "hc.sample.rate"
 
-	got := testTraceExporter(internaldata.OCToTraces(td.Node, td.Resource, td.Spans), t, cfg)
+	got := testTracesExporter(internaldata.OCToTraces(td.Node, td.Resource, td.Spans), t, cfg)
 
 	want := []honeycombData{
 		{
@@ -499,7 +501,7 @@ func TestEmptyNode(t *testing.T) {
 		},
 	}
 
-	got := testTraceExporter(internaldata.OCToTraces(td.Node, td.Resource, td.Spans), t, baseConfig())
+	got := testTracesExporter(internaldata.OCToTraces(td.Node, td.Resource, td.Spans), t, baseConfig())
 
 	want := []honeycombData{
 		{
@@ -620,7 +622,7 @@ func TestNode(t *testing.T) {
 				},
 			}
 
-			got := testTraceExporter(internaldata.OCToTraces(td.Node, td.Resource, td.Spans), t, baseConfig())
+			got := testTracesExporter(internaldata.OCToTraces(td.Node, td.Resource, td.Spans), t, baseConfig())
 
 			want := []honeycombData{
 				{
@@ -641,7 +643,7 @@ func TestRunErrorLogger_OnError(t *testing.T) {
 	logger := zap.New(obs)
 
 	cfg := createDefaultConfig().(*Config)
-	exporter, err := newHoneycombTraceExporter(cfg, logger)
+	exporter, err := newHoneycombTracesExporter(cfg, logger)
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -670,6 +672,6 @@ func TestRunErrorLogger_OnError(t *testing.T) {
 func TestDebugUsesDebugLogger(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Debug = true
-	_, err := newHoneycombTraceExporter(cfg, zap.NewNop())
+	_, err := newHoneycombTracesExporter(cfg, zap.NewNop())
 	require.NoError(t, err)
 }

@@ -35,9 +35,7 @@ type PerfCounterConfig struct {
 	Counters  []string `mapstructure:"counters"`
 }
 
-func (c *Config) validate() error {
-	// TODO: consider validating duplicate configuration of counters
-
+func (c *Config) Validate() error {
 	var errors []error
 
 	if c.CollectionInterval <= 0 {

@@ -21,6 +21,17 @@ The Following settings are optional:
 
 - `enable_metric_type: true`(default value is false): Enable the statsd receiver to be able to emit the metric type(gauge, counter, timer(in the future), histogram(in the future)) as a label.
 
+- `timer_histogram_mapping:`(default value is below): Specify what OTLP type to convert received timing/histogram data to.
+
+// TODO: can add regex support for `match` later.
+
+`"match"`, we only support `"*"` now. 
+
+`"statsd_type"` specifies received Statsd data type. Possible values for this setting are `"timing"`, `"timer"` and `"histogram"`.
+
+`"observer_type"` specifies OTLP data type to convert to. The only supported target data type currently is `"gauge"`, which does not perform any aggregation.
+Support for `"summary"` data type is planned to be added in the future.
+
 Example:
 
 ```yaml
@@ -30,6 +41,13 @@ receivers:
     endpoint: "localhost:8127"
     aggregation_interval: 70s
     enable_metric_type: true
+    timer_histogram_mapping:
+      - match: "*"
+        statsd_type: "histogram"
+        observer_type: "gauge"
+      - match: "*"
+        statsd_type: "timing"
+        observer_type: "gauge"
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
@@ -75,7 +93,6 @@ General format is:
 `<name>:<value>|c|@<sample-rate>|#<tag1-key>:<tag1-value>`
 
 It supports sample rate.
-TODO: Use OTLP type(Sum data points, with AggregationTemporality=Delta and Monotonic=False) for transferred data types (now we are using OpenCensus types).
 TODO: Need to change the implementation part for sample rate after OTLP supports sample rate as a parameter later.
 
 
@@ -83,11 +100,14 @@ TODO: Need to change the implementation part for sample rate after OTLP supports
 
 `<name>:<value>|g|@<sample-rate>|#<tag1-key>:<tag1-value>`
 
-TODO: Use OTLP type for transferred data types (now we are using OpenCensus types).
 
 ### Timer
 
-TODO: add support for timer and histogram.
+`<name>:<value>|ms|@<sample-rate>|#<tag1-key>:<tag1-value>`
+`<name>:<value>|h|@<sample-rate>|#<tag1-key>:<tag1-value>`
+
+It supports sample rate.
+
 
 ## Testing
 
@@ -99,6 +119,13 @@ receivers:
     endpoint: "localhost:8125" # default
     aggregation_interval: 60s  # default
     enable_metric_type: false   # default
+    timer_histogram_mapping:
+      - match: "*"
+        statsd_type: "histogram"
+        observer_type: "gauge"
+      - match: "*"
+        statsd_type: "timing"
+        observer_type: "gauge"
 
 exporters:
   file:

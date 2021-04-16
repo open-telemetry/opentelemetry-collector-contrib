@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"strconv"
 	"time"
 
@@ -62,6 +63,10 @@ func NewFluentBitFileLogWriter(host string, port int) *FluentBitFileLogWriter {
 }
 
 func (f *FluentBitFileLogWriter) Start() error {
+	if _, err := exec.LookPath("fluent-bit"); err != nil {
+		return err
+	}
+
 	return nil
 }
 

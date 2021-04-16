@@ -104,7 +104,7 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 			for si := 0; si < spans.Len(); si++ {
 				span := spans.At(si)
 				se := &splunk.Event{
-					Time:       timestampToSecondsWithMillisecondPrecision(span.StartTime()),
+					Time:       timestampToSecondsWithMillisecondPrecision(span.StartTimestamp()),
 					Host:       host,
 					Source:     source,
 					SourceType: sourceType,
@@ -163,8 +163,8 @@ func toHecSpan(logger *zap.Logger, span pdata.Span) HecSpan {
 		ParentSpan: span.ParentSpanID().HexString(),
 		Name:       span.Name(),
 		Attributes: attributes,
-		StartTime:  span.StartTime(),
-		EndTime:    span.EndTime(),
+		StartTime:  span.StartTimestamp(),
+		EndTime:    span.EndTimestamp(),
 		Kind:       span.Kind().String(),
 		Status:     status,
 		Links:      links,

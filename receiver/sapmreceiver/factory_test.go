@@ -20,8 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.uber.org/zap"
 )
 
@@ -42,7 +42,7 @@ func TestCreateReceiver(t *testing.T) {
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, nil)
-	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
+	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, mReceiver)
 }
 

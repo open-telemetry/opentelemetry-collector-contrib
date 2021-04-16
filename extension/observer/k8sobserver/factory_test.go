@@ -21,8 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -43,11 +43,8 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := Factory{createK8sClientset: nilClient}
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &Config{
-		ExtensionSettings: configmodels.ExtensionSettings{
-			TypeVal: typeStr,
-			NameVal: string(typeStr),
-		},
-		APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+		ExtensionSettings: config.NewExtensionSettings(typeStr),
+		APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 	},
 		cfg)
 

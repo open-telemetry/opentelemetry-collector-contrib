@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Receivers[configmodels.Type(typeStr)] = factory
+	factories.Receivers[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -45,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 	duration := 10 * time.Second
 	defaultCfg := cfg.Receivers["kubeletstats/default"].(*Config)
 	require.Equal(t, &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: "kubeletstats",
 			NameVal: "kubeletstats/default",
 		},
@@ -64,7 +64,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tlsCfg := cfg.Receivers["kubeletstats/tls"].(*Config)
 	require.Equal(t, &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: "kubeletstats",
 			NameVal: "kubeletstats/tls",
 		},
@@ -92,7 +92,7 @@ func TestLoadConfig(t *testing.T) {
 
 	saCfg := cfg.Receivers["kubeletstats/sa"].(*Config)
 	require.Equal(t, &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: "kubeletstats",
 			NameVal: "kubeletstats/sa",
 		},
@@ -112,7 +112,7 @@ func TestLoadConfig(t *testing.T) {
 
 	metadataCfg := cfg.Receivers["kubeletstats/metadata"].(*Config)
 	require.Equal(t, &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: "kubeletstats",
 			NameVal: "kubeletstats/metadata",
 		},
@@ -135,7 +135,7 @@ func TestLoadConfig(t *testing.T) {
 
 	metricGroupsCfg := cfg.Receivers["kubeletstats/metric_groups"].(*Config)
 	require.Equal(t, &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: "kubeletstats",
 			NameVal: "kubeletstats/metric_groups",
 		},
@@ -154,7 +154,7 @@ func TestLoadConfig(t *testing.T) {
 
 	metadataWithK8sAPICfg := cfg.Receivers["kubeletstats/metadata_with_k8s_api"].(*Config)
 	require.Equal(t, &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: config.ReceiverSettings{
 			TypeVal: "kubeletstats",
 			NameVal: "kubeletstats/metadata_with_k8s_api",
 		},
@@ -243,7 +243,7 @@ func TestGetReceiverOptions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				ReceiverSettings: config.ReceiverSettings{
 					NameVal: typeStr,
 				},
 				CollectionInterval:    10 * time.Second,

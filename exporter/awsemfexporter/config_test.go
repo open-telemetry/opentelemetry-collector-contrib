@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -43,13 +43,13 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, 3, len(cfg.Exporters))
 
 	r0 := cfg.Exporters["awsemf"]
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
+	assert.Equal(t, factory.CreateDefaultConfig(), r0)
 
 	r1 := cfg.Exporters["awsemf/1"].(*Config)
 	r1.Validate()
 	assert.Equal(t,
 		&Config{
-			ExporterSettings:                configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "awsemf/1"},
+			ExporterSettings:                &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "awsemf/1"},
 			LogGroupName:                    "",
 			LogStreamName:                   "",
 			Endpoint:                        "",
@@ -70,7 +70,7 @@ func TestLoadConfig(t *testing.T) {
 	r2.Validate()
 	assert.Equal(t, r2,
 		&Config{
-			ExporterSettings:                configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "awsemf/resource_attr_to_label"},
+			ExporterSettings:                &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "awsemf/resource_attr_to_label"},
 			LogGroupName:                    "",
 			LogStreamName:                   "",
 			Endpoint:                        "",
@@ -97,7 +97,7 @@ func TestConfigValidate(t *testing.T) {
 		{unit: "Megabytes", metricName: "memory_usage"},
 	}
 	config := &Config{
-		ExporterSettings:            configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "awsemf/resource_attr_to_label"},
+		ExporterSettings:            &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "awsemf/resource_attr_to_label"},
 		RequestTimeoutSeconds:       30,
 		MaxRetries:                  1,
 		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
