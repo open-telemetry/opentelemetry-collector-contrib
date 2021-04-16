@@ -107,7 +107,7 @@ func (f *FluentLogsForwarder) convertLogToMap(lr pdata.LogRecord) map[string]str
 		out["log"] = lr.Body().StringVal()
 	}
 
-	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		switch v.Type() {
 		case pdata.AttributeValueSTRING:
 			out[k] = v.StringVal()
@@ -120,6 +120,7 @@ func (f *FluentLogsForwarder) convertLogToMap(lr pdata.LogRecord) map[string]str
 		default:
 			panic("missing case")
 		}
+		return true
 	})
 
 	return out
@@ -131,7 +132,7 @@ func (f *FluentLogsForwarder) convertLogToJSON(lr pdata.LogRecord) []byte {
 	}
 	rec["log"] = lr.Body().StringVal()
 
-	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		switch v.Type() {
 		case pdata.AttributeValueSTRING:
 			rec[k] = v.StringVal()
@@ -144,6 +145,7 @@ func (f *FluentLogsForwarder) convertLogToJSON(lr pdata.LogRecord) []byte {
 		default:
 			panic("missing case")
 		}
+		return true
 	})
 	b, err := json.Marshal(rec)
 	if err != nil {

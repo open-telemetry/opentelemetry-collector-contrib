@@ -365,7 +365,7 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 
 func verifyMetricLabels(dp metricDataPoint, t *testing.T, seenMetricIDs map[metricID]bool) {
 	mID := metricID{}
-	dp.LabelsMap().ForEach(func(k string, v string) {
+	dp.LabelsMap().Range(func(k string, v string) bool {
 		switch k {
 		case serviceNameKey:
 			mID.service = v
@@ -384,6 +384,7 @@ func verifyMetricLabels(dp metricDataPoint, t *testing.T, seenMetricIDs map[metr
 		case nullAttrName:
 			assert.Empty(t, v)
 		}
+		return true
 	})
 	// Service/operation/kind should be a unique metric.
 	assert.False(t, seenMetricIDs[mID])

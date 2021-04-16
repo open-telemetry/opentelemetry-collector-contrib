@@ -114,8 +114,9 @@ func (gap *groupByAttrsProcessor) ProcessLogs(ctx context.Context, ld pdata.Logs
 }
 
 func deleteAttributes(attrsForRemoval, targetAttrs pdata.AttributeMap) {
-	attrsForRemoval.ForEach(func(key string, _ pdata.AttributeValue) {
+	attrsForRemoval.Range(func(key string, _ pdata.AttributeValue) bool {
 		targetAttrs.Delete(key)
+		return true
 	})
 }
 

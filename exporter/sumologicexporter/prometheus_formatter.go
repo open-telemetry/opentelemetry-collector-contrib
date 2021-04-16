@@ -58,8 +58,9 @@ func newPrometheusFormatter() (prometheusFormatter, error) {
 func (f *prometheusFormatter) tags2String(attr pdata.AttributeMap, labels pdata.StringMap) prometheusTags {
 	mergedAttributes := pdata.NewAttributeMap()
 	attr.CopyTo(mergedAttributes)
-	labels.ForEach(func(k string, v string) {
+	labels.Range(func(k string, v string) bool {
 		mergedAttributes.UpsertString(k, v)
+		return true
 	})
 	length := mergedAttributes.Len()
 
@@ -68,7 +69,7 @@ func (f *prometheusFormatter) tags2String(attr pdata.AttributeMap, labels pdata.
 	}
 
 	returnValue := make([]string, 0, length)
-	mergedAttributes.ForEach(func(k string, v pdata.AttributeValue) {
+	mergedAttributes.Range(func(k string, v pdata.AttributeValue) bool {
 		returnValue = append(
 			returnValue,
 			fmt.Sprintf(
@@ -77,6 +78,7 @@ func (f *prometheusFormatter) tags2String(attr pdata.AttributeMap, labels pdata.
 				f.sanitizeValue(tracetranslator.AttributeValueToString(v, false)),
 			),
 		)
+		return true
 	})
 
 	return prometheusTags(fmt.Sprintf("{%s}", strings.Join(returnValue, ",")))
@@ -210,8 +212,9 @@ func (f *prometheusFormatter) intGauge2Strings(record metricPair) []string {
 func (f *prometheusFormatter) mergeAttributes(attributes pdata.AttributeMap, additionalAttributes pdata.AttributeMap) pdata.AttributeMap {
 	mergedAttributes := pdata.NewAttributeMap()
 	attributes.CopyTo(mergedAttributes)
-	additionalAttributes.ForEach(func(k string, v pdata.AttributeValue) {
+	additionalAttributes.Range(func(k string, v pdata.AttributeValue) bool {
 		mergedAttributes.Upsert(k, v)
+		return true
 	})
 	return mergedAttributes
 }

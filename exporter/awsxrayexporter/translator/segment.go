@@ -350,7 +350,7 @@ func makeXRayAttributes(attributes map[string]string, resource pdata.Resource, s
 	}
 
 	if storeResource {
-		resource.Attributes().ForEach(func(key string, value pdata.AttributeValue) {
+		resource.Attributes().Range(func(key string, value pdata.AttributeValue) bool {
 			key = "otel.resource." + key
 			annoVal := annotationValue(value)
 			indexed := indexAllAttrs || indexedKeys[key]
@@ -363,6 +363,7 @@ func makeXRayAttributes(attributes map[string]string, resource pdata.Resource, s
 					defaultMetadata[key] = metaVal
 				}
 			}
+			return true
 		})
 	}
 
@@ -415,8 +416,9 @@ func metadataValue(value pdata.AttributeValue) interface{} {
 		return value.BoolVal()
 	case pdata.AttributeValueMAP:
 		converted := map[string]interface{}{}
-		value.MapVal().ForEach(func(key string, value pdata.AttributeValue) {
+		value.MapVal().Range(func(key string, value pdata.AttributeValue) bool {
 			converted[key] = metadataValue(value)
+			return true
 		})
 		return converted
 	case pdata.AttributeValueARRAY:

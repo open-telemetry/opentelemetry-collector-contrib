@@ -45,13 +45,14 @@ func newFilter(flds []string) (filter, error) {
 func (f *filter) filterIn(attributes pdata.AttributeMap) fields {
 	returnValue := pdata.NewAttributeMap()
 
-	attributes.ForEach(func(k string, v pdata.AttributeValue) {
+	attributes.Range(func(k string, v pdata.AttributeValue) bool {
 		for _, regex := range f.regexes {
 			if regex.MatchString(k) {
 				returnValue.Insert(k, v)
-				return
+				return true
 			}
 		}
+		return true
 	})
 	returnValue.Sort()
 	return newFields(returnValue)
@@ -61,13 +62,14 @@ func (f *filter) filterIn(attributes pdata.AttributeMap) fields {
 func (f *filter) filterOut(attributes pdata.AttributeMap) fields {
 	returnValue := pdata.NewAttributeMap()
 
-	attributes.ForEach(func(k string, v pdata.AttributeValue) {
+	attributes.Range(func(k string, v pdata.AttributeValue) bool {
 		for _, regex := range f.regexes {
 			if regex.MatchString(k) {
-				return
+				return true
 			}
 		}
 		returnValue.Insert(k, v)
+		return true
 	})
 	returnValue.Sort()
 	return newFields(returnValue)

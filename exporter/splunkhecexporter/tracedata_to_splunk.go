@@ -84,8 +84,9 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 		if indexSet, isSet := attributes.Get(splunk.IndexLabel); isSet {
 			index = indexSet.StringVal()
 		}
-		attributes.ForEach(func(k string, v pdata.AttributeValue) {
+		attributes.Range(func(k string, v pdata.AttributeValue) bool {
 			commonFields[k] = tracetranslator.AttributeValueToString(v, false)
+			return true
 		})
 
 		if sourceSet, isSet := rs.Resource().Attributes().Get(conventions.AttributeServiceName); isSet {
@@ -94,8 +95,9 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 		if sourcetypeSet, isSet := rs.Resource().Attributes().Get(splunk.SourcetypeLabel); isSet {
 			sourceType = sourcetypeSet.StringVal()
 		}
-		rs.Resource().Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		rs.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 			commonFields[k] = tracetranslator.AttributeValueToString(v, false)
+			return true
 		})
 		ilss := rs.InstrumentationLibrarySpans()
 		for sils := 0; sils < ilss.Len(); sils++ {
@@ -122,16 +124,18 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 
 func toHecSpan(logger *zap.Logger, span pdata.Span) HecSpan {
 	attributes := map[string]interface{}{}
-	span.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+	span.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		attributes[k] = convertAttributeValue(v, logger)
+		return true
 	})
 
 	links := make([]HecLink, span.Links().Len())
 	for i := 0; i < span.Links().Len(); i++ {
 		link := span.Links().At(i)
 		linkAttributes := map[string]interface{}{}
-		link.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		link.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 			linkAttributes[k] = convertAttributeValue(v, logger)
+			return true
 		})
 		links[i] = HecLink{
 			Attributes: linkAttributes,
@@ -144,8 +148,9 @@ func toHecSpan(logger *zap.Logger, span pdata.Span) HecSpan {
 	for i := 0; i < span.Events().Len(); i++ {
 		event := span.Events().At(i)
 		eventAttributes := map[string]interface{}{}
-		event.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		event.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 			eventAttributes[k] = convertAttributeValue(v, logger)
+			return true
 		})
 		events[i] = HecEvent{
 			Attributes: eventAttributes,
