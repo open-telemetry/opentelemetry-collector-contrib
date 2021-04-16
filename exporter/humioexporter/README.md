@@ -20,14 +20,14 @@ As defined in the [TLS Configuration Settings](https://github.com/open-telemetry
 
 In addition, the following global configuration options can be overridden:
 
+- `disable_compression` (default: `false`): Whether to stop compressing payloads with gzip before sending them to Humio. This should only be disabled if compression can be shown to have a negative impact on performance in your specific deployment.
 - `tags` (no default): A series of key-value pairs used to target specific Data Sources for storage inside a Humio repository. Refer to [Humio Tagging](https://docs.humio.com/docs/parsers/tagging/) for more details.
 - `disable_service_tag` (default: `false`): By default, the service name will be used to tag all exported events in addition to user-provided tags. If disabled, only the user-provided tags will be used. However, at least one tag _must_ be specified.
 
 ### Traces
 For exporting structured data (traces), the following configuration options are available:
 
-- `unix_timestamps` (default: `false`): Whether to use Unix or ISO 8601 formatted timestamps when exporting data to Humio. If this is set to `true`, timestamps will be represented in milliseconds (Unix time) in UTC.
-- `timezone` (default: host timezone): When using Unix timestamps, this option can be provided to specify the local timezone of the events. If not specified, the local time zone of the host is used instead. An example is `Europe/Copenhagen`.
+- `unix_timestamps` (default: `false`): Whether to use Unix or ISO 8601 formatted timestamps when exporting data to Humio. If this is set to `true`, timestamps will be represented in milliseconds (Unix time) in UTC, and the time zone of the event is stored separately in the payload sent to Humio.
 
 ## Advaced Configuration
 This exporter, like many others, includes shared configuration helpers for the following advanced settings:
@@ -48,13 +48,11 @@ exporters:
         ingest_token: "00000000-0000-0000-0000-0000000000000"
         endpoint: "http://localhost:8080"
         timeout: 10s
+        disable_compression: true
         disable_service_tag: true
         tags:
             host: "web_server"
             environment: "production"
-        logs:
-            log_parser: "custom-parser"
         traces:
             unix_timestamps: true
-            timezone: "Europe/Copenhagen"
 ```
