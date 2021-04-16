@@ -14,6 +14,7 @@ parameters:
 orbs:
   win: circleci/windows@2.4.0
   aws-cli: circleci/aws-cli@1.3.1
+  kubernetes: circleci/kubernetes@0.11.2
 
 executors:
   golang:
@@ -102,25 +103,6 @@ commands:
           keys:
             - cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}-v4
 
-  install_fluentbit:
-    steps:
-      - run: |
-          sudo chmod 0777 -R /opt
-      - restore_cache: # restores saved cache if no changes are detected since last run
-          keys:
-            - "cimg-fluentbit-{{ arch }}-1.5.3"
-      - run: |
-          sudo ln -s /opt/td-agent-bit/bin/td-agent-bit /usr/local/bin/fluent-bit
-          if [[ -f /opt/td-agent-bit/bin/td-agent-bit ]]; then
-            exit 0
-          fi
-          wget https://packages.fluentbit.io/ubuntu/bionic/pool/main/t/td-agent-bit/td-agent-bit_1.5.3_amd64.deb
-          sudo dpkg -i ./td-agent-bit*.deb
-      - save_cache:
-          key: cimg-fluentbit-{{ arch }}-1.5.3
-          paths:
-            - /opt/td-agent-bit
-
   publish_docker_images:
     parameters:
       repo:
@@ -169,6 +151,20 @@ workflows:
       - publish-dev:
           requires:
             - run-stability-tests
+      - run-tracing-tests:
+          repo: opentelemetry-collector-dev
+          tag: ${CIRCLE_SHA1}
+          requires:
+            - publish-dev
+      - publish-stable:
+          requires:
+            - run-tracing-tests
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
+
 
   build-publish:
     when: << pipeline.parameters.run-build-publish >>
@@ -243,20 +239,31 @@ workflows:
             branches:
               ignore: /.*/
             tags:
-              only: /.*/
-      - spawn-stability-tests-job:
+              ignore: /.*/
+      - publish-dev:
           requires:
             - lint
             - unit-tests
-            - loadtest
-            - windows-test
             - integration-tests
             - cross-compile
+            - loadtest
+            - windows-test
+            - windows-msi
+            - deb-package
+            - rpm-package
           filters:
             branches:
-              only: /main|release\/.+/
+              ignore: /.*/
             tags:
               ignore: /.*/
+      - spawn-stability-tests-job:
+          requires:
+            - publish-check
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              only: /.*/
       - integration-tests:
           filters:
             tags:
@@ -340,7 +347,6 @@ jobs:
       TEST_RESULTS: testbed/tests/results/junit/results.xml
     steps:
       - restore_workspace
-      - install_fluentbit
       - run:
           name: Loadtest
           command: make e2e-test
@@ -569,3 +575,67 @@ jobs:
       - persist_to_workspace:
           root: ~/
           paths: project/dist/*.<< parameters.package_type >>
+
+  run-tracing-tests:
+    parameters:
+      repo:
+        type: string
+      tag:
+        type: string
+    docker:
+      - image: ${INFRASTRUCTURE_ACCOUNT_ID}.dkr.ecr.us-west-2.amazonaws.com/tracing-tests/tests:latest
+        aws_auth:
+          aws_access_key_id: ${TRACING_TESTS_AWS_ACCESS_KEY_ID}
+          aws_secret_access_key: ${TRACING_TESTS_AWS_SECRET_ACCESS_KEY}
+    steps:
+      - run:
+          name: "Configure environment variables"
+          command: |
+            echo "export SUMO_API_ENDPOINT=${TRACING_TESTS_SUMO_API_ENDPOINT}" >> $BASH_ENV
+            echo "export OTELCOL_HEALTHCHECK_URL=${TRACING_TESTS_OTELCOL_URL}" >> $BASH_ENV
+            echo "export SUMO_ACCESS_ID=${TRACING_TESTS_SUMO_ACCESS_ID}" >> $BASH_ENV
+            echo "export SUMO_ACCESS_KEY=${TRACING_TESTS_SUMO_ACCESS_KEY}" >> $BASH_ENV
+            echo "export PYTHONWARNINGS=ignore:Unverified HTTPS request"  >> $BASH_ENV
+            echo "export AWS_ACCESS_KEY_ID=${TRACING_TESTS_CLUSTER_AWS_ACCESS_ID}" >> $BASH_ENV
+            echo "export AWS_SECRET_ACCESS_KEY=${TRACING_TESTS_CLUSTER_AWS_ACCESS_KEY}" >> $BASH_ENV
+      - kubernetes/install-kubeconfig:
+          kubeconfig: TRACING_TESTS_CLUSTER_KUBECONFIG_DATA
+      - kubernetes/install-kubectl
+      - aws-cli/install
+      - run:
+          name: "Clean up environment"
+          command: /opt/tracing-tests/deployment_scripts/clean-up-env.sh
+      - run:
+          name: "Deploy Sumologic OpenTelemetry Collector"
+          command: /opt/tracing-tests/deployment_scripts/deploy-otelcol.sh << parameters.repo >> << parameters.tag >>
+      - run:
+          name: "Wait for Sumologic OpenTelemetry Collector to be available"
+          command: kubectl -n java-app wait --for=condition=ready --timeout=120s pod -l app=otelcol
+      - run:
+          name: "Deploy ECR Registry Secret"
+          command: /opt/tracing-tests/deployment_scripts/deploy-ecr-registry-secret.sh
+      - run:
+          name: "Deploy Kubernetes Metadata Provider application"
+          command: /opt/tracing-tests/deployment_scripts/deploy-k8sfeeder.sh
+      - run:
+          name: "Wait for Kubernetes Metadata Provider"
+          command: kubectl -n java-app wait --for=condition=ready --timeout=60s pod -l app=k8s-feeder
+      - run:
+          name: "Get Kubernetes Metadata provider URL"
+          command: echo "export KUBERNETES_METADATA_URL=$(kubectl -n java-app get svc k8s-feeder-svc-pub -o json | jq .status.loadBalancer.ingress[0].hostname)" >> $BASH_ENV
+      - run:
+          name: "Deploy Java App application"
+          command: /opt/tracing-tests/deployment_scripts/deploy-javaapp.sh
+      - run:
+          name: "Wait for Kubernetes Metadata Provider"
+          command: kubectl -n java-app wait --for=condition=ready --timeout=60s pod -l app=server
+      - run:
+          name: "Wait for data..."
+          command: sleep 180
+      - run:
+          name: "Execute Tracing Tests"
+          command: "pytest --rootdir=/opt/tracing-tests --junitxml=/opt/tracing-tests/test-results/junit.xml --html=/opt/tracing-tests/test-results/report.html --self-contained-html -vvv /opt/tracing-tests/tests"
+      - store_test_results:
+          path: /opt/tracing-tests/test-results
+      - store_artifacts:
+          path: /opt/tracing-tests/test-results
