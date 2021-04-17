@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package awsprometheusremotewriteexporter provides a Prometheus Remote Write Exporter with AWS Sigv4 authentication
 package awsprometheusremotewriteexporter
 
 import (
@@ -46,7 +45,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateMetricsExporter(t *testing.T) {
 	af := NewFactory()
 	validConfigWithAuth := af.CreateDefaultConfig().(*Config)
-	validConfigWithAuth.AuthConfig = AuthConfig{Region: "region", Service: "service"}
+	validConfigWithAuth.AuthConfig = AuthConfig{Region: "region"}
 
 	// Some form of AWS credentials chain required to test valid auth case
 	// This is a set of mock credentials strictly for testing purposes. Users
@@ -55,7 +54,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	os.Setenv("AWS_SECRET_ACCESS_KEY", "mock_value2")
 
 	invalidConfigWithAuth := af.CreateDefaultConfig().(*Config)
-	invalidConfigWithAuth.AuthConfig = AuthConfig{Region: "", Service: "service"}
+	invalidConfigWithAuth.AuthConfig = AuthConfig{}
 
 	invalidConfig := af.CreateDefaultConfig().(*Config)
 	invalidConfig.HTTPClientSettings = confighttp.HTTPClientSettings{}
@@ -87,11 +86,6 @@ func TestCreateMetricsExporter(t *testing.T) {
 			component.ExporterCreateParams{Logger: zap.NewNop()},
 			false,
 		},
-		{"invalid_auth_case",
-			invalidConfigWithAuth,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
-			true,
-		},
 		{"invalid_config_case",
 			invalidConfig,
 			component.ExporterCreateParams{Logger: zap.NewNop()},
@@ -103,7 +97,6 @@ func TestCreateMetricsExporter(t *testing.T) {
 			true,
 		},
 	}
-	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := af.CreateMetricsExporter(context.Background(), tt.params, tt.cfg)

@@ -30,7 +30,6 @@ The following settings can be optionally configured:
 - `write_buffer_size` (default = 512 * 1024): WriteBufferSize for HTTP client.
 - `aws_auth`: specify if each request should be signed with AWS Sig v4. The following settings must be configured:
     - `region`: region of the AWS service being exported to.
-    - `service`: AWS service being exported to.
     - `role_arn`: Amazon Resource Name of the role to assume.
 
 #### Examples:
@@ -64,7 +63,6 @@ exporters:
         X-Scope-OrgID: 234
     aws_auth:
         region: "us-west-2"
-        service: "service-name"
     external_labels:
         key1: value1
         key2: value2

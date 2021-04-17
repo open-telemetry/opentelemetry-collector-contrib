@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package awsprometheusremotewriteexporter provides a Prometheus Remote Write Exporter with AWS Sigv4 authentication
 package awsprometheusremotewriteexporter
 
 import (
@@ -94,7 +93,6 @@ func TestLoadConfig(t *testing.T) {
 		},
 		AuthConfig: AuthConfig{
 			Region:  "us-west-2",
-			Service: "service-name",
 			RoleArn: "arn:aws:iam::123456789012:role/IAMRole",
 		},
 	}

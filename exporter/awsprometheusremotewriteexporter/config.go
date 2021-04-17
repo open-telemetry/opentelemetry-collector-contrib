@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package awsprometheusremotewriteexporter provides a Prometheus Remote Write Exporter with AWS Sigv4 authentication
 package awsprometheusremotewriteexporter
 
 import (
@@ -32,8 +31,7 @@ type Config struct {
 type AuthConfig struct {
 	// Region is the AWS region for AWS Sig v4.
 	Region string `mapstructure:"region"`
-	// Service is the service name for AWS Sig v4
-	Service string `mapstructure:"service"`
+
 	// Amazon Resource Name (ARN) of a role to assume
 	RoleArn string `mapstructure:"role_arn"`
 }

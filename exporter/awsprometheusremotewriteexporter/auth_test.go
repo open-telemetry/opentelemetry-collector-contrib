@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package awsprometheusremotewriteexporter provides a Prometheus Remote Write Exporter with AWS Sigv4 authentication
 package awsprometheusremotewriteexporter
 
 import (
@@ -36,7 +35,7 @@ import (
 func TestRequestSignature(t *testing.T) {
 	// Some form of AWS credentials must be set up for tests to succeed
 	awsCreds := fetchMockCredentials()
-	authConfig := AuthConfig{Region: "region", Service: "service"}
+	authConfig := AuthConfig{Region: "region"}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, err := v4.GetSignedRequestSignature(r)
@@ -81,7 +80,7 @@ func (cc *checkCloser) Close() error {
 func TestLeakingBody(t *testing.T) {
 	// Some form of AWS credentials must be set up for tests to succeed
 	awsCreds := fetchMockCredentials()
-	authConfig := AuthConfig{Region: "region", Service: "service"}
+	authConfig := AuthConfig{Region: "region"}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, err := v4.GetSignedRequestSignature(r)
@@ -124,11 +123,11 @@ func TestGetCredsFromConfig(t *testing.T) {
 	}{
 		{
 			"success_case_without_role",
-			AuthConfig{Region: "region", Service: "service"},
+			AuthConfig{Region: "region"},
 		},
 		{
 			"success_case_with_role",
-			AuthConfig{Region: "region", Service: "service", RoleArn: "arn:aws:iam::123456789012:role/IAMRole"},
+			AuthConfig{Region: "region", RoleArn: "arn:aws:iam::123456789012:role/IAMRole"},
 		},
 	}
 	// run tests
@@ -164,13 +163,13 @@ func TestRoundTrip(t *testing.T) {
 			"valid_round_tripper",
 			defaultRoundTripper,
 			false,
-			AuthConfig{Region: "region", Service: "service"},
+			AuthConfig{Region: "region"},
 		},
 		{
 			"round_tripper_error",
 			errorRoundTripper,
 			true,
-			AuthConfig{Region: "region", Service: "service", RoleArn: "arn:aws:iam::123456789012:role/IAMRole"},
+			AuthConfig{Region: "region", RoleArn: "arn:aws:iam::123456789012:role/IAMRole"},
 		},
 	}
 
@@ -183,7 +182,7 @@ func TestRoundTrip(t *testing.T) {
 			}))
 			defer server.Close()
 			serverURL, _ := url.Parse(server.URL)
-			authConfig := AuthConfig{Region: "region", Service: "service"}
+			authConfig := AuthConfig{Region: "region"}
 			rt, err := createSigningRoundTripperWithCredentials(authConfig, awsCreds, tt.rt)
 			assert.NoError(t, err)
 			req, err := http.NewRequest("POST", serverURL.String(), strings.NewReader(""))
@@ -201,7 +200,6 @@ func TestRoundTrip(t *testing.T) {
 }
 
 func TestCreateSigningRoundTripperWithCredentials(t *testing.T) {
-
 	defaultRoundTripper := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
 
 	// Some form of AWS credentials must be set up for tests to succeed
@@ -219,7 +217,7 @@ func TestCreateSigningRoundTripperWithCredentials(t *testing.T) {
 			"success_case",
 			awsCreds,
 			defaultRoundTripper,
-			AuthConfig{Region: "region", Service: "service"},
+			AuthConfig{Region: "region"},
 			true,
 			false,
 		},
@@ -227,7 +225,7 @@ func TestCreateSigningRoundTripperWithCredentials(t *testing.T) {
 			"success_case_no_auth_applied",
 			awsCreds,
 			defaultRoundTripper,
-			AuthConfig{Region: "", Service: ""},
+			AuthConfig{Region: ""},
 			false,
 			false,
 		},
@@ -235,7 +233,7 @@ func TestCreateSigningRoundTripperWithCredentials(t *testing.T) {
 			"no_credentials_provided_error",
 			nil,
 			defaultRoundTripper,
-			AuthConfig{Region: "region", Service: "service"},
+			AuthConfig{Region: "region"},
 			true,
 			true,
 		},
@@ -252,7 +250,6 @@ func TestCreateSigningRoundTripperWithCredentials(t *testing.T) {
 			if tt.authApplied {
 				sRtp := rtp.(*signingRoundTripper)
 				assert.Equal(t, sRtp.transport, tt.roundTripper)
-				assert.Equal(t, tt.authConfig.Service, sRtp.service)
 			} else {
 				assert.Equal(t, rtp, tt.roundTripper)
 			}
@@ -294,7 +291,9 @@ func TestCloneRequest(t *testing.T) {
 }
 
 func fetchMockCredentials() *credentials.Credentials {
-	return credentials.NewStaticCredentials("MOCK_AWS_ACCESS_KEY",
+	return credentials.NewStaticCredentials(
+		"MOCK_AWS_ACCESS_KEY",
 		"MOCK_AWS_SECRET_ACCESS_KEY",
-		"MOCK_TOKEN")
+		"MOCK_TOKEN",
+	)
 }

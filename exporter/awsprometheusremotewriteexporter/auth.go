@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package awsprometheusremotewriteexporter provides a Prometheus Remote Write Exporter with AWS Sigv4 authentication
 package awsprometheusremotewriteexporter
 
 import (
@@ -30,12 +29,13 @@ import (
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 )
 
+const ampService = "aps"
+
 // signingRoundTripper is a Custom RoundTripper that performs AWS Sig V4
 type signingRoundTripper struct {
 	transport http.RoundTripper
 	signer    *v4.Signer
 	region    string
-	service   string
 }
 
 // RoundTrip signs each outgoing request
@@ -58,7 +58,7 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	req2 := cloneRequest(req)
 
 	// Sign the request
-	_, err = si.signer.Sign(req2, body, si.service, si.region, time.Now())
+	_, err = si.signer.Sign(req2, body, ampService, si.region, time.Now())
 	if err != nil {
 		return nil, err
 	}
@@ -73,13 +73,11 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 }
 
 func newSigningRoundTripper(auth AuthConfig, next http.RoundTripper) (http.RoundTripper, error) {
-
 	creds := getCredsFromConfig(auth)
 	return createSigningRoundTripperWithCredentials(auth, creds, next)
 }
 
 func getCredsFromConfig(auth AuthConfig) *credentials.Credentials {
-
 	// Session Must ensure the Session is valid
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		Config: aws.Config{Region: aws.String(auth.Region)},
@@ -99,29 +97,21 @@ func getCredsFromConfig(auth AuthConfig) *credentials.Credentials {
 }
 
 func createSigningRoundTripperWithCredentials(auth AuthConfig, creds *credentials.Credentials, next http.RoundTripper) (http.RoundTripper, error) {
-	if !isValidAuth(auth) {
+	if auth.Region == "" {
+		// TODO(jbd): Automatically identify from the workspace URL.
 		return next, nil
 	}
-
 	if creds == nil {
 		return nil, errors.New("no AWS credentials exist")
 	}
 
 	signer := v4.NewSigner(creds)
-
 	rt := signingRoundTripper{
 		transport: next,
 		signer:    signer,
 		region:    auth.Region,
-		service:   auth.Service,
 	}
-
-	// return a RoundTripper
 	return &rt, nil
-}
-
-func isValidAuth(params AuthConfig) bool {
-	return params.Region != "" && params.Service != ""
 }
 
 func cloneRequest(r *http.Request) *http.Request {
