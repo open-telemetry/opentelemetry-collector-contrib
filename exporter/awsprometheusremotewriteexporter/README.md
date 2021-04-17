@@ -59,13 +59,14 @@ exporters:
         max_interval: 60s
         max_elapsed_time: 10m
     endpoint: "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write"
-    aws_auth:
-        region: "us-east-1" # need to match workspace region
-        role_arn: "arn:aws:iam::123456789012:role/aws-service-role/access"
     ca_file: "/var/lib/mycert.pem"
     write_buffer_size: 524288
     headers:
         X-Scope-OrgID: 234
+    aws_auth:
+        region: "us-east-1" # need to match workspace region
+        service: "aps"
+        role_arn: "arn:aws:iam::123456789012:role/aws-service-role/access"
     external_labels:
         key1: value1
         key2: value2
