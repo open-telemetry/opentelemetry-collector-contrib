@@ -1,9 +1,9 @@
 # Using Contexts:
 #   some jobs depend on secrets like API tokens to work correctly such as publishing to docker hub
 #   or reporting issues to GitHub. All such tokens are stored in CircleCI contexts (https://circleci.com/docs/2.0/contexts).
-#   
+#
 #   All tokens stored in a contexts are injected into a job as environment variables IF the pipeline that runs the job
-#   explicitly enables the context for the job. 
+#   explicitly enables the context for the job.
 #
 #   Contexts are protected with security groups. Jobs that use contexts will not run for commits from people who are not
 #   part of the approved security groups for the given context. This means that contributors who are not part of the
@@ -15,7 +15,7 @@
 #        This context makes GITHUB_TOKEN available to jobs. Jobs can use the token to authenticate with the GitHub API.
 #        We use this to report failures as issues back to the GitHub project.
 #        Any member of the OpenTelemetry GitHub organisation can run jobs that require this context e.g, loadtest-with-github-reports.
-#        
+#
 #      - dockerhub-token
 #        This contexts makes DOCKER_HUB_USERNAME and DOCKER_HUB_PASSWORD environment variables available to the jobs.
 #        This is used to publish docker images to Docker Hub.
@@ -197,6 +197,11 @@ commands:
             choco upgrade golang --version=1.15
             refreshenv
       - run:
+          name: Install mingw for cgo
+          command: |
+            choco install mingw
+            refreshenv
+      - run:
           name: Unit tests
           command: (Get-Childitem -Include go.mod -Recurse) | ForEach-Object { cd (Split-Path $_ -Parent); go test ./...; if ($LastExitCode -gt 0) { exit $LastExitCode } }
       - save_module_cache
@@ -273,7 +278,7 @@ workflows:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - loadtest:
           requires:
-            - cross-compile 
+            - cross-compile
           filters:
             branches:
               ignore: main
@@ -311,7 +316,7 @@ workflows:
       # this publish-check step run for PR builds (all branches except main).
       # it runs the same jobs as the previous public-check step but
       # it uses the versions that do not need access to the
-      # GITHUB_TOKEN secret. 
+      # GITHUB_TOKEN secret.
       - publish-check:
           requires:
             - lint

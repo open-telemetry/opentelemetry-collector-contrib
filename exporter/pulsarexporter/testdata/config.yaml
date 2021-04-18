@@ -1,0 +1,52 @@
+exporters:
+  pulsar/traces:
+    topic: otlp_traces
+    url: pulsar://localhost:6650
+  pulsar/metrics:
+    topic: otlp_metrics
+    url: pulsar://localhost:6650
+  pulsar/logs:
+    topic: otlp_logs
+    url: pulsar://localhost:6650
+  pulsar/allsettings:
+    url: pulsar://localhost:6650
+    connection_timeout: 10s
+    operation_timeout: 10s
+    auth:
+      name: token
+      params:
+        token: "123"
+    max_connections_per_broker: 10
+    topic: otlp_traces
+    encoding: otlp_proto
+    send_timeout: 1s
+    max_pending_messages: 1000
+    compression_type: 1
+    compression_level: 1
+    batching_max_publish_delay: 100ms
+    batching_max_messages: 1024
+    batching_max_size: 1048576
+    attribute_as_send_key: service.name
+  pulsar:
+    topic: otlp_traces
+    url: pulsar://localhost:6650
+processors:
+  nop:
+
+receivers:
+  nop:
+
+service:
+  pipelines:
+    traces/producer:
+      receivers: [ nop ]
+      processors: [ nop ]
+      exporters: [ pulsar/traces ]
+    metrics:
+      receivers: [ nop ]
+      processors: [ nop ]
+      exporters: [ pulsar/metrics ]
+    logs:
+      receivers: [ nop ]
+      processors: [ nop ]
+      exporters: [ pulsar/logs ]
