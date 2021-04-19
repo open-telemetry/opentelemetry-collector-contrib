@@ -18,6 +18,11 @@ from flask import Flask, request
 
 from opentelemetry import trace
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.instrumentation.propagators import (
+    TraceResponsePropagator,
+    get_global_response_propagator,
+    set_global_response_propagator,
+)
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.test.wsgitestutil import WsgiTestBase
 from opentelemetry.util.http import get_excluded_urls
@@ -118,6 +123,31 @@ class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
         self.assertEqual(span_list[0].name, "/hello/<int:helloid>")
         self.assertEqual(span_list[0].kind, trace.SpanKind.SERVER)
         self.assertEqual(span_list[0].attributes, expected_attrs)
+
+    def test_trace_response(self):
+        orig = get_global_response_propagator()
+
+        set_global_response_propagator(TraceResponsePropagator())
+        response = self.client.get("/hello/123")
+        headers = response.headers
+
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 1)
+        span = span_list[0]
+
+        self.assertIn("traceresponse", headers)
+        self.assertEqual(
+            headers["access-control-expose-headers"], "traceresponse",
+        )
+        self.assertEqual(
+            headers["traceresponse"],
+            "00-{0}-{1}-01".format(
+                trace.format_trace_id(span.get_span_context().trace_id),
+                trace.format_span_id(span.get_span_context().span_id),
+            ),
+        )
+
+        set_global_response_propagator(orig)
 
     def test_not_recording(self):
         mock_tracer = Mock()

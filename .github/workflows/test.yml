@@ -6,7 +6,7 @@ on:
     - 'release/*'
   pull_request:
 env:
-  CORE_REPO_SHA: cad261e5dae1fe986c87e6965664b45cc9ab73c3
+  CORE_REPO_SHA: 6bd163f6d670319eba6693b8465a068a1828f484
 
 jobs:
   build:
@@ -98,6 +98,6 @@ jobs:
         uses: actions/cache@v2
         with:
           path: .tox
-          key: tox-cache-${{ matrix.tox-environment }}-${{ hashFiles('tox.ini', 'dev-requirements.txt', 'docs-requirements.txt') }}
+          key: v2-tox-cache-${{ matrix.tox-environment }}-${{ hashFiles('tox.ini', 'dev-requirements.txt', 'docs-requirements.txt') }}
       - name: run tox
         run: tox -e ${{ matrix.tox-environment }}

@@ -34,6 +34,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#415](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/415))
 - `opentelemetry-instrumentation-tornado` Add request/response hooks.
   ([#426](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/426))
+- `opentelemetry-instrumenation-django` now supports trace response headers.
+  ([#436](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/436))
+- `opentelemetry-instrumenation-tornado` now supports trace response headers.
+  ([#436](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/436))
+- `opentelemetry-instrumenation-pyramid` now supports trace response headers.
+  ([#436](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/436))
+- `opentelemetry-instrumenation-falcon` now supports trace response headers.
+  ([#436](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/436))
+- `opentelemetry-instrumenation-flask` now supports trace response headers.
+  ([#436](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/436))
 
 ### Removed
 - Remove `http.status_text` from span attributes

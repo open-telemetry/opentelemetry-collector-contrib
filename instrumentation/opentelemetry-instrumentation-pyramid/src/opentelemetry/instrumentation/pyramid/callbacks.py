@@ -21,6 +21,9 @@ from pyramid.tweens import EXCVIEW
 
 import opentelemetry.instrumentation.wsgi as otel_wsgi
 from opentelemetry import context, trace
+from opentelemetry.instrumentation.propagators import (
+    get_global_response_propagator,
+)
 from opentelemetry.instrumentation.pyramid.version import __version__
 from opentelemetry.propagate import extract
 from opentelemetry.util._time import _time_ns
@@ -156,6 +159,10 @@ def trace_tween_factory(handler, registry):
                     response_or_exception.status,
                     response_or_exception.headers,
                 )
+
+                propagator = get_global_response_propagator()
+                if propagator:
+                    propagator.inject(response.headers)
 
                 activation = request.environ.get(_ENVIRON_ACTIVATION_KEY)
 

@@ -55,6 +55,9 @@ import opentelemetry.instrumentation.wsgi as otel_wsgi
 from opentelemetry import context, trace
 from opentelemetry.instrumentation.flask.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
+from opentelemetry.instrumentation.propagators import (
+    get_global_response_propagator,
+)
 from opentelemetry.propagate import extract
 from opentelemetry.util._time import _time_ns
 from opentelemetry.util.http import get_excluded_urls
@@ -90,6 +93,13 @@ def _rewrapped_app(wsgi_app):
         def _start_response(status, response_headers, *args, **kwargs):
             if not _excluded_urls.url_disabled(flask.request.url):
                 span = flask.request.environ.get(_ENVIRON_SPAN_KEY)
+
+                propagator = get_global_response_propagator()
+                if propagator:
+                    propagator.inject(
+                        response_headers,
+                        setter=otel_wsgi.default_response_propagation_setter,
+                    )
 
                 if span:
                     otel_wsgi.add_response_attributes(

@@ -6,13 +6,12 @@ sphinx-autodoc-typehints
 # doesn't work for pkg_resources.
 -e "git+https://github.com/open-telemetry/opentelemetry-python.git#egg=opentelemetry-api&subdirectory=opentelemetry-api"
 -e "git+https://github.com/open-telemetry/opentelemetry-python.git#egg=opentelemetry-sdk&subdirectory=opentelemetry-sdk"
+-e "git+https://github.com/open-telemetry/opentelemetry-python.git#egg=opentelemetry-instrumentation&subdirectory=opentelemetry-instrumentation"
 
 # Required by opentelemetry-instrumentation
 fastapi~=0.58.1
 psutil~=5.7.0
 pymemcache~=1.3
-
--e "git+https://github.com/open-telemetry/opentelemetry-python.git#egg=opentelemetry-instrumentation&subdirectory=opentelemetry-instrumentation"
 
 # Required by conf
 django>=2.2

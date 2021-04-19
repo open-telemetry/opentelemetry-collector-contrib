@@ -83,6 +83,10 @@ from wrapt import wrap_function_wrapper
 
 from opentelemetry import context, trace
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
+from opentelemetry.instrumentation.propagators import (
+    FuncSetter,
+    get_global_response_propagator,
+)
 from opentelemetry.instrumentation.tornado.version import __version__
 from opentelemetry.instrumentation.utils import (
     extract_attributes_from_object,
@@ -104,6 +108,8 @@ _OTEL_PATCHED_KEY = "_otel_patched_key"
 
 _excluded_urls = get_excluded_urls("TORNADO")
 _traced_request_attrs = get_traced_request_attrs("TORNADO")
+
+response_propagation_setter = FuncSetter(tornado.web.RequestHandler.add_header)
 
 
 class TornadoInstrumentor(BaseInstrumentor):
@@ -256,6 +262,14 @@ def _start_span(tracer, handler, start_time) -> _TraceContext:
     activation.__enter__()  # pylint: disable=E1101
     ctx = _TraceContext(activation, span, token)
     setattr(handler, _HANDLER_CONTEXT_KEY, ctx)
+
+    # finish handler is called after the response is sent back to
+    # the client so it is too late to inject trace response headers
+    # there.
+    propagator = get_global_response_propagator()
+    if propagator:
+        propagator.inject(handler, setter=response_propagation_setter)
+
     return ctx
 
 

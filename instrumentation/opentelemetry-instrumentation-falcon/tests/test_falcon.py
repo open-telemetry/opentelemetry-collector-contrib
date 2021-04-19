@@ -17,8 +17,13 @@ from unittest.mock import Mock, patch
 from falcon import testing
 
 from opentelemetry.instrumentation.falcon import FalconInstrumentor
+from opentelemetry.instrumentation.propagators import (
+    TraceResponsePropagator,
+    get_global_response_propagator,
+    set_global_response_propagator,
+)
 from opentelemetry.test.test_base import TestBase
-from opentelemetry.trace import StatusCode
+from opentelemetry.trace import StatusCode, format_span_id, format_trace_id
 from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
 
 from .app import make_app
@@ -196,6 +201,28 @@ class TestFalconInstrumentation(TestFalconBase):
         self.assertIn("query_string", span.attributes)
         self.assertEqual(span.attributes["query_string"], "q=abc")
         self.assertNotIn("not_available_attr", span.attributes)
+
+    def test_trace_response(self):
+        orig = get_global_response_propagator()
+        set_global_response_propagator(TraceResponsePropagator())
+
+        response = self.client().simulate_get(path="/hello?q=abc")
+        headers = response.headers
+        span = self.memory_exporter.get_finished_spans()[0]
+
+        self.assertIn("traceresponse", headers)
+        self.assertEqual(
+            headers["access-control-expose-headers"], "traceresponse",
+        )
+        self.assertEqual(
+            headers["traceresponse"],
+            "00-{0}-{1}-01".format(
+                format_trace_id(span.get_span_context().trace_id),
+                format_span_id(span.get_span_context().span_id),
+            ),
+        )
+
+        set_global_response_propagator(orig)
 
     def test_traced_not_recording(self):
         mock_tracer = Mock()

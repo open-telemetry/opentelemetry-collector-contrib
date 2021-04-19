@@ -20,6 +20,9 @@ from django.http import HttpRequest, HttpResponse
 
 from opentelemetry.context import attach, detach
 from opentelemetry.instrumentation.django.version import __version__
+from opentelemetry.instrumentation.propagators import (
+    get_global_response_propagator,
+)
 from opentelemetry.instrumentation.utils import extract_attributes_from_object
 from opentelemetry.instrumentation.wsgi import (
     add_response_attributes,
@@ -179,6 +182,11 @@ class _DjangoMiddleware(MiddlewareMixin):
                 response,
             )
 
+            propagator = get_global_response_propagator()
+            if propagator:
+                propagator.inject(response)
+
+            # record any exceptions raised while processing the request
             exception = request.META.pop(self._environ_exception_key, None)
             if _DjangoMiddleware._otel_response_hook:
                 _DjangoMiddleware._otel_response_hook(  # pylint: disable=not-callable

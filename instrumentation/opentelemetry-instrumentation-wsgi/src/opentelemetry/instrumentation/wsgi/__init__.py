@@ -75,14 +75,14 @@ class WSGIGetter(Getter):
         self, carrier: dict, key: str
     ) -> typing.Optional[typing.List[str]]:
         """Getter implementation to retrieve a HTTP header value from the
-            PEP3333-conforming WSGI environ
+             PEP3333-conforming WSGI environ
 
-       Args:
-            carrier: WSGI environ object
-            key: header name in environ object
-        Returns:
-            A list with a single string with the header value if it exists,
-            else None.
+        Args:
+             carrier: WSGI environ object
+             key: header name in environ object
+         Returns:
+             A list with a single string with the header value if it exists,
+             else None.
         """
         environ_key = "HTTP_" + key.upper().replace("-", "_")
         value = carrier.get(environ_key)
@@ -264,3 +264,14 @@ def _end_span_after_iterating(iterable, span, tracer, token):
             close()
         span.end()
         context.detach(token)
+
+
+# TODO: inherit from opentelemetry.instrumentation.propagators.Setter
+
+
+class ResponsePropagationSetter:
+    def set(self, carrier, key, value):  # pylint: disable=no-self-use
+        carrier.append((key, value))
+
+
+default_response_propagation_setter = ResponsePropagationSetter()

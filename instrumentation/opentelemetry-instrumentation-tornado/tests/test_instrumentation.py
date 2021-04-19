@@ -18,6 +18,11 @@ from unittest.mock import Mock, patch
 from tornado.testing import AsyncHTTPTestCase
 
 from opentelemetry import trace
+from opentelemetry.instrumentation.propagators import (
+    TraceResponsePropagator,
+    get_global_response_propagator,
+    set_global_response_propagator,
+)
 from opentelemetry.instrumentation.tornado import (
     TornadoInstrumentor,
     patch_handler_class,
@@ -369,6 +374,32 @@ class TestTornadoInstrumentation(TornadoTest):
             server_span, {"uri": "/pong?q=abc&b=123", "query": "q=abc&b=123"}
         )
         self.memory_exporter.clear()
+
+    def test_response_headers(self):
+        orig = get_global_response_propagator()
+        set_global_response_propagator(TraceResponsePropagator())
+
+        response = self.fetch("/")
+        headers = response.headers
+
+        spans = self.sorted_spans(self.memory_exporter.get_finished_spans())
+        self.assertEqual(len(spans), 3)
+        server_span = spans[1]
+
+        self.assertIn("traceresponse", headers)
+        self.assertEqual(
+            headers["access-control-expose-headers"], "traceresponse",
+        )
+        self.assertEqual(
+            headers["traceresponse"],
+            "00-{0}-{1}-01".format(
+                trace.format_trace_id(server_span.get_span_context().trace_id),
+                trace.format_span_id(server_span.get_span_context().span_id),
+            ),
+        )
+
+        self.memory_exporter.clear()
+        set_global_response_propagator(orig)
 
 
 class TornadoHookTest(TornadoTest):
