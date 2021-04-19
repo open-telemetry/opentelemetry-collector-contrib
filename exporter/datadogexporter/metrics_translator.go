@@ -250,7 +250,7 @@ func mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, bucke
 }
 
 // mapMetrics maps OTLP metrics into the DataDog format
-func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, md pdata.Metrics) (series []datadog.Metric, droppedTimeSeries int) {
+func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, fallbackHost string, md pdata.Metrics) (series []datadog.Metric, droppedTimeSeries int) {
 	pushTime := uint64(time.Now().UTC().UnixNano())
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
@@ -264,13 +264,14 @@ func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, md pdata.Metri
 			attributeTags = attributes.TagsFromAttributes(rm.Resource().Attributes())
 		}
 
-		host, hostFromAttrs := metadata.HostnameFromAttributes(rm.Resource().Attributes())
+		host, ok := metadata.HostnameFromAttributes(rm.Resource().Attributes())
+		if !ok {
+			host = fallbackHost
+		}
 
 		// Report the host as running
-		runningMetric := metrics.DefaultMetrics("metrics", pushTime)
-		if hostFromAttrs {
-			runningMetric[0].Host = &host
-		}
+		runningMetric := metrics.DefaultMetrics("metrics", host, pushTime)
+
 		series = append(series, runningMetric...)
 
 		ilms := rm.InstrumentationLibraryMetrics()
@@ -305,11 +306,8 @@ func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, md pdata.Metri
 					datapoints = mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), cfg.Buckets, attributeTags)
 				}
 
-				// Try to get host from resource
-				if hostFromAttrs {
-					for i := range datapoints {
-						datapoints[i].SetHost(host)
-					}
+				for i := range datapoints {
+					datapoints[i].SetHost(host)
 				}
 
 				series = append(series, datapoints...)

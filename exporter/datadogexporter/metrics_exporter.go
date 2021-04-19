@@ -69,9 +69,9 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 		})
 	}
 
-	ms, _ := mapMetrics(exp.cfg.Metrics, exp.prevPts, md)
-
-	metrics.ProcessMetrics(ms, exp.params.Logger, exp.cfg)
+	fallbackHost := metadata.GetHost(exp.params.Logger, exp.cfg)
+	ms, _ := mapMetrics(exp.cfg.Metrics, exp.prevPts, fallbackHost, md)
+	metrics.ProcessMetrics(ms, exp.cfg)
 
 	err := exp.client.PostMetrics(ms)
 	return err
