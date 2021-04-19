@@ -47,7 +47,7 @@ func (h *httpForwarder) Start(_ context.Context, host component.Host) error {
 
 	h.server = h.config.Ingress.ToServer(handler)
 	go func() {
-		if err := h.server.Serve(listener); err != nil {
+		if err := h.server.Serve(listener); err != http.ErrServerClosed {
 			host.ReportFatalError(err)
 		}
 	}()
