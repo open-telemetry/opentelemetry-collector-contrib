@@ -169,29 +169,33 @@ func TestTracesToHumioEvents_OrganizedByTags(t *testing.T) {
 	// Arrange
 	traces := pdata.NewTraces()
 
-	// Three spans for the same service-A across two different resources, as
-	// well a span from a separate service-B
+	// Three spans for the same trace across two different resources, as
+	// well a span from a separate trace
 	res1 := pdata.NewResourceSpans()
 	res1.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service-A")
 	res1.InstrumentationLibrarySpans().Resize(1)
 	res1.InstrumentationLibrarySpans().At(0).Spans().Resize(2)
+	res1.InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID(createTraceID("10000000000000000000000000000000")))
+	res1.InstrumentationLibrarySpans().At(0).Spans().At(1).SetTraceID(pdata.NewTraceID(createTraceID("10000000000000000000000000000000")))
 	traces.ResourceSpans().Append(res1)
 
 	res2 := pdata.NewResourceSpans()
-	res2.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service-A")
+	res2.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service-B")
 	res2.InstrumentationLibrarySpans().Resize(1)
 	res2.InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+	res2.InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID(createTraceID("10000000000000000000000000000000")))
 	traces.ResourceSpans().Append(res2)
 
 	res3 := pdata.NewResourceSpans()
-	res3.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service-B")
+	res3.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service-C")
 	res3.InstrumentationLibrarySpans().Resize(1)
 	res3.InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+	res3.InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID(createTraceID("20000000000000000000000000000000")))
 	traces.ResourceSpans().Append(res3)
 
-	// Organize by service name
+	// Organize by trace id
 	exp := newTracesExporter(&Config{
-		Tag: TagServiceName,
+		Tag: TagTraceID,
 	}, zap.NewNop(), &clientMock{})
 
 	// Act
@@ -201,9 +205,9 @@ func TestTracesToHumioEvents_OrganizedByTags(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, actual, 2)
 	for _, group := range actual {
-		assert.Contains(t, group.Tags, string(TagServiceName))
+		assert.Contains(t, group.Tags, string(TagTraceID))
 
-		if group.Tags[string(TagServiceName)] == "service-A" {
+		if group.Tags[string(TagTraceID)] == "10000000000000000000000000000000" {
 			assert.Len(t, group.Events, 3)
 		} else {
 			assert.Len(t, group.Events, 1)
@@ -427,6 +431,47 @@ func TestToHumioAttributesShaded(t *testing.T) {
 
 	// Assert
 	assert.Equal(t, expected, actual)
+}
+
+func TestTagFromSpan(t *testing.T) {
+	// Arrange
+	evt := &HumioStructuredEvent{
+		Timestamp: time.Now(),
+		AsUnix:    false,
+		Attributes: &HumioSpan{
+			TraceID:     "trace1",
+			ServiceName: "my_service",
+		},
+	}
+
+	testCases := []struct {
+		desc     string
+		tagger   Tagger
+		expected string
+	}{
+		{
+			desc:     "Tag with trace id",
+			tagger:   TagTraceID,
+			expected: "trace1",
+		},
+		{
+			desc:     "Tag with service name",
+			tagger:   TagServiceName,
+			expected: "my_service",
+		},
+		{
+			desc:     "No tagging",
+			tagger:   TagNone,
+			expected: "",
+		},
+	}
+
+	// Act
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			assert.Equal(t, tagFromSpan(evt, tC.tagger), tC.expected)
+		})
+	}
 }
 
 func TestShutdown(t *testing.T) {
