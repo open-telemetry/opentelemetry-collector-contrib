@@ -416,19 +416,21 @@ func (t *transformer) MetricAttributes(baseAttributes map[string]interface{}, at
 	for k, v := range baseAttributes {
 		rawMap[k] = v
 	}
-	attrMap.ForEach(func(k string, v string) {
+	attrMap.Range(func(k string, v string) bool {
 		// Only include attribute if not an override attribute
 		if _, isOverrideKey := t.OverrideAttributes[k]; !isOverrideKey {
 			rawMap[k] = v
 		}
+		return true
 	})
 
 	return rawMap
 }
 
 func (t *transformer) TrackAttributes(location attributeLocation, attributeMap pdata.AttributeMap) {
-	attributeMap.ForEach(func(k string, v pdata.AttributeValue) {
+	attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
 		statsKey := attributeStatsKey{location: location, attributeType: v.Type()}
 		t.details.attributeMetadataCount[statsKey]++
+		return true
 	})
 }
