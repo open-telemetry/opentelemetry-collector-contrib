@@ -43,7 +43,7 @@ func (s *brokerScraper) Name() string {
 func (s *brokerScraper) start(context.Context, component.Host) error {
 	client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
 	if err != nil {
-		return fmt.Errorf("failed to create client while starting brokers scraper:%w", err)
+		return fmt.Errorf("failed to create client while starting brokers scraper: %w", err)
 	}
 	s.client = client
 	return nil

@@ -33,7 +33,7 @@ const (
 	consumersScraperName   = "consumers"
 )
 
-type createKafkaScraper = func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.ResourceMetricsScraper, error)
+type createKafkaScraper func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.ResourceMetricsScraper, error)
 
 var (
 	allScrapers = map[string]createKafkaScraper{
