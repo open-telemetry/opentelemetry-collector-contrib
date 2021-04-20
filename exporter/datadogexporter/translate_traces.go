@@ -535,7 +535,7 @@ func getSpanErrorAndSetTags(s pdata.Span, tags map[string]string) int32 {
 //  that escaped the scope of the span ("exception.escaped" == true) instead of the last exception event
 //  in the case that these events differ.
 //
-//  https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/exceptions.md#attributes
+//  https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/exceptions.md#attributes
 func extractErrorTagsFromEvents(s pdata.Span, tags map[string]string) {
 	evts := s.Events()
 	for i := evts.Len() - 1; i >= 0; i-- {
