@@ -22,6 +22,7 @@ or clients).
 | Rename label values           | For label `state`, rename value `idle` to `-`                                                   |
 | Delete data points            | Delete all points where label `state` has value `idle`                                          |
 | Toggle data type              | Change from `int` data points to `double` data points                                           |
+| Scale value                   | Multiply values by 1000 to convert from seconds to milliseconds                                 |
 | Aggregate across label sets   | Retain only the label `state`, average all points with the same value for this label            |
 | Aggregate across label values | For label `state`, sum points where the value is `user` or `system` into `used = user + system` |
 
@@ -78,7 +79,7 @@ transforms:
     # operations contain a list of operations that will be performed on the resulting metric(s)
     operations:
         # action defines the type of operation that will be performed, see examples below for more details
-      - action: {add_label, update_label, delete_label_value, toggle_scalar_data_type, aggregate_labels, aggregate_label_values}
+      - action: {add_label, update_label, delete_label_value, toggle_scalar_data_type, scale_value, aggregate_labels, aggregate_label_values}
         # label specifies the label to operate on
         label: <label>
         # new_label specifies the updated name of the label; if action is add_label, new_label is required
@@ -93,6 +94,8 @@ transforms:
         label_set: [labels...]
         # aggregation_type defines how data points will be aggregated; if action is aggregate_labels or aggregate_label_values, aggregation_type is required
         aggregation_type: {sum, mean, min, max}
+        # scale specifies the scalar to apply to values
+        scale: <scalar>
         # value_actions contain a list of operations that will be performed on the selected label
         value_actions:
             # value specifies the value to operate on
@@ -232,6 +235,16 @@ include: system.cpu.usage
 action: update
 operation:
   - action: toggle_scalar_data_type
+```
+
+### Scale value
+```yaml
+# scale CPU usage from seconds to milliseconds
+include: system.cpu.usage
+action: update
+operation:
+  - action: scale_value
+    scale: 1000
 ```
 
 ### Aggregate labels
