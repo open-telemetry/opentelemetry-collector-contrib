@@ -2,10 +2,55 @@
 
 ## Unreleased
 
+## v0.25.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.25.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.25.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
 ## 🚀 New components 🚀
 
 - `kafkametricsreceiver` new receiver component for collecting metrics about a kafka cluster - primarily lag and offset. [configuration instructions](receiver/kafkametricsreceiver/README.md)
+- `file_storage` extension to read and write data to the local file system (#3087)
 
+## 🛑 Breaking changes 🛑
+
+- `newrelic` exporter (#3091):
+  - Removal of common attributes (use opentelemetry collector resource processor to add attributes)
+  - Drop support for cumulative metrics being sent to New Relic via a collector
+
+## 💡 Enhancements 💡
+
+- Update `opentelemetry-log-collection` to v0.17.0 for log receivers (#3017)
+- `datadog` exporter:
+  - Add `peer.service` priority instead of `service.name` (#2817)
+  - Improve support of semantic conventions for K8s, Azure and ECS (#2623)
+- Improve and batch logs translation for stanza (#2892)
+- `statsd` receiver: Add timing/histogram as OTLP gauge (#2973)
+- `honeycomb` exporter: Add Retry and Queue settings (#2714)
+- `resourcedetection` processor:
+  - Add AKS resource detector (#3035)
+  - Use conventions package constants for ECS detector (#3171)
+- `sumologic` exporter: Add graphite format (#2695)
+- Add trace attributes to the log entry for stanza (#3018)
+- `splunk_hec` exporter: Send log record name as part of the HEC log event (#3119)
+- `newrelic` exporter (#3091):
+  - Add support for logs
+  - Performance improvements
+  - Optimizations to the New Relic payload to reduce payload size
+  - Metrics generated for monitoring the exporter
+  - Insert Key vs License keys are auto-detected in some cases
+  - Collector version information is properly extracted via the application start info parameters
+
+## 🧰 Bug fixes 🧰
+
+- `splunk_hec` exporter: Fix sending log payload with missing the GZIP footer (#3032)
+- `awsxray` exporter: Remove propagation of error on shutdown (#2999)
+- `resourcedetection` processor:
+  - Correctly report DRAGONFLYBSD value (#3100)
+  - Fallback to `os.Hostname` when FQDN is not available (#3099)
+- `httpforwarder` extension: Do not report ErrServerClosed when shutting down the service (#3173)
+- `collectd` receiver: Do not report ErrServerClosed when shutting down the service (#3178)
 
 ## v0.24.0
 
