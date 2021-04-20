@@ -79,6 +79,14 @@ func newTracesExporter(
 				output, localErr := xrayClient.PutTraceSegments(&input)
 				if localErr != nil {
 					logger.Debug("response error", zap.Error(localErr))
+					// refresh xrayClient with new aws session if aws credentials is expired
+					if awsErr, ok := localErr.(awserr.RequestFailure); ok && awsErr.Code() == awsutil.ErrCodeExpiredTokenException {
+						awsConfig, session, err = awsutil.GetAWSConfigSession(logger, cn, &config.(*Config).AWSSessionSettings)
+						if err == nil {
+							xrayClient = newXRay(logger, awsConfig, params.ApplicationStartInfo, session)
+							logger.Info("created new xray client to pick up new aws credentials")
+						}
+					}
 					err = wrapErrorIfBadRequest(&localErr) // record error
 				}
 				if output != nil {
@@ -99,7 +107,7 @@ func newTracesExporter(
 
 func wrapErrorIfBadRequest(err *error) error {
 	_, ok := (*err).(awserr.RequestFailure)
-	if ok && (*err).(awserr.RequestFailure).StatusCode() < 500 {
+	if ok && (*err).(awserr.RequestFailure).Code() != awsutil.ErrCodeExpiredTokenException && (*err).(awserr.RequestFailure).StatusCode() < 500 {
 		return consumererror.Permanent(*err)
 	}
 	return *err

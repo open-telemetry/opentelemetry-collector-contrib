@@ -35,6 +35,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 func init() {
@@ -49,8 +51,12 @@ type mockPusher struct {
 func (p *mockPusher) AddLogEntry(logEvent *LogEvent) error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
+	if errorStr == "expired token" {
+		return awserr.NewRequestFailure(awserr.New(awsutil.ErrCodeExpiredTokenException, "aws errors", nil), 400, "").(error)
+	}
+
 	if errorStr != "" {
-		return awserr.NewRequestFailure(nil, 400, "").(error)
+		return awserr.NewRequestFailure(awserr.New("invalidException", "aws errors", nil), 400, "").(error)
 	}
 	return nil
 }
@@ -58,8 +64,11 @@ func (p *mockPusher) AddLogEntry(logEvent *LogEvent) error {
 func (p *mockPusher) ForceFlush() error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
+	if errorStr == "expired token" {
+		return awserr.NewRequestFailure(awserr.New(awsutil.ErrCodeExpiredTokenException, "aws errors", nil), 400, "").(error)
+	}
 	if errorStr != "" {
-		return awserr.NewRequestFailure(nil, 400, "").(error)
+		return awserr.NewRequestFailure(awserr.New("invalidException", "aws errors", nil), 400, "").(error)
 	}
 	return nil
 }
@@ -473,6 +482,7 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	pusher := new(mockPusher)
 	pusher.On("AddLogEntry", nil).Return("some error").Once()
 	pusher.On("AddLogEntry", nil).Return("").Twice()
+	pusher.On("AddLogEntry", nil).Return("expired token").Once()
 	pusher.On("ForceFlush", nil).Return("some error").Once()
 	pusher.On("ForceFlush", nil).Return("").Once()
 	pusher.On("ForceFlush", nil).Return("some error").Once()
@@ -527,6 +537,7 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	assert.NotNil(t, exp.(*emfExporter).pushMetricsData(ctx, md))
 	assert.NotNil(t, exp.(*emfExporter).pushMetricsData(ctx, md))
 	assert.Nil(t, exp.(*emfExporter).pushMetricsData(ctx, md))
+	assert.False(t, consumererror.IsPermanent(exp.(*emfExporter).pushMetricsData(ctx, md)))
 	assert.Nil(t, exp.(*emfExporter).Shutdown(ctx))
 }
 
@@ -606,10 +617,10 @@ func TestNewExporterWithoutSession(t *testing.T) {
 }
 
 func TestWrapErrorIfBadRequest(t *testing.T) {
-	awsErr := awserr.NewRequestFailure(nil, 400, "").(error)
+	awsErr := awserr.NewRequestFailure(awserr.New("awserr", "some err", nil), 400, "").(error)
 	err := wrapErrorIfBadRequest(&awsErr)
 	assert.True(t, consumererror.IsPermanent(err))
-	awsErr = awserr.NewRequestFailure(nil, 500, "").(error)
+	awsErr = awserr.NewRequestFailure(awserr.New("awserr", "some err", nil), 500, "").(error)
 	err = wrapErrorIfBadRequest(&awsErr)
 	assert.False(t, consumererror.IsPermanent(err))
 }

@@ -52,6 +52,7 @@ type emfExporter struct {
 	pusherMapLock sync.Mutex
 	retryCnt      int
 	collectorID   string
+	appInfo       component.ApplicationStartInfo
 }
 
 // New func creates an EMF Exporter instance with data push callback func
@@ -86,6 +87,7 @@ func New(
 		retryCnt:         *awsConfig.MaxRetries,
 		logger:           logger,
 		collectorID:      collectorIdentifier.String(),
+		appInfo:          params.ApplicationStartInfo,
 	}
 	emfExporter.groupStreamToPusherMap = map[string]map[string]Pusher{}
 
@@ -191,7 +193,7 @@ func (emf *emfExporter) getPusher(logGroup, logStream string) Pusher {
 
 	var pusher Pusher
 	if pusher, ok = streamToPusherMap[logStream]; !ok {
-		pusher = NewPusher(aws.String(logGroup), aws.String(logStream), emf.retryCnt, emf.svcStructuredLog, emf.logger)
+		pusher = NewPusher(aws.String(logGroup), aws.String(logStream), emf)
 		streamToPusherMap[logStream] = pusher
 	}
 	return pusher
@@ -235,9 +237,9 @@ func (emf *emfExporter) Start(ctx context.Context, host component.Host) error {
 }
 
 func wrapErrorIfBadRequest(err *error) error {
-	_, ok := (*err).(awserr.RequestFailure)
-	if ok && (*err).(awserr.RequestFailure).StatusCode() < 500 {
+	if _, ok := (*err).(awserr.RequestFailure); ok && (*err).(awserr.RequestFailure).StatusCode() < 500 && (*err).(awserr.RequestFailure).Code() != awsutil.ErrCodeExpiredTokenException {
 		return consumererror.Permanent(*err)
 	}
+
 	return *err
 }

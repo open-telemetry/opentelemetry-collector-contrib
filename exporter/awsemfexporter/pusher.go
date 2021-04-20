@@ -21,8 +21,13 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 const (
@@ -198,30 +203,32 @@ type pusher struct {
 	streamToken      string // no init value
 	svcStructuredLog LogClient
 	retryCnt         int
+	config           config.Exporter
+	appInfo          component.ApplicationStartInfo
 }
 
 // NewPusher creates a pusher instance
-func NewPusher(logGroupName, logStreamName *string, retryCnt int,
-	svcStructuredLog LogClient, logger *zap.Logger) Pusher {
+func NewPusher(logGroupName, logStreamName *string, emf *emfExporter) Pusher {
 
-	pusher := newPusher(logGroupName, logStreamName, svcStructuredLog, logger)
+	pusher := newPusher(logGroupName, logStreamName, emf)
 
 	pusher.retryCnt = defaultRetryCount
-	if retryCnt > 0 {
-		pusher.retryCnt = retryCnt
+	if emf.retryCnt > 0 {
+		pusher.retryCnt = emf.retryCnt
 	}
 
 	return pusher
 }
 
 // Only create a pusher, but not start the instance.
-func newPusher(logGroupName, logStreamName *string,
-	svcStructuredLog LogClient, logger *zap.Logger) *pusher {
+func newPusher(logGroupName, logStreamName *string, emf *emfExporter) *pusher {
 	pusher := &pusher{
 		logGroupName:     logGroupName,
 		logStreamName:    logStreamName,
-		svcStructuredLog: svcStructuredLog,
-		logger:           logger,
+		svcStructuredLog: emf.svcStructuredLog,
+		logger:           emf.logger,
+		config:           emf.config,
+		appInfo:          emf.appInfo,
 	}
 	pusher.logEventBatch = newLogEventBatch(logGroupName, logStreamName)
 
@@ -291,6 +298,15 @@ func (p *pusher) pushLogEventBatch(req interface{}) error {
 	var err error
 	tmpToken, err = p.svcStructuredLog.PutLogEvents(putLogEventsInput, p.retryCnt)
 
+	awsErr, ok := err.(awserr.RequestFailure)
+	// create new cloudwatch log client for the pusher if the token has been expired
+	// and resend the request
+	if ok && awsErr.Code() == awsutil.ErrCodeExpiredTokenException {
+		p.renewStructureLogClient()
+		p.logger.Info("renewed the cwlog client with new session token")
+		tmpToken, err = p.svcStructuredLog.PutLogEvents(putLogEventsInput, p.retryCnt)
+	}
+
 	if err != nil {
 		return err
 	}
@@ -341,4 +357,13 @@ func (p *pusher) renewLogEventBatch() *LogEventBatch {
 	}
 
 	return prevBatch
+}
+
+func (p *pusher) renewStructureLogClient() error {
+	awsConfig, session, err := awsutil.GetAWSConfigSession(p.logger, &awsutil.Conn{}, &p.config.(*Config).AWSSessionSettings)
+	if err != nil {
+		return err
+	}
+	p.svcStructuredLog = NewCloudWatchLogsClient(p.logger, awsConfig, p.appInfo, session)
+	return nil
 }

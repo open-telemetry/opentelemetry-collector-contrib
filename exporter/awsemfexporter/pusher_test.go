@@ -65,7 +65,7 @@ func TestConcurrentPushAndFlush(t *testing.T) {
 }
 
 func newMockPusherWithEventCheck(check func(msg string)) (Pusher, string) {
-	logger := zap.NewNop()
+	emf := &emfExporter{}
 	tmpfolder, _ := ioutil.TempDir("", "")
 	svc := NewAlwaysPassMockLogClient(func(args mock.Arguments) {
 		input := args.Get(0).(*cloudwatchlogs.PutLogEventsInput)
@@ -74,7 +74,9 @@ func newMockPusherWithEventCheck(check func(msg string)) (Pusher, string) {
 			check(eventMsg)
 		}
 	})
-	p := newPusher(&logGroup, &logStreamName, svc, logger)
+	emf.logger = zap.NewNop()
+	emf.svcStructuredLog = svc
+	p := newPusher(&logGroup, &logStreamName, emf)
 	return p, tmpfolder
 }
 
@@ -175,10 +177,12 @@ func TestLogEventBatch_sortLogEvents(t *testing.T) {
 
 // Need to remove the tmp state folder after testing.
 func newMockPusher() (*pusher, string) {
-	logger := zap.NewNop()
+	emf := &emfExporter{}
 	tmpfolder, _ := ioutil.TempDir("", "")
 	svc := NewAlwaysPassMockLogClient(func(args mock.Arguments) {})
-	p := newPusher(&logGroup, &logStreamName, svc, logger)
+	emf.logger = zap.NewNop()
+	emf.svcStructuredLog = svc
+	p := newPusher(&logGroup, &logStreamName, emf)
 	return p, tmpfolder
 }
 

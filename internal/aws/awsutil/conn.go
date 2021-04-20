@@ -34,6 +34,11 @@ import (
 	"golang.org/x/net/http2"
 )
 
+const (
+	ErrCodeThrottlingException   = "ThrottlingException"
+	ErrCodeExpiredTokenException = "ExpiredTokenException"
+)
+
 type ConnAttr interface {
 	newAWSSession(logger *zap.Logger, roleArn string, region string) (*session.Session, error)
 	getEC2Region(s *session.Session) (string, error)
