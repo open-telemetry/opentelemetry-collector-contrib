@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/simple"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -40,6 +41,15 @@ type topicScraper struct {
 
 func (s *topicScraper) Name() string {
 	return topicsScraperName
+}
+
+func (s *topicScraper) start(context.Context, component.Host) error {
+	client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create client while starting topics scraper: %w", err)
+	}
+	s.client = client
+	return nil
 }
 
 func (s *topicScraper) shutdown(context.Context) error {
@@ -118,12 +128,7 @@ func createTopicsScraper(_ context.Context, config Config, saramaConfig *sarama.
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile topic filter: %w", err)
 	}
-	client, err := newSaramaClient(config.Brokers, saramaConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create sarama client: %w", err)
-	}
 	s := topicScraper{
-		client:       client,
 		logger:       logger,
 		topicFilter:  topicFilter,
 		saramaConfig: saramaConfig,
@@ -133,5 +138,6 @@ func createTopicsScraper(_ context.Context, config Config, saramaConfig *sarama.
 		s.Name(),
 		s.scrape,
 		scraperhelper.WithShutdown(s.shutdown),
+		scraperhelper.WithStart(s.start),
 	), nil
 }
