@@ -8,10 +8,6 @@ exporters:
     awsprometheusremotewrite:
     awsprometheusremotewrite/2:
         namespace: "test-space"
-        sending_queue:
-            enabled: true
-            num_consumers: 2
-            queue_size: 10
         retry_on_failure:
             enabled: true
             initial_interval: 10s
