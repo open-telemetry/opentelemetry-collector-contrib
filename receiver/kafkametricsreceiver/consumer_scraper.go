@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/simple"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -36,11 +37,29 @@ type consumerScraper struct {
 	groupFilter  *regexp.Regexp
 	topicFilter  *regexp.Regexp
 	clusterAdmin sarama.ClusterAdmin
+	saramaConfig *sarama.Config
 	config       Config
 }
 
 func (s *consumerScraper) Name() string {
 	return consumersScraperName
+}
+
+func (s *consumerScraper) start(context.Context, component.Host) error {
+	client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create client while starting consumer scraper: %w", err)
+	}
+	clusterAdmin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
+	if err != nil {
+		if client != nil {
+			_ = client.Close()
+		}
+		return fmt.Errorf("failed to create cluster admin while starting consumer scraper: %w", err)
+	}
+	s.client = client
+	s.clusterAdmin = clusterAdmin
+	return nil
 }
 
 func (s *consumerScraper) shutdown(_ context.Context) error {
@@ -163,25 +182,17 @@ func createConsumerScraper(_ context.Context, config Config, saramaConfig *saram
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile topic filter: %w", err)
 	}
-	client, err := newSaramaClient(config.Brokers, saramaConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create sarama client: %w", err)
-	}
-	clusterAdmin, err := newClusterAdmin(config.Brokers, saramaConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create sarama cluster admin: %w", err)
-	}
 	s := consumerScraper{
-		client:       client,
 		logger:       logger,
 		groupFilter:  groupFilter,
 		topicFilter:  topicFilter,
-		clusterAdmin: clusterAdmin,
 		config:       config,
+		saramaConfig: saramaConfig,
 	}
 	return scraperhelper.NewResourceMetricsScraper(
 		s.Name(),
 		s.scrape,
 		scraperhelper.WithShutdown(s.shutdown),
+		scraperhelper.WithStart(s.start),
 	), nil
 }

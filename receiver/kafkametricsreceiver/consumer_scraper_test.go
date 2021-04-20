@@ -61,29 +61,49 @@ func TestConsumerScraper_createConsumerScraper(t *testing.T) {
 	newSaramaClient = mockNewSaramaClient
 	newClusterAdmin = mockNewClusterAdmin
 	ms, err := createConsumerScraper(context.Background(), Config{}, sc, zap.NewNop())
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, ms)
 }
 
-func TestConsumerScraper_createScraper_handles_client_error(t *testing.T) {
+func TestConsumerScraper_startScraper_handles_client_error(t *testing.T) {
 	newSaramaClient = func(addrs []string, conf *sarama.Config) (sarama.Client, error) {
 		return nil, fmt.Errorf("new client failed")
 	}
 	sc := sarama.NewConfig()
 	ms, err := createConsumerScraper(context.Background(), Config{}, sc, zap.NewNop())
-	assert.NotNil(t, err)
-	assert.Nil(t, ms)
+	assert.NotNil(t, ms)
+	assert.Nil(t, err)
+	err = ms.Start(context.Background(), nil)
+	assert.Error(t, err)
 }
 
-func TestConsumerScraper_createScraper_handles_clusterAdmin_error(t *testing.T) {
-	newSaramaClient = mockNewSaramaClient
+func TestConsumerScraper_startScraper_handles_clusterAdmin_error(t *testing.T) {
+	newSaramaClient = func(addrs []string, conf *sarama.Config) (sarama.Client, error) {
+		client := newMockClient()
+		client.Mock.
+			On("Close").Return(nil)
+		return client, nil
+	}
 	newClusterAdmin = func(addrs []string, conf *sarama.Config) (sarama.ClusterAdmin, error) {
 		return nil, fmt.Errorf("new cluster admin failed")
 	}
 	sc := sarama.NewConfig()
 	ms, err := createConsumerScraper(context.Background(), Config{}, sc, zap.NewNop())
-	assert.NotNil(t, err)
-	assert.Nil(t, ms)
+	assert.Nil(t, err)
+	assert.NotNil(t, ms)
+	err = ms.Start(context.Background(), nil)
+	assert.Error(t, err)
+}
+
+func TestConsumerScraperStart(t *testing.T) {
+	newSaramaClient = mockNewSaramaClient
+	newClusterAdmin = mockNewClusterAdmin
+	sc := sarama.NewConfig()
+	ms, err := createConsumerScraper(context.Background(), Config{}, sc, zap.NewNop())
+	assert.Nil(t, err)
+	assert.NotNil(t, ms)
+	err = ms.Start(context.Background(), nil)
+	assert.NoError(t, err)
 }
 
 func TestConsumerScraper_createScraper_handles_invalid_topic_match(t *testing.T) {
@@ -93,7 +113,7 @@ func TestConsumerScraper_createScraper_handles_invalid_topic_match(t *testing.T)
 	ms, err := createConsumerScraper(context.Background(), Config{
 		TopicMatch: "[",
 	}, sc, zap.NewNop())
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, ms)
 }
 
@@ -104,7 +124,7 @@ func TestConsumerScraper_createScraper_handles_invalid_group_match(t *testing.T)
 	ms, err := createConsumerScraper(context.Background(), Config{
 		GroupMatch: "[",
 	}, sc, zap.NewNop())
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, ms)
 }
 
@@ -118,7 +138,7 @@ func TestConsumerScraper_scrape(t *testing.T) {
 		groupFilter:  filter,
 	}
 	ms, err := cs.scrape(context.Background())
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, ms)
 }
 
@@ -135,7 +155,7 @@ func TestConsumerScraper_scrape_handlesListTopicError(t *testing.T) {
 		groupFilter:  filter,
 	}
 	_, err := cs.scrape(context.Background())
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestConsumerScraper_scrape_handlesListConsumerGroupError(t *testing.T) {
@@ -150,7 +170,7 @@ func TestConsumerScraper_scrape_handlesListConsumerGroupError(t *testing.T) {
 		groupFilter:  filter,
 	}
 	_, err := cs.scrape(context.Background())
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestConsumerScraper_scrape_handlesDescribeConsumerError(t *testing.T) {
@@ -165,7 +185,7 @@ func TestConsumerScraper_scrape_handlesDescribeConsumerError(t *testing.T) {
 		groupFilter:  filter,
 	}
 	_, err := cs.scrape(context.Background())
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestConsumerScraper_scrape_handlesOffsetPartialError(t *testing.T) {
@@ -183,7 +203,7 @@ func TestConsumerScraper_scrape_handlesOffsetPartialError(t *testing.T) {
 	}
 	s, err := cs.scrape(context.Background())
 	assert.NotNil(t, s)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestConsumerScraper_scrape_handlesPartitionPartialError(t *testing.T) {
@@ -201,5 +221,5 @@ func TestConsumerScraper_scrape_handlesPartitionPartialError(t *testing.T) {
 	}
 	s, err := cs.scrape(context.Background())
 	assert.NotNil(t, s)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }

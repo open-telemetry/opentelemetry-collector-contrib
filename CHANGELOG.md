@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 🚀 New components 🚀
+
+- `kafkametricsreceiver` new receiver component for collecting metrics about a kafka cluster - primarily lag and offset. [configuration instructions](receiver/kafkametricsreceiver/README.md)
+
+
 ## v0.24.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.24.0 (Beta) 🎉
