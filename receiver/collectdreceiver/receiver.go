@@ -88,7 +88,7 @@ func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error
 		err = nil
 		go func() {
 			err = cdr.server.ListenAndServe()
-			if err != nil {
+			if err != http.ErrServerClosed {
 				host.ReportFatalError(fmt.Errorf("error starting collectd receiver: %v", err))
 			}
 		}()
