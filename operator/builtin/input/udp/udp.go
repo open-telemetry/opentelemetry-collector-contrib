@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strconv"
 	"sync"
 
 	"go.uber.org/zap"
@@ -42,6 +43,7 @@ type UDPInputConfig struct {
 	helper.InputConfig `yaml:",inline"`
 
 	ListenAddress string `json:"listen_address,omitempty" yaml:"listen_address,omitempty"`
+	AddAttributes bool   `json:"add_attributes,omitempty" yaml:"add_attributes,omitempty"`
 }
 
 // Build will build a udp input operator.
@@ -64,6 +66,7 @@ func (c UDPInputConfig) Build(context operator.BuildContext) ([]operator.Operato
 		InputOperator: inputOperator,
 		address:       address,
 		buffer:        make([]byte, 8192),
+		addAttributes: c.AddAttributes,
 	}
 	return []operator.Operator{udpInput}, nil
 }
@@ -72,7 +75,8 @@ func (c UDPInputConfig) Build(context operator.BuildContext) ([]operator.Operato
 type UDPInput struct {
 	buffer []byte
 	helper.InputOperator
-	address *net.UDPAddr
+	address       *net.UDPAddr
+	addAttributes bool
 
 	connection net.PacketConn
 	cancel     context.CancelFunc
@@ -102,7 +106,7 @@ func (u *UDPInput) goHandleMessages(ctx context.Context) {
 		defer u.wg.Done()
 
 		for {
-			message, err := u.readMessage()
+			message, remoteAddr, err := u.readMessage()
 			if err != nil {
 				select {
 				case <-ctx.Done():
@@ -119,23 +123,36 @@ func (u *UDPInput) goHandleMessages(ctx context.Context) {
 				continue
 			}
 
+			if u.addAttributes {
+				entry.AddAttribute("net.transport", "IP.UDP")
+				if addr, ok := u.connection.LocalAddr().(*net.UDPAddr); ok {
+					entry.AddAttribute("net.host.ip", addr.IP.String())
+					entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
+				}
+
+				if addr, ok := remoteAddr.(*net.UDPAddr); ok {
+					entry.AddAttribute("net.peer.ip", addr.IP.String())
+					entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
+				}
+			}
+
 			u.Write(ctx, entry)
 		}
 	}()
 }
 
 // readMessage will read log messages from the connection.
-func (u *UDPInput) readMessage() (string, error) {
-	n, _, err := u.connection.ReadFrom(u.buffer)
+func (u *UDPInput) readMessage() (string, net.Addr, error) {
+	n, addr, err := u.connection.ReadFrom(u.buffer)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	// Remove trailing characters and NULs
 	for ; (n > 0) && (u.buffer[n-1] < 32); n-- {
 	}
 
-	return string(u.buffer[:n]), nil
+	return string(u.buffer[:n]), addr, nil
 }
 
 // Stop will stop listening for udp messages.

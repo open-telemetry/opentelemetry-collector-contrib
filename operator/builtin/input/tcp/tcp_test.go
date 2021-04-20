@@ -18,6 +18,7 @@ import (
 	"crypto/tls"
 	"net"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -116,6 +117,66 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 			select {
 			case entry := <-entryChan:
 				require.Equal(t, expectedMessage, entry.Body)
+			case <-time.After(time.Second):
+				require.FailNow(t, "Timed out waiting for message to be written")
+			}
+		}
+
+		select {
+		case entry := <-entryChan:
+			require.FailNow(t, "Unexpected entry: %s", entry)
+		case <-time.After(100 * time.Millisecond):
+			return
+		}
+	}
+}
+
+func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) {
+	return func(t *testing.T) {
+		cfg := NewTCPInputConfig("test_id")
+		cfg.ListenAddress = ":0"
+		cfg.AddAttributes = true
+
+		ops, err := cfg.Build(testutil.NewBuildContext(t))
+		require.NoError(t, err)
+		op := ops[0]
+
+		mockOutput := testutil.Operator{}
+		tcpInput := op.(*TCPInput)
+		tcpInput.InputOperator.OutputOperators = []operator.Operator{&mockOutput}
+
+		entryChan := make(chan *entry.Entry, 1)
+		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+			entryChan <- args.Get(1).(*entry.Entry)
+		}).Return(nil)
+
+		err = tcpInput.Start(testutil.NewMockPersister("test"))
+		require.NoError(t, err)
+		defer tcpInput.Stop()
+
+		conn, err := net.Dial("tcp", tcpInput.listener.Addr().String())
+		require.NoError(t, err)
+		defer conn.Close()
+
+		_, err = conn.Write(input)
+		require.NoError(t, err)
+
+		for _, expectedMessage := range expected {
+			select {
+			case entry := <-entryChan:
+				expectedAttributes := map[string]string{
+					"net.transport": "IP.TCP",
+				}
+				if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
+					expectedAttributes["net.host.ip"] = addr.IP.String()
+					expectedAttributes["net.host.port"] = strconv.FormatInt(int64(addr.Port), 10)
+				}
+				if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
+					expectedAttributes["net.peer.ip"] = addr.IP.String()
+					expectedAttributes["net.peer.port"] = strconv.FormatInt(int64(addr.Port), 10)
+				}
+				require.Equal(t, expectedMessage, entry.Body)
+				require.Equal(t, expectedAttributes, entry.Attributes)
 			case <-time.After(time.Second):
 				require.FailNow(t, "Timed out waiting for message to be written")
 			}
@@ -280,6 +341,11 @@ func TestBuild(t *testing.T) {
 func TestTcpInput(t *testing.T) {
 	t.Run("Simple", tcpInputTest([]byte("message\n"), []string{"message"}))
 	t.Run("CarriageReturn", tcpInputTest([]byte("message\r\n"), []string{"message"}))
+}
+
+func TestTcpInputAattributes(t *testing.T) {
+	t.Run("Simple", tcpInputAttributesTest([]byte("message\n"), []string{"message"}))
+	t.Run("CarriageReturn", tcpInputAttributesTest([]byte("message\r\n"), []string{"message"}))
 }
 
 func TestTLSTcpInput(t *testing.T) {
