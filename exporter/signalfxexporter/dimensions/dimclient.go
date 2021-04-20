@@ -35,7 +35,7 @@ import (
 )
 
 // DimensionClient sends updates to dimensions to the SignalFx API
-// This is a port of https://github.com/signalfx/signalfx-agent/blob/master/pkg/core/writer/dimensions/client.go
+// This is a port of https://github.com/signalfx/signalfx-agent/blob/main/pkg/core/writer/dimensions/client.go
 // with the only major difference being deduplication of dimension
 // updates are currently not done by this port.
 type DimensionClient struct {

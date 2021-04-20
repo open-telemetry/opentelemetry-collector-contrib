@@ -39,7 +39,7 @@ type Config struct {
 
 // TODO: Move to a common package for use by other receivers and also pull
 // in other utilities from
-// https://github.com/signalfx/signalfx-agent/blob/master/pkg/core/common/httpclient/http.go.
+// https://github.com/signalfx/signalfx-agent/blob/main/pkg/core/common/httpclient/http.go.
 type httpConfig struct {
 	// Whether not TLS is enabled
 	TLSEnabled bool      `mapstructure:"tls_enabled"`

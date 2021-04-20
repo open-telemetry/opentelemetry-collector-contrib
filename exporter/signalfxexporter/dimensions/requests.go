@@ -37,7 +37,7 @@ import (
 )
 
 // This is a direct port of
-// https://github.com/signalfx/signalfx-agent/blob/master/pkg/core/writer/requests/sender.go.
+// https://github.com/signalfx/signalfx-agent/blob/main/pkg/core/writer/requests/sender.go.
 type ReqSender struct {
 	client               *http.Client
 	requests             chan *http.Request
