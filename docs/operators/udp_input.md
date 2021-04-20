@@ -4,14 +4,15 @@ The `udp_input` operator listens for logs from UDP packets.
 
 ### Configuration Fields
 
-| Field             | Default          | Description                                                                       |
-| ---               | ---              | ---                                                                               |
-| `id`              | `udp_input`      | A unique identifier for the operator                                              |
-| `output`          | Next in pipeline | The connected operator(s) that will receive all outbound entries                  |
-| `listen_address`  | required         | A listen address of the form `<ip>:<port>`                                        |
-| `write_to`        | $                | The body [field](/docs/types/field.md) written to when creating a new log entry |
-| `attributes`      | {}               | A map of `key: value` pairs to add to the entry's attributes                         |
-| `resource`        | {}               | A map of `key: value` pairs to add to the entry's resource                       |
+| Field             | Default          | Description                                                                                        |
+| ---               | ---              | ---                                                                                                |
+| `id`              | `udp_input`      | A unique identifier for the operator                                                               |
+| `output`          | Next in pipeline | The connected operator(s) that will receive all outbound entries                                   |
+| `listen_address`  | required         | A listen address of the form `<ip>:<port>`                                                         |
+| `write_to`        | $                | The body [field](/docs/types/field.md) written to when creating a new log entry                    |
+| `attributes`      | {}               | A map of `key: value` pairs to add to the entry's attributes                                       |
+| `resource`        | {}               | A map of `key: value` pairs to add to the entry's resource                                         |
+| `add_attributes`  | false            | Adds `net.transport`, `net.peer.ip`, `net.peer.port`, `net.host.ip` and `net.host.port` attributes |
 
 ### Example Configurations
 

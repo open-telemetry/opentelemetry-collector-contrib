@@ -21,6 +21,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
+	"strconv"
 	"sync"
 	"time"
 
@@ -58,6 +59,7 @@ type TCPInputConfig struct {
 	MaxBufferSize helper.ByteSize         `json:"max_buffer_size,omitempty" yaml:"max_buffer_size,omitempty"`
 	ListenAddress string                  `json:"listen_address,omitempty" yaml:"listen_address,omitempty"`
 	TLS           *helper.TLSServerConfig `json:"tls,omitempty" yaml:"tls,omitempty"`
+	AddAttributes bool                    `json:"add_attributes,omitempty" yaml:"add_attributes,omitempty"`
 }
 
 // Build will build a tcp input operator.
@@ -90,6 +92,7 @@ func (c TCPInputConfig) Build(context operator.BuildContext) ([]operator.Operato
 		InputOperator: inputOperator,
 		address:       c.ListenAddress,
 		maxBufferSize: int(c.MaxBufferSize),
+		addAttributes: c.AddAttributes,
 	}
 
 	if c.TLS != nil {
@@ -107,6 +110,7 @@ type TCPInput struct {
 	helper.InputOperator
 	address       string
 	maxBufferSize int
+	addAttributes bool
 
 	listener net.Listener
 	cancel   context.CancelFunc
@@ -206,6 +210,20 @@ func (t *TCPInput) goHandleMessages(ctx context.Context, conn net.Conn, cancel c
 				t.Errorw("Failed to create entry", zap.Error(err))
 				continue
 			}
+
+			if t.addAttributes {
+				entry.AddAttribute("net.transport", "IP.TCP")
+				if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
+					entry.AddAttribute("net.peer.ip", addr.IP.String())
+					entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
+				}
+
+				if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
+					entry.AddAttribute("net.host.ip", addr.IP.String())
+					entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
+				}
+			}
+
 			t.Write(ctx, entry)
 		}
 		if err := scanner.Err(); err != nil {
