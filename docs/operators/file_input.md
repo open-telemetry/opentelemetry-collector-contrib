@@ -14,7 +14,7 @@ The `file_input` operator reads logs from files. It will place the lines read in
 | `multiline`            |                  | A `multiline` configuration block. See below for details                                                           |
 | `write_to`             | $                | The body [field](/docs/types/field.md) written to when creating a new log entry                                  |
 | `encoding`             | `nop`            | The encoding of the file being read. See the list of supported encodings below for available options               |
-| `include_file_name`    | `true`           | Whether to add the file name as the label `file_name`                                                              |
+| `include_file_name`    | `true`           | Whether to add the file name as the attribute `file_name`                                                              |
 | `include_file_path`    | `false`          | Whether to add the file path as the label `file_path`                                                              |
 | `start_at`             | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`                            |
 | `fingerprint_size`     | `1kb`            | The number of bytes with which to identify a file. The first bytes in the file are used as the fingerprint. Decreasing this value at any point will cause existing fingerprints to forgotten, meaning that all files will be read from the beginning (one time). |
@@ -76,13 +76,13 @@ log3
 
 ```json
 {
-  "message": "log1"
+  "body": "log1"
 },
 {
-  "message": "log2"
+  "body": "log2"
 },
 {
-  "message": "log3"
+  "body": "log3"
 }
 ```
 
@@ -118,10 +118,10 @@ log4
 
 ```json
 {
-  "message": "START log1\nlog2\n"
+  "body": "START log1\nlog2\n"
 },
 {
-  "message": "START log3\nlog4\n"
+  "body": "START log3\nlog4\n"
 }
 ```
 

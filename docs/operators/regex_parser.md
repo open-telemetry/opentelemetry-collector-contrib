@@ -9,8 +9,8 @@ The `regex_parser` operator parses the string-type field selected by `parse_from
 | `id`          | `regex_parser`   | A unique identifier for the operator                                                                                                                                                                                                     |
 | `output`      | Next in pipeline | The connected operator(s) that will receive all outbound entries                                                                                                                                                                         |
 | `regex`       | required         | A [Go regular expression](https://github.com/google/re2/wiki/Syntax). The named capture groups will be extracted as fields in the parsed object                                                                                          |
-| `parse_from`  | $                | A [field](/docs/types/field.md) that indicates the field to be parsed                                                                                                                                                                    |
-| `parse_to`    | $                | A [field](/docs/types/field.md) that indicates the field to be parsed                                                                                                                                                                    |
+| `parse_from`  | $                | A [field](/docs/types/field.md) that indicates the field from which values should be parsed                                                                                                                                                                    |
+| `parse_to`    | $                | A [field](/docs/types/field.md) that indicates the field to which values will be parsed                                                                                                                                                                    |
 | `preserve_to` |                  | Preserves the unparsed value at the specified [field](/docs/types/field.md)                                                                                                                                                              |
 | `on_error`    | `send`           | The behavior of the operator if it encounters an error. See [on_error](/docs/types/on_error.md)                                                                                                                                          |
 | `if`          |                  | An [expression](/docs/types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
@@ -68,7 +68,7 @@ Configuration:
   parse_from: message.embedded
   parse_to: parsed
   regex: '^Host=(?P<host>[^,]+), Type=(?P<type>.*)$'
-  preserve: true
+  preserve_to: message.embedded
 ```
 
 <table>
@@ -110,7 +110,7 @@ Configuration:
 </table>
 
 
-#### Parse the field `message` with a regular expression and also parse the timestamp
+#### Parse the body with a regular expression and also parse the timestamp
 
 Configuration:
 ```yaml
@@ -130,9 +130,7 @@ Configuration:
 ```json
 {
   "timestamp": "",
-  "body": {
-    "message": "Time=2020-01-31, Host=127.0.0.1, Type=HTTP"
-  }
+  "body": "Time=2020-01-31, Host=127.0.0.1, Type=HTTP"
 }
 ```
 
@@ -159,6 +157,7 @@ Configuration:
 ```yaml
 - type: regex_parser
   regex: '^Host=(?<host>)$'
+  parse_from: message
   if: '$body.type == "hostname"'
 ```
 
@@ -225,6 +224,7 @@ Configuration:
 ```yaml
 - type: regex_parser
   regex: '^Host=(?<host>)$'
+  parse_from: message
   if: '$body.type == "hostname"'
 ```
 
