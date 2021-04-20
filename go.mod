@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-log-collection
 
-go 1.14
+go 1.15
 
 require (
 	github.com/antonmedv/expr v1.8.9
