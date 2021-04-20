@@ -51,6 +51,7 @@ const (
 	eventNameTag        string = "name"
 	eventAttrTag        string = "attributes"
 	eventTimeTag        string = "time"
+	MaxMetaValLen       int    = 5000
 	// tagContainersTags specifies the name of the tag which holds key/value
 	// pairs representing information about the container (Docker, EC2, etc).
 	tagContainersTags = "_dd.tags.container"
@@ -381,6 +382,10 @@ func setStringTag(s *pb.Span, key, v string) {
 			setMetric(s, ext.EventSampleRate, 0)
 		}
 	default:
+		if len(v) > MaxMetaValLen {
+			v = utils.TruncateUTF8(v, MaxMetaValLen) + "..."
+		}
+
 		s.Meta[key] = v
 	}
 }
