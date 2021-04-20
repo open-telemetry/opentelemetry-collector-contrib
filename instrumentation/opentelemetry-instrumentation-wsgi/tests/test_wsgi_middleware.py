@@ -20,6 +20,7 @@ from urllib.parse import urlsplit
 
 import opentelemetry.instrumentation.wsgi as otel_wsgi
 from opentelemetry import trace as trace_api
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.wsgitestutil import WsgiTestBase
 from opentelemetry.trace import StatusCode
 
@@ -114,17 +115,17 @@ class TestWsgiApplication(WsgiTestBase):
         self.assertEqual(span_list[0].name, span_name)
         self.assertEqual(span_list[0].kind, trace_api.SpanKind.SERVER)
         expected_attributes = {
-            "http.server_name": "127.0.0.1",
-            "http.scheme": "http",
-            "net.host.port": 80,
-            "http.host": "127.0.0.1",
-            "http.flavor": "1.0",
-            "http.url": "http://127.0.0.1/",
-            "http.status_code": 200,
+            SpanAttributes.HTTP_SERVER_NAME: "127.0.0.1",
+            SpanAttributes.HTTP_SCHEME: "http",
+            SpanAttributes.NET_HOST_PORT: 80,
+            SpanAttributes.HTTP_HOST: "127.0.0.1",
+            SpanAttributes.HTTP_FLAVOR: "1.0",
+            SpanAttributes.HTTP_URL: "http://127.0.0.1/",
+            SpanAttributes.HTTP_STATUS_CODE: 200,
         }
         expected_attributes.update(span_attributes or {})
         if http_method is not None:
-            expected_attributes["http.method"] = http_method
+            expected_attributes[SpanAttributes.HTTP_METHOD] = http_method
         self.assertEqual(span_list[0].attributes, expected_attributes)
 
     def test_basic_wsgi_call(self):
@@ -230,30 +231,32 @@ class TestWsgiAttributes(unittest.TestCase):
         self.assertDictEqual(
             attrs,
             {
-                "http.method": "GET",
-                "http.host": "127.0.0.1",
-                "http.url": "http://127.0.0.1/?foo=bar",
-                "net.host.port": 80,
-                "http.scheme": "http",
-                "http.server_name": "127.0.0.1",
-                "http.flavor": "1.0",
+                SpanAttributes.HTTP_METHOD: "GET",
+                SpanAttributes.HTTP_HOST: "127.0.0.1",
+                SpanAttributes.HTTP_URL: "http://127.0.0.1/?foo=bar",
+                SpanAttributes.NET_HOST_PORT: 80,
+                SpanAttributes.HTTP_SCHEME: "http",
+                SpanAttributes.HTTP_SERVER_NAME: "127.0.0.1",
+                SpanAttributes.HTTP_FLAVOR: "1.0",
             },
         )
 
     def validate_url(self, expected_url, raw=False, has_host=True):
         parts = urlsplit(expected_url)
         expected = {
-            "http.scheme": parts.scheme,
-            "net.host.port": parts.port
+            SpanAttributes.HTTP_SCHEME: parts.scheme,
+            SpanAttributes.NET_HOST_PORT: parts.port
             or (80 if parts.scheme == "http" else 443),
-            "http.server_name": parts.hostname,  # Not true in the general case, but for all tests.
+            SpanAttributes.HTTP_SERVER_NAME: parts.hostname,  # Not true in the general case, but for all tests.
         }
         if raw:
-            expected["http.target"] = expected_url.split(parts.netloc, 1)[1]
+            expected[SpanAttributes.HTTP_TARGET] = expected_url.split(
+                parts.netloc, 1
+            )[1]
         else:
-            expected["http.url"] = expected_url
+            expected[SpanAttributes.HTTP_URL] = expected_url
         if has_host:
-            expected["http.host"] = parts.hostname
+            expected[SpanAttributes.HTTP_HOST] = parts.hostname
 
         attrs = otel_wsgi.collect_request_attributes(self.environ)
         self.assertGreaterEqual(
@@ -309,9 +312,9 @@ class TestWsgiAttributes(unittest.TestCase):
             "HTTP_HOST"
         ] += ":8080"  # Note that we do not correct SERVER_PORT
         expected = {
-            "http.host": "127.0.0.1:8080",
-            "http.url": "http://127.0.0.1:8080/",
-            "net.host.port": 80,
+            SpanAttributes.HTTP_HOST: "127.0.0.1:8080",
+            SpanAttributes.HTTP_URL: "http://127.0.0.1:8080/",
+            SpanAttributes.NET_HOST_PORT: 80,
         }
         self.assertGreaterEqual(
             otel_wsgi.collect_request_attributes(self.environ).items(),
@@ -324,7 +327,7 @@ class TestWsgiAttributes(unittest.TestCase):
 
     def test_request_attributes_pathless(self):
         self.environ["RAW_URI"] = ""
-        expected = {"http.target": ""}
+        expected = {SpanAttributes.HTTP_TARGET: ""}
         self.assertGreaterEqual(
             otel_wsgi.collect_request_attributes(self.environ).items(),
             expected.items(),
@@ -337,8 +340,8 @@ class TestWsgiAttributes(unittest.TestCase):
             "REQUEST_URI"
         ] = "127.0.0.1:8080"  # Might happen in a CONNECT request
         expected = {
-            "http.host": "127.0.0.1:8080",
-            "http.target": "127.0.0.1:8080",
+            SpanAttributes.HTTP_HOST: "127.0.0.1:8080",
+            SpanAttributes.HTTP_TARGET: "127.0.0.1:8080",
         }
         self.assertGreaterEqual(
             otel_wsgi.collect_request_attributes(self.environ).items(),
@@ -347,7 +350,7 @@ class TestWsgiAttributes(unittest.TestCase):
 
     def test_http_user_agent_attribute(self):
         self.environ["HTTP_USER_AGENT"] = "test-useragent"
-        expected = {"http.user_agent": "test-useragent"}
+        expected = {SpanAttributes.HTTP_USER_AGENT: "test-useragent"}
         self.assertGreaterEqual(
             otel_wsgi.collect_request_attributes(self.environ).items(),
             expected.items(),
@@ -355,7 +358,7 @@ class TestWsgiAttributes(unittest.TestCase):
 
     def test_response_attributes(self):
         otel_wsgi.add_response_attributes(self.span, "404 Not Found", {})
-        expected = (mock.call("http.status_code", 404),)
+        expected = (mock.call(SpanAttributes.HTTP_STATUS_CODE, 404),)
         self.assertEqual(self.span.set_attribute.call_count, len(expected))
         self.span.set_attribute.assert_has_calls(expected, any_order=True)
 

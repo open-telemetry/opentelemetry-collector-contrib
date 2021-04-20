@@ -30,6 +30,7 @@ from opentelemetry.instrumentation.wsgi import (
     wsgi_getter,
 )
 from opentelemetry.propagate import extract
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import Span, SpanKind, get_tracer, use_span
 from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
 
@@ -48,10 +49,24 @@ except ImportError:
 
 _logger = getLogger(__name__)
 _attributes_by_preference = [
-    ["http.scheme", "http.host", "http.target"],
-    ["http.scheme", "http.server_name", "net.host.port", "http.target"],
-    ["http.scheme", "net.host.name", "net.host.port", "http.target"],
-    ["http.url"],
+    [
+        SpanAttributes.HTTP_SCHEME,
+        SpanAttributes.HTTP_HOST,
+        SpanAttributes.HTTP_TARGET,
+    ],
+    [
+        SpanAttributes.HTTP_SCHEME,
+        SpanAttributes.HTTP_SERVER_NAME,
+        SpanAttributes.NET_HOST_PORT,
+        SpanAttributes.HTTP_TARGET,
+    ],
+    [
+        SpanAttributes.HTTP_SCHEME,
+        SpanAttributes.NET_HOST_NAME,
+        SpanAttributes.NET_HOST_PORT,
+        SpanAttributes.HTTP_TARGET,
+    ],
+    [SpanAttributes.HTTP_URL],
 ]
 
 
@@ -159,7 +174,7 @@ class _DjangoMiddleware(MiddlewareMixin):
                 if match:
                     route = getattr(match, "route")
                     if route:
-                        span.set_attribute("http.route", route)
+                        span.set_attribute(SpanAttributes.HTTP_ROUTE, route)
 
     def process_exception(self, request, exception):
         if self._excluded_urls.url_disabled(request.build_absolute_uri("?")):

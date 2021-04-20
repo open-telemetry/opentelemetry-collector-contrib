@@ -21,6 +21,7 @@ from starlette.routing import Route
 from starlette.testclient import TestClient
 
 import opentelemetry.instrumentation.starlette as otel_starlette
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.util.http import get_excluded_urls
 
@@ -67,11 +68,13 @@ class TestStarletteManualInstrumentation(TestBase):
         for span in spans:
             self.assertIn("/user/{username}", span.name)
         self.assertEqual(
-            spans[-1].attributes["http.route"], "/user/{username}"
+            spans[-1].attributes[SpanAttributes.HTTP_ROUTE], "/user/{username}"
         )
         # ensure that at least one attribute that is populated by
         # the asgi instrumentation is successfully feeding though.
-        self.assertEqual(spans[-1].attributes["http.flavor"], "1.1")
+        self.assertEqual(
+            spans[-1].attributes[SpanAttributes.HTTP_FLAVOR], "1.1"
+        )
 
     def test_starlette_excluded_urls(self):
         """Ensure that givem starlette routes are excluded."""

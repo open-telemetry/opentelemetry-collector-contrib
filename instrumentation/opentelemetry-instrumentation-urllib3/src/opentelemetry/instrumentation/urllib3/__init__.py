@@ -58,6 +58,7 @@ from opentelemetry.instrumentation.utils import (
     unwrap,
 )
 from opentelemetry.propagate import inject
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import Span, SpanKind, TracerProvider, get_tracer
 from opentelemetry.trace.status import Status
 
@@ -110,8 +111,8 @@ def _instrument(
 
         span_name = _get_span_name(span_name_or_callback, method, url, headers)
         span_attributes = {
-            "http.method": method,
-            "http.url": url,
+            SpanAttributes.HTTP_METHOD: method,
+            SpanAttributes.HTTP_URL: url,
         }
 
         with get_tracer(
@@ -202,7 +203,7 @@ def _apply_response(span: Span, response: urllib3.response.HTTPResponse):
     if not span.is_recording():
         return
 
-    span.set_attribute("http.status_code", response.status)
+    span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, response.status)
     span.set_status(Status(http_status_to_status_code(response.status)))
 
 

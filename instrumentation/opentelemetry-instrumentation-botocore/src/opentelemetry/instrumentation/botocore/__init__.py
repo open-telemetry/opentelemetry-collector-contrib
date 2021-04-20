@@ -57,6 +57,7 @@ from opentelemetry.instrumentation.botocore.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import unwrap
 from opentelemetry.propagate import inject
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import SpanKind, get_tracer
 
 logger = logging.getLogger(__name__)
@@ -159,7 +160,8 @@ class BotocoreInstrumentor(BaseInstrumentor):
 
                     if "HTTPStatusCode" in metadata:
                         span.set_attribute(
-                            "http.status_code", metadata["HTTPStatusCode"],
+                            SpanAttributes.HTTP_STATUS_CODE,
+                            metadata["HTTPStatusCode"],
                         )
 
             if error:

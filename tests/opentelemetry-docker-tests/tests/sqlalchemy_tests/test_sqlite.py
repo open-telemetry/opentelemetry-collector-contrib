@@ -18,7 +18,7 @@ import pytest
 from sqlalchemy.exc import OperationalError
 
 from opentelemetry import trace
-from opentelemetry.instrumentation.sqlalchemy.engine import _DB, _STMT
+from opentelemetry.semconv.trace import SpanAttributes
 
 from .mixins import SQLAlchemyTestMixin
 
@@ -45,9 +45,12 @@ class SQLiteTestCase(SQLAlchemyTestMixin):
         # span fields
         self.assertEqual(span.name, "SELECT :memory:")
         self.assertEqual(
-            span.attributes.get(_STMT), "SELECT * FROM a_wrong_table"
+            span.attributes.get(SpanAttributes.DB_STATEMENT),
+            "SELECT * FROM a_wrong_table",
         )
-        self.assertEqual(span.attributes.get(_DB), self.SQL_DB)
+        self.assertEqual(
+            span.attributes.get(SpanAttributes.DB_NAME), self.SQL_DB
+        )
         self.assertTrue((span.end_time - span.start_time) > 0)
         # check the error
         self.assertIs(

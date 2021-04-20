@@ -22,6 +22,7 @@ from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.celery import CeleryInstrumentor
 from opentelemetry.sdk import resources
 from opentelemetry.sdk.trace import TracerProvider, export
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import StatusCode
 
 # set a high timeout for async executions due to issues in CI
@@ -104,7 +105,9 @@ def test_fn_task_apply(celery_app, memory_exporter):
 
     assert span.status.is_ok is True
     assert span.name == "run/test_celery_functional.fn_task"
-    assert span.attributes.get("messaging.message_id") == t.task_id
+    assert (
+        span.attributes.get(SpanAttributes.MESSAGING_MESSAGE_ID) == t.task_id
+    )
     assert (
         span.attributes.get("celery.task_name")
         == "test_celery_functional.fn_task"
@@ -129,7 +132,9 @@ def test_fn_task_apply_bind(celery_app, memory_exporter):
 
     assert span.status.is_ok is True
     assert span.name == "run/test_celery_functional.fn_task"
-    assert span.attributes.get("messaging.message_id") == t.task_id
+    assert (
+        span.attributes.get(SpanAttributes.MESSAGING_MESSAGE_ID) == t.task_id
+    )
     assert (
         span.attributes.get("celery.task_name")
         == "test_celery_functional.fn_task"
@@ -162,7 +167,10 @@ def test_fn_task_apply_async(celery_app, memory_exporter):
         == "apply_async/test_celery_functional.fn_task_parameters"
     )
     assert async_span.attributes.get("celery.action") == "apply_async"
-    assert async_span.attributes.get("messaging.message_id") == result.task_id
+    assert (
+        async_span.attributes.get(SpanAttributes.MESSAGING_MESSAGE_ID)
+        == result.task_id
+    )
     assert (
         async_span.attributes.get("celery.task_name")
         == "test_celery_functional.fn_task_parameters"
@@ -172,7 +180,10 @@ def test_fn_task_apply_async(celery_app, memory_exporter):
     assert run_span.name == "test_celery_functional.fn_task_parameters"
     assert run_span.attributes.get("celery.action") == "run"
     assert run_span.attributes.get("celery.state") == "SUCCESS"
-    assert run_span.attributes.get("messaging.message_id") == result.task_id
+    assert (
+        run_span.attributes.get(SpanAttributes.MESSAGING_MESSAGE_ID)
+        == result.task_id
+    )
     assert (
         run_span.attributes.get("celery.task_name")
         == "test_celery_functional.fn_task_parameters"
@@ -217,7 +228,10 @@ def test_fn_task_delay(celery_app, memory_exporter):
         == "apply_async/test_celery_functional.fn_task_parameters"
     )
     assert async_span.attributes.get("celery.action") == "apply_async"
-    assert async_span.attributes.get("messaging.message_id") == result.task_id
+    assert (
+        async_span.attributes.get(SpanAttributes.MESSAGING_MESSAGE_ID)
+        == result.task_id
+    )
     assert (
         async_span.attributes.get("celery.task_name")
         == "test_celery_functional.fn_task_parameters"
@@ -227,7 +241,10 @@ def test_fn_task_delay(celery_app, memory_exporter):
     assert run_span.name == "run/test_celery_functional.fn_task_parameters"
     assert run_span.attributes.get("celery.action") == "run"
     assert run_span.attributes.get("celery.state") == "SUCCESS"
-    assert run_span.attributes.get("messaging.message_id") == result.task_id
+    assert (
+        run_span.attributes.get(SpanAttributes.MESSAGING_MESSAGE_ID)
+        == result.task_id
+    )
     assert (
         run_span.attributes.get("celery.task_name")
         == "test_celery_functional.fn_task_parameters"
@@ -258,7 +275,10 @@ def test_fn_exception(celery_app, memory_exporter):
         == "test_celery_functional.fn_exception"
     )
     assert span.status.status_code == StatusCode.ERROR
-    assert span.attributes.get("messaging.message_id") == result.task_id
+    assert (
+        span.attributes.get(SpanAttributes.MESSAGING_MESSAGE_ID)
+        == result.task_id
+    )
     assert "Task class is failing" in span.status.description
 
 
@@ -286,7 +306,10 @@ def test_fn_exception_expected(celery_app, memory_exporter):
         span.attributes.get("celery.task_name")
         == "test_celery_functional.fn_exception"
     )
-    assert span.attributes.get("messaging.message_id") == result.task_id
+    assert (
+        span.attributes.get(SpanAttributes.MESSAGING_MESSAGE_ID)
+        == result.task_id
+    )
 
 
 def test_fn_retry_exception(celery_app, memory_exporter):
@@ -313,7 +336,10 @@ def test_fn_retry_exception(celery_app, memory_exporter):
         span.attributes.get("celery.task_name")
         == "test_celery_functional.fn_exception"
     )
-    assert span.attributes.get("messaging.message_id") == result.task_id
+    assert (
+        span.attributes.get(SpanAttributes.MESSAGING_MESSAGE_ID)
+        == result.task_id
+    )
 
 
 def test_class_task(celery_app, memory_exporter):
@@ -345,7 +371,10 @@ def test_class_task(celery_app, memory_exporter):
     )
     assert span.attributes.get("celery.action") == "run"
     assert span.attributes.get("celery.state") == "SUCCESS"
-    assert span.attributes.get("messaging.message_id") == result.task_id
+    assert (
+        span.attributes.get(SpanAttributes.MESSAGING_MESSAGE_ID)
+        == result.task_id
+    )
 
 
 def test_class_task_exception(celery_app, memory_exporter):
@@ -378,7 +407,10 @@ def test_class_task_exception(celery_app, memory_exporter):
     assert span.attributes.get("celery.action") == "run"
     assert span.attributes.get("celery.state") == "FAILURE"
     assert span.status.status_code == StatusCode.ERROR
-    assert span.attributes.get("messaging.message_id") == result.task_id
+    assert (
+        span.attributes.get(SpanAttributes.MESSAGING_MESSAGE_ID)
+        == result.task_id
+    )
     assert "Task class is failing" in span.status.description
 
 
@@ -410,7 +442,10 @@ def test_class_task_exception_excepted(celery_app, memory_exporter):
     assert span.name == "run/test_celery_functional.BaseTask"
     assert span.attributes.get("celery.action") == "run"
     assert span.attributes.get("celery.state") == "FAILURE"
-    assert span.attributes.get("messaging.message_id") == result.task_id
+    assert (
+        span.attributes.get(SpanAttributes.MESSAGING_MESSAGE_ID)
+        == result.task_id
+    )
 
 
 def test_shared_task(celery_app, memory_exporter):
@@ -435,7 +470,10 @@ def test_shared_task(celery_app, memory_exporter):
     )
     assert span.attributes.get("celery.action") == "run"
     assert span.attributes.get("celery.state") == "SUCCESS"
-    assert span.attributes.get("messaging.message_id") == result.task_id
+    assert (
+        span.attributes.get(SpanAttributes.MESSAGING_MESSAGE_ID)
+        == result.task_id
+    )
 
 
 @pytest.mark.skip(reason="inconsistent test results")
@@ -484,7 +522,10 @@ def test_apply_async_previous_style_tasks(
     )
     assert run_span.attributes.get("celery.action") == "run"
     assert run_span.attributes.get("celery.state") == "SUCCESS"
-    assert run_span.attributes.get("messaging.message_id") == result.task_id
+    assert (
+        run_span.attributes.get(SpanAttributes.MESSAGING_MESSAGE_ID)
+        == result.task_id
+    )
 
     assert async_run_span.status.is_ok is True
     assert async_run_span.name == "run/test_celery_functional.CelerySubClass"
@@ -495,7 +536,8 @@ def test_apply_async_previous_style_tasks(
     assert async_run_span.attributes.get("celery.action") == "run"
     assert async_run_span.attributes.get("celery.state") == "SUCCESS"
     assert (
-        async_run_span.attributes.get("messaging.message_id") != result.task_id
+        async_run_span.attributes.get(SpanAttributes.MESSAGING_MESSAGE_ID)
+        != result.task_id
     )
 
     assert async_span.status.is_ok is True
@@ -507,10 +549,13 @@ def test_apply_async_previous_style_tasks(
         == "test_celery_functional.CelerySubClass"
     )
     assert async_span.attributes.get("celery.action") == "apply_async"
-    assert async_span.attributes.get("messaging.message_id") != result.task_id
+    assert (
+        async_span.attributes.get(SpanAttributes.MESSAGING_MESSAGE_ID)
+        != result.task_id
+    )
     assert async_span.attributes.get(
-        "messaging.message_id"
-    ) == async_run_span.attributes.get("messaging.message_id")
+        SpanAttributes.MESSAGING_MESSAGE_ID
+    ) == async_run_span.attributes.get(SpanAttributes.MESSAGING_MESSAGE_ID)
 
 
 def test_custom_tracer_provider(celery_app, memory_exporter):

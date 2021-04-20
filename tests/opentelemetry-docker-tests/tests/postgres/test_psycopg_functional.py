@@ -19,6 +19,7 @@ from psycopg2 import sql
 
 from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.test_base import TestBase
 
 POSTGRES_HOST = os.getenv("POSTGRESQL_HOST", "localhost")
@@ -71,11 +72,21 @@ class TestFunctionalPsycopg(TestBase):
         self.assertIsNotNone(child_span.parent)
         self.assertIs(child_span.parent, root_span.get_span_context())
         self.assertIs(child_span.kind, trace_api.SpanKind.CLIENT)
-        self.assertEqual(child_span.attributes["db.system"], "postgresql")
-        self.assertEqual(child_span.attributes["db.name"], POSTGRES_DB_NAME)
-        self.assertEqual(child_span.attributes["db.user"], POSTGRES_USER)
-        self.assertEqual(child_span.attributes["net.peer.name"], POSTGRES_HOST)
-        self.assertEqual(child_span.attributes["net.peer.port"], POSTGRES_PORT)
+        self.assertEqual(
+            child_span.attributes[SpanAttributes.DB_SYSTEM], "postgresql"
+        )
+        self.assertEqual(
+            child_span.attributes[SpanAttributes.DB_NAME], POSTGRES_DB_NAME
+        )
+        self.assertEqual(
+            child_span.attributes[SpanAttributes.DB_USER], POSTGRES_USER
+        )
+        self.assertEqual(
+            child_span.attributes[SpanAttributes.NET_PEER_NAME], POSTGRES_HOST
+        )
+        self.assertEqual(
+            child_span.attributes[SpanAttributes.NET_PEER_PORT], POSTGRES_PORT
+        )
 
     def test_execute(self):
         """Should create a child span for execute method"""
@@ -141,6 +152,6 @@ class TestFunctionalPsycopg(TestBase):
         span = spans[2]
         self.assertEqual(span.name, "SELECT")
         self.assertEqual(
-            span.attributes["db.statement"],
+            span.attributes[SpanAttributes.DB_STATEMENT],
             'SELECT FROM "users" where "name"=\'"abc"\'',
         )

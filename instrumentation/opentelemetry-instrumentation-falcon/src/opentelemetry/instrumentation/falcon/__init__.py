@@ -108,6 +108,7 @@ from opentelemetry.instrumentation.utils import (
     http_status_to_status_code,
 )
 from opentelemetry.propagate import extract
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace.status import Status
 from opentelemetry.util._time import _time_ns
 from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
@@ -270,7 +271,7 @@ class _TraceMiddleware:
         except ValueError:
             pass
         finally:
-            span.set_attribute("http.status_code", status_code)
+            span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, status_code)
             span.set_status(
                 Status(
                     status_code=http_status_to_status_code(status_code),

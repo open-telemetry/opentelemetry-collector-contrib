@@ -42,10 +42,9 @@ from pymongo import monitoring
 from opentelemetry import trace
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.pymongo.version import __version__
+from opentelemetry.semconv.trace import DbSystemValues, SpanAttributes
 from opentelemetry.trace import SpanKind, get_tracer
 from opentelemetry.trace.status import Status, StatusCode
-
-DATABASE_SYSTEM = "mongodb"
 
 
 class CommandTracer(monitoring.CommandListener):
@@ -68,12 +67,18 @@ class CommandTracer(monitoring.CommandListener):
         try:
             span = self._tracer.start_span(name, kind=SpanKind.CLIENT)
             if span.is_recording():
-                span.set_attribute("db.system", DATABASE_SYSTEM)
-                span.set_attribute("db.name", event.database_name)
-                span.set_attribute("db.statement", statement)
+                span.set_attribute(
+                    SpanAttributes.DB_SYSTEM, DbSystemValues.MONGODB.value
+                )
+                span.set_attribute(SpanAttributes.DB_NAME, event.database_name)
+                span.set_attribute(SpanAttributes.DB_STATEMENT, statement)
                 if event.connection_id is not None:
-                    span.set_attribute("net.peer.name", event.connection_id[0])
-                    span.set_attribute("net.peer.port", event.connection_id[1])
+                    span.set_attribute(
+                        SpanAttributes.NET_PEER_NAME, event.connection_id[0]
+                    )
+                    span.set_attribute(
+                        SpanAttributes.NET_PEER_PORT, event.connection_id[1]
+                    )
 
             # Add Span to dictionary
             self._span_dict[_get_span_dict_key(event)] = span

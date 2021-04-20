@@ -50,6 +50,7 @@ from opentelemetry.instrumentation.urllib.version import (  # pylint: disable=no
 )
 from opentelemetry.instrumentation.utils import http_status_to_status_code
 from opentelemetry.propagate import inject
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import SpanKind, get_tracer
 from opentelemetry.trace.status import Status
 
@@ -138,8 +139,8 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
             span_name = get_default_span_name(method)
 
         labels = {
-            "http.method": method,
-            "http.url": url,
+            SpanAttributes.HTTP_METHOD: method,
+            SpanAttributes.HTTP_URL: url,
         }
 
         with get_tracer(
@@ -147,8 +148,8 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
         ).start_as_current_span(span_name, kind=SpanKind.CLIENT) as span:
             exception = None
             if span.is_recording():
-                span.set_attribute("http.method", method)
-                span.set_attribute("http.url", url)
+                span.set_attribute(SpanAttributes.HTTP_METHOD, method)
+                span.set_attribute(SpanAttributes.HTTP_URL, url)
 
             headers = get_or_create_headers()
             inject(headers)
@@ -167,15 +168,17 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
             if result is not None:
 
                 code_ = result.getcode()
-                labels["http.status_code"] = str(code_)
+                labels[SpanAttributes.HTTP_STATUS_CODE] = str(code_)
 
                 if span.is_recording():
-                    span.set_attribute("http.status_code", code_)
+                    span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, code_)
                     span.set_status(Status(http_status_to_status_code(code_)))
 
                 ver_ = str(getattr(result, "version", ""))
                 if ver_:
-                    labels["http.flavor"] = "{}.{}".format(ver_[:1], ver_[:-1])
+                    labels[SpanAttributes.HTTP_FLAVOR] = "{}.{}".format(
+                        ver_[:1], ver_[:-1]
+                    )
 
             if span_callback is not None:
                 span_callback(span, result)

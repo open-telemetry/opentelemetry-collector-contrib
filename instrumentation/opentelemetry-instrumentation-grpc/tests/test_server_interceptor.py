@@ -27,6 +27,7 @@ from opentelemetry.instrumentation.grpc import (
     server_interceptor,
 )
 from opentelemetry.sdk import trace as trace_sdk
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.trace import StatusCode
 
@@ -113,12 +114,14 @@ class TestOpenTelemetryServerInterceptor(TestBase):
         self.assert_span_has_attributes(
             span,
             {
-                "net.peer.ip": "[::1]",
-                "net.peer.name": "localhost",
-                "rpc.method": "handler",
-                "rpc.service": "TestServicer",
-                "rpc.system": "grpc",
-                "rpc.grpc.status_code": grpc.StatusCode.OK.value[0],
+                SpanAttributes.NET_PEER_IP: "[::1]",
+                SpanAttributes.NET_PEER_NAME: "localhost",
+                SpanAttributes.RPC_METHOD: "handler",
+                SpanAttributes.RPC_SERVICE: "TestServicer",
+                SpanAttributes.RPC_SYSTEM: "grpc",
+                SpanAttributes.RPC_GRPC_STATUS_CODE: grpc.StatusCode.OK.value[
+                    0
+                ],
             },
         )
 
@@ -191,12 +194,14 @@ class TestOpenTelemetryServerInterceptor(TestBase):
         self.assert_span_has_attributes(
             span,
             {
-                "net.peer.ip": "[::1]",
-                "net.peer.name": "localhost",
-                "rpc.method": "SimpleMethod",
-                "rpc.service": "GRPCTestServer",
-                "rpc.system": "grpc",
-                "rpc.grpc.status_code": grpc.StatusCode.OK.value[0],
+                SpanAttributes.NET_PEER_IP: "[::1]",
+                SpanAttributes.NET_PEER_NAME: "localhost",
+                SpanAttributes.RPC_METHOD: "SimpleMethod",
+                SpanAttributes.RPC_SERVICE: "GRPCTestServer",
+                SpanAttributes.RPC_SYSTEM: "grpc",
+                SpanAttributes.RPC_GRPC_STATUS_CODE: grpc.StatusCode.OK.value[
+                    0
+                ],
             },
         )
 
@@ -258,12 +263,14 @@ class TestOpenTelemetryServerInterceptor(TestBase):
         self.assert_span_has_attributes(
             parent_span,
             {
-                "net.peer.ip": "[::1]",
-                "net.peer.name": "localhost",
-                "rpc.method": "SimpleMethod",
-                "rpc.service": "GRPCTestServer",
-                "rpc.system": "grpc",
-                "rpc.grpc.status_code": grpc.StatusCode.OK.value[0],
+                SpanAttributes.NET_PEER_IP: "[::1]",
+                SpanAttributes.NET_PEER_NAME: "localhost",
+                SpanAttributes.RPC_METHOD: "SimpleMethod",
+                SpanAttributes.RPC_SERVICE: "GRPCTestServer",
+                SpanAttributes.RPC_SYSTEM: "grpc",
+                SpanAttributes.RPC_GRPC_STATUS_CODE: grpc.StatusCode.OK.value[
+                    0
+                ],
             },
         )
 
@@ -316,12 +323,14 @@ class TestOpenTelemetryServerInterceptor(TestBase):
         self.assert_span_has_attributes(
             span,
             {
-                "net.peer.ip": "[::1]",
-                "net.peer.name": "localhost",
-                "rpc.method": "ServerStreamingMethod",
-                "rpc.service": "GRPCTestServer",
-                "rpc.system": "grpc",
-                "rpc.grpc.status_code": grpc.StatusCode.OK.value[0],
+                SpanAttributes.NET_PEER_IP: "[::1]",
+                SpanAttributes.NET_PEER_NAME: "localhost",
+                SpanAttributes.RPC_METHOD: "ServerStreamingMethod",
+                SpanAttributes.RPC_SERVICE: "GRPCTestServer",
+                SpanAttributes.RPC_SYSTEM: "grpc",
+                SpanAttributes.RPC_GRPC_STATUS_CODE: grpc.StatusCode.OK.value[
+                    0
+                ],
             },
         )
 
@@ -383,12 +392,14 @@ class TestOpenTelemetryServerInterceptor(TestBase):
         self.assert_span_has_attributes(
             parent_span,
             {
-                "net.peer.ip": "[::1]",
-                "net.peer.name": "localhost",
-                "rpc.method": "ServerStreamingMethod",
-                "rpc.service": "GRPCTestServer",
-                "rpc.system": "grpc",
-                "rpc.grpc.status_code": grpc.StatusCode.OK.value[0],
+                SpanAttributes.NET_PEER_IP: "[::1]",
+                SpanAttributes.NET_PEER_NAME: "localhost",
+                SpanAttributes.RPC_METHOD: "ServerStreamingMethod",
+                SpanAttributes.RPC_SERVICE: "GRPCTestServer",
+                SpanAttributes.RPC_SYSTEM: "grpc",
+                SpanAttributes.RPC_GRPC_STATUS_CODE: grpc.StatusCode.OK.value[
+                    0
+                ],
             },
         )
 
@@ -478,12 +489,14 @@ class TestOpenTelemetryServerInterceptor(TestBase):
             self.assert_span_has_attributes(
                 span,
                 {
-                    "net.peer.ip": "[::1]",
-                    "net.peer.name": "localhost",
-                    "rpc.method": "handler",
-                    "rpc.service": "TestServicer",
-                    "rpc.system": "grpc",
-                    "rpc.grpc.status_code": grpc.StatusCode.OK.value[0],
+                    SpanAttributes.NET_PEER_IP: "[::1]",
+                    SpanAttributes.NET_PEER_NAME: "localhost",
+                    SpanAttributes.RPC_METHOD: "handler",
+                    SpanAttributes.RPC_SERVICE: "TestServicer",
+                    SpanAttributes.RPC_SYSTEM: "grpc",
+                    SpanAttributes.RPC_GRPC_STATUS_CODE: grpc.StatusCode.OK.value[
+                        0
+                    ],
                 },
             )
 
@@ -547,12 +560,14 @@ class TestOpenTelemetryServerInterceptor(TestBase):
             self.assert_span_has_attributes(
                 span,
                 {
-                    "net.peer.ip": "[::1]",
-                    "net.peer.name": "localhost",
-                    "rpc.method": "handler",
-                    "rpc.service": "TestServicer",
-                    "rpc.system": "grpc",
-                    "rpc.grpc.status_code": grpc.StatusCode.OK.value[0],
+                    SpanAttributes.NET_PEER_IP: "[::1]",
+                    SpanAttributes.NET_PEER_NAME: "localhost",
+                    SpanAttributes.RPC_METHOD: "handler",
+                    SpanAttributes.RPC_SERVICE: "TestServicer",
+                    SpanAttributes.RPC_SYSTEM: "grpc",
+                    SpanAttributes.RPC_GRPC_STATUS_CODE: grpc.StatusCode.OK.value[
+                        0
+                    ],
                 },
             )
 
@@ -613,12 +628,12 @@ class TestOpenTelemetryServerInterceptor(TestBase):
         self.assert_span_has_attributes(
             span,
             {
-                "net.peer.ip": "[::1]",
-                "net.peer.name": "localhost",
-                "rpc.method": "handler",
-                "rpc.service": "TestServicer",
-                "rpc.system": "grpc",
-                "rpc.grpc.status_code": grpc.StatusCode.FAILED_PRECONDITION.value[
+                SpanAttributes.NET_PEER_IP: "[::1]",
+                SpanAttributes.NET_PEER_NAME: "localhost",
+                SpanAttributes.RPC_METHOD: "handler",
+                SpanAttributes.RPC_SERVICE: "TestServicer",
+                SpanAttributes.RPC_SYSTEM: "grpc",
+                SpanAttributes.RPC_GRPC_STATUS_CODE: grpc.StatusCode.FAILED_PRECONDITION.value[
                     0
                 ],
             },

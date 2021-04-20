@@ -46,6 +46,7 @@ import wrapt
 from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.dbapi.version import __version__
 from opentelemetry.instrumentation.utils import unwrap
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import SpanKind, TracerProvider, get_tracer
 from opentelemetry.trace.status import Status, StatusCode
 
@@ -278,13 +279,13 @@ class DatabaseApiIntegration:
         if user and isinstance(user, bytes):
             user = user.decode()
         if user is not None:
-            self.span_attributes["db.user"] = str(user)
+            self.span_attributes[SpanAttributes.DB_USER] = str(user)
         host = self.connection_props.get("host")
         if host is not None:
-            self.span_attributes["net.peer.name"] = host
+            self.span_attributes[SpanAttributes.NET_PEER_NAME] = host
         port = self.connection_props.get("port")
         if port is not None:
-            self.span_attributes["net.peer.port"] = port
+            self.span_attributes[SpanAttributes.NET_PEER_PORT] = port
 
 
 def get_traced_connection_proxy(
@@ -325,10 +326,12 @@ class CursorTracer:
             return
         statement = self.get_statement(cursor, args)
         span.set_attribute(
-            "db.system", self._db_api_integration.database_system
+            SpanAttributes.DB_SYSTEM, self._db_api_integration.database_system
         )
-        span.set_attribute("db.name", self._db_api_integration.database)
-        span.set_attribute("db.statement", statement)
+        span.set_attribute(
+            SpanAttributes.DB_NAME, self._db_api_integration.database
+        )
+        span.set_attribute(SpanAttributes.DB_STATEMENT, statement)
 
         for (
             attribute_key,

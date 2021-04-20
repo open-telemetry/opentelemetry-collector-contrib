@@ -17,6 +17,7 @@ from starlette.routing import Match
 
 from opentelemetry.instrumentation.asgi import OpenTelemetryMiddleware
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.util.http import get_excluded_urls
 
 _excluded_urls = get_excluded_urls("FASTAPI")
@@ -82,5 +83,5 @@ def _get_route_details(scope):
     span_name = route or scope.get("method", "")
     attributes = {}
     if route:
-        attributes["http.route"] = route
+        attributes[SpanAttributes.HTTP_ROUTE] = route
     return span_name, attributes

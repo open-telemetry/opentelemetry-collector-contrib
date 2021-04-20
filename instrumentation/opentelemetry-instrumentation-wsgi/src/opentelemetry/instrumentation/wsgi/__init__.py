@@ -63,6 +63,7 @@ from opentelemetry.instrumentation.utils import http_status_to_status_code
 from opentelemetry.instrumentation.wsgi.version import __version__
 from opentelemetry.propagate import extract
 from opentelemetry.propagators.textmap import Getter
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace.status import Status, StatusCode
 
 _HTTP_VERSION_PREFIX = "HTTP/"
@@ -111,41 +112,43 @@ def collect_request_attributes(environ):
     WSGI environ and returns a dictionary to be used as span creation attributes."""
 
     result = {
-        "http.method": environ.get("REQUEST_METHOD"),
-        "http.server_name": environ.get("SERVER_NAME"),
-        "http.scheme": environ.get("wsgi.url_scheme"),
+        SpanAttributes.HTTP_METHOD: environ.get("REQUEST_METHOD"),
+        SpanAttributes.HTTP_SERVER_NAME: environ.get("SERVER_NAME"),
+        SpanAttributes.HTTP_SCHEME: environ.get("wsgi.url_scheme"),
     }
 
     host_port = environ.get("SERVER_PORT")
     if host_port is not None:
-        result.update({"net.host.port": int(host_port)})
+        result.update({SpanAttributes.NET_HOST_PORT: int(host_port)})
 
-    setifnotnone(result, "http.host", environ.get("HTTP_HOST"))
+    setifnotnone(result, SpanAttributes.HTTP_HOST, environ.get("HTTP_HOST"))
     target = environ.get("RAW_URI")
     if target is None:  # Note: `"" or None is None`
         target = environ.get("REQUEST_URI")
     if target is not None:
-        result["http.target"] = target
+        result[SpanAttributes.HTTP_TARGET] = target
     else:
-        result["http.url"] = wsgiref_util.request_uri(environ)
+        result[SpanAttributes.HTTP_URL] = wsgiref_util.request_uri(environ)
 
     remote_addr = environ.get("REMOTE_ADDR")
     if remote_addr:
-        result["net.peer.ip"] = remote_addr
+        result[SpanAttributes.NET_PEER_IP] = remote_addr
     remote_host = environ.get("REMOTE_HOST")
     if remote_host and remote_host != remote_addr:
-        result["net.peer.name"] = remote_host
+        result[SpanAttributes.NET_PEER_NAME] = remote_host
 
     user_agent = environ.get("HTTP_USER_AGENT")
     if user_agent is not None and len(user_agent) > 0:
-        result["http.user_agent"] = user_agent
+        result[SpanAttributes.HTTP_USER_AGENT] = user_agent
 
-    setifnotnone(result, "net.peer.port", environ.get("REMOTE_PORT"))
+    setifnotnone(
+        result, SpanAttributes.NET_PEER_PORT, environ.get("REMOTE_PORT")
+    )
     flavor = environ.get("SERVER_PROTOCOL", "")
     if flavor.upper().startswith(_HTTP_VERSION_PREFIX):
         flavor = flavor[len(_HTTP_VERSION_PREFIX) :]
     if flavor:
-        result["http.flavor"] = flavor
+        result[SpanAttributes.HTTP_FLAVOR] = flavor
 
     return result
 
@@ -169,7 +172,7 @@ def add_response_attributes(
             )
         )
     else:
-        span.set_attribute("http.status_code", status_code)
+        span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, status_code)
         span.set_status(Status(http_status_to_status_code(status_code)))
 
 

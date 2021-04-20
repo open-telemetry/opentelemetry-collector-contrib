@@ -19,6 +19,7 @@ from opentelemetry.instrumentation.pymongo import (
     CommandTracer,
     PymongoInstrumentor,
 )
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.test_base import TestBase
 
 
@@ -52,11 +53,17 @@ class TestPymongo(TestBase):
         span = command_tracer._pop_span(mock_event)
         self.assertIs(span.kind, trace_api.SpanKind.CLIENT)
         self.assertEqual(span.name, "command_name.find")
-        self.assertEqual(span.attributes["db.system"], "mongodb")
-        self.assertEqual(span.attributes["db.name"], "database_name")
-        self.assertEqual(span.attributes["db.statement"], "command_name find")
-        self.assertEqual(span.attributes["net.peer.name"], "test.com")
-        self.assertEqual(span.attributes["net.peer.port"], "1234")
+        self.assertEqual(span.attributes[SpanAttributes.DB_SYSTEM], "mongodb")
+        self.assertEqual(
+            span.attributes[SpanAttributes.DB_NAME], "database_name"
+        )
+        self.assertEqual(
+            span.attributes[SpanAttributes.DB_STATEMENT], "command_name find"
+        )
+        self.assertEqual(
+            span.attributes[SpanAttributes.NET_PEER_NAME], "test.com"
+        )
+        self.assertEqual(span.attributes[SpanAttributes.NET_PEER_PORT], "1234")
 
     def test_succeeded(self):
         mock_event = MockEvent({})

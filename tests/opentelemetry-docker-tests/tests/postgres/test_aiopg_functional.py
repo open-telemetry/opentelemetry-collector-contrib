@@ -20,6 +20,7 @@ import pytest
 
 from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.aiopg import AiopgInstrumentor
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.test_base import TestBase
 
 POSTGRES_HOST = os.getenv("POSTGRESQL_HOST", "127.0.0.1")
@@ -78,11 +79,21 @@ class TestFunctionalAiopgConnect(TestBase):
         self.assertIsNotNone(child_span.parent)
         self.assertIs(child_span.parent, root_span.get_span_context())
         self.assertIs(child_span.kind, trace_api.SpanKind.CLIENT)
-        self.assertEqual(child_span.attributes["db.system"], "postgresql")
-        self.assertEqual(child_span.attributes["db.name"], POSTGRES_DB_NAME)
-        self.assertEqual(child_span.attributes["db.user"], POSTGRES_USER)
-        self.assertEqual(child_span.attributes["net.peer.name"], POSTGRES_HOST)
-        self.assertEqual(child_span.attributes["net.peer.port"], POSTGRES_PORT)
+        self.assertEqual(
+            child_span.attributes[SpanAttributes.DB_SYSTEM], "postgresql"
+        )
+        self.assertEqual(
+            child_span.attributes[SpanAttributes.DB_NAME], POSTGRES_DB_NAME
+        )
+        self.assertEqual(
+            child_span.attributes[SpanAttributes.DB_USER], POSTGRES_USER
+        )
+        self.assertEqual(
+            child_span.attributes[SpanAttributes.NET_PEER_NAME], POSTGRES_HOST
+        )
+        self.assertEqual(
+            child_span.attributes[SpanAttributes.NET_PEER_PORT], POSTGRES_PORT
+        )
 
     def test_execute(self):
         """Should create a child span for execute method"""
@@ -160,11 +171,21 @@ class TestFunctionalAiopgCreatePool(TestBase):
         self.assertIsNotNone(child_span.parent)
         self.assertIs(child_span.parent, root_span.get_span_context())
         self.assertIs(child_span.kind, trace_api.SpanKind.CLIENT)
-        self.assertEqual(child_span.attributes["db.system"], "postgresql")
-        self.assertEqual(child_span.attributes["db.name"], POSTGRES_DB_NAME)
-        self.assertEqual(child_span.attributes["db.user"], POSTGRES_USER)
-        self.assertEqual(child_span.attributes["net.peer.name"], POSTGRES_HOST)
-        self.assertEqual(child_span.attributes["net.peer.port"], POSTGRES_PORT)
+        self.assertEqual(
+            child_span.attributes[SpanAttributes.DB_SYSTEM], "postgresql"
+        )
+        self.assertEqual(
+            child_span.attributes[SpanAttributes.DB_NAME], POSTGRES_DB_NAME
+        )
+        self.assertEqual(
+            child_span.attributes[SpanAttributes.DB_USER], POSTGRES_USER
+        )
+        self.assertEqual(
+            child_span.attributes[SpanAttributes.NET_PEER_NAME], POSTGRES_HOST
+        )
+        self.assertEqual(
+            child_span.attributes[SpanAttributes.NET_PEER_PORT], POSTGRES_PORT
+        )
 
     def test_execute(self):
         """Should create a child span for execute method"""

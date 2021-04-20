@@ -22,6 +22,7 @@ import urllib3.exceptions
 from opentelemetry import context, trace
 from opentelemetry.instrumentation.urllib3 import URLLib3Instrumentor
 from opentelemetry.propagate import get_global_textmap, set_global_textmap
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.mock_textmap import MockTextMapPropagator
 from opentelemetry.test.test_base import TestBase
 
@@ -69,9 +70,9 @@ class TestURLLib3Instrumentor(TestBase):
         self.assertEqual("HTTP GET", span.name)
 
         attributes = {
-            "http.method": "GET",
-            "http.url": url,
-            "http.status_code": 200,
+            SpanAttributes.HTTP_METHOD: "GET",
+            SpanAttributes.HTTP_URL: url,
+            SpanAttributes.HTTP_STATUS_CODE: 200,
         }
         self.assertEqual(attributes, span.attributes)
 
@@ -79,8 +80,8 @@ class TestURLLib3Instrumentor(TestBase):
         span = self.assert_span()
 
         attributes = {
-            "http.method": "GET",
-            "http.url": url,
+            SpanAttributes.HTTP_METHOD: "GET",
+            SpanAttributes.HTTP_URL: url,
         }
         self.assertEqual(attributes, span.attributes)
         self.assertEqual(
@@ -125,7 +126,9 @@ class TestURLLib3Instrumentor(TestBase):
         self.assertEqual(404, response.status)
 
         span = self.assert_span()
-        self.assertEqual(404, span.attributes.get("http.status_code"))
+        self.assertEqual(
+            404, span.attributes.get(SpanAttributes.HTTP_STATUS_CODE)
+        )
         self.assertIs(trace.status.StatusCode.ERROR, span.status.status_code)
 
     def test_basic_http_non_default_port(self):

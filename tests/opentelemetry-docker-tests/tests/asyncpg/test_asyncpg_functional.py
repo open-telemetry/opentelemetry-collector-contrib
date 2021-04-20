@@ -4,6 +4,7 @@ import os
 import asyncpg
 
 from opentelemetry.instrumentation.asyncpg import AsyncPGInstrumentor
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.trace import StatusCode
 
@@ -42,11 +43,21 @@ class TestFunctionalAsyncPG(TestBase):
         AsyncPGInstrumentor().uninstrument()
 
     def check_span(self, span):
-        self.assertEqual(span.attributes["db.system"], "postgresql")
-        self.assertEqual(span.attributes["db.name"], POSTGRES_DB_NAME)
-        self.assertEqual(span.attributes["db.user"], POSTGRES_USER)
-        self.assertEqual(span.attributes["net.peer.name"], POSTGRES_HOST)
-        self.assertEqual(span.attributes["net.peer.port"], POSTGRES_PORT)
+        self.assertEqual(
+            span.attributes[SpanAttributes.DB_SYSTEM], "postgresql"
+        )
+        self.assertEqual(
+            span.attributes[SpanAttributes.DB_NAME], POSTGRES_DB_NAME
+        )
+        self.assertEqual(
+            span.attributes[SpanAttributes.DB_USER], POSTGRES_USER
+        )
+        self.assertEqual(
+            span.attributes[SpanAttributes.NET_PEER_NAME], POSTGRES_HOST
+        )
+        self.assertEqual(
+            span.attributes[SpanAttributes.NET_PEER_PORT], POSTGRES_PORT
+        )
 
     def test_instrumented_execute_method_without_arguments(self, *_, **__):
         async_call(self._connection.execute("SELECT 42;"))
@@ -55,14 +66,18 @@ class TestFunctionalAsyncPG(TestBase):
         self.assertIs(StatusCode.UNSET, spans[0].status.status_code)
         self.check_span(spans[0])
         self.assertEqual(spans[0].name, "SELECT 42;")
-        self.assertEqual(spans[0].attributes["db.statement"], "SELECT 42;")
+        self.assertEqual(
+            spans[0].attributes[SpanAttributes.DB_STATEMENT], "SELECT 42;"
+        )
 
     def test_instrumented_fetch_method_without_arguments(self, *_, **__):
         async_call(self._connection.fetch("SELECT 42;"))
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 1)
         self.check_span(spans[0])
-        self.assertEqual(spans[0].attributes["db.statement"], "SELECT 42;")
+        self.assertEqual(
+            spans[0].attributes[SpanAttributes.DB_STATEMENT], "SELECT 42;"
+        )
 
     def test_instrumented_transaction_method(self, *_, **__):
         async def _transaction_execute():
@@ -74,15 +89,21 @@ class TestFunctionalAsyncPG(TestBase):
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(3, len(spans))
         self.check_span(spans[0])
-        self.assertEqual(spans[0].attributes["db.statement"], "BEGIN;")
+        self.assertEqual(
+            spans[0].attributes[SpanAttributes.DB_STATEMENT], "BEGIN;"
+        )
         self.assertIs(StatusCode.UNSET, spans[0].status.status_code)
 
         self.check_span(spans[1])
-        self.assertEqual(spans[1].attributes["db.statement"], "SELECT 42;")
+        self.assertEqual(
+            spans[1].attributes[SpanAttributes.DB_STATEMENT], "SELECT 42;"
+        )
         self.assertIs(StatusCode.UNSET, spans[1].status.status_code)
 
         self.check_span(spans[2])
-        self.assertEqual(spans[2].attributes["db.statement"], "COMMIT;")
+        self.assertEqual(
+            spans[2].attributes[SpanAttributes.DB_STATEMENT], "COMMIT;"
+        )
         self.assertIs(StatusCode.UNSET, spans[2].status.status_code)
 
     def test_instrumented_failed_transaction_method(self, *_, **__):
@@ -97,17 +118,22 @@ class TestFunctionalAsyncPG(TestBase):
         self.assertEqual(3, len(spans))
 
         self.check_span(spans[0])
-        self.assertEqual(spans[0].attributes["db.statement"], "BEGIN;")
+        self.assertEqual(
+            spans[0].attributes[SpanAttributes.DB_STATEMENT], "BEGIN;"
+        )
         self.assertIs(StatusCode.UNSET, spans[0].status.status_code)
 
         self.check_span(spans[1])
         self.assertEqual(
-            spans[1].attributes["db.statement"], "SELECT 42::uuid;"
+            spans[1].attributes[SpanAttributes.DB_STATEMENT],
+            "SELECT 42::uuid;",
         )
         self.assertEqual(StatusCode.ERROR, spans[1].status.status_code)
 
         self.check_span(spans[2])
-        self.assertEqual(spans[2].attributes["db.statement"], "ROLLBACK;")
+        self.assertEqual(
+            spans[2].attributes[SpanAttributes.DB_STATEMENT], "ROLLBACK;"
+        )
         self.assertIs(StatusCode.UNSET, spans[2].status.status_code)
 
     def test_instrumented_method_doesnt_capture_parameters(self, *_, **__):
@@ -116,7 +142,9 @@ class TestFunctionalAsyncPG(TestBase):
         self.assertEqual(len(spans), 1)
         self.assertIs(StatusCode.UNSET, spans[0].status.status_code)
         self.check_span(spans[0])
-        self.assertEqual(spans[0].attributes["db.statement"], "SELECT $1;")
+        self.assertEqual(
+            spans[0].attributes[SpanAttributes.DB_STATEMENT], "SELECT $1;"
+        )
 
 
 class TestFunctionalAsyncPG_CaptureParameters(TestBase):
@@ -144,11 +172,21 @@ class TestFunctionalAsyncPG_CaptureParameters(TestBase):
         AsyncPGInstrumentor().uninstrument()
 
     def check_span(self, span):
-        self.assertEqual(span.attributes["db.system"], "postgresql")
-        self.assertEqual(span.attributes["db.name"], POSTGRES_DB_NAME)
-        self.assertEqual(span.attributes["db.user"], POSTGRES_USER)
-        self.assertEqual(span.attributes["net.peer.name"], POSTGRES_HOST)
-        self.assertEqual(span.attributes["net.peer.port"], POSTGRES_PORT)
+        self.assertEqual(
+            span.attributes[SpanAttributes.DB_SYSTEM], "postgresql"
+        )
+        self.assertEqual(
+            span.attributes[SpanAttributes.DB_NAME], POSTGRES_DB_NAME
+        )
+        self.assertEqual(
+            span.attributes[SpanAttributes.DB_USER], POSTGRES_USER
+        )
+        self.assertEqual(
+            span.attributes[SpanAttributes.NET_PEER_NAME], POSTGRES_HOST
+        )
+        self.assertEqual(
+            span.attributes[SpanAttributes.NET_PEER_PORT], POSTGRES_PORT
+        )
 
     def test_instrumented_execute_method_with_arguments(self, *_, **__):
         async_call(self._connection.execute("SELECT $1;", "1"))
@@ -158,7 +196,9 @@ class TestFunctionalAsyncPG_CaptureParameters(TestBase):
 
         self.check_span(spans[0])
         self.assertEqual(spans[0].name, "SELECT $1;")
-        self.assertEqual(spans[0].attributes["db.statement"], "SELECT $1;")
+        self.assertEqual(
+            spans[0].attributes[SpanAttributes.DB_STATEMENT], "SELECT $1;"
+        )
         self.assertEqual(
             spans[0].attributes["db.statement.parameters"], "('1',)"
         )
@@ -169,7 +209,9 @@ class TestFunctionalAsyncPG_CaptureParameters(TestBase):
         self.assertEqual(len(spans), 1)
 
         self.check_span(spans[0])
-        self.assertEqual(spans[0].attributes["db.statement"], "SELECT $1;")
+        self.assertEqual(
+            spans[0].attributes[SpanAttributes.DB_STATEMENT], "SELECT $1;"
+        )
         self.assertEqual(
             spans[0].attributes["db.statement.parameters"], "('1',)"
         )
@@ -180,7 +222,9 @@ class TestFunctionalAsyncPG_CaptureParameters(TestBase):
         self.assertEqual(len(spans), 1)
 
         self.check_span(spans[0])
-        self.assertEqual(spans[0].attributes["db.statement"], "SELECT $1;")
+        self.assertEqual(
+            spans[0].attributes[SpanAttributes.DB_STATEMENT], "SELECT $1;"
+        )
         self.assertEqual(
             spans[0].attributes["db.statement.parameters"], "([['1'], ['2']],)"
         )
@@ -192,7 +236,9 @@ class TestFunctionalAsyncPG_CaptureParameters(TestBase):
         self.assertEqual(len(spans), 1)
 
         self.check_span(spans[0])
-        self.assertEqual(spans[0].attributes["db.statement"], "SELECT 42;")
+        self.assertEqual(
+            spans[0].attributes[SpanAttributes.DB_STATEMENT], "SELECT 42;"
+        )
         self.assertEqual(
             spans[0].attributes["db.statement.parameters"], "(1, 2, 3)"
         )

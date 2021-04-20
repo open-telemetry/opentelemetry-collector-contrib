@@ -94,6 +94,7 @@ from opentelemetry.instrumentation.utils import (
     unwrap,
 )
 from opentelemetry.propagate import extract
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace.status import Status
 from opentelemetry.util._time import _time_ns
 from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
@@ -222,17 +223,17 @@ def _log_exception(tracer, func, handler, args, kwargs):
 
 def _get_attributes_from_request(request):
     attrs = {
-        "http.method": request.method,
-        "http.scheme": request.protocol,
-        "http.host": request.host,
-        "http.target": request.path,
+        SpanAttributes.HTTP_METHOD: request.method,
+        SpanAttributes.HTTP_SCHEME: request.protocol,
+        SpanAttributes.HTTP_HOST: request.host,
+        SpanAttributes.HTTP_TARGET: request.path,
     }
 
     if request.host:
-        attrs["http.host"] = request.host
+        attrs[SpanAttributes.HTTP_HOST] = request.host
 
     if request.remote_ip:
-        attrs["net.peer.ip"] = request.remote_ip
+        attrs[SpanAttributes.NET_PEER_IP] = request.remote_ip
 
     return extract_attributes_from_object(
         request, _traced_request_attrs, attrs
@@ -297,7 +298,7 @@ def _finish_span(tracer, handler, error=None):
         return
 
     if ctx.span.is_recording():
-        ctx.span.set_attribute("http.status_code", status_code)
+        ctx.span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, status_code)
         ctx.span.set_status(
             Status(
                 status_code=http_status_to_status_code(status_code),

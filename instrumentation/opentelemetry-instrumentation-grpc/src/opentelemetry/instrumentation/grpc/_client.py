@@ -29,6 +29,7 @@ from opentelemetry.instrumentation.grpc import grpcext
 from opentelemetry.instrumentation.grpc._utilities import RpcInfo
 from opentelemetry.propagate import inject
 from opentelemetry.propagators.textmap import Setter
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace.status import Status, StatusCode
 
 
@@ -87,10 +88,10 @@ class OpenTelemetryClientInterceptor(
     def _start_span(self, method):
         service, meth = method.lstrip("/").split("/", 1)
         attributes = {
-            "rpc.system": "grpc",
-            "rpc.grpc.status_code": grpc.StatusCode.OK.value[0],
-            "rpc.method": meth,
-            "rpc.service": service,
+            SpanAttributes.RPC_SYSTEM: "grpc",
+            SpanAttributes.RPC_GRPC_STATUS_CODE: grpc.StatusCode.OK.value[0],
+            SpanAttributes.RPC_METHOD: meth,
+            SpanAttributes.RPC_SERVICE: service,
         }
 
         return self._tracer.start_as_current_span(
@@ -144,7 +145,7 @@ class OpenTelemetryClientInterceptor(
                     Status(StatusCode.ERROR)
                 )
                 guarded_span.generated_span.set_attribute(
-                    "rpc.grpc.status_code", err.code().value[0]
+                    SpanAttributes.RPC_GRPC_STATUS_CODE, err.code().value[0]
                 )
                 raise err
 
@@ -180,7 +181,9 @@ class OpenTelemetryClientInterceptor(
                     yield response
             except grpc.RpcError as err:
                 span.set_status(Status(StatusCode.ERROR))
-                span.set_attribute("rpc.grpc.status_code", err.code().value[0])
+                span.set_attribute(
+                    SpanAttributes.RPC_GRPC_STATUS_CODE, err.code().value[0]
+                )
                 raise err
 
     def intercept_stream(
@@ -215,7 +218,7 @@ class OpenTelemetryClientInterceptor(
                     Status(StatusCode.ERROR)
                 )
                 guarded_span.generated_span.set_attribute(
-                    "rpc.grpc.status_code", err.code().value[0],
+                    SpanAttributes.RPC_GRPC_STATUS_CODE, err.code().value[0],
                 )
                 raise err
 

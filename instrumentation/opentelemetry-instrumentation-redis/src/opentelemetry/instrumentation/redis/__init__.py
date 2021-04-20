@@ -53,9 +53,9 @@ from opentelemetry.instrumentation.redis.util import (
 )
 from opentelemetry.instrumentation.redis.version import __version__
 from opentelemetry.instrumentation.utils import unwrap
+from opentelemetry.semconv.trace import SpanAttributes
 
 _DEFAULT_SERVICE = "redis"
-_RAWCMD = "db.statement"
 
 
 def _set_connection_attributes(span, conn):
@@ -79,7 +79,7 @@ def _traced_execute_command(func, instance, args, kwargs):
         name, kind=trace.SpanKind.CLIENT
     ) as span:
         if span.is_recording():
-            span.set_attribute(_RAWCMD, query)
+            span.set_attribute(SpanAttributes.DB_STATEMENT, query)
             _set_connection_attributes(span, instance)
             span.set_attribute("db.redis.args_length", len(args))
         return func(*args, **kwargs)
@@ -97,7 +97,7 @@ def _traced_execute_pipeline(func, instance, args, kwargs):
         span_name, kind=trace.SpanKind.CLIENT
     ) as span:
         if span.is_recording():
-            span.set_attribute(_RAWCMD, resource)
+            span.set_attribute(SpanAttributes.DB_STATEMENT, resource)
             _set_connection_attributes(span, instance)
             span.set_attribute(
                 "db.redis.pipeline_length", len(instance.command_stack)

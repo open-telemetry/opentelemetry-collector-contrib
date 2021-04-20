@@ -16,6 +16,7 @@ import threading
 import time
 
 from opentelemetry.instrumentation.celery import CeleryInstrumentor
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.trace import SpanKind
 
@@ -54,7 +55,7 @@ class TestCeleryInstrumentation(TestBase):
             {
                 "celery.action": "run",
                 "celery.state": "SUCCESS",
-                "messaging.destination": "celery",
+                SpanAttributes.MESSAGING_DESTINATION: "celery",
                 "celery.task_name": "tests.celery_test_tasks.task_add",
             },
         )
@@ -68,8 +69,8 @@ class TestCeleryInstrumentation(TestBase):
             {
                 "celery.action": "apply_async",
                 "celery.task_name": "tests.celery_test_tasks.task_add",
-                "messaging.destination_kind": "queue",
-                "messaging.destination": "celery",
+                SpanAttributes.MESSAGING_DESTINATION_KIND: "queue",
+                SpanAttributes.MESSAGING_DESTINATION: "celery",
             },
         )
 

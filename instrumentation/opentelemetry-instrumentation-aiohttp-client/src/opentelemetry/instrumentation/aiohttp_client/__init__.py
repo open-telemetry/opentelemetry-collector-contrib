@@ -77,6 +77,7 @@ from opentelemetry.instrumentation.utils import (
     unwrap,
 )
 from opentelemetry.propagate import inject
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import SpanKind, TracerProvider, get_tracer
 from opentelemetry.trace.status import Status, StatusCode
 
@@ -169,8 +170,10 @@ def create_trace_config(
 
         if trace_config_ctx.span.is_recording():
             attributes = {
-                "http.method": http_method,
-                "http.url": trace_config_ctx.url_filter(params.url)
+                SpanAttributes.HTTP_METHOD: http_method,
+                SpanAttributes.HTTP_URL: trace_config_ctx.url_filter(
+                    params.url
+                )
                 if callable(trace_config_ctx.url_filter)
                 else str(params.url),
             }
@@ -196,7 +199,7 @@ def create_trace_config(
                 Status(http_status_to_status_code(int(params.response.status)))
             )
             trace_config_ctx.span.set_attribute(
-                "http.status_code", params.response.status
+                SpanAttributes.HTTP_STATUS_CODE, params.response.status
             )
         _end_trace(trace_config_ctx)
 

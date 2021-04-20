@@ -26,6 +26,7 @@ from opentelemetry.instrumentation.propagators import (
 )
 from opentelemetry.instrumentation.pyramid.version import __version__
 from opentelemetry.propagate import extract
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.util._time import _time_ns
 from opentelemetry.util.http import get_excluded_urls
 
@@ -98,7 +99,9 @@ def _before_traversal(event):
     if span.is_recording():
         attributes = otel_wsgi.collect_request_attributes(request_environ)
         if request.matched_route:
-            attributes["http.route"] = request.matched_route.pattern
+            attributes[
+                SpanAttributes.HTTP_ROUTE
+            ] = request.matched_route.pattern
         for key, value in attributes.items():
             span.set_attribute(key, value)
 

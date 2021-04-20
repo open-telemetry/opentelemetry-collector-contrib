@@ -24,6 +24,7 @@ from pymemcache.exceptions import (
 
 from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.pymemcache import PymemcacheInstrumentor
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.trace import get_tracer
 
@@ -65,10 +66,18 @@ class PymemcacheClientTestCase(
             command, *_ = query.split(" ")
             self.assertEqual(span.name, command)
             self.assertIs(span.kind, trace_api.SpanKind.CLIENT)
-            self.assertEqual(span.attributes["net.peer.name"], TEST_HOST)
-            self.assertEqual(span.attributes["net.peer.port"], TEST_PORT)
-            self.assertEqual(span.attributes["db.system"], "memcached")
-            self.assertEqual(span.attributes["db.statement"], query)
+            self.assertEqual(
+                span.attributes[SpanAttributes.NET_PEER_NAME], TEST_HOST
+            )
+            self.assertEqual(
+                span.attributes[SpanAttributes.NET_PEER_PORT], TEST_PORT
+            )
+            self.assertEqual(
+                span.attributes[SpanAttributes.DB_SYSTEM], "memcached"
+            )
+            self.assertEqual(
+                span.attributes[SpanAttributes.DB_STATEMENT], query
+            )
 
     def test_set_success(self):
         client = self.make_client([b"STORED\r\n"])
@@ -207,8 +216,12 @@ class PymemcacheClientTestCase(
         spans = self.memory_exporter.get_finished_spans()
 
         self.assertEqual(len(spans), 2)
-        self.assertEqual(spans[0].attributes["net.peer.name"], TEST_HOST)
-        self.assertEqual(spans[0].attributes["net.peer.port"], TEST_PORT)
+        self.assertEqual(
+            spans[0].attributes[SpanAttributes.NET_PEER_NAME], TEST_HOST
+        )
+        self.assertEqual(
+            spans[0].attributes[SpanAttributes.NET_PEER_PORT], TEST_PORT
+        )
 
     def test_append_stored(self):
         client = self.make_client([b"STORED\r\n"])
@@ -511,10 +524,18 @@ class PymemcacheHashClientTestCase(TestBase):
             command, *_ = query.split(" ")
             self.assertEqual(span.name, command)
             self.assertIs(span.kind, trace_api.SpanKind.CLIENT)
-            self.assertEqual(span.attributes["net.peer.name"], TEST_HOST)
-            self.assertEqual(span.attributes["net.peer.port"], TEST_PORT)
-            self.assertEqual(span.attributes["db.system"], "memcached")
-            self.assertEqual(span.attributes["db.statement"], query)
+            self.assertEqual(
+                span.attributes[SpanAttributes.NET_PEER_NAME], TEST_HOST
+            )
+            self.assertEqual(
+                span.attributes[SpanAttributes.NET_PEER_PORT], TEST_PORT
+            )
+            self.assertEqual(
+                span.attributes[SpanAttributes.DB_SYSTEM], "memcached"
+            )
+            self.assertEqual(
+                span.attributes[SpanAttributes.DB_STATEMENT], query
+            )
 
     def test_delete_many_found(self):
         client = self.make_client([b"STORED\r", b"\n", b"DELETED\r\n"])

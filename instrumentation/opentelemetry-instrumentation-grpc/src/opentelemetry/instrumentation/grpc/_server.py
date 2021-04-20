@@ -29,6 +29,7 @@ import grpc
 from opentelemetry import trace
 from opentelemetry.context import attach, detach
 from opentelemetry.propagate import extract
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace.status import Status, StatusCode
 
 logger = logging.getLogger(__name__)
@@ -116,7 +117,9 @@ class _OpenTelemetryServicerContext(grpc.ServicerContext):
     def abort(self, code, details):
         self.code = code
         self.details = details
-        self._active_span.set_attribute("rpc.grpc.status_code", code.value[0])
+        self._active_span.set_attribute(
+            SpanAttributes.RPC_GRPC_STATUS_CODE, code.value[0]
+        )
         self._active_span.set_status(
             Status(
                 status_code=StatusCode.ERROR,
@@ -132,7 +135,9 @@ class _OpenTelemetryServicerContext(grpc.ServicerContext):
         self.code = code
         # use details if we already have it, otherwise the status description
         details = self.details or code.value[1]
-        self._active_span.set_attribute("rpc.grpc.status_code", code.value[0])
+        self._active_span.set_attribute(
+            SpanAttributes.RPC_GRPC_STATUS_CODE, code.value[0]
+        )
         if code != grpc.StatusCode.OK:
             self._active_span.set_status(
                 Status(
@@ -198,8 +203,8 @@ class OpenTelemetryServerInterceptor(grpc.ServerInterceptor):
 
         # standard attributes
         attributes = {
-            "rpc.system": "grpc",
-            "rpc.grpc.status_code": grpc.StatusCode.OK.value[0],
+            SpanAttributes.RPC_SYSTEM: "grpc",
+            SpanAttributes.RPC_GRPC_STATUS_CODE: grpc.StatusCode.OK.value[0],
         }
 
         # if we have details about the call, split into service and method
@@ -207,7 +212,12 @@ class OpenTelemetryServerInterceptor(grpc.ServerInterceptor):
             service, method = handler_call_details.method.lstrip("/").split(
                 "/", 1
             )
-            attributes.update({"rpc.method": method, "rpc.service": service})
+            attributes.update(
+                {
+                    SpanAttributes.RPC_METHOD: method,
+                    SpanAttributes.RPC_SERVICE: service,
+                }
+            )
 
         # add some attributes from the metadata
         metadata = dict(context.invocation_metadata())
@@ -224,11 +234,16 @@ class OpenTelemetryServerInterceptor(grpc.ServerInterceptor):
             ip, port = (
                 context.peer().split(",")[0].split(":", 1)[1].rsplit(":", 1)
             )
-            attributes.update({"net.peer.ip": ip, "net.peer.port": port})
+            attributes.update(
+                {
+                    SpanAttributes.NET_PEER_IP: ip,
+                    SpanAttributes.NET_PEER_PORT: port,
+                }
+            )
 
             # other telemetry sources add this, so we will too
             if ip in ("[::1]", "127.0.0.1"):
-                attributes["net.peer.name"] = "localhost"
+                attributes[SpanAttributes.NET_PEER_NAME] = "localhost"
 
         except IndexError:
             logger.warning("Failed to parse peer address '%s'", context.peer())

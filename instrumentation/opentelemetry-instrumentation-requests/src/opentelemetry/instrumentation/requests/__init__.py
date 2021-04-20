@@ -45,6 +45,7 @@ from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.requests.version import __version__
 from opentelemetry.instrumentation.utils import http_status_to_status_code
 from opentelemetry.propagate import inject
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import SpanKind, get_tracer
 from opentelemetry.trace.status import Status
 
@@ -122,16 +123,16 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
             span_name = get_default_span_name(method)
 
         labels = {}
-        labels["http.method"] = method
-        labels["http.url"] = url
+        labels[SpanAttributes.HTTP_METHOD] = method
+        labels[SpanAttributes.HTTP_URL] = url
 
         with get_tracer(
             __name__, __version__, tracer_provider
         ).start_as_current_span(span_name, kind=SpanKind.CLIENT) as span:
             exception = None
             if span.is_recording():
-                span.set_attribute("http.method", method)
-                span.set_attribute("http.url", url)
+                span.set_attribute(SpanAttributes.HTTP_METHOD, method)
+                span.set_attribute(SpanAttributes.HTTP_URL, url)
 
             headers = get_or_create_headers()
             inject(headers)
@@ -149,13 +150,17 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
 
             if isinstance(result, Response):
                 if span.is_recording():
-                    span.set_attribute("http.status_code", result.status_code)
+                    span.set_attribute(
+                        SpanAttributes.HTTP_STATUS_CODE, result.status_code
+                    )
                     span.set_status(
                         Status(http_status_to_status_code(result.status_code))
                     )
-                labels["http.status_code"] = str(result.status_code)
+                labels[SpanAttributes.HTTP_STATUS_CODE] = str(
+                    result.status_code
+                )
                 if result.raw and result.raw.version:
-                    labels["http.flavor"] = (
+                    labels[SpanAttributes.HTTP_FLAVOR] = (
                         str(result.raw.version)[:1]
                         + "."
                         + str(result.raw.version)[:-1]

@@ -20,12 +20,7 @@ import pytest
 from sqlalchemy.exc import ProgrammingError
 
 from opentelemetry import trace
-from opentelemetry.instrumentation.sqlalchemy.engine import (
-    _DB,
-    _HOST,
-    _PORT,
-    _STMT,
-)
+from opentelemetry.semconv.trace import SpanAttributes
 
 from .mixins import SQLAlchemyTestMixin
 
@@ -52,8 +47,14 @@ class PostgresTestCase(SQLAlchemyTestMixin):
 
     def check_meta(self, span):
         # check database connection tags
-        self.assertEqual(span.attributes.get(_HOST), POSTGRES_CONFIG["host"])
-        self.assertEqual(span.attributes.get(_PORT), POSTGRES_CONFIG["port"])
+        self.assertEqual(
+            span.attributes.get(SpanAttributes.NET_PEER_NAME),
+            POSTGRES_CONFIG["host"],
+        )
+        self.assertEqual(
+            span.attributes.get(SpanAttributes.NET_PEER_PORT),
+            POSTGRES_CONFIG["port"],
+        )
 
     def test_engine_execute_errors(self):
         # ensures that SQL errors are reported
@@ -67,9 +68,12 @@ class PostgresTestCase(SQLAlchemyTestMixin):
         # span fields
         self.assertEqual(span.name, "SELECT opentelemetry-tests")
         self.assertEqual(
-            span.attributes.get(_STMT), "SELECT * FROM a_wrong_table"
+            span.attributes.get(SpanAttributes.DB_STATEMENT),
+            "SELECT * FROM a_wrong_table",
         )
-        self.assertEqual(span.attributes.get(_DB), self.SQL_DB)
+        self.assertEqual(
+            span.attributes.get(SpanAttributes.DB_NAME), self.SQL_DB
+        )
         self.check_meta(span)
         self.assertTrue(span.end_time - span.start_time > 0)
         # check the error

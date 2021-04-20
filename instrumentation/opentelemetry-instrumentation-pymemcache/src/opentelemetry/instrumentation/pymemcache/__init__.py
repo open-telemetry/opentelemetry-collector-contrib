@@ -46,21 +46,16 @@ from wrapt import wrap_function_wrapper as _wrap
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.pymemcache.version import __version__
 from opentelemetry.instrumentation.utils import unwrap
+from opentelemetry.semconv.trace import (
+    DbSystemValues,
+    NetTransportValues,
+    SpanAttributes,
+)
 from opentelemetry.trace import SpanKind, get_tracer
 
 logger = logging.getLogger(__name__)
 
-# Network attribute semantic convention here:
-# https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes
-_HOST = "net.peer.name"
-_PORT = "net.peer.port"
-_TRANSPORT = "net.transport"
-# Database semantic conventions here:
-# https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/database.md
-_DB = "db.system"
 
-_DEFAULT_SERVICE = "memcached"
-_RAWCMD = "db.statement"
 COMMANDS = [
     "set",
     "set_many",
@@ -123,7 +118,7 @@ def _wrap_cmd(tracer, cmd, wrapped, instance, args, kwargs):
                     vals = _get_query_string(args[0])
 
                 query = "{}{}{}".format(cmd, " " if vals else "", vals)
-                span.set_attribute(_RAWCMD, query)
+                span.set_attribute(SpanAttributes.DB_STATEMENT, query)
 
                 _set_connection_attributes(span, instance)
         except Exception as ex:  # pylint: disable=broad-except
@@ -162,19 +157,23 @@ def _get_query_string(arg):
 def _get_address_attributes(instance):
     """Attempt to get host and port from Client instance."""
     address_attributes = {}
-    address_attributes[_DB] = "memcached"
+    address_attributes[SpanAttributes.DB_SYSTEM] = "memcached"
 
     # client.base.Client contains server attribute which is either a host/port tuple, or unix socket path string
     # https://github.com/pinterest/pymemcache/blob/f02ddf73a28c09256589b8afbb3ee50f1171cac7/pymemcache/client/base.py#L228
     if hasattr(instance, "server"):
         if isinstance(instance.server, tuple):
             host, port = instance.server
-            address_attributes[_HOST] = host
-            address_attributes[_PORT] = port
-            address_attributes[_TRANSPORT] = "IP.TCP"
+            address_attributes[SpanAttributes.NET_PEER_NAME] = host
+            address_attributes[SpanAttributes.NET_PEER_PORT] = port
+            address_attributes[
+                SpanAttributes.NET_TRANSPORT
+            ] = NetTransportValues.IP_TCP.value
         elif isinstance(instance.server, str):
-            address_attributes[_HOST] = instance.server
-            address_attributes[_TRANSPORT] = "Unix"
+            address_attributes[SpanAttributes.NET_PEER_NAME] = instance.server
+            address_attributes[
+                SpanAttributes.NET_TRANSPORT
+            ] = NetTransportValues.UNIX.value
 
     return address_attributes
 

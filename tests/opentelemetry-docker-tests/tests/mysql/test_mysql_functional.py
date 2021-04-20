@@ -18,6 +18,7 @@ import mysql.connector
 
 from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.mysql import MySQLInstrumentor
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.test_base import TestBase
 
 MYSQL_USER = os.getenv("MYSQL_USER", "testuser")
@@ -70,11 +71,19 @@ class TestFunctionalMysql(TestBase):
         self.assertIsNotNone(db_span.parent)
         self.assertIs(db_span.parent, root_span.get_span_context())
         self.assertIs(db_span.kind, trace_api.SpanKind.CLIENT)
-        self.assertEqual(db_span.attributes["db.system"], "mysql")
-        self.assertEqual(db_span.attributes["db.name"], MYSQL_DB_NAME)
-        self.assertEqual(db_span.attributes["db.user"], MYSQL_USER)
-        self.assertEqual(db_span.attributes["net.peer.name"], MYSQL_HOST)
-        self.assertEqual(db_span.attributes["net.peer.port"], MYSQL_PORT)
+        self.assertEqual(db_span.attributes[SpanAttributes.DB_SYSTEM], "mysql")
+        self.assertEqual(
+            db_span.attributes[SpanAttributes.DB_NAME], MYSQL_DB_NAME
+        )
+        self.assertEqual(
+            db_span.attributes[SpanAttributes.DB_USER], MYSQL_USER
+        )
+        self.assertEqual(
+            db_span.attributes[SpanAttributes.NET_PEER_NAME], MYSQL_HOST
+        )
+        self.assertEqual(
+            db_span.attributes[SpanAttributes.NET_PEER_PORT], MYSQL_PORT
+        )
 
     def test_execute(self):
         """Should create a child span for execute"""

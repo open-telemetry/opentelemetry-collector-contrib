@@ -22,6 +22,7 @@ from opentelemetry.instrumentation.propagators import (
     get_global_response_propagator,
     set_global_response_propagator,
 )
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.trace import StatusCode, format_span_id, format_trace_id
 from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
@@ -104,17 +105,17 @@ class TestFalconInstrumentation(TestFalconBase):
         self.assert_span_has_attributes(
             span,
             {
-                "http.method": method,
-                "http.server_name": "falconframework.org",
-                "http.scheme": "http",
-                "net.host.port": 80,
-                "http.host": "falconframework.org",
-                "http.target": "/",
-                "net.peer.ip": "127.0.0.1",
-                "net.peer.port": "65133",
-                "http.flavor": "1.1",
+                SpanAttributes.HTTP_METHOD: method,
+                SpanAttributes.HTTP_SERVER_NAME: "falconframework.org",
+                SpanAttributes.HTTP_SCHEME: "http",
+                SpanAttributes.NET_HOST_PORT: 80,
+                SpanAttributes.HTTP_HOST: "falconframework.org",
+                SpanAttributes.HTTP_TARGET: "/",
+                SpanAttributes.NET_PEER_IP: "127.0.0.1",
+                SpanAttributes.NET_PEER_PORT: "65133",
+                SpanAttributes.HTTP_FLAVOR: "1.1",
                 "falcon.resource": "HelloWorldResource",
-                "http.status_code": 201,
+                SpanAttributes.HTTP_STATUS_CODE: 201,
             },
         )
         self.memory_exporter.clear()
@@ -129,16 +130,16 @@ class TestFalconInstrumentation(TestFalconBase):
         self.assert_span_has_attributes(
             span,
             {
-                "http.method": "GET",
-                "http.server_name": "falconframework.org",
-                "http.scheme": "http",
-                "net.host.port": 80,
-                "http.host": "falconframework.org",
-                "http.target": "/",
-                "net.peer.ip": "127.0.0.1",
-                "net.peer.port": "65133",
-                "http.flavor": "1.1",
-                "http.status_code": 404,
+                SpanAttributes.HTTP_METHOD: "GET",
+                SpanAttributes.HTTP_SERVER_NAME: "falconframework.org",
+                SpanAttributes.HTTP_SCHEME: "http",
+                SpanAttributes.NET_HOST_PORT: 80,
+                SpanAttributes.HTTP_HOST: "falconframework.org",
+                SpanAttributes.HTTP_TARGET: "/",
+                SpanAttributes.NET_PEER_IP: "127.0.0.1",
+                SpanAttributes.NET_PEER_PORT: "65133",
+                SpanAttributes.HTTP_FLAVOR: "1.1",
+                SpanAttributes.HTTP_STATUS_CODE: 404,
             },
         )
 
@@ -160,16 +161,16 @@ class TestFalconInstrumentation(TestFalconBase):
         self.assert_span_has_attributes(
             span,
             {
-                "http.method": "GET",
-                "http.server_name": "falconframework.org",
-                "http.scheme": "http",
-                "net.host.port": 80,
-                "http.host": "falconframework.org",
-                "http.target": "/",
-                "net.peer.ip": "127.0.0.1",
-                "net.peer.port": "65133",
-                "http.flavor": "1.1",
-                "http.status_code": 500,
+                SpanAttributes.HTTP_METHOD: "GET",
+                SpanAttributes.HTTP_SERVER_NAME: "falconframework.org",
+                SpanAttributes.HTTP_SCHEME: "http",
+                SpanAttributes.NET_HOST_PORT: 80,
+                SpanAttributes.HTTP_HOST: "falconframework.org",
+                SpanAttributes.HTTP_TARGET: "/",
+                SpanAttributes.NET_PEER_IP: "127.0.0.1",
+                SpanAttributes.NET_PEER_PORT: "65133",
+                SpanAttributes.HTTP_FLAVOR: "1.1",
+                SpanAttributes.HTTP_STATUS_CODE: 500,
             },
         )
 

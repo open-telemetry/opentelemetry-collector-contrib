@@ -59,6 +59,7 @@ from opentelemetry.instrumentation.propagators import (
     get_global_response_propagator,
 )
 from opentelemetry.propagate import extract
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.util._time import _time_ns
 from opentelemetry.util.http import get_excluded_urls
 
@@ -144,7 +145,9 @@ def _wrapped_before_request(name_callback):
             if flask.request.url_rule:
                 # For 404 that result from no route found, etc, we
                 # don't have a url_rule.
-                attributes["http.route"] = flask.request.url_rule.rule
+                attributes[
+                    SpanAttributes.HTTP_ROUTE
+                ] = flask.request.url_rule.rule
             for key, value in attributes.items():
                 span.set_attribute(key, value)
 

@@ -27,6 +27,7 @@ from opentelemetry.instrumentation.grpc.grpcext._interceptor import (
     _UnaryClientInfo,
 )
 from opentelemetry.propagate import get_global_textmap, set_global_textmap
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.mock_textmap import MockTextMapPropagator
 from opentelemetry.test.test_base import TestBase
 
@@ -72,10 +73,12 @@ class TestClientProto(TestBase):
         self.assert_span_has_attributes(
             span,
             {
-                "rpc.method": "SimpleMethod",
-                "rpc.service": "GRPCTestServer",
-                "rpc.system": "grpc",
-                "rpc.grpc.status_code": grpc.StatusCode.OK.value[0],
+                SpanAttributes.RPC_METHOD: "SimpleMethod",
+                SpanAttributes.RPC_SERVICE: "GRPCTestServer",
+                SpanAttributes.RPC_SYSTEM: "grpc",
+                SpanAttributes.RPC_GRPC_STATUS_CODE: grpc.StatusCode.OK.value[
+                    0
+                ],
             },
         )
 
@@ -96,10 +99,12 @@ class TestClientProto(TestBase):
         self.assert_span_has_attributes(
             span,
             {
-                "rpc.method": "ServerStreamingMethod",
-                "rpc.service": "GRPCTestServer",
-                "rpc.system": "grpc",
-                "rpc.grpc.status_code": grpc.StatusCode.OK.value[0],
+                SpanAttributes.RPC_METHOD: "ServerStreamingMethod",
+                SpanAttributes.RPC_SERVICE: "GRPCTestServer",
+                SpanAttributes.RPC_SYSTEM: "grpc",
+                SpanAttributes.RPC_GRPC_STATUS_CODE: grpc.StatusCode.OK.value[
+                    0
+                ],
             },
         )
 
@@ -120,10 +125,12 @@ class TestClientProto(TestBase):
         self.assert_span_has_attributes(
             span,
             {
-                "rpc.method": "ClientStreamingMethod",
-                "rpc.service": "GRPCTestServer",
-                "rpc.system": "grpc",
-                "rpc.grpc.status_code": grpc.StatusCode.OK.value[0],
+                SpanAttributes.RPC_METHOD: "ClientStreamingMethod",
+                SpanAttributes.RPC_SERVICE: "GRPCTestServer",
+                SpanAttributes.RPC_SYSTEM: "grpc",
+                SpanAttributes.RPC_GRPC_STATUS_CODE: grpc.StatusCode.OK.value[
+                    0
+                ],
             },
         )
 
@@ -146,10 +153,12 @@ class TestClientProto(TestBase):
         self.assert_span_has_attributes(
             span,
             {
-                "rpc.method": "BidirectionalStreamingMethod",
-                "rpc.service": "GRPCTestServer",
-                "rpc.system": "grpc",
-                "rpc.grpc.status_code": grpc.StatusCode.OK.value[0],
+                SpanAttributes.RPC_METHOD: "BidirectionalStreamingMethod",
+                SpanAttributes.RPC_SERVICE: "GRPCTestServer",
+                SpanAttributes.RPC_SYSTEM: "grpc",
+                SpanAttributes.RPC_GRPC_STATUS_CODE: grpc.StatusCode.OK.value[
+                    0
+                ],
             },
         )
 

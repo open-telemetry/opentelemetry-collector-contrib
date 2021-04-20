@@ -15,23 +15,36 @@
 """
 Some utils used by the redis integration
 """
+from opentelemetry.semconv.trace import (
+    DbSystemValues,
+    NetTransportValues,
+    SpanAttributes,
+)
 
 
 def _extract_conn_attributes(conn_kwargs):
     """ Transform redis conn info into dict """
     attributes = {
-        "db.system": "redis",
+        SpanAttributes.DB_SYSTEM: DbSystemValues.REDIS.value,
     }
     db = conn_kwargs.get("db", 0)
-    attributes["db.name"] = db
-    attributes["db.redis.database_index"] = db
+    attributes[SpanAttributes.DB_NAME] = db
+    attributes[SpanAttributes.DB_REDIS_DATABASE_INDEX] = db
     try:
-        attributes["net.peer.name"] = conn_kwargs.get("host", "localhost")
-        attributes["net.peer.port"] = conn_kwargs.get("port", 6379)
-        attributes["net.transport"] = "IP.TCP"
+        attributes[SpanAttributes.NET_PEER_NAME] = conn_kwargs.get(
+            "host", "localhost"
+        )
+        attributes[SpanAttributes.NET_PEER_PORT] = conn_kwargs.get(
+            "port", 6379
+        )
+        attributes[
+            SpanAttributes.NET_TRANSPORT
+        ] = NetTransportValues.IP_TCP.value
     except KeyError:
-        attributes["net.peer.name"] = conn_kwargs.get("path", "")
-        attributes["net.transport"] = "Unix"
+        attributes[SpanAttributes.NET_PEER_NAME] = conn_kwargs.get("path", "")
+        attributes[
+            SpanAttributes.NET_TRANSPORT
+        ] = NetTransportValues.UNIX.value
 
     return attributes
 

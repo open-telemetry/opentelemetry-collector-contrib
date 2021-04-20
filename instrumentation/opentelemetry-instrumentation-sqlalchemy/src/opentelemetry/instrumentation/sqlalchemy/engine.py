@@ -19,17 +19,8 @@ from sqlalchemy.event import listen  # pylint: disable=no-name-in-module
 
 from opentelemetry import trace
 from opentelemetry.instrumentation.sqlalchemy.version import __version__
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace.status import Status, StatusCode
-
-# Network attribute semantic convention here:
-# https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes
-_HOST = "net.peer.name"
-_PORT = "net.peer.port"
-# Database semantic conventions here:
-# https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/database.md
-_STMT = "db.statement"
-_DB = "db.name"
-_USER = "db.user"
 
 
 def _normalize_vendor(vendor):
@@ -105,7 +96,7 @@ class EngineTracer:
         if not found:
             attrs = _get_attributes_from_cursor(self.vendor, cursor, attrs)
 
-        db_name = attrs.get(_DB, "")
+        db_name = attrs.get(SpanAttributes.DB_NAME, "")
         span = self.tracer.start_span(
             self._operation_name(db_name, statement),
             kind=trace.SpanKind.CLIENT,
@@ -113,8 +104,8 @@ class EngineTracer:
         self.current_thread_span = self.cursor_mapping[cursor] = span
         with trace.use_span(span, end_on_exit=False):
             if span.is_recording():
-                span.set_attribute(_STMT, statement)
-                span.set_attribute("db.system", self.vendor)
+                span.set_attribute(SpanAttributes.DB_STATEMENT, statement)
+                span.set_attribute(SpanAttributes.DB_SYSTEM, self.vendor)
                 for key, value in attrs.items():
                     span.set_attribute(key, value)
 
@@ -144,13 +135,13 @@ def _get_attributes_from_url(url):
     """Set connection tags from the url. return true if successful."""
     attrs = {}
     if url.host:
-        attrs[_HOST] = url.host
+        attrs[SpanAttributes.NET_PEER_NAME] = url.host
     if url.port:
-        attrs[_PORT] = url.port
+        attrs[SpanAttributes.NET_PEER_PORT] = url.port
     if url.database:
-        attrs[_DB] = url.database
+        attrs[SpanAttributes.DB_NAME] = url.database
     if url.username:
-        attrs[_USER] = url.username
+        attrs[SpanAttributes.DB_USER] = url.username
     return attrs, bool(url.host)
 
 
@@ -164,7 +155,7 @@ def _get_attributes_from_cursor(vendor, cursor, attrs):
             dsn = getattr(cursor.connection, "dsn", None)
             if dsn:
                 data = parse_dsn(dsn)
-                attrs[_DB] = data.get("dbname")
-                attrs[_HOST] = data.get("host")
-                attrs[_PORT] = int(data.get("port"))
+                attrs[SpanAttributes.DB_NAME] = data.get("dbname")
+                attrs[SpanAttributes.NET_PEER_NAME] = data.get("host")
+                attrs[SpanAttributes.NET_PEER_PORT] = int(data.get("port"))
     return attrs

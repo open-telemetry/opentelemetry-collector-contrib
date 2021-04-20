@@ -62,6 +62,7 @@ from opentelemetry.instrumentation.celery.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.propagate import extract, inject
 from opentelemetry.propagators.textmap import Getter
+from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace.status import Status, StatusCode
 
 logger = logging.getLogger(__name__)
@@ -75,7 +76,6 @@ _TASK_RETRY_REASON_KEY = "celery.retry.reason"
 _TASK_REVOKED_REASON_KEY = "celery.revoked.reason"
 _TASK_REVOKED_TERMINATED_SIGNAL_KEY = "celery.terminated.signal"
 _TASK_NAME_KEY = "celery.task_name"
-_MESSAGE_ID_ATTRIBUTE_NAME = "messaging.message_id"
 
 
 class CeleryGetter(Getter):
@@ -182,7 +182,7 @@ class CeleryInstrumentor(BaseInstrumentor):
         # apply some attributes here because most of the data is not available
         if span.is_recording():
             span.set_attribute(_TASK_TAG_KEY, _TASK_APPLY_ASYNC)
-            span.set_attribute(_MESSAGE_ID_ATTRIBUTE_NAME, task_id)
+            span.set_attribute(SpanAttributes.MESSAGING_MESSAGE_ID, task_id)
             span.set_attribute(_TASK_NAME_KEY, task.name)
             utils.set_attributes_from_context(span, kwargs)
 

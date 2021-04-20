@@ -16,6 +16,8 @@ import logging
 
 from celery import registry  # pylint: disable=no-name-in-module
 
+from opentelemetry.semconv.trace import SpanAttributes
+
 logger = logging.getLogger(__name__)
 
 # Celery Context key
@@ -77,21 +79,23 @@ def set_attributes_from_context(span, context):
             # Get also destination from this
             routing_key = value.get("routing_key")
             if routing_key is not None:
-                span.set_attribute("messaging.destination", routing_key)
+                span.set_attribute(
+                    SpanAttributes.MESSAGING_DESTINATION, routing_key
+                )
             value = str(value)
 
         elif key == "id":
-            attribute_name = "messaging.message_id"
+            attribute_name = SpanAttributes.MESSAGING_MESSAGE_ID
 
         elif key == "correlation_id":
-            attribute_name = "messaging.conversation_id"
+            attribute_name = SpanAttributes.MESSAGING_CONVERSATION_ID
 
         elif key == "routing_key":
-            attribute_name = "messaging.destination"
+            attribute_name = SpanAttributes.MESSAGING_DESTINATION
 
         # according to https://docs.celeryproject.org/en/stable/userguide/routing.html#exchange-types
         elif key == "declare":
-            attribute_name = "messaging.destination_kind"
+            attribute_name = SpanAttributes.MESSAGING_DESTINATION_KIND
             for declare in value:
                 if declare.exchange.type == "direct":
                     value = "queue"
