@@ -11,7 +11,7 @@ require (
 	github.com/observiq/go-syslog/v3 v3.0.2
 	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.24.0
+	go.opentelemetry.io/collector v0.25.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/sys v0.0.0-20210309074719-68d13333faf2
 	golang.org/x/text v0.3.6
