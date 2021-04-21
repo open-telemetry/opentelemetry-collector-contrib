@@ -229,7 +229,7 @@ func TestSplitLogsIntoDifferentBatches(t *testing.T) {
 func newTraces(rss ...pdata.ResourceSpans) pdata.Traces {
 	td := pdata.NewTraces()
 	for _, rs := range rss {
-		td.ResourceSpans().Append(rs)
+		rs.CopyTo(td.ResourceSpans().AppendEmpty())
 	}
 	return td
 }
@@ -262,12 +262,12 @@ func fillResourceSpans(rs pdata.ResourceSpans, key string, val pdata.AttributeVa
 	secondSpan.SetTraceID(pdata.NewTraceID([16]byte{byte(rand.Int())}))
 }
 
-func newMetrics(rss ...pdata.ResourceMetrics) pdata.Metrics {
-	td := pdata.NewMetrics()
-	for _, rs := range rss {
-		td.ResourceMetrics().Append(rs)
+func newMetrics(rms ...pdata.ResourceMetrics) pdata.Metrics {
+	md := pdata.NewMetrics()
+	for _, rm := range rms {
+		rm.CopyTo(md.ResourceMetrics().AppendEmpty())
 	}
-	return td
+	return md
 }
 
 func sortMetrics(tds []pdata.Metrics, attrKey string) {
@@ -298,12 +298,12 @@ func fillResourceMetrics(rs pdata.ResourceMetrics, key string, val pdata.Attribu
 	secondMetric.SetDataType(pdata.MetricDataType(rand.Int() % 4))
 }
 
-func newLogs(rss ...pdata.ResourceLogs) pdata.Logs {
-	td := pdata.NewLogs()
-	for _, rs := range rss {
-		td.ResourceLogs().Append(rs)
+func newLogs(rls ...pdata.ResourceLogs) pdata.Logs {
+	ld := pdata.NewLogs()
+	for _, rl := range rls {
+		rl.CopyTo(ld.ResourceLogs().AppendEmpty())
 	}
-	return td
+	return ld
 }
 
 func sortLogs(tds []pdata.Logs, attrKey string) {

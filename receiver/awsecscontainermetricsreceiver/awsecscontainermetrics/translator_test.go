@@ -40,7 +40,8 @@ func TestIntGauge(t *testing.T) {
 	intValue := int64(100)
 	timestamp := pdata.TimestampFromTime(time.Now())
 
-	ilm := intGauge("cpu_utilized", "Count", intValue, timestamp)
+	ilm := pdata.NewInstrumentationLibraryMetrics()
+	appendIntGauge("cpu_utilized", "Count", intValue, timestamp, ilm)
 	require.NotNil(t, ilm)
 }
 
@@ -48,16 +49,18 @@ func TestDoubleGauge(t *testing.T) {
 	timestamp := pdata.TimestampFromTime(time.Now())
 	floatValue := 100.01
 
-	m := doubleGauge("cpu_utilized", "Count", floatValue, timestamp)
-	require.NotNil(t, m)
+	ilm := pdata.NewInstrumentationLibraryMetrics()
+	appendDoubleGauge("cpu_utilized", "Count", floatValue, timestamp, ilm)
+	require.NotNil(t, ilm)
 }
 
 func TestIntSum(t *testing.T) {
 	timestamp := pdata.TimestampFromTime(time.Now())
 	intValue := int64(100)
 
-	m := intSum("cpu_utilized", "Count", intValue, timestamp)
-	require.NotNil(t, m)
+	ilm := pdata.NewInstrumentationLibraryMetrics()
+	appendIntSum("cpu_utilized", "Count", intValue, timestamp, ilm)
+	require.NotNil(t, ilm)
 }
 
 func TestConvertStoppedContainerDataToOTMetrics(t *testing.T) {

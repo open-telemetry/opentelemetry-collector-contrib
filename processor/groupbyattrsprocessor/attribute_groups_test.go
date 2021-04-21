@@ -57,7 +57,7 @@ var (
 	count    = 1000
 	groups   = randomGroups(count)
 	res      = simpleResource()
-	lagAttrs = &logsGroupedByAttrs{}
+	lagAttrs = newLogsGroupedByAttrs()
 )
 
 func TestResourceAttributeScenarios(t *testing.T) {

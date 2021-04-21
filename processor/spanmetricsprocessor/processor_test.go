@@ -398,7 +398,7 @@ func verifyMetricLabels(dp metricDataPoint, t *testing.T, seenMetricIDs map[metr
 func buildSampleTrace() pdata.Traces {
 	traces := pdata.NewTraces()
 
-	serviceASpans := buildServiceSpans(
+	initServiceSpans(
 		serviceSpans{
 			serviceName: "service-a",
 			spans: []span{
@@ -413,8 +413,8 @@ func buildSampleTrace() pdata.Traces {
 					statusCode: pdata.StatusCodeOk,
 				},
 			},
-		})
-	serviceBSpans := buildServiceSpans(
+		}, traces.ResourceSpans().AppendEmpty())
+	initServiceSpans(
 		serviceSpans{
 			serviceName: "service-b",
 			spans: []span{
@@ -424,32 +424,24 @@ func buildSampleTrace() pdata.Traces {
 					statusCode: pdata.StatusCodeError,
 				},
 			},
-		})
-	ignoredSpans := buildServiceSpans(serviceSpans{})
-	traces.ResourceSpans().Append(serviceASpans)
-	traces.ResourceSpans().Append(serviceBSpans)
-	traces.ResourceSpans().Append(ignoredSpans)
+		}, traces.ResourceSpans().AppendEmpty())
+	initServiceSpans(serviceSpans{}, traces.ResourceSpans().AppendEmpty())
 	return traces
 }
 
-func buildServiceSpans(serviceSpans serviceSpans) pdata.ResourceSpans {
-	spans := pdata.NewResourceSpans()
-
+func initServiceSpans(serviceSpans serviceSpans, spans pdata.ResourceSpans) {
 	if serviceSpans.serviceName != "" {
 		spans.Resource().Attributes().
 			InsertString(conventions.AttributeServiceName, serviceSpans.serviceName)
 	}
 
-	ils := pdata.NewInstrumentationLibrarySpans()
+	ils := spans.InstrumentationLibrarySpans().AppendEmpty()
 	for _, span := range serviceSpans.spans {
-		ils.Spans().Append(buildSpan(span))
+		initSpan(span, ils.Spans().AppendEmpty())
 	}
-	spans.InstrumentationLibrarySpans().Append(ils)
-	return spans
 }
 
-func buildSpan(span span) pdata.Span {
-	s := pdata.NewSpan()
+func initSpan(span span, s pdata.Span) {
 	s.SetName(span.operation)
 	s.SetKind(span.kind)
 	s.Status().SetCode(span.statusCode)
@@ -463,7 +455,6 @@ func buildSpan(span span) pdata.Span {
 	s.Attributes().InsertNull(nullAttrName)
 	s.Attributes().Insert(mapAttrName, pdata.NewAttributeValueMap())
 	s.Attributes().Insert(arrayAttrName, pdata.NewAttributeValueArray())
-	return s
 }
 
 func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExporter, component.TracesExporter) {

@@ -291,7 +291,7 @@ func subLogs(ld *pdata.Logs, from *logIndex) *pdata.Logs {
 	resourcesSub := subset.ResourceLogs()
 
 	for i := from.resource; i < resources.Len(); i++ {
-		resourcesSub.Append(pdata.NewResourceLogs())
+		resourcesSub.AppendEmpty()
 		resources.At(i).Resource().CopyTo(resourcesSub.At(i - from.resource).Resource())
 
 		libraries := resources.At(i).InstrumentationLibraryLogs()
@@ -302,7 +302,7 @@ func subLogs(ld *pdata.Logs, from *logIndex) *pdata.Logs {
 			j = from.library
 		}
 		for jSub := 0; j < libraries.Len(); j++ {
-			librariesSub.Append(pdata.NewInstrumentationLibraryLogs())
+			librariesSub.AppendEmpty()
 			libraries.At(j).InstrumentationLibrary().CopyTo(librariesSub.At(jSub).InstrumentationLibrary())
 
 			logs := libraries.At(j).Logs()
@@ -313,8 +313,9 @@ func subLogs(ld *pdata.Logs, from *logIndex) *pdata.Logs {
 			if i == from.resource && j == from.library {
 				k = from.record
 			}
+
 			for kSub := 0; k < logs.Len(); k++ {
-				logsSub.Append(pdata.NewLogRecord())
+				logsSub.AppendEmpty()
 				logs.At(k).CopyTo(logsSub.At(kSub))
 				kSub++
 			}
@@ -356,7 +357,7 @@ func getReader(zippers *sync.Pool, b *bytes.Buffer, disableCompression bool) (io
 	return b, false, err
 }
 
-func (c *client) stop(context context.Context) error {
+func (c *client) stop(context.Context) error {
 	c.wg.Wait()
 	return nil
 }
