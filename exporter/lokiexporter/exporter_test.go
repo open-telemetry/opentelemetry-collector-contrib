@@ -52,22 +52,17 @@ var (
 
 func createLogData(numberOfLogs int, attributes pdata.AttributeMap) pdata.Logs {
 	logs := pdata.NewLogs()
-	logs.ResourceLogs().Resize(1)
-	rl := logs.ResourceLogs().At(0)
-	rl.InstrumentationLibraryLogs().Resize(1)
-	ill := rl.InstrumentationLibraryLogs().At(0)
+	ill := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
 
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
-		logRecord := pdata.NewLogRecord()
+		logRecord := ill.Logs().AppendEmpty()
 		logRecord.Body().SetStringVal("mylog")
 		attributes.Range(func(k string, v pdata.AttributeValue) bool {
 			logRecord.Attributes().Insert(k, v)
 			return true
 		})
 		logRecord.SetTimestamp(ts)
-
-		ill.Logs().Append(logRecord)
 	}
 
 	return logs
@@ -287,17 +282,11 @@ func TestExporter_logDataToLoki(t *testing.T) {
 
 	t.Run("with attributes that match config", func(t *testing.T) {
 		logs := pdata.NewLogs()
-		logs.ResourceLogs().Resize(1)
-		rl := logs.ResourceLogs().At(0)
-		rl.InstrumentationLibraryLogs().Resize(1)
-		ill := rl.InstrumentationLibraryLogs().At(0)
-
 		ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
-		lr := pdata.NewLogRecord()
+		lr := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
 		lr.Body().SetStringVal("log message")
 		lr.Attributes().InsertString("not.in.config", "not allowed")
 		lr.SetTimestamp(ts)
-		ill.Logs().Append(lr)
 
 		pr, numDroppedLogs := exp.logDataToLoki(logs)
 		expectedPr := &logproto.PushRequest{Streams: make([]logproto.Stream, 0)}
@@ -307,19 +296,13 @@ func TestExporter_logDataToLoki(t *testing.T) {
 
 	t.Run("with partial attributes that match config", func(t *testing.T) {
 		logs := pdata.NewLogs()
-		logs.ResourceLogs().Resize(1)
-		rl := logs.ResourceLogs().At(0)
-		rl.InstrumentationLibraryLogs().Resize(1)
-		ill := rl.InstrumentationLibraryLogs().At(0)
-
 		ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
-		lr := pdata.NewLogRecord()
+		lr := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
 		lr.Body().SetStringVal("log message")
 		lr.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
 		lr.Attributes().InsertString("severity", "info")
 		lr.Attributes().InsertString("random.attribute", "random")
 		lr.SetTimestamp(ts)
-		ill.Logs().Append(lr)
 
 		pr, numDroppedLogs := exp.logDataToLoki(logs)
 		require.Equal(t, 0, numDroppedLogs)
@@ -329,27 +312,21 @@ func TestExporter_logDataToLoki(t *testing.T) {
 
 	t.Run("with multiple logs and same attributes", func(t *testing.T) {
 		logs := pdata.NewLogs()
-		logs.ResourceLogs().Resize(1)
-		rl := logs.ResourceLogs().At(0)
-		rl.InstrumentationLibraryLogs().Resize(1)
-		ill := rl.InstrumentationLibraryLogs().At(0)
-
 		ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
-		lr1 := pdata.NewLogRecord()
+		ill := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
+		lr1 := ill.Logs().AppendEmpty()
 		lr1.Body().SetStringVal("log message 1")
 		lr1.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
 		lr1.Attributes().InsertString(conventions.AttributeK8sCluster, "mycluster")
 		lr1.Attributes().InsertString("severity", "info")
 		lr1.SetTimestamp(ts)
-		ill.Logs().Append(lr1)
 
-		lr2 := pdata.NewLogRecord()
+		lr2 := ill.Logs().AppendEmpty()
 		lr2.Body().SetStringVal("log message 2")
 		lr2.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
 		lr2.Attributes().InsertString(conventions.AttributeK8sCluster, "mycluster")
 		lr2.Attributes().InsertString("severity", "info")
 		lr2.SetTimestamp(ts)
-		ill.Logs().Append(lr2)
 
 		pr, numDroppedLogs := exp.logDataToLoki(logs)
 		require.Equal(t, 0, numDroppedLogs)
@@ -360,27 +337,22 @@ func TestExporter_logDataToLoki(t *testing.T) {
 
 	t.Run("with multiple logs and different attributes", func(t *testing.T) {
 		logs := pdata.NewLogs()
-		logs.ResourceLogs().Resize(1)
-		rl := logs.ResourceLogs().At(0)
-		rl.InstrumentationLibraryLogs().Resize(1)
-		ill := rl.InstrumentationLibraryLogs().At(0)
-
 		ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
-		lr1 := pdata.NewLogRecord()
+		ill := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
+
+		lr1 := ill.Logs().AppendEmpty()
 		lr1.Body().SetStringVal("log message 1")
 		lr1.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer1")
 		lr1.Attributes().InsertString(conventions.AttributeK8sCluster, "mycluster1")
 		lr1.Attributes().InsertString("severity", "debug")
 		lr1.SetTimestamp(ts)
-		ill.Logs().Append(lr1)
 
-		lr2 := pdata.NewLogRecord()
+		lr2 := ill.Logs().AppendEmpty()
 		lr2.Body().SetStringVal("log message 2")
 		lr2.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer2")
 		lr2.Attributes().InsertString(conventions.AttributeK8sCluster, "mycluster2")
 		lr2.Attributes().InsertString("severity", "error")
 		lr2.SetTimestamp(ts)
-		ill.Logs().Append(lr2)
 
 		pr, numDroppedLogs := exp.logDataToLoki(logs)
 		require.Equal(t, 0, numDroppedLogs)

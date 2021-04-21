@@ -101,7 +101,7 @@ func TestCaptureSpanMetadata(t *testing.T) {
 				s := pdata.NewSpan()
 				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 				s.SetName("invalid SpanID")
-				s.Events().Append(pdata.NewSpanEvent())
+				s.Events().AppendEmpty()
 				return s
 			},
 			err:     errInvalidSpanID,
@@ -114,7 +114,7 @@ func TestCaptureSpanMetadata(t *testing.T) {
 				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 				s.SetName("no events but has links")
-				s.Links().Append(pdata.NewSpanLink())
+				s.Links().AppendEmpty()
 				return s
 			},
 			wantKey: spanStatsKey{hasEvents: false, hasLinks: true},
@@ -127,8 +127,8 @@ func TestCaptureSpanMetadata(t *testing.T) {
 				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 2}))
 				s.SetParentSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 				s.SetName("has events and links")
-				s.Events().Append(pdata.NewSpanEvent())
-				s.Links().Append(pdata.NewSpanLink())
+				s.Events().AppendEmpty()
+				s.Links().AppendEmpty()
 				return s
 			},
 			wantKey: spanStatsKey{hasEvents: true, hasLinks: true},
@@ -152,15 +152,15 @@ func TestCaptureSpanAttributeMetadata(t *testing.T) {
 	details := newTraceMetadata(context.TODO())
 	transform := newTransformer(nil, &details)
 
-	se := pdata.NewSpanEvent()
-	se.Attributes().InsertBool("testattr", true)
-
 	s := pdata.NewSpan()
 	s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 	s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 2}))
 	s.SetParentSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 	s.SetName("test span")
-	s.Events().Append(se)
+
+	se := s.Events().AppendEmpty()
+	se.Attributes().InsertBool("testattr", true)
+
 	s.Attributes().InsertInt("spanattr", 42)
 
 	_, err := transform.Span(s)
@@ -175,14 +175,12 @@ func TestDoesNotCaptureSpanAttributeMetadata(t *testing.T) {
 	details := newTraceMetadata(context.TODO())
 	transform := newTransformer(nil, &details)
 
-	se := pdata.NewSpanEvent()
-
 	s := pdata.NewSpan()
 	s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 	s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 2}))
 	s.SetParentSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 	s.SetName("test span")
-	s.Events().Append(se)
+	s.Events().AppendEmpty()
 
 	_, err := transform.Span(s)
 
@@ -424,12 +422,9 @@ func TestTransformSpan(t *testing.T) {
 				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 7}))
 				s.SetName("with events")
 
-				ev := pdata.NewSpanEventSlice()
-				ev.Resize(1)
-				event := ev.At(0)
+				event := s.Events().AppendEmpty()
 				event.SetName("this is the event name")
 				event.SetTimestamp(pdata.TimestampFromTime(now))
-				s.Events().Append(event)
 				return s
 			},
 			want: telemetry.Span{
@@ -522,10 +517,9 @@ func TestTransformGauge(t *testing.T) {
 		m.SetUnit("1")
 		m.SetDataType(pdata.MetricDataTypeDoubleGauge)
 		gd := m.DoubleGauge()
-		dp := pdata.NewDoubleDataPoint()
+		dp := gd.DataPoints().AppendEmpty()
 		dp.SetTimestamp(ts)
 		dp.SetValue(42.0)
-		gd.DataPoints().Append(dp)
 		t.Run("Double", func(t *testing.T) { testTransformMetric(t, m, expected) })
 	}
 	{
@@ -535,10 +529,9 @@ func TestTransformGauge(t *testing.T) {
 		m.SetUnit("1")
 		m.SetDataType(pdata.MetricDataTypeIntGauge)
 		gi := m.IntGauge()
-		dp := pdata.NewIntDataPoint()
+		dp := gi.DataPoints().AppendEmpty()
 		dp.SetTimestamp(ts)
 		dp.SetValue(42)
-		gi.DataPoints().Append(dp)
 		t.Run("Int64", func(t *testing.T) { testTransformMetric(t, m, expected) })
 	}
 }
@@ -568,11 +561,10 @@ func TestTransformSum(t *testing.T) {
 		m.SetDataType(pdata.MetricDataTypeDoubleSum)
 		d := m.DoubleSum()
 		d.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-		dp := pdata.NewDoubleDataPoint()
+		dp := d.DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(end)
 		dp.SetValue(42.0)
-		d.DataPoints().Append(dp)
 		t.Run("DoubleSum-Delta", func(t *testing.T) { testTransformMetric(t, m, expected) })
 	}
 	{
@@ -583,11 +575,10 @@ func TestTransformSum(t *testing.T) {
 		m.SetDataType(pdata.MetricDataTypeDoubleSum)
 		d := m.DoubleSum()
 		d.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		dp := pdata.NewDoubleDataPoint()
+		dp := d.DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(end)
 		dp.SetValue(42.0)
-		d.DataPoints().Append(dp)
 		t.Run("DoubleSum-Cumulative", func(t *testing.T) { testTransformMetricWithError(t, m, &errUnsupportedMetricType{}) })
 	}
 	{
@@ -598,11 +589,10 @@ func TestTransformSum(t *testing.T) {
 		m.SetDataType(pdata.MetricDataTypeIntSum)
 		d := m.IntSum()
 		d.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-		dp := pdata.NewIntDataPoint()
+		dp := d.DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(end)
 		dp.SetValue(42.0)
-		d.DataPoints().Append(dp)
 		t.Run("IntSum-Delta", func(t *testing.T) { testTransformMetric(t, m, expected) })
 	}
 	{
@@ -613,11 +603,10 @@ func TestTransformSum(t *testing.T) {
 		m.SetDataType(pdata.MetricDataTypeIntSum)
 		d := m.IntSum()
 		d.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		dp := pdata.NewIntDataPoint()
+		dp := d.DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(end)
 		dp.SetValue(42.0)
-		d.DataPoints().Append(dp)
 		t.Run("IntSum-Cumulative", func(t *testing.T) { testTransformMetricWithError(t, m, &errUnsupportedMetricType{}) })
 	}
 }
@@ -683,7 +672,7 @@ func testTransformDeltaSummaryWithValues(t *testing.T, testName string, count ui
 	m.SetUnit("s")
 	m.SetDataType(pdata.MetricDataTypeSummary)
 	ds := m.Summary()
-	dp := pdata.NewSummaryDataPoint()
+	dp := ds.DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(end)
 	dp.SetSum(sum)
@@ -691,18 +680,15 @@ func testTransformDeltaSummaryWithValues(t *testing.T, testName string, count ui
 	dp.LabelsMap().Insert("foo", "bar")
 	q := dp.QuantileValues()
 	if !math.IsNaN(min) {
-		minQuantile := pdata.NewValueAtQuantile()
+		minQuantile := q.AppendEmpty()
 		minQuantile.SetQuantile(0)
 		minQuantile.SetValue(min)
-		q.Append(minQuantile)
 	}
 	if !math.IsNaN(max) {
-		maxQuantile := pdata.NewValueAtQuantile()
+		maxQuantile := q.AppendEmpty()
 		maxQuantile.SetQuantile(1)
 		maxQuantile.SetValue(max)
-		q.Append(maxQuantile)
 	}
-	ds.DataPoints().Append(dp)
 
 	t.Run(testName, func(t *testing.T) { testTransformMetricWithComparer(t, m, expected, comparer) })
 }
@@ -718,7 +704,7 @@ func TestUnsupportedMetricTypes(t *testing.T) {
 		m.SetUnit("1")
 		m.SetDataType(pdata.MetricDataTypeIntHistogram)
 		h := m.IntHistogram()
-		dp := pdata.NewIntHistogramDataPoint()
+		dp := h.DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(end)
 		dp.SetCount(2)
@@ -726,7 +712,6 @@ func TestUnsupportedMetricTypes(t *testing.T) {
 		dp.SetExplicitBounds([]float64{3, 7, 11})
 		dp.SetBucketCounts([]uint64{1, 1, 0, 0})
 		h.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-		h.DataPoints().Append(dp)
 
 		t.Run("IntHistogram", func(t *testing.T) { testTransformMetricWithError(t, m, &errUnsupportedMetricType{}) })
 	}
@@ -737,7 +722,7 @@ func TestUnsupportedMetricTypes(t *testing.T) {
 		m.SetUnit("1")
 		m.SetDataType(pdata.MetricDataTypeHistogram)
 		h := m.Histogram()
-		dp := pdata.NewHistogramDataPoint()
+		dp := h.DataPoints().AppendEmpty()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(end)
 		dp.SetCount(2)
@@ -745,7 +730,6 @@ func TestUnsupportedMetricTypes(t *testing.T) {
 		dp.SetExplicitBounds([]float64{3, 7, 11})
 		dp.SetBucketCounts([]uint64{1, 1, 0, 0})
 		h.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-		h.DataPoints().Append(dp)
 
 		t.Run("DoubleHistogram", func(t *testing.T) { testTransformMetricWithError(t, m, &errUnsupportedMetricType{}) })
 	}
