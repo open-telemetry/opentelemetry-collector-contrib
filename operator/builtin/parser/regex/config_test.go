@@ -14,62 +14,46 @@
 package regex
 
 import (
-	"fmt"
-	"io/ioutil"
-	"path"
 	"testing"
-
-	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper/operatortest"
 )
 
-type testCase struct {
-	name      string
-	expectErr bool
-	expect    *RegexParserConfig
-}
-
 func TestRegexParserGoldenConfig(t *testing.T) {
-	cases := []testCase{
+	cases := []operatortest.ConfigUnmarshalTest{
 		{
-			"default",
-			false,
-			defaultCfg(),
+			Name:   "default",
+			Expect: defaultCfg(),
 		},
 		{
-			"parse_from_simple",
-			false,
-			func() *RegexParserConfig {
+			Name: "parse_from_simple",
+			Expect: func() *RegexParserConfig {
 				cfg := defaultCfg()
 				cfg.ParseFrom = entry.NewBodyField("from")
 				return cfg
 			}(),
 		},
 		{
-			"parse_to_simple",
-			false,
-			func() *RegexParserConfig {
+			Name: "parse_to_simple",
+			Expect: func() *RegexParserConfig {
 				cfg := defaultCfg()
 				cfg.ParseTo = entry.NewBodyField("log")
 				return cfg
 			}(),
 		},
 		{
-			"on_error_drop",
-			false,
-			func() *RegexParserConfig {
+			Name: "on_error_drop",
+			Expect: func() *RegexParserConfig {
 				cfg := defaultCfg()
 				cfg.OnError = "drop"
 				return cfg
 			}(),
 		},
 		{
-			"timestamp",
-			false,
-			func() *RegexParserConfig {
+			Name: "timestamp",
+			Expect: func() *RegexParserConfig {
 				cfg := defaultCfg()
 				parseField := entry.NewBodyField("timestamp_field")
 				newTime := helper.TimeParser{
@@ -82,9 +66,8 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"severity",
-			false,
-			func() *RegexParserConfig {
+			Name: "severity",
+			Expect: func() *RegexParserConfig {
 				cfg := defaultCfg()
 				parseField := entry.NewBodyField("severity_field")
 				severityField := helper.NewSeverityParserConfig()
@@ -101,9 +84,8 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"preserve_to",
-			false,
-			func() *RegexParserConfig {
+			Name: "preserve_to",
+			Expect: func() *RegexParserConfig {
 				cfg := defaultCfg()
 				preserve := entry.NewBodyField("aField")
 				cfg.PreserveTo = &preserve
@@ -111,9 +93,8 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"regex",
-			false,
-			func() *RegexParserConfig {
+			Name: "regex",
+			Expect: func() *RegexParserConfig {
 				cfg := defaultCfg()
 				cfg.Regex = "^Host=(?P<host>[^,]+), Type=(?P<type>.*)$"
 				return cfg
@@ -122,59 +103,10 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		t.Run("yaml/"+tc.name, func(t *testing.T) {
-			cfgFromYaml, yamlErr := configFromFileViaYaml(path.Join(".", "testdata", fmt.Sprintf("%s.yaml", tc.name)))
-			if tc.expectErr {
-				require.Error(t, yamlErr)
-			} else {
-				require.NoError(t, yamlErr)
-				require.Equal(t, tc.expect, cfgFromYaml)
-			}
-		})
-		t.Run("mapstructure/"+tc.name, func(t *testing.T) {
-			cfgFromMapstructure := defaultCfg()
-			mapErr := configFromFileViaMapstructure(
-				path.Join(".", "testdata", fmt.Sprintf("%s.yaml", tc.name)),
-				cfgFromMapstructure,
-			)
-			if tc.expectErr {
-				require.Error(t, mapErr)
-			} else {
-				require.NoError(t, mapErr)
-				require.Equal(t, tc.expect, cfgFromMapstructure)
-			}
+		t.Run(tc.Name, func(t *testing.T) {
+			tc.Run(t, defaultCfg())
 		})
 	}
-}
-
-func configFromFileViaYaml(file string) (*RegexParserConfig, error) {
-	bytes, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil, fmt.Errorf("could not find config file: %s", err)
-	}
-
-	config := defaultCfg()
-	if err := yaml.Unmarshal(bytes, config); err != nil {
-		return nil, fmt.Errorf("failed to read config file as yaml: %s", err)
-	}
-
-	return config, nil
-}
-
-func configFromFileViaMapstructure(file string, result *RegexParserConfig) error {
-	bytes, err := ioutil.ReadFile(file)
-	if err != nil {
-		return fmt.Errorf("could not find config file: %s", err)
-	}
-
-	raw := map[string]interface{}{}
-
-	if err := yaml.Unmarshal(bytes, raw); err != nil {
-		return fmt.Errorf("failed to read data from yaml: %s", err)
-	}
-
-	err = helper.UnmarshalMapstructure(raw, result)
-	return err
 }
 
 func defaultCfg() *RegexParserConfig {

@@ -14,38 +14,26 @@
 package retain
 
 import (
-	"fmt"
-	"io/ioutil"
-	"path"
 	"testing"
 
-	"github.com/mitchellh/mapstructure"
-	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
-
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper/operatortest"
 )
-
-type configTestCase struct {
-	name   string
-	expect *RetainOperatorConfig
-}
 
 // test unmarshalling of values into config struct
 func TestGoldenConfigs(t *testing.T) {
-	cases := []configTestCase{
+	cases := []operatortest.ConfigUnmarshalTest{
 		{
-			"retain_single",
-			func() *RetainOperatorConfig {
+			Name: "retain_single",
+			Expect: func() *RetainOperatorConfig {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("key"))
 				return cfg
 			}(),
 		},
 		{
-			"retain_multi",
-			func() *RetainOperatorConfig {
+			Name: "retain_multi",
+			Expect: func() *RetainOperatorConfig {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("key"))
 				cfg.Fields = append(cfg.Fields, entry.NewBodyField("nested2"))
@@ -53,16 +41,16 @@ func TestGoldenConfigs(t *testing.T) {
 			}(),
 		},
 		{
-			"retain_single_attribute",
-			func() *RetainOperatorConfig {
+			Name: "retain_single_attribute",
+			Expect: func() *RetainOperatorConfig {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("key"))
 				return cfg
 			}(),
 		},
 		{
-			"retain_multi_attribute",
-			func() *RetainOperatorConfig {
+			Name: "retain_multi_attribute",
+			Expect: func() *RetainOperatorConfig {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("key1"))
 				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("key2"))
@@ -70,16 +58,16 @@ func TestGoldenConfigs(t *testing.T) {
 			}(),
 		},
 		{
-			"retain_single_resource",
-			func() *RetainOperatorConfig {
+			Name: "retain_single_resource",
+			Expect: func() *RetainOperatorConfig {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewResourceField("key"))
 				return cfg
 			}(),
 		},
 		{
-			"retain_multi_resource",
-			func() *RetainOperatorConfig {
+			Name: "retain_multi_resource",
+			Expect: func() *RetainOperatorConfig {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewResourceField("key1"))
 				cfg.Fields = append(cfg.Fields, entry.NewResourceField("key2"))
@@ -87,8 +75,8 @@ func TestGoldenConfigs(t *testing.T) {
 			}(),
 		},
 		{
-			"retain_one_of_each",
-			func() *RetainOperatorConfig {
+			Name: "retain_one_of_each",
+			Expect: func() *RetainOperatorConfig {
 				cfg := defaultCfg()
 				cfg.Fields = append(cfg.Fields, entry.NewResourceField("key1"))
 				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("key3"))
@@ -98,54 +86,10 @@ func TestGoldenConfigs(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		t.Run("GoldenConfig/"+tc.name, func(t *testing.T) {
-			cfgFromYaml, yamlErr := configFromFileViaYaml(path.Join(".", "testdata", fmt.Sprintf("%s.yaml", tc.name)))
-			cfgFromMapstructure, mapErr := configFromFileViaMapstructure(path.Join(".", "testdata", fmt.Sprintf("%s.yaml", tc.name)))
-			require.NoError(t, yamlErr)
-			require.Equal(t, tc.expect, cfgFromYaml)
-			require.NoError(t, mapErr)
-			require.Equal(t, tc.expect, cfgFromMapstructure)
+		t.Run(tc.Name, func(t *testing.T) {
+			tc.Run(t, defaultCfg())
 		})
 	}
-}
-
-func configFromFileViaYaml(file string) (*RetainOperatorConfig, error) {
-	bytes, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil, fmt.Errorf("could not find config file: %s", err)
-	}
-
-	config := defaultCfg()
-	if err := yaml.Unmarshal(bytes, config); err != nil {
-		return nil, fmt.Errorf("failed to read config file as yaml: %s", err)
-	}
-
-	return config, nil
-}
-
-func configFromFileViaMapstructure(file string) (*RetainOperatorConfig, error) {
-	bytes, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil, fmt.Errorf("could not find config file: %s", err)
-	}
-
-	raw := map[string]interface{}{}
-
-	if err := yaml.Unmarshal(bytes, raw); err != nil {
-		return nil, fmt.Errorf("failed to read data from yaml: %s", err)
-	}
-
-	cfg := defaultCfg()
-	dc := &mapstructure.DecoderConfig{Result: cfg, DecodeHook: helper.JSONUnmarshalerHook()}
-	ms, err := mapstructure.NewDecoder(dc)
-	if err != nil {
-		return nil, err
-	}
-	err = ms.Decode(raw)
-	if err != nil {
-		return nil, err
-	}
-	return cfg, nil
 }
 
 func defaultCfg() *RetainOperatorConfig {
