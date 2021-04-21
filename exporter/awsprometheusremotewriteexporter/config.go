@@ -27,12 +27,12 @@ type Config struct {
 	AuthConfig AuthConfig `mapstructure:"aws_auth"`
 }
 
-// AuthConfig defines AWS authentication configurations for SigningRoundTripper
+// AuthConfig defines AWS authentication configurations for SigningRoundTripper.
 type AuthConfig struct {
 	// Region is the AWS region for AWS SigV4.
 	Region string `mapstructure:"region"`
 
-	// Service is the AWS service for AWS SigV4, this is by default "aps".
+	// Service is the AWS service for AWS SigV4, this is by default "aps". Optional.
 	Service string `mapstructure:"service"`
 
 	// Amazon Resource Name (ARN) of a role to assume. Optional.
