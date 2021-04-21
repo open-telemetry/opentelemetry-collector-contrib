@@ -31,111 +31,81 @@ func newResourceMetrics(ms pdata.MetricSlice, serviceName string) pdata.Resource
 }
 
 func buildKeyspaceTriplet(k *keyspace, t *timeBundle) pdata.MetricSlice {
-	keysPDM := buildKeyspaceKeysMetric(k, t)
-	expiresPDM := buildKeyspaceExpiresMetric(k, t)
-	ttlPDM := buildKeyspaceTTLMetric(k, t)
-
 	ms := pdata.NewMetricSlice()
-	ms.Append(keysPDM)
-	ms.Append(expiresPDM)
-	ms.Append(ttlPDM)
-
+	ms.Resize(3)
+	initKeyspaceKeysMetric(k, t, ms.At(0))
+	initKeyspaceExpiresMetric(k, t, ms.At(1))
+	initKeyspaceTTLMetric(k, t, ms.At(2))
 	return ms
 }
 
-func buildKeyspaceKeysMetric(k *keyspace, t *timeBundle) pdata.Metric {
+func initKeyspaceKeysMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 	m := &redisMetric{
 		name:   "redis/db/keys",
 		labels: map[string]string{"db": k.db},
 		pdType: pdata.MetricDataTypeIntGauge,
 	}
-	value := int64(k.keys)
-
-	pt := pdata.NewIntDataPoint()
-	pt.SetValue(value)
-	pdm := newIntMetric(m, pt, t)
-
-	return pdm
+	initIntMetric(m, int64(k.keys), t, dest)
 }
 
-func buildKeyspaceExpiresMetric(k *keyspace, t *timeBundle) pdata.Metric {
+func initKeyspaceExpiresMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 	m := &redisMetric{
 		name:   "redis/db/expires",
 		labels: map[string]string{"db": k.db},
 		pdType: pdata.MetricDataTypeIntGauge,
 	}
-	value := int64(k.expires)
-
-	pt := pdata.NewIntDataPoint()
-	pt.SetValue(value)
-	pdm := newIntMetric(m, pt, t)
-
-	return pdm
+	initIntMetric(m, int64(k.expires), t, dest)
 }
 
-func buildKeyspaceTTLMetric(k *keyspace, t *timeBundle) pdata.Metric {
+func initKeyspaceTTLMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 	m := &redisMetric{
 		name:   "redis/db/avg_ttl",
 		units:  "ms",
 		labels: map[string]string{"db": k.db},
 		pdType: pdata.MetricDataTypeIntGauge,
 	}
-	value := int64(k.avgTTL)
-
-	pt := pdata.NewIntDataPoint()
-	pt.SetValue(value)
-	pdm := newIntMetric(m, pt, t)
-
-	return pdm
+	initIntMetric(m, int64(k.avgTTL), t, dest)
 }
 
-func newIntMetric(m *redisMetric, pt pdata.IntDataPoint, t *timeBundle) pdata.Metric {
-	pdm := redisMetricToPDM(m)
+func initIntMetric(m *redisMetric, value int64, t *timeBundle, dest pdata.Metric) {
+	redisMetricToPDM(m, dest)
 
-	pt.SetTimestamp(pdata.TimestampFromTime(t.current))
-	pt.LabelsMap().InitFromMap(m.labels)
-
-	var points pdata.IntDataPointSlice
+	var pt pdata.IntDataPoint
 	if m.pdType == pdata.MetricDataTypeIntGauge {
-		points = pdm.IntGauge().DataPoints()
+		pt = dest.IntGauge().DataPoints().AppendEmpty()
 	} else if m.pdType == pdata.MetricDataTypeIntSum {
-		pt.SetStartTimestamp(pdata.TimestampFromTime(t.serverStart))
-		sum := pdm.IntSum()
+		sum := dest.IntSum()
 		sum.SetIsMonotonic(m.isMonotonic)
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		points = sum.DataPoints()
+		pt = sum.DataPoints().AppendEmpty()
+		pt.SetStartTimestamp(pdata.TimestampFromTime(t.serverStart))
 	}
-	points.Append(pt)
-
-	return pdm
-}
-
-func newDoubleMetric(m *redisMetric, pt pdata.DoubleDataPoint, t *timeBundle) pdata.Metric {
-	pdm := redisMetricToPDM(m)
-
+	pt.SetValue(value)
 	pt.SetTimestamp(pdata.TimestampFromTime(t.current))
 	pt.LabelsMap().InitFromMap(m.labels)
-
-	var points pdata.DoubleDataPointSlice
-	if m.pdType == pdata.MetricDataTypeDoubleGauge {
-		points = pdm.DoubleGauge().DataPoints()
-	} else if m.pdType == pdata.MetricDataTypeDoubleSum {
-		pt.SetStartTimestamp(pdata.TimestampFromTime(t.serverStart))
-		sum := pdm.DoubleSum()
-		sum.SetIsMonotonic(m.isMonotonic)
-		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		points = sum.DataPoints()
-	}
-	points.Append(pt)
-
-	return pdm
 }
 
-func redisMetricToPDM(m *redisMetric) pdata.Metric {
-	pdm := pdata.NewMetric()
-	pdm.SetDataType(m.pdType)
-	pdm.SetName(m.name)
-	pdm.SetDescription(m.desc)
-	pdm.SetUnit(m.units)
-	return pdm
+func initDoubleMetric(m *redisMetric, value float64, t *timeBundle, dest pdata.Metric) {
+	redisMetricToPDM(m, dest)
+
+	var pt pdata.DoubleDataPoint
+	if m.pdType == pdata.MetricDataTypeDoubleGauge {
+		pt = dest.DoubleGauge().DataPoints().AppendEmpty()
+	} else if m.pdType == pdata.MetricDataTypeDoubleSum {
+		sum := dest.DoubleSum()
+		sum.SetIsMonotonic(m.isMonotonic)
+		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		pt = sum.DataPoints().AppendEmpty()
+		pt.SetStartTimestamp(pdata.TimestampFromTime(t.serverStart))
+	}
+	pt.SetValue(value)
+	pt.SetTimestamp(pdata.TimestampFromTime(t.current))
+	pt.LabelsMap().InitFromMap(m.labels)
+}
+
+func redisMetricToPDM(m *redisMetric, dest pdata.Metric) {
+	dest.SetDataType(m.pdType)
+	dest.SetName(m.name)
+	dest.SetDescription(m.desc)
+	dest.SetUnit(m.units)
 }
