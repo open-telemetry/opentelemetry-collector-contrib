@@ -29,7 +29,7 @@ import (
 
 const typeStr = "syslog"
 
-// NewFactory creates a factory for filelog receiver
+// NewFactory creates a factory for syslog receiver
 func NewFactory() component.ReceiverFactory {
 	return stanza.NewFactory(ReceiverType{})
 }
