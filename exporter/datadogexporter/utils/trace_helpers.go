@@ -136,6 +136,7 @@ func NormalizeServiceName(service string) string {
 // TruncateUTF8 truncates the given string to make sure it uses less than limit bytes.
 // If the last character is an utf8 character that would be splitten, it removes it
 // entirely to make sure the resulting string is not broken.
+// from: https://github.com/DataDog/datadog-agent/blob/140a4ee164261ef2245340c50371ba989fbeb038/pkg/trace/traceutil/truncate.go#L34-L49
 func TruncateUTF8(s string, limit int) string {
 	if len(s) <= limit {
 		return s
