@@ -2539,12 +2539,12 @@ func TestDeltaTranslatorMismatchedValueTypes(t *testing.T) {
 	c := testConverter(t, map[string]string{"system.cpu.time": "system.cpu.delta"})
 	md1 := baseMD()
 	md1.SetDataType(pdata.MetricDataTypeIntSum)
-	md1.IntSum().DataPoints().Append(intTS("cpu0", "user", 1, 1, 1))
+	intTS("cpu0", "user", 1, 1, 1, md1.IntSum().DataPoints().AppendEmpty())
 
 	_ = c.MetricDataToSignalFxV2(wrapMetric(md1))
 	md2 := baseMD()
 	md2.SetDataType(pdata.MetricDataTypeDoubleSum)
-	md2.DoubleSum().DataPoints().Append(dblTS("cpu0", "user", 1, 1, 1))
+	dblTS("cpu0", "user", 1, 1, 1, md2.DoubleSum().DataPoints().AppendEmpty())
 	pts := c.MetricDataToSignalFxV2(wrapMetric(md2))
 	idx := indexPts(pts)
 	require.Equal(t, 1, len(idx))
@@ -2984,12 +2984,12 @@ func doubleMD(secondsDelta int64, valueDelta float64) pdata.ResourceMetrics {
 	md := baseMD()
 	md.SetDataType(pdata.MetricDataTypeDoubleSum)
 	ms := md.DoubleSum()
-	ms.DataPoints().Append(dblTS("cpu0", "user", secondsDelta, 100, valueDelta))
-	ms.DataPoints().Append(dblTS("cpu0", "system", secondsDelta, 200, valueDelta))
-	ms.DataPoints().Append(dblTS("cpu0", "idle", secondsDelta, 300, valueDelta))
-	ms.DataPoints().Append(dblTS("cpu1", "user", secondsDelta, 111, valueDelta))
-	ms.DataPoints().Append(dblTS("cpu1", "system", secondsDelta, 222, valueDelta))
-	ms.DataPoints().Append(dblTS("cpu1", "idle", secondsDelta, 333, valueDelta))
+	dblTS("cpu0", "user", secondsDelta, 100, valueDelta, ms.DataPoints().AppendEmpty())
+	dblTS("cpu0", "system", secondsDelta, 200, valueDelta, ms.DataPoints().AppendEmpty())
+	dblTS("cpu0", "idle", secondsDelta, 300, valueDelta, ms.DataPoints().AppendEmpty())
+	dblTS("cpu1", "user", secondsDelta, 111, valueDelta, ms.DataPoints().AppendEmpty())
+	dblTS("cpu1", "system", secondsDelta, 222, valueDelta, ms.DataPoints().AppendEmpty())
+	dblTS("cpu1", "idle", secondsDelta, 333, valueDelta, ms.DataPoints().AppendEmpty())
 
 	return wrapMetric(md)
 }
@@ -2998,12 +2998,12 @@ func intMD(secondsDelta int64, valueDelta int64) pdata.ResourceMetrics {
 	md := baseMD()
 	md.SetDataType(pdata.MetricDataTypeIntSum)
 	ms := md.IntSum()
-	ms.DataPoints().Append(intTS("cpu0", "user", secondsDelta, 100, valueDelta))
-	ms.DataPoints().Append(intTS("cpu0", "system", secondsDelta, 200, valueDelta))
-	ms.DataPoints().Append(intTS("cpu0", "idle", secondsDelta, 300, valueDelta))
-	ms.DataPoints().Append(intTS("cpu1", "user", secondsDelta, 111, valueDelta))
-	ms.DataPoints().Append(intTS("cpu1", "system", secondsDelta, 222, valueDelta))
-	ms.DataPoints().Append(intTS("cpu1", "idle", secondsDelta, 333, valueDelta))
+	intTS("cpu0", "user", secondsDelta, 100, valueDelta, ms.DataPoints().AppendEmpty())
+	intTS("cpu0", "system", secondsDelta, 200, valueDelta, ms.DataPoints().AppendEmpty())
+	intTS("cpu0", "idle", secondsDelta, 300, valueDelta, ms.DataPoints().AppendEmpty())
+	intTS("cpu1", "user", secondsDelta, 111, valueDelta, ms.DataPoints().AppendEmpty())
+	intTS("cpu1", "system", secondsDelta, 222, valueDelta, ms.DataPoints().AppendEmpty())
+	intTS("cpu1", "idle", secondsDelta, 333, valueDelta, ms.DataPoints().AppendEmpty())
 
 	return wrapMetric(md)
 }
@@ -3012,12 +3012,12 @@ func intMDAfterReset(secondsDelta int64, valueDelta int64) pdata.ResourceMetrics
 	md := baseMD()
 	md.SetDataType(pdata.MetricDataTypeIntSum)
 	ms := md.IntSum()
-	ms.DataPoints().Append(intTS("cpu0", "user", secondsDelta, 0, valueDelta))
-	ms.DataPoints().Append(intTS("cpu0", "system", secondsDelta, 0, valueDelta))
-	ms.DataPoints().Append(intTS("cpu0", "idle", secondsDelta, 0, valueDelta))
-	ms.DataPoints().Append(intTS("cpu1", "user", secondsDelta, 0, valueDelta))
-	ms.DataPoints().Append(intTS("cpu1", "system", secondsDelta, 0, valueDelta))
-	ms.DataPoints().Append(intTS("cpu1", "idle", secondsDelta, 0, valueDelta))
+	intTS("cpu0", "user", secondsDelta, 0, valueDelta, ms.DataPoints().AppendEmpty())
+	intTS("cpu0", "system", secondsDelta, 0, valueDelta, ms.DataPoints().AppendEmpty())
+	intTS("cpu0", "idle", secondsDelta, 0, valueDelta, ms.DataPoints().AppendEmpty())
+	intTS("cpu1", "user", secondsDelta, 0, valueDelta, ms.DataPoints().AppendEmpty())
+	intTS("cpu1", "system", secondsDelta, 0, valueDelta, ms.DataPoints().AppendEmpty())
+	intTS("cpu1", "idle", secondsDelta, 0, valueDelta, ms.DataPoints().AppendEmpty())
 
 	return wrapMetric(md)
 }
@@ -3029,8 +3029,7 @@ func baseMD() pdata.Metric {
 	return out
 }
 
-func dblTS(lbl0 string, lbl1 string, secondsDelta int64, v float64, valueDelta float64) pdata.DoubleDataPoint {
-	out := pdata.NewDoubleDataPoint()
+func dblTS(lbl0 string, lbl1 string, secondsDelta int64, v float64, valueDelta float64, out pdata.DoubleDataPoint) {
 	out.LabelsMap().InitFromMap(map[string]string{
 		"cpu":   lbl0,
 		"state": lbl1,
@@ -3038,11 +3037,9 @@ func dblTS(lbl0 string, lbl1 string, secondsDelta int64, v float64, valueDelta f
 	const startTime = 1600000000
 	out.SetTimestamp(pdata.Timestamp(time.Duration(startTime+secondsDelta) * time.Second))
 	out.SetValue(v + valueDelta)
-	return out
 }
 
-func intTS(lbl0 string, lbl1 string, secondsDelta int64, v int64, valueDelta int64) pdata.IntDataPoint {
-	out := pdata.NewIntDataPoint()
+func intTS(lbl0 string, lbl1 string, secondsDelta int64, v int64, valueDelta int64, out pdata.IntDataPoint) {
 	out.LabelsMap().InitFromMap(map[string]string{
 		"cpu":   lbl0,
 		"state": lbl1,
@@ -3050,12 +3047,10 @@ func intTS(lbl0 string, lbl1 string, secondsDelta int64, v int64, valueDelta int
 	const startTime = 1600000000
 	out.SetTimestamp(pdata.Timestamp(time.Duration(startTime+secondsDelta) * time.Second))
 	out.SetValue(v + valueDelta)
-	return out
 }
 
 func wrapMetric(m pdata.Metric) pdata.ResourceMetrics {
 	out := pdata.NewResourceMetrics()
-	out.InstrumentationLibraryMetrics().Resize(1)
-	out.InstrumentationLibraryMetrics().At(0).Metrics().Append(m)
+	out.InstrumentationLibraryMetrics().AppendEmpty().Metrics().Append(m)
 	return out
 }
