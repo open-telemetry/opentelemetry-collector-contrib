@@ -4,7 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/open-telemetry/opentelemetry-python-contrib/compare/v0.19b0...HEAD)
+## [Unreleased](https://github.com/open-telemetry/opentelemetry-python-contrib/compare/v0.200...HEAD)
+
+## [0.20b0](https://github.com/open-telemetry/opentelemetry-python-contrib/releases/tag/v0.20b0) - 2021-04-20
 
 ### Changed
 - Restrict DataDog exporter's `ddtrace` dependency to known working versions.
@@ -44,14 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#436](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/436))
 - `opentelemetry-instrumenation-flask` now supports trace response headers.
   ([#436](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/436))
-
-### Removed
-- Remove `http.status_text` from span attributes
-  ([#406](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/406))
-
-### Removed
-- Remove `http.status_text` from span attributes
-  ([#406](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/406))
 
 ### Removed
 - Remove `http.status_text` from span attributes
