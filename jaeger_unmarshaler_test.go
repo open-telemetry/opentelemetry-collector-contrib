@@ -26,7 +26,7 @@ import (
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 )
 
-func TestUnmarshallJaeger(t *testing.T) {
+func TestUnmarshalJaeger(t *testing.T) {
 	td := pdata.NewTraces()
 	span := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foo")
@@ -40,45 +40,45 @@ func TestUnmarshallJaeger(t *testing.T) {
 	protoBytes, err := batches[0].Spans[0].Marshal()
 	require.NoError(t, err)
 
-	jsonMarshaller := &jsonpb.Marshaler{}
+	jsonMarshaler := &jsonpb.Marshaler{}
 	jsonBytes := new(bytes.Buffer)
-	require.NoError(t, jsonMarshaller.Marshal(jsonBytes, batches[0].Spans[0]))
+	require.NoError(t, jsonMarshaler.Marshal(jsonBytes, batches[0].Spans[0]))
 
 	tests := []struct {
-		unmarshaller TracesUnmarshaller
-		encoding     string
-		bytes        []byte
+		unmarshaler TracesUnmarshaler
+		encoding    string
+		bytes       []byte
 	}{
 		{
-			unmarshaller: jaegerProtoSpanUnmarshaller{},
-			encoding:     "jaeger_proto",
-			bytes:        protoBytes,
+			unmarshaler: jaegerProtoSpanUnmarshaler{},
+			encoding:    "jaeger_proto",
+			bytes:       protoBytes,
 		},
 		{
-			unmarshaller: jaegerJSONSpanUnmarshaller{},
-			encoding:     "jaeger_json",
-			bytes:        jsonBytes.Bytes(),
+			unmarshaler: jaegerJSONSpanUnmarshaler{},
+			encoding:    "jaeger_json",
+			bytes:       jsonBytes.Bytes(),
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.encoding, func(t *testing.T) {
-			got, err := test.unmarshaller.Unmarshal(test.bytes)
+			got, err := test.unmarshaler.Unmarshal(test.bytes)
 			require.NoError(t, err)
 			assert.Equal(t, td, got)
-			assert.Equal(t, test.encoding, test.unmarshaller.Encoding())
+			assert.Equal(t, test.encoding, test.unmarshaler.Encoding())
 		})
 	}
 }
 
-func TestUnmarshallJaegerProto_error(t *testing.T) {
-	p := jaegerProtoSpanUnmarshaller{}
+func TestUnmarshalJaegerProto_error(t *testing.T) {
+	p := jaegerProtoSpanUnmarshaler{}
 	got, err := p.Unmarshal([]byte("+$%"))
 	assert.Equal(t, pdata.NewTraces(), got)
 	assert.Error(t, err)
 }
 
-func TestUnmarshallJaegerJSON_error(t *testing.T) {
-	p := jaegerJSONSpanUnmarshaller{}
+func TestUnmarshalJaegerJSON_error(t *testing.T) {
+	p := jaegerJSONSpanUnmarshaler{}
 	got, err := p.Unmarshal([]byte("+$%"))
 	assert.Equal(t, pdata.NewTraces(), got)
 	assert.Error(t, err)
