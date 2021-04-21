@@ -53,8 +53,7 @@ func createDefaultConfig() config.Exporter {
 
 		// Settings specific to the Humio exporter
 		DisableCompression: false,
-		Tags:               map[string]string{},
-		DisableServiceTag:  false,
+		Tag:                TagNone,
 		Traces: TracesConfig{
 			UnixTimestamps: false,
 		},
@@ -74,6 +73,11 @@ func createTracesExporter(
 
 	if err := cfg.sanitize(); err != nil {
 		return nil, err
+	}
+
+	// We only require the trace ingest token when the trace exporter is enabled
+	if cfg.Traces.IngestToken == "" {
+		return nil, errors.New("an ingest token for traces is required when enabling the Humio trace exporter")
 	}
 
 	client, err := newHumioClient(cfg, params.Logger)
