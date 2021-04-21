@@ -1,5 +1,7 @@
 # File Storage
 
+> :construction: This extension is in alpha. Configuration and functionality are subject to change.
+
 The File Storage extension can persist state to the local file system. 
 
 The extension requires read and write access to a directory. A default directory can be used, but it must already exist in order for the extension to operate.
