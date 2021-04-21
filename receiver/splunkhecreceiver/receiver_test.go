@@ -581,7 +581,6 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 				Token:              "ignored",
 				SourceType:         "defaultsourcetype",
 				Index:              "defaultindex",
-				InsecureSkipVerify: true,
 				DisableCompression: true,
 				Endpoint:           endServer.URL,
 			}
@@ -680,7 +679,6 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 				Token:              "ignored",
 				SourceType:         "defaultsourcetype",
 				Index:              "defaultindex",
-				InsecureSkipVerify: true,
 				DisableCompression: true,
 				Endpoint:           endServer.URL,
 			}
