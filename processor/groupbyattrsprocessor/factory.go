@@ -21,7 +21,7 @@ import (
 
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
@@ -29,7 +29,7 @@ import (
 
 const (
 	// typeStr is the value of "type" for this processor in the configuration.
-	typeStr configmodels.Type = "groupbyattrs"
+	typeStr config.Type = "groupbyattrs"
 )
 
 var (
@@ -49,18 +49,15 @@ func NewFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTraceProcessor),
+		processorhelper.WithTraces(createTracesProcessor),
 		processorhelper.WithLogs(createLogsProcessor))
 }
 
 // createDefaultConfig creates the default configuration for the processor.
-func createDefaultConfig() configmodels.Processor {
+func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: string(typeStr),
-		},
-		GroupByKeys: []string{},
+		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		GroupByKeys:       []string{},
 	}
 }
 
@@ -87,12 +84,12 @@ func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) (*grou
 	return &groupByAttrsProcessor{logger: logger, groupByKeys: nonEmptyAttributes}, nil
 }
 
-// createTraceProcessor creates a trace processor based on this config.
-func createTraceProcessor(
+// createTracesProcessor creates a trace processor based on this config.
+func createTracesProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.TracesConsumer) (component.TracesProcessor, error) {
+	cfg config.Processor,
+	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 
 	oCfg := cfg.(*Config)
 	gap, err := createGroupByAttrsProcessor(params.Logger, oCfg.GroupByKeys)
@@ -100,7 +97,7 @@ func createTraceProcessor(
 		return nil, err
 	}
 
-	return processorhelper.NewTraceProcessor(
+	return processorhelper.NewTracesProcessor(
 		cfg,
 		nextConsumer,
 		gap,
@@ -111,8 +108,8 @@ func createTraceProcessor(
 func createLogsProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.LogsConsumer) (component.LogsProcessor, error) {
+	cfg config.Processor,
+	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 
 	oCfg := cfg.(*Config)
 	gap, err := createGroupByAttrsProcessor(params.Logger, oCfg.GroupByKeys)

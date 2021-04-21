@@ -62,7 +62,7 @@ This setting controls what resource attributes are set on metrics emitted from t
 
 Note that the backticks below are not typos--they indicate the value is set dynamically.
 
-`type.pod`
+`type == "pod"`
 
 | Resource Attribute | Default       |
 |--------------------|---------------|
@@ -70,7 +70,7 @@ Note that the backticks below are not typos--they indicate the value is set dyna
 | k8s.pod.uid        | \`uid\`       |
 | k8s.namespace.name | \`namespace\` |
 
-`type.port`
+`type == "port"`
 
 | Resource Attribute | Default           |
 |--------------------|-------------------|
@@ -78,7 +78,7 @@ Note that the backticks below are not typos--they indicate the value is set dyna
 | k8s.pod.uid        | \`pod.uid\`       |
 | k8s.namespace.name | \`pod.namespace\` |
 
-`type.hostport`
+`type == "hostport"`
 
 None
 
@@ -86,7 +86,7 @@ See `redis/2` in [examples](#examples).
 
 ## Rule Expressions
 
-Each rule must start with `type.(pod|port|hostport) &&` such that the rule matches
+Each rule must start with `type == ("pod"|"port"|"hostport") &&` such that the rule matches
 only one endpoint type. Depending on the type of endpoint the rule is
 targeting it will have different variables available.
 
@@ -94,7 +94,7 @@ targeting it will have different variables available.
 
 | Variable    | Description                       |
 |-------------|-----------------------------------|
-| type.pod    | `true`                            |
+| type        | `"pod"`                            |
 | name        | name of the pod                   |
 | namespace   | namespace of the pod              |
 | uid         | unique id of the pod              |
@@ -105,7 +105,7 @@ targeting it will have different variables available.
 
 | Variable        | Description                             |
 |-----------------|-----------------------------------------|
-| type.port       | `true`                                  |
+| type            | `"port"`                                  |
 | name            | container port name                     |
 | port            | port number                             |
 | protocol        | The transport protocol ("TCP" or "UDP") |
@@ -119,7 +119,7 @@ targeting it will have different variables available.
 
 | Variable      | Description                                      |
 |---------------|--------------------------------------------------|
-| type.hostport | `true`                                           |
+| type          | `"hostport"`                                           |
 | process_name  | Name of the process                              |
 | command       | Command line with the used to invoke the process |
 | is_ipv6       | true if endpoint is IPv6, otherwise false        |
@@ -141,14 +141,14 @@ receivers:
     receivers:
       prometheus_simple:
         # Configure prometheus scraping if standard prometheus annotations are set on the pod.
-        rule: type.pod && annotations["prometheus.io/scrape"] == "true"
+        rule: type == "pod" && annotations["prometheus.io/scrape"] == "true"
         config:
           metrics_path: '`"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/metrics"`'
           endpoint: '`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090`'
 
       redis/1:
         # If this rule matches an instance of this receiver will be started.
-        rule: type.port && port == 6379
+        rule: type == "port" && port == 6379
         config:
           # Static receiver-specific config.
           password: secret
@@ -157,7 +157,7 @@ receivers:
 
       redis/2:
         # Set a resource attribute based on endpoint value.
-        rule: type.port && port == 6379
+        rule: type == "port" && port == 6379
         resource_attributes:
           # Dynamic value.
           app: `pod.labels["app"]`
@@ -169,7 +169,7 @@ receivers:
     receivers:
       redis/on_host:
         # If this rule matches an instance of this receiver will be started.
-        rule: type.port && port == 6379 && is_ipv6 == true
+        rule: type == "port" && port == 6379 && is_ipv6 == true
         config:
           service_name: redis_on_host
 

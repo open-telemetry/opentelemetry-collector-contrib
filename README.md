@@ -2,11 +2,11 @@
 
 <p align="center">
   <strong>
-    <a href="https://opentelemetry.io/docs/collector/getting-started/">Getting Started<a/>
+    <a href="https://opentelemetry.io/docs/collector/getting-started/">Getting Started</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md">Getting Involved<a/>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md">Getting Involved</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://gitter.im/open-telemetry/opentelemetry-service">Getting In Touch<a/>
+    <a href="https://gitter.im/open-telemetry/opentelemetry-service">Getting In Touch</a>
   </strong>
 </p>
 
@@ -28,17 +28,17 @@
 
 <p align="center">
   <strong>
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/vision.md">Vision<a/>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/vision.md">Vision</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/design.md">Design<a/>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/design.md">Design</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/monitoring.md">Monitoring<a/>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/monitoring.md">Monitoring</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/performance.md">Performance<a/>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/performance.md">Performance</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md">Security<a/>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md">Security</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/roadmap.md">Roadmap<a/>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/roadmap.md">Roadmap</a>
   </strong>
 </p>
 
@@ -78,7 +78,7 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 - [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
-Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md).
+Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md).
 
 ## PRs and Reviews
 

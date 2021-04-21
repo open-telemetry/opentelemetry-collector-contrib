@@ -185,8 +185,8 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 		Description:    description,
 		Op:             op,
 		Tags:           tags,
-		StartTimestamp: unixNanoToTime(span.StartTime()),
-		EndTimestamp:   unixNanoToTime(span.EndTime()),
+		StartTimestamp: unixNanoToTime(span.StartTimestamp()),
+		EndTimestamp:   unixNanoToTime(span.EndTimestamp()),
 		Status:         status,
 	}
 
@@ -270,7 +270,7 @@ func generateTagsFromResource(resource pdata.Resource) map[string]string {
 func generateTagsFromAttributes(attrs pdata.AttributeMap) map[string]string {
 	tags := make(map[string]string)
 
-	attrs.ForEach(func(key string, attr pdata.AttributeValue) {
+	attrs.Range(func(key string, attr pdata.AttributeValue) bool {
 		switch attr.Type() {
 		case pdata.AttributeValueSTRING:
 			tags[key] = attr.StringVal()
@@ -281,6 +281,7 @@ func generateTagsFromAttributes(attrs pdata.AttributeMap) map[string]string {
 		case pdata.AttributeValueINT:
 			tags[key] = strconv.FormatInt(attr.IntVal(), 10)
 		}
+		return true
 	})
 
 	return tags
@@ -336,7 +337,7 @@ func CreateSentryExporter(config *Config, params component.ExporterCreateParams)
 		transport: transport,
 	}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		config,
 		params.Logger,
 		s.pushTraceData,

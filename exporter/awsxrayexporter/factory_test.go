@@ -23,41 +23,42 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		AWSSessionSettings: awsutil.AWSSessionSettings{
+			NumberOfWorkers:       8,
+			Endpoint:              "",
+			RequestTimeoutSeconds: 30,
+			MaxRetries:            2,
+			NoVerifySSL:           false,
+			ProxyAddress:          "",
+			Region:                "",
+			LocalMode:             false,
+			ResourceARN:           "",
+			RoleARN:               "",
 		},
-		NumberOfWorkers:       8,
-		Endpoint:              "",
-		RequestTimeoutSeconds: 30,
-		MaxRetries:            2,
-		NoVerifySSL:           false,
-		ProxyAddress:          "",
-		Region:                "",
-		LocalMode:             false,
-		ResourceARN:           "",
-		RoleARN:               "",
 	}, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
-func TestCreateTraceExporter(t *testing.T) {
+func TestCreateTracesExporter(t *testing.T) {
 	logger := zap.NewNop()
 
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -75,7 +76,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)

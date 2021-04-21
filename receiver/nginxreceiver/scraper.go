@@ -30,16 +30,16 @@ type nginxScraper struct {
 	client *client.NginxClient
 
 	logger *zap.Logger
-	config *config
+	cfg    *Config
 }
 
 func newNginxScraper(
 	logger *zap.Logger,
-	config *config,
+	cfg *Config,
 ) *nginxScraper {
 	return &nginxScraper{
 		logger: logger,
-		config: config,
+		cfg:    cfg,
 	}
 }
 
@@ -47,12 +47,12 @@ func (r *nginxScraper) scrape(ctx context.Context) (pdata.ResourceMetricsSlice, 
 	// Init client in scrape method in case there are transient errors in the
 	// constructor.
 	if r.client == nil {
-		httpClient, err := r.config.ToClient()
+		httpClient, err := r.cfg.ToClient()
 		if err != nil {
 			return pdata.ResourceMetricsSlice{}, err
 		}
 
-		r.client, err = client.NewNginxClient(httpClient, r.config.HTTPClientSettings.Endpoint)
+		r.client, err = client.NewNginxClient(httpClient, r.cfg.HTTPClientSettings.Endpoint)
 		if err != nil {
 			r.client = nil
 			return pdata.ResourceMetricsSlice{}, err

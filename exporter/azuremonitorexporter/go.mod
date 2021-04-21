@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter
 
-go 1.14
+go 1.15
 
 require (
 	code.cloudfoundry.org/clock v1.0.0 // indirect
@@ -15,7 +15,7 @@ require (
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
-	go.opentelemetry.io/collector v0.22.1-0.20210313012550-03904de3dd61
+	go.opentelemetry.io/collector v0.24.1-0.20210420003310-0a2ea1b33eb6
 	go.uber.org/zap v1.16.0
 	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
 	gopkg.in/ini.v1 v1.57.0 // indirect

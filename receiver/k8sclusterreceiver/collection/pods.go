@@ -116,7 +116,7 @@ func getResourceForPod(pod *corev1.Pod) *resourcepb.Resource {
 		Labels: map[string]string{
 			conventions.AttributeK8sPodUID:    string(pod.UID),
 			conventions.AttributeK8sPod:       pod.Name,
-			k8sKeyNodeName:                    pod.Spec.NodeName,
+			conventions.AttributeK8sNodeName:  pod.Spec.NodeName,
 			conventions.AttributeK8sNamespace: pod.Namespace,
 			conventions.AttributeK8sCluster:   pod.ClusterName,
 		},

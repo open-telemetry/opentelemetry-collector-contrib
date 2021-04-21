@@ -31,6 +31,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -53,9 +54,9 @@ var testSpans = []*tracepb.Span{
 	},
 }
 
-func testTraceExporter(td pdata.Traces, t *testing.T, cfg *Config) {
+func testTracesExporter(td pdata.Traces, t *testing.T, cfg *Config) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exporter, err := createTraceExporter(context.Background(), params, cfg)
+	exporter, err := createTracesExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -65,9 +66,9 @@ func testTraceExporter(td pdata.Traces, t *testing.T, cfg *Config) {
 	require.NoError(t, err)
 }
 
-func TestNullTraceExporterConfig(tester *testing.T) {
+func TestNullTracesExporterConfig(tester *testing.T) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := newLogzioTraceExporter(nil, params)
+	_, err := newLogzioTracesExporter(nil, params)
 	assert.Error(tester, err, "Null exporter config should produce error")
 }
 
@@ -90,16 +91,17 @@ func TestNullTokenConfig(tester *testing.T) {
 		Region: "eu",
 	}
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := createTraceExporter(context.Background(), params, &cfg)
+	_, err := createTracesExporter(context.Background(), params, &cfg)
 	assert.Error(tester, err, "Empty token should produce error")
 }
 
 func TestEmptyNode(tester *testing.T) {
 	cfg := Config{
-		TracesToken: "test",
-		Region:      "eu",
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		TracesToken:      "test",
+		Region:           "eu",
 	}
-	testTraceExporter(internaldata.OCToTraces(nil, nil, nil), tester, &cfg)
+	testTracesExporter(internaldata.OCToTraces(nil, nil, nil), tester, &cfg)
 }
 
 func TestWriteSpanError(tester *testing.T) {
@@ -141,9 +143,10 @@ func TestPushTraceData(tester *testing.T) {
 		rw.WriteHeader(http.StatusOK)
 	}))
 	cfg := Config{
-		TracesToken:    "test",
-		Region:         "eu",
-		CustomEndpoint: server.URL,
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		TracesToken:      "test",
+		Region:           "eu",
+		CustomEndpoint:   server.URL,
 	}
 	defer server.Close()
 
@@ -155,7 +158,7 @@ func TestPushTraceData(tester *testing.T) {
 			HostName: testHost,
 		},
 	}
-	testTraceExporter(internaldata.OCToTraces(node, nil, testSpans), tester, &cfg)
+	testTracesExporter(internaldata.OCToTraces(node, nil, testSpans), tester, &cfg)
 	requests := strings.Split(string(recordedRequests), "\n")
 	var logzioSpan objects.LogzioSpan
 	assert.NoError(tester, json.Unmarshal([]byte(requests[0]), &logzioSpan))
@@ -172,9 +175,10 @@ func TestPushTraceData(tester *testing.T) {
 
 func TestPushMetricsData(tester *testing.T) {
 	cfg := Config{
-		MetricsToken:   "test",
-		Region:         "eu",
-		CustomEndpoint: "url",
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		MetricsToken:     "test",
+		Region:           "eu",
+		CustomEndpoint:   "url",
 	}
 	md := pdata.NewMetrics()
 

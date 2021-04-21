@@ -17,7 +17,7 @@ orbs:
 executors:
   golang:
     docker:
-      - image: cimg/go:1.14
+      - image: cimg/go:1.15
   machine:
     machine:
       image: ubuntu-1604:201903-01
@@ -60,18 +60,15 @@ commands:
       - run:
           name: Install tools
           command: make install-tools
-      - run:
-          name: Install testbed tools
-          command: make -C testbed install-tools
       - save_module_cache
 
   setup_go:
     steps:
       - run:
-          name: Install Go 1.14
+          name: Install Go 1.15
           command: |
             sudo rm -rf /usr/local/go
-            curl -L https://dl.google.com/go/go1.14.4.linux-amd64.tar.gz | sudo tar xz -C /usr/local
+            curl -L https://dl.google.com/go/go1.15.11.linux-amd64.tar.gz | sudo tar xz -C /usr/local
       - run:
           name: Add ~/go/bin to PATH
           command: |
@@ -90,7 +87,7 @@ commands:
   save_module_cache:
     steps:
       - save_cache:
-          key: cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}
+          key: cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}-{{ checksum "internal/tools/go.sum" }}
           paths:
             - "/home/circleci/go/pkg/mod"
 
@@ -101,7 +98,26 @@ commands:
           command: mkdir -p ~/go/pkg/mod
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
-            - cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}
+            - cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}-{{ checksum "internal/tools/go.sum" }}
+
+  install_fluentbit:
+    steps:
+      - run: |
+          sudo chmod 0777 -R /opt
+      - restore_cache: # restores saved cache if no changes are detected since last run
+          keys:
+            - "cimg-fluentbit-{{ arch }}-1.5.3"
+      - run: |
+          sudo ln -s /opt/td-agent-bit/bin/td-agent-bit /usr/local/bin/fluent-bit
+          if [[ -f /opt/td-agent-bit/bin/td-agent-bit ]]; then
+            exit 0
+          fi
+          wget https://packages.fluentbit.io/ubuntu/bionic/pool/main/t/td-agent-bit/td-agent-bit_1.5.3_amd64.deb
+          sudo dpkg -i ./td-agent-bit*.deb
+      - save_cache:
+          key: cimg-fluentbit-{{ arch }}-1.5.3
+          paths:
+            - /opt/td-agent-bit
 
   publish_docker_images:
     parameters:
@@ -291,7 +307,7 @@ jobs:
 
   build-examples:
     docker:
-      - image: cimg/go:1.14
+      - image: cimg/go:1.15
     steps:
       - restore_workspace
       - setup_remote_docker
@@ -329,6 +345,7 @@ jobs:
       TEST_RESULTS: testbed/tests/results/junit/results.xml
     steps:
       - restore_workspace
+      - install_fluentbit
       - run:
           name: Loadtest
           command: make e2e-test
@@ -383,7 +400,7 @@ jobs:
 
   publish-check:
     docker:
-      - image: cimg/go:1.14
+      - image: cimg/go:1.15
     steps:
       - attach_to_workspace
       - setup_remote_docker
@@ -399,7 +416,7 @@ jobs:
 
   publish-stable:
     docker:
-      - image: cimg/go:1.14
+      - image: cimg/go:1.15
     steps:
       - restore_workspace
       - verify_dist_files_exist

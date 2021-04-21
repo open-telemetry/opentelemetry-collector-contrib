@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
+	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
 // AWS X-Ray acceptable values for origin field.
@@ -97,8 +97,8 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 	}
 
 	var (
-		startTime                              = timestampToFloatSeconds(span.StartTime())
-		endTime                                = timestampToFloatSeconds(span.EndTime())
+		startTime                              = timestampToFloatSeconds(span.StartTimestamp())
+		endTime                                = timestampToFloatSeconds(span.EndTimestamp())
 		httpfiltered, http                     = makeHTTP(span)
 		isError, isFault, causefiltered, cause = makeCause(span, httpfiltered, resource)
 		origin                                 = determineAwsOrigin(resource)
@@ -220,9 +220,9 @@ func determineAwsOrigin(resource pdata.Resource) string {
 		}
 	}
 
-	// TODO(willarmiros): Only use infrastructure_service for origin resolution once detectors for all AWS environments are
+	// TODO(willarmiros): Only use platform for origin resolution once detectors for all AWS environments are
 	// implemented for robustness
-	if is, present := resource.Attributes().Get("cloud.infrastructure_service"); present {
+	if is, present := resource.Attributes().Get(semconventions.AttributeCloudPlatform); present {
 		switch is.StringVal() {
 		case "EKS":
 			return OriginEKS
@@ -350,7 +350,7 @@ func makeXRayAttributes(attributes map[string]string, resource pdata.Resource, s
 	}
 
 	if storeResource {
-		resource.Attributes().ForEach(func(key string, value pdata.AttributeValue) {
+		resource.Attributes().Range(func(key string, value pdata.AttributeValue) bool {
 			key = "otel.resource." + key
 			annoVal := annotationValue(value)
 			indexed := indexAllAttrs || indexedKeys[key]
@@ -363,6 +363,7 @@ func makeXRayAttributes(attributes map[string]string, resource pdata.Resource, s
 					defaultMetadata[key] = metaVal
 				}
 			}
+			return true
 		})
 	}
 
@@ -415,8 +416,9 @@ func metadataValue(value pdata.AttributeValue) interface{} {
 		return value.BoolVal()
 	case pdata.AttributeValueMAP:
 		converted := map[string]interface{}{}
-		value.MapVal().ForEach(func(key string, value pdata.AttributeValue) {
+		value.MapVal().Range(func(key string, value pdata.AttributeValue) bool {
 			converted[key] = metadataValue(value)
+			return true
 		})
 		return converted
 	case pdata.AttributeValueARRAY:

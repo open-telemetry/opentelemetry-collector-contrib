@@ -66,9 +66,10 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 
 	attr := res.Attributes()
 	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.InsertString(conventions.AttributeCloudInfrastructureService, conventions.AttributeCloudProviderAWSECS)
-	attr.InsertString("aws.ecs.task.arn", tmdeResp.TaskARN)
-	attr.InsertString("aws.ecs.task.family", tmdeResp.Family)
+	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
+	attr.InsertString(conventions.AttributeAWSECSTaskARN, tmdeResp.TaskARN)
+	attr.InsertString(conventions.AttributeAWSECSTaskFamily, tmdeResp.Family)
+	attr.InsertString(conventions.AttributeAWSECSTaskRevision, tmdeResp.Revision)
 
 	region, account := parseRegionAndAccount(tmdeResp.TaskARN)
 	if account != "" {
@@ -80,20 +81,20 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	}
 
 	// TMDE returns the the cluster short name or ARN, so we need to construct the ARN if necessary
-	attr.InsertString("aws.ecs.cluster.arn", constructClusterArn(tmdeResp.Cluster, region, account))
+	attr.InsertString(conventions.AttributeAWSECSClusterARN, constructClusterArn(tmdeResp.Cluster, region, account))
 
 	// The Availability Zone is not available in all Fargate runtimes
 	if tmdeResp.AvailabilityZone != "" {
-		attr.InsertString(conventions.AttributeCloudZone, tmdeResp.AvailabilityZone)
+		attr.InsertString(conventions.AttributeCloudAvailabilityZone, tmdeResp.AvailabilityZone)
 	}
 
 	// The launch type and log data attributes are only available in TMDE v4
 	switch lt := strings.ToLower(tmdeResp.LaunchType); lt {
 	case "ec2":
-		attr.InsertString("aws.ecs.launchtype", "ec2")
+		attr.InsertString(conventions.AttributeAWSECSLaunchType, "ec2")
 
 	case "fargate":
-		attr.InsertString("aws.ecs.launchtype", "fargate")
+		attr.InsertString(conventions.AttributeAWSECSLaunchType, "fargate")
 	}
 
 	selfMetaData, err := d.provider.fetchContainerMetaData(tmde)
@@ -102,7 +103,12 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 		return res, err
 	}
 
-	logAttributes := [4]string{"aws.log.group.names", "aws.log.group.arns", "aws.log.stream.names", "aws.log.stream.arns"}
+	logAttributes := [4]string{
+		conventions.AttributeAWSLogGroupNames,
+		conventions.AttributeAWSLogGroupARNs,
+		conventions.AttributeAWSLogStreamNames,
+		conventions.AttributeAWSLogStreamARNs,
+	}
 
 	for i, attribVal := range getValidLogData(tmdeResp.Containers, selfMetaData, account) {
 		if attribVal.ArrayVal().Len() > 0 {

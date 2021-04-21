@@ -17,12 +17,15 @@ package stanza
 import (
 	"context"
 	"fmt"
+	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/noop"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -61,7 +64,7 @@ func (c *UnstartableConfig) Build(context operator.BuildContext) ([]operator.Ope
 }
 
 // Start will return an error
-func (o *UnstartableOperator) Start() error {
+func (o *UnstartableOperator) Start(_ operator.Persister) error {
 	return fmt.Errorf("something very unusual happened")
 }
 
@@ -71,21 +74,31 @@ func (o *UnstartableOperator) Process(ctx context.Context, entry *entry.Entry) e
 }
 
 type mockLogsConsumer struct {
-	received int
+	received int32
 }
 
 func (m *mockLogsConsumer) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	m.received++
+	atomic.AddInt32(&m.received, 1)
 	return nil
 }
 
+func (m *mockLogsConsumer) Received() int {
+	ret := atomic.LoadInt32(&m.received)
+	return int(ret)
+}
+
 type mockLogsRejecter struct {
-	rejected int
+	rejected int32
 }
 
 func (m *mockLogsRejecter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	m.rejected++
+	atomic.AddInt32(&m.rejected, 1)
 	return fmt.Errorf("no")
+}
+
+func (m *mockLogsRejecter) Rejected() int {
+	ret := atomic.LoadInt32(&m.rejected)
+	return int(ret)
 }
 
 const testType = "test"
@@ -96,28 +109,32 @@ type TestConfig struct {
 }
 type TestReceiverType struct{}
 
-func (f TestReceiverType) Type() configmodels.Type {
-	return configmodels.Type(testType)
+func (f TestReceiverType) Type() config.Type {
+	return config.Type(testType)
 }
 
-func (f TestReceiverType) CreateDefaultConfig() configmodels.Receiver {
+func (f TestReceiverType) CreateDefaultConfig() config.Receiver {
 	return &TestConfig{
 		BaseConfig: BaseConfig{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(testType),
+			ReceiverSettings: config.ReceiverSettings{
+				TypeVal: config.Type(testType),
 				NameVal: testType,
 			},
 			Operators: OperatorConfigs{},
+			Converter: ConverterConfig{
+				MaxFlushCount: 1,
+				FlushInterval: 100 * time.Millisecond,
+			},
 		},
 		Input: InputConfig{},
 	}
 }
 
-func (f TestReceiverType) BaseConfig(cfg configmodels.Receiver) BaseConfig {
+func (f TestReceiverType) BaseConfig(cfg config.Receiver) BaseConfig {
 	return cfg.(*TestConfig).BaseConfig
 }
 
-func (f TestReceiverType) DecodeInputConfig(cfg configmodels.Receiver) (*operator.Config, error) {
+func (f TestReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
 	testConfig := cfg.(*TestConfig)
 
 	// Allow tests to run without implementing input config
@@ -130,4 +147,41 @@ func (f TestReceiverType) DecodeInputConfig(cfg configmodels.Receiver) (*operato
 		return nil, fmt.Errorf("Unknown input type")
 	}
 	return &operator.Config{Builder: NewUnstartableConfig()}, nil
+}
+
+func newMockPersister() *persister {
+	return &persister{
+		client: newMockClient(),
+	}
+}
+
+type mockClient struct {
+	cache    map[string][]byte
+	cacheMux sync.Mutex
+}
+
+func newMockClient() *mockClient {
+	return &mockClient{
+		cache: make(map[string][]byte),
+	}
+}
+
+func (p *mockClient) Get(_ context.Context, key string) ([]byte, error) {
+	p.cacheMux.Lock()
+	defer p.cacheMux.Unlock()
+	return p.cache[key], nil
+}
+
+func (p *mockClient) Set(_ context.Context, key string, value []byte) error {
+	p.cacheMux.Lock()
+	defer p.cacheMux.Unlock()
+	p.cache[key] = value
+	return nil
+}
+
+func (p *mockClient) Delete(_ context.Context, key string) error {
+	p.cacheMux.Lock()
+	defer p.cacheMux.Unlock()
+	delete(p.cache, key)
+	return nil
 }

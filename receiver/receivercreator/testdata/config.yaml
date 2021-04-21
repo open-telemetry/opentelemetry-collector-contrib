@@ -3,8 +3,10 @@ receivers:
   receiver_creator/1:
     watch_observers: [mock_observer]
     receivers:
+      examplereceiver/1:
+        rule: type == "port"
       nop/1:
-        rule: type.port
+        rule: type == "port"
         config:
           endpoint: localhost:12345
 

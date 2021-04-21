@@ -18,11 +18,11 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
+	dtconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 )
 
 const (
@@ -40,14 +40,11 @@ func NewFactory() component.ExporterFactory {
 }
 
 // createDefaultConfig creates the default exporter configuration
-func createDefaultConfig() configmodels.Exporter {
-	return &config.Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		RetrySettings: exporterhelper.DefaultRetrySettings(),
-		QueueSettings: exporterhelper.DefaultQueueSettings(),
+func createDefaultConfig() config.Exporter {
+	return &dtconfig.Config{
+		ExporterSettings: config.NewExporterSettings(typeStr),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 		ResourceToTelemetrySettings: exporterhelper.ResourceToTelemetrySettings{
 			Enabled: false,
 		},
@@ -63,10 +60,10 @@ func createDefaultConfig() configmodels.Exporter {
 func createMetricsExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
-	c configmodels.Exporter,
+	c config.Exporter,
 ) (component.MetricsExporter, error) {
 
-	cfg := c.(*config.Config)
+	cfg := c.(*dtconfig.Config)
 
 	if err := cfg.Sanitize(); err != nil {
 		return nil, err

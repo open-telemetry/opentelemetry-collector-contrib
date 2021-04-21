@@ -20,7 +20,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	otlphttp "go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/idtoken"
@@ -44,14 +44,14 @@ func NewFactoryWithTokenSourceGetter(tsg TokenSourceGetter) component.ExporterFa
 	return &f5cloudFactory{ExporterFactory: otlphttp.NewFactory(), getTokenSource: tsg}
 }
 
-func (f *f5cloudFactory) Type() configmodels.Type {
+func (f *f5cloudFactory) Type() config.Type {
 	return typeStr
 }
 
 func (f *f5cloudFactory) CreateMetricsExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
-	config configmodels.Exporter) (component.MetricsExporter, error) {
+	config config.Exporter) (component.MetricsExporter, error) {
 
 	cfg := config.(*Config)
 
@@ -67,7 +67,7 @@ func (f *f5cloudFactory) CreateMetricsExporter(
 func (f *f5cloudFactory) CreateTracesExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
-	config configmodels.Exporter) (component.TracesExporter, error) {
+	config config.Exporter) (component.TracesExporter, error) {
 
 	cfg := config.(*Config)
 
@@ -83,7 +83,7 @@ func (f *f5cloudFactory) CreateTracesExporter(
 func (f *f5cloudFactory) CreateLogsExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
-	config configmodels.Exporter) (component.LogsExporter, error) {
+	config config.Exporter) (component.LogsExporter, error) {
 
 	cfg := config.(*Config)
 
@@ -96,7 +96,7 @@ func (f *f5cloudFactory) CreateLogsExporter(
 	return f.ExporterFactory.CreateLogsExporter(ctx, params, &cfg.Config)
 }
 
-func (f *f5cloudFactory) CreateDefaultConfig() configmodels.Exporter {
+func (f *f5cloudFactory) CreateDefaultConfig() config.Exporter {
 	cfg := &Config{
 		Config: *f.ExporterFactory.CreateDefaultConfig().(*otlphttp.Config),
 		AuthConfig: AuthConfig{

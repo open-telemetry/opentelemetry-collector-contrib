@@ -86,7 +86,7 @@ func (l *lokiExporter) pushLogData(ctx context.Context, ld pdata.Logs) error {
 
 	resp, err := l.client.Do(req)
 	if err != nil {
-		return consumererror.PartialLogsError(err, ld)
+		return consumererror.NewLogs(err, ld)
 	}
 
 	_, _ = io.Copy(ioutil.Discard, resp.Body)
@@ -94,7 +94,7 @@ func (l *lokiExporter) pushLogData(ctx context.Context, ld pdata.Logs) error {
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
 		err = fmt.Errorf("HTTP %d %q", resp.StatusCode, http.StatusText(resp.StatusCode))
-		return consumererror.PartialLogsError(err, ld)
+		return consumererror.NewLogs(err, ld)
 	}
 
 	return nil

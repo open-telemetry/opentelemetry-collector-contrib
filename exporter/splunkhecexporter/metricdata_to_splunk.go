@@ -65,12 +65,14 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 		if indexSet, isSet := attributes.Get(splunk.IndexLabel); isSet {
 			index = indexSet.StringVal()
 		}
-		attributes.ForEach(func(k string, v pdata.AttributeValue) {
+		attributes.Range(func(k string, v pdata.AttributeValue) bool {
 			commonFields[k] = tracetranslator.AttributeValueToString(v, false)
+			return true
 		})
 
-		rm.Resource().Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		rm.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 			commonFields[k] = tracetranslator.AttributeValueToString(v, false)
+			return true
 		})
 		ilms := rm.InstrumentationLibraryMetrics()
 		for ilmi := 0; ilmi < ilms.Len(); ilmi++ {
@@ -101,8 +103,8 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 						splunkMetrics = append(splunkMetrics, sm)
 					}
-				case pdata.MetricDataTypeDoubleHistogram:
-					pts := tm.DoubleHistogram().DataPoints()
+				case pdata.MetricDataTypeHistogram:
+					pts := tm.Histogram().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
 						bounds := dataPt.ExplicitBounds()
@@ -246,8 +248,9 @@ func createEvent(timestamp pdata.Timestamp, host string, source string, sourceTy
 }
 
 func populateLabels(fields map[string]interface{}, labelsMap pdata.StringMap) {
-	labelsMap.ForEach(func(k string, v string) {
+	labelsMap.Range(func(k string, v string) bool {
 		fields[k] = v
+		return true
 	})
 }
 

@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/system"
@@ -66,6 +67,21 @@ func GetHost(logger *zap.Logger, cfg *config.Config) *string {
 	return &hostname
 }
 
+func getClusterName(attrs pdata.AttributeMap) (string, bool) {
+	if k8sClusterName, ok := attrs.Get(conventions.AttributeK8sCluster); ok {
+		return k8sClusterName.StringVal(), true
+	}
+
+	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
+	if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure {
+		return azure.ClusterNameFromAttributes(attrs)
+	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS {
+		return ec2.ClusterNameFromAttributes(attrs)
+	}
+
+	return "", false
+}
+
 // HostnameFromAttributes tries to get a valid hostname from attributes by checking, in order:
 //
 //   1. a custom Datadog hostname provided by the "datadog.host.name" attribute
@@ -84,23 +100,19 @@ func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
 
 	// Kubernetes: node-cluster if cluster name is available, else node
 	if k8sNodeName, ok := attrs.Get(AttributeK8sNodeName); ok {
-		if k8sClusterName, ok := attrs.Get(conventions.AttributeK8sCluster); ok {
-			return k8sNodeName.StringVal() + "-" + k8sClusterName.StringVal(), true
+		if k8sClusterName, ok := getClusterName(attrs); ok {
+			return k8sNodeName.StringVal() + "-" + k8sClusterName, true
 		}
 		return k8sNodeName.StringVal(), true
 	}
 
-	// container id (e.g. from Docker)
-	if containerID, ok := attrs.Get(conventions.AttributeContainerID); ok {
-		return containerID.StringVal(), true
-	}
-
-	// handle AWS case separately to have similar behavior to the Datadog Agent
 	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
 	if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS {
 		return ec2.HostnameFromAttributes(attrs)
 	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP {
 		return gcp.HostnameFromAttributes(attrs)
+	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure {
+		return azure.HostnameFromAttributes(attrs)
 	}
 
 	// host id from cloud provider
@@ -111,6 +123,11 @@ func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
 	// hostname from cloud provider or OS
 	if hostName, ok := attrs.Get(conventions.AttributeHostName); ok {
 		return hostName.StringVal(), true
+	}
+
+	// container id (e.g. from Docker)
+	if containerID, ok := attrs.Get(conventions.AttributeContainerID); ok {
+		return containerID.StringVal(), true
 	}
 
 	return "", false

@@ -48,7 +48,13 @@ The following settings can be optionally configured:
   - Default: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
 - `dimensions`: the list of dimensions to add together with the default dimensions defined above. Each additional dimension is defined with a `name` which is looked up in the span's collection of attributes. If the `name`d attribute is missing in the span, the optional provided `default` is used. If no `default` is provided, this dimension will be **omitted** from the metric.
 
-Example:
+## Examples
+
+The following is a simple example usage of the spanmetrics processor.
+
+For configuration examples on other use cases, please refer to [More Examples](#more-examples).
+
+The full list of settings exposed for this processor are documented [here](./config.go).
 
 ```yaml
 receivers:
@@ -69,6 +75,7 @@ receivers:
         endpoint: "localhost:55677"
 
 processors:
+  batch:
   spanmetrics:
     metrics_exporter: otlp/spanmetrics
     latency_histogram_buckets: [2ms, 6ms, 10ms, 100ms, 250ms]
@@ -89,21 +96,24 @@ exporters:
     endpoint: "0.0.0.0:8889"
     namespace: promexample
 
-pipelines:
-  traces:
-    receivers: [jaeger]
-    processors: [spanmetrics, batch]
-    exporters: [jaeger]
+service:
+  pipelines:
+    traces:
+      receivers: [jaeger]
+      processors: [spanmetrics, batch]
+      exporters: [jaeger]
 
-  # The exporter name must match the metrics_exporter name.
-  # The receiver is just a dummy and never used; added to pass validation requiring at least one receiver in a pipeline.
-  metrics/spanmetrics:
-    receivers: [otlp/spanmetrics]
-    exporters: [otlp/spanmetrics]
+    # The exporter name must match the metrics_exporter name.
+    # The receiver is just a dummy and never used; added to pass validation requiring at least one receiver in a pipeline.
+    metrics/spanmetrics:
+      receivers: [otlp/spanmetrics]
+      exporters: [otlp/spanmetrics]
 
-  metrics:
-    receivers: [otlp]
-    exporters: [prometheus]
+    metrics:
+      receivers: [otlp]
+      exporters: [prometheus]
 ```
 
-The full list of settings exposed for this processor are documented [here](./config.go) with detailed sample configuration [here](./testdata).
+### More Examples
+
+For more example configuration covering various other use cases, please visit the [testdata directory](./testdata).

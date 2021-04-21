@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -31,7 +31,7 @@ import (
 
 func TestFactory_TestType(t *testing.T) {
 	f := NewFactory()
-	assert.Equal(t, f.Type(), configmodels.Type(typeStr))
+	assert.Equal(t, f.Type(), config.Type(typeStr))
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
@@ -83,7 +83,7 @@ func TestFactory_CreateMetricsExporterInvalidConfig(t *testing.T) {
 	require.Nil(t, oexp)
 }
 
-func TestFactory_CreateTraceExporter(t *testing.T) {
+func TestFactory_CreateTracesExporter(t *testing.T) {
 	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
@@ -106,7 +106,7 @@ func TestFactory_CreateTraceExporter(t *testing.T) {
 	require.Equal(t, "opentelemetry-collector-contrib 0.0.0", cfg.Headers["User-Agent"])
 }
 
-func Test_Factory_CreateTraceExporterInvalidConfig(t *testing.T) {
+func Test_Factory_CreateTracesExporterInvalidConfig(t *testing.T) {
 	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 

@@ -23,7 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -40,10 +40,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 
 			mtp, err := processorhelper.NewMetricsProcessor(
 				&Config{
-					ProcessorSettings: configmodels.ProcessorSettings{
-						TypeVal: typeStr,
-						NameVal: typeStr,
-					},
+					ProcessorSettings: config.NewProcessorSettings(typeStr),
 				},
 				next,
 				p,
@@ -173,7 +170,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 	md := internaldata.MetricsData{Metrics: in}
 
 	p := newMetricsTransformProcessor(nil, transforms)
-	mtp, _ := processorhelper.NewMetricsProcessor(&Config{}, consumertest.NewMetricsNop(), p)
+	mtp, _ := processorhelper.NewMetricsProcessor(&Config{}, consumertest.NewNop(), p)
 
 	b.ResetTimer()
 

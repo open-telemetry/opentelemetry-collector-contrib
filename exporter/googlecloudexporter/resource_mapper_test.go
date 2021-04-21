@@ -132,6 +132,31 @@ func TestResourceMapper(t *testing.T) {
 				Type: "source.resource3",
 				Labels: map[string]string{
 					"source.label1": "value1", // unknown label is dropped
+					"contrib.opencensus.io/exporter/stackdriver/project_id":             "123",
+					"cloud.availability_zone":                                           "zone1",
+					"contrib.opencensus.io/exporter/stackdriver/generic_task/namespace": "ns1",
+					"contrib.opencensus.io/exporter/stackdriver/generic_task/job":       "job1",
+					"contrib.opencensus.io/exporter/stackdriver/generic_task/task_id":   "task1",
+				},
+			},
+			// Resource without matching config should be converted via default implementation
+			wantResource: &monitoredres.MonitoredResource{
+				Type: "global",
+				// All labels are transformed by default function
+				Labels: map[string]string{
+					"project_id": "123",
+					"location":   "zone1",
+					"namespace":  "ns1",
+					"job":        "job1",
+					"task_id":    "task1",
+				},
+			},
+		},
+		{
+			name: "Handle cloud.zone for backcompat",
+			sourceResource: &resource.Resource{
+				Type: "source.resource3",
+				Labels: map[string]string{
 					"contrib.opencensus.io/exporter/stackdriver/project_id": "123",
 					"cloud.zone": "zone1",
 					"contrib.opencensus.io/exporter/stackdriver/generic_task/namespace": "ns1",
@@ -139,7 +164,6 @@ func TestResourceMapper(t *testing.T) {
 					"contrib.opencensus.io/exporter/stackdriver/generic_task/task_id":   "task1",
 				},
 			},
-			// Resource without matching config should be converted via default implementation
 			wantResource: &monitoredres.MonitoredResource{
 				Type: "global",
 				// All labels are transformed by default function

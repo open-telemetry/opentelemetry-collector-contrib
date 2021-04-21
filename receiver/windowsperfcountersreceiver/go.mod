@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver
 
-go 1.14
+go 1.15
 
 require (
 	github.com/armon/go-metrics v0.3.3 // indirect
@@ -11,10 +11,9 @@ require (
 	github.com/onsi/ginkgo v1.14.1 // indirect
 	github.com/onsi/gomega v1.10.2 // indirect
 	github.com/pelletier/go-toml v1.8.0 // indirect
-	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.22.1-0.20210313012550-03904de3dd61
+	go.opentelemetry.io/collector v0.24.1-0.20210420003310-0a2ea1b33eb6
 	go.uber.org/zap v1.16.0
-	golang.org/x/sys v0.0.0-20210217105451-b926d437f341
+	golang.org/x/sys v0.0.0-20210309074719-68d13333faf2
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )

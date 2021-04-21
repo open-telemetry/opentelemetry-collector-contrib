@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/spf13/viper"
+	"go.opentelemetry.io/collector/config"
 )
 
 var (
@@ -71,24 +71,23 @@ type ParserConfig interface {
 // LoadParserConfig is used to load the parser configuration according to the
 // specified parser type. It expects the passed viper to be pointing at the level
 // of the Config reference.
-func LoadParserConfig(v *viper.Viper, config *Config) error {
-	defaultCfgFn, ok := parserMap[config.Type]
+func LoadParserConfig(cp *config.Parser, cfg *Config) error {
+	defaultCfgFn, ok := parserMap[cfg.Type]
 	if !ok {
 		return fmt.Errorf(
 			"unknown parser type %q, valid parser types: %v",
-			config.Type,
+			cfg.Type,
 			validParsers)
 	}
 
-	config.Config = defaultCfgFn()
+	cfg.Config = defaultCfgFn()
 
-	vParserCfg := v.Sub(configSection)
-	if vParserCfg == nil {
-		// Parser config section was not specified, use the default config.
-		return nil
+	vParserCfg, errSub := cp.Sub(configSection)
+	if errSub != nil {
+		return errSub
 	}
 
-	if err := vParserCfg.UnmarshalExact(config.Config); err != nil {
+	if err := vParserCfg.UnmarshalExact(cfg.Config); err != nil {
 		return err
 	}
 

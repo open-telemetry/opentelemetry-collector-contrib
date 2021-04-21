@@ -56,33 +56,41 @@ func TestBrokerShutdown_closed(t *testing.T) {
 
 func TestBrokerScraper_Name(t *testing.T) {
 	s := brokerScraper{}
-	assert.Equal(t, s.Name(), "brokers")
+	assert.Equal(t, s.Name(), brokersScraperName)
 }
 
 func TestBrokerScraper_createBrokerScraper(t *testing.T) {
 	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient
 	ms, err := createBrokerScraper(context.Background(), Config{}, sc, zap.NewNop())
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, ms)
 }
 
-func TestBrokerScraper_createBrokerScraper_handles_client_error(t *testing.T) {
+func TestBrokerScraperStart(t *testing.T) {
+	newSaramaClient = mockNewSaramaClient
+	sc := sarama.NewConfig()
+	ms, err := createBrokerScraper(context.Background(), Config{}, sc, zap.NewNop())
+	assert.NotNil(t, ms)
+	assert.Nil(t, err)
+	err = ms.Start(context.Background(), nil)
+	assert.NoError(t, err)
+}
+
+func TestBrokerScraper_startBrokerScraper_handles_client_error(t *testing.T) {
 	newSaramaClient = func(addrs []string, conf *sarama.Config) (sarama.Client, error) {
 		return nil, fmt.Errorf("new client failed")
 	}
 	sc := sarama.NewConfig()
 	ms, err := createBrokerScraper(context.Background(), Config{}, sc, zap.NewNop())
-	assert.NotNil(t, err)
-	assert.Nil(t, ms)
+	assert.NotNil(t, ms)
+	assert.Nil(t, err)
+	err = ms.Start(context.Background(), nil)
+	assert.Error(t, err)
 }
 
 func TestBrokerScraper_scrape(t *testing.T) {
 	client := newMockClient()
-	r := sarama.NewBroker(testBroker)
-	testBrokers := make([]*sarama.Broker, 1)
-	testBrokers[0] = r
-	client.brokers = testBrokers
 	client.Mock.On("Brokers").Return(testBrokers)
 	bs := brokerScraper{
 		client: client,
@@ -102,6 +110,6 @@ func TestBrokersScraper_createBrokerScraper(t *testing.T) {
 	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient
 	ms, err := createBrokerScraper(context.Background(), Config{}, sc, zap.NewNop())
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, ms)
 }

@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -119,6 +120,66 @@ func TestConsumeMetrics(t *testing.T) {
 	}
 	md := internaldata.OCToMetrics(mdata)
 	require.Error(t, exp.ConsumeMetrics(ctx, md))
+	require.NoError(t, exp.Shutdown(ctx))
+}
+
+func TestConsumeMetricsWithOutputDestination(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	factory := NewFactory()
+	expCfg := factory.CreateDefaultConfig().(*Config)
+	expCfg.Region = "us-west-2"
+	expCfg.MaxRetries = 0
+	expCfg.OutputDestination = "stdout"
+	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	assert.Nil(t, err)
+	assert.NotNil(t, exp)
+
+	mdata := internaldata.MetricsData{
+		Node: &commonpb.Node{
+			ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
+			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
+		},
+		Resource: &resourcepb.Resource{
+			Labels: map[string]string{
+				"resource": "R1",
+			},
+		},
+		Metrics: []*metricspb.Metric{
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+						{Key: "isItAnError"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan", HasValue: true},
+							{Value: "false", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 1234567890123,
+								},
+								Value: &metricspb.Point_Int64Value{
+									Int64Value: 1,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	md := internaldata.OCToMetrics(mdata)
+	require.NoError(t, exp.ConsumeMetrics(ctx, md))
 	require.NoError(t, exp.Shutdown(ctx))
 }
 
@@ -567,4 +628,20 @@ func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
 	assert.NotNil(t, expCfg.logger)
+}
+
+func stashEnv() []string {
+	env := os.Environ()
+	os.Clearenv()
+
+	return env
+}
+
+func popEnv(env []string) {
+	os.Clearenv()
+
+	for _, e := range env {
+		p := strings.SplitN(e, "=", 2)
+		os.Setenv(p[0], p[1])
+	}
 }

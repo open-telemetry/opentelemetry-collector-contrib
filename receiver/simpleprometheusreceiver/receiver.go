@@ -32,12 +32,12 @@ import (
 type prometheusReceiverWrapper struct {
 	params            component.ReceiverCreateParams
 	config            *Config
-	consumer          consumer.MetricsConsumer
+	consumer          consumer.Metrics
 	prometheusRecever component.MetricsReceiver
 }
 
 // new returns a prometheusReceiverWrapper
-func new(params component.ReceiverCreateParams, cfg *Config, consumer consumer.MetricsConsumer) *prometheusReceiverWrapper {
+func new(params component.ReceiverCreateParams, cfg *Config, consumer consumer.Metrics) *prometheusReceiverWrapper {
 	return &prometheusReceiverWrapper{params: params, config: cfg, consumer: consumer}
 }
 

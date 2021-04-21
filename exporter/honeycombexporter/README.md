@@ -12,6 +12,16 @@ The following configuration options are supported:
 * `sample_rate` (Optional): Constant sample rate. Can be used to send 1 / x events to Honeycomb. Defaults to 1 (always sample).
 * `sample_rate_attribute` (Optional): The name of an attribute that contains the sample_rate for each span. If the attribute is on the span, it takes precedence over the static sample_rate configuration
 * `debug` (Optional): Set this to true to get debug logs from the honeycomb SDK. Defaults to false.
+* `retry_on_failure` (Optional):
+  - `enabled` (default = true)
+  - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
+  - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
+  - `max_elapsed_time` (default = 120s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
+* `sending_queue` (Optional):
+  - `enabled` (default = true)
+  - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
+  - `queue_size` (default = 5000): Maximum number of batches kept in memory before data; ignored if `enabled` is `false`;
+
 Example:
 
 ```yaml
@@ -23,4 +33,13 @@ exporters:
     sample_rate: 25
     sample_rate_attribute: "hny.sample_rate"
     debug: true
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5
+      max_interval: 30
+      max_elapsed_time: 120
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 10000
 ```

@@ -31,6 +31,7 @@ const (
 		"Family":"myFamily",
 		"LaunchType":"ec2",
 		"AvailabilityZone":"ap-southeast-1a",
+		"Revision":"26",
 		"Containers": []
 	}`
 
@@ -75,6 +76,7 @@ func Test_ecsMetadata_fetchTask(t *testing.T) {
 	assert.Equal(t, "myFamily", fetchResp.Family)
 	assert.Equal(t, "ec2", fetchResp.LaunchType)
 	assert.Equal(t, "ap-southeast-1a", fetchResp.AvailabilityZone)
+	assert.Equal(t, "26", fetchResp.Revision)
 	assert.Empty(t, fetchResp.Containers)
 }
 

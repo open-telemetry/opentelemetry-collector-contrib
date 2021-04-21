@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	traceexport "go.opentelemetry.io/otel/sdk/export/trace"
 	"google.golang.org/api/option"
@@ -87,7 +88,7 @@ func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
 	return copts, nil
 }
 
-func newGoogleCloudTraceExporter(cfg *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
+func newGoogleCloudTracesExporter(cfg *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
 	setVersionInUserAgent(cfg, params.ApplicationStartInfo.Version)
 
 	topts := []cloudtrace.Option{
@@ -108,7 +109,7 @@ func newGoogleCloudTraceExporter(cfg *Config, params component.ExporterCreatePar
 
 	tExp := &traceExporter{texporter: exp}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		cfg,
 		params.Logger,
 		tExp.pushTraces,
@@ -182,7 +183,7 @@ func newGoogleCloudMetricsExporter(cfg *Config, params component.ExporterCreateP
 func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) error {
 	// PushMetricsProto doesn't bundle subsequent calls, so we need to
 	// combine the data here to avoid generating too many RPC calls.
-	mds := internaldata.MetricsToOC(m)
+	mds := exportAdditionalLabels(internaldata.MetricsToOC(m))
 	count := 0
 	for _, md := range mds {
 		count += len(md.Metrics)
@@ -208,6 +209,21 @@ func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) err
 	return err
 }
 
+func exportAdditionalLabels(mds []internaldata.MetricsData) []internaldata.MetricsData {
+	for _, md := range mds {
+		if md.Resource == nil ||
+			md.Resource.Labels == nil ||
+			md.Node == nil ||
+			md.Node.Identifier == nil ||
+			len(md.Node.Identifier.HostName) == 0 {
+			continue
+		}
+		// MetricsToOC removes `host.name` label and writes it to node indentifier, here we reintroduce it.
+		md.Resource.Labels[conventions.AttributeHostName] = md.Node.Identifier.HostName
+	}
+	return mds
+}
+
 // pushTraces calls texporter.ExportSpan for each span in the given traces
 func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
 	var errs []error
@@ -222,7 +238,7 @@ func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) error 
 	if err != nil {
 		errs = append(errs, err)
 	}
-	return consumererror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 func numPoints(metrics []*metricspb.Metric) int {

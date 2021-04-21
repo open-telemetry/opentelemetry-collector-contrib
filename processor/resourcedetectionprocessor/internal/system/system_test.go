@@ -33,6 +33,11 @@ type mockMetadata struct {
 	mock.Mock
 }
 
+func (m *mockMetadata) Hostname() (string, error) {
+	args := m.MethodCalled("Hostname")
+	return args.String(0), args.Error(1)
+}
+
 func (m *mockMetadata) FQDN() (string, error) {
 	args := m.MethodCalled("FQDN")
 	return args.String(0), args.Error(1)
@@ -54,7 +59,7 @@ func TestDetectFQDNAvailable(t *testing.T) {
 	md.On("FQDN").Return("fqdn", nil)
 	md.On("OSType").Return("DARWIN", nil)
 
-	detector := &Detector{provider: md}
+	detector := &Detector{provider: md, logger: zap.NewNop()}
 	res, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	md.AssertExpectations(t)
@@ -70,23 +75,45 @@ func TestDetectFQDNAvailable(t *testing.T) {
 
 }
 
+func TestFallbackHostname(t *testing.T) {
+	mdHostname := &mockMetadata{}
+	mdHostname.On("Hostname").Return("hostname", nil)
+	mdHostname.On("FQDN").Return("", errors.New("err"))
+	mdHostname.On("OSType").Return("DARWIN", nil)
+
+	detector := &Detector{provider: mdHostname, logger: zap.NewNop()}
+	res, err := detector.Detect(context.Background())
+	require.NoError(t, err)
+	mdHostname.AssertExpectations(t)
+	res.Attributes().Sort()
+
+	expected := internal.NewResource(map[string]interface{}{
+		conventions.AttributeHostName: "hostname",
+		conventions.AttributeOSType:   "DARWIN",
+	})
+	expected.Attributes().Sort()
+
+	assert.Equal(t, expected, res)
+}
+
 func TestDetectError(t *testing.T) {
-	// FQDN fails
+	// FQDN and hostname fail
 	mdFQDN := &mockMetadata{}
 	mdFQDN.On("OSType").Return("WINDOWS", nil)
 	mdFQDN.On("FQDN").Return("", errors.New("err"))
+	mdFQDN.On("Hostname").Return("", errors.New("err"))
 
-	detector := &Detector{provider: mdFQDN}
+	detector := &Detector{provider: mdFQDN, logger: zap.NewNop()}
 	res, err := detector.Detect(context.Background())
 	assert.Error(t, err)
 	assert.True(t, internal.IsEmptyResource(res))
 
-	// Hostname fails
-	mdHostname := &mockMetadata{}
-	mdHostname.On("FQDN").Return("fqdn", nil)
-	mdHostname.On("OSType").Return("", errors.New("err"))
+	// OS type fails
+	mdOSType := &mockMetadata{}
+	mdOSType.On("FQDN").Return("fqdn", nil)
+	mdOSType.On("OSType").Return("", errors.New("err"))
 
-	detector = &Detector{provider: mdHostname}
+	detector = &Detector{provider: mdOSType, logger: zap.NewNop()}
 	res, err = detector.Detect(context.Background())
 	assert.Error(t, err)
 	assert.True(t, internal.IsEmptyResource(res))

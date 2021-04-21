@@ -47,7 +47,7 @@ func TestIntegration(t *testing.T) {
 	c := d.StartImage("docker.io/library/redis:6.0.3", container.WithPortReady(6379))
 
 	f := NewFactory()
-	cfg := f.CreateDefaultConfig().(*config)
+	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = c.AddrForPort(6379)
 
 	consumer := new(consumertest.MetricsSink)

@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
@@ -33,16 +33,16 @@ var (
 
 var _ component.MetricsReceiver = (*receiverCreator)(nil)
 
-// receiverCreator implements consumer.MetricsConsumer.
+// receiverCreator implements consumer.Metrics.
 type receiverCreator struct {
 	params          component.ReceiverCreateParams
 	cfg             *Config
-	nextConsumer    consumer.MetricsConsumer
+	nextConsumer    consumer.Metrics
 	observerHandler observerHandler
 }
 
 // newReceiverCreator creates the receiver_creator with the given parameters.
-func newReceiverCreator(params component.ReceiverCreateParams, cfg *Config, nextConsumer consumer.MetricsConsumer) (component.MetricsReceiver, error) {
+func newReceiverCreator(params component.ReceiverCreateParams, cfg *Config, nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextConsumer
 	}
@@ -81,7 +81,7 @@ func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 			host:        &loggingHost{host, rc.params.Logger},
 		}}
 
-	observers := map[configmodels.Type]observer.Observable{}
+	observers := map[config.Type]observer.Observable{}
 
 	// Match all configured observers to the extensions that are running.
 	for _, watchObserver := range rc.cfg.WatchObservers {

@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -41,7 +41,7 @@ type kubernetesReceiver struct {
 
 	config   *Config
 	logger   *zap.Logger
-	consumer consumer.MetricsConsumer
+	consumer consumer.Metrics
 	cancel   context.CancelFunc
 }
 
@@ -51,7 +51,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 
 	exporters := host.GetExporters()
 	if err := kr.resourceWatcher.setupMetadataExporters(
-		exporters[configmodels.MetricsDataType], kr.config.MetadataExporters); err != nil {
+		exporters[config.MetricsDataType], kr.config.MetadataExporters); err != nil {
 		return err
 	}
 
@@ -111,7 +111,7 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 
 // newReceiver creates the Kubernetes cluster receiver with the given configuration.
 func newReceiver(
-	logger *zap.Logger, config *Config, consumer consumer.MetricsConsumer,
+	logger *zap.Logger, config *Config, consumer consumer.Metrics,
 	client kubernetes.Interface) (component.MetricsReceiver, error) {
 	resourceWatcher := newResourceWatcher(logger, client, config.NodeConditionTypesToReport, defaultInitialSyncTimeout)
 

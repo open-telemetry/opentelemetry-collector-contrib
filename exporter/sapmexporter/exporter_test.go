@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/trace/jaeger"
 	"go.uber.org/zap"
@@ -35,9 +35,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-func TestCreateTraceExporter(t *testing.T) {
+func TestCreateTracesExporter(t *testing.T) {
 	config := &Config{
-		ExporterSettings:   configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "sapm/customname"},
+		ExporterSettings:   &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "sapm/customname"},
 		Endpoint:           "test-endpoint",
 		AccessToken:        "abcd1234",
 		NumWorkers:         3,
@@ -49,17 +49,17 @@ func TestCreateTraceExporter(t *testing.T) {
 	}
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
-	te, err := newSAPMTraceExporter(config, params)
+	te, err := newSAPMTracesExporter(config, params)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
 	assert.NoError(t, te.Shutdown(context.Background()), "trace exporter shutdown failed")
 }
 
-func TestCreateTraceExporterWithInvalidConfig(t *testing.T) {
+func TestCreateTracesExporterWithInvalidConfig(t *testing.T) {
 	config := &Config{}
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	te, err := newSAPMTraceExporter(config, params)
+	te, err := newSAPMTracesExporter(config, params)
 	require.Error(t, err)
 	assert.Nil(t, te)
 }

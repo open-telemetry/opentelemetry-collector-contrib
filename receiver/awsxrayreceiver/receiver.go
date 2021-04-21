@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
+	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/proxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
@@ -44,14 +44,14 @@ type xrayReceiver struct {
 	poller       udppoller.Poller
 	server       proxy.Server
 	logger       *zap.Logger
-	consumer     consumer.TracesConsumer
+	consumer     consumer.Traces
 	longLivedCtx context.Context
 	startOnce    sync.Once
 	stopOnce     sync.Once
 }
 
 func newReceiver(config *Config,
-	consumer consumer.TracesConsumer,
+	consumer consumer.Traces,
 	logger *zap.Logger) (component.TracesReceiver, error) {
 
 	if consumer == nil {

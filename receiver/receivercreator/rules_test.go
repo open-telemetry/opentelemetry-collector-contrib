@@ -44,9 +44,10 @@ func Test_ruleEval(t *testing.T) {
 	}{
 		// Doesn't work yet. See comment in newRule.
 		// {"unknown variable", args{`type == "port" && unknown_var == 1`, portEndpoint}, false, true},
-		{"basic port", args{`type.port && name == "http" && pod.labels["app"] == "redis"`, portEndpoint}, true, false},
-		{"basic pod", args{`type.pod && labels["region"] == "west-1"`, podEndpoint}, true, false},
-		{"annotations", args{`type.pod && annotations["scrape"] == "true"`, podEndpoint}, true, false},
+		{"basic port", args{`type == "port" && name == "http" && pod.labels["app"] == "redis"`, portEndpoint}, true, false},
+		{"basic hostport", args{`type == "hostport" && port == 1234 && process_name == "splunk"`, hostportEndpoint}, true, false},
+		{"basic pod", args{`type == "pod" && labels["region"] == "west-1"`, podEndpoint}, true, false},
+		{"annotations", args{`type == "pod" && annotations["scrape"] == "true"`, podEndpoint}, true, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -81,7 +82,9 @@ func Test_newRule(t *testing.T) {
 		{"empty rule", args{""}, true},
 		{"does not start with type", args{"port == 1234"}, true},
 		{"invalid syntax", args{"port =="}, true},
-		{"valid", args{`type.port && port_name == "http"`}, false},
+		{"valid port", args{`type == "port" && port_name == "http"`}, false},
+		{"valid pod", args{`type=="pod" && port_name == "http"`}, false},
+		{"valid hostport", args{`type ==    "hostport" && port_name == "http"`}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

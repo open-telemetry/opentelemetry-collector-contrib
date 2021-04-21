@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -29,15 +28,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
-type mockProvider struct {
-	mock.Mock
-}
-
-func (m *mockProvider) metadata(_ context.Context) (*computeMetadata, error) {
-	args := m.MethodCalled("metadata")
-	return args.Get(0).(*computeMetadata), args.Error(1)
-}
-
 func TestNewDetector(t *testing.T) {
 	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
 	require.NoError(t, err)
@@ -45,14 +35,15 @@ func TestNewDetector(t *testing.T) {
 }
 
 func TestDetectAzureAvailable(t *testing.T) {
-	mp := &mockProvider{}
-	mp.On("metadata").Return(&computeMetadata{
+	mp := &MockProvider{}
+	mp.On("Metadata").Return(&ComputeMetadata{
 		Location:          "location",
 		Name:              "name",
 		VMID:              "vmID",
 		VMSize:            "vmSize",
 		SubscriptionID:    "subscriptionID",
 		ResourceGroupName: "resourceGroup",
+		VMScaleSetName:    "myScaleset",
 	}, nil)
 
 	detector := &Detector{provider: mp}
@@ -62,14 +53,15 @@ func TestDetectAzureAvailable(t *testing.T) {
 	res.Attributes().Sort()
 
 	expected := internal.NewResource(map[string]interface{}{
-		conventions.AttributeCloudProvider:              conventions.AttributeCloudProviderAzure,
-		conventions.AttributeCloudInfrastructureService: conventions.AttributeCloudProviderAzureVM,
-		conventions.AttributeHostName:                   "name",
-		conventions.AttributeCloudRegion:                "location",
-		conventions.AttributeHostID:                     "vmID",
-		conventions.AttributeCloudAccount:               "subscriptionID",
-		"azure.vm.size":                                 "vmSize",
-		"azure.resourcegroup.name":                      "resourceGroup",
+		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
+		conventions.AttributeCloudPlatform: conventions.AttributeCloudPlatformAzureVM,
+		conventions.AttributeHostName:      "name",
+		conventions.AttributeCloudRegion:   "location",
+		conventions.AttributeHostID:        "vmID",
+		conventions.AttributeCloudAccount:  "subscriptionID",
+		"azure.vm.size":                    "vmSize",
+		"azure.resourcegroup.name":         "resourceGroup",
+		"azure.vm.scaleset.name":           "myScaleset",
 	})
 	expected.Attributes().Sort()
 
@@ -77,11 +69,11 @@ func TestDetectAzureAvailable(t *testing.T) {
 }
 
 func TestDetectError(t *testing.T) {
-	mp := &mockProvider{}
-	mp.On("metadata").Return(&computeMetadata{}, fmt.Errorf("mock error"))
+	mp := &MockProvider{}
+	mp.On("Metadata").Return(&ComputeMetadata{}, fmt.Errorf("mock error"))
 
-	detector := &Detector{provider: mp}
+	detector := &Detector{provider: mp, logger: zap.NewNop()}
 	res, err := detector.Detect(context.Background())
-	assert.Error(t, err)
+	assert.NoError(t, err)
 	assert.True(t, internal.IsEmptyResource(res))
 }

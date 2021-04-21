@@ -22,6 +22,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -31,8 +32,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -53,7 +54,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[configmodels.Type(typeStr)] = factory
+	factories.Receivers[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -87,44 +88,52 @@ func TestReadStaticFile(t *testing.T) {
 
 	expectedTimestamp, _ := time.ParseInLocation("2006-01-02", "2020-08-25", time.Local)
 
-	e1 := entry.New()
-	e1.Timestamp = expectedTimestamp
-	e1.Severity = entry.Info
-	e1.Set(entry.NewRecordField("msg"), "Something routine")
-	e1.AddAttribute("file_name", "simple.log")
-
-	e2 := entry.New()
-	e2.Timestamp = expectedTimestamp
-	e2.Severity = entry.Error
-	e2.Set(entry.NewRecordField("msg"), "Something bad happened!")
-	e2.AddAttribute("file_name", "simple.log")
-
-	e3 := entry.New()
-	e3.Timestamp = expectedTimestamp
-	e3.Severity = entry.Debug
-	e3.Set(entry.NewRecordField("msg"), "Some details...")
-	e3.AddAttribute("file_name", "simple.log")
-
-	expectedLogs := []pdata.Logs{
-		stanza.Convert(e1),
-		stanza.Convert(e2),
-		stanza.Convert(e3),
-	}
-
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
 	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
 
-	rcvr, err := f.CreateLogsReceiver(context.Background(), params, testdataConfigYamlAsMap(), sink)
+	cfg := testdataConfigYamlAsMap()
+	cfg.Converter.MaxFlushCount = 10
+	cfg.Converter.FlushInterval = time.Millisecond
+
+	converter := stanza.NewConverter(stanza.WithFlushInterval(time.Millisecond))
+	converter.Start()
+	defer converter.Stop()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go consumeNLogsFromConverter(converter.OutChannel(), 3, &wg)
+
+	rcvr, err := f.CreateLogsReceiver(context.Background(), params, cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Build the expected set by using stanza.Converter to translate entries
+	// to pdata Logs.
+	queueEntry := func(t *testing.T, c *stanza.Converter, msg string, severity entry.Severity) {
+		e := entry.New()
+		e.Timestamp = expectedTimestamp
+		e.Set(entry.NewBodyField("msg"), msg)
+		e.Severity = severity
+		e.AddAttribute("file_name", "simple.log")
+		require.NoError(t, c.Batch(e))
+	}
+	queueEntry(t, converter, "Something routine", entry.Info)
+	queueEntry(t, converter, "Something bad happened!", entry.Error)
+	queueEntry(t, converter, "Some details...", entry.Debug)
 
 	dir, err := os.Getwd()
 	require.NoError(t, err)
 	t.Logf("Working Directory: %s", dir)
 
-	require.NoError(t, rcvr.Start(context.Background(), &testHost{t: t}))
-	require.Eventually(t, expectNLogs(sink, 3), time.Second, time.Millisecond)
-	require.Equal(t, expectedLogs, sink.AllLogs())
+	wg.Wait()
+
+	require.Eventually(t, expectNLogs(sink, 3), 2*time.Second, 5*time.Millisecond,
+		"expected %d but got %d logs",
+		3, sink.LogRecordsCount(),
+	)
+	// TODO: Figure out a nice way to assert each logs entry content.
+	// require.Equal(t, expectedLogs, sink.AllLogs())
 	require.NoError(t, rcvr.Shutdown(context.Background()))
 }
 
@@ -167,44 +176,71 @@ type rotationTest struct {
 func (rt *rotationTest) Run(t *testing.T) {
 	t.Parallel()
 
+	tempDir := newTempDir(t)
+
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
 	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
 
-	tempDir := newTempDir(t)
+	cfg := testdataRotateTestYamlAsMap(tempDir)
+	cfg.Converter.MaxFlushCount = 1
+	cfg.Converter.FlushInterval = time.Millisecond
 
 	// With a max of 100 logs per file and 1 backup file, rotation will occur
 	// when more than 100 logs are written, and deletion when more than 200 are written.
 	// Write 300 and validate that we got the all despite rotation and deletion.
 	logger := newRotatingLogger(t, tempDir, 100, 1, rt.copyTruncate, rt.sequential)
-	numLogs := 300
+	numLogs := 2
 
-	// Build input lines and expected outputs
-	lines := make([]string, numLogs)
-	expectedLogs := make([]pdata.Logs, numLogs)
+	// Build expected outputs
 	expectedTimestamp, _ := time.ParseInLocation("2006-01-02", "2020-08-25", time.Local)
+	converter := stanza.NewConverter(stanza.WithFlushInterval(time.Millisecond))
+	converter.Start()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go consumeNLogsFromConverter(converter.OutChannel(), numLogs, &wg)
+
+	rcvr, err := f.CreateLogsReceiver(context.Background(), params, cfg, sink)
+	require.NoError(t, err, "failed to create receiver")
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+
 	for i := 0; i < numLogs; i++ {
 		msg := fmt.Sprintf("This is a simple log line with the number %3d", i)
-		lines[i] = fmt.Sprintf("2020-08-25 %s", msg)
 
+		// Build the expected set by converting entries to pdata Logs...
 		e := entry.New()
 		e.Timestamp = expectedTimestamp
-		e.Set(entry.NewRecordField("msg"), msg)
-		expectedLogs[i] = stanza.Convert(e)
-	}
+		e.Set(entry.NewBodyField("msg"), msg)
+		require.NoError(t, converter.Batch(e))
 
-	rcvr, err := f.CreateLogsReceiver(context.Background(), params, testdataRotateTestYamlAsMap(tempDir), sink)
-	require.NoError(t, err, "failed to create receiver")
-	require.NoError(t, rcvr.Start(context.Background(), &testHost{t: t}))
-
-	for _, line := range lines {
-		logger.Print(line)
+		// ... and write the logs lines to the actual file consumed by receiver.
+		logger.Print(fmt.Sprintf("2020-08-25 %s", msg))
 		time.Sleep(time.Millisecond)
 	}
 
-	require.Eventually(t, expectNLogs(sink, numLogs), 2*time.Second, time.Millisecond)
-	require.ElementsMatch(t, expectedLogs, sink.AllLogs())
+	wg.Wait()
+	require.Eventually(t, expectNLogs(sink, numLogs), 2*time.Second, 10*time.Millisecond,
+		"expected %d but got %d logs",
+		numLogs, sink.LogRecordsCount(),
+	)
+	// TODO: Figure out a nice way to assert each logs entry content.
+	// require.Equal(t, expectedLogs, sink.AllLogs())
 	require.NoError(t, rcvr.Shutdown(context.Background()))
+	converter.Stop()
+}
+
+func consumeNLogsFromConverter(ch <-chan pdata.Logs, count int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	n := 0
+	for pLog := range ch {
+		n += pLog.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().Len()
+
+		if n == count {
+			return
+		}
+	}
 }
 
 func newRotatingLogger(t *testing.T, tempDir string, maxLines, maxBackups int, copyTruncate, sequential bool) *log.Logger {
@@ -239,22 +275,10 @@ func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
 	return func() bool { return sink.LogRecordsCount() == expected }
 }
 
-type testHost struct {
-	component.Host
-	t *testing.T
-}
-
-var _ component.Host = (*testHost)(nil)
-
-// ReportFatalError causes the test to be run to fail.
-func (h *testHost) ReportFatalError(err error) {
-	h.t.Fatalf("receiver reported a fatal error: %v", err)
-}
-
 func testdataConfigYamlAsMap() *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "filelog",
 				NameVal: "filelog",
 			},
@@ -271,6 +295,10 @@ func testdataConfigYamlAsMap() *FileLogConfig {
 					},
 				},
 			},
+			Converter: stanza.ConverterConfig{
+				MaxFlushCount: stanza.DefaultMaxFlushCount,
+				FlushInterval: stanza.DefaultFlushInterval,
+			},
 		},
 		Input: stanza.InputConfig{
 			"include": []interface{}{
@@ -284,7 +312,7 @@ func testdataConfigYamlAsMap() *FileLogConfig {
 func testdataRotateTestYamlAsMap(tempDir string) *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ReceiverSettings: config.ReceiverSettings{
 				TypeVal: "filelog",
 				NameVal: "filelog",
 			},
@@ -297,6 +325,10 @@ func testdataRotateTestYamlAsMap(tempDir string) *FileLogConfig {
 						"parse_from": "ts",
 					},
 				},
+			},
+			Converter: stanza.ConverterConfig{
+				MaxFlushCount: stanza.DefaultMaxFlushCount,
+				FlushInterval: stanza.DefaultFlushInterval,
 			},
 		},
 		Input: stanza.InputConfig{

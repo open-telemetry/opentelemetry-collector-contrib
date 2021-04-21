@@ -47,6 +47,7 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 
 	// Get the body
 	content, err := ioutil.ReadAll(reqBody)
+	reqBody.Close()
 	if err != nil {
 		return nil, err
 	}

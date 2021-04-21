@@ -580,7 +580,7 @@ func commonEnvelopeValidations(
 
 	assert.NotNil(t, envelope)
 	assert.Equal(t, expectedEnvelopeName, envelope.Name)
-	assert.Equal(t, toTime(span.StartTime()).Format(time.RFC3339Nano), envelope.Time)
+	assert.Equal(t, toTime(span.StartTimestamp()).Format(time.RFC3339Nano), envelope.Time)
 	assert.Equal(t, defaultTraceIDAsHex, envelope.Tags[contracts.OperationId])
 	assert.Equal(t, defaultParentSpanIDAsHex, envelope.Tags[contracts.OperationParentId])
 	assert.Equal(t, defaultServiceNamespace+"."+defaultServiceName, envelope.Tags[contracts.CloudRole])
@@ -732,27 +732,27 @@ func assertAttributesCopiedToPropertiesOrMeasurements(
 	properties map[string]string,
 	measurements map[string]float64) {
 
-	attributeMap.ForEach(
-		func(k string, v pdata.AttributeValue) {
-			switch v.Type() {
-			case pdata.AttributeValueSTRING:
-				p, exists := properties[k]
-				assert.True(t, exists)
-				assert.Equal(t, v.StringVal(), p)
-			case pdata.AttributeValueBOOL:
-				p, exists := properties[k]
-				assert.True(t, exists)
-				assert.Equal(t, strconv.FormatBool(v.BoolVal()), p)
-			case pdata.AttributeValueINT:
-				m, exists := measurements[k]
-				assert.True(t, exists)
-				assert.Equal(t, float64(v.IntVal()), m)
-			case pdata.AttributeValueDOUBLE:
-				m, exists := measurements[k]
-				assert.True(t, exists)
-				assert.Equal(t, v.DoubleVal(), m)
-			}
-		})
+	attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+		switch v.Type() {
+		case pdata.AttributeValueSTRING:
+			p, exists := properties[k]
+			assert.True(t, exists)
+			assert.Equal(t, v.StringVal(), p)
+		case pdata.AttributeValueBOOL:
+			p, exists := properties[k]
+			assert.True(t, exists)
+			assert.Equal(t, strconv.FormatBool(v.BoolVal()), p)
+		case pdata.AttributeValueINT:
+			m, exists := measurements[k]
+			assert.True(t, exists)
+			assert.Equal(t, float64(v.IntVal()), m)
+		case pdata.AttributeValueDOUBLE:
+			m, exists := measurements[k]
+			assert.True(t, exists)
+			assert.Equal(t, v.DoubleVal(), m)
+		}
+		return true
+	})
 }
 
 /*
@@ -765,8 +765,8 @@ func getSpan(spanName string, spanKind pdata.SpanKind, initialAttributes map[str
 	span.SetParentSpanID(pdata.NewSpanID(defaultParentSpanID))
 	span.SetName(spanName)
 	span.SetKind(spanKind)
-	span.SetStartTime(defaultSpanStartTime)
-	span.SetEndTime(defaultSpanEndTme)
+	span.SetStartTimestamp(defaultSpanStartTime)
+	span.SetEndTimestamp(defaultSpanEndTme)
 	span.Attributes().InitFromMap(initialAttributes)
 	return span
 }

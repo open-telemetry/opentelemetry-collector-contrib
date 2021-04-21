@@ -37,7 +37,7 @@ type observerHandler struct {
 	// receiversByEndpointID is a map of endpoint IDs to a receiver instance.
 	receiversByEndpointID receiverMap
 	// nextConsumer is the receiver_creator's own consumer
-	nextConsumer consumer.MetricsConsumer
+	nextConsumer consumer.Metrics
 	// runner starts and stops receiver instances.
 	runner runner
 }
@@ -58,7 +58,7 @@ func (obs *observerHandler) shutdown() error {
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("shutdown on %d receivers failed: %v", len(errs), consumererror.CombineErrors(errs))
+		return fmt.Errorf("shutdown on %d receivers failed: %v", len(errs), consumererror.Combine(errs))
 	}
 
 	return nil
@@ -85,14 +85,13 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 			}
 
 			obs.logger.Info("starting receiver",
-				zap.String("name", template.fullName),
-				zap.String("type", string(template.typeStr)),
+				zap.String("name", template.id.String()),
 				zap.String("endpoint", e.Target),
 				zap.String("endpoint_id", string(e.ID)))
 
 			resolvedConfig, err := expandMap(template.config, env)
 			if err != nil {
-				obs.logger.Error("unable to resolve template config", zap.String("receiver", template.fullName), zap.Error(err))
+				obs.logger.Error("unable to resolve template config", zap.String("receiver", template.id.String()), zap.Error(err))
 				continue
 			}
 
@@ -106,7 +105,7 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 			resolvedDiscoveredConfig, err := expandMap(discoveredConfig, env)
 
 			if err != nil {
-				obs.logger.Error("unable to resolve discovered config", zap.String("receiver", template.fullName), zap.Error(err))
+				obs.logger.Error("unable to resolve discovered config", zap.String("receiver", template.id.String()), zap.Error(err))
 				continue
 			}
 
@@ -120,22 +119,21 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 			)
 
 			if err != nil {
-				obs.logger.Error("failed creating resource enhancer", zap.String("receiver", template.fullName), zap.Error(err))
+				obs.logger.Error("failed creating resource enhancer", zap.String("receiver", template.id.String()), zap.Error(err))
 				continue
 			}
 
 			rcvr, err := obs.runner.start(
 				receiverConfig{
-					fullName: template.fullName,
-					typeStr:  template.typeStr,
-					config:   resolvedConfig,
+					id:     template.id,
+					config: resolvedConfig,
 				},
 				resolvedDiscoveredConfig,
 				resourceEnhancer,
 			)
 
 			if err != nil {
-				obs.logger.Error("failed to start receiver", zap.String("receiver", template.fullName))
+				obs.logger.Error("failed to start receiver", zap.String("receiver", template.id.String()))
 				continue
 			}
 

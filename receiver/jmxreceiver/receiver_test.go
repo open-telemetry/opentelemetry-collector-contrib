@@ -31,14 +31,14 @@ import (
 
 func TestReceiver(t *testing.T) {
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	config := &config{
+	config := &Config{
 		Endpoint: "service:jmx:protocol:sap",
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: fmt.Sprintf("localhost:%d", testutil.GetAvailablePort(t)),
 		},
 	}
 
-	receiver := newJMXMetricReceiver(params, config, consumertest.NewMetricsNop())
+	receiver := newJMXMetricReceiver(params, config, consumertest.NewNop())
 	require.NotNil(t, receiver)
 	require.Same(t, params.Logger, receiver.logger)
 	require.Same(t, config, receiver.config)
@@ -50,13 +50,13 @@ func TestReceiver(t *testing.T) {
 func TestBuildJMXMetricGathererConfig(t *testing.T) {
 	tests := []struct {
 		name           string
-		config         config
+		config         Config
 		expectedConfig string
 		expectedError  string
 	}{
 		{
 			"uses target system",
-			config{
+			Config{
 				Endpoint:           "service:jmx:rmi///jndi/rmi://myservice:12345/jmxrmi/",
 				TargetSystem:       "mytargetsystem",
 				GroovyScript:       "mygroovyscript",
@@ -78,7 +78,7 @@ otel.exporter.otlp.metric.timeout = 234000
 		},
 		{
 			"uses groovy script",
-			config{
+			Config{
 				Endpoint:           "service:jmx:rmi///jndi/rmi://myservice:12345/jmxrmi/",
 				GroovyScript:       "mygroovyscript",
 				CollectionInterval: 123 * time.Second,
@@ -99,7 +99,7 @@ otel.exporter.otlp.metric.timeout = 234000
 		},
 		{
 			"uses endpoint as service url",
-			config{
+			Config{
 				Endpoint:           "myhost:12345",
 				TargetSystem:       "mytargetsystem",
 				GroovyScript:       "mygroovyscript",
@@ -121,7 +121,7 @@ otel.exporter.otlp.metric.timeout = 234000
 		},
 		{
 			"errors on portless endpoint",
-			config{
+			Config{
 				Endpoint:           "myhostwithoutport",
 				TargetSystem:       "mytargetsystem",
 				GroovyScript:       "mygroovyscript",
@@ -137,7 +137,7 @@ otel.exporter.otlp.metric.timeout = 234000
 		},
 		{
 			"errors on invalid port in endpoint",
-			config{
+			Config{
 				Endpoint:           "myhost:withoutvalidport",
 				TargetSystem:       "mytargetsystem",
 				GroovyScript:       "mygroovyscript",
@@ -153,7 +153,7 @@ otel.exporter.otlp.metric.timeout = 234000
 		},
 		{
 			"errors on invalid endpoint",
-			config{
+			Config{
 				Endpoint:           ":::",
 				TargetSystem:       "mytargetsystem",
 				GroovyScript:       "mygroovyscript",
@@ -172,7 +172,7 @@ otel.exporter.otlp.metric.timeout = 234000
 	for _, test := range tests {
 		t.Run(test.name, func(tt *testing.T) {
 			params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-			receiver := newJMXMetricReceiver(params, &test.config, consumertest.NewMetricsNop())
+			receiver := newJMXMetricReceiver(params, &test.config, consumertest.NewNop())
 			jmxConfig, err := receiver.buildJMXMetricGathererConfig()
 			if test.expectedError == "" {
 				require.NoError(t, err)
@@ -188,24 +188,24 @@ otel.exporter.otlp.metric.timeout = 234000
 func TestBuildOTLPReceiverInvalidEndpoints(t *testing.T) {
 	tests := []struct {
 		name        string
-		config      config
+		config      Config
 		expectedErr string
 	}{
 		{
 			"missing OTLPExporterConfig.Endpoint",
-			config{},
+			Config{},
 			"failed to parse OTLPExporterConfig.Endpoint : missing port in address",
 		},
 		{
 			"invalid OTLPExporterConfig.Endpoint host with 0 port",
-			config{OTLPExporterConfig: otlpExporterConfig{Endpoint: ".:0"}},
+			Config{OTLPExporterConfig: otlpExporterConfig{Endpoint: ".:0"}},
 			"failed determining desired port from OTLPExporterConfig.Endpoint .:0: listen tcp: lookup .:",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(tt *testing.T) {
 			params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-			jmxReceiver := newJMXMetricReceiver(params, &test.config, consumertest.NewMetricsNop())
+			jmxReceiver := newJMXMetricReceiver(params, &test.config, consumertest.NewNop())
 			otlpReceiver, err := jmxReceiver.buildOTLPReceiver()
 			require.Error(t, err)
 			require.Contains(t, err.Error(), test.expectedErr)

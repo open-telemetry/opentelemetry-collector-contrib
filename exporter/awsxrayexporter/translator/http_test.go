@@ -229,7 +229,7 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 	attributes[semconventions.AttributeHTTPClientIP] = "192.168.15.32"
 	attributes[semconventions.AttributeHTTPStatusCode] = 200
 	span := constructHTTPServerSpan(attributes)
-	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTime())
+	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTimestamp())
 	timeEvents.CopyTo(span.Events())
 
 	filtered, httpData := makeHTTP(span)
@@ -245,25 +245,6 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))
 }
 
-func TestHttpStatusFromSpanStatus(t *testing.T) {
-	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "GET"
-	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
-	span := constructHTTPClientSpan(attributes)
-
-	filtered, httpData := makeHTTP(span)
-
-	assert.NotNil(t, httpData)
-	assert.NotNil(t, filtered)
-	w := testWriters.borrow()
-	if err := w.Encode(httpData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
-	jsonStr := w.String()
-	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "200"))
-}
-
 func TestSpanWithNotEnoughHTTPRequestURLAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
@@ -275,7 +256,7 @@ func TestSpanWithNotEnoughHTTPRequestURLAttributes(t *testing.T) {
 	attributes[semconventions.AttributeNetPeerPort] = 8080
 	attributes[semconventions.AttributeHTTPStatusCode] = 200
 	span := constructHTTPServerSpan(attributes)
-	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTime())
+	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTimestamp())
 	timeEvents.CopyTo(span.Events())
 
 	filtered, httpData := makeHTTP(span)
@@ -301,8 +282,8 @@ func constructHTTPClientSpan(attributes map[string]interface{}) pdata.Span {
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindCLIENT)
-	span.SetStartTime(pdata.TimestampFromTime(startTime))
-	span.SetEndTime(pdata.TimestampFromTime(endTime))
+	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(0)
@@ -324,8 +305,8 @@ func constructHTTPServerSpan(attributes map[string]interface{}) pdata.Span {
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindSERVER)
-	span.SetStartTime(pdata.TimestampFromTime(startTime))
-	span.SetEndTime(pdata.TimestampFromTime(endTime))
+	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(0)

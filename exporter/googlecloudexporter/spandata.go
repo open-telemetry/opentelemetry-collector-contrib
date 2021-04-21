@@ -49,11 +49,11 @@ func pdataSpanToOTSpanData(
 	resource pdata.Resource,
 	il pdata.InstrumentationLibrary,
 ) *export.SpanSnapshot {
-	sc := apitrace.SpanContext{}
+	sc := apitrace.SpanContextConfig{}
 	sc.TraceID = span.TraceID().Bytes()
 	sc.SpanID = span.SpanID().Bytes()
-	startTime := time.Unix(0, int64(span.StartTime()))
-	endTime := time.Unix(0, int64(span.EndTime()))
+	startTime := time.Unix(0, int64(span.StartTimestamp()))
+	endTime := time.Unix(0, int64(span.EndTimestamp()))
 	// TODO: Decide if ignoring the error is fine.
 	r, _ := sdkresource.New(
 		context.Background(),
@@ -61,7 +61,7 @@ func pdataSpanToOTSpanData(
 	)
 
 	sd := &export.SpanSnapshot{
-		SpanContext:              sc,
+		SpanContext:              apitrace.NewSpanContext(sc),
 		ParentSpanID:             span.ParentSpanID().Bytes(),
 		SpanKind:                 pdataSpanKindToOTSpanKind(span.Kind()),
 		StartTime:                startTime,
@@ -120,7 +120,7 @@ func pdataStatusCodeToOTCode(c pdata.StatusCode) codes.Code {
 func pdataAttributesToOTAttributes(attrs pdata.AttributeMap, resource pdata.Resource) []attribute.KeyValue {
 	otAttrs := make([]attribute.KeyValue, 0, attrs.Len())
 	appendAttrs := func(m pdata.AttributeMap) {
-		m.ForEach(func(k string, v pdata.AttributeValue) {
+		m.Range(func(k string, v pdata.AttributeValue) bool {
 			switch v.Type() {
 			case pdata.AttributeValueSTRING:
 				otAttrs = append(otAttrs, attribute.String(k, v.StringVal()))
@@ -130,10 +130,8 @@ func pdataAttributesToOTAttributes(attrs pdata.AttributeMap, resource pdata.Reso
 				otAttrs = append(otAttrs, attribute.Int64(k, v.IntVal()))
 			case pdata.AttributeValueDOUBLE:
 				otAttrs = append(otAttrs, attribute.Float64(k, v.DoubleVal()))
-			// pdata Array, and Map cannot be converted to value.Value
-			default:
-				return
 			}
+			return true
 		})
 	}
 	appendAttrs(resource.Attributes())
@@ -146,11 +144,11 @@ func pdataLinksToOTLinks(links pdata.SpanLinkSlice) []apitrace.Link {
 	otLinks := make([]apitrace.Link, 0, size)
 	for i := 0; i < size; i++ {
 		link := links.At(i)
-		sc := apitrace.SpanContext{}
+		sc := apitrace.SpanContextConfig{}
 		sc.TraceID = link.TraceID().Bytes()
 		sc.SpanID = link.SpanID().Bytes()
 		otLinks = append(otLinks, apitrace.Link{
-			SpanContext: sc,
+			SpanContext: apitrace.NewSpanContext(sc),
 			Attributes:  pdataAttributesToOTAttributes(link.Attributes(), pdata.NewResource()),
 		})
 	}

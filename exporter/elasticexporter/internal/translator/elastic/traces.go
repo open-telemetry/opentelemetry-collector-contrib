@@ -46,8 +46,8 @@ func EncodeSpan(
 	parentID := model.SpanID(otlpSpan.ParentSpanID().Bytes())
 	root := parentID == model.SpanID{}
 
-	startTime := time.Unix(0, int64(otlpSpan.StartTime())).UTC()
-	endTime := time.Unix(0, int64(otlpSpan.EndTime())).UTC()
+	startTime := time.Unix(0, int64(otlpSpan.StartTimestamp())).UTC()
+	endTime := time.Unix(0, int64(otlpSpan.EndTimestamp())).UTC()
 	durationMillis := endTime.Sub(startTime).Seconds() * 1000
 
 	name := truncate(otlpSpan.Name())
@@ -109,7 +109,7 @@ func setTransactionProperties(
 		netPeerPort int
 	)
 
-	otlpSpan.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+	otlpSpan.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		var storeTag bool
 		switch k {
 		// http.*
@@ -181,6 +181,7 @@ func setTransactionProperties(
 				Value: ifaceAttributeValue(v),
 			})
 		}
+		return true
 	})
 
 	context.setFramework(otlpLibrary.Name(), otlpLibrary.Version())
@@ -228,7 +229,7 @@ func setSpanProperties(otlpSpan pdata.Span, span *model.Span) error {
 		netPeerPort int
 	)
 
-	otlpSpan.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+	otlpSpan.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		var storeTag bool
 		switch k {
 		// http.*
@@ -281,6 +282,7 @@ func setSpanProperties(otlpSpan pdata.Span, span *model.Span) error {
 				Value: ifaceAttributeValue(v),
 			})
 		}
+		return true
 	})
 
 	destPort := netPeerPort
@@ -382,7 +384,7 @@ func encodeSpanEvents(
 		}
 		var exceptionEscaped bool
 		var exceptionMessage, exceptionStacktrace, exceptionType string
-		event.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		event.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 			switch k {
 			case conventions.AttributeExceptionMessage:
 				exceptionMessage = v.StringVal()
@@ -393,6 +395,7 @@ func encodeSpanEvents(
 			case "exception.escaped":
 				exceptionEscaped = v.BoolVal()
 			}
+			return true
 		})
 		if exceptionMessage == "" && exceptionType == "" {
 			// `At least one of the following sets of attributes is required:

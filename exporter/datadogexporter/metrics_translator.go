@@ -33,12 +33,13 @@ import (
 // getTags maps a stringMap into a slice of Datadog tags
 func getTags(labels pdata.StringMap) []string {
 	tags := make([]string, 0, labels.Len())
-	labels.ForEach(func(key string, value string) {
+	labels.Range(func(key string, value string) bool {
 		if value == "" {
 			// Tags can't end with ":" so we replace empty values with "n/a"
 			value = "n/a"
 		}
 		tags = append(tags, fmt.Sprintf("%s:%s", key, value))
+		return true
 	})
 	return tags
 }
@@ -219,7 +220,7 @@ func mapIntHistogramMetrics(name string, slice pdata.IntHistogramDataPointSlice,
 // mapIntHistogramMetrics maps double histogram metrics slices to Datadog metrics
 //
 // see mapIntHistogramMetrics docs for further details.
-func mapDoubleHistogramMetrics(name string, slice pdata.DoubleHistogramDataPointSlice, buckets bool, attrTags []string) []datadog.Metric {
+func mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, buckets bool, attrTags []string) []datadog.Metric {
 	// Allocate assuming none are nil and no buckets
 	ms := make([]datadog.Metric, 0, 2*slice.Len())
 	for i := 0; i < slice.Len(); i++ {
@@ -300,8 +301,8 @@ func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, md pdata.Metri
 					}
 				case pdata.MetricDataTypeIntHistogram:
 					datapoints = mapIntHistogramMetrics(md.Name(), md.IntHistogram().DataPoints(), cfg.Buckets, attributeTags)
-				case pdata.MetricDataTypeDoubleHistogram:
-					datapoints = mapDoubleHistogramMetrics(md.Name(), md.DoubleHistogram().DataPoints(), cfg.Buckets, attributeTags)
+				case pdata.MetricDataTypeHistogram:
+					datapoints = mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), cfg.Buckets, attributeTags)
 				}
 
 				// Try to get host from resource

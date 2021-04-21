@@ -722,7 +722,7 @@ type blockingConsumer struct {
 	blockCh <-chan struct{}
 }
 
-var _ consumer.TracesConsumer = (*blockingConsumer)(nil)
+var _ consumer.Traces = (*blockingConsumer)(nil)
 
 func (b *blockingConsumer) ConsumeTraces(context.Context, pdata.Traces) error {
 	<-b.blockCh

@@ -38,13 +38,6 @@ const (
 )
 
 var (
-	// EndpointTypes is a map of all known endpoint types.
-	EndpointTypes = map[EndpointType]bool{
-		PortType:     true,
-		PodType:      true,
-		HostPortType: true,
-	}
-
 	_ EndpointDetails = (*Pod)(nil)
 	_ EndpointDetails = (*Port)(nil)
 	_ EndpointDetails = (*HostPort)(nil)
@@ -71,17 +64,11 @@ func (e *Endpoint) Env() (EndpointEnv, error) {
 	if e.Details == nil {
 		return nil, errors.New("endpoint is missing details")
 	}
+
 	env := e.Details.Env()
 	env["endpoint"] = e.Target
+	env["type"] = string(e.Details.Type())
 
-	// Populate type field for evaluating rules with `type.port && ...`.
-	// Use string instead of EndpointType for rule evaluation.
-	types := map[string]bool{}
-	for endpointType := range EndpointTypes {
-		types[string(endpointType)] = false
-	}
-	types[string(e.Details.Type())] = true
-	env["type"] = types
 	return env, nil
 }
 

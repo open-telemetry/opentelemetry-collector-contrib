@@ -74,7 +74,7 @@ func TestNewReceiver(t *testing.T) {
 		return nil, nil
 	}
 	allScrapers["brokers"] = mockScraper
-	r, err := newMetricsReceiver(context.Background(), *c, component.ReceiverCreateParams{}, consumertest.NewMetricsNop())
+	r, err := newMetricsReceiver(context.Background(), *c, component.ReceiverCreateParams{}, consumertest.NewNop())
 	assert.Nil(t, err)
 	assert.NotNil(t, r)
 }
@@ -86,7 +86,7 @@ func TestNewReceiver_handles_scraper_error(t *testing.T) {
 		return nil, fmt.Errorf("fail")
 	}
 	allScrapers["brokers"] = mockScraper
-	r, err := newMetricsReceiver(context.Background(), *c, component.ReceiverCreateParams{}, consumertest.NewMetricsNop())
+	r, err := newMetricsReceiver(context.Background(), *c, component.ReceiverCreateParams{}, consumertest.NewNop())
 	assert.NotNil(t, err)
 	assert.Nil(t, r)
 }

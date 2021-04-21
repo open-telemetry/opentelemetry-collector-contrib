@@ -30,7 +30,7 @@ type rule struct {
 }
 
 // ruleRe is used to verify the rule starts type check.
-var ruleRe = regexp.MustCompile(`^type\.(pod|port)`)
+var ruleRe = regexp.MustCompile(`^type\s*==\s*("pod"|"port"|"hostport")`)
 
 // newRule creates a new rule instance.
 func newRule(ruleStr string) (rule, error) {

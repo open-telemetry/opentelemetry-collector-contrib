@@ -56,8 +56,8 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 	span.SetParentSpanID(parentSpanID)
 	span.SetName("End-To-End Here")
 	span.SetKind(pdata.SpanKindSERVER)
-	span.SetStartTime(pdataStartTime)
-	span.SetEndTime(pdataEndTime)
+	span.SetStartTimestamp(pdataStartTime)
+	span.SetEndTimestamp(pdataEndTime)
 
 	status := span.Status()
 	status.SetCode(pdata.StatusCodeError)
@@ -92,10 +92,10 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 	gotOTSpanData := pdataResourceSpansToOTSpanData(rs)
 
 	wantOTSpanData := &trace.SpanSnapshot{
-		SpanContext: apitrace.SpanContext{
+		SpanContext: apitrace.NewSpanContext(apitrace.SpanContextConfig{
 			TraceID: apitrace.TraceID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F},
 			SpanID:  apitrace.SpanID{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8},
-		},
+		}),
 		SpanKind:     apitrace.SpanKindServer,
 		ParentSpanID: apitrace.SpanID{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8},
 		Name:         "End-To-End Here",
@@ -115,17 +115,17 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 		},
 		Links: []apitrace.Link{
 			{
-				SpanContext: apitrace.SpanContext{
+				SpanContext: apitrace.NewSpanContext(apitrace.SpanContextConfig{
 					TraceID: apitrace.TraceID{0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF},
 					SpanID:  apitrace.SpanID{0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6, 0xB7},
-				},
+				}),
 				Attributes: []attribute.KeyValue{},
 			},
 			{
-				SpanContext: apitrace.SpanContext{
+				SpanContext: apitrace.NewSpanContext(apitrace.SpanContextConfig{
 					TraceID: apitrace.TraceID{0xE0, 0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7, 0xE8, 0xE9, 0xEA, 0xEB, 0xEC, 0xED, 0xEE, 0xEF},
 					SpanID:  apitrace.SpanID{0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7},
-				},
+				}),
 				Attributes: []attribute.KeyValue{},
 			},
 		},

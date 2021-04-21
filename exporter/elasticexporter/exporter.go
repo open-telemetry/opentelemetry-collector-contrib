@@ -27,7 +27,7 @@ import (
 	"go.elastic.co/apm/transport"
 	"go.elastic.co/fastjson"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -36,15 +36,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter/internal/translator/elastic"
 )
 
-func newElasticTraceExporter(
+func newElasticTracesExporter(
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	exporter, err := newElasticExporter(cfg.(*Config), params.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elastic APM trace exporter: %v", err)
 	}
-	return exporterhelper.NewTraceExporter(cfg, params.Logger, func(ctx context.Context, traces pdata.Traces) error {
+	return exporterhelper.NewTracesExporter(cfg, params.Logger, func(ctx context.Context, traces pdata.Traces) error {
 		var errs []error
 		resourceSpansSlice := traces.ResourceSpans()
 		for i := 0; i < resourceSpansSlice.Len(); i++ {
@@ -54,13 +54,13 @@ func newElasticTraceExporter(
 				errs = append(errs, err)
 			}
 		}
-		return consumererror.CombineErrors(errs)
+		return consumererror.Combine(errs)
 	})
 }
 
 func newElasticMetricsExporter(
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	exporter, err := newElasticExporter(cfg.(*Config), params.Logger)
 	if err != nil {
@@ -76,7 +76,7 @@ func newElasticMetricsExporter(
 				errs = append(errs, err)
 			}
 		}
-		return consumererror.CombineErrors(errs)
+		return consumererror.Combine(errs)
 	})
 }
 
@@ -149,7 +149,7 @@ func (e *elasticExporter) ExportResourceSpans(ctx context.Context, rs pdata.Reso
 	if err := e.sendEvents(ctx, &w); err != nil {
 		return count, err
 	}
-	return len(errs), consumererror.CombineErrors(errs)
+	return len(errs), consumererror.Combine(errs)
 }
 
 // ExportResourceMetrics exports OTLP metrics to Elastic APM Server,
@@ -175,7 +175,7 @@ func (e *elasticExporter) ExportResourceMetrics(ctx context.Context, rm pdata.Re
 	if err := e.sendEvents(ctx, &w); err != nil {
 		return totalDropped, err
 	}
-	return totalDropped, consumererror.CombineErrors(errs)
+	return totalDropped, consumererror.Combine(errs)
 }
 
 func (e *elasticExporter) sendEvents(ctx context.Context, w *fastjson.Writer) error {

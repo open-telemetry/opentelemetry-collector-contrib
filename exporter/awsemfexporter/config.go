@@ -15,9 +15,11 @@
 package awsemfexporter
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 var (
@@ -28,7 +30,10 @@ var (
 
 // Config defines configuration for AWS EMF exporter.
 type Config struct {
-	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	*config.ExporterSettings `mapstructure:"-"`
+	// AWSSessionSettings contains the common configuration options
+	// for creating AWS session to communicate with backend
+	awsutil.AWSSessionSettings `mapstructure:",squash"`
 	// LogGroupName is the name of CloudWatch log group which defines group of log streams
 	// that share the same retention, monitoring, and access control settings.
 	LogGroupName string `mapstructure:"log_group_name"`
@@ -38,34 +43,26 @@ type Config struct {
 	// Namespace is a container for CloudWatch metrics.
 	// Metrics in different namespaces are isolated from each other.
 	Namespace string `mapstructure:"namespace"`
-	// Endpoint is the CloudWatch Logs service endpoint which the requests
-	// are forwarded to. https://docs.aws.amazon.com/general/latest/gr/cwl_region.html
-	// e.g. logs.us-east-1.amazonaws.com and logs-fips.us-east-1.amazonaws.com
-	Endpoint string `mapstructure:"endpoint"`
-	// RequestTimeoutSeconds is number of seconds before a request times out.
-	RequestTimeoutSeconds int `mapstructure:"request_timeout_seconds"`
-	// ProxyAddress defines the proxy address that the local TCP server
-	// forwards HTTP requests to AWS CloudWatch Logs backend through.
-	ProxyAddress string `mapstructure:"proxy_address"`
-	// Region is the AWS region where the metric logs are sent to.
-	Region string `mapstructure:"region"`
-	// RoleARN is the IAM role used by the collector when communicating
-	// with the CloudWatch Logs service
-	RoleARN string `mapstructure:"role_arn"`
-	// NoVerifySSL is the option to disable TLS certificate verification.
-	NoVerifySSL bool `mapstructure:"no_verify_ssl"`
-	// MaxRetries is the maximum number of retries before abandoning an attempt to post data.
-	MaxRetries int `mapstructure:"max_retries"`
 	// DimensionRollupOption is the option for metrics dimension rollup. Three options are available, default option is "ZeroAndSingleDimensionRollup".
 	// "ZeroAndSingleDimensionRollup" - Enable both zero dimension rollup and single dimension rollup
 	// "SingleDimensionRollupOnly" - Enable single dimension rollup
 	// "NoDimensionRollup" - No dimension rollup (only keep original metrics which contain all dimensions)
 	DimensionRollupOption string `mapstructure:"dimension_rollup_option"`
+	// ParseJSONEncodedAttributeValues is an array of attribute keys whose corresponding values are JSON-encoded as strings.
+	// Those strings will be decoded to its original json structure.
+	ParseJSONEncodedAttributeValues []string `mapstructure:"parse_json_encoded_attr_values"`
+
 	// MetricDeclarations is the list of rules to be used to set dimensions for exported metrics.
 	MetricDeclarations []*MetricDeclaration `mapstructure:"metric_declarations"`
 
 	// MetricDescriptors is the list of override metric descriptors that are sent to the CloudWatch
 	MetricDescriptors []MetricDescriptor `mapstructure:"metric_descriptors"`
+
+	// OutputDestination is an option to specify the EMFExporter output. Default option is "cloudwatch"
+	// "cloudwatch" - direct the exporter output to CloudWatch backend
+	// "stdout" - direct the exporter output to stdout
+	// TODO: we can support directing output to a file (in the future) while customer specifies a file path here.
+	OutputDestination string `mapstructure:"output_destination"`
 
 	// ResourceToTelemetrySettings is the option for converting resource attrihutes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
@@ -87,7 +84,7 @@ type MetricDescriptor struct {
 }
 
 // Validate filters out invalid metricDeclarations and metricDescriptors
-func (config *Config) Validate() {
+func (config *Config) Validate() error {
 	validDeclarations := []*MetricDeclaration{}
 	for _, declaration := range config.MetricDeclarations {
 		err := declaration.Init(config.logger)
@@ -111,6 +108,7 @@ func (config *Config) Validate() {
 		}
 	}
 	config.MetricDescriptors = validDescriptors
+	return nil
 }
 
 func newEMFSupportedUnits() map[string]interface{} {

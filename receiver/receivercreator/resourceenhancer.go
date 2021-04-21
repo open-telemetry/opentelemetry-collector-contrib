@@ -24,13 +24,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
-var _ consumer.MetricsConsumer = (*resourceEnhancer)(nil)
+var _ consumer.Metrics = (*resourceEnhancer)(nil)
 
 // resourceEnhancer adds additional resource attribute entries
 // from the given endpoint environment. The added attributes vary based on the type
 // of the endpoint.
 type resourceEnhancer struct {
-	nextConsumer consumer.MetricsConsumer
+	nextConsumer consumer.Metrics
 	attrs        map[string]string
 }
 
@@ -38,7 +38,7 @@ func newResourceEnhancer(
 	resources resourceAttributes,
 	env observer.EndpointEnv,
 	endpoint observer.Endpoint,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 ) (*resourceEnhancer, error) {
 	attrs := map[string]string{}
 
