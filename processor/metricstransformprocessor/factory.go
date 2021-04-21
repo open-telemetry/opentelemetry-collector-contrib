@@ -180,9 +180,9 @@ func buildHelperConfig(config *Config, version string) []internalTransform {
 func createFilter(filterConfig FilterConfig) internalFilter {
 	switch filterConfig.MatchType {
 	case StrictMatchType:
-		return internalFilterStrict{include: filterConfig.Include}
+		return internalFilterStrict{include: filterConfig.Include, matchLabels: filterConfig.MatchLabels}
 	case RegexpMatchType:
-		return internalFilterRegexp{include: regexp.MustCompile(filterConfig.Include)}
+		return internalFilterRegexp{include: regexp.MustCompile(filterConfig.Include), matchLabels: filterConfig.MatchLabels}
 	}
 
 	return nil

@@ -68,14 +68,17 @@ type match struct {
 }
 
 type internalFilterStrict struct {
-	include string
+	include     string
+	matchLabels map[string]string
 }
 
 func (f internalFilterStrict) getMatches(toMatch metricNameMapping) []*match {
 	if metrics, ok := toMatch[f.include]; ok {
-		matches := make([]*match, len(metrics))
-		for i, metric := range metrics {
-			matches[i] = &match{metric: metric}
+		matches := make([]*match, 0, 10)
+		for _, metric := range metrics {
+			if labelMatched(f.matchLabels, metric, false) {
+				matches = append(matches, &match{metric: metric})
+			}
 		}
 		return matches
 	}
@@ -88,7 +91,8 @@ func (f internalFilterStrict) getSubexpNames() []string {
 }
 
 type internalFilterRegexp struct {
-	include *regexp.Regexp
+	include     *regexp.Regexp
+	matchLabels map[string]string
 }
 
 func (f internalFilterRegexp) getMatches(toMatch metricNameMapping) []*match {
@@ -96,7 +100,9 @@ func (f internalFilterRegexp) getMatches(toMatch metricNameMapping) []*match {
 	for name, metrics := range toMatch {
 		if submatches := f.include.FindStringSubmatchIndex(name); submatches != nil {
 			for _, metric := range metrics {
-				matches = append(matches, &match{metric: metric, pattern: f.include, submatches: submatches})
+				if labelMatched(f.matchLabels, metric, true) {
+					matches = append(matches, &match{metric: metric, pattern: f.include, submatches: submatches})
+				}
 			}
 		}
 	}
@@ -405,4 +411,46 @@ func (mtp *metricsTransformProcessor) compareTimestamps(t1 *timestamppb.Timestam
 	}
 
 	return t1.Seconds < t2.Seconds || (t1.Seconds == t2.Seconds && t1.Nanos < t2.Nanos)
+}
+
+func labelMatched(filterLabels map[string]string, metric *metricspb.Metric, isRegexp bool) bool {
+	if len(filterLabels) == 0 {
+		return true
+	}
+
+	for key, value := range filterLabels {
+		keyFound := false
+
+		for idx, label := range metric.MetricDescriptor.LabelKeys {
+			if label.Key != key {
+				continue
+			}
+
+			keyFound = true
+			for _, timeseries := range metric.Timeseries {
+				if isRegexp {
+					re := regexp.MustCompile(value)
+					if !re.MatchString(timeseries.LabelValues[idx].Value) {
+						return false
+					}
+				} else {
+					if timeseries.LabelValues[idx].Value != value {
+						return false
+					}
+				}
+				break
+			}
+		}
+
+		// if a label-key is not found and the label-value is non-empty, return false
+		if !keyFound && !(value == "" || isEmptyExp(value)) {
+			return false
+		}
+	}
+	return true
+}
+
+func isEmptyExp(exp string) bool {
+	re := regexp.MustCompile(exp)
+	return re.MatchString("")
 }
