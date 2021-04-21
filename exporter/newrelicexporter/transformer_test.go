@@ -512,7 +512,7 @@ func TestTransformSpan(t *testing.T) {
 						EventType: "this is the event name",
 						Timestamp: now.UTC(),
 						Attributes: map[string]interface{}{
-							droppedAttributesCountKey: uint32(1),
+							eventsDroppedAttributesCountKey: uint32(1),
 						},
 					},
 				},

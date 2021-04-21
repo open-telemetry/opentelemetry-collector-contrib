@@ -28,21 +28,22 @@ import (
 )
 
 const (
-	unitAttrKey               = "unit"
-	descriptionAttrKey        = "description"
-	collectorNameKey          = "collector.name"
-	collectorVersionKey       = "collector.version"
-	instrumentationNameKey    = "instrumentation.name"
-	instrumentationVersionKey = "instrumentation.version"
-	droppedAttributesCountKey = "otel.dropped_attributes_count"
-	droppedEventsCountKey     = "otel.dropped_events_count"
-	statusCodeKey             = "otel.status_code"
-	statusDescriptionKey      = "otel.status_description"
-	spanKindKey               = "span.kind"
-	spanIDKey                 = "span.id"
-	traceIDKey                = "trace.id"
-	logSeverityTextKey        = "log.level"
-	logSeverityNumKey         = "log.levelNum"
+	unitAttrKey                     = "unit"
+	descriptionAttrKey              = "description"
+	collectorNameKey                = "collector.name"
+	collectorVersionKey             = "collector.version"
+	instrumentationNameKey          = "instrumentation.name"
+	instrumentationVersionKey       = "instrumentation.version"
+	droppedAttributesCountKey       = "otel.dropped_attributes_count"
+	droppedEventsCountKey           = "otel.dropped_events_count"
+	eventsDroppedAttributesCountKey = "otel.event.dropped_attributes_count"
+	statusCodeKey                   = "otel.status_code"
+	statusDescriptionKey            = "otel.status_description"
+	spanKindKey                     = "span.kind"
+	spanIDKey                       = "span.id"
+	traceIDKey                      = "trace.id"
+	logSeverityTextKey              = "log.level"
+	logSeverityNumKey               = "log.levelNum"
 )
 
 type transformer struct {
@@ -238,7 +239,7 @@ func (t *transformer) SpanEvents(span pdata.Span) []telemetry.Event {
 		}
 
 		if droppedAttributesCount := event.DroppedAttributesCount(); droppedAttributesCount > 0 {
-			events[i].Attributes[droppedAttributesCountKey] = droppedAttributesCount
+			events[i].Attributes[eventsDroppedAttributesCountKey] = droppedAttributesCount
 		}
 
 		t.TrackAttributes(attributeLocationSpanEvent, eventAttrs)
