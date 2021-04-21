@@ -75,6 +75,6 @@ func createMetricsReceiver(
 		agent:           tAgent,
 		consumer:        nextConsumer,
 		logger:          params.Logger,
-		metricConverter: newConverter(tCfg.SeparateField),
+		metricConverter: newConverter(tCfg.SeparateField, params.Logger),
 	}, nil
 }

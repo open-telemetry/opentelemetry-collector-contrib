@@ -16,9 +16,11 @@ package telegrafreceiver
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/influxdata/telegraf"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.uber.org/zap"
 )
 
 const (
@@ -31,11 +33,13 @@ type MetricConverter interface {
 
 type metricConverter struct {
 	separateField bool
+	logger        *zap.Logger
 }
 
-func newConverter(separateField bool) MetricConverter {
+func newConverter(separateField bool, logger *zap.Logger) MetricConverter {
 	return metricConverter{
 		separateField: separateField,
+		logger:        logger,
 	}
 }
 
@@ -58,61 +62,81 @@ func (mc metricConverter) Convert(m telegraf.Metric) (pdata.Metrics, error) {
 	il.SetName(typeStr)
 	il.SetVersion(versionStr)
 
-	tim := m.Time().UnixNano()
+	tim := m.Time()
 
 	metrics := ilm.Metrics()
 
 	switch t := m.Type(); t {
 	case telegraf.Gauge:
 		for _, f := range m.FieldList() {
-			pm := pdata.NewMetric()
-
-			if mc.separateField {
-				pm.SetName(m.Name())
-			} else {
-				pm.SetName(m.Name() + "_" + f.Key)
-			}
+			var pm pdata.Metric
 
 			switch v := f.Value.(type) {
 			case float64:
-				pm.SetDataType(pdata.MetricDataTypeDoubleGauge)
-				dps := pm.DoubleGauge().DataPoints()
-				dps.Resize(1)
-				dp := dps.At(0)
-				dp.SetValue(v)
-				dp.SetTimestamp(pdata.TimestampUnixNano(tim))
-				if mc.separateField {
-					dp.LabelsMap().Insert(fieldLabel, f.Key)
-				}
+				pm = newDoubleGauge(f.Key, v, tim, mc.separateField)
 
-			case int64, uint64:
-				pm.SetDataType(pdata.MetricDataTypeIntGauge)
-				dps := pm.IntGauge().DataPoints()
-				dps.Resize(1)
-				dp := dps.At(0)
-				switch vv := v.(type) {
-				case int64:
-					dp.SetValue(vv)
-				case uint64:
-					dp.SetValue(int64(vv))
-				}
+			case int64:
+				pm = newIntGauge(f.Key, v, tim, mc.separateField)
+			case uint64:
+				pm = newIntGauge(f.Key, int64(v), tim, mc.separateField)
 
-				dp.SetTimestamp(pdata.TimestampUnixNano(tim))
-				if mc.separateField {
-					dp.LabelsMap().Insert(fieldLabel, f.Key)
+			case bool:
+				var vv int64 = 0
+				if v {
+					vv = 1
 				}
+				pm = newIntGauge(f.Key, vv, tim, mc.separateField)
 
 			default:
-				return pdata.Metrics{},
-					fmt.Errorf("unknown data type in telegraf.Gauge metric: %T", v)
+				mc.logger.Warn(
+					"Unsupported data type when handling telegraf.Gauge",
+					zap.String("type", fmt.Sprintf("%T", v)),
+					zap.String("key", f.Key),
+					zap.Any("value", f.Value),
+				)
+				continue
 			}
+
+			setName(&pm, m.Name(), f.Key, mc.separateField)
+			metrics.Append(pm)
+		}
+
+	case telegraf.Untyped:
+		for _, f := range m.FieldList() {
+			var pm pdata.Metric
+
+			switch v := f.Value.(type) {
+			case float64:
+				pm = newDoubleGauge(f.Key, v, tim, mc.separateField)
+
+			case int64:
+				pm = newIntGauge(f.Key, v, tim, mc.separateField)
+			case uint64:
+				pm = newIntGauge(f.Key, int64(v), tim, mc.separateField)
+
+			case bool:
+				var vv int64 = 0
+				if v {
+					vv = 1
+				}
+				pm = newIntGauge(f.Key, vv, tim, mc.separateField)
+
+			default:
+				mc.logger.Warn(
+					"Unsupported data type when handling telegraf.Untyped",
+					zap.String("type", fmt.Sprintf("%T", v)),
+					zap.String("key", f.Key),
+					zap.Any("value", f.Value),
+				)
+				continue
+			}
+
+			setName(&pm, m.Name(), f.Key, mc.separateField)
 			metrics.Append(pm)
 		}
 
 	case telegraf.Counter:
 		return pdata.Metrics{}, fmt.Errorf("unsupported metric type: telegraf.Counter")
-	case telegraf.Untyped:
-		return pdata.Metrics{}, fmt.Errorf("unsupported metric type: telegraf.Untyped")
 	case telegraf.Summary:
 		return pdata.Metrics{}, fmt.Errorf("unsupported metric type: telegraf.Summary")
 	case telegraf.Histogram:
@@ -123,4 +147,40 @@ func (mc metricConverter) Convert(m telegraf.Metric) (pdata.Metrics, error) {
 	}
 
 	return ms, nil
+}
+
+func setName(pm *pdata.Metric, name string, key string, separateField bool) {
+	if separateField {
+		pm.SetName(name)
+	} else {
+		pm.SetName(name + "_" + key)
+	}
+}
+
+func newDoubleGauge(key string, value float64, t time.Time, separateField bool) pdata.Metric {
+	pm := pdata.NewMetric()
+	pm.SetDataType(pdata.MetricDataTypeDoubleGauge)
+	dps := pm.DoubleGauge().DataPoints()
+	dps.Resize(1)
+	dp := dps.At(0)
+	dp.SetValue(value)
+	dp.SetTimestamp(pdata.Timestamp(t.UnixNano()))
+	if separateField {
+		dp.LabelsMap().Insert(fieldLabel, key)
+	}
+	return pm
+}
+
+func newIntGauge(key string, value int64, t time.Time, separateField bool) pdata.Metric {
+	pm := pdata.NewMetric()
+	pm.SetDataType(pdata.MetricDataTypeIntGauge)
+	dps := pm.IntGauge().DataPoints()
+	dps.Resize(1)
+	dp := dps.At(0)
+	dp.SetValue(value)
+	dp.SetTimestamp(pdata.Timestamp(t.UnixNano()))
+	if separateField {
+		dp.LabelsMap().Insert(fieldLabel, key)
+	}
+	return pm
 }

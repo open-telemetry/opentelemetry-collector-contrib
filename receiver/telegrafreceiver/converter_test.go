@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.uber.org/zap"
 )
 
 func TestConverter(t *testing.T) {
@@ -141,6 +142,70 @@ func TestConverter(t *testing.T) {
 				return metrics
 			},
 		},
+		{
+			name:          "untyped_int_with_one_field",
+			separateField: false,
+			metricsFn: func() (telegraf.Metric, error) {
+				fields := map[string]interface{}{
+					"available": uint64(39097651200),
+				}
+
+				return metric.New("mem", nil, fields, tim, telegraf.Untyped)
+			},
+			expectedFn: func() pdata.MetricSlice {
+				metrics := pdata.NewMetricSlice()
+				metrics.Append(newMetricIntGauge("mem_available", 39097651200, tim))
+				return metrics
+			},
+		},
+		{
+			name:          "untyped_double_with_one_field",
+			separateField: false,
+			metricsFn: func() (telegraf.Metric, error) {
+				fields := map[string]interface{}{
+					"used_percent": 43.10542941093445,
+				}
+
+				return metric.New("mem", nil, fields, tim, telegraf.Untyped)
+			},
+			expectedFn: func() pdata.MetricSlice {
+				metrics := pdata.NewMetricSlice()
+				metrics.Append(newMetricDoubleGauge("mem_used_percent", 43.10542941093445, tim))
+				return metrics
+			},
+		},
+		{
+			name:          "untyped_bool_with_one_field_false",
+			separateField: false,
+			metricsFn: func() (telegraf.Metric, error) {
+				fields := map[string]interface{}{
+					"throttling_supported": false,
+				}
+
+				return metric.New("cpu", nil, fields, tim, telegraf.Untyped)
+			},
+			expectedFn: func() pdata.MetricSlice {
+				metrics := pdata.NewMetricSlice()
+				metrics.Append(newMetricIntGauge("cpu_throttling_supported", 0, tim))
+				return metrics
+			},
+		},
+		{
+			name:          "untyped_bool_with_one_field_true",
+			separateField: false,
+			metricsFn: func() (telegraf.Metric, error) {
+				fields := map[string]interface{}{
+					"throttling_supported": true,
+				}
+
+				return metric.New("cpu", nil, fields, tim, telegraf.Untyped)
+			},
+			expectedFn: func() pdata.MetricSlice {
+				metrics := pdata.NewMetricSlice()
+				metrics.Append(newMetricIntGauge("cpu_throttling_supported", 1, tim))
+				return metrics
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -148,7 +213,7 @@ func TestConverter(t *testing.T) {
 			m, err := tt.metricsFn()
 			require.NoError(t, err)
 
-			mc := newConverter(tt.separateField)
+			mc := newConverter(tt.separateField, zap.NewNop())
 			out, err := mc.Convert(m)
 
 			if tt.expectedErr {
