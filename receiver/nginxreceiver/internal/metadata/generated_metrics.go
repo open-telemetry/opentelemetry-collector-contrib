@@ -91,15 +91,15 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 	return metricsByName[n]
 }
 
-func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
-	return map[string]func() pdata.Metric{
-		Metrics.NginxConnectionsAccepted.Name(): Metrics.NginxConnectionsAccepted.New,
-		Metrics.NginxConnectionsActive.Name():   Metrics.NginxConnectionsActive.New,
-		Metrics.NginxConnectionsHandled.Name():  Metrics.NginxConnectionsHandled.New,
-		Metrics.NginxConnectionsReading.Name():  Metrics.NginxConnectionsReading.New,
-		Metrics.NginxConnectionsWaiting.Name():  Metrics.NginxConnectionsWaiting.New,
-		Metrics.NginxConnectionsWriting.Name():  Metrics.NginxConnectionsWriting.New,
-		Metrics.NginxRequests.Name():            Metrics.NginxRequests.New,
+func (m *metricStruct) FactoriesByName() map[string]func(pdata.Metric) {
+	return map[string]func(pdata.Metric){
+		Metrics.NginxConnectionsAccepted.Name(): Metrics.NginxConnectionsAccepted.Init,
+		Metrics.NginxConnectionsActive.Name():   Metrics.NginxConnectionsActive.Init,
+		Metrics.NginxConnectionsHandled.Name():  Metrics.NginxConnectionsHandled.Init,
+		Metrics.NginxConnectionsReading.Name():  Metrics.NginxConnectionsReading.Init,
+		Metrics.NginxConnectionsWaiting.Name():  Metrics.NginxConnectionsWaiting.Init,
+		Metrics.NginxConnectionsWriting.Name():  Metrics.NginxConnectionsWriting.Init,
+		Metrics.NginxRequests.Name():            Metrics.NginxRequests.Init,
 	}
 }
 
