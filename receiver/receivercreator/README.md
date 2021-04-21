@@ -53,7 +53,7 @@ port but the port needs to be set inside endpoint. You could do:
 
 ```yaml
 config:
-   endpoint: `endpoint`:8080
+   endpoint: '`endpoint`:8080'
 ```
 
 **receivers.&lt;receiver_type/id&gt;.resource_attributes**
