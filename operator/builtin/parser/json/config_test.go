@@ -14,62 +14,46 @@
 package json
 
 import (
-	"fmt"
-	"io/ioutil"
-	"path"
 	"testing"
-
-	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper/operatortest"
 )
 
-type testCase struct {
-	name      string
-	expectErr bool
-	expect    *JSONParserConfig
-}
-
 func TestJSONParserConfig(t *testing.T) {
-	cases := []testCase{
+	cases := []operatortest.ConfigUnmarshalTest{
 		{
-			"default",
-			false,
-			defaultCfg(),
+			Name:   "default",
+			Expect: defaultCfg(),
 		},
 		{
-			"parse_from_simple",
-			false,
-			func() *JSONParserConfig {
+			Name: "parse_from_simple",
+			Expect: func() *JSONParserConfig {
 				cfg := defaultCfg()
 				cfg.ParseFrom = entry.NewBodyField("from")
 				return cfg
 			}(),
 		},
 		{
-			"parse_to_simple",
-			false,
-			func() *JSONParserConfig {
+			Name: "parse_to_simple",
+			Expect: func() *JSONParserConfig {
 				cfg := defaultCfg()
 				cfg.ParseTo = entry.NewBodyField("log")
 				return cfg
 			}(),
 		},
 		{
-			"on_error_drop",
-			false,
-			func() *JSONParserConfig {
+			Name: "on_error_drop",
+			Expect: func() *JSONParserConfig {
 				cfg := defaultCfg()
 				cfg.OnError = "drop"
 				return cfg
 			}(),
 		},
 		{
-			"timestamp",
-			false,
-			func() *JSONParserConfig {
+			Name: "timestamp",
+			Expect: func() *JSONParserConfig {
 				cfg := defaultCfg()
 				parseField := entry.NewBodyField("timestamp_field")
 				newTime := helper.TimeParser{
@@ -82,9 +66,8 @@ func TestJSONParserConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"severity",
-			false,
-			func() *JSONParserConfig {
+			Name: "severity",
+			Expect: func() *JSONParserConfig {
 				cfg := defaultCfg()
 				parseField := entry.NewBodyField("severity_field")
 				severityField := helper.NewSeverityParserConfig()
@@ -101,9 +84,8 @@ func TestJSONParserConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"preserve_to",
-			false,
-			func() *JSONParserConfig {
+			Name: "preserve_to",
+			Expect: func() *JSONParserConfig {
 				cfg := defaultCfg()
 				preserve := entry.NewBodyField("aField")
 				cfg.PreserveTo = &preserve
@@ -113,59 +95,10 @@ func TestJSONParserConfig(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		t.Run("yaml/"+tc.name, func(t *testing.T) {
-			cfgFromYaml, yamlErr := configFromFileViaYaml(path.Join(".", "testdata", fmt.Sprintf("%s.yaml", tc.name)))
-			if tc.expectErr {
-				require.Error(t, yamlErr)
-			} else {
-				require.NoError(t, yamlErr)
-				require.Equal(t, tc.expect, cfgFromYaml)
-			}
-		})
-		t.Run("mapstructure/"+tc.name, func(t *testing.T) {
-			cfgFromMapstructure := defaultCfg()
-			mapErr := configFromFileViaMapstructure(
-				path.Join(".", "testdata", fmt.Sprintf("%s.yaml", tc.name)),
-				cfgFromMapstructure,
-			)
-			if tc.expectErr {
-				require.Error(t, mapErr)
-			} else {
-				require.NoError(t, mapErr)
-				require.Equal(t, tc.expect, cfgFromMapstructure)
-			}
+		t.Run(tc.Name, func(t *testing.T) {
+			tc.Run(t, defaultCfg())
 		})
 	}
-}
-
-func configFromFileViaYaml(file string) (*JSONParserConfig, error) {
-	bytes, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil, fmt.Errorf("could not find config file: %s", err)
-	}
-
-	config := defaultCfg()
-	if err := yaml.Unmarshal(bytes, config); err != nil {
-		return nil, fmt.Errorf("failed to read config file as yaml: %s", err)
-	}
-
-	return config, nil
-}
-
-func configFromFileViaMapstructure(file string, result *JSONParserConfig) error {
-	bytes, err := ioutil.ReadFile(file)
-	if err != nil {
-		return fmt.Errorf("could not find config file: %s", err)
-	}
-
-	raw := map[string]interface{}{}
-
-	if err := yaml.Unmarshal(bytes, raw); err != nil {
-		return fmt.Errorf("failed to read data from yaml: %s", err)
-	}
-
-	err = helper.UnmarshalMapstructure(raw, result)
-	return err
 }
 
 func defaultCfg() *JSONParserConfig {

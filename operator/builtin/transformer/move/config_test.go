@@ -15,30 +15,18 @@ package move
 // limitations under the License.
 
 import (
-	"fmt"
-	"io/ioutil"
-	"path"
 	"testing"
 
-	"github.com/mitchellh/mapstructure"
-	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
-
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper/operatortest"
 )
-
-type configTestCase struct {
-	name   string
-	expect *MoveOperatorConfig
-}
 
 // test unmarshalling of values into config struct
 func TestGoldenConfig(t *testing.T) {
-	cases := []configTestCase{
+	cases := []operatortest.ConfigUnmarshalTest{
 		{
-			"MoveBodyToBody",
-			func() *MoveOperatorConfig {
+			Name: "MoveBodyToBody",
+			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewBodyField("new")
@@ -46,8 +34,8 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"MoveBodyToAttribute",
-			func() *MoveOperatorConfig {
+			Name: "MoveBodyToAttribute",
+			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewAttributeField("new")
@@ -55,8 +43,8 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"MoveAttributeToBody",
-			func() *MoveOperatorConfig {
+			Name: "MoveAttributeToBody",
+			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewAttributeField("new")
 				cfg.To = entry.NewBodyField("new")
@@ -64,8 +52,8 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"MoveAttributeToResource",
-			func() *MoveOperatorConfig {
+			Name: "MoveAttributeToResource",
+			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewAttributeField("new")
 				cfg.To = entry.NewResourceField("new")
@@ -73,8 +61,8 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"MoveResourceToAttribute",
-			func() *MoveOperatorConfig {
+			Name: "MoveResourceToAttribute",
+			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewResourceField("new")
 				cfg.To = entry.NewAttributeField("new")
@@ -82,8 +70,8 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"MoveNest",
-			func() *MoveOperatorConfig {
+			Name: "MoveNest",
+			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested")
 				cfg.To = entry.NewBodyField("NewNested")
@@ -91,8 +79,8 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"MoveFromNestedObj",
-			func() *MoveOperatorConfig {
+			Name: "MoveFromNestedObj",
+			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested", "nestedkey")
 				cfg.To = entry.NewBodyField("unnestedkey")
@@ -100,8 +88,8 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"MoveToNestedObj",
-			func() *MoveOperatorConfig {
+			Name: "MoveToNestedObj",
+			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("newnestedkey")
 				cfg.To = entry.NewBodyField("nested", "newnestedkey")
@@ -109,8 +97,8 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"MoveDoubleNestedObj",
-			func() *MoveOperatorConfig {
+			Name: "MoveDoubleNestedObj",
+			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested", "nested2")
 				cfg.To = entry.NewBodyField("nested2")
@@ -118,8 +106,8 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"MoveNestToResource",
-			func() *MoveOperatorConfig {
+			Name: "MoveNestToResource",
+			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested")
 				cfg.To = entry.NewResourceField("NewNested")
@@ -127,8 +115,8 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"MoveNestToAttribute",
-			func() *MoveOperatorConfig {
+			Name: "MoveNestToAttribute",
+			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested")
 				cfg.To = entry.NewAttributeField("NewNested")
@@ -136,8 +124,8 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"ImplicitBodyFrom",
-			func() *MoveOperatorConfig {
+			Name: "ImplicitBodyFrom",
+			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("implicitkey")
 				cfg.To = entry.NewAttributeField("new")
@@ -145,8 +133,8 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"ImplicitBodyTo",
-			func() *MoveOperatorConfig {
+			Name: "ImplicitBodyTo",
+			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewAttributeField("new")
 				cfg.To = entry.NewBodyField("implicitkey")
@@ -154,8 +142,8 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"ImplicitNestedKey",
-			func() *MoveOperatorConfig {
+			Name: "ImplicitNestedKey",
+			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewAttributeField("new")
 				cfg.To = entry.NewBodyField("key", "key2")
@@ -163,8 +151,8 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			"ReplaceBody",
-			func() *MoveOperatorConfig {
+			Name: "ReplaceBody",
+			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested")
 				cfg.To = entry.NewBodyField()
@@ -173,54 +161,10 @@ func TestGoldenConfig(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			cfgFromYaml, yamlErr := configFromFileViaYaml(path.Join(".", "testdata", fmt.Sprintf("%s.yaml", tc.name)))
-			cfgFromMapstructure, mapErr := configFromFileViaMapstructure(path.Join(".", "testdata", fmt.Sprintf("%s.yaml", tc.name)))
-			require.NoError(t, yamlErr)
-			require.Equal(t, tc.expect, cfgFromYaml)
-			require.NoError(t, mapErr)
-			require.Equal(t, tc.expect, cfgFromMapstructure)
+		t.Run(tc.Name, func(t *testing.T) {
+			tc.Run(t, defaultCfg())
 		})
 	}
-}
-
-func configFromFileViaYaml(file string) (*MoveOperatorConfig, error) {
-	bytes, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil, fmt.Errorf("could not find config file: %s", err)
-	}
-
-	config := defaultCfg()
-	if err := yaml.Unmarshal(bytes, config); err != nil {
-		return nil, fmt.Errorf("failed to read config file as yaml: %s", err)
-	}
-
-	return config, nil
-}
-
-func configFromFileViaMapstructure(file string) (*MoveOperatorConfig, error) {
-	bytes, err := ioutil.ReadFile(file)
-	if err != nil {
-		return nil, fmt.Errorf("could not find config file: %s", err)
-	}
-
-	raw := map[string]interface{}{}
-
-	if err := yaml.Unmarshal(bytes, raw); err != nil {
-		return nil, fmt.Errorf("failed to read data from yaml: %s", err)
-	}
-
-	cfg := defaultCfg()
-	dc := &mapstructure.DecoderConfig{Result: cfg, DecodeHook: helper.JSONUnmarshalerHook()}
-	ms, err := mapstructure.NewDecoder(dc)
-	if err != nil {
-		return nil, err
-	}
-	err = ms.Decode(raw)
-	if err != nil {
-		return nil, err
-	}
-	return cfg, nil
 }
 
 func defaultCfg() *MoveOperatorConfig {
