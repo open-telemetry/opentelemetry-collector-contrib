@@ -118,15 +118,8 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	unixNSecs := int64(11 * time.Millisecond)
 	ts := pdata.TimestampFromTime(time.Unix(unixSecs, unixNSecs))
 
-	doubleVal := 1234.5678
-	doublePt := pdata.NewDoubleDataPoint()
-	doublePt.SetTimestamp(ts)
-	doublePt.SetValue(doubleVal)
-
-	int64Val := int64(123)
-	int64Pt := pdata.NewIntDataPoint()
-	int64Pt.SetTimestamp(ts)
-	int64Pt.SetValue(int64Val)
+	const doubleVal = 1234.5678
+	const int64Val = int64(123)
 
 	want := pdata.NewMetrics()
 	rms := want.ResourceMetrics()
@@ -141,13 +134,17 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		m := ilm.Metrics().At(0)
 		m.SetName("gauge_double_with_dims")
 		m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		m.DoubleGauge().DataPoints().Append(doublePt)
+		doublePt := m.DoubleGauge().DataPoints().AppendEmpty()
+		doublePt.SetTimestamp(ts)
+		doublePt.SetValue(doubleVal)
 	}
 	{
 		m := ilm.Metrics().At(1)
 		m.SetName("gauge_int_with_dims")
 		m.SetDataType(pdata.MetricDataTypeIntGauge)
-		m.IntGauge().DataPoints().Append(int64Pt)
+		int64Pt := m.IntGauge().DataPoints().AppendEmpty()
+		int64Pt.SetTimestamp(ts)
+		int64Pt.SetValue(int64Val)
 	}
 	{
 		m := ilm.Metrics().At(2)
@@ -155,7 +152,9 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		m.SetDataType(pdata.MetricDataTypeDoubleSum)
 		m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		m.DoubleSum().SetIsMonotonic(true)
-		m.DoubleSum().DataPoints().Append(doublePt)
+		doublePt := m.DoubleSum().DataPoints().AppendEmpty()
+		doublePt.SetTimestamp(ts)
+		doublePt.SetValue(doubleVal)
 	}
 	{
 		m := ilm.Metrics().At(3)
@@ -163,7 +162,9 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		m.SetDataType(pdata.MetricDataTypeIntSum)
 		m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		m.IntSum().SetIsMonotonic(true)
-		m.IntSum().DataPoints().Append(int64Pt)
+		int64Pt := m.IntSum().DataPoints().AppendEmpty()
+		int64Pt.SetTimestamp(ts)
+		int64Pt.SetValue(int64Val)
 	}
 
 	expCfg := &signalfxexporter.Config{
