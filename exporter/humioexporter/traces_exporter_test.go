@@ -132,6 +132,7 @@ func TestPushTraceData_PermanentOnCompleteFailure(t *testing.T) {
 	// Assert
 	require.Error(t, err)
 	assert.True(t, consumererror.IsPermanent(err))
+	assert.Contains(t, err.Error(), "unable to serialize spans due to missing required service name for the associated resource")
 }
 
 func TestPushTraceData_TransientOnPartialFailure(t *testing.T) {

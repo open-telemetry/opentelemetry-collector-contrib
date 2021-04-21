@@ -103,6 +103,7 @@ func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStru
 
 		if _, ok := r.Attributes().Get(conventions.AttributeServiceName); !ok {
 			droppedTraces = append(droppedTraces, resSpan)
+			e.logger.Error("skipping export of spans for resource with missing service name, which is required for the Humio exporter")
 			continue
 		}
 
@@ -128,7 +129,7 @@ func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStru
 		}
 
 		return results, consumererror.NewTraces(
-			errors.New("unable to serialize spans"),
+			errors.New("unable to serialize spans due to missing required service name for the associated resource"),
 			dropped,
 		)
 	}
