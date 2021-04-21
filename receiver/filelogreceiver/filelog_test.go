@@ -190,7 +190,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	// when more than 100 logs are written, and deletion when more than 200 are written.
 	// Write 300 and validate that we got the all despite rotation and deletion.
 	logger := newRotatingLogger(t, tempDir, 100, 1, rt.copyTruncate, rt.sequential)
-	numLogs := 2
+	numLogs := 300
 
 	// Build expected outputs
 	expectedTimestamp, _ := time.ParseInLocation("2006-01-02", "2020-08-25", time.Local)
