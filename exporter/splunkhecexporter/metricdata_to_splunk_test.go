@@ -51,7 +51,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			name: "empty_resource_metrics",
 			metricsDataFn: func() pdata.Metrics {
 				metrics := pdata.NewMetrics()
-				metrics.ResourceMetrics().Resize(1)
+				metrics.ResourceMetrics().AppendEmpty()
 				return metrics
 			},
 		},
@@ -66,7 +66,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
+				ilm.Metrics().AppendEmpty()
 				return metrics
 			},
 			wantNumDroppedTimeseries: 1,
@@ -76,8 +76,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
-				doubleGauge := ilm.Metrics().At(0)
+				doubleGauge := ilm.Metrics().AppendEmpty()
 				doubleGauge.SetName("gauge_double_with_dims")
 				doubleGauge.SetDataType(pdata.MetricDataTypeDoubleGauge)
 				return metrics
@@ -88,8 +87,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
-				intGauge := ilm.Metrics().At(0)
+				intGauge := ilm.Metrics().AppendEmpty()
 				intGauge.SetName("gauge_int_with_dims")
 				intGauge.SetDataType(pdata.MetricDataTypeIntGauge)
 				return metrics
@@ -100,8 +98,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
-				intHistogram := ilm.Metrics().At(0)
+				intHistogram := ilm.Metrics().AppendEmpty()
 				intHistogram.SetName("hist_int_with_dims")
 				intHistogram.SetDataType(pdata.MetricDataTypeIntHistogram)
 				return metrics
@@ -112,8 +109,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
-				doubleHistogram := ilm.Metrics().At(0)
+				doubleHistogram := ilm.Metrics().AppendEmpty()
 				doubleHistogram.SetName("hist_double_with_dims")
 				doubleHistogram.SetDataType(pdata.MetricDataTypeHistogram)
 				return metrics
@@ -124,8 +120,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
-				doubleSum := ilm.Metrics().At(0)
+				doubleSum := ilm.Metrics().AppendEmpty()
 				doubleSum.SetName("double_sum_with_dims")
 				doubleSum.SetDataType(pdata.MetricDataTypeDoubleSum)
 				return metrics
@@ -136,8 +131,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
-				intSum := ilm.Metrics().At(0)
+				intSum := ilm.Metrics().AppendEmpty()
 				intSum.SetName("int_sum_with_dims")
 				intSum.SetDataType(pdata.MetricDataTypeIntSum)
 				return metrics
@@ -148,11 +142,10 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
-				doubleGauge := ilm.Metrics().At(0)
+				doubleGauge := ilm.Metrics().AppendEmpty()
 				doubleGauge.SetName("gauge_double_with_dims")
 				doubleGauge.SetDataType(pdata.MetricDataTypeDoubleGauge)
-				doubleGauge.DoubleGauge().DataPoints().Resize(1)
+				doubleGauge.DoubleGauge().DataPoints().AppendEmpty()
 				return metrics
 			},
 		},
@@ -161,11 +154,10 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
-				intGauge := ilm.Metrics().At(0)
+				intGauge := ilm.Metrics().AppendEmpty()
 				intGauge.SetName("gauge_int_with_dims")
 				intGauge.SetDataType(pdata.MetricDataTypeIntGauge)
-				intGauge.IntGauge().DataPoints().Resize(1)
+				intGauge.IntGauge().DataPoints().AppendEmpty()
 				return metrics
 			},
 		},
@@ -174,11 +166,10 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
-				intHistogram := ilm.Metrics().At(0)
+				intHistogram := ilm.Metrics().AppendEmpty()
 				intHistogram.SetName("int_histogram_with_dims")
 				intHistogram.SetDataType(pdata.MetricDataTypeIntHistogram)
-				intHistogram.IntHistogram().DataPoints().Resize(1)
+				intHistogram.IntHistogram().DataPoints().AppendEmpty()
 				return metrics
 			},
 		},
@@ -187,11 +178,10 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
-				doubleHistogram := ilm.Metrics().At(0)
+				doubleHistogram := ilm.Metrics().AppendEmpty()
 				doubleHistogram.SetName("double_histogram_with_dims")
 				doubleHistogram.SetDataType(pdata.MetricDataTypeHistogram)
-				doubleHistogram.Histogram().DataPoints().Resize(1)
+				doubleHistogram.Histogram().DataPoints().AppendEmpty()
 				return metrics
 			},
 		},
@@ -200,11 +190,10 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
-				intSum := ilm.Metrics().At(0)
+				intSum := ilm.Metrics().AppendEmpty()
 				intSum.SetName("int_sum_with_dims")
 				intSum.SetDataType(pdata.MetricDataTypeIntSum)
-				intSum.IntSum().DataPoints().Resize(1)
+				intSum.IntSum().DataPoints().AppendEmpty()
 				return metrics
 			},
 		},
@@ -213,11 +202,10 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
-				doubleSum := ilm.Metrics().At(0)
+				doubleSum := ilm.Metrics().AppendEmpty()
 				doubleSum.SetName("double_sum_with_dims")
 				doubleSum.SetDataType(pdata.MetricDataTypeDoubleSum)
-				doubleSum.DoubleSum().DataPoints().Resize(1)
+				doubleSum.DoubleSum().DataPoints().AppendEmpty()
 				return metrics
 			},
 		},
@@ -226,31 +214,26 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 
 				metrics := pdata.NewMetrics()
-				metrics.ResourceMetrics().Resize(1)
-				rm := metrics.ResourceMetrics().At(0)
+				rm := metrics.ResourceMetrics().AppendEmpty()
 				rm.Resource().Attributes().InsertString("service.name", "mysource")
 				rm.Resource().Attributes().InsertString("host.name", "myhost")
 				rm.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
 				rm.Resource().Attributes().InsertString("com.splunk.index", "myindex")
 				rm.Resource().Attributes().InsertString("k0", "v0")
 				rm.Resource().Attributes().InsertString("k1", "v1")
-				rm.InstrumentationLibraryMetrics().Resize(1)
-				ilm := rm.InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(2)
+				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 
-				doubleGauge := ilm.Metrics().At(0)
+				doubleGauge := ilm.Metrics().AppendEmpty()
 				doubleGauge.SetName("gauge_double_with_dims")
 				doubleGauge.SetDataType(pdata.MetricDataTypeDoubleGauge)
-				doubleGauge.DoubleGauge().DataPoints().Resize(1)
-				doubleDataPt := doubleGauge.DoubleGauge().DataPoints().At(0)
+				doubleDataPt := doubleGauge.DoubleGauge().DataPoints().AppendEmpty()
 				doubleDataPt.SetValue(doubleVal)
 				doubleDataPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
 
-				intGauge := ilm.Metrics().At(1)
+				intGauge := ilm.Metrics().AppendEmpty()
 				intGauge.SetName("gauge_int_with_dims")
 				intGauge.SetDataType(pdata.MetricDataTypeIntGauge)
-				intGauge.IntGauge().DataPoints().Resize(1)
-				intDataPt := intGauge.IntGauge().DataPoints().At(0)
+				intDataPt := intGauge.IntGauge().DataPoints().AppendEmpty()
 				intDataPt.SetValue(int64Val)
 				intDataPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
 				intDataPt.SetTimestamp(pdata.TimestampFromTime(tsUnix))
@@ -268,12 +251,10 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
-				doubleHistogram := ilm.Metrics().At(0)
+				doubleHistogram := ilm.Metrics().AppendEmpty()
 				doubleHistogram.SetName("double_histogram_with_dims")
 				doubleHistogram.SetDataType(pdata.MetricDataTypeHistogram)
-				doubleHistogram.Histogram().DataPoints().Resize(1)
-				doubleHistogramPt := doubleHistogram.Histogram().DataPoints().At(0)
+				doubleHistogramPt := doubleHistogram.Histogram().DataPoints().AppendEmpty()
 				doubleHistogramPt.SetExplicitBounds(distributionBounds)
 				doubleHistogramPt.SetBucketCounts([]uint64{4, 2, 3})
 				doubleHistogramPt.SetSum(23)
@@ -287,12 +268,10 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
-				doubleHistogram := ilm.Metrics().At(0)
+				doubleHistogram := ilm.Metrics().AppendEmpty()
 				doubleHistogram.SetName("double_histogram_with_dims")
 				doubleHistogram.SetDataType(pdata.MetricDataTypeHistogram)
-				doubleHistogram.Histogram().DataPoints().Resize(1)
-				doubleHistogramPt := doubleHistogram.Histogram().DataPoints().At(0)
+				doubleHistogramPt := doubleHistogram.Histogram().DataPoints().AppendEmpty()
 				doubleHistogramPt.SetExplicitBounds(distributionBounds)
 				doubleHistogramPt.SetBucketCounts(distributionCounts)
 				doubleHistogramPt.SetSum(23)
@@ -384,12 +363,10 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
-				intHistogram := ilm.Metrics().At(0)
+				intHistogram := ilm.Metrics().AppendEmpty()
 				intHistogram.SetName("int_histogram_with_dims")
 				intHistogram.SetDataType(pdata.MetricDataTypeIntHistogram)
-				intHistogram.IntHistogram().DataPoints().Resize(1)
-				intHistogramPt := intHistogram.IntHistogram().DataPoints().At(0)
+				intHistogramPt := intHistogram.IntHistogram().DataPoints().AppendEmpty()
 				intHistogramPt.SetExplicitBounds(distributionBounds)
 				intHistogramPt.SetBucketCounts([]uint64{4, 2, 3})
 				intHistogramPt.SetCount(7)
@@ -404,12 +381,10 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
-				intHistogram := ilm.Metrics().At(0)
+				intHistogram := ilm.Metrics().AppendEmpty()
 				intHistogram.SetName("int_histogram_with_dims")
 				intHistogram.SetDataType(pdata.MetricDataTypeIntHistogram)
-				intHistogram.IntHistogram().DataPoints().Resize(1)
-				intHistogramPt := intHistogram.IntHistogram().DataPoints().At(0)
+				intHistogramPt := intHistogram.IntHistogram().DataPoints().AppendEmpty()
 				intHistogramPt.SetExplicitBounds(distributionBounds)
 				intHistogramPt.SetBucketCounts(distributionCounts)
 				intHistogramPt.SetCount(7)
@@ -501,12 +476,10 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
-				intSum := ilm.Metrics().At(0)
+				intSum := ilm.Metrics().AppendEmpty()
 				intSum.SetName("int_sum_with_dims")
 				intSum.SetDataType(pdata.MetricDataTypeIntSum)
-				intSum.IntSum().DataPoints().Resize(1)
-				intDataPt := intSum.IntSum().DataPoints().At(0)
+				intDataPt := intSum.IntSum().DataPoints().AppendEmpty()
 				intDataPt.SetTimestamp(ts)
 				intDataPt.SetValue(62)
 				return metrics
@@ -531,12 +504,10 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
-				doubleSum := ilm.Metrics().At(0)
+				doubleSum := ilm.Metrics().AppendEmpty()
 				doubleSum.SetName("double_sum_with_dims")
 				doubleSum.SetDataType(pdata.MetricDataTypeDoubleSum)
-				doubleSum.DoubleSum().DataPoints().Resize(1)
-				doubleDataPt := doubleSum.DoubleSum().DataPoints().At(0)
+				doubleDataPt := doubleSum.DoubleSum().DataPoints().AppendEmpty()
 				doubleDataPt.SetTimestamp(ts)
 				doubleDataPt.SetValue(62)
 				return metrics
@@ -561,8 +532,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
 				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
-				doubleSum := ilm.Metrics().At(0)
+				doubleSum := ilm.Metrics().AppendEmpty()
 				doubleSum.SetName("unknown_with_dims")
 				doubleSum.SetDataType(pdata.MetricDataTypeNone)
 				return metrics
@@ -632,10 +602,9 @@ func TestNilTimeWhenTimestampIsZero(t *testing.T) {
 
 func newMetricsWithResources() pdata.Metrics {
 	metrics := pdata.NewMetrics()
-	metrics.ResourceMetrics().Resize(1)
-	rm := metrics.ResourceMetrics().At(0)
+	rm := metrics.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().InsertString("k0", "v0")
 	rm.Resource().Attributes().InsertString("k1", "v1")
-	rm.InstrumentationLibraryMetrics().Resize(1)
+	rm.InstrumentationLibraryMetrics().AppendEmpty()
 	return metrics
 }

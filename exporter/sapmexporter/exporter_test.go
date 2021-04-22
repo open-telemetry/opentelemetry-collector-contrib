@@ -70,19 +70,18 @@ func buildTestTraces(setTokenLabel bool) (traces pdata.Traces) {
 	rss.Resize(20)
 
 	for i := 0; i < 20; i++ {
-		span := rss.At(i)
-		resource := span.Resource()
+		rs := rss.At(i)
+		resource := rs.Resource()
 		if setTokenLabel && i%2 == 1 {
 			tokenLabel := fmt.Sprintf("MyToken%d", i/5)
 			resource.Attributes().InsertString("com.splunk.signalfx.access_token", tokenLabel)
 		}
 
-		span.InstrumentationLibrarySpans().Resize(1)
-		span.InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+		span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 		name := fmt.Sprintf("Span%d", i)
-		span.InstrumentationLibrarySpans().At(0).Spans().At(0).SetName(name)
-		span.InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID([16]byte{1}))
-		span.InstrumentationLibrarySpans().At(0).Spans().At(0).SetSpanID(pdata.NewSpanID([8]byte{1}))
+		span.SetName(name)
+		span.SetTraceID(pdata.NewTraceID([16]byte{1}))
+		span.SetSpanID(pdata.NewSpanID([8]byte{1}))
 	}
 
 	return traces
@@ -133,12 +132,11 @@ func buildTestTrace(setIds bool) pdata.Traces {
 	trace := pdata.NewTraces()
 	trace.ResourceSpans().Resize(2)
 	for i := 0; i < 2; i++ {
-		span := trace.ResourceSpans().At(i)
-		resource := span.Resource()
+		rs := trace.ResourceSpans().At(i)
+		resource := rs.Resource()
 		resource.Attributes().InsertString("com.splunk.signalfx.access_token", fmt.Sprintf("TraceAccessToken%v", i))
-		span.InstrumentationLibrarySpans().Resize(1)
-		span.InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-		span.InstrumentationLibrarySpans().At(0).Spans().At(0).SetName("MySpan")
+		span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("MySpan")
 
 		rand.Seed(time.Now().Unix())
 		var traceIDBytes [16]byte
@@ -146,8 +144,8 @@ func buildTestTrace(setIds bool) pdata.Traces {
 		rand.Read(traceIDBytes[:])
 		rand.Read(spanIDBytes[:])
 		if setIds {
-			span.InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID(traceIDBytes))
-			span.InstrumentationLibrarySpans().At(0).Spans().At(0).SetSpanID(pdata.NewSpanID(spanIDBytes))
+			span.SetTraceID(pdata.NewTraceID(traceIDBytes))
+			span.SetSpanID(pdata.NewSpanID(spanIDBytes))
 		}
 	}
 	return trace
