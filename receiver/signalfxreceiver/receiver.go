@@ -307,13 +307,8 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 	}
 
 	ld := pdata.NewLogs()
-	rls := ld.ResourceLogs()
-	rls.Resize(1)
-	rl := rls.At(0)
-
-	ills := rl.InstrumentationLibraryLogs()
-	ills.Resize(1)
-	ill := ills.At(0)
+	rl := ld.ResourceLogs().AppendEmpty()
+	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
 	signalFxV2EventsToLogRecords(msg.Events, ill.Logs())
 
 	if r.config.AccessTokenPassthrough {

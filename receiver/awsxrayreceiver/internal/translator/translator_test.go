@@ -1001,8 +1001,7 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 		return &rs
 	}
 
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ls := rs.InstrumentationLibrarySpans().At(0)
+	ls := rs.InstrumentationLibrarySpans().AppendEmpty()
 	ls.Spans().Resize(len(propsPerSpan))
 
 	for i, props := range propsPerSpan {

@@ -189,7 +189,7 @@ func (melr *MessageEventLogRecord) LogRecords() pdata.LogSlice {
 
 func (melr *MessageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
 	melr.LogSlice = pdata.NewLogSlice()
-	melr.LogSlice.Resize(1)
+	log := melr.LogSlice.AppendEmpty()
 
 	var arrLen uint32
 	var err error
@@ -207,15 +207,15 @@ func (melr *MessageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
 		return msgp.WrapError(err, "Tag")
 	}
 
-	attrs := melr.LogSlice.At(0).Attributes()
+	attrs := log.Attributes()
 	attrs.InsertString(tagAttributeKey, tag)
 
-	err = decodeTimestampToLogRecord(dc, melr.LogSlice.At(0))
+	err = decodeTimestampToLogRecord(dc, log)
 	if err != nil {
 		return msgp.WrapError(err, "Time")
 	}
 
-	err = parseRecordToLogRecord(dc, melr.LogSlice.At(0))
+	err = parseRecordToLogRecord(dc, log)
 	if err != nil {
 		return err
 	}

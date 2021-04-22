@@ -143,19 +143,20 @@ func TestRunningTraces(t *testing.T) {
 	td := pdata.NewTraces()
 
 	rts := td.ResourceSpans()
-	rts.Resize(4)
 
-	rt := rts.At(0)
+	rt := rts.AppendEmpty()
 	resAttrs := rt.Resource().Attributes()
 	resAttrs.Insert(metadata.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-1"))
 
-	rt = rts.At(1)
+	rt = rts.AppendEmpty()
 	resAttrs = rt.Resource().Attributes()
 	resAttrs.Insert(metadata.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-1"))
 
-	rt = rts.At(2)
+	rt = rts.AppendEmpty()
 	resAttrs = rt.Resource().Attributes()
 	resAttrs.Insert(metadata.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-2"))
+
+	rts.AppendEmpty()
 
 	_, runningMetrics := convertToDatadogTd(td, newSublayerCalculator(), &config.Config{})
 
@@ -335,6 +336,12 @@ func TestTracesTranslationErrorsFromEventsUsesLast(t *testing.T) {
 	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
 	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
 
+	attribs := map[string]pdata.AttributeValue{
+		conventions.AttributeExceptionType:       pdata.NewAttributeValueString("HttpError"),
+		conventions.AttributeExceptionStacktrace: pdata.NewAttributeValueString("HttpError at line 67\nthing at line 45"),
+		conventions.AttributeExceptionMessage:    pdata.NewAttributeValueString("HttpError error occurred"),
+	}
+
 	mockEndTime := time.Now().Round(time.Second)
 
 	// create mock resource span data
@@ -342,27 +349,24 @@ func TestTracesTranslationErrorsFromEventsUsesLast(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeError, true, mockEndTime)
 	span := rs.InstrumentationLibrarySpans().At(0).Spans().At(0)
 	events := span.Events()
-	events.Resize(4)
 
-	events.At(0).SetName("start")
+	events.AppendEmpty().SetName("start")
 
-	events.At(1).SetName(conventions.AttributeExceptionEventName)
-	events.At(1).Attributes().InitFromMap(map[string]pdata.AttributeValue{
+	event := events.AppendEmpty()
+	event.SetName(conventions.AttributeExceptionEventName)
+	event.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		conventions.AttributeExceptionType:       pdata.NewAttributeValueString("SomeOtherErr"),
 		conventions.AttributeExceptionStacktrace: pdata.NewAttributeValueString("SomeOtherErr at line 67\nthing at line 45"),
 		conventions.AttributeExceptionMessage:    pdata.NewAttributeValueString("SomeOtherErr error occurred"),
 	})
 
-	attribs := map[string]pdata.AttributeValue{
-		conventions.AttributeExceptionType:       pdata.NewAttributeValueString("HttpError"),
-		conventions.AttributeExceptionStacktrace: pdata.NewAttributeValueString("HttpError at line 67\nthing at line 45"),
-		conventions.AttributeExceptionMessage:    pdata.NewAttributeValueString("HttpError error occurred"),
-	}
-	events.At(2).SetName(conventions.AttributeExceptionEventName)
-	events.At(2).Attributes().InitFromMap(attribs)
+	event = events.AppendEmpty()
+	event.SetName(conventions.AttributeExceptionEventName)
+	event.Attributes().InitFromMap(attribs)
 
-	events.At(3).SetName("end")
-	events.At(3).Attributes().InitFromMap(map[string]pdata.AttributeValue{
+	event = events.AppendEmpty()
+	event.SetName("end")
+	event.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"flag": pdata.NewAttributeValueBool(false),
 	})
 

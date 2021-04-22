@@ -54,19 +54,15 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 	buildDefaultLogs := func() pdata.Logs {
 		logs := pdata.NewLogs()
 		resourceLogs := logs.ResourceLogs()
-		resourceLogs.Resize(1)
-		resourceLog := resourceLogs.At(0)
+		resourceLog := resourceLogs.AppendEmpty()
 		resourceLog.Resource().Attributes().InsertString("k0", "should use ILL attr value instead")
 		resourceLog.Resource().Attributes().InsertString("k3", "v3")
 		resourceLog.Resource().Attributes().InsertInt("k4", 123)
 
 		ilLogs := resourceLog.InstrumentationLibraryLogs()
-		ilLogs.Resize(1)
-		logSlice := ilLogs.At(0).Logs()
+		logSlice := ilLogs.AppendEmpty().Logs()
 
-		logSlice.Resize(1)
-		l := logSlice.At(0)
-
+		l := logSlice.AppendEmpty()
 		l.SetName("shutdown")
 		l.SetTimestamp(pdata.TimestampFromTime(now.Truncate(time.Millisecond)))
 		attrs := l.Attributes()

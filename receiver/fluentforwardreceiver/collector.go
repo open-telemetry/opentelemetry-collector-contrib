@@ -77,20 +77,11 @@ func fillBufferUntilChanEmpty(eventCh <-chan Event, buf []Event) []Event {
 
 func collectLogRecords(events []Event) pdata.Logs {
 	out := pdata.NewLogs()
-
-	logs := out.ResourceLogs()
-
-	logs.Resize(1)
-	rls := logs.At(0)
-
-	rls.InstrumentationLibraryLogs().Resize(1)
-	logSlice := rls.InstrumentationLibraryLogs().At(0).Logs()
-
+	rls := out.ResourceLogs().AppendEmpty()
+	logSlice := rls.InstrumentationLibraryLogs().AppendEmpty().Logs()
 	for i := range events {
 		events[i].LogRecords().MoveAndAppendTo(logSlice)
 	}
-
 	stats.Record(context.Background(), observ.RecordsGenerated.M(int64(out.LogRecordCount())))
-
 	return out
 }

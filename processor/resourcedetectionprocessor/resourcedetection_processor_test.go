@@ -200,8 +200,7 @@ func TestResourceProcessor(t *testing.T) {
 			defer func() { assert.NoError(t, rtp.Shutdown(context.Background())) }()
 
 			td := pdata.NewTraces()
-			td.ResourceSpans().Resize(1)
-			tt.sourceResource.CopyTo(td.ResourceSpans().At(0).Resource())
+			tt.sourceResource.CopyTo(td.ResourceSpans().AppendEmpty().Resource())
 
 			err = rtp.ConsumeTraces(context.Background(), td)
 			require.NoError(t, err)
@@ -267,8 +266,7 @@ func TestResourceProcessor(t *testing.T) {
 			defer func() { assert.NoError(t, rlp.Shutdown(context.Background())) }()
 
 			ld := pdata.NewLogs()
-			ld.ResourceLogs().Resize(1)
-			tt.sourceResource.CopyTo(ld.ResourceLogs().At(0).Resource())
+			tt.sourceResource.CopyTo(ld.ResourceLogs().AppendEmpty().Resource())
 
 			err = rlp.ConsumeLogs(context.Background(), ld)
 			require.NoError(t, err)

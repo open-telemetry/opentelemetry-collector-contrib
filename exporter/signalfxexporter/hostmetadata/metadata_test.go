@@ -308,8 +308,7 @@ func (dc *fakeDimClient) getMetadataUpdates() [][]*metadata.MetadataUpdate {
 func generateSampleMetricsData(attrs map[string]string) pdata.Metrics {
 	m := pdata.NewMetrics()
 	rm := m.ResourceMetrics()
-	rm.Resize(1)
-	res := rm.At(0).Resource()
+	res := rm.AppendEmpty().Resource()
 	for k, v := range attrs {
 		res.Attributes().InsertString(k, v)
 	}

@@ -381,11 +381,9 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pdata.TraceID, deletionT
 
 func prepareTraceBatch(rss pdata.ResourceSpans, spans []*pdata.Span) pdata.Traces {
 	traceTd := pdata.NewTraces()
-	traceTd.ResourceSpans().Resize(1)
-	rs := traceTd.ResourceSpans().At(0)
+	rs := traceTd.ResourceSpans().AppendEmpty()
 	rss.Resource().CopyTo(rs.Resource())
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ils := rs.InstrumentationLibrarySpans().At(0)
+	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
 	for _, span := range spans {
 		ils.Spans().Append(*span)
 	}

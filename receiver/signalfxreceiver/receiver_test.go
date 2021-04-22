@@ -123,10 +123,9 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 
 	want := pdata.NewMetrics()
 	ilm := want.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.Metrics().Resize(4)
 
 	{
-		m := ilm.Metrics().At(0)
+		m := ilm.Metrics().AppendEmpty()
 		m.SetName("gauge_double_with_dims")
 		m.SetDataType(pdata.MetricDataTypeDoubleGauge)
 		doublePt := m.DoubleGauge().DataPoints().AppendEmpty()
@@ -134,7 +133,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		doublePt.SetValue(doubleVal)
 	}
 	{
-		m := ilm.Metrics().At(1)
+		m := ilm.Metrics().AppendEmpty()
 		m.SetName("gauge_int_with_dims")
 		m.SetDataType(pdata.MetricDataTypeIntGauge)
 		int64Pt := m.IntGauge().DataPoints().AppendEmpty()
@@ -142,7 +141,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		int64Pt.SetValue(int64Val)
 	}
 	{
-		m := ilm.Metrics().At(2)
+		m := ilm.Metrics().AppendEmpty()
 		m.SetName("cumulative_double_with_dims")
 		m.SetDataType(pdata.MetricDataTypeDoubleSum)
 		m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
@@ -152,7 +151,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		doublePt.SetValue(doubleVal)
 	}
 	{
-		m := ilm.Metrics().At(3)
+		m := ilm.Metrics().AppendEmpty()
 		m.SetName("cumulative_int_with_dims")
 		m.SetDataType(pdata.MetricDataTypeIntSum)
 		m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
