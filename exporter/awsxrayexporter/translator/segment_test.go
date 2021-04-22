@@ -717,12 +717,8 @@ func constructDefaultResource() pdata.Resource {
 
 	resourceArrayVal := pdata.NewAttributeValueArray()
 	resourceArray := resourceArrayVal.ArrayVal()
-	val1 := pdata.NewAttributeValueNull()
-	val1.SetStringVal("foo")
-	val2 := pdata.NewAttributeValueNull()
-	val2.SetStringVal("bar")
-	resourceArray.Append(val1)
-	resourceArray.Append(val2)
+	resourceArray.AppendEmpty().SetStringVal("foo")
+	resourceArray.AppendEmpty().SetStringVal("bar")
 	attrs.Insert(resourceArrayKey, resourceArrayVal)
 	attrs.CopyTo(resource.Attributes())
 	return resource

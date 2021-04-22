@@ -57,25 +57,33 @@ func matchingInstrumentationLibraryLogs(rl pdata.ResourceLogs, library pdata.Ins
 }
 
 // spansGroupedByAttrs keeps all found grouping attributes for spans, together with the matching records
-type spansGroupedByAttrs []pdata.ResourceSpans
+type spansGroupedByAttrs struct {
+	pdata.ResourceSpansSlice
+}
 
 // logsGroupedByAttrs keeps all found grouping attributes for logs, together with the matching records
-type logsGroupedByAttrs []pdata.ResourceLogs
+type logsGroupedByAttrs struct {
+	pdata.ResourceLogsSlice
+}
 
 func newLogsGroupedByAttrs() *logsGroupedByAttrs {
-	return &logsGroupedByAttrs{}
+	return &logsGroupedByAttrs{
+		ResourceLogsSlice: pdata.NewResourceLogsSlice(),
+	}
 }
 
 func newSpansGroupedByAttrs() *spansGroupedByAttrs {
-	return &spansGroupedByAttrs{}
+	return &spansGroupedByAttrs{
+		ResourceSpansSlice: pdata.NewResourceSpansSlice(),
+	}
 }
 
 // findGroup searches for an existing pdata.ResourceLogs that contains both the grouped attributes
 // and base resource attributes. Returns the matching pdata.ResourceLogs and bool value which is set to true if found
 func (lgba logsGroupedByAttrs) findGroup(baseResource pdata.Resource, attrs pdata.AttributeMap) (pdata.ResourceLogs, bool) {
-	for i := 0; i < len(lgba); i++ {
-		if resourceMatches(lgba[i].Resource(), baseResource, attrs) {
-			return lgba[i], true
+	for i := 0; i < lgba.Len(); i++ {
+		if resourceMatches(lgba.At(i).Resource(), baseResource, attrs) {
+			return lgba.At(i), true
 		}
 	}
 	return pdata.ResourceLogs{}, false
@@ -84,9 +92,9 @@ func (lgba logsGroupedByAttrs) findGroup(baseResource pdata.Resource, attrs pdat
 // findGroup searches for an existing pdata.ResourceLogs that contains both the grouped attributes
 // and base resource attributes. Returns the matching pdata.ResourceLogs and bool value which is set to true if found
 func (sgba spansGroupedByAttrs) findGroup(baseResource pdata.Resource, attrs pdata.AttributeMap) (pdata.ResourceSpans, bool) {
-	for i := 0; i < len(sgba); i++ {
-		if resourceMatches(sgba[i].Resource(), baseResource, attrs) {
-			return sgba[i], true
+	for i := 0; i < sgba.Len(); i++ {
+		if resourceMatches(sgba.At(i).Resource(), baseResource, attrs) {
+			return sgba.At(i), true
 		}
 	}
 	return pdata.ResourceSpans{}, false
@@ -149,7 +157,7 @@ func resourceMatches(res pdata.Resource, baseResource pdata.Resource, recordAttr
 func (sgba *spansGroupedByAttrs) attributeGroup(baseResource pdata.Resource, recordAttrs pdata.AttributeMap) pdata.ResourceSpans {
 	res, found := sgba.findGroup(baseResource, recordAttrs)
 	if !found {
-		res = pdata.NewResourceSpans()
+		res = sgba.AppendEmpty()
 
 		baseResource.CopyTo(res.Resource())
 
@@ -159,8 +167,6 @@ func (sgba *spansGroupedByAttrs) attributeGroup(baseResource pdata.Resource, rec
 			attrs.Upsert(k, v)
 			return true
 		})
-
-		*sgba = append(*sgba, res)
 	}
 
 	return res
@@ -170,7 +176,7 @@ func (sgba *spansGroupedByAttrs) attributeGroup(baseResource pdata.Resource, rec
 func (lgba *logsGroupedByAttrs) attributeGroup(baseResource pdata.Resource, recordAttrs pdata.AttributeMap) pdata.ResourceLogs {
 	res, found := lgba.findGroup(baseResource, recordAttrs)
 	if !found {
-		res = pdata.NewResourceLogs()
+		res = lgba.AppendEmpty()
 		baseResource.CopyTo(res.Resource())
 
 		// This prioritizes log attributes over resource attributes, if they overlap
@@ -179,8 +185,6 @@ func (lgba *logsGroupedByAttrs) attributeGroup(baseResource pdata.Resource, reco
 			attrs.Upsert(k, v)
 			return true
 		})
-
-		*lgba = append(*lgba, res)
 	}
 
 	return res

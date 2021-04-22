@@ -213,7 +213,8 @@ func generateLargeLogsBatch() pdata.Logs {
 }
 
 func TestConsumeLogsData(t *testing.T) {
-	logRecord := pdata.NewLogRecord()
+	logs := pdata.NewLogs()
+	logRecord := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
 	logRecord.Body().SetStringVal("mylog")
 	logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 	logRecord.Attributes().InsertString("custom", "custom")

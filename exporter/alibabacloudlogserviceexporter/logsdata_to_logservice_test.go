@@ -34,7 +34,7 @@ func getComplexAttributeValueMap() pdata.AttributeValue {
 	mapValReal.InsertInt("code", 200)
 	mapValReal.InsertNull("null")
 	arrayVal := pdata.NewAttributeValueArray()
-	arrayVal.ArrayVal().Append(pdata.NewAttributeValueString("array"))
+	arrayVal.ArrayVal().AppendEmpty().SetStringVal("array")
 	mapValReal.Insert("array", arrayVal)
 
 	subMapVal := pdata.NewAttributeValueMap()
@@ -52,14 +52,13 @@ func createLogData(numberOfLogs int) pdata.Logs {
 	rl.Resource().Attributes().InsertString("resouceKey", "resourceValue")
 	rl.Resource().Attributes().InsertString(conventions.AttributeServiceName, "test-log-service-exporter")
 	rl.Resource().Attributes().InsertString(conventions.AttributeHostName, "test-host")
-	rl.InstrumentationLibraryLogs().Resize(1)
-	ill := rl.InstrumentationLibraryLogs().At(0)
+	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
 	ill.InstrumentationLibrary().SetName("collector")
 	ill.InstrumentationLibrary().SetVersion("v0.1.0")
 
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
-		logRecord := pdata.NewLogRecord()
+		logRecord := ill.Logs().AppendEmpty()
 		switch i {
 		case 0:
 			// do nothing, left body null
@@ -77,7 +76,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 			logRecord.Body().SetStringVal("log contents")
 		case 6:
 			arrayVal := pdata.NewAttributeValueArray()
-			arrayVal.ArrayVal().Append(pdata.NewAttributeValueString("array"))
+			arrayVal.ArrayVal().AppendEmpty().SetStringVal("array")
 			logRecord.Attributes().Insert("array-value", arrayVal)
 			logRecord.Body().SetStringVal("log contents")
 		default:
@@ -90,8 +89,6 @@ func createLogData(numberOfLogs int) pdata.Logs {
 		logRecord.Attributes().InsertNull("null-value")
 
 		logRecord.SetTimestamp(ts)
-
-		ill.Logs().Append(logRecord)
 	}
 
 	return logs

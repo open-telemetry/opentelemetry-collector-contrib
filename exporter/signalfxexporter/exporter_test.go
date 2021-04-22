@@ -492,10 +492,7 @@ func TestNewEventExporter(t *testing.T) {
 
 func makeSampleResourceLogs() pdata.Logs {
 	out := pdata.NewLogs()
-	out.ResourceLogs().Resize(1)
-	out.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
-
-	logSlice := out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
+	logSlice := out.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs()
 	logSlice.Resize(1)
 	l := logSlice.At(0)
 
@@ -631,7 +628,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 
 	newLogData := func(includeToken bool) pdata.Logs {
 		out := makeSampleResourceLogs()
-		out.ResourceLogs().Append(makeSampleResourceLogs().ResourceLogs().At(0))
+		makeSampleResourceLogs().ResourceLogs().At(0).CopyTo(out.ResourceLogs().AppendEmpty())
 
 		if includeToken {
 			out.ResourceLogs().At(0).Resource().Attributes().InsertString("com.splunk.signalfx.access_token", fromLabels)

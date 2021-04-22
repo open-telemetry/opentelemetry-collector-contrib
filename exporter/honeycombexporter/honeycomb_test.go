@@ -295,18 +295,16 @@ func TestExporter(t *testing.T) {
 
 func TestSpanKinds(t *testing.T) {
 	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(1)
-	rs := td.ResourceSpans().At(0)
+	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"service.name": pdata.NewAttributeValueString("test_service"),
 	})
-	rs.InstrumentationLibrarySpans().Resize(1)
-	instrLibrarySpans := rs.InstrumentationLibrarySpans().At(0)
+	instrLibrarySpans := rs.InstrumentationLibrarySpans().AppendEmpty()
 	lib := instrLibrarySpans.InstrumentationLibrary()
 	lib.SetName("my.custom.library")
 	lib.SetVersion("1.0.0")
 
-	instrLibrarySpans.Spans().Append(createSpan())
+	initSpan(instrLibrarySpans.Spans().AppendEmpty())
 
 	spanKinds := []pdata.SpanKind{
 		pdata.SpanKindINTERNAL,
@@ -361,8 +359,7 @@ func TestSpanKinds(t *testing.T) {
 	}
 }
 
-func createSpan() pdata.Span {
-	span := pdata.NewSpan()
+func initSpan(span pdata.Span) {
 	span.SetName("spanName")
 	span.SetTraceID(pdata.NewTraceID([16]byte{0x01}))
 	span.SetParentSpanID(pdata.NewSpanID([8]byte{0x02}))
@@ -371,7 +368,6 @@ func createSpan() pdata.Span {
 	span.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"span_attr_name": pdata.NewAttributeValueString("Span Attribute"),
 	})
-	return span
 }
 
 func TestSampleRateAttribute(t *testing.T) {

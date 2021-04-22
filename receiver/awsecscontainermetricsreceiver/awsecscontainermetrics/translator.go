@@ -20,118 +20,92 @@ import (
 
 func convertToOTLPMetrics(prefix string, m ECSMetrics, r pdata.Resource, timestamp pdata.Timestamp) pdata.Metrics {
 	md := pdata.NewMetrics()
-	rms := md.ResourceMetrics()
-	rms.Resize(1)
-	rm := rms.At(0)
-
+	rm := md.ResourceMetrics().AppendEmpty()
 	r.CopyTo(rm.Resource())
 
 	ilms := rm.InstrumentationLibraryMetrics()
 
-	ilms.Append(intGauge(prefix+AttributeMemoryUsage, UnitBytes, int64(m.MemoryUsage), timestamp))
-	ilms.Append(intGauge(prefix+AttributeMemoryMaxUsage, UnitBytes, int64(m.MemoryMaxUsage), timestamp))
-	ilms.Append(intGauge(prefix+AttributeMemoryLimit, UnitBytes, int64(m.MemoryLimit), timestamp))
-	ilms.Append(intGauge(prefix+AttributeMemoryUtilized, UnitMegaBytes, int64(m.MemoryUtilized), timestamp))
-	ilms.Append(intGauge(prefix+AttributeMemoryReserved, UnitMegaBytes, int64(m.MemoryReserved), timestamp))
+	appendIntGauge(prefix+AttributeMemoryUsage, UnitBytes, int64(m.MemoryUsage), timestamp, ilms.AppendEmpty())
+	appendIntGauge(prefix+AttributeMemoryMaxUsage, UnitBytes, int64(m.MemoryMaxUsage), timestamp, ilms.AppendEmpty())
+	appendIntGauge(prefix+AttributeMemoryLimit, UnitBytes, int64(m.MemoryLimit), timestamp, ilms.AppendEmpty())
+	appendIntGauge(prefix+AttributeMemoryUtilized, UnitMegaBytes, int64(m.MemoryUtilized), timestamp, ilms.AppendEmpty())
+	appendIntGauge(prefix+AttributeMemoryReserved, UnitMegaBytes, int64(m.MemoryReserved), timestamp, ilms.AppendEmpty())
 
-	ilms.Append(intSum(prefix+AttributeCPUTotalUsage, UnitNanoSecond, int64(m.CPUTotalUsage), timestamp))
-	ilms.Append(intSum(prefix+AttributeCPUKernelModeUsage, UnitNanoSecond, int64(m.CPUUsageInKernelmode), timestamp))
-	ilms.Append(intSum(prefix+AttributeCPUUserModeUsage, UnitNanoSecond, int64(m.CPUUsageInUserMode), timestamp))
-	ilms.Append(intGauge(prefix+AttributeCPUCores, UnitCount, int64(m.NumOfCPUCores), timestamp))
-	ilms.Append(intGauge(prefix+AttributeCPUOnlines, UnitCount, int64(m.CPUOnlineCpus), timestamp))
-	ilms.Append(intSum(prefix+AttributeCPUSystemUsage, UnitNanoSecond, int64(m.SystemCPUUsage), timestamp))
-	ilms.Append(doubleGauge(prefix+AttributeCPUUtilized, UnitPercent, m.CPUUtilized, timestamp))
-	ilms.Append(doubleGauge(prefix+AttributeCPUReserved, UnitVCpu, m.CPUReserved, timestamp))
-	ilms.Append(doubleGauge(prefix+AttributeCPUUsageInVCPU, UnitVCpu, m.CPUUsageInVCPU, timestamp))
+	appendIntSum(prefix+AttributeCPUTotalUsage, UnitNanoSecond, int64(m.CPUTotalUsage), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeCPUKernelModeUsage, UnitNanoSecond, int64(m.CPUUsageInKernelmode), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeCPUUserModeUsage, UnitNanoSecond, int64(m.CPUUsageInUserMode), timestamp, ilms.AppendEmpty())
+	appendIntGauge(prefix+AttributeCPUCores, UnitCount, int64(m.NumOfCPUCores), timestamp, ilms.AppendEmpty())
+	appendIntGauge(prefix+AttributeCPUOnlines, UnitCount, int64(m.CPUOnlineCpus), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeCPUSystemUsage, UnitNanoSecond, int64(m.SystemCPUUsage), timestamp, ilms.AppendEmpty())
+	appendDoubleGauge(prefix+AttributeCPUUtilized, UnitPercent, m.CPUUtilized, timestamp, ilms.AppendEmpty())
+	appendDoubleGauge(prefix+AttributeCPUReserved, UnitVCpu, m.CPUReserved, timestamp, ilms.AppendEmpty())
+	appendDoubleGauge(prefix+AttributeCPUUsageInVCPU, UnitVCpu, m.CPUUsageInVCPU, timestamp, ilms.AppendEmpty())
 
-	ilms.Append(doubleGauge(prefix+AttributeNetworkRateRx, UnitBytesPerSec, m.NetworkRateRxBytesPerSecond, timestamp))
-	ilms.Append(doubleGauge(prefix+AttributeNetworkRateTx, UnitBytesPerSec, m.NetworkRateTxBytesPerSecond, timestamp))
+	appendDoubleGauge(prefix+AttributeNetworkRateRx, UnitBytesPerSec, m.NetworkRateRxBytesPerSecond, timestamp, ilms.AppendEmpty())
+	appendDoubleGauge(prefix+AttributeNetworkRateTx, UnitBytesPerSec, m.NetworkRateTxBytesPerSecond, timestamp, ilms.AppendEmpty())
 
-	ilms.Append(intSum(prefix+AttributeNetworkRxBytes, UnitBytes, int64(m.NetworkRxBytes), timestamp))
-	ilms.Append(intSum(prefix+AttributeNetworkRxPackets, UnitCount, int64(m.NetworkRxPackets), timestamp))
-	ilms.Append(intSum(prefix+AttributeNetworkRxErrors, UnitCount, int64(m.NetworkRxErrors), timestamp))
-	ilms.Append(intSum(prefix+AttributeNetworkRxDropped, UnitCount, int64(m.NetworkRxDropped), timestamp))
-	ilms.Append(intSum(prefix+AttributeNetworkTxBytes, UnitBytes, int64(m.NetworkTxBytes), timestamp))
-	ilms.Append(intSum(prefix+AttributeNetworkTxPackets, UnitCount, int64(m.NetworkTxPackets), timestamp))
-	ilms.Append(intSum(prefix+AttributeNetworkTxErrors, UnitCount, int64(m.NetworkTxErrors), timestamp))
-	ilms.Append(intSum(prefix+AttributeNetworkTxDropped, UnitCount, int64(m.NetworkTxDropped), timestamp))
+	appendIntSum(prefix+AttributeNetworkRxBytes, UnitBytes, int64(m.NetworkRxBytes), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeNetworkRxPackets, UnitCount, int64(m.NetworkRxPackets), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeNetworkRxErrors, UnitCount, int64(m.NetworkRxErrors), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeNetworkRxDropped, UnitCount, int64(m.NetworkRxDropped), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeNetworkTxBytes, UnitBytes, int64(m.NetworkTxBytes), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeNetworkTxPackets, UnitCount, int64(m.NetworkTxPackets), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeNetworkTxErrors, UnitCount, int64(m.NetworkTxErrors), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeNetworkTxDropped, UnitCount, int64(m.NetworkTxDropped), timestamp, ilms.AppendEmpty())
 
-	ilms.Append(intSum(prefix+AttributeStorageRead, UnitBytes, int64(m.StorageReadBytes), timestamp))
-	ilms.Append(intSum(prefix+AttributeStorageWrite, UnitBytes, int64(m.StorageWriteBytes), timestamp))
+	appendIntSum(prefix+AttributeStorageRead, UnitBytes, int64(m.StorageReadBytes), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeStorageWrite, UnitBytes, int64(m.StorageWriteBytes), timestamp, ilms.AppendEmpty())
 
 	return md
 }
 
 func convertStoppedContainerDataToOTMetrics(prefix string, containerResource pdata.Resource, timestamp pdata.Timestamp, duration float64) pdata.Metrics {
 	md := pdata.NewMetrics()
-	rms := md.ResourceMetrics()
-	rms.Resize(1)
-	rm := rms.At(0)
-
+	rm := md.ResourceMetrics().AppendEmpty()
 	containerResource.CopyTo(rm.Resource())
-
 	ilms := rm.InstrumentationLibraryMetrics()
 
-	ilms.Append(doubleGauge(prefix+AttributeDuration, UnitSecond, duration, timestamp))
+	appendDoubleGauge(prefix+AttributeDuration, UnitSecond, duration, timestamp, ilms.AppendEmpty())
 
 	return md
 }
 
-func intGauge(metricName string, unit string, value int64, ts pdata.Timestamp) pdata.InstrumentationLibraryMetrics {
-
-	ilm := pdata.NewInstrumentationLibraryMetrics()
-
-	metric := initMetric(ilm, metricName, unit)
+func appendIntGauge(metricName string, unit string, value int64, ts pdata.Timestamp, ilm pdata.InstrumentationLibraryMetrics) {
+	metric := appendMetric(ilm, metricName, unit)
 
 	metric.SetDataType(pdata.MetricDataTypeIntGauge)
 	intGauge := metric.IntGauge()
 
-	updateIntDataPoint(intGauge.DataPoints(), value, ts)
-
-	return ilm
+	appendIntDataPoint(intGauge.DataPoints(), value, ts)
 }
 
-func intSum(metricName string, unit string, value int64, ts pdata.Timestamp) pdata.InstrumentationLibraryMetrics {
-	ilm := pdata.NewInstrumentationLibraryMetrics()
-
-	metric := initMetric(ilm, metricName, unit)
+func appendIntSum(metricName string, unit string, value int64, ts pdata.Timestamp, ilm pdata.InstrumentationLibraryMetrics) {
+	metric := appendMetric(ilm, metricName, unit)
 
 	metric.SetDataType(pdata.MetricDataTypeIntSum)
 	intSum := metric.IntSum()
 	intSum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
-	updateIntDataPoint(intSum.DataPoints(), value, ts)
-
-	return ilm
+	appendIntDataPoint(intSum.DataPoints(), value, ts)
 }
 
-func doubleGauge(metricName string, unit string, value float64, ts pdata.Timestamp) pdata.InstrumentationLibraryMetrics {
-	ilm := pdata.NewInstrumentationLibraryMetrics()
-
-	metric := initMetric(ilm, metricName, unit)
-
+func appendDoubleGauge(metricName string, unit string, value float64, ts pdata.Timestamp, ilm pdata.InstrumentationLibraryMetrics) {
+	metric := appendMetric(ilm, metricName, unit)
 	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
 	doubleGauge := metric.DoubleGauge()
-	dataPoints := doubleGauge.DataPoints()
-	dataPoints.Resize(1)
-	dataPoint := dataPoints.At(0)
-
-	dataPoint.SetValue(value)
-	dataPoint.SetTimestamp(ts)
-
-	return ilm
-}
-
-func updateIntDataPoint(dataPoints pdata.IntDataPointSlice, value int64, ts pdata.Timestamp) {
-	dataPoints.Resize(1)
-	dataPoint := dataPoints.At(0)
+	dataPoint := doubleGauge.DataPoints().AppendEmpty()
 	dataPoint.SetValue(value)
 	dataPoint.SetTimestamp(ts)
 }
 
-func initMetric(ilm pdata.InstrumentationLibraryMetrics, name, unit string) pdata.Metric {
-	ilm.Metrics().Resize(1)
-	metric := ilm.Metrics().At(0)
+func appendIntDataPoint(dataPoints pdata.IntDataPointSlice, value int64, ts pdata.Timestamp) {
+	dataPoint := dataPoints.AppendEmpty()
+	dataPoint.SetValue(value)
+	dataPoint.SetTimestamp(ts)
+}
+
+func appendMetric(ilm pdata.InstrumentationLibraryMetrics, name, unit string) pdata.Metric {
+	metric := ilm.Metrics().AppendEmpty()
 	metric.SetName(name)
 	metric.SetUnit(unit)
 
