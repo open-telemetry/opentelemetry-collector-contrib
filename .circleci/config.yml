@@ -30,18 +30,18 @@ commands:
       files:
         type: string
         default: |
-          bin/otelcontribcol_darwin_amd64
-          bin/otelcontribcol_linux_arm64
-          bin/otelcontribcol_linux_amd64
-          bin/otelcontribcol_windows_amd64.exe
-          dist/otel-contrib-collector-*.arm64.rpm
-          dist/otel-contrib-collector_*_amd64.deb
-          dist/otel-contrib-collector-*.x86_64.rpm
-          dist/otel-contrib-collector_*_arm64.deb
-          dist/otel-contrib-collector-*amd64.msi
+            bin/otelcontribcol_darwin_amd64
+            bin/otelcontribcol_linux_arm64
+            bin/otelcontribcol_linux_amd64
+            bin/otelcontribcol_windows_amd64.exe
+            dist/otel-contrib-collector-*.arm64.rpm
+            dist/otel-contrib-collector_*_amd64.deb
+            dist/otel-contrib-collector-*.x86_64.rpm
+            dist/otel-contrib-collector_*_arm64.deb
+            dist/otel-contrib-collector-*amd64.msi
     steps:
       - run:
-          name: Check if distribution files exist
+          name: Check if files exist
           command: |
             files="<< parameters.files >>"
             for f in $files; do
@@ -90,7 +90,7 @@ commands:
   save_module_cache:
     steps:
       - save_cache:
-          key: cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}-v4
+          key: cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}-{{ checksum "internal/tools/go.sum" }}
           paths:
             - "/home/circleci/go/pkg/mod"
 
@@ -101,7 +101,7 @@ commands:
           command: mkdir -p ~/go/pkg/mod
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
-            - cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}-v4
+            - cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}-{{ checksum "internal/tools/go.sum" }}
 
   install_fluentbit:
     steps:
@@ -175,13 +175,8 @@ workflows:
           tag: ${CIRCLE_SHA1}
           requires:
             - publish-dev
-      - publish-stable:
-          requires:
-            - run-tracing-tests
           filters:
             branches:
-              ignore: /.*/
-            tags:
               only: /.*/
 
 
@@ -191,47 +186,47 @@ workflows:
       - windows-test:
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - setup:
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - lint:
           requires:
             - setup
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - build-examples:
           requires:
             - setup
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - cross-compile:
           requires:
             - setup
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - loadtest:
           requires:
             - cross-compile
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - unit-tests:
           requires:
             - setup
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - windows-msi:
           requires:
             - cross-compile
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - publish-check:
           requires:
             - lint
@@ -258,31 +253,20 @@ workflows:
             branches:
               ignore: /.*/
             tags:
-              ignore: /.*/
-      - publish-dev:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+      - spawn-stability-tests-job:
           requires:
             - lint
             - unit-tests
-            - integration-tests
-            - cross-compile
             - loadtest
             - windows-test
-            - windows-msi
-            - deb-package
-            - rpm-package
+            - integration-tests
+            - cross-compile
           filters:
             branches:
-              ignore: /.*/
+              only: /main|release|tracing\/.+/
             tags:
               ignore: /.*/
-      - spawn-stability-tests-job:
-          requires:
-            - publish-check
-          filters:
-            branches:
-              only: /.*/
-            tags:
-              only: /.*/
       - integration-tests:
           filters:
             tags:
@@ -444,11 +428,15 @@ jobs:
           repo: opentelemetry-collector
           tag: ${CIRCLE_TAG:1}
       - run:
+          name: Prepare release artifacts
+          command: |
+            cp bin/* dist/
+      - run:
           name: Calculate checksums
-          command: cd bin && shasum -a 256 * > checksums.txt
+          command: cd dist && shasum -a 256 * > checksums.txt
       - run:
           name: Create Github release and upload artifacts
-          command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG bin/
+          command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace -prerelease $CIRCLE_TAG dist/
 
   publish-dev:
     executor: golang
@@ -471,10 +459,15 @@ jobs:
       - run:
           name: Trigger stability tests job
           command: |
-            curl -f -X POST "https://circleci.com/api/v2/project/github/SumoLogic/${CIRCLE_PROJECT_REPONAME}/pipeline?circle-token=${CIRCLE_API_TOKEN}" \
+            PARAM='"branch": "'"${CIRCLE_BRANCH}"'"'
+            if [ -z "$CIRCLE_BRANCH" ]; then
+              PARAM='"tag": "'"${CIRCLE_TAG}"'"'
+            fi
+            curl -f -X POST "https://circleci.com/api/v2/project/github/SumoLogic/${CIRCLE_PROJECT_REPONAME}/pipeline" \
                 -H 'Content-Type: application/json' \
                 -H 'Accept: application/json' \
-                -d '{"parameters": {"run-build-publish": false, "run-stability-tests": true, "collector-sha": "'"${CIRCLE_SHA1}"'"}, "branch": "'"${CIRCLE_BRANCH}"'"}'
+                -H "Circle-Token: ${CIRCLE_API_TOKEN}" \
+                -d '{"parameters": {"run-build-publish": false, "run-stability-tests": true, "collector-sha": "'"${CIRCLE_SHA1}"'"}, '"${PARAM}"'}'
 
   checkout-commit:
     executor: golang
