@@ -85,13 +85,13 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 	return metricsByName[n]
 }
 
-func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
-	return map[string]func() pdata.Metric{
-		Metrics.MemcachedBytes.Name():              Metrics.MemcachedBytes.New,
-		Metrics.MemcachedCurrentConnections.Name(): Metrics.MemcachedCurrentConnections.New,
-		Metrics.MemcachedGetHits.Name():            Metrics.MemcachedGetHits.New,
-		Metrics.MemcachedGetMisses.Name():          Metrics.MemcachedGetMisses.New,
-		Metrics.MemcachedTotalConnections.Name():   Metrics.MemcachedTotalConnections.New,
+func (m *metricStruct) FactoriesByName() map[string]func(pdata.Metric) {
+	return map[string]func(pdata.Metric){
+		Metrics.MemcachedBytes.Name():              Metrics.MemcachedBytes.Init,
+		Metrics.MemcachedCurrentConnections.Name(): Metrics.MemcachedCurrentConnections.Init,
+		Metrics.MemcachedGetHits.Name():            Metrics.MemcachedGetHits.Init,
+		Metrics.MemcachedGetMisses.Name():          Metrics.MemcachedGetMisses.Init,
+		Metrics.MemcachedTotalConnections.Name():   Metrics.MemcachedTotalConnections.Init,
 	}
 }
 
