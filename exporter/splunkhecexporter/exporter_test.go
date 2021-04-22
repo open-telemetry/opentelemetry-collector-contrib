@@ -165,6 +165,8 @@ func TestConsumeMetricsData(t *testing.T) {
 			config.SourceType = "test_type"
 			config.Token = "1234"
 			config.Index = "test_index"
+			config.SplunkAppName = "OpenTelemetry-Collector Splunk Exporter"
+			config.SplunkAppVersion = "v0.0.1"
 
 			sender, err := buildClient(options, config, zap.NewNop())
 			assert.NoError(t, err)
@@ -309,6 +311,8 @@ func TestConsumeLogsData(t *testing.T) {
 			config.SourceType = "test_type"
 			config.Token = "1234"
 			config.Index = "test_index"
+			config.SplunkAppName = "OpenTelemetry-Collector Splunk Exporter"
+			config.SplunkAppVersion = "v0.0.1"
 
 			sender, err := buildClient(options, config, zap.NewNop())
 			assert.NoError(t, err)

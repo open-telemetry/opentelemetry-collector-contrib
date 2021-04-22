@@ -108,10 +108,12 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) (
 			return gzip.NewWriter(nil)
 		}},
 		headers: map[string]string{
-			"Connection":    "keep-alive",
-			"Content-Type":  "application/json",
-			"User-Agent":    "OpenTelemetry-Collector Splunk Exporter/v0.0.1",
-			"Authorization": splunk.HECTokenHeader + " " + config.Token,
+			"Connection":           "keep-alive",
+			"Content-Type":         "application/json",
+			"User-Agent":           config.SplunkAppName + "/" + config.SplunkAppVersion,
+			"Authorization":        splunk.HECTokenHeader + " " + config.Token,
+			"__splunk_app_name":    config.SplunkAppName,
+			"__splunk_app_version": config.SplunkAppVersion,
 		},
 		config: config,
 	}, nil

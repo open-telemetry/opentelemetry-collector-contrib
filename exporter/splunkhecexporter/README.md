@@ -62,6 +62,10 @@ exporters:
     cert_file: /certs/HECclient.crt
     # Path to the TLS key to use for TLS required connections. Should only be used if `insecure` is set to false.
     key_file: /certs/HECclient.key
+    # Application name is used to track telemetry information for Splunk App's using HEC by App name.
+    splunk_app_name: "OpenTelemetry-Collector Splunk Exporter"
+    # Application version is used to track telemetry information for Splunk App's using HEC by App version.
+    splunk_app_version: "v0.0.1"
 ```
 
 The full list of settings exposed for this exporter are documented [here](config.go)
