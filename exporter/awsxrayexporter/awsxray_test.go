@@ -75,14 +75,11 @@ func constructSpanData() pdata.Traces {
 	resource := constructResource()
 
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rspans := traces.ResourceSpans().At(0)
+	rspans := traces.ResourceSpans().AppendEmpty()
 	resource.CopyTo(rspans.Resource())
-	rspans.InstrumentationLibrarySpans().Resize(1)
-	ispans := rspans.InstrumentationLibrarySpans().At(0)
-	ispans.Spans().Resize(2)
-	constructHTTPClientSpan().CopyTo(ispans.Spans().At(0))
-	constructHTTPServerSpan().CopyTo(ispans.Spans().At(1))
+	ispans := rspans.InstrumentationLibrarySpans().AppendEmpty()
+	constructHTTPClientSpan().CopyTo(ispans.Spans().AppendEmpty())
+	constructHTTPServerSpan().CopyTo(ispans.Spans().AppendEmpty())
 	return traces
 }
 

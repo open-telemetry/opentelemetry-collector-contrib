@@ -83,7 +83,7 @@ func newMetadataEndpoint(c chan []byte) func(http.ResponseWriter, *http.Request)
 	}
 }
 
-func fillAttributeMap(attrs *pdata.AttributeMap, mp map[string]string) {
+func fillAttributeMap(attrs pdata.AttributeMap, mp map[string]string) {
 	attrs.Clear()
 	attrs.EnsureCapacity(len(mp))
 	for k, v := range mp {
@@ -95,25 +95,21 @@ func fillAttributeMap(attrs *pdata.AttributeMap, mp map[string]string) {
 // from a Go map
 func NewAttributeMap(mp map[string]string) pdata.AttributeMap {
 	attrs := pdata.NewAttributeMap()
-	fillAttributeMap(&attrs, mp)
+	fillAttributeMap(attrs, mp)
 	return attrs
 }
 
 func newMetricsWithAttributeMap(mp map[string]string) pdata.Metrics {
 	md := pdata.NewMetrics()
-	md.ResourceMetrics().Resize(1)
-	attrs := md.ResourceMetrics().At(0).Resource().Attributes()
-	fillAttributeMap(&attrs, mp)
+	fillAttributeMap(md.ResourceMetrics().AppendEmpty().Resource().Attributes(), mp)
 	return md
 }
 
 func newTracesWithAttributeMap(mp map[string]string) pdata.Traces {
 	traces := pdata.NewTraces()
 	resourceSpans := traces.ResourceSpans()
-	resourceSpans.Resize(1)
-	resourceSpans.At(0).InstrumentationLibrarySpans().Resize(1)
-	resourceSpans.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	attrs := resourceSpans.At(0).Resource().Attributes()
-	fillAttributeMap(&attrs, mp)
+	rs := resourceSpans.AppendEmpty()
+	fillAttributeMap(rs.Resource().Attributes(), mp)
+	rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	return traces
 }

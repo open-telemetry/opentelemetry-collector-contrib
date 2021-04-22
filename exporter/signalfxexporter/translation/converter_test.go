@@ -117,9 +117,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		summaryDP.SetSum(summarySumVal)
 		summaryDP.SetCount(summaryCountVal)
 		qvs := summaryDP.QuantileValues()
-		qvs.Resize(4)
-		for i := 0; i < qvs.Len(); i++ {
-			qv := qvs.At(i)
+		for i := 0; i < 4; i++ {
+			qv := qvs.AppendEmpty()
 			qv.SetQuantile(0.25 * float64(i+1))
 			qv.SetValue(float64(i))
 		}
@@ -145,22 +144,21 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			metricsDataFn: func() pdata.ResourceMetrics {
 				out := pdata.NewResourceMetrics()
 				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
-				ilm.Metrics().Resize(8)
 
 				{
-					m := ilm.Metrics().At(0)
+					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeDoubleGauge)
 					initDoublePt(m.DoubleGauge().DataPoints().AppendEmpty())
 				}
 				{
-					m := ilm.Metrics().At(1)
+					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_int_with_dims")
 					m.SetDataType(pdata.MetricDataTypeIntGauge)
 					initInt64Pt(m.IntGauge().DataPoints().AppendEmpty())
 				}
 				{
-					m := ilm.Metrics().At(2)
+					m := ilm.Metrics().AppendEmpty()
 					m.SetName("cumulative_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeDoubleSum)
 					m.DoubleSum().SetIsMonotonic(true)
@@ -168,7 +166,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					initDoublePt(m.DoubleSum().DataPoints().AppendEmpty())
 				}
 				{
-					m := ilm.Metrics().At(3)
+					m := ilm.Metrics().AppendEmpty()
 					m.SetName("cumulative_int_with_dims")
 					m.SetDataType(pdata.MetricDataTypeIntSum)
 					m.IntSum().SetIsMonotonic(true)
@@ -176,7 +174,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					initInt64Pt(m.IntSum().DataPoints().AppendEmpty())
 				}
 				{
-					m := ilm.Metrics().At(4)
+					m := ilm.Metrics().AppendEmpty()
 					m.SetName("delta_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeDoubleSum)
 					m.DoubleSum().SetIsMonotonic(true)
@@ -184,7 +182,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					initDoublePt(m.DoubleSum().DataPoints().AppendEmpty())
 				}
 				{
-					m := ilm.Metrics().At(5)
+					m := ilm.Metrics().AppendEmpty()
 					m.SetName("delta_int_with_dims")
 					m.SetDataType(pdata.MetricDataTypeIntSum)
 					m.IntSum().SetIsMonotonic(true)
@@ -192,14 +190,14 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					initInt64Pt(m.IntSum().DataPoints().AppendEmpty())
 				}
 				{
-					m := ilm.Metrics().At(6)
+					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_sum_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeDoubleSum)
 					m.DoubleSum().SetIsMonotonic(false)
 					initDoublePt(m.DoubleSum().DataPoints().AppendEmpty())
 				}
 				{
-					m := ilm.Metrics().At(7)
+					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_sum_int_with_dims")
 					m.SetDataType(pdata.MetricDataTypeIntSum)
 					m.IntSum().SetIsMonotonic(false)
@@ -224,29 +222,28 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			metricsDataFn: func() pdata.ResourceMetrics {
 				out := pdata.NewResourceMetrics()
 				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
-				ilm.Metrics().Resize(4)
 
 				{
-					m := ilm.Metrics().At(0)
+					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeDoubleGauge)
 					initDoublePtWithLabels(m.DoubleGauge().DataPoints().AppendEmpty())
 				}
 				{
-					m := ilm.Metrics().At(1)
+					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_int_with_dims")
 					m.SetDataType(pdata.MetricDataTypeIntGauge)
 					initInt64PtWithLabels(m.IntGauge().DataPoints().AppendEmpty())
 				}
 				{
-					m := ilm.Metrics().At(2)
+					m := ilm.Metrics().AppendEmpty()
 					m.SetName("cumulative_double_with_dims")
 					m.SetDataType(pdata.MetricDataTypeDoubleSum)
 					m.DoubleSum().SetIsMonotonic(true)
 					initDoublePtWithLabels(m.DoubleSum().DataPoints().AppendEmpty())
 				}
 				{
-					m := ilm.Metrics().At(3)
+					m := ilm.Metrics().AppendEmpty()
 					m.SetName("cumulative_int_with_dims")
 					m.SetDataType(pdata.MetricDataTypeIntSum)
 					m.IntSum().SetIsMonotonic(true)
@@ -1045,9 +1042,8 @@ func TestConvertSummary(t *testing.T) {
 	timestamp := 111 * 1e6
 	summary.SetTimestamp(pdata.Timestamp(timestamp))
 	qvs := summary.QuantileValues()
-	qvs.Resize(4)
-	for i := 0; i < qvs.Len(); i++ {
-		qv := qvs.At(i)
+	for i := 0; i < 4; i++ {
+		qv := qvs.AppendEmpty()
 		qv.SetQuantile(0.25 * float64(i+1))
 		qv.SetValue(float64(i))
 	}

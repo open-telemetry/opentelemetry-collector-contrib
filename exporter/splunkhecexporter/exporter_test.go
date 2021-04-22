@@ -192,10 +192,8 @@ func generateLargeBatch() internaldata.MetricsData {
 
 func generateLargeLogsBatch() pdata.Logs {
 	logs := pdata.NewLogs()
-	logs.ResourceLogs().Resize(1)
-	rl := logs.ResourceLogs().At(0)
-	rl.InstrumentationLibraryLogs().Resize(1)
-	ill := rl.InstrumentationLibraryLogs().At(0)
+	rl := logs.ResourceLogs().AppendEmpty()
+	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
 	ill.Logs().Resize(65000)
 	ts := pdata.Timestamp(123)
 	for i := 0; i < 65000; i++ {
