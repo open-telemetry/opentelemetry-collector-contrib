@@ -142,43 +142,37 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 
 func (cfg *Config) validateConfig() error {
 	if cfg.AccessToken == "" {
-		return errors.New("requires a non-empty \"access_token\"")
+		return errors.New(`requires a non-empty "access_token"`)
 	}
 
 	if cfg.Realm == "" && (cfg.IngestURL == "" || cfg.APIURL == "") {
-		return errors.New("requires a non-empty \"realm\", or" +
-			" \"ingest_url\" and \"api_url\" should be explicitly set")
+		return errors.New(`requires a non-empty "realm", or` +
+			` "ingest_url" and "api_url" should be explicitly set`)
 	}
 
 	if cfg.Timeout < 0 {
-		return errors.New("cannot have a negative \"timeout\"")
+		return errors.New(`cannot have a negative "timeout"`)
 	}
 
 	return nil
 }
 
-func (cfg *Config) getIngestURL() (out *url.URL, err error) {
-	if cfg.IngestURL == "" {
-		out, err = url.Parse(fmt.Sprintf("https://ingest.%s.signalfx.com", cfg.Realm))
-		if err != nil {
-			return out, err
-		}
-	} else {
+func (cfg *Config) getIngestURL() (*url.URL, error) {
+	if cfg.IngestURL != "" {
 		// Ignore realm and use the IngestURL. Typically used for debugging.
-		out, err = url.Parse(cfg.IngestURL)
-		if err != nil {
-			return out, err
-		}
+		return url.Parse(cfg.IngestURL)
 	}
 
-	return out, err
+	return url.Parse(fmt.Sprintf("https://ingest.%s.signalfx.com", cfg.Realm))
 }
 
 func (cfg *Config) getAPIURL() (*url.URL, error) {
-	if cfg.APIURL == "" {
-		return url.Parse(fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm))
+	if cfg.APIURL != "" {
+		// Ignore realm and use the APIURL. Typically used for debugging.
+		return url.Parse(cfg.APIURL)
 	}
-	return url.Parse(cfg.APIURL)
+
+	return url.Parse(fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm))
 }
 
 func (cfg *Config) Unmarshal(componentParser *config.Parser) (err error) {
