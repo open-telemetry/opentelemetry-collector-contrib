@@ -58,7 +58,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 			name: "empty_rs",
 			traceDataFn: func() pdata.Traces {
 				traces := pdata.NewTraces()
-				traces.ResourceSpans().Resize(1)
+				traces.ResourceSpans().AppendEmpty()
 				return traces
 			},
 			wantSplunkEvents:    []*splunk.Event{},
@@ -68,12 +68,11 @@ func Test_traceDataToSplunk(t *testing.T) {
 			name: "empty_ils",
 			traceDataFn: func() pdata.Traces {
 				traces := pdata.NewTraces()
-				traces.ResourceSpans().Resize(1)
-				rs := traces.ResourceSpans().At(0)
+				rs := traces.ResourceSpans().AppendEmpty()
 				rs.Resource().Attributes().InsertString("service.name", "myservice")
 				rs.Resource().Attributes().InsertString("host.name", "myhost")
 				rs.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
-				rs.InstrumentationLibrarySpans().Resize(1)
+				rs.InstrumentationLibrarySpans().AppendEmpty()
 				return traces
 			},
 			wantSplunkEvents:    []*splunk.Event{},
@@ -101,8 +100,7 @@ func initSpan(name string, ts *pdata.Timestamp, span pdata.Span) {
 	if ts != nil {
 		span.SetStartTimestamp(*ts)
 	}
-	span.Links().Resize(1)
-	spanLink := span.Links().At(0)
+	spanLink := span.Links().AppendEmpty()
 	spanLink.SetTraceState("OK")
 	bytes, _ := hex.DecodeString("12345678")
 	var traceID [16]byte
@@ -119,8 +117,7 @@ func initSpan(name string, ts *pdata.Timestamp, span pdata.Span) {
 	foobarContents.ArrayVal().AppendEmpty().SetStringVal("b")
 	spanLink.Attributes().Insert("foobar", foobarContents)
 
-	span.Events().Resize(1)
-	spanEvent := span.Events().At(0)
+	spanEvent := span.Events().AppendEmpty()
 	spanEvent.Attributes().InsertString("foo", "bar")
 	spanEvent.SetName("myEvent")
 	if ts != nil {

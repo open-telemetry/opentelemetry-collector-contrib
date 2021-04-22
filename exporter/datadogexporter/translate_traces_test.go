@@ -45,14 +45,10 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 
 	rs := pdata.NewResourceSpans()
 	ilss := rs.InstrumentationLibrarySpans()
-	ilss.Resize(1)
-	il := ilss.At(0).InstrumentationLibrary()
-	il.SetName("test_il_name")
-	il.SetVersion("test_il_version")
-	spans := ilss.At(0).Spans()
-	spans.Resize(1)
-
-	span := spans.At(0)
+	ils := ilss.AppendEmpty()
+	ils.InstrumentationLibrary().SetName("test_il_name")
+	ils.InstrumentationLibrary().SetVersion("test_il_version")
+	span := ils.Spans().AppendEmpty()
 
 	traceID := pdata.NewTraceID(mockTraceID)
 	spanID := pdata.NewSpanID(mockSpanID)
@@ -126,7 +122,7 @@ func newSublayerCalculator() *sublayerCalculator {
 
 func TestConvertToDatadogTd(t *testing.T) {
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
+	traces.ResourceSpans().AppendEmpty()
 	calculator := newSublayerCalculator()
 
 	outputTraces, runningMetrics := convertToDatadogTd(traces, calculator, &config.Config{})
@@ -182,20 +178,17 @@ func TestObfuscation(t *testing.T) {
 	calculator := newSublayerCalculator()
 
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
+	rs := traces.ResourceSpans().AppendEmpty()
 	resource := rs.Resource()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"service.name": pdata.NewAttributeValueString("sure"),
 	})
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ilss := rs.InstrumentationLibrarySpans().At(0)
+	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
 	instrumentationLibrary := ilss.InstrumentationLibrary()
 	instrumentationLibrary.SetName("flash")
 	instrumentationLibrary.SetVersion("v1")
 
-	ilss.Spans().Resize(1)
-	span := ilss.Spans().At(0)
+	span := ilss.Spans().AppendEmpty()
 
 	// Make this a FaaS span, which will trigger an error, because conversion
 	// of them is currently not supported.

@@ -42,14 +42,9 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 
 	buildDefaultMetricsData := func(typ pdata.MetricDataType, val interface{}) pdata.Metrics {
 		out := pdata.NewMetrics()
-		out.ResourceMetrics().Resize(1)
-		rm := out.ResourceMetrics().At(0)
-		rm.InstrumentationLibraryMetrics().Resize(1)
-		ilm := rm.InstrumentationLibraryMetrics().At(0)
-		ms := ilm.Metrics()
-
-		ms.Resize(1)
-		m := ms.At(0)
+		rm := out.ResourceMetrics().AppendEmpty()
+		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+		m := ilm.Metrics().AppendEmpty()
 
 		m.SetDataType(typ)
 		m.SetName("single")
@@ -73,14 +68,12 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 
 		switch typ {
 		case pdata.MetricDataTypeIntGauge, pdata.MetricDataTypeIntSum:
-			dps.(pdata.IntDataPointSlice).Resize(1)
-			dp := dps.(pdata.IntDataPointSlice).At(0)
+			dp := dps.(pdata.IntDataPointSlice).AppendEmpty()
 			labels = dp.LabelsMap()
 			dp.SetTimestamp(pdata.TimestampFromTime(now.Truncate(time.Millisecond)))
 			dp.SetValue(int64(val.(int)))
 		case pdata.MetricDataTypeDoubleGauge, pdata.MetricDataTypeDoubleSum:
-			dps.(pdata.DoubleDataPointSlice).Resize(1)
-			dp := dps.(pdata.DoubleDataPointSlice).At(0)
+			dp := dps.(pdata.DoubleDataPointSlice).AppendEmpty()
 			labels = dp.LabelsMap()
 			dp.SetTimestamp(pdata.TimestampFromTime(now.Truncate(time.Millisecond)))
 			dp.SetValue(val.(float64))

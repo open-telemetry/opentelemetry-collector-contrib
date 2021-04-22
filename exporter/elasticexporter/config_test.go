@@ -107,11 +107,7 @@ func testAuth(t *testing.T, apiKey, secretToken, expectedAuthorization string) {
 	assert.NotNil(t, te, "failed to create trace exporter")
 
 	traces := pdata.NewTraces()
-	resourceSpans := traces.ResourceSpans()
-	resourceSpans.Resize(1)
-	resourceSpans.At(0).InstrumentationLibrarySpans().Resize(1)
-	resourceSpans.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	span := resourceSpans.At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span := traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foobar")
 	assert.NoError(t, te.ConsumeTraces(context.Background(), traces))
 }

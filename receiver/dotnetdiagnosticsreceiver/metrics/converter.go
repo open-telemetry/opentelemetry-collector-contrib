@@ -25,12 +25,10 @@ import (
 func rawMetricsToPdata(rawMetrics []dotnet.Metric, startTime, now time.Time) pdata.Metrics {
 	pdm := pdata.NewMetrics()
 	rms := pdm.ResourceMetrics()
-	rms.Resize(1)
-	rm := rms.At(0)
+	rm := rms.AppendEmpty()
 	rm.Resource().Attributes()
 	ilms := rm.InstrumentationLibraryMetrics()
-	ilms.Resize(1)
-	ilm := ilms.At(0)
+	ilm := ilms.AppendEmpty()
 	ms := ilm.Metrics()
 	ms.Resize(len(rawMetrics))
 	for i := 0; i < len(rawMetrics); i++ {
@@ -49,8 +47,7 @@ func rawMetricToPdata(dm dotnet.Metric, pdm pdata.Metric, startTime, now time.Ti
 	case "Mean":
 		pdm.SetDataType(pdata.MetricDataTypeDoubleGauge)
 		dps := pdm.DoubleGauge().DataPoints()
-		dps.Resize(1)
-		dp := dps.At(0)
+		dp := dps.AppendEmpty()
 		dp.SetTimestamp(nowPD)
 		dp.SetValue(dm.Mean())
 	case "Sum":
@@ -58,8 +55,7 @@ func rawMetricToPdata(dm dotnet.Metric, pdm pdata.Metric, startTime, now time.Ti
 		sum := pdm.DoubleSum()
 		sum.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 		dps := sum.DataPoints()
-		dps.Resize(1)
-		dp := dps.At(0)
+		dp := dps.AppendEmpty()
 		dp.SetStartTimestamp(pdata.TimestampFromTime(startTime))
 		dp.SetTimestamp(nowPD)
 		dp.SetValue(dm.Increment())
