@@ -39,14 +39,14 @@ exporters:
     apikey: super-secret-api-key
     timeout: 30s
 
-  # host_override is set to send data to New Relic's EU data centers.
-  traces:
-    host_override: trace-api.eu.newrelic.com
-    timeout: 20s
-  metrics:
-    host_override: metric-api.eu.newrelic.com
-  logs:
-    host_override: log-api.eu.newrelic.com
+    # host_override is set to send data to New Relic's EU data centers.
+    traces:
+      host_override: trace-api.eu.newrelic.com
+      timeout: 20s
+    metrics:
+      host_override: metric-api.eu.newrelic.com
+    logs:
+      host_override: log-api.eu.newrelic.com
 ```
 
 ## Find and use your data
