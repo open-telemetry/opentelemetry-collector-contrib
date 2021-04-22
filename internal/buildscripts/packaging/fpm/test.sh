@@ -5,12 +5,11 @@ set -euo pipefail
 SCRIPT_DIR="$( cd "$( dirname ${BASH_SOURCE[0]} )" && pwd )"
 REPO_DIR="$( cd "$SCRIPT_DIR/../../../../" && pwd )"
 PKG_PATH="${1:-}"
-CONFIG_PATH="${2:-"$REPO_DIR/examples/tracing/otel-collector-config.yml"}"
 
 . $SCRIPT_DIR/common.sh
 
 if [[ -z "$PKG_PATH" ]]; then
-    echo "usage: ${BASH_SOURCE[0]} DEB_OR_RPM_PATH [CONFIG_PATH]" >&2
+    echo "usage: ${BASH_SOURCE[0]} DEB_OR_RPM_PATH" >&2
     exit 1
 fi
 
@@ -19,10 +18,6 @@ if [[ ! -f "$PKG_PATH" ]]; then
     exit 1
 fi
 
-if [[ ! -f "$CONFIG_PATH" ]]; then
-    echo "$CONFIG_PATH not found!" >&2
-    exit 1
-fi
 
 pkg_base="$( basename "$PKG_PATH" )"
 pkg_type="${pkg_base##*.}"
@@ -40,38 +35,9 @@ trap "docker rm -fv $container_name >/dev/null 2>&1 || true" EXIT
 docker build -t $image_name -f "$SCRIPT_DIR/$pkg_type/Dockerfile.test" "$SCRIPT_DIR"
 docker rm -fv $container_name >/dev/null 2>&1 || true
 
-# test install without config, service should not be running
+# test install
 echo
 $docker_run
-install_pkg $container_name "$PKG_PATH"
-sleep 5
-echo "Checking $SERVICE_NAME service status after install without config ..."
-if $docker_exec systemctl --no-pager status $SERVICE_NAME; then
-    echo "$SERVICE_NAME service is running when it should not" >&2
-    exit 1
-fi
-echo "$SERVICE_NAME service is correctly not running"
-
-# test service start after adding config
-echo
-docker_cp $container_name "$CONFIG_PATH" /etc/otel-contrib-collector/config.yaml
-
-echo "Starting $SERVICE_NAME service ..."
-$docker_exec systemctl start $SERVICE_NAME
-
-# ensure service has started and still running after 5 seconds
-sleep 5
-echo "Checking $SERVICE_NAME service status ..."
-$docker_exec systemctl --no-pager status $SERVICE_NAME
-
-echo "Checking $PROCESS_NAME process ..."
-$docker_exec pgrep -a -u otel $PROCESS_NAME
-docker rm -fv $container_name
-
-# test install with existing config, service should auto start
-echo
-$docker_run
-docker_cp $container_name "$CONFIG_PATH" /etc/otel-contrib-collector/config.yaml
 install_pkg $container_name "$PKG_PATH"
 
 # ensure service has started and still running after 5 seconds
