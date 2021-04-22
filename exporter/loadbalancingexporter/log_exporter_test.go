@@ -310,8 +310,7 @@ func TestNoLogsInBatch(t *testing.T) {
 			"no instrumentation library logs",
 			func() pdata.Logs {
 				batch := pdata.NewLogs()
-				rl := pdata.NewResourceLogs()
-				batch.ResourceLogs().Append(rl)
+				batch.ResourceLogs().AppendEmpty()
 				return batch
 			}(),
 		},
@@ -319,10 +318,7 @@ func TestNoLogsInBatch(t *testing.T) {
 			"no logs",
 			func() pdata.Logs {
 				batch := pdata.NewLogs()
-				rl := pdata.NewResourceLogs()
-				ill := pdata.NewInstrumentationLibraryLogs()
-				rl.InstrumentationLibraryLogs().Append(ill)
-				batch.ResourceLogs().Append(rl)
+				batch.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
 				return batch
 			}(),
 		},

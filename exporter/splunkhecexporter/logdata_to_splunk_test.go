@@ -272,7 +272,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord := pdata.NewLogRecord()
 				attVal := pdata.NewAttributeValueArray()
 				attArray := attVal.ArrayVal()
-				attArray.Append(pdata.NewAttributeValueString("foo"))
+				attArray.AppendEmpty().SetStringVal("foo")
 				attVal.CopyTo(logRecord.Body())
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
@@ -339,10 +339,8 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 
 func makeLog(record pdata.LogRecord) pdata.Logs {
 	logs := pdata.NewLogs()
-	logs.ResourceLogs().Resize(1)
-	rl := logs.ResourceLogs().At(0)
-	rl.InstrumentationLibraryLogs().Resize(1)
-	ill := rl.InstrumentationLibraryLogs().At(0)
+	rl := logs.ResourceLogs().AppendEmpty()
+	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
 	ill.Logs().Append(record)
 	return logs
 }

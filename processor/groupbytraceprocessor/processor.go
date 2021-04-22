@@ -288,11 +288,10 @@ func splitByTrace(rs pdata.ResourceSpans) []*singleTraceBatch {
 				// and set our own ILS
 				rs.Resource().CopyTo(newRS.Resource())
 
-				newILS := pdata.NewInstrumentationLibrarySpans()
+				newILS := newRS.InstrumentationLibrarySpans().AppendEmpty()
 				// currently, the ILS implementation has only an InstrumentationLibrary and spans. We'll copy the library
 				// and set our own spans
 				ils.InstrumentationLibrary().CopyTo(newILS.InstrumentationLibrary())
-				newRS.InstrumentationLibrarySpans().Append(newILS)
 
 				batch := &singleTraceBatch{
 					traceID: span.TraceID(),

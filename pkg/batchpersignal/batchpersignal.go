@@ -37,20 +37,17 @@ func SplitTraces(batch pdata.Traces) []pdata.Traces {
 				// for the first traceID in the ILS, initialize the map entry
 				// and add the singleTraceBatch to the result list
 				if _, ok := batches[key]; !ok {
-					newRS := pdata.NewResourceSpans()
+					trace := pdata.NewTraces()
+					newRS := trace.ResourceSpans().AppendEmpty()
 					// currently, the ResourceSpans implementation has only a Resource and an ILS. We'll copy the Resource
 					// and set our own ILS
 					rs.Resource().CopyTo(newRS.Resource())
 
-					newILS := pdata.NewInstrumentationLibrarySpans()
+					newILS := newRS.InstrumentationLibrarySpans().AppendEmpty()
 					// currently, the ILS implementation has only an InstrumentationLibrary and spans. We'll copy the library
 					// and set our own spans
 					ils.InstrumentationLibrary().CopyTo(newILS.InstrumentationLibrary())
-					newRS.InstrumentationLibrarySpans().Append(newILS)
 					batches[key] = newRS
-
-					trace := pdata.NewTraces()
-					trace.ResourceSpans().Append(newRS)
 
 					result = append(result, trace)
 				}
@@ -85,22 +82,19 @@ func SplitLogs(batch pdata.Logs) []pdata.Logs {
 				// for the first traceID in the ILL, initialize the map entry
 				// and add the singleTraceBatch to the result list
 				if _, ok := batches[key]; !ok {
-					newRL := pdata.NewResourceLogs()
+					logs := pdata.NewLogs()
+					newRL := logs.ResourceLogs().AppendEmpty()
 					// currently, the ResourceLogs implementation has only a Resource and an ILL. We'll copy the Resource
 					// and set our own ILL
 					rs.Resource().CopyTo(newRL.Resource())
 
-					newILL := pdata.NewInstrumentationLibraryLogs()
+					newILL := newRL.InstrumentationLibraryLogs().AppendEmpty()
 					// currently, the ILL implementation has only an InstrumentationLibrary and logs. We'll copy the library
 					// and set our own logs
 					ill.InstrumentationLibrary().CopyTo(newILL.InstrumentationLibrary())
-					newRL.InstrumentationLibraryLogs().Append(newILL)
 					batches[key] = newRL
 
-					trace := pdata.NewLogs()
-					trace.ResourceLogs().Append(newRL)
-
-					result = append(result, trace)
+					result = append(result, logs)
 				}
 
 				// there is only one instrumentation library per batch
