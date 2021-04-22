@@ -68,8 +68,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intGaugeMetric.SetName("int_gauge")
 	intGauge := intGaugeMetric.IntGauge()
 	intGaugeDataPoints := intGauge.DataPoints()
-	intGaugeDataPoints.Resize(1)
-	intGaugeDataPoint := intGaugeDataPoints.At(0)
+	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
 	intGaugeDataPoint.SetValue(10)
 	intGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
@@ -78,8 +77,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intSumMetric.SetName("int_sum")
 	intSum := intSumMetric.IntSum()
 	intSumDataPoints := intSum.DataPoints()
-	intSumDataPoints.Resize(1)
-	intSumDataPoint := intSumDataPoints.At(0)
+	intSumDataPoint := intSumDataPoints.AppendEmpty()
 	intSumDataPoint.SetValue(10)
 	intSumDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
@@ -88,8 +86,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intHistogramMetric.SetName("double_histogram")
 	intHistogram := intHistogramMetric.IntHistogram()
 	intHistogramDataPoints := intHistogram.DataPoints()
-	intHistogramDataPoints.Resize(1)
-	intHistogramDataPoint := intHistogramDataPoints.At(0)
+	intHistogramDataPoint := intHistogramDataPoints.AppendEmpty()
 	intHistogramDataPoint.SetCount(2)
 	intHistogramDataPoint.SetSum(19)
 	intHistogramDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
@@ -99,8 +96,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleGaugeMetric.SetName("double_gauge")
 	doubleGauge := doubleGaugeMetric.DoubleGauge()
 	doubleGaugeDataPoints := doubleGauge.DataPoints()
-	doubleGaugeDataPoints.Resize(1)
-	doubleGaugeDataPoint := doubleGaugeDataPoints.At(0)
+	doubleGaugeDataPoint := doubleGaugeDataPoints.AppendEmpty()
 	doubleGaugeDataPoint.SetValue(10.1)
 	doubleGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
@@ -109,8 +105,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleSumMetric.SetName("double_sum")
 	doubleSum := doubleSumMetric.DoubleSum()
 	doubleSumDataPoints := doubleSum.DataPoints()
-	doubleSumDataPoints.Resize(1)
-	doubleSumDataPoint := doubleSumDataPoints.At(0)
+	doubleSumDataPoint := doubleSumDataPoints.AppendEmpty()
 	doubleSumDataPoint.SetValue(10.1)
 	doubleSumDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
@@ -119,9 +114,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleHistogramMetric.SetName("double_histogram")
 	doubleHistogram := doubleHistogramMetric.Histogram()
 	doubleHistogramDataPoints := doubleHistogram.DataPoints()
-	doubleHistogramDataPoints.Resize(1)
-
-	doubleHistogramDataPoint := doubleHistogramDataPoints.At(0)
+	doubleHistogramDataPoint := doubleHistogramDataPoints.AppendEmpty()
 	doubleHistogramDataPoint.SetCount(2)
 	doubleHistogramDataPoint.SetSum(10.1)
 	doubleHistogramDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
@@ -192,9 +185,7 @@ func Test_exporter_PushMetricsData_EmptyPayload(t *testing.T) {
 	ilm := ilms.At(0)
 
 	metrics := ilm.Metrics()
-	metrics.Resize(1)
-
-	noneMetric := metrics.At(0)
+	noneMetric := metrics.AppendEmpty()
 	noneMetric.SetName("none")
 
 	e := &exporter{
@@ -226,15 +217,12 @@ func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 	ilm := ilms.At(0)
 
 	metrics := ilm.Metrics()
-	metrics.Resize(1)
-
-	metric := metrics.At(0)
+	metric := metrics.AppendEmpty()
 	metric.SetDataType(pdata.MetricDataTypeIntGauge)
 	metric.SetName("int_gauge")
 	intGauge := metric.IntGauge()
 	intGaugeDataPoints := intGauge.DataPoints()
-	intGaugeDataPoints.Resize(1)
-	intGaugeDataPoint := intGaugeDataPoints.At(0)
+	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
 	intGaugeDataPoint.SetValue(10)
 	intGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
@@ -425,15 +413,12 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 	ilm := ilms.At(0)
 
 	metrics := ilm.Metrics()
-	metrics.Resize(1)
-
-	intGaugeMetric := metrics.At(0)
+	intGaugeMetric := metrics.AppendEmpty()
 	intGaugeMetric.SetDataType(pdata.MetricDataTypeIntGauge)
 	intGaugeMetric.SetName("int_gauge")
 	intGauge := intGaugeMetric.IntGauge()
 	intGaugeDataPoints := intGauge.DataPoints()
-	intGaugeDataPoints.Resize(1)
-	intGaugeDataPoint := intGaugeDataPoints.At(0)
+	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
 	intGaugeDataPoint.SetValue(10)
 	intGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
