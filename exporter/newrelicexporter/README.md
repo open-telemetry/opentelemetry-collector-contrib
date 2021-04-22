@@ -33,21 +33,21 @@ Relic's US data centers. For other use cases refer to
 [OpenTelemetry: Advanced configuration](https://docs.newrelic.com/docs/integrations/open-source-telemetry-integrations/opentelemetry/opentelemetry-advanced-configuration#h2-change-endpoints).
 
 **Example of overriding options by telemetry signal:**
-  ```yaml
-  exporters:
-    newrelic:
-      apikey: super-secret-api-key
-      timeout: 30s
+```yaml
+exporters:
+  newrelic:
+    apikey: super-secret-api-key
+    timeout: 30s
 
-      # host_override is set to send data to New Relic's EU data centers.
-      traces:
-        host_override: trace-api.eu.newrelic.com
-        timeout: 20s
-      metrics:
-        host_override: metric-api.eu.newrelic.com
-      logs:
-        host_override: log-api.eu.newrelic.com
-  ```
+    # host_override is set to send data to New Relic's EU data centers.
+    traces:
+      host_override: trace-api.eu.newrelic.com
+      timeout: 20s
+    metrics:
+      host_override: metric-api.eu.newrelic.com
+    logs:
+      host_override: log-api.eu.newrelic.com
+```
 
 ## Find and use your data
 
