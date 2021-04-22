@@ -51,6 +51,10 @@ exporters:
     timeout: 10s
     # Whether to skip checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
     insecure_skip_verify: false
+    # Application name is used to track telemetry information for Splunk App's using HEC by App name.
+    splunk_app_name: "OpenTelemetry-Collector Splunk Exporter"
+    # Application version is used to track telemetry information for Splunk App's using HEC by App version.
+    splunk_app_version: "v0.0.1"
 ```
 
 The full list of settings exposed for this exporter are documented [here](config.go)
