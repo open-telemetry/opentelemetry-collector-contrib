@@ -31,10 +31,9 @@ import (
 
 func LogRecordsToLogs(records []pdata.LogRecord) pdata.Logs {
 	logs := pdata.NewLogs()
-	logs.ResourceLogs().Resize(1)
-	logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
+	logsSlice := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs()
 	for _, record := range records {
-		logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().Append(record)
+		logsSlice.Append(record)
 	}
 
 	return logs

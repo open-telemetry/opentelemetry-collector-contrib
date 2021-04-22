@@ -160,12 +160,8 @@ func ToTraces(rawSeg []byte) (*pdata.Traces, error) {
 	}
 
 	traceData := pdata.NewTraces()
-	rspanSlice := traceData.ResourceSpans()
-	rspanSlice.Resize(1)      // initialize a new empty pdata.ResourceSpans
-	rspan := rspanSlice.At(0) // retrieve the empty pdata.ResourceSpans we just created
-
-	rspan.InstrumentationLibrarySpans().Resize(1)
-	ils := rspan.InstrumentationLibrarySpans().At(0)
+	rspan := traceData.ResourceSpans().AppendEmpty()
+	ils := rspan.InstrumentationLibrarySpans().AppendEmpty()
 	ils.Spans().Resize(len(records))
 
 	return &traceData, nil

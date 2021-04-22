@@ -737,8 +737,7 @@ func constructTimedEventsWithReceivedMessageEvent(tm pdata.Timestamp) pdata.Span
 	event.SetDroppedAttributesCount(0)
 
 	events := pdata.NewSpanEventSlice()
-	events.Resize(1)
-	event.CopyTo(events.At(0))
+	event.CopyTo(events.AppendEmpty())
 	return events
 }
 
@@ -754,8 +753,7 @@ func constructTimedEventsWithSentMessageEvent(tm pdata.Timestamp) pdata.SpanEven
 	event.SetDroppedAttributesCount(0)
 
 	events := pdata.NewSpanEventSlice()
-	events.Resize(1)
-	event.CopyTo(events.At(0))
+	event.CopyTo(events.AppendEmpty())
 	return events
 }
 

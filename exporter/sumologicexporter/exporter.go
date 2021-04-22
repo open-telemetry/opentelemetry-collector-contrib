@@ -228,11 +228,8 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 		// Move all dropped records to Logs
 		droppedLogs := pdata.NewLogs()
 		rls = droppedLogs.ResourceLogs()
-		rls.Resize(1)
-
-		ills := rls.At(0).InstrumentationLibraryLogs()
-		ills.Resize(1)
-		logs := ills.At(0).Logs()
+		ills := rls.AppendEmpty().InstrumentationLibraryLogs()
+		logs := ills.AppendEmpty().Logs()
 
 		for _, log := range droppedRecords {
 			logs.Append(log)
@@ -334,8 +331,7 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metri
 			record.attributes.CopyTo(rm.Resource().Attributes())
 
 			ilms := rm.InstrumentationLibraryMetrics()
-			ilms.Resize(1)
-			ilms.At(0).Metrics().Append(record.metric)
+			ilms.AppendEmpty().Metrics().Append(record.metric)
 		}
 
 		return consumererror.NewMetrics(consumererror.Combine(errs), droppedMetrics)

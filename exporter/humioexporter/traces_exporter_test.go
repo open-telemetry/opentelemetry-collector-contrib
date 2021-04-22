@@ -120,9 +120,7 @@ func TestPushTraceData_PermanentOnCompleteFailure(t *testing.T) {
 	// We do not export spans with missing service names, so this span should
 	// fail exporting
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	traces.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
-	traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+	traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 
 	exp := newTracesExporter(&Config{}, zap.NewNop(), &clientMock{})
 
@@ -141,12 +139,10 @@ func TestPushTraceData_TransientOnPartialFailure(t *testing.T) {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(2)
 	traces.ResourceSpans().At(0).Resource().Attributes().InsertString(conventions.AttributeServiceName, "service1")
-	traces.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(1)
-	traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+	traces.ResourceSpans().At(0).InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 
 	// ...and one without (partial failure)
-	traces.ResourceSpans().At(1).InstrumentationLibrarySpans().Resize(1)
-	traces.ResourceSpans().At(1).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+	traces.ResourceSpans().At(1).InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 
 	exp := newTracesExporter(&Config{}, zap.NewNop(), &clientMock{
 		func() error { return nil },
@@ -172,27 +168,19 @@ func TestTracesToHumioEvents_OrganizedByTags(t *testing.T) {
 
 	// Three spans for the same trace across two different resources, as
 	// well a span from a separate trace
-	res1 := pdata.NewResourceSpans()
+	res1 := traces.ResourceSpans().AppendEmpty()
 	res1.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service-A")
-	res1.InstrumentationLibrarySpans().Resize(1)
-	res1.InstrumentationLibrarySpans().At(0).Spans().Resize(2)
-	res1.InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID(createTraceID("10000000000000000000000000000000")))
-	res1.InstrumentationLibrarySpans().At(0).Spans().At(1).SetTraceID(pdata.NewTraceID(createTraceID("10000000000000000000000000000000")))
-	traces.ResourceSpans().Append(res1)
+	ils1 := res1.InstrumentationLibrarySpans().AppendEmpty()
+	ils1.Spans().AppendEmpty().SetTraceID(pdata.NewTraceID(createTraceID("10000000000000000000000000000000")))
+	ils1.Spans().AppendEmpty().SetTraceID(pdata.NewTraceID(createTraceID("10000000000000000000000000000000")))
 
-	res2 := pdata.NewResourceSpans()
+	res2 := traces.ResourceSpans().AppendEmpty()
 	res2.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service-B")
-	res2.InstrumentationLibrarySpans().Resize(1)
-	res2.InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	res2.InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID(createTraceID("10000000000000000000000000000000")))
-	traces.ResourceSpans().Append(res2)
+	res2.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(pdata.NewTraceID(createTraceID("10000000000000000000000000000000")))
 
-	res3 := pdata.NewResourceSpans()
+	res3 := traces.ResourceSpans().AppendEmpty()
 	res3.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service-C")
-	res3.InstrumentationLibrarySpans().Resize(1)
-	res3.InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	res3.InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID(createTraceID("20000000000000000000000000000000")))
-	traces.ResourceSpans().Append(res3)
+	res3.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(pdata.NewTraceID(createTraceID("20000000000000000000000000000000")))
 
 	// Organize by trace id
 	exp := newTracesExporter(&Config{

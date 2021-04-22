@@ -290,22 +290,20 @@ func convertEntries(entries []*entry.Entry) pdata.Logs {
 	}
 
 	logs := out.ResourceLogs()
-	logs.Resize(1)
-	rls := logs.At(0)
+	rls := logs.AppendEmpty()
 
 	// NOTE: This assumes that passed in entries all come from the same Resource.
 	if len(entries[0].Resource) > 0 {
 		resource := rls.Resource()
 		resourceAtts := resource.Attributes()
+		resourceAtts.EnsureCapacity(len(entries[0].Resource))
 		for k, v := range entries[0].Resource {
 			resourceAtts.InsertString(k, v)
 		}
 	}
 
-	rls.InstrumentationLibraryLogs().Resize(1)
-	ills := rls.InstrumentationLibraryLogs().At(0)
+	ills := rls.InstrumentationLibraryLogs().AppendEmpty()
 	ills.Logs().Resize(len(entries))
-
 	for i := 0; i < len(entries); i++ {
 		ent := entries[i]
 		convertInto(ent, ills.Logs().At(i))

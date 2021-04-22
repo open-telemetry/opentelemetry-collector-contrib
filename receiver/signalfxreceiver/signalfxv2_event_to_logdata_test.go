@@ -50,10 +50,7 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 
 	buildDefaultLogs := func() pdata.LogSlice {
 		logSlice := pdata.NewLogSlice()
-
-		logSlice.Resize(1)
-		l := logSlice.At(0)
-
+		l := logSlice.AppendEmpty()
 		l.SetName("shutdown")
 		l.SetTimestamp(pdata.TimestampFromTime(now.Truncate(time.Millisecond)))
 		attrs := l.Attributes()

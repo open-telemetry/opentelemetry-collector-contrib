@@ -55,15 +55,14 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	ilm := ilms.At(0)
 
 	metrics := ilm.Metrics()
-	metrics.Resize(8)
 
-	badNameMetric := metrics.At(0)
+	badNameMetric := metrics.AppendEmpty()
 	badNameMetric.SetName("")
 
-	noneMetric := metrics.At(1)
+	noneMetric := metrics.AppendEmpty()
 	noneMetric.SetName("none")
 
-	intGaugeMetric := metrics.At(2)
+	intGaugeMetric := metrics.AppendEmpty()
 	intGaugeMetric.SetDataType(pdata.MetricDataTypeIntGauge)
 	intGaugeMetric.SetName("int_gauge")
 	intGauge := intGaugeMetric.IntGauge()
@@ -72,7 +71,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intGaugeDataPoint.SetValue(10)
 	intGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
-	intSumMetric := metrics.At(3)
+	intSumMetric := metrics.AppendEmpty()
 	intSumMetric.SetDataType(pdata.MetricDataTypeIntSum)
 	intSumMetric.SetName("int_sum")
 	intSum := intSumMetric.IntSum()
@@ -81,7 +80,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intSumDataPoint.SetValue(10)
 	intSumDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
-	intHistogramMetric := metrics.At(4)
+	intHistogramMetric := metrics.AppendEmpty()
 	intHistogramMetric.SetDataType(pdata.MetricDataTypeIntHistogram)
 	intHistogramMetric.SetName("double_histogram")
 	intHistogram := intHistogramMetric.IntHistogram()
@@ -91,7 +90,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	intHistogramDataPoint.SetSum(19)
 	intHistogramDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
-	doubleGaugeMetric := metrics.At(5)
+	doubleGaugeMetric := metrics.AppendEmpty()
 	doubleGaugeMetric.SetDataType(pdata.MetricDataTypeDoubleGauge)
 	doubleGaugeMetric.SetName("double_gauge")
 	doubleGauge := doubleGaugeMetric.DoubleGauge()
@@ -100,7 +99,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleGaugeDataPoint.SetValue(10.1)
 	doubleGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
-	doubleSumMetric := metrics.At(6)
+	doubleSumMetric := metrics.AppendEmpty()
 	doubleSumMetric.SetDataType(pdata.MetricDataTypeDoubleSum)
 	doubleSumMetric.SetName("double_sum")
 	doubleSum := doubleSumMetric.DoubleSum()
@@ -109,7 +108,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleSumDataPoint.SetValue(10.1)
 	doubleSumDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
-	doubleHistogramMetric := metrics.At(7)
+	doubleHistogramMetric := metrics.AppendEmpty()
 	doubleHistogramMetric.SetDataType(pdata.MetricDataTypeHistogram)
 	doubleHistogramMetric.SetName("double_histogram")
 	doubleHistogram := doubleHistogramMetric.Histogram()

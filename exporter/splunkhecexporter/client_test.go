@@ -609,8 +609,7 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 			},
 			logs: func() pdata.Logs {
 				logs := pdata.NewLogs()
-				logs.ResourceLogs().Resize(1)
-				logs.ResourceLogs().At(0).InstrumentationLibraryLogs()
+				logs.ResourceLogs().AppendEmpty()
 				return logs
 			}(),
 			requires: func(t *testing.T, logs pdata.Logs) {
@@ -624,8 +623,7 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 			},
 			logs: func() pdata.Logs {
 				logs := pdata.NewLogs()
-				logs.ResourceLogs().Resize(1)
-				logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
+				logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
 				return logs
 			}(),
 			requires: func(t *testing.T, logs pdata.Logs) {
