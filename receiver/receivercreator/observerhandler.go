@@ -133,7 +133,7 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 			)
 
 			if err != nil {
-				obs.logger.Error("failed to start receiver", zap.String("receiver", template.id.String()))
+				obs.logger.Error("failed to start receiver", zap.String("receiver", template.id.String()), zap.Error(err))
 				continue
 			}
 
@@ -152,7 +152,7 @@ func (obs *observerHandler) OnRemove(removed []observer.Endpoint) {
 			obs.logger.Info("stopping receiver", zap.Reflect("receiver", rcvr), zap.String("endpoint_id", string(e.ID)))
 
 			if err := obs.runner.shutdown(rcvr); err != nil {
-				obs.logger.Error("failed to stop receiver", zap.Reflect("receiver", rcvr))
+				obs.logger.Error("failed to stop receiver", zap.Reflect("receiver", rcvr), zap.Error(err))
 				continue
 			}
 		}
