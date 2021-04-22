@@ -132,13 +132,22 @@ exclude_metrics:
   - system.disk.merged
   - system.disk.io
   - system.disk.time
+  - system.disk.io_time
+  - system.disk.operation_time
   - system.disk.pending_operations
+  - system.disk.weighted_io_time
 
 # Network-IO metrics.
 - metric_names:
   - system.network.packets
   - system.network.dropped
   - system.network.tcp_connections
+  - system.network.connections
+
+# Processes metrics
+- metric_names:
+  - system.processes.count
+  - system.processes.created
 
 # Virtual memory metrics.
 - metric_names:
