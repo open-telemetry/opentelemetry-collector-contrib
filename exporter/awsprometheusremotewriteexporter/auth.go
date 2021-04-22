@@ -18,9 +18,13 @@ package awsprometheusremotewriteexporter
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -53,6 +57,13 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	}
 
 	body := bytes.NewReader(content)
+
+	FormatHeaderValues(req, aws.SDKName, aws.SDKVersion, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+
+	v := os.Getenv("AWS_EXECUTION_ENV")
+	if len(v) != 0 {
+		AddToUserAgent(req, "exec_env/"+v)
+	}
 
 	// Clone request to ensure thread safety
 	req2 := cloneRequest(req)
@@ -134,4 +145,26 @@ func cloneRequest(r *http.Request) *http.Request {
 		r2.Header[k] = append([]string(nil), s...)
 	}
 	return r2
+}
+
+// FormatHeaderValues will add the name/version pair to the User-Agent request
+// header. If the extra parameters are provided they will be added as metadata to the
+// name/version pair resulting in the following format.
+// "name/version (extra0; extra1; ...)"
+// The user agent part will be concatenated with this current request's user agent string.
+func FormatHeaderValues(req *http.Request, name, version string, extra ...string) {
+	ua := fmt.Sprintf("%s/%s", name, version)
+	if len(extra) > 0 {
+		ua += fmt.Sprintf(" (%s)", strings.Join(extra, "; "))
+	}
+	AddToUserAgent(req, ua)
+}
+
+// AddToUserAgent adds the string to the end of the request's current user agent.
+func AddToUserAgent(req *http.Request, s string) {
+	curUA := req.Header.Get("User-Agent")
+	if len(curUA) > 0 {
+		s = curUA + " " + s
+	}
+	req.Header.Set("User-Agent", s)
 }
