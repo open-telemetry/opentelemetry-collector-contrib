@@ -84,7 +84,8 @@ func TestTraceDataIterationNoShortCircuit(t *testing.T) {
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
-	ilss.Spans().Resize(2)
+	ilss.Spans().AppendEmpty()
+	ilss.Spans().AppendEmpty()
 
 	visitor := getMockVisitor(true)
 
@@ -98,7 +99,8 @@ func TestTraceDataIterationShortCircuit(t *testing.T) {
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
-	ilss.Spans().Resize(2)
+	ilss.Spans().AppendEmpty()
+	ilss.Spans().AppendEmpty()
 
 	visitor := getMockVisitor(false)
 

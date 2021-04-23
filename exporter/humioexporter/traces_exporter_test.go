@@ -287,16 +287,14 @@ func TestSpanToHumioEventNoInstrumentation(t *testing.T) {
 func TestToHumioLinks(t *testing.T) {
 	// Arrange
 	slice := pdata.NewSpanLinkSlice()
-	link1 := pdata.NewSpanLink()
+	link1 := slice.AppendEmpty()
 	link1.SetTraceID(pdata.NewTraceID(createTraceID("11")))
 	link1.SetSpanID(pdata.NewSpanID(createSpanID("22")))
 	link1.SetTraceState("state1")
-	slice.Append(link1)
 
-	link2 := pdata.NewSpanLink()
+	link2 := slice.AppendEmpty()
 	link2.SetTraceID(pdata.NewTraceID(createTraceID("33")))
 	link2.SetSpanID(pdata.NewSpanID(createSpanID("44")))
-	slice.Append(link2)
 
 	expected := []*HumioLink{
 		{
@@ -358,9 +356,9 @@ func TestToHumioAttributes(t *testing.T) {
 			attr: func() pdata.AttributeMap {
 				attrMap := pdata.NewAttributeMap()
 				arr := pdata.NewAttributeValueArray()
-				arr.ArrayVal().Append(pdata.NewAttributeValueString("a"))
-				arr.ArrayVal().Append(pdata.NewAttributeValueString("b"))
-				arr.ArrayVal().Append(pdata.NewAttributeValueInt(4))
+				arr.ArrayVal().AppendEmpty().SetStringVal("a")
+				arr.ArrayVal().AppendEmpty().SetStringVal("b")
+				arr.ArrayVal().AppendEmpty().SetIntVal(4)
 				attrMap.Insert("array", arr)
 				return attrMap
 			},

@@ -30,10 +30,10 @@ import (
 
 func createSimpleLogData(numberOfLogs int) pdata.Logs {
 	logs := pdata.NewLogs()
-	logs.ResourceLogs().Resize(2)
-	rl := logs.ResourceLogs().At(0)
-	rl.InstrumentationLibraryLogs().Resize(2)
-	ill := rl.InstrumentationLibraryLogs().At(0)
+	logs.ResourceLogs().AppendEmpty() // Add an empty ResourceLogs
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.InstrumentationLibraryLogs().AppendEmpty() // Add an empty InstrumentationLibraryLogs
+	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
 
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())

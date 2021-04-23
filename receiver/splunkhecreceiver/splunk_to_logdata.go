@@ -35,15 +35,14 @@ func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 	rl := ld.ResourceLogs().AppendEmpty()
 	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
 	for _, event := range events {
-		logRecord := pdata.NewLogRecord()
-
-		// The SourceType field is the most logical "name" of the event.
-		logRecord.SetName(event.SourceType)
 		attrValue, err := convertInterfaceToAttributeValue(logger, event.Event)
 		if err != nil {
 			logger.Debug("Unsupported value conversion", zap.Any("value", event.Event))
 			return ld, errors.New(cannotConvertValue)
 		}
+		logRecord := ill.Logs().AppendEmpty()
+		// The SourceType field is the most logical "name" of the event.
+		logRecord.SetName(event.SourceType)
 		attrValue.CopyTo(logRecord.Body())
 
 		// Splunk timestamps are in seconds so convert to nanos by multiplying
@@ -78,9 +77,6 @@ func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 			}
 			logRecord.Attributes().Insert(key, attrValue)
 		}
-
-		ill.Logs().Append(logRecord)
-
 	}
 
 	return ld, nil
