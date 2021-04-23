@@ -49,7 +49,7 @@ type batchBuilder func() ([]telemetry.Batch, error)
 
 func clientOptionForAPIKey(apiKey string) telemetry.ClientOption {
 	if apiKey != "" {
-		if strings.HasPrefix(apiKey, "NRII-") {
+		if len(apiKey) < 40 {
 			return telemetry.WithInsertKey(apiKey)
 		}
 		return telemetry.WithLicenseKey(apiKey)
