@@ -17,8 +17,10 @@ package awsprometheusremotewriteexporter
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -68,10 +70,14 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	return resp, err
 }
 
-func newSigningRoundTripper(auth AuthConfig, next http.RoundTripper) (http.RoundTripper, error) {
+func newSigningRoundTripper(cfg *Config, next http.RoundTripper) (http.RoundTripper, error) {
+	auth := cfg.AuthConfig
 	if auth.Region == "" {
-		// TODO(jbd): Automatically parse the region from the workspace.
-		return next, nil
+		region, err := parseEndpointRegion(cfg.Config.HTTPClientSettings.Endpoint)
+		if err != nil {
+			return next, err
+		}
+		auth.Region = region
 	}
 	if auth.Service == "" {
 		auth.Service = defaultAMPSigV4Service
@@ -98,6 +104,17 @@ func getCredsFromConfig(auth AuthConfig) *credentials.Credentials {
 		creds = sess.Config.Credentials
 	}
 	return creds
+}
+
+var regionRe = regexp.MustCompile(`aps-workspaces\.(.*)\.amazonaws\.com`)
+
+func parseEndpointRegion(endpoint string) (region string, err error) {
+	// Example: https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write
+	results := regionRe.FindAllStringSubmatch(endpoint, 1)
+	if len(results) < 1 || len(results[0]) < 2 {
+		return "", fmt.Errorf("invalid Amazon Managed Service for Prometheus endpoint: %q", endpoint)
+	}
+	return results[0][1], nil
 }
 
 func newSigningRoundTripperWithCredentials(auth AuthConfig, creds *credentials.Credentials, next http.RoundTripper) (http.RoundTripper, error) {

@@ -288,6 +288,44 @@ func TestCloneRequest(t *testing.T) {
 	}
 }
 
+func TestParseEndpointRegion(t *testing.T) {
+	tests := []struct {
+		name       string
+		endpoint   string
+		wantRegion string
+		wantErr    bool
+	}{
+		{
+			name:     "empty",
+			endpoint: "",
+			wantErr:  true,
+		},
+		{
+			name:     "invalid",
+			endpoint: "https://aps-workspaces.us-east-1",
+			wantErr:  true,
+		},
+		{
+			name:       "valid",
+			endpoint:   "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write",
+			wantRegion: "us-east-1",
+			wantErr:    false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotRegion, err := parseEndpointRegion(tt.endpoint)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseEndpointRegion() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotRegion != tt.wantRegion {
+				t.Errorf("parseEndpointRegion() = %v, want %v", gotRegion, tt.wantRegion)
+			}
+		})
+	}
+}
+
 func fetchMockCredentials() *credentials.Credentials {
 	return credentials.NewStaticCredentials(
 		"MOCK_AWS_ACCESS_KEY",
