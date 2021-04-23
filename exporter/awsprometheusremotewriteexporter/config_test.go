@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package awsprometheusremotewriteexporter provides a Prometheus Remote Write Exporter with AWS Sigv4 authentication
 package awsprometheusremotewriteexporter
 
 import (
@@ -31,7 +30,7 @@ import (
 	prw "go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter"
 )
 
-// TestLoadConfig checks whether yaml configuration can be loaded correctly
+// TestLoadConfig checks whether yaml configuration can be loaded correctly.
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)

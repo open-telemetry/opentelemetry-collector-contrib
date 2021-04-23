@@ -61,6 +61,7 @@ exporters:
     endpoint: "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write"
     aws_auth:
         region: "us-east-1" # need to match workspace region
+        service: "aps"
         role_arn: "arn:aws:iam::123456789012:role/aws-service-role/access"
     ca_file: "/var/lib/mycert.pem"
     write_buffer_size: 524288
