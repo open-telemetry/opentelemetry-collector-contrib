@@ -32,7 +32,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.24.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.0.0-00010101000000-000000000000
@@ -73,9 +72,26 @@ require (
 	golang.org/x/sys v0.0.0-20210403161142-5e06dd20ab57
 )
 
-replace go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector v0.24.0-sumo
+replace go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector v0.25.0-sumo-1
 
 replace github.com/influxdata/telegraf => github.com/sumologic/telegraf v1.17.3-sumo
+
+// For some reason building unstable version of otelcontribcol on Linux fails
+// with the following error:
+// # github.com/docker/libnetwork/ipvs
+// /go/pkg/mod/github.com/docker/libnetwork@v0.8.0-dev.2.0.20181012153825-d7b61745d166/ipvs/ipvs.go:100:32: cannot use &tv (type *syscall.Timeval) as type *unix.Timeval in argument to sock.SetSendTimeout
+// /go/pkg/mod/github.com/docker/libnetwork@v0.8.0-dev.2.0.20181012153825-d7b61745d166/ipvs/ipvs.go:104:35: cannot use &tv (type *syscall.Timeval) as type *unix.Timeval in argument to sock.SetReceiveTimeout
+// /go/pkg/mod/github.com/docker/libnetwork@v0.8.0-dev.2.0.20181012153825-d7b61745d166/ipvs/netlink.go:219:13: assignment mismatch: 2 variables but s.Receive returns 3 values
+//
+// Related issue: https://github.com/moby/libnetwork/issues/2110
+//
+// It seems there was a breaking change introduced in github.com/vishvananda/netlink
+// which github.com/vishvananda/netlink depends on:
+// https://github.com/vishvananda/netlink/commit/0e3b74dbe28f37fd911f9bca3565fdca33c03f29
+//
+// This is this commit's parent which we need to make the compilation pass:
+// https://github.com/vishvananda/netlink/commit/b7fbf1f5291ecf8ae5179d3202e914cb98cfe400
+replace github.com/vishvananda/netlink => github.com/vishvananda/netlink v0.0.0-20171026164018-b7fbf1f5291e
 
 // Replace references to modules that are in this repository with their relateive paths
 // so that we always build with current (latest) version of the source code.

@@ -21,4 +21,4 @@ require (
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )
 
-replace go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector v0.24.0-sumo
+replace go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector v0.25.0-sumo-1

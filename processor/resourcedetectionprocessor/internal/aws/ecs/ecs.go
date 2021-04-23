@@ -68,7 +68,6 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attr.InsertString(conventions.AttributeCloudInfrastructureService, conventions.AttributeCloudPlatformAWSECS)
 	attr.InsertString("cloud.namespace", "ecs")
-	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
 	attr.InsertString(conventions.AttributeAWSECSTaskARN, tmdeResp.TaskARN)
 	attr.InsertString(conventions.AttributeAWSECSTaskFamily, tmdeResp.Family)
 	attr.InsertString(conventions.AttributeAWSECSTaskRevision, tmdeResp.Revision)

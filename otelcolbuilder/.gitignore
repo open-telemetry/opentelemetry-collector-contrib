@@ -1,1 +1,2 @@
 cmd/
+!cmd/main_test.go

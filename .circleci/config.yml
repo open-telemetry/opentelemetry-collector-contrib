@@ -264,7 +264,7 @@ workflows:
             - cross-compile
           filters:
             branches:
-              only: /main|release|tracing\/.+/
+              only: /main|release.+|tracing.+/
             tags:
               ignore: /.*/
       - integration-tests:
@@ -403,7 +403,7 @@ jobs:
 
   publish-check:
     docker:
-      - image: cimg/go:1.14
+      - image: cimg/go:1.15
     steps:
       - attach_to_workspace
       - setup_remote_docker

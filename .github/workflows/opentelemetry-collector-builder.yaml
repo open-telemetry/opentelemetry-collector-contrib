@@ -22,7 +22,7 @@ jobs:
   #     - name: Build OpenTelemetry distro
   #       working-directory: ./otelcolbuilder/
   #       run: |
-  #         go install github.com/open-telemetry/opentelemetry-collector-builder@v0.24.0
+  #         go install github.com/open-telemetry/opentelemetry-collector-builder@v0.25.0
   #         make build
 
   # Just build on 1.15 for now because of a weird issue:
