@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package awsprometheusremotewriteexporter provides a Prometheus Remote Write Exporter with AWS Sigv4 authentication
 package awsprometheusremotewriteexporter
 
 import (
@@ -55,7 +54,7 @@ func TestRequestSignature(t *testing.T) {
 		WriteBufferSize: 0,
 		Timeout:         0,
 		CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
-			return createSigningRoundTripperWithCredentials(authConfig, awsCreds, next)
+			return newSigningRoundTripperWithCredentials(authConfig, awsCreds, next)
 		},
 	}
 	client, _ := setting.ToClient()
@@ -100,7 +99,7 @@ func TestLeakingBody(t *testing.T) {
 		WriteBufferSize: 0,
 		Timeout:         0,
 		CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
-			return createSigningRoundTripperWithCredentials(authConfig, awsCreds, next)
+			return newSigningRoundTripperWithCredentials(authConfig, awsCreds, next)
 		},
 	}
 	client, _ := setting.ToClient()
@@ -184,7 +183,7 @@ func TestRoundTrip(t *testing.T) {
 			defer server.Close()
 			serverURL, _ := url.Parse(server.URL)
 			authConfig := AuthConfig{Region: "region", Service: "service"}
-			rt, err := createSigningRoundTripperWithCredentials(authConfig, awsCreds, tt.rt)
+			rt, err := newSigningRoundTripperWithCredentials(authConfig, awsCreds, tt.rt)
 			assert.NoError(t, err)
 			req, err := http.NewRequest("POST", serverURL.String(), strings.NewReader(""))
 			assert.NoError(t, err)
@@ -201,7 +200,6 @@ func TestRoundTrip(t *testing.T) {
 }
 
 func TestCreateSigningRoundTripperWithCredentials(t *testing.T) {
-
 	defaultRoundTripper := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
 
 	// Some form of AWS credentials must be set up for tests to succeed
@@ -240,10 +238,9 @@ func TestCreateSigningRoundTripperWithCredentials(t *testing.T) {
 			true,
 		},
 	}
-	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rtp, err := createSigningRoundTripperWithCredentials(tt.authConfig, tt.creds, tt.roundTripper)
+			rtp, err := newSigningRoundTripperWithCredentials(tt.authConfig, tt.creds, tt.roundTripper)
 			if tt.returnError {
 				assert.Error(t, err)
 				return
@@ -253,8 +250,6 @@ func TestCreateSigningRoundTripperWithCredentials(t *testing.T) {
 				sRtp := rtp.(*signingRoundTripper)
 				assert.Equal(t, sRtp.transport, tt.roundTripper)
 				assert.Equal(t, tt.authConfig.Service, sRtp.service)
-			} else {
-				assert.Equal(t, rtp, tt.roundTripper)
 			}
 		})
 	}
@@ -294,7 +289,9 @@ func TestCloneRequest(t *testing.T) {
 }
 
 func fetchMockCredentials() *credentials.Credentials {
-	return credentials.NewStaticCredentials("MOCK_AWS_ACCESS_KEY",
+	return credentials.NewStaticCredentials(
+		"MOCK_AWS_ACCESS_KEY",
 		"MOCK_AWS_SECRET_ACCESS_KEY",
-		"MOCK_TOKEN")
+		"MOCK_TOKEN",
+	)
 }
