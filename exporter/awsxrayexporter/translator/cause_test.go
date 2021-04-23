@@ -28,7 +28,10 @@ func TestCauseWithExceptions(t *testing.T) {
 	errorMsg := "this is a test"
 	attributeMap := make(map[string]interface{})
 
-	event1 := pdata.NewSpanEvent()
+	span := constructExceptionServerSpan(attributeMap, pdata.StatusCodeError)
+	span.Status().SetMessage(errorMsg)
+
+	event1 := span.Events().AppendEmpty()
 	event1.SetName(semconventions.AttributeExceptionEventName)
 	attributes := pdata.NewAttributeMap()
 	attributes.InsertString(semconventions.AttributeExceptionType, "java.lang.IllegalStateException")
@@ -40,16 +43,12 @@ func TestCauseWithExceptions(t *testing.T) {
 Caused by: java.lang.IllegalArgumentException: bad argument`)
 	attributes.CopyTo(event1.Attributes())
 
-	event2 := pdata.NewSpanEvent()
+	event2 := span.Events().AppendEmpty()
 	event2.SetName(semconventions.AttributeExceptionEventName)
 	attributes = pdata.NewAttributeMap()
 	attributes.InsertString(semconventions.AttributeExceptionType, "EmptyError")
 	attributes.CopyTo(event2.Attributes())
 
-	span := constructExceptionServerSpan(attributeMap, pdata.StatusCodeError)
-	span.Status().SetMessage(errorMsg)
-	span.Events().Append(event1)
-	span.Events().Append(event2)
 	filtered, _ := makeHTTP(span)
 
 	res := pdata.NewResource()

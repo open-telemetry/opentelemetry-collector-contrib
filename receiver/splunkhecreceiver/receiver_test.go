@@ -410,12 +410,9 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	t.Log("Event Reception Started")
 
 	logs := pdata.NewLogs()
-	logs.ResourceLogs().Resize(1)
-	rl := logs.ResourceLogs().At(0)
-	rl.InstrumentationLibraryLogs().Resize(1)
-	ill := rl.InstrumentationLibraryLogs().At(0)
-	ill.Logs().Resize(1)
-	lr := ill.Logs().At(0)
+	rl := logs.ResourceLogs().AppendEmpty()
+	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
+	lr := ill.Logs().AppendEmpty()
 
 	now := time.Now()
 	msecInt64 := now.UnixNano() / 1e6

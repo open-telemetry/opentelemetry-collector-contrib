@@ -95,19 +95,18 @@ func (p *StatsDParser) Initialize(enableMetricType bool, sendTimerHistogram []Ti
 // get the metrics preparing for flushing and reset the state
 func (p *StatsDParser) GetMetrics() pdata.Metrics {
 	metrics := pdata.NewMetrics()
-	metrics.ResourceMetrics().Resize(1)
-	metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Resize(0)
+	rm := metrics.ResourceMetrics().AppendEmpty()
 
 	for _, metric := range p.gauges {
-		metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Append(metric)
+		rm.InstrumentationLibraryMetrics().Append(metric)
 	}
 
 	for _, metric := range p.counters {
-		metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Append(metric)
+		rm.InstrumentationLibraryMetrics().Append(metric)
 	}
 
 	for _, metric := range p.timersAndDistributions {
-		metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Append(metric)
+		rm.InstrumentationLibraryMetrics().Append(metric)
 	}
 
 	p.gauges = make(map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics)

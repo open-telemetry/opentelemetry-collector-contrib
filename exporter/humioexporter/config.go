@@ -33,12 +33,18 @@ const (
 
 // LogsConfig represents the Humio configuration settings specific to logs
 type LogsConfig struct {
+	//Ingest token for identifying and authorizing with a Humio repository
+	IngestToken string `mapstructure:"ingest_token"`
+
 	// The name of a custom log parser to use, if no parser is associated with the ingest token
 	LogParser string `mapstructure:"log_parser"`
 }
 
 // TracesConfig represents the Humio configuration settings specific to traces
 type TracesConfig struct {
+	//Ingest token for identifying and authorizing with a Humio repository
+	IngestToken string `mapstructure:"ingest_token"`
+
 	// Whether to use Unix timestamps, or to fall back to ISO 8601 formatted strings
 	UnixTimestamps bool `mapstructure:"unix_timestamps"`
 }
@@ -51,9 +57,6 @@ type Config struct {
 	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
 
-	//Ingest token for identifying and authorizing with a Humio repository
-	IngestToken string `mapstructure:"ingest_token"`
-
 	// Endpoint for the unstructured ingest API, created internally
 	unstructuredEndpoint *url.URL
 
@@ -63,11 +66,8 @@ type Config struct {
 	// Whether gzip compression should be disabled when sending data to Humio
 	DisableCompression bool `mapstructure:"disable_compression"`
 
-	// Key-value pairs used to target specific data sources for storage inside Humio
-	Tags map[string]string `mapstructure:"tags,omitempty"`
-
-	// Whether this exporter should automatically add the service name as a tag
-	DisableServiceTag bool `mapstructure:"disable_service_tag"`
+	// Name of tagging strategy used to target specific data sources for storage inside Humio
+	Tag Tagger `mapstructure:"tag"`
 
 	// Configuration options specific to logs
 	Logs LogsConfig `mapstructure:"logs"`
@@ -78,16 +78,12 @@ type Config struct {
 
 // Validate ensures that a valid configuration has been provided, such that we can fail early
 func (c *Config) Validate() error {
-	if c.IngestToken == "" {
-		return errors.New("requires an ingest_token")
-	}
-
 	if c.Endpoint == "" {
 		return errors.New("requires an endpoint")
 	}
 
-	if c.DisableServiceTag && len(c.Tags) == 0 {
-		return errors.New("requires at least one custom tag when disabling service tag")
+	if c.Tag != TagNone && c.Tag != TagTraceID && c.Tag != TagServiceName {
+		return fmt.Errorf("tagging strategy must be one of %s, %s, or %s", TagNone, TagTraceID, TagServiceName)
 	}
 
 	// Ensure that it is possible to construct URLs to access the ingest API
@@ -127,7 +123,6 @@ func (c *Config) sanitize() error {
 	}
 
 	c.Headers["content-type"] = "application/json"
-	c.Headers["authorization"] = "Bearer " + c.IngestToken
 
 	if !c.DisableCompression {
 		c.Headers["content-encoding"] = "gzip"

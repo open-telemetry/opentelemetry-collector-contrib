@@ -50,9 +50,12 @@ func TestCreateTracesExporter(t *testing.T) {
 			desc: "Valid trace configuration",
 			cfg: &Config{
 				ExporterSettings: config.NewExporterSettings(typeStr),
-				IngestToken:      "00000000-0000-0000-0000-0000000000000",
+				Tag:              TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
+				},
+				Traces: TracesConfig{
+					IngestToken: "00000000-0000-0000-0000-0000000000000",
 				},
 			},
 			wantErr: false,
@@ -61,8 +64,20 @@ func TestCreateTracesExporter(t *testing.T) {
 			desc: "Unsanitizable trace configuration",
 			cfg: &Config{
 				ExporterSettings: config.NewExporterSettings(typeStr),
+				Tag:              TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "\n",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			desc: "Missing ingest token",
+			cfg: &Config{
+				ExporterSettings: config.NewExporterSettings(typeStr),
+				Tag:              TagNone,
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "http://localhost:8080",
 				},
 			},
 			wantErr: true,
@@ -71,7 +86,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			desc: "Invalid client configuration",
 			cfg: &Config{
 				ExporterSettings: config.NewExporterSettings(typeStr),
-				IngestToken:      "00000000-0000-0000-0000-0000000000000",
+				Tag:              TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
 					TLSSetting: configtls.TLSClientSetting{
@@ -80,6 +95,9 @@ func TestCreateTracesExporter(t *testing.T) {
 							KeyFile:  "key.key",
 						},
 					},
+				},
+				Traces: TracesConfig{
+					IngestToken: "00000000-0000-0000-0000-0000000000000",
 				},
 			},
 			wantErr: true,

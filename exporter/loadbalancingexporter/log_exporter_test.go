@@ -310,8 +310,7 @@ func TestNoLogsInBatch(t *testing.T) {
 			"no instrumentation library logs",
 			func() pdata.Logs {
 				batch := pdata.NewLogs()
-				rl := pdata.NewResourceLogs()
-				batch.ResourceLogs().Append(rl)
+				batch.ResourceLogs().AppendEmpty()
 				return batch
 			}(),
 		},
@@ -319,10 +318,7 @@ func TestNoLogsInBatch(t *testing.T) {
 			"no logs",
 			func() pdata.Logs {
 				batch := pdata.NewLogs()
-				rl := pdata.NewResourceLogs()
-				ill := pdata.NewInstrumentationLibraryLogs()
-				rl.InstrumentationLibraryLogs().Append(ill)
-				batch.ResourceLogs().Append(rl)
+				batch.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
 				return batch
 			}(),
 		},
@@ -505,23 +501,18 @@ func simpleLogs() pdata.Logs {
 
 func simpleLogWithID(id pdata.TraceID) pdata.Logs {
 	logs := pdata.NewLogs()
-	logs.ResourceLogs().Resize(1)
-	rl := logs.ResourceLogs().At(0)
-	rl.InstrumentationLibraryLogs().Resize(1)
-	ill := rl.InstrumentationLibraryLogs().At(0)
-	ill.Logs().Resize(1)
-	ill.Logs().At(0).SetTraceID(id)
+	rl := logs.ResourceLogs().AppendEmpty()
+	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
+	ill.Logs().AppendEmpty().SetTraceID(id)
 
 	return logs
 }
 
 func simpleLogWithoutID() pdata.Logs {
 	logs := pdata.NewLogs()
-	logs.ResourceLogs().Resize(1)
-	rl := logs.ResourceLogs().At(0)
-	rl.InstrumentationLibraryLogs().Resize(1)
-	ill := rl.InstrumentationLibraryLogs().At(0)
-	ill.Logs().Resize(1)
+	rl := logs.ResourceLogs().AppendEmpty()
+	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
+	ill.Logs().AppendEmpty()
 
 	return logs
 }

@@ -717,12 +717,8 @@ func constructDefaultResource() pdata.Resource {
 
 	resourceArrayVal := pdata.NewAttributeValueArray()
 	resourceArray := resourceArrayVal.ArrayVal()
-	val1 := pdata.NewAttributeValueNull()
-	val1.SetStringVal("foo")
-	val2 := pdata.NewAttributeValueNull()
-	val2.SetStringVal("bar")
-	resourceArray.Append(val1)
-	resourceArray.Append(val2)
+	resourceArray.AppendEmpty().SetStringVal("foo")
+	resourceArray.AppendEmpty().SetStringVal("bar")
 	attrs.Insert(resourceArrayKey, resourceArrayVal)
 	attrs.CopyTo(resource.Attributes())
 	return resource
@@ -741,8 +737,7 @@ func constructTimedEventsWithReceivedMessageEvent(tm pdata.Timestamp) pdata.Span
 	event.SetDroppedAttributesCount(0)
 
 	events := pdata.NewSpanEventSlice()
-	events.Resize(1)
-	event.CopyTo(events.At(0))
+	event.CopyTo(events.AppendEmpty())
 	return events
 }
 
@@ -758,8 +753,7 @@ func constructTimedEventsWithSentMessageEvent(tm pdata.Timestamp) pdata.SpanEven
 	event.SetDroppedAttributesCount(0)
 
 	events := pdata.NewSpanEventSlice()
-	events.Resize(1)
-	event.CopyTo(events.At(0))
+	event.CopyTo(events.AppendEmpty())
 	return events
 }
 

@@ -166,10 +166,10 @@ func getValidLogData(containers []Container, self *Container, account string) [4
 			self.DockerID != container.DockerID &&
 			logData != (LogData{}) {
 
-			logGroupNames.ArrayVal().Append(pdata.NewAttributeValueString(logData.LogGroup))
-			logGroupArns.ArrayVal().Append(pdata.NewAttributeValueString(constructLogGroupArn(logData.Region, account, logData.LogGroup)))
-			logStreamNames.ArrayVal().Append(pdata.NewAttributeValueString(logData.Stream))
-			logStreamArns.ArrayVal().Append(pdata.NewAttributeValueString(constructLogStreamArn(logData.Region, account, logData.LogGroup, logData.Stream)))
+			logGroupNames.ArrayVal().AppendEmpty().SetStringVal(logData.LogGroup)
+			logGroupArns.ArrayVal().AppendEmpty().SetStringVal(constructLogGroupArn(logData.Region, account, logData.LogGroup))
+			logStreamNames.ArrayVal().AppendEmpty().SetStringVal(logData.Stream)
+			logStreamArns.ArrayVal().AppendEmpty().SetStringVal(constructLogStreamArn(logData.Region, account, logData.LogGroup, logData.Stream))
 		}
 	}
 

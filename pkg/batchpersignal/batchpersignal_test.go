@@ -24,12 +24,10 @@ import (
 func TestSplitDifferentTracesIntoDifferentBatches(t *testing.T) {
 	// we have 1 ResourceSpans with 1 ILS and two traceIDs, resulting in two batches
 	inBatch := pdata.NewTraces()
-	inBatch.ResourceSpans().Resize(1)
-	rs := inBatch.ResourceSpans().At(0)
-	rs.InstrumentationLibrarySpans().Resize(1)
+	rs := inBatch.ResourceSpans().AppendEmpty()
 
 	// the first ILS has two spans
-	ils := rs.InstrumentationLibrarySpans().At(0)
+	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
 	library := ils.InstrumentationLibrary()
 	library.SetName("first-library")
 	ils.Spans().Resize(2)
@@ -60,12 +58,10 @@ func TestSplitDifferentTracesIntoDifferentBatches(t *testing.T) {
 func TestSplitDifferentLogsIntoDifferentBatches(t *testing.T) {
 	// we have 1 ResourceLogs with 1 ILL and three traceIDs (one null) resulting in three batches
 	inBatch := pdata.NewLogs()
-	inBatch.ResourceLogs().Resize(1)
-	rl := inBatch.ResourceLogs().At(0)
-	rl.InstrumentationLibraryLogs().Resize(1)
+	rl := inBatch.ResourceLogs().AppendEmpty()
 
 	// the first ILL has three logs
-	ill := rl.InstrumentationLibraryLogs().At(0)
+	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
 	library := ill.InstrumentationLibrary()
 	library.SetName("first-library")
 	ill.Logs().Resize(3)

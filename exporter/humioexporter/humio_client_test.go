@@ -37,10 +37,16 @@ import (
 func makeClient(t *testing.T, host string, compression bool) exporterClient {
 	cfg := &Config{
 		ExporterSettings:   config.NewExporterSettings(typeStr),
-		IngestToken:        "token",
 		DisableCompression: !compression,
+		Tag:                TagNone,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: host,
+		},
+		Logs: LogsConfig{
+			IngestToken: "logs-token",
+		},
+		Traces: TracesConfig{
+			IngestToken: "traces-token",
 		},
 	}
 	err := cfg.Validate()
@@ -121,9 +127,10 @@ func makeStructuredEvents(unix bool) []*HumioStructuredEvents {
 }
 
 type requestData struct {
-	Path  string
-	Body  string
-	Error error
+	Path   string
+	Header http.Header
+	Body   string
+	Error  error
 }
 
 // Helper function to intercept information from HTTP requests.
@@ -135,6 +142,7 @@ func executeRequest(fn func(s *httptest.Server) error) (result requestData) {
 	// store it in "result"
 	s := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		result.Path = r.URL.Path
+		result.Header = r.Header
 		body, err := ioutil.ReadAll(r.Body)
 
 		if err != nil {
@@ -175,6 +183,7 @@ func TestSendUnstructuredEvents(t *testing.T) {
 
 	// Assert
 	require.NoError(t, result.Error)
+	assert.Contains(t, result.Header.Get("authorization"), "Bearer logs-token")
 	assert.Equal(t, "/api/v1/ingest/humio-unstructured", result.Path)
 	assert.Equal(t, expected, result.Body)
 }
@@ -192,6 +201,7 @@ func TestSendStructuredEventsIso(t *testing.T) {
 
 	// Assert
 	require.NoError(t, result.Error)
+	assert.Contains(t, result.Header.Get("authorization"), "Bearer traces-token")
 	assert.Equal(t, "/api/v1/ingest/humio-structured", result.Path)
 	assert.Equal(t, expected, result.Body)
 }
@@ -209,8 +219,27 @@ func TestSendStructuredEventsUnix(t *testing.T) {
 
 	// Assert
 	require.NoError(t, result.Error)
+	assert.Contains(t, result.Header.Get("authorization"), "Bearer traces-token")
 	assert.Equal(t, "/api/v1/ingest/humio-structured", result.Path)
 	assert.Equal(t, expected, result.Body)
+}
+
+func TestSendEventsUncompressedHeaders(t *testing.T) {
+	// Arrange
+	evts := makeStructuredEvents(true)
+
+	// Act
+	result := executeRequest(func(s *httptest.Server) error {
+		humio := makeClient(t, s.URL, false)
+		return humio.sendStructuredEvents(context.Background(), evts)
+	})
+
+	// Assert
+	require.NoError(t, result.Error)
+	assert.Contains(t, result.Header.Get("authorization"), "Bearer traces-token")
+	assert.Contains(t, result.Header.Get("content-type"), "application/json")
+	assert.NotEmpty(t, result.Header.Get("user-agent"))
+	assert.Empty(t, result.Header.Get("content-encoding"))
 }
 
 func TestSendEventsCompressed(t *testing.T) {
@@ -234,6 +263,7 @@ func TestSendEventsCompressed(t *testing.T) {
 
 	// Assert
 	require.NoError(t, result.Error)
+	assert.Contains(t, result.Header.Get("content-encoding"), "gzip")
 	assert.Equal(t, "/api/v1/ingest/humio-structured", result.Path)
 	assert.Equal(t, expected.String(), result.Body)
 }
@@ -255,7 +285,7 @@ func TestSendEventsBadParameters(t *testing.T) {
 	humio := makeClient(t, "https://localhost:8080", true)
 
 	// Act
-	err := humio.(*humioClient).sendEvents(context.Background(), nil, "\n")
+	err := humio.(*humioClient).sendEvents(context.Background(), nil, "\n", "token")
 
 	// Assert
 	require.Error(t, err)

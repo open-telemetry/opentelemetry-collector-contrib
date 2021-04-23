@@ -32,11 +32,8 @@ const (
 // SplunkHecToLogData transforms splunk events into logs
 func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource)) (pdata.Logs, error) {
 	ld := pdata.NewLogs()
-	rls := ld.ResourceLogs()
-	rls.Resize(1)
-	rl := rls.At(0)
-	rl.InstrumentationLibraryLogs().Resize(1)
-	ill := rl.InstrumentationLibraryLogs().At(0)
+	rl := ld.ResourceLogs().AppendEmpty()
+	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
 	for _, event := range events {
 		logRecord := pdata.NewLogRecord()
 

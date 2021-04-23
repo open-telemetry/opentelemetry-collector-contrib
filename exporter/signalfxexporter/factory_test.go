@@ -265,7 +265,7 @@ func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
 	require.NotNil(t, te)
 
 	// Validate that default excludes are always loaded.
-	assert.Equal(t, 10, len(config.ExcludeMetrics))
+	assert.Equal(t, 11, len(config.ExcludeMetrics))
 }
 
 func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
@@ -285,7 +285,7 @@ func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 	require.NotNil(t, te)
 
 	// Validate that default excludes are always loaded.
-	assert.Equal(t, 11, len(config.ExcludeMetrics))
+	assert.Equal(t, 12, len(config.ExcludeMetrics))
 }
 
 func TestCreateMetricsExporterWithEmptyExcludeMetrics(t *testing.T) {
@@ -1040,17 +1040,16 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 
 func getResourceMetrics(metrics []map[string]string) pdata.ResourceMetrics {
 	rms := pdata.NewResourceMetrics()
-	rms.InstrumentationLibraryMetrics().Resize(1)
-	ilms := rms.InstrumentationLibraryMetrics().At(0)
+	ilms := rms.InstrumentationLibraryMetrics().AppendEmpty()
 	ilms.Metrics().Resize(len(metrics))
 
 	for i, mp := range metrics {
 		m := ilms.Metrics().At(i)
 		// Set data type to some arbitrary since it does not matter for this test.
 		m.SetDataType(pdata.MetricDataTypeIntSum)
-		m.IntSum().DataPoints().Resize(1)
-		m.IntSum().DataPoints().At(0).SetValue(0)
-		labelsMap := m.IntSum().DataPoints().At(0).LabelsMap()
+		dp := m.IntSum().DataPoints().AppendEmpty()
+		dp.SetValue(0)
+		labelsMap := dp.LabelsMap()
 		for k, v := range mp {
 			if v == "" {
 				m.SetName(k)

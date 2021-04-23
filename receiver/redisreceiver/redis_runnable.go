@@ -92,19 +92,11 @@ func (r *redisRunnable) Run() error {
 	}
 
 	pdm := pdata.NewMetrics()
-	rms := pdm.ResourceMetrics()
-
-	rm := pdata.NewResourceMetrics()
-	rms.Append(rm)
+	rm := pdm.ResourceMetrics().AppendEmpty()
 	resource := rm.Resource()
 	rattrs := resource.Attributes()
 	rattrs.InsertString("service.name", r.serviceName)
-
-	ilms := rm.InstrumentationLibraryMetrics()
-
-	ilm := pdata.NewInstrumentationLibraryMetrics()
-	ilms.Append(ilm)
-
+	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	fixedMS, warnings := inf.buildFixedMetrics(r.redisMetrics, r.timeBundle)
 	fixedMS.MoveAndAppendTo(ilm.Metrics())
 	if warnings != nil {

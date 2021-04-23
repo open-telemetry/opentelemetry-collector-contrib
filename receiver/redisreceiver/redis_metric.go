@@ -36,58 +36,46 @@ type redisMetric struct {
 // passed-in time is applied to the Point.
 func (m *redisMetric) parseMetric(strVal string, t *timeBundle) (pdata.Metric, error) {
 	var err error
-	var pdm pdata.Metric
+	pdm := pdata.NewMetric()
 	switch m.pdType {
 	case pdata.MetricDataTypeIntSum:
-		var pt pdata.IntDataPoint
-		pt, err = strToInt64Point(strVal)
+		var val int64
+		val, err = strToInt64Point(strVal)
 		if err != nil {
-			return pdata.Metric{}, err
+			return pdm, err
 		}
-		pdm = newIntMetric(m, pt, t)
+		initIntMetric(m, val, t, pdm)
 	case pdata.MetricDataTypeIntGauge:
-		var pt pdata.IntDataPoint
-		pt, err = strToInt64Point(strVal)
+		var val int64
+		val, err = strToInt64Point(strVal)
 		if err != nil {
-			return pdata.Metric{}, err
+			return pdm, err
 		}
-		pdm = newIntMetric(m, pt, t)
+		initIntMetric(m, val, t, pdm)
 	case pdata.MetricDataTypeDoubleSum:
-		var pt pdata.DoubleDataPoint
-		pt, err = strToDoublePoint(strVal)
+		var val float64
+		val, err = strToDoublePoint(strVal)
 		if err != nil {
-			return pdata.Metric{}, err
+			return pdm, err
 		}
-		pdm = newDoubleMetric(m, pt, t)
+		initDoubleMetric(m, val, t, pdm)
 	case pdata.MetricDataTypeDoubleGauge:
-		var pt pdata.DoubleDataPoint
-		pt, err = strToDoublePoint(strVal)
+		var val float64
+		val, err = strToDoublePoint(strVal)
 		if err != nil {
-			return pdata.Metric{}, err
+			return pdm, err
 		}
-		pdm = newDoubleMetric(m, pt, t)
+		initDoubleMetric(m, val, t, pdm)
 	}
 	return pdm, nil
 }
 
 // Converts a numeric whole number string to a Point.
-func strToInt64Point(s string) (pdata.IntDataPoint, error) {
-	pt := pdata.NewIntDataPoint()
-	i, err := strconv.ParseInt(s, 10, 64)
-	if err != nil {
-		return pt, err
-	}
-	pt.SetValue(i)
-	return pt, nil
+func strToInt64Point(s string) (int64, error) {
+	return strconv.ParseInt(s, 10, 64)
 }
 
 // Converts a numeric floating point string to a Point.
-func strToDoublePoint(s string) (pdata.DoubleDataPoint, error) {
-	pt := pdata.NewDoubleDataPoint()
-	f, err := strconv.ParseFloat(s, 64)
-	if err != nil {
-		return pt, err
-	}
-	pt.SetValue(f)
-	return pt, nil
+func strToDoublePoint(s string) (float64, error) {
+	return strconv.ParseFloat(s, 64)
 }

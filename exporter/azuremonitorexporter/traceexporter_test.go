@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	mock "github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -53,15 +53,12 @@ func TestExporterTraceDataCallbackSingleSpan(t *testing.T) {
 	span := getDefaultHTTPServerSpan()
 
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
+	rs := traces.ResourceSpans().AppendEmpty()
 	r := rs.Resource()
 	resource.CopyTo(r)
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ilss := rs.InstrumentationLibrarySpans().At(0)
+	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
 	instrumentationLibrary.CopyTo(ilss.InstrumentationLibrary())
-	ilss.Spans().Resize(1)
-	span.CopyTo(ilss.Spans().At(0))
+	span.CopyTo(ilss.Spans().AppendEmpty())
 
 	assert.NoError(t, exporter.onTraceData(context.Background(), traces))
 
@@ -83,15 +80,12 @@ func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 	span.Attributes().InsertString(conventions.AttributeFaaSTrigger, "http")
 
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
+	rs := traces.ResourceSpans().AppendEmpty()
 	r := rs.Resource()
 	resource.CopyTo(r)
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ilss := rs.InstrumentationLibrarySpans().At(0)
+	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
 	instrumentationLibrary.CopyTo(ilss.InstrumentationLibrary())
-	ilss.Spans().Resize(1)
-	span.CopyTo(ilss.Spans().At(0))
+	span.CopyTo(ilss.Spans().AppendEmpty())
 
 	err := exporter.onTraceData(context.Background(), traces)
 	assert.Error(t, err)

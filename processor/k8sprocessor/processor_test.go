@@ -231,45 +231,36 @@ type generateResourceFunc func(res pdata.Resource)
 
 func generateTraces(resourceFunc ...generateResourceFunc) pdata.Traces {
 	t := pdata.NewTraces()
-	rs := t.ResourceSpans()
-	rs.Resize(1)
-	rs.At(0).InstrumentationLibrarySpans().Resize(1)
-	rs.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+	rs := t.ResourceSpans().AppendEmpty()
 	for _, resFun := range resourceFunc {
-		res := rs.At(0).Resource()
+		res := rs.Resource()
 		resFun(res)
 	}
-	span := rs.At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foobar")
 	return t
 }
 
 func generateMetrics(resourceFunc ...generateResourceFunc) pdata.Metrics {
 	m := pdata.NewMetrics()
-	ms := m.ResourceMetrics()
-	ms.Resize(1)
-	ms.At(0).InstrumentationLibraryMetrics().Resize(1)
-	ms.At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(1)
+	ms := m.ResourceMetrics().AppendEmpty()
 	for _, resFun := range resourceFunc {
-		res := ms.At(0).Resource()
+		res := ms.Resource()
 		resFun(res)
 	}
-	metric := ms.At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+	metric := ms.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetName("foobar")
 	return m
 }
 
 func generateLogs(resourceFunc ...generateResourceFunc) pdata.Logs {
 	l := pdata.NewLogs()
-	ls := l.ResourceLogs()
-	ls.Resize(1)
-	ls.At(0).InstrumentationLibraryLogs().Resize(1)
-	ls.At(0).InstrumentationLibraryLogs().At(0).Logs().Resize(1)
+	ls := l.ResourceLogs().AppendEmpty()
 	for _, resFun := range resourceFunc {
-		res := ls.At(0).Resource()
+		res := ls.Resource()
 		resFun(res)
 	}
-	log := ls.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0)
+	log := ls.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
 	log.SetName("foobar")
 	return l
 }

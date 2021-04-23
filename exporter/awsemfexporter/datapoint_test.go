@@ -277,8 +277,7 @@ func TestIntDataPointSliceAt(t *testing.T) {
 	for _, tc := range testDeltaCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			testDPS := pdata.NewIntDataPointSlice()
-			testDPS.Resize(1)
-			testDP := testDPS.At(0)
+			testDP := testDPS.AppendEmpty()
 			testDP.SetValue(tc.value.(int64))
 			testDP.LabelsMap().InitFromMap(labels)
 
@@ -343,8 +342,7 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 	for _, tc := range testDeltaCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			testDPS := pdata.NewDoubleDataPointSlice()
-			testDPS.Resize(1)
-			testDP := testDPS.At(0)
+			testDP := testDPS.AppendEmpty()
 			testDP.SetValue(tc.value.(float64))
 			testDP.LabelsMap().InitFromMap(labels)
 
@@ -381,8 +379,7 @@ func TestHistogramDataPointSliceAt(t *testing.T) {
 	labels := map[string]string{"label1": "value1"}
 
 	testDPS := pdata.NewHistogramDataPointSlice()
-	testDPS.Resize(1)
-	testDP := testDPS.At(0)
+	testDP := testDPS.AppendEmpty()
 	testDP.SetCount(uint64(17))
 	testDP.SetSum(float64(17.13))
 	testDP.SetBucketCounts([]uint64{1, 2, 3})
@@ -442,8 +439,7 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.testName, func(t *testing.T) {
 			testDPS := pdata.NewSummaryDataPointSlice()
-			testDPS.Resize(1)
-			testDP := testDPS.At(0)
+			testDP := testDPS.AppendEmpty()
 			testDP.SetSum(tt.inputSumCount[0].(float64))
 			testDP.SetCount(tt.inputSumCount[1].(uint64))
 

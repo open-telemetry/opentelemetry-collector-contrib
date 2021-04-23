@@ -4,13 +4,13 @@ go 1.15
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
-	github.com/docker/docker v20.10.4+incompatible
+	github.com/docker/docker v20.10.6+incompatible
 	github.com/gobwas/glob v0.2.3
 	github.com/golang/protobuf v1.5.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.24.1-0.20210420003310-0a2ea1b33eb6
+	go.opentelemetry.io/collector v0.25.1-0.20210421230708-d10b842f49eb
 	go.uber.org/zap v1.16.0
 	google.golang.org/protobuf v1.26.0
 )

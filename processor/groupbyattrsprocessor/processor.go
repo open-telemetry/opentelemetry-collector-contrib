@@ -61,11 +61,8 @@ func (gap *groupByAttrsProcessor) ProcessTraces(ctx context.Context, td pdata.Tr
 
 	// Copy the grouped data into output
 	groupedTraces := pdata.NewTraces()
-	groupedResourceSpans := groupedTraces.ResourceSpans()
-	for _, eg := range *extractedGroups {
-		groupedResourceSpans.Append(eg)
-	}
-	stats.Record(ctx, mDistSpanGroups.M(int64(len(*extractedGroups))))
+	extractedGroups.MoveAndAppendTo(groupedTraces.ResourceSpans())
+	stats.Record(ctx, mDistSpanGroups.M(int64(groupedTraces.ResourceSpans().Len())))
 
 	return groupedTraces, nil
 }
@@ -104,11 +101,8 @@ func (gap *groupByAttrsProcessor) ProcessLogs(ctx context.Context, ld pdata.Logs
 
 	// Copy the grouped data into output
 	groupedLogs := pdata.NewLogs()
-	groupedResourceLogs := groupedLogs.ResourceLogs()
-	for _, eg := range *extractedGroups {
-		groupedResourceLogs.Append(eg)
-	}
-	stats.Record(ctx, mDistLogGroups.M(int64(len(*extractedGroups))))
+	extractedGroups.MoveAndAppendTo(groupedLogs.ResourceLogs())
+	stats.Record(ctx, mDistLogGroups.M(int64(groupedLogs.ResourceLogs().Len())))
 
 	return groupedLogs, nil
 }

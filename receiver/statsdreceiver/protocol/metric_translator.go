@@ -21,47 +21,40 @@ import (
 )
 
 func buildCounterMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.InstrumentationLibraryMetrics {
-	dp := pdata.NewIntDataPoint()
+	ilm := pdata.NewInstrumentationLibraryMetrics()
+	nm := ilm.Metrics().AppendEmpty()
+	nm.SetName(parsedMetric.description.name)
+	if parsedMetric.unit != "" {
+		nm.SetUnit(parsedMetric.unit)
+	}
+	nm.SetDataType(pdata.MetricDataTypeIntSum)
+	nm.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	nm.IntSum().SetIsMonotonic(true)
+
+	dp := nm.IntSum().DataPoints().AppendEmpty()
 	dp.SetValue(parsedMetric.intvalue)
 	dp.SetTimestamp(pdata.TimestampFromTime(timeNow))
 	for i, key := range parsedMetric.labelKeys {
 		dp.LabelsMap().Insert(key, parsedMetric.labelValues[i])
 	}
 
-	nm := pdata.NewMetric()
-	nm.SetName(parsedMetric.description.name)
-	if parsedMetric.unit != "" {
-		nm.SetUnit(parsedMetric.unit)
-	}
-	nm.SetDataType(pdata.MetricDataTypeIntSum)
-	nm.IntSum().DataPoints().Append(dp)
-	nm.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
-	nm.IntSum().SetIsMonotonic(true)
-
-	ilm := pdata.NewInstrumentationLibraryMetrics()
-	ilm.Metrics().Append(nm)
-
 	return ilm
 }
 
 func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.InstrumentationLibraryMetrics {
-	dp := pdata.NewDoubleDataPoint()
-	dp.SetValue(parsedMetric.floatvalue)
-	dp.SetTimestamp(pdata.TimestampFromTime(timeNow))
-	for i, key := range parsedMetric.labelKeys {
-		dp.LabelsMap().Insert(key, parsedMetric.labelValues[i])
-	}
-
-	nm := pdata.NewMetric()
+	ilm := pdata.NewInstrumentationLibraryMetrics()
+	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(parsedMetric.description.name)
 	if parsedMetric.unit != "" {
 		nm.SetUnit(parsedMetric.unit)
 	}
 	nm.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	nm.DoubleGauge().DataPoints().Append(dp)
-
-	ilm := pdata.NewInstrumentationLibraryMetrics()
-	ilm.Metrics().Append(nm)
+	dp := nm.DoubleGauge().DataPoints().AppendEmpty()
+	dp.SetValue(parsedMetric.floatvalue)
+	dp.SetTimestamp(pdata.TimestampFromTime(timeNow))
+	for i, key := range parsedMetric.labelKeys {
+		dp.LabelsMap().Insert(key, parsedMetric.labelValues[i])
+	}
 
 	return ilm
 }

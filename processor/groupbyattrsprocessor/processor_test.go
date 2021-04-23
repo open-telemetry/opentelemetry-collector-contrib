@@ -69,23 +69,17 @@ func someComplexLogs(withResourceAttrIndex bool, rlCount int, illCount int) pdat
 	logs := pdata.NewLogs()
 
 	for i := 0; i < rlCount; i++ {
-		rl := pdata.NewResourceLogs()
+		rl := logs.ResourceLogs().AppendEmpty()
 		if withResourceAttrIndex {
 			rl.Resource().Attributes().InsertInt("resourceAttrIndex", int64(i))
 		}
 
 		for j := 0; j < illCount; j++ {
-			log := pdata.NewLogRecord()
+			log := rl.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
 			log.SetName(fmt.Sprintf("foo-%d-%d", i, j))
 			log.Attributes().InsertString("commonGroupedAttr", "abc")
 			log.Attributes().InsertString("commonNonGroupedAttr", "xyz")
-
-			ill := pdata.NewInstrumentationLibraryLogs()
-			ill.Logs().Append(log)
-			rl.InstrumentationLibraryLogs().Append(ill)
 		}
-
-		logs.ResourceLogs().Append(rl)
 	}
 
 	return logs
@@ -95,23 +89,17 @@ func someComplexTraces(withResourceAttrIndex bool, rsCount int, ilsCount int) pd
 	traces := pdata.NewTraces()
 
 	for i := 0; i < rsCount; i++ {
-		rs := pdata.NewResourceSpans()
+		rs := traces.ResourceSpans().AppendEmpty()
 		if withResourceAttrIndex {
 			rs.Resource().Attributes().InsertInt("resourceAttrIndex", int64(i))
 		}
 
 		for j := 0; j < ilsCount; j++ {
-			span := pdata.NewSpan()
+			span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 			span.SetName(fmt.Sprintf("foo-%d-%d", i, j))
 			span.Attributes().InsertString("commonGroupedAttr", "abc")
 			span.Attributes().InsertString("commonNonGroupedAttr", "xyz")
-
-			ils := pdata.NewInstrumentationLibrarySpans()
-			ils.Spans().Append(span)
-			rs.InstrumentationLibrarySpans().Append(ils)
 		}
-
-		traces.ResourceSpans().Append(rs)
 	}
 
 	return traces
@@ -302,41 +290,27 @@ func TestAttributeGrouping(t *testing.T) {
 }
 
 func someSpans(attrs pdata.AttributeMap, count int) pdata.Traces {
-	ils := pdata.NewInstrumentationLibrarySpans()
+	traces := pdata.NewTraces()
+	ils := traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
 
 	for i := 0; i < count; i++ {
-		span := pdata.NewSpan()
+		span := ils.Spans().AppendEmpty()
 		span.SetName(fmt.Sprint("foo-", i))
 		attrs.CopyTo(span.Attributes())
-
-		ils.Spans().Append(span)
 	}
-
-	rs := pdata.NewResourceSpans()
-	rs.InstrumentationLibrarySpans().Append(ils)
-
-	traces := pdata.NewTraces()
-	traces.ResourceSpans().Append(rs)
 
 	return traces
 }
 
 func someLogs(attrs pdata.AttributeMap, count int) pdata.Logs {
-	ill := pdata.NewInstrumentationLibraryLogs()
+	logs := pdata.NewLogs()
+	ill := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
 
 	for i := 0; i < count; i++ {
-		log := pdata.NewLogRecord()
+		log := ill.Logs().AppendEmpty()
 		log.SetName(fmt.Sprint("foo-", i))
 		attrs.CopyTo(log.Attributes())
-
-		ill.Logs().Append(log)
 	}
-
-	rl := pdata.NewResourceLogs()
-	rl.InstrumentationLibraryLogs().Append(ill)
-
-	logs := pdata.NewLogs()
-	logs.ResourceLogs().Append(rl)
 
 	return logs
 }

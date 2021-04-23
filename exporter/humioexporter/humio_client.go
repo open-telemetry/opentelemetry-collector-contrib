@@ -122,19 +122,19 @@ func newHumioClient(cfg *Config, logger *zap.Logger) (exporterClient, error) {
 	}, nil
 }
 
-// Send a payload of unstructured events to the corresponding Humio API
+// Send a payload of unstructured events to the corresponding Humio API. Will eventually be renamed as sendLogs
 func (h *humioClient) sendUnstructuredEvents(ctx context.Context, evts []*HumioUnstructuredEvents) error {
-	return h.sendEvents(ctx, evts, h.cfg.unstructuredEndpoint.String())
+	return h.sendEvents(ctx, evts, h.cfg.unstructuredEndpoint.String(), h.cfg.Logs.IngestToken)
 }
 
-// Send a payload of structured events to the corresponding Humio API
+// Send a payload of structured events to the corresponding Humio API. Will eventually be renamed as sendTraces
 func (h *humioClient) sendStructuredEvents(ctx context.Context, evts []*HumioStructuredEvents) error {
-	return h.sendEvents(ctx, evts, h.cfg.structuredEndpoint.String())
+	return h.sendEvents(ctx, evts, h.cfg.structuredEndpoint.String(), h.cfg.Traces.IngestToken)
 }
 
 // Send a payload of generic events to the specified Humio API. This method should
 // never be called directly
-func (h *humioClient) sendEvents(ctx context.Context, evts interface{}, url string) error {
+func (h *humioClient) sendEvents(ctx context.Context, evts interface{}, url string, token string) error {
 	body, err := h.encodeBody(evts)
 	if err != nil {
 		return consumererror.Permanent(err)
@@ -153,6 +153,7 @@ func (h *humioClient) sendEvents(ctx context.Context, evts interface{}, url stri
 	for h, v := range h.cfg.Headers {
 		req.Header.Set(h, v)
 	}
+	req.Header.Set("authorization", "Bearer "+token)
 
 	res, err := h.client.Do(req)
 	if err != nil {

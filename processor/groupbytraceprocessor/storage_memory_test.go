@@ -32,10 +32,8 @@ func TestMemoryCreateAndGetTrace(t *testing.T) {
 	}
 
 	baseTrace := pdata.NewResourceSpans()
-	baseTrace.InstrumentationLibrarySpans().Resize(1)
-	ils := baseTrace.InstrumentationLibrarySpans().At(0)
-	ils.Spans().Resize(1)
-	span := ils.Spans().At(0)
+	ils := baseTrace.InstrumentationLibrarySpans().AppendEmpty()
+	span := ils.Spans().AppendEmpty()
 
 	// test
 	for _, traceID := range traceIDs {
@@ -64,10 +62,8 @@ func TestMemoryDeleteTrace(t *testing.T) {
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
 	trace := pdata.NewResourceSpans()
-	trace.InstrumentationLibrarySpans().Resize(1)
-	ils := trace.InstrumentationLibrarySpans().At(0)
-	ils.Spans().Resize(1)
-	span := ils.Spans().At(0)
+	ils := trace.InstrumentationLibrarySpans().AppendEmpty()
+	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 
 	st.createOrAppend(traceID, trace)
@@ -91,20 +87,16 @@ func TestMemoryAppendSpans(t *testing.T) {
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
 	batch := pdata.NewResourceSpans()
-	batch.InstrumentationLibrarySpans().Resize(1)
-	ils := batch.InstrumentationLibrarySpans().At(0)
-	ils.Spans().Resize(1)
-	span := ils.Spans().At(0)
+	ils := batch.InstrumentationLibrarySpans().AppendEmpty()
+	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
 
 	st.createOrAppend(traceID, batch)
 
 	secondBatch := pdata.NewResourceSpans()
-	secondBatch.InstrumentationLibrarySpans().Resize(1)
-	secondIls := secondBatch.InstrumentationLibrarySpans().At(0)
-	secondIls.Spans().Resize(1)
-	secondSpan := secondIls.Spans().At(0)
+	secondIls := secondBatch.InstrumentationLibrarySpans().AppendEmpty()
+	secondSpan := secondIls.Spans().AppendEmpty()
 	secondSpan.SetName("second-name")
 	secondSpan.SetTraceID(traceID)
 	secondSpan.SetSpanID(pdata.NewSpanID([8]byte{5, 6, 7, 8}))
@@ -113,8 +105,8 @@ func TestMemoryAppendSpans(t *testing.T) {
 		pdata.NewResourceSpans(),
 		pdata.NewResourceSpans(),
 	}
-	expected[0].InstrumentationLibrarySpans().Append(ils)
-	expected[1].InstrumentationLibrarySpans().Append(secondIls)
+	ils.CopyTo(expected[0].InstrumentationLibrarySpans().AppendEmpty())
+	secondIls.CopyTo(expected[1].InstrumentationLibrarySpans().AppendEmpty())
 
 	// test
 	err := st.createOrAppend(traceID, secondBatch)
@@ -140,10 +132,8 @@ func TestMemoryTraceIsBeingCloned(t *testing.T) {
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
 	batch := pdata.NewResourceSpans()
-	batch.InstrumentationLibrarySpans().Resize(1)
-	ils := batch.InstrumentationLibrarySpans().At(0)
-	ils.Spans().Resize(1)
-	span := ils.Spans().At(0)
+	ils := batch.InstrumentationLibrarySpans().AppendEmpty()
+	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
 	span.SetName("should-not-be-changed")

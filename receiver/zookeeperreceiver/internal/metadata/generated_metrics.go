@@ -121,25 +121,25 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 	return metricsByName[n]
 }
 
-func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
-	return map[string]func() pdata.Metric{
-		Metrics.ZookeeperApproximateDateSize.Name():   Metrics.ZookeeperApproximateDateSize.New,
-		Metrics.ZookeeperConnectionsAlive.Name():      Metrics.ZookeeperConnectionsAlive.New,
-		Metrics.ZookeeperEphemeralNodes.Name():        Metrics.ZookeeperEphemeralNodes.New,
-		Metrics.ZookeeperFollowers.Name():             Metrics.ZookeeperFollowers.New,
-		Metrics.ZookeeperFsyncThresholdExceeds.Name(): Metrics.ZookeeperFsyncThresholdExceeds.New,
-		Metrics.ZookeeperLatencyAvg.Name():            Metrics.ZookeeperLatencyAvg.New,
-		Metrics.ZookeeperLatencyMax.Name():            Metrics.ZookeeperLatencyMax.New,
-		Metrics.ZookeeperLatencyMin.Name():            Metrics.ZookeeperLatencyMin.New,
-		Metrics.ZookeeperMaxFileDescriptors.Name():    Metrics.ZookeeperMaxFileDescriptors.New,
-		Metrics.ZookeeperOpenFileDescriptors.Name():   Metrics.ZookeeperOpenFileDescriptors.New,
-		Metrics.ZookeeperOutstandingRequests.Name():   Metrics.ZookeeperOutstandingRequests.New,
-		Metrics.ZookeeperPacketsReceived.Name():       Metrics.ZookeeperPacketsReceived.New,
-		Metrics.ZookeeperPacketsSent.Name():           Metrics.ZookeeperPacketsSent.New,
-		Metrics.ZookeeperPendingSyncs.Name():          Metrics.ZookeeperPendingSyncs.New,
-		Metrics.ZookeeperSyncedFollowers.Name():       Metrics.ZookeeperSyncedFollowers.New,
-		Metrics.ZookeeperWatches.Name():               Metrics.ZookeeperWatches.New,
-		Metrics.ZookeeperZnodes.Name():                Metrics.ZookeeperZnodes.New,
+func (m *metricStruct) FactoriesByName() map[string]func(pdata.Metric) {
+	return map[string]func(pdata.Metric){
+		Metrics.ZookeeperApproximateDateSize.Name():   Metrics.ZookeeperApproximateDateSize.Init,
+		Metrics.ZookeeperConnectionsAlive.Name():      Metrics.ZookeeperConnectionsAlive.Init,
+		Metrics.ZookeeperEphemeralNodes.Name():        Metrics.ZookeeperEphemeralNodes.Init,
+		Metrics.ZookeeperFollowers.Name():             Metrics.ZookeeperFollowers.Init,
+		Metrics.ZookeeperFsyncThresholdExceeds.Name(): Metrics.ZookeeperFsyncThresholdExceeds.Init,
+		Metrics.ZookeeperLatencyAvg.Name():            Metrics.ZookeeperLatencyAvg.Init,
+		Metrics.ZookeeperLatencyMax.Name():            Metrics.ZookeeperLatencyMax.Init,
+		Metrics.ZookeeperLatencyMin.Name():            Metrics.ZookeeperLatencyMin.Init,
+		Metrics.ZookeeperMaxFileDescriptors.Name():    Metrics.ZookeeperMaxFileDescriptors.Init,
+		Metrics.ZookeeperOpenFileDescriptors.Name():   Metrics.ZookeeperOpenFileDescriptors.Init,
+		Metrics.ZookeeperOutstandingRequests.Name():   Metrics.ZookeeperOutstandingRequests.Init,
+		Metrics.ZookeeperPacketsReceived.Name():       Metrics.ZookeeperPacketsReceived.Init,
+		Metrics.ZookeeperPacketsSent.Name():           Metrics.ZookeeperPacketsSent.Init,
+		Metrics.ZookeeperPendingSyncs.Name():          Metrics.ZookeeperPendingSyncs.Init,
+		Metrics.ZookeeperSyncedFollowers.Name():       Metrics.ZookeeperSyncedFollowers.Init,
+		Metrics.ZookeeperWatches.Name():               Metrics.ZookeeperWatches.Init,
+		Metrics.ZookeeperZnodes.Name():                Metrics.ZookeeperZnodes.Init,
 	}
 }
 

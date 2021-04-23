@@ -118,52 +118,47 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	unixNSecs := int64(11 * time.Millisecond)
 	ts := pdata.TimestampFromTime(time.Unix(unixSecs, unixNSecs))
 
-	doubleVal := 1234.5678
-	doublePt := pdata.NewDoubleDataPoint()
-	doublePt.SetTimestamp(ts)
-	doublePt.SetValue(doubleVal)
-
-	int64Val := int64(123)
-	int64Pt := pdata.NewIntDataPoint()
-	int64Pt.SetTimestamp(ts)
-	int64Pt.SetValue(int64Val)
+	const doubleVal = 1234.5678
+	const int64Val = int64(123)
 
 	want := pdata.NewMetrics()
-	rms := want.ResourceMetrics()
-	rms.Resize(1)
-	rm := rms.At(0)
-
-	rm.InstrumentationLibraryMetrics().Resize(1)
-	ilm := rm.InstrumentationLibraryMetrics().At(0)
-	ilm.Metrics().Resize(4)
+	ilm := want.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 
 	{
-		m := ilm.Metrics().At(0)
+		m := ilm.Metrics().AppendEmpty()
 		m.SetName("gauge_double_with_dims")
 		m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		m.DoubleGauge().DataPoints().Append(doublePt)
+		doublePt := m.DoubleGauge().DataPoints().AppendEmpty()
+		doublePt.SetTimestamp(ts)
+		doublePt.SetValue(doubleVal)
 	}
 	{
-		m := ilm.Metrics().At(1)
+		m := ilm.Metrics().AppendEmpty()
 		m.SetName("gauge_int_with_dims")
 		m.SetDataType(pdata.MetricDataTypeIntGauge)
-		m.IntGauge().DataPoints().Append(int64Pt)
+		int64Pt := m.IntGauge().DataPoints().AppendEmpty()
+		int64Pt.SetTimestamp(ts)
+		int64Pt.SetValue(int64Val)
 	}
 	{
-		m := ilm.Metrics().At(2)
+		m := ilm.Metrics().AppendEmpty()
 		m.SetName("cumulative_double_with_dims")
 		m.SetDataType(pdata.MetricDataTypeDoubleSum)
 		m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		m.DoubleSum().SetIsMonotonic(true)
-		m.DoubleSum().DataPoints().Append(doublePt)
+		doublePt := m.DoubleSum().DataPoints().AppendEmpty()
+		doublePt.SetTimestamp(ts)
+		doublePt.SetValue(doubleVal)
 	}
 	{
-		m := ilm.Metrics().At(3)
+		m := ilm.Metrics().AppendEmpty()
 		m.SetName("cumulative_int_with_dims")
 		m.SetDataType(pdata.MetricDataTypeIntSum)
 		m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		m.IntSum().SetIsMonotonic(true)
-		m.IntSum().DataPoints().Append(int64Pt)
+		int64Pt := m.IntSum().DataPoints().AppendEmpty()
+		int64Pt.SetTimestamp(ts)
+		int64Pt.SetValue(int64Val)
 	}
 
 	expCfg := &signalfxexporter.Config{
@@ -574,21 +569,12 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	msec := time.Now().Unix() * 1e3
 
 	want := pdata.NewMetrics()
-	want.ResourceMetrics().Resize(1)
-	rm := want.ResourceMetrics().At(0)
-	rm.InstrumentationLibraryMetrics().Resize(1)
-	ilm := rm.InstrumentationLibraryMetrics().At(0)
-	ms := ilm.Metrics()
-
-	ms.Resize(1)
-	m := ms.At(0)
+	m := want.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
 
 	m.SetDataType(pdata.MetricDataTypeIntGauge)
 	m.SetName("single")
 	dps := m.IntGauge().DataPoints()
-
-	dps.Resize(1)
-	dp := dps.At(0)
+	dp := dps.AppendEmpty()
 	dp.SetTimestamp(pdata.Timestamp(msec * 1e6))
 	dp.SetValue(13)
 
