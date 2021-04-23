@@ -1144,16 +1144,3 @@ func TestStatsAggregations(t *testing.T) {
 
 	assert.Equal(t, "test-version", statsVersionTag.Value)
 }
-
-// ensure that truncation helperr function truncates strings as expected
-// and accounts for the limit and multi byte ending characters
-// from https://github.com/DataDog/datadog-agent/blob/140a4ee164261ef2245340c50371ba989fbeb038/pkg/trace/traceutil/truncate_test.go#L15
-func TestTruncateUTF8Strings(t *testing.T) {
-	assert.Equal(t, "", utils.TruncateUTF8("", 5))
-	assert.Equal(t, "télé", utils.TruncateUTF8("télé", 5))
-	assert.Equal(t, "t", utils.TruncateUTF8("télé", 2))
-	assert.Equal(t, "éé", utils.TruncateUTF8("ééééé", 5))
-	assert.Equal(t, "ééééé", utils.TruncateUTF8("ééééé", 18))
-	assert.Equal(t, "ééééé", utils.TruncateUTF8("ééééé", 10))
-	assert.Equal(t, "ééé", utils.TruncateUTF8("ééééé", 6))
-}
