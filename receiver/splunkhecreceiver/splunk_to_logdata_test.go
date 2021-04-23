@@ -90,9 +90,8 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				logsSlice := createLogsSlice(nanoseconds)
 				arrVal := pdata.NewAttributeValueArray()
 				arr := arrVal.ArrayVal()
-				arr.Resize(2)
-				arr.At(0).SetStringVal("foo")
-				arr.At(1).SetStringVal("bar")
+				arr.AppendEmpty().SetStringVal("foo")
+				arr.AppendEmpty().SetStringVal("bar")
 				arrVal.CopyTo(logsSlice.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body())
 				return logsSlice
 			}(),
