@@ -58,6 +58,7 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 
 	body := bytes.NewReader(content)
 
+	// Add the sdk and system information to the User-Agent header of the request
 	FormatHeaderValues(req, aws.SDKName, aws.SDKVersion, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	v := os.Getenv("AWS_EXECUTION_ENV")
@@ -151,7 +152,7 @@ func cloneRequest(r *http.Request) *http.Request {
 // header. If the extra parameters are provided they will be added as metadata to the
 // name/version pair resulting in the following format.
 // "name/version (extra0; extra1; ...)"
-// The user agent part will be concatenated with this current request's user agent string.
+// The user agent part will be concatenated with this current request's User-Agent string.
 func FormatHeaderValues(req *http.Request, name, version string, extra ...string) {
 	ua := fmt.Sprintf("%s/%s", name, version)
 	if len(extra) > 0 {
@@ -160,7 +161,7 @@ func FormatHeaderValues(req *http.Request, name, version string, extra ...string
 	AddToUserAgent(req, ua)
 }
 
-// AddToUserAgent adds the string to the end of the request's current user agent.
+// AddToUserAgent adds the string to the end of the request's current User-Agent.
 func AddToUserAgent(req *http.Request, s string) {
 	curUA := req.Header.Get("User-Agent")
 	if len(curUA) > 0 {
