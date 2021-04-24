@@ -148,21 +148,21 @@ func cloneRequest(r *http.Request) *http.Request {
 	return r2
 }
 
-// FormatHeaderValues will add the name/version pair to the User-Agent request
-// header. If the extra parameters are provided they will be added as metadata to the
+// formatHeaderValues will format the provided name and version to the name/version format.
+// If the extra parameters are provided they will be added as metadata to the
 // name/version pair resulting in the following format.
 // "name/version (extra0; extra1; ...)"
-// The user agent part will be concatenated with this current request's User-Agent string.
-func FormatHeaderValues(req *http.Request, name, version string, extra ...string) {
+func formatHeaderValues(name, version string, extra ...string) string {
 	ua := fmt.Sprintf("%s/%s", name, version)
 	if len(extra) > 0 {
-		ua += fmt.Sprintf(" (%s)", strings.Join(extra, "; "))
+		ua = fmt.Sprintf("%s (%s)", ua, strings.Join(extra, "; "))
 	}
-	AddToUserAgent(req, ua)
+	// AddToUserAgent(req, ua)
+	return ua
 }
 
-// AddToUserAgent adds the string to the end of the request's current User-Agent.
-func AddToUserAgent(req *http.Request, s string) {
+// addToUserAgent adds the string to the end of the request's current User-Agent.
+func addToUserAgent(req *http.Request, s string) {
 	curUA := req.Header.Get("User-Agent")
 	if len(curUA) > 0 {
 		s = curUA + " " + s
