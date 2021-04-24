@@ -20,8 +20,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"regexp"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -106,15 +107,18 @@ func getCredsFromConfig(auth AuthConfig) *credentials.Credentials {
 	return creds
 }
 
-var regionRe = regexp.MustCompile(`aps-workspaces\.(.*)\.amazonaws\.com`)
-
 func parseEndpointRegion(endpoint string) (region string, err error) {
 	// Example: https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write
-	results := regionRe.FindAllStringSubmatch(endpoint, 1)
-	if len(results) < 1 || len(results[0]) < 2 {
-		return "", fmt.Errorf("invalid Amazon Managed Service for Prometheus endpoint: %q", endpoint)
+	const nDomains = 3
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return "", err
 	}
-	return results[0][1], nil
+	p := strings.SplitN(u.Host, ".", nDomains)
+	if len(p) < nDomains {
+		return "", fmt.Errorf("invalid endpoint: %q", endpoint)
+	}
+	return p[1], nil
 }
 
 func newSigningRoundTripperWithCredentials(auth AuthConfig, creds *credentials.Credentials, next http.RoundTripper) (http.RoundTripper, error) {
