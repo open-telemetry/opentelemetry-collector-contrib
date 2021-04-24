@@ -337,9 +337,10 @@ jobs:
       - run:
           name: Unit test coverage
           command: make unit-tests-with-cover
-      - run:
-          name: Upload unit test coverage
-          command: bash <(curl -s https://codecov.io/bash) -F unit
+# DISABLE CODECOV UNTIL THE SCRIPT IS AUDITED AND WE ARE CERTAIN IT IS OK TO TO EXECUTE IT.
+#      - run:
+#          name: Upload unit test coverage
+#          command: bash <(curl -s https://codecov.io/bash) -F unit
 
   loadtest:
     executor: golang
@@ -519,9 +520,10 @@ jobs:
             mkdir -p test-results/junit
             trap "go-junit-report -set-exit-code < test-results/go-integration-tests.out > test-results/junit/results.xml" EXIT
             make integration-tests-with-cover | tee test-results/go-integration-tests.out
-      - run:
-          name: Upload integration test coverage
-          command: bash <(curl -s https://codecov.io/bash) -F integration
+# DISABLE CODECOV UNTIL THE SCRIPT IS AUDITED AND WE ARE CERTAIN IT IS OK TO TO EXECUTE IT.
+#      - run:
+#          name: Upload integration test coverage
+#          command: bash <(curl -s https://codecov.io/bash) -F integration
       - store_test_results:
           path: test-results/junit
       - store_artifacts:
