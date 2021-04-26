@@ -133,7 +133,10 @@ func TestGetCredsFromConfig(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			creds := getCredsFromConfig(tt.authConfig)
+			creds, err := getCredsFromConfig(tt.authConfig)
+			if err != nil {
+				t.Fatalf("Failed getCredsFromConfig: %v", err)
+			}
 			require.NotNil(t, creds)
 
 		})
