@@ -15,7 +15,6 @@
 package utils
 
 import (
-	"encoding/csv"
 	"regexp"
 	"strings"
 	"unicode"
@@ -213,12 +212,4 @@ func compileRules(exprs []string) []*regexp.Regexp {
 		list = append(list, rule)
 	}
 	return list
-}
-
-func SplitString(s string, sep rune) ([]string, error) {
-	r := csv.NewReader(strings.NewReader(s))
-	r.TrimLeadingSpace = true
-	r.LazyQuotes = true
-	r.Comma = sep
-	return r.Read()
 }
