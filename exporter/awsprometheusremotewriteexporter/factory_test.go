@@ -76,11 +76,6 @@ func TestCreateMetricsExporter(t *testing.T) {
 		params      component.ExporterCreateParams
 		returnError bool
 	}{
-		{"success_case_default",
-			af.CreateDefaultConfig(),
-			component.ExporterCreateParams{Logger: zap.NewNop()},
-			false,
-		},
 		{"success_case_with_auth",
 			validConfigWithAuth,
 			component.ExporterCreateParams{Logger: zap.NewNop()},
@@ -97,7 +92,6 @@ func TestCreateMetricsExporter(t *testing.T) {
 			true,
 		},
 	}
-	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := af.CreateMetricsExporter(context.Background(), tt.params, tt.cfg)

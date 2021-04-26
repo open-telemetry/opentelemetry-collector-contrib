@@ -57,7 +57,7 @@ func (af *awsFactory) CreateDefaultConfig() config.Exporter {
 	cfg.TypeVal = typeStr
 	cfg.NameVal = typeStr
 	cfg.HTTPClientSettings.CustomRoundTripper = func(next http.RoundTripper) (http.RoundTripper, error) {
-		return newSigningRoundTripper(cfg.AuthConfig, next)
+		return newSigningRoundTripper(cfg, next)
 	}
 
 	return cfg
