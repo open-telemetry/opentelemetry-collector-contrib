@@ -86,16 +86,8 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateParam
 	// https://github.com/DataDog/datadog-serverless-functions/blob/11f170eac105d66be30f18eda09eca791bc0d31b/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L43
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
 
-	// a blocklist for dropping IgnoreResource
-	var blocklister *utils.Blocklister
-	// ignored resources
-	r, err := utils.SplitString(cfg.Traces.IgnoreResource, ',')
-
-	if err == nil {
-		blocklister = utils.NewBlocklister(r)
-	} else {
-		blocklister = utils.NewBlocklister([]string{})
-	}
+	// a blocklist for dropping ignored resources
+	blocklister := utils.NewBlocklister(cfg.Traces.IgnoreResources)
 
 	calculator := &sublayerCalculator{sc: stats.NewSublayerCalculator()}
 	exporter := &traceExporter{

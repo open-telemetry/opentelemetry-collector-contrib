@@ -75,6 +75,7 @@ func createDefaultConfig() config.Exporter {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "$DD_APM_URL", // If not provided, set during config sanitization
 			},
+			IgnoreResources: []string{},
 		},
 
 		SendMetadata:        true,

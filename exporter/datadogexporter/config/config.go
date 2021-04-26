@@ -99,8 +99,10 @@ type TracesConfig struct {
 	SampleRate uint `mapstructure:"sample_rate"`
 
 	// ignored resources
-	// csv of regexes
-	IgnoreResource string `mapstructure:"ignore_resource"`
+	// A blacklist of regular expressions can be provided to disable certain traces based on their resource name
+	// all entries must be surrounded by double quotes and separated by commas.
+	// ignore_resources: ["(GET|POST) /healthcheck"]
+	IgnoreResources []string `mapstructure:"ignore_resources"`
 }
 
 // TagsConfig defines the tag-related configuration
@@ -226,6 +228,10 @@ func (c *Config) Sanitize() error {
 
 	if c.Traces.TCPAddr.Endpoint == "" {
 		c.Traces.TCPAddr.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
+	}
+
+	if c.Traces.IgnoreResources == nil {
+		c.Traces.IgnoreResources = []string{}
 	}
 
 	return nil
