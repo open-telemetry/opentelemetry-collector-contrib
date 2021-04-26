@@ -15,7 +15,6 @@
 package utils
 
 import (
-	"regexp"
 	"strings"
 	"unicode"
 
@@ -31,13 +30,6 @@ const (
 	// From: https://github.com/DataDog/datadog-agent/blob/eab0dde41fe3a069a65c33d82a81b1ef1cf6b3bc/pkg/trace/traceutil/normalize.go#L15
 	DefaultServiceName string = "unnamed-otel-service"
 )
-
-// From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/filters/blacklister.go#L15-L19
-// Blocklister holds a list of regular expressions which will match resources
-// on spans that should be dropped.
-type Blocklister struct {
-	list []*regexp.Regexp
-}
 
 // NormalizeSpanName returns a cleaned up, normalized span name. Span names are used to formulate tags,
 // and they also are used throughout the UI to connect metrics and traces. This helper function will:
@@ -184,37 +176,4 @@ func GetRoot(t *pb.APITrace) *pb.Span {
 
 	// Gracefully fail with the last span of the trace
 	return spans[len(spans)-1]
-}
-
-// From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/filters/blacklister.go#L21-L29
-// Allows returns true if the Blocklister permits this span.
-func (f *Blocklister) Allows(span *pb.Span) bool {
-	for _, entry := range f.list {
-		if entry.MatchString(span.Resource) {
-			return false
-		}
-	}
-	return true
-}
-
-// From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/filters/blacklister.go#L41-L45
-// NewBlocklister creates a new Blocklister based on the given list of
-// regular expressions.
-func NewBlocklister(exprs []string) *Blocklister {
-	return &Blocklister{list: compileRules(exprs)}
-}
-
-// From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/filters/blacklister.go#L47-L59
-// compileRules compiles as many rules as possible from the list of expressions.
-func compileRules(exprs []string) []*regexp.Regexp {
-	list := make([]*regexp.Regexp, 0, len(exprs))
-	for _, entry := range exprs {
-		rule, err := regexp.Compile(entry)
-		if err != nil {
-			// log.Errorf("Invalid resource filter: %q", entry)
-			continue
-		}
-		list = append(list, rule)
-	}
-	return list
 }

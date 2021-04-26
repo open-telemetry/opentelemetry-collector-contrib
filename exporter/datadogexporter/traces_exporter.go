@@ -56,7 +56,7 @@ type traceExporter struct {
 	obfuscator     *obfuscate.Obfuscator
 	calculator     *sublayerCalculator
 	client         *datadog.Client
-	blocklister    *utils.Blocklister
+	blocklister    *Blocklister
 }
 
 var (
@@ -87,7 +87,7 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateParam
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
 
 	// a blocklist for dropping ignored resources
-	blocklister := utils.NewBlocklister(cfg.Traces.IgnoreResources)
+	blocklister := NewBlocklister(cfg.Traces.IgnoreResources)
 
 	calculator := &sublayerCalculator{sc: stats.NewSublayerCalculator()}
 	exporter := &traceExporter{
