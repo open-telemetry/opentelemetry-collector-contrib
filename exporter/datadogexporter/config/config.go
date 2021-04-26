@@ -97,6 +97,10 @@ type TracesConfig struct {
 	// meaning no sampling. If you want to send one event out of every 250
 	// times Send() is called, you would specify 250 here.
 	SampleRate uint `mapstructure:"sample_rate"`
+
+	// ignored resources
+	// csv of regexes
+	IgnoreResource string `mapstructure:"ignore_resource"`
 }
 
 // TagsConfig defines the tag-related configuration

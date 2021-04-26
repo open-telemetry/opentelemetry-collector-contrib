@@ -15,9 +15,12 @@
 package utils
 
 import (
+	"encoding/csv"
+	"regexp"
 	"strings"
 	"unicode"
 
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -29,6 +32,12 @@ const (
 	// From: https://github.com/DataDog/datadog-agent/blob/eab0dde41fe3a069a65c33d82a81b1ef1cf6b3bc/pkg/trace/traceutil/normalize.go#L15
 	DefaultServiceName string = "unnamed-otel-service"
 )
+
+// Blocklister holds a list of regular expressions which will match resources
+// on spans that should be dropped.
+type Blocklister struct {
+	list []*regexp.Regexp
+}
 
 // NormalizeSpanName returns a cleaned up, normalized span name. Span names are used to formulate tags,
 // and they also are used throughout the UI to connect metrics and traces. This helper function will:
@@ -131,4 +140,85 @@ func NormalizeServiceName(service string) string {
 	}
 
 	return s
+}
+
+// GetRoot extracts the root span from a trace
+func GetRoot(t *pb.APITrace) *pb.Span {
+	// That should be caught beforehand
+	spans := t.GetSpans()
+	if len(spans) == 0 {
+		return nil
+	}
+	// General case: go over all spans and check for one which matching parent
+	parentIDToChild := map[uint64]*pb.Span{}
+
+	for i := range spans {
+		// Common case optimization: check for span with ParentID == 0, starting from the end,
+		// since some clients report the root last
+		j := len(spans) - 1 - i
+		if spans[j].ParentID == 0 {
+			return spans[j]
+		}
+		parentIDToChild[spans[j].ParentID] = spans[j]
+	}
+
+	for i := range spans {
+		_, ok := parentIDToChild[spans[i].SpanID]
+
+		if ok {
+			delete(parentIDToChild, spans[i].SpanID)
+		}
+	}
+
+	// Here, if the trace is valid, we should have len(parentIDToChild) == 1
+	// if len(parentIDToChild) != 1 {
+	//	// log.Debugf("Didn't reliably find the root span for traceID:%v", t[0].TraceID)
+	// }
+
+	// Have a safe bahavior if that's not the case
+	// Pick the first span without its parent
+	for parentID := range parentIDToChild {
+		return parentIDToChild[parentID]
+	}
+
+	// Gracefully fail with the last span of the trace
+	return spans[len(spans)-1]
+}
+
+// Allows returns true if the Blocklister permits this span.
+func (f *Blocklister) Allows(span *pb.Span) bool {
+	for _, entry := range f.list {
+		if entry.MatchString(span.Resource) {
+			return false
+		}
+	}
+	return true
+}
+
+// NewBlocklister creates a new Blocklister based on the given list of
+// regular expressions.
+func NewBlocklister(exprs []string) *Blocklister {
+	return &Blocklister{list: compileRules(exprs)}
+}
+
+// compileRules compiles as many rules as possible from the list of expressions.
+func compileRules(exprs []string) []*regexp.Regexp {
+	list := make([]*regexp.Regexp, 0, len(exprs))
+	for _, entry := range exprs {
+		rule, err := regexp.Compile(entry)
+		if err != nil {
+			// log.Errorf("Invalid resource filter: %q", entry)
+			continue
+		}
+		list = append(list, rule)
+	}
+	return list
+}
+
+func SplitString(s string, sep rune) ([]string, error) {
+	r := csv.NewReader(strings.NewReader(s))
+	r.TrimLeadingSpace = true
+	r.LazyQuotes = true
+	r.Comma = sep
+	return r.Read()
 }
