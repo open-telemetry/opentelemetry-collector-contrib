@@ -32,6 +32,7 @@ const (
 	DefaultServiceName string = "unnamed-otel-service"
 )
 
+// From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/filters/blacklister.go#L15-L19
 // Blocklister holds a list of regular expressions which will match resources
 // on spans that should be dropped.
 type Blocklister struct {
@@ -141,6 +142,7 @@ func NormalizeServiceName(service string) string {
 	return s
 }
 
+// From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/traceutil/trace.go#L27
 // GetRoot extracts the root span from a trace
 func GetRoot(t *pb.APITrace) *pb.Span {
 	// That should be caught beforehand
@@ -184,6 +186,7 @@ func GetRoot(t *pb.APITrace) *pb.Span {
 	return spans[len(spans)-1]
 }
 
+// From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/filters/blacklister.go#L21-L29
 // Allows returns true if the Blocklister permits this span.
 func (f *Blocklister) Allows(span *pb.Span) bool {
 	for _, entry := range f.list {
@@ -194,12 +197,14 @@ func (f *Blocklister) Allows(span *pb.Span) bool {
 	return true
 }
 
+// From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/filters/blacklister.go#L41-L45
 // NewBlocklister creates a new Blocklister based on the given list of
 // regular expressions.
 func NewBlocklister(exprs []string) *Blocklister {
 	return &Blocklister{list: compileRules(exprs)}
 }
 
+// From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/filters/blacklister.go#L47-L59
 // compileRules compiles as many rules as possible from the list of expressions.
 func compileRules(exprs []string) []*regexp.Regexp {
 	list := make([]*regexp.Regexp, 0, len(exprs))

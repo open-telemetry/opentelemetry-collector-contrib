@@ -171,11 +171,14 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 	for traceID, apiTrace := range apiTraces {
 		// first drop trace if root span exists in trace chunk that is on blocklist (drop trace no stats).
 		// In the dd-agent, the blocklist/blacklist behavior can be performed before most of the expensive
-		// operations on the span. In this case, the span must be converted from otlp span into a dd span first.
-		// DD trace chunks rec'd by datadog-agent v0.4+ endpoint are expected as arrays of spans
-		// grouped by trace id. Since OTLP groups by arrays of spans from the same instrumentation library, not trace-id,
-		// (contrib-instrumention-redis, contrib-instrumention-rails, etc), beside otlp->dd conversion, we have to iterate
+		// operations on the span.
+		// See: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/agent/agent.go#L200
+		// However, in our case, the span must be converted from otlp span into a dd span first. This is for 2 reasons.
+		// First, DD trace chunks rec'd by datadog-agent v0.4+ endpoint are expected as arrays of spans grouped by trace id.
+		// But, since OTLP groups by arrays of spans from the same instrumentation library, not trace-id,
+		// (contrib-instrumention-redis, contrib-instrumention-rails, etc), we have to iterate
 		// over batch and group all spans by trace id.
+		// Second, otlp->dd conversion is what creates the resource name that we are checking in the blocklist.
 		// Note: OTLP also groups by ResourceSpans but practically speaking a payload will usually only
 		// contain 1 ResourceSpan array.
 
