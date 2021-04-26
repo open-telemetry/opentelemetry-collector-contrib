@@ -24,6 +24,10 @@ from django.conf import settings
 
 settings.configure()
 
+source_dirs = [
+    os.path.abspath("../opentelemetry-instrumentation/src/"),
+]
+
 exp = "../exporter"
 exp_dirs = [
     os.path.abspath("/".join(["../exporter", f, "src"]))
@@ -45,7 +49,7 @@ sdk_ext_dirs = [
     if isdir(join(sdk_ext, f))
 ]
 
-sys.path[:0] = exp_dirs + instr_dirs + sdk_ext_dirs
+sys.path[:0] = source_dirs + exp_dirs + instr_dirs + sdk_ext_dirs
 
 # -- Project information -----------------------------------------------------
 
