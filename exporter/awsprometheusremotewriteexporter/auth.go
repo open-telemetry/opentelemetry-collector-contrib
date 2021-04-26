@@ -17,9 +17,12 @@ package awsprometheusremotewriteexporter
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -68,10 +71,14 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	return resp, err
 }
 
-func newSigningRoundTripper(auth AuthConfig, next http.RoundTripper) (http.RoundTripper, error) {
+func newSigningRoundTripper(cfg *Config, next http.RoundTripper) (http.RoundTripper, error) {
+	auth := cfg.AuthConfig
 	if auth.Region == "" {
-		// TODO(jbd): Automatically parse the region from the workspace.
-		return next, nil
+		region, err := parseEndpointRegion(cfg.Config.HTTPClientSettings.Endpoint)
+		if err != nil {
+			return next, err
+		}
+		auth.Region = region
 	}
 	if auth.Service == "" {
 		auth.Service = defaultAMPSigV4Service
@@ -98,6 +105,20 @@ func getCredsFromConfig(auth AuthConfig) *credentials.Credentials {
 		creds = sess.Config.Credentials
 	}
 	return creds
+}
+
+func parseEndpointRegion(endpoint string) (region string, err error) {
+	// Example: https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write
+	const nDomains = 3
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return "", err
+	}
+	p := strings.SplitN(u.Host, ".", nDomains)
+	if len(p) < nDomains {
+		return "", fmt.Errorf("invalid endpoint: %q", endpoint)
+	}
+	return p[1], nil
 }
 
 func newSigningRoundTripperWithCredentials(auth AuthConfig, creds *credentials.Credentials, next http.RoundTripper) (http.RoundTripper, error) {
