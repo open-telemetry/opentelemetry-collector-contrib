@@ -328,6 +328,18 @@ jobs:
       - run:
           name: Build collector for all archs
           command: grep ^otelcontribcol-all-sys Makefile|fmt -w 1|tail -n +2|circleci tests split|xargs make
+      - run:
+          name: Install opentelemetry-collector-builder
+          command: cd otelcolbuilder && make install-bin-linux && cd ..
+      - run:
+          name: Build sumo collector with builder for all archs
+          command: >
+            cd otelcolbuilder &&
+            grep ^otelcol-sumo-all-sys Makefile|fmt -w 1|tail -n +2|circleci tests split|xargs make &&
+            cd ..
+      - run:
+          name: Copy sumo collector to bin/
+          command: cp otelcolbuilder/cmd/otelcol-sumo* bin/
       - persist_to_workspace:
           root: ~/
           paths: project/bin

@@ -1,26 +1,62 @@
 dist:
-  name: otelcol-sumo
+  # name: otelcol-sumo # name of the binary produced. Optional, specified in Makefile for each platform.
   description: Sumo Logic OpenTelemetry Collector distribution
 
   # the module name for the new distribution, following Go mod conventions. Optional, but recommended.
   module: github.com/SumoLogic/opentelemetry-collector-builder
 
   otelcol_version: 0.25.0 # the OpenTelemetry Collector version to use as base for the distribution.
-  output_path: ./cmd/ # the path to write the output (sources and binary).
+  output_path: ./cmd # the path to write the output (sources and binary).
 
 exporters:
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.25.0"
 
 processors:
+  # Processors with non-upstreamed changes:
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor v0.25.0"
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor v0.25.0"
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/processor/sourceprocessor v0.25.0"
+  # Upstream processors:
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.25.0"
 
 receivers:
+  # Receivers with non-upstreamed changes:
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/telegrafreceiver v0.25.0"
+  # Upstream receivers:
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver v0.25.0"
+  # - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.25.0"
+  # - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.25.0"
+  # - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.25.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.25.0"
 
 # Replacement paths are relative to the output_path (location of source files)
 replaces:
+  # ----------------------------------------------------------------------------
   # Customized processors
   - github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor => ./../../processor/cascadingfilterprocessor
   # -
@@ -33,6 +69,43 @@ replaces:
   # Customized receivers
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/telegrafreceiver => ./../../receiver/telegrafreceiver
   - github.com/influxdata/telegraf => github.com/sumologic/telegraf v1.17.3-sumo
+
+  # ----------------------------------------------------------------------------
+  # The following replace statements are needed because replace statements only
+  # have the effect in the Go module they are declared in.
+  # ----------------------------------------------------------------------------
+  # This is needed because:
+  # go: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver@v0.25.0 requires
+  #     github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza@v0.0.0: reading github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza/internal/stanza/go.mod at revision internal/stanza/v0.0.0: unknown revision internal/stanza/v0.0.0
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza => ./../../internal/stanza
+  # This is needed because:
+  # go: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver@v0.25.0 requires
+  #     github.com/open-telemetry/opentelemetry-collector-contrib/internal/common@v0.0.0-00010101000000-000000000000: invalid version: unknown revision 000000000000
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ./../../internal/common
+  # This is needed because:
+  # go: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver@v0.25.0 requires
+  #     github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver@v0.0.0-00010101000000-000000000000: invalid version: unknown revision 000000000000
+  - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver => ./../../receiver/redisreceiver
+  # -
+  - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ./../../pkg/experimentalmetricmetadata
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray => ./../../internal/aws/xray
+
+  # For some reason building unstable version of otelcontribcol on Linux fails
+  # with the following error:
+  # # github.com/docker/libnetwork/ipvs
+  # /go/pkg/mod/github.com/docker/libnetwork@v0.8.0-dev.2.0.20181012153825-d7b61745d166/ipvs/ipvs.go:100:32: cannot use &tv (type *syscall.Timeval) as type *unix.Timeval in argument to sock.SetSendTimeout
+  # /go/pkg/mod/github.com/docker/libnetwork@v0.8.0-dev.2.0.20181012153825-d7b61745d166/ipvs/ipvs.go:104:35: cannot use &tv (type *syscall.Timeval) as type *unix.Timeval in argument to sock.SetReceiveTimeout
+  # /go/pkg/mod/github.com/docker/libnetwork@v0.8.0-dev.2.0.20181012153825-d7b61745d166/ipvs/netlink.go:219:13: assignment mismatch: 2 variables but s.Receive returns 3 values
+  #
+  # Related issue: https://github.com/moby/libnetwork/issues/2110
+  #
+  # It seems there was a breaking change introduced in github.com/vishvananda/netlink
+  # which github.com/vishvananda/netlink depends on:
+  # https://github.com/vishvananda/netlink/commit/0e3b74dbe28f37fd911f9bca3565fdca33c03f29
+  #
+  # This is this commit's parent which we need to make the compilation pass:
+  # https://github.com/vishvananda/netlink/commit/b7fbf1f5291ecf8ae5179d3202e914cb98cfe400
+  - github.com/vishvananda/netlink => github.com/vishvananda/netlink v0.0.0-20171026164018-b7fbf1f5291e
 
   # ----------------------------------------------------------------------------
   # Customized core
