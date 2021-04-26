@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package awsprometheusremotewriteexporter provides a Prometheus Remote Write Exporter with AWS Sigv4 authentication
 package awsprometheusremotewriteexporter
 
 import (
@@ -86,11 +85,6 @@ func TestCreateMetricsExporter(t *testing.T) {
 			validConfigWithAuth,
 			component.ExporterCreateParams{Logger: zap.NewNop()},
 			false,
-		},
-		{"invalid_auth_case",
-			invalidConfigWithAuth,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
-			true,
 		},
 		{"invalid_config_case",
 			invalidConfig,

@@ -706,15 +706,13 @@ func generateLargeDPBatch() pdata.Metrics {
 		m.SetName("test_" + strconv.Itoa(i))
 		m.SetDataType(pdata.MetricDataTypeIntGauge)
 
-		dp := pdata.NewIntDataPoint()
+		dp := m.IntGauge().DataPoints().AppendEmpty()
 		dp.SetTimestamp(pdata.TimestampFromTime(ts))
 		dp.LabelsMap().InitFromMap(map[string]string{
 			"k0": "v0",
 			"k1": "v1",
 		})
 		dp.SetValue(int64(i))
-
-		m.IntGauge().DataPoints().Append(dp)
 	}
 
 	return md
@@ -1007,8 +1005,9 @@ func TestConsumeMetadata(t *testing.T) {
 func BenchmarkExporterConsumeData(b *testing.B) {
 	batchSize := 1000
 	metrics := pdata.NewMetrics()
+	tmd := testMetricsData()
 	for i := 0; i < batchSize; i++ {
-		metrics.ResourceMetrics().Append(testMetricsData())
+		tmd.CopyTo(metrics.ResourceMetrics().AppendEmpty())
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
