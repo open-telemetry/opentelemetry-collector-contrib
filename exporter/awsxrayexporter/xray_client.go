@@ -92,6 +92,6 @@ func IsTimeoutError(err error) bool {
 func newCollectorUserAgentHandler(startInfo component.ApplicationStartInfo) request.NamedHandler {
 	return request.NamedHandler{
 		Name: "otel.collector.UserAgentHandler",
-		Fn:   request.MakeAddToUserAgentHandler(collectorDistribution, startInfo.Version, startInfo.GitHash),
+		Fn:   request.MakeAddToUserAgentHandler(collectorDistribution, startInfo.Version),
 	}
 }
