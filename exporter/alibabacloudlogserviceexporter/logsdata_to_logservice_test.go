@@ -47,8 +47,8 @@ func getComplexAttributeValueMap() pdata.AttributeValue {
 
 func createLogData(numberOfLogs int) pdata.Logs {
 	logs := pdata.NewLogs()
-	logs.ResourceLogs().Resize(2)
-	rl := logs.ResourceLogs().At(0)
+	logs.ResourceLogs().AppendEmpty() // Add an empty ResourceLogs
+	rl := logs.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("resouceKey", "resourceValue")
 	rl.Resource().Attributes().InsertString(conventions.AttributeServiceName, "test-log-service-exporter")
 	rl.Resource().Attributes().InsertString(conventions.AttributeHostName, "test-host")

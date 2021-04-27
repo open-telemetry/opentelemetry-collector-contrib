@@ -202,7 +202,7 @@ func testTraceData(t *testing.T, expected []Batch, resource *resourcepb.Resource
 	assert.Equal(t, expected, m.Batches)
 	if !useAPIKeyHeader {
 		assert.Equal(t, []string{"NRII-1"}, m.Header[http.CanonicalHeaderKey("api-key")])
-	} else if strings.HasPrefix(apiKey, "NRII-") {
+	} else if len(apiKey) < 40 {
 		assert.Equal(t, []string{apiKey}, m.Header[http.CanonicalHeaderKey("api-key")])
 	} else {
 		assert.Equal(t, []string{apiKey}, m.Header[http.CanonicalHeaderKey("x-license-key")])
@@ -361,7 +361,7 @@ func TestExportTraceDataMinimum(t *testing.T) {
 	}
 
 	testTraceData(t, expected, nil, spans, "")
-	testTraceData(t, expected, nil, spans, "api-key")
+	testTraceData(t, expected, nil, spans, "0000000000000000000000000000000000000000")
 	testTraceData(t, expected, nil, spans, "NRII-api-key")
 }
 
@@ -435,7 +435,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	}
 
 	testTraceData(t, expected, resource, spans, "")
-	testTraceData(t, expected, resource, spans, "api-key")
+	testTraceData(t, expected, resource, spans, "0000000000000000000000000000000000000000")
 	testTraceData(t, expected, resource, spans, "NRII-api-key")
 }
 
@@ -517,7 +517,7 @@ func TestExportMetricDataMinimal(t *testing.T) {
 	}
 
 	testMetricData(t, expected, md, "NRII-api-key")
-	testMetricData(t, expected, md, "api-key")
+	testMetricData(t, expected, md, "0000000000000000000000000000000000000000")
 	testMetricData(t, expected, md, "")
 }
 
@@ -683,7 +683,7 @@ func TestExportMetricDataFull(t *testing.T) {
 	}
 
 	testMetricData(t, expected, md, "")
-	testMetricData(t, expected, md, "api-key")
+	testMetricData(t, expected, md, "0000000000000000000000000000000000000000")
 	testMetricData(t, expected, md, "NRII-api-key")
 }
 
@@ -723,16 +723,15 @@ func TestExportLogs(t *testing.T) {
 	}
 
 	testLogData(t, expected, logs, "")
-	testLogData(t, expected, logs, "api-key")
+	testLogData(t, expected, logs, "0000000000000000000000000000000000000000")
 	testLogData(t, expected, logs, "NRII-api-key")
 }
 
 func TestCreatesClientOptionWithVersionInUserAgent(t *testing.T) {
-	testUserAgentContainsCollectorInfo(t, testCollectorVersion, "githash", testCollectorName, "NewRelic-OpenTelemetry-Collector/v1.2.3 TestCollector")
-	testUserAgentContainsCollectorInfo(t, "", "githash", testCollectorName, "NewRelic-OpenTelemetry-Collector/githash TestCollector")
+	testUserAgentContainsCollectorInfo(t, testCollectorVersion, testCollectorName, "NewRelic-OpenTelemetry-Collector/v1.2.3 TestCollector")
 }
 
-func testUserAgentContainsCollectorInfo(t *testing.T, version string, gitHash string, exeName string, expectedUserAgentSubstring string) {
+func testUserAgentContainsCollectorInfo(t *testing.T, version string, exeName string, expectedUserAgentSubstring string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -763,7 +762,6 @@ func testUserAgentContainsCollectorInfo(t *testing.T, version string, gitHash st
 	params := component.ExporterCreateParams{Logger: zap.NewNop(), ApplicationStartInfo: component.ApplicationStartInfo{
 		ExeName: exeName,
 		Version: version,
-		GitHash: gitHash,
 	}}
 	exp, err := f.CreateTracesExporter(context.Background(), params, c)
 	require.NoError(t, err)

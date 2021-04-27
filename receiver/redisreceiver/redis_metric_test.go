@@ -27,7 +27,7 @@ func TestParseMetric_PointTimestamp(t *testing.T) {
 	now := time.Now()
 	uptimeMetric := uptimeInSeconds()
 	pdm, err := uptimeMetric.parseMetric("42", newTimeBundle(now, 100))
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	pt := pdm.IntSum().DataPoints().At(0)
 	ptTime := pt.Timestamp()

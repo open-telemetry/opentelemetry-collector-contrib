@@ -30,11 +30,10 @@ func TestSplitDifferentTracesIntoDifferentBatches(t *testing.T) {
 	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
 	library := ils.InstrumentationLibrary()
 	library.SetName("first-library")
-	ils.Spans().Resize(2)
-	firstSpan := ils.Spans().At(0)
+	firstSpan := ils.Spans().AppendEmpty()
 	firstSpan.SetName("first-batch-first-span")
 	firstSpan.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
-	secondSpan := ils.Spans().At(1)
+	secondSpan := ils.Spans().AppendEmpty()
 	secondSpan.SetName("first-batch-second-span")
 	secondSpan.SetTraceID(pdata.NewTraceID([16]byte{2, 3, 4, 5}))
 

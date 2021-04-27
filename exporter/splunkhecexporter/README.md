@@ -22,6 +22,9 @@ The following configuration options can also be configured:
 - `disable_compression` (default: false): Whether to disable gzip compression over HTTP.
 - `timeout` (default: 10s): HTTP timeout when sending data.
 - `insecure_skip_verify` (default: false): Whether to skip checking the certificate of the HEC endpoint when sending data over HTTPS.
+- `ca_file` (no default) Path to the CA cert to verify the server being connected to.
+- `cert_file` (no default) Path to the TLS cert to use for client connections when TLS client auth is required.
+- `key_file` (no default) Path to the TLS key to use for TLS required connections.
 - `max_content_length_logs` (default: 2097152): Maximum log data size in bytes per HTTP post limited to 2097152 bytes (2 MiB).
 
 In addition, this exporter offers queued retry which is enabled by default.
@@ -51,6 +54,14 @@ exporters:
     timeout: 10s
     # Whether to skip checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
     insecure_skip_verify: false
+    # Whether to skip checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
+    insecure: false
+    # Path to the CA cert to verify the server being connected to. Should only be used if `insecure` is set to false.
+    ca_file: /certs/ExampleCA.crt
+    # Path to the TLS cert to use for client connections when TLS client auth is required. Should only be used if `insecure` is set to false.
+    cert_file: /certs/HECclient.crt
+    # Path to the TLS key to use for TLS required connections. Should only be used if `insecure` is set to false.
+    key_file: /certs/HECclient.key
 ```
 
 The full list of settings exposed for this exporter are documented [here](config.go)
