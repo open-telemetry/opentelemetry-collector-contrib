@@ -444,7 +444,6 @@ func TestUserAgent(t *testing.T) {
 
 	startInfo := component.ApplicationStartInfo{
 		Version: "1.0",
-		GitHash: "beef",
 	}
 
 	session, _ := session.NewSession()
@@ -457,5 +456,5 @@ func TestUserAgent(t *testing.T) {
 	}, nil, nil)
 
 	logClient.Handlers.Build.Run(req)
-	assert.Contains(t, req.HTTPRequest.UserAgent(), "opentelemetry-collector-contrib/1.0 (beef)")
+	assert.Contains(t, req.HTTPRequest.UserAgent(), "opentelemetry-collector-contrib/1.0")
 }
