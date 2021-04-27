@@ -1101,6 +1101,7 @@ func TestStatsAggregations(t *testing.T) {
 // ensure that sanitization  of trace payloads occurs
 func TestSanitization(t *testing.T) {
 	calculator := newSublayerCalculator()
+	denylister := NewDenylister([]string{})
 
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
@@ -1116,7 +1117,7 @@ func TestSanitization(t *testing.T) {
 	instrumentationLibrary.SetVersion("v1")
 	ilss.Spans().Resize(1)
 
-	outputTraces, _ := convertToDatadogTd(traces, calculator, &config.Config{})
+	outputTraces, _ := convertToDatadogTd(traces, calculator, &config.Config{}, denylister)
 	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
 
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
