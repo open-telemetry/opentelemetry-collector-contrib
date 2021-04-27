@@ -116,7 +116,6 @@ func TestLeakingBody(t *testing.T) {
 }
 
 func TestGetCredsFromConfig(t *testing.T) {
-
 	tests := []struct {
 		name       string
 		authConfig AuthConfig
@@ -133,9 +132,9 @@ func TestGetCredsFromConfig(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			creds := getCredsFromConfig(tt.authConfig)
+			creds, err := getCredsFromConfig(tt.authConfig)
+			require.NoError(t, err, "Failed getCredsFromConfig")
 			require.NotNil(t, creds)
-
 		})
 	}
 }

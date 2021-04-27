@@ -84,27 +84,28 @@ func newSigningRoundTripper(cfg *Config, next http.RoundTripper) (http.RoundTrip
 		auth.Service = defaultAMPSigV4Service
 	}
 
-	creds := getCredsFromConfig(auth)
+	creds, err := getCredsFromConfig(auth)
+	if err != nil {
+		return next, err
+	}
 	return newSigningRoundTripperWithCredentials(auth, creds, next)
 }
 
-func getCredsFromConfig(auth AuthConfig) *credentials.Credentials {
-	// TODO: Don't panic, handle the error from NewSessionWithOptions.
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
+func getCredsFromConfig(auth AuthConfig) (*credentials.Credentials, error) {
+	sess, err := session.NewSessionWithOptions(session.Options{
 		Config: aws.Config{Region: aws.String(auth.Region)},
-	}))
-
-	var creds *credentials.Credentials
-	if auth.RoleArn != "" {
-		// Get credentials from an assumeRole API call
-		creds = stscreds.NewCredentials(sess, auth.RoleArn, func(p *stscreds.AssumeRoleProvider) {
-			p.RoleSessionName = "aws-otel-collector-" + strconv.FormatInt(time.Now().Unix(), 10)
-		})
-	} else {
-		// Get Credentials, either from ./aws or from environmental variables
-		creds = sess.Config.Credentials
+	})
+	if err != nil {
+		return nil, err
 	}
-	return creds
+	if auth.RoleArn != "" {
+		// Get credentials from an assumeRole API call.
+		return stscreds.NewCredentials(sess, auth.RoleArn, func(p *stscreds.AssumeRoleProvider) {
+			p.RoleSessionName = "aws-otel-collector-" + strconv.FormatInt(time.Now().Unix(), 10)
+		}), nil
+	}
+	// Get Credentials, either from ./aws or from environmental variables.
+	return sess.Config.Credentials, nil
 }
 
 func parseEndpointRegion(endpoint string) (region string, err error) {
