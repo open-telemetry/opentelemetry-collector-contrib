@@ -21,6 +21,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -57,6 +59,15 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 
 	// Clone request to ensure thread safety.
 	req2 := cloneRequest(req)
+
+	// Add the sdk and system information to the User-Agent header of the request
+	extras := []string{runtime.Version(), runtime.GOOS, runtime.GOARCH}
+	if v := os.Getenv("AWS_EXECUTION_ENV"); v != "" {
+		extras = append(extras, v)
+	}
+	addToUserAgent(req, aws.SDKName, aws.SDKVersion, extras...)
+
+	// Sign the request
 	_, err = si.signer.Sign(req2, body, si.service, si.region, time.Now())
 	if err != nil {
 		return nil, err
@@ -147,24 +158,19 @@ func cloneRequest(r *http.Request) *http.Request {
 	return r2
 }
 
-// formatHeaderValues will format the provided name and version to the name/version format.
+// addToUserAgent will format the provided name and version to the name/version format.
 // If the extra parameters are provided they will be added as metadata to the
 // name/version pair resulting in the following format.
 // "name/version (extra0; extra1; ...)"
-func formatHeaderValues(name, version string, extra ...string) string {
+// It then adds the string to the end of the request's current User-Agent.
+func addToUserAgent(req *http.Request, name, version string, extra ...string) {
 	ua := fmt.Sprintf("%s/%s", name, version)
 	if len(extra) > 0 {
 		ua = fmt.Sprintf("%s (%s)", ua, strings.Join(extra, "; "))
 	}
-	// AddToUserAgent(req, ua)
-	return ua
-}
-
-// addToUserAgent adds the string to the end of the request's current User-Agent.
-func addToUserAgent(req *http.Request, s string) {
 	curUA := req.Header.Get("User-Agent")
 	if len(curUA) > 0 {
-		s = curUA + " " + s
+		ua = curUA + " " + ua
 	}
-	req.Header.Set("User-Agent", s)
+	req.Header.Set("User-Agent", ua)
 }
