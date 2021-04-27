@@ -21,6 +21,7 @@ import (
 	"path"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -59,11 +60,11 @@ type Config struct {
 	// Disable GZip compression. Defaults to false.
 	DisableCompression bool `mapstructure:"disable_compression"`
 
-	// insecure_skip_verify skips checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
-	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
-
 	// Maximum log data size in bytes per HTTP post. Defaults to the backend limit of 2097152 bytes (2MiB).
 	MaxContentLengthLogs uint `mapstructure:"max_content_length_logs"`
+
+	// TLSSetting struct exposes TLS client configuration.
+	TLSSetting configtls.TLSClientSetting `mapstructure:",squash"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {

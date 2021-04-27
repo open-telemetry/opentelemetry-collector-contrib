@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
@@ -78,6 +79,15 @@ func TestLoadConfig(t *testing.T) {
 			Enabled:      true,
 			NumConsumers: 2,
 			QueueSize:    10,
+		},
+		TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: configtls.TLSSetting{
+				CAFile:   "",
+				CertFile: "",
+				KeyFile:  "",
+			},
+			Insecure:           true,
+			InsecureSkipVerify: false,
 		},
 	}
 	assert.Equal(t, &expectedCfg, e1)
