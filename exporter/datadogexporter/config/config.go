@@ -236,7 +236,7 @@ func (c *Config) Sanitize() error {
 
 func (c *Config) Validate() error {
 	if c.Traces.IgnoreResources != nil {
-		for _, entry := range exprs {
+		for _, entry := range c.Traces.IgnoreResources {
 			_, err := regexp.Compile(entry)
 			if err != nil {
 				return fmt.Errorf("'%s' is not valid resource filter regular expression", entry)
