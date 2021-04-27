@@ -15,10 +15,12 @@
 package datadogexporter
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"testing"
 	"time"
+	"unicode"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/obfuscate"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
@@ -99,12 +101,12 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 
 	if resourceEnvAndService {
 		resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-			conventions.AttributeContainerID: pdata.NewAttributeValueString("3249847017410247"),
-			conventions.AttributeK8sPod:      pdata.NewAttributeValueString("example-pod-name"),
-			"namespace":                      pdata.NewAttributeValueString("kube-system"),
-			"service.name":                   pdata.NewAttributeValueString("test-resource-service-name"),
-			"deployment.environment":         pdata.NewAttributeValueString("test-env"),
-			"service.version":                pdata.NewAttributeValueString("test-version"),
+			conventions.AttributeContainerID:           pdata.NewAttributeValueString("3249847017410247"),
+			conventions.AttributeDeploymentEnvironment: pdata.NewAttributeValueString("test-env"),
+			conventions.AttributeK8sPod:                pdata.NewAttributeValueString("example-pod-name"),
+			"namespace":                                pdata.NewAttributeValueString("kube-system"),
+			"service.name":                             pdata.NewAttributeValueString("test-resource-service-name"),
+			"service.version":                          pdata.NewAttributeValueString("test-version"),
 		})
 
 	} else {
@@ -1054,4 +1056,92 @@ func TestStatsAggregations(t *testing.T) {
 	}
 
 	assert.Equal(t, "test-version", statsVersionTag.Value)
+}
+
+// ensure that sanitization  of trace payloads occurs
+func TestSanitization(t *testing.T) {
+	calculator := newSublayerCalculator()
+
+	traces := pdata.NewTraces()
+	traces.ResourceSpans().Resize(1)
+	rs := traces.ResourceSpans().At(0)
+	resource := rs.Resource()
+	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		"deployment.environment": pdata.NewAttributeValueString("UpperCase"),
+	})
+	rs.InstrumentationLibrarySpans().Resize(1)
+	ilss := rs.InstrumentationLibrarySpans().At(0)
+	instrumentationLibrary := ilss.InstrumentationLibrary()
+	instrumentationLibrary.SetName("flash")
+	instrumentationLibrary.SetVersion("v1")
+	ilss.Spans().Resize(1)
+
+	outputTraces, _ := convertToDatadogTd(traces, calculator, &config.Config{})
+	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
+
+	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
+	obfuscatePayload(obfuscator, aggregatedTraces)
+	assert.Equal(t, 1, len(aggregatedTraces))
+
+	assert.Equal(t, "uppercase", aggregatedTraces[0].Env)
+}
+
+func TestNormalizeTag(t *testing.T) {
+	for _, tt := range []struct{ in, out string }{
+		{in: "#test_starting_hash", out: "test_starting_hash"},
+		{in: "TestCAPSandSuch", out: "testcapsandsuch"},
+		{in: "Test Conversion Of Weird !@#$%^&**() Characters", out: "test_conversion_of_weird_characters"},
+		{in: "$#weird_starting", out: "weird_starting"},
+		{in: "allowed:c0l0ns", out: "allowed:c0l0ns"},
+		{in: "1love", out: "love"},
+		{in: "ünicöde", out: "ünicöde"},
+		{in: "ünicöde:metäl", out: "ünicöde:metäl"},
+		{in: "Data🐨dog🐶 繋がっ⛰てて", out: "data_dog_繋がっ_てて"},
+		{in: " spaces   ", out: "spaces"},
+		{in: " #hashtag!@#spaces #__<>#  ", out: "hashtag_spaces"},
+		{in: ":testing", out: ":testing"},
+		{in: "_foo", out: "foo"},
+		{in: ":::test", out: ":::test"},
+		{in: "contiguous_____underscores", out: "contiguous_underscores"},
+		{in: "foo_", out: "foo"},
+		{in: "\u017Fodd_\u017Fcase\u017F", out: "\u017Fodd_\u017Fcase\u017F"}, // edge-case
+		{in: "", out: ""},
+		{in: " ", out: ""},
+		{in: "ok", out: "ok"},
+		{in: "™Ö™Ö™™Ö™", out: "ö_ö_ö"},
+		{in: "AlsO:ök", out: "also:ök"},
+		{in: ":still_ok", out: ":still_ok"},
+		{in: "___trim", out: "trim"},
+		{in: "12.:trim@", out: ":trim"},
+		{in: "12.:trim@@", out: ":trim"},
+		{in: "fun:ky__tag/1", out: "fun:ky_tag/1"},
+		{in: "fun:ky@tag/2", out: "fun:ky_tag/2"},
+		{in: "fun:ky@@@tag/3", out: "fun:ky_tag/3"},
+		{in: "tag:1/2.3", out: "tag:1/2.3"},
+		{in: "---fun:k####y_ta@#g/1_@@#", out: "fun:k_y_ta_g/1"},
+		{in: "AlsO:œ#@ö))œk", out: "also:œ_ö_œk"},
+		{in: "test\x99\x8faaa", out: "test_aaa"},
+		{in: "test\x99\x8f", out: "test"},
+		{in: strings.Repeat("a", 888), out: strings.Repeat("a", 200)},
+		{
+			in: func() string {
+				b := bytes.NewBufferString("a")
+				for i := 0; i < 799; i++ {
+					_, err := b.WriteRune('🐶')
+					assert.NoError(t, err)
+				}
+				_, err := b.WriteRune('b')
+				assert.NoError(t, err)
+				return b.String()
+			}(),
+			out: "a", // 'b' should have been truncated
+		},
+		{"a" + string(unicode.ReplacementChar), "a"},
+		{"a" + string(unicode.ReplacementChar) + string(unicode.ReplacementChar), "a"},
+		{"a" + string(unicode.ReplacementChar) + string(unicode.ReplacementChar) + "b", "a_b"},
+	} {
+		t.Run("", func(t *testing.T) {
+			assert.Equal(t, tt.out, utils.NormalizeTag(tt.in), tt.in)
+		})
+	}
 }
