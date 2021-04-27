@@ -13,7 +13,7 @@ The `copy` operator copies a value from one [field](/docs/types/field.md) to ano
 | `on_error` | `send`           | The behavior of the operator if it encounters an error. See [on_error](/docs/types/on_error.md)                                                                                                                                          |
 | `if`       |                  | An [expression](/docs/types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
 
-Example usage:
+### Example Configurations:
 
 <hr>
 Copy a value from the body to resource

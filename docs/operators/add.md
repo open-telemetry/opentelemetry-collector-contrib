@@ -14,7 +14,7 @@ The `add` operator adds a value to an `entry`'s `body`, `attributes`, or `resour
 | `if`       |                  | An [expression](/docs/types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
 
 
-Example usage:
+### Example Configurations:
 
 <hr>
 Add a string to the body

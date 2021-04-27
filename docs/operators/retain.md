@@ -14,7 +14,9 @@ The `retain` operator keeps the specified list of fields, and removes the rest.
 <hr>
 <b>NOTE:</b> If no fields in a group (attributes, resource, or body) are specified, that entire group will be retained.
 <hr>
-Example usage:
+
+### Example Configurations:
+
 <hr>
 Retain fields in the body
 
