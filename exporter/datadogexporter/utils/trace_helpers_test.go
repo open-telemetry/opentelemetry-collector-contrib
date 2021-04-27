@@ -29,9 +29,7 @@ import (
 func TestGetRootFromCompleteTrace(t *testing.T) {
 	assert := assert.New(t)
 
-	var trace *pb.APITrace
-
-	trace = &pb.APITrace{
+	trace := &pb.APITrace{
 		TraceID:   uint64(1234),
 		Spans:     []*pb.Span{},
 		StartTime: 0,
@@ -54,9 +52,7 @@ func TestGetRootFromCompleteTrace(t *testing.T) {
 func TestGetRootFromPartialTrace(t *testing.T) {
 	assert := assert.New(t)
 
-	var trace *pb.APITrace
-
-	trace = &pb.APITrace{
+	trace := &pb.APITrace{
 		TraceID:   uint64(1234),
 		Spans:     []*pb.Span{},
 		StartTime: 0,
