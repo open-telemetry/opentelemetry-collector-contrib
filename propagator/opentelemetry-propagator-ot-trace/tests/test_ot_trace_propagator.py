@@ -248,6 +248,9 @@ class TestOTTracePropagator(TestCase):
         self.assertEqual(hex(span_context.span_id)[2:], "e457b5a2e4d86bd1")
         self.assertTrue(span_context.is_remote)
         self.assertEqual(span_context.trace_flags, TraceFlags.SAMPLED)
+        self.assertIsInstance(
+            get_current_span().get_span_context().trace_flags, TraceFlags
+        )
 
     def test_extract_trace_id_span_id_sampled_false(self):
         """Test valid trace_id, span_id and sampled false"""
@@ -268,6 +271,9 @@ class TestOTTracePropagator(TestCase):
         self.assertEqual(hex(span_context.span_id)[2:], "e457b5a2e4d86bd1")
         self.assertTrue(span_context.is_remote)
         self.assertEqual(span_context.trace_flags, TraceFlags.DEFAULT)
+        self.assertIsInstance(
+            get_current_span().get_span_context().trace_flags, TraceFlags
+        )
 
     def test_extract_malformed_trace_id(self):
         """Test extraction with malformed trace_id"""

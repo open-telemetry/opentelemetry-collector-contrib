@@ -85,7 +85,7 @@ class OTTracePropagator(TextMapPropagator):
                         trace_id=int(traceid, 16),
                         span_id=int(spanid, 16),
                         is_remote=True,
-                        trace_flags=traceflags,
+                        trace_flags=TraceFlags(traceflags),
                     )
                 ),
                 context,
