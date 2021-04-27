@@ -17,6 +17,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -230,5 +231,17 @@ func (c *Config) Sanitize() error {
 		c.Traces.TCPAddr.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
 	}
 
+	return nil
+}
+
+func (c *Config) Validate() error {
+	if c.Traces.IgnoreResources != nil {
+		for _, entry := range exprs {
+			_, err := regexp.Compile(entry)
+			if err != nil {
+				return fmt.Errorf("'%s' is not valid resource filter regular expression", entry)
+			}
+		}
+	}
 	return nil
 }
