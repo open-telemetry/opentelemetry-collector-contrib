@@ -37,13 +37,15 @@ import (
 )
 
 const (
-	stringAttrName = "stringAttrName"
-	intAttrName    = "intAttrName"
-	doubleAttrName = "doubleAttrName"
-	boolAttrName   = "boolAttrName"
-	nullAttrName   = "nullAttrName"
-	mapAttrName    = "mapAttrName"
-	arrayAttrName  = "arrayAttrName"
+	stringAttrName     = "stringAttrName"
+	intAttrName        = "intAttrName"
+	doubleAttrName     = "doubleAttrName"
+	boolAttrName       = "boolAttrName"
+	nullAttrName       = "nullAttrName"
+	mapAttrName        = "mapAttrName"
+	arrayAttrName      = "arrayAttrName"
+	notInSpanAttrName0 = "shouldBeInMetric"
+	notInSpanAttrName1 = "shouldNotBeInMetric"
 
 	sampleLatency         = 11
 	sampleLatencyDuration = sampleLatency * time.Millisecond
@@ -51,9 +53,10 @@ const (
 
 // metricID represents the minimum attributes that uniquely identifies a metric in our tests.
 type metricID struct {
-	service   string
-	operation string
-	kind      string
+	service    string
+	operation  string
+	kind       string
+	statusCode string
 }
 
 type metricDataPoint interface {
@@ -262,6 +265,7 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 }
 
 func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *string) *processorImp {
+	defaultNotInSpanAttrVal := "defaultNotInSpanAttrVal"
 	return &processorImp{
 		logger:          zap.NewNop(),
 		metricsExporter: mexp,
@@ -282,6 +286,10 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 			{mapAttrName, nil},
 			{arrayAttrName, nil},
 			{nullAttrName, defaultNullValue},
+			// Add a default value for an attribute that doesn't exist in a span
+			{notInSpanAttrName0, &defaultNotInSpanAttrVal},
+			// Leave the default value unset to test that this dimension should not be added to the metric.
+			{notInSpanAttrName1, nil},
 		},
 		metricKeyToDimensions: make(map[metricKey]dimKV),
 	}
@@ -365,6 +373,16 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 
 func verifyMetricLabels(dp metricDataPoint, t *testing.T, seenMetricIDs map[metricID]bool) {
 	mID := metricID{}
+	wantDimensions := map[string]string{
+		stringAttrName:     "stringAttrValue",
+		intAttrName:        "99",
+		doubleAttrName:     "99.99",
+		boolAttrName:       "true",
+		nullAttrName:       "",
+		arrayAttrName:      "[]",
+		mapAttrName:        "{}",
+		notInSpanAttrName0: "defaultNotInSpanAttrVal",
+	}
 	dp.LabelsMap().Range(func(k string, v string) bool {
 		switch k {
 		case serviceNameKey:
@@ -373,19 +391,18 @@ func verifyMetricLabels(dp metricDataPoint, t *testing.T, seenMetricIDs map[metr
 			mID.operation = v
 		case spanKindKey:
 			mID.kind = v
-		case stringAttrName:
-			assert.Equal(t, "stringAttrValue", v)
-		case intAttrName:
-			assert.Equal(t, "99", v)
-		case doubleAttrName:
-			assert.Equal(t, "99.99", v)
-		case boolAttrName:
-			assert.Equal(t, "true", v)
-		case nullAttrName:
-			assert.Empty(t, v)
+		case statusCodeKey:
+			mID.statusCode = v
+		case notInSpanAttrName1:
+			assert.Fail(t, notInSpanAttrName1+" should not be in this metric")
+		default:
+			assert.Equal(t, wantDimensions[k], v)
+			delete(wantDimensions, k)
 		}
 		return true
 	})
+	assert.Empty(t, wantDimensions, "Did not see all expected dimensions in metric. Missing: ", wantDimensions)
+
 	// Service/operation/kind should be a unique metric.
 	assert.False(t, seenMetricIDs[mID])
 	seenMetricIDs[mID] = true
