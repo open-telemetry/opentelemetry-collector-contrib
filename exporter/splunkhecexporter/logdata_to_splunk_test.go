@@ -337,14 +337,6 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 	}
 }
 
-func makeLog(record pdata.LogRecord) pdata.Logs {
-	logs := pdata.NewLogs()
-	rl := logs.ResourceLogs().AppendEmpty()
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	ill.Logs().Append(record)
-	return logs
-}
-
 func commonLogSplunkEvent(
 	event interface{},
 	ts pdata.Timestamp,

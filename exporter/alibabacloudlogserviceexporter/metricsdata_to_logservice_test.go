@@ -28,26 +28,25 @@ func TestMetricDataToLogService(t *testing.T) {
 	logger := zap.NewNop()
 
 	md := pdata.NewMetrics()
-	md.ResourceMetrics().Resize(2)
-	rm := md.ResourceMetrics().At(0)
+	md.ResourceMetrics().AppendEmpty() // Add an empty ResourceMetrics
+	rm := md.ResourceMetrics().AppendEmpty()
 
 	rm.Resource().Attributes().InsertString("labelB", "valueB")
 	rm.Resource().Attributes().InsertString("labelA", "valueA")
 	rm.Resource().Attributes().InsertString("a", "b")
 	ilms := rm.InstrumentationLibraryMetrics()
-	ilms.Resize(2)
-	ilm := ilms.At(0)
+	ilms.AppendEmpty() // Add an empty InstrumentationLibraryMetrics
+	ilm := ilms.AppendEmpty()
 
 	metrics := ilm.Metrics()
-	metrics.Resize(10)
 
-	badNameMetric := metrics.At(0)
+	badNameMetric := metrics.AppendEmpty()
 	badNameMetric.SetName("")
 
-	noneMetric := metrics.At(1)
+	noneMetric := metrics.AppendEmpty()
 	noneMetric.SetName("none")
 
-	intGaugeMetric := metrics.At(2)
+	intGaugeMetric := metrics.AppendEmpty()
 	intGaugeMetric.SetDataType(pdata.MetricDataTypeIntGauge)
 	intGaugeMetric.SetName("int_gauge")
 	intGauge := intGaugeMetric.IntGauge()
@@ -57,7 +56,7 @@ func TestMetricDataToLogService(t *testing.T) {
 	intGaugeDataPoint.SetValue(10)
 	intGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
-	doubleGaugeMetric := metrics.At(3)
+	doubleGaugeMetric := metrics.AppendEmpty()
 	doubleGaugeMetric.SetDataType(pdata.MetricDataTypeDoubleGauge)
 	doubleGaugeMetric.SetName("double_gauge")
 	doubleGauge := doubleGaugeMetric.DoubleGauge()
@@ -67,7 +66,7 @@ func TestMetricDataToLogService(t *testing.T) {
 	doubleGaugeDataPoint.SetValue(10.1)
 	doubleGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
-	intSumMetric := metrics.At(4)
+	intSumMetric := metrics.AppendEmpty()
 	intSumMetric.SetDataType(pdata.MetricDataTypeIntSum)
 	intSumMetric.SetName("int_sum")
 	intSum := intSumMetric.IntSum()
@@ -77,7 +76,7 @@ func TestMetricDataToLogService(t *testing.T) {
 	intSumDataPoint.SetValue(11)
 	intSumDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
-	doubleSumMetric := metrics.At(5)
+	doubleSumMetric := metrics.AppendEmpty()
 	doubleSumMetric.SetDataType(pdata.MetricDataTypeDoubleSum)
 	doubleSumMetric.SetName("double_sum")
 	doubleSum := doubleSumMetric.DoubleSum()
@@ -87,7 +86,7 @@ func TestMetricDataToLogService(t *testing.T) {
 	doubleSumDataPoint.SetValue(10.1)
 	doubleSumDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
 
-	intHistogramMetric := metrics.At(6)
+	intHistogramMetric := metrics.AppendEmpty()
 	intHistogramMetric.SetDataType(pdata.MetricDataTypeIntHistogram)
 	intHistogramMetric.SetName("double_histogram")
 	intHistogram := intHistogramMetric.IntHistogram()
@@ -100,7 +99,7 @@ func TestMetricDataToLogService(t *testing.T) {
 	intHistogramDataPoint.SetBucketCounts([]uint64{1, 2, 3})
 	intHistogramDataPoint.SetExplicitBounds([]float64{1, 2})
 
-	doubleHistogramMetric := metrics.At(7)
+	doubleHistogramMetric := metrics.AppendEmpty()
 	doubleHistogramMetric.SetDataType(pdata.MetricDataTypeHistogram)
 	doubleHistogramMetric.SetName("double_$histogram")
 	doubleHistogram := doubleHistogramMetric.Histogram()
@@ -113,7 +112,7 @@ func TestMetricDataToLogService(t *testing.T) {
 	doubleHistogramDataPoint.SetBucketCounts([]uint64{1, 2, 3})
 	doubleHistogramDataPoint.SetExplicitBounds([]float64{1, 2})
 
-	doubleSummaryMetric := metrics.At(8)
+	doubleSummaryMetric := metrics.AppendEmpty()
 	doubleSummaryMetric.SetDataType(pdata.MetricDataTypeSummary)
 	doubleSummaryMetric.SetName("double-summary")
 	doubleSummary := doubleSummaryMetric.Summary()

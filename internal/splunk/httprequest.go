@@ -28,7 +28,7 @@ const HeaderRetryAfter = "Retry-After"
 
 // HandleHTTPCode handles an http response and returns the right type of error in case of a failure.
 func HandleHTTPCode(resp *http.Response) error {
-	// SignalFx accepts all 2XX codes.
+	// Splunk accepts all 2XX codes.
 	if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices {
 		return nil
 	}

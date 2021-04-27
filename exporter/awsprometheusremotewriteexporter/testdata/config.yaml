@@ -13,7 +13,7 @@ exporters:
             initial_interval: 10s
             max_interval: 60s
             max_elapsed_time: 10m
-        endpoint: "http://localhost:9009"
+        endpoint: "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write"
         ca_file: "/var/lib/mycert.pem"
         write_buffer_size: 524288
         headers:
