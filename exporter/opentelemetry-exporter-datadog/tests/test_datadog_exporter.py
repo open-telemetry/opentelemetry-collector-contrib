@@ -388,6 +388,7 @@ class TestDatadogSpanExporter(unittest.TestCase):
         self.assertEqual(span["error"], 1)
         self.assertEqual(span["meta"]["error.msg"], "bar")
         self.assertEqual(span["meta"]["error.type"], "ValueError")
+        self.assertTrue(span["meta"]["error.stack"] is not None)
 
     def test_shutdown(self):
         span_names = ["xxx", "bar", "foo"]
