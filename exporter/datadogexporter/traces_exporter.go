@@ -56,7 +56,7 @@ type traceExporter struct {
 	obfuscator     *obfuscate.Obfuscator
 	calculator     *sublayerCalculator
 	client         *datadog.Client
-	denylister    *Denylister
+	denylister     *Denylister
 }
 
 var (
@@ -98,7 +98,7 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateParam
 		obfuscator:     obfuscator,
 		calculator:     calculator,
 		client:         client,
-		denylister:    denylister,
+		denylister:     denylister,
 	}
 
 	return exporter
