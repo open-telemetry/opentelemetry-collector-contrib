@@ -117,7 +117,7 @@ func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePa
 // converts a Trace's resource spans into a trace payload
 func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCalculator, hostname string, cfg *config.Config) pb.TracePayload {
 	// get env tag
-	env := cfg.Env
+	env := utils.NormalizeTag(cfg.Env)
 
 	resource := rs.Resource()
 	ilss := rs.InstrumentationLibrarySpans()
@@ -138,7 +138,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 	// specification states that the resource level deployment.environment should be used for passing env, so defer to that
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/deployment_environment.md#deployment
 	if resourceEnv, ok := datadogTags[conventions.AttributeDeploymentEnvironment]; ok {
-		payload.Env = resourceEnv
+		payload.Env = utils.NormalizeTag(resourceEnv)
 	}
 
 	apiTraces := map[uint64]*pb.APITrace{}
@@ -318,14 +318,15 @@ func aggregateSpanTags(span pdata.Span, datadogTags map[string]string) map[strin
 	spanTags := make(map[string]string, span.Attributes().Len()+len(datadogTags))
 
 	for key, val := range datadogTags {
-		spanTags[key] = val
+		spanTags[utils.NormalizeTag(key)] = val
 	}
 
 	span.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-		spanTags[k] = tracetranslator.AttributeValueToString(v, false)
+		spanTags[utils.NormalizeTag(k)] = tracetranslator.AttributeValueToString(v, false)
 		return true
 	})
 
+	// we don't want to normalize these tags since `_dd` is a special case
 	spanTags[tagContainersTags] = buildDatadogContainerTags(spanTags)
 	return spanTags
 }
@@ -371,10 +372,11 @@ func setStringTag(s *pb.Span, key, v string) {
 	switch key {
 	// if a span has `service.name` set as the tag
 	case ext.ServiceName:
-		s.Service = v
+		s.Service = utils.NormalizeTag(v)
 	case ext.SpanType:
-		s.Type = v
+		s.Type = utils.NormalizeTag(v)
 	case ext.AnalyticsEvent:
+		// we dont want to normalize ints
 		if v != "false" {
 			setMetric(s, ext.EventSampleRate, 1)
 		} else {
