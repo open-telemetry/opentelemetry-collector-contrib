@@ -17,7 +17,6 @@ package splunkhecexporter
 import (
 	"compress/gzip"
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -68,7 +67,10 @@ func createExporter(
 			fmt.Errorf("failed to process %q config: %v", config.Name(), err)
 	}
 
-	client := buildClient(options, config, logger)
+	client, err := buildClient(options, config, logger)
+	if err != nil {
+		return nil, err
+	}
 
 	return &splunkExporter{
 		pushMetricsData: client.pushMetricsData,
@@ -79,7 +81,11 @@ func createExporter(
 	}, nil
 }
 
-func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) *client {
+func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) (*client, error) {
+	tlsCfg, err := config.TLSSetting.LoadTLSConfig()
+	if err != nil {
+		return nil, fmt.Errorf("could not retrieve TLS config for Splunk HEC Exporter: %w", err)
+	}
 	return &client{
 		url: options.url,
 		client: &http.Client{
@@ -94,9 +100,7 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) *
 				MaxIdleConnsPerHost: int(config.MaxConnections),
 				IdleConnTimeout:     idleConnTimeout,
 				TLSHandshakeTimeout: tlsHandshakeTimeout,
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: config.InsecureSkipVerify,
-				},
+				TLSClientConfig:     tlsCfg,
 			},
 		},
 		logger: logger,
@@ -110,5 +114,5 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) *
 			"Authorization": splunk.HECTokenHeader + " " + config.Token,
 		},
 		config: config,
-	}
+	}, nil
 }
