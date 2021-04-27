@@ -732,7 +732,7 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
 			p := &StatsDParser{}
-			p.Initialize(false, []TimerHistogramMapping{{Match: "*", StatsdType: "timer", ObserverType: "gauge"}, {Match: "*", StatsdType: "histogram", ObserverType: "gauge"}})
+			p.Initialize(false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}})
 			for _, line := range tt.input {
 				err = p.Aggregate(line)
 			}
@@ -800,7 +800,7 @@ func TestStatsDParser_AggregateWithMetricType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
 			p := &StatsDParser{}
-			p.Initialize(true, []TimerHistogramMapping{{Match: "*", StatsdType: "timer", ObserverType: "gauge"}, {Match: "*", StatsdType: "histogram", ObserverType: "gauge"}})
+			p.Initialize(true, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}})
 			for _, line := range tt.input {
 				err = p.Aggregate(line)
 			}
@@ -814,9 +814,99 @@ func TestStatsDParser_AggregateWithMetricType(t *testing.T) {
 	}
 }
 
+func TestStatsDParser_AggregateTimmerWithSummary(t *testing.T) {
+	timeNowFunc = func() time.Time {
+		return time.Unix(711, 0)
+	}
+
+	tests := []struct {
+		name              string
+		input             []string
+		expectedSummaries map[statsDMetricdescription]summaryMetric
+		err               error
+	}{
+		{
+			name: "timer",
+			input: []string{
+				"statsdTestMetric1:1|ms|#mykey:myvalue",
+				"statsdTestMetric2:2|ms|#mykey:myvalue",
+				"statsdTestMetric1:1|ms|#mykey:myvalue",
+				"statsdTestMetric1:10|ms|#mykey:myvalue",
+				"statsdTestMetric1:20|ms|#mykey:myvalue",
+				"statsdTestMetric2:5|ms|#mykey:myvalue",
+				"statsdTestMetric2:10|ms|#mykey:myvalue",
+				"statsdTestMetric1:20|ms|@0.1|#mykey:myvalue",
+			},
+			expectedSummaries: map[statsDMetricdescription]summaryMetric{
+				testDescription("statsdTestMetric1", "ms",
+					[]string{"mykey"}, []string{"myvalue"}): {
+					name:          "statsdTestMetric1",
+					summaryPoints: []float64{1, 1, 10, 20, 200},
+					labelKeys:     []string{"mykey"},
+					labelValues:   []string{"myvalue"},
+					timeNow:       timeNowFunc(),
+				},
+				testDescription("statsdTestMetric2", "ms",
+					[]string{"mykey"}, []string{"myvalue"}): {
+					name:          "statsdTestMetric2",
+					summaryPoints: []float64{2, 5, 10},
+					labelKeys:     []string{"mykey"},
+					labelValues:   []string{"myvalue"},
+					timeNow:       timeNowFunc(),
+				},
+			},
+		},
+		{
+			name: "histogram",
+			input: []string{
+				"statsdTestMetric1:1|h|#mykey:myvalue",
+				"statsdTestMetric2:2|h|#mykey:myvalue",
+				"statsdTestMetric1:1|h|#mykey:myvalue",
+				"statsdTestMetric1:10|h|#mykey:myvalue",
+				"statsdTestMetric1:20|h|#mykey:myvalue",
+				"statsdTestMetric2:5|h|#mykey:myvalue",
+				"statsdTestMetric2:10|h|#mykey:myvalue",
+			},
+			expectedSummaries: map[statsDMetricdescription]summaryMetric{
+				testDescription("statsdTestMetric1", "h",
+					[]string{"mykey"}, []string{"myvalue"}): {
+					name:          "statsdTestMetric1",
+					summaryPoints: []float64{1, 1, 10, 20},
+					labelKeys:     []string{"mykey"},
+					labelValues:   []string{"myvalue"},
+					timeNow:       timeNowFunc(),
+				},
+				testDescription("statsdTestMetric2", "h",
+					[]string{"mykey"}, []string{"myvalue"}): {
+					name:          "statsdTestMetric2",
+					summaryPoints: []float64{2, 5, 10},
+					labelKeys:     []string{"mykey"},
+					labelValues:   []string{"myvalue"},
+					timeNow:       timeNowFunc(),
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var err error
+			p := &StatsDParser{}
+			p.Initialize(false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "summary"}, {StatsdType: "histogram", ObserverType: "summary"}})
+			for _, line := range tt.input {
+				err = p.Aggregate(line)
+			}
+			if tt.err != nil {
+				assert.Equal(t, tt.err, err)
+			} else {
+				assert.Equal(t, tt.expectedSummaries, p.summaries)
+			}
+		})
+	}
+}
+
 func TestStatsDParser_Initialize(t *testing.T) {
 	p := &StatsDParser{}
-	p.Initialize(true, []TimerHistogramMapping{{Match: "*", StatsdType: "timer", ObserverType: "gauge"}, {Match: "*", StatsdType: "histogram", ObserverType: "gauge"}})
+	p.Initialize(true, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}})
 	labels := attribute.Distinct{}
 	teststatsdDMetricdescription := statsDMetricdescription{
 		name:             "test",
@@ -830,7 +920,7 @@ func TestStatsDParser_Initialize(t *testing.T) {
 
 func TestStatsDParser_GetMetrics(t *testing.T) {
 	p := &StatsDParser{}
-	p.Initialize(true, []TimerHistogramMapping{{Match: "*", StatsdType: "timer", ObserverType: "gauge"}, {Match: "*", StatsdType: "histogram", ObserverType: "gauge"}})
+	p.Initialize(true, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}})
 	p.gauges[testDescription("statsdTestMetric1", "g",
 		[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"})] =
 		buildGaugeMetric(testStatsDMetric("testGauge1", "", 0, 1, false, "g", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}), time.Unix(711, 0))
@@ -841,8 +931,17 @@ func TestStatsDParser_GetMetrics(t *testing.T) {
 		[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"})] =
 		buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 10102, false, "g", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}), time.Unix(711, 0))
 	p.timersAndDistributions = append(p.timersAndDistributions, buildGaugeMetric(testStatsDMetric("statsdTestMetric1", "", 0, 10102, false, "ms", 0, []string{"mykey2", "metric_type"}, []string{"myvalue2", "gauge"}), time.Unix(711, 0)))
+	p.summaries = map[statsDMetricdescription]summaryMetric{
+		testDescription("statsdTestMetric1", "h",
+			[]string{"mykey"}, []string{"myvalue"}): {
+			name:          "statsdTestMetric1",
+			summaryPoints: []float64{1, 1, 10, 20},
+			labelKeys:     []string{"mykey"},
+			labelValues:   []string{"myvalue"},
+			timeNow:       timeNowFunc(),
+		}}
 	metrics := p.GetMetrics()
-	assert.Equal(t, 4, metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len())
+	assert.Equal(t, 5, metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len())
 }
 
 func TestTimeNowFunc(t *testing.T) {

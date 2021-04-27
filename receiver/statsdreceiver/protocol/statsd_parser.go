@@ -43,7 +43,6 @@ const (
 )
 
 type TimerHistogramMapping struct {
-	Match        string `mapstructure:"match"`
 	StatsdType   string `mapstructure:"statsd_type"`
 	ObserverType string `mapstructure:"observer_type"`
 }
@@ -52,10 +51,19 @@ type TimerHistogramMapping struct {
 type StatsDParser struct {
 	gauges                 map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics
 	counters               map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics
+	summaries              map[statsDMetricdescription]summaryMetric
 	timersAndDistributions []pdata.InstrumentationLibraryMetrics
 	enableMetricType       bool
 	observeTimer           string
 	observeHistogram       string
+}
+
+type summaryMetric struct {
+	name          string
+	summaryPoints []float64
+	labelKeys     []string
+	labelValues   []string
+	timeNow       time.Time
 }
 
 type statsDMetric struct {
@@ -80,6 +88,8 @@ func (p *StatsDParser) Initialize(enableMetricType bool, sendTimerHistogram []Ti
 	p.gauges = make(map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics)
 	p.counters = make(map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics)
 	p.timersAndDistributions = make([]pdata.InstrumentationLibraryMetrics, 0)
+	p.summaries = make(map[statsDMetricdescription]summaryMetric)
+
 	p.enableMetricType = enableMetricType
 	for _, eachMap := range sendTimerHistogram {
 		switch eachMap.StatsdType {
@@ -109,10 +119,14 @@ func (p *StatsDParser) GetMetrics() pdata.Metrics {
 		rm.InstrumentationLibraryMetrics().Append(metric)
 	}
 
+	for _, summaryMetric := range p.summaries {
+		metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Append(buildSummaryMetric(summaryMetric))
+	}
+
 	p.gauges = make(map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics)
 	p.counters = make(map[statsDMetricdescription]pdata.InstrumentationLibraryMetrics)
 	p.timersAndDistributions = make([]pdata.InstrumentationLibraryMetrics, 0)
-
+	p.summaries = make(map[statsDMetricdescription]summaryMetric)
 	return metrics
 }
 
@@ -155,12 +169,52 @@ func (p *StatsDParser) Aggregate(line string) error {
 		switch p.observeHistogram {
 		case "gauge":
 			p.timersAndDistributions = append(p.timersAndDistributions, buildGaugeMetric(parsedMetric, timeNowFunc()))
+		case "summary":
+			eachSummaryMetric, ok := p.summaries[parsedMetric.description]
+			if !ok {
+				p.summaries[parsedMetric.description] = summaryMetric{
+					name:          parsedMetric.description.name,
+					summaryPoints: []float64{parsedMetric.floatvalue},
+					labelKeys:     parsedMetric.labelKeys,
+					labelValues:   parsedMetric.labelValues,
+					timeNow:       timeNowFunc(),
+				}
+			} else {
+				points := eachSummaryMetric.summaryPoints
+				p.summaries[parsedMetric.description] = summaryMetric{
+					name:          parsedMetric.description.name,
+					summaryPoints: append(points, parsedMetric.floatvalue),
+					labelKeys:     parsedMetric.labelKeys,
+					labelValues:   parsedMetric.labelValues,
+					timeNow:       timeNowFunc(),
+				}
+			}
 		}
 
 	case statsdTiming:
 		switch p.observeTimer {
 		case "gauge":
 			p.timersAndDistributions = append(p.timersAndDistributions, buildGaugeMetric(parsedMetric, timeNowFunc()))
+		case "summary":
+			eachSummaryMetric, ok := p.summaries[parsedMetric.description]
+			if !ok {
+				p.summaries[parsedMetric.description] = summaryMetric{
+					name:          parsedMetric.description.name,
+					summaryPoints: []float64{parsedMetric.floatvalue},
+					labelKeys:     parsedMetric.labelKeys,
+					labelValues:   parsedMetric.labelValues,
+					timeNow:       timeNowFunc(),
+				}
+			} else {
+				points := eachSummaryMetric.summaryPoints
+				p.summaries[parsedMetric.description] = summaryMetric{
+					name:          parsedMetric.description.name,
+					summaryPoints: append(points, parsedMetric.floatvalue),
+					labelKeys:     parsedMetric.labelKeys,
+					labelValues:   parsedMetric.labelValues,
+					timeNow:       timeNowFunc(),
+				}
+			}
 		}
 	}
 
