@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go v0.81.0
 	github.com/Showmax/go-fqdn v1.0.0
 	github.com/armon/go-metrics v0.3.3 // indirect
-	github.com/aws/aws-sdk-go v1.38.25
+	github.com/aws/aws-sdk-go v1.38.26
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/gogo/googleapis v1.3.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
@@ -16,7 +16,7 @@ require (
 	github.com/onsi/gomega v1.10.2 // indirect
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.25.1-0.20210421230708-d10b842f49eb
+	go.opentelemetry.io/collector v0.25.1-0.20210424160629-2e33101196e3
 	go.uber.org/zap v1.16.0
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )
