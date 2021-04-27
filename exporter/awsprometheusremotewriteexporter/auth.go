@@ -65,7 +65,7 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	if v := os.Getenv("AWS_EXECUTION_ENV"); v != "" {
 		extras = append(extras, v)
 	}
-	addToUserAgent(req, aws.SDKName, aws.SDKVersion, extras...)
+	addToUserAgent(req2, aws.SDKName, aws.SDKVersion, extras...)
 
 	// Sign the request
 	_, err = si.signer.Sign(req2, body, si.service, si.region, time.Now())
