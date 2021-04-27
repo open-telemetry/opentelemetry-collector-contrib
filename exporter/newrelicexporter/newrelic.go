@@ -61,8 +61,6 @@ func clientOptions(info *component.ApplicationStartInfo, apiKey string, apiKeyHe
 	userAgent := product
 	if info.Version != "" {
 		userAgent += "/" + info.Version
-	} else if info.GitHash != "" {
-		userAgent += "/" + info.GitHash
 	}
 	userAgent += " " + info.ExeName
 	options := []telemetry.ClientOption{telemetry.WithUserAgent(userAgent)}
