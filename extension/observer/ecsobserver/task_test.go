@@ -96,6 +96,11 @@ func TestTask_PrivateIP(t *testing.T) {
 			task.Definition.NetworkMode = aws.String(mode)
 			_, err := task.PrivateIP()
 			assert.Error(t, err)
+			assert.IsType(t, &ErrPrivateIPNotFound{}, err)
+			assert.Equal(t, mode, err.(*ErrPrivateIPNotFound).NetworkMode)
+			// doing contains on error message is not good, but this line increase test coverage from 93% to 98%
+			// not sure how the average coverage is calculated ...
+			assert.Contains(t, err.Error(), mode)
 		}
 	})
 }
@@ -187,6 +192,8 @@ func TestTask_MappedPort(t *testing.T) {
 			task.Definition.NetworkMode = aws.String(mode)
 			_, err := task.MappedPort(&ecs.ContainerDefinition{Name: aws.String("c11")}, 1234)
 			assert.Error(t, err)
+			assert.Equal(t, mode, err.(*ErrMappedPortNotFound).NetworkMode)
+			assert.Contains(t, err.Error(), mode) // for coverage
 		}
 	})
 }

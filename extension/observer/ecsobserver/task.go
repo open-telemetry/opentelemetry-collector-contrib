@@ -81,16 +81,40 @@ func (t *Task) ContainerLabels(containerIndex int) map[string]string {
 	return labels
 }
 
+// ErrPrivateIPNotFound indicates the awsvpc private ip or EC2 instance ip is not found.
+type ErrPrivateIPNotFound struct {
+	TaskArn     string
+	NetworkMode string
+	Extra       string // extra message
+}
+
+func (e *ErrPrivateIPNotFound) Error() string {
+	m := fmt.Sprintf("private ip not found for network mode %q and task %s", e.NetworkMode, e.TaskArn)
+	if e.Extra != "" {
+		m = m + " " + e.Extra
+	}
+	return m
+}
+
 // PrivateIP returns private ip address based on network mode.
-// EC2 launch type can use hsot/brige mode and the private ip is the EC2 instance's ip.
+// EC2 launch type can use host/bridge mode and the private ip is the EC2 instance's ip.
 // awsvpc has its own ip regardless of launch type.
 func (t *Task) PrivateIP() (string, error) {
 	arn := aws.StringValue(t.Task.TaskArn)
-	switch aws.StringValue(t.Definition.NetworkMode) {
-	// Default network mode is bridge on EC2
+	mode := aws.StringValue(t.Definition.NetworkMode)
+	errNotFound := &ErrPrivateIPNotFound{
+		TaskArn:     arn,
+		NetworkMode: mode,
+	}
+	switch mode {
+	// When network mode is empty and launch type is EC2, ECS uses bridge network.
+	// For fargate it has to be awsvpc and will error on task creation if invalid config is given.
+	// See https://docs.aws.amazon.com/AmazonECS/latest/userguide/fargate-task-defs.html#fargate-tasks-networkmod
+	// In another word, when network mode is empty, it must be EC2 bridge.
 	case "", ecs.NetworkModeHost, ecs.NetworkModeBridge:
 		if t.EC2 == nil {
-			return "", fmt.Errorf("task has no network mode and no ec2 info %s", arn)
+			errNotFound.Extra = "EC2 info not found"
+			return "", errNotFound
 		}
 		return aws.StringValue(t.EC2.PrivateIpAddress), nil
 	case ecs.NetworkModeAwsvpc:
@@ -103,22 +127,45 @@ func (t *Task) PrivateIP() (string, error) {
 				}
 			}
 		}
-		return "", fmt.Errorf("private ipv4 address not found for awsvpc on task %s", arn)
+		return "", errNotFound
 	case ecs.NetworkModeNone:
-		return "", fmt.Errorf("task has none network mode %s", arn)
+		return "", errNotFound
 	default:
-		return "", fmt.Errorf("unknown task network mode %q for task %s", aws.StringValue(t.Definition.NetworkMode), arn)
+		return "", errNotFound
 	}
 }
 
+// ErrMappedPortNotFound indicates the port specified in config does not exists
+// or the location for mapped ports has changed on ECS side.
+type ErrMappedPortNotFound struct {
+	TaskArn       string
+	NetworkMode   string
+	ContainerName string
+	ContainerPort int64
+}
+
+func (e *ErrMappedPortNotFound) Error() string {
+	// Output the error message in this order to make searching easier as only task arn changes frequently.
+	// %q for network mode because empty string is valid for ECS EC2.
+	return fmt.Sprintf("mapped port not found for container port %d network mode %q on container %s in task %s",
+		e.ContainerPort, e.NetworkMode, e.ContainerName, e.TaskArn)
+}
+
 // MappedPort returns 'external' port based on network mode.
-// EC2 bridge gets random host port while EC2 host/awsvpc uses whatever specified by user.
+// EC2 bridge uses a random host port while EC2 host/awsvpc uses a port specified by the user.
 func (t *Task) MappedPort(def *ecs.ContainerDefinition, containerPort int64) (int64, error) {
 	arn := aws.StringValue(t.Task.TaskArn)
 	mode := aws.StringValue(t.Definition.NetworkMode)
+	// the error is same for all network modes (if any)
+	errNotFound := &ErrMappedPortNotFound{
+		TaskArn:       arn,
+		NetworkMode:   mode,
+		ContainerName: aws.StringValue(def.Name),
+		ContainerPort: containerPort,
+	}
 	switch mode {
 	case ecs.NetworkModeNone:
-		return 0, fmt.Errorf("task has none network mode %s", arn)
+		return 0, errNotFound
 	case ecs.NetworkModeHost, ecs.NetworkModeAwsvpc:
 		// taskDefinition->containerDefinitions->portMappings
 		for _, v := range def.PortMappings {
@@ -126,7 +173,7 @@ func (t *Task) MappedPort(def *ecs.ContainerDefinition, containerPort int64) (in
 				return aws.Int64Value(v.HostPort), nil
 			}
 		}
-		return 0, fmt.Errorf("port %d not found for network mode %s", containerPort, mode)
+		return 0, errNotFound
 	case "", ecs.NetworkModeBridge:
 		//  task->containers->networkBindings
 		for _, c := range t.Task.Containers {
@@ -138,9 +185,8 @@ func (t *Task) MappedPort(def *ecs.ContainerDefinition, containerPort int64) (in
 				}
 			}
 		}
-		return 0, fmt.Errorf("port %d not found for network mode %s", containerPort, mode)
+		return 0, errNotFound
 	default:
-		return 0, fmt.Errorf("port %d not found for container %s on task %s",
-			containerPort, aws.StringValue(def.Name), arn)
+		return 0, errNotFound
 	}
 }

@@ -58,18 +58,20 @@ type MatchedContainer struct {
 }
 
 // MergeTargets adds new targets to the set, the 'key' is port + metrics path.
-// The 'key' does not have ip because all the targets from on container has same ip.
-// If there are duplicated 'key' we honor existing target and does not override.
-// The duplication could happen if there are several rules matching same target.
+// The 'key' does not contain an IP address because all targets from one
+// container have the same IP address. If there are duplicate 'key's we honor
+// the existing target and do not override.  Duplication could happen if there
+// are several rules matching same target.
 func (mc *MatchedContainer) MergeTargets(newTargets []MatchedTarget) {
+NextNewTarget:
 	for _, newt := range newTargets {
 		for _, old := range mc.Targets {
 			// If port and metrics_path are same, then we treat them as same target and keep the existing one
 			if old.Port == newt.Port && old.MetricsPath == newt.MetricsPath {
-				continue
+				continue NextNewTarget
 			}
-			mc.Targets = append(mc.Targets, newt)
 		}
+		mc.Targets = append(mc.Targets, newt)
 	}
 }
 
