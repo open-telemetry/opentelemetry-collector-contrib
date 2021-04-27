@@ -230,9 +230,5 @@ func (c *Config) Sanitize() error {
 		c.Traces.TCPAddr.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
 	}
 
-	if c.Traces.IgnoreResources == nil {
-		c.Traces.IgnoreResources = []string{}
-	}
-
 	return nil
 }

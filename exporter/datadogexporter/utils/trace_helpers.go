@@ -134,8 +134,8 @@ func NormalizeServiceName(service string) string {
 	return s
 }
 
-// From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/traceutil/trace.go#L27
 // GetRoot extracts the root span from a trace
+// From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/traceutil/trace.go#L27
 func GetRoot(t *pb.APITrace) *pb.Span {
 	// That should be caught beforehand
 	spans := t.GetSpans()
@@ -163,12 +163,10 @@ func GetRoot(t *pb.APITrace) *pb.Span {
 		}
 	}
 
-	// Here, if the trace is valid, we should have len(parentIDToChild) == 1
-	// if len(parentIDToChild) != 1 {
-	//	// log.Debugf("Didn't reliably find the root span for traceID:%v", t[0].TraceID)
-	// }
+	// TODO: pass logger into convertToDatadogTd, so that we can improve debug logging in translation.
+	// For now it would require some rewrite, but ideally should log if we cant locate a root span
 
-	// Have a safe bahavior if that's not the case
+	// Have a safe behavior if there is multiple spans without a parent
 	// Pick the first span without its parent
 	for parentID := range parentIDToChild {
 		return parentIDToChild[parentID]

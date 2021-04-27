@@ -57,7 +57,7 @@ const (
 )
 
 // converts Traces into an array of datadog trace payloads grouped by env
-func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *config.Config, blk *Blocklister) ([]*pb.TracePayload, []datadog.Metric) {
+func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *config.Config, blk *Denylister) ([]*pb.TracePayload, []datadog.Metric) {
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
 	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
@@ -115,7 +115,7 @@ func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePa
 }
 
 // converts a Trace's resource spans into a trace payload
-func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCalculator, hostname string, cfg *config.Config, blk *Blocklister) pb.TracePayload {
+func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCalculator, hostname string, cfg *config.Config, blk *Denylister) pb.TracePayload {
 	// get env tag
 	env := cfg.Env
 
@@ -168,9 +168,9 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 		}
 	}
 
-	for traceID, apiTrace := range apiTraces {
-		// first drop trace if root span exists in trace chunk that is on blocklist (drop trace no stats).
-		// In the dd-agent, the blocklist/blacklist behavior can be performed before most of the expensive
+	for _, apiTrace := range apiTraces {
+		// first drop trace if root span exists in trace chunk that is on denylist (drop trace no stats).
+		// In the dd-agent, the denylist/blacklist behavior can be performed before most of the expensive
 		// operations on the span.
 		// See: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/agent/agent.go#L200
 		// However, in our case, the span must be converted from otlp span into a dd span first. This is for 2 reasons.
@@ -178,7 +178,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 		// But, since OTLP groups by arrays of spans from the same instrumentation library, not trace-id,
 		// (contrib-instrumention-redis, contrib-instrumention-rails, etc), we have to iterate
 		// over batch and group all spans by trace id.
-		// Second, otlp->dd conversion is what creates the resource name that we are checking in the blocklist.
+		// Second, otlp->dd conversion is what creates the resource name that we are checking in the denylist.
 		// Note: OTLP also groups by ResourceSpans but practically speaking a payload will usually only
 		// contain 1 ResourceSpan array.
 
@@ -186,8 +186,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 		rootSpan := utils.GetRoot(apiTrace)
 
 		if !blk.Allows(rootSpan) {
-			//TODO: do we need to delete if we're skipping appending to payload?
-			delete(apiTraces, traceID)
+			// drop trace by not adding to payload if it's root span matches denylist
 			continue
 		}
 

@@ -21,8 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// https://github.com/DataDog/datadog-agent/blob/d3a4cd66314d70162e2c76d2481f4b93455cf717/pkg/trace/test/testutil/span.go#L372
 // TestSpan returns a fix span with hardcoded info, useful for reproducible tests
+// https://github.com/DataDog/datadog-agent/blob/d3a4cd66314d70162e2c76d2481f4b93455cf717/pkg/trace/test/testutil/span.go#L372
 func testSpan() *pb.Span {
 	return &pb.Span{
 		Duration: 10000000,
@@ -45,7 +45,7 @@ func testSpan() *pb.Span {
 	}
 }
 
-func TestBlocklister(t *testing.T) {
+func TestDenylister(t *testing.T) {
 	tests := []struct {
 		filter      []string
 		resource    string
@@ -70,14 +70,14 @@ func TestBlocklister(t *testing.T) {
 	for _, test := range tests {
 		span := testSpan()
 		span.Resource = test.resource
-		filter := NewBlocklister(test.filter)
+		filter := NewDenylister(test.filter)
 
 		assert.Equal(t, test.expectation, filter.Allows(span))
 	}
 }
 
 func TestCompileRules(t *testing.T) {
-	filter := NewBlocklister([]string{"[123", "]123", "{6}"})
+	filter := NewDenylister([]string{"[123", "]123", "{6}"})
 	for i := 0; i < 100; i++ {
 		span := testSpan()
 		assert.True(t, filter.Allows(span))

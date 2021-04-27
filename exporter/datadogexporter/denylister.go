@@ -20,16 +20,16 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 )
 
-// From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/filters/blacklister.go#L15-L19
-// Blocklister holds a list of regular expressions which will match resources
+// Denylister holds a list of regular expressions which will match resources
 // on spans that should be dropped.
-type Blocklister struct {
+// From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/filters/blacklister.go#L15-L19
+type Denylister struct {
 	list []*regexp.Regexp
 }
 
+// Allows returns true if the Denylister permits this span.
 // From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/filters/blacklister.go#L21-L29
-// Allows returns true if the Blocklister permits this span.
-func (f *Blocklister) Allows(span *pb.Span) bool {
+func (f *Denylister) Allows(span *pb.Span) bool {
 	for _, entry := range f.list {
 		if entry.MatchString(span.Resource) {
 			return false
@@ -38,15 +38,15 @@ func (f *Blocklister) Allows(span *pb.Span) bool {
 	return true
 }
 
-// From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/filters/blacklister.go#L41-L45
-// NewBlocklister creates a new Blocklister based on the given list of
+// NewDenylister creates a new Denylister based on the given list of
 // regular expressions.
-func NewBlocklister(exprs []string) *Blocklister {
-	return &Blocklister{list: compileRules(exprs)}
+// From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/filters/blacklister.go#L41-L45
+func NewDenylister(exprs []string) *Denylister {
+	return &Denylister{list: compileRules(exprs)}
 }
 
-// From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/filters/blacklister.go#L47-L59
 // compileRules compiles as many rules as possible from the list of expressions.
+// From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/filters/blacklister.go#L47-L59
 func compileRules(exprs []string) []*regexp.Regexp {
 	list := make([]*regexp.Regexp, 0, len(exprs))
 	for _, entry := range exprs {
