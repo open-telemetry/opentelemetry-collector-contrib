@@ -40,8 +40,8 @@ type Detector struct {
 }
 
 // NewDetector creates a new system metadata detector
-func NewDetector(p component.ProcessorCreateParams, dcfg internal.DetectorConfig) (internal.Detector, error) {
-	return &Detector{provider: newSystemMetadata(), logger: p.Logger}, nil
+func NewDetector(p component.ProcessorCreateParams, _ internal.DetectorConfig) (internal.Detector, error) {
+	return &Detector{provider: &systemMetadataImpl{}, logger: p.Logger}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones

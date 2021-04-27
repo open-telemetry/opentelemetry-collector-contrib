@@ -54,7 +54,7 @@ func TestNewDetector(t *testing.T) {
 	assert.NotNil(t, d)
 }
 
-func TestDetectHostnameAvailable(t *testing.T) {
+func TestDetectFQDNAvailable(t *testing.T) {
 	md := &mockMetadata{}
 	md.On("FQDN").Return("fqdn", nil)
 	md.On("OSType").Return("DARWIN", nil)

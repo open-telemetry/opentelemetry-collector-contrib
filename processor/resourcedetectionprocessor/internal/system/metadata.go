@@ -34,10 +34,6 @@ type systemMetadata interface {
 	OSType() (string, error)
 }
 
-func newSystemMetadata() systemMetadata {
-	return &systemMetadataImpl{}
-}
-
 type systemMetadataImpl struct{}
 
 func (*systemMetadataImpl) OSType() (string, error) {
