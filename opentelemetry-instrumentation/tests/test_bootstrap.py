@@ -23,10 +23,7 @@ from opentelemetry.instrumentation import bootstrap
 
 
 def sample_packages(packages, rate):
-    sampled = sample(
-        list(packages),
-        int(len(packages) * rate),
-    )
+    sampled = sample(list(packages), int(len(packages) * rate),)
     return {k: v for k, v in packages.items() if k in sampled}
 
 
