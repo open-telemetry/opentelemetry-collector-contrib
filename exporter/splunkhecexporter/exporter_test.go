@@ -32,6 +32,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
@@ -56,6 +57,24 @@ func TestNew(t *testing.T) {
 	got, err = createExporter(config, zap.NewNop())
 	assert.NoError(t, err)
 	require.NotNil(t, got)
+
+	config = &Config{
+		Token:           "someToken",
+		Endpoint:        "https://example.com:8088",
+		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
+		TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: configtls.TLSSetting{
+				CAFile:   "file-not-found",
+				CertFile: "file-not-found",
+				KeyFile:  "file-not-found",
+			},
+			Insecure:           false,
+			InsecureSkipVerify: false,
+		},
+	}
+	got, err = createExporter(config, zap.NewNop())
+	assert.Error(t, err)
+	require.Nil(t, got)
 }
 
 func TestConsumeMetricsData(t *testing.T) {
@@ -147,7 +166,8 @@ func TestConsumeMetricsData(t *testing.T) {
 			config.Token = "1234"
 			config.Index = "test_index"
 
-			sender := buildClient(options, config, zap.NewNop())
+			sender, err := buildClient(options, config, zap.NewNop())
+			assert.NoError(t, err)
 
 			md := internaldata.OCToMetrics(tt.md)
 			err = sender.pushMetricsData(context.Background(), md)
@@ -290,7 +310,8 @@ func TestConsumeLogsData(t *testing.T) {
 			config.Token = "1234"
 			config.Index = "test_index"
 
-			sender := buildClient(options, config, zap.NewNop())
+			sender, err := buildClient(options, config, zap.NewNop())
+			assert.NoError(t, err)
 
 			err = sender.pushLogData(context.Background(), tt.ld)
 			if tt.wantErr {
