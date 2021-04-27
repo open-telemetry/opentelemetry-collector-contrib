@@ -86,16 +86,7 @@ func (c *client) pushMetricsData(
 	io.Copy(ioutil.Discard, resp.Body)
 	resp.Body.Close()
 
-	// Splunk accepts all 2XX codes.
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		err = fmt.Errorf(
-			"HTTP %d %q",
-			resp.StatusCode,
-			http.StatusText(resp.StatusCode))
-		return err
-	}
-
-	return nil
+	return splunk.HandleHTTPCode(resp)
 }
 
 func (c *client) pushTraceData(
@@ -268,15 +259,7 @@ func (c *client) postEvents(ctx context.Context, events io.Reader, compressed bo
 	io.Copy(ioutil.Discard, resp.Body)
 	resp.Body.Close()
 
-	// Splunk accepts all 2XX codes.
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		err = fmt.Errorf(
-			"HTTP %d %q",
-			resp.StatusCode,
-			http.StatusText(resp.StatusCode))
-		return err
-	}
-	return nil
+	return splunk.HandleHTTPCode(resp)
 }
 
 // subLogs returns a subset of `ld` starting from index `from` to the end.
