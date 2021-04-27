@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package system
+package docker
 
 import (
 	"context"
@@ -28,40 +28,40 @@ import (
 
 const (
 	// TypeStr is the detector type string
-	TypeStr = "system"
+	TypeStr = "docker"
 )
 
 var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider systemMetadata
+	provider dockerMetadata
 	logger   *zap.Logger
 }
 
 // NewDetector creates a new system metadata detector
 func NewDetector(p component.ProcessorCreateParams, dcfg internal.DetectorConfig) (internal.Detector, error) {
-	return &Detector{provider: newSystemMetadata(), logger: p.Logger}, nil
+	dockerProvider, err := newDockerMetadata()
+	if err != nil {
+		return nil, fmt.Errorf("failed creating detector: %w", err)
+	}
+
+	return &Detector{provider: dockerProvider, logger: p.Logger}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
-func (d *Detector) Detect(_ context.Context) (pdata.Resource, error) {
+func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()
 	attrs := res.Attributes()
 
-	osType, err := d.provider.OSType()
+	osType, err := d.provider.OSType(ctx)
 	if err != nil {
 		return res, fmt.Errorf("failed getting OS type: %w", err)
 	}
 
-	hostname, err := d.provider.FQDN()
+	hostname, err := d.provider.Hostname(ctx)
 	if err != nil {
-		// Fallback to OS hostname
-		d.logger.Debug("FQDN query failed, falling back to OS hostname", zap.Error(err))
-		hostname, err = d.provider.Hostname()
-		if err != nil {
-			return res, fmt.Errorf("failed getting OS hostname: %w", err)
-		}
+		return res, fmt.Errorf("failed getting OS hostname: %w", err)
 	}
 
 	attrs.InsertString(conventions.AttributeHostName, hostname)

@@ -33,24 +33,23 @@ type mockMetadata struct {
 	mock.Mock
 }
 
-func (m *mockMetadata) Hostname(context.Context) (string, error) {
+func (m *mockMetadata) Hostname() (string, error) {
 	args := m.MethodCalled("Hostname")
 	return args.String(0), args.Error(1)
 }
 
-func (m *mockMetadata) FQDN(context.Context) (string, error) {
+func (m *mockMetadata) FQDN() (string, error) {
 	args := m.MethodCalled("FQDN")
 	return args.String(0), args.Error(1)
 }
 
-func (m *mockMetadata) OSType(context.Context) (string, error) {
+func (m *mockMetadata) OSType() (string, error) {
 	args := m.MethodCalled("OSType")
 	return args.String(0), args.Error(1)
 }
 
 func TestNewDetector(t *testing.T) {
-	var dcfg internal.DetectorConfig = Config{Docker: false}
-	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, dcfg)
+	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, d)
 }

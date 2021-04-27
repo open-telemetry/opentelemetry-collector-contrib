@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package system
+package docker
 
 import (
 	"context"
@@ -25,13 +25,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestGOOSToOsType(t *testing.T) {
-	assert.Equal(t, "DARWIN", goosToOSType("darwin"))
-	assert.Equal(t, "LINUX", goosToOSType("linux"))
-	assert.Equal(t, "WINDOWS", goosToOSType("windows"))
-	assert.Equal(t, "DRAGONFLYBSD", goosToOSType("dragonfly"))
-}
 
 func TestDockerError(t *testing.T) {
 	_, err := newDockerMetadata(client.WithHost("invalidHost"))
@@ -49,9 +42,6 @@ func TestDocker(t *testing.T) {
 
 	provider, err := newDockerMetadata(client.WithHost(ts.URL))
 	require.NoError(t, err)
-
-	_, err = provider.FQDN(context.Background())
-	assert.Error(t, err)
 
 	hostname, err := provider.Hostname(context.Background())
 	assert.NoError(t, err)
