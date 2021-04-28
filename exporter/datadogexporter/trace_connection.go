@@ -41,10 +41,14 @@ type traceEdgeConnection struct {
 	apiKey             string
 	client             *http.Client
 <<<<<<< HEAD
+<<<<<<< HEAD
 	binaryInfo         component.BinaryInfo
 =======
 	startInfo          component.BinaryInfo
 >>>>>>> replaced ApplicationStartInfo to BinaryInfo
+=======
+	binaryInfo         component.BinaryInfo
+>>>>>>> renamed variables from startInfo to binaryInfo
 	InsecureSkipVerify bool
 }
 
@@ -55,10 +59,14 @@ const (
 
 // createTraceEdgeConnection returns a new TraceEdgeConnection
 <<<<<<< HEAD
+<<<<<<< HEAD
 func createTraceEdgeConnection(rootURL, apiKey string, binaryInfo component.BinaryInfo) TraceEdgeConnection {
 =======
 func createTraceEdgeConnection(rootURL, apiKey string, startInfo component.BinaryInfo) TraceEdgeConnection {
 >>>>>>> replaced ApplicationStartInfo to BinaryInfo
+=======
+func createTraceEdgeConnection(rootURL, apiKey string, binaryInfo component.BinaryInfo) TraceEdgeConnection {
+>>>>>>> renamed variables from startInfo to binaryInfo
 
 	return &traceEdgeConnection{
 		traceURL:   rootURL + "/api/v0.2/traces",

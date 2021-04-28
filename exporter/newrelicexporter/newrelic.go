@@ -38,11 +38,7 @@ const (
 
 // exporter exports OpenTelemetry Collector data to New Relic.
 type exporter struct {
-<<<<<<< HEAD
 	binaryInfo     *component.BinaryInfo
-=======
-	startInfo      *component.BinaryInfo
->>>>>>> replaced ApplicationStartInfo to BinaryInfo
 	requestFactory telemetry.RequestFactory
 	apiKeyHeader   string
 	logger         *zap.Logger
@@ -84,11 +80,7 @@ func clientOptions(info *component.BinaryInfo, apiKey string, apiKeyHeader strin
 	return options
 }
 
-<<<<<<< HEAD
 func newExporter(l *zap.Logger, binaryInfo *component.BinaryInfo, nrConfig EndpointConfig, createFactory factoryBuilder) (exporter, error) {
-=======
-func newExporter(l *zap.Logger, startInfo *component.BinaryInfo, nrConfig EndpointConfig, createFactory factoryBuilder) (exporter, error) {
->>>>>>> replaced ApplicationStartInfo to BinaryInfo
 	options := clientOptions(
 		binaryInfo,
 		nrConfig.APIKey,

@@ -51,10 +51,14 @@ var (
 	}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	mockBinaryInfo = component.BinaryInfo{
 =======
 	mockStartInfo = component.BinaryInfo{
 >>>>>>> replaced ApplicationStartInfo to BinaryInfo
+=======
+	mockBinaryInfo = component.BinaryInfo{
+>>>>>>> renamed variables from startInfo to binaryInfo
 		Command: "otelcontribcol",
 		Version: "1.0",
 	}
@@ -65,10 +69,14 @@ func TestFillHostMetadata(t *testing.T) {
 	params := component.ExporterCreateParams{
 		Logger:     zap.NewNop(),
 <<<<<<< HEAD
+<<<<<<< HEAD
 		BinaryInfo: mockBinaryInfo,
 =======
 		BinaryInfo: mockStartInfo,
 >>>>>>> replaced ApplicationStartInfo to BinaryInfo
+=======
+		BinaryInfo: mockBinaryInfo,
+>>>>>>> renamed variables from startInfo to binaryInfo
 	}
 
 	cfg := &config.Config{TagsConfig: config.TagsConfig{
