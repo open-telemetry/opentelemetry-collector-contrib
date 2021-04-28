@@ -17,7 +17,6 @@ package awsxrayreceiver
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -46,8 +45,6 @@ type xrayReceiver struct {
 	logger       *zap.Logger
 	consumer     consumer.Traces
 	longLivedCtx context.Context
-	startOnce    sync.Once
-	stopOnce     sync.Once
 }
 
 func newReceiver(config *Config,
@@ -89,37 +86,28 @@ func newReceiver(config *Config,
 
 func (x *xrayReceiver) Start(ctx context.Context, host component.Host) error {
 	// TODO: Might want to pass `host` into read() below to report a fatal error
-	var err = componenterror.ErrAlreadyStarted
-	x.startOnce.Do(func() {
-		x.longLivedCtx = obsreport.ReceiverContext(ctx, x.instanceName, udppoller.Transport)
-		x.poller.Start(x.longLivedCtx)
-		go x.start()
-		go x.server.ListenAndServe()
-		x.logger.Info("X-Ray TCP proxy server started")
-		err = nil
-	})
-	return err
+	x.longLivedCtx = obsreport.ReceiverContext(ctx, x.instanceName, udppoller.Transport)
+	x.poller.Start(x.longLivedCtx)
+	go x.start()
+	go x.server.ListenAndServe()
+	x.logger.Info("X-Ray TCP proxy server started")
+	return nil
 }
 
 func (x *xrayReceiver) Shutdown(_ context.Context) error {
-	var err = componenterror.ErrAlreadyStopped
-	x.stopOnce.Do(func() {
-		err = nil
-		pollerErr := x.poller.Close()
-		if pollerErr != nil {
-			err = pollerErr
-		}
+	var err error
+	if pollerErr := x.poller.Close(); pollerErr != nil {
+		err = pollerErr
+	}
 
-		proxyErr := x.server.Close()
-		if proxyErr != nil {
-			if err == nil {
-				err = proxyErr
-			} else {
-				err = fmt.Errorf("failed to close proxy: %s: failed to close poller: %s",
-					proxyErr.Error(), err.Error())
-			}
+	if proxyErr := x.server.Close(); proxyErr != nil {
+		if err == nil {
+			err = proxyErr
+		} else {
+			err = fmt.Errorf("failed to close proxy: %s: failed to close poller: %s",
+				proxyErr.Error(), err.Error())
 		}
-	})
+	}
 	return err
 }
 
