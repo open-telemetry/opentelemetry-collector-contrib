@@ -39,7 +39,7 @@ type metricsExporter struct {
 
 func newMetricsExporter(ctx context.Context, params component.ExporterCreateParams, cfg *config.Config) *metricsExporter {
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
-	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.ApplicationStartInfo)
+	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.BinaryInfo)
 	client.HttpClient = utils.NewHTTPClient(10 * time.Second)
 
 	utils.ValidateAPIKey(params.Logger, client)

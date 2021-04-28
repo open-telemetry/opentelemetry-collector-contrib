@@ -90,7 +90,7 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateParam
 		params:         params,
 		cfg:            cfg,
 		ctx:            ctx,
-		edgeConnection: createTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key, params.ApplicationStartInfo),
+		edgeConnection: createTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key, params.BinaryInfo),
 		obfuscator:     obfuscator,
 		calculator:     calculator,
 		client:         client,

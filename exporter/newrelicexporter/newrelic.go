@@ -38,7 +38,7 @@ const (
 
 // exporter exports OpenTelemetry Collector data to New Relic.
 type exporter struct {
-	startInfo      *component.ApplicationStartInfo
+	startInfo      *component.BinaryInfo
 	requestFactory telemetry.RequestFactory
 	apiKeyHeader   string
 	logger         *zap.Logger
@@ -57,12 +57,12 @@ func clientOptionForAPIKey(apiKey string) telemetry.ClientOption {
 	return nil
 }
 
-func clientOptions(info *component.ApplicationStartInfo, apiKey string, apiKeyHeader string, hostOverride string, insecure bool) []telemetry.ClientOption {
+func clientOptions(info *component.BinaryInfo, apiKey string, apiKeyHeader string, hostOverride string, insecure bool) []telemetry.ClientOption {
 	userAgent := product
 	if info.Version != "" {
 		userAgent += "/" + info.Version
 	}
-	userAgent += " " + info.ExeName
+	userAgent += " " + info.Command
 	options := []telemetry.ClientOption{telemetry.WithUserAgent(userAgent)}
 	if apiKey != "" {
 		options = append(options, clientOptionForAPIKey(apiKey))
@@ -80,7 +80,7 @@ func clientOptions(info *component.ApplicationStartInfo, apiKey string, apiKeyHe
 	return options
 }
 
-func newExporter(l *zap.Logger, startInfo *component.ApplicationStartInfo, nrConfig EndpointConfig, createFactory factoryBuilder) (exporter, error) {
+func newExporter(l *zap.Logger, startInfo *component.BinaryInfo, nrConfig EndpointConfig, createFactory factoryBuilder) (exporter, error) {
 	options := clientOptions(
 		startInfo,
 		nrConfig.APIKey,

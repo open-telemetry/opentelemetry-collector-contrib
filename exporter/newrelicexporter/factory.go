@@ -63,7 +63,7 @@ func createTracesExporter(
 		return nil, fmt.Errorf("invalid config: %#v", cfg)
 	}
 	traceConfig := nrConfig.GetTracesConfig()
-	exp, err := newExporter(params.Logger, &params.ApplicationStartInfo, traceConfig, telemetry.NewSpanRequestFactory)
+	exp, err := newExporter(params.Logger, &params.BinaryInfo, traceConfig, telemetry.NewSpanRequestFactory)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func createMetricsExporter(
 	}
 
 	metricsConfig := nrConfig.GetMetricsConfig()
-	exp, err := newExporter(params.Logger, &params.ApplicationStartInfo, metricsConfig, telemetry.NewMetricRequestFactory)
+	exp, err := newExporter(params.Logger, &params.BinaryInfo, metricsConfig, telemetry.NewMetricRequestFactory)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func createLogsExporter(
 	}
 
 	logsConfig := nrConfig.GetLogsConfig()
-	exp, err := newExporter(params.Logger, &params.ApplicationStartInfo, logsConfig, telemetry.NewLogRequestFactory)
+	exp, err := newExporter(params.Logger, &params.BinaryInfo, logsConfig, telemetry.NewLogRequestFactory)
 	if err != nil {
 		return nil, err
 	}

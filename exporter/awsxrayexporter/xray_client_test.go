@@ -29,7 +29,7 @@ import (
 func TestUserAgent(t *testing.T) {
 	logger := zap.NewNop()
 
-	startInfo := component.ApplicationStartInfo{
+	startInfo := component.BinaryInfo{
 		Version: "1.0",
 	}
 

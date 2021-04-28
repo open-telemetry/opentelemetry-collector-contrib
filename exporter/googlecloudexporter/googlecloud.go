@@ -89,7 +89,7 @@ func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
 }
 
 func newGoogleCloudTracesExporter(cfg *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
-	setVersionInUserAgent(cfg, params.ApplicationStartInfo.Version)
+	setVersionInUserAgent(cfg, params.BinaryInfo.Version)
 
 	topts := []cloudtrace.Option{
 		cloudtrace.WithProjectID(cfg.ProjectID),
@@ -122,7 +122,7 @@ func newGoogleCloudTracesExporter(cfg *Config, params component.ExporterCreatePa
 }
 
 func newGoogleCloudMetricsExporter(cfg *Config, params component.ExporterCreateParams) (component.MetricsExporter, error) {
-	setVersionInUserAgent(cfg, params.ApplicationStartInfo.Version)
+	setVersionInUserAgent(cfg, params.BinaryInfo.Version)
 
 	// TODO:  For each ProjectID, create a different exporter
 	// or at least a unique Google Cloud client per ProjectID.

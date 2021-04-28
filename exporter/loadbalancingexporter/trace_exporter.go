@@ -53,8 +53,8 @@ func newTracesExporter(params component.ExporterCreateParams, cfg config.Exporte
 	exporterFactory := otlpexporter.NewFactory()
 
 	tmplParams := component.ExporterCreateParams{
-		Logger:               params.Logger,
-		ApplicationStartInfo: params.ApplicationStartInfo,
+		Logger:     params.Logger,
+		BinaryInfo: params.BinaryInfo,
 	}
 
 	loadBalancer, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Exporter, error) {

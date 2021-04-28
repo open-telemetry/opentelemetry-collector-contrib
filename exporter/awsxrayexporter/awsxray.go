@@ -45,7 +45,7 @@ func newTracesExporter(
 	if err != nil {
 		return nil, err
 	}
-	xrayClient := newXRay(logger, awsConfig, params.ApplicationStartInfo, session)
+	xrayClient := newXRay(logger, awsConfig, params.BinaryInfo, session)
 	return exporterhelper.NewTracesExporter(
 		config,
 		logger,

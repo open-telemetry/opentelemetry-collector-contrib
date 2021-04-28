@@ -255,8 +255,8 @@ func TestAddMissingExporters(t *testing.T) {
 		return newNopMockTracesExporter(), nil
 	}))
 	tmplParams := component.ExporterCreateParams{
-		Logger:               params.Logger,
-		ApplicationStartInfo: params.ApplicationStartInfo,
+		Logger:     params.Logger,
+		BinaryInfo: params.BinaryInfo,
 	}
 	fn := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		oCfg := cfg.Protocol.OTLP
@@ -296,8 +296,8 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 		return nil, expectedErr
 	}))
 	tmplParams := component.ExporterCreateParams{
-		Logger:               params.Logger,
-		ApplicationStartInfo: params.ApplicationStartInfo,
+		Logger:     params.Logger,
+		BinaryInfo: params.BinaryInfo,
 	}
 	fn := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		oCfg := cfg.Protocol.OTLP

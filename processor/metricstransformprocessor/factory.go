@@ -58,7 +58,7 @@ func createMetricsProcessor(
 		return nil, err
 	}
 
-	metricsProcessor := newMetricsTransformProcessor(params.Logger, buildHelperConfig(oCfg, params.ApplicationStartInfo.Version))
+	metricsProcessor := newMetricsTransformProcessor(params.Logger, buildHelperConfig(oCfg, params.BinaryInfo.Version))
 
 	return processorhelper.NewMetricsProcessor(
 		cfg,

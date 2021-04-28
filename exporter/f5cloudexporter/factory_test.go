@@ -62,7 +62,7 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 
 	creationParams := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
-		ApplicationStartInfo: component.ApplicationStartInfo{
+		BinaryInfo: component.BinaryInfo{
 			Version: "0.0.0",
 		},
 	}
@@ -95,7 +95,7 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 
 	creationParams := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
-		ApplicationStartInfo: component.ApplicationStartInfo{
+		BinaryInfo: component.BinaryInfo{
 			Version: "0.0.0",
 		},
 	}
@@ -128,7 +128,7 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 
 	creationParams := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
-		ApplicationStartInfo: component.ApplicationStartInfo{
+		BinaryInfo: component.BinaryInfo{
 			Version: "0.0.0",
 		},
 	}

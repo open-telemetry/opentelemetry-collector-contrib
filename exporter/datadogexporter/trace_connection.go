@@ -40,7 +40,7 @@ type traceEdgeConnection struct {
 	statsURL           string
 	apiKey             string
 	client             *http.Client
-	startInfo          component.ApplicationStartInfo
+	startInfo          component.BinaryInfo
 	InsecureSkipVerify bool
 }
 
@@ -50,7 +50,7 @@ const (
 )
 
 // createTraceEdgeConnection returns a new TraceEdgeConnection
-func createTraceEdgeConnection(rootURL, apiKey string, startInfo component.ApplicationStartInfo) TraceEdgeConnection {
+func createTraceEdgeConnection(rootURL, apiKey string, startInfo component.BinaryInfo) TraceEdgeConnection {
 
 	return &traceEdgeConnection{
 		traceURL:  rootURL + "/api/v0.2/traces",

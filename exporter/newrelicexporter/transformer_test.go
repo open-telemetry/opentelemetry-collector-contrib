@@ -31,8 +31,8 @@ import (
 )
 
 func TestCommonAttributes(t *testing.T) {
-	startInfo := &component.ApplicationStartInfo{
-		ExeName: "the-collector",
+	startInfo := &component.BinaryInfo{
+		Command: "the-collector",
 		Version: "0.0.1",
 	}
 
@@ -56,8 +56,8 @@ func TestCommonAttributes(t *testing.T) {
 }
 
 func TestDoesNotCaptureResourceAttributeMetadata(t *testing.T) {
-	startInfo := &component.ApplicationStartInfo{
-		ExeName: "the-collector",
+	startInfo := &component.BinaryInfo{
+		Command: "the-collector",
 		Version: "0.0.1",
 	}
 
@@ -466,8 +466,8 @@ func testTransformMetric(t *testing.T, metric pdata.Metric, want []telemetry.Met
 
 func testTransformMetricWithComparer(t *testing.T, metric pdata.Metric, want []telemetry.Metric, compare func(t *testing.T, want []telemetry.Metric, got []telemetry.Metric)) {
 	details := newMetricMetadata(context.Background())
-	transform := newTransformer(&component.ApplicationStartInfo{
-		ExeName: testCollectorName,
+	transform := newTransformer(&component.BinaryInfo{
+		Command: testCollectorName,
 		Version: testCollectorVersion,
 	}, &details)
 	got, err := transform.Metric(metric)
@@ -483,8 +483,8 @@ func testTransformMetricWithComparer(t *testing.T, metric pdata.Metric, want []t
 
 func testTransformMetricWithError(t *testing.T, metric pdata.Metric, expectedErrorType interface{}) {
 	details := newMetricMetadata(context.Background())
-	transform := newTransformer(&component.ApplicationStartInfo{
-		ExeName: testCollectorName,
+	transform := newTransformer(&component.BinaryInfo{
+		Command: testCollectorName,
 		Version: testCollectorVersion,
 	}, &details)
 	_, err := transform.Metric(metric)
@@ -738,8 +738,8 @@ func TestUnsupportedMetricTypes(t *testing.T) {
 func TestTransformUnknownMetricType(t *testing.T) {
 	metric := pdata.NewMetric()
 	details := newMetricMetadata(context.Background())
-	transform := newTransformer(&component.ApplicationStartInfo{
-		ExeName: testCollectorName,
+	transform := newTransformer(&component.BinaryInfo{
+		Command: testCollectorName,
 		Version: testCollectorVersion,
 	}, &details)
 

@@ -50,8 +50,8 @@ var (
 		},
 	}
 
-	mockStartInfo = component.ApplicationStartInfo{
-		ExeName: "otelcontribcol",
+	mockStartInfo = component.BinaryInfo{
+		Command: "otelcontribcol",
 		Version: "1.0",
 	}
 )
@@ -59,8 +59,8 @@ var (
 func TestFillHostMetadata(t *testing.T) {
 	cache.Cache.Flush()
 	params := component.ExporterCreateParams{
-		Logger:               zap.NewNop(),
-		ApplicationStartInfo: mockStartInfo,
+		Logger:     zap.NewNop(),
+		BinaryInfo: mockStartInfo,
 	}
 
 	cfg := &config.Config{TagsConfig: config.TagsConfig{
@@ -196,8 +196,8 @@ func TestPusher(t *testing.T) {
 		UseResourceMetadata: true,
 	}
 	mockParams := component.ExporterCreateParams{
-		Logger:               zap.NewNop(),
-		ApplicationStartInfo: mockStartInfo,
+		Logger:     zap.NewNop(),
+		BinaryInfo: mockStartInfo,
 	}
 	attrs := testutils.NewAttributeMap(map[string]string{
 		AttributeDatadogHostname: "datadog-hostname",
@@ -217,7 +217,7 @@ func TestPusher(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "datadog-hostname")
 	assert.Equal(t, recvMetadata.Version, mockStartInfo.Version)
-	assert.Equal(t, recvMetadata.Flavor, mockStartInfo.ExeName)
+	assert.Equal(t, recvMetadata.Flavor, mockStartInfo.Command)
 	require.NotNil(t, recvMetadata.Meta)
 	hostname, err := os.Hostname()
 	require.NoError(t, err)

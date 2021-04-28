@@ -58,7 +58,7 @@ func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logger *z
 }
 
 // NewCloudWatchLogsClient create cloudWatchLogClient
-func NewCloudWatchLogsClient(logger *zap.Logger, awsConfig *aws.Config, startInfo component.ApplicationStartInfo, sess *session.Session) LogClient {
+func NewCloudWatchLogsClient(logger *zap.Logger, awsConfig *aws.Config, startInfo component.BinaryInfo, sess *session.Session) LogClient {
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
 	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(startInfo))
@@ -181,7 +181,7 @@ func (client *cloudWatchLogClient) CreateStream(logGroup, streamName *string) (t
 	return "", nil
 }
 
-func newCollectorUserAgentHandler(startInfo component.ApplicationStartInfo) request.NamedHandler {
+func newCollectorUserAgentHandler(startInfo component.BinaryInfo) request.NamedHandler {
 	return request.NamedHandler{
 		Name: "otel.collector.UserAgentHandler",
 		Fn:   request.MakeAddToUserAgentHandler(collectorDistribution, startInfo.Version),

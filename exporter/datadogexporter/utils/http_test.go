@@ -25,8 +25,8 @@ import (
 )
 
 var (
-	startInfo = component.ApplicationStartInfo{
-		ExeName: "otelcontribcol",
+	startInfo = component.BinaryInfo{
+		Command: "otelcontribcol",
 		Version: "1.0",
 	}
 )

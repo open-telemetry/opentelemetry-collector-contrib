@@ -59,7 +59,7 @@ func (f *f5cloudFactory) CreateMetricsExporter(
 		return nil, err
 	}
 
-	fillUserAgent(cfg, params.ApplicationStartInfo.Version)
+	fillUserAgent(cfg, params.BinaryInfo.Version)
 
 	return f.ExporterFactory.CreateMetricsExporter(ctx, params, &cfg.Config)
 }
@@ -75,7 +75,7 @@ func (f *f5cloudFactory) CreateTracesExporter(
 		return nil, err
 	}
 
-	fillUserAgent(cfg, params.ApplicationStartInfo.Version)
+	fillUserAgent(cfg, params.BinaryInfo.Version)
 
 	return f.ExporterFactory.CreateTracesExporter(ctx, params, &cfg.Config)
 }
@@ -91,7 +91,7 @@ func (f *f5cloudFactory) CreateLogsExporter(
 		return nil, err
 	}
 
-	fillUserAgent(cfg, params.ApplicationStartInfo.Version)
+	fillUserAgent(cfg, params.BinaryInfo.Version)
 
 	return f.ExporterFactory.CreateLogsExporter(ctx, params, &cfg.Config)
 }

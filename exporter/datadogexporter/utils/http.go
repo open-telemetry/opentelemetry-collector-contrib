@@ -60,12 +60,12 @@ func SetExtraHeaders(h http.Header, extras map[string]string) {
 	}
 }
 
-func UserAgent(startInfo component.ApplicationStartInfo) string {
-	return fmt.Sprintf("%s/%s", startInfo.ExeName, startInfo.Version)
+func UserAgent(startInfo component.BinaryInfo) string {
+	return fmt.Sprintf("%s/%s", startInfo.Command, startInfo.Version)
 }
 
 // SetDDHeaders sets the Datadog-specific headers
-func SetDDHeaders(reqHeader http.Header, startInfo component.ApplicationStartInfo, apiKey string) {
+func SetDDHeaders(reqHeader http.Header, startInfo component.BinaryInfo, apiKey string) {
 	reqHeader.Set("DD-Api-Key", apiKey)
 	reqHeader.Set("User-Agent", UserAgent(startInfo))
 }
