@@ -67,7 +67,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			args: args{
 				config: *defaultConfig,
 			},
-			wantStartErr: errNilNextConsumer,
+			wantStartErr: componenterror.ErrNilNextConsumer,
 		},
 		{
 			name: "default_endpoint",
@@ -112,7 +112,6 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 	runtime.Gosched()
 	defer r.Shutdown(context.Background())
-	require.Equal(t, componenterror.ErrAlreadyStarted, r.Start(context.Background(), componenttest.NewNopHost()))
 
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
@@ -189,9 +188,6 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	got := mds[0]
 	require.Equal(t, 1, got.ResourceMetrics().Len())
 	assert.Equal(t, want, got)
-
-	assert.NoError(t, r.Shutdown(context.Background()))
-	assert.Equal(t, componenterror.ErrAlreadyStopped, r.Shutdown(context.Background()))
 }
 
 func Test_sfxReceiver_handleReq(t *testing.T) {

@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -63,8 +62,7 @@ const (
 )
 
 var (
-	errNilNextConsumer = errors.New("nil nextConsumer")
-	errEmptyEndpoint   = errors.New("empty endpoint")
+	errEmptyEndpoint = errors.New("empty endpoint")
 
 	okRespBody               = initJSONResponse(responseOK)
 	invalidMethodRespBody    = initJSONResponse(responseInvalidMethod)
@@ -86,9 +84,6 @@ type sfxReceiver struct {
 	metricsConsumer consumer.Metrics
 	logsConsumer    consumer.Logs
 	server          *http.Server
-
-	startOnce sync.Once
-	stopOnce  sync.Once
 }
 
 var _ component.MetricsReceiver = (*sfxReceiver)(nil)
@@ -120,7 +115,7 @@ func (r *sfxReceiver) RegisterLogsConsumer(lc consumer.Logs) {
 	r.logsConsumer = lc
 }
 
-// StartMetricsReception tells the receiver to start its processing.
+// Start tells the receiver to start its processing.
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
 func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
@@ -128,53 +123,41 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 	defer r.Unlock()
 
 	if r.metricsConsumer == nil && r.logsConsumer == nil {
-		return errNilNextConsumer
+		return componenterror.ErrNilNextConsumer
 	}
 
-	err := componenterror.ErrAlreadyStarted
-	r.startOnce.Do(func() {
-		err = nil
+	// set up the listener
+	ln, err := r.config.HTTPServerSettings.ToListener()
+	if err != nil {
+		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
+	}
 
-		var ln net.Listener
-		// set up the listener
-		ln, err = r.config.HTTPServerSettings.ToListener()
-		if err != nil {
-			err = fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
-			return
+	mx := mux.NewRouter()
+	mx.HandleFunc("/v2/datapoint", r.handleDatapointReq)
+	mx.HandleFunc("/v2/event", r.handleEventReq)
+
+	r.server = r.config.HTTPServerSettings.ToServer(mx)
+
+	// TODO: Evaluate what properties should be configurable, for now
+	//		set some hard-coded values.
+	r.server.ReadHeaderTimeout = defaultServerTimeout
+	r.server.WriteTimeout = defaultServerTimeout
+
+	go func() {
+		if errHTTP := r.server.Serve(ln); errHTTP != http.ErrServerClosed {
+			host.ReportFatalError(errHTTP)
 		}
-
-		mx := mux.NewRouter()
-		mx.HandleFunc("/v2/datapoint", r.handleDatapointReq)
-		mx.HandleFunc("/v2/event", r.handleEventReq)
-
-		r.server = r.config.HTTPServerSettings.ToServer(mx)
-
-		// TODO: Evaluate what properties should be configurable, for now
-		//		set some hard-coded values.
-		r.server.ReadHeaderTimeout = defaultServerTimeout
-		r.server.WriteTimeout = defaultServerTimeout
-
-		go func() {
-			if errHTTP := r.server.Serve(ln); errHTTP != http.ErrServerClosed {
-				host.ReportFatalError(errHTTP)
-			}
-		}()
-	})
-
-	return err
+	}()
+	return nil
 }
 
-// StopMetricsReception tells the receiver that should stop reception,
+// Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 func (r *sfxReceiver) Shutdown(context.Context) error {
 	r.Lock()
 	defer r.Unlock()
 
-	err := componenterror.ErrAlreadyStopped
-	r.stopOnce.Do(func() {
-		err = r.server.Close()
-	})
-	return err
+	return r.server.Close()
 }
 
 func (r *sfxReceiver) readBody(ctx context.Context, resp http.ResponseWriter, req *http.Request) ([]byte, bool) {

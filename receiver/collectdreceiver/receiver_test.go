@@ -24,6 +24,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -57,7 +58,7 @@ func TestNewReceiver(t *testing.T) {
 				timeout:     defaultTimeout,
 				attrsPrefix: "default_attr_",
 			},
-			wantErr: errNilNextConsumer,
+			wantErr: componenterror.ErrNilNextConsumer,
 		},
 		{
 			name: "happy path",

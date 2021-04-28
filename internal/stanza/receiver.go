@@ -21,7 +21,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-log-collection/agent"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
@@ -33,10 +32,8 @@ type receiver struct {
 	config.NamedEntity
 
 	sync.Mutex
-	startOnce sync.Once
-	stopOnce  sync.Once
-	wg        sync.WaitGroup
-	cancel    context.CancelFunc
+	wg     sync.WaitGroup
+	cancel context.CancelFunc
 
 	agent         *agent.LogAgent
 	emitter       *LogEmitter
@@ -53,48 +50,41 @@ var _ component.LogsReceiver = (*receiver)(nil)
 func (r *receiver) Start(ctx context.Context, host component.Host) error {
 	r.Lock()
 	defer r.Unlock()
-	retErr := componenterror.ErrAlreadyStarted
+	rctx, cancel := context.WithCancel(ctx)
+	r.cancel = cancel
+	r.logger.Info("Starting stanza receiver")
 
-	r.startOnce.Do(func() {
-		retErr = nil
-		rctx, cancel := context.WithCancel(ctx)
-		r.cancel = cancel
-		r.logger.Info("Starting stanza receiver")
+	if setErr := r.setStorageClient(ctx, host); setErr != nil {
+		return fmt.Errorf("storage client: %s", setErr)
+	}
 
-		if setErr := r.setStorageClient(ctx, host); setErr != nil {
-			retErr = fmt.Errorf("storage client: %s", setErr)
-			return
-		}
+	if obsErr := r.agent.Start(r.getPersister()); obsErr != nil {
+		return fmt.Errorf("start stanza: %s", obsErr)
+	}
 
-		if obsErr := r.agent.Start(r.getPersister()); obsErr != nil {
-			retErr = fmt.Errorf("start stanza: %s", obsErr)
-			return
-		}
+	r.converter.Start()
 
-		r.converter.Start()
+	// Below we're starting 2 loops:
+	// * one which reads all the logs produced by the emitter and then forwards
+	//   them to converter
+	// ...
+	r.wg.Add(1)
+	go r.emitterLoop(rctx)
 
-		// Below we're starting 2 loops:
-		// * one which reads all the logs produced by the emitter and then forwards
-		//   them to converter
-		// ...
-		r.wg.Add(1)
-		go r.emitterLoop(rctx)
+	// ...
+	// * second one which reads all the logs produced by the converter
+	//   (aggregated by Resource) and then calls consumer to consumer them.
+	r.wg.Add(1)
+	go r.consumerLoop(rctx)
 
-		// ...
-		// * second one which reads all the logs produced by the converter
-		//   (aggregated by Resource) and then calls consumer to consumer them.
-		r.wg.Add(1)
-		go r.consumerLoop(rctx)
+	// Those 2 loops are started in separate goroutines because batching in
+	// the emitter loop can cause a flush, caused by either reaching the max
+	// flush size or by the configurable ticker which would in turn cause
+	// a set of log entries to be available for reading in converter's out
+	// channel. In order to prevent backpressure, reading from the converter
+	// channel and batching are done in those 2 goroutines.
 
-		// Those 2 loops are started in separate goroutines because batching in
-		// the emitter loop can cause a flush, caused by either reaching the max
-		// flush size or by the configurable ticker which would in turn cause
-		// a set of log entries to be available for reading in converter's out
-		// channel. In order to prevent backpressure, reading from the converter
-		// channel and batching are done in those 2 goroutines.
-	})
-
-	return retErr
+	return nil
 }
 
 // emitterLoop reads the log entries produced by the emitter and batches them
@@ -151,13 +141,10 @@ func (r *receiver) Shutdown(ctx context.Context) error {
 	r.Lock()
 	defer r.Unlock()
 
-	err := componenterror.ErrAlreadyStopped
-	r.stopOnce.Do(func() {
-		r.logger.Info("Stopping stanza receiver")
-		err = r.agent.Stop()
-		r.converter.Stop()
-		r.cancel()
-		r.wg.Wait()
-	})
+	r.logger.Info("Stopping stanza receiver")
+	err := r.agent.Stop()
+	r.converter.Stop()
+	r.cancel()
+	r.wg.Wait()
 	return err
 }

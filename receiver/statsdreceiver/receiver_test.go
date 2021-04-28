@@ -140,7 +140,7 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 			r.reporter = mr
 
 			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-			require.Equal(t, componenterror.ErrAlreadyStarted, r.Start(context.Background(), componenttest.NewNopHost()))
+			defer r.Shutdown(context.Background())
 
 			statsdClient := tt.clientFn(t)
 
@@ -162,9 +162,6 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 			assert.Equal(t, statsdMetric.Name, metric.GetMetricDescriptor().GetName())
 			tss := metric.GetTimeseries()
 			require.Equal(t, 1, len(tss))
-
-			assert.NoError(t, r.Shutdown(context.Background()))
-			assert.Equal(t, componenterror.ErrAlreadyStopped, r.Shutdown(context.Background()))
 		})
 	}
 }
