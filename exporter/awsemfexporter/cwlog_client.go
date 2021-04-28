@@ -181,7 +181,11 @@ func (client *cloudWatchLogClient) CreateStream(logGroup, streamName *string) (t
 	return "", nil
 }
 
+<<<<<<< HEAD
 func newCollectorUserAgentHandler(binaryInfo component.BinaryInfo) request.NamedHandler {
+=======
+func newCollectorUserAgentHandler(startInfo component.BinaryInfo) request.NamedHandler {
+>>>>>>> replaced ApplicationStartInfo to BinaryInfo
 	return request.NamedHandler{
 		Name: "otel.collector.UserAgentHandler",
 		Fn:   request.MakeAddToUserAgentHandler(collectorDistribution, binaryInfo.Version),
