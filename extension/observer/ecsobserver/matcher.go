@@ -15,7 +15,10 @@
 package ecsobserver
 
 import (
+	"fmt"
+
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -83,4 +86,52 @@ type MatchedTarget struct {
 	Port         int
 	MetricsPath  string
 	Job          string
+}
+
+// a global instance because it's expected and we don't care about why the container didn't match (for now).
+// In the future we might add a debug flag for each matcher config and return typed error with more detail
+// to help user debug. e.g. type ^ngix-*$ does not match nginx-service.
+var errNotMatched = fmt.Errorf("container not matched")
+
+// matchContainers apply one matcher to a list of tasks and returns MatchResult.
+// It does not modify the task in place, the attaching match result logic is
+// performed by TaskFilter at later stage.
+func matchContainers(tasks []*Task, matcher Matcher, matcherIndex int) (*MatchResult, error) {
+	var (
+		matchedTasks      []int
+		matchedContainers []MatchedContainer
+	)
+	var merr error
+	tpe := matcher.Type()
+	for tIndex, t := range tasks {
+		var matched []MatchedContainer
+		for cIndex, c := range t.Definition.ContainerDefinitions {
+			targets, err := matcher.MatchTargets(t, c)
+			// NOTE: we don't stop when there is an error because it could be one task having invalid docker label.
+			if err != nil {
+				// Keep track of unexpected error
+				if err != errNotMatched {
+					multierr.AppendInto(&merr, err)
+				}
+				continue
+			}
+			for i := range targets {
+				targets[i].MatcherType = tpe
+				targets[i].MatcherIndex = matcherIndex
+			}
+			matched = append(matched, MatchedContainer{
+				TaskIndex:      tIndex,
+				ContainerIndex: cIndex,
+				Targets:        targets,
+			})
+		}
+		if len(matched) > 0 {
+			matchedTasks = append(matchedTasks, tIndex)
+			matchedContainers = append(matchedContainers, matched...)
+		}
+	}
+	return &MatchResult{
+		Tasks:      matchedTasks,
+		Containers: matchedContainers,
+	}, merr
 }
