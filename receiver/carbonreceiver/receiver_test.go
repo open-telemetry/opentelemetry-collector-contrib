@@ -76,7 +76,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			args: args{
 				config: *defaultConfig,
 			},
-			wantErr: errNilNextConsumer,
+			wantErr: componenterror.ErrNilNextConsumer,
 		},
 		{
 			name: "empty_endpoint",
@@ -217,7 +217,6 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 			runtime.Gosched()
 			defer r.Shutdown(context.Background())
-			require.Equal(t, componenterror.ErrAlreadyStarted, r.Start(context.Background(), componenttest.NewNopHost()))
 
 			snd := tt.clientFn(t)
 
@@ -241,9 +240,6 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			assert.Equal(t, carbonMetric.Name, metric.GetMetricDescriptor().GetName())
 			tss := metric.GetTimeseries()
 			require.Equal(t, 1, len(tss))
-
-			assert.NoError(t, r.Shutdown(context.Background()))
-			assert.Equal(t, componenterror.ErrAlreadyStopped, r.Shutdown(context.Background()))
 		})
 	}
 }
