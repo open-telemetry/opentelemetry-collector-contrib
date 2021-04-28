@@ -50,11 +50,7 @@ func NewDenylister(exprs []string) *Denylister {
 func compileRules(exprs []string) []*regexp.Regexp {
 	list := make([]*regexp.Regexp, 0, len(exprs))
 	for _, entry := range exprs {
-		rule, err := regexp.Compile(entry)
-		if err != nil {
-			// log.Errorf("Invalid resource filter: %q", entry)
-			continue
-		}
+		rule := regexp.MustCompile(entry)
 		list = append(list, rule)
 	}
 	return list
