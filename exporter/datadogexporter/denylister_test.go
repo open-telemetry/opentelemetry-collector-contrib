@@ -61,8 +61,6 @@ func TestDenylister(t *testing.T) {
 		{[]string{"(GET|POST) /healthcheck"}, "GET /healthcheck", false},
 		{[]string{"(GET|POST) /healthcheck"}, "POST /healthcheck", false},
 		{[]string{"SELECT COUNT\\(\\*\\) FROM BAR"}, "SELECT COUNT(*) FROM BAR", false},
-		{[]string{"[123"}, "[123", true},
-		{[]string{"\\[123"}, "[123", false},
 		{[]string{"ABC+", "W+"}, "ABCCCC", false},
 		{[]string{"ABC+", "W+"}, "WWW", false},
 	}
@@ -77,7 +75,7 @@ func TestDenylister(t *testing.T) {
 }
 
 func TestCompileRules(t *testing.T) {
-	filter := NewDenylister([]string{"[123", "]123", "{6}"})
+	filter := NewDenylister([]string{"\n{6}"})
 	for i := 0; i < 100; i++ {
 		span := testSpan()
 		assert.True(t, filter.Allows(span))

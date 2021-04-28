@@ -772,6 +772,7 @@ func TestTracesTranslationServicePeerName(t *testing.T) {
 func TestTracesTranslationTruncatetag(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
+	denylister := NewDenylister([]string{})
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -788,7 +789,7 @@ func TestTracesTranslationTruncatetag(t *testing.T) {
 	span.Attributes().InsertString(conventions.AttributeExceptionStacktrace, RandStringBytes(5500))
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{})
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{}, denylister)
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
