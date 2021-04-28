@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sort"
@@ -119,6 +120,8 @@ func (b *influxHTTPWriterBatch) flushAndClose(ctx context.Context) error {
 
 	if res, err := b.w.httpClient.Do(req); err != nil {
 		return err
+	} else if body, err := ioutil.ReadAll(res.Body); err != nil {
+		return err
 	} else if err = res.Body.Close(); err != nil {
 		return err
 	} else {
@@ -126,9 +129,9 @@ func (b *influxHTTPWriterBatch) flushAndClose(ctx context.Context) error {
 		case 2: // Success
 			break
 		case 5: // Retryable error
-			return fmt.Errorf("line protocol write returned %q", res.Status)
+			return fmt.Errorf("line protocol write returned %q %q", res.Status, string(body))
 		default: // Terminal error
-			return consumererror.Permanent(fmt.Errorf("line protocol write returned %q", res.Status))
+			return consumererror.Permanent(fmt.Errorf("line protocol write returned %q %q", res.Status, string(body)))
 		}
 	}
 
