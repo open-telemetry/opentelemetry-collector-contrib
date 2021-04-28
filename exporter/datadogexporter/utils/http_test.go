@@ -25,7 +25,7 @@ import (
 )
 
 var (
-	startInfo = component.BinaryInfo{
+	binaryInfo = component.BinaryInfo{
 		Command: "otelcontribcol",
 		Version: "1.0",
 	}
@@ -33,13 +33,13 @@ var (
 
 func TestUserAgent(t *testing.T) {
 
-	assert.Equal(t, UserAgent(startInfo), "otelcontribcol/1.0")
+	assert.Equal(t, UserAgent(binaryInfo), "otelcontribcol/1.0")
 }
 
 func TestDDHeaders(t *testing.T) {
 	header := http.Header{}
 	apiKey := "apikey"
-	SetDDHeaders(header, startInfo, apiKey)
+	SetDDHeaders(header, binaryInfo, apiKey)
 	assert.Equal(t, header.Get("DD-Api-Key"), apiKey)
 	assert.Equal(t, header.Get("USer-Agent"), "otelcontribcol/1.0")
 

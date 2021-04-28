@@ -50,7 +50,7 @@ var (
 		},
 	}
 
-	mockStartInfo = component.BinaryInfo{
+	mockBinaryInfo = component.BinaryInfo{
 		Command: "otelcontribcol",
 		Version: "1.0",
 	}
@@ -60,7 +60,7 @@ func TestFillHostMetadata(t *testing.T) {
 	cache.Cache.Flush()
 	params := component.ExporterCreateParams{
 		Logger:     zap.NewNop(),
-		BinaryInfo: mockStartInfo,
+		BinaryInfo: mockBinaryInfo,
 	}
 
 	cfg := &config.Config{TagsConfig: config.TagsConfig{
@@ -172,7 +172,7 @@ func TestPushMetadata(t *testing.T) {
 	defer ts.Close()
 	cfg.Metrics.Endpoint = ts.URL
 
-	err := pushMetadata(cfg, mockStartInfo, &mockMetadata)
+	err := pushMetadata(cfg, mockBinaryInfo, &mockMetadata)
 	require.NoError(t, err)
 }
 
@@ -186,7 +186,7 @@ func TestFailPushMetadata(t *testing.T) {
 	defer ts.Close()
 	cfg.Metrics.Endpoint = ts.URL
 
-	err := pushMetadata(cfg, mockStartInfo, &mockMetadata)
+	err := pushMetadata(cfg, mockBinaryInfo, &mockMetadata)
 	require.Error(t, err)
 }
 
@@ -197,7 +197,7 @@ func TestPusher(t *testing.T) {
 	}
 	mockParams := component.ExporterCreateParams{
 		Logger:     zap.NewNop(),
-		BinaryInfo: mockStartInfo,
+		BinaryInfo: mockBinaryInfo,
 	}
 	attrs := testutils.NewAttributeMap(map[string]string{
 		AttributeDatadogHostname: "datadog-hostname",
@@ -216,8 +216,8 @@ func TestPusher(t *testing.T) {
 	err := json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "datadog-hostname")
-	assert.Equal(t, recvMetadata.Version, mockStartInfo.Version)
-	assert.Equal(t, recvMetadata.Flavor, mockStartInfo.Command)
+	assert.Equal(t, recvMetadata.Version, mockBinaryInfo.Version)
+	assert.Equal(t, recvMetadata.Flavor, mockBinaryInfo.Command)
 	require.NotNil(t, recvMetadata.Meta)
 	hostname, err := os.Hostname()
 	require.NoError(t, err)

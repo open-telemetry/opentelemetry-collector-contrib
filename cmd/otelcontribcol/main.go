@@ -33,16 +33,9 @@ func main() {
 		log.Fatalf("failed to build components: %v", err)
 	}
 
-<<<<<<< HEAD
-	info := component.ApplicationStartInfo{
+	info := component.BinaryInfo{
 		ExeName: "otelcontribcol",
 		Version: version.Version,
-=======
-	info := component.BinaryInfo{
-		Command:     "otelcontribcol",
-		Description: "OpenTelemetry Collector Contrib",
-		Version:     version.Version,
->>>>>>> replaced ApplicationStartInfo to BinaryInfo
 	}
 
 	if err := run(service.Parameters{BinaryInfo: info, Factories: factories}); err != nil {

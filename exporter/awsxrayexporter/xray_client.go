@@ -54,7 +54,7 @@ func (c *XRayClient) PutTelemetryRecords(input *xray.PutTelemetryRecordsInput) (
 }
 
 // newXRay creates a new instance of the XRay client with a aws configuration and session .
-func newXRay(logger *zap.Logger, awsConfig *aws.Config, startInfo component.BinaryInfo, s *session.Session) XRay {
+func newXRay(logger *zap.Logger, awsConfig *aws.Config, binaryInfo component.BinaryInfo, s *session.Session) XRay {
 	x := xray.New(s, awsConfig)
 	logger.Debug("Using Endpoint: %s", zap.String("endpoint", x.Endpoint))
 
@@ -63,7 +63,7 @@ func newXRay(logger *zap.Logger, awsConfig *aws.Config, startInfo component.Bina
 		Fn:   request.MakeAddToUserAgentHandler("xray", "1.0", os.Getenv("AWS_EXECUTION_ENV")),
 	})
 
-	x.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(startInfo))
+	x.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(binaryInfo))
 
 	x.Handlers.Sign.PushFrontNamed(request.NamedHandler{
 		Name: "tracing.TimestampHandler",
@@ -89,9 +89,9 @@ func IsTimeoutError(err error) bool {
 	return false
 }
 
-func newCollectorUserAgentHandler(startInfo component.BinaryInfo) request.NamedHandler {
+func newCollectorUserAgentHandler(binaryInfo component.BinaryInfo) request.NamedHandler {
 	return request.NamedHandler{
 		Name: "otel.collector.UserAgentHandler",
-		Fn:   request.MakeAddToUserAgentHandler(collectorDistribution, startInfo.Version),
+		Fn:   request.MakeAddToUserAgentHandler(collectorDistribution, binaryInfo.Version),
 	}
 }

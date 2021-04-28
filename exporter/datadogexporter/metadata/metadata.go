@@ -146,11 +146,11 @@ func fillHostMetadata(params component.ExporterCreateParams, cfg *config.Config,
 	}
 }
 
-func pushMetadata(cfg *config.Config, startInfo component.BinaryInfo, metadata *HostMetadata) error {
+func pushMetadata(cfg *config.Config, binaryInfo component.BinaryInfo, metadata *HostMetadata) error {
 	path := cfg.Metrics.TCPAddr.Endpoint + "/intake"
 	buf, _ := json.Marshal(metadata)
 	req, _ := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(buf))
-	utils.SetDDHeaders(req.Header, startInfo, cfg.API.Key)
+	utils.SetDDHeaders(req.Header, binaryInfo, cfg.API.Key)
 	utils.SetExtraHeaders(req.Header, utils.JSONHeaders)
 	client := utils.NewHTTPClient(10 * time.Second)
 	resp, err := client.Do(req)

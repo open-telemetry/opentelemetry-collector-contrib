@@ -442,12 +442,12 @@ func TestLogUnknownError(t *testing.T) {
 func TestUserAgent(t *testing.T) {
 	logger := zap.NewNop()
 
-	startInfo := component.BinaryInfo{
+	binaryInfo := component.BinaryInfo{
 		Version: "1.0",
 	}
 
 	session, _ := session.NewSession()
-	cwlog := NewCloudWatchLogsClient(logger, &aws.Config{}, startInfo, session)
+	cwlog := NewCloudWatchLogsClient(logger, &aws.Config{}, binaryInfo, session)
 	logClient := cwlog.(*cloudWatchLogClient).svc.(*cloudwatchlogs.CloudWatchLogs)
 
 	req := request.New(aws.Config{}, metadata.ClientInfo{}, logClient.Handlers, nil, &request.Operation{

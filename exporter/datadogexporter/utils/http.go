@@ -60,14 +60,14 @@ func SetExtraHeaders(h http.Header, extras map[string]string) {
 	}
 }
 
-func UserAgent(startInfo component.BinaryInfo) string {
-	return fmt.Sprintf("%s/%s", startInfo.Command, startInfo.Version)
+func UserAgent(binaryInfo component.BinaryInfo) string {
+	return fmt.Sprintf("%s/%s", binaryInfo.Command, binaryInfo.Version)
 }
 
 // SetDDHeaders sets the Datadog-specific headers
-func SetDDHeaders(reqHeader http.Header, startInfo component.BinaryInfo, apiKey string) {
+func SetDDHeaders(reqHeader http.Header, binaryInfo component.BinaryInfo, apiKey string) {
 	reqHeader.Set("DD-Api-Key", apiKey)
-	reqHeader.Set("User-Agent", UserAgent(startInfo))
+	reqHeader.Set("User-Agent", UserAgent(binaryInfo))
 }
 
 // DoWithRetries repeats a fallible action up to `maxRetries` times
