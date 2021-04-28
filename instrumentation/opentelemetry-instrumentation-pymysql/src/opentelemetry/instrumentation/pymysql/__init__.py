@@ -78,11 +78,13 @@ class PyMySQLInstrumentor(BaseInstrumentor):
         dbapi.unwrap_connect(pymysql, "connect")
 
     # pylint:disable=no-self-use
-    def instrument_connection(self, connection):
+    def instrument_connection(self, connection, tracer_provider=None):
         """Enable instrumentation in a PyMySQL connection.
 
         Args:
             connection: The connection to instrument.
+            tracer_provider: The optional tracer provider to use. If omitted
+                the current globally configured one is used.
 
         Returns:
             An instrumented connection.
@@ -94,6 +96,7 @@ class PyMySQLInstrumentor(BaseInstrumentor):
             self._DATABASE_SYSTEM,
             self._CONNECTION_ATTRIBUTES,
             version=__version__,
+            tracer_provider=tracer_provider,
         )
 
     def uninstrument_connection(self, connection):

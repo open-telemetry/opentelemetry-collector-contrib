@@ -84,6 +84,7 @@ from opentelemetry.instrumentation.django.environment_variables import (
 from opentelemetry.instrumentation.django.middleware import _DjangoMiddleware
 from opentelemetry.instrumentation.django.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
+from opentelemetry.trace import get_tracer
 
 _logger = getLogger(__name__)
 
@@ -104,6 +105,13 @@ class DjangoInstrumentor(BaseInstrumentor):
         # ext. Find a better way of implementing this.
         if environ.get(OTEL_PYTHON_DJANGO_INSTRUMENT) == "False":
             return
+
+        tracer_provider = kwargs.get("tracer_provider")
+        tracer = get_tracer(
+            __name__, __version__, tracer_provider=tracer_provider,
+        )
+
+        _DjangoMiddleware._tracer = tracer
 
         _DjangoMiddleware._otel_request_hook = kwargs.pop("request_hook", None)
         _DjangoMiddleware._otel_response_hook = kwargs.pop(

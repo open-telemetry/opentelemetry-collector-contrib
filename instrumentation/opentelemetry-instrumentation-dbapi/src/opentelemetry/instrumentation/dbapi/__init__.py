@@ -228,20 +228,17 @@ class DatabaseApiIntegration:
             }
         self._name = name
         self._version = version
-        self._tracer_provider = tracer_provider
+        self._tracer = get_tracer(
+            self._name,
+            instrumenting_library_version=self._version,
+            tracer_provider=tracer_provider,
+        )
         self.capture_parameters = capture_parameters
         self.database_system = database_system
         self.connection_props = {}
         self.span_attributes = {}
         self.name = ""
         self.database = ""
-
-    def get_tracer(self):
-        return get_tracer(
-            self._name,
-            instrumenting_library_version=self._version,
-            tracer_provider=self._tracer_provider,
-        )
 
     def wrapped_connection(
         self,
@@ -370,7 +367,7 @@ class CursorTracer:
                 else self._db_api_integration.name
             )
 
-        with self._db_api_integration.get_tracer().start_as_current_span(
+        with self._db_api_integration._tracer.start_as_current_span(
             name, kind=SpanKind.CLIENT
         ) as span:
             self._populate_span(span, cursor, *args)

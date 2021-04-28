@@ -50,8 +50,6 @@ from opentelemetry.semconv.trace import (
 from opentelemetry.trace import SpanKind
 from opentelemetry.trace.status import Status, StatusCode
 
-_APPLIED = "_opentelemetry_tracer"
-
 
 def _hydrate_span_from_args(connection, query, parameters) -> dict:
     """Get network and database attributes from connection."""
@@ -98,16 +96,11 @@ class AsyncPGInstrumentor(BaseInstrumentor):
     def __init__(self, capture_parameters=False):
         super().__init__()
         self.capture_parameters = capture_parameters
+        self._tracer = None
 
     def _instrument(self, **kwargs):
-        tracer_provider = kwargs.get(
-            "tracer_provider", trace.get_tracer_provider()
-        )
-        setattr(
-            asyncpg,
-            _APPLIED,
-            tracer_provider.get_tracer("asyncpg", __version__),
-        )
+        tracer_provider = kwargs.get("tracer_provider")
+        self._tracer = trace.get_tracer(__name__, __version__, tracer_provider)
 
         for method in [
             "Connection.execute",
@@ -121,7 +114,6 @@ class AsyncPGInstrumentor(BaseInstrumentor):
             )
 
     def _uninstrument(self, **__):
-        delattr(asyncpg, _APPLIED)
         for method in [
             "execute",
             "executemany",
@@ -132,13 +124,14 @@ class AsyncPGInstrumentor(BaseInstrumentor):
             unwrap(asyncpg.Connection, method)
 
     async def _do_execute(self, func, instance, args, kwargs):
-        tracer = getattr(asyncpg, _APPLIED)
 
         exception = None
         params = getattr(instance, "_params", {})
         name = args[0] if args[0] else params.get("database", "postgresql")
 
-        with tracer.start_as_current_span(name, kind=SpanKind.CLIENT) as span:
+        with self._tracer.start_as_current_span(
+            name, kind=SpanKind.CLIENT
+        ) as span:
             if span.is_recording():
                 span_attributes = _hydrate_span_from_args(
                     instance,

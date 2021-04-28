@@ -31,7 +31,7 @@ from opentelemetry.instrumentation.wsgi import (
 )
 from opentelemetry.propagate import extract
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.trace import Span, SpanKind, get_tracer, use_span
+from opentelemetry.trace import Span, SpanKind, use_span
 from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
 
 try:
@@ -82,6 +82,7 @@ class _DjangoMiddleware(MiddlewareMixin):
 
     _traced_request_attrs = get_traced_request_attrs("DJANGO")
     _excluded_urls = get_excluded_urls("DJANGO")
+    _tracer = None
 
     _otel_request_hook: Callable[[Span, HttpRequest], None] = None
     _otel_response_hook: Callable[
@@ -125,9 +126,7 @@ class _DjangoMiddleware(MiddlewareMixin):
 
         token = attach(extract(request_meta, getter=wsgi_getter))
 
-        tracer = get_tracer(__name__, __version__)
-
-        span = tracer.start_span(
+        span = self._tracer.start_span(
             self._get_span_name(request),
             kind=SpanKind.SERVER,
             start_time=request_meta.get(

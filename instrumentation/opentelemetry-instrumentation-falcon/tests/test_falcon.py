@@ -22,6 +22,7 @@ from opentelemetry.instrumentation.propagators import (
     get_global_response_propagator,
     set_global_response_propagator,
 )
+from opentelemetry.sdk.resources import Resource
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.trace import StatusCode, format_span_id, format_trace_id
@@ -237,6 +238,36 @@ class TestFalconInstrumentation(TestFalconBase):
             self.assertTrue(mock_span.is_recording.called)
             self.assertFalse(mock_span.set_attribute.called)
             self.assertFalse(mock_span.set_status.called)
+
+
+class TestFalconInstrumentationWithTracerProvider(TestBase):
+    def setUp(self):
+        super().setUp()
+        resource = Resource.create({"resource-key": "resource-value"})
+        result = self.create_tracer_provider(resource=resource)
+        tracer_provider, exporter = result
+        self.exporter = exporter
+
+        FalconInstrumentor().instrument(tracer_provider=tracer_provider)
+        self.app = make_app()
+
+    def client(self):
+        return testing.TestClient(self.app)
+
+    def tearDown(self):
+        super().tearDown()
+        with self.disable_logging():
+            FalconInstrumentor().uninstrument()
+
+    def test_traced_request(self):
+        self.client().simulate_request(method="GET", path="/hello")
+        spans = self.exporter.get_finished_spans()
+        self.assertEqual(len(spans), 1)
+        span = spans[0]
+        self.assertEqual(
+            span.resource.attributes["resource-key"], "resource-value"
+        )
+        self.exporter.clear()
 
 
 class TestFalconInstrumentationHooks(TestFalconBase):

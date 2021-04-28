@@ -38,10 +38,10 @@ def _normalize_vendor(vendor):
 
 
 def _get_tracer(engine, tracer_provider=None):
-    if tracer_provider is None:
-        tracer_provider = trace.get_tracer_provider()
-    return tracer_provider.get_tracer(
-        _normalize_vendor(engine.name), __version__
+    return trace.get_tracer(
+        _normalize_vendor(engine.name),
+        __version__,
+        tracer_provider=tracer_provider,
     )
 
 

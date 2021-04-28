@@ -147,13 +147,18 @@ class GrpcInstrumentorServer(BaseInstrumentor):
 
     def _instrument(self, **kwargs):
         self._original_func = grpc.server
+        tracer_provider = kwargs.get("tracer_provider")
 
         def server(*args, **kwargs):
             if "interceptors" in kwargs:
                 # add our interceptor as the first
-                kwargs["interceptors"].insert(0, server_interceptor())
+                kwargs["interceptors"].insert(
+                    0, server_interceptor(tracer_provider=tracer_provider)
+                )
             else:
-                kwargs["interceptors"] = [server_interceptor()]
+                kwargs["interceptors"] = [
+                    server_interceptor(tracer_provider=tracer_provider)
+                ]
             return self._original_func(*args, **kwargs)
 
         grpc.server = server

@@ -83,17 +83,20 @@ class AiopgInstrumentor(BaseInstrumentor):
             tracer_provider=tracer_provider,
         )
 
+    # pylint:disable=no-self-use
     def _uninstrument(self, **kwargs):
         """"Disable aiopg instrumentation"""
         wrappers.unwrap_connect()
         wrappers.unwrap_create_pool()
 
     # pylint:disable=no-self-use
-    def instrument_connection(self, connection):
+    def instrument_connection(self, connection, tracer_provider=None):
         """Enable instrumentation in a aiopg connection.
 
         Args:
             connection: The connection to instrument.
+            tracer_provider: The optional tracer provider to use. If omitted
+                the current globally configured one is used.
 
         Returns:
             An instrumented connection.
@@ -103,6 +106,8 @@ class AiopgInstrumentor(BaseInstrumentor):
             connection,
             self._DATABASE_SYSTEM,
             self._CONNECTION_ATTRIBUTES,
+            version=__version__,
+            tracer_provider=tracer_provider,
         )
 
     def uninstrument_connection(self, connection):

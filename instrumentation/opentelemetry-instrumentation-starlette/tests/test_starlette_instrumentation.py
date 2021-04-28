@@ -21,6 +21,7 @@ from starlette.routing import Route
 from starlette.testclient import TestClient
 
 import opentelemetry.instrumentation.starlette as otel_starlette
+from opentelemetry.sdk.resources import Resource
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.util.http import get_excluded_urls
@@ -109,12 +110,26 @@ class TestAutoInstrumentation(TestStarletteManualInstrumentation):
 
     def _create_app(self):
         # instrumentation is handled by the instrument call
-        self._instrumentor.instrument()
+        resource = Resource.create({"key1": "value1", "key2": "value2"})
+        result = self.create_tracer_provider(resource=resource)
+        tracer_provider, exporter = result
+        self.memory_exporter = exporter
+
+        self._instrumentor.instrument(tracer_provider=tracer_provider)
+
         return self._create_starlette_app()
 
     def tearDown(self):
         self._instrumentor.uninstrument()
         super().tearDown()
+
+    def test_request(self):
+        self._client.get("/foobar")
+        spans = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(spans), 3)
+        for span in spans:
+            self.assertEqual(span.resource.attributes["key1"], "value1")
+            self.assertEqual(span.resource.attributes["key2"], "value2")
 
 
 class TestAutoInstrumentationLogic(unittest.TestCase):

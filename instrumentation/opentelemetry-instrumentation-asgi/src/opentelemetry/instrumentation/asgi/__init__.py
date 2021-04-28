@@ -167,11 +167,19 @@ class OpenTelemetryMiddleware:
             and a tuple, representing the desired span name and a
             dictionary with any additional span attributes to set.
             Optional: Defaults to get_default_span_details.
+        tracer_provider: The optional tracer provider to use. If omitted
+            the current globally configured one is used.
     """
 
-    def __init__(self, app, excluded_urls=None, span_details_callback=None):
+    def __init__(
+        self,
+        app,
+        excluded_urls=None,
+        span_details_callback=None,
+        tracer_provider=None,
+    ):
         self.app = guarantee_single_callable(app)
-        self.tracer = trace.get_tracer(__name__, __version__)
+        self.tracer = trace.get_tracer(__name__, __version__, tracer_provider)
         self.span_details_callback = (
             span_details_callback or get_default_span_details
         )

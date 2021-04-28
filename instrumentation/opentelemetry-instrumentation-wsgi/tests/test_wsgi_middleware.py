@@ -20,7 +20,9 @@ from urllib.parse import urlsplit
 
 import opentelemetry.instrumentation.wsgi as otel_wsgi
 from opentelemetry import trace as trace_api
+from opentelemetry.sdk.resources import Resource
 from opentelemetry.semconv.trace import SpanAttributes
+from opentelemetry.test.test_base import TestBase
 from opentelemetry.test.wsgitestutil import WsgiTestBase
 from opentelemetry.trace import StatusCode
 
@@ -361,6 +363,42 @@ class TestWsgiAttributes(unittest.TestCase):
         expected = (mock.call(SpanAttributes.HTTP_STATUS_CODE, 404),)
         self.assertEqual(self.span.set_attribute.call_count, len(expected))
         self.span.set_attribute.assert_has_calls(expected, any_order=True)
+
+
+class TestWsgiMiddlewareWithTracerProvider(WsgiTestBase):
+    def validate_response(
+        self,
+        response,
+        exporter,
+        error=None,
+        span_name="HTTP GET",
+        http_method="GET",
+    ):
+        while True:
+            try:
+                value = next(response)
+                self.assertEqual(value, b"*")
+            except StopIteration:
+                break
+
+        span_list = exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 1)
+        self.assertEqual(span_list[0].name, span_name)
+        self.assertEqual(span_list[0].kind, trace_api.SpanKind.SERVER)
+        self.assertEqual(
+            span_list[0].resource.attributes["service-key"], "service-value"
+        )
+
+    def test_basic_wsgi_call(self):
+        resource = Resource.create({"service-key": "service-value"})
+        result = TestBase.create_tracer_provider(resource=resource)
+        tracer_provider, exporter = result
+
+        app = otel_wsgi.OpenTelemetryMiddleware(
+            simple_wsgi, tracer_provider=tracer_provider
+        )
+        response = app(self.environ, self.start_response)
+        self.validate_response(response, exporter)
 
 
 if __name__ == "__main__":

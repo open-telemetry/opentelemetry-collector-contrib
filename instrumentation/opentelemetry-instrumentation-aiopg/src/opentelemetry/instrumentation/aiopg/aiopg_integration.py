@@ -114,7 +114,7 @@ class AsyncCursorTracer(CursorTracer):
                 else self._db_api_integration.name
             )
 
-        with self._db_api_integration.get_tracer().start_as_current_span(
+        with self._db_api_integration._tracer.start_as_current_span(
             name, kind=SpanKind.CLIENT
         ) as span:
             self._populate_span(span, cursor, *args)

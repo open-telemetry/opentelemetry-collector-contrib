@@ -18,11 +18,13 @@ import unittest.mock as mock
 
 import opentelemetry.instrumentation.asgi as otel_asgi
 from opentelemetry import trace as trace_api
+from opentelemetry.sdk import resources
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.asgitestutil import (
     AsgiTestBase,
     setup_testing_defaults,
 )
+from opentelemetry.test.test_base import TestBase
 
 
 async def http_app(scope, receive, send):
@@ -210,6 +212,22 @@ class TestAsgiApplication(AsgiTestBase):
         self.send_default_request()
         outputs = self.get_all_output()
         self.validate_outputs(outputs, modifiers=[update_expected_span_name])
+
+    def test_custom_tracer_provider_otel_asgi(self):
+        resource = resources.Resource.create({"service-test-key": "value"})
+        result = TestBase.create_tracer_provider(resource=resource)
+        tracer_provider, exporter = result
+
+        app = otel_asgi.OpenTelemetryMiddleware(
+            simple_asgi, tracer_provider=tracer_provider
+        )
+        self.seed_app(app)
+        self.send_default_request()
+        span_list = exporter.get_finished_spans()
+        for span in span_list:
+            self.assertEqual(
+                span.resource.attributes["service-test-key"], "value"
+            )
 
     def test_behavior_with_scope_server_as_none(self):
         """Test that middleware is ok when server is none in scope."""

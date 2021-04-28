@@ -86,11 +86,15 @@ class Psycopg2Instrumentor(BaseInstrumentor):
         dbapi.unwrap_connect(psycopg2, "connect")
 
     # TODO(owais): check if core dbapi can do this for all dbapi implementations e.g, pymysql and mysql
-    def instrument_connection(self, connection):  # pylint: disable=no-self-use
+    def instrument_connection(
+        self, connection, tracer_provider=None
+    ):  # pylint: disable=no-self-use
         setattr(
             connection, _OTEL_CURSOR_FACTORY_KEY, connection.cursor_factory
         )
-        connection.cursor_factory = _new_cursor_factory()
+        connection.cursor_factory = _new_cursor_factory(
+            tracer_provider=tracer_provider
+        )
         return connection
 
     # TODO(owais): check if core dbapi can do this for all dbapi implementations e.g, pymysql and mysql
@@ -146,13 +150,14 @@ class CursorTracer(dbapi.CursorTracer):
         return statement
 
 
-def _new_cursor_factory(db_api=None, base_factory=None):
+def _new_cursor_factory(db_api=None, base_factory=None, tracer_provider=None):
     if not db_api:
         db_api = DatabaseApiIntegration(
             __name__,
             Psycopg2Instrumentor._DATABASE_SYSTEM,
             connection_attributes=Psycopg2Instrumentor._CONNECTION_ATTRIBUTES,
             version=__version__,
+            tracer_provider=tracer_provider,
         )
 
     base_factory = base_factory or pg_cursor

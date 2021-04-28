@@ -194,11 +194,15 @@ class OpenTelemetryMiddleware:
         response_hook: Optional callback which is called with the server span,
                        WSGI environ, status_code and response_headers for every
                        incoming request.
+        tracer_provider: Optional tracer provider to use. If omitted the current
+                         globally configured one is used.
     """
 
-    def __init__(self, wsgi, request_hook=None, response_hook=None):
+    def __init__(
+        self, wsgi, request_hook=None, response_hook=None, tracer_provider=None
+    ):
         self.wsgi = wsgi
-        self.tracer = trace.get_tracer(__name__, __version__)
+        self.tracer = trace.get_tracer(__name__, __version__, tracer_provider)
         self.request_hook = request_hook
         self.response_hook = response_hook
 
