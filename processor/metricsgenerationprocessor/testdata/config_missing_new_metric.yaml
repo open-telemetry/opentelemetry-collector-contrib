@@ -1,0 +1,25 @@
+receivers:
+  nop:
+
+processors:
+  metricsgeneration:
+    generation_rules:
+      # missing new_metric_name
+      - generation_type: calculate
+        operand1_metric: metric1
+        operand2_metric: metric2
+        operation: percent
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [metricsgeneration]
+      exporters: [nop]
+    metrics:
+      receivers: [nop]
+      processors: [metricsgeneration]
+      exporters: [nop]

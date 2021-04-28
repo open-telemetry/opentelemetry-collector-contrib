@@ -1,0 +1,25 @@
+receivers:
+  nop:
+
+processors:
+  metricsgeneration:
+    generation_rules:
+      # missing scale_by
+      - new_metric_name: new_metric
+        generation_type: scale
+        operand1_metric: metric1
+        operation: multiply
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [metricsgeneration]
+      exporters: [nop]
+    metrics:
+      receivers: [nop]
+      processors: [metricsgeneration]
+      exporters: [nop]

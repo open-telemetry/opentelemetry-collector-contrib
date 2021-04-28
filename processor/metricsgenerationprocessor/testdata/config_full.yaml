@@ -1,0 +1,30 @@
+receivers:
+  nop:
+
+processors:
+  metricsgeneration:
+    generation_rules:
+      - new_metric_name: new_metric
+        generation_type: calculate
+        operand1_metric: metric1
+        operand2_metric: metric2
+        operation: percent
+      - new_metric_name: new_metric
+        generation_type: scale
+        operand1_metric: metric1
+        scale_by: 1000
+        operation: multiply
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [metricsgeneration]
+      exporters: [nop]
+    metrics:
+      receivers: [nop]
+      processors: [metricsgeneration]
+      exporters: [nop]
