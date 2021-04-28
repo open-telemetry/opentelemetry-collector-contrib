@@ -51,6 +51,9 @@ const (
 	eventNameTag        string = "name"
 	eventAttrTag        string = "attributes"
 	eventTimeTag        string = "time"
+	// max meta value from
+	// https://github.com/DataDog/datadog-agent/blob/140a4ee164261ef2245340c50371ba989fbeb038/pkg/trace/traceutil/truncate.go#L23.
+	MaxMetaValLen int = 5000
 	// tagContainersTags specifies the name of the tag which holds key/value
 	// pairs representing information about the container (Docker, EC2, etc).
 	tagContainersTags = "_dd.tags.container"
@@ -369,6 +372,10 @@ func setMetric(s *pb.Span, key string, v float64) {
 }
 
 func setStringTag(s *pb.Span, key, v string) {
+	if len(v) > MaxMetaValLen {
+		v = utils.TruncateUTF8(v, MaxMetaValLen)
+	}
+
 	switch key {
 	// if a span has `service.name` set as the tag
 	case ext.ServiceName:
