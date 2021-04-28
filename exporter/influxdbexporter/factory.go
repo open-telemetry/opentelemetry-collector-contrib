@@ -16,9 +16,11 @@ package influxdbexporter
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -33,30 +35,28 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createTraceExporter(ctx context.Context, params component.ExporterCreateParams, config config.Exporter) (component.TracesExporter, error) {
+func createTraceExporter(_ context.Context, params component.ExporterCreateParams, config config.Exporter) (component.TracesExporter, error) {
 	cfg := config.(*Config)
 	println(cfg)
 
-	exporter, err := newExporter(cfg, params)
+	exporter, err := newTracesExporter(cfg, params)
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		config,
 		params.Logger,
 		exporter.pushTraces,
 		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithResourceToTelemetryConversion(exporterhelper.ResourceToTelemetrySettings{Enabled: true}),
 		exporterhelper.WithRetry(cfg.RetrySettings),
-		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 	)
 }
 
-func createMetricsExporter(ctx context.Context, params component.ExporterCreateParams, config config.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(_ context.Context, params component.ExporterCreateParams, config config.Exporter) (component.MetricsExporter, error) {
 	cfg := config.(*Config)
 
-	exporter, err := newExporter(cfg, params)
+	exporter, err := newMetricsExporter(cfg, params)
 	if err != nil {
 		return nil, err
 	}
@@ -66,16 +66,14 @@ func createMetricsExporter(ctx context.Context, params component.ExporterCreateP
 		params.Logger,
 		exporter.pushMetrics,
 		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithResourceToTelemetryConversion(exporterhelper.ResourceToTelemetrySettings{Enabled: true}),
 		exporterhelper.WithRetry(cfg.RetrySettings),
-		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 	)
 }
 
-func createLogsExporter(ctx context.Context, params component.ExporterCreateParams, config config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(_ context.Context, params component.ExporterCreateParams, config config.Exporter) (component.LogsExporter, error) {
 	cfg := config.(*Config)
 
-	exporter, err := newExporter(cfg, params)
+	exporter, err := newLogsExporter(cfg, params)
 	if err != nil {
 		return nil, err
 	}
@@ -85,21 +83,24 @@ func createLogsExporter(ctx context.Context, params component.ExporterCreatePara
 		params.Logger,
 		exporter.pushLogs,
 		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithResourceToTelemetryConversion(exporterhelper.ResourceToTelemetrySettings{Enabled: true}),
 		exporterhelper.WithRetry(cfg.RetrySettings),
-		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 	)
 }
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.ExporterSettings{
+		ExporterSettings: &config.ExporterSettings{
 			TypeVal: typeStr,
+			NameVal: typeStr,
 		},
-		QueueSettings:   exporterhelper.DefaultQueueSettings(),
-		RetrySettings:   exporterhelper.DefaultRetrySettings(),
-		TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),
-
-		Protocol: protocolLineProtocol,
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Timeout: 5 * time.Second,
+			Headers: map[string]string{
+				"User-Agent": "OpenTelemetry -> Influx",
+			},
+		},
+		QueueSettings: exporterhelper.DefaultQueueSettings(),
+		RetrySettings: exporterhelper.DefaultRetrySettings(),
+		MetricsSchema: "telegraf-prometheus-v1",
 	}
 }

@@ -33,35 +33,34 @@ type influxHTTPWriter struct {
 	encoderPool sync.Pool
 	httpClient  *http.Client
 	writeURL    string
-	writeHeader http.Header
 
 	logger common.Logger
 }
 
-func newInfluxHTTPWriter(logger common.Logger, serverURL, authToken, org, bucket string, writeTimeout time.Duration) (*influxHTTPWriter, error) {
-	writeURL, err := url.Parse(serverURL)
+func newInfluxHTTPWriter(logger common.Logger, config *Config) (*influxHTTPWriter, error) {
+	writeURL, err := url.Parse(config.HTTPClientSettings.Endpoint)
 	if err != nil {
 		return nil, err
 	}
-	writeURL, err = writeURL.Parse("api/v2/write")
-	if err != nil {
-		return nil, err
+	if writeURL.Path == "" || writeURL.Path == "/" {
+		writeURL, err = writeURL.Parse("api/v2/write")
+		if err != nil {
+			return nil, err
+		}
 	}
 	queryValues := writeURL.Query()
-	queryValues.Set("org", org)
-	queryValues.Set("bucket", bucket)
+	queryValues.Set("org", config.Org)
+	queryValues.Set("bucket", config.Bucket)
 	queryValues.Set("precision", "ns")
 	writeURL.RawQuery = queryValues.Encode()
 
-	writeHeader := make(http.Header)
-	writeHeader.Set("User-Agent", "OpenTelemetry -> Influx")
-	if authToken != "" {
-		writeHeader.Set("Authorization", "Token "+authToken)
+	if config.Token != "" {
+		config.HTTPClientSettings.Headers["Authorization"] = "Token " + config.Token
 	}
 
-	httpClient := new(http.Client)
-	if writeTimeout > 0 {
-		httpClient.Timeout = writeTimeout
+	httpClient, err := config.HTTPClientSettings.ToClient()
+	if err != nil {
+		return nil, err
 	}
 
 	return &influxHTTPWriter{
@@ -73,10 +72,9 @@ func newInfluxHTTPWriter(logger common.Logger, serverURL, authToken, org, bucket
 				return e
 			},
 		},
-		httpClient:  httpClient,
-		writeURL:    writeURL.String(),
-		writeHeader: writeHeader,
-		logger:      logger,
+		httpClient: httpClient,
+		writeURL:   writeURL.String(),
+		logger:     logger,
 	}, nil
 }
 
@@ -118,7 +116,6 @@ func (b *influxHTTPWriterBatch) flushAndClose(ctx context.Context) error {
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
-	req.Header = b.w.writeHeader
 
 	if res, err := b.w.httpClient.Do(req); err != nil {
 		return err

@@ -16,39 +16,32 @@ package influxdbexporter
 
 import (
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
 	// The value of "type" key in configuration.
-	typeStr config.Type = "influxdb"
-
-	protocolLineProtocol = "line-protocol"
-	protocolGrpc         = "grpc"
+	typeStr = "influxdb"
 )
 
 // Config defines configuration for the InfluxDB exporter.
 type Config struct {
-	config.ExporterSettings        `mapstructure:",squash"`
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
-	exporterhelper.TimeoutSettings `mapstructure:",squash"`
+	*config.ExporterSettings      `mapstructure:"-"`
+	confighttp.HTTPClientSettings `mapstructure:",squash"`
+	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
 
 	// Org is the InfluxDB organization name of the destination bucket.
 	Org string `mapstructure:"org"`
 	// Bucket is the InfluxDB bucket name that telemetry will be written to.
 	Bucket string `mapstructure:"bucket"`
+	// Token is used to identify InfluxDB permissions within the organization.
+	Token string `mapstructure:"token"`
 
-	// Protocol is the method used to deliver metrics to InfluxDB. Must be one of:
-	// line-protocol, grpc, json
-	Protocol string `mapstructure:"protocol"`
-
-	// LineProtocolServerURL is the destination for Protocol "line-protocol".
-	// For example http://localhost:8086
-	LineProtocolServerURL string `mapstructure:"line_protocol_server_url"`
-	// LineProtocolAuthToken is the authentication token for Protocol "line-protocol".
-	LineProtocolAuthToken string `mapstructure:"line_protocol_auth_token"`
-
-	// TODO add gRPC, JSON
-	// configgrpc.GRPCClientSettings `mapstructure:",squash"`
+	// MetricsSchema indicates the metrics schema to emit to line protocol.
+	// Options:
+	// - telegraf-prometheus-v1
+	// - telegraf-prometheus-v2
+	MetricsSchema string `mapstructure:"metrics_schema"`
 }

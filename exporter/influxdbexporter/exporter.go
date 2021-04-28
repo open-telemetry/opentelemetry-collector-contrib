@@ -18,65 +18,42 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/influxdata/influxdb-observability/otel2influx"
-	otlpcollectorlogs "github.com/influxdata/influxdb-observability/otlp/collector/logs/v1"
-	otlpcollectormetrics "github.com/influxdata/influxdb-observability/otlp/collector/metrics/v1"
-	otlpcollectortrace "github.com/influxdata/influxdb-observability/otlp/collector/trace/v1"
-	otlplogs "github.com/influxdata/influxdb-observability/otlp/logs/v1"
-	otlpmetrics "github.com/influxdata/influxdb-observability/otlp/metrics/v1"
-	otlptrace "github.com/influxdata/influxdb-observability/otlp/trace/v1"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
 )
 
-type exporter struct {
-	influxWriter    *influxHTTPWriter
-	influxConverter *otel2influx.OpenTelemetryToInfluxConverter
-
-	logger *zap.Logger
+type tracesExporter struct {
+	writer    *influxHTTPWriter
+	converter *otel2influx.OtelTracesToLineProtocol
 }
 
-func newExporter(config *Config, params component.ExporterCreateParams) (*exporter, error) {
-	switch config.Protocol {
-	case protocolLineProtocol:
-		influxLogger := newZapInfluxLogger(params.Logger)
-		converter := otel2influx.NewOpenTelemetryToInfluxConverter(influxLogger)
-		influxWriter, err := newInfluxHTTPWriter(influxLogger, config.LineProtocolServerURL, config.LineProtocolAuthToken, config.Org, config.Bucket, config.Timeout)
-		if err != nil {
-			return nil, err
-		}
-
-		return &exporter{
-			influxWriter:    influxWriter,
-			influxConverter: converter,
-			logger:          params.Logger,
-		}, nil
-
-	case protocolGrpc:
-		// TODO
-		fallthrough
-
-	default:
-		return nil, fmt.Errorf("protocol %q not supported", config.Protocol)
+func newTracesExporter(config *Config, params component.ExporterCreateParams) (*tracesExporter, error) {
+	influxLogger := newZapInfluxLogger(params.Logger)
+	converter := otel2influx.NewOtelTracesToLineProtocol(influxLogger)
+	writer, err := newInfluxHTTPWriter(influxLogger, config)
+	if err != nil {
+		return nil, err
 	}
+
+	return &tracesExporter{
+		writer:    writer,
+		converter: converter,
+	}, nil
 }
 
-func (e *exporter) pushTraces(ctx context.Context, td pdata.Traces) error {
-	var spans []*otlptrace.ResourceSpans
-	{
-		var r otlpcollectortrace.ExportTraceServiceRequest
-		if protoBytes, err := td.ToOtlpProtoBytes(); err != nil {
-			return err
-		} else if err = proto.Unmarshal(protoBytes, &r); err != nil {
-			return err
-		}
-		spans = r.ResourceSpans
-	}
+func (e *tracesExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
+	batch := e.writer.newBatch()
 
-	batch := e.influxWriter.newBatch()
-	_ = e.influxConverter.WriteTraces(ctx, spans, batch)
+	protoBytes, err := td.ToOtlpProtoBytes()
+	if err != nil {
+		return err
+	}
+	err = e.converter.WriteTracesFromRequestBytes(ctx, protoBytes, batch)
+	if err != nil {
+		return err
+	}
 	if err := batch.flushAndClose(ctx); err != nil {
 		return err
 	}
@@ -84,41 +61,87 @@ func (e *exporter) pushTraces(ctx context.Context, td pdata.Traces) error {
 	return nil
 }
 
-func (e *exporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
-	var metrics []*otlpmetrics.ResourceMetrics
-	{
-		var r otlpcollectormetrics.ExportMetricsServiceRequest
-		if protoBytes, err := md.ToOtlpProtoBytes(); err != nil {
-			return err
-		} else if err = proto.Unmarshal(protoBytes, &r); err != nil {
-			return err
-		}
-		metrics = r.ResourceMetrics
+type metricsExporter struct {
+	writer    *influxHTTPWriter
+	converter *otel2influx.OtelMetricsToLineProtocol
+}
+
+var metricsSchemata = map[string]otel2influx.MetricsSchema{
+	"telegraf-prometheus-v1": otel2influx.MetricsSchemaTelegrafPrometheusV1,
+	"telegraf-prometheus-v2": otel2influx.MetricsSchemaTelegrafPrometheusV2,
+}
+
+func newMetricsExporter(config *Config, params component.ExporterCreateParams) (*metricsExporter, error) {
+	influxLogger := newZapInfluxLogger(params.Logger)
+	schema, found := metricsSchemata[config.MetricsSchema]
+	if !found {
+		return nil, fmt.Errorf("schema '%s' not recognized", config.MetricsSchema)
 	}
 
-	batch := e.influxWriter.newBatch()
-	_ = e.influxConverter.WriteMetrics(ctx, metrics, batch)
-	if err := batch.flushAndClose(ctx); err != nil {
+	converter, err := otel2influx.NewOtelMetricsToLineProtocol(influxLogger, schema)
+	if err != nil {
+		return nil, err
+	}
+	writer, err := newInfluxHTTPWriter(influxLogger, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &metricsExporter{
+		writer:    writer,
+		converter: converter,
+	}, nil
+}
+
+func (e *metricsExporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
+	batch := e.writer.newBatch()
+
+	protoBytes, err := md.ToOtlpProtoBytes()
+	if err != nil {
+		return consumererror.Permanent(err)
+	}
+	err = e.converter.WriteMetricsFromRequestBytes(ctx, protoBytes, batch)
+	if err != nil {
+		return consumererror.Permanent(err)
+	}
+	err = batch.flushAndClose(ctx)
+	if err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (e *exporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
-	var logRecords []*otlplogs.ResourceLogs
-	{
-		var r otlpcollectorlogs.ExportLogsServiceRequest
-		if protoBytes, err := ld.ToOtlpProtoBytes(); err != nil {
-			return err
-		} else if err = proto.Unmarshal(protoBytes, &r); err != nil {
-			return err
-		}
-		logRecords = r.ResourceLogs
+type logsExporter struct {
+	writer    *influxHTTPWriter
+	converter *otel2influx.OtelLogsToLineProtocol
+}
+
+func newLogsExporter(config *Config, params component.ExporterCreateParams) (*logsExporter, error) {
+	influxLogger := newZapInfluxLogger(params.Logger)
+	converter := otel2influx.NewOtelLogsToLineProtocol(influxLogger)
+	writer, err := newInfluxHTTPWriter(influxLogger, config)
+	if err != nil {
+		return nil, err
 	}
 
-	batch := e.influxWriter.newBatch()
-	_ = e.influxConverter.WriteLogs(ctx, logRecords, batch)
+	return &logsExporter{
+		writer:    writer,
+		converter: converter,
+	}, nil
+}
+
+func (e *logsExporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
+	batch := e.writer.newBatch()
+
+	protoBytes, err := ld.ToOtlpProtoBytes()
+	if err != nil {
+		return err
+	}
+	err = e.converter.WriteLogsFromRequestBytes(ctx, protoBytes, batch)
+	if err != nil {
+		return err
+	}
 	if err := batch.flushAndClose(ctx); err != nil {
 		return err
 	}
