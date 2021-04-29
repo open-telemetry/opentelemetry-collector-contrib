@@ -1,0 +1,18 @@
+name: Detecting Biased Language
+on:
+  pull_request:
+    branches:
+      - main
+jobs:
+  biased_lang:
+    runs-on: ubuntu-latest
+    name: Detecting Biased Language
+    steps:
+      - uses: actions/checkout@v2
+      - id: pink-panther
+        uses: splunk/pink-panther@main
+        with:
+          token: ${{secrets.GITHUB_TOKEN}}
+          path: $GITHUB_WORKSPACE
+          url: $GITHUB_SERVER_URL
+          repo: $GITHUB_REPOSITORY
