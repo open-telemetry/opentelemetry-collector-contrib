@@ -704,7 +704,7 @@ func TestParseExceptionWithJavaScriptStactracekMalformedLines(t *testing.T) {
 	assert.Equal(t, 0, *exceptions[0].Stack[0].Line)
 }
 
-func TestParseExceptionWithSimpleStacktrace (t *testing.T) {
+func TestParseExceptionWithSimpleStacktrace(t *testing.T) {
 	exceptionType := "System.FormatException"
 	message := "Input string was not in a correct format"
 

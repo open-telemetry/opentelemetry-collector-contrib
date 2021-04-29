@@ -451,7 +451,7 @@ func fillDotnetStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 			} else {
 				idx := strings.LastIndexByte(line, ')')
 				if idx >= 0 {
-					label := line[len("\tat "):idx+1]
+					label := line[len("\tat ") : idx+1]
 					path := ""
 					line_number := 0
 
