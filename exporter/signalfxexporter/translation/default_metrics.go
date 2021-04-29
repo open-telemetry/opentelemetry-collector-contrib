@@ -35,78 +35,13 @@ exclude_metrics:
   - cpu.utilization_per_core
   - cpu.wait
 
-  # Memory metrics.
-  # Derived from https://docs.signalfx.com/en/latest/integrations/agent/monitors/memory.html.
-  # Windows Only.
-  - memory.available
-
-  # Filesystems metrics.
-  # Derived from https://docs.signalfx.com/en/latest/integrations/agent/monitors/filesystems.html.
-  - df_complex.reserved
-  - df_inodes.free
-  - df_inodes.used
-  - percent_inodes.free
-  - percent_inodes.used
-  - percent_bytes.free
-  - percent_bytes.free
-  - percent_bytes.free
-
   # Disk-IO metrics.
   # Derived from https://docs.signalfx.com/en/latest/integrations/agent/monitors/disk-io.html.
-  - disk_merged.read
-  - disk_merged.write
-  - disk_octets.read
-  - disk_octets.write
   - disk_ops.pending
-  - disk_time.read
-  - disk_time.write
-  # Windows Only.
-  - disk_octets.avg_read
-  - disk_octets.avg_write
-  - disk_time.avg_read
-  - disk_time.avg_write
-
-  # Network-io metrics.
-  # Derived from https://docs.signalfx.com/en/latest/integrations/agent/monitors/net-io.html.
-  - if_dropped.rx
-  - if_dropped.tx
-  - if_packets.rx
-  - if_packets.tx
 
   # Virtual memory metrics
   - vmpage_io.memory.in
   - vmpage_io.memory.out
-  - vmpage_faults.majflt
-  - vmpage_faults.minflt
-
-  # k8s metrics
-  # Derived from https://docs.signalfx.com/en/latest/integrations/agent/monitors/kubernetes-cluster.html.
-  - kubernetes.cronjob.active
-  - kubernetes.daemon_set.updated
-  - kubernetes.deployment.updated
-
-  # matches kubernetes.job.(active|completions|failed|parallelism|succeeded)
-  - /^kubernetes\.job\.(?:active|completions|failed|parallelism|succeeded)$/
-
-  # matches kubernetes.stateful_set.(current|desired|ready|updated)
-  - /^kubernetes\.stateful_set\.(?:current|desired|ready|updated)$/
-
-  # matches all container limit metrics but kubernetes.container_cpu_limit and kubernetes.container_memory_limit
-  - /^kubernetes\.container_.+_limit$/
-  - '!kubernetes.container_memory_limit'
-  - '!kubernetes.container_cpu_limit'
-
-  - /^kubernetes\.container_.+_request$/
-
-  # matches all metrics that starts with kubernetes.node_ but kubernetes.node_ready
-  - /^kubernetes\.node_.+$/
-  - '!kubernetes.node_ready'
-
-  # kubelet metrics
-  # Derived from https://docs.signalfx.com/en/latest/integrations/agent/monitors/kubelet-metrics.html
-  - /^container_memory_(?:available_bytes|major_page_faults|page_faults|rss_bytes|working_set_bytes)$/
-  - /^pod_ephemeral_storage_(?:used_bytes|capacity_bytes)$/
-  - /^kubernetes\.volume_inodes(_free|_used)*$/
 
 
 # Metrics in OpenTelemetry Convention.
