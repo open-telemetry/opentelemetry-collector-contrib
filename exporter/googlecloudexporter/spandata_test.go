@@ -22,8 +22,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
+	"go.opentelemetry.io/otel/sdk/trace"
 	apitrace "go.opentelemetry.io/otel/trace"
 )
 
@@ -95,11 +95,14 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 			TraceID: apitrace.TraceID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F},
 			SpanID:  apitrace.SpanID{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8},
 		}),
-		SpanKind:     apitrace.SpanKindServer,
-		ParentSpanID: apitrace.SpanID{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8},
-		Name:         "End-To-End Here",
-		StartTime:    startTime,
-		EndTime:      endTime,
+		SpanKind: apitrace.SpanKindServer,
+		Parent: apitrace.NewSpanContext(apitrace.SpanContextConfig{
+			TraceID: apitrace.TraceID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F},
+			SpanID:  apitrace.SpanID{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8},
+		}),
+		Name:      "End-To-End Here",
+		StartTime: startTime,
+		EndTime:   endTime,
 		MessageEvents: []apitrace.Event{
 			{
 				Time:       startTime,
@@ -146,7 +149,7 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 	assert.EqualValues(t, 1, len(gotOTSpanData))
 	assert.EqualValues(t, wantOTSpanData.SpanContext, gotOTSpanData[0].SpanContext)
 	assert.EqualValues(t, wantOTSpanData.SpanKind, gotOTSpanData[0].SpanKind)
-	assert.EqualValues(t, wantOTSpanData.ParentSpanID, gotOTSpanData[0].ParentSpanID)
+	assert.EqualValues(t, wantOTSpanData.Parent, gotOTSpanData[0].Parent)
 	assert.EqualValues(t, wantOTSpanData.Name, gotOTSpanData[0].Name)
 	assert.EqualValues(t, wantOTSpanData.StartTime, gotOTSpanData[0].StartTime)
 	assert.EqualValues(t, wantOTSpanData.EndTime, gotOTSpanData[0].EndTime)
