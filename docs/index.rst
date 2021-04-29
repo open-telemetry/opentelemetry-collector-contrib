@@ -32,7 +32,7 @@ Extensions
 ----------
 
 Visit `OpenTelemetry Registry <https://opentelemetry.io/registry/?s=python>`_ to
-find a lit of related projects like exporters, instrumentation libraries, tracer
+find a lot of related projects like exporters, instrumentation libraries, tracer
 implementations, etc.
 
 Installing Cutting Edge Packages
