@@ -428,7 +428,7 @@ func fillDotnetStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 
 				label := parts[0][len("\tat "):]
 				path := parts[1]
-				line_number := 0
+				lineNumber := 0
 
 				colonIdx := strings.LastIndexByte(parts[1], ':')
 				if colonIdx >= 0 {
@@ -438,13 +438,13 @@ func fillDotnetStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 						lineStr = lineStr[5:]
 					}
 					path = path[0:colonIdx]
-					line_number, _ = strconv.Atoi(lineStr)
+					lineNumber, _ = strconv.Atoi(lineStr)
 				}
 
 				stack := awsxray.StackFrame{
 					Path:  aws.String(path),
 					Label: aws.String(label),
-					Line:  aws.Int(line_number),
+					Line:  aws.Int(lineNumber),
 				}
 
 				exception.Stack = append(exception.Stack, stack)
@@ -453,12 +453,12 @@ func fillDotnetStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 				if idx >= 0 {
 					label := line[len("\tat ") : idx+1]
 					path := ""
-					line_number := 0
+					lineNumber := 0
 
 					stack := awsxray.StackFrame{
 						Path:  aws.String(path),
 						Label: aws.String(label),
-						Line:  aws.Int(line_number),
+						Line:  aws.Int(lineNumber),
 					}
 
 					exception.Stack = append(exception.Stack, stack)
