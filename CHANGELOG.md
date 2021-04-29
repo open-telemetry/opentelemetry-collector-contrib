@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python-contrib/compare/v0.200...HEAD)
 
 ### Changed
+
 - `opentelemetry-propagator-ot-trace` Use `TraceFlags` object in `extract`
   ([#472](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/472))
+- Set the `traced_request_attrs` of FalconInstrumentor by an argument correctly.
+  ([#473](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/473))
 
 ### Added
 - Move `opentelemetry-instrumentation` from core repository
