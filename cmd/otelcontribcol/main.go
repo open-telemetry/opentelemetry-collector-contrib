@@ -37,7 +37,6 @@ func main() {
 		Command:     "otelcontribcol",
 		Description: "OpenTelemetry Collector Contrib",
 		Version:     version.Version,
-		GitHash:     version.GitHash,
 	}
 
 	if err := run(service.Parameters{BuildInfo: info, Factories: factories}); err != nil {
