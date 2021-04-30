@@ -31,8 +31,8 @@ import (
 )
 
 func TestCommonAttributes(t *testing.T) {
-	startInfo := &component.ApplicationStartInfo{
-		ExeName: "the-collector",
+	buildInfo := &component.BuildInfo{
+		Command: "the-collector",
 		Version: "0.0.1",
 	}
 
@@ -44,7 +44,7 @@ func TestCommonAttributes(t *testing.T) {
 	ilm.SetVersion("test version")
 
 	details := newTraceMetadata(context.TODO())
-	commonAttrs := newTransformer(startInfo, &details).CommonAttributes(resource, ilm)
+	commonAttrs := newTransformer(buildInfo, &details).CommonAttributes(resource, ilm)
 	assert.Equal(t, "the-collector", commonAttrs[collectorNameKey])
 	assert.Equal(t, "0.0.1", commonAttrs[collectorVersionKey])
 	assert.Equal(t, "R1", commonAttrs["resource"])
@@ -56,8 +56,8 @@ func TestCommonAttributes(t *testing.T) {
 }
 
 func TestDoesNotCaptureResourceAttributeMetadata(t *testing.T) {
-	startInfo := &component.ApplicationStartInfo{
-		ExeName: "the-collector",
+	buildInfo := &component.BuildInfo{
+		Command: "the-collector",
 		Version: "0.0.1",
 	}
 
@@ -68,7 +68,7 @@ func TestDoesNotCaptureResourceAttributeMetadata(t *testing.T) {
 	ilm.SetVersion("test version")
 
 	details := newTraceMetadata(context.TODO())
-	commonAttrs := newTransformer(startInfo, &details).CommonAttributes(resource, ilm)
+	commonAttrs := newTransformer(buildInfo, &details).CommonAttributes(resource, ilm)
 
 	assert.Greater(t, len(commonAttrs), 0)
 	assert.Equal(t, 0, len(details.attributeMetadataCount))
@@ -466,8 +466,8 @@ func testTransformMetric(t *testing.T, metric pdata.Metric, want []telemetry.Met
 
 func testTransformMetricWithComparer(t *testing.T, metric pdata.Metric, want []telemetry.Metric, compare func(t *testing.T, want []telemetry.Metric, got []telemetry.Metric)) {
 	details := newMetricMetadata(context.Background())
-	transform := newTransformer(&component.ApplicationStartInfo{
-		ExeName: testCollectorName,
+	transform := newTransformer(&component.BuildInfo{
+		Command: testCollectorName,
 		Version: testCollectorVersion,
 	}, &details)
 	got, err := transform.Metric(metric)
@@ -483,8 +483,8 @@ func testTransformMetricWithComparer(t *testing.T, metric pdata.Metric, want []t
 
 func testTransformMetricWithError(t *testing.T, metric pdata.Metric, expectedErrorType interface{}) {
 	details := newMetricMetadata(context.Background())
-	transform := newTransformer(&component.ApplicationStartInfo{
-		ExeName: testCollectorName,
+	transform := newTransformer(&component.BuildInfo{
+		Command: testCollectorName,
 		Version: testCollectorVersion,
 	}, &details)
 	_, err := transform.Metric(metric)
@@ -738,8 +738,8 @@ func TestUnsupportedMetricTypes(t *testing.T) {
 func TestTransformUnknownMetricType(t *testing.T) {
 	metric := pdata.NewMetric()
 	details := newMetricMetadata(context.Background())
-	transform := newTransformer(&component.ApplicationStartInfo{
-		ExeName: testCollectorName,
+	transform := newTransformer(&component.BuildInfo{
+		Command: testCollectorName,
 		Version: testCollectorVersion,
 	}, &details)
 
