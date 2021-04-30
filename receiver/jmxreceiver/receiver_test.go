@@ -71,9 +71,9 @@ func TestBuildJMXMetricGathererConfig(t *testing.T) {
 			`otel.jmx.service.url = service:jmx:rmi///jndi/rmi://myservice:12345/jmxrmi/
 otel.jmx.interval.milliseconds = 123000
 otel.jmx.target.system = mytargetsystem
-otel.exporter = otlp
-otel.exporter.otlp.endpoint = myotlpendpoint
-otel.exporter.otlp.metric.timeout = 234000
+otel.metrics.exporter = otlp
+otel.exporter.otlp.endpoint = http://myotlpendpoint
+otel.exporter.otlp.timeout = 234000
 `, "",
 		},
 		{
@@ -83,7 +83,7 @@ otel.exporter.otlp.metric.timeout = 234000
 				GroovyScript:       "mygroovyscript",
 				CollectionInterval: 123 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
-					Endpoint: "myotlpendpoint",
+					Endpoint: "http://myotlpendpoint",
 					TimeoutSettings: exporterhelper.TimeoutSettings{
 						Timeout: 234 * time.Second,
 					},
@@ -92,9 +92,9 @@ otel.exporter.otlp.metric.timeout = 234000
 			`otel.jmx.service.url = service:jmx:rmi///jndi/rmi://myservice:12345/jmxrmi/
 otel.jmx.interval.milliseconds = 123000
 otel.jmx.groovy.script = mygroovyscript
-otel.exporter = otlp
-otel.exporter.otlp.endpoint = myotlpendpoint
-otel.exporter.otlp.metric.timeout = 234000
+otel.metrics.exporter = otlp
+otel.exporter.otlp.endpoint = http://myotlpendpoint
+otel.exporter.otlp.timeout = 234000
 `, "",
 		},
 		{
@@ -105,18 +105,23 @@ otel.exporter.otlp.metric.timeout = 234000
 				GroovyScript:       "mygroovyscript",
 				CollectionInterval: 123 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
-					Endpoint: "myotlpendpoint",
+					Endpoint: "https://myotlpendpoint",
 					TimeoutSettings: exporterhelper.TimeoutSettings{
 						Timeout: 234 * time.Second,
+					},
+					Headers: map[string]string{
+						"one":   "two",
+						"three": "four",
 					},
 				},
 			},
 			`otel.jmx.service.url = service:jmx:rmi:///jndi/rmi://myhost:12345/jmxrmi
 otel.jmx.interval.milliseconds = 123000
 otel.jmx.target.system = mytargetsystem
-otel.exporter = otlp
-otel.exporter.otlp.endpoint = myotlpendpoint
-otel.exporter.otlp.metric.timeout = 234000
+otel.metrics.exporter = otlp
+otel.exporter.otlp.endpoint = https://myotlpendpoint
+otel.exporter.otlp.timeout = 234000
+otel.exporter.otlp.headers = one=two,three=four
 `, "",
 		},
 		{

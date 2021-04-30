@@ -60,7 +60,7 @@ func (suite *JMXIntegrationSuite) TearDownSuite() {
 }
 
 func downloadJMXMetricGathererJAR() (string, error) {
-	url := "https://oss.jfrog.org/artifactory/list/oss-snapshot-local/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/0.0.1-SNAPSHOT/opentelemetry-java-contrib-jmx-metrics-0.0.1-20201110.155252-5.jar"
+	url := "https://oss.sonatype.org/content/repositories/snapshots/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/1.0.0-alpha-SNAPSHOT/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha-20210429.213723-5.jar"
 	resp, err := http.Get(url)
 	if err != nil {
 		return "", err
@@ -191,7 +191,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 
 		ilm := rm.InstrumentationLibraryMetrics().At(0)
 		require.Equal(t, "io.opentelemetry.contrib.jmxmetrics", ilm.InstrumentationLibrary().Name())
-		require.Equal(t, "0.0.1", ilm.InstrumentationLibrary().Version())
+		require.Equal(t, "1.0.0-alpha", ilm.InstrumentationLibrary().Version())
 
 		met := ilm.Metrics().At(0)
 
@@ -229,5 +229,5 @@ func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 	}()
 
 	err := receiver.Start(context.Background(), componenttest.NewNopHost())
-	require.EqualError(t, err, "listen tcp: lookup <invalid>: no such host")
+	require.Contains(t, err.Error(), "listen tcp: lookup <invalid>:")
 }
