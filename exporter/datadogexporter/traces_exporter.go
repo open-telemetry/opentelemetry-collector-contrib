@@ -56,6 +56,7 @@ type traceExporter struct {
 	obfuscator     *obfuscate.Obfuscator
 	calculator     *sublayerCalculator
 	client         *datadog.Client
+	denylister     *Denylister
 }
 
 var (
@@ -85,6 +86,9 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateParam
 	// https://github.com/DataDog/datadog-serverless-functions/blob/11f170eac105d66be30f18eda09eca791bc0d31b/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L43
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
 
+	// a denylist for dropping ignored resources
+	denylister := NewDenylister(cfg.Traces.IgnoreResources)
+
 	calculator := &sublayerCalculator{sc: stats.NewSublayerCalculator()}
 	exporter := &traceExporter{
 		params:         params,
@@ -94,6 +98,7 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateParam
 		obfuscator:     obfuscator,
 		calculator:     calculator,
 		client:         client,
+		denylister:     denylister,
 	}
 
 	return exporter
@@ -131,7 +136,7 @@ func (exp *traceExporter) pushTraceData(
 	// convert traces to datadog traces and group trace payloads by env
 	// we largely apply the same logic as the serverless implementation, simplified a bit
 	// https://github.com/DataDog/datadog-serverless-functions/blob/f5c3aedfec5ba223b11b76a4239fcbf35ec7d045/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L61-L83
-	ddTraces, ms := convertToDatadogTd(td, exp.calculator, exp.cfg)
+	ddTraces, ms := convertToDatadogTd(td, exp.calculator, exp.cfg, exp.denylister)
 
 	// group the traces by env to reduce the number of flushes
 	aggregatedTraces := aggregateTracePayloadsByEnv(ddTraces)
