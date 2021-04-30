@@ -17,6 +17,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -97,6 +98,12 @@ type TracesConfig struct {
 	// meaning no sampling. If you want to send one event out of every 250
 	// times Send() is called, you would specify 250 here.
 	SampleRate uint `mapstructure:"sample_rate"`
+
+	// ignored resources
+	// A blacklist of regular expressions can be provided to disable certain traces based on their resource name
+	// all entries must be surrounded by double quotes and separated by commas.
+	// ignore_resources: ["(GET|POST) /healthcheck"]
+	IgnoreResources []string `mapstructure:"ignore_resources"`
 }
 
 // TagsConfig defines the tag-related configuration
@@ -224,5 +231,17 @@ func (c *Config) Sanitize() error {
 		c.Traces.TCPAddr.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
 	}
 
+	return nil
+}
+
+func (c *Config) Validate() error {
+	if c.Traces.IgnoreResources != nil {
+		for _, entry := range c.Traces.IgnoreResources {
+			_, err := regexp.Compile(entry)
+			if err != nil {
+				return fmt.Errorf("'%s' is not valid resource filter regular expression", entry)
+			}
+		}
+	}
 	return nil
 }

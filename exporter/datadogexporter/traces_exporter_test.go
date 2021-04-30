@@ -81,6 +81,7 @@ func testTracesExporterHelper(td pdata.Traces, t *testing.T) []string {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: server.URL,
 			},
+			IgnoreResources: []string{},
 		},
 	}
 
