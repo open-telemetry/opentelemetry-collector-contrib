@@ -25,6 +25,11 @@ var (
 	// conventionsMappings defines the mapping between OpenTelemetry semantic conventions
 	// and Datadog Agent conventions
 	conventionsMapping = map[string]string{
+		// Datadog conventions
+		conventions.AttributeDeploymentEnvironment: "env",
+		conventions.AttributeServiceName: "service",
+		conventions.AttributeServiceVersion: "version",
+
 		// ECS conventions
 		// https://github.com/DataDog/datadog-agent/blob/e081bed/pkg/tagger/collectors/ecs_extract.go
 		conventions.AttributeAWSECSTaskFamily: "task_family",
