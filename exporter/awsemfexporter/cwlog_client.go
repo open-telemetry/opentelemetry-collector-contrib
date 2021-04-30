@@ -58,10 +58,10 @@ func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logger *z
 }
 
 // NewCloudWatchLogsClient create cloudWatchLogClient
-func NewCloudWatchLogsClient(logger *zap.Logger, awsConfig *aws.Config, binaryInfo component.BinaryInfo, sess *session.Session) LogClient {
+func NewCloudWatchLogsClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, sess *session.Session) LogClient {
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
-	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(binaryInfo))
+	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo))
 	return newCloudWatchLogClient(client, logger)
 }
 
@@ -181,17 +181,9 @@ func (client *cloudWatchLogClient) CreateStream(logGroup, streamName *string) (t
 	return "", nil
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-func newCollectorUserAgentHandler(binaryInfo component.BinaryInfo) request.NamedHandler {
-=======
-func newCollectorUserAgentHandler(startInfo component.BinaryInfo) request.NamedHandler {
->>>>>>> replaced ApplicationStartInfo to BinaryInfo
-=======
-func newCollectorUserAgentHandler(binaryInfo component.BinaryInfo) request.NamedHandler {
->>>>>>> renamed variables from startInfo to binaryInfo
+func newCollectorUserAgentHandler(buildInfo component.BuildInfo) request.NamedHandler {
 	return request.NamedHandler{
 		Name: "otel.collector.UserAgentHandler",
-		Fn:   request.MakeAddToUserAgentHandler(collectorDistribution, binaryInfo.Version),
+		Fn:   request.MakeAddToUserAgentHandler(collectorDistribution, buildInfo.Version),
 	}
 }

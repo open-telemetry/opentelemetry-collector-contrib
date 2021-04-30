@@ -40,15 +40,7 @@ type traceEdgeConnection struct {
 	statsURL           string
 	apiKey             string
 	client             *http.Client
-<<<<<<< HEAD
-<<<<<<< HEAD
-	binaryInfo         component.BinaryInfo
-=======
-	startInfo          component.BinaryInfo
->>>>>>> replaced ApplicationStartInfo to BinaryInfo
-=======
-	binaryInfo         component.BinaryInfo
->>>>>>> renamed variables from startInfo to binaryInfo
+	buildInfo          component.BuildInfo
 	InsecureSkipVerify bool
 }
 
@@ -58,22 +50,14 @@ const (
 )
 
 // createTraceEdgeConnection returns a new TraceEdgeConnection
-<<<<<<< HEAD
-<<<<<<< HEAD
-func createTraceEdgeConnection(rootURL, apiKey string, binaryInfo component.BinaryInfo) TraceEdgeConnection {
-=======
-func createTraceEdgeConnection(rootURL, apiKey string, startInfo component.BinaryInfo) TraceEdgeConnection {
->>>>>>> replaced ApplicationStartInfo to BinaryInfo
-=======
-func createTraceEdgeConnection(rootURL, apiKey string, binaryInfo component.BinaryInfo) TraceEdgeConnection {
->>>>>>> renamed variables from startInfo to binaryInfo
+func createTraceEdgeConnection(rootURL, apiKey string, buildInfo component.BuildInfo) TraceEdgeConnection {
 
 	return &traceEdgeConnection{
-		traceURL:   rootURL + "/api/v0.2/traces",
-		statsURL:   rootURL + "/api/v0.2/stats",
-		binaryInfo: binaryInfo,
-		apiKey:     apiKey,
-		client:     utils.NewHTTPClient(traceEdgeTimeout),
+		traceURL:  rootURL + "/api/v0.2/traces",
+		statsURL:  rootURL + "/api/v0.2/stats",
+		buildInfo: buildInfo,
+		apiKey:    apiKey,
+		client:    utils.NewHTTPClient(traceEdgeTimeout),
 	}
 }
 
@@ -170,7 +154,7 @@ func (con *traceEdgeConnection) sendPayloadToTraceEdge(ctx context.Context, apiK
 		return false, err
 	}
 
-	utils.SetDDHeaders(req.Header, con.binaryInfo, apiKey)
+	utils.SetDDHeaders(req.Header, con.buildInfo, apiKey)
 	utils.SetExtraHeaders(req.Header, payload.Headers)
 
 	resp, err := con.client.Do(req)

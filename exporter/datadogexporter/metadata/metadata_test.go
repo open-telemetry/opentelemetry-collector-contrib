@@ -50,15 +50,7 @@ var (
 		},
 	}
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-	mockBinaryInfo = component.BinaryInfo{
-=======
-	mockStartInfo = component.BinaryInfo{
->>>>>>> replaced ApplicationStartInfo to BinaryInfo
-=======
-	mockBinaryInfo = component.BinaryInfo{
->>>>>>> renamed variables from startInfo to binaryInfo
+	mockBuildInfo = component.BuildInfo{
 		Command: "otelcontribcol",
 		Version: "1.0",
 	}
@@ -67,16 +59,8 @@ var (
 func TestFillHostMetadata(t *testing.T) {
 	cache.Cache.Flush()
 	params := component.ExporterCreateParams{
-		Logger:     zap.NewNop(),
-<<<<<<< HEAD
-<<<<<<< HEAD
-		BinaryInfo: mockBinaryInfo,
-=======
-		BinaryInfo: mockStartInfo,
->>>>>>> replaced ApplicationStartInfo to BinaryInfo
-=======
-		BinaryInfo: mockBinaryInfo,
->>>>>>> renamed variables from startInfo to binaryInfo
+		Logger:    zap.NewNop(),
+		BuildInfo: mockBuildInfo,
 	}
 
 	cfg := &config.Config{TagsConfig: config.TagsConfig{
@@ -188,7 +172,7 @@ func TestPushMetadata(t *testing.T) {
 	defer ts.Close()
 	cfg.Metrics.Endpoint = ts.URL
 
-	err := pushMetadata(cfg, mockBinaryInfo, &mockMetadata)
+	err := pushMetadata(cfg, mockBuildInfo, &mockMetadata)
 	require.NoError(t, err)
 }
 
@@ -202,7 +186,7 @@ func TestFailPushMetadata(t *testing.T) {
 	defer ts.Close()
 	cfg.Metrics.Endpoint = ts.URL
 
-	err := pushMetadata(cfg, mockBinaryInfo, &mockMetadata)
+	err := pushMetadata(cfg, mockBuildInfo, &mockMetadata)
 	require.Error(t, err)
 }
 
@@ -212,8 +196,8 @@ func TestPusher(t *testing.T) {
 		UseResourceMetadata: true,
 	}
 	mockParams := component.ExporterCreateParams{
-		Logger:     zap.NewNop(),
-		BinaryInfo: mockBinaryInfo,
+		Logger:    zap.NewNop(),
+		BuildInfo: mockBuildInfo,
 	}
 	attrs := testutils.NewAttributeMap(map[string]string{
 		AttributeDatadogHostname: "datadog-hostname",
@@ -232,8 +216,8 @@ func TestPusher(t *testing.T) {
 	err := json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "datadog-hostname")
-	assert.Equal(t, recvMetadata.Version, mockBinaryInfo.Version)
-	assert.Equal(t, recvMetadata.Flavor, mockBinaryInfo.Command)
+	assert.Equal(t, recvMetadata.Version, mockBuildInfo.Version)
+	assert.Equal(t, recvMetadata.Flavor, mockBuildInfo.Command)
 	require.NotNil(t, recvMetadata.Meta)
 	hostname, err := os.Hostname()
 	require.NoError(t, err)

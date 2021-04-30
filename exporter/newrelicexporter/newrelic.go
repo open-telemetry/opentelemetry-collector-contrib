@@ -38,7 +38,7 @@ const (
 
 // exporter exports OpenTelemetry Collector data to New Relic.
 type exporter struct {
-	binaryInfo     *component.BinaryInfo
+	buildInfo     *component.BuildInfo
 	requestFactory telemetry.RequestFactory
 	apiKeyHeader   string
 	logger         *zap.Logger
@@ -57,7 +57,7 @@ func clientOptionForAPIKey(apiKey string) telemetry.ClientOption {
 	return nil
 }
 
-func clientOptions(info *component.BinaryInfo, apiKey string, apiKeyHeader string, hostOverride string, insecure bool) []telemetry.ClientOption {
+func clientOptions(info *component.BuildInfo, apiKey string, apiKeyHeader string, hostOverride string, insecure bool) []telemetry.ClientOption {
 	userAgent := product
 	if info.Version != "" {
 		userAgent += "/" + info.Version
@@ -80,9 +80,9 @@ func clientOptions(info *component.BinaryInfo, apiKey string, apiKeyHeader strin
 	return options
 }
 
-func newExporter(l *zap.Logger, binaryInfo *component.BinaryInfo, nrConfig EndpointConfig, createFactory factoryBuilder) (exporter, error) {
+func newExporter(l *zap.Logger, buildInfo *component.BuildInfo, nrConfig EndpointConfig, createFactory factoryBuilder) (exporter, error) {
 	options := clientOptions(
-		binaryInfo,
+		buildInfo,
 		nrConfig.APIKey,
 		nrConfig.APIKeyHeader,
 		nrConfig.HostOverride,
@@ -93,7 +93,7 @@ func newExporter(l *zap.Logger, binaryInfo *component.BinaryInfo, nrConfig Endpo
 		return exporter{}, err
 	}
 	return exporter{
-		binaryInfo:     binaryInfo,
+		buildInfo:     buildInfo,
 		requestFactory: f,
 		apiKeyHeader:   strings.ToLower(nrConfig.APIKeyHeader),
 		logger:         l,
@@ -131,7 +131,7 @@ func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (outputErr
 func (e exporter) buildTraceBatch(details *exportMetadata, td pdata.Traces) ([]telemetry.Batch, error) {
 	var errs []error
 
-	transform := newTransformer(e.binaryInfo, details)
+	transform := newTransformer(e.buildInfo, details)
 	batches := make([]telemetry.Batch, 0, calcSpanBatches(td))
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
@@ -184,7 +184,7 @@ func (e exporter) pushLogData(ctx context.Context, ld pdata.Logs) (outputErr err
 func (e exporter) buildLogBatch(details *exportMetadata, ld pdata.Logs) ([]telemetry.Batch, error) {
 	var errs []error
 
-	transform := newTransformer(e.binaryInfo, details)
+	transform := newTransformer(e.buildInfo, details)
 	batches := make([]telemetry.Batch, 0, calcLogBatches(ld))
 
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
@@ -237,7 +237,7 @@ func (e exporter) pushMetricData(ctx context.Context, md pdata.Metrics) (outputE
 func (e exporter) buildMetricBatch(details *exportMetadata, md pdata.Metrics) ([]telemetry.Batch, error) {
 	var errs []error
 
-	transform := newTransformer(e.binaryInfo, details)
+	transform := newTransformer(e.buildInfo, details)
 	batches := make([]telemetry.Batch, 0, calcMetricBatches(md))
 
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
