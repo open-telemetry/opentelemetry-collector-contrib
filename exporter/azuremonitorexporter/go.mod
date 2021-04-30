@@ -15,8 +15,8 @@ require (
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
-	go.opentelemetry.io/collector v0.25.1-0.20210430165557-1eb6d1a7b03c
+	go.opentelemetry.io/collector v0.25.1-0.20210430203654-b05f61bb14cc
 	go.uber.org/zap v1.16.0
-	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
+	golang.org/x/net v0.0.0-20210324051636-2c4c8ecb7826
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )
