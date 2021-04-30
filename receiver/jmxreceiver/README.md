@@ -12,7 +12,7 @@ Status: alpha
 
 This receiver will launch a child JRE process running the JMX Metric Gatherer configured with your specified JMX
 connection information and target Groovy script.  It then reports metrics to an implicitly created OTLP receiver.
-In order to use you will need to download the most [recent release](https://oss.jfrog.org/artifactory/oss-snapshot-local/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/)
+In order to use you will need to download the most [recent release](https://oss.sonatype.org/content/repositories/snapshots/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics)
 of the JMX Metric Gatherer JAR and configure the receiver with its path.  It is assumed that the JRE is
 available on your system.
 

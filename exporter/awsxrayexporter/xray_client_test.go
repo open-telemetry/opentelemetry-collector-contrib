@@ -29,13 +29,12 @@ import (
 func TestUserAgent(t *testing.T) {
 	logger := zap.NewNop()
 
-	startInfo := component.ApplicationStartInfo{
+	buildInfo := component.BuildInfo{
 		Version: "1.0",
-		GitHash: "beef",
 	}
 
 	session, _ := session.NewSession()
-	xray := newXRay(logger, &aws.Config{}, startInfo, session)
+	xray := newXRay(logger, &aws.Config{}, buildInfo, session)
 	x := xray.(*XRayClient).xRay
 
 	req := request.New(aws.Config{}, metadata.ClientInfo{}, x.Handlers, nil, &request.Operation{
@@ -44,5 +43,5 @@ func TestUserAgent(t *testing.T) {
 	}, nil, nil)
 
 	x.Handlers.Build.Run(req)
-	assert.Contains(t, req.HTTPRequest.UserAgent(), "opentelemetry-collector-contrib/1.0 (beef)")
+	assert.Contains(t, req.HTTPRequest.UserAgent(), "opentelemetry-collector-contrib/1.0")
 }

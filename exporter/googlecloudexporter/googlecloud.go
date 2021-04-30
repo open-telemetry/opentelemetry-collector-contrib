@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/internaldata"
-	traceexport "go.opentelemetry.io/otel/sdk/export/trace"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 )
@@ -89,7 +89,7 @@ func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
 }
 
 func newGoogleCloudTracesExporter(cfg *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
-	setVersionInUserAgent(cfg, params.ApplicationStartInfo.Version)
+	setVersionInUserAgent(cfg, params.BuildInfo.Version)
 
 	topts := []cloudtrace.Option{
 		cloudtrace.WithProjectID(cfg.ProjectID),
@@ -122,7 +122,7 @@ func newGoogleCloudTracesExporter(cfg *Config, params component.ExporterCreatePa
 }
 
 func newGoogleCloudMetricsExporter(cfg *Config, params component.ExporterCreateParams) (component.MetricsExporter, error) {
-	setVersionInUserAgent(cfg, params.ApplicationStartInfo.Version)
+	setVersionInUserAgent(cfg, params.BuildInfo.Version)
 
 	// TODO:  For each ProjectID, create a different exporter
 	// or at least a unique Google Cloud client per ProjectID.
@@ -228,7 +228,7 @@ func exportAdditionalLabels(mds []internaldata.MetricsData) []internaldata.Metri
 func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
 	var errs []error
 	resourceSpans := td.ResourceSpans()
-	spans := make([]*traceexport.SpanSnapshot, 0, td.SpanCount())
+	spans := make([]*sdktrace.SpanSnapshot, 0, td.SpanCount())
 	for i := 0; i < resourceSpans.Len(); i++ {
 		sd := pdataResourceSpansToOTSpanData(resourceSpans.At(i))
 		spans = append(spans, sd...)

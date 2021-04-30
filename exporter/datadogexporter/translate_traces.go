@@ -51,13 +51,16 @@ const (
 	eventNameTag        string = "name"
 	eventAttrTag        string = "attributes"
 	eventTimeTag        string = "time"
+	// max meta value from
+	// https://github.com/DataDog/datadog-agent/blob/140a4ee164261ef2245340c50371ba989fbeb038/pkg/trace/traceutil/truncate.go#L23.
+	MaxMetaValLen int = 5000
 	// tagContainersTags specifies the name of the tag which holds key/value
 	// pairs representing information about the container (Docker, EC2, etc).
 	tagContainersTags = "_dd.tags.container"
 )
 
 // converts Traces into an array of datadog trace payloads grouped by env
-func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *config.Config) ([]*pb.TracePayload, []datadog.Metric) {
+func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *config.Config, blk *Denylister) ([]*pb.TracePayload, []datadog.Metric) {
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
 	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
@@ -77,7 +80,7 @@ func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *co
 			hostname = resHostname
 		}
 
-		payload := resourceSpansToDatadogSpans(rs, calculator, hostname, cfg)
+		payload := resourceSpansToDatadogSpans(rs, calculator, hostname, cfg, blk)
 		traces = append(traces, &payload)
 
 		ms := metrics.DefaultMetrics("traces", uint64(pushTime))
@@ -115,9 +118,9 @@ func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePa
 }
 
 // converts a Trace's resource spans into a trace payload
-func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCalculator, hostname string, cfg *config.Config) pb.TracePayload {
+func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCalculator, hostname string, cfg *config.Config, blk *Denylister) pb.TracePayload {
 	// get env tag
-	env := cfg.Env
+	env := utils.NormalizeTag(cfg.Env)
 
 	resource := rs.Resource()
 	ilss := rs.InstrumentationLibrarySpans()
@@ -138,7 +141,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 	// specification states that the resource level deployment.environment should be used for passing env, so defer to that
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/deployment_environment.md#deployment
 	if resourceEnv, ok := datadogTags[conventions.AttributeDeploymentEnvironment]; ok {
-		payload.Env = resourceEnv
+		payload.Env = utils.NormalizeTag(resourceEnv)
 	}
 
 	apiTraces := map[uint64]*pb.APITrace{}
@@ -169,6 +172,27 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 	}
 
 	for _, apiTrace := range apiTraces {
+		// first drop trace if root span exists in trace chunk that is on denylist (drop trace no stats).
+		// In the dd-agent, the denylist/blacklist behavior can be performed before most of the expensive
+		// operations on the span.
+		// See: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/agent/agent.go#L200
+		// However, in our case, the span must be converted from otlp span into a dd span first. This is for 2 reasons.
+		// First, DD trace chunks rec'd by datadog-agent v0.4+ endpoint are expected as arrays of spans grouped by trace id.
+		// But, since OTLP groups by arrays of spans from the same instrumentation library, not trace-id,
+		// (contrib-instrumention-redis, contrib-instrumention-rails, etc), we have to iterate
+		// over batch and group all spans by trace id.
+		// Second, otlp->dd conversion is what creates the resource name that we are checking in the denylist.
+		// Note: OTLP also groups by ResourceSpans but practically speaking a payload will usually only
+		// contain 1 ResourceSpan array.
+
+		// Root span is used to carry some trace-level metadata, such as sampling rate and priority.
+		rootSpan := utils.GetRoot(apiTrace)
+
+		if !blk.Allows(rootSpan) {
+			// drop trace by not adding to payload if it's root span matches denylist
+			continue
+		}
+
 		// calculates analyzed spans for use in trace search and app analytics
 		// appends a specific piece of metadata to these spans marking them as analyzed
 		// TODO: allow users to configure specific spans to be marked as an analyzed spans for app analytics
@@ -246,11 +270,13 @@ func spanToDatadogSpan(s pdata.Span,
 	// we can then set Error field when creating and predefine a max meta capacity
 	isSpanError := getSpanErrorAndSetTags(s, tags)
 
+	resourceName := getDatadogResourceName(s, tags)
+
 	span := &pb.Span{
 		TraceID:  decodeAPMTraceID(s.TraceID().Bytes()),
 		SpanID:   decodeAPMSpanID(s.SpanID().Bytes()),
 		Name:     getDatadogSpanName(s, tags),
-		Resource: getDatadogResourceName(s, tags),
+		Resource: resourceName,
 		Service:  normalizedServiceName,
 		Start:    int64(startTime),
 		Duration: duration,
@@ -318,14 +344,15 @@ func aggregateSpanTags(span pdata.Span, datadogTags map[string]string) map[strin
 	spanTags := make(map[string]string, span.Attributes().Len()+len(datadogTags))
 
 	for key, val := range datadogTags {
-		spanTags[key] = val
+		spanTags[utils.NormalizeTag(key)] = val
 	}
 
 	span.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-		spanTags[k] = tracetranslator.AttributeValueToString(v, false)
+		spanTags[utils.NormalizeTag(k)] = tracetranslator.AttributeValueToString(v, false)
 		return true
 	})
 
+	// we don't want to normalize these tags since `_dd` is a special case
 	spanTags[tagContainersTags] = buildDatadogContainerTags(spanTags)
 	return spanTags
 }
@@ -368,13 +395,18 @@ func setMetric(s *pb.Span, key string, v float64) {
 }
 
 func setStringTag(s *pb.Span, key, v string) {
+	if len(v) > MaxMetaValLen {
+		v = utils.TruncateUTF8(v, MaxMetaValLen)
+	}
+
 	switch key {
 	// if a span has `service.name` set as the tag
 	case ext.ServiceName:
-		s.Service = v
+		s.Service = utils.NormalizeTag(v)
 	case ext.SpanType:
-		s.Type = v
+		s.Type = utils.NormalizeTag(v)
 	case ext.AnalyticsEvent:
+		// we dont want to normalize ints
 		if v != "false" {
 			setMetric(s, ext.EventSampleRate, 1)
 		} else {

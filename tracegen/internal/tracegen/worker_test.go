@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
-	export "go.opentelemetry.io/otel/sdk/export/trace"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 )
@@ -101,13 +100,13 @@ func TestUnthrottled(t *testing.T) {
 	assert.True(t, len(syncer.spans) > 100, "there should have been more than 100 spans, had %d", len(syncer.spans))
 }
 
-var _ export.SpanExporter = (*mockSyncer)(nil)
+var _ sdktrace.SpanExporter = (*mockSyncer)(nil)
 
 type mockSyncer struct {
-	spans []*export.SpanSnapshot
+	spans []*sdktrace.SpanSnapshot
 }
 
-func (m *mockSyncer) ExportSpans(_ context.Context, spanData []*export.SpanSnapshot) error {
+func (m *mockSyncer) ExportSpans(_ context.Context, spanData []*sdktrace.SpanSnapshot) error {
 	m.spans = append(m.spans, spanData...)
 	return nil
 }
@@ -117,5 +116,5 @@ func (m *mockSyncer) Shutdown(context.Context) error {
 }
 
 func (m *mockSyncer) Reset() {
-	m.spans = []*export.SpanSnapshot{}
+	m.spans = []*sdktrace.SpanSnapshot{}
 }

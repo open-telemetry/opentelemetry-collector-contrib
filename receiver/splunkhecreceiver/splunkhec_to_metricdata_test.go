@@ -15,6 +15,7 @@
 package splunkhecreceiver
 
 import (
+	"sort"
 	"testing"
 	"time"
 
@@ -266,7 +267,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			md, numDroppedTimeseries := SplunkHecToMetricsData(zap.NewNop(), []*splunk.Event{tt.splunkDataPoint}, func(resource pdata.Resource) {})
 			assert.Equal(t, tt.wantDroppedTimeseries, numDroppedTimeseries)
-			assert.EqualValues(t, tt.wantMetricsData, md)
+			assert.EqualValues(t, tt.wantMetricsData, sortMetricsAndLabels(md))
 		})
 	}
 }
@@ -305,4 +306,46 @@ func int64Ptr(i int64) *int64 {
 func float64Ptr(f float64) *float64 {
 	l := f
 	return &l
+}
+
+func sortMetricsAndLabels(md pdata.Metrics) pdata.Metrics {
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rm := md.ResourceMetrics().At(i)
+		for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
+			ilm := rm.InstrumentationLibraryMetrics().At(j)
+			internalSortMetricsAndLabels(ilm.Metrics())
+		}
+	}
+	return md
+}
+
+func internalSortMetricsAndLabels(metrics pdata.MetricSlice) {
+	dest := pdata.NewMetricSlice()
+	metricsMap := make(map[string]pdata.Metric)
+	for k := 0; k < metrics.Len(); k++ {
+		m := metrics.At(k)
+		metricsMap[m.Name()] = m
+		switch m.DataType() {
+		case pdata.MetricDataTypeIntGauge:
+			dps := m.IntGauge().DataPoints()
+			for l := 0; l < dps.Len(); l++ {
+				dps.At(l).LabelsMap().Sort()
+			}
+		case pdata.MetricDataTypeDoubleGauge:
+			dps := m.DoubleGauge().DataPoints()
+			for l := 0; l < dps.Len(); l++ {
+				dps.At(l).LabelsMap().Sort()
+			}
+		}
+	}
+
+	metricNames := make([]string, 0, len(metricsMap))
+	for name := range metricsMap {
+		metricNames = append(metricNames, name)
+	}
+	sort.Strings(metricNames)
+	for _, name := range metricNames {
+		metricsMap[name].CopyTo(dest.AppendEmpty())
+	}
+	dest.CopyTo(metrics)
 }

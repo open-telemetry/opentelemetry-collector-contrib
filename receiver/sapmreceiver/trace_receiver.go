@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"sync"
 
@@ -28,7 +27,6 @@ import (
 	splunksapm "github.com/signalfx/sapm-proto/gen"
 	"github.com/signalfx/sapm-proto/sapmprotocol"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
@@ -46,10 +44,8 @@ var gzipWriterPool = &sync.Pool{
 // sapmReceiver receives spans in the Splunk SAPM format over HTTP
 type sapmReceiver struct {
 	// mu protects the fields of this type
-	mu        sync.Mutex
-	startOnce sync.Once
-	stopOnce  sync.Once
-	logger    *zap.Logger
+	mu     sync.Mutex
+	logger *zap.Logger
 
 	config *Config
 	server *http.Server
@@ -161,53 +157,39 @@ func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Reques
 	rw.Write(gzipBuffer.Bytes())
 }
 
-// StartTraceReception starts the sapmReceiver's server
+// Start starts the sapmReceiver's server.
 func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 	sr.mu.Lock()
 	defer sr.mu.Unlock()
 
-	var err = componenterror.ErrAlreadyStarted
-	sr.startOnce.Do(func() {
-		var ln net.Listener
+	// set up the listener
+	ln, err := sr.config.HTTPServerSettings.ToListener()
+	if err != nil {
+		return fmt.Errorf("failed to bind to address %s: %w", sr.config.Endpoint, err)
+	}
 
-		// set up the listener
-		ln, err = sr.config.HTTPServerSettings.ToListener()
-		if err != nil {
-			err = fmt.Errorf("failed to bind to address %s: %w", sr.config.Endpoint, err)
-			return
+	// use gorilla mux to create a router/handler
+	nr := mux.NewRouter()
+	nr.HandleFunc(sapmprotocol.TraceEndpointV2, sr.HTTPHandlerFunc)
+
+	// create a server with the handler
+	sr.server = sr.config.HTTPServerSettings.ToServer(nr)
+
+	// run the server on a routine
+	go func() {
+		if errHTTP := sr.server.Serve(ln); errHTTP != http.ErrServerClosed {
+			host.ReportFatalError(errHTTP)
 		}
-
-		// use gorilla mux to create a router/handler
-		nr := mux.NewRouter()
-		nr.HandleFunc(sapmprotocol.TraceEndpointV2, sr.HTTPHandlerFunc)
-
-		// create a server with the handler
-		sr.server = sr.config.HTTPServerSettings.ToServer(nr)
-
-		// run the server on a routine
-		go func() {
-			if errHTTP := sr.server.Serve(ln); errHTTP != http.ErrServerClosed {
-				host.ReportFatalError(errHTTP)
-			}
-		}()
-	})
-	return err
+	}()
+	return nil
 }
 
-// StopTraceRetention stops the the sapmReceiver's server
+// Shutdown stops the the sapmReceiver's server.
 func (sr *sapmReceiver) Shutdown(context.Context) error {
 	sr.mu.Lock()
 	defer sr.mu.Unlock()
 
-	var err = componenterror.ErrAlreadyStopped
-	sr.stopOnce.Do(func() {
-		if sr.server != nil {
-			err = sr.server.Close()
-			sr.server = nil
-		}
-	})
-
-	return err
+	return sr.server.Close()
 }
 
 // this validates at compile time that sapmReceiver implements the component.TracesReceiver interface

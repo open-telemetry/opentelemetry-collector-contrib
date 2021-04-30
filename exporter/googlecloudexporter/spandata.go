@@ -22,15 +22,15 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	export "go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	apitrace "go.opentelemetry.io/otel/trace"
 )
 
-func pdataResourceSpansToOTSpanData(rs pdata.ResourceSpans) []*export.SpanSnapshot {
+func pdataResourceSpansToOTSpanData(rs pdata.ResourceSpans) []*sdktrace.SpanSnapshot {
 	resource := rs.Resource()
-	var sds []*export.SpanSnapshot
+	var sds []*sdktrace.SpanSnapshot
 	ilss := rs.InstrumentationLibrarySpans()
 	for i := 0; i < ilss.Len(); i++ {
 		ils := ilss.At(i)
@@ -48,10 +48,15 @@ func pdataSpanToOTSpanData(
 	span pdata.Span,
 	resource pdata.Resource,
 	il pdata.InstrumentationLibrary,
-) *export.SpanSnapshot {
-	sc := apitrace.SpanContextConfig{}
-	sc.TraceID = span.TraceID().Bytes()
-	sc.SpanID = span.SpanID().Bytes()
+) *sdktrace.SpanSnapshot {
+	sc := apitrace.SpanContextConfig{
+		TraceID: span.TraceID().Bytes(),
+		SpanID:  span.SpanID().Bytes(),
+	}
+	parentSc := apitrace.SpanContextConfig{
+		TraceID: span.TraceID().Bytes(),
+		SpanID:  span.ParentSpanID().Bytes(),
+	}
 	startTime := time.Unix(0, int64(span.StartTimestamp()))
 	endTime := time.Unix(0, int64(span.EndTimestamp()))
 	// TODO: Decide if ignoring the error is fine.
@@ -60,9 +65,9 @@ func pdataSpanToOTSpanData(
 		sdkresource.WithAttributes(pdataAttributesToOTAttributes(pdata.NewAttributeMap(), resource)...),
 	)
 
-	sd := &export.SpanSnapshot{
+	sd := &sdktrace.SpanSnapshot{
 		SpanContext:              apitrace.NewSpanContext(sc),
-		ParentSpanID:             span.ParentSpanID().Bytes(),
+		Parent:                   apitrace.NewSpanContext(parentSc),
 		SpanKind:                 pdataSpanKindToOTSpanKind(span.Kind()),
 		StartTime:                startTime,
 		EndTime:                  endTime,
@@ -70,7 +75,6 @@ func pdataSpanToOTSpanData(
 		Attributes:               pdataAttributesToOTAttributes(span.Attributes(), resource),
 		Links:                    pdataLinksToOTLinks(span.Links()),
 		MessageEvents:            pdataEventsToOTMessageEvents(span.Events()),
-		HasRemoteParent:          false, // no field for this in pdata Span
 		DroppedAttributeCount:    int(span.DroppedAttributesCount()),
 		DroppedMessageEventCount: int(span.DroppedEventsCount()),
 		DroppedLinkCount:         int(span.DroppedLinksCount()),

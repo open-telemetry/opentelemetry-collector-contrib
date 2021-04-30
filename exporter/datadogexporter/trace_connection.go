@@ -40,7 +40,7 @@ type traceEdgeConnection struct {
 	statsURL           string
 	apiKey             string
 	client             *http.Client
-	startInfo          component.ApplicationStartInfo
+	buildInfo          component.BuildInfo
 	InsecureSkipVerify bool
 }
 
@@ -50,12 +50,12 @@ const (
 )
 
 // createTraceEdgeConnection returns a new TraceEdgeConnection
-func createTraceEdgeConnection(rootURL, apiKey string, startInfo component.ApplicationStartInfo) TraceEdgeConnection {
+func createTraceEdgeConnection(rootURL, apiKey string, buildInfo component.BuildInfo) TraceEdgeConnection {
 
 	return &traceEdgeConnection{
 		traceURL:  rootURL + "/api/v0.2/traces",
 		statsURL:  rootURL + "/api/v0.2/stats",
-		startInfo: startInfo,
+		buildInfo: buildInfo,
 		apiKey:    apiKey,
 		client:    utils.NewHTTPClient(traceEdgeTimeout),
 	}
@@ -154,7 +154,7 @@ func (con *traceEdgeConnection) sendPayloadToTraceEdge(ctx context.Context, apiK
 		return false, err
 	}
 
-	utils.SetDDHeaders(req.Header, con.startInfo, apiKey)
+	utils.SetDDHeaders(req.Header, con.buildInfo, apiKey)
 	utils.SetExtraHeaders(req.Header, payload.Headers)
 
 	resp, err := con.client.Do(req)

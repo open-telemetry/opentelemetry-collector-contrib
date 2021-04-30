@@ -35,10 +35,8 @@ import (
 
 // MockAwsXrayReceiver type is used to handle spans received in the AWS data format.
 type MockAwsXrayReceiver struct {
-	mu        sync.Mutex
-	startOnce sync.Once
-	stopOnce  sync.Once
-	logger    *zap.Logger
+	mu     sync.Mutex
+	logger *zap.Logger
 
 	config *Config
 	server *http.Server
@@ -68,35 +66,29 @@ func (ar *MockAwsXrayReceiver) Start(_ context.Context, host component.Host) err
 	ar.mu.Lock()
 	defer ar.mu.Unlock()
 
-	var err = componenterror.ErrAlreadyStarted
-	ar.startOnce.Do(func() {
-		var ln net.Listener
+	// set up the listener
+	ln, err := net.Listen("tcp", ar.config.Endpoint)
+	if err != nil {
+		return fmt.Errorf("failed to bind to address %s: %v", ar.config.Endpoint, err)
+	}
+	ar.logger.Info(fmt.Sprintf("listen to address %s", ar.config.Endpoint))
 
-		// set up the listener
-		ln, err = net.Listen("tcp", ar.config.Endpoint)
-		if err != nil {
-			err = fmt.Errorf("failed to bind to address %s: %v", ar.config.Endpoint, err)
-			return
+	// use gorilla mux to create a router/handler
+	nr := mux.NewRouter()
+	nr.HandleFunc("/TraceSegments", ar.HTTPHandlerFunc)
+
+	// create a server with the handler
+	ar.server = &http.Server{Handler: nr}
+
+	// run the server on a routine
+	go func() {
+		if ar.config.TLSCredentials != nil {
+			host.ReportFatalError(ar.server.ServeTLS(ln, ar.config.TLSCredentials.CertFile, ar.config.TLSCredentials.KeyFile))
+		} else {
+			host.ReportFatalError(ar.server.Serve(ln))
 		}
-		ar.logger.Info(fmt.Sprintf("listen to address %s", ar.config.Endpoint))
-
-		// use gorilla mux to create a router/handler
-		nr := mux.NewRouter()
-		nr.HandleFunc("/TraceSegments", ar.HTTPHandlerFunc)
-
-		// create a server with the handler
-		ar.server = &http.Server{Handler: nr}
-
-		// run the server on a routine
-		go func() {
-			if ar.config.TLSCredentials != nil {
-				host.ReportFatalError(ar.server.ServeTLS(ln, ar.config.TLSCredentials.CertFile, ar.config.TLSCredentials.KeyFile))
-			} else {
-				host.ReportFatalError(ar.server.Serve(ln))
-			}
-		}()
-	})
-	return err
+	}()
+	return nil
 }
 
 // handleRequest parses an http request containing aws json request and passes the count of the traces to next consumer
@@ -140,11 +132,7 @@ func (ar *MockAwsXrayReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http
 // giving it a chance to perform any necessary clean-up and shutting down
 // its HTTP server.
 func (ar *MockAwsXrayReceiver) Shutdown(context.Context) error {
-	var err = componenterror.ErrAlreadyStopped
-	ar.stopOnce.Do(func() {
-		err = ar.server.Close()
-	})
-	return err
+	return ar.server.Close()
 }
 
 func ToTraces(rawSeg []byte) (*pdata.Traces, error) {
