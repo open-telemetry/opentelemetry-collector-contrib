@@ -22,9 +22,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"sync"
 
@@ -257,24 +255,11 @@ func (c *client) postEvents(ctx context.Context, events io.Reader, compressed bo
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
+
+	err = splunk.HandleHTTPCode(resp)
 
 	io.Copy(ioutil.Discard, resp.Body)
-	resp.Body.Close()
-
-	if err = splunk.HandleHTTPCode(resp); err != nil && resp.StatusCode == http.StatusBadRequest {
-		var err2 error
-
-		if req.Body, err2 = req.GetBody(); err2 != nil {
-			log.Fatal(err2)
-		}
-		defer req.Body.Close()
-
-		var dump []byte
-		if dump, err2 = httputil.DumpRequestOut(req, true); err2 != nil {
-			log.Fatal(err2)
-		}
-		err = fmt.Errorf("%w for request %q", err, dump)
-	}
 
 	return err
 }
