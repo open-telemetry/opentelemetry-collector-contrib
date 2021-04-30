@@ -40,6 +40,24 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
+type testRoundTripper func(req *http.Request) *http.Response
+
+func (t testRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	return t(req), nil
+}
+
+func newTestClient(respCode int, respBody string) *http.Client {
+	return &http.Client{
+		Transport: testRoundTripper(func(req *http.Request) *http.Response {
+			return &http.Response{
+				StatusCode: respCode,
+				Body:       ioutil.NopCloser(bytes.NewBufferString(respBody)),
+				Header:     make(http.Header),
+			}
+		}),
+	}
+}
+
 func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 
 	doubleVal := 1234.5678
@@ -710,6 +728,39 @@ func Test_pushLogData_PostError(t *testing.T) {
 	require.Error(t, err)
 	assert.IsType(t, consumererror.Logs{}, err)
 	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
+}
+
+func Test_pushLogData_Status400_ShouldAddRequestToError(t *testing.T) {
+	var err error
+	splunkClient := client{
+		url: &url.URL{Scheme: "http", Host: "splunk"},
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+	}
+	payload := createLogData(1, 1, 1)
+	payloadJSON := `{\"host\":\"myhost\",\"source\":\"myapp\",\"sourcetype\":\"myapp-type\",\"index\":\"myindex\",\"event\":\"mylog\",\"fields\":{\"custom\":\"custom\",\"host.name\":\"myhost\",\"otlp.log.name\":\"0_0_0\",\"service.name\":\"myapp\"}}\n\r\n\r\n`
+
+	// An HTTP client that returns status code 400.
+	splunkClient.client = newTestClient(400, `Bad Request`)
+	// Sending payload
+	err = splunkClient.pushLogData(context.Background(), payload)
+	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
+	//require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
+	require.Contains(t, err.Error(), "HTTP 400")
+	// The returned error should contain the payload.
+	assert.Contains(t, err.Error(), payloadJSON)
+
+	// An HTTP client that returns some other status code other than 400.
+	splunkClient.client = newTestClient(500, `Internal Server Error`)
+	// Sending payload
+	err = splunkClient.pushLogData(context.Background(), payload)
+	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
+	//require.False(t, consumererror.IsPermanent(err), "Expecting non-permanent error")
+	require.Contains(t, err.Error(), "HTTP 500")
+	// The returned error should not contain the payload.
+	assert.NotContains(t, err.Error(), payloadJSON)
 }
 
 func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
