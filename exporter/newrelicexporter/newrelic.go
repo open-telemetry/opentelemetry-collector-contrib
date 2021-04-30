@@ -38,7 +38,7 @@ const (
 
 // exporter exports OpenTelemetry Collector data to New Relic.
 type exporter struct {
-	buildInfo     *component.BuildInfo
+	buildInfo      *component.BuildInfo
 	requestFactory telemetry.RequestFactory
 	apiKeyHeader   string
 	logger         *zap.Logger
@@ -93,7 +93,7 @@ func newExporter(l *zap.Logger, buildInfo *component.BuildInfo, nrConfig Endpoin
 		return exporter{}, err
 	}
 	return exporter{
-		buildInfo:     buildInfo,
+		buildInfo:      buildInfo,
 		requestFactory: f,
 		apiKeyHeader:   strings.ToLower(nrConfig.APIKeyHeader),
 		logger:         l,
