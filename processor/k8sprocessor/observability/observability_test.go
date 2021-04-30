@@ -87,6 +87,9 @@ func TestMetrics(t *testing.T) {
 	}
 	go metricReader.ReadAndExport(e)
 
+	// TODO: fix this test: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1093
+	t.Skipf("Skipped because unstable.")
+
 	var data []*metricdata.Metric
 	select {
 	case <-time.After(time.Second * 2):
