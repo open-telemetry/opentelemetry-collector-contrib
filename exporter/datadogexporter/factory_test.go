@@ -64,6 +64,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "$DD_APM_URL",
 			},
+			IgnoreResources: []string{},
 		},
 
 		TagsConfig: ddconfig.TagsConfig{
@@ -131,6 +132,7 @@ func TestLoadConfig(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://trace.agent.datadoghq.eu",
 			},
+			IgnoreResources: []string{},
 		},
 		SendMetadata:        true,
 		OnlyMetadata:        false,
@@ -173,6 +175,7 @@ func TestLoadConfig(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://trace.agent.datadoghq.com",
 			},
+			IgnoreResources: []string{},
 		},
 		SendMetadata:        true,
 		OnlyMetadata:        false,
@@ -257,6 +260,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://trace.agent.datadoghq.test",
 			},
+			IgnoreResources: []string{},
 		},
 		SendMetadata:        true,
 		OnlyMetadata:        false,
@@ -302,6 +306,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://trace.agent.datadoghq.com",
 			},
+			IgnoreResources: []string{},
 		},
 		SendMetadata:        true,
 		OnlyMetadata:        false,

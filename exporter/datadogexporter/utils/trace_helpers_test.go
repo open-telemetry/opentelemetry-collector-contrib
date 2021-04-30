@@ -20,8 +20,53 @@ import (
 	"testing"
 	"unicode"
 
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/stretchr/testify/assert"
 )
+
+// TestGetRootFromCompleteTrace ensures that GetRoot returns a root span or fails gracefully from a complete trace chunk
+// From: https://github.com/DataDog/datadog-agent/blob/eb819b117fba4d57ccc35f1a74d4618b57daf8aa/pkg/trace/traceutil/trace_test.go#L15
+func TestGetRootFromCompleteTrace(t *testing.T) {
+	assert := assert.New(t)
+
+	trace := &pb.APITrace{
+		TraceID:   uint64(1234),
+		Spans:     []*pb.Span{},
+		StartTime: 0,
+		EndTime:   0,
+	}
+
+	trace.Spans = []*pb.Span{
+		{TraceID: uint64(1234), SpanID: uint64(12341), Service: "s1", Name: "n1", Resource: ""},
+		{TraceID: uint64(1234), SpanID: uint64(12342), ParentID: uint64(12341), Service: "s1", Name: "n1", Resource: ""},
+		{TraceID: uint64(1234), SpanID: uint64(12343), ParentID: uint64(12341), Service: "s1", Name: "n1", Resource: ""},
+		{TraceID: uint64(1234), SpanID: uint64(12344), ParentID: uint64(12342), Service: "s2", Name: "n2", Resource: ""},
+		{TraceID: uint64(1234), SpanID: uint64(12345), ParentID: uint64(12344), Service: "s2", Name: "n2", Resource: ""},
+	}
+
+	assert.Equal(GetRoot(trace).SpanID, uint64(12341))
+}
+
+// TestGetRootFromPartialTrace ensures that GetRoot returns a root span or fails gracefully from a partial trace chunk
+// From: https://github.com/DataDog/datadog-agent/blob/eb819b117fba4d57ccc35f1a74d4618b57daf8aa/pkg/trace/traceutil/trace_test.go#L29
+func TestGetRootFromPartialTrace(t *testing.T) {
+	assert := assert.New(t)
+
+	trace := &pb.APITrace{
+		TraceID:   uint64(1234),
+		Spans:     []*pb.Span{},
+		StartTime: 0,
+		EndTime:   0,
+	}
+
+	trace.Spans = []*pb.Span{
+		{TraceID: uint64(1234), SpanID: uint64(12341), ParentID: uint64(12340), Service: "s1", Name: "n1", Resource: ""},
+		{TraceID: uint64(1234), SpanID: uint64(12342), ParentID: uint64(12341), Service: "s1", Name: "n1", Resource: ""},
+		{TraceID: uint64(1234), SpanID: uint64(12343), ParentID: uint64(12342), Service: "s2", Name: "n2", Resource: ""},
+	}
+
+	assert.Equal(GetRoot(trace).SpanID, uint64(12341))
+}
 
 // ensure that truncation helper function truncates strings as expected
 // and accounts for the limit and multi byte ending characters

@@ -60,7 +60,7 @@ const (
 )
 
 // converts Traces into an array of datadog trace payloads grouped by env
-func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *config.Config) ([]*pb.TracePayload, []datadog.Metric) {
+func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *config.Config, blk *Denylister) ([]*pb.TracePayload, []datadog.Metric) {
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
 	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
@@ -80,7 +80,7 @@ func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *co
 			hostname = resHostname
 		}
 
-		payload := resourceSpansToDatadogSpans(rs, calculator, hostname, cfg)
+		payload := resourceSpansToDatadogSpans(rs, calculator, hostname, cfg, blk)
 		traces = append(traces, &payload)
 
 		ms := metrics.DefaultMetrics("traces", uint64(pushTime))
@@ -118,7 +118,7 @@ func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePa
 }
 
 // converts a Trace's resource spans into a trace payload
-func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCalculator, hostname string, cfg *config.Config) pb.TracePayload {
+func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCalculator, hostname string, cfg *config.Config, blk *Denylister) pb.TracePayload {
 	// get env tag
 	env := utils.NormalizeTag(cfg.Env)
 
@@ -172,6 +172,27 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 	}
 
 	for _, apiTrace := range apiTraces {
+		// first drop trace if root span exists in trace chunk that is on denylist (drop trace no stats).
+		// In the dd-agent, the denylist/blacklist behavior can be performed before most of the expensive
+		// operations on the span.
+		// See: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/agent/agent.go#L200
+		// However, in our case, the span must be converted from otlp span into a dd span first. This is for 2 reasons.
+		// First, DD trace chunks rec'd by datadog-agent v0.4+ endpoint are expected as arrays of spans grouped by trace id.
+		// But, since OTLP groups by arrays of spans from the same instrumentation library, not trace-id,
+		// (contrib-instrumention-redis, contrib-instrumention-rails, etc), we have to iterate
+		// over batch and group all spans by trace id.
+		// Second, otlp->dd conversion is what creates the resource name that we are checking in the denylist.
+		// Note: OTLP also groups by ResourceSpans but practically speaking a payload will usually only
+		// contain 1 ResourceSpan array.
+
+		// Root span is used to carry some trace-level metadata, such as sampling rate and priority.
+		rootSpan := utils.GetRoot(apiTrace)
+
+		if !blk.Allows(rootSpan) {
+			// drop trace by not adding to payload if it's root span matches denylist
+			continue
+		}
+
 		// calculates analyzed spans for use in trace search and app analytics
 		// appends a specific piece of metadata to these spans marking them as analyzed
 		// TODO: allow users to configure specific spans to be marked as an analyzed spans for app analytics
@@ -249,11 +270,13 @@ func spanToDatadogSpan(s pdata.Span,
 	// we can then set Error field when creating and predefine a max meta capacity
 	isSpanError := getSpanErrorAndSetTags(s, tags)
 
+	resourceName := getDatadogResourceName(s, tags)
+
 	span := &pb.Span{
 		TraceID:  decodeAPMTraceID(s.TraceID().Bytes()),
 		SpanID:   decodeAPMSpanID(s.SpanID().Bytes()),
 		Name:     getDatadogSpanName(s, tags),
-		Resource: getDatadogResourceName(s, tags),
+		Resource: resourceName,
 		Service:  normalizedServiceName,
 		Start:    int64(startTime),
 		Duration: duration,

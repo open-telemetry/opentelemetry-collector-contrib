@@ -145,3 +145,13 @@ func TestCensorAPIKey(t *testing.T) {
 		cfg.GetCensoredKey(),
 	)
 }
+
+func TestIgnoreResourcesValidation(t *testing.T) {
+	validCfg := Config{Traces: TracesConfig{IgnoreResources: []string{"[123]"}}}
+	invalidCfg := Config{Traces: TracesConfig{IgnoreResources: []string{"[123"}}}
+
+	noErr := validCfg.Validate()
+	err := invalidCfg.Validate()
+	require.NoError(t, noErr)
+	require.Error(t, err)
+}

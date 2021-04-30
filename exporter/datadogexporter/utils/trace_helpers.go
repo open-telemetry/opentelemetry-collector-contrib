@@ -19,6 +19,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -132,6 +133,48 @@ func NormalizeServiceName(service string) string {
 	}
 
 	return s
+}
+
+// GetRoot extracts the root span from a trace
+// From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/traceutil/trace.go#L27
+func GetRoot(t *pb.APITrace) *pb.Span {
+	// That should be caught beforehand
+	spans := t.GetSpans()
+	if len(spans) == 0 {
+		return nil
+	}
+	// General case: go over all spans and check for one which matching parent
+	parentIDToChild := map[uint64]*pb.Span{}
+
+	for i := range spans {
+		// Common case optimization: check for span with ParentID == 0, starting from the end,
+		// since some clients report the root last
+		j := len(spans) - 1 - i
+		if spans[j].ParentID == 0 {
+			return spans[j]
+		}
+		parentIDToChild[spans[j].ParentID] = spans[j]
+	}
+
+	for i := range spans {
+		_, ok := parentIDToChild[spans[i].SpanID]
+
+		if ok {
+			delete(parentIDToChild, spans[i].SpanID)
+		}
+	}
+
+	// TODO: pass logger into convertToDatadogTd, so that we can improve debug logging in translation.
+	// For now it would require some rewrite, but ideally should log if we cant locate a root span
+
+	// Have a safe behavior if there is multiple spans without a parent
+	// Pick the first span without its parent
+	for parentID := range parentIDToChild {
+		return parentIDToChild[parentID]
+	}
+
+	// Gracefully fail with the last span of the trace
+	return spans[len(spans)-1]
 }
 
 // TruncateUTF8 truncates the given string to make sure it uses less than limit bytes.
