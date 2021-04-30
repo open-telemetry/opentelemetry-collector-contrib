@@ -68,7 +68,7 @@ type Config struct {
 
 	// App version is used to track telemetry information for Splunk App's using HEC by App version.
 	SplunkAppVersion string `mapstructure:"splunk_app_version"`
-  
+
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.TLSClientSetting `mapstructure:",squash"`
 }
