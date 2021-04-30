@@ -49,8 +49,8 @@ func newLogsExporter(params component.ExporterCreateParams, cfg config.Exporter)
 	exporterFactory := otlpexporter.NewFactory()
 
 	tmplParams := component.ExporterCreateParams{
-		Logger:               params.Logger,
-		ApplicationStartInfo: params.ApplicationStartInfo,
+		Logger:    params.Logger,
+		BuildInfo: params.BuildInfo,
 	}
 
 	loadBalancer, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Exporter, error) {

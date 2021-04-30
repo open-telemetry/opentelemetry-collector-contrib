@@ -48,12 +48,12 @@ type transformer struct {
 	details            *exportMetadata
 }
 
-func newTransformer(startInfo *component.ApplicationStartInfo, details *exportMetadata) *transformer {
+func newTransformer(buildInfo *component.BuildInfo, details *exportMetadata) *transformer {
 	overrideAttributes := make(map[string]interface{})
-	if startInfo != nil {
-		overrideAttributes[collectorNameKey] = startInfo.ExeName
-		if startInfo.Version != "" {
-			overrideAttributes[collectorVersionKey] = startInfo.Version
+	if buildInfo != nil {
+		overrideAttributes[collectorNameKey] = buildInfo.Command
+		if buildInfo.Version != "" {
+			overrideAttributes[collectorVersionKey] = buildInfo.Version
 		}
 	}
 
