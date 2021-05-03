@@ -153,6 +153,8 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 		exceptions = fillPythonStacktrace(stacktrace, exceptions)
 	case "javascript":
 		exceptions = fillJavaScriptStacktrace(stacktrace, exceptions)
+	case "dotnet":
+		exceptions = fillDotnetStacktrace(stacktrace, exceptions)
 	}
 
 	return exceptions
@@ -397,6 +399,73 @@ func fillJavaScriptStacktrace(stacktrace string, exceptions []awsxray.Exception)
 				exception.Stack = append(exception.Stack, stack)
 			}
 		}
+		line, err = r.ReadLine()
+		if err != nil {
+			break
+		}
+	}
+	return exceptions
+}
+
+func fillDotnetStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxray.Exception {
+	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
+
+	// Skip first line containing top level exception / message
+	r.ReadLine()
+	exception := &exceptions[0]
+	var line string
+	line, err := r.ReadLine()
+	if err != nil {
+		return exceptions
+	}
+
+	exception.Stack = make([]awsxray.StackFrame, 0)
+	for {
+		if strings.HasPrefix(line, "\tat ") {
+			index := strings.Index(line, " in ")
+			if index >= 0 {
+				parts := strings.Split(line, " in ")
+
+				label := parts[0][len("\tat "):]
+				path := parts[1]
+				lineNumber := 0
+
+				colonIdx := strings.LastIndexByte(parts[1], ':')
+				if colonIdx >= 0 {
+					lineStr := path[colonIdx+1:]
+
+					if strings.HasPrefix(lineStr, "line") {
+						lineStr = lineStr[5:]
+					}
+					path = path[0:colonIdx]
+					lineNumber, _ = strconv.Atoi(lineStr)
+				}
+
+				stack := awsxray.StackFrame{
+					Path:  aws.String(path),
+					Label: aws.String(label),
+					Line:  aws.Int(lineNumber),
+				}
+
+				exception.Stack = append(exception.Stack, stack)
+			} else {
+				idx := strings.LastIndexByte(line, ')')
+				if idx >= 0 {
+					label := line[len("\tat ") : idx+1]
+					path := ""
+					lineNumber := 0
+
+					stack := awsxray.StackFrame{
+						Path:  aws.String(path),
+						Label: aws.String(label),
+						Line:  aws.Int(lineNumber),
+					}
+
+					exception.Stack = append(exception.Stack, stack)
+				}
+			}
+		}
+
 		line, err = r.ReadLine()
 		if err != nil {
 			break
