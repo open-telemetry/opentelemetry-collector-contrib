@@ -23,14 +23,12 @@ The Following settings are optional:
 
 - `timer_histogram_mapping:`(default value is below): Specify what OTLP type to convert received timing/histogram data to.
 
-// TODO: can add regex support for `match` later.
-
-`"match"`, we only support `"*"` now. 
 
 `"statsd_type"` specifies received Statsd data type. Possible values for this setting are `"timing"`, `"timer"` and `"histogram"`.
 
-`"observer_type"` specifies OTLP data type to convert to. The only supported target data type currently is `"gauge"`, which does not perform any aggregation.
-Support for `"summary"` data type is planned to be added in the future.
+`"observer_type"` specifies OTLP data type to convert to. We support `"gauge"` and `"summary"`. For `"gauge"`, it does not perform any aggregation.
+For `"summary`, the statsD receiver will aggregate to one OTLP summary metric for one metric description(the same metric name with the same tags). It will send percentile 0, 10, 50, 90, 95, 100 to the downstream. 
+TODO: Add a new option to use a smoothed summary like Promethetheus: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/3261 
 
 Example:
 
@@ -42,11 +40,9 @@ receivers:
     aggregation_interval: 70s
     enable_metric_type: true
     timer_histogram_mapping:
-      - match: "*"
-        statsd_type: "histogram"
+      - statsd_type: "histogram"
         observer_type: "gauge"
-      - match: "*"
-        statsd_type: "timing"
+      - statsd_type: "timing"
         observer_type: "gauge"
 ```
 
@@ -120,11 +116,9 @@ receivers:
     aggregation_interval: 60s  # default
     enable_metric_type: false   # default
     timer_histogram_mapping:
-      - match: "*"
-        statsd_type: "histogram"
+      - statsd_type: "histogram"
         observer_type: "gauge"
-      - match: "*"
-        statsd_type: "timing"
+      - statsd_type: "timing"
         observer_type: "gauge"
 
 exporters:

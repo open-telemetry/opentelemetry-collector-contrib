@@ -59,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 			Transport: "custom_transport",
 		},
 		AggregationInterval:   70 * time.Second,
-		TimerHistogramMapping: []protocol.TimerHistogramMapping{{Match: "*", StatsdType: "histogram", ObserverType: "gauge"}, {Match: "*", StatsdType: "timing", ObserverType: "gauge"}},
+		TimerHistogramMapping: []protocol.TimerHistogramMapping{{StatsdType: "histogram", ObserverType: "gauge"}, {StatsdType: "timing", ObserverType: "gauge"}},
 	}, r1)
 }
 
@@ -73,7 +73,6 @@ func TestValidate(t *testing.T) {
 	const (
 		negativeAggregationIntervalErr = "aggregation_interval must be a positive duration"
 		noObjectNameErr                = "must specify object name for all TimerHistogramMappings"
-		matchNotSupportErr             = "match is not supported: %s"
 		statsdTypeNotSupportErr        = "statsd_type is not supported: %s"
 		observerTypeNotSupportErr      = "observer_type is not supported: %s"
 	)
@@ -84,27 +83,17 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				AggregationInterval: -1,
 				TimerHistogramMapping: []protocol.TimerHistogramMapping{
-					{Match: "*", StatsdType: "timing", ObserverType: "gauge"},
-				},
-			},
-			expectedErr: negativeAggregationIntervalErr,
-		},
-		{
-			name: "emptyMatch",
-			cfg: &Config{
-				AggregationInterval: 10,
-				TimerHistogramMapping: []protocol.TimerHistogramMapping{
 					{StatsdType: "timing", ObserverType: "gauge"},
 				},
 			},
-			expectedErr: noObjectNameErr,
+			expectedErr: negativeAggregationIntervalErr,
 		},
 		{
 			name: "emptyStatsdType",
 			cfg: &Config{
 				AggregationInterval: 10,
 				TimerHistogramMapping: []protocol.TimerHistogramMapping{
-					{Match: "*", ObserverType: "gauge"},
+					{ObserverType: "gauge"},
 				},
 			},
 			expectedErr: noObjectNameErr,
@@ -114,27 +103,17 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				AggregationInterval: 10,
 				TimerHistogramMapping: []protocol.TimerHistogramMapping{
-					{Match: "*", StatsdType: "timing"},
+					{StatsdType: "timing"},
 				},
 			},
 			expectedErr: noObjectNameErr,
-		},
-		{
-			name: "MatchNotSupport",
-			cfg: &Config{
-				AggregationInterval: 10,
-				TimerHistogramMapping: []protocol.TimerHistogramMapping{
-					{Match: "aaa", StatsdType: "timing", ObserverType: "gauge"},
-				},
-			},
-			expectedErr: fmt.Sprintf(matchNotSupportErr, "aaa"),
 		},
 		{
 			name: "StatsdTypeNotSupport",
 			cfg: &Config{
 				AggregationInterval: 10,
 				TimerHistogramMapping: []protocol.TimerHistogramMapping{
-					{Match: "*", StatsdType: "abc", ObserverType: "gauge"},
+					{StatsdType: "abc", ObserverType: "gauge"},
 				},
 			},
 			expectedErr: fmt.Sprintf(statsdTypeNotSupportErr, "abc"),
@@ -144,7 +123,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				AggregationInterval: 10,
 				TimerHistogramMapping: []protocol.TimerHistogramMapping{
-					{Match: "*", StatsdType: "timer", ObserverType: "gauge1"},
+					{StatsdType: "timer", ObserverType: "gauge1"},
 				},
 			},
 			expectedErr: fmt.Sprintf(observerTypeNotSupportErr, "gauge1"),

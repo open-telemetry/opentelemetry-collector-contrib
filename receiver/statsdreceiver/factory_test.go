@@ -48,7 +48,7 @@ func TestCreateReceiverWithConfigErr(t *testing.T) {
 	cfg := &Config{
 		AggregationInterval: -1,
 		TimerHistogramMapping: []protocol.TimerHistogramMapping{
-			{Match: "*", StatsdType: "timing", ObserverType: "gauge"},
+			{StatsdType: "timing", ObserverType: "gauge"},
 		},
 	}
 	receiver, err := createMetricsReceiver(
