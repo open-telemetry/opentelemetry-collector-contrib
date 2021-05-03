@@ -127,8 +127,8 @@ func fillHostMetadata(params component.ExporterCreateParams, cfg *config.Config,
 
 	// This information always gets filled in here
 	// since it does not come from OTEL conventions
-	hm.Flavor = params.ApplicationStartInfo.ExeName
-	hm.Version = params.ApplicationStartInfo.Version
+	hm.Flavor = params.BuildInfo.Command
+	hm.Version = params.BuildInfo.Version
 	hm.Tags.OTel = append(hm.Tags.OTel, cfg.GetHostTags()...)
 
 	// EC2 data was not set from attributes
@@ -146,11 +146,11 @@ func fillHostMetadata(params component.ExporterCreateParams, cfg *config.Config,
 	}
 }
 
-func pushMetadata(cfg *config.Config, startInfo component.ApplicationStartInfo, metadata *HostMetadata) error {
+func pushMetadata(cfg *config.Config, buildInfo component.BuildInfo, metadata *HostMetadata) error {
 	path := cfg.Metrics.TCPAddr.Endpoint + "/intake"
 	buf, _ := json.Marshal(metadata)
 	req, _ := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(buf))
-	utils.SetDDHeaders(req.Header, startInfo, cfg.API.Key)
+	utils.SetDDHeaders(req.Header, buildInfo, cfg.API.Key)
 	utils.SetExtraHeaders(req.Header, utils.JSONHeaders)
 	client := utils.NewHTTPClient(10 * time.Second)
 	resp, err := client.Do(req)
@@ -178,7 +178,7 @@ func pushMetadataWithRetry(params component.ExporterCreateParams, cfg *config.Co
 	params.Logger.Debug("Sending host metadata payload", zap.Any("payload", hostMetadata))
 
 	numRetries, err := utils.DoWithRetries(maxRetries, func() error {
-		return pushMetadata(cfg, params.ApplicationStartInfo, hostMetadata)
+		return pushMetadata(cfg, params.BuildInfo, hostMetadata)
 	})
 
 	if err != nil {

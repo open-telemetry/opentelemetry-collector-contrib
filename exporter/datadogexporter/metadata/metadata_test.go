@@ -50,8 +50,8 @@ var (
 		},
 	}
 
-	mockStartInfo = component.ApplicationStartInfo{
-		ExeName: "otelcontribcol",
+	mockBuildInfo = component.BuildInfo{
+		Command: "otelcontribcol",
 		Version: "1.0",
 	}
 )
@@ -59,8 +59,8 @@ var (
 func TestFillHostMetadata(t *testing.T) {
 	cache.Cache.Flush()
 	params := component.ExporterCreateParams{
-		Logger:               zap.NewNop(),
-		ApplicationStartInfo: mockStartInfo,
+		Logger:    zap.NewNop(),
+		BuildInfo: mockBuildInfo,
 	}
 
 	cfg := &config.Config{TagsConfig: config.TagsConfig{
@@ -172,7 +172,7 @@ func TestPushMetadata(t *testing.T) {
 	defer ts.Close()
 	cfg.Metrics.Endpoint = ts.URL
 
-	err := pushMetadata(cfg, mockStartInfo, &mockMetadata)
+	err := pushMetadata(cfg, mockBuildInfo, &mockMetadata)
 	require.NoError(t, err)
 }
 
@@ -186,7 +186,7 @@ func TestFailPushMetadata(t *testing.T) {
 	defer ts.Close()
 	cfg.Metrics.Endpoint = ts.URL
 
-	err := pushMetadata(cfg, mockStartInfo, &mockMetadata)
+	err := pushMetadata(cfg, mockBuildInfo, &mockMetadata)
 	require.Error(t, err)
 }
 
@@ -196,8 +196,8 @@ func TestPusher(t *testing.T) {
 		UseResourceMetadata: true,
 	}
 	mockParams := component.ExporterCreateParams{
-		Logger:               zap.NewNop(),
-		ApplicationStartInfo: mockStartInfo,
+		Logger:    zap.NewNop(),
+		BuildInfo: mockBuildInfo,
 	}
 	attrs := testutils.NewAttributeMap(map[string]string{
 		AttributeDatadogHostname: "datadog-hostname",
@@ -216,8 +216,8 @@ func TestPusher(t *testing.T) {
 	err := json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "datadog-hostname")
-	assert.Equal(t, recvMetadata.Version, mockStartInfo.Version)
-	assert.Equal(t, recvMetadata.Flavor, mockStartInfo.ExeName)
+	assert.Equal(t, recvMetadata.Version, mockBuildInfo.Version)
+	assert.Equal(t, recvMetadata.Flavor, mockBuildInfo.Command)
 	require.NotNil(t, recvMetadata.Meta)
 	hostname, err := os.Hostname()
 	require.NoError(t, err)

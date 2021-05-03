@@ -16,7 +16,6 @@ package splunkhecreceiver
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -31,7 +30,6 @@ import (
 // pdata.Metrics. Returning the converted data and the number of
 // dropped time series.
 func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource)) (pdata.Metrics, int) {
-
 	numDroppedTimeSeries := 0
 	md := pdata.NewMetrics()
 
@@ -54,52 +52,36 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 
 		values := event.GetMetricValues()
 
-		labelKeys, labelValues := buildLabelKeysAndValues(event.Fields)
-		populateLabels := func(labels pdata.StringMap) {
-			for i, k := range labelKeys {
-				labels.Insert(k, labelValues[i])
-			}
-		}
+		labels := buildLabels(event.Fields)
 
-		metricNames := make([]string, 0, len(values))
-		for k := range values {
-			metricNames = append(metricNames, k)
-		}
-		sort.Strings(metricNames)
-
-		metrics := resourceMetrics.InstrumentationLibraryMetrics().AppendEmpty()
-		for _, metricName := range metricNames {
+		metrics := resourceMetrics.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+		for metricName, metricValue := range values {
 			pointTimestamp := convertTimestamp(event.Time)
 			metric := pdata.NewMetric()
-			metric.SetDataType(pdata.MetricDataTypeNone)
 			metric.SetName(metricName)
 
-			metricValue := values[metricName]
-			if i, ok := metricValue.(int64); ok {
-				addIntGauge(pointTimestamp, i, metric, populateLabels)
-			} else if i, ok := metricValue.(*int64); ok {
-				addIntGauge(pointTimestamp, *i, metric, populateLabels)
-			} else if f, ok := metricValue.(float64); ok {
-				addDoubleGauge(pointTimestamp, f, metric, populateLabels)
-			} else if f, ok := metricValue.(*float64); ok {
-				addDoubleGauge(pointTimestamp, *f, metric, populateLabels)
-			} else if s, ok := metricValue.(*string); ok {
-				convertString(logger, metricName, *s, &numDroppedTimeSeries, pointTimestamp, metric, populateLabels)
-			} else if s, ok := metricValue.(string); ok {
-				convertString(logger, metricName, s, &numDroppedTimeSeries, pointTimestamp, metric, populateLabels)
-			} else {
+			switch v := metricValue.(type) {
+			case int64:
+				addIntGauge(metrics, metricName, v, pointTimestamp, labels)
+			case *int64:
+				addIntGauge(metrics, metricName, *v, pointTimestamp, labels)
+			case float64:
+				addDoubleGauge(metrics, metricName, v, pointTimestamp, labels)
+			case *float64:
+				addDoubleGauge(metrics, metricName, *v, pointTimestamp, labels)
+			case string:
+				convertString(logger, &numDroppedTimeSeries, metrics, metricName, pointTimestamp, v, labels)
+			case *string:
+				convertString(logger, &numDroppedTimeSeries, metrics, metricName, pointTimestamp, *v, labels)
+			default:
 				// drop this point as we do not know how to extract a value from it
 				numDroppedTimeSeries++
 				logger.Debug("Cannot convert metric, unknown input type",
 					zap.String("metric", metricName))
 			}
-
-			if metric.DataType() != pdata.MetricDataTypeNone {
-				metrics.Metrics().Append(metric)
-			}
 		}
 
-		if metrics.Metrics().Len() > 0 {
+		if metrics.Len() > 0 {
 			md.ResourceMetrics().Append(resourceMetrics)
 		}
 	}
@@ -107,7 +89,7 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 	return md, numDroppedTimeSeries
 }
 
-func convertString(logger *zap.Logger, metricName string, s string, numDroppedTimeSeries *int, pointTimestamp pdata.Timestamp, metric pdata.Metric, populateLabels func(pdata.StringMap)) {
+func convertString(logger *zap.Logger, numDroppedTimeSeries *int, metrics pdata.MetricSlice, metricName string, pointTimestamp pdata.Timestamp, s string, labels pdata.StringMap) {
 	// best effort, cast to string and turn into a number
 	dbl, err := strconv.ParseFloat(s, 64)
 	if err != nil {
@@ -115,24 +97,28 @@ func convertString(logger *zap.Logger, metricName string, s string, numDroppedTi
 		logger.Debug("Cannot convert metric value from string to number",
 			zap.String("metric", metricName))
 	} else {
-		addDoubleGauge(pointTimestamp, dbl, metric, populateLabels)
+		addDoubleGauge(metrics, metricName, dbl, pointTimestamp, labels)
 	}
 }
 
-func addIntGauge(ts pdata.Timestamp, value int64, metric pdata.Metric, populateLabels func(pdata.StringMap)) {
+func addIntGauge(metrics pdata.MetricSlice, metricName string, value int64, ts pdata.Timestamp, labels pdata.StringMap) {
+	metric := metrics.AppendEmpty()
+	metric.SetName(metricName)
 	metric.SetDataType(pdata.MetricDataTypeIntGauge)
 	intPt := metric.IntGauge().DataPoints().AppendEmpty()
 	intPt.SetTimestamp(ts)
 	intPt.SetValue(value)
-	populateLabels(intPt.LabelsMap())
+	labels.CopyTo(intPt.LabelsMap())
 }
 
-func addDoubleGauge(ts pdata.Timestamp, value float64, metric pdata.Metric, populateLabels func(pdata.StringMap)) {
+func addDoubleGauge(metrics pdata.MetricSlice, metricName string, value float64, ts pdata.Timestamp, labels pdata.StringMap) {
+	metric := metrics.AppendEmpty()
+	metric.SetName(metricName)
 	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
 	doublePt := metric.DoubleGauge().DataPoints().AppendEmpty()
 	doublePt.SetTimestamp(ts)
 	doublePt.SetValue(value)
-	populateLabels(doublePt.LabelsMap())
+	labels.CopyTo(doublePt.LabelsMap())
 }
 
 func convertTimestamp(sec *float64) pdata.Timestamp {
@@ -144,27 +130,19 @@ func convertTimestamp(sec *float64) pdata.Timestamp {
 }
 
 // Extract dimensions from the Splunk event fields to populate metric data point labels.
-func buildLabelKeysAndValues(
-	dimensions map[string]interface{},
-) ([]string, []string) {
-	keys := make([]string, 0, len(dimensions))
-	values := make([]string, 0, len(dimensions))
-	dimensionKeys := make([]string, 0, len(dimensions))
-	for key := range dimensions {
-		dimensionKeys = append(dimensionKeys, key)
-	}
-	sort.Strings(dimensionKeys)
-	for _, key := range dimensionKeys {
+func buildLabels(dimensions map[string]interface{}) pdata.StringMap {
+	labels := pdata.NewStringMap()
+	labels.EnsureCapacity(len(dimensions))
+	for key, val := range dimensions {
 
 		if strings.HasPrefix(key, "metric_name") {
 			continue
 		}
-		if key == "" || dimensions[key] == nil {
+		if key == "" || val == nil {
 			// TODO: Log or metric for this odd ball?
 			continue
 		}
-		keys = append(keys, key)
-		values = append(values, fmt.Sprintf("%v", dimensions[key]))
+		labels.Insert(key, fmt.Sprintf("%v", val))
 	}
-	return keys, values
+	return labels
 }

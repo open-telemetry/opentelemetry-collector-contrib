@@ -158,10 +158,19 @@ otel.jmx.interval.milliseconds = %v
 		javaConfig += fmt.Sprintf("otel.jmx.groovy.script = %v\n", jmx.config.GroovyScript)
 	}
 
-	javaConfig += fmt.Sprintf(`otel.exporter = otlp
+	endpoint := jmx.config.OTLPExporterConfig.Endpoint
+	if !strings.HasPrefix(endpoint, "http") {
+		endpoint = fmt.Sprintf("http://%s", endpoint)
+	}
+
+	javaConfig += fmt.Sprintf(`otel.metrics.exporter = otlp
 otel.exporter.otlp.endpoint = %v
-otel.exporter.otlp.metric.timeout = %v
-`, jmx.config.OTLPExporterConfig.Endpoint, jmx.config.OTLPExporterConfig.Timeout.Milliseconds())
+otel.exporter.otlp.timeout = %v
+`, endpoint, jmx.config.OTLPExporterConfig.Timeout.Milliseconds())
+
+	if len(jmx.config.OTLPExporterConfig.Headers) > 0 {
+		javaConfig += fmt.Sprintf("otel.exporter.otlp.headers = %s\n", jmx.config.OTLPExporterConfig.headersToString())
+	}
 
 	if jmx.config.Username != "" {
 		javaConfig += fmt.Sprintf("otel.jmx.username = %v\n", jmx.config.Username)

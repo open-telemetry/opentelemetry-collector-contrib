@@ -72,9 +72,15 @@ func buildTestTraces(setTokenLabel bool) (traces pdata.Traces) {
 	for i := 0; i < 20; i++ {
 		rs := rss.At(i)
 		resource := rs.Resource()
+		resource.Attributes().InsertString("key1", "value1")
 		if setTokenLabel && i%2 == 1 {
 			tokenLabel := fmt.Sprintf("MyToken%d", i/5)
 			resource.Attributes().InsertString("com.splunk.signalfx.access_token", tokenLabel)
+			resource.Attributes().InsertString("com.splunk.signalfx.access_token", tokenLabel)
+		}
+		// Add one last element every 3rd resource, this way we have cases with token last or not.
+		if i%3 == 1 {
+			resource.Attributes().InsertString("key2", "value2")
 		}
 
 		span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()

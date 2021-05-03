@@ -16,6 +16,7 @@ package jmxreceiver
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -68,6 +69,24 @@ type otlpExporterConfig struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 	// The headers to include in OTLP metric submission requests.
 	Headers map[string]string `mapstructure:"headers"`
+}
+
+func (oec otlpExporterConfig) headersToString() string {
+	// sort for reliable testing
+	headers := make([]string, 0, len(oec.Headers))
+	for k := range oec.Headers {
+		headers = append(headers, k)
+	}
+	sort.Strings(headers)
+
+	headerString := ""
+	for _, k := range headers {
+		v := oec.Headers[k]
+		headerString += fmt.Sprintf("%s=%v,", k, v)
+	}
+	// remove trailing comma
+	headerString = headerString[0 : len(headerString)-1]
+	return headerString
 }
 
 func (c *Config) validate() error {
