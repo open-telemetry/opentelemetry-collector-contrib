@@ -44,13 +44,10 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	conf := cfg.Processors["groupbyattrs/custom"]
+	conf := cfg.Processors[config.NewIDWithName(typeStr, "custom")]
 	assert.Equal(t, conf,
 		&Config{
-			ProcessorSettings: &config.ProcessorSettings{
-				TypeVal: "groupbyattrs",
-				NameVal: "groupbyattrs/custom",
-			},
-			GroupByKeys: []string{"key1", "key2"},
+			ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "custom")),
+			GroupByKeys:       []string{"key1", "key2"},
 		})
 }
