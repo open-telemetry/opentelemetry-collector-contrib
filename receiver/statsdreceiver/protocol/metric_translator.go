@@ -17,6 +17,7 @@ package protocol
 import (
 	"time"
 
+	"github.com/montanaflynn/stats"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -57,4 +58,32 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.Instru
 	}
 
 	return ilm
+}
+
+func buildSummaryMetric(summaryMetric summaryMetric) pdata.InstrumentationLibraryMetrics {
+	dp := pdata.NewSummaryDataPoint()
+	dp.SetCount(uint64(len(summaryMetric.summaryPoints)))
+	sum, _ := stats.Sum(summaryMetric.summaryPoints)
+	dp.SetSum(sum)
+	dp.SetTimestamp(pdata.TimestampFromTime(summaryMetric.timeNow))
+
+	quantile := []float64{0, 10, 50, 90, 95, 100}
+	for _, v := range quantile {
+		eachQuantile := pdata.NewValueAtQuantile()
+		eachQuantile.SetQuantile(v)
+		eachQuantileValue, _ := stats.PercentileNearestRank(summaryMetric.summaryPoints, v)
+		eachQuantile.SetValue(eachQuantileValue)
+		dp.QuantileValues().Append(eachQuantile)
+	}
+
+	nm := pdata.NewMetric()
+	nm.SetName(summaryMetric.name)
+	nm.SetDataType(pdata.MetricDataTypeSummary)
+	nm.Summary().DataPoints().Append(dp)
+
+	ilm := pdata.NewInstrumentationLibraryMetrics()
+	ilm.Metrics().Append(nm)
+
+	return ilm
+
 }

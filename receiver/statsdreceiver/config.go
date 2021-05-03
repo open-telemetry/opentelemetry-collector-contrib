@@ -37,9 +37,8 @@ type Config struct {
 func (c *Config) validate() error {
 
 	var errors []error
-	supportMatch := []string{"*"}
 	supportedStatsdType := []string{"timing", "timer", "histogram"}
-	supportedObserverType := []string{"gauge"}
+	supportedObserverType := []string{"gauge", "summary"}
 
 	if c.AggregationInterval <= 0 {
 		errors = append(errors, fmt.Errorf("aggregation_interval must be a positive duration"))
@@ -47,14 +46,6 @@ func (c *Config) validate() error {
 
 	var TimerHistogramMappingMissingObjectName bool
 	for _, eachMap := range c.TimerHistogramMapping {
-		if eachMap.Match == "" {
-			TimerHistogramMappingMissingObjectName = true
-			break
-		}
-
-		if !protocol.Contains(supportMatch, eachMap.Match) {
-			errors = append(errors, fmt.Errorf("match is not supported: %s", eachMap.Match))
-		}
 
 		if eachMap.StatsdType == "" {
 			TimerHistogramMappingMissingObjectName = true

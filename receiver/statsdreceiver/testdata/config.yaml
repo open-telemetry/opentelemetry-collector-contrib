@@ -6,11 +6,9 @@ receivers:
     aggregation_interval: 70s
     enable_metric_type: false
     timer_histogram_mapping:
-      - match: "*"
-        statsd_type: "histogram"
+      - statsd_type: "histogram"
         observer_type: "gauge"
-      - match: "*"
-        statsd_type: "timing"
+      - statsd_type: "timing"
         observer_type: "gauge"
 
 processors:
