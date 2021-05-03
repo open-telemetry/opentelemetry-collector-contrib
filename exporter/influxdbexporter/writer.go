@@ -93,7 +93,7 @@ type influxHTTPWriterBatch struct {
 	logger  common.Logger
 }
 
-func (b *influxHTTPWriterBatch) WritePoint(_ context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts time.Time) error {
+func (b *influxHTTPWriterBatch) WritePoint(_ context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts time.Time, _ common.InfluxMetricValueType) error {
 	b.encoder.StartLine(measurement)
 	for _, tag := range b.sortTags(tags) {
 		b.encoder.AddTag(tag.k, tag.v)

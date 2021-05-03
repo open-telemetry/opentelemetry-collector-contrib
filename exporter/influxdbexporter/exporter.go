@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/influxdata/influxdb-observability/common"
 	"github.com/influxdata/influxdb-observability/otel2influx"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -66,9 +67,9 @@ type metricsExporter struct {
 	converter *otel2influx.OtelMetricsToLineProtocol
 }
 
-var metricsSchemata = map[string]otel2influx.MetricsSchema{
-	"telegraf-prometheus-v1": otel2influx.MetricsSchemaTelegrafPrometheusV1,
-	"telegraf-prometheus-v2": otel2influx.MetricsSchemaTelegrafPrometheusV2,
+var metricsSchemata = map[string]common.MetricsSchema{
+	"telegraf-prometheus-v1": common.MetricsSchemaTelegrafPrometheusV1,
+	"telegraf-prometheus-v2": common.MetricsSchemaTelegrafPrometheusV2,
 }
 
 func newMetricsExporter(config *Config, params component.ExporterCreateParams) (*metricsExporter, error) {
