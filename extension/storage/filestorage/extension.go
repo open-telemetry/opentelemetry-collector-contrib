@@ -68,7 +68,7 @@ func (lfs *localFileStorage) Shutdown(context.Context) error {
 }
 
 // GetClient returns a storage client for an individual component
-func (lfs *localFileStorage) GetClient(ctx context.Context, kind component.Kind, ent config.NamedEntity) (storage.Client, error) {
+func (lfs *localFileStorage) GetClient(ctx context.Context, kind component.Kind, ent config.ComponentID) (storage.Client, error) {
 	rawName := fmt.Sprintf("%s_%s_%s", kindString(kind), ent.Type(), ent.Name())
 	// TODO sanitize rawName
 	absoluteName := filepath.Join(lfs.directory, rawName)

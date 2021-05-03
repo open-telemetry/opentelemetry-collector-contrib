@@ -211,8 +211,8 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 		transport = "https"
 	}
 
-	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), transport)
-	ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.Name(), transport)
+	ctx := obsreport.ReceiverContext(req.Context(), r.config.ID().String(), transport)
+	ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.ID().String(), transport)
 
 	if r.metricsConsumer == nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errMetricsNotConfigured, nil)
@@ -264,8 +264,8 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 		transport = "https"
 	}
 
-	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), transport)
-	ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.Name(), transport)
+	ctx := obsreport.ReceiverContext(req.Context(), r.config.ID().String(), transport)
+	ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.ID().String(), transport)
 
 	if r.logsConsumer == nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errLogsNotConfigured, nil)
@@ -325,7 +325,7 @@ func (r *sfxReceiver) failRequest(
 			r.logger.Warn(
 				"Error writing HTTP response message",
 				zap.Error(writeErr),
-				zap.String("receiver", r.config.Name()))
+				zap.String("receiver", r.config.ID().String()))
 		}
 	}
 
@@ -353,7 +353,7 @@ func (r *sfxReceiver) failRequest(
 		zap.Int("http_status_code", httpStatusCode),
 		zap.String("msg", msg),
 		zap.Error(err), // It handles nil error
-		zap.String("receiver", r.config.Name()))
+	)
 }
 
 func initJSONResponse(s string) []byte {

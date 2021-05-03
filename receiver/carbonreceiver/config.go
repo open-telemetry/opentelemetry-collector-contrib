@@ -71,7 +71,7 @@ func (cfg *Config) Unmarshal(componentParser *config.Parser) error {
 		return fmt.Errorf(
 			"error on %q section for %s: %v",
 			parserConfigSection,
-			cfg.Name(),
+			cfg.ID().String(),
 			err)
 	}
 

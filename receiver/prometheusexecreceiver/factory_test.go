@@ -45,15 +45,14 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	assert.NoError(t, err)
 
 	factory := NewFactory()
-	receiverType := "prometheus_exec"
-	factories.Receivers[config.Type(receiverType)] = factory
+	factories.Receivers[typeStr] = factory
 
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 
-	receiver := cfg.Receivers[receiverType]
+	receiver := cfg.Receivers[config.NewID(typeStr)]
 
 	// Test CreateTracesReceiver
 	traceReceiver, err = factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, receiver, nil)
@@ -66,7 +65,7 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// Test CreateMetricsReceiver
-	receiver = cfg.Receivers["prometheus_exec/test"]
+	receiver = cfg.Receivers[config.NewIDWithName(typeStr, "test")]
 	metricReceiver, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, receiver, nil)
 	assert.Equal(t, nil, err)
 
@@ -75,10 +74,7 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 		config:   receiver.(*Config),
 		consumer: nil,
 		promReceiverConfig: &prometheusreceiver.Config{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: "prometheus_exec",
-				NameVal: "prometheus_exec/test",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "test")),
 			PrometheusConfig: &promconfig.Config{
 				ScrapeConfigs: []*promconfig.ScrapeConfig{
 					{

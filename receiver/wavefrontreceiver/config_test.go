@@ -42,16 +42,13 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 2)
 
-	r0 := cfg.Receivers["wavefront"]
+	r0 := cfg.Receivers[config.NewID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), r0)
 
-	r1 := cfg.Receivers["wavefront/allsettings"].(*Config)
+	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "allsettings")].(*Config)
 	assert.Equal(t,
 		&Config{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: config.Type(typeStr),
-				NameVal: "wavefront/allsettings",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "allsettings")),
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "localhost:8080",
 			},

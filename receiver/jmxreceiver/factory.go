@@ -39,10 +39,7 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
 		JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 		CollectionInterval: 10 * time.Second,
 		OTLPExporterConfig: otlpExporterConfig{

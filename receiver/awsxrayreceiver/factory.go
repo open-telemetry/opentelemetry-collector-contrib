@@ -41,12 +41,9 @@ func createDefaultConfig() config.Receiver {
 	// in the X-Ray daemon:
 	// https://github.com/aws/aws-xray-daemon/blob/master/pkg/cfg/cfg.go#L99
 	return &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: config.Type(awsxray.TypeStr),
-			NameVal: awsxray.TypeStr,
-			// X-Ray daemon defaults to 127.0.0.1:2000 but
-			// the default in OT is 0.0.0.0.
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(awsxray.TypeStr)),
+		// X-Ray daemon defaults to 127.0.0.1:2000 but
+		// the default in OT is 0.0.0.0.
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "0.0.0.0:2000",
 			Transport: udppoller.Transport,
