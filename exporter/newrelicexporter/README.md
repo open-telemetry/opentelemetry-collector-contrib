@@ -4,7 +4,7 @@
 
 ## Overview
 
-This exporter supports sending trace and metric data to [New Relic](https://newrelic.com/)
+This exporter supports sending trace, metric, and log data to [New Relic](https://newrelic.com/)
 
 > Please review the Collector's [security
 > documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
