@@ -45,15 +45,12 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 2)
 
-	r0 := cfg.Receivers["statsd"]
+	r0 := cfg.Receivers[config.NewID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), r0)
 
-	r1 := cfg.Receivers["statsd/receiver_settings"]
+	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "receiver_settings")]
 	assert.Equal(t, &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: config.Type(typeStr),
-			NameVal: "statsd/receiver_settings",
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "receiver_settings")),
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "localhost:12345",
 			Transport: "custom_transport",

@@ -98,7 +98,7 @@ func (c *Config) validate() error {
 		missingFields = append(missingFields, "`target_system` or `groovy_script`")
 	}
 	if missingFields != nil {
-		baseMsg := fmt.Sprintf("%v missing required field", c.Name())
+		baseMsg := fmt.Sprintf("%v missing required field", c.ID())
 		if len(missingFields) > 1 {
 			baseMsg += "s"
 		}
@@ -106,11 +106,11 @@ func (c *Config) validate() error {
 	}
 
 	if c.CollectionInterval < 0 {
-		return fmt.Errorf("%v `interval` must be positive: %vms", c.Name(), c.CollectionInterval.Milliseconds())
+		return fmt.Errorf("%v `interval` must be positive: %vms", c.ID(), c.CollectionInterval.Milliseconds())
 	}
 
 	if c.OTLPExporterConfig.Timeout < 0 {
-		return fmt.Errorf("%v `otlp.timeout` must be positive: %vms", c.Name(), c.OTLPExporterConfig.Timeout.Milliseconds())
+		return fmt.Errorf("%v `otlp.timeout` must be positive: %vms", c.ID(), c.OTLPExporterConfig.Timeout.Milliseconds())
 	}
 	return nil
 }

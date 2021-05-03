@@ -45,11 +45,8 @@ func NewFactory() component.ReceiverFactory {
 // createDefaultConfig returns a default config
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
-		ScrapeInterval: defaultCollectionInterval,
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ScrapeInterval:   defaultCollectionInterval,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
 			Env: []subprocessmanager.EnvConfig{},
 		},

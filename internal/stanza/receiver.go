@@ -29,8 +29,7 @@ import (
 )
 
 type receiver struct {
-	config.NamedEntity
-
+	id config.ComponentID
 	sync.Mutex
 	wg     sync.WaitGroup
 	cancel context.CancelFunc

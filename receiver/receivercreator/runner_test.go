@@ -20,11 +20,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.uber.org/zap"
 )
 
 func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
-	run := &receiverRunner{params: component.ReceiverCreateParams{Logger: zap.NewNop()}, idNamespace: "receiver_creator/1"}
+	run := &receiverRunner{params: component.ReceiverCreateParams{Logger: zap.NewNop()}, idNamespace: config.NewIDWithName(typeStr, "1")}
 	exampleFactory := &nopWithEndpointFactory{}
 	template, err := newReceiverTemplate("nop/1", nil)
 	require.NoError(t, err)
@@ -37,7 +38,7 @@ func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
 	nopConfig := loadedConfig.(*nopWithEndpointConfig)
 	// Verify that the overridden endpoint is used instead of the one in the config file.
 	assert.Equal(t, "localhost:12345", nopConfig.Endpoint)
-	assert.Equal(t, "receiver_creator/1/nop/1{endpoint=\"localhost:12345\"}", nopConfig.Name())
+	assert.Equal(t, "nop/1/receiver_creator/1{endpoint=\"localhost:12345\"}", nopConfig.ID().String())
 
 	// Test that metric receiver can be created from loaded config.
 	t.Run("test create receiver from loaded config", func(t *testing.T) {
