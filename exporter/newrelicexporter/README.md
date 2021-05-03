@@ -2,6 +2,8 @@
 
 :sparkles: **[New Relic offers OTLP (OpenTelemetry Protocol) Ingest as a pre-release! To sign up, click here!](https://forms.gle/fa2pWcQxgVQYMggEA)** :sparkles:
 
+This means you can use an [OTLP](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlpexporter) exporter and no longer need this exporter to send data to New Relic.
+
 ## Overview
 
 This exporter supports sending trace, metric, and log data to [New Relic](https://newrelic.com/)
