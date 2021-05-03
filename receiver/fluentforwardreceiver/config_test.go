@@ -30,7 +30,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[config.Type(typeStr)] = factory
+	factories.Receivers[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -40,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 1)
 
-	r0 := cfg.Receivers["fluentforward"]
+	r0 := cfg.Receivers[config.NewID("fluentforward")]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
 }

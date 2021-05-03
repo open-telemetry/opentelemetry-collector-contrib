@@ -73,7 +73,7 @@ func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 		nextConsumer:          rc.nextConsumer,
 		runner: &receiverRunner{
 			params:      rc.params,
-			idNamespace: rc.cfg.Name(),
+			idNamespace: rc.cfg.ID(),
 			host:        &loggingHost{host, rc.params.Logger},
 		}}
 
@@ -102,8 +102,7 @@ func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 	}
 
 	if len(observers) == 0 {
-		rc.params.Logger.Warn("no observers were configured and no subreceivers will be started. receiver_creator will be disabled",
-			zap.String("receiver", rc.cfg.Name()))
+		rc.params.Logger.Warn("no observers were configured and no subreceivers will be started. receiver_creator will be disabled")
 	}
 
 	// Start all configured watchers.

@@ -58,7 +58,7 @@ func newReceiver(config *Config,
 	logger.Info("Going to listen on endpoint for X-Ray segments",
 		zap.String(udppoller.Transport, config.Endpoint))
 	poller, err := udppoller.New(&udppoller.Config{
-		ReceiverInstanceName: config.Name(),
+		ReceiverInstanceName: config.ID().String(),
 		Transport:            config.Transport,
 		Endpoint:             config.Endpoint,
 		NumOfPollerToStart:   maxPollerCount,
@@ -76,7 +76,7 @@ func newReceiver(config *Config,
 	}
 
 	return &xrayReceiver{
-		instanceName: config.Name(),
+		instanceName: config.ID().String(),
 		poller:       poller,
 		server:       srv,
 		logger:       logger,

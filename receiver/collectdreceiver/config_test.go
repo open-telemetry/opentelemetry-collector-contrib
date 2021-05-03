@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[config.Type(typeStr)] = factory
+	factories.Receivers[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -42,16 +42,13 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 2)
 
-	r0 := cfg.Receivers["collectd"]
+	r0 := cfg.Receivers[config.NewID(typeStr)]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Receivers["collectd/one"].(*Config)
+	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "one")].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: config.Type(typeStr),
-				NameVal: "collectd/one",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "one")),
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "localhost:12345",
 			},

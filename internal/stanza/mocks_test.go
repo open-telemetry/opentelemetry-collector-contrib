@@ -116,11 +116,8 @@ func (f TestReceiverType) Type() config.Type {
 func (f TestReceiverType) CreateDefaultConfig() config.Receiver {
 	return &TestConfig{
 		BaseConfig: BaseConfig{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: config.Type(testType),
-				NameVal: testType,
-			},
-			Operators: OperatorConfigs{},
+			ReceiverSettings: config.NewReceiverSettings(config.NewID(testType)),
+			Operators:        OperatorConfigs{},
 			Converter: ConverterConfig{
 				MaxFlushCount: 1,
 				FlushInterval: 100 * time.Millisecond,

@@ -69,7 +69,7 @@ func Test_statsdreceiver_New(t *testing.T) {
 				},
 				nextConsumer: consumertest.NewNop(),
 			},
-			wantErr: errors.New("unsupported transport \"unknown\" for receiver \"statsd\""),
+			wantErr: errors.New("unsupported transport \"unknown\" for receiver statsd"),
 		},
 	}
 	for _, tt := range tests {
@@ -109,10 +109,7 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 			name: "default_config with 9s interval",
 			configFn: func() *Config {
 				return &Config{
-					ReceiverSettings: config.ReceiverSettings{
-						TypeVal: config.Type(typeStr),
-						NameVal: typeStr,
-					},
+					ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 					NetAddr: confignet.NetAddr{
 						Endpoint:  defaultBindEndpoint,
 						Transport: defaultTransport,

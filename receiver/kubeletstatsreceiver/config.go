@@ -72,7 +72,7 @@ func (cfg *Config) getReceiverOptions() (*receiverOptions, error) {
 	}
 
 	return &receiverOptions{
-		name:                  cfg.Name(),
+		name:                  cfg.ID().String(),
 		collectionInterval:    cfg.CollectionInterval,
 		extraMetadataLabels:   cfg.ExtraMetadataLabels,
 		metricGroupsToCollect: mgs,

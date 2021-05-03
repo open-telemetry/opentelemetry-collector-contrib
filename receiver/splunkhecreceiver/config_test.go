@@ -116,16 +116,13 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 3)
 
-	r0 := cfg.Receivers["splunk_hec"]
+	r0 := cfg.Receivers[config.NewID(typeStr)]
 	assert.Equal(t, r0, createDefaultConfig())
 
-	r1 := cfg.Receivers["splunk_hec/allsettings"].(*Config)
+	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "allsettings")].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "splunk_hec/allsettings",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "allsettings")),
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: "localhost:8088",
 			},
@@ -135,13 +132,10 @@ func TestLoadConfig(t *testing.T) {
 			Path: "/foo",
 		})
 
-	r2 := cfg.Receivers["splunk_hec/tls"].(*Config)
+	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "tls")].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "splunk_hec/tls",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "tls")),
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: ":8088",
 				TLSSetting: &configtls.TLSServerSetting{

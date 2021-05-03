@@ -29,12 +29,9 @@ import (
 
 var (
 	wantReceiver2 = &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: config.Type("prometheus_exec"),
-			NameVal: "prometheus_exec/test",
-		},
-		ScrapeInterval: 60 * time.Second,
-		Port:           9104,
+		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "test")),
+		ScrapeInterval:   60 * time.Second,
+		Port:             9104,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
 			Command: "mysqld_exporter",
 			Env:     []subprocessmanager.EnvConfig{},
@@ -42,11 +39,8 @@ var (
 	}
 
 	wantReceiver3 = &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: config.Type("prometheus_exec"),
-			NameVal: "prometheus_exec/test2",
-		},
-		ScrapeInterval: 90 * time.Second,
+		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "test2")),
+		ScrapeInterval:   90 * time.Second,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
 			Command: "postgres_exporter",
 			Env:     []subprocessmanager.EnvConfig{},
@@ -54,12 +48,9 @@ var (
 	}
 
 	wantReceiver4 = &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: config.Type("prometheus_exec"),
-			NameVal: "prometheus_exec/end_to_end_test/1",
-		},
-		ScrapeInterval: 100 * time.Millisecond,
-		Port:           9999,
+		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "end_to_end_test/1")),
+		ScrapeInterval:   100 * time.Millisecond,
+		Port:             9999,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
 			Command: "go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}",
 			Env: []subprocessmanager.EnvConfig{
@@ -76,11 +67,8 @@ var (
 	}
 
 	wantReceiver5 = &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: config.Type("prometheus_exec"),
-			NameVal: "prometheus_exec/end_to_end_test/2",
-		},
-		ScrapeInterval: 100 * time.Millisecond,
+		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "end_to_end_test/2")),
+		ScrapeInterval:   100 * time.Millisecond,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
 			Command: "go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}",
 			Env:     []subprocessmanager.EnvConfig{},
@@ -93,28 +81,26 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, err)
 
 	factory := NewFactory()
-	receiverType := "prometheus_exec"
-	factories.Receivers[config.Type(receiverType)] = factory
+	factories.Receivers[typeStr] = factory
 
-	config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
-
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 	assert.NoError(t, err)
-	assert.NotNil(t, config)
+	assert.NotNil(t, cfg)
 
-	assert.Equal(t, len(config.Receivers), 5)
+	assert.Equal(t, len(cfg.Receivers), 5)
 
-	receiver1 := config.Receivers[receiverType]
+	receiver1 := cfg.Receivers[config.NewID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), receiver1)
 
-	receiver2 := config.Receivers["prometheus_exec/test"]
+	receiver2 := cfg.Receivers[config.NewIDWithName(typeStr, "test")]
 	assert.Equal(t, wantReceiver2, receiver2)
 
-	receiver3 := config.Receivers["prometheus_exec/test2"]
+	receiver3 := cfg.Receivers[config.NewIDWithName(typeStr, "test2")]
 	assert.Equal(t, wantReceiver3, receiver3)
 
-	receiver4 := config.Receivers["prometheus_exec/end_to_end_test/1"]
+	receiver4 := cfg.Receivers[config.NewIDWithName(typeStr, "end_to_end_test/1")]
 	assert.Equal(t, wantReceiver4, receiver4)
 
-	receiver5 := config.Receivers["prometheus_exec/end_to_end_test/2"]
+	receiver5 := cfg.Receivers[config.NewIDWithName(typeStr, "end_to_end_test/2")]
 	assert.Equal(t, wantReceiver5, receiver5)
 }

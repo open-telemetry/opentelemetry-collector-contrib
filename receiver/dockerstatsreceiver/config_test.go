@@ -31,20 +31,20 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[config.Type(typeStr)] = factory
-	config, err := configtest.LoadConfigFile(
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
 
 	require.NoError(t, err)
-	require.NotNil(t, config)
-	assert.Equal(t, 2, len(config.Receivers))
+	require.NotNil(t, cfg)
+	assert.Equal(t, 2, len(cfg.Receivers))
 
-	defaultConfig := config.Receivers["docker_stats"]
+	defaultConfig := cfg.Receivers[config.NewID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), defaultConfig)
 
 	dcfg := defaultConfig.(*Config)
-	assert.Equal(t, "docker_stats", dcfg.Name())
+	assert.Equal(t, "docker_stats", dcfg.ID().String())
 	assert.Equal(t, "unix:///var/run/docker.sock", dcfg.Endpoint)
 	assert.Equal(t, 10*time.Second, dcfg.CollectionInterval)
 	assert.Equal(t, 5*time.Second, dcfg.Timeout)
@@ -55,8 +55,8 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.False(t, dcfg.ProvidePerCoreCPUMetrics)
 
-	ascfg := config.Receivers["docker_stats/allsettings"].(*Config)
-	assert.Equal(t, "docker_stats/allsettings", ascfg.Name())
+	ascfg := cfg.Receivers[config.NewIDWithName(typeStr, "allsettings")].(*Config)
+	assert.Equal(t, "docker_stats/allsettings", ascfg.ID().String())
 	assert.Equal(t, "http://example.com/", ascfg.Endpoint)
 	assert.Equal(t, 2*time.Second, ascfg.CollectionInterval)
 	assert.Equal(t, 20*time.Second, ascfg.Timeout)

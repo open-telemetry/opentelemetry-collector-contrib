@@ -65,7 +65,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.25.1-0.20210430203654-b05f61bb14cc
+	go.opentelemetry.io/collector v0.25.1-0.20210503171846-9c7c862e8547
 	golang.org/x/sys v0.0.0-20210412220455-f1c623a9e750
 )
 

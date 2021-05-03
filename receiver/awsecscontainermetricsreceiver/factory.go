@@ -50,10 +50,7 @@ func NewFactory() component.ReceiverFactory {
 // createDefaultConfig returns a default config for the receiver.
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
 		CollectionInterval: defaultCollectionInterval,
 	}
 }

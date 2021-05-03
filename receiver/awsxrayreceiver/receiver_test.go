@@ -316,9 +316,7 @@ func createAndOptionallyStartReceiver(
 	logger, recorded := logSetup()
 	rcvr, err := newReceiver(
 		&Config{
-			ReceiverSettings: config.ReceiverSettings{
-				NameVal: receiverName,
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.MustIDFromString(receiverName)),
 			NetAddr: confignet.NetAddr{
 				Endpoint:  addr,
 				Transport: udppoller.Transport,
