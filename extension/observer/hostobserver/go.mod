@@ -12,7 +12,7 @@ require (
 	github.com/onsi/gomega v1.10.2 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.0.0-00010101000000-000000000000
 	github.com/pelletier/go-toml v1.8.0 // indirect
-	github.com/shirou/gopsutil v3.21.3+incompatible
+	github.com/shirou/gopsutil v3.21.4+incompatible
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.25.1-0.20210430203654-b05f61bb14cc
 	go.uber.org/zap v1.16.0
