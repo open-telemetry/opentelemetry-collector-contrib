@@ -17,6 +17,9 @@ package filelogreceiver
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -31,6 +34,8 @@ import (
 func TestStorage(t *testing.T) {
 	t.Parallel()
 
+	const baseLog = "This is a simple log line with the number %3d"
+
 	ctx := context.Background()
 
 	logsDir := newTempDir(t)
@@ -44,13 +49,7 @@ func TestStorage(t *testing.T) {
 	cfg.Converter.FlushInterval = time.Millisecond
 	cfg.Operators = nil // not testing processing, just read the lines
 
-	logger := newRotatingLogger(t, logsDir, 1000, 1, false, false)
-
-	writeLog := func(nums ...int) {
-		for _, i := range nums {
-			logger.Println(fmt.Sprintf("This is a simple log line with the number %3d", i))
-		}
-	}
+	logger := newRecallLogger(t, logsDir)
 
 	host := storagetest.NewStorageHost(t, storageDir, "test")
 	sink := new(consumertest.LogsSink)
@@ -59,11 +58,12 @@ func TestStorage(t *testing.T) {
 	require.NoError(t, rcvr.Start(ctx, host))
 
 	// Write 2 logs
-	writeLog(0, 1)
+	logger.log(fmt.Sprintf(baseLog, 0))
+	logger.log(fmt.Sprintf(baseLog, 1))
 
 	// Expect them now, since the receiver is running
 	require.Eventually(t,
-		expectNLogs(sink, 2),
+		expectLogs(sink, logger.recall()),
 		time.Second,
 		10*time.Millisecond,
 		"expected 2 but got %d logs",
@@ -77,7 +77,9 @@ func TestStorage(t *testing.T) {
 	}
 
 	// Write 3 more logs while the collector is not running
-	writeLog(2, 3, 4)
+	logger.log(fmt.Sprintf(baseLog, 2))
+	logger.log(fmt.Sprintf(baseLog, 3))
+	logger.log(fmt.Sprintf(baseLog, 4))
 
 	// Start the components again
 	host = storagetest.NewStorageHost(t, storageDir, "test")
@@ -88,7 +90,7 @@ func TestStorage(t *testing.T) {
 
 	// Expect only the new 3
 	require.Eventually(t,
-		expectNLogs(sink, 3),
+		expectLogs(sink, logger.recall()),
 		time.Second,
 		10*time.Millisecond,
 		"expected 3 but got %d logs",
@@ -98,12 +100,12 @@ func TestStorage(t *testing.T) {
 
 	// Write 100 more, to ensure we're past the fingerprint size
 	for i := 100; i < 200; i++ {
-		writeLog(i)
+		logger.log(fmt.Sprintf(baseLog, i))
 	}
 
 	// Expect the new 100
 	require.Eventually(t,
-		expectNLogs(sink, 100),
+		expectLogs(sink, logger.recall()),
 		time.Second,
 		10*time.Millisecond,
 		"expected 100 but got %d logs",
@@ -117,7 +119,11 @@ func TestStorage(t *testing.T) {
 	}
 
 	// Write 5 more logs while the collector is not running
-	writeLog(5, 6, 7, 8, 9)
+	logger.log(fmt.Sprintf(baseLog, 5))
+	logger.log(fmt.Sprintf(baseLog, 6))
+	logger.log(fmt.Sprintf(baseLog, 7))
+	logger.log(fmt.Sprintf(baseLog, 8))
+	logger.log(fmt.Sprintf(baseLog, 9))
 
 	// Start the components again
 	host = storagetest.NewStorageHost(t, storageDir, "test")
@@ -128,7 +134,7 @@ func TestStorage(t *testing.T) {
 
 	// Expect only the new 5
 	require.Eventually(t,
-		expectNLogs(sink, 5),
+		expectLogs(sink, logger.recall()),
 		time.Second,
 		10*time.Millisecond,
 		"expected 5 but got %d logs",
@@ -139,5 +145,61 @@ func TestStorage(t *testing.T) {
 	require.NoError(t, rcvr.Shutdown(ctx))
 	for _, e := range host.GetExtensions() {
 		require.NoError(t, e.Shutdown(ctx))
+	}
+}
+
+type recallLogger struct {
+	*log.Logger
+	written []string
+}
+
+func newRecallLogger(t *testing.T, tempDir string) *recallLogger {
+	path := filepath.Join(tempDir, "test.log")
+	logFile, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	require.NoError(t, err)
+
+	return &recallLogger{
+		Logger:  log.New(logFile, "", 0),
+		written: []string{},
+	}
+}
+
+func (l *recallLogger) log(s string) {
+	l.written = append(l.written, s)
+	l.Logger.Println(s)
+}
+
+func (l *recallLogger) recall() []string {
+	l.written = []string{}
+	return l.written
+}
+
+// TODO use stateless Convert() from #3125 to generate exact pdata.Logs
+// for now, just validate body
+func expectLogs(sink *consumertest.LogsSink, expected []string) func() bool {
+	return func() bool {
+
+		found := make(map[string]bool)
+		for _, e := range expected {
+			found[e] = false
+		}
+
+		for _, logs := range sink.AllLogs() {
+			body := logs.ResourceLogs().
+				At(0).InstrumentationLibraryLogs().
+				At(0).Logs().
+				At(0).Body().
+				StringVal()
+
+			found[body] = true
+		}
+
+		for _, v := range found {
+			if !v {
+				return false
+			}
+		}
+
+		return true
 	}
 }
