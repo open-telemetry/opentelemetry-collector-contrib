@@ -465,7 +465,7 @@ func fillDotnetStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 				}
 			}
 		}
-		// We skip "..." (common frames) and Suppressed By exceptions.
+
 		line, err = r.ReadLine()
 		if err != nil {
 			break
