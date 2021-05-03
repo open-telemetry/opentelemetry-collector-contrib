@@ -170,7 +170,7 @@ func (l *recallLogger) log(s string) {
 }
 
 func (l *recallLogger) recall() []string {
-	l.written = []string{}
+	defer func() { l.written = []string{} }()
 	return l.written
 }
 
@@ -178,6 +178,10 @@ func (l *recallLogger) recall() []string {
 // for now, just validate body
 func expectLogs(sink *consumertest.LogsSink, expected []string) func() bool {
 	return func() bool {
+
+		if sink.LogRecordsCount() != len(expected) {
+			return false
+		}
 
 		found := make(map[string]bool)
 		for _, e := range expected {
