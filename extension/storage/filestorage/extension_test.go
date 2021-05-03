@@ -35,7 +35,7 @@ func TestExtensionIntegrity(t *testing.T) {
 
 	type mockComponent struct {
 		kind component.Kind
-		name config.NamedEntity
+		name config.ComponentID
 	}
 
 	components := []mockComponent{
@@ -50,14 +50,14 @@ func TestExtensionIntegrity(t *testing.T) {
 	}
 
 	// Make a client for each component
-	clients := make(map[config.NamedEntity]storage.Client)
+	clients := make(map[config.ComponentID]storage.Client)
 	for _, c := range components {
 		client, err := se.GetClient(ctx, c.kind, c.name)
 		require.NoError(t, err)
 		clients[c.name] = client
 	}
 
-	thrashClient := func(wg *sync.WaitGroup, n config.NamedEntity, c storage.Client) {
+	thrashClient := func(wg *sync.WaitGroup, n config.ComponentID, c storage.Client) {
 		// keys and values
 		keys := []string{"a", "b", "c", "d", "e"}
 		myBytes := []byte(n.Name())
@@ -240,6 +240,6 @@ func newTestExtension(t *testing.T) storage.Extension {
 	return se
 }
 
-func newTestEntity(name string) config.NamedEntity {
-	return &config.ExporterSettings{TypeVal: "nop", NameVal: name}
+func newTestEntity(name string) config.ComponentID {
+	return config.NewIDWithName("nop", name)
 }

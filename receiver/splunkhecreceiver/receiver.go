@@ -143,7 +143,7 @@ func NewLogsReceiver(
 	return r, nil
 }
 
-// StartMetricsReception tells the receiver to start its processing.
+// Start tells the receiver to start its processing.
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
 func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
@@ -176,7 +176,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	return err
 }
 
-// StopMetricsReception tells the receiver that should stop reception,
+// Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 func (r *splunkReceiver) Shutdown(context.Context) error {
 	r.Lock()
@@ -194,9 +194,9 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		transport = "https"
 	}
 
-	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), transport)
+	ctx := obsreport.ReceiverContext(req.Context(), r.config.ID().String(), transport)
 	if r.logsConsumer == nil {
-		ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.Name(), transport)
+		ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.ID().String(), transport)
 	}
 	reqPath := req.URL.Path
 	if !r.config.pathGlob.Match(reqPath) {
@@ -314,10 +314,7 @@ func (r *splunkReceiver) failRequest(
 		// The response needs to be written as a JSON string.
 		_, writeErr := resp.Write(jsonResponse)
 		if writeErr != nil {
-			r.logger.Warn(
-				"Error writing HTTP response message",
-				zap.Error(writeErr),
-				zap.String("receiver", r.config.Name()))
+			r.logger.Warn("Error writing HTTP response message", zap.Error(writeErr))
 		}
 	}
 
@@ -344,7 +341,7 @@ func (r *splunkReceiver) failRequest(
 		zap.Int("http_status_code", httpStatusCode),
 		zap.String("msg", msg),
 		zap.Error(err), // It handles nil error
-		zap.String("receiver", r.config.Name()))
+	)
 }
 
 func initJSONResponse(s string) []byte {

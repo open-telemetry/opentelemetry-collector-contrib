@@ -44,28 +44,22 @@ func TestLoadConfig(t *testing.T) {
 	// are excluded from the final list.
 	assert.Equal(t, len(cfg.Receivers), 4)
 
-	r0 := cfg.Receivers["sapm"]
+	r0 := cfg.Receivers[config.NewID(typeStr)]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Receivers["sapm/customname"].(*Config)
+	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "customname")].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "sapm/customname",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "customname")),
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: "0.0.0.0:7276",
 			},
 		})
 
-	r2 := cfg.Receivers["sapm/tls"].(*Config)
+	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "tls")].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "sapm/tls",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "tls")),
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: ":7276",
 				TLSSetting: &configtls.TLSServerSetting{
@@ -77,13 +71,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	r3 := cfg.Receivers["sapm/passthrough"].(*Config)
+	r3 := cfg.Receivers[config.NewIDWithName(typeStr, "passthrough")].(*Config)
 	assert.Equal(t, r3,
 		&Config{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "sapm/passthrough",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "passthrough")),
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: ":7276",
 			},

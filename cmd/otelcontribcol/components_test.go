@@ -33,7 +33,7 @@ func TestDefaultComponents(t *testing.T) {
 	recvs := factories.Receivers
 	for k, v := range recvs {
 		assert.Equal(t, k, v.Type())
-		assert.Equal(t, k, v.CreateDefaultConfig().Type())
+		assert.Equal(t, k, v.CreateDefaultConfig().ID().Type())
 	}
 
 	procs := factories.Processors

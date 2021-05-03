@@ -41,19 +41,16 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 2)
 
-	r0 := cfg.Receivers["windowsperfcounters"]
+	r0 := cfg.Receivers[config.NewID(typeStr)]
 	defaultConfigSingleObject := factory.CreateDefaultConfig()
 	defaultConfigSingleObject.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
 
 	assert.Equal(t, defaultConfigSingleObject, r0)
 
-	r1 := cfg.Receivers["windowsperfcounters/customname"].(*Config)
+	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "customname")].(*Config)
 	expectedConfig := &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "windowsperfcounters/customname",
-			},
+			ReceiverSettings:   config.NewReceiverSettings(config.NewIDWithName(typeStr, "customname")),
 			CollectionInterval: 30 * time.Second,
 		},
 		PerfCounters: []PerfCounterConfig{

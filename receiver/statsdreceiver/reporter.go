@@ -28,7 +28,6 @@ import (
 // observability per Collector metric observability package.
 type reporter struct {
 	name          string
-	spanName      string
 	logger        *zap.Logger
 	sugaredLogger *zap.SugaredLogger // Used for generic debug logging
 }
@@ -38,7 +37,6 @@ var _ transport.Reporter = (*reporter)(nil)
 func newReporter(receiverName string, logger *zap.Logger) transport.Reporter {
 	return &reporter{
 		name:          receiverName,
-		spanName:      receiverName + ".receiver",
 		logger:        logger,
 		sugaredLogger: logger.Sugar(),
 	}

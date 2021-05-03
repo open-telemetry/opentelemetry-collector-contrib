@@ -38,10 +38,7 @@ func TestFactory(t *testing.T) {
 	require.True(t, ok)
 
 	require.Equal(t, &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ReceiverSettings:           config.NewReceiverSettings(config.NewID(typeStr)),
 		CollectionInterval:         10 * time.Second,
 		NodeConditionTypesToReport: defaultNodeConditionsToReport,
 		APIConfig: k8sconfig.APIConfig{

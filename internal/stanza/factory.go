@@ -83,12 +83,12 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 		converter := NewConverter(opts...)
 
 		return &receiver{
-			NamedEntity: cfg,
-			agent:       logAgent,
-			emitter:     emitter,
-			consumer:    nextConsumer,
-			logger:      params.Logger,
-			converter:   converter,
+			id:        cfg.ID(),
+			agent:     logAgent,
+			emitter:   emitter,
+			consumer:  nextConsumer,
+			logger:    params.Logger,
+			converter: converter,
 		}, nil
 	}
 }

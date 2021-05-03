@@ -86,7 +86,7 @@ func TestMockedEndToEnd(t *testing.T) {
 			NameVal: "mock_observer",
 		}: &mockObserver{},
 	}
-	dynCfg := cfg.Receivers["receiver_creator/1"]
+	dynCfg := cfg.Receivers[config.NewIDWithName(typeStr, "1")]
 	factory := NewFactory()
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	mockConsumer := &mockMetricsConsumer{}

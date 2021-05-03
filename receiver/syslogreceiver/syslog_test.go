@@ -100,17 +100,14 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	assert.Equal(t, len(cfg.Receivers), 1)
-	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers["syslog"])
+	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewID(typeStr)])
 }
 
 func testdataConfigYamlAsMap() *SysLogConfig {
 	return &SysLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: "syslog",
-				NameVal: "syslog",
-			},
-			Operators: stanza.OperatorConfigs{},
+			ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+			Operators:        stanza.OperatorConfigs{},
 			Converter: stanza.ConverterConfig{
 				FlushInterval: 100 * time.Millisecond,
 			},
@@ -127,11 +124,8 @@ func testdataConfigYamlAsMap() *SysLogConfig {
 func testdataUDPConfig() *SysLogConfig {
 	return &SysLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: "syslog",
-				NameVal: "syslog",
-			},
-			Operators: stanza.OperatorConfigs{},
+			ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+			Operators:        stanza.OperatorConfigs{},
 			Converter: stanza.ConverterConfig{
 				FlushInterval: 100 * time.Millisecond,
 			},
@@ -153,11 +147,8 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 	factory := NewFactory()
 	badCfg := &SysLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: "syslog",
-				NameVal: "syslog",
-			},
-			Operators: stanza.OperatorConfigs{},
+			ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+			Operators:        stanza.OperatorConfigs{},
 		},
 		Input: stanza.InputConfig{
 			"tcp": map[string]interface{}{

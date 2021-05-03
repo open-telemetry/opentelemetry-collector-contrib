@@ -40,16 +40,16 @@ const (
 	// template for port in strings
 	portTemplate string = "{{port}}"
 	// healthyProcessTime is the default time a process needs to stay alive to be considered healthy
-	healthyProcessTime time.Duration = 30 * time.Minute
+	healthyProcessTime = 30 * time.Minute
 	// healthyCrashCount is the amount of times a process can crash (within the healthyProcessTime) before being considered unstable - it may be trying to find a port
 	healthyCrashCount int = 3
-	// delayMutiplier is the factor by which the delay scales
+	// delayMultiplier is the factor by which the delay scales
 	delayMultiplier float64 = 2.0
 	// initialDelay is the initial delay before a process is restarted
-	initialDelay time.Duration = 1 * time.Second
+	initialDelay = 1 * time.Second
 	// default path to scrape metrics at endpoint
 	defaultMetricsPath = "/metrics"
-	// defaul timeout for a scrape
+	// default timeout for a scrape
 	defaultScrapeTimeout = 10 * time.Second
 )
 
@@ -80,7 +80,7 @@ type runResult struct {
 // newPromExecReceiver returns a prometheusExecReceiver
 func newPromExecReceiver(params component.ReceiverCreateParams, config *Config, consumer consumer.Metrics) (*prometheusExecReceiver, error) {
 	if config.SubprocessConfig.Command == "" {
-		return nil, fmt.Errorf("no command to execute entered in config file for %v", config.Name())
+		return nil, fmt.Errorf("no command to execute entered in config file for %v", config.ID())
 	}
 	subprocessConfig := getSubprocessConfig(config)
 	promReceiverConfig := getPromReceiverConfig(config)
@@ -103,7 +103,12 @@ func getPromReceiverConfig(cfg *Config) *prometheusreceiver.Config {
 	scrapeConfig.ScrapeTimeout = model.Duration(defaultScrapeTimeout)
 	scrapeConfig.Scheme = "http"
 	scrapeConfig.MetricsPath = defaultMetricsPath
-	scrapeConfig.JobName = extractName(cfg)
+	jobName := cfg.ID().Name()
+	if jobName == "" {
+		// Fallback to type if no name
+		jobName = string(cfg.ID().Type())
+	}
+	scrapeConfig.JobName = jobName
 	scrapeConfig.HonorLabels = false
 	scrapeConfig.HonorTimestamps = true
 
@@ -118,13 +123,8 @@ func getPromReceiverConfig(cfg *Config) *prometheusreceiver.Config {
 		},
 	}
 
-	receiverSettings := &config.ReceiverSettings{
-		TypeVal: typeStr,
-		NameVal: cfg.Name(),
-	}
-
 	return &prometheusreceiver.Config{
-		ReceiverSettings: *receiverSettings,
+		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, cfg.ID().Name())),
 		PrometheusConfig: &promconfig.Config{
 			ScrapeConfigs: []*promconfig.ScrapeConfig{scrapeConfig},
 		},
@@ -139,16 +139,6 @@ func getSubprocessConfig(cfg *Config) *subprocessmanager.SubprocessConfig {
 	subprocessConfig.Env = cfg.SubprocessConfig.Env
 
 	return subprocessConfig
-}
-
-// extractName will return the receiver's given custom name (prometheus_exec/custom_name)
-func extractName(cfg *Config) string {
-	splitName := strings.SplitN(cfg.Name(), "/", 2)
-	if len(splitName) > 1 && splitName[1] != "" {
-		return splitName[1]
-	}
-	// fall back to the first part of the string, prometheus_exec
-	return splitName[0]
 }
 
 // Start creates the configs and calls the function that handles the prometheus_exec receiver
