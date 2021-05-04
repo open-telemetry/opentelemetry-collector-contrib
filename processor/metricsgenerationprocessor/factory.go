@@ -77,7 +77,7 @@ func validateConfiguration(config *Config) error {
 			return fmt.Errorf("missing required field %q", GenerationTypeFieldName)
 		}
 
-		if rule.Type != "" && !rule.Type.isValid() {
+		if !rule.Type.isValid() {
 			return fmt.Errorf("%q must be in %q", GenerationTypeFieldName, generationTypes)
 		}
 
