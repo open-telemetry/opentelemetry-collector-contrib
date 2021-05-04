@@ -14,7 +14,7 @@ The metrics generation processor (`metricsgenerationprocessor`) can be used to c
 ## Configuration
 
 Configuration is specified through a list of generation rules. Generation rules find the metrics which 
-matche the given metric names apply the operation to those metrics.
+match the given metric names and apply the specified operation to those metrics.
 
 ```yaml
 processors:
