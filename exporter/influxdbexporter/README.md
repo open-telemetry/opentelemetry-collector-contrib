@@ -10,6 +10,9 @@ The following configuration options are supported:
 
 * `endpoint` (required) HTTP destination for line protocol
 * `timeout` (default = 5s) Timeout for requests
+* `headers`: (optional) additional headers attached to each HTTP request
+  - header `User-Agent` is `OpenTelemetry -> Influx` by default
+  - if `token` (below) is set, then header `Authorization` will overridden with the given token
 * `org` (required) Name of InfluxDB organization that owns the destination bucket
 * `bucket` (required) InfluxDB bucket name to where signals will 
 * `token` (optional) The authentication token for InfluxDB

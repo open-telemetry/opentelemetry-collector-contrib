@@ -93,6 +93,8 @@ type influxHTTPWriterBatch struct {
 	logger  common.Logger
 }
 
+// WritePoint emits a set of line protocol attributes (metrics, tags, fields, timestamp)
+// to the internal line protocol buffer. This method implements otel2influx.InfluxWriter.
 func (b *influxHTTPWriterBatch) WritePoint(_ context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts time.Time, _ common.InfluxMetricValueType) error {
 	b.encoder.StartLine(measurement)
 	for _, tag := range b.sortTags(tags) {
@@ -104,9 +106,8 @@ func (b *influxHTTPWriterBatch) WritePoint(_ context.Context, measurement string
 	b.encoder.EndLine(ts)
 
 	if err := b.encoder.Err(); err != nil {
-		// b.encoder.AbortLine
 		defer b.encoder.ClearErr()
-		return fmt.Errorf("failed to encode point: %w", err)
+		return consumererror.Permanent(fmt.Errorf("failed to encode point: %w", err))
 	}
 
 	return nil

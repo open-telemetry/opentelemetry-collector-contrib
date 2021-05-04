@@ -37,7 +37,6 @@ func NewFactory() component.ExporterFactory {
 
 func createTraceExporter(_ context.Context, params component.ExporterCreateParams, config config.Exporter) (component.TracesExporter, error) {
 	cfg := config.(*Config)
-	println(cfg)
 
 	exporter, err := newTracesExporter(cfg, params)
 	if err != nil {

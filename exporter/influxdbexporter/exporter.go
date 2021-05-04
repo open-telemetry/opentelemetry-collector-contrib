@@ -49,17 +49,13 @@ func (e *tracesExporter) pushTraces(ctx context.Context, td pdata.Traces) error 
 
 	protoBytes, err := td.ToOtlpProtoBytes()
 	if err != nil {
-		return err
+		return consumererror.Permanent(err)
 	}
 	err = e.converter.WriteTracesFromRequestBytes(ctx, protoBytes, batch)
 	if err != nil {
-		return err
+		return consumererror.Permanent(err)
 	}
-	if err := batch.flushAndClose(ctx); err != nil {
-		return err
-	}
-
-	return nil
+	return batch.flushAndClose(ctx)
 }
 
 type metricsExporter struct {
@@ -105,12 +101,7 @@ func (e *metricsExporter) pushMetrics(ctx context.Context, md pdata.Metrics) err
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
-	err = batch.flushAndClose(ctx)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return batch.flushAndClose(ctx)
 }
 
 type logsExporter struct {
@@ -137,15 +128,11 @@ func (e *logsExporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
 
 	protoBytes, err := ld.ToOtlpProtoBytes()
 	if err != nil {
-		return err
+		return consumererror.Permanent(err)
 	}
 	err = e.converter.WriteLogsFromRequestBytes(ctx, protoBytes, batch)
 	if err != nil {
-		return err
+		return consumererror.Permanent(err)
 	}
-	if err := batch.flushAndClose(ctx); err != nil {
-		return err
-	}
-
-	return nil
+	return batch.flushAndClose(ctx)
 }
