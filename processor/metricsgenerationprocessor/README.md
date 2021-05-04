@@ -23,7 +23,7 @@ processors:
 
         # specify the metric generation rules
         generation_rules:
-              # name of the new metric. this is a required field
+              # Name of the new metric. This is a required field.
             - new_metric_name: <new_metric_name>
 
               # generation_type describes how the metric will be generated. it can either be calculate or scale calculate generates a metric applying the given operation on two operand metrics. scale operates only on  operand1 metric to generate the new metric.
