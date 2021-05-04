@@ -50,7 +50,7 @@ type factory struct {
 
 	// providers stores a provider for each named processor that
 	// may a different set of detectors configured.
-	providers map[string]*internal.ResourceProvider
+	providers map[config.ComponentID]*internal.ResourceProvider
 	lock      sync.Mutex
 }
 
@@ -71,7 +71,7 @@ func NewFactory() component.ProcessorFactory {
 
 	f := &factory{
 		resourceProviderFactory: resourceProviderFactory,
-		providers:               map[string]*internal.ResourceProvider{},
+		providers:               map[config.ComponentID]*internal.ResourceProvider{},
 	}
 
 	return processorhelper.NewFactory(
@@ -89,7 +89,7 @@ func (*factory) Type() config.Type {
 
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(typeStr),
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		Detectors:         []string{env.TypeStr},
 		Timeout:           5 * time.Second,
 		Override:          true,
@@ -159,7 +159,7 @@ func (f *factory) getResourceDetectionProcessor(
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	provider, err := f.getResourceProvider(params, cfg.Name(), oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfig)
+	provider, err := f.getResourceProvider(params, cfg.ID(), oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +172,7 @@ func (f *factory) getResourceDetectionProcessor(
 
 func (f *factory) getResourceProvider(
 	params component.ProcessorCreateParams,
-	processorName string,
+	processorName config.ComponentID,
 	timeout time.Duration,
 	configuredDetectors []string,
 	detectorConfigs DetectorConfig,

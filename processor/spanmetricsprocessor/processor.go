@@ -83,7 +83,7 @@ type processorImp struct {
 	metricKeyToDimensions map[metricKey]dimKV
 }
 
-func newProcessor(logger *zap.Logger, config config.Exporter, nextConsumer consumer.Traces) (*processorImp, error) {
+func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer consumer.Traces) (*processorImp, error) {
 	logger.Info("Building spanmetricsprocessor")
 	pConfig := config.(*Config)
 
