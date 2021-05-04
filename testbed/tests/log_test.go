@@ -102,7 +102,7 @@ func TestLog10kDPS(t *testing.T) {
 		},
 		{
 			name:     "syslog-udp",
-			sender:   datasenders.NewTCPUDPWriter("udp", testbed.DefaultHost, testbed.GetAvailablePort(t), 1),
+			sender:   datasenders.NewSyslogWriter("udp", testbed.DefaultHost, testbed.GetAvailablePort(t), 1),
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 80,

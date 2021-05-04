@@ -88,17 +88,14 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	assert.Equal(t, len(cfg.Receivers), 1)
-	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers["tcplog"])
+	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewID(typeStr)])
 }
 
 func testdataConfigYamlAsMap() *TCPLogConfig {
 	return &TCPLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: "tcplog",
-				NameVal: "tcplog",
-			},
-			Operators: stanza.OperatorConfigs{},
+			ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+			Operators:        stanza.OperatorConfigs{},
 		},
 		Input: stanza.InputConfig{
 			"listen_address": "0.0.0.0:29018",
@@ -114,11 +111,8 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 	factory := NewFactory()
 	badCfg := &TCPLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: "tcplog",
-				NameVal: "tcplog",
-			},
-			Operators: stanza.OperatorConfigs{},
+			ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+			Operators:        stanza.OperatorConfigs{},
 		},
 		Input: stanza.InputConfig{
 			"max_buffer_size": "0.1.0.1-",
