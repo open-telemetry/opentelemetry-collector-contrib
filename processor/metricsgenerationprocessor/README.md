@@ -35,7 +35,7 @@ processors:
               # This field is required only if the generation_type is "calculate".
               operand2_metric: <second_operand_metric>
 
-              # operation specifies which atrithmatic operation to apply. it can be one of the five supported operations.
+              # Operation specifies which arithmetic operation to apply. It must be one of the five supported operations.
               operation: {add, subtract, multiply, divide, percent}
 ```
 
