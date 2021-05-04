@@ -52,7 +52,7 @@ type TracesConfig struct {
 // Config represents the Humio configuration settings
 type Config struct {
 	// Inherited settings
-	*config.ExporterSettings      `mapstructure:"-"`
+	config.ExporterSettings       `mapstructure:",squash"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`

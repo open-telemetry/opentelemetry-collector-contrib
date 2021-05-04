@@ -34,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[config.Type(typeStr)] = factory
+	factories.Exporters[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
@@ -42,14 +42,11 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, 2, len(cfg.Exporters))
 
-	exporter := cfg.Exporters["f5cloud/allsettings"]
+	exporter := cfg.Exporters[config.NewIDWithName(typeStr, "allsettings")]
 	actualCfg := exporter.(*Config)
 	expectedCfg := &Config{
 		Config: otlphttp.Config{
-			ExporterSettings: &config.ExporterSettings{
-				NameVal: "f5cloud/allsettings",
-				TypeVal: "f5cloud",
-			},
+			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "allsettings")),
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         true,
 				InitialInterval: 10 * time.Second,
@@ -150,7 +147,7 @@ func TestConfig_sanitize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.ExporterSettings = config.NewExporterSettings(typeStr)
+			cfg.ExporterSettings = config.NewExporterSettings(config.NewID(typeStr))
 			cfg.Endpoint = tt.fields.Endpoint
 			cfg.Source = tt.fields.Source
 			cfg.AuthConfig = AuthConfig{

@@ -44,7 +44,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	// Note: the default configuration created by CreateDefaultConfig
 	// still has the unresolved environment variables.
 	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 
 		API: ddconfig.APIConfig{
 			Key:  "$DD_API_KEY",
@@ -95,16 +95,12 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	apiConfig := cfg.Exporters["datadog/api"].(*ddconfig.Config)
+	apiConfig := cfg.Exporters[config.NewIDWithName(typeStr, "api")].(*ddconfig.Config)
 	err = apiConfig.Sanitize()
 
 	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: &config.ExporterSettings{
-			NameVal: "datadog/api",
-			TypeVal: typeStr,
-		},
-
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "api")),
 		TagsConfig: ddconfig.TagsConfig{
 			Hostname:   "customhostname",
 			Env:        "prod",
@@ -139,16 +135,12 @@ func TestLoadConfig(t *testing.T) {
 		UseResourceMetadata: true,
 	}, apiConfig)
 
-	defaultConfig := cfg.Exporters["datadog/default"].(*ddconfig.Config)
+	defaultConfig := cfg.Exporters[config.NewIDWithName(typeStr, "default")].(*ddconfig.Config)
 	err = defaultConfig.Sanitize()
 
 	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: &config.ExporterSettings{
-			NameVal: "datadog/default",
-			TypeVal: typeStr,
-		},
-
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "default")),
 		TagsConfig: ddconfig.TagsConfig{
 			Hostname:   "",
 			Env:        "none",
@@ -182,7 +174,7 @@ func TestLoadConfig(t *testing.T) {
 		UseResourceMetadata: true,
 	}, defaultConfig)
 
-	invalidConfig := cfg.Exporters["datadog/invalid"].(*ddconfig.Config)
+	invalidConfig := cfg.Exporters[config.NewIDWithName(typeStr, "invalid")].(*ddconfig.Config)
 	err = invalidConfig.Sanitize()
 	require.Error(t, err)
 }
@@ -222,16 +214,13 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	apiConfig := cfg.Exporters["datadog/api2"].(*ddconfig.Config)
+	apiConfig := cfg.Exporters[config.NewIDWithName(typeStr, "api2")].(*ddconfig.Config)
 	err = apiConfig.Sanitize()
 
 	// Check that settings with env variables get overridden when explicitly set in config
 	require.NoError(t, err)
 	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: &config.ExporterSettings{
-			NameVal: "datadog/api2",
-			TypeVal: typeStr,
-		},
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "api2")),
 
 		TagsConfig: ddconfig.TagsConfig{
 			Hostname:   "customhostname",
@@ -267,7 +256,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 		UseResourceMetadata: true,
 	}, apiConfig)
 
-	defaultConfig := cfg.Exporters["datadog/default2"].(*ddconfig.Config)
+	defaultConfig := cfg.Exporters[config.NewIDWithName(typeStr, "default2")].(*ddconfig.Config)
 	err = defaultConfig.Sanitize()
 
 	require.NoError(t, err)
@@ -275,10 +264,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	// Check that settings with env variables get taken into account when
 	// no settings are given.
 	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: &config.ExporterSettings{
-			NameVal: "datadog/default2",
-			TypeVal: typeStr,
-		},
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "default2")),
 
 		TagsConfig: ddconfig.TagsConfig{
 			Hostname:   "testhost",
@@ -324,23 +310,22 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[config.Type(typeStr)] = factory
+	factories.Exporters[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
 	// Use the mock server for API key validation
-	c := (cfg.Exporters["datadog/api"]).(*ddconfig.Config)
+	c := (cfg.Exporters[config.NewIDWithName(typeStr, "api")]).(*ddconfig.Config)
 	c.Metrics.TCPAddr.Endpoint = server.URL
 	c.SendMetadata = false
-	cfg.Exporters["datadog/api"] = c
 
 	ctx := context.Background()
 	exp, err := factory.CreateMetricsExporter(
 		ctx,
 		component.ExporterCreateParams{Logger: logger},
-		cfg.Exporters["datadog/api"],
+		cfg.Exporters[config.NewIDWithName(typeStr, "api")],
 	)
 
 	assert.NoError(t, err)
@@ -357,14 +342,14 @@ func TestCreateAPITracesExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[config.Type(typeStr)] = factory
+	factories.Exporters[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
 	// Use the mock server for API key validation
-	c := (cfg.Exporters["datadog/api"]).(*ddconfig.Config)
+	c := (cfg.Exporters[config.NewIDWithName(typeStr, "api")]).(*ddconfig.Config)
 	c.Metrics.TCPAddr.Endpoint = server.URL
 	c.SendMetadata = false
 
@@ -372,7 +357,7 @@ func TestCreateAPITracesExporter(t *testing.T) {
 	exp, err := factory.CreateTracesExporter(
 		ctx,
 		component.ExporterCreateParams{Logger: logger},
-		cfg.Exporters["datadog/api"],
+		cfg.Exporters[config.NewIDWithName(typeStr, "api")],
 	)
 
 	assert.NoError(t, err)
@@ -388,11 +373,11 @@ func TestOnlyMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[config.Type(typeStr)] = factory
+	factories.Exporters[typeStr] = factory
 
 	ctx := context.Background()
 	cfg := &ddconfig.Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		API:              ddconfig.APIConfig{Key: "notnull"},
 		Metrics:          ddconfig.MetricsConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
 		Traces:           ddconfig.TracesConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},

@@ -63,7 +63,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "bad config fails",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				APIURL:           "abc",
 			},
 			wantErr: true,
@@ -71,7 +71,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "fails to create metrics converter",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				AccessToken:      "test",
 				Realm:            "realm",
 				ExcludeMetrics:   []dpfilters.MetricFilter{{}},
@@ -81,7 +81,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "successfully create exporter",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				AccessToken:      "someToken",
 				Realm:            "xyz",
 				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
@@ -91,7 +91,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "create exporter with host metadata syncer",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				AccessToken:      "someToken",
 				Realm:            "xyz",
 				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
@@ -449,7 +449,7 @@ func TestNewEventExporter(t *testing.T) {
 	assert.Nil(t, got)
 
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		AccessToken:      "someToken",
 		IngestURL:        "asdf://:%",
 		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},

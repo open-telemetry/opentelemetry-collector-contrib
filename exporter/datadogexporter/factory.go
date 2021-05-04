@@ -45,7 +45,7 @@ func NewFactory() component.ExporterFactory {
 // createDefaultConfig creates the default exporter configuration
 func createDefaultConfig() config.Exporter {
 	return &ddconfig.Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		API: ddconfig.APIConfig{
 			Key:  "$DD_API_KEY", // Must be set if using API
 			Site: "$DD_SITE",    // If not provided, set during config sanitization

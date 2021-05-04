@@ -93,15 +93,15 @@ func (n nopHostWithExporters) GetFactory(component.Kind, config.Type) component.
 	return nil
 }
 
-func (n nopHostWithExporters) GetExtensions() map[config.NamedEntity]component.Extension {
+func (n nopHostWithExporters) GetExtensions() map[config.ComponentID]component.Extension {
 	return nil
 }
 
-func (n nopHostWithExporters) GetExporters() map[config.DataType]map[config.NamedEntity]component.Exporter {
-	return map[config.DataType]map[config.NamedEntity]component.Exporter{
+func (n nopHostWithExporters) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
+	return map[config.DataType]map[config.ComponentID]component.Exporter{
 		config.MetricsDataType: {
-			&config.ExporterSettings{TypeVal: "nop", NameVal: "nop/withoutmetadata"}: MockExporter{},
-			&config.ExporterSettings{TypeVal: "nop", NameVal: "nop/withmetadata"}:    mockExporterWithK8sMetadata{},
+			config.MustIDFromString("nop/withoutmetadata"): MockExporter{},
+			config.MustIDFromString("nop/withmetadata"):    mockExporterWithK8sMetadata{},
 		},
 	}
 }

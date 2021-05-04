@@ -41,16 +41,13 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Exporters), 2)
 
-	r0 := cfg.Exporters["newrelic"]
+	r0 := cfg.Exporters[config.NewID(typeStr)]
 	defaultConfig := factory.CreateDefaultConfig().(*Config)
 	assert.Equal(t, r0, defaultConfig)
 
-	r1 := cfg.Exporters["newrelic/alt"].(*Config)
+	r1 := cfg.Exporters[config.NewIDWithName(typeStr, "alt")].(*Config)
 	assert.Equal(t, r1, &Config{
-		ExporterSettings: &config.ExporterSettings{
-			TypeVal: "newrelic",
-			NameVal: "newrelic/alt",
-		},
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "alt")),
 		CommonConfig: EndpointConfig{
 			APIKey:  "a1b2c3d4",
 			Timeout: time.Second * 30,
@@ -71,7 +68,7 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestEndpointSpecificConfigTakesPrecedence(t *testing.T) {
-	config := Config{
+	cfg := Config{
 		CommonConfig: EndpointConfig{
 			APIKey:       "commonapikey",
 			APIKeyHeader: "commonapikeyheader",
@@ -98,13 +95,13 @@ func TestEndpointSpecificConfigTakesPrecedence(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, config.TracesConfig, config.GetTracesConfig())
-	assert.Equal(t, config.MetricsConfig, config.GetMetricsConfig())
-	assert.Equal(t, config.LogsConfig, config.GetLogsConfig())
+	assert.Equal(t, cfg.TracesConfig, cfg.GetTracesConfig())
+	assert.Equal(t, cfg.MetricsConfig, cfg.GetMetricsConfig())
+	assert.Equal(t, cfg.LogsConfig, cfg.GetLogsConfig())
 }
 
 func TestEndpointSpecificConfigUsedWhenDefined(t *testing.T) {
-	config := Config{
+	cfg := Config{
 		CommonConfig: EndpointConfig{
 			APIKey:       "commonapikey",
 			APIKeyHeader: "commonapikeyheader",
@@ -147,13 +144,13 @@ func TestEndpointSpecificConfigUsedWhenDefined(t *testing.T) {
 		Timeout:      time.Second * 10,
 	}
 
-	assert.Equal(t, expectedTraceConfig, config.GetTracesConfig())
-	assert.Equal(t, expectedMetricConfig, config.GetMetricsConfig())
-	assert.Equal(t, expectedLogConfig, config.GetLogsConfig())
+	assert.Equal(t, expectedTraceConfig, cfg.GetTracesConfig())
+	assert.Equal(t, expectedMetricConfig, cfg.GetMetricsConfig())
+	assert.Equal(t, expectedLogConfig, cfg.GetLogsConfig())
 }
 
 func TestCommonConfigValuesUsed(t *testing.T) {
-	config := Config{
+	cfg := Config{
 		CommonConfig: EndpointConfig{
 			APIKey:       "commonapikey",
 			APIKeyHeader: "commonapikeyheader",
@@ -180,7 +177,7 @@ func TestCommonConfigValuesUsed(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, config.CommonConfig, config.GetTracesConfig())
-	assert.Equal(t, config.CommonConfig, config.GetMetricsConfig())
-	assert.Equal(t, config.CommonConfig, config.GetLogsConfig())
+	assert.Equal(t, cfg.CommonConfig, cfg.GetTracesConfig())
+	assert.Equal(t, cfg.CommonConfig, cfg.GetMetricsConfig())
+	assert.Equal(t, cfg.CommonConfig, cfg.GetLogsConfig())
 }

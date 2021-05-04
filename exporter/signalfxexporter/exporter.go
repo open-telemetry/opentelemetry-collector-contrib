@@ -85,7 +85,7 @@ func newSignalFxExporter(
 	options, err := config.getOptionsFromConfig()
 	if err != nil {
 		return nil,
-			fmt.Errorf("failed to process %q config: %v", config.Name(), err)
+			fmt.Errorf("failed to process %q config: %v", config.ID().String(), err)
 	}
 
 	headers := buildHeaders(config)
@@ -156,7 +156,7 @@ func newEventExporter(config *Config, logger *zap.Logger) (*signalfxExporter, er
 	options, err := config.getOptionsFromConfig()
 	if err != nil {
 		return nil,
-			fmt.Errorf("failed to process %q config: %v", config.Name(), err)
+			fmt.Errorf("failed to process %q config: %v", config.ID().String(), err)
 	}
 
 	headers := buildHeaders(config)

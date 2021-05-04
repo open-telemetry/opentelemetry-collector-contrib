@@ -44,13 +44,13 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Exporters), 2)
 
-	r0 := cfg.Exporters["sapm"]
+	r0 := cfg.Exporters[config.NewID(typeStr)]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Exporters["sapm/customname"].(*Config)
+	r1 := cfg.Exporters[config.NewIDWithName(typeStr, "customname")].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ExporterSettings: &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "sapm/customname"},
+			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "customname")),
 			Endpoint:         "test-endpoint",
 			AccessToken:      "abcd1234",
 			NumWorkers:       3,

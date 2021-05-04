@@ -20,7 +20,7 @@ import (
 )
 
 type Config struct {
-	*config.ExporterSettings `mapstructure:"-"`
+	config.ExporterSettings `mapstructure:",squash"`
 	// APIKey is the authentication token associated with the Honeycomb account.
 	APIKey string `mapstructure:"api_key"`
 	// Dataset is the Honeycomb dataset to send events to.

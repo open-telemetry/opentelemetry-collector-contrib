@@ -42,17 +42,15 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Exporters), 2)
 
-	exporterType := typeStr
-	exporter := cfg.Exporters[exporterType]
+	exporter := cfg.Exporters[config.NewID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), exporter)
 
-	exporterType = typeStr + "/2"
-	exporter = cfg.Exporters[exporterType].(*Config)
+	exporter = cfg.Exporters[config.NewIDWithName(typeStr, "2")].(*Config)
 	assert.NoError(t, configcheck.ValidateConfig(exporter))
 	assert.Equal(
 		t,
 		&Config{
-			ExporterSettings:   &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: exporterType},
+			ExporterSettings:   config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
 			Endpoint:           defaultEndpoint,
 			InstrumentationKey: "abcdefg",
 			MaxBatchSize:       100,

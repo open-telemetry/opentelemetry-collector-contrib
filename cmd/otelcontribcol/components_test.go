@@ -28,7 +28,7 @@ func TestDefaultComponents(t *testing.T) {
 	exts := factories.Extensions
 	for k, v := range exts {
 		assert.Equal(t, k, v.Type())
-		assert.Equal(t, k, v.CreateDefaultConfig().Type())
+		assert.Equal(t, config.NewID(k), v.CreateDefaultConfig().ID())
 	}
 
 	recvs := factories.Receivers
@@ -46,6 +46,6 @@ func TestDefaultComponents(t *testing.T) {
 	exps := factories.Exporters
 	for k, v := range exps {
 		assert.Equal(t, k, v.Type())
-		assert.Equal(t, k, v.CreateDefaultConfig().Type())
+		assert.Equal(t, config.NewID(k), v.CreateDefaultConfig().ID())
 	}
 }

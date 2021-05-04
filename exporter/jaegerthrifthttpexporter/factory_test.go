@@ -55,7 +55,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 func TestFactory_CreateTracesExporter(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		URL:              "http://some.other.location/api/traces",
 		Headers: map[string]string{
 			"added-entry": "added value",
@@ -79,14 +79,14 @@ func TestFactory_CreateTracesExporterFails(t *testing.T) {
 		{
 			name: "empty_url",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 			},
 			errorMessage: "\"jaeger_thrift\" config requires a valid \"url\": parse \"\": empty url",
 		},
 		{
 			name: "invalid_url",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				URL:              ".localhost:123",
 			},
 			errorMessage: "\"jaeger_thrift\" config requires a valid \"url\": parse \".localhost:123\": invalid URI for request",
@@ -94,7 +94,7 @@ func TestFactory_CreateTracesExporterFails(t *testing.T) {
 		{
 			name: "negative_duration",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				URL:              "localhost:123",
 				Timeout:          -2 * time.Second,
 			},

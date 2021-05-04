@@ -34,7 +34,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		context.Background(),
 		component.ExtensionCreateParams{},
 		&Config{
-			ExtensionSettings: config.NewExtensionSettings(typeStr),
+			ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
 		},
 	)
 	require.NoError(t, err)
