@@ -43,10 +43,10 @@ type Config struct {
 	*config.ProcessorSettings `mapstructure:"-"`
 
 	// Set of rules for generating new metrics
-	GenerationRules []GenerationRule `mapstructure:"generation_rules"`
+	Rules []Rule `mapstructure:"rules"`
 }
 
-type GenerationRule struct {
+type Rule struct {
 	// Name of the new metric being generated. This is a required field.
 	NewMetricName string `mapstructure:"new_metric_name"`
 
@@ -96,7 +96,7 @@ const (
 	Add OperationType = "add"
 
 	// Subtract the second operand from the first operand
-	Subtract OperationType = "substract"
+	Subtract OperationType = "subtract"
 
 	// Multiply two operands
 	Multiply OperationType = "multiply"

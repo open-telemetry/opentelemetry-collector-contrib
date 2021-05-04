@@ -36,7 +36,7 @@ func TestLoadingFullConfig(t *testing.T) {
 			filterName: "metricsgeneration",
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(typeStr),
-				GenerationRules: []GenerationRule{
+				Rules: []Rule{
 					{
 						NewMetricName:  "new_metric",
 						Type:           "calculate",

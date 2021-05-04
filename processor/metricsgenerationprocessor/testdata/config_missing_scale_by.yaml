@@ -3,7 +3,7 @@ receivers:
 
 processors:
   metricsgeneration:
-    generation_rules:
+    rules:
       # missing scale_by
       - new_metric_name: new_metric
         generation_type: scale

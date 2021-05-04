@@ -3,7 +3,7 @@ receivers:
 
 processors:
   metricsgeneration:
-    generation_rules:
+    rules:
       - new_metric_name: new_metric
         generation_type: calculate
         operand1_metric: metric1

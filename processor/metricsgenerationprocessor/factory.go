@@ -68,7 +68,7 @@ func createMetricsProcessor(
 // validateConfiguration validates the input configuration has all of the required fields for the processor
 // An error is returned if there are any invalid inputs.
 func validateConfiguration(config *Config) error {
-	for _, rule := range config.GenerationRules {
+	for _, rule := range config.Rules {
 		if rule.NewMetricName == "" {
 			return fmt.Errorf("missing required field %q", NewMetricFieldName)
 		}
@@ -101,11 +101,11 @@ func validateConfiguration(config *Config) error {
 }
 
 // buildInternalConfig constructs the internal metric genration rules
-func buildInternalConfig(config *Config) []internalGenerationRule {
-	internalRules := make([]internalGenerationRule, len(config.GenerationRules))
+func buildInternalConfig(config *Config) []internalRule {
+	internalRules := make([]internalRule, len(config.Rules))
 
-	for i, rule := range config.GenerationRules {
-		internalRules[i] = internalGenerationRule(rule)
+	for i, rule := range config.Rules {
+		internalRules[i] = internalRule(rule)
 	}
 	return internalRules
 }

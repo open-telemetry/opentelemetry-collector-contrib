@@ -24,13 +24,13 @@ import (
 )
 
 type metricsGenerationProcessor struct {
-	generationRules []internalGenerationRule
-	logger          *zap.Logger
+	rules  []internalRule
+	logger *zap.Logger
 }
 
 var _ processorhelper.MProcessor = (*metricsGenerationProcessor)(nil)
 
-type internalGenerationRule struct {
+type internalRule struct {
 	NewMetricName  string
 	Type           GenerationType
 	Operand1Metric string
@@ -39,10 +39,10 @@ type internalGenerationRule struct {
 	ScaleBy        float64
 }
 
-func newMetricsGenerationProcessor(rules []internalGenerationRule, logger *zap.Logger) *metricsGenerationProcessor {
+func newMetricsGenerationProcessor(rules []internalRule, logger *zap.Logger) *metricsGenerationProcessor {
 	return &metricsGenerationProcessor{
-		generationRules: rules,
-		logger:          logger,
+		rules:  rules,
+		logger: logger,
 	}
 }
 

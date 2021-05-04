@@ -83,7 +83,7 @@ func TestCreateProcessors(t *testing.T) {
 		{
 			configName:   "config_missing_scale_by.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("%q filed required to be greater than 0 for generation type %q", ScaleByFieldName, Scale),
+			errorMessage: fmt.Sprintf("field %q required to be greater than 0 for generation type %q", ScaleByFieldName, Scale),
 		},
 		{
 			configName:   "config_invalid_operation.yaml",

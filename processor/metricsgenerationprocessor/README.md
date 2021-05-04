@@ -22,7 +22,7 @@ processors:
     metricsgeneration:
 
         # specify the metric generation rules
-        generation_rules:
+        rules:
               # Name of the new metric. This is a required field.
             - new_metric_name: <new_metric_name>
 
@@ -44,7 +44,7 @@ processors:
 ### Create a new metric using two existing metrics
 ```yaml
 # create pod.cpu.utilized following (pod.cpu.usage / node.cpu.limit)
-generation_rules:
+rules:
     - new_metric_name: pod.cpu.utilized
       generation_type: calculate
       operand1_metric: pod.cpu.usage
@@ -55,7 +55,7 @@ generation_rules:
 ### Create a new metric scaling the value of an existing metric
 ```yaml
 # create pod.memory.usage.bytes from pod.memory.usage.megabytes
-generation_rules:
+rules:
     - new_metric_name: pod.memory.usage.bytes
       generation_type: scale
       operand1_metric: pod.memory.usage.megabytes

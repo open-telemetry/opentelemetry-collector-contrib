@@ -3,7 +3,7 @@ receivers:
 
 processors:
   metricsgeneration:
-    generation_rules:
+    rules:
       # missing generation type
       - new_metric_name: new_metric
         operand1_metric: metric1
