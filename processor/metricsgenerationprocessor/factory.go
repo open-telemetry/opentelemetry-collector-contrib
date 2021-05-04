@@ -90,7 +90,7 @@ func validateConfiguration(config *Config) error {
 		}
 
 		if rule.Type == Scale && rule.ScaleBy <= 0 {
-			return fmt.Errorf("%q filed required to be greater than 0 for generation type %q", ScaleByFieldName, Scale)
+			return fmt.Errorf("field %q required to be greater than 0 for generation type %q", ScaleByFieldName, Scale)
 		}
 
 		if rule.Operation != "" && !rule.Operation.isValid() {
