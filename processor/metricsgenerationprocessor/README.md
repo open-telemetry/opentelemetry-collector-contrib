@@ -60,5 +60,5 @@ generation_rules:
       generation_type: scale
       operand1_metric: pod.memory.usage.megabytes
       operation: multiply
-      scale_by: 1000000
+      scale_by: 1048576
 ```
