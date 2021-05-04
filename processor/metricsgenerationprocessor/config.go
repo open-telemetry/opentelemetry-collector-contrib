@@ -15,6 +15,8 @@
 package metricsgenerationprocessor
 
 import (
+	"sort"
+
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -84,6 +86,17 @@ func (gt GenerationType) isValid() bool {
 	return ok
 }
 
+func getGenerationTypeKeys() []string {
+	ret := make([]string, len(generationTypes))
+	i := 0
+	for k := range generationTypes {
+		ret[i] = string(k)
+		i++
+	}
+	sort.Strings(ret)
+	return ret
+}
+
 type OperationType string
 
 const (
@@ -115,4 +128,15 @@ var operationTypes = map[OperationType]struct{}{
 func (ot OperationType) isValid() bool {
 	_, ok := operationTypes[ot]
 	return ok
+}
+
+func getOperationTypeKeys() []string {
+	ret := make([]string, len(operationTypes))
+	i := 0
+	for k := range operationTypes {
+		ret[i] = string(k)
+		i++
+	}
+	sort.Strings(ret)
+	return ret
 }
