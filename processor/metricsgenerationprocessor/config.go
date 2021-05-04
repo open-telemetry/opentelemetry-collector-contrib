@@ -86,7 +86,7 @@ func (gt GenerationType) isValid() bool {
 	return ok
 }
 
-func getGenerationTypeKeys() []string {
+var generationTypeKeys = func() []string {
 	ret := make([]string, len(generationTypes))
 	i := 0
 	for k := range generationTypes {
@@ -130,7 +130,7 @@ func (ot OperationType) isValid() bool {
 	return ok
 }
 
-func getOperationTypeKeys() []string {
+var operationTypeKeys = func() []string {
 	ret := make([]string, len(operationTypes))
 	i := 0
 	for k := range operationTypes {

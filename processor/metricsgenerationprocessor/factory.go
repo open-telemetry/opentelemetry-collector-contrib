@@ -81,7 +81,7 @@ func validateConfiguration(config *Config) error {
 		}
 
 		if !rule.Type.isValid() {
-			return fmt.Errorf("%q must be in %q", GenerationTypeFieldName, getGenerationTypeKeys())
+			return fmt.Errorf("%q must be in %q", GenerationTypeFieldName, generationTypeKeys())
 		}
 
 		if rule.Operand1Metric == "" {
@@ -97,7 +97,7 @@ func validateConfiguration(config *Config) error {
 		}
 
 		if rule.Operation != "" && !rule.Operation.isValid() {
-			return fmt.Errorf("%q must be in %q", OperationFieldName, getOperationTypeKeys())
+			return fmt.Errorf("%q must be in %q", OperationFieldName, operationTypeKeys())
 		}
 	}
 	return nil

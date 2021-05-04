@@ -68,7 +68,7 @@ func TestCreateProcessors(t *testing.T) {
 		{
 			configName:   "config_invalid_generation_type.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("%q must be in %q", GenerationTypeFieldName, getGenerationTypeKeys()),
+			errorMessage: fmt.Sprintf("%q must be in %q", GenerationTypeFieldName, generationTypeKeys()),
 		},
 		{
 			configName:   "config_missing_operand1.yaml",
@@ -88,7 +88,7 @@ func TestCreateProcessors(t *testing.T) {
 		{
 			configName:   "config_invalid_operation.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("%q must be in %q", OperationFieldName, getOperationTypeKeys()),
+			errorMessage: fmt.Sprintf("%q must be in %q", OperationFieldName, operationTypeKeys()),
 		},
 	}
 
