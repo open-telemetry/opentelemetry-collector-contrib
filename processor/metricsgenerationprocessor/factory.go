@@ -108,7 +108,15 @@ func buildInternalConfig(config *Config) []internalRule {
 	internalRules := make([]internalRule, len(config.Rules))
 
 	for i, rule := range config.Rules {
-		internalRules[i] = internalRule(rule)
+		customRule := internalRule{
+			NewMetricName:  rule.NewMetricName,
+			Type:           string(rule.Type),
+			Operand1Metric: rule.Operand1Metric,
+			Operand2Metric: rule.Operand2Metric,
+			Operation:      string(rule.Operation),
+			ScaleBy:        rule.ScaleBy,
+		}
+		internalRules[i] = customRule
 	}
 	return internalRules
 }

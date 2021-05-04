@@ -32,10 +32,10 @@ var _ processorhelper.MProcessor = (*metricsGenerationProcessor)(nil)
 
 type internalRule struct {
 	NewMetricName  string
-	Type           GenerationType
+	Type           string
 	Operand1Metric string
 	Operand2Metric string
-	Operation      OperationType
+	Operation      string
 	ScaleBy        float64
 }
 
