@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
+	"go.uber.org/zap"
 )
 
 func TestCommonAttributes(t *testing.T) {
@@ -44,7 +45,7 @@ func TestCommonAttributes(t *testing.T) {
 	ilm.SetVersion("test version")
 
 	details := newTraceMetadata(context.TODO())
-	commonAttrs := newTransformer(buildInfo, &details).CommonAttributes(resource, ilm)
+	commonAttrs := newTransformer(zap.NewNop(), buildInfo, &details).CommonAttributes(resource, ilm)
 	assert.Equal(t, "the-collector", commonAttrs[collectorNameKey])
 	assert.Equal(t, "0.0.1", commonAttrs[collectorVersionKey])
 	assert.Equal(t, "R1", commonAttrs["resource"])
@@ -68,7 +69,7 @@ func TestDoesNotCaptureResourceAttributeMetadata(t *testing.T) {
 	ilm.SetVersion("test version")
 
 	details := newTraceMetadata(context.TODO())
-	commonAttrs := newTransformer(buildInfo, &details).CommonAttributes(resource, ilm)
+	commonAttrs := newTransformer(zap.NewNop(), buildInfo, &details).CommonAttributes(resource, ilm)
 
 	assert.Greater(t, len(commonAttrs), 0)
 	assert.Equal(t, 0, len(details.attributeMetadataCount))
@@ -76,7 +77,7 @@ func TestDoesNotCaptureResourceAttributeMetadata(t *testing.T) {
 
 func TestCaptureSpanMetadata(t *testing.T) {
 	details := newTraceMetadata(context.TODO())
-	transform := newTransformer(nil, &details)
+	transform := newTransformer(zap.NewNop(), nil, &details)
 
 	tests := []struct {
 		name     string
@@ -150,7 +151,7 @@ func TestCaptureSpanMetadata(t *testing.T) {
 
 func TestCaptureSpanAttributeMetadata(t *testing.T) {
 	details := newTraceMetadata(context.TODO())
-	transform := newTransformer(nil, &details)
+	transform := newTransformer(zap.NewNop(), nil, &details)
 
 	s := pdata.NewSpan()
 	s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
@@ -173,7 +174,7 @@ func TestCaptureSpanAttributeMetadata(t *testing.T) {
 
 func TestDoesNotCaptureSpanAttributeMetadata(t *testing.T) {
 	details := newTraceMetadata(context.TODO())
-	transform := newTransformer(nil, &details)
+	transform := newTransformer(zap.NewNop(), nil, &details)
 
 	s := pdata.NewSpan()
 	s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
@@ -191,7 +192,7 @@ func TestDoesNotCaptureSpanAttributeMetadata(t *testing.T) {
 func TestTransformSpan(t *testing.T) {
 	now := time.Unix(100, 0)
 	details := newTraceMetadata(context.TODO())
-	transform := newTransformer(nil, &details)
+	transform := newTransformer(zap.NewNop(), nil, &details)
 
 	tests := []struct {
 		name     string
@@ -466,7 +467,7 @@ func testTransformMetric(t *testing.T, metric pdata.Metric, want []telemetry.Met
 
 func testTransformMetricWithComparer(t *testing.T, metric pdata.Metric, want []telemetry.Metric, compare func(t *testing.T, want []telemetry.Metric, got []telemetry.Metric)) {
 	details := newMetricMetadata(context.Background())
-	transform := newTransformer(&component.BuildInfo{
+	transform := newTransformer(zap.NewNop(), &component.BuildInfo{
 		Command: testCollectorName,
 		Version: testCollectorVersion,
 	}, &details)
@@ -483,7 +484,7 @@ func testTransformMetricWithComparer(t *testing.T, metric pdata.Metric, want []t
 
 func testTransformMetricWithError(t *testing.T, metric pdata.Metric, expectedErrorType interface{}) {
 	details := newMetricMetadata(context.Background())
-	transform := newTransformer(&component.BuildInfo{
+	transform := newTransformer(zap.NewNop(), &component.BuildInfo{
 		Command: testCollectorName,
 		Version: testCollectorVersion,
 	}, &details)
@@ -552,6 +553,17 @@ func TestTransformSum(t *testing.T) {
 			},
 		},
 	}
+	expectedGauge := []telemetry.Metric{
+		telemetry.Gauge{
+			Name:      "sum",
+			Value:     42.0,
+			Timestamp: start.AsTime(),
+			Attributes: map[string]interface{}{
+				"unit":        "1",
+				"description": "description",
+			},
+		},
+	}
 
 	{
 		m := pdata.NewMetric()
@@ -579,7 +591,7 @@ func TestTransformSum(t *testing.T) {
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(end)
 		dp.SetValue(42.0)
-		t.Run("DoubleSum-Cumulative", func(t *testing.T) { testTransformMetricWithError(t, m, &errUnsupportedMetricType{}) })
+		t.Run("DoubleSum-Cumulative", func(t *testing.T) { testTransformMetric(t, m, expectedGauge) })
 	}
 	{
 		m := pdata.NewMetric()
@@ -607,7 +619,7 @@ func TestTransformSum(t *testing.T) {
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(end)
 		dp.SetValue(42.0)
-		t.Run("IntSum-Cumulative", func(t *testing.T) { testTransformMetricWithError(t, m, &errUnsupportedMetricType{}) })
+		t.Run("IntSum-Cumulative", func(t *testing.T) { testTransformMetric(t, m, expectedGauge) })
 	}
 }
 
@@ -738,7 +750,7 @@ func TestUnsupportedMetricTypes(t *testing.T) {
 func TestTransformUnknownMetricType(t *testing.T) {
 	metric := pdata.NewMetric()
 	details := newMetricMetadata(context.Background())
-	transform := newTransformer(&component.BuildInfo{
+	transform := newTransformer(zap.NewNop(), &component.BuildInfo{
 		Command: testCollectorName,
 		Version: testCollectorVersion,
 	}, &details)
@@ -837,7 +849,7 @@ func TestTransformer_Log(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			details := newLogMetadata(context.TODO())
-			transform := newTransformer(nil, &details)
+			transform := newTransformer(zap.NewNop(), nil, &details)
 			got, _ := transform.Log(test.logFunc())
 			assert.EqualValues(t, test.want, got)
 		})
@@ -851,7 +863,7 @@ func TestCaptureLogAttributeMetadata(t *testing.T) {
 	log.Body().SetStringVal("Hello World")
 
 	details := newLogMetadata(context.TODO())
-	transform := newTransformer(nil, &details)
+	transform := newTransformer(zap.NewNop(), nil, &details)
 	_, err := transform.Log(log)
 
 	require.NoError(t, err)
@@ -865,7 +877,7 @@ func TestDoesNotCaptureLogAttributeMetadata(t *testing.T) {
 	log.Body().SetStringVal("Hello World")
 
 	details := newLogMetadata(context.TODO())
-	transform := newTransformer(nil, &details)
+	transform := newTransformer(zap.NewNop(), nil, &details)
 	_, err := transform.Log(log)
 
 	require.NoError(t, err)
