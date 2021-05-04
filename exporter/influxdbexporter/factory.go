@@ -88,10 +88,7 @@ func createLogsExporter(_ context.Context, params component.ExporterCreateParams
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: &config.ExporterSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Timeout: 5 * time.Second,
 			Headers: map[string]string{
