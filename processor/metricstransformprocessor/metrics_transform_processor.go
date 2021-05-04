@@ -59,6 +59,7 @@ type internalOperation struct {
 type internalFilter interface {
 	getMatches(toMatch metricNameMapping) []*match
 	getSubexpNames() []string
+	labelMatched(metric *metricspb.Metric) bool
 }
 
 type match struct {
@@ -76,7 +77,7 @@ func (f internalFilterStrict) getMatches(toMatch metricNameMapping) []*match {
 	if metrics, ok := toMatch[f.include]; ok {
 		matches := make([]*match, 0, 10)
 		for _, metric := range metrics {
-			if labelMatched(f.matchLabels, metric, false) {
+			if f.labelMatched(metric) {
 				matches = append(matches, &match{metric: metric})
 			}
 		}
@@ -90,9 +91,40 @@ func (f internalFilterStrict) getSubexpNames() []string {
 	return nil
 }
 
+func (f internalFilterStrict) labelMatched(metric *metricspb.Metric) bool {
+	if len(f.matchLabels) == 0 {
+		return true
+	}
+
+	for key, value := range f.matchLabels {
+		keyFound := false
+
+		for idx, label := range metric.MetricDescriptor.LabelKeys {
+			if label.Key != key {
+				continue
+			}
+
+			keyFound = true
+			for _, timeseries := range metric.Timeseries {
+				if timeseries.LabelValues[idx].Value != value {
+					return false
+				}
+				break
+			}
+		}
+
+		// if a label-key is not found then return false only if the given label-value is non-empty. If a given label-value is empty
+		// and the key is not found then return true. In this approach we can make sure certain key is not present which is a valid use case.
+		if !keyFound && value != "" {
+			return false
+		}
+	}
+	return true
+}
+
 type internalFilterRegexp struct {
 	include     *regexp.Regexp
-	matchLabels map[string]string
+	matchLabels map[string]*regexp.Regexp
 }
 
 func (f internalFilterRegexp) getMatches(toMatch metricNameMapping) []*match {
@@ -100,7 +132,7 @@ func (f internalFilterRegexp) getMatches(toMatch metricNameMapping) []*match {
 	for name, metrics := range toMatch {
 		if submatches := f.include.FindStringSubmatchIndex(name); submatches != nil {
 			for _, metric := range metrics {
-				if labelMatched(f.matchLabels, metric, true) {
+				if f.labelMatched(metric) {
 					matches = append(matches, &match{metric: metric, pattern: f.include, submatches: submatches})
 				}
 			}
@@ -111,6 +143,37 @@ func (f internalFilterRegexp) getMatches(toMatch metricNameMapping) []*match {
 
 func (f internalFilterRegexp) getSubexpNames() []string {
 	return f.include.SubexpNames()
+}
+
+func (f internalFilterRegexp) labelMatched(metric *metricspb.Metric) bool {
+	if len(f.matchLabels) == 0 {
+		return true
+	}
+
+	for key, value := range f.matchLabels {
+		keyFound := false
+
+		for idx, label := range metric.MetricDescriptor.LabelKeys {
+			if label.Key != key {
+				continue
+			}
+
+			keyFound = true
+			for _, timeseries := range metric.Timeseries {
+				if !value.MatchString(timeseries.LabelValues[idx].Value) {
+					return false
+				}
+				break
+			}
+		}
+
+		// if a label-key is not found then return false only if the given label-value is non-empty. If a given label-value is empty
+		// and the key is not found then return true. In this approach we can make sure certain key is not present which is a valid use case.
+		if !keyFound && !value.MatchString("") {
+			return false
+		}
+	}
+	return true
 }
 
 type metricNameMapping map[string][]*metricspb.Metric
@@ -411,46 +474,4 @@ func (mtp *metricsTransformProcessor) compareTimestamps(t1 *timestamppb.Timestam
 	}
 
 	return t1.Seconds < t2.Seconds || (t1.Seconds == t2.Seconds && t1.Nanos < t2.Nanos)
-}
-
-func labelMatched(filterLabels map[string]string, metric *metricspb.Metric, isRegexp bool) bool {
-	if len(filterLabels) == 0 {
-		return true
-	}
-
-	for key, value := range filterLabels {
-		keyFound := false
-
-		for idx, label := range metric.MetricDescriptor.LabelKeys {
-			if label.Key != key {
-				continue
-			}
-
-			keyFound = true
-			for _, timeseries := range metric.Timeseries {
-				if isRegexp {
-					re := regexp.MustCompile(value)
-					if !re.MatchString(timeseries.LabelValues[idx].Value) {
-						return false
-					}
-				} else {
-					if timeseries.LabelValues[idx].Value != value {
-						return false
-					}
-				}
-				break
-			}
-		}
-
-		// if a label-key is not found and the label-value is non-empty, return false
-		if !keyFound && !(value == "" || isEmptyExp(value)) {
-			return false
-		}
-	}
-	return true
-}
-
-func isEmptyExp(exp string) bool {
-	re := regexp.MustCompile(exp)
-	return re.MatchString("")
 }

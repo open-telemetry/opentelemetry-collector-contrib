@@ -182,7 +182,7 @@ func createFilter(filterConfig FilterConfig) internalFilter {
 	case StrictMatchType:
 		return internalFilterStrict{include: filterConfig.Include, matchLabels: filterConfig.MatchLabels}
 	case RegexpMatchType:
-		return internalFilterRegexp{include: regexp.MustCompile(filterConfig.Include), matchLabels: filterConfig.MatchLabels}
+		return internalFilterRegexp{include: regexp.MustCompile(filterConfig.Include), matchLabels: getFilterRegexpMap(filterConfig.MatchLabels)}
 	}
 
 	return nil
@@ -206,4 +206,13 @@ func sliceToSet(slice []string) map[string]bool {
 		set[s] = true
 	}
 	return set
+}
+
+func getFilterRegexpMap(strMap map[string]string) map[string]*regexp.Regexp {
+	regexpMap := make(map[string]*regexp.Regexp)
+
+	for k, value := range strMap {
+		regexpMap[k] = regexp.MustCompile(value)
+	}
+	return regexpMap
 }

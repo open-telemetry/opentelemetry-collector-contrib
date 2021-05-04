@@ -178,13 +178,3 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 		mtp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(md))
 	}
 }
-
-func TestIsEmptyExpTrue(t *testing.T) {
-	check := isEmptyExp("^$")
-	assert.True(t, check)
-}
-
-func TestIsEmptyExpFalse(t *testing.T) {
-	check := isEmptyExp("not_true")
-	assert.False(t, check)
-}
