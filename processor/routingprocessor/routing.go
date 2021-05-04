@@ -45,7 +45,7 @@ type processorImp struct {
 }
 
 // Crete new processor
-func newProcessor(logger *zap.Logger, cfg config.Exporter) (*processorImp, error) {
+func newProcessor(logger *zap.Logger, cfg config.Processor) (*processorImp, error) {
 	logger.Info("building processor")
 
 	oCfg := cfg.(*Config)

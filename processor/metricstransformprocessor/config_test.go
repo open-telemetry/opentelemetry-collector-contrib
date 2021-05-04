@@ -28,14 +28,14 @@ import (
 func TestLoadingFullConfig(t *testing.T) {
 	tests := []struct {
 		configFile string
-		filterName string
+		filterName config.ComponentID
 		expCfg     *Config
 	}{
 		{
 			configFile: "config_full.yaml",
-			filterName: "metricstransform",
+			filterName: config.NewID(typeStr),
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(typeStr),
+				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 				Transforms: []Transform{
 					{
 						MetricIncludeFilter: FilterConfig{
@@ -50,12 +50,9 @@ func TestLoadingFullConfig(t *testing.T) {
 		},
 		{
 			configFile: "config_full.yaml",
-			filterName: "metricstransform/multiple",
+			filterName: config.NewIDWithName(typeStr, "multiple"),
 			expCfg: &Config{
-				ProcessorSettings: &config.ProcessorSettings{
-					TypeVal: "metricstransform",
-					NameVal: "metricstransform/multiple",
-				},
+				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "multiple")),
 				Transforms: []Transform{
 					{
 						MetricIncludeFilter: FilterConfig{
@@ -137,9 +134,9 @@ func TestLoadingFullConfig(t *testing.T) {
 		},
 		{
 			configFile: "config_deprecated.yaml",
-			filterName: "metricstransform",
+			filterName: config.NewID(typeStr),
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(typeStr),
+				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 				Transforms: []Transform{
 					{
 						MetricName: "old_name",
@@ -152,19 +149,17 @@ func TestLoadingFullConfig(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.filterName, func(t *testing.T) {
+		t.Run(test.filterName.String(), func(t *testing.T) {
 
 			factories, err := componenttest.NopFactories()
 			assert.NoError(t, err)
 
 			factory := NewFactory()
-			factories.Processors[config.Type(typeStr)] = factory
-			config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", test.configFile), factories)
+			factories.Processors[typeStr] = factory
+			cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", test.configFile), factories)
 			assert.NoError(t, err)
-			require.NotNil(t, config)
-
-			cfg := config.Processors[test.filterName]
-			assert.Equal(t, test.expCfg, cfg)
+			require.NotNil(t, cfg)
+			assert.Equal(t, test.expCfg, cfg.Processors[test.filterName])
 		})
 	}
 }

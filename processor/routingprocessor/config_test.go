@@ -43,10 +43,10 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	parsed := cfg.Processors["routing"]
+	parsed := cfg.Processors[config.NewID(typeStr)]
 	assert.Equal(t, parsed,
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(typeStr),
+			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 			DefaultExporters:  []string{"otlp"},
 			FromAttribute:     "X-Tenant",
 			Table: []RoutingTableItem{

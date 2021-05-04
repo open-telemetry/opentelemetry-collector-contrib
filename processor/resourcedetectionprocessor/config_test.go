@@ -39,27 +39,21 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 
-	p1 := cfg.Processors["resourcedetection"]
+	p1 := cfg.Processors[config.NewID(typeStr)]
 	assert.Equal(t, p1, factory.CreateDefaultConfig())
 
-	p2 := cfg.Processors["resourcedetection/gce"]
+	p2 := cfg.Processors[config.NewIDWithName(typeStr, "gce")]
 	assert.Equal(t, p2, &Config{
-		ProcessorSettings: &config.ProcessorSettings{
-			TypeVal: "resourcedetection",
-			NameVal: "resourcedetection/gce",
-		},
-		Detectors: []string{"env", "gce"},
-		Timeout:   2 * time.Second,
-		Override:  false,
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "gce")),
+		Detectors:         []string{"env", "gce"},
+		Timeout:           2 * time.Second,
+		Override:          false,
 	})
 
-	p3 := cfg.Processors["resourcedetection/ec2"]
+	p3 := cfg.Processors[config.NewIDWithName(typeStr, "ec2")]
 	assert.Equal(t, p3, &Config{
-		ProcessorSettings: &config.ProcessorSettings{
-			TypeVal: "resourcedetection",
-			NameVal: "resourcedetection/ec2",
-		},
-		Detectors: []string{"env", "ec2"},
+		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "ec2")),
+		Detectors:         []string{"env", "ec2"},
 		DetectorConfig: DetectorConfig{
 			EC2Config: ec2.Config{
 				Tags: []string{"^tag1$", "^tag2$"},

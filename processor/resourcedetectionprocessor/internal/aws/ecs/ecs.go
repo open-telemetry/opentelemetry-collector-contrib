@@ -45,7 +45,7 @@ func NewDetector(params component.ProcessorCreateParams, _ internal.DetectorConf
 	return &Detector{provider: &ecsMetadataProviderImpl{logger: params.Logger, client: &http.Client{}}}, nil
 }
 
-// Records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes
+// Detect records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes
 // TODO(willarmiros): Replace all attribute fields and enums with values defined in "conventions" once they exist
 func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()

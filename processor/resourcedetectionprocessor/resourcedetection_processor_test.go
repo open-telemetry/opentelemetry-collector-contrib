@@ -157,7 +157,7 @@ func TestResourceProcessor(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := &factory{providers: map[string]*internal.ResourceProvider{}}
+			factory := &factory{providers: map[config.ComponentID]*internal.ResourceProvider{}}
 
 			md1 := &MockDetector{}
 			md1.On("Detect").Return(tt.detectedResource, tt.detectedError)
@@ -171,7 +171,7 @@ func TestResourceProcessor(t *testing.T) {
 			}
 
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(typeStr),
+				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 				Override:          tt.override,
 				Detectors:         tt.detectorKeys,
 				Timeout:           time.Second,

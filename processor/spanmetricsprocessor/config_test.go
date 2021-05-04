@@ -82,12 +82,12 @@ func TestLoadConfig(t *testing.T) {
 			require.NotNil(t, cfg)
 			assert.Equal(t,
 				&Config{
-					ProcessorSettings:       config.NewProcessorSettings(typeStr),
+					ProcessorSettings:       config.NewProcessorSettings(config.NewID(typeStr)),
 					MetricsExporter:         tc.wantMetricsExporter,
 					LatencyHistogramBuckets: tc.wantLatencyHistogramBuckets,
 					Dimensions:              tc.wantDimensions,
 				},
-				cfg.Processors["spanmetrics"],
+				cfg.Processors[config.NewID(typeStr)],
 			)
 		})
 	}
