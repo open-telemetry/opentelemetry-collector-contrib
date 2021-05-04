@@ -32,7 +32,7 @@ processors:
               # this is a required field
               operand1_metric: <first_operand_metric>
 
-              # this field is required only if the generation_type is calculate
+              # This field is required only if the generation_type is "calculate".
               operand2_metric: <second_operand_metric>
 
               # operation specifies which atrithmatic operation to apply. it can be one of the five supported operations.
