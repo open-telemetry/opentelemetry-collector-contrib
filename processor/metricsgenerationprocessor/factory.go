@@ -51,7 +51,10 @@ func createMetricsProcessor(
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
-	processorConfig := cfg.(*Config)
+	processorConfig, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("configuration parsing error")
+	}
 	if err := validateConfiguration(processorConfig); err != nil {
 		return nil, err
 	}

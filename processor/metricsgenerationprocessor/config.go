@@ -77,15 +77,11 @@ const (
 	Scale GenerationType = "scale"
 )
 
-var generationTypes = []GenerationType{Calculate, Scale}
+var generationTypes = map[GenerationType]struct{}{Calculate: {}, Scale: {}}
 
 func (gt GenerationType) isValid() bool {
-	for _, generationType := range generationTypes {
-		if generationType == gt {
-			return true
-		}
-	}
-	return false
+	_, ok := generationTypes[gt]
+	return ok
 }
 
 type OperationType string
@@ -108,13 +104,15 @@ const (
 	Percent OperationType = "percent"
 )
 
-var operationTypes = []OperationType{Add, Subtract, Multiply, Divide, Percent}
+var operationTypes = map[OperationType]struct{}{
+	Add:      {},
+	Subtract: {},
+	Multiply: {},
+	Divide:   {},
+	Percent:  {},
+}
 
 func (ot OperationType) isValid() bool {
-	for _, operationType := range operationTypes {
-		if operationType == ot {
-			return true
-		}
-	}
-	return false
+	_, ok := operationTypes[ot]
+	return ok
 }
