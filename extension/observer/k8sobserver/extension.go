@@ -46,7 +46,7 @@ var _ (component.Extension) = (*k8sObserver)(nil)
 
 // ListAndWatch notifies watcher with the current state and sends subsequent state changes.
 func (k *k8sObserver) ListAndWatch(listener observer.Notify) {
-	k.informer.AddEventHandler(&handler{watcher: listener, idNamespace: k.config.Name()})
+	k.informer.AddEventHandler(&handler{watcher: listener, idNamespace: k.config.ID().String()})
 }
 
 // newObserver creates a new k8s observer extension.

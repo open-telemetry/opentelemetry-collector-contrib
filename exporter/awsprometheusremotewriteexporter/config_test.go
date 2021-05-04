@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	// From the default configurations -- checks if a correct exporter is instantiated
-	e0 := cfg.Exporters["awsprometheusremotewrite"]
+	e0 := cfg.Exporters[config.NewID(typeStr)]
 	cfgDefault := factory.CreateDefaultConfig()
 	// testing function equality is not supported in Go hence these will be ignored for this test
 	cfgDefault.(*Config).HTTPClientSettings.CustomRoundTripper = nil
@@ -51,14 +51,11 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, e0, cfgDefault)
 
 	// checks if the correct Config struct can be instantiated from testdata/config.yaml
-	e1 := cfg.Exporters["awsprometheusremotewrite/2"]
+	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
 	cfgComplete := &Config{
 		Config: prw.Config{
-			ExporterSettings: &config.ExporterSettings{
-				NameVal: "awsprometheusremotewrite/2",
-				TypeVal: "awsprometheusremotewrite",
-			},
-			TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),
+			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
+			TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         true,
 				InitialInterval: 10 * time.Second,

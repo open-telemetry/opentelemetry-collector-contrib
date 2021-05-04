@@ -39,18 +39,15 @@ func TestLoadConfig(t *testing.T) {
 
 	require.Len(t, cfg.Extensions, 2)
 
-	ext0 := cfg.Extensions["file_storage"]
+	ext0 := cfg.Extensions[config.NewID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
 
-	ext1 := cfg.Extensions["file_storage/all_settings"]
+	ext1 := cfg.Extensions[config.NewIDWithName(typeStr, "all_settings")]
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: config.ExtensionSettings{
-				TypeVal: "file_storage",
-				NameVal: "file_storage/all_settings",
-			},
-			Directory: "/var/lib/otelcol/mydir",
-			Timeout:   2 * time.Second,
+			ExtensionSettings: config.NewExtensionSettings(config.NewIDWithName(typeStr, "all_settings")),
+			Directory:         "/var/lib/otelcol/mydir",
+			Timeout:           2 * time.Second,
 		},
 		ext1)
 }

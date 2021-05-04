@@ -32,7 +32,7 @@ import (
 type mockHostFactories struct {
 	component.Host
 	factories  component.Factories
-	extensions map[config.NamedEntity]component.Extension
+	extensions map[config.ComponentID]component.Extension
 }
 
 // GetFactory of the specified kind. Returns the factory for a component type.
@@ -50,7 +50,7 @@ func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType confi
 	return nil
 }
 
-func (mh *mockHostFactories) GetExtensions() map[config.NamedEntity]component.Extension {
+func (mh *mockHostFactories) GetExtensions() map[config.ComponentID]component.Extension {
 	return mh.extensions
 }
 
@@ -58,7 +58,7 @@ func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *config.Config) {
 	factories, err := componenttest.NopFactories()
 	require.Nil(t, err)
 
-	factories.Receivers[config.Type("nop")] = &nopWithEndpointFactory{ReceiverFactory: componenttest.NewNopReceiverFactory()}
+	factories.Receivers[("nop")] = &nopWithEndpointFactory{ReceiverFactory: componenttest.NewNopReceiverFactory()}
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory

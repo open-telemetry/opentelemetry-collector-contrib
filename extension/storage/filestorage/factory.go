@@ -36,12 +36,9 @@ func NewFactory() component.ExtensionFactory {
 
 func createDefaultConfig() config.Extension {
 	return &Config{
-		ExtensionSettings: config.ExtensionSettings{
-			TypeVal: typeStr,
-			NameVal: string(typeStr),
-		},
-		Directory: getDefaultDirectory(),
-		Timeout:   time.Second,
+		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
+		Directory:         getDefaultDirectory(),
+		Timeout:           time.Second,
 	}
 }
 
@@ -50,6 +47,5 @@ func createExtension(
 	params component.ExtensionCreateParams,
 	cfg config.Extension,
 ) (component.Extension, error) {
-	config := cfg.(*Config)
-	return newLocalFileStorage(params.Logger, config)
+	return newLocalFileStorage(params.Logger, cfg.(*Config))
 }

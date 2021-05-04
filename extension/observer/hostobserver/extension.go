@@ -50,7 +50,7 @@ func newObserver(logger *zap.Logger, config *Config) (component.Extension, error
 			RefreshInterval: config.RefreshInterval,
 			Endpointslister: endpointsLister{
 				logger:                logger,
-				observerName:          config.Name(),
+				observerName:          config.ID().String(),
 				getConnections:        getConnections,
 				getProcess:            process.NewProcess,
 				collectProcessDetails: collectProcessDetails,

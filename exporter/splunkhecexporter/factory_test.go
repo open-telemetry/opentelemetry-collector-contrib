@@ -123,7 +123,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 func TestFactory_CreateMetricsExporter(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Token:            "testToken",
 		Endpoint:         "https://example.com:8000",
 	}
@@ -143,7 +143,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "empty_endpoint",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				Token:            "token",
 			},
 			errorMessage: "failed to process \"splunk_hec\" config: requires a non-empty \"endpoint\"",
@@ -151,7 +151,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "empty_token",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				Endpoint:         "https://example.com:8000",
 			},
 			errorMessage: "failed to process \"splunk_hec\" config: requires a non-empty \"token\"",

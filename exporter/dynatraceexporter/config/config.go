@@ -26,7 +26,7 @@ import (
 
 // Config defines configuration for the Dynatrace exporter.
 type Config struct {
-	*config.ExporterSettings      `mapstructure:"-"`
+	config.ExporterSettings       `mapstructure:",squash"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 
 	exporterhelper.QueueSettings               `mapstructure:"sending_queue"`
