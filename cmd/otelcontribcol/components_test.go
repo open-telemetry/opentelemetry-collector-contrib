@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/config"
 )
 
 func TestDefaultComponents(t *testing.T) {
@@ -33,13 +34,13 @@ func TestDefaultComponents(t *testing.T) {
 	recvs := factories.Receivers
 	for k, v := range recvs {
 		assert.Equal(t, k, v.Type())
-		assert.Equal(t, k, v.CreateDefaultConfig().ID().Type())
+		assert.Equal(t, config.NewID(k), v.CreateDefaultConfig().ID())
 	}
 
 	procs := factories.Processors
 	for k, v := range procs {
 		assert.Equal(t, k, v.Type())
-		assert.Equal(t, k, v.CreateDefaultConfig().Type())
+		assert.Equal(t, config.NewID(k), v.CreateDefaultConfig().ID())
 	}
 
 	exps := factories.Exporters
