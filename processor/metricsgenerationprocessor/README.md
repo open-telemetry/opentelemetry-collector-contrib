@@ -29,7 +29,7 @@ processors:
               # generation_type describes how the new metric will be generated. It can be one of `calculate` or `scale`.  Calculate generates a metric applying the given operation on two operand metrics. Scale operates only on  operand1 metric to generate the new metric.
               generation_type: {calculate, scale}
 
-              # this is a required field
+              # This is a required field.
               operand1_metric: <first_operand_metric>
 
               # This field is required only if the generation_type is "calculate".
