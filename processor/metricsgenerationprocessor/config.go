@@ -59,7 +59,7 @@ type GenerationRule struct {
 	// Second operand metric to use in the calculation. A required field if the generation_type is calculate.
 	Operand2Metric string `mapstructure:"operand2_metric"`
 
-	// The arithmatic operation to apply for the calculation. This is a required field.
+	// The arithmetic operation to apply for the calculation. This is a required field.
 	Operation OperationType `mapstructure:"operation"`
 
 	// A constant number by which the first operand will be scaled. A required field if the generation_type is scale.
