@@ -9,7 +9,7 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.2
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.25.1-0.20210504151019-4603bad78ae7
+	go.opentelemetry.io/collector v0.25.1-0.20210504213736-b8824d020718
 	go.uber.org/zap v1.16.0
 )
 
