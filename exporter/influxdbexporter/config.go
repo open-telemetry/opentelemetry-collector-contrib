@@ -27,7 +27,7 @@ const (
 
 // Config defines configuration for the InfluxDB exporter.
 type Config struct {
-	*config.ExporterSettings      `mapstructure:"-"`
+	config.ExporterSettings       `mapstructure:",squash"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`

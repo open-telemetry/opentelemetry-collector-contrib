@@ -39,12 +39,12 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	configDefault := cfg.Exporters["influxdb"]
+	configDefault := cfg.Exporters[config.NewID(typeStr)]
 	assert.Equal(t, configDefault, factory.CreateDefaultConfig())
 
-	configWithSettings := cfg.Exporters["influxdb/withsettings"].(*Config)
+	configWithSettings := cfg.Exporters[config.NewIDWithName(typeStr, "withsettings")].(*Config)
 	assert.Equal(t, configWithSettings, &Config{
-		ExporterSettings: &config.ExporterSettings{TypeVal: typeStr, NameVal: "influxdb/withsettings"},
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "withsettings")),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://localhost:8080",
 			Timeout:  500 * time.Millisecond,
