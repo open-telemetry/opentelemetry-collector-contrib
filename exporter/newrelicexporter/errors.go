@@ -15,6 +15,7 @@
 package newrelicexporter
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -63,7 +64,9 @@ type httpError struct {
 	Response *http.Response
 }
 
-func (e *httpError) Error() string { return "New Relic HTTP call failed" }
+func (e *httpError) Error() string {
+	return fmt.Sprintf("New Relic HTTP call failed. Status Code: %d", e.Response.StatusCode)
+}
 
 func (e *httpError) GRPCStatus() *grpcStatus.Status {
 	mapEntry, ok := httpGrpcMapping[e.Response.StatusCode]

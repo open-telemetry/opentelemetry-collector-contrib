@@ -90,7 +90,7 @@ func TestHttpError_GRPCStatus(t *testing.T) {
 
 func TestHttpError_Error(t *testing.T) {
 	httpError := &httpError{Response: responseOf(http.StatusTeapot)}
-	assert.Equal(t, httpError.Error(), "New Relic HTTP call failed")
+	assert.Equal(t, httpError.Error(), "New Relic HTTP call failed. Status Code: 418")
 }
 
 func responseOf(statusCode int) *http.Response {

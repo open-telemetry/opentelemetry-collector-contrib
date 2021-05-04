@@ -131,7 +131,7 @@ func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (outputErr
 func (e exporter) buildTraceBatch(details *exportMetadata, td pdata.Traces) ([]telemetry.Batch, error) {
 	var errs []error
 
-	transform := newTransformer(e.buildInfo, details)
+	transform := newTransformer(e.logger, e.buildInfo, details)
 	batches := make([]telemetry.Batch, 0, calcSpanBatches(td))
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
@@ -184,7 +184,7 @@ func (e exporter) pushLogData(ctx context.Context, ld pdata.Logs) (outputErr err
 func (e exporter) buildLogBatch(details *exportMetadata, ld pdata.Logs) ([]telemetry.Batch, error) {
 	var errs []error
 
-	transform := newTransformer(e.buildInfo, details)
+	transform := newTransformer(e.logger, e.buildInfo, details)
 	batches := make([]telemetry.Batch, 0, calcLogBatches(ld))
 
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
@@ -237,7 +237,7 @@ func (e exporter) pushMetricData(ctx context.Context, md pdata.Metrics) (outputE
 func (e exporter) buildMetricBatch(details *exportMetadata, md pdata.Metrics) ([]telemetry.Batch, error) {
 	var errs []error
 
-	transform := newTransformer(e.buildInfo, details)
+	transform := newTransformer(e.logger, e.buildInfo, details)
 	batches := make([]telemetry.Batch, 0, calcMetricBatches(md))
 
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
