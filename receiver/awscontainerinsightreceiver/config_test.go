@@ -31,8 +31,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	receiverType := "awscontainerinsightreceiver"
-	factories.Receivers[config.Type(receiverType)] = factory
+	factories.Receivers[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -43,19 +42,16 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, len(cfg.Receivers), 2)
 
 	//ensure default configurations are generated when users provide nothing
-	r0 := cfg.Receivers[receiverType]
+	r0 := cfg.Receivers[config.NewID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), r0)
 
-	r1 := cfg.Receivers["awscontainerinsightreceiver"]
+	r1 := cfg.Receivers[config.NewID(typeStr)]
 	assert.Equal(t, r1, factory.CreateDefaultConfig())
 
-	r2 := cfg.Receivers["awscontainerinsightreceiver/collection_interval_settings"].(*Config)
+	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "collection_interval_settings")].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: config.Type(receiverType),
-				NameVal: "awscontainerinsightreceiver/collection_interval_settings",
-			},
+			ReceiverSettings:      config.NewReceiverSettings(config.NewIDWithName(typeStr, "collection_interval_settings")),
 			CollectionInterval:    60 * time.Second,
 			ContainerOrchestrator: "eks",
 		})
