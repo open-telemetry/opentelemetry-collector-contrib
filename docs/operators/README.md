@@ -26,13 +26,19 @@ Outputs:
 - [File](docs/operators/file_output.md)
 
 General purpose:
-- [Rate Limit](/docs/operators/rate_limit.md)
+- [Add](/docs/operators/add.md)
+- [Copy](/docs/operators/copy.md)
+- [Flatten](/docs/operators/flatten.md)
 - [Filter](/docs/operators/filter.md)
-- [Router](/docs/operators/router.md)
-- [Metadata](/docs/operators/metadata.md)
-- [Recombine](/docs/operators/recombine.md)
-- [Restructure](/docs/operators/restructure.md)
 - [Host Metadata](/docs/operators/host_metadata.md)
 - [Kubernetes Metadata Decorator](/docs/operators/k8s_metadata_decorator.md)
+- [Metadata](/docs/operators/metadata.md)
+- [Move](/docs/operators/move.md)
+- [Rate Limit](/docs/operators/rate_limit.md)
+- [Router](/docs/operators/router.md)
+- [Recombine](/docs/operators/recombine.md)
+- [Restructure](/docs/operators/restructure.md)
+- [Remove](/docs/operators/remove.md)
+- [Retain](/docs/operators/retain.md)
 
 Or create your own [plugins](/docs/plugins.md) for a technology-specific use case.
