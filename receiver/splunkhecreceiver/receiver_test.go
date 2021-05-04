@@ -574,7 +574,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 
 			factory := splunkhecexporter.NewFactory()
 			exporterConfig := splunkhecexporter.Config{
-				ExporterSettings:   config.NewExporterSettings("splunkhec"),
+				ExporterSettings:   config.NewExporterSettings(config.NewID("splunkhec")),
 				Token:              "ignored",
 				SourceType:         "defaultsourcetype",
 				Index:              "defaultindex",
@@ -672,7 +672,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 
 			factory := splunkhecexporter.NewFactory()
 			exporterConfig := splunkhecexporter.Config{
-				ExporterSettings:   config.NewExporterSettings("splunkhec"),
+				ExporterSettings:   config.NewExporterSettings(config.NewID("splunkhec")),
 				Token:              "ignored",
 				SourceType:         "defaultsourcetype",
 				Index:              "defaultindex",

@@ -127,7 +127,7 @@ func TestRegisterExportersForValidRoute(t *testing.T) {
 	otlpExpFactory := otlpexporter.NewFactory()
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings("otlp"),
+		ExporterSettings: config.NewExporterSettings(config.NewID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
@@ -136,10 +136,10 @@ func TestRegisterExportersForValidRoute(t *testing.T) {
 	require.NoError(t, err)
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.NamedEntity]component.Exporter {
-			return map[config.DataType]map[config.NamedEntity]component.Exporter{
+		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
+			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.TracesDataType: {
-					otlpConfig: otlpExp,
+					otlpConfig.ID(): otlpExp,
 				},
 			}
 		},
@@ -192,7 +192,7 @@ func TestErrorRequestedExporterNotFoundForDefaultRoute(t *testing.T) {
 	otlpExpFactory := otlpexporter.NewFactory()
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings("otlp"),
+		ExporterSettings: config.NewExporterSettings(config.NewID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
@@ -201,10 +201,10 @@ func TestErrorRequestedExporterNotFoundForDefaultRoute(t *testing.T) {
 	require.NoError(t, err)
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.NamedEntity]component.Exporter {
-			return map[config.DataType]map[config.NamedEntity]component.Exporter{
+		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
+			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.TracesDataType: {
-					otlpConfig: otlpExp,
+					otlpConfig.ID(): otlpExp,
 				},
 			}
 		},
@@ -231,15 +231,12 @@ func TestInvalidExporter(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings("otlp"),
-	}
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.NamedEntity]component.Exporter {
-			return map[config.DataType]map[config.NamedEntity]component.Exporter{
+		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
+			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.TracesDataType: {
-					otlpConfig: &mockComponent{},
+					config.NewID("otlp"): &mockComponent{},
 				},
 			}
 		},
@@ -416,10 +413,10 @@ func TestProcessorCapabilities(t *testing.T) {
 
 type mockHost struct {
 	component.Host
-	GetExportersFunc func() map[config.DataType]map[config.NamedEntity]component.Exporter
+	GetExportersFunc func() map[config.DataType]map[config.ComponentID]component.Exporter
 }
 
-func (m *mockHost) GetExporters() map[config.DataType]map[config.NamedEntity]component.Exporter {
+func (m *mockHost) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
 	if m.GetExportersFunc != nil {
 		return m.GetExportersFunc()
 	}

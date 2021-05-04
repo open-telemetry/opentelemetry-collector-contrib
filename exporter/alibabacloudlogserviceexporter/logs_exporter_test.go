@@ -52,7 +52,7 @@ func createSimpleLogData(numberOfLogs int) pdata.Logs {
 
 func TestNewLogsExporter(t *testing.T) {
 	got, err := newLogsExporter(zap.NewNop(), &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Endpoint:         "us-west-1.log.aliyuncs.com",
 		Project:          "demo-project",
 		Logstore:         "demo-logstore",
@@ -68,7 +68,7 @@ func TestNewLogsExporter(t *testing.T) {
 
 func TestSTSTokenExporter(t *testing.T) {
 	got, err := newLogsExporter(zap.NewNop(), &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Endpoint:         "us-west-1.log.aliyuncs.com",
 		Project:          "demo-project",
 		Logstore:         "demo-logstore",

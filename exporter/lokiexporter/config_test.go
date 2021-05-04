@@ -44,9 +44,9 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, 2, len(cfg.Exporters))
 
-	actualCfg := cfg.Exporters["loki/allsettings"].(*Config)
+	actualCfg := cfg.Exporters[config.NewIDWithName(typeStr, "allsettings")].(*Config)
 	expectedCfg := Config{
-		ExporterSettings: &config.ExporterSettings{TypeVal: typeStr, NameVal: "loki/allsettings"},
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "allsettings")),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Headers: map[string]string{
 				"x-custom-header": "loki_rocks",
@@ -168,7 +168,7 @@ func TestConfig_validate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.ExporterSettings = config.NewExporterSettings(typeStr)
+			cfg.ExporterSettings = config.NewExporterSettings(config.NewID(typeStr))
 			cfg.Endpoint = tt.fields.Endpoint
 			cfg.Labels = tt.fields.Labels
 

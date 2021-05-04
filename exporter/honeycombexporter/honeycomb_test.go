@@ -103,7 +103,7 @@ func testTracesExporter(td pdata.Traces, t *testing.T, cfg *Config) []honeycombD
 
 func baseConfig() *Config {
 	return &Config{
-		ExporterSettings:    config.NewExporterSettings(typeStr),
+		ExporterSettings:    config.NewExporterSettings(config.NewID(typeStr)),
 		APIKey:              "test",
 		Dataset:             "test",
 		Debug:               false,

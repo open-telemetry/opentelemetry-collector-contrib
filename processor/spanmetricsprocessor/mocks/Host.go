@@ -28,15 +28,15 @@ type Host struct {
 }
 
 // GetExporters provides a mock function with given fields:
-func (_m *Host) GetExporters() map[config.DataType]map[config.NamedEntity]component.Exporter {
+func (_m *Host) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
 	ret := _m.Called()
 
-	var r0 map[config.DataType]map[config.NamedEntity]component.Exporter
-	if rf, ok := ret.Get(0).(func() map[config.DataType]map[config.NamedEntity]component.Exporter); ok {
+	var r0 map[config.DataType]map[config.ComponentID]component.Exporter
+	if rf, ok := ret.Get(0).(func() map[config.DataType]map[config.ComponentID]component.Exporter); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[config.DataType]map[config.NamedEntity]component.Exporter)
+			r0 = ret.Get(0).(map[config.DataType]map[config.ComponentID]component.Exporter)
 		}
 	}
 
@@ -44,15 +44,15 @@ func (_m *Host) GetExporters() map[config.DataType]map[config.NamedEntity]compon
 }
 
 // GetExtensions provides a mock function with given fields:
-func (_m *Host) GetExtensions() map[config.NamedEntity]component.Extension {
+func (_m *Host) GetExtensions() map[config.ComponentID]component.Extension {
 	ret := _m.Called()
 
-	var r0 map[config.NamedEntity]component.Extension
-	if rf, ok := ret.Get(0).(func() map[config.NamedEntity]component.Extension); ok {
+	var r0 map[config.ComponentID]component.Extension
+	if rf, ok := ret.Get(0).(func() map[config.ComponentID]component.Extension); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[config.NamedEntity]component.Extension)
+			r0 = ret.Get(0).(map[config.ComponentID]component.Extension)
 		}
 	}
 

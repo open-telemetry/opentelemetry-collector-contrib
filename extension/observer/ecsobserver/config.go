@@ -29,7 +29,7 @@ const (
 )
 
 type Config struct {
-	*config.ExtensionSettings `mapstructure:"-" yaml:"-"`
+	config.ExtensionSettings `mapstructure:",squash"`
 
 	// ClusterName is the target ECS cluster name for service discovery.
 	ClusterName string `mapstructure:"cluster_name" yaml:"cluster_name"`
@@ -55,7 +55,7 @@ type Config struct {
 // DefaultConfig only applies docker label
 func DefaultConfig() Config {
 	return Config{
-		ExtensionSettings: config.NewExtensionSettings(typeStr),
+		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
 		ClusterName:       "default",
 		ClusterRegion:     os.Getenv(awsRegionEnvKey),
 		ResultFile:        "/etc/ecs_sd_targets.yaml",

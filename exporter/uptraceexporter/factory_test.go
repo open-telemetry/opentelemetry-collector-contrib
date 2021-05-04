@@ -56,7 +56,7 @@ func TestCreateTracesExporterLoadConfig(t *testing.T) {
 
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exporter, err := factory.CreateTracesExporter(
-		context.Background(), params, cfg.Exporters["uptrace/customname"])
+		context.Background(), params, cfg.Exporters[config.NewIDWithName(typeStr, "customname")])
 	require.Nil(t, err)
 	require.NotNil(t, exporter)
 }

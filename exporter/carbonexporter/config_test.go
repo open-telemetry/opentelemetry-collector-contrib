@@ -34,27 +34,22 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[config.Type(typeStr)] = factory
+	factories.Exporters[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters["carbon"]
+	e0 := cfg.Exporters[config.NewID(typeStr)]
 
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
 	assert.Equal(t, defaultCfg, e0)
 
-	expectedName := "carbon/allsettings"
-
-	e1 := cfg.Exporters[expectedName]
+	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "allsettings")]
 	expectedCfg := Config{
-		ExporterSettings: &config.ExporterSettings{
-			TypeVal: config.Type(typeStr),
-			NameVal: expectedName,
-		},
-		Endpoint: "localhost:8080",
-		Timeout:  10 * time.Second,
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "allsettings")),
+		Endpoint:         "localhost:8080",
+		Timeout:          10 * time.Second,
 	}
 	assert.Equal(t, &expectedCfg, e1)
 

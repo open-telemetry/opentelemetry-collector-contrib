@@ -269,9 +269,9 @@ func TestBuildExporterConfig(t *testing.T) {
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "test-build-exporter-config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
-	require.NotNil(t, cfg.Exporters["loadbalancing"])
 
-	c := cfg.Exporters["loadbalancing"]
+	c := cfg.Exporters[config.NewID(typeStr)]
+	require.NotNil(t, c)
 
 	// test
 	defaultCfg := otlpexporter.NewFactory().CreateDefaultConfig().(*otlpexporter.Config)
@@ -505,7 +505,7 @@ func simpleTraceWithID(id pdata.TraceID) pdata.Traces {
 
 func simpleConfig() *Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
 		},

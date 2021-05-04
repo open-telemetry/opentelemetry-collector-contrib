@@ -42,12 +42,12 @@ func TestLoadConfig(t *testing.T) {
 
 	defaultCfg := factory.CreateDefaultConfig()
 	defaultCfg.(*Config).Endpoints = []string{"https://elastic.example.com:9200"}
-	r0 := cfg.Exporters["elasticsearch"]
+	r0 := cfg.Exporters[config.NewID(typeStr)]
 	assert.Equal(t, r0, defaultCfg)
 
-	r1 := cfg.Exporters["elasticsearch/customname"].(*Config)
+	r1 := cfg.Exporters[config.NewIDWithName(typeStr, "customname")].(*Config)
 	assert.Equal(t, r1, &Config{
-		ExporterSettings: &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "elasticsearch/customname"},
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "customname")),
 		Endpoints:        []string{"https://elastic.example.com:9200"},
 		CloudID:          "TRNMxjXlNJEt",
 		Index:            "myindex",

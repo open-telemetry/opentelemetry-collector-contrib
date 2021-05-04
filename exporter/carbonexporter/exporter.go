@@ -32,12 +32,12 @@ func newCarbonExporter(cfg *Config, params component.ExporterCreateParams) (comp
 	// Resolve TCP address just to ensure that it is a valid one. It is better
 	// to fail here than at when the exporter is started.
 	if _, err := net.ResolveTCPAddr("tcp", cfg.Endpoint); err != nil {
-		return nil, fmt.Errorf("%q exporter has an invalid TCP endpoint: %w", cfg.Name(), err)
+		return nil, fmt.Errorf("%v exporter has an invalid TCP endpoint: %w", cfg.ID(), err)
 	}
 
 	// Negative timeouts are not acceptable, since all sends will fail.
 	if cfg.Timeout < 0 {
-		return nil, fmt.Errorf("%q exporter requires a positive timeout", cfg.Name())
+		return nil, fmt.Errorf("%v exporter requires a positive timeout", cfg.ID())
 	}
 
 	sender := carbonSender{

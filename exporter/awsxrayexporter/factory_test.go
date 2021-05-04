@@ -35,7 +35,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			NumberOfWorkers:       8,
 			Endpoint:              "",
@@ -65,7 +65,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	exporter, err := factory.CreateTracesExporter(ctx, component.ExporterCreateParams{Logger: logger}, cfg.Exporters["awsxray/customname"])
+	exporter, err := factory.CreateTracesExporter(ctx, component.ExporterCreateParams{Logger: logger}, cfg.Exporters[config.NewIDWithName(typeStr, "customname")])
 	assert.Nil(t, err)
 	assert.NotNil(t, exporter)
 }
@@ -83,7 +83,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	exporter, err := factory.CreateMetricsExporter(ctx, component.ExporterCreateParams{Logger: logger}, cfg.Exporters["awsxray/customname"])
+	exporter, err := factory.CreateMetricsExporter(ctx, component.ExporterCreateParams{Logger: logger}, cfg.Exporters[config.NewIDWithName(typeStr, "customname")])
 	assert.NotNil(t, err)
 	assert.Nil(t, exporter)
 }

@@ -35,8 +35,7 @@ func TestFactory(t *testing.T) {
 	require.Equal(t, config.Type(expectType), f.Type())
 
 	cfg := f.CreateDefaultConfig().(*Config)
-	require.Equal(t, expectType, cfg.Name())
-	require.Equal(t, config.Type(expectType), cfg.Type())
+	require.Equal(t, config.NewID(typeStr), cfg.ID())
 	require.Equal(t, ":6060", cfg.Ingress.Endpoint)
 	require.Equal(t, 10*time.Second, cfg.Egress.Timeout)
 

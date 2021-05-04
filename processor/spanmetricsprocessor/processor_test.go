@@ -87,9 +87,9 @@ func TestProcessorStart(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
-			exporters := map[config.DataType]map[config.NamedEntity]component.Exporter{
+			exporters := map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.MetricsDataType: {
-					otlpConfig: tc.exporter,
+					otlpConfig.ID(): tc.exporter,
 				},
 			}
 			mhost := &mocks.Host{}
@@ -460,7 +460,7 @@ func initSpan(span span, s pdata.Span) {
 func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExporter, component.TracesExporter) {
 	otlpExpFactory := otlpexporter.NewFactory()
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings("otlp"),
+		ExporterSettings: config.NewExporterSettings(config.NewID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},

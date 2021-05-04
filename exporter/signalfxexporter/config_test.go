@@ -43,13 +43,13 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[config.Type(typeStr)] = factory
+	factories.Exporters[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters["signalfx"]
+	e0 := cfg.Exporters[config.NewID(typeStr)]
 
 	// Realm doesn't have a default value so set it directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
@@ -59,16 +59,11 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg.TranslationRules = defaultTranslationRules
 	assert.Equal(t, defaultCfg, e0)
 
-	expectedName := "signalfx/allsettings"
-
-	e1 := cfg.Exporters[expectedName]
+	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "allsettings")]
 	expectedCfg := Config{
-		ExporterSettings: &config.ExporterSettings{
-			TypeVal: config.Type(typeStr),
-			NameVal: expectedName,
-		},
-		AccessToken: "testToken",
-		Realm:       "us1",
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "allsettings")),
+		AccessToken:      "testToken",
+		Realm:            "us1",
 		Headers: map[string]string{
 			"added-entry": "added value",
 			"dot.test":    "test",
@@ -316,7 +311,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				AccessToken:      tt.fields.AccessToken,
 				Realm:            tt.fields.Realm,
 				IngestURL:        tt.fields.IngestURL,

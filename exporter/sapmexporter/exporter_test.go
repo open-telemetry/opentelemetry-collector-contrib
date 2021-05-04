@@ -36,8 +36,8 @@ import (
 )
 
 func TestCreateTracesExporter(t *testing.T) {
-	config := &Config{
-		ExporterSettings:   &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "sapm/customname"},
+	cfg := &Config{
+		ExporterSettings:   config.NewExporterSettings(config.NewIDWithName(typeStr, "customname")),
 		Endpoint:           "test-endpoint",
 		AccessToken:        "abcd1234",
 		NumWorkers:         3,
@@ -49,7 +49,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	}
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
-	te, err := newSAPMTracesExporter(config, params)
+	te, err := newSAPMTracesExporter(cfg, params)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
@@ -57,9 +57,9 @@ func TestCreateTracesExporter(t *testing.T) {
 }
 
 func TestCreateTracesExporterWithInvalidConfig(t *testing.T) {
-	config := &Config{}
+	cfg := &Config{}
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	te, err := newSAPMTracesExporter(config, params)
+	te, err := newSAPMTracesExporter(cfg, params)
 	require.Error(t, err)
 	assert.Nil(t, te)
 }
@@ -214,7 +214,7 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 			}()
 			defer server.Close()
 
-			config := &Config{
+			cfg := &Config{
 				Endpoint:    server.URL,
 				AccessToken: "ClientAccessToken",
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
@@ -223,7 +223,7 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 			}
 			params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
-			se, err := newSAPMExporter(config, params)
+			se, err := newSAPMExporter(cfg, params)
 			assert.Nil(t, err)
 			assert.NotNil(t, se, "failed to create trace exporter")
 

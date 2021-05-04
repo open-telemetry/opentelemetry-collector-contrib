@@ -112,7 +112,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
 		Headers: map[string]string{
@@ -136,7 +136,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "negative_duration",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				AccessToken:      "testToken",
 				Realm:            "lab",
 				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: -2 * time.Second},
@@ -146,7 +146,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "empty_realm_and_urls",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				AccessToken:      "testToken",
 			},
 			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
@@ -155,7 +155,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "empty_realm_and_api_url",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(typeStr),
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				AccessToken:      "testToken",
 				IngestURL:        "http://localhost:123",
 			},
@@ -255,7 +255,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 
 func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
 	}
@@ -270,7 +270,7 @@ func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
 
 func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
 		ExcludeMetrics: []dpfilters.MetricFilter{
@@ -290,7 +290,7 @@ func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 
 func TestCreateMetricsExporterWithEmptyExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
 		ExcludeMetrics:   []dpfilters.MetricFilter{},
