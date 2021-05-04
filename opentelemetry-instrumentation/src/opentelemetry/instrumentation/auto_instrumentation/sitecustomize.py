@@ -23,23 +23,34 @@ from pkg_resources import iter_entry_points
 from opentelemetry.environment_variables import (
     OTEL_PYTHON_DISABLED_INSTRUMENTATIONS,
 )
+from opentelemetry.instrumentation.distro import BaseDistro, DefaultDistro
 
 logger = getLogger(__file__)
 
 
-def _load_distros():
+def _load_distros() -> BaseDistro:
     for entry_point in iter_entry_points("opentelemetry_distro"):
         try:
-            entry_point.load()().configure()  # type: ignore
-            logger.debug("Distribution %s configured", entry_point.name)
+            distro = entry_point.load()()
+            if not isinstance(distro, BaseDistro):
+                logger.debug(
+                    "%s is not an OpenTelemetry Distro. Skipping",
+                    entry_point.name,
+                )
+                continue
+            logger.debug(
+                "Distribution %s will be configured", entry_point.name
+            )
+            return distro
         except Exception as exc:  # pylint: disable=broad-except
             logger.exception(
                 "Distribution %s configuration failed", entry_point.name
             )
             raise exc
+    return DefaultDistro()
 
 
-def _load_instrumentors():
+def _load_instrumentors(distro):
     package_to_exclude = environ.get(OTEL_PYTHON_DISABLED_INSTRUMENTATIONS, [])
     if isinstance(package_to_exclude, str):
         package_to_exclude = package_to_exclude.split(",")
@@ -47,13 +58,14 @@ def _load_instrumentors():
         package_to_exclude = [x.strip() for x in package_to_exclude]
 
     for entry_point in iter_entry_points("opentelemetry_instrumentor"):
+        if entry_point.name in package_to_exclude:
+            logger.debug(
+                "Instrumentation skipped for library %s", entry_point.name
+            )
+            continue
+
         try:
-            if entry_point.name in package_to_exclude:
-                logger.debug(
-                    "Instrumentation skipped for library %s", entry_point.name
-                )
-                continue
-            entry_point.load()().instrument()  # type: ignore
+            distro.load_instrumentor(entry_point)
             logger.debug("Instrumented %s", entry_point.name)
         except Exception as exc:  # pylint: disable=broad-except
             logger.exception("Instrumenting of %s failed", entry_point.name)
@@ -80,9 +92,10 @@ def _load_configurators():
 
 def initialize():
     try:
-        _load_distros()
+        distro = _load_distros()
+        distro.configure()
         _load_configurators()
-        _load_instrumentors()
+        _load_instrumentors(distro)
     except Exception:  # pylint: disable=broad-except
         logger.exception("Failed to auto initialize opentelemetry")
     finally:

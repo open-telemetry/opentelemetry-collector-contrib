@@ -20,6 +20,10 @@ OpenTelemetry Base Distribution (Distro)
 from abc import ABC, abstractmethod
 from logging import getLogger
 
+from pkg_resources import EntryPoint
+
+from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
+
 _LOG = getLogger(__name__)
 
 
@@ -43,5 +47,25 @@ class BaseDistro(ABC):
         """Configure the distribution"""
         self._configure(**kwargs)
 
+    def load_instrumentor(  # pylint: disable=no-self-use
+        self, entry_point: EntryPoint
+    ):
+        """Takes a collection of instrumentation entry points
+        and activates them by instantiating and calling instrument()
+        on each one.
 
-__all__ = ["BaseDistro"]
+        Distros can override this method to customize the behavior by
+        inspecting each entry point and configuring them in special ways,
+        passing additional arguments, load a replacement/fork instead,
+        skip loading entirely, etc.
+        """
+        instrumentor: BaseInstrumentor = entry_point.load()
+        instrumentor().instrument()
+
+
+class DefaultDistro(BaseDistro):
+    def _configure(self, **kwargs):
+        pass
+
+
+__all__ = ["BaseDistro", "DefaultDistro"]
