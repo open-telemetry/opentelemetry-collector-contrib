@@ -33,10 +33,11 @@ import (
 )
 
 const (
-	idleConnTimeout     = 30 * time.Second
-	tlsHandshakeTimeout = 10 * time.Second
-	dialerTimeout       = 30 * time.Second
-	dialerKeepAlive     = 30 * time.Second
+	idleConnTimeout      = 30 * time.Second
+	tlsHandshakeTimeout  = 10 * time.Second
+	dialerTimeout        = 30 * time.Second
+	dialerKeepAlive      = 30 * time.Second
+	defaultSplunkAppName = "OpenTelemetry Collector Contrib"
 )
 
 type splunkExporter struct {
@@ -56,9 +57,18 @@ type exporterOptions struct {
 func createExporter(
 	config *Config,
 	logger *zap.Logger,
+	buildinfo *component.BuildInfo,
 ) (*splunkExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
+	}
+
+	if config.SplunkAppName == "" {
+		config.SplunkAppName = defaultSplunkAppName
+	}
+
+	if config.SplunkAppVersion == "" {
+		config.SplunkAppVersion = buildinfo.Version
 	}
 
 	options, err := config.getOptionsFromConfig()
