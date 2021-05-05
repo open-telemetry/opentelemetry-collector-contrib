@@ -30,8 +30,8 @@ type tracesExporter struct {
 	converter *otel2influx.OtelTracesToLineProtocol
 }
 
-func newTracesExporter(config *Config, params component.ExporterCreateParams) (*tracesExporter, error) {
-	influxLogger := newZapInfluxLogger(params.Logger)
+func newTracesExporter(config *Config, componentSettings component.ComponentSettings) (*tracesExporter, error) {
+	influxLogger := newZapInfluxLogger(componentSettings.Logger)
 	converter := otel2influx.NewOtelTracesToLineProtocol(influxLogger)
 	writer, err := newInfluxHTTPWriter(influxLogger, config)
 	if err != nil {
@@ -68,8 +68,8 @@ var metricsSchemata = map[string]common.MetricsSchema{
 	"telegraf-prometheus-v2": common.MetricsSchemaTelegrafPrometheusV2,
 }
 
-func newMetricsExporter(config *Config, params component.ExporterCreateParams) (*metricsExporter, error) {
-	influxLogger := newZapInfluxLogger(params.Logger)
+func newMetricsExporter(config *Config, componentSettings component.ComponentSettings) (*metricsExporter, error) {
+	influxLogger := newZapInfluxLogger(componentSettings.Logger)
 	schema, found := metricsSchemata[config.MetricsSchema]
 	if !found {
 		return nil, fmt.Errorf("schema '%s' not recognized", config.MetricsSchema)
@@ -109,8 +109,8 @@ type logsExporter struct {
 	converter *otel2influx.OtelLogsToLineProtocol
 }
 
-func newLogsExporter(config *Config, params component.ExporterCreateParams) (*logsExporter, error) {
-	influxLogger := newZapInfluxLogger(params.Logger)
+func newLogsExporter(config *Config, componentSettings component.ComponentSettings) (*logsExporter, error) {
+	influxLogger := newZapInfluxLogger(componentSettings.Logger)
 	converter := otel2influx.NewOtelLogsToLineProtocol(influxLogger)
 	writer, err := newInfluxHTTPWriter(influxLogger, config)
 	if err != nil {

@@ -40,7 +40,7 @@ func newTracesExporter(
 	config config.Exporter, componentSettings component.ComponentSettings, cn awsutil.ConnAttr) (component.TracesExporter, error) {
 	typeLog := zap.String("type", string(config.ID().Type()))
 	nameLog := zap.String("name", config.ID().String())
-	logger := pcomponentSettings.Logger
+	logger := componentSettings.Logger
 	awsConfig, session, err := awsutil.GetAWSConfigSession(logger, cn, &config.(*Config).AWSSessionSettings)
 	if err != nil {
 		return nil, err

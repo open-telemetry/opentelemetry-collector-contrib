@@ -58,7 +58,7 @@ var (
 
 func TestFillHostMetadata(t *testing.T) {
 	cache.Cache.Flush()
-	params := component.ComponentSettings{
+	componentSettings := component.ComponentSettings{
 		Logger:    zap.NewNop(),
 		BuildInfo: mockBuildInfo,
 	}
