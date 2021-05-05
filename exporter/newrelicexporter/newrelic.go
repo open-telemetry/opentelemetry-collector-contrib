@@ -36,6 +36,9 @@ const (
 	product = "NewRelic-OpenTelemetry-Collector"
 )
 
+// GitHash may be replaced at compile time in order to update the UserAgent
+var GitHash = ""
+
 // exporter exports OpenTelemetry Collector data to New Relic.
 type exporter struct {
 	buildInfo      *component.BuildInfo
@@ -61,6 +64,8 @@ func clientOptions(info *component.BuildInfo, apiKey string, apiKeyHeader string
 	userAgent := product
 	if info.Version != "" {
 		userAgent += "/" + info.Version
+	} else if GitHash != "" {
+		userAgent += "/" + GitHash
 	}
 	userAgent += " " + info.Command
 	options := []telemetry.ClientOption{telemetry.WithUserAgent(userAgent)}

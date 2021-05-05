@@ -728,10 +728,12 @@ func TestExportLogs(t *testing.T) {
 }
 
 func TestCreatesClientOptionWithVersionInUserAgent(t *testing.T) {
-	testUserAgentContainsCollectorInfo(t, testCollectorVersion, testCollectorName, "NewRelic-OpenTelemetry-Collector/v1.2.3 TestCollector")
+	testUserAgentContainsCollectorInfo(t, "", "", testCollectorName, "NewRelic-OpenTelemetry-Collector TestCollector")
+	testUserAgentContainsCollectorInfo(t, "abcdef", "", testCollectorName, "NewRelic-OpenTelemetry-Collector/abcdef TestCollector")
+	testUserAgentContainsCollectorInfo(t, "", testCollectorVersion, testCollectorName, "NewRelic-OpenTelemetry-Collector/v1.2.3 TestCollector")
 }
 
-func testUserAgentContainsCollectorInfo(t *testing.T, version string, exeName string, expectedUserAgentSubstring string) {
+func testUserAgentContainsCollectorInfo(t *testing.T, gitHash string, version string, exeName string, expectedUserAgentSubstring string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -763,6 +765,11 @@ func testUserAgentContainsCollectorInfo(t *testing.T, version string, exeName st
 		Command: exeName,
 		Version: version,
 	}}
+
+	cleanupHash := GitHash
+	GitHash = gitHash
+	t.Cleanup(func() { GitHash = cleanupHash })
+
 	exp, err := f.CreateTracesExporter(context.Background(), params, c)
 	require.NoError(t, err)
 
