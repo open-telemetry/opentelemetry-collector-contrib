@@ -18,3 +18,6 @@ require (
 	google.golang.org/api v0.45.0
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )
+
+// WIP update for otelcol changes
+replace go.opentelemetry.io/collector => github.com/pmatyjasek-sumo/opentelemetry-collector v0.25.1-0.20210428081312-72ef9d6ccfe5
