@@ -46,7 +46,7 @@ var (
 var newMetricsReceiver = func(
 	ctx context.Context,
 	config Config,
-	params component.ReceiverCreateParams,
+	componentSettings component.ComponentSettings,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	sc := sarama.NewConfig()
@@ -64,7 +64,7 @@ var newMetricsReceiver = func(
 	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(config.Scrapers))
 	for _, scraper := range config.Scrapers {
 		if s, ok := allScrapers[scraper]; ok {
-			s, err := s(ctx, config, sc, params.Logger)
+			s, err := s(ctx, config, sc, componentSettings.Logger)
 			if err != nil {
 				return nil, err
 			}
@@ -76,7 +76,7 @@ var newMetricsReceiver = func(
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&config.ScraperControllerSettings,
-		params.Logger,
+		componentSettings.Logger,
 		consumer,
 		scraperControllerOptions...,
 	)

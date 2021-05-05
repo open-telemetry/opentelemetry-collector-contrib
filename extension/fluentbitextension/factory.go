@@ -41,7 +41,7 @@ func createDefaultConfig() config.Extension {
 	}
 }
 
-func createExtension(_ context.Context, params component.ExtensionCreateParams, cfg config.Extension) (component.Extension, error) {
+func createExtension(_ context.Context, componentSettings component.ComponentSettings, cfg config.Extension) (component.Extension, error) {
 	config := cfg.(*Config)
-	return newProcessManager(config, params.Logger), nil
+	return newProcessManager(config, componentSettings.Logger), nil
 }

@@ -37,14 +37,14 @@ func TestCreateMetricsExporter(t *testing.T) {
 	cfg.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := createMetricsExporter(context.Background(), params, cfg)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	_, err := createMetricsExporter(context.Background(), componentSettings, cfg)
 	assert.NoError(t, err)
 }
 
 func TestCreateMetricsExporterNoConfig(t *testing.T) {
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := createMetricsExporter(context.Background(), params, nil)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	_, err := createMetricsExporter(context.Background(), componentSettings, nil)
 	assert.Error(t, err)
 }
 
@@ -53,22 +53,22 @@ func TestCreateTracesExporter(t *testing.T) {
 	cfg.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := createTracesExporter(context.Background(), params, cfg)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	_, err := createTracesExporter(context.Background(), componentSettings, cfg)
 	assert.NoError(t, err)
 }
 
 func TestCreateTracesExporterNoConfig(t *testing.T) {
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := createTracesExporter(context.Background(), params, nil)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	_, err := createTracesExporter(context.Background(), componentSettings, nil)
 	assert.Error(t, err)
 }
 
 func TestCreateTracesExporterInvalidEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "urn:something:12345"
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := createTracesExporter(context.Background(), params, cfg)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	_, err := createTracesExporter(context.Background(), componentSettings, cfg)
 	assert.Error(t, err)
 }
 
@@ -77,22 +77,22 @@ func TestCreateLogsExporter(t *testing.T) {
 	cfg.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := createLogsExporter(context.Background(), params, cfg)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	_, err := createLogsExporter(context.Background(), componentSettings, cfg)
 	assert.NoError(t, err)
 }
 
 func TestCreateLogsExporterNoConfig(t *testing.T) {
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := createLogsExporter(context.Background(), params, nil)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	_, err := createLogsExporter(context.Background(), componentSettings, nil)
 	assert.Error(t, err)
 }
 
 func TestCreateLogsExporterInvalidEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "urn:something:12345"
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := createLogsExporter(context.Background(), params, cfg)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	_, err := createLogsExporter(context.Background(), componentSettings, cfg)
 	assert.Error(t, err)
 }
 
@@ -102,9 +102,9 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 	exp, err := factory.CreateMetricsExporter(
-		context.Background(), params,
+		context.Background(), componentSettings,
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
@@ -113,7 +113,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	cfg.Token = "testToken"
 	cfg.Endpoint = "https://example.com"
 	exp, err = factory.CreateMetricsExporter(
-		context.Background(), params,
+		context.Background(), componentSettings,
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -128,8 +128,8 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 		Endpoint:         "https://example.com:8000",
 	}
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	te, err := createMetricsExporter(context.Background(), params, config)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	te, err := createMetricsExporter(context.Background(), componentSettings, config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }
@@ -159,8 +159,8 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			params := component.ExporterCreateParams{Logger: zap.NewNop()}
-			te, err := createMetricsExporter(context.Background(), params, tt.config)
+			componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+			te, err := createMetricsExporter(context.Background(), componentSettings, tt.config)
 			assert.EqualError(t, err, tt.errorMessage)
 			assert.Nil(t, te)
 		})

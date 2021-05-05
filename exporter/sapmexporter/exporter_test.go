@@ -47,9 +47,9 @@ func TestCreateTracesExporter(t *testing.T) {
 			AccessTokenPassthrough: true,
 		},
 	}
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 
-	te, err := newSAPMTracesExporter(cfg, params)
+	te, err := newSAPMTracesExporter(cfg, componentSettings)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
@@ -58,8 +58,8 @@ func TestCreateTracesExporter(t *testing.T) {
 
 func TestCreateTracesExporterWithInvalidConfig(t *testing.T) {
 	cfg := &Config{}
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	te, err := newSAPMTracesExporter(cfg, params)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	te, err := newSAPMTracesExporter(cfg, componentSettings)
 	require.Error(t, err)
 	assert.Nil(t, te)
 }
@@ -221,9 +221,9 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 					AccessTokenPassthrough: tt.accessTokenPassthrough,
 				},
 			}
-			params := component.ExporterCreateParams{Logger: zap.NewNop()}
+			componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 
-			se, err := newSAPMExporter(cfg, params)
+			se, err := newSAPMExporter(cfg, componentSettings)
 			assert.Nil(t, err)
 			assert.NotNil(t, se, "failed to create trace exporter")
 

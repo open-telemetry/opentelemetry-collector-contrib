@@ -44,10 +44,10 @@ func TestNewExporter(t *testing.T) {
 			},
 		},
 	}
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 
 	// The client should have been created correctly
-	exp := newMetricsExporter(context.Background(), params, cfg)
+	exp := newMetricsExporter(context.Background(), componentSettings, cfg)
 	assert.NotNil(t, exp)
 	_ = exp.PushMetricsData(context.Background(), testutils.TestMetrics.Clone())
 	assert.Equal(t, len(server.MetadataChan), 0)

@@ -44,7 +44,7 @@ func createDefaultConfig() config.Exporter {
 
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	config config.Exporter,
 ) (component.TracesExporter, error) {
 	sentryConfig, ok := config.(*Config)
@@ -53,6 +53,6 @@ func createTracesExporter(
 	}
 
 	// Create exporter based on sentry config.
-	exp, err := CreateSentryExporter(sentryConfig, params)
+	exp, err := CreateSentryExporter(sentryConfig, componentSettings)
 	return exp, err
 }

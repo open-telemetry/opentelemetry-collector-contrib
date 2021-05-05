@@ -63,10 +63,10 @@ func createDefaultConfig() config.Exporter {
 
 func createLogsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
-	exp, err := newLogsExporter(cfg.(*Config), params)
+	exp, err := newLogsExporter(cfg.(*Config), componentSettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the logs exporter: %w", err)
 	}
@@ -76,10 +76,10 @@ func createLogsExporter(
 
 func createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
-	exp, err := newMetricsExporter(cfg.(*Config), params)
+	exp, err := newMetricsExporter(cfg.(*Config), componentSettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the metrics exporter: %w", err)
 	}

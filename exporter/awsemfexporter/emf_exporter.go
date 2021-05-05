@@ -57,13 +57,13 @@ type emfExporter struct {
 // New func creates an EMF Exporter instance with data push callback func
 func New(
 	config config.Exporter,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 ) (component.MetricsExporter, error) {
 	if config == nil {
 		return nil, errors.New("emf exporter config is nil")
 	}
 
-	logger := params.Logger
+	logger := componentSettings.Logger
 	expConfig := config.(*Config)
 	expConfig.logger = logger
 
@@ -74,7 +74,7 @@ func New(
 	}
 
 	// create CWLogs client with aws session config
-	svcStructuredLog := NewCloudWatchLogsClient(logger, awsConfig, params.BuildInfo, session)
+	svcStructuredLog := NewCloudWatchLogsClient(logger, awsConfig, componentSettings.BuildInfo, session)
 	collectorIdentifier, _ := uuid.NewRandom()
 
 	expConfig.Validate()
@@ -95,16 +95,16 @@ func New(
 // NewEmfExporter creates a new exporter using exporterhelper
 func NewEmfExporter(
 	config config.Exporter,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 ) (component.MetricsExporter, error) {
-	exp, err := New(config, params)
+	exp, err := New(config, componentSettings)
 	if err != nil {
 		return nil, err
 	}
 
 	return exporterhelper.NewMetricsExporter(
 		config,
-		params.Logger,
+		componentSettings.Logger,
 		exp.(*emfExporter).pushMetricsData,
 		exporterhelper.WithResourceToTelemetryConversion(config.(*Config).ResourceToTelemetrySettings),
 		exporterhelper.WithShutdown(exp.(*emfExporter).Shutdown),

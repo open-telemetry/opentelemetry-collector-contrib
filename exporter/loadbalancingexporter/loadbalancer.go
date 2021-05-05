@@ -61,7 +61,7 @@ type loadBalancerImp struct {
 }
 
 // Create new load balancer
-func newLoadBalancer(params component.ExporterCreateParams, cfg config.Exporter, factory componentFactory) (*loadBalancerImp, error) {
+func newLoadBalancer(componentSettings component.ComponentSettings, cfg config.Exporter, factory componentFactory) (*loadBalancerImp, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Resolver.DNS != nil && oCfg.Resolver.Static != nil {
@@ -77,7 +77,7 @@ func newLoadBalancer(params component.ExporterCreateParams, cfg config.Exporter,
 		}
 	}
 	if oCfg.Resolver.DNS != nil {
-		dnsLogger := params.Logger.With(zap.String("resolver", "dns"))
+		dnsLogger := componentSettings.Logger.With(zap.String("resolver", "dns"))
 
 		var err error
 		res, err = newDNSResolver(dnsLogger, oCfg.Resolver.DNS.Hostname, oCfg.Resolver.DNS.Port)
@@ -91,7 +91,7 @@ func newLoadBalancer(params component.ExporterCreateParams, cfg config.Exporter,
 	}
 
 	return &loadBalancerImp{
-		logger:           params.Logger,
+		logger:           componentSettings.Logger,
 		res:              res,
 		componentFactory: factory,
 		exporters:        map[string]component.Exporter{},

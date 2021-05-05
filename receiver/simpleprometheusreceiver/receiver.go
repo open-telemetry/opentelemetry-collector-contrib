@@ -30,15 +30,15 @@ import (
 )
 
 type prometheusReceiverWrapper struct {
-	params            component.ReceiverCreateParams
+	componentSettings component.ComponentSettings
 	config            *Config
 	consumer          consumer.Metrics
 	prometheusRecever component.MetricsReceiver
 }
 
 // new returns a prometheusReceiverWrapper
-func new(params component.ReceiverCreateParams, cfg *Config, consumer consumer.Metrics) *prometheusReceiverWrapper {
-	return &prometheusReceiverWrapper{params: params, config: cfg, consumer: consumer}
+func new(componentSettings component.ComponentSettings, cfg *Config, consumer consumer.Metrics) *prometheusReceiverWrapper {
+	return &prometheusReceiverWrapper{componentSettings: componentSettings, config: cfg, consumer: consumer}
 }
 
 // Start creates and starts the prometheus receiver.
@@ -50,7 +50,7 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 		return fmt.Errorf("failed to create prometheus receiver config: %v", err)
 	}
 
-	pr, err := pFactory.CreateMetricsReceiver(ctx, prw.params, pConfig, prw.consumer)
+	pr, err := pFactory.CreateMetricsReceiver(ctx, prw.componentSettings, pConfig, prw.consumer)
 	if err != nil {
 		return fmt.Errorf("failed to create prometheus receiver: %v", err)
 	}

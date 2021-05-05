@@ -37,13 +37,13 @@ func TestCreateExporter(t *testing.T) {
 
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 
-	te, err := factory.CreateTracesExporter(context.Background(), params, eCfg)
+	te, err := factory.CreateTracesExporter(context.Background(), componentSettings, eCfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
-	me, err := factory.CreateMetricsExporter(context.Background(), params, eCfg)
+	me, err := factory.CreateMetricsExporter(context.Background(), componentSettings, eCfg)
 	assert.Error(t, err)
 	assert.Nil(t, me)
 }

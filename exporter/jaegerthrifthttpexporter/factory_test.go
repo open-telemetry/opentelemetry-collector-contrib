@@ -38,15 +38,15 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	// Default config doesn't have default URL so creating from it should
 	// fail.
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := createTracesExporter(context.Background(), params, cfg)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	exp, err := createTracesExporter(context.Background(), componentSettings, cfg)
 	assert.Error(t, err)
 	assert.Nil(t, exp)
 
 	// Endpoint doesn't have a default value so set it directly.
 	expCfg := cfg.(*Config)
 	expCfg.URL = "http://some.target.org:12345/api/traces"
-	exp, err = createTracesExporter(context.Background(), params, cfg)
+	exp, err = createTracesExporter(context.Background(), componentSettings, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
@@ -64,8 +64,8 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 		Timeout: 2 * time.Second,
 	}
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	te, err := createTracesExporter(context.Background(), params, config)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	te, err := createTracesExporter(context.Background(), componentSettings, config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }
@@ -103,8 +103,8 @@ func TestFactory_CreateTracesExporterFails(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			params := component.ExporterCreateParams{Logger: zap.NewNop()}
-			te, err := createTracesExporter(context.Background(), params, tt.config)
+			componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+			te, err := createTracesExporter(context.Background(), componentSettings, tt.config)
 			assert.EqualError(t, err, tt.errorMessage)
 			assert.Nil(t, te)
 		})

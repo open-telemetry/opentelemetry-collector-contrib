@@ -52,9 +52,9 @@ func createDefaultConfig() config.Exporter {
 
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	eCfg := cfg.(*Config)
-	return newSAPMTracesExporter(eCfg, params)
+	return newSAPMTracesExporter(eCfg, componentSettings)
 }

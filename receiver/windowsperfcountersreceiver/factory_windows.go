@@ -28,19 +28,19 @@ import (
 // createMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	oCfg := cfg.(*Config)
-	scraper, err := newScraper(oCfg, params.Logger)
+	scraper, err := newScraper(oCfg, componentSettings.Logger)
 	if err != nil {
 		return nil, err
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&oCfg.ScraperControllerSettings,
-		params.Logger,
+		componentSettings.Logger,
 		consumer,
 		scraperhelper.AddMetricsScraper(
 			scraperhelper.NewMetricsScraper(

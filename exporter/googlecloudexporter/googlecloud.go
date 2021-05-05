@@ -88,8 +88,8 @@ func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
 	return copts, nil
 }
 
-func newGoogleCloudTracesExporter(cfg *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
-	setVersionInUserAgent(cfg, params.BuildInfo.Version)
+func newGoogleCloudTracesExporter(cfg *Config, componentSettings component.ComponentSettings) (component.TracesExporter, error) {
+	setVersionInUserAgent(cfg, componentSettings.BuildInfo.Version)
 
 	topts := []cloudtrace.Option{
 		cloudtrace.WithProjectID(cfg.ProjectID),
@@ -111,7 +111,7 @@ func newGoogleCloudTracesExporter(cfg *Config, params component.ExporterCreatePa
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
+		componentSettings.Logger,
 		tExp.pushTraces,
 		exporterhelper.WithShutdown(tExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
@@ -121,8 +121,8 @@ func newGoogleCloudTracesExporter(cfg *Config, params component.ExporterCreatePa
 		exporterhelper.WithRetry(cfg.RetrySettings))
 }
 
-func newGoogleCloudMetricsExporter(cfg *Config, params component.ExporterCreateParams) (component.MetricsExporter, error) {
-	setVersionInUserAgent(cfg, params.BuildInfo.Version)
+func newGoogleCloudMetricsExporter(cfg *Config, componentSettings component.ComponentSettings) (component.MetricsExporter, error) {
+	setVersionInUserAgent(cfg, componentSettings.BuildInfo.Version)
 
 	// TODO:  For each ProjectID, create a different exporter
 	// or at least a unique Google Cloud client per ProjectID.
@@ -169,7 +169,7 @@ func newGoogleCloudMetricsExporter(cfg *Config, params component.ExporterCreateP
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		params.Logger,
+		componentSettings.Logger,
 		mExp.pushMetrics,
 		exporterhelper.WithShutdown(mExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism

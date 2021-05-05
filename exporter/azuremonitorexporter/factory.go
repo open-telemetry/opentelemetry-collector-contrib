@@ -61,7 +61,7 @@ func createDefaultConfig() config.Exporter {
 
 func (f *factory) createTracesExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	exporterConfig, ok := cfg.(*Config)
@@ -70,8 +70,8 @@ func (f *factory) createTracesExporter(
 		return nil, errUnexpectedConfigurationType
 	}
 
-	tc := f.getTransportChannel(exporterConfig, params.Logger)
-	return newTracesExporter(exporterConfig, tc, params.Logger)
+	tc := f.getTransportChannel(exporterConfig, componentSettings.Logger)
+	return newTracesExporter(exporterConfig, tc, componentSettings.Logger)
 }
 
 // Configures the transport channel.

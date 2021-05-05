@@ -84,7 +84,7 @@ func (rCfg *Config) validate() error {
 // CreateTracesReceiver creates a trace receiver based on provided config.
 func createTracesReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
@@ -97,5 +97,5 @@ func createTracesReceiver(
 	}
 
 	// Create the receiver.
-	return New(ctx, params, rCfg, nextConsumer)
+	return New(ctx, componentSettings, rCfg, nextConsumer)
 }

@@ -100,8 +100,8 @@ func TestProcessorStart(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.MetricsExporter = tc.metricsExporter
 
-			procCreationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
-			traceProcessor, err := factory.CreateTracesProcessor(context.Background(), procCreationParams, cfg, consumertest.NewNop())
+			procCreationcomponentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+			traceProcessor, err := factory.CreateTracesProcessor(context.Background(), procCreationcomponentSettings, cfg, consumertest.NewNop())
 			require.NoError(t, err)
 
 			// Test
@@ -465,10 +465,10 @@ func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExpo
 			Endpoint: "example.com:1234",
 		},
 	}
-	expCreationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	mexp, err := otlpExpFactory.CreateMetricsExporter(context.Background(), expCreationParams, otlpConfig)
+	expCreationcomponentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	mexp, err := otlpExpFactory.CreateMetricsExporter(context.Background(), expCreationcomponentSettings, otlpConfig)
 	require.NoError(t, err)
-	texp, err := otlpExpFactory.CreateTracesExporter(context.Background(), expCreationParams, otlpConfig)
+	texp, err := otlpExpFactory.CreateTracesExporter(context.Background(), expCreationcomponentSettings, otlpConfig)
 	require.NoError(t, err)
 	return otlpConfig, mexp, texp
 }

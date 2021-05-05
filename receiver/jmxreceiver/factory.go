@@ -53,7 +53,7 @@ func createDefaultConfig() config.Receiver {
 
 func createReceiver(
 	_ context.Context,
-	params component.ReceiverCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
@@ -61,5 +61,5 @@ func createReceiver(
 	if err := jmxConfig.validate(); err != nil {
 		return nil, err
 	}
-	return newJMXMetricReceiver(params, jmxConfig, consumer), nil
+	return newJMXMetricReceiver(componentSettings, jmxConfig, consumer), nil
 }

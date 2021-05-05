@@ -45,11 +45,11 @@ func createDefaultConfig() config.Receiver {
 
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	oCfg := cfg.(*Config)
 
-	return newRedisReceiver(params.Logger, oCfg, consumer), nil
+	return newRedisReceiver(componentSettings.Logger, oCfg, consumer), nil
 }

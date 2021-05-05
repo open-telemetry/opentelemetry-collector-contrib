@@ -49,14 +49,14 @@ func (s *sublayerCalculator) computeSublayers(trace pb.Trace) []stats.SublayerVa
 }
 
 type traceExporter struct {
-	params         component.ExporterCreateParams
-	cfg            *config.Config
-	ctx            context.Context
-	edgeConnection TraceEdgeConnection
-	obfuscator     *obfuscate.Obfuscator
-	calculator     *sublayerCalculator
-	client         *datadog.Client
-	denylister     *Denylister
+	componentSettings component.ComponentSettings
+	cfg               *config.Config
+	ctx               context.Context
+	edgeConnection    TraceEdgeConnection
+	obfuscator        *obfuscate.Obfuscator
+	calculator        *sublayerCalculator
+	client            *datadog.Client
+	denylister        *Denylister
 }
 
 var (
@@ -77,10 +77,10 @@ var (
 	}
 )
 
-func newTracesExporter(ctx context.Context, params component.ExporterCreateParams, cfg *config.Config) *traceExporter {
+func newTracesExporter(ctx context.Context, componentSettings component.ComponentSettings, cfg *config.Config) *traceExporter {
 	// client to send running metric to the backend & perform API key validation
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
-	utils.ValidateAPIKey(params.Logger, client)
+	utils.ValidateAPIKey(componentSettings.Logger, client)
 
 	// removes potentially sensitive info and PII, approach taken from serverless approach
 	// https://github.com/DataDog/datadog-serverless-functions/blob/11f170eac105d66be30f18eda09eca791bc0d31b/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L43
@@ -91,14 +91,14 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateParam
 
 	calculator := &sublayerCalculator{sc: stats.NewSublayerCalculator()}
 	exporter := &traceExporter{
-		params:         params,
-		cfg:            cfg,
-		ctx:            ctx,
-		edgeConnection: createTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key, params.BuildInfo),
-		obfuscator:     obfuscator,
-		calculator:     calculator,
-		client:         client,
-		denylister:     denylister,
+		componentSettings: componentSettings,
+		cfg:               cfg,
+		ctx:               ctx,
+		edgeConnection:    createTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key, params.BuildInfo),
+		obfuscator:        obfuscator,
+		calculator:        calculator,
+		client:            client,
+		denylister:        denylister,
 	}
 
 	return exporter
@@ -129,7 +129,7 @@ func (exp *traceExporter) pushTraceData(
 			if td.ResourceSpans().Len() > 0 {
 				attrs = td.ResourceSpans().At(0).Resource().Attributes()
 			}
-			go metadata.Pusher(exp.ctx, exp.params, exp.cfg, attrs)
+			go metadata.Pusher(exp.ctx, exp.componentSettings, exp.cfg, attrs)
 		})
 	}
 
@@ -164,7 +164,7 @@ func (exp *traceExporter) pushWithRetry(ctx context.Context, ddTracePayload *pb.
 	err := exp.edgeConnection.SendTraces(ctx, ddTracePayload, maxRetries)
 
 	if err != nil {
-		exp.params.Logger.Info("failed to send traces", zap.Error(err))
+		exp.componentSettings.Logger.Info("failed to send traces", zap.Error(err))
 	}
 
 	// this is for generating metrics like hits, errors, and latency, it uses a separate endpoint than Traces
@@ -172,7 +172,7 @@ func (exp *traceExporter) pushWithRetry(ctx context.Context, ddTracePayload *pb.
 	errStats := exp.edgeConnection.SendStats(context.Background(), stats, maxRetries)
 
 	if errStats != nil {
-		exp.params.Logger.Info("failed to send trace stats", zap.Error(errStats))
+		exp.componentSettings.Logger.Info("failed to send trace stats", zap.Error(errStats))
 	}
 
 	return fn()

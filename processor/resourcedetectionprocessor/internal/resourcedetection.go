@@ -39,7 +39,7 @@ type ResourceDetectorConfig interface {
 	GetConfigFromType(DetectorType) DetectorConfig
 }
 
-type DetectorFactory func(component.ProcessorCreateParams, DetectorConfig) (Detector, error)
+type DetectorFactory func(component.ComponentSettings, DetectorConfig) (Detector, error)
 
 type ResourceProviderFactory struct {
 	// detectors holds all possible detector types.
@@ -51,20 +51,20 @@ func NewProviderFactory(detectors map[DetectorType]DetectorFactory) *ResourcePro
 }
 
 func (f *ResourceProviderFactory) CreateResourceProvider(
-	params component.ProcessorCreateParams,
+	componentSettings component.ComponentSettings,
 	timeout time.Duration,
 	detectorConfigs ResourceDetectorConfig,
 	detectorTypes ...DetectorType) (*ResourceProvider, error) {
-	detectors, err := f.getDetectors(params, detectorConfigs, detectorTypes)
+	detectors, err := f.getDetectors(componentSettings, detectorConfigs, detectorTypes)
 	if err != nil {
 		return nil, err
 	}
 
-	provider := NewResourceProvider(params.Logger, timeout, detectors...)
+	provider := NewResourceProvider(componentSettings.Logger, timeout, detectors...)
 	return provider, nil
 }
 
-func (f *ResourceProviderFactory) getDetectors(params component.ProcessorCreateParams, detectorConfigs ResourceDetectorConfig, detectorTypes []DetectorType) ([]Detector, error) {
+func (f *ResourceProviderFactory) getDetectors(componentSettings component.ComponentSettings, detectorConfigs ResourceDetectorConfig, detectorTypes []DetectorType) ([]Detector, error) {
 	detectors := make([]Detector, 0, len(detectorTypes))
 	for _, detectorType := range detectorTypes {
 		detectorFactory, ok := f.detectors[detectorType]
@@ -72,7 +72,7 @@ func (f *ResourceProviderFactory) getDetectors(params component.ProcessorCreateP
 			return nil, fmt.Errorf("invalid detector key: %v", detectorType)
 		}
 
-		detector, err := detectorFactory(params, detectorConfigs.GetConfigFromType(detectorType))
+		detector, err := detectorFactory(componentSettings, detectorConfigs.GetConfigFromType(detectorType))
 		if err != nil {
 			return nil, fmt.Errorf("failed creating detector type %q: %w", detectorType, err)
 		}

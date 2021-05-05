@@ -74,7 +74,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 
 	_, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{
+		component.ComponentSettings{
 			Logger: zaptest.NewLogger(t),
 		},
 		cfg,
@@ -90,7 +90,7 @@ func TestReadStaticFile(t *testing.T) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
+	componentSettings := component.ComponentSettings{Logger: zaptest.NewLogger(t)}
 
 	cfg := testdataConfigYamlAsMap()
 	cfg.Converter.MaxFlushCount = 10
@@ -104,7 +104,7 @@ func TestReadStaticFile(t *testing.T) {
 	wg.Add(1)
 	go consumeNLogsFromConverter(converter.OutChannel(), 3, &wg)
 
-	rcvr, err := f.CreateLogsReceiver(context.Background(), params, cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), componentSettings, cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -180,7 +180,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
+	componentSettings := component.ComponentSettings{Logger: zaptest.NewLogger(t)}
 
 	cfg := testdataRotateTestYamlAsMap(tempDir)
 	cfg.Converter.MaxFlushCount = 1
@@ -201,7 +201,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	wg.Add(1)
 	go consumeNLogsFromConverter(converter.OutChannel(), numLogs, &wg)
 
-	rcvr, err := f.CreateLogsReceiver(context.Background(), params, cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), componentSettings, cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 

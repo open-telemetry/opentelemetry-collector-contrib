@@ -56,12 +56,12 @@ func TestNewLogsExporter(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			// prepare
 			config := tt.config
-			params := component.ExporterCreateParams{
+			componentSettings := component.ComponentSettings{
 				Logger: zap.NewNop(),
 			}
 
 			// test
-			_, err := newLogsExporter(params, config)
+			_, err := newLogsExporter(componentSettings, config)
 
 			// verify
 			require.Equal(t, tt.err, err)
@@ -80,11 +80,11 @@ func TestLogExporterStart(t *testing.T) {
 			func() *logExporterImp {
 				// prepare
 				cfg := simpleConfig()
-				params := component.ExporterCreateParams{
+				componentSettings := component.ComponentSettings{
 					Logger: zap.NewNop(),
 				}
 
-				p, _ := newLogsExporter(params, cfg)
+				p, _ := newLogsExporter(componentSettings, cfg)
 				return p
 			}(),
 			nil,
@@ -94,12 +94,12 @@ func TestLogExporterStart(t *testing.T) {
 			func() *logExporterImp {
 				// prepare
 				cfg := simpleConfig()
-				params := component.ExporterCreateParams{
+				componentSettings := component.ComponentSettings{
 					Logger: zap.NewNop(),
 				}
 
-				lb, _ := newLoadBalancer(params, cfg, nil)
-				p, _ := newLogsExporter(params, cfg)
+				lb, _ := newLoadBalancer(componentSettings, cfg, nil)
+				p, _ := newLogsExporter(componentSettings, cfg)
 
 				lb.res = &mockResolver{
 					onStart: func(context.Context) error {
@@ -129,10 +129,10 @@ func TestLogExporterStart(t *testing.T) {
 func TestLogExporterShutdown(t *testing.T) {
 	// prepare
 	config := simpleConfig()
-	params := component.ExporterCreateParams{
+	componentSettings := component.ComponentSettings{
 		Logger: zap.NewNop(),
 	}
-	p, err := newLogsExporter(params, config)
+	p, err := newLogsExporter(componentSettings, config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -146,17 +146,17 @@ func TestLogExporterShutdown(t *testing.T) {
 func TestConsumeLogs(t *testing.T) {
 	// prepare
 	config := simpleConfig()
-	params := component.ExporterCreateParams{
+	componentSettings := component.ComponentSettings{
 		Logger: zap.NewNop(),
 	}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		return newNopMockLogsExporter(), nil
 	}
-	lb, err := newLoadBalancer(params, config, componentFactory)
+	lb, err := newLoadBalancer(componentSettings, config, componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(params, config)
+	p, err := newLogsExporter(componentSettings, config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -184,17 +184,17 @@ func TestConsumeLogs(t *testing.T) {
 func TestConsumeLogsExporterNotFound(t *testing.T) {
 	// prepare
 	config := simpleConfig()
-	params := component.ExporterCreateParams{
+	componentSettings := component.ComponentSettings{
 		Logger: zap.NewNop(),
 	}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		return newNopMockTracesExporter(), nil
 	}
-	lb, err := newLoadBalancer(params, config, componentFactory)
+	lb, err := newLoadBalancer(componentSettings, config, componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(params, config)
+	p, err := newLogsExporter(componentSettings, config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -221,17 +221,17 @@ func TestConsumeLogsExporterNotFound(t *testing.T) {
 func TestConsumeLogsUnexpectedExporterType(t *testing.T) {
 	// prepare
 	config := simpleConfig()
-	params := component.ExporterCreateParams{
+	componentSettings := component.ComponentSettings{
 		Logger: zap.NewNop(),
 	}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		return newNopMockExporter(), nil
 	}
-	lb, err := newLoadBalancer(params, config, componentFactory)
+	lb, err := newLoadBalancer(componentSettings, config, componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(params, config)
+	p, err := newLogsExporter(componentSettings, config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -260,17 +260,17 @@ func TestConsumeLogsUnexpectedExporterType(t *testing.T) {
 func TestLogBatchWithTwoTraces(t *testing.T) {
 	// prepare
 	config := simpleConfig()
-	params := component.ExporterCreateParams{
+	componentSettings := component.ComponentSettings{
 		Logger: zap.NewNop(),
 	}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		return newNopMockLogsExporter(), nil
 	}
-	lb, err := newLoadBalancer(params, config, componentFactory)
+	lb, err := newLoadBalancer(componentSettings, config, componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(params, config)
+	p, err := newLogsExporter(componentSettings, config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -333,17 +333,17 @@ func TestNoLogsInBatch(t *testing.T) {
 func TestLogsWithoutTraceID(t *testing.T) {
 	// prepare
 	config := simpleConfig()
-	params := component.ExporterCreateParams{
+	componentSettings := component.ComponentSettings{
 		Logger: zap.NewNop(),
 	}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		return newNopMockLogsExporter(), nil
 	}
-	lb, err := newLoadBalancer(params, config, componentFactory)
+	lb, err := newLoadBalancer(componentSettings, config, componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(params, config)
+	p, err := newLogsExporter(componentSettings, config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -412,15 +412,15 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 			DNS: &DNSResolver{Hostname: "service-1", Port: ""},
 		},
 	}
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		return newNopMockLogsExporter(), nil
 	}
-	lb, err := newLoadBalancer(params, cfg, componentFactory)
+	lb, err := newLoadBalancer(componentSettings, cfg, componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(params, cfg)
+	p, err := newLogsExporter(componentSettings, cfg)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 

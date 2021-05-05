@@ -45,8 +45,8 @@ type Detector struct {
 	metadata gcp.Metadata
 }
 
-func NewDetector(params component.ProcessorCreateParams, _ internal.DetectorConfig) (internal.Detector, error) {
-	return &Detector{log: params.Logger, metadata: &gcp.MetadataImpl{}}, nil
+func NewDetector(componentSettings component.ComponentSettings, _ internal.DetectorConfig) (internal.Detector, error) {
+	return &Detector{log: componentSettings.Logger, metadata: &gcp.MetadataImpl{}}, nil
 }
 
 // Detect detects associated resources when running in GKE environment.

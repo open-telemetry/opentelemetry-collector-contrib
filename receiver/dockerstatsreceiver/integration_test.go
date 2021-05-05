@@ -53,21 +53,21 @@ func factory() (component.ReceiverFactory, *Config) {
 	return f, config
 }
 
-func paramsAndContext(t *testing.T) (component.ReceiverCreateParams, context.Context, context.CancelFunc) {
+func paramsAndContext(t *testing.T) (component.ReceiverCreatecomponentSettings, context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
-	return component.ReceiverCreateParams{Logger: logger}, ctx, cancel
+	return component.ComponentSettings{Logger: logger}, ctx, cancel
 }
 
 func TestDefaultMetricsIntegration(t *testing.T) {
-	params, ctx, cancel := paramsAndContext(t)
+	componentSettings, ctx, cancel := paramsAndContext(t)
 	defer cancel()
 	d := container.New(t)
 	d.StartImage("docker.io/library/nginx:1.17", container.WithPortReady(80))
 
 	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
-	receiver, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
+	receiver, err := f.CreateMetricsReceiver(ctx, componentSettings, config, consumer)
 	r := receiver.(*Receiver)
 
 	require.NoError(t, err, "failed creating metrics Receiver")
@@ -90,10 +90,10 @@ func TestAllMetricsIntegration(t *testing.T) {
 	f, config := factory()
 	config.ProvidePerCoreCPUMetrics = true
 
-	params, ctx, cancel := paramsAndContext(t)
+	componentSettings, ctx, cancel := paramsAndContext(t)
 	defer cancel()
 
-	receiver, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
+	receiver, err := f.CreateMetricsReceiver(ctx, componentSettings, config, consumer)
 	r := receiver.(*Receiver)
 
 	require.NoError(t, err, "failed creating metrics Receiver")
@@ -109,12 +109,12 @@ func TestAllMetricsIntegration(t *testing.T) {
 }
 
 func TestMonitoringAddedContainerIntegration(t *testing.T) {
-	params, ctx, cancel := paramsAndContext(t)
+	componentSettings, ctx, cancel := paramsAndContext(t)
 	defer cancel()
 	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
 
-	receiver, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
+	receiver, err := f.CreateMetricsReceiver(ctx, componentSettings, config, consumer)
 	r := receiver.(*Receiver)
 
 	require.NoError(t, err, "failed creating metrics Receiver")
@@ -133,7 +133,7 @@ func TestMonitoringAddedContainerIntegration(t *testing.T) {
 }
 
 func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
-	params, ctx, cancel := paramsAndContext(t)
+	componentSettings, ctx, cancel := paramsAndContext(t)
 	defer cancel()
 	d := container.New(t)
 	d.StartImage("docker.io/library/redis:6.0.3", container.WithPortReady(6379))
@@ -142,7 +142,7 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	config.ExcludedImages = append(config.ExcludedImages, "*redis*")
 
 	consumer := new(consumertest.MetricsSink)
-	receiver, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
+	receiver, err := f.CreateMetricsReceiver(ctx, componentSettings, config, consumer)
 	r := receiver.(*Receiver)
 
 	require.NoError(t, err, "failed creating metrics Receiver")
@@ -172,12 +172,12 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 }
 
 func TestRemovedContainerRemovesRecordsIntegration(t *testing.T) {
-	params, ctx, cancel := paramsAndContext(t)
+	componentSettings, ctx, cancel := paramsAndContext(t)
 	defer cancel()
 	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
 	config.ExcludedImages = append(config.ExcludedImages, "!*nginx*")
-	receiver, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
+	receiver, err := f.CreateMetricsReceiver(ctx, componentSettings, config, consumer)
 	r := receiver.(*Receiver)
 
 	require.NoError(t, r.Start(ctx, &testHost{

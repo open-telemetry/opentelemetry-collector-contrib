@@ -71,30 +71,30 @@ func TestCreateMetricsExporter(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		cfg         config.Exporter
-		params      component.ExporterCreateParams
-		returnError bool
+		name              string
+		cfg               config.Exporter
+		componentSettings component.ComponentSettings
+		returnError       bool
 	}{
 		{"success_case_with_auth",
 			validConfigWithAuth,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
+			component.ComponentSettings{Logger: zap.NewNop()},
 			false,
 		},
 		{"invalid_config_case",
 			invalidConfig,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
+			component.ComponentSettings{Logger: zap.NewNop()},
 			true,
 		},
 		{"invalid_tls_config_case",
 			invalidTLSConfig,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
+			component.ComponentSettings{Logger: zap.NewNop()},
 			true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := af.CreateMetricsExporter(context.Background(), tt.params, tt.cfg)
+			_, err := af.CreateMetricsExporter(context.Background(), tt.componentSettings, tt.cfg)
 			if tt.returnError {
 				assert.Error(t, err)
 				return

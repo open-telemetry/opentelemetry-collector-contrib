@@ -26,7 +26,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var creationParams = component.ReceiverCreateParams{Logger: zap.NewNop()}
+var componentSettings = component.ComponentSettings{Logger: zap.NewNop()}
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
@@ -45,7 +45,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
 
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), componentSettings, cfg, consumertest.NewNop())
 
 	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, tReceiver)
@@ -56,7 +56,7 @@ func TestCreateLogsReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
 
-	tReceiver, err := factory.CreateLogsReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateLogsReceiver(context.Background(), componentSettings, cfg, consumertest.NewNop())
 
 	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, tReceiver)

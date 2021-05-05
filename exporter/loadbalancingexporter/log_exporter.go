@@ -45,24 +45,24 @@ type logExporterImp struct {
 }
 
 // Create new logs exporter
-func newLogsExporter(params component.ExporterCreateParams, cfg config.Exporter) (*logExporterImp, error) {
+func newLogsExporter(componentSettings component.ComponentSettings, cfg config.Exporter) (*logExporterImp, error) {
 	exporterFactory := otlpexporter.NewFactory()
 
-	tmplParams := component.ExporterCreateParams{
-		Logger:    params.Logger,
-		BuildInfo: params.BuildInfo,
+	tmplcomponentSettings := component.ComponentSettings{
+		Logger:    componentSettings.Logger,
+		BuildInfo: componentSettings.BuildInfo,
 	}
 
-	loadBalancer, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	loadBalancer, err := newLoadBalancer(componentSettings, cfg, func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
-		return exporterFactory.CreateLogsExporter(ctx, tmplParams, &oCfg)
+		return exporterFactory.CreateLogsExporter(ctx, tmplcomponentSettings, &oCfg)
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return &logExporterImp{
-		logger:       params.Logger,
+		logger:       componentSettings.Logger,
 		loadBalancer: loadBalancer,
 	}, nil
 }

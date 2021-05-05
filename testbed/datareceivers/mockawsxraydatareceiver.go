@@ -70,8 +70,8 @@ func (ar *MockAwsXrayDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics,
 			KeyFile:  "../mockdatareceivers/mockawsxrayreceiver/server.key",
 		},
 	}
-	params := component.ReceiverCreateParams{Logger: zap.L()}
-	ar.receiver, err = mockawsxrayreceiver.New(tc, params, &mockDatareceiverCFG)
+	componentSettings := component.ComponentSettings{Logger: zap.L()}
+	ar.receiver, err = mockawsxrayreceiver.New(tc, componentSettings, &mockDatareceiverCFG)
 
 	if err != nil {
 		return err

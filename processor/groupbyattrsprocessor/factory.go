@@ -87,12 +87,12 @@ func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) (*grou
 // createTracesProcessor creates a trace processor based on this config.
 func createTracesProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 
 	oCfg := cfg.(*Config)
-	gap, err := createGroupByAttrsProcessor(params.Logger, oCfg.GroupByKeys)
+	gap, err := createGroupByAttrsProcessor(componentSettings.Logger, oCfg.GroupByKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -107,12 +107,12 @@ func createTracesProcessor(
 // createLogsProcessor creates a metrics processor based on this config.
 func createLogsProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 
 	oCfg := cfg.(*Config)
-	gap, err := createGroupByAttrsProcessor(params.Logger, oCfg.GroupByKeys)
+	gap, err := createGroupByAttrsProcessor(componentSettings.Logger, oCfg.GroupByKeys)
 	if err != nil {
 		return nil, err
 	}

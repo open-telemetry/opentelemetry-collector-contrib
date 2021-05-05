@@ -59,18 +59,18 @@ func (f *factory) CreateDefaultConfig() config.Exporter {
 
 func (f *factory) CreateTracesExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
-	logDeprecation(params.Logger)
-	return f.ExporterFactory.CreateTracesExporter(ctx, params, cfg)
+	logDeprecation(componentSettings.Logger)
+	return f.ExporterFactory.CreateTracesExporter(ctx, componentSettings, cfg)
 }
 
 func (f *factory) CreateMetricsExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
-	logDeprecation(params.Logger)
-	return f.ExporterFactory.CreateMetricsExporter(ctx, params, cfg)
+	logDeprecation(componentSettings.Logger)
+	return f.ExporterFactory.CreateMetricsExporter(ctx, componentSettings, cfg)
 }

@@ -52,10 +52,10 @@ func createDefaultConfig() config.Receiver {
 // CreateTracesReceiver creates a trace receiver based on provided config.
 func createTracesReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	rCfg := cfg.(*Config)
-	return New(nextConsumer, params, rCfg)
+	return New(nextConsumer, componentSettings, rCfg)
 }

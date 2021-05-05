@@ -62,17 +62,17 @@ func createDefaultConfig() config.Exporter {
 // createTracesExporter creates a trace exporter based on this config.
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Exporter) (component.TracesExporter, error) {
 	eCfg := cfg.(*Config)
-	return newGoogleCloudTracesExporter(eCfg, params)
+	return newGoogleCloudTracesExporter(eCfg, componentSettings)
 }
 
 // createMetricsExporter creates a metrics exporter based on this config.
 func createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Exporter) (component.MetricsExporter, error) {
 	eCfg := cfg.(*Config)
-	return newGoogleCloudMetricsExporter(eCfg, params)
+	return newGoogleCloudMetricsExporter(eCfg, componentSettings)
 }

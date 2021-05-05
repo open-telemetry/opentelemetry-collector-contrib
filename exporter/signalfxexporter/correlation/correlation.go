@@ -31,13 +31,13 @@ import (
 
 // Tracker correlation
 type Tracker struct {
-	once         sync.Once
-	log          *zap.Logger
-	cfg          *Config
-	params       component.ExporterCreateParams
-	traceTracker *tracetracker.ActiveServiceTracker
-	correlation  *correlationContext
-	accessToken  string
+	once              sync.Once
+	log               *zap.Logger
+	cfg               *Config
+	componentSettings component.ComponentSettings
+	traceTracker      *tracetracker.ActiveServiceTracker
+	correlation       *correlationContext
+	accessToken       string
 }
 
 type correlationContext struct {
@@ -46,16 +46,16 @@ type correlationContext struct {
 }
 
 // NewTracker creates a new tracker instance for correlation.
-func NewTracker(cfg *Config, accessToken string, params component.ExporterCreateParams) *Tracker {
+func NewTracker(cfg *Config, accessToken string, componentSettings component.ComponentSettings) *Tracker {
 	return &Tracker{
-		log:         params.Logger,
-		cfg:         cfg,
-		params:      params,
-		accessToken: accessToken,
+		log:               componentSettings.Logger,
+		cfg:               cfg,
+		componentSettings: componentSettings,
+		accessToken:       accessToken,
 	}
 }
 
-func newCorrelationClient(cfg *Config, accessToken string, params component.ExporterCreateParams) (
+func newCorrelationClient(cfg *Config, accessToken string, componentSettings component.ComponentSettings) (
 	*correlationContext, error,
 ) {
 	corrURL, err := url.Parse(cfg.Endpoint)
@@ -70,7 +70,7 @@ func newCorrelationClient(cfg *Config, accessToken string, params component.Expo
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	client, err := correlations.NewCorrelationClient(newZapShim(params.Logger), ctx, httpClient, correlations.ClientConfig{
+	client, err := correlations.NewCorrelationClient(newZapShim(componentSettings.Logger), ctx, httpClient, correlations.ClientConfig{
 		Config:      cfg.Config,
 		AccessToken: accessToken,
 		URL:         corrURL,
@@ -106,7 +106,7 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) error {
 		}
 
 		var err error
-		cor.correlation, err = newCorrelationClient(cor.cfg, cor.accessToken, cor.params)
+		cor.correlation, err = newCorrelationClient(cor.cfg, cor.accessToken, cor.componentSettings)
 		if err != nil {
 			cor.log.Error("Failed to create correlation client", zap.Error(err))
 			return
@@ -115,7 +115,7 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) error {
 		hostDimension := string(hostID.Key)
 
 		cor.traceTracker = tracetracker.New(
-			newZapShim(cor.params.Logger),
+			newZapShim(cor.componentSettings.Logger),
 			cor.cfg.StaleServiceTimeout,
 			cor.correlation,
 			map[string]string{

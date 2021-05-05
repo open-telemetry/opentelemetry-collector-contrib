@@ -58,8 +58,8 @@ func (je *SapmDataSender) Start() error {
 	}
 
 	var err error
-	params := component.ExporterCreateParams{Logger: zap.L()}
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	componentSettings := component.ComponentSettings{Logger: zap.L()}
+	exporter, err := factory.CreateTracesExporter(context.Background(), componentSettings, cfg)
 
 	if err != nil {
 		return err

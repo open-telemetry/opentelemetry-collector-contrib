@@ -85,9 +85,9 @@ func testTracesExporterHelper(td pdata.Traces, t *testing.T) []string {
 		},
 	}
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 
-	exporter, err := createTracesExporter(context.Background(), params, &cfg)
+	exporter, err := createTracesExporter(context.Background(), componentSettings, &cfg)
 
 	assert.NoError(t, err)
 
@@ -161,10 +161,10 @@ func TestNewTracesExporter(t *testing.T) {
 	cfg := &config.Config{}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
 	cfg.Metrics.TCPAddr.Endpoint = metricsServer.URL
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 
 	// The client should have been created correctly
-	exp := newTracesExporter(context.Background(), params, cfg)
+	exp := newTracesExporter(context.Background(), componentSettings, cfg)
 	assert.NotNil(t, exp)
 }
 
@@ -191,8 +191,8 @@ func TestPushTraceData(t *testing.T) {
 		UseResourceMetadata: true,
 	}
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp := newTracesExporter(context.Background(), params, cfg)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	exp := newTracesExporter(context.Background(), componentSettings, cfg)
 
 	err := exp.pushTraceData(context.Background(), testutils.TestTraces.Clone())
 	assert.NoError(t, err)

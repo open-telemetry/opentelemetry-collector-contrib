@@ -61,7 +61,7 @@ func createDefaultConfig() config.Exporter {
 
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	config config.Exporter,
 ) (component.TracesExporter, error) {
 	c := config.(*Config)
@@ -88,10 +88,10 @@ func createTracesExporter(
 		MaxListSize:           c.MaxBytesPerBatch,
 		ListFlushInterval:     c.FlushIntervalSeconds,
 		Encoding:              exportFormat,
-	}, params.Logger)
+	}, componentSettings.Logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return Exporter{k, params.Logger}, nil
+	return Exporter{k, componentSettings.Logger}, nil
 }

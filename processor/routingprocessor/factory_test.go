@@ -32,7 +32,7 @@ import (
 func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	creationcomponentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
@@ -46,7 +46,7 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+	exp, err := factory.CreateTracesProcessor(context.Background(), creationcomponentSettings, cfg, consumertest.NewNop())
 
 	// verify
 	assert.Nil(t, err)
@@ -56,11 +56,11 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 func TestFailOnEmptyConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	creationcomponentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 	cfg := factory.CreateDefaultConfig()
 
 	// test
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+	exp, err := factory.CreateTracesProcessor(context.Background(), creationcomponentSettings, cfg, consumertest.NewNop())
 
 	// verify
 	assert.Error(t, err)
@@ -70,7 +70,7 @@ func TestFailOnEmptyConfiguration(t *testing.T) {
 func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	creationcomponentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
@@ -83,7 +83,7 @@ func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+	exp, err := factory.CreateTracesProcessor(context.Background(), creationcomponentSettings, cfg, consumertest.NewNop())
 
 	// verify
 	assert.True(t, errors.Is(err, errNoExporters))
@@ -93,7 +93,7 @@ func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	creationcomponentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
@@ -102,7 +102,7 @@ func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+	exp, err := factory.CreateTracesProcessor(context.Background(), creationcomponentSettings, cfg, consumertest.NewNop())
 
 	// verify
 	assert.True(t, errors.Is(err, errNoTableItems))
@@ -112,7 +112,7 @@ func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
 func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	creationcomponentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
@@ -125,7 +125,7 @@ func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+	exp, err := factory.CreateTracesProcessor(context.Background(), creationcomponentSettings, cfg, consumertest.NewNop())
 
 	// verify
 	assert.True(t, errors.Is(err, errNoMissingFromAttribute))
@@ -135,7 +135,7 @@ func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	creationcomponentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
@@ -151,7 +151,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	require.NoError(t, err)
 
 	// test
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, next)
+	exp, err := factory.CreateTracesProcessor(context.Background(), creationcomponentSettings, cfg, next)
 
 	// verify
 	assert.NoError(t, err)
@@ -161,7 +161,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 func TestShutdown(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	creationcomponentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
@@ -174,7 +174,7 @@ func TestShutdown(t *testing.T) {
 		},
 	}
 
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+	exp, err := factory.CreateTracesProcessor(context.Background(), creationcomponentSettings, cfg, consumertest.NewNop())
 	require.Nil(t, err)
 	require.NotNil(t, exp)
 

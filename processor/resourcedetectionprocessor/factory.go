@@ -98,11 +98,11 @@ func createDefaultConfig() config.Processor {
 
 func (f *factory) createTracesProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
-	rdp, err := f.getResourceDetectionProcessor(params, cfg)
+	rdp, err := f.getResourceDetectionProcessor(componentSettings, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -117,11 +117,11 @@ func (f *factory) createTracesProcessor(
 
 func (f *factory) createMetricsProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
-	rdp, err := f.getResourceDetectionProcessor(params, cfg)
+	rdp, err := f.getResourceDetectionProcessor(componentSettings, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -136,11 +136,11 @@ func (f *factory) createMetricsProcessor(
 
 func (f *factory) createLogsProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
-	rdp, err := f.getResourceDetectionProcessor(params, cfg)
+	rdp, err := f.getResourceDetectionProcessor(componentSettings, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -154,12 +154,12 @@ func (f *factory) createLogsProcessor(
 }
 
 func (f *factory) getResourceDetectionProcessor(
-	params component.ProcessorCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Processor,
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	provider, err := f.getResourceProvider(params, cfg.ID(), oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfig)
+	provider, err := f.getResourceProvider(componentSettings, cfg.ID(), oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func (f *factory) getResourceDetectionProcessor(
 }
 
 func (f *factory) getResourceProvider(
-	params component.ProcessorCreateParams,
+	componentSettings component.ComponentSettings,
 	processorName config.ComponentID,
 	timeout time.Duration,
 	configuredDetectors []string,
@@ -189,7 +189,7 @@ func (f *factory) getResourceProvider(
 		detectorTypes = append(detectorTypes, internal.DetectorType(strings.TrimSpace(key)))
 	}
 
-	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, timeout, &detectorConfigs, detectorTypes...)
+	provider, err := f.resourceProviderFactory.CreateResourceProvider(componentSettings, timeout, &detectorConfigs, detectorTypes...)
 	if err != nil {
 		return nil, err
 	}

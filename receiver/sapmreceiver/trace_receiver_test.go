@@ -211,8 +211,8 @@ func sendSapm(endpoint string, sapm *splunksapm.PostSpansRequest, zipped bool, t
 }
 
 func setupReceiver(t *testing.T, config *Config, sink *consumertest.TracesSink) component.TracesReceiver {
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	sr, err := New(context.Background(), params, config, sink)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	sr, err := New(context.Background(), componentSettings, config, sink)
 	assert.NoError(t, err, "should not have failed to create the SAPM receiver")
 	t.Log("Starting")
 

@@ -39,8 +39,8 @@ func TestTracesExporter(t *testing.T) {
 
 	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	te, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	te, err := factory.CreateTracesExporter(context.Background(), componentSettings, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
@@ -67,8 +67,8 @@ func TestMetricsExporter(t *testing.T) {
 
 	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	me, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	me, err := factory.CreateMetricsExporter(context.Background(), componentSettings, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
 
@@ -93,8 +93,8 @@ func TestMetricsExporterSendError(t *testing.T) {
 	eCfg := cfg.(*Config)
 	eCfg.APMServerURL = "http://testing.invalid"
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	me, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	me, err := factory.CreateMetricsExporter(context.Background(), componentSettings, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
 

@@ -35,7 +35,7 @@ func TestWithInvalidConfig(t *testing.T) {
 
 	r, err := f.CreateMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		component.ComponentSettings{Logger: zap.NewNop()},
 		cfg, consumertest.NewNop(),
 	)
 	require.Error(t, err)
@@ -51,11 +51,11 @@ func TestWithValidConfig(t *testing.T) {
 	cfg.(*Config).Endpoint = "myendpoint:12345"
 	cfg.(*Config).GroovyScript = "mygroovyscriptpath"
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	r, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	r, err := f.CreateMetricsReceiver(context.Background(), componentSettings, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	receiver := r.(*jmxMetricReceiver)
-	assert.Same(t, receiver.logger, params.Logger)
+	assert.Same(t, receiver.logger, componentSettings.Logger)
 	assert.Same(t, receiver.config, cfg)
 }

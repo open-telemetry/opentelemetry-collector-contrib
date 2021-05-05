@@ -102,7 +102,7 @@ func initExporter(cfg *Config) (*sumologicexporter, error) {
 
 func newLogsExporter(
 	cfg *Config,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 ) (component.LogsExporter, error) {
 	se, err := initExporter(cfg)
 	if err != nil {
@@ -111,7 +111,7 @@ func newLogsExporter(
 
 	return exporterhelper.NewLogsExporter(
 		cfg,
-		params.Logger,
+		componentSettings.Logger,
 		se.pushLogsData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
@@ -123,7 +123,7 @@ func newLogsExporter(
 
 func newMetricsExporter(
 	cfg *Config,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 ) (component.MetricsExporter, error) {
 	se, err := initExporter(cfg)
 	if err != nil {
@@ -132,7 +132,7 @@ func newMetricsExporter(
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		params.Logger,
+		componentSettings.Logger,
 		se.pushMetricsData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself

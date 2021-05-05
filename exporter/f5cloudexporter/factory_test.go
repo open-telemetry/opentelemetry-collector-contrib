@@ -60,13 +60,13 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 		Audience:       "tests",
 	}
 
-	creationParams := component.ExporterCreateParams{
+	creationcomponentSettings := component.ComponentSettings{
 		Logger: zap.NewNop(),
 		BuildInfo: component.BuildInfo{
 			Version: "0.0.0",
 		},
 	}
-	oexp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
+	oexp, err := factory.CreateMetricsExporter(context.Background(), creationcomponentSettings, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
 
@@ -77,8 +77,8 @@ func TestFactory_CreateMetricsExporterInvalidConfig(t *testing.T) {
 	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	oexp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
+	creationcomponentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	oexp, err := factory.CreateMetricsExporter(context.Background(), creationcomponentSettings, cfg)
 	require.Error(t, err)
 	require.Nil(t, oexp)
 }
@@ -93,13 +93,13 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 		Audience:       "tests",
 	}
 
-	creationParams := component.ExporterCreateParams{
+	creationcomponentSettings := component.ComponentSettings{
 		Logger: zap.NewNop(),
 		BuildInfo: component.BuildInfo{
 			Version: "0.0.0",
 		},
 	}
-	oexp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
+	oexp, err := factory.CreateTracesExporter(context.Background(), creationcomponentSettings, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
 
@@ -110,8 +110,8 @@ func Test_Factory_CreateTracesExporterInvalidConfig(t *testing.T) {
 	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	oexp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
+	creationcomponentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	oexp, err := factory.CreateTracesExporter(context.Background(), creationcomponentSettings, cfg)
 	require.Error(t, err)
 	require.Nil(t, oexp)
 }
@@ -126,13 +126,13 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 		Audience:       "tests",
 	}
 
-	creationParams := component.ExporterCreateParams{
+	creationcomponentSettings := component.ComponentSettings{
 		Logger: zap.NewNop(),
 		BuildInfo: component.BuildInfo{
 			Version: "0.0.0",
 		},
 	}
-	oexp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
+	oexp, err := factory.CreateLogsExporter(context.Background(), creationcomponentSettings, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
 
@@ -143,8 +143,8 @@ func TestFactory_CreateLogsExporterInvalidConfig(t *testing.T) {
 	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
-	oexp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
+	creationcomponentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	oexp, err := factory.CreateLogsExporter(context.Background(), creationcomponentSettings, cfg)
 	require.Error(t, err)
 	require.Nil(t, oexp)
 }

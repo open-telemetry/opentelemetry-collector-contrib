@@ -36,8 +36,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateTracesExporterError(t *testing.T) {
 	cfg := createDefaultConfig()
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := createTracesExporter(context.Background(), params, cfg)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	exp, err := createTracesExporter(context.Background(), componentSettings, cfg)
 	require.Error(t, err)
 	require.Nil(t, exp)
 }
@@ -54,9 +54,9 @@ func TestCreateTracesExporterLoadConfig(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 	exporter, err := factory.CreateTracesExporter(
-		context.Background(), params, cfg.Exporters[config.NewIDWithName(typeStr, "customname")])
+		context.Background(), componentSettings, cfg.Exporters[config.NewIDWithName(typeStr, "customname")])
 	require.Nil(t, err)
 	require.NotNil(t, exporter)
 }

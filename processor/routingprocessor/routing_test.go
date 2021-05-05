@@ -125,14 +125,14 @@ func TestRegisterExportersForValidRoute(t *testing.T) {
 	require.NoError(t, err)
 
 	otlpExpFactory := otlpexporter.NewFactory()
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	creationcomponentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 	otlpConfig := &otlpexporter.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
 	}
-	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), creationParams, otlpConfig)
+	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), creationcomponentSettings, otlpConfig)
 	require.NoError(t, err)
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
@@ -190,14 +190,14 @@ func TestErrorRequestedExporterNotFoundForDefaultRoute(t *testing.T) {
 	require.NoError(t, err)
 
 	otlpExpFactory := otlpexporter.NewFactory()
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	creationcomponentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 	otlpConfig := &otlpexporter.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
 	}
-	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), creationParams, otlpConfig)
+	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), creationcomponentSettings, otlpConfig)
 	require.NoError(t, err)
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),

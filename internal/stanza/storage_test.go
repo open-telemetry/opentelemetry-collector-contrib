@@ -84,7 +84,7 @@ func TestFailOnMultipleStorageExtensions(t *testing.T) {
 }
 
 func createReceiver(t *testing.T) *receiver {
-	params := component.ReceiverCreateParams{
+	componentSettings := component.ComponentSettings{
 		Logger: zaptest.NewLogger(t),
 	}
 	mockConsumer := mockLogsConsumer{}
@@ -93,7 +93,7 @@ func createReceiver(t *testing.T) *receiver {
 
 	logsReceiver, err := factory.CreateLogsReceiver(
 		context.Background(),
-		params,
+		componentSettings,
 		factory.CreateDefaultConfig(),
 		&mockConsumer,
 	)
@@ -148,8 +148,8 @@ func newTestExtension(t *testing.T, directory string) storage.Extension {
 	f := filestorage.NewFactory()
 	cfg := f.CreateDefaultConfig().(*filestorage.Config)
 	cfg.Directory = directory
-	params := component.ExtensionCreateParams{Logger: zaptest.NewLogger(t)}
-	extension, _ := f.CreateExtension(context.Background(), params, cfg)
+	componentSettings := component.ComponentSettings{Logger: zaptest.NewLogger(t)}
+	extension, _ := f.CreateExtension(context.Background(), componentSettings, cfg)
 	se, _ := extension.(storage.Extension)
 	return se
 }

@@ -182,9 +182,9 @@ func TestNewExtensionErrorsOnMissingDirectory(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = "/not/a/dir"
 
-	params := component.ExtensionCreateParams{Logger: zaptest.NewLogger(t)}
+	componentSettings := component.ComponentSettings{Logger: zaptest.NewLogger(t)}
 
-	extension, err := f.CreateExtension(context.Background(), params, cfg)
+	extension, err := f.CreateExtension(context.Background(), componentSettings, cfg)
 	require.Error(t, err)
 	require.Nil(t, extension)
 }
@@ -199,9 +199,9 @@ func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	params := component.ExtensionCreateParams{Logger: zaptest.NewLogger(t)}
+	componentSettings := component.ComponentSettings{Logger: zaptest.NewLogger(t)}
 
-	extension, err := f.CreateExtension(context.Background(), params, cfg)
+	extension, err := f.CreateExtension(context.Background(), componentSettings, cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -229,9 +229,9 @@ func newTestExtension(t *testing.T) storage.Extension {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	params := component.ExtensionCreateParams{Logger: zaptest.NewLogger(t)}
+	componentSettings := component.ComponentSettings{Logger: zaptest.NewLogger(t)}
 
-	extension, err := f.CreateExtension(context.Background(), params, cfg)
+	extension, err := f.CreateExtension(context.Background(), componentSettings, cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)

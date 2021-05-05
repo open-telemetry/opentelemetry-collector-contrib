@@ -25,7 +25,7 @@ import (
 )
 
 func TestCreateReceiver(t *testing.T) {
-	params := component.ReceiverCreateParams{
+	componentSettings := component.ComponentSettings{
 		Logger: zap.NewNop(),
 	}
 
@@ -37,7 +37,7 @@ func TestCreateReceiver(t *testing.T) {
 				"type": "json_parser",
 			},
 		}
-		receiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, &mockLogsConsumer{})
+		receiver, err := factory.CreateLogsReceiver(context.Background(), componentSettings, cfg, &mockLogsConsumer{})
 		require.NoError(t, err, "receiver creation failed")
 		require.NotNil(t, receiver, "receiver creation failed")
 	})
@@ -49,7 +49,7 @@ func TestCreateReceiver(t *testing.T) {
 			MaxFlushCount: 1,
 			FlushInterval: 3 * time.Second,
 		}
-		receiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, &mockLogsConsumer{})
+		receiver, err := factory.CreateLogsReceiver(context.Background(), componentSettings, cfg, &mockLogsConsumer{})
 		require.NoError(t, err, "receiver creation failed")
 		require.NotNil(t, receiver, "receiver creation failed")
 	})
@@ -60,7 +60,7 @@ func TestCreateReceiver(t *testing.T) {
 		badCfg.Input = map[string]interface{}{
 			"type": "unknown",
 		}
-		receiver, err := factory.CreateLogsReceiver(context.Background(), params, badCfg, &mockLogsConsumer{})
+		receiver, err := factory.CreateLogsReceiver(context.Background(), componentSettings, badCfg, &mockLogsConsumer{})
 		require.Error(t, err, "receiver creation should fail if input config isn't valid")
 		require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
 	})
@@ -73,7 +73,7 @@ func TestCreateReceiver(t *testing.T) {
 				"badparam": "badvalue",
 			},
 		}
-		receiver, err := factory.CreateLogsReceiver(context.Background(), params, badCfg, &mockLogsConsumer{})
+		receiver, err := factory.CreateLogsReceiver(context.Background(), componentSettings, badCfg, &mockLogsConsumer{})
 		require.Error(t, err, "receiver creation should fail if parser configs aren't valid")
 		require.Nil(t, receiver, "receiver creation should fail if parser configs aren't valid")
 	})

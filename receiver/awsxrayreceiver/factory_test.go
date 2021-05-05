@@ -65,7 +65,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateTracesReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{
+		component.ComponentSettings{
 			Logger: zap.NewNop(),
 		},
 		factory.CreateDefaultConfig().(*Config),
@@ -78,7 +78,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{
+		component.ComponentSettings{
 			Logger: zap.NewNop(),
 		},
 		factory.CreateDefaultConfig().(*Config),

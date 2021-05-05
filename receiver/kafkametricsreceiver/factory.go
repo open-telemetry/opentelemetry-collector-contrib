@@ -52,11 +52,11 @@ func createDefaultConfig() config.Receiver {
 
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Receiver,
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	c := cfg.(*Config)
-	r, err := newMetricsReceiver(ctx, *c, params, nextConsumer)
+	r, err := newMetricsReceiver(ctx, *c, componentSettings, nextConsumer)
 	if err != nil {
 		return nil, err
 	}

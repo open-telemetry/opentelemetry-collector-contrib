@@ -39,12 +39,12 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig()
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	traceReceiver, err := factory.CreateTracesReceiver(context.Background(), params, config, &testbed.MockTraceConsumer{})
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	traceReceiver, err := factory.CreateTracesReceiver(context.Background(), componentSettings, config, &testbed.MockTraceConsumer{})
 	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, traceReceiver)
 
-	metricReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, config, &testbed.MockMetricConsumer{})
+	metricReceiver, err := factory.CreateMetricsReceiver(context.Background(), componentSettings, config, &testbed.MockMetricConsumer{})
 	assert.NoError(t, err, "Metric receiver creation failed")
 	assert.NotNil(t, metricReceiver, "Receiver creation failed")
 }
@@ -56,15 +56,15 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 
 	receiverCfg.Endpoint = ""
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 	consumer := &testbed.MockMetricConsumer{}
-	receiver, err := factory.CreateMetricsReceiver(context.Background(), params, receiverCfg, consumer)
+	receiver, err := factory.CreateMetricsReceiver(context.Background(), componentSettings, receiverCfg, consumer)
 	assert.Nil(t, receiver)
 	assert.Error(t, err)
 	assert.Equal(t, "config.Endpoint must be specified", err.Error())
 
 	receiverCfg.Endpoint = "\a"
-	receiver, err = factory.CreateMetricsReceiver(context.Background(), params, receiverCfg, consumer)
+	receiver, err = factory.CreateMetricsReceiver(context.Background(), componentSettings, receiverCfg, consumer)
 	assert.Nil(t, receiver)
 	assert.Error(t, err)
 	assert.Equal(

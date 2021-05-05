@@ -41,8 +41,8 @@ type Detector struct {
 	provider ecsMetadataProvider
 }
 
-func NewDetector(params component.ProcessorCreateParams, _ internal.DetectorConfig) (internal.Detector, error) {
-	return &Detector{provider: &ecsMetadataProviderImpl{logger: params.Logger, client: &http.Client{}}}, nil
+func NewDetector(componentSettings component.ComponentSettings, _ internal.DetectorConfig) (internal.Detector, error) {
+	return &Detector{provider: &ecsMetadataProviderImpl{logger: componentSettings.Logger, client: &http.Client{}}}, nil
 }
 
 // Detect records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes

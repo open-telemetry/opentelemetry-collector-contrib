@@ -40,12 +40,12 @@ func createDefaultConfig() config.Exporter {
 	}
 }
 
-func createTracesExporter(_ context.Context, params component.ExporterCreateParams, cfg config.Exporter) (component.TracesExporter, error) {
+func createTracesExporter(_ context.Context, componentSettings component.ComponentSettings, cfg config.Exporter) (component.TracesExporter, error) {
 	config := cfg.(*Config)
-	return newLogzioTracesExporter(config, params)
+	return newLogzioTracesExporter(config, componentSettings)
 }
 
-func createMetricsExporter(_ context.Context, params component.ExporterCreateParams, cfg config.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(_ context.Context, componentSettings component.ComponentSettings, cfg config.Exporter) (component.MetricsExporter, error) {
 	config := cfg.(*Config)
-	return newLogzioMetricsExporter(config, params)
+	return newLogzioMetricsExporter(config, componentSettings)
 }

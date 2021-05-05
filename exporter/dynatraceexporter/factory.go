@@ -59,7 +59,7 @@ func createDefaultConfig() config.Exporter {
 // createMetricsExporter creates a metrics exporter based on this
 func createMetricsExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	c config.Exporter,
 ) (component.MetricsExporter, error) {
 
@@ -69,7 +69,7 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	exp, err := newMetricsExporter(params, cfg)
+	exp, err := newMetricsExporter(componentSettings, cfg)
 
 	if err != nil {
 		return nil, err
@@ -77,7 +77,7 @@ func createMetricsExporter(
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
-		params.Logger,
+		componentSettings.Logger,
 		exp.PushMetricsData,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),

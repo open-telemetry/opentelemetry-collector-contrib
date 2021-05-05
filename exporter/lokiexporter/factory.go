@@ -54,21 +54,21 @@ func createDefaultConfig() config.Exporter {
 	}
 }
 
-func createLogsExporter(_ context.Context, params component.ExporterCreateParams, config config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(_ context.Context, componentSettings component.ComponentSettings, config config.Exporter) (component.LogsExporter, error) {
 	expCfg := config.(*Config)
 
 	if err := expCfg.validate(); err != nil {
 		return nil, err
 	}
 
-	exp, err := newExporter(expCfg, params.Logger)
+	exp, err := newExporter(expCfg, componentSettings.Logger)
 	if err != nil {
 		return nil, err
 	}
 
 	return exporterhelper.NewLogsExporter(
 		expCfg,
-		params.Logger,
+		componentSettings.Logger,
 		exp.pushLogData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),

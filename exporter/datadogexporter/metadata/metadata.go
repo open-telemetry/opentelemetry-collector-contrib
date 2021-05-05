@@ -117,30 +117,30 @@ func metadataFromAttributes(attrs pdata.AttributeMap) *HostMetadata {
 	return hm
 }
 
-func fillHostMetadata(params component.ExporterCreateParams, cfg *config.Config, hm *HostMetadata) {
+func fillHostMetadata(componentSettings component.ComponentSettings, cfg *config.Config, hm *HostMetadata) {
 	// Could not get hostname from attributes
 	if hm.InternalHostname == "" {
-		hostname := *GetHost(params.Logger, cfg)
+		hostname := *GetHost(componentSettings.Logger, cfg)
 		hm.InternalHostname = hostname
 		hm.Meta.Hostname = hostname
 	}
 
 	// This information always gets filled in here
 	// since it does not come from OTEL conventions
-	hm.Flavor = params.BuildInfo.Command
-	hm.Version = params.BuildInfo.Version
+	hm.Flavor = componentSettings.BuildInfo.Command
+	hm.Version = componentSettings.BuildInfo.Version
 	hm.Tags.OTel = append(hm.Tags.OTel, cfg.GetHostTags()...)
 
 	// EC2 data was not set from attributes
 	if hm.Meta.EC2Hostname == "" {
-		ec2HostInfo := ec2.GetHostInfo(params.Logger)
+		ec2HostInfo := ec2.GetHostInfo(componentSettings.Logger)
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
 		hm.Meta.InstanceID = ec2HostInfo.InstanceID
 	}
 
 	// System data was not set from attributes
 	if hm.Meta.SocketHostname == "" {
-		systemHostInfo := system.GetHostInfo(params.Logger)
+		systemHostInfo := system.GetHostInfo(componentSettings.Logger)
 		hm.Meta.SocketHostname = systemHostInfo.OS
 		hm.Meta.SocketFqdn = systemHostInfo.FQDN
 	}
@@ -172,29 +172,29 @@ func pushMetadata(cfg *config.Config, buildInfo component.BuildInfo, metadata *H
 	return nil
 }
 
-func pushMetadataWithRetry(params component.ExporterCreateParams, cfg *config.Config, hostMetadata *HostMetadata) {
+func pushMetadataWithRetry(componentSettings component.ComponentSettings, cfg *config.Config, hostMetadata *HostMetadata) {
 	const maxRetries = 5
 
-	params.Logger.Debug("Sending host metadata payload", zap.Any("payload", hostMetadata))
+	componentSettings.Logger.Debug("Sending host metadata payload", zap.Any("payload", hostMetadata))
 
 	numRetries, err := utils.DoWithRetries(maxRetries, func() error {
-		return pushMetadata(cfg, params.BuildInfo, hostMetadata)
+		return pushMetadata(cfg, componentSettings.BuildInfo, hostMetadata)
 	})
 
 	if err != nil {
-		params.Logger.Warn("Sending host metadata failed", zap.Error(err))
+		componentSettings.Logger.Warn("Sending host metadata failed", zap.Error(err))
 	} else {
-		params.Logger.Info("Sent host metadata", zap.Int("retries", numRetries))
+		componentSettings.Logger.Info("Sent host metadata", zap.Int("retries", numRetries))
 	}
 
 }
 
 // Pusher pushes host metadata payloads periodically to Datadog intake
-func Pusher(ctx context.Context, params component.ExporterCreateParams, cfg *config.Config, attrs pdata.AttributeMap) {
+func Pusher(ctx context.Context, componentSettings component.ComponentSettings, cfg *config.Config, attrs pdata.AttributeMap) {
 	// Push metadata every 30 minutes
 	ticker := time.NewTicker(30 * time.Minute)
 	defer ticker.Stop()
-	defer params.Logger.Debug("Shut down host metadata routine")
+	defer componentSettings.Logger.Debug("Shut down host metadata routine")
 
 	// Get host metadata from resources and fill missing info using our exporter.
 	// Currently we only retrieve it once but still send the same payload
@@ -207,17 +207,17 @@ func Pusher(ctx context.Context, params component.ExporterCreateParams, cfg *con
 	if cfg.UseResourceMetadata {
 		hostMetadata = metadataFromAttributes(attrs)
 	}
-	fillHostMetadata(params, cfg, hostMetadata)
+	fillHostMetadata(componentSettings, cfg, hostMetadata)
 
 	// Run one first time at startup
-	pushMetadataWithRetry(params, cfg, hostMetadata)
+	pushMetadataWithRetry(componentSettings, cfg, hostMetadata)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C: // Send host metadata
-			pushMetadataWithRetry(params, cfg, hostMetadata)
+			pushMetadataWithRetry(componentSettings, cfg, hostMetadata)
 		}
 	}
 }

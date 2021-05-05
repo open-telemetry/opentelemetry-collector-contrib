@@ -46,13 +46,13 @@ func createDefaultConfig() config.Receiver {
 
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	componentSettings component.ComponentSettings,
 	config config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	dockerConfig := config.(*Config)
 
-	dsr, err := NewReceiver(ctx, params.Logger, dockerConfig, consumer)
+	dsr, err := NewReceiver(ctx, componentSettings.Logger, dockerConfig, consumer)
 	if err != nil {
 		return nil, err
 	}

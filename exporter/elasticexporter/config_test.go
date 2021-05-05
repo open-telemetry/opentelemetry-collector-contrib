@@ -63,20 +63,20 @@ func TestLoadConfig(t *testing.T) {
 func TestConfigValidate(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 
-	_, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	_, err := factory.CreateTracesExporter(context.Background(), componentSettings, cfg)
 	require.Error(t, err)
 	assert.EqualError(t, err, "cannot configure Elastic APM trace exporter: invalid config: APMServerURL must be specified")
 
-	_, err = factory.CreateMetricsExporter(context.Background(), params, cfg)
+	_, err = factory.CreateMetricsExporter(context.Background(), componentSettings, cfg)
 	require.Error(t, err)
 	assert.EqualError(t, err, "cannot configure Elastic APM metrics exporter: invalid config: APMServerURL must be specified")
 
 	cfg.APMServerURL = "foo"
-	_, err = factory.CreateTracesExporter(context.Background(), params, cfg)
+	_, err = factory.CreateTracesExporter(context.Background(), componentSettings, cfg)
 	assert.NoError(t, err)
-	_, err = factory.CreateMetricsExporter(context.Background(), params, cfg)
+	_, err = factory.CreateMetricsExporter(context.Background(), componentSettings, cfg)
 	assert.NoError(t, err)
 }
 
@@ -87,7 +87,7 @@ func TestConfigAuth(t *testing.T) {
 
 func testAuth(t *testing.T, apiKey, secretToken, expectedAuthorization string) {
 	factory := NewFactory()
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.APIKey = apiKey
 	cfg.SecretToken = secretToken
@@ -102,7 +102,7 @@ func testAuth(t *testing.T, apiKey, secretToken, expectedAuthorization string) {
 	defer srv.Close()
 	cfg.APMServerURL = srv.URL
 
-	te, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	te, err := factory.CreateTracesExporter(context.Background(), componentSettings, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 

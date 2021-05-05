@@ -28,16 +28,16 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := createDefaultConfig()
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, &mockMetricsConsumer{})
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), componentSettings, cfg, &mockMetricsConsumer{})
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
-	tReceiver, err = factory.CreateMetricsReceiver(context.Background(), params, cfg, &mockMetricsConsumer{})
+	tReceiver, err = factory.CreateMetricsReceiver(context.Background(), componentSettings, cfg, &mockMetricsConsumer{})
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
-	mReceiver, err := factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
+	mReceiver, err := factory.CreateTracesReceiver(context.Background(), componentSettings, cfg, nil)
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, mReceiver)

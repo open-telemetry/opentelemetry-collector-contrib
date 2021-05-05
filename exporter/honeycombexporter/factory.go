@@ -50,18 +50,18 @@ func createDefaultConfig() config.Exporter {
 
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	eCfg := cfg.(*Config)
-	exporter, err := newHoneycombTracesExporter(eCfg, params.Logger)
+	exporter, err := newHoneycombTracesExporter(eCfg, componentSettings.Logger)
 	if err != nil {
 		return nil, err
 	}
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
-		params.Logger,
+		componentSettings.Logger,
 		exporter.pushTraceData,
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithRetry(eCfg.RetrySettings),

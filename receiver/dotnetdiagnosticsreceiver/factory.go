@@ -53,12 +53,12 @@ func createDefaultConfig() config.Receiver {
 
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	componentSettings component.ComponentSettings,
 	baseConfig config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := baseConfig.(*Config)
-	bw := network.NewBlobWriter(cfg.LocalDebugDir, cfg.MaxLocalDebugFiles, params.Logger)
+	bw := network.NewBlobWriter(cfg.LocalDebugDir, cfg.MaxLocalDebugFiles, componentSettings.Logger)
 	sec := int(math.Round(cfg.CollectionInterval.Seconds()))
 	return NewReceiver(
 		ctx,
@@ -66,7 +66,7 @@ func createMetricsReceiver(
 		mkConnectionSupplier(cfg.PID, net.Dial, filepath.Glob),
 		cfg.Counters,
 		sec,
-		params.Logger,
+		componentSettings.Logger,
 		bw,
 	)
 }

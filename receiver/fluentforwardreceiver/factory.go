@@ -44,11 +44,11 @@ func createDefaultConfig() config.Receiver {
 
 func createLogsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Receiver,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 
 	rCfg := cfg.(*Config)
-	return newFluentReceiver(params.Logger, rCfg, consumer)
+	return newFluentReceiver(componentSettings.Logger, rCfg, consumer)
 }

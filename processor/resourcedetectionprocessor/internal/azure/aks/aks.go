@@ -38,7 +38,7 @@ type Detector struct {
 }
 
 // NewDetector creates a new AKS detector
-func NewDetector(component.ProcessorCreateParams, internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(component.ComponentSettings, internal.DetectorConfig) (internal.Detector, error) {
 	return &Detector{provider: azure.NewProvider()}, nil
 }
 

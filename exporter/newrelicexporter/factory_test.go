@@ -40,17 +40,17 @@ func TestCreateExporterWithAPIKey(t *testing.T) {
 	cfg := createDefaultConfig()
 	nrConfig := cfg.(*Config)
 	nrConfig.CommonConfig.APIKey = "a1b2c3d4"
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 
-	te, err := createTracesExporter(context.Background(), params, nrConfig)
+	te, err := createTracesExporter(context.Background(), componentSettings, nrConfig)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
-	me, err := createMetricsExporter(context.Background(), params, nrConfig)
+	me, err := createMetricsExporter(context.Background(), componentSettings, nrConfig)
 	assert.Nil(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
 
-	le, err := createLogsExporter(context.Background(), params, nrConfig)
+	le, err := createLogsExporter(context.Background(), componentSettings, nrConfig)
 	assert.Nil(t, err)
 	assert.NotNil(t, le, "failed to create logs exporter")
 }
@@ -59,17 +59,17 @@ func TestCreateExporterWithAPIKeyHeader(t *testing.T) {
 	cfg := createDefaultConfig()
 	nrConfig := cfg.(*Config)
 	nrConfig.CommonConfig.APIKeyHeader = "api-key"
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 
-	te, err := createTracesExporter(context.Background(), params, nrConfig)
+	te, err := createTracesExporter(context.Background(), componentSettings, nrConfig)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
-	me, err := createMetricsExporter(context.Background(), params, nrConfig)
+	me, err := createMetricsExporter(context.Background(), componentSettings, nrConfig)
 	assert.Nil(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
 
-	le, err := createLogsExporter(context.Background(), params, nrConfig)
+	le, err := createLogsExporter(context.Background(), componentSettings, nrConfig)
 	assert.Nil(t, err)
 	assert.NotNil(t, le, "failed to create logs exporter")
 }
@@ -79,17 +79,17 @@ func TestCreateExporterWithAPIKeyAndAPIKeyHeader(t *testing.T) {
 	nrConfig := cfg.(*Config)
 	nrConfig.CommonConfig.APIKey = "a1b2c3d4"
 	nrConfig.CommonConfig.APIKeyHeader = "api-key"
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 
-	te, err := createTracesExporter(context.Background(), params, nrConfig)
+	te, err := createTracesExporter(context.Background(), componentSettings, nrConfig)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
-	me, err := createMetricsExporter(context.Background(), params, nrConfig)
+	me, err := createMetricsExporter(context.Background(), componentSettings, nrConfig)
 	assert.Nil(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
 
-	le, err := createLogsExporter(context.Background(), params, nrConfig)
+	le, err := createLogsExporter(context.Background(), componentSettings, nrConfig)
 	assert.Nil(t, err)
 	assert.NotNil(t, le, "failed to create logs exporter")
 }
@@ -97,34 +97,34 @@ func TestCreateExporterWithAPIKeyAndAPIKeyHeader(t *testing.T) {
 func TestCreateExporterErrorWithoutAPIKeyOrAPIKeyHeader(t *testing.T) {
 	cfg := createDefaultConfig()
 	nrConfig := cfg.(*Config)
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 
-	te, err := createTracesExporter(context.Background(), params, nrConfig)
+	te, err := createTracesExporter(context.Background(), componentSettings, nrConfig)
 	assert.NotNil(t, err)
 	assert.Nil(t, te)
 
-	me, err := createMetricsExporter(context.Background(), params, nrConfig)
+	me, err := createMetricsExporter(context.Background(), componentSettings, nrConfig)
 	assert.NotNil(t, err)
 	assert.Nil(t, me)
 
-	le, err := createLogsExporter(context.Background(), params, nrConfig)
+	le, err := createLogsExporter(context.Background(), componentSettings, nrConfig)
 	assert.NotNil(t, err)
 	assert.Nil(t, le)
 }
 func TestCreateTracesExporterError(t *testing.T) {
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := createTracesExporter(context.Background(), params, nil)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	_, err := createTracesExporter(context.Background(), componentSettings, nil)
 	assert.Error(t, err)
 }
 
 func TestCreateMetricsExporterError(t *testing.T) {
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := createMetricsExporter(context.Background(), params, nil)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	_, err := createMetricsExporter(context.Background(), componentSettings, nil)
 	assert.Error(t, err)
 }
 
 func TestCreateLogsExporterError(t *testing.T) {
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := createLogsExporter(context.Background(), params, nil)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	_, err := createLogsExporter(context.Background(), componentSettings, nil)
 	assert.Error(t, err)
 }

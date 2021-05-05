@@ -45,16 +45,16 @@ func createDefaultConfig() config.Exporter {
 
 func createTracesExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
-	return newElasticTracesExporter(params, cfg)
+	return newElasticTracesExporter(componentSettings, cfg)
 }
 
 func createMetricsExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
-	return newElasticMetricsExporter(params, cfg)
+	return newElasticMetricsExporter(componentSettings, cfg)
 }

@@ -36,16 +36,16 @@ func TestCreateTestProcessor(t *testing.T) {
 		GroupByKeys:       []string{"foo"},
 	}
 
-	params := component.ProcessorCreateParams{
+	componentSettings := component.ComponentSettings{
 		Logger: zap.NewNop(),
 	}
 
-	tp, err := createTracesProcessor(context.Background(), params, cfg, consumertest.NewNop())
+	tp, err := createTracesProcessor(context.Background(), componentSettings, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 	assert.Equal(t, true, tp.GetCapabilities().MutatesConsumedData)
 
-	lp, err := createLogsProcessor(context.Background(), params, cfg, consumertest.NewNop())
+	lp, err := createLogsProcessor(context.Background(), componentSettings, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
 	assert.Equal(t, true, lp.GetCapabilities().MutatesConsumedData)

@@ -54,39 +54,39 @@ func createDefaultConfig() config.Processor {
 
 func createTracesProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Processor,
 	next consumer.Traces,
 ) (component.TracesProcessor, error) {
-	return createTracesProcessorWithOptions(ctx, params, cfg, next)
+	return createTracesProcessorWithOptions(ctx, componentSettings, cfg, next)
 }
 
 func createLogsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Processor,
 	nextLogsConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
-	return createLogsProcessorWithOptions(ctx, params, cfg, nextLogsConsumer)
+	return createLogsProcessorWithOptions(ctx, componentSettings, cfg, nextLogsConsumer)
 }
 
 func createMetricsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Processor,
 	nextMetricsConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
-	return createMetricsProcessorWithOptions(ctx, params, cfg, nextMetricsConsumer)
+	return createMetricsProcessorWithOptions(ctx, componentSettings, cfg, nextMetricsConsumer)
 }
 
 func createTracesProcessorWithOptions(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Processor,
 	next consumer.Traces,
 	options ...Option,
 ) (component.TracesProcessor, error) {
-	kp, err := createKubernetesProcessor(params, cfg, options...)
+	kp, err := createKubernetesProcessor(componentSettings, cfg, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -102,12 +102,12 @@ func createTracesProcessorWithOptions(
 
 func createMetricsProcessorWithOptions(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Processor,
 	nextMetricsConsumer consumer.Metrics,
 	options ...Option,
 ) (component.MetricsProcessor, error) {
-	kp, err := createKubernetesProcessor(params, cfg, options...)
+	kp, err := createKubernetesProcessor(componentSettings, cfg, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -123,12 +123,12 @@ func createMetricsProcessorWithOptions(
 
 func createLogsProcessorWithOptions(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Processor,
 	nextLogsConsumer consumer.Logs,
 	options ...Option,
 ) (component.LogsProcessor, error) {
-	kp, err := createKubernetesProcessor(params, cfg, options...)
+	kp, err := createKubernetesProcessor(componentSettings, cfg, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -143,11 +143,11 @@ func createLogsProcessorWithOptions(
 }
 
 func createKubernetesProcessor(
-	params component.ProcessorCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Processor,
 	options ...Option,
 ) (*kubernetesprocessor, error) {
-	kp := &kubernetesprocessor{logger: params.Logger}
+	kp := &kubernetesprocessor{logger: componentSettings.Logger}
 
 	allOptions := append(createProcessorOpts(cfg), options...)
 

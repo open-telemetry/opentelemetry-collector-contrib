@@ -42,8 +42,8 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	rCfg.Endpoint = addr
 	sink := new(consumertest.MetricsSink)
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	rcvr, err := createMetricsReceiver(context.Background(), params, rCfg, sink)
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
+	rcvr, err := createMetricsReceiver(context.Background(), componentSettings, rCfg, sink)
 	require.NoError(t, err)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))

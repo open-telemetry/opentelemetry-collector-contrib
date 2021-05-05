@@ -63,11 +63,11 @@ func TestIntegrationSingleNode(t *testing.T) {
 	cfg.Brokers = []string{kafkaAddress}
 	cfg.CollectionInterval = 5 * time.Second
 	consumer := new(consumertest.MetricsSink)
-	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
+	componentSettings := component.ComponentSettings{Logger: zaptest.NewLogger(t)}
 
 	var receiver component.MetricsReceiver
 	var err error
-	receiver, err = f.CreateMetricsReceiver(context.Background(), params, cfg, consumer)
+	receiver, err = f.CreateMetricsReceiver(context.Background(), componentSettings, cfg, consumer)
 	require.NoError(t, err, "failed to create receiver")
 	require.Eventuallyf(t, func() bool {
 		err = receiver.Start(context.Background(), &testHost{t: t})

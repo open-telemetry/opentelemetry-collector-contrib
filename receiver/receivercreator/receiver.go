@@ -31,22 +31,22 @@ var _ component.MetricsReceiver = (*receiverCreator)(nil)
 
 // receiverCreator implements consumer.Metrics.
 type receiverCreator struct {
-	params          component.ReceiverCreateParams
-	cfg             *Config
-	nextConsumer    consumer.Metrics
-	observerHandler observerHandler
+	componentSettings component.ComponentSettings
+	cfg               *Config
+	nextConsumer      consumer.Metrics
+	observerHandler   observerHandler
 }
 
 // newReceiverCreator creates the receiver_creator with the given parameters.
-func newReceiverCreator(params component.ReceiverCreateParams, cfg *Config, nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
+func newReceiverCreator(componentSettings component.ComponentSettings, cfg *Config, nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
 
 	r := &receiverCreator{
-		params:       params,
-		cfg:          cfg,
-		nextConsumer: nextConsumer,
+		componentSettings: componentSettings,
+		cfg:               cfg,
+		nextConsumer:      nextConsumer,
 	}
 	return r, nil
 }
@@ -68,13 +68,13 @@ var _ component.Host = (*loggingHost)(nil)
 func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 	rc.observerHandler = observerHandler{
 		config:                rc.cfg,
-		logger:                rc.params.Logger,
+		logger:                rc.componentSettings.Logger,
 		receiversByEndpointID: receiverMap{},
 		nextConsumer:          rc.nextConsumer,
 		runner: &receiverRunner{
-			params:      rc.params,
-			idNamespace: rc.cfg.ID(),
-			host:        &loggingHost{host, rc.params.Logger},
+			componentSettings: rc.componentSettings,
+			idNamespace:       rc.cfg.ID(),
+			host:              &loggingHost{host, rc.componentSettings.Logger},
 		}}
 
 	observers := map[config.Type]observer.Observable{}
@@ -102,7 +102,7 @@ func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 	}
 
 	if len(observers) == 0 {
-		rc.params.Logger.Warn("no observers were configured and no subreceivers will be started. receiver_creator will be disabled")
+		rc.componentSettings.Logger.Warn("no observers were configured and no subreceivers will be started. receiver_creator will be disabled")
 	}
 
 	// Start all configured watchers.

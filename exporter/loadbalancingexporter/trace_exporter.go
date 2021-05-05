@@ -49,24 +49,24 @@ type traceExporterImp struct {
 }
 
 // Create new traces exporter
-func newTracesExporter(params component.ExporterCreateParams, cfg config.Exporter) (*traceExporterImp, error) {
+func newTracesExporter(componentSettings component.ComponentSettings, cfg config.Exporter) (*traceExporterImp, error) {
 	exporterFactory := otlpexporter.NewFactory()
 
-	tmplParams := component.ExporterCreateParams{
-		Logger:    params.Logger,
-		BuildInfo: params.BuildInfo,
+	tmplcomponentSettings := component.ComponentSettings{
+		Logger:    componentSettings.Logger,
+		BuildInfo: componentSettings.BuildInfo,
 	}
 
-	loadBalancer, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	loadBalancer, err := newLoadBalancer(componentSettings, cfg, func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
-		return exporterFactory.CreateTracesExporter(ctx, tmplParams, &oCfg)
+		return exporterFactory.CreateTracesExporter(ctx, tmplcomponentSettings, &oCfg)
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return &traceExporterImp{
-		logger:       params.Logger,
+		logger:       componentSettings.Logger,
 		loadBalancer: loadBalancer,
 	}, nil
 }

@@ -113,7 +113,7 @@ func TestDetector_Detect(t *testing.T) {
 }
 
 func TestNewDetector(t *testing.T) {
-	detector, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
+	detector, err := NewDetector(component.ComponentSettings{Logger: zap.NewNop()}, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, detector)
 }

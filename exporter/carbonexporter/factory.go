@@ -45,10 +45,10 @@ func createDefaultConfig() config.Exporter {
 
 func createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	config config.Exporter,
 ) (component.MetricsExporter, error) {
-	exp, err := newCarbonExporter(config.(*Config), params)
+	exp, err := newCarbonExporter(config.(*Config), componentSettings)
 
 	if err != nil {
 		return nil, err

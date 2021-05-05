@@ -68,7 +68,7 @@ func createDefaultConfig() config.Processor {
 // createTracesProcessor creates a trace processor based on this config.
 func createTracesProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 
@@ -85,5 +85,5 @@ func createTracesProcessor(
 	// the only supported storage for now
 	st = newMemoryStorage()
 
-	return newGroupByTraceProcessor(params.Logger, st, nextConsumer, *oCfg), nil
+	return newGroupByTraceProcessor(componentSettings.Logger, st, nextConsumer, *oCfg), nil
 }

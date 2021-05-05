@@ -54,9 +54,9 @@ const (
 )
 
 type prometheusExecReceiver struct {
-	params   component.ReceiverCreateParams
-	config   *Config
-	consumer consumer.Metrics
+	componentSettings component.ComponentSettings
+	config            *Config
+	consumer          consumer.Metrics
 
 	// Prometheus receiver config
 	promReceiverConfig *prometheusreceiver.Config
@@ -78,7 +78,7 @@ type runResult struct {
 }
 
 // newPromExecReceiver returns a prometheusExecReceiver
-func newPromExecReceiver(params component.ReceiverCreateParams, config *Config, consumer consumer.Metrics) (*prometheusExecReceiver, error) {
+func newPromExecReceiver(componentSettings component.ComponentSettings, config *Config, consumer consumer.Metrics) (*prometheusExecReceiver, error) {
 	if config.SubprocessConfig.Command == "" {
 		return nil, fmt.Errorf("no command to execute entered in config file for %v", config.ID())
 	}
@@ -86,7 +86,7 @@ func newPromExecReceiver(params component.ReceiverCreateParams, config *Config, 
 	promReceiverConfig := getPromReceiverConfig(config)
 
 	return &prometheusExecReceiver{
-		params:             params,
+		componentSettings:  componentSettings,
 		config:             config,
 		consumer:           consumer,
 		subprocessConfig:   subprocessConfig,
@@ -159,7 +159,7 @@ func (per *prometheusExecReceiver) manageProcess(ctx context.Context, host compo
 
 		receiver, err := per.createAndStartReceiver(ctx, host)
 		if err != nil {
-			per.params.Logger.Error("createReceiver() error", zap.String("error", err.Error()))
+			per.componentSettings.Logger.Error("createReceiver() error", zap.String("error", err.Error()))
 			return
 		}
 
@@ -167,7 +167,7 @@ func (per *prometheusExecReceiver) manageProcess(ctx context.Context, host compo
 
 		err = receiver.Shutdown(ctx)
 		if err != nil {
-			per.params.Logger.Error("could not stop receiver associated to process, killing it", zap.String("error", err.Error()))
+			per.componentSettings.Logger.Error("could not stop receiver associated to process, killing it", zap.String("error", err.Error()))
 			return
 		}
 
@@ -203,7 +203,7 @@ func (per *prometheusExecReceiver) createAndStartReceiver(ctx context.Context, h
 
 	// Create and start the underlying Prometheus receiver
 	factory := prometheusreceiver.NewFactory()
-	receiver, err := factory.CreateMetricsReceiver(ctx, per.params, per.promReceiverConfig, per.consumer)
+	receiver, err := factory.CreateMetricsReceiver(ctx, per.componentSettings, per.promReceiverConfig, per.consumer)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create Prometheus receiver - killing this single process/receiver: %w", err)
 	}
@@ -229,7 +229,7 @@ func (per *prometheusExecReceiver) runProcess(ctx context.Context) time.Duration
 	case result := <-run:
 		// Log the error from the subprocess without returning it since we want to restart the process if it exited
 		if result.subprocessErr != nil {
-			per.params.Logger.Info("Subprocess error", zap.String("error", result.subprocessErr.Error()))
+			per.componentSettings.Logger.Info("Subprocess error", zap.String("error", result.subprocessErr.Error()))
 		}
 		cancel()
 		return result.elapsed
@@ -242,14 +242,14 @@ func (per *prometheusExecReceiver) runProcess(ctx context.Context) time.Duration
 
 // handleProcessResult calls the process manager's run function and pipes the return value into the channel
 func (per *prometheusExecReceiver) handleProcessResult(childCtx context.Context, run chan<- runResult) {
-	elapsed, subprocessErr := per.subprocessConfig.Run(childCtx, per.params.Logger)
+	elapsed, subprocessErr := per.subprocessConfig.Run(childCtx, per.componentSettings.Logger)
 	run <- runResult{elapsed, subprocessErr}
 }
 
 // computeDelayAndSleep will compute how long the process should delay before restarting and handle a shutdown while this goroutine waits
 func (per *prometheusExecReceiver) computeDelayAndSleep(elapsed time.Duration, crashCount int) {
 	sleepTime := getDelay(elapsed, healthyProcessTime, crashCount, healthyCrashCount)
-	per.params.Logger.Info("Subprocess start delay", zap.String("time until process restarts", sleepTime.String()))
+	per.componentSettings.Logger.Info("Subprocess start delay", zap.String("time until process restarts", sleepTime.String()))
 
 	select {
 	case <-time.After(sleepTime):

@@ -56,10 +56,10 @@ func createDefaultConfig() config.Receiver {
 // createMetricsReceiver creates a metrics receiver based on provided Config.
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Receiver,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)
-	return newPromExecReceiver(params, rCfg, nextConsumer)
+	return newPromExecReceiver(componentSettings, rCfg, nextConsumer)
 }

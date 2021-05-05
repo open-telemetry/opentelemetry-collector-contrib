@@ -27,7 +27,7 @@ import (
 func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	creationcomponentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 	cfg := &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Resolver: ResolverSettings{
@@ -36,7 +36,7 @@ func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), creationcomponentSettings, cfg)
 
 	// verify
 	assert.Nil(t, err)
@@ -46,7 +46,7 @@ func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 func TestLogExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	creationcomponentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 	cfg := &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Resolver: ResolverSettings{
@@ -55,7 +55,7 @@ func TestLogExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
+	exp, err := factory.CreateLogsExporter(context.Background(), creationcomponentSettings, cfg)
 
 	// verify
 	assert.Nil(t, err)

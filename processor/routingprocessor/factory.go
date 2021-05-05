@@ -43,10 +43,10 @@ func createDefaultConfig() config.Processor {
 	}
 }
 
-func createTracesProcessor(_ context.Context, params component.ProcessorCreateParams, cfg config.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
+func createTracesProcessor(_ context.Context, componentSettings component.ComponentSettings, cfg config.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 	_, ok := nextConsumer.(component.Processor)
 	if ok {
-		params.Logger.Warn("another processor has been defined after the routing processor: it will NOT receive any data!")
+		componentSettings.Logger.Warn("another processor has been defined after the routing processor: it will NOT receive any data!")
 	}
-	return newProcessor(params.Logger, cfg)
+	return newProcessor(componentSettings.Logger, cfg)
 }

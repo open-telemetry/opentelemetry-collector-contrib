@@ -36,13 +36,13 @@ func TestDefaultConfiguration(t *testing.T) {
 func TestCreateTestProcessor(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 
-	params := component.ProcessorCreateParams{
+	componentSettings := component.ComponentSettings{
 		Logger: logger,
 	}
 	next := &mockProcessor{}
 
 	// test
-	p, err := createTracesProcessor(context.Background(), params, c, next)
+	p, err := createTracesProcessor(context.Background(), componentSettings, c, next)
 
 	// verify
 	assert.NoError(t, err)
@@ -52,7 +52,7 @@ func TestCreateTestProcessor(t *testing.T) {
 func TestCreateTestProcessorWithNotImplementedOptions(t *testing.T) {
 	// prepare
 	f := NewFactory()
-	params := component.ProcessorCreateParams{
+	componentSettings := component.ComponentSettings{
 		Logger: logger,
 	}
 	next := &mockProcessor{}
@@ -75,7 +75,7 @@ func TestCreateTestProcessorWithNotImplementedOptions(t *testing.T) {
 			errDiskStorageNotSupported,
 		},
 	} {
-		p, err := f.CreateTracesProcessor(context.Background(), params, tt.config, next)
+		p, err := f.CreateTracesProcessor(context.Background(), componentSettings, tt.config, next)
 
 		// verify
 		assert.Error(t, tt.expectedErr, err)

@@ -45,7 +45,7 @@ func NewFactory(logReceiverType LogReceiverType) component.ReceiverFactory {
 func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLogsReceiver {
 	return func(
 		ctx context.Context,
-		params component.ReceiverCreateParams,
+		componentSettings component.ComponentSettings,
 		cfg config.Receiver,
 		nextConsumer consumer.Logs,
 	) (component.LogsReceiver, error) {
@@ -62,8 +62,8 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 
 		pipeline := append([]operator.Config{*inputCfg}, operatorCfgs...)
 
-		emitter := NewLogEmitter(params.Logger.Sugar())
-		logAgent, err := agent.NewBuilder(params.Logger.Sugar()).
+		emitter := NewLogEmitter(componentSettings.Logger.Sugar())
+		logAgent, err := agent.NewBuilder(componentSettings.Logger.Sugar()).
 			WithConfig(&agent.Config{Pipeline: pipeline}).
 			WithDefaultOutput(emitter).
 			Build()
@@ -72,7 +72,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 		}
 
 		opts := []ConverterOption{
-			WithLogger(params.Logger),
+			WithLogger(componentSettings.Logger),
 		}
 		if baseCfg.Converter.MaxFlushCount > 0 {
 			opts = append(opts, WithMaxFlushCount(baseCfg.Converter.MaxFlushCount))
@@ -87,7 +87,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 			agent:     logAgent,
 			emitter:   emitter,
 			consumer:  nextConsumer,
-			logger:    params.Logger,
+			logger:    componentSettings.Logger,
 			converter: converter,
 		}, nil
 	}

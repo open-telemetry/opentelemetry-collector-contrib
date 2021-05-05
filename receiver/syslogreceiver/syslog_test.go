@@ -48,9 +48,9 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 	numLogs := 5
 
 	f := NewFactory()
-	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
+	componentSettings := component.ComponentSettings{Logger: zaptest.NewLogger(t)}
 	sink := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogsReceiver(context.Background(), params, cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), componentSettings, cfg, sink)
 	require.NoError(t, err)
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -140,7 +140,7 @@ func testdataUDPConfig() *SysLogConfig {
 }
 
 func TestDecodeInputConfigFailure(t *testing.T) {
-	params := component.ReceiverCreateParams{
+	componentSettings := component.ComponentSettings{
 		Logger: zap.NewNop(),
 	}
 	sink := new(consumertest.LogsSink)
@@ -157,7 +157,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 			"protocol": "rfc5424",
 		},
 	}
-	receiver, err := factory.CreateLogsReceiver(context.Background(), params, badCfg, sink)
+	receiver, err := factory.CreateLogsReceiver(context.Background(), componentSettings, badCfg, sink)
 	require.Error(t, err, "receiver creation should fail if input config isn't valid")
 	require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
 }

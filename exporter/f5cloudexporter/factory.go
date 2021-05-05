@@ -50,7 +50,7 @@ func (f *f5cloudFactory) Type() config.Type {
 
 func (f *f5cloudFactory) CreateMetricsExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	config config.Exporter) (component.MetricsExporter, error) {
 
 	cfg := config.(*Config)
@@ -59,14 +59,14 @@ func (f *f5cloudFactory) CreateMetricsExporter(
 		return nil, err
 	}
 
-	fillUserAgent(cfg, params.BuildInfo.Version)
+	fillUserAgent(cfg, componentSettings.BuildInfo.Version)
 
-	return f.ExporterFactory.CreateMetricsExporter(ctx, params, &cfg.Config)
+	return f.ExporterFactory.CreateMetricsExporter(ctx, componentSettings, &cfg.Config)
 }
 
 func (f *f5cloudFactory) CreateTracesExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	config config.Exporter) (component.TracesExporter, error) {
 
 	cfg := config.(*Config)
@@ -75,14 +75,14 @@ func (f *f5cloudFactory) CreateTracesExporter(
 		return nil, err
 	}
 
-	fillUserAgent(cfg, params.BuildInfo.Version)
+	fillUserAgent(cfg, componentSettings.BuildInfo.Version)
 
-	return f.ExporterFactory.CreateTracesExporter(ctx, params, &cfg.Config)
+	return f.ExporterFactory.CreateTracesExporter(ctx, componentSettings, &cfg.Config)
 }
 
 func (f *f5cloudFactory) CreateLogsExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	config config.Exporter) (component.LogsExporter, error) {
 
 	cfg := config.(*Config)
@@ -91,9 +91,9 @@ func (f *f5cloudFactory) CreateLogsExporter(
 		return nil, err
 	}
 
-	fillUserAgent(cfg, params.BuildInfo.Version)
+	fillUserAgent(cfg, componentSettings.BuildInfo.Version)
 
-	return f.ExporterFactory.CreateLogsExporter(ctx, params, &cfg.Config)
+	return f.ExporterFactory.CreateLogsExporter(ctx, componentSettings, &cfg.Config)
 }
 
 func (f *f5cloudFactory) CreateDefaultConfig() config.Exporter {

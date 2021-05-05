@@ -34,24 +34,24 @@ import (
 var _ component.MetricsReceiver = (*jmxMetricReceiver)(nil)
 
 type jmxMetricReceiver struct {
-	logger       *zap.Logger
-	config       *Config
-	subprocess   *subprocess.Subprocess
-	params       component.ReceiverCreateParams
-	otlpReceiver component.MetricsReceiver
-	nextConsumer consumer.Metrics
+	logger            *zap.Logger
+	config            *Config
+	subprocess        *subprocess.Subprocess
+	componentSettings component.ComponentSettings
+	otlpReceiver      component.MetricsReceiver
+	nextConsumer      consumer.Metrics
 }
 
 func newJMXMetricReceiver(
-	params component.ReceiverCreateParams,
+	componentSettings component.ComponentSettings,
 	config *Config,
 	nextConsumer consumer.Metrics,
 ) *jmxMetricReceiver {
 	return &jmxMetricReceiver{
-		logger:       params.Logger,
-		params:       params,
-		config:       config,
-		nextConsumer: nextConsumer,
+		logger:            componentSettings.Logger,
+		componentSettings: componentSettings,
+		config:            config,
+		nextConsumer:      nextConsumer,
 	}
 }
 
@@ -126,7 +126,7 @@ func (jmx *jmxMetricReceiver) buildOTLPReceiver() (component.MetricsReceiver, er
 	config.GRPC.NetAddr = confignet.NetAddr{Endpoint: endpoint, Transport: "tcp"}
 	config.HTTP = nil
 
-	return factory.CreateMetricsReceiver(context.Background(), jmx.params, config, jmx.nextConsumer)
+	return factory.CreateMetricsReceiver(context.Background(), jmx.componentSettings, config, jmx.nextConsumer)
 }
 
 func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {

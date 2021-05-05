@@ -54,8 +54,8 @@ func createDefaultConfig() config.Extension {
 
 func createExtension(
 	_ context.Context,
-	params component.ExtensionCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Extension,
 ) (component.Extension, error) {
-	return newHTTPForwarder(cfg.(*Config), params.Logger)
+	return newHTTPForwarder(cfg.(*Config), componentSettings.Logger)
 }

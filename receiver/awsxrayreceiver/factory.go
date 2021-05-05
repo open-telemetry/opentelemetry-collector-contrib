@@ -54,9 +54,9 @@ func createDefaultConfig() config.Receiver {
 
 func createTracesReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Receiver,
 	consumer consumer.Traces) (component.TracesReceiver, error) {
 	rcfg := cfg.(*Config)
-	return newReceiver(rcfg, consumer, params.Logger)
+	return newReceiver(rcfg, consumer, componentSettings.Logger)
 }

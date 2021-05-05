@@ -39,32 +39,32 @@ func TestCreateProcessor(t *testing.T) {
 	kubeClientProvider = newFakeClient
 
 	cfg := factory.CreateDefaultConfig()
-	params := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 
-	tp, err := factory.CreateTracesProcessor(context.Background(), params, cfg, consumertest.NewNop())
+	tp, err := factory.CreateTracesProcessor(context.Background(), componentSettings, cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), params, cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetricsProcessor(context.Background(), componentSettings, cfg, consumertest.NewNop())
 	assert.NotNil(t, mp)
 	assert.NoError(t, err)
 
-	lp, err := factory.CreateLogsProcessor(context.Background(), params, cfg, consumertest.NewNop())
+	lp, err := factory.CreateLogsProcessor(context.Background(), componentSettings, cfg, consumertest.NewNop())
 	assert.NotNil(t, lp)
 	assert.NoError(t, err)
 
 	oCfg := cfg.(*Config)
 	oCfg.Passthrough = true
 
-	tp, err = factory.CreateTracesProcessor(context.Background(), params, cfg, consumertest.NewNop())
+	tp, err = factory.CreateTracesProcessor(context.Background(), componentSettings, cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
-	mp, err = factory.CreateMetricsProcessor(context.Background(), params, cfg, consumertest.NewNop())
+	mp, err = factory.CreateMetricsProcessor(context.Background(), componentSettings, cfg, consumertest.NewNop())
 	assert.NotNil(t, mp)
 	assert.NoError(t, err)
 
-	lp, err = factory.CreateLogsProcessor(context.Background(), params, cfg, consumertest.NewNop())
+	lp, err = factory.CreateLogsProcessor(context.Background(), componentSettings, cfg, consumertest.NewNop())
 	assert.NotNil(t, lp)
 	assert.NoError(t, err)
 

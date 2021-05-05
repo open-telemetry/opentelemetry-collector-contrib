@@ -42,9 +42,9 @@ func TestIntegration(t *testing.T) {
 	cfg.Endpoint = c.AddrForPort(11211)
 
 	consumer := new(consumertest.MetricsSink)
-	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
+	componentSettings := component.ComponentSettings{Logger: zaptest.NewLogger(t)}
 
-	rcvr, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumer)
+	rcvr, err := f.CreateMetricsReceiver(context.Background(), componentSettings, cfg, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 

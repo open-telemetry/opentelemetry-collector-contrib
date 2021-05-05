@@ -55,7 +55,7 @@ func createDefaultConfig() config.Exporter {
 // CreateTracesExporter creates a New Relic trace exporter for this configuration.
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	nrConfig, ok := cfg.(*Config)
@@ -63,7 +63,7 @@ func createTracesExporter(
 		return nil, fmt.Errorf("invalid config: %#v", cfg)
 	}
 	traceConfig := nrConfig.GetTracesConfig()
-	exp, err := newExporter(params.Logger, &params.BuildInfo, traceConfig, telemetry.NewSpanRequestFactory)
+	exp, err := newExporter(componentSettings.Logger, &componentSettings.BuildInfo, traceConfig, telemetry.NewSpanRequestFactory)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func createTracesExporter(
 // CreateMetricsExporter creates a New Relic metrics exporter for this configuration.
 func createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	nrConfig, ok := cfg.(*Config)
@@ -89,7 +89,7 @@ func createMetricsExporter(
 	}
 
 	metricsConfig := nrConfig.GetMetricsConfig()
-	exp, err := newExporter(params.Logger, &params.BuildInfo, metricsConfig, telemetry.NewMetricRequestFactory)
+	exp, err := newExporter(componentSettings.Logger, &componentSettings.BuildInfo, metricsConfig, telemetry.NewMetricRequestFactory)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func createMetricsExporter(
 // CreateLogsExporter creates a New Relic logs exporter for this configuration.
 func createLogsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	nrConfig, ok := cfg.(*Config)
@@ -113,7 +113,7 @@ func createLogsExporter(
 	}
 
 	logsConfig := nrConfig.GetLogsConfig()
-	exp, err := newExporter(params.Logger, &params.BuildInfo, logsConfig, telemetry.NewLogRequestFactory)
+	exp, err := newExporter(componentSettings.Logger, &componentSettings.BuildInfo, logsConfig, telemetry.NewLogRequestFactory)
 	if err != nil {
 		return nil, err
 	}

@@ -57,26 +57,26 @@ func TestLoadConfig(t *testing.T) {
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	componentSettings := component.ComponentSettings{Logger: zap.NewNop()}
 
 	// missing params
-	te, err := factory.CreateTracesExporter(context.Background(), params, e0)
+	te, err := factory.CreateTracesExporter(context.Background(), componentSettings, e0)
 	require.Error(t, err)
 	require.Nil(t, te)
-	me, err := factory.CreateMetricsExporter(context.Background(), params, e0)
+	me, err := factory.CreateMetricsExporter(context.Background(), componentSettings, e0)
 	require.Error(t, err)
 	require.Nil(t, me)
-	le, err := factory.CreateLogsExporter(context.Background(), params, e0)
+	le, err := factory.CreateLogsExporter(context.Background(), componentSettings, e0)
 	require.Error(t, err)
 	require.Nil(t, le)
 
-	te, err = factory.CreateTracesExporter(context.Background(), params, e1)
+	te, err = factory.CreateTracesExporter(context.Background(), componentSettings, e1)
 	require.NoError(t, err)
 	require.NotNil(t, te)
-	me, err = factory.CreateMetricsExporter(context.Background(), params, e1)
+	me, err = factory.CreateMetricsExporter(context.Background(), componentSettings, e1)
 	require.NoError(t, err)
 	require.NotNil(t, me)
-	le, err = factory.CreateLogsExporter(context.Background(), params, e1)
+	le, err = factory.CreateLogsExporter(context.Background(), componentSettings, e1)
 	require.NoError(t, err)
 	require.NotNil(t, le)
 }

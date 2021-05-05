@@ -58,7 +58,7 @@ var (
 
 func TestFillHostMetadata(t *testing.T) {
 	cache.Cache.Flush()
-	params := component.ExporterCreateParams{
+	params := component.ComponentSettings{
 		Logger:    zap.NewNop(),
 		BuildInfo: mockBuildInfo,
 	}
@@ -70,7 +70,7 @@ func TestFillHostMetadata(t *testing.T) {
 	}}
 
 	metadata := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
-	fillHostMetadata(params, cfg, metadata)
+	fillHostMetadata(componentSettings, cfg, metadata)
 
 	assert.Equal(t, metadata.InternalHostname, "hostname")
 	assert.Equal(t, metadata.Flavor, "otelcontribcol")
@@ -84,7 +84,7 @@ func TestFillHostMetadata(t *testing.T) {
 		Tags:             &HostTags{},
 	}
 
-	fillHostMetadata(params, cfg, metadataWithVals)
+	fillHostMetadata(componentSettings, cfg, metadataWithVals)
 	assert.Equal(t, metadataWithVals.InternalHostname, "my-custom-hostname")
 	assert.Equal(t, metadataWithVals.Flavor, "otelcontribcol")
 	assert.Equal(t, metadataWithVals.Version, "1.0")
@@ -195,7 +195,7 @@ func TestPusher(t *testing.T) {
 		API:                 config.APIConfig{Key: "apikey"},
 		UseResourceMetadata: true,
 	}
-	mockParams := component.ExporterCreateParams{
+	mockcomponentSettings := component.ComponentSettings{
 		Logger:    zap.NewNop(),
 		BuildInfo: mockBuildInfo,
 	}
@@ -209,7 +209,7 @@ func TestPusher(t *testing.T) {
 	defer server.Close()
 	cfg.Metrics.Endpoint = server.URL
 
-	go Pusher(ctx, mockParams, cfg, attrs)
+	go Pusher(ctx, mockcomponentSettings, cfg, attrs)
 
 	body := <-server.MetadataChan
 	var recvMetadata HostMetadata

@@ -35,9 +35,9 @@ type runner interface {
 
 // receiverRunner handles starting/stopping of a concrete subreceiver instance.
 type receiverRunner struct {
-	params      component.ReceiverCreateParams
-	idNamespace config.ComponentID
-	host        component.Host
+	componentSettings component.ComponentSettings
+	idNamespace       config.ComponentID
+	host              component.Host
 }
 
 var _ runner = (*receiverRunner)(nil)
@@ -112,5 +112,5 @@ func (run *receiverRunner) createRuntimeReceiver(
 	cfg config.Receiver,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	return factory.CreateMetricsReceiver(context.Background(), run.params, cfg, nextConsumer)
+	return factory.CreateMetricsReceiver(context.Background(), run.componentSettings, cfg, nextConsumer)
 }

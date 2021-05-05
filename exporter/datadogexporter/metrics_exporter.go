@@ -30,19 +30,19 @@ import (
 )
 
 type metricsExporter struct {
-	params  component.ExporterCreateParams
-	cfg     *config.Config
-	ctx     context.Context
-	client  *datadog.Client
-	prevPts *ttlmap.TTLMap
+	componentSettings component.ComponentSettings
+	cfg               *config.Config
+	ctx               context.Context
+	client            *datadog.Client
+	prevPts           *ttlmap.TTLMap
 }
 
-func newMetricsExporter(ctx context.Context, params component.ExporterCreateParams, cfg *config.Config) *metricsExporter {
+func newMetricsExporter(ctx context.Context, componentSettings component.ComponentSettings, cfg *config.Config) *metricsExporter {
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
-	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.BuildInfo)
+	client.ExtraHeader["User-Agent"] = utils.UserAgent(componentSettings.BuildInfo)
 	client.HttpClient = utils.NewHTTPClient(10 * time.Second)
 
-	utils.ValidateAPIKey(params.Logger, client)
+	utils.ValidateAPIKey(componentSettings.Logger, client)
 
 	var sweepInterval int64 = 1
 	if cfg.Metrics.DeltaTTL > 1 {
@@ -51,7 +51,7 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreatePara
 	prevPts := ttlmap.New(sweepInterval, cfg.Metrics.DeltaTTL)
 	prevPts.Start()
 
-	return &metricsExporter{params, cfg, ctx, client, prevPts}
+	return &metricsExporter{componentSettings, cfg, ctx, client, prevPts}
 }
 
 func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error {
@@ -65,13 +65,13 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 			if md.ResourceMetrics().Len() > 0 {
 				attrs = md.ResourceMetrics().At(0).Resource().Attributes()
 			}
-			go metadata.Pusher(exp.ctx, exp.params, exp.cfg, attrs)
+			go metadata.Pusher(exp.ctx, exp.componentSettings, exp.cfg, attrs)
 		})
 	}
 
 	ms, _ := mapMetrics(exp.cfg.Metrics, exp.prevPts, md)
 
-	metrics.ProcessMetrics(ms, exp.params.Logger, exp.cfg)
+	metrics.ProcessMetrics(ms, exp.componentSettings.Logger, exp.cfg)
 
 	err := exp.client.PostMetrics(ms)
 	return err

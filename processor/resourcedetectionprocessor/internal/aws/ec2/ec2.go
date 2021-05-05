@@ -42,7 +42,7 @@ type Detector struct {
 	tagKeyRegexes    []*regexp.Regexp
 }
 
-func NewDetector(_ component.ProcessorCreateParams, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(_ component.ComponentSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	sess, err := session.NewSession()
 	if err != nil {

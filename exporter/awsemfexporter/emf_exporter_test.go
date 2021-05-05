@@ -71,7 +71,7 @@ func TestConsumeMetrics(t *testing.T) {
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = 0
-	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	exp, err := New(expCfg, component.ComponentSettings{Logger: zap.NewNop()})
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -131,7 +131,7 @@ func TestConsumeMetricsWithOutputDestination(t *testing.T) {
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = 0
 	expCfg.OutputDestination = "stdout"
-	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	exp, err := New(expCfg, component.ComponentSettings{Logger: zap.NewNop()})
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -192,7 +192,7 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "test-logStreamName"
-	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	exp, err := New(expCfg, component.ComponentSettings{Logger: zap.NewNop()})
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -259,7 +259,7 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "/aws/ecs/containerinsights/{ClusterName}/performance"
 	expCfg.LogStreamName = "{TaskId}"
-	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	exp, err := New(expCfg, component.ComponentSettings{Logger: zap.NewNop()})
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -328,7 +328,7 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "{TaskId}"
-	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	exp, err := New(expCfg, component.ComponentSettings{Logger: zap.NewNop()})
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -397,7 +397,7 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "{WrongKey}"
-	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	exp, err := New(expCfg, component.ComponentSettings{Logger: zap.NewNop()})
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -466,7 +466,7 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	expCfg.MaxRetries = 0
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "test-logStreamName"
-	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	exp, err := New(expCfg, component.ComponentSettings{Logger: zap.NewNop()})
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -538,7 +538,7 @@ func TestNewExporterWithoutConfig(t *testing.T) {
 	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 
 	assert.Nil(t, expCfg.logger)
-	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	exp, err := New(expCfg, component.ComponentSettings{Logger: zap.NewNop()})
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
 	assert.NotNil(t, expCfg.logger)
@@ -573,7 +573,7 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 
 	obs, logs := observer.New(zap.WarnLevel)
 	logger := zap.New(obs)
-	exp, err := New(expCfg, component.ExporterCreateParams{Logger: logger})
+	exp, err := New(expCfg, component.ComponentSettings{Logger: logger})
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -600,7 +600,7 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 }
 
 func TestNewExporterWithoutSession(t *testing.T) {
-	exp, err := New(nil, component.ExporterCreateParams{Logger: zap.NewNop()})
+	exp, err := New(nil, component.ComponentSettings{Logger: zap.NewNop()})
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
 }
@@ -624,7 +624,7 @@ func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 
 	assert.Nil(t, expCfg.logger)
-	exp, err := NewEmfExporter(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	exp, err := NewEmfExporter(expCfg, component.ComponentSettings{Logger: zap.NewNop()})
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
 	assert.NotNil(t, expCfg.logger)

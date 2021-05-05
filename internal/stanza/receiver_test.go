@@ -35,7 +35,7 @@ import (
 )
 
 func TestStart(t *testing.T) {
-	params := component.ReceiverCreateParams{
+	componentSettings := component.ComponentSettings{
 		Logger: zaptest.NewLogger(t),
 	}
 	mockConsumer := mockLogsConsumer{}
@@ -44,7 +44,7 @@ func TestStart(t *testing.T) {
 
 	logsReceiver, err := factory.CreateLogsReceiver(
 		context.Background(),
-		params,
+		componentSettings,
 		factory.CreateDefaultConfig(),
 		&mockConsumer,
 	)
@@ -67,7 +67,7 @@ func TestStart(t *testing.T) {
 }
 
 func TestHandleStartError(t *testing.T) {
-	params := component.ReceiverCreateParams{
+	componentSettings := component.ComponentSettings{
 		Logger: zaptest.NewLogger(t),
 	}
 	mockConsumer := mockLogsConsumer{}
@@ -77,7 +77,7 @@ func TestHandleStartError(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*TestConfig)
 	cfg.Input = newUnstartableParams()
 
-	receiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, &mockConsumer)
+	receiver, err := factory.CreateLogsReceiver(context.Background(), componentSettings, cfg, &mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
 	err = receiver.Start(context.Background(), componenttest.NewNopHost())
@@ -85,13 +85,13 @@ func TestHandleStartError(t *testing.T) {
 }
 
 func TestHandleConsumeError(t *testing.T) {
-	params := component.ReceiverCreateParams{
+	componentSettings := component.ComponentSettings{
 		Logger: zaptest.NewLogger(t),
 	}
 	mockConsumer := mockLogsRejecter{}
 	factory := NewFactory(TestReceiverType{})
 
-	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), params, factory.CreateDefaultConfig(), &mockConsumer)
+	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), componentSettings, factory.CreateDefaultConfig(), &mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
 	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())

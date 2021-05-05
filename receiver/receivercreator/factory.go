@@ -61,9 +61,9 @@ func createDefaultConfig() config.Receiver {
 
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	return newReceiverCreator(params, cfg.(*Config), consumer)
+	return newReceiverCreator(componentSettings, cfg.(*Config), consumer)
 }

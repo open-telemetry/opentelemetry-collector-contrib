@@ -58,7 +58,7 @@ func (f *Factory) CreateDefaultConfig() config.Extension {
 // CreateExtension creates the extension based on this config.
 func (f *Factory) CreateExtension(
 	ctx context.Context,
-	params component.ExtensionCreateParams,
+	componentSettings component.ComponentSettings,
 	cfg config.Extension,
 ) (component.Extension, error) {
 	config := cfg.(*Config)
@@ -72,7 +72,7 @@ func (f *Factory) CreateExtension(
 		clientset.CoreV1().RESTClient(), "pods", v1.NamespaceAll,
 		fields.OneTermEqualSelector("spec.nodeName", config.Node))
 
-	return newObserver(params.Logger, config, listWatch)
+	return newObserver(componentSettings.Logger, config, listWatch)
 }
 
 // NewFactory should be called to create a factory with default values.

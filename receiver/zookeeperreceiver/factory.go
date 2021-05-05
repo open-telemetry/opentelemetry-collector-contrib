@@ -57,19 +57,19 @@ func createDefaultConfig() config.Receiver {
 // CreateMetricsReceiver creates zookeeper (metrics) receiver.
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateParams,
+	componentSettings component.ComponentSettings,
 	config config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	rConfig := config.(*Config)
-	zms, err := newZookeeperMetricsScraper(params.Logger, rConfig)
+	zms, err := newZookeeperMetricsScraper(componentSettings.Logger, rConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&rConfig.ScraperControllerSettings,
-		params.Logger,
+		componentSettings.Logger,
 		consumer,
 		scraperhelper.AddResourceMetricsScraper(
 			scraperhelper.NewResourceMetricsScraper(

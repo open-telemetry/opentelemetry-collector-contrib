@@ -53,10 +53,10 @@ func createDefaultConfig() config.Exporter {
 	}
 }
 
-func createTracesExporter(_ context.Context, params component.ExporterCreateParams, cfg config.Exporter) (component.TracesExporter, error) {
-	return newTracesExporter(params, cfg)
+func createTracesExporter(_ context.Context, componentSettings component.ComponentSettings, cfg config.Exporter) (component.TracesExporter, error) {
+	return newTracesExporter(componentSettings, cfg)
 }
 
-func createLogExporter(_ context.Context, params component.ExporterCreateParams, cfg config.Exporter) (component.LogsExporter, error) {
-	return newLogsExporter(params, cfg)
+func createLogExporter(_ context.Context, componentSettings component.ComponentSettings, cfg config.Exporter) (component.LogsExporter, error) {
+	return newLogsExporter(componentSettings, cfg)
 }
