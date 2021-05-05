@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## v0.26.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.26.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.26.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+
+- `influxdb` exporter to support sending tracing, metrics, and logging data to [InfluxDB](https://www.influxdata.com/products/)
+
 ## 🛑 Breaking changes 🛑
 
 - `signalfx` exporter (#3207):
@@ -12,6 +22,32 @@
     - system.network.connections
     - system.processes.count
     - system.processes.created
+
+## 💡 Enhancements 💡
+
+- Add default config and systemd environment file support for DEB/RPM packages (#3123)
+- Log errors on receiver start/stop failures (#3208)
+- `newrelic` exporter: Update API key detection logic (#3212)
+- `splunkhec` exporter:
+  - Mark permanent errors to avoid futile retries (#3253)
+  - Add TLS certs verification (#3204)
+- `datadog` exporter:
+  - Add env and tag name normalization to trace payloads (#3200)
+  - add `ignore_resource`s configuration option (#3245)
+- `jmx` receiver: Update for latest snapshot and header support (#3283)
+- `awsxray` exporter: Added support for stack trace translation for .NET language (#3280)
+- `statsd` receiver: Add timing/histogram for statsD receiver as OTLP summary (#3261)
+
+## 🧰 Bug fixes 🧰
+
+- `awsprometheusremotewrite` exporter:
+  - Remove `sending_queue` (#3186)
+  - Use the correct default for aws_auth.service (#3161)
+  - Identify the Amazon Prometheus region from the endpoint (#3210)
+  - Don't panic in case session can't be constructed (#3221)
+- `datadog` exporter: Add max tag length (#3185)
+- `sapm` exporter: Fix crash when passing the signalfx access token (#3294)
+- `newrelic` exporter: Update error conditions (#3322)
 
 ## v0.25.0
 
