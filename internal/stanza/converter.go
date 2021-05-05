@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"runtime"
 	"sync"
 	"time"
@@ -152,7 +153,7 @@ func WithWorkerCount(workerCount int) ConverterOption {
 func NewConverter(opts ...ConverterOption) *Converter {
 	c := &Converter{
 		workerChan:    make(chan *entry.Entry),
-		workerCount:   runtime.NumCPU() / 4,
+		workerCount:   int(math.Max(1, float64(runtime.NumCPU()/4))),
 		batchChan:     make(chan *workerItem),
 		data:          make(map[string]pdata.Logs),
 		pLogsChan:     make(chan pdata.Logs),

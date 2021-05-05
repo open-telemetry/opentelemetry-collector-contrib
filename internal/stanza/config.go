@@ -45,7 +45,7 @@ type ConverterConfig struct {
 	FlushInterval time.Duration `mapstructure:"flush_interval"`
 	// WorkerCount defines how many worker goroutines used for entry.Entry to
 	// log records translation should be spawned.
-	// By default: runtime.NumCPU() / 4 worker are spawned.
+	// By default: math.Max(1, runtime.NumCPU()/4) workers are spawned.
 	WorkerCount int `mapstructure:"worker_count"`
 }
 
