@@ -39,7 +39,6 @@ var (
 	mPodsAdded    = stats.Int64("otelcol_k8s_pod_added", "Number of pod add events received", "1")
 	mPodsDeleted  = stats.Int64("otelcol_k8s_pod_deleted", "Number of pod delete events received", "1")
 	mPodTableSize = stats.Int64("otelcol_k8s_pod_table_size", "Size of table containing pod info", "1")
-
 	mIDLookupMiss = stats.Int64("otelcol_k8s_ip_lookup_miss", "Number of times pod by identifier (IP, UID) lookup failed.", "1")
 )
 
