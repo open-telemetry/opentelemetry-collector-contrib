@@ -54,7 +54,7 @@ func newTransformer(logger *zap.Logger, buildInfo *component.BuildInfo, details 
 	overrideAttributes := make(map[string]interface{})
 	if buildInfo != nil {
 		overrideAttributes[collectorNameKey] = buildInfo.Command
-		if buildInfo.Version != "" {
+		if strings.HasPrefix(buildInfo.Version, "v") {
 			overrideAttributes[collectorVersionKey] = buildInfo.Version
 		}
 	}

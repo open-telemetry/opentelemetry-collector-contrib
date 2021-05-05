@@ -39,8 +39,9 @@ import (
 )
 
 const (
-	testCollectorName    = "TestCollector"
-	testCollectorVersion = "v1.2.3"
+	testCollectorName           = "TestCollector"
+	testCollectorVersion        = "v1.2.3"
+	testCollectorVersionInvalid = "invalid"
 )
 
 type mockConfig struct {
@@ -728,10 +729,11 @@ func TestExportLogs(t *testing.T) {
 }
 
 func TestCreatesClientOptionWithVersionInUserAgent(t *testing.T) {
-	testUserAgentContainsCollectorInfo(t, testCollectorVersion, testCollectorName, "NewRelic-OpenTelemetry-Collector/v1.2.3 TestCollector")
+	testUserAgentContainsCollectorInfo(t, testCollectorVersionInvalid, testCollectorName, "NewRelic-OpenTelemetry-Collector/invalid TestCollector", "")
+	testUserAgentContainsCollectorInfo(t, testCollectorVersion, testCollectorName, "NewRelic-OpenTelemetry-Collector/v1.2.3 TestCollector", "v1.2.3")
 }
 
-func testUserAgentContainsCollectorInfo(t *testing.T, version string, exeName string, expectedUserAgentSubstring string) {
+func testUserAgentContainsCollectorInfo(t *testing.T, version string, exeName string, expectedUserAgentSubstring string, expectedVersionAttribute string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -777,6 +779,28 @@ func testUserAgentContainsCollectorInfo(t *testing.T, version string, exeName st
 	err = exp.Shutdown(ctx)
 	require.NoError(t, err)
 
+	attributes := map[string]string{
+		"collector.name": exeName,
+	}
+	if expectedVersionAttribute != "" {
+		attributes["collector.version"] = expectedVersionAttribute
+	}
+
+	expected := []Batch{
+		{
+			Common: Common{
+				Attributes: attributes,
+			},
+			Spans: []Span{{
+				ID:      "0000000000000001",
+				TraceID: "01010101010101010101010101010101",
+				Attributes: map[string]interface{}{
+					"name": "root",
+				},
+			}},
+		},
+	}
+	assert.Equal(t, expected, m.Batches)
 	assert.Contains(t, m.Header[http.CanonicalHeaderKey("user-agent")][0], expectedUserAgentSubstring)
 }
 
