@@ -105,11 +105,8 @@ func (f internalFilterStrict) labelMatched(metric *metricspb.Metric) bool {
 			}
 
 			keyFound = true
-			for _, timeseries := range metric.Timeseries {
-				if timeseries.LabelValues[idx].Value != value {
-					return false
-				}
-				break
+			if len(metric.Timeseries) > 0 && metric.Timeseries[0].LabelValues[idx].Value != value {
+				return false
 			}
 		}
 
@@ -159,11 +156,8 @@ func (f internalFilterRegexp) labelMatched(metric *metricspb.Metric) bool {
 			}
 
 			keyFound = true
-			for _, timeseries := range metric.Timeseries {
-				if !value.MatchString(timeseries.LabelValues[idx].Value) {
-					return false
-				}
-				break
+			if len(metric.Timeseries) > 0 && !value.MatchString(metric.Timeseries[0].LabelValues[idx].Value) {
+				return false
 			}
 		}
 
