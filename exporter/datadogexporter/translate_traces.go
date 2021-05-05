@@ -369,6 +369,10 @@ func buildDatadogContainerTags(spanTags map[string]string) string {
 		b.WriteString(fmt.Sprintf("%s:%s,", "pod_name", val))
 	}
 
+	if val, ok := spanTags[conventions.AttributeAWSECSTaskARN]; ok {
+		b.WriteString(fmt.Sprintf("%s:%s,", "task_arn", val))
+	}
+
 	return strings.TrimSuffix(b.String(), ",")
 }
 
