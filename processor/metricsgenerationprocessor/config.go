@@ -15,6 +15,7 @@
 package metricsgenerationprocessor
 
 import (
+	"fmt"
 	"sort"
 
 	"go.opentelemetry.io/collector/config"
@@ -40,7 +41,7 @@ const (
 	OperationFieldName = "operation"
 )
 
-// Config is the configuration for the processor.
+// Config defines the configuration for the processor.
 type Config struct {
 	*config.ProcessorSettings `mapstructure:"-"`
 
@@ -139,4 +140,39 @@ var operationTypeKeys = func() []string {
 	}
 	sort.Strings(ret)
 	return ret
+}
+
+// Validate checks whether the input configuration has all of the required fields for the processor.
+// An error is returned if there are any invalid inputs.
+func (config *Config) Validate() error {
+	for _, rule := range config.Rules {
+		if rule.NewMetricName == "" {
+			return fmt.Errorf("missing required field %q", NewMetricFieldName)
+		}
+
+		if rule.Type == "" {
+			return fmt.Errorf("missing required field %q", GenerationTypeFieldName)
+		}
+
+		if !rule.Type.isValid() {
+			return fmt.Errorf("%q must be in %q", GenerationTypeFieldName, generationTypeKeys())
+		}
+
+		if rule.Operand1Metric == "" {
+			return fmt.Errorf("missing required field %q", Operand1MetricFieldName)
+		}
+
+		if rule.Type == Calculate && rule.Operand2Metric == "" {
+			return fmt.Errorf("missing required field %q for generation type %q", Operand2MetricFieldName, Calculate)
+		}
+
+		if rule.Type == Scale && rule.ScaleBy <= 0 {
+			return fmt.Errorf("field %q required to be greater than 0 for generation type %q", ScaleByFieldName, Scale)
+		}
+
+		if rule.Operation != "" && !rule.Operation.isValid() {
+			return fmt.Errorf("%q must be in %q", OperationFieldName, operationTypeKeys())
+		}
+	}
+	return nil
 }

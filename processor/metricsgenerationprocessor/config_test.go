@@ -15,6 +15,7 @@
 package metricsgenerationprocessor
 
 import (
+	"fmt"
 	"path"
 	"testing"
 
@@ -71,5 +72,71 @@ func TestLoadingFullConfig(t *testing.T) {
 			cfg := config.Processors[test.filterName]
 			assert.Equal(t, test.expCfg, cfg)
 		})
+	}
+}
+
+func TestValidateConfig(t *testing.T) {
+	tests := []struct {
+		configName   string
+		succeed      bool
+		errorMessage string
+	}{
+		{
+			configName: "config_full.yaml",
+			succeed:    true,
+		},
+		{
+			configName:   "config_missing_new_metric.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("missing required field %q", NewMetricFieldName),
+		},
+		{
+			configName:   "config_missing_type.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("missing required field %q", GenerationTypeFieldName),
+		},
+		{
+			configName:   "config_invalid_generation_type.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("%q must be in %q", GenerationTypeFieldName, generationTypeKeys()),
+		},
+		{
+			configName:   "config_missing_operand1.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("missing required field %q", Operand1MetricFieldName),
+		},
+		{
+			configName:   "config_missing_operand2.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("missing required field %q for generation type %q", Operand2MetricFieldName, Calculate),
+		},
+		{
+			configName:   "config_missing_scale_by.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("field %q required to be greater than 0 for generation type %q", ScaleByFieldName, Scale),
+		},
+		{
+			configName:   "config_invalid_operation.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("%q must be in %q", OperationFieldName, operationTypeKeys()),
+		},
+	}
+
+	for _, test := range tests {
+		factories, err := componenttest.NopFactories()
+		assert.NoError(t, err)
+
+		factory := NewFactory()
+		factories.Processors[typeStr] = factory
+		t.Run(test.configName, func(t *testing.T) {
+			config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", test.configName), factories)
+			if test.succeed {
+				assert.NotNil(t, config)
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, fmt.Sprintf("processor %q has invalid configuration: %s", typeStr, test.errorMessage))
+			}
+		})
+
 	}
 }

@@ -55,41 +55,6 @@ func TestCreateProcessors(t *testing.T) {
 			configName: "config_full.yaml",
 			succeed:    true,
 		},
-		{
-			configName:   "config_missing_new_metric.yaml",
-			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q", NewMetricFieldName),
-		},
-		{
-			configName:   "config_missing_type.yaml",
-			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q", GenerationTypeFieldName),
-		},
-		{
-			configName:   "config_invalid_generation_type.yaml",
-			succeed:      false,
-			errorMessage: fmt.Sprintf("%q must be in %q", GenerationTypeFieldName, generationTypeKeys()),
-		},
-		{
-			configName:   "config_missing_operand1.yaml",
-			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q", Operand1MetricFieldName),
-		},
-		{
-			configName:   "config_missing_operand2.yaml",
-			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q for generation type %q", Operand2MetricFieldName, Calculate),
-		},
-		{
-			configName:   "config_missing_scale_by.yaml",
-			succeed:      false,
-			errorMessage: fmt.Sprintf("field %q required to be greater than 0 for generation type %q", ScaleByFieldName, Scale),
-		},
-		{
-			configName:   "config_invalid_operation.yaml",
-			succeed:      false,
-			errorMessage: fmt.Sprintf("%q must be in %q", OperationFieldName, operationTypeKeys()),
-		},
 	}
 
 	for _, test := range tests {
