@@ -785,6 +785,30 @@ var (
 			},
 		},
 		{
+			name: "metric_name_insert_with_match_label_strict_missing_key",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1", matchLabels: map[string]string{"missing_key": "value1"}},
+					Action:              Insert,
+					NewName:             "new/metric1",
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setLabels([]string{"label1", "label2"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"value1", "value2"}).
+					addInt64Point(0, 3, 2).build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setLabels([]string{"label1", "label2"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"value1", "value2"}).
+					addInt64Point(0, 3, 2).build(),
+			},
+		},
+		{
 			name: "metric_name_insert_with_match_label_regexp_missing_key",
 			transforms: []internalTransform{
 				{
