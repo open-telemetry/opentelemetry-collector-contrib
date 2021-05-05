@@ -16,6 +16,7 @@ package awsprometheusremotewriteexporter
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -24,6 +25,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/stretchr/testify/assert"
@@ -54,7 +56,8 @@ func TestRequestSignature(t *testing.T) {
 		WriteBufferSize: 0,
 		Timeout:         0,
 		CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
-			return newSigningRoundTripperWithCredentials(authConfig, awsCreds, next)
+			sdk_information := fmt.Sprintf("%s/%s", aws.SDKName, aws.SDKVersion)
+			return newSigningRoundTripperWithCredentials(authConfig, awsCreds, next, sdk_information)
 		},
 	}
 	client, _ := setting.ToClient()
@@ -99,7 +102,8 @@ func TestLeakingBody(t *testing.T) {
 		WriteBufferSize: 0,
 		Timeout:         0,
 		CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
-			return newSigningRoundTripperWithCredentials(authConfig, awsCreds, next)
+			sdk_information := fmt.Sprintf("%s/%s", aws.SDKName, aws.SDKVersion)
+			return newSigningRoundTripperWithCredentials(authConfig, awsCreds, next, sdk_information)
 		},
 	}
 	client, _ := setting.ToClient()
@@ -182,7 +186,8 @@ func TestRoundTrip(t *testing.T) {
 			defer server.Close()
 			serverURL, _ := url.Parse(server.URL)
 			authConfig := AuthConfig{Region: "region", Service: "service"}
-			rt, err := newSigningRoundTripperWithCredentials(authConfig, awsCreds, tt.rt)
+			sdk_information := fmt.Sprintf("%s/%s", aws.SDKName, aws.SDKVersion)
+			rt, err := newSigningRoundTripperWithCredentials(authConfig, awsCreds, tt.rt, sdk_information)
 			assert.NoError(t, err)
 			req, err := http.NewRequest("POST", serverURL.String(), strings.NewReader(""))
 			assert.NoError(t, err)
@@ -239,7 +244,8 @@ func TestCreateSigningRoundTripperWithCredentials(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rtp, err := newSigningRoundTripperWithCredentials(tt.authConfig, tt.creds, tt.roundTripper)
+			sdk_information := fmt.Sprintf("%s/%s", aws.SDKName, aws.SDKVersion)
+			rtp, err := newSigningRoundTripperWithCredentials(tt.authConfig, tt.creds, tt.roundTripper, sdk_information)
 			if tt.returnError {
 				assert.Error(t, err)
 				return

@@ -17,8 +17,13 @@ package awsprometheusremotewriteexporter
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"os"
+	"runtime"
+	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	prw "go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter"
@@ -56,7 +61,12 @@ func (af *awsFactory) CreateDefaultConfig() config.Exporter {
 
 	cfg.ExporterSettings = config.NewExporterSettings(config.NewID(typeStr))
 	cfg.HTTPClientSettings.CustomRoundTripper = func(next http.RoundTripper) (http.RoundTripper, error) {
-		return newSigningRoundTripper(cfg, next)
+		extras := []string{runtime.Version(), runtime.GOOS, runtime.GOARCH}
+		if v := os.Getenv("AWS_EXECUTION_ENV"); v != "" {
+			extras = append(extras, v)
+		}
+		runtime_info := fmt.Sprintf("%s/%s (%s)", aws.SDKName, aws.SDKVersion, strings.Join(extras, "; "))
+		return newSigningRoundTripper(cfg, next, runtime_info)
 	}
 
 	return cfg
