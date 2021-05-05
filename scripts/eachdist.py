@@ -237,6 +237,16 @@ def parse_args(args=None):
         "releaseargs", nargs=argparse.REMAINDER, help=extraargs_help("pytest")
     )
 
+    fmtparser = subparsers.add_parser(
+        "format", help="Formats all source code with black and isort.",
+    )
+    fmtparser.set_defaults(func=format_args)
+    fmtparser.add_argument(
+        "--path",
+        required=False,
+        help="Format only this path instead of entire repository",
+    )
+
     return parser.parse_args(args)
 
 
@@ -641,6 +651,22 @@ def test_args(args):
                 "testroots",
             ),
         )
+    )
+
+
+def format_args(args):
+    format_dir = str(find_projectroot())
+    if args.path:
+        format_dir = os.path.join(format_dir, args.path)
+
+    runsubprocess(
+        args.dry_run, ("black", "."), cwd=format_dir, check=True,
+    )
+    runsubprocess(
+        args.dry_run,
+        ("isort", "--profile", "black", "."),
+        cwd=format_dir,
+        check=True,
     )
 
 
