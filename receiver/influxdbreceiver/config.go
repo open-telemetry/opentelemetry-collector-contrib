@@ -21,7 +21,7 @@ import (
 
 // Config defines configuration for the InfluxDB receiver.
 type Config struct {
-	*config.ReceiverSettings      `mapstructure:"-"`
+	config.ReceiverSettings       `mapstructure:"-"`
 	confighttp.HTTPServerSettings `mapstructure:",squash"`
 
 	// MetricsSchema indicates the metrics schema to emit to line protocol.
