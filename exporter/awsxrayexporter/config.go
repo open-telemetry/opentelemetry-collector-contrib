@@ -22,7 +22,7 @@ import (
 
 // Config defines configuration for AWS X-Ray exporter.
 type Config struct {
-	*config.ExporterSettings `mapstructure:"-"`
+	config.ExporterSettings `mapstructure:",squash"`
 	// AWSSessionSettings contains the common configuration options
 	// for creating AWS session to communicate with backend
 	awsutil.AWSSessionSettings `mapstructure:",squash"`

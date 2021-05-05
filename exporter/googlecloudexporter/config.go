@@ -22,10 +22,10 @@ import (
 
 // Config defines configuration for Google Cloud exporter.
 type Config struct {
-	*config.ExporterSettings `mapstructure:"-"`
-	ProjectID                string `mapstructure:"project"`
-	UserAgent                string `mapstructure:"user_agent"`
-	Endpoint                 string `mapstructure:"endpoint"`
+	config.ExporterSettings `mapstructure:",squash"`
+	ProjectID               string `mapstructure:"project"`
+	UserAgent               string `mapstructure:"user_agent"`
+	Endpoint                string `mapstructure:"endpoint"`
 	// Only has effect if Endpoint is not ""
 	UseInsecure bool `mapstructure:"use_insecure"`
 

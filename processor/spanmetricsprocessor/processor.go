@@ -166,16 +166,16 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 	for k, exp := range exporters[config.MetricsDataType] {
 		metricsExp, ok := exp.(component.MetricsExporter)
 		if !ok {
-			return fmt.Errorf("the exporter %q isn't a metrics exporter", k.Name())
+			return fmt.Errorf("the exporter %q isn't a metrics exporter", k.String())
 		}
 
-		availableMetricsExporters = append(availableMetricsExporters, k.Name())
+		availableMetricsExporters = append(availableMetricsExporters, k.String())
 
 		p.logger.Debug("Looking for spanmetrics exporter from available exporters",
 			zap.String("spanmetrics-exporter", p.config.MetricsExporter),
 			zap.Any("available-exporters", availableMetricsExporters),
 		)
-		if k.Name() == p.config.MetricsExporter {
+		if k.String() == p.config.MetricsExporter {
 			p.metricsExporter = metricsExp
 			p.logger.Info("Found exporter", zap.String("spanmetrics-exporter", p.config.MetricsExporter))
 			break
@@ -346,16 +346,13 @@ func buildDimensionKVs(serviceName string, span pdata.Span, optionalDims []Dimen
 	dims[spanKindKey] = span.Kind().String()
 	dims[statusCodeKey] = span.Status().Code().String()
 	spanAttr := span.Attributes()
-	var value string
 	for _, d := range optionalDims {
-		// Set the default if configured, otherwise this metric will have no value set for the dimension.
-		if d.Default != nil {
-			value = *d.Default
-		}
 		if attr, ok := spanAttr.Get(d.Name); ok {
-			value = tracetranslator.AttributeValueToString(attr, false)
+			dims[d.Name] = tracetranslator.AttributeValueToString(attr, false)
+		} else if d.Default != nil {
+			// Set the default if configured, otherwise this metric should have no value set for the dimension.
+			dims[d.Name] = *d.Default
 		}
-		dims[d.Name] = value
 	}
 	return dims
 }

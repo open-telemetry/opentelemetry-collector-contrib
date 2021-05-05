@@ -29,17 +29,17 @@ import (
 
 type StorageHost struct {
 	component.Host
-	extensions map[config.NamedEntity]component.Extension
+	extensions map[config.ComponentID]component.Extension
 }
 
-func (h StorageHost) GetExtensions() map[config.NamedEntity]component.Extension {
+func (h StorageHost) GetExtensions() map[config.ComponentID]component.Extension {
 	return h.extensions
 }
 
 func NewStorageHost(t *testing.T, directory string, extensionNames ...string) StorageHost {
 	h := StorageHost{
 		Host:       componenttest.NewNopHost(),
-		extensions: make(map[config.NamedEntity]component.Extension),
+		extensions: make(map[config.ComponentID]component.Extension),
 	}
 
 	for _, name := range extensionNames {
@@ -58,6 +58,6 @@ func NewTestExtension(t *testing.T, directory string) storage.Extension {
 	return se
 }
 
-func newTestEntity(name string) config.NamedEntity {
-	return &config.ExporterSettings{TypeVal: "nop", NameVal: name}
+func newTestEntity(name string) config.ComponentID {
+	return config.NewIDWithName("nop", name)
 }

@@ -44,14 +44,14 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, 3, len(cfg.Exporters))
 
-	r0 := cfg.Exporters["awsemf"]
+	r0 := cfg.Exporters[config.NewID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), r0)
 
-	r1 := cfg.Exporters["awsemf/1"].(*Config)
-	r1.Validate()
+	r1 := cfg.Exporters[config.NewIDWithName(typeStr, "1")].(*Config)
+	assert.NoError(t, r1.Validate())
 	assert.Equal(t,
 		&Config{
-			ExporterSettings: &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "awsemf/1"},
+			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "1")),
 			AWSSessionSettings: awsutil.AWSSessionSettings{
 				NumberOfWorkers:       8,
 				Endpoint:              "",
@@ -71,11 +71,11 @@ func TestLoadConfig(t *testing.T) {
 			MetricDescriptors:               []MetricDescriptor{},
 		}, r1)
 
-	r2 := cfg.Exporters["awsemf/resource_attr_to_label"].(*Config)
-	r2.Validate()
+	r2 := cfg.Exporters[config.NewIDWithName(typeStr, "resource_attr_to_label")].(*Config)
+	assert.NoError(t, r2.Validate())
 	assert.Equal(t, r2,
 		&Config{
-			ExporterSettings: &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "awsemf/resource_attr_to_label"},
+			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "resource_attr_to_label")),
 			AWSSessionSettings: awsutil.AWSSessionSettings{
 				NumberOfWorkers:       8,
 				Endpoint:              "",
@@ -104,8 +104,8 @@ func TestConfigValidate(t *testing.T) {
 		{unit: "INVALID", metricName: "404"},
 		{unit: "Megabytes", metricName: "memory_usage"},
 	}
-	config := &Config{
-		ExporterSettings: &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "awsemf/resource_attr_to_label"},
+	cfg := &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "1")),
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			RequestTimeoutSeconds: 30,
 			MaxRetries:            1,
@@ -115,11 +115,11 @@ func TestConfigValidate(t *testing.T) {
 		MetricDescriptors:           incorrectDescriptor,
 		logger:                      zap.NewNop(),
 	}
-	config.Validate()
+	assert.NoError(t, cfg.Validate())
 
-	assert.Equal(t, 2, len(config.MetricDescriptors))
+	assert.Equal(t, 2, len(cfg.MetricDescriptors))
 	assert.Equal(t, []MetricDescriptor{
 		{unit: "Count", metricName: "apiserver_total", overwrite: true},
 		{unit: "Megabytes", metricName: "memory_usage"},
-	}, config.MetricDescriptors)
+	}, cfg.MetricDescriptors)
 }

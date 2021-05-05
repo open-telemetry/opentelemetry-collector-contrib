@@ -39,26 +39,21 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters[typeStr]
+	e0 := cfg.Exporters[config.NewID(typeStr)]
 
 	// Endpoint doesn't have a default value so set it directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
 	defaultCfg.Endpoint = "cn-hangzhou.log.aliyuncs.com"
 	assert.Equal(t, defaultCfg, e0)
 
-	expectedName := typeStr + "/2"
-
-	e1 := cfg.Exporters[expectedName]
+	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
 	expectedCfg := Config{
-		ExporterSettings: &config.ExporterSettings{
-			TypeVal: config.Type(typeStr),
-			NameVal: expectedName,
-		},
-		Endpoint:        "cn-hangzhou.log.aliyuncs.com",
-		Project:         "demo-project",
-		Logstore:        "demo-logstore",
-		AccessKeyID:     "test-id",
-		AccessKeySecret: "test-secret",
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
+		Endpoint:         "cn-hangzhou.log.aliyuncs.com",
+		Project:          "demo-project",
+		Logstore:         "demo-logstore",
+		AccessKeyID:      "test-id",
+		AccessKeySecret:  "test-secret",
 	}
 	assert.Equal(t, &expectedCfg, e1)
 

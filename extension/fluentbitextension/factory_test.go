@@ -29,7 +29,7 @@ import (
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
-		ExtensionSettings: config.NewExtensionSettings(typeStr),
+		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
 	}, cfg)
 
 	assert.NoError(t, configcheck.ValidateConfig(cfg))

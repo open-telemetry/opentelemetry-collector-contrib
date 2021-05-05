@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[config.Type(typeStr)] = factory
+	factories.Exporters[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -42,13 +42,13 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Exporters), 2)
 
-	r0 := cfg.Exporters["googlecloud"]
+	r0 := cfg.Exporters[config.NewID(typeStr)]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Exporters["googlecloud/customname"].(*Config)
+	r1 := cfg.Exporters[config.NewIDWithName(typeStr, "customname")].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ExporterSettings: &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "googlecloud/customname"},
+			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "customname")),
 			ProjectID:        "my-project",
 			UserAgent:        "opentelemetry-collector-contrib {{version}}",
 			Endpoint:         "test-endpoint",

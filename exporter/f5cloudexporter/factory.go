@@ -105,8 +105,7 @@ func (f *f5cloudFactory) CreateDefaultConfig() config.Exporter {
 		},
 	}
 
-	cfg.TypeVal = typeStr
-	cfg.NameVal = typeStr
+	cfg.ExporterSettings = config.NewExporterSettings(config.NewID(typeStr))
 
 	cfg.Headers["User-Agent"] = "opentelemetry-collector-contrib {{version}}"
 

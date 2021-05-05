@@ -28,7 +28,7 @@ import (
 func TestNewTracesExporter(t *testing.T) {
 
 	got, err := newTracesExporter(zap.NewNop(), &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Endpoint:         "cn-hangzhou.log.aliyuncs.com",
 		Project:          "demo-project",
 		Logstore:         "demo-logstore",

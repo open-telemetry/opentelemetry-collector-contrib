@@ -42,12 +42,12 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Exporters), 3)
 
-	r0 := cfg.Exporters["honeycomb"]
+	r0 := cfg.Exporters[config.NewID(typeStr)]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Exporters["honeycomb/customname"].(*Config)
+	r1 := cfg.Exporters[config.NewIDWithName(typeStr, "customname")].(*Config)
 	assert.Equal(t, r1, &Config{
-		ExporterSettings: &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "honeycomb/customname"},
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "customname")),
 		APIKey:           "test-apikey",
 		Dataset:          "test-dataset",
 		APIURL:           "https://api.testhost.io",
@@ -64,9 +64,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 	})
 
-	r2 := cfg.Exporters["honeycomb/sample_rate"].(*Config)
+	r2 := cfg.Exporters[config.NewIDWithName(typeStr, "sample_rate")].(*Config)
 	assert.Equal(t, r2, &Config{
-		ExporterSettings:    &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "honeycomb/sample_rate"},
+		ExporterSettings:    config.NewExporterSettings(config.NewIDWithName(typeStr, "sample_rate")),
 		APIURL:              "https://api.honeycomb.io",
 		SampleRate:          5,
 		SampleRateAttribute: "custom.sample_rate",

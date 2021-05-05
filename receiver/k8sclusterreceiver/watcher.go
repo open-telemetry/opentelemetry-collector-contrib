@@ -172,7 +172,7 @@ func (rw *resourceWatcher) waitForInitialInformerSync() {
 }
 
 func (rw *resourceWatcher) setupMetadataExporters(
-	exporters map[config.NamedEntity]component.Exporter,
+	exporters map[config.ComponentID]component.Exporter,
 	metadataExportersFromConfig []string,
 ) error {
 
@@ -184,7 +184,7 @@ func (rw *resourceWatcher) setupMetadataExporters(
 	}
 
 	for cfg, exp := range exporters {
-		if !metadataExportersSet[cfg.Name()] {
+		if !metadataExportersSet[cfg.String()] {
 			continue
 		}
 		kme, ok := exp.(metadata.MetadataExporter)
@@ -193,7 +193,7 @@ func (rw *resourceWatcher) setupMetadataExporters(
 		}
 		out = append(out, kme.ConsumeMetadata)
 		rw.logger.Info("Configured Kubernetes MetadataExporter",
-			zap.String("exporter_name", cfg.Name()),
+			zap.String("exporter_name", cfg.String()),
 		)
 	}
 
@@ -202,11 +202,11 @@ func (rw *resourceWatcher) setupMetadataExporters(
 }
 
 func validateMetadataExporters(metadataExporters map[string]bool,
-	exporters map[config.NamedEntity]component.Exporter) error {
+	exporters map[config.ComponentID]component.Exporter) error {
 
 	configuredExporters := map[string]bool{}
 	for cfg := range exporters {
-		configuredExporters[cfg.Name()] = true
+		configuredExporters[cfg.String()] = true
 	}
 
 	for e := range metadataExporters {

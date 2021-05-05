@@ -37,13 +37,13 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[config.Type(typeStr)] = factory
+	factories.Exporters[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters["splunk_hec"]
+	e0 := cfg.Exporters[config.NewID(typeStr)]
 
 	// Endpoint and Token do not have a default value so set them directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
@@ -51,14 +51,9 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg.Endpoint = "https://splunk:8088/services/collector"
 	assert.Equal(t, defaultCfg, e0)
 
-	expectedName := "splunk_hec/allsettings"
-
-	e1 := cfg.Exporters[expectedName]
+	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "allsettings")]
 	expectedCfg := Config{
-		ExporterSettings: &config.ExporterSettings{
-			TypeVal: config.Type(typeStr),
-			NameVal: expectedName,
-		},
+		ExporterSettings:     config.NewExporterSettings(config.NewIDWithName(typeStr, "allsettings")),
 		Token:                "00000000-0000-0000-0000-0000000000000",
 		Endpoint:             "https://splunk:8088/services/collector",
 		Source:               "otel",

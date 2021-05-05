@@ -153,7 +153,7 @@ func (t *TagsConfig) GetHostTags() []string {
 
 // Config defines configuration for the Datadog exporter.
 type Config struct {
-	*config.ExporterSettings `mapstructure:"-"`
+	config.ExporterSettings `mapstructure:",squash"`
 
 	TagsConfig `mapstructure:",squash"`
 

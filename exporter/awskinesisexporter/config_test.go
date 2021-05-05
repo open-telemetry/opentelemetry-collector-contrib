@@ -38,11 +38,11 @@ func TestDefaultConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters["awskinesis"]
+	e := cfg.Exporters[config.NewID(typeStr)]
 
 	assert.Equal(t, e,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(typeStr),
+			ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 			AWS: AWSConfig{
 				Region: "us-west-2",
 			},
@@ -76,11 +76,11 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters["awskinesis"]
+	e := cfg.Exporters[config.NewID(typeStr)]
 
 	assert.Equal(t, e,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(typeStr),
+			ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 			AWS: AWSConfig{
 				StreamName:      "test-stream",
 				KinesisEndpoint: "awskinesis.mars-1.aws.galactic",

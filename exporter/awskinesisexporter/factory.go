@@ -39,7 +39,7 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		AWS: AWSConfig{
 			Region: "us-west-2",
 		},
@@ -66,7 +66,7 @@ func createTracesExporter(
 ) (component.TracesExporter, error) {
 	c := config.(*Config)
 	k, err := awskinesis.NewExporter(&awskinesis.Options{
-		Name:               c.Name(),
+		Name:               c.ID().String(),
 		StreamName:         c.AWS.StreamName,
 		AWSRegion:          c.AWS.Region,
 		AWSRole:            c.AWS.Role,
