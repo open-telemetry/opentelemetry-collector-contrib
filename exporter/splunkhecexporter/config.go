@@ -63,6 +63,12 @@ type Config struct {
 	// Maximum log data size in bytes per HTTP post. Defaults to the backend limit of 2097152 bytes (2MiB).
 	MaxContentLengthLogs uint `mapstructure:"max_content_length_logs"`
 
+	// App name is used to track telemetry information for Splunk App's using HEC by App name.
+	SplunkAppName string `mapstructure:"splunk_app_name"`
+
+	// App version is used to track telemetry information for Splunk App's using HEC by App version.
+	SplunkAppVersion string `mapstructure:"splunk_app_version"`
+
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.TLSClientSetting `mapstructure:",squash"`
 
