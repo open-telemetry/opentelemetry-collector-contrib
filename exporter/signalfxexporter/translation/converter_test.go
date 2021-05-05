@@ -1,4 +1,4 @@
-// Copyright 2019 OpenTelemetry Authors
+// Copyright OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,9 +15,11 @@
 package translation
 
 import (
+	"fmt"
 	"math"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -40,6 +42,13 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		"k1": "v1",
 	}
 
+	longLabelMap := map[string]string{
+		fmt.Sprintf("l%sng_key", strings.Repeat("o", 128)): "v0",
+		"k0": "v0",
+		"k1": fmt.Sprintf("l%sng_value", strings.Repeat("o", 256)),
+		"k2": "v2",
+	}
+
 	const unixSecs = int64(1574092046)
 	const unixNSecs = int64(11 * time.Millisecond)
 	ts := pdata.TimestampFromTime(time.Unix(unixSecs, unixNSecs))
@@ -54,6 +63,11 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	initDoublePtWithLabels := func(doublePtWithLabels pdata.DoubleDataPoint) {
 		initDoublePt(doublePtWithLabels)
 		doublePtWithLabels.LabelsMap().InitFromMap(labelMap)
+	}
+
+	initDoublePtWithLongLabels := func(doublePtWithLabels pdata.DoubleDataPoint) {
+		initDoublePt(doublePtWithLabels)
+		doublePtWithLabels.LabelsMap().InitFromMap(longLabelMap)
 	}
 
 	differentLabelMap := map[string]string{
@@ -310,6 +324,116 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"k_r1": "vr1",
 					}, labelMap),
 					int64Val),
+			},
+		},
+		{
+			name: "with_node_resources_dims - long metric name",
+			metricsDataFn: func() pdata.ResourceMetrics {
+				out := pdata.NewResourceMetrics()
+				res := out.Resource()
+				res.Attributes().InsertString("k/r0", "vr0")
+				res.Attributes().InsertString("k/r1", "vr1")
+				res.Attributes().InsertString("k/n0", "vn0")
+				res.Attributes().InsertString("k/n1", "vn1")
+
+				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm.Metrics().Resize(5)
+
+				{
+					m := ilm.Metrics().At(0)
+					m.SetName(fmt.Sprintf("l%sng_name", strings.Repeat("o", 256)))
+					m.SetDataType(pdata.MetricDataTypeDoubleGauge)
+					initDoublePtWithLabels(m.DoubleGauge().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().At(1)
+					m.SetName("gauge_int_with_dims")
+					m.SetDataType(pdata.MetricDataTypeIntGauge)
+					initInt64PtWithLabels(m.IntGauge().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().At(2)
+					m.SetName(fmt.Sprintf("l%sng_name", strings.Repeat("o", 256)))
+					m.SetDataType(pdata.MetricDataTypeDoubleGauge)
+					initDoublePtWithLabels(m.DoubleGauge().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().At(3)
+					m.SetName(fmt.Sprintf("l%sng_name", strings.Repeat("o", 256)))
+					m.SetDataType(pdata.MetricDataTypeDoubleGauge)
+					initDoublePtWithLabels(m.DoubleGauge().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().At(4)
+					m.SetName("gauge_int_with_dims")
+					m.SetDataType(pdata.MetricDataTypeIntGauge)
+					initInt64PtWithLabels(m.IntGauge().DataPoints().AppendEmpty())
+				}
+
+				return out
+			},
+			wantSfxDataPoints: []*sfxpb.DataPoint{
+				int64SFxDataPoint(
+					"gauge_int_with_dims",
+					tsMSecs,
+					&sfxMetricTypeGauge,
+					util.MergeStringMaps(map[string]string{
+						"k_n0": "vn0",
+						"k_n1": "vn1",
+						"k_r0": "vr0",
+						"k_r1": "vr1",
+					}, labelMap),
+					int64Val),
+				int64SFxDataPoint(
+					"gauge_int_with_dims",
+					tsMSecs,
+					&sfxMetricTypeGauge,
+					util.MergeStringMaps(map[string]string{
+						"k_n0": "vn0",
+						"k_n1": "vn1",
+						"k_r0": "vr0",
+						"k_r1": "vr1",
+					}, labelMap),
+					int64Val),
+			},
+		},
+		{
+			name: "with_node_resources_dims - long dimension name/value",
+			metricsDataFn: func() pdata.ResourceMetrics {
+				out := pdata.NewResourceMetrics()
+				res := out.Resource()
+				res.Attributes().InsertString("k/r0", "vr0")
+				res.Attributes().InsertString("k/r1", "vr1")
+				res.Attributes().InsertString("k/n0", "vn0")
+				res.Attributes().InsertString("k/n1", "vn1")
+
+				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm.Metrics().Resize(1)
+
+				{
+					m := ilm.Metrics().At(0)
+					m.SetName("gauge_double_with_dims")
+					m.SetDataType(pdata.MetricDataTypeDoubleGauge)
+					initDoublePtWithLongLabels(m.DoubleGauge().DataPoints().AppendEmpty())
+				}
+
+				return out
+			},
+			wantSfxDataPoints: []*sfxpb.DataPoint{
+				doubleSFxDataPoint(
+					"gauge_double_with_dims",
+					tsMSecs,
+					&sfxMetricTypeGauge,
+					util.MergeStringMaps(map[string]string{
+						"k_n0": "vn0",
+						"k_n1": "vn1",
+						"k_r0": "vr0",
+						"k_r1": "vr1",
+					}, map[string]string{
+						"k0": "v0",
+						"k2": "v2",
+					}),
+					doubleVal),
 			},
 		},
 		{
