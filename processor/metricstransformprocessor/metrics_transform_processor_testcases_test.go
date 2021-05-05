@@ -682,7 +682,7 @@ var (
 			name: "metric_name_insert_with_match_label_regexp",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"), matchLabels: map[string]*regexp.Regexp{"label1": regexp.MustCompile("(.|\\s)*\\S(.|\\s)*")}},
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"), matchLabels: map[string]*regexp.Regexp{"label1": regexp.MustCompile(`(.|\s)*\S(.|\s)*`)}},
 					Action:              Insert,
 					NewName:             "new/metric1",
 				},
