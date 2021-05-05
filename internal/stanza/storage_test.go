@@ -106,15 +106,15 @@ func createReceiver(t *testing.T) *receiver {
 
 type hostWithStorage struct {
 	component.Host
-	extensions map[config.NamedEntity]component.Extension
+	extensions map[config.ComponentID]component.Extension
 }
 
-func (h hostWithStorage) GetExtensions() map[config.NamedEntity]component.Extension {
+func (h hostWithStorage) GetExtensions() map[config.ComponentID]component.Extension {
 	return h.extensions
 }
 
 func (h hostWithStorage) ShutdownExtensions(ctx context.Context) error {
-	errs := []error{}
+	var errs []error
 	for _, e := range h.extensions {
 		errs = append(errs, e.Shutdown(ctx))
 	}
@@ -124,7 +124,7 @@ func (h hostWithStorage) ShutdownExtensions(ctx context.Context) error {
 func getHostWithStorage(t *testing.T, directory string) hostWithStorage {
 	return hostWithStorage{
 		Host: componenttest.NewNopHost(),
-		extensions: map[config.NamedEntity]component.Extension{
+		extensions: map[config.ComponentID]component.Extension{
 			newTestEntity("my_extension"): newTestExtension(t, directory),
 		},
 	}
@@ -133,15 +133,15 @@ func getHostWithStorage(t *testing.T, directory string) hostWithStorage {
 func getHostWithMultipleStorage(t *testing.T, directory string) hostWithStorage {
 	return hostWithStorage{
 		Host: componenttest.NewNopHost(),
-		extensions: map[config.NamedEntity]component.Extension{
+		extensions: map[config.ComponentID]component.Extension{
 			newTestEntity("my_extension_one"): newTestExtension(t, directory),
 			newTestEntity("my_extension_two"): newTestExtension(t, directory),
 		},
 	}
 }
 
-func newTestEntity(name string) config.NamedEntity {
-	return &config.ExporterSettings{TypeVal: "nop", NameVal: name}
+func newTestEntity(name string) config.ComponentID {
+	return config.NewIDWithName("nop", name)
 }
 
 func newTestExtension(t *testing.T, directory string) storage.Extension {

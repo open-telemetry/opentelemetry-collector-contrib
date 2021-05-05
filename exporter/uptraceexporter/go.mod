@@ -7,7 +7,7 @@ require (
 	github.com/gogo/googleapis v1.3.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
-	github.com/klauspost/compress v1.12.1
+	github.com/klauspost/compress v1.12.2
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/onsi/ginkgo v1.14.1 // indirect
 	github.com/onsi/gomega v1.10.2 // indirect
@@ -15,7 +15,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/uptrace/uptrace-go v0.20.0
 	github.com/vmihailenco/msgpack/v5 v5.3.1
-	go.opentelemetry.io/collector v0.25.1-0.20210430165557-1eb6d1a7b03c
+	go.opentelemetry.io/collector v0.26.0
 	go.opentelemetry.io/otel v0.20.0
 	go.uber.org/zap v1.16.0
 	gopkg.in/ini.v1 v1.57.0 // indirect

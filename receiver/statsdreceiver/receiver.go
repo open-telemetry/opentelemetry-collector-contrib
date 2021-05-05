@@ -70,7 +70,7 @@ func New(
 		config:       &config,
 		nextConsumer: nextConsumer,
 		server:       server,
-		reporter:     newReporter(config.Name(), logger),
+		reporter:     newReporter(config.ID().String(), logger),
 		parser:       &protocol.StatsDParser{},
 	}
 	return r, nil
@@ -83,7 +83,7 @@ func buildTransportServer(config Config) (transport.Server, error) {
 		return transport.NewUDPServer(config.NetAddr.Endpoint)
 	}
 
-	return nil, fmt.Errorf("unsupported transport %q for receiver %q", config.NetAddr.Transport, config.Name())
+	return nil, fmt.Errorf("unsupported transport %q for receiver %v", config.NetAddr.Transport, config.ID())
 }
 
 // Start starts a UDP server that can process StatsD messages.

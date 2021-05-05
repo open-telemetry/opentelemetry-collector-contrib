@@ -37,7 +37,7 @@ type ReceiverType struct{}
 
 // Type is the receiver type
 func (f ReceiverType) Type() config.Type {
-	return config.Type(typeStr)
+	return typeStr
 }
 
 // CreateDefaultConfig creates a config with type and version
@@ -47,11 +47,8 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 func createDefaultConfig() *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: config.Type(typeStr),
-				NameVal: typeStr,
-			},
-			Operators: stanza.OperatorConfigs{},
+			ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+			Operators:        stanza.OperatorConfigs{},
 			Converter: stanza.ConverterConfig{
 				MaxFlushCount: stanza.DefaultMaxFlushCount,
 				FlushInterval: stanza.DefaultFlushInterval,

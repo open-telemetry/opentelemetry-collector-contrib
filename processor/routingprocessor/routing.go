@@ -45,7 +45,7 @@ type processorImp struct {
 }
 
 // Crete new processor
-func newProcessor(logger *zap.Logger, cfg config.Exporter) (*processorImp, error) {
+func newProcessor(logger *zap.Logger, cfg config.Processor) (*processorImp, error) {
 	logger.Info("building processor")
 
 	oCfg := cfg.(*Config)
@@ -83,7 +83,7 @@ func (e *processorImp) Start(_ context.Context, host component.Host) error {
 		if !ok {
 			return fmt.Errorf("the exporter %q isn't a trace exporter", k.Name())
 		}
-		availableExporters[k.Name()] = traceExp
+		availableExporters[k.String()] = traceExp
 	}
 
 	// default exporters

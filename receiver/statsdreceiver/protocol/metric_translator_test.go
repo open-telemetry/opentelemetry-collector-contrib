@@ -74,3 +74,37 @@ func TestBuildGaugeMetric(t *testing.T) {
 	dp.LabelsMap().Insert("mykey2", "myvalue2")
 	assert.Equal(t, metric, expectedMetrics)
 }
+
+func TestBuildSummaryMetric(t *testing.T) {
+	timeNow := time.Now()
+
+	oneSummaryMetric := summaryMetric{
+		name:          "testSummary",
+		summaryPoints: []float64{1, 2, 4, 6, 5, 3},
+		labelKeys:     []string{"mykey", "mykey2"},
+		labelValues:   []string{"myvalue", "myvalue2"},
+		timeNow:       timeNow,
+	}
+
+	metric := buildSummaryMetric(oneSummaryMetric)
+	expectedMetric := pdata.NewInstrumentationLibraryMetrics()
+	expectedMetric.Metrics().Resize(1)
+	expectedMetric.Metrics().At(0).SetName("testSummary")
+	expectedMetric.Metrics().At(0).SetDataType(pdata.MetricDataTypeSummary)
+	expectedMetric.Metrics().At(0).Summary().DataPoints().Resize(1)
+	expectedMetric.Metrics().At(0).Summary().DataPoints().At(0).SetSum(21)
+	expectedMetric.Metrics().At(0).Summary().DataPoints().At(0).SetCount(6)
+	expectedMetric.Metrics().At(0).Summary().DataPoints().At(0).SetTimestamp(pdata.TimestampFromTime(timeNow))
+	quantile := []float64{0, 10, 50, 90, 95, 100}
+	value := []float64{1, 1, 3, 6, 6, 6}
+	for int, v := range quantile {
+		eachQuantile := pdata.NewValueAtQuantile()
+		eachQuantile.SetQuantile(v)
+		eachQuantileValue := value[int]
+		eachQuantile.SetValue(eachQuantileValue)
+		expectedMetric.Metrics().At(0).Summary().DataPoints().At(0).QuantileValues().Append(eachQuantile)
+	}
+
+	assert.Equal(t, metric, expectedMetric)
+
+}

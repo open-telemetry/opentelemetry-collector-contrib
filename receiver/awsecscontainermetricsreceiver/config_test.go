@@ -42,16 +42,13 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 2)
 
-	r1 := cfg.Receivers["awsecscontainermetrics"]
+	r1 := cfg.Receivers[config.NewID(typeStr)]
 	assert.Equal(t, r1, factory.CreateDefaultConfig())
 
-	r2 := cfg.Receivers["awsecscontainermetrics/collection_interval_settings"].(*Config)
+	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "collection_interval_settings")].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			ReceiverSettings: config.ReceiverSettings{
-				TypeVal: config.Type(receiverType),
-				NameVal: "awsecscontainermetrics/collection_interval_settings",
-			},
+			ReceiverSettings:   config.NewReceiverSettings(config.NewIDWithName(typeStr, "collection_interval_settings")),
 			CollectionInterval: 10 * time.Second,
 		})
 }

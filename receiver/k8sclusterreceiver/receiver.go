@@ -47,7 +47,7 @@ type kubernetesReceiver struct {
 
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
 	var c context.Context
-	c, kr.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, kr.config.Name(), transport))
+	c, kr.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, kr.config.ID().String(), transport))
 
 	exporters := host.GetExporters()
 	if err := kr.resourceWatcher.setupMetadataExporters(
@@ -68,7 +68,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 		if kr.resourceWatcher.timedContextForInitialSync.Err() == context.DeadlineExceeded {
 			kr.resourceWatcher.initialSyncTimedOut.Store(true)
 			kr.logger.Error("Timed out waiting for initial cache sync.")
-			host.ReportFatalError(fmt.Errorf("failed to start receiver: %s", kr.config.NameVal))
+			host.ReportFatalError(fmt.Errorf("failed to start receiver: %v", kr.config.ID()))
 			return
 		}
 

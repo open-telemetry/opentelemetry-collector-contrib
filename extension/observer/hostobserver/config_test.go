@@ -39,17 +39,14 @@ func TestLoadConfig(t *testing.T) {
 
 	require.Len(t, cfg.Extensions, 2)
 
-	ext0 := cfg.Extensions["host_observer"]
+	ext0 := cfg.Extensions[config.NewID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
 
-	ext1 := cfg.Extensions["host_observer/all_settings"]
+	ext1 := cfg.Extensions[config.NewIDWithName(typeStr, "all_settings")]
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: &config.ExtensionSettings{
-				TypeVal: "host_observer",
-				NameVal: "host_observer/all_settings",
-			},
-			RefreshInterval: 20 * time.Second,
+			ExtensionSettings: config.NewExtensionSettings(config.NewIDWithName(typeStr, "all_settings")),
+			RefreshInterval:   20 * time.Second,
 		},
 		ext1)
 }

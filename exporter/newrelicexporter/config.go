@@ -42,7 +42,7 @@ type EndpointConfig struct {
 
 // Config defines configuration options for the New Relic exporter.
 type Config struct {
-	*config.ExporterSettings `mapstructure:"-"`
+	config.ExporterSettings `mapstructure:",squash"`
 
 	// CommonConfig stores the base configuration for each endpoint.
 	CommonConfig EndpointConfig `mapstructure:",squash"`

@@ -78,7 +78,7 @@ func (r *Receiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	r.obsCtx = obsreport.ReceiverContext(ctx, r.config.Name(), r.transport)
+	r.obsCtx = obsreport.ReceiverContext(ctx, r.config.ID().String(), r.transport)
 
 	r.runnerCtx, r.runnerCancel = context.WithCancel(context.Background())
 	r.runner = interval.NewRunner(r.config.CollectionInterval, r)

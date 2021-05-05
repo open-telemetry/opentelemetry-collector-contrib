@@ -52,7 +52,7 @@ type factory struct {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(typeStr),
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Endpoint:         defaultEndpoint,
 		MaxBatchSize:     1024,
 		MaxBatchInterval: 10 * time.Second,

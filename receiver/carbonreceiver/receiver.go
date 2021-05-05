@@ -89,7 +89,7 @@ func New(
 		config:       &config,
 		nextConsumer: nextConsumer,
 		server:       server,
-		reporter:     newReporter(config.Name(), logger),
+		reporter:     newReporter(config.ID().String(), logger),
 		parser:       parser,
 	}
 
@@ -104,7 +104,7 @@ func buildTransportServer(config Config) (transport.Server, error) {
 		return transport.NewUDPServer(config.Endpoint)
 	}
 
-	return nil, fmt.Errorf("unsupported transport %q for receiver %q", config.Transport, config.Name())
+	return nil, fmt.Errorf("unsupported transport %q for receiver %v", config.Transport, config.ID())
 }
 
 // Start tells the receiver to start its processing.

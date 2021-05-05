@@ -20,7 +20,7 @@ import (
 
 // Config has the configuration for the fluentbit extension.
 type Config struct {
-	*config.ExtensionSettings `mapstructure:"-"`
+	config.ExtensionSettings `mapstructure:",squash"`
 
 	// The TCP `host:port` to which the subprocess should send log entries.
 	// This is required unless you are overridding `args` and providing the

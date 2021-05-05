@@ -38,15 +38,12 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters["sentry"]
+	e0 := cfg.Exporters[config.NewID(typeStr)]
 	assert.Equal(t, e0, factory.CreateDefaultConfig())
 
-	e1 := cfg.Exporters["sentry/2"]
+	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
 	assert.Equal(t, e1, &Config{
-		ExporterSettings: &config.ExporterSettings{
-			NameVal: "sentry/2",
-			TypeVal: "sentry",
-		},
-		DSN: "https://key@host/path/42",
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
+		DSN:              "https://key@host/path/42",
 	})
 }

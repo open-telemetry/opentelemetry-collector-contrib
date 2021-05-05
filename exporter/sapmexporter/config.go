@@ -32,7 +32,7 @@ const (
 
 // Config defines configuration for SAPM exporter.
 type Config struct {
-	*config.ExporterSettings `mapstructure:"-"`
+	config.ExporterSettings `mapstructure:",squash"`
 
 	// Endpoint is the destination to where traces will be sent to in SAPM format.
 	// It must be a full URL and include the scheme, port and path e.g, https://ingest.signalfx.com/v2/trace

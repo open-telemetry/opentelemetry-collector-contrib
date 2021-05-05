@@ -32,7 +32,7 @@ import (
 type mockHostFactories struct {
 	component.Host
 	factories  component.Factories
-	extensions map[config.NamedEntity]component.Extension
+	extensions map[config.ComponentID]component.Extension
 }
 
 // GetFactory of the specified kind. Returns the factory for a component type.
@@ -50,7 +50,7 @@ func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType confi
 	return nil
 }
 
-func (mh *mockHostFactories) GetExtensions() map[config.NamedEntity]component.Extension {
+func (mh *mockHostFactories) GetExtensions() map[config.ComponentID]component.Extension {
 	return mh.extensions
 }
 
@@ -58,10 +58,10 @@ func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *config.Config) {
 	factories, err := componenttest.NopFactories()
 	require.Nil(t, err)
 
-	factories.Receivers[config.Type("nop")] = &nopWithEndpointFactory{ReceiverFactory: componenttest.NewNopReceiverFactory()}
+	factories.Receivers[("nop")] = &nopWithEndpointFactory{ReceiverFactory: componenttest.NewNopReceiverFactory()}
 
 	factory := NewFactory()
-	factories.Receivers[config.Type(typeStr)] = factory
+	factories.Receivers[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -78,10 +78,10 @@ func TestLoadConfig(t *testing.T) {
 	_, cfg := exampleCreatorFactory(t)
 	factory := NewFactory()
 
-	r0 := cfg.Receivers["receiver_creator"]
+	r0 := cfg.Receivers[config.NewID("receiver_creator")]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Receivers["receiver_creator/1"].(*Config)
+	r1 := cfg.Receivers[config.NewIDWithName("receiver_creator", "1")].(*Config)
 
 	assert.NotNil(t, r1)
 	assert.Len(t, r1.receiverTemplates, 2)
@@ -111,9 +111,7 @@ type nopWithEndpointReceiver struct {
 
 func (*nopWithEndpointFactory) CreateDefaultConfig() config.Receiver {
 	return &nopWithEndpointConfig{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: "nop",
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewID("nop")),
 	}
 }
 

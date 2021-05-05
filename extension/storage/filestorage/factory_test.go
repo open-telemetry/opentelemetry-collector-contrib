@@ -33,12 +33,10 @@ import (
 
 func TestFactory(t *testing.T) {
 	f := NewFactory()
-	expectType := "file_storage"
-	require.Equal(t, config.Type(expectType), f.Type())
+	require.Equal(t, typeStr, f.Type())
 
 	cfg := f.CreateDefaultConfig().(*Config)
-	require.Equal(t, expectType, cfg.Name())
-	require.Equal(t, config.Type(expectType), cfg.Type())
+	require.Equal(t, config.NewID(typeStr), cfg.ID())
 
 	if runtime.GOOS != "windows" {
 		require.Equal(t, "/var/lib/otelcol/file_storage", cfg.Directory)

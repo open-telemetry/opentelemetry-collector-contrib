@@ -44,11 +44,8 @@ func NewFactory() component.ReceiverFactory {
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
-		Endpoint: defaultEndpoint,
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		Endpoint:         defaultEndpoint,
 	}
 }
 

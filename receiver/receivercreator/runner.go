@@ -36,7 +36,7 @@ type runner interface {
 // receiverRunner handles starting/stopping of a concrete subreceiver instance.
 type receiverRunner struct {
 	params      component.ReceiverCreateParams
-	idNamespace string
+	idNamespace config.ComponentID
 	host        component.Host
 }
 
@@ -66,7 +66,7 @@ func (run *receiverRunner) start(
 	}
 
 	if err := recvr.Start(context.Background(), run.host); err != nil {
-		return nil, fmt.Errorf("failed starting receiver %s: %v", cfg.Name(), err)
+		return nil, fmt.Errorf("failed starting receiver %v: %v", cfg.ID(), err)
 	}
 
 	return recvr, nil
@@ -102,7 +102,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	}
 	// Sets dynamically created receiver to something like receiver_creator/1/redis{endpoint="localhost:6380"}.
 	// TODO: Need to make sure this is unique (just endpoint is probably not totally sufficient).
-	receiverConfig.SetName(fmt.Sprintf("%s/%s{endpoint=%q}", run.idNamespace, receiver.id.String(), cast.ToString(mergedConfig.Get(endpointConfigKey))))
+	receiverConfig.SetIDName(fmt.Sprintf("%s/%s{endpoint=%q}", receiver.id.Name(), run.idNamespace, cast.ToString(mergedConfig.Get(endpointConfigKey))))
 	return receiverConfig, nil
 }
 

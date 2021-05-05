@@ -36,6 +36,10 @@ const (
 	defaultEnableMetricType    = false
 )
 
+var (
+	defaultTimerHistogramMapping = []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}
+)
+
 // NewFactory creates a factory for the StatsD receiver.
 func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
@@ -47,17 +51,14 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: config.Type(typeStr),
-			NameVal: typeStr,
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 		NetAddr: confignet.NetAddr{
 			Endpoint:  defaultBindEndpoint,
 			Transport: defaultTransport,
 		},
 		AggregationInterval:   defaultAggregationInterval,
 		EnableMetricType:      defaultEnableMetricType,
-		TimerHistogramMapping: []protocol.TimerHistogramMapping{{Match: "*", StatsdType: "timer", ObserverType: "gauge"}, {Match: "*", StatsdType: "histogram", ObserverType: "gauge"}},
+		TimerHistogramMapping: defaultTimerHistogramMapping,
 	}
 }
 

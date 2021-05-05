@@ -52,7 +52,7 @@ func NewCarbonDataSender(port int) *CarbonDataSender {
 func (cs *CarbonDataSender) Start() error {
 	factory := carbonexporter.NewFactory()
 	cfg := &carbonexporter.Config{
-		ExporterSettings: config.NewExporterSettings(factory.Type()),
+		ExporterSettings: config.NewExporterSettings(config.NewID(factory.Type())),
 		Endpoint:         cs.GetEndpoint().String(),
 		Timeout:          5 * time.Second,
 	}

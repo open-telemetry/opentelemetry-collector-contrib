@@ -48,12 +48,12 @@ func TestLoadConfig(t *testing.T) {
 
 	defaultCfg := factory.CreateDefaultConfig()
 	defaultCfg.(*Config).APMServerURL = "https://elastic.example.com"
-	r0 := cfg.Exporters["elastic"]
+	r0 := cfg.Exporters[config.NewID(typeStr)]
 	assert.Equal(t, r0, defaultCfg)
 
-	r1 := cfg.Exporters["elastic/customname"].(*Config)
+	r1 := cfg.Exporters[config.NewIDWithName(typeStr, "customname")]
 	assert.Equal(t, r1, &Config{
-		ExporterSettings: &config.ExporterSettings{TypeVal: config.Type(typeStr), NameVal: "elastic/customname"},
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "customname")),
 		APMServerURL:     "https://elastic.example.com",
 		APIKey:           "RTNxMjlXNEJt",
 		SecretToken:      "hunter2",

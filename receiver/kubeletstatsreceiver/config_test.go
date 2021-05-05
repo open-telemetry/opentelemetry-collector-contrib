@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Receivers[config.Type(typeStr)] = factory
+	factories.Receivers[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -43,12 +43,9 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	duration := 10 * time.Second
-	defaultCfg := cfg.Receivers["kubeletstats/default"].(*Config)
+	defaultCfg := cfg.Receivers[config.NewIDWithName(typeStr, "default")].(*Config)
 	require.Equal(t, &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: "kubeletstats",
-			NameVal: "kubeletstats/default",
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "default")),
 		ClientConfig: kubelet.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "tls",
@@ -62,12 +59,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}, defaultCfg)
 
-	tlsCfg := cfg.Receivers["kubeletstats/tls"].(*Config)
+	tlsCfg := cfg.Receivers[config.NewIDWithName(typeStr, "tls")].(*Config)
 	require.Equal(t, &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: "kubeletstats",
-			NameVal: "kubeletstats/tls",
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "tls")),
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "1.2.3.4:5555",
 		},
@@ -90,12 +84,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}, tlsCfg)
 
-	saCfg := cfg.Receivers["kubeletstats/sa"].(*Config)
+	saCfg := cfg.Receivers[config.NewIDWithName(typeStr, "sa")].(*Config)
 	require.Equal(t, &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: "kubeletstats",
-			NameVal: "kubeletstats/sa",
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "sa")),
 		ClientConfig: kubelet.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "serviceAccount",
@@ -110,12 +101,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}, saCfg)
 
-	metadataCfg := cfg.Receivers["kubeletstats/metadata"].(*Config)
+	metadataCfg := cfg.Receivers[config.NewIDWithName(typeStr, "metadata")].(*Config)
 	require.Equal(t, &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: "kubeletstats",
-			NameVal: "kubeletstats/metadata",
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "metadata")),
 		ClientConfig: kubelet.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "serviceAccount",
@@ -133,12 +121,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}, metadataCfg)
 
-	metricGroupsCfg := cfg.Receivers["kubeletstats/metric_groups"].(*Config)
+	metricGroupsCfg := cfg.Receivers[config.NewIDWithName(typeStr, "metric_groups")].(*Config)
 	require.Equal(t, &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: "kubeletstats",
-			NameVal: "kubeletstats/metric_groups",
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "metric_groups")),
 		ClientConfig: kubelet.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "serviceAccount",
@@ -152,12 +137,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}, metricGroupsCfg)
 
-	metadataWithK8sAPICfg := cfg.Receivers["kubeletstats/metadata_with_k8s_api"].(*Config)
+	metadataWithK8sAPICfg := cfg.Receivers[config.NewIDWithName(typeStr, "metadata_with_k8s_api")].(*Config)
 	require.Equal(t, &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: "kubeletstats",
-			NameVal: "kubeletstats/metadata_with_k8s_api",
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "metadata_with_k8s_api")),
 		ClientConfig: kubelet.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "serviceAccount",
@@ -243,9 +225,7 @@ func TestGetReceiverOptions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ReceiverSettings: config.ReceiverSettings{
-					NameVal: typeStr,
-				},
+				ReceiverSettings:      config.NewReceiverSettings(config.NewID(typeStr)),
 				CollectionInterval:    10 * time.Second,
 				ExtraMetadataLabels:   tt.fields.extraMetadataLabels,
 				MetricGroupsToCollect: tt.fields.metricGroupsToCollect,

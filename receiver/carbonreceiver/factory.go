@@ -44,10 +44,7 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.ReceiverSettings{
-			TypeVal: config.Type(typeStr),
-			NameVal: typeStr,
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "localhost:2003",
 			Transport: "tcp",

@@ -703,3 +703,95 @@ func TestParseExceptionWithJavaScriptStactracekMalformedLines(t *testing.T) {
 	assert.Equal(t, "/home/gbusey/file.js", *exceptions[0].Stack[0].Path)
 	assert.Equal(t, 0, *exceptions[0].Stack[0].Line)
 }
+
+func TestParseExceptionWithSimpleStacktrace(t *testing.T) {
+	exceptionType := "System.FormatException"
+	message := "Input string was not in a correct format"
+
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `System.FormatException: Input string was not in a correct format.
+	at System.Number.ThrowOverflowOrFormatException(ParsingStatus status, TypeCode type)
+	at System.Number.ParseInt32(ReadOnlySpan1 value, NumberStyles styles, NumberFormatInfo info)
+	at System.Int32.Parse(String s)
+	at MyNamespace.IntParser.Parse(String s) in C:\apps\MyNamespace\IntParser.cs:line 11
+	at MyNamespace.Program.Main(String[] args) in C:\apps\MyNamespace\Program.cs:line 12`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "dotnet")
+	assert.Len(t, exceptions, 1)
+	assert.Equal(t, "System.FormatException", *exceptions[0].Type)
+	assert.Equal(t, "Input string was not in a correct format", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 5)
+	assert.Equal(t, "System.Number.ThrowOverflowOrFormatException(ParsingStatus status, TypeCode type)", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 0, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "System.Number.ParseInt32(ReadOnlySpan1 value, NumberStyles styles, NumberFormatInfo info)", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 0, *exceptions[0].Stack[1].Line)
+	assert.Equal(t, "System.Int32.Parse(String s)", *exceptions[0].Stack[2].Label)
+	assert.Equal(t, "", *exceptions[0].Stack[2].Path)
+	assert.Equal(t, 0, *exceptions[0].Stack[2].Line)
+	assert.Equal(t, "MyNamespace.IntParser.Parse(String s)", *exceptions[0].Stack[3].Label)
+	assert.Equal(t, "C:\\apps\\MyNamespace\\IntParser.cs", *exceptions[0].Stack[3].Path)
+	assert.Equal(t, 11, *exceptions[0].Stack[3].Line)
+	assert.Equal(t, "MyNamespace.Program.Main(String[] args)", *exceptions[0].Stack[4].Label)
+	assert.Equal(t, "C:\\apps\\MyNamespace\\Program.cs", *exceptions[0].Stack[4].Path)
+	assert.Equal(t, 12, *exceptions[0].Stack[4].Line)
+}
+
+func TestParseExceptionWithInnerExceptionStacktrace(t *testing.T) {
+	exceptionType := "System.Exception"
+	message := "test"
+
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `System.Exception: test
+	at integration_test_app.Controllers.AppController.OutgoingHttp() in /Users/bhautip/Documents/otel-dotnet/aws-otel-dotnet/integration-test-app/integration-test-app/Controllers/AppController.cs:line 21
+	at lambda_method(Closure , Object , Object[] )
+	at Microsoft.Extensions.Internal.ObjectMethodExecutor.Execute(Object target, Object[] parameters)
+	at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.SyncObjectResultExecutor.Execute(IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+	at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Logged|12_1(ControllerActionInvoker invoker)
+	at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+	at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+	at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+	at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+	--- End of stack trace from previous location where exception was thrown ---
+	at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|19_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+	at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)
+	at Microsoft.AspNetCore.Routing.EndpointMiddleware.<Invoke>g__AwaitRequestTask|6_0(Endpoint endpoint, Task requestTask, ILogger logger)
+	at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+	at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware.Invoke(HttpContext context)`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "dotnet")
+	assert.Len(t, exceptions, 1)
+	assert.Equal(t, "System.Exception", *exceptions[0].Type)
+	assert.Equal(t, "test", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 14)
+	assert.Equal(t, "integration_test_app.Controllers.AppController.OutgoingHttp()", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "/Users/bhautip/Documents/otel-dotnet/aws-otel-dotnet/integration-test-app/integration-test-app/Controllers/AppController.cs", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 21, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|19_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)", *exceptions[0].Stack[9].Label)
+	assert.Equal(t, "", *exceptions[0].Stack[9].Path)
+	assert.Equal(t, 0, *exceptions[0].Stack[9].Line)
+}
+
+func TestParseExceptionWithMalformedStacktrace(t *testing.T) {
+	exceptionType := "System.Exception"
+	message := "test"
+
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `System.Exception: test
+	at integration_test_app.Controllers.AppController.OutgoingHttp() in /Users/bhautip/Documents/otel-dotnet/aws-otel-dotnet/integration-test-app/integration-test-app/Controllers/AppController.cs:line 21
+	at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware.Invoke(HttpContext context malformed
+	at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean allowHttp2, CancellationToken cancellationToken) non-malformed`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "dotnet")
+	assert.Len(t, exceptions, 1)
+	assert.Equal(t, "System.Exception", *exceptions[0].Type)
+	assert.Equal(t, "test", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 2)
+	assert.Equal(t, "integration_test_app.Controllers.AppController.OutgoingHttp()", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "/Users/bhautip/Documents/otel-dotnet/aws-otel-dotnet/integration-test-app/integration-test-app/Controllers/AppController.cs", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 21, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean allowHttp2, CancellationToken cancellationToken)", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 0, *exceptions[0].Stack[1].Line)
+}
