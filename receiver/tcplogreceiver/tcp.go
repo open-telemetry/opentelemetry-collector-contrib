@@ -12,14 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package syslogreceiver
+package tcplogreceiver
 
 import (
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/syslog"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/tcp"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/udp"
-	syslogparser "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/syslog"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"gopkg.in/yaml.v2"
@@ -27,15 +24,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 )
 
-const typeStr = "syslog"
+const typeStr = "tcplog"
 
-// NewFactory creates a factory for syslog receiver
+// NewFactory creates a factory for tcp receiver
 func NewFactory() component.ReceiverFactory {
 	return stanza.NewFactory(ReceiverType{})
 }
 
 // ReceiverType implements stanza.LogReceiverType
-// to create a syslog receiver
+// to create a tcp receiver
 type ReceiverType struct{}
 
 // Type is the receiver type
@@ -45,7 +42,7 @@ func (f ReceiverType) Type() config.Type {
 
 // CreateDefaultConfig creates a config with type and version
 func (f ReceiverType) CreateDefaultConfig() config.Receiver {
-	return &SysLogConfig{
+	return &TCPLogConfig{
 		BaseConfig: stanza.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 			Operators:        stanza.OperatorConfigs{},
@@ -56,32 +53,23 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 
 // BaseConfig gets the base config from config, for now
 func (f ReceiverType) BaseConfig(cfg config.Receiver) stanza.BaseConfig {
-	return cfg.(*SysLogConfig).BaseConfig
+	return cfg.(*TCPLogConfig).BaseConfig
 }
 
-// SysLogConfig defines configuration for the syslog receiver
-type SysLogConfig struct {
+// TCPLogConfig defines configuration for the tcp receiver
+type TCPLogConfig struct {
 	stanza.BaseConfig `mapstructure:",squash"`
 	Input             stanza.InputConfig `mapstructure:",remain"`
 }
 
 // DecodeInputConfig unmarshals the input operator
 func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
-	logConfig := cfg.(*SysLogConfig)
+	logConfig := cfg.(*TCPLogConfig)
 	yamlBytes, _ := yaml.Marshal(logConfig.Input)
-	inputCfg := syslog.NewSyslogInputConfig("syslog_input")
-	inputCfg.SyslogParserConfig = *syslogparser.NewSyslogParserConfig("syslog_parser")
+	inputCfg := tcp.NewTCPInputConfig("tcp_input")
 
 	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
 		return nil, err
-	}
-
-	//
-	if inputCfg.Tcp != nil {
-		inputCfg.Tcp.InputConfig = tcp.NewTCPInputConfig("tcp_input").InputConfig
-	}
-	if inputCfg.Udp != nil {
-		inputCfg.Udp.InputConfig = udp.NewUDPInputConfig("udp_input").InputConfig
 	}
 
 	return &operator.Config{Builder: inputCfg}, nil

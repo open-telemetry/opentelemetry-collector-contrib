@@ -111,7 +111,7 @@ func TestLog10kDPS(t *testing.T) {
 		},
 		{
 			name:     "syslog-tcp-batch-1",
-			sender:   datasenders.NewSyslogWriter("tcp", testbed.DefaultHost, testbed.GetAvailablePort(t), 1),
+			sender:   datasenders.NewTCPUDPWriter("tcp", testbed.DefaultHost, testbed.GetAvailablePort(t), 1),
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 80,
@@ -120,7 +120,7 @@ func TestLog10kDPS(t *testing.T) {
 		},
 		{
 			name:     "syslog-tcp-batch-100",
-			sender:   datasenders.NewSyslogWriter("tcp", testbed.DefaultHost, testbed.GetAvailablePort(t), 100),
+			sender:   datasenders.NewTCPUDPWriter("tcp", testbed.DefaultHost, testbed.GetAvailablePort(t), 100),
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 80,
@@ -143,6 +143,24 @@ func TestLog10kDPS(t *testing.T) {
 			receiver: datareceivers.NewSplunkHECDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 60,
+				ExpectedMaxRAM: 150,
+			},
+		},
+		{
+			name:     "tcp-batch-1",
+			sender:   datasenders.NewTCPUDPWriter("tcp", testbed.DefaultHost, testbed.GetAvailablePort(t), 1),
+			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 80,
+				ExpectedMaxRAM: 150,
+			},
+		},
+		{
+			name:     "tcp-batch-100",
+			sender:   datasenders.NewTCPUDPWriter("tcp", testbed.DefaultHost, testbed.GetAvailablePort(t), 100),
+			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 80,
 				ExpectedMaxRAM: 150,
 			},
 		},
