@@ -65,6 +65,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.0.0-00010101000000-000000000000
+	github.com/shirou/gopsutil v3.21.4+incompatible // indirect
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.25.1-0.20210504213736-b8824d020718
 	golang.org/x/sys v0.0.0-20210412220455-f1c623a9e750
@@ -224,4 +225,4 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googl
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter => ./exporter/stackdriverexporter
 
 // TODO: Remove before merge, update dependencies
-replace go.opentelemetry.io/collector => github.com/pmatyjasek-sumo/opentelemetry-collector v0.25.1-0.20210428081312-72ef9d6ccfe5
+replace go.opentelemetry.io/collector => github.com/pmatyjasek-sumo/opentelemetry-collector v0.26.1-0.20210505092123-44f32bb740c4

@@ -22,4 +22,4 @@ require (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray => ./../../internal/aws/xray
 // WIP update for otelcol changes
-replace go.opentelemetry.io/collector => github.com/pmatyjasek-sumo/opentelemetry-collector v0.25.1-0.20210428081312-72ef9d6ccfe5
+replace go.opentelemetry.io/collector => github.com/pmatyjasek-sumo/opentelemetry-collector v0.26.1-0.20210505092123-44f32bb740c4

@@ -10,3 +10,6 @@ require (
 	go.opentelemetry.io/collector v0.25.1-0.20210504213219-970b76cc794a
 	go.uber.org/zap v1.16.0
 )
+
+// TODO: Remove before merge, update dependencies
+replace go.opentelemetry.io/collector => github.com/pmatyjasek-sumo/opentelemetry-collector v0.26.1-0.20210505092123-44f32bb740c4
