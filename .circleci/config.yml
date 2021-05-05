@@ -650,7 +650,7 @@ jobs:
           command: echo "export KUBERNETES_METADATA_URL=$(kubectl -n java-app get svc k8s-feeder-svc-pub -o json | jq .status.loadBalancer.ingress[0].hostname)" >> $BASH_ENV
       - run:
           name: "Deploy Java App application"
-          command: /opt/tracing-tests/deployment_scripts/deploy-javaapp.sh
+          command: /opt/tracing-tests/deployment_scripts/deploy-test-applications.sh
       - run:
           name: "Wait for Kubernetes Metadata Provider"
           command: kubectl -n java-app wait --for=condition=ready --timeout=60s pod -l app=server
