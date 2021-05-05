@@ -46,22 +46,19 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	p0 := cfg.Processors["k8s_tagger"]
+	p0 := cfg.Processors[config.NewID(typeStr)]
 	assert.Equal(t, p0,
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(typeStr),
+			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 			APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 		})
 
-	p1 := cfg.Processors["k8s_tagger/2"]
+	p1 := cfg.Processors[config.NewIDWithName(typeStr, "2")]
 	assert.Equal(t, p1,
 		&Config{
-			ProcessorSettings: &config.ProcessorSettings{
-				TypeVal: "k8s_tagger",
-				NameVal: "k8s_tagger/2",
-			},
-			APIConfig:   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
-			Passthrough: false,
+			ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "2")),
+			APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
+			Passthrough:       false,
 			Extract: ExtractConfig{
 				Metadata: []string{"podName", "podUID", "deployment", "cluster", "namespace", "node", "startTime"},
 				Annotations: []FieldExtractConfig{
