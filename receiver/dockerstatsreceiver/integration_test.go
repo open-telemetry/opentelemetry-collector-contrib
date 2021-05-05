@@ -53,7 +53,7 @@ func factory() (component.ReceiverFactory, *Config) {
 	return f, config
 }
 
-func paramsAndContext(t *testing.T) (component.ReceiverCreatecomponentSettings, context.Context, context.CancelFunc) {
+func paramsAndContext(t *testing.T) (component.ComponentSettings, context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
 	return component.ComponentSettings{Logger: logger}, ctx, cancel
