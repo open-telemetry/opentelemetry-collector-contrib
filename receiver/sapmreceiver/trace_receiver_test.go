@@ -18,11 +18,8 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/binary"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"testing"
 	"time"
@@ -189,16 +186,20 @@ func sendSapm(endpoint string, sapm *splunksapm.PostSpansRequest, zipped bool, t
 	client := &http.Client{}
 
 	if tlsEnabled {
-		caCert, errCert := ioutil.ReadFile("./testdata/testcert.crt")
-		if errCert != nil {
-			return nil, fmt.Errorf("failed to load certificate: %s", errCert.Error())
-		}
-		caCertPool := x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM(caCert)
-		client.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{
-				RootCAs: caCertPool,
+		tlscs := configtls.TLSClientSetting{
+			TLSSetting: configtls.TLSSetting{
+				CAFile:   "./testdata/ca.crt",
+				CertFile: "./testdata/client.crt",
+				KeyFile:  "./testdata/client.key",
 			},
+			ServerName: "localhost",
+		}
+		tls, errTLS := tlscs.LoadTLSConfig()
+		if errTLS != nil {
+			return nil, fmt.Errorf("failed to send request to receiver %w", err)
+		}
+		client.Transport = &http.Transport{
+			TLSClientConfig: tls,
 		}
 	}
 
@@ -279,8 +280,9 @@ func TestReception(t *testing.T) {
 						Endpoint: tlsAddress,
 						TLSSetting: &configtls.TLSServerSetting{
 							TLSSetting: configtls.TLSSetting{
-								CertFile: "./testdata/testcert.crt",
-								KeyFile:  "./testdata/testkey.key",
+								CAFile:   "./testdata/ca.crt",
+								CertFile: "./testdata/server.crt",
+								KeyFile:  "./testdata/server.key",
 							},
 						},
 					},
@@ -302,7 +304,7 @@ func TestReception(t *testing.T) {
 			t.Log("Sending Sapm Request")
 			var resp *http.Response
 			resp, err := sendSapm(tt.args.config.Endpoint, tt.args.sapm, tt.args.zipped, tt.args.useTLS, "")
-			require.NoErrorf(t, err, "should not have failed when sending sapm %v", err)
+			require.NoError(t, err)
 			assert.Equal(t, 200, resp.StatusCode)
 			t.Log("SAPM Request Received")
 
