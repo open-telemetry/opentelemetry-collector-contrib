@@ -56,14 +56,14 @@ func (s *commonExportSetting) hasContainerPort(containerPort int) bool {
 	return s.metricsPorts[containerPort]
 }
 
-// TaskExporter converts annotated Task into PrometheusECSTarget.
-type TaskExporter struct {
+// taskExporter converts annotated Task into PrometheusECSTarget.
+type taskExporter struct {
 	logger  *zap.Logger
 	cluster string
 }
 
-func newTaskExporter(logger *zap.Logger, cluster string) *TaskExporter {
-	return &TaskExporter{
+func newTaskExporter(logger *zap.Logger, cluster string) *taskExporter {
+	return &taskExporter{
 		logger:  logger,
 		cluster: cluster,
 	}
@@ -72,7 +72,7 @@ func newTaskExporter(logger *zap.Logger, cluster string) *TaskExporter {
 // ExportTasks loops a list of tasks and export prometheus scrape targets.
 // It keeps track of error but does NOT stop when error occurs.
 // The returned targets are all valid and the error(s) are mainly for generating metrics.
-func (e *TaskExporter) ExportTasks(tasks []*Task) ([]PrometheusECSTarget, error) {
+func (e *taskExporter) ExportTasks(tasks []*Task) ([]PrometheusECSTarget, error) {
 	var merr error
 	var allTargets []PrometheusECSTarget
 	for _, t := range tasks {
@@ -87,7 +87,7 @@ func (e *TaskExporter) ExportTasks(tasks []*Task) ([]PrometheusECSTarget, error)
 // ExportTask exports all the matched container within a single task.
 // One task can contain multiple containers. One container can have more than one target
 // if there are multiple ports in `metrics_port`.
-func (e *TaskExporter) ExportTask(task *Task) ([]PrometheusECSTarget, error) {
+func (e *taskExporter) ExportTask(task *Task) ([]PrometheusECSTarget, error) {
 	// All targets in one task shares same IP.
 	privateIP, err := task.PrivateIP()
 	if err != nil {
