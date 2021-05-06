@@ -81,7 +81,9 @@ const (
 	labelEC2PublicIP            = labelPrefix + "ec2_public_ip"
 )
 
-func TargetToLabels(t PrometheusECSTarget) map[string]string {
+// ToLabels converts fields in the target to map.
+// It also sanitize label name because the requirements on AWS tags and Prometheus are different.
+func (t *PrometheusECSTarget) ToLabels() map[string]string {
 	labels := map[string]string{
 		labelSource:                 t.Source,
 		labelAddress:                t.Address,
