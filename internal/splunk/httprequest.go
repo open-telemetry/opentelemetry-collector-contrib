@@ -17,6 +17,7 @@ package splunk
 import (
 	"fmt"
 	"net/http"
+	"net/http/httputil"
 	"strconv"
 	"time"
 
@@ -53,7 +54,12 @@ func HandleHTTPCode(resp *http.Response) error {
 		err = exporterhelper.NewThrottleRetry(err, time.Duration(retryAfter)*time.Second)
 	// Check for permanent errors.
 	case http.StatusBadRequest, http.StatusUnauthorized:
-		err = consumererror.Permanent(err)
+		dump, err2 := httputil.DumpResponse(resp, true)
+		if err2 == nil {
+			err = consumererror.Permanent(fmt.Errorf("%w", fmt.Errorf("%q", dump)))
+		} else {
+			err = consumererror.Combine([]error{err, err2})
+		}
 	}
 
 	return err
