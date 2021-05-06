@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
@@ -39,7 +40,7 @@ const (
 // xrayReceiver implements the component.TracesReceiver interface for converting
 // AWS X-Ray segment document into the OT internal trace format.
 type xrayReceiver struct {
-	instanceName string
+	instanceID   config.ComponentID
 	poller       udppoller.Poller
 	server       proxy.Server
 	logger       *zap.Logger
@@ -58,10 +59,10 @@ func newReceiver(config *Config,
 	logger.Info("Going to listen on endpoint for X-Ray segments",
 		zap.String(udppoller.Transport, config.Endpoint))
 	poller, err := udppoller.New(&udppoller.Config{
-		ReceiverInstanceName: config.ID().String(),
-		Transport:            config.Transport,
-		Endpoint:             config.Endpoint,
-		NumOfPollerToStart:   maxPollerCount,
+		ReceiverID:         config.ID(),
+		Transport:          config.Transport,
+		Endpoint:           config.Endpoint,
+		NumOfPollerToStart: maxPollerCount,
 	}, logger)
 	if err != nil {
 		return nil, err
@@ -76,17 +77,17 @@ func newReceiver(config *Config,
 	}
 
 	return &xrayReceiver{
-		instanceName: config.ID().String(),
-		poller:       poller,
-		server:       srv,
-		logger:       logger,
-		consumer:     consumer,
+		instanceID: config.ID(),
+		poller:     poller,
+		server:     srv,
+		logger:     logger,
+		consumer:   consumer,
 	}, nil
 }
 
 func (x *xrayReceiver) Start(ctx context.Context, host component.Host) error {
 	// TODO: Might want to pass `host` into read() below to report a fatal error
-	x.longLivedCtx = obsreport.ReceiverContext(ctx, x.instanceName, udppoller.Transport)
+	x.longLivedCtx = obsreport.ReceiverContext(ctx, x.instanceID, udppoller.Transport)
 	x.poller.Start(x.longLivedCtx)
 	go x.start()
 	go x.server.ListenAndServe()
