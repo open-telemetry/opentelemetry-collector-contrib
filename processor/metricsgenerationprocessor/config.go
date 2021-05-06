@@ -28,10 +28,10 @@ const (
 	// typeFieldName is the mapstructure field name for Type field
 	typeFieldName = "type"
 
-	// metric1FieldName is the mapstructure field name for Operand1Metric field
+	// metric1FieldName is the mapstructure field name for Metric1 field
 	metric1FieldName = "metric1"
 
-	// metric2FieldName is the mapstructure field name for Operand2Metric field
+	// metric2FieldName is the mapstructure field name for Metric2 field
 	metric2FieldName = "metric2"
 
 	// scaleByFieldName is the mapstructure field name for ScaleBy field
@@ -57,10 +57,10 @@ type Rule struct {
 	Type GenerationType `mapstructure:"type"`
 
 	// First operand metric to use in the calculation. This is a required field.
-	Operand1Metric string `mapstructure:"metric1"`
+	Metric1 string `mapstructure:"metric1"`
 
 	// Second operand metric to use in the calculation. A required field if the type is calculate.
-	Operand2Metric string `mapstructure:"metric2"`
+	Metric2 string `mapstructure:"metric2"`
 
 	// The arithmetic operation to apply for the calculation. This is a required field.
 	Operation OperationType `mapstructure:"operation"`
@@ -114,7 +114,7 @@ const (
 	// Divides the first operand with the second operand
 	divide OperationType = "divide"
 
-	// Calculates the percentage: (Operand1 / Operand2) * 100
+	// Calculates the percentage: (Metric1 / Metric2) * 100
 	percent OperationType = "percent"
 )
 
@@ -158,11 +158,11 @@ func (config *Config) Validate() error {
 			return fmt.Errorf("%q must be in %q", typeFieldName, generationTypeKeys())
 		}
 
-		if rule.Operand1Metric == "" {
+		if rule.Metric1 == "" {
 			return fmt.Errorf("missing required field %q", metric1FieldName)
 		}
 
-		if rule.Type == calculate && rule.Operand2Metric == "" {
+		if rule.Type == calculate && rule.Metric2 == "" {
 			return fmt.Errorf("missing required field %q for generation type %q", metric2FieldName, calculate)
 		}
 

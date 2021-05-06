@@ -74,8 +74,8 @@ func buildInternalConfig(config *Config) []internalRule {
 		customRule := internalRule{
 			name:      rule.Name,
 			ruleType:  string(rule.Type),
-			metric1:   rule.Operand1Metric,
-			metric2:   rule.Operand2Metric,
+			metric1:   rule.Metric1,
+			metric2:   rule.Metric2,
 			operation: string(rule.Operation),
 			scaleBy:   rule.ScaleBy,
 		}
