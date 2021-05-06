@@ -48,18 +48,15 @@ func newMetricsGenerationProcessor(rules []internalRule, logger *zap.Logger) *me
 
 // Start is invoked during service startup.
 func (mgp *metricsGenerationProcessor) Start(context.Context, component.Host) error {
-	mgp.logger.Info("metricsGenerationProcessor started.")
 	return nil
 }
 
 // ProcessMetrics implements the MProcessor interface.
 func (mgp *metricsGenerationProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
-	mgp.logger.Info("metricsGenerationProcessor processed metrics.")
 	return md, nil
 }
 
 // Shutdown is invoked during service shutdown.
 func (mgp *metricsGenerationProcessor) Shutdown(context.Context) error {
-	mgp.logger.Info("metricsGenerationProcessor stopped.")
 	return nil
 }

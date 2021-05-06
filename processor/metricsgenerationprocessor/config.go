@@ -23,16 +23,16 @@ import (
 
 const (
 	// NewMetricFieldName is the mapstructure field name for NewMetricName field
-	NewMetricFieldName = "new_metric_name"
+	NewMetricFieldName = "name"
 
-	// GenerationTypeFieldName is the mapstructure field name for Type field
-	GenerationTypeFieldName = "generation_type"
+	// TypeFieldName is the mapstructure field name for Type field
+	TypeFieldName = "type"
 
 	// Operand1MetricFieldName is the mapstructure field name for Operand1Metric field
-	Operand1MetricFieldName = "operand1_metric"
+	Operand1MetricFieldName = "metric1"
 
 	// Operand2MetricFieldName is the mapstructure field name for Operand2Metric field
-	Operand2MetricFieldName = "operand2_metric"
+	Operand2MetricFieldName = "metric2"
 
 	// ScaleByFieldName is the mapstructure field name for ScaleBy field
 	ScaleByFieldName = "scale_by"
@@ -51,21 +51,21 @@ type Config struct {
 
 type Rule struct {
 	// Name of the new metric being generated. This is a required field.
-	NewMetricName string `mapstructure:"new_metric_name"`
+	NewMetricName string `mapstructure:"name"`
 
 	// The rule type following which the new metric will be generated. This is a required field.
-	Type GenerationType `mapstructure:"generation_type"`
+	Type GenerationType `mapstructure:"type"`
 
 	// First operand metric to use in the calculation. This is a required field.
-	Operand1Metric string `mapstructure:"operand1_metric"`
+	Operand1Metric string `mapstructure:"metric1"`
 
-	// Second operand metric to use in the calculation. A required field if the generation_type is calculate.
-	Operand2Metric string `mapstructure:"operand2_metric"`
+	// Second operand metric to use in the calculation. A required field if the type is calculate.
+	Operand2Metric string `mapstructure:"metric2"`
 
 	// The arithmetic operation to apply for the calculation. This is a required field.
 	Operation OperationType `mapstructure:"operation"`
 
-	// A constant number by which the first operand will be scaled. A required field if the generation_type is scale.
+	// A constant number by which the first operand will be scaled. A required field if the type is scale.
 	ScaleBy float64 `mapstructure:"scale_by"`
 }
 
@@ -151,11 +151,11 @@ func (config *Config) Validate() error {
 		}
 
 		if rule.Type == "" {
-			return fmt.Errorf("missing required field %q", GenerationTypeFieldName)
+			return fmt.Errorf("missing required field %q", TypeFieldName)
 		}
 
 		if !rule.Type.isValid() {
-			return fmt.Errorf("%q must be in %q", GenerationTypeFieldName, generationTypeKeys())
+			return fmt.Errorf("%q must be in %q", TypeFieldName, generationTypeKeys())
 		}
 
 		if rule.Operand1Metric == "" {

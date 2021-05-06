@@ -4,10 +4,10 @@ receivers:
 processors:
   metricsgeneration:
     rules:
-      - new_metric_name: new_metric
-        generation_type: invalid # invalid generation type
-        operand1_metric: metric1
-        operand2_metric: metric2
+      - name: new_metric
+        type: invalid # invalid generation type
+        metric1: metric1
+        metric2: metric2
         operation: percent
 
 exporters:

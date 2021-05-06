@@ -66,7 +66,7 @@ func createMetricsProcessor(
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
-// buildInternalConfig constructs the internal metric genration rules
+// buildInternalConfig constructs the internal metric generation rules
 func buildInternalConfig(config *Config) []internalRule {
 	internalRules := make([]internalRule, len(config.Rules))
 

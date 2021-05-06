@@ -24,16 +24,16 @@ processors:
         # specify the metric generation rules
         rules:
               # Name of the new metric. This is a required field.
-            - new_metric_name: <new_metric_name>
+            - name: <new_metric_name>
 
-              # generation_type describes how the new metric will be generated. It can be one of `calculate` or `scale`.  Calculate generates a metric applying the given operation on two operand metrics. Scale operates only on operand1 metric to generate the new metric.
-              generation_type: {calculate, scale}
+              # type describes how the new metric will be generated. It can be one of `calculate` or `scale`.  Calculate generates a metric applying the given operation on two operand metrics. Scale operates only on operand1 metric to generate the new metric.
+              type: {calculate, scale}
 
               # This is a required field.
-              operand1_metric: <first_operand_metric>
+              metric1: <first_operand_metric>
 
-              # This field is required only if the generation_type is "calculate".
-              operand2_metric: <second_operand_metric>
+              # This field is required only if the type is "calculate".
+              metric2: <second_operand_metric>
 
               # Operation specifies which arithmetic operation to apply. It must be one of the five supported operations.
               operation: {add, subtract, multiply, divide, percent}
@@ -45,10 +45,10 @@ processors:
 ```yaml
 # create pod.cpu.utilized following (pod.cpu.usage / node.cpu.limit)
 rules:
-    - new_metric_name: pod.cpu.utilized
-      generation_type: calculate
-      operand1_metric: pod.cpu.usage
-      operand2_metric: node.cpu.limit
+    - name: pod.cpu.utilized
+      type: calculate
+      metric1: pod.cpu.usage
+      metric2: node.cpu.limit
       operation: divide
 ```
 
@@ -56,9 +56,9 @@ rules:
 ```yaml
 # create pod.memory.usage.bytes from pod.memory.usage.megabytes
 rules:
-    - new_metric_name: pod.memory.usage.bytes
-      generation_type: scale
-      operand1_metric: pod.memory.usage.megabytes
+    - name: pod.memory.usage.bytes
+      type: scale
+      metric1: pod.memory.usage.megabytes
       operation: multiply
       scale_by: 1048576
 ```

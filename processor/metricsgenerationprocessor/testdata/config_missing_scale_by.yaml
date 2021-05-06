@@ -5,9 +5,9 @@ processors:
   metricsgeneration:
     rules:
       # missing scale_by
-      - new_metric_name: new_metric
-        generation_type: scale
-        operand1_metric: metric1
+      - name: new_metric
+        type: scale
+        metric1: metric1
         operation: multiply
 
 exporters:

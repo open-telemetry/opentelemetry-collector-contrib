@@ -93,12 +93,12 @@ func TestValidateConfig(t *testing.T) {
 		{
 			configName:   "config_missing_type.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q", GenerationTypeFieldName),
+			errorMessage: fmt.Sprintf("missing required field %q", TypeFieldName),
 		},
 		{
 			configName:   "config_invalid_generation_type.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("%q must be in %q", GenerationTypeFieldName, generationTypeKeys()),
+			errorMessage: fmt.Sprintf("%q must be in %q", TypeFieldName, generationTypeKeys()),
 		},
 		{
 			configName:   "config_missing_operand1.yaml",

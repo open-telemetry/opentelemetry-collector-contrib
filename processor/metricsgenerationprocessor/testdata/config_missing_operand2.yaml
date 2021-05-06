@@ -5,9 +5,9 @@ processors:
   metricsgeneration:
     rules:
       # missing operand2 metric
-      - new_metric_name: new_metric
-        generation_type: calculate
-        operand1_metric: metric1
+      - name: new_metric
+        type: calculate
+        metric1: metric1
         operation: percent
 
 exporters:
