@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -34,6 +35,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
+var sdkInformation string = fmt.Sprintf("%s/%s (%s; %s; %s)", aws.SDKName, aws.SDKVersion, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+
 func TestRequestSignature(t *testing.T) {
 	// Some form of AWS credentials must be set up for tests to succeed
 	awsCreds := fetchMockCredentials()
@@ -42,6 +45,7 @@ func TestRequestSignature(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, err := v4.GetSignedRequestSignature(r)
 		assert.NoError(t, err)
+		assert.Equal(t, sdkInformation, r.Header.Get("User-Agent"))
 		w.WriteHeader(200)
 	}))
 	defer server.Close()
@@ -56,8 +60,7 @@ func TestRequestSignature(t *testing.T) {
 		WriteBufferSize: 0,
 		Timeout:         0,
 		CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
-			sdk_information := fmt.Sprintf("%s/%s", aws.SDKName, aws.SDKVersion)
-			return newSigningRoundTripperWithCredentials(authConfig, awsCreds, next, sdk_information)
+			return newSigningRoundTripperWithCredentials(authConfig, awsCreds, next, sdkInformation)
 		},
 	}
 	client, _ := setting.ToClient()
@@ -88,6 +91,7 @@ func TestLeakingBody(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, err := v4.GetSignedRequestSignature(r)
 		assert.NoError(t, err)
+		assert.Equal(t, sdkInformation, r.Header.Get("User-Agent"))
 		w.WriteHeader(200)
 	}))
 	defer server.Close()
@@ -102,8 +106,7 @@ func TestLeakingBody(t *testing.T) {
 		WriteBufferSize: 0,
 		Timeout:         0,
 		CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
-			sdk_information := fmt.Sprintf("%s/%s", aws.SDKName, aws.SDKVersion)
-			return newSigningRoundTripperWithCredentials(authConfig, awsCreds, next, sdk_information)
+			return newSigningRoundTripperWithCredentials(authConfig, awsCreds, next, sdkInformation)
 		},
 	}
 	client, _ := setting.ToClient()
@@ -181,13 +184,13 @@ func TestRoundTrip(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				_, err := v4.GetSignedRequestSignature(r)
 				assert.NoError(t, err)
+				assert.Equal(t, sdkInformation, r.Header.Get("User-Agent"))
 				w.WriteHeader(200)
 			}))
 			defer server.Close()
 			serverURL, _ := url.Parse(server.URL)
 			authConfig := AuthConfig{Region: "region", Service: "service"}
-			sdk_information := fmt.Sprintf("%s/%s", aws.SDKName, aws.SDKVersion)
-			rt, err := newSigningRoundTripperWithCredentials(authConfig, awsCreds, tt.rt, sdk_information)
+			rt, err := newSigningRoundTripperWithCredentials(authConfig, awsCreds, tt.rt, sdkInformation)
 			assert.NoError(t, err)
 			req, err := http.NewRequest("POST", serverURL.String(), strings.NewReader(""))
 			assert.NoError(t, err)
@@ -244,8 +247,7 @@ func TestCreateSigningRoundTripperWithCredentials(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sdk_information := fmt.Sprintf("%s/%s", aws.SDKName, aws.SDKVersion)
-			rtp, err := newSigningRoundTripperWithCredentials(tt.authConfig, tt.creds, tt.roundTripper, sdk_information)
+			rtp, err := newSigningRoundTripperWithCredentials(tt.authConfig, tt.creds, tt.roundTripper, sdkInformation)
 			if tt.returnError {
 				assert.Error(t, err)
 				return

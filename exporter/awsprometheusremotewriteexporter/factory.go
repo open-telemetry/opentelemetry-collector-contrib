@@ -65,8 +65,8 @@ func (af *awsFactory) CreateDefaultConfig() config.Exporter {
 		if v := os.Getenv("AWS_EXECUTION_ENV"); v != "" {
 			extras = append(extras, v)
 		}
-		runtime_info := fmt.Sprintf("%s/%s (%s)", aws.SDKName, aws.SDKVersion, strings.Join(extras, "; "))
-		return newSigningRoundTripper(cfg, next, runtime_info)
+		runtimeInfo := fmt.Sprintf("%s/%s (%s)", aws.SDKName, aws.SDKVersion, strings.Join(extras, "; "))
+		return newSigningRoundTripper(cfg, next, runtimeInfo)
 	}
 
 	return cfg
