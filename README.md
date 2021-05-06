@@ -60,7 +60,7 @@ small number of users.
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/open-telemetry/teams/collector-contrib-triagers))
-- [Andrew Hsu](https://github.com/andrewhsu), Lightstep
+- [Alolita Sharma](https://github.com/alolita), AWS
 - [Steve Flanders](https://github.com/flands), Splunk
 
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
