@@ -22,23 +22,23 @@ import (
 )
 
 const (
-	// NewMetricFieldName is the mapstructure field name for NewMetricName field
-	NewMetricFieldName = "name"
+	// nameFieldName is the mapstructure field name for name field
+	nameFieldName = "name"
 
-	// TypeFieldName is the mapstructure field name for Type field
-	TypeFieldName = "type"
+	// typeFieldName is the mapstructure field name for Type field
+	typeFieldName = "type"
 
-	// Operand1MetricFieldName is the mapstructure field name for Operand1Metric field
-	Operand1MetricFieldName = "metric1"
+	// metric1FieldName is the mapstructure field name for Operand1Metric field
+	metric1FieldName = "metric1"
 
-	// Operand2MetricFieldName is the mapstructure field name for Operand2Metric field
-	Operand2MetricFieldName = "metric2"
+	// metric2FieldName is the mapstructure field name for Operand2Metric field
+	metric2FieldName = "metric2"
 
-	// ScaleByFieldName is the mapstructure field name for ScaleBy field
-	ScaleByFieldName = "scale_by"
+	// scaleByFieldName is the mapstructure field name for ScaleBy field
+	scaleByFieldName = "scale_by"
 
-	// OperationFieldName is the mapstructure field name for Operation field
-	OperationFieldName = "operation"
+	// operationFieldName is the mapstructure field name for Operation field
+	operationFieldName = "operation"
 )
 
 // Config defines the configuration for the processor.
@@ -51,7 +51,7 @@ type Config struct {
 
 type Rule struct {
 	// Name of the new metric being generated. This is a required field.
-	NewMetricName string `mapstructure:"name"`
+	Name string `mapstructure:"name"`
 
 	// The rule type following which the new metric will be generated. This is a required field.
 	Type GenerationType `mapstructure:"type"`
@@ -74,13 +74,13 @@ type GenerationType string
 const (
 
 	// Generates a new metric applying an arithmatic operation with two operands
-	Calculate GenerationType = "calculate"
+	calculate GenerationType = "calculate"
 
 	// Generates a new metric scaling the value of s given metric with a provided constant
-	Scale GenerationType = "scale"
+	scale GenerationType = "scale"
 )
 
-var generationTypes = map[GenerationType]struct{}{Calculate: {}, Scale: {}}
+var generationTypes = map[GenerationType]struct{}{calculate: {}, scale: {}}
 
 func (gt GenerationType) isValid() bool {
 	_, ok := generationTypes[gt]
@@ -103,27 +103,27 @@ type OperationType string
 const (
 
 	// Adds two operands
-	Add OperationType = "add"
+	add OperationType = "add"
 
-	// Subtract the second operand from the first operand
-	Subtract OperationType = "subtract"
+	// subtract the second operand from the first operand
+	subtract OperationType = "subtract"
 
-	// Multiply two operands
-	Multiply OperationType = "multiply"
+	// multiply two operands
+	multiply OperationType = "multiply"
 
 	// Divides the first operand with the second operand
-	Divide OperationType = "divide"
+	divide OperationType = "divide"
 
 	// Calculates the percentage: (Operand1 / Operand2) * 100
-	Percent OperationType = "percent"
+	percent OperationType = "percent"
 )
 
 var operationTypes = map[OperationType]struct{}{
-	Add:      {},
-	Subtract: {},
-	Multiply: {},
-	Divide:   {},
-	Percent:  {},
+	add:      {},
+	subtract: {},
+	multiply: {},
+	divide:   {},
+	percent:  {},
 }
 
 func (ot OperationType) isValid() bool {
@@ -146,32 +146,32 @@ var operationTypeKeys = func() []string {
 // An error is returned if there are any invalid inputs.
 func (config *Config) Validate() error {
 	for _, rule := range config.Rules {
-		if rule.NewMetricName == "" {
-			return fmt.Errorf("missing required field %q", NewMetricFieldName)
+		if rule.Name == "" {
+			return fmt.Errorf("missing required field %q", nameFieldName)
 		}
 
 		if rule.Type == "" {
-			return fmt.Errorf("missing required field %q", TypeFieldName)
+			return fmt.Errorf("missing required field %q", typeFieldName)
 		}
 
 		if !rule.Type.isValid() {
-			return fmt.Errorf("%q must be in %q", TypeFieldName, generationTypeKeys())
+			return fmt.Errorf("%q must be in %q", typeFieldName, generationTypeKeys())
 		}
 
 		if rule.Operand1Metric == "" {
-			return fmt.Errorf("missing required field %q", Operand1MetricFieldName)
+			return fmt.Errorf("missing required field %q", metric1FieldName)
 		}
 
-		if rule.Type == Calculate && rule.Operand2Metric == "" {
-			return fmt.Errorf("missing required field %q for generation type %q", Operand2MetricFieldName, Calculate)
+		if rule.Type == calculate && rule.Operand2Metric == "" {
+			return fmt.Errorf("missing required field %q for generation type %q", metric2FieldName, calculate)
 		}
 
-		if rule.Type == Scale && rule.ScaleBy <= 0 {
-			return fmt.Errorf("field %q required to be greater than 0 for generation type %q", ScaleByFieldName, Scale)
+		if rule.Type == scale && rule.ScaleBy <= 0 {
+			return fmt.Errorf("field %q required to be greater than 0 for generation type %q", scaleByFieldName, scale)
 		}
 
 		if rule.Operation != "" && !rule.Operation.isValid() {
-			return fmt.Errorf("%q must be in %q", OperationFieldName, operationTypeKeys())
+			return fmt.Errorf("%q must be in %q", operationFieldName, operationTypeKeys())
 		}
 	}
 	return nil

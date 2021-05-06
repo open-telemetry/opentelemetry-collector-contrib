@@ -72,12 +72,12 @@ func buildInternalConfig(config *Config) []internalRule {
 
 	for i, rule := range config.Rules {
 		customRule := internalRule{
-			NewMetricName:  rule.NewMetricName,
-			Type:           string(rule.Type),
-			Operand1Metric: rule.Operand1Metric,
-			Operand2Metric: rule.Operand2Metric,
-			Operation:      string(rule.Operation),
-			ScaleBy:        rule.ScaleBy,
+			name:      rule.Name,
+			ruleType:  string(rule.Type),
+			metric1:   rule.Operand1Metric,
+			metric2:   rule.Operand2Metric,
+			operation: string(rule.Operation),
+			scaleBy:   rule.ScaleBy,
 		}
 		internalRules[i] = customRule
 	}

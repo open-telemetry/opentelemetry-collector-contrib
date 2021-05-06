@@ -31,12 +31,12 @@ type metricsGenerationProcessor struct {
 var _ processorhelper.MProcessor = (*metricsGenerationProcessor)(nil)
 
 type internalRule struct {
-	NewMetricName  string
-	Type           string
-	Operand1Metric string
-	Operand2Metric string
-	Operation      string
-	ScaleBy        float64
+	name      string
+	ruleType  string
+	metric1   string
+	metric2   string
+	operation string
+	scaleBy   float64
 }
 
 func newMetricsGenerationProcessor(rules []internalRule, logger *zap.Logger) *metricsGenerationProcessor {

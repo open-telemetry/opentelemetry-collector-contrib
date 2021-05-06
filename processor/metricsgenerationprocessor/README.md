@@ -26,7 +26,7 @@ processors:
               # Name of the new metric. This is a required field.
             - name: <new_metric_name>
 
-              # type describes how the new metric will be generated. It can be one of `calculate` or `scale`.  Calculate generates a metric applying the given operation on two operand metrics. Scale operates only on operand1 metric to generate the new metric.
+              # type describes how the new metric will be generated. It can be one of `calculate` or `scale`.  calculate generates a metric applying the given operation on two operand metrics. scale operates only on operand1 metric to generate the new metric.
               type: {calculate, scale}
 
               # This is a required field.

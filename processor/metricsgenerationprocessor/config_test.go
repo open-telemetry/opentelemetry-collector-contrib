@@ -39,14 +39,14 @@ func TestLoadingFullConfig(t *testing.T) {
 				ProcessorSettings: config.NewProcessorSettings(typeStr),
 				Rules: []Rule{
 					{
-						NewMetricName:  "new_metric",
+						Name:           "new_metric",
 						Type:           "calculate",
 						Operand1Metric: "metric1",
 						Operand2Metric: "metric2",
 						Operation:      "percent",
 					},
 					{
-						NewMetricName:  "new_metric",
+						Name:           "new_metric",
 						Type:           "scale",
 						Operand1Metric: "metric1",
 						ScaleBy:        1000,
@@ -88,37 +88,37 @@ func TestValidateConfig(t *testing.T) {
 		{
 			configName:   "config_missing_new_metric.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q", NewMetricFieldName),
+			errorMessage: fmt.Sprintf("missing required field %q", nameFieldName),
 		},
 		{
 			configName:   "config_missing_type.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q", TypeFieldName),
+			errorMessage: fmt.Sprintf("missing required field %q", typeFieldName),
 		},
 		{
 			configName:   "config_invalid_generation_type.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("%q must be in %q", TypeFieldName, generationTypeKeys()),
+			errorMessage: fmt.Sprintf("%q must be in %q", typeFieldName, generationTypeKeys()),
 		},
 		{
 			configName:   "config_missing_operand1.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q", Operand1MetricFieldName),
+			errorMessage: fmt.Sprintf("missing required field %q", metric1FieldName),
 		},
 		{
 			configName:   "config_missing_operand2.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q for generation type %q", Operand2MetricFieldName, Calculate),
+			errorMessage: fmt.Sprintf("missing required field %q for generation type %q", metric2FieldName, calculate),
 		},
 		{
 			configName:   "config_missing_scale_by.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("field %q required to be greater than 0 for generation type %q", ScaleByFieldName, Scale),
+			errorMessage: fmt.Sprintf("field %q required to be greater than 0 for generation type %q", scaleByFieldName, scale),
 		},
 		{
 			configName:   "config_invalid_operation.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("%q must be in %q", OperationFieldName, operationTypeKeys()),
+			errorMessage: fmt.Sprintf("%q must be in %q", operationFieldName, operationTypeKeys()),
 		},
 	}
 
