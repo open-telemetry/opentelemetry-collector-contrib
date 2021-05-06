@@ -60,11 +60,13 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	req2 := cloneRequest(req)
 
 	// Add the runtime information to the User-Agent header of the request
-	curUA := req2.Header.Get("User-Agent")
-	if len(curUA) > 0 {
-		si.runtimeInfo = curUA + " " + si.runtimeInfo
+	ua := req2.Header.Get("User-Agent")
+	if len(ua) > 0 {
+		ua = ua + " " + si.runtimeInfo
+	} else {
+		ua = si.runtimeInfo
 	}
-	req2.Header.Set("User-Agent", si.runtimeInfo)
+	req2.Header.Set("User-Agent", ua)
 
 	// Sign the request
 	_, err = si.signer.Sign(req2, body, si.service, si.region, time.Now())
