@@ -258,3 +258,21 @@ build-examples:
 .PHONY: checkdoc
 checkdoc:
 	checkdoc --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)
+
+# Function to execute a command. Note the empty line before endef to make sure each command
+# gets executed separately instead of concatenated with previous one.
+# Accepts command to execute as first parameter.
+define exec-command
+$(1)
+
+endef
+
+# List of directories where certificates are stored for unit tests.
+CERT_DIRS := receiver/sapmreceiver/testdata \
+             receiver/signalfxreceiver/testdata \
+             receiver/splunkhecreceiver/testdata
+
+# Generate certificates for unit tests relying on certificates.
+.PHONY: certs
+certs:
+	$(foreach dir, $(CERT_DIRS), $(call exec-command, @internal/buildscripts/gen-certs.sh -o $(dir)))
