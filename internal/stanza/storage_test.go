@@ -21,13 +21,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.uber.org/multierr"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 )
 
 func TestStorage(t *testing.T) {
@@ -36,7 +32,7 @@ func TestStorage(t *testing.T) {
 	require.NoError(t, err)
 
 	r := createReceiver(t)
-	host := getHostWithStorage(t, tempDir)
+	host := storagetest.NewStorageHost(t, tempDir, "test")
 	err = r.Start(ctx, host)
 	require.NoError(t, err)
 
@@ -49,7 +45,9 @@ func TestStorage(t *testing.T) {
 
 	// Cycle the receiver
 	require.NoError(t, r.Shutdown(ctx))
-	require.NoError(t, host.ShutdownExtensions(ctx))
+	for _, e := range host.GetExtensions() {
+		require.NoError(t, e.Shutdown(ctx))
+	}
 
 	r = createReceiver(t)
 	err = r.Start(ctx, host)
@@ -77,7 +75,7 @@ func TestFailOnMultipleStorageExtensions(t *testing.T) {
 	require.NoError(t, err)
 
 	r := createReceiver(t)
-	host := getHostWithMultipleStorage(t, tempDir)
+	host := storagetest.NewStorageHost(t, tempDir, "one", "two")
 	err = r.Start(ctx, host)
 	require.Error(t, err)
 	require.Equal(t, "storage client: multiple storage extensions found", err.Error())
@@ -102,56 +100,6 @@ func createReceiver(t *testing.T) *receiver {
 	r, ok := logsReceiver.(*receiver)
 	require.True(t, ok)
 	return r
-}
-
-type hostWithStorage struct {
-	component.Host
-	extensions map[config.ComponentID]component.Extension
-}
-
-func (h hostWithStorage) GetExtensions() map[config.ComponentID]component.Extension {
-	return h.extensions
-}
-
-func (h hostWithStorage) ShutdownExtensions(ctx context.Context) error {
-	var errs []error
-	for _, e := range h.extensions {
-		errs = append(errs, e.Shutdown(ctx))
-	}
-	return multierr.Combine(errs...)
-}
-
-func getHostWithStorage(t *testing.T, directory string) hostWithStorage {
-	return hostWithStorage{
-		Host: componenttest.NewNopHost(),
-		extensions: map[config.ComponentID]component.Extension{
-			newTestEntity("my_extension"): newTestExtension(t, directory),
-		},
-	}
-}
-
-func getHostWithMultipleStorage(t *testing.T, directory string) hostWithStorage {
-	return hostWithStorage{
-		Host: componenttest.NewNopHost(),
-		extensions: map[config.ComponentID]component.Extension{
-			newTestEntity("my_extension_one"): newTestExtension(t, directory),
-			newTestEntity("my_extension_two"): newTestExtension(t, directory),
-		},
-	}
-}
-
-func newTestEntity(name string) config.ComponentID {
-	return config.NewIDWithName("nop", name)
-}
-
-func newTestExtension(t *testing.T, directory string) storage.Extension {
-	f := filestorage.NewFactory()
-	cfg := f.CreateDefaultConfig().(*filestorage.Config)
-	cfg.Directory = directory
-	params := component.ExtensionCreateParams{Logger: zaptest.NewLogger(t)}
-	extension, _ := f.CreateExtension(context.Background(), params, cfg)
-	se, _ := extension.(storage.Extension)
-	return se
 }
 
 func TestPersisterImplementation(t *testing.T) {
