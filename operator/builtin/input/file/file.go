@@ -27,7 +27,6 @@ import (
 
 	"github.com/bmatcuk/doublestar/v3"
 	"go.uber.org/zap"
-	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
@@ -57,7 +56,7 @@ type InputOperator struct {
 
 	fingerprintSize int
 
-	encoding encoding.Encoding
+	encoding helper.Encoding
 
 	wg         sync.WaitGroup
 	firstCheck bool

@@ -53,7 +53,7 @@ func (f *InputOperator) NewReader(path string, file *os.File, fp *Fingerprint) (
 		Path:          path,
 		fileInput:     f,
 		SugaredLogger: f.SugaredLogger.With("path", path),
-		decoder:       f.encoding.NewDecoder(),
+		decoder:       f.encoding.Encoding.NewDecoder(),
 		decodeBuffer:  make([]byte, 1<<12),
 	}
 	return r, nil
