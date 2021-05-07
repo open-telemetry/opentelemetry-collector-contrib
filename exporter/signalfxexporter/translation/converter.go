@@ -15,6 +15,7 @@
 package translation
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -477,6 +478,15 @@ const (
 	maxDimensionValueLength = 256
 )
 
+var (
+	invalidMetricNameReason = fmt.Sprintf(
+		"metric name longer than %d characters", maxMetricNameLength)
+	invalidDimensionNameReason = fmt.Sprintf(
+		"dimension name longer than %d characters", maxDimensionNameLength)
+	invalidDimensionValueReason = fmt.Sprintf(
+		"dimension value longer than %d characters", maxDimensionValueLength)
+)
+
 type datapointValidator struct {
 	logger                  *zap.Logger
 	nonAlphanumericDimChars string
@@ -527,8 +537,10 @@ func (dpv *datapointValidator) sanitizeDimensions(dimensions []*sfxpb.Dimension)
 func (dpv *datapointValidator) isValidMetricName(name string) bool {
 	if len(name) > maxMetricNameLength {
 		dpv.logger.Warn("dropping datapoint",
-			zap.String("reason", "metric name too long"),
-			zap.String("metric_name", name))
+			zap.String("reason", invalidMetricNameReason),
+			zap.String("metric_name", name),
+			zap.Int("metric_name_length", len(name)),
+		)
 		return false
 	}
 	return true
@@ -541,8 +553,10 @@ func (dpv *datapointValidator) isValidDimension(dimension *sfxpb.Dimension) bool
 func (dpv *datapointValidator) isValidDimensionName(name string) bool {
 	if len(name) > maxDimensionNameLength {
 		dpv.logger.Warn("dropping dimension",
-			zap.String("reason", "dimension name too long"),
-			zap.String("dimension_name", name))
+			zap.String("reason", invalidDimensionNameReason),
+			zap.String("dimension_name", name),
+			zap.Int("dimension_name_length", len(name)),
+		)
 		return false
 	}
 	return true
@@ -551,8 +565,10 @@ func (dpv *datapointValidator) isValidDimensionName(name string) bool {
 func (dpv *datapointValidator) isValidDimensionValue(value string) bool {
 	if len(value) > maxDimensionValueLength {
 		dpv.logger.Warn("dropping dimension",
-			zap.String("reason", "dimension value too long"),
-			zap.String("dimension_value", value))
+			zap.String("reason", invalidDimensionValueReason),
+			zap.String("dimension_value", value),
+			zap.Int("dimension_value_length", len(value)),
+		)
 		return false
 	}
 	return true
@@ -566,13 +582,13 @@ func createSampledLogger(logger *zap.Logger) *zap.Logger {
 	}
 
 	// Create a logger that samples all messages to 1 per 10 seconds initially,
-	// and 1/100 of messages after that.
+	// and 1/10000 of messages after that.
 	opts := zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 		return zapcore.NewSamplerWithOptions(
 			core,
 			10*time.Second,
 			1,
-			100,
+			10000,
 		)
 	})
 	return logger.WithOptions(opts)
