@@ -64,7 +64,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#436](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/436))
 - `opentelemetry-instrumenation-flask` now supports trace response headers.
   ([#436](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/436))
-
+- `opentelemetry-instrumentation-grpc` Keep client interceptor in sync with grpc client interceptors.
+  ([#442](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/442))
+  
 ### Removed
 - Remove `http.status_text` from span attributes
   ([#406](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/406))
