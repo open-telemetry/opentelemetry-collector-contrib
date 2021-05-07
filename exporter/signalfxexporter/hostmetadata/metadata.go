@@ -72,6 +72,8 @@ func (s *Syncer) syncOnResource(res pdata.Resource) {
 	}
 
 	metadataUpdate := s.prepareMetadataUpdate(props, hostID)
+	s.logger.Info("Preparing to sync host properties to host dimension", zap.String("dimension_key", string(hostID.Key)),
+		zap.String("dimension_value", hostID.ID), zap.Any("properties", props))
 	err := s.dimClient.PushMetadata([]*metadata.MetadataUpdate{metadataUpdate})
 	if err != nil {
 		s.logger.Error("Failed to push host metadata update", zap.Error(err))
