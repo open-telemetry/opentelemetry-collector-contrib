@@ -73,7 +73,7 @@ func createMetricsReceiver(
 		consumer,
 		scraperhelper.AddResourceMetricsScraper(
 			scraperhelper.NewResourceMetricsScraper(
-				typeStr,
+				rConfig.ID(),
 				zms.scrape,
 				scraperhelper.WithShutdown(zms.shutdown),
 			),

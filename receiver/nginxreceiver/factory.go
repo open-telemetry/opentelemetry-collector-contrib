@@ -62,7 +62,7 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 
 	ns := newNginxScraper(params.Logger, cfg)
-	scraper := scraperhelper.NewResourceMetricsScraper(typeStr, ns.scrape)
+	scraper := scraperhelper.NewResourceMetricsScraper(cfg.ID(), ns.scrape)
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&cfg.ScraperControllerSettings, params.Logger, consumer,

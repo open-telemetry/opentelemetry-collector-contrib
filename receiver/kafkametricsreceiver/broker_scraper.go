@@ -21,6 +21,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/simple"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -69,14 +70,14 @@ func (s *brokerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, err
 	return metrics.Metrics.ResourceMetrics(), nil
 }
 
-func createBrokerScraper(_ context.Context, config Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.ResourceMetricsScraper, error) {
+func createBrokerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.ResourceMetricsScraper, error) {
 	s := brokerScraper{
 		logger:       logger,
-		config:       config,
+		config:       cfg,
 		saramaConfig: saramaConfig,
 	}
 	ms := scraperhelper.NewResourceMetricsScraper(
-		s.Name(),
+		config.NewID(config.Type(s.Name())),
 		s.scrape,
 		scraperhelper.WithShutdown(s.shutdown),
 		scraperhelper.WithStart(s.start),
