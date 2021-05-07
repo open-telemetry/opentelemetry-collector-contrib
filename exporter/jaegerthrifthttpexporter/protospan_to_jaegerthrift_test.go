@@ -28,6 +28,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
+	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -334,7 +335,7 @@ func TestOCStatusToJaegerThriftTags(t *testing.T) {
 			},
 			wantTags: []*jaeger.Tag{
 				{
-					Key:   tracetranslator.TagHTTPStatusCode,
+					Key:   conventions.AttributeHTTPStatusCode,
 					VLong: func() *int64 { v := int64(404); return &v }(),
 					VType: jaeger.TagType_LONG,
 				},

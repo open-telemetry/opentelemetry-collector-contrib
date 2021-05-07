@@ -1,0 +1,16 @@
+receivers:
+  tcplog:
+    listen_address: "0.0.0.0:29018"
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    logs:
+      receivers: [tcplog]
+      processors: [ nop ]
+      exporters: [ nop ]

@@ -22,6 +22,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/simple"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -123,8 +124,8 @@ func (s *topicScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 	return metrics.Metrics.ResourceMetrics(), scrapeErrors.Combine()
 }
 
-func createTopicsScraper(_ context.Context, config Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.ResourceMetricsScraper, error) {
-	topicFilter, err := regexp.Compile(config.TopicMatch)
+func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.ResourceMetricsScraper, error) {
+	topicFilter, err := regexp.Compile(cfg.TopicMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile topic filter: %w", err)
 	}
@@ -132,10 +133,10 @@ func createTopicsScraper(_ context.Context, config Config, saramaConfig *sarama.
 		logger:       logger,
 		topicFilter:  topicFilter,
 		saramaConfig: saramaConfig,
-		config:       config,
+		config:       cfg,
 	}
 	return scraperhelper.NewResourceMetricsScraper(
-		s.Name(),
+		config.NewID(config.Type(s.Name())),
 		s.scrape,
 		scraperhelper.WithShutdown(s.shutdown),
 		scraperhelper.WithStart(s.start),

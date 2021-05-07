@@ -22,6 +22,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/simple"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -173,12 +174,12 @@ func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, e
 	return metrics.ResourceMetrics(), scrapeErrors.Combine()
 }
 
-func createConsumerScraper(_ context.Context, config Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.ResourceMetricsScraper, error) {
-	groupFilter, err := regexp.Compile(config.GroupMatch)
+func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.ResourceMetricsScraper, error) {
+	groupFilter, err := regexp.Compile(cfg.GroupMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile group_match: %w", err)
 	}
-	topicFilter, err := regexp.Compile(config.TopicMatch)
+	topicFilter, err := regexp.Compile(cfg.TopicMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile topic filter: %w", err)
 	}
@@ -186,11 +187,11 @@ func createConsumerScraper(_ context.Context, config Config, saramaConfig *saram
 		logger:       logger,
 		groupFilter:  groupFilter,
 		topicFilter:  topicFilter,
-		config:       config,
+		config:       cfg,
 		saramaConfig: saramaConfig,
 	}
 	return scraperhelper.NewResourceMetricsScraper(
-		s.Name(),
+		config.NewID(config.Type(s.Name())),
 		s.scrape,
 		scraperhelper.WithShutdown(s.shutdown),
 		scraperhelper.WithStart(s.start),

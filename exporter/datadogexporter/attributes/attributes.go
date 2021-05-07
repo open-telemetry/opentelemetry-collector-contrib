@@ -25,6 +25,18 @@ var (
 	// conventionsMappings defines the mapping between OpenTelemetry semantic conventions
 	// and Datadog Agent conventions
 	conventionsMapping = map[string]string{
+		// Datadog conventions
+		// https://docs.datadoghq.com/getting_started/tagging/unified_service_tagging/
+		conventions.AttributeDeploymentEnvironment: "env",
+		conventions.AttributeServiceName:           "service",
+		conventions.AttributeServiceVersion:        "version",
+
+		// Cloud conventions
+		// https://www.datadoghq.com/blog/tagging-best-practices/
+		conventions.AttributeCloudProvider:         "cloud_provider",
+		conventions.AttributeCloudRegion:           "region",
+		conventions.AttributeCloudAvailabilityZone: "zone",
+
 		// ECS conventions
 		// https://github.com/DataDog/datadog-agent/blob/e081bed/pkg/tagger/collectors/ecs_extract.go
 		conventions.AttributeAWSECSTaskFamily: "task_family",

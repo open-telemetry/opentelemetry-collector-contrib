@@ -70,7 +70,7 @@ func New(
 		config:       &config,
 		nextConsumer: nextConsumer,
 		server:       server,
-		reporter:     newReporter(config.ID().String(), logger),
+		reporter:     newReporter(config.ID(), logger),
 		parser:       &protocol.StatsDParser{},
 	}
 	return r, nil

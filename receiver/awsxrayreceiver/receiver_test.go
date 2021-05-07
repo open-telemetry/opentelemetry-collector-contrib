@@ -127,9 +127,9 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	const receiverName = "TestSegmentsPassedToConsumer"
+	receiverID := config.MustIDFromString("TestSegmentsPassedToConsumer")
 
-	addr, rcvr, _ := createAndOptionallyStartReceiver(t, receiverName, nil, true)
+	addr, rcvr, _ := createAndOptionallyStartReceiver(t, receiverID, nil, true)
 	defer rcvr.Shutdown(context.Background())
 
 	content, err := ioutil.ReadFile(path.Join("../../internal/aws/xray", "testdata", "ddbSample.txt"))
@@ -145,7 +145,7 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 		return len(got) == 1
 	}, 10*time.Second, 5*time.Millisecond, "consumer should eventually get the X-Ray span")
 
-	obsreporttest.CheckReceiverTraces(t, receiverName, udppoller.Transport, 18, 0)
+	obsreporttest.CheckReceiverTraces(t, receiverID, udppoller.Transport, 18, 0)
 }
 
 func TestTranslatorErrorsOut(t *testing.T) {
@@ -157,13 +157,13 @@ func TestTranslatorErrorsOut(t *testing.T) {
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	const receiverName = "TestTranslatorErrorsOut"
+	receiverID := config.MustIDFromString("TestTranslatorErrorsOut")
 
-	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverName, nil, true)
+	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverID, nil, true)
 	defer rcvr.Shutdown(context.Background())
 
 	err = writePacket(t, addr, segmentHeader+"invalidSegment")
-	assert.NoError(t, err, "can not write packet in the "+receiverName+" case")
+	assert.NoError(t, err, "can not write packet in the "+receiverID.String()+" case")
 
 	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
@@ -172,7 +172,7 @@ func TestTranslatorErrorsOut(t *testing.T) {
 			"X-Ray segment to OT traces conversion failed")
 	}, 10*time.Second, 5*time.Millisecond, "poller should log warning because consumer errored out")
 
-	obsreporttest.CheckReceiverTraces(t, receiverName, udppoller.Transport, 0, 1)
+	obsreporttest.CheckReceiverTraces(t, receiverID, udppoller.Transport, 0, 1)
 }
 
 func TestSegmentsConsumerErrorsOut(t *testing.T) {
@@ -184,9 +184,9 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	const receiverName = "TestSegmentsConsumerErrorsOut"
+	receiverID := config.MustIDFromString("TestSegmentsConsumerErrorsOut")
 
-	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverName,
+	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverID,
 		&mockConsumer{consumeErr: errors.New("can't consume traces")},
 		true)
 	defer rcvr.Shutdown(context.Background())
@@ -203,7 +203,7 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 			"Trace consumer errored out")
 	}, 10*time.Second, 5*time.Millisecond, "poller should log warning because consumer errored out")
 
-	obsreporttest.CheckReceiverTraces(t, receiverName, udppoller.Transport, 0, 1)
+	obsreporttest.CheckReceiverTraces(t, receiverID, udppoller.Transport, 0, 1)
 }
 
 func TestPollerCloseError(t *testing.T) {
@@ -211,7 +211,7 @@ func TestPollerCloseError(t *testing.T) {
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	_, rcvr, _ := createAndOptionallyStartReceiver(t, "TestPollerCloseError", nil, false)
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.MustIDFromString("TestPollerCloseError"), nil, false)
 	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
 	rcvr.(*xrayReceiver).poller = mPoller
 	rcvr.(*xrayReceiver).server = &mockProxy{}
@@ -224,7 +224,7 @@ func TestProxyCloseError(t *testing.T) {
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	_, rcvr, _ := createAndOptionallyStartReceiver(t, "TestPollerCloseError", nil, false)
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.MustIDFromString("TestPollerCloseError"), nil, false)
 	mProxy := &mockProxy{closeErr: errors.New("mockProxyCloseErr")}
 	rcvr.(*xrayReceiver).poller = &mockPoller{}
 	rcvr.(*xrayReceiver).server = mProxy
@@ -237,7 +237,7 @@ func TestBothPollerAndProxyCloseError(t *testing.T) {
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	_, rcvr, _ := createAndOptionallyStartReceiver(t, "TestBothPollerAndProxyCloseError", nil, false)
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.MustIDFromString("TestBothPollerAndProxyCloseError"), nil, false)
 	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
 	mProxy := &mockProxy{closeErr: errors.New("mockProxyCloseErr")}
 	rcvr.(*xrayReceiver).poller = mPoller
@@ -299,7 +299,7 @@ func (m *mockProxy) Close() error {
 
 func createAndOptionallyStartReceiver(
 	t *testing.T,
-	receiverName string,
+	receiverID config.ComponentID,
 	csu consumer.Traces,
 	start bool) (string, component.TracesReceiver, *observer.ObservedLogs) {
 	addr, err := findAvailableUDPAddress()
@@ -316,7 +316,7 @@ func createAndOptionallyStartReceiver(
 	logger, recorded := logSetup()
 	rcvr, err := newReceiver(
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.MustIDFromString(receiverName)),
+			ReceiverSettings: config.NewReceiverSettings(receiverID),
 			NetAddr: confignet.NetAddr{
 				Endpoint:  addr,
 				Transport: udppoller.Transport,

@@ -40,6 +40,24 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
+type testRoundTripper func(req *http.Request) *http.Response
+
+func (t testRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	return t(req), nil
+}
+
+func newTestClient(respCode int, respBody string) *http.Client {
+	return &http.Client{
+		Transport: testRoundTripper(func(req *http.Request) *http.Response {
+			return &http.Response{
+				StatusCode: respCode,
+				Body:       ioutil.NopCloser(bytes.NewBufferString(respBody)),
+				Header:     make(http.Header),
+			}
+		}),
+	}
+}
+
 func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 
 	doubleVal := 1234.5678
@@ -710,6 +728,39 @@ func Test_pushLogData_PostError(t *testing.T) {
 	require.Error(t, err)
 	assert.IsType(t, consumererror.Logs{}, err)
 	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
+}
+
+func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
+	splunkClient := client{
+		url: &url.URL{Scheme: "http", Host: "splunk"},
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+	}
+	logs := createLogData(1, 1, 1)
+
+	responseBody := `some error occurred`
+
+	// An HTTP client that returns status code 400 and response body responseBody.
+	splunkClient.client = newTestClient(400, responseBody)
+	// Sending logs using the client.
+	err := splunkClient.pushLogData(context.Background(), logs)
+	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
+	//require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
+	require.Contains(t, err.Error(), "HTTP/0.0 400")
+	// The returned error should contain the response body responseBody.
+	assert.Contains(t, err.Error(), responseBody)
+
+	// An HTTP client that returns some other status code other than 400 and response body responseBody.
+	splunkClient.client = newTestClient(500, responseBody)
+	// Sending logs using the client.
+	err = splunkClient.pushLogData(context.Background(), logs)
+	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
+	//require.False(t, consumererror.IsPermanent(err), "Expecting non-permanent error")
+	require.Contains(t, err.Error(), "HTTP 500")
+	// The returned error should not contain the response body responseBody.
+	assert.NotContains(t, err.Error(), responseBody)
 }
 
 func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
