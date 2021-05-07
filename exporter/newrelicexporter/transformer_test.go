@@ -443,6 +443,82 @@ func TestTransformSpan(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "with dropped attributes",
+			spanFunc: func() pdata.Span {
+				s := pdata.NewSpan()
+				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 8}))
+				s.SetName("with dropped attributes")
+				s.SetDroppedAttributesCount(2)
+				return s
+			},
+			want: telemetry.Span{
+				ID:        "0000000000000008",
+				TraceID:   "01010101010101010101010101010101",
+				Name:      "with dropped attributes",
+				Timestamp: time.Unix(0, 0).UTC(),
+				Attributes: map[string]interface{}{
+					droppedAttributesCountKey: uint32(2),
+				},
+				Events: nil,
+			},
+		},
+		{
+			name: "with dropped events",
+			spanFunc: func() pdata.Span {
+				s := pdata.NewSpan()
+				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 9}))
+				s.SetName("with dropped events")
+				s.SetDroppedEventsCount(3)
+				return s
+			},
+			want: telemetry.Span{
+				ID:        "0000000000000009",
+				TraceID:   "01010101010101010101010101010101",
+				Name:      "with dropped events",
+				Timestamp: time.Unix(0, 0).UTC(),
+				Attributes: map[string]interface{}{
+					droppedEventsCountKey: uint32(3),
+				},
+				Events: nil,
+			},
+		},
+		{
+			name: "with dropped attributes on events",
+			spanFunc: func() pdata.Span {
+				s := pdata.NewSpan()
+				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 10}))
+				s.SetName("with dropped attributes on events")
+
+				ev := pdata.NewSpanEventSlice()
+				ev.Resize(1)
+				event := ev.At(0)
+				event.SetName("this is the event name")
+				event.SetTimestamp(pdata.TimestampFromTime(now))
+				event.SetDroppedAttributesCount(1)
+				s.Events().Append(event)
+				return s
+			},
+			want: telemetry.Span{
+				ID:         "000000000000000a",
+				TraceID:    "01010101010101010101010101010101",
+				Name:       "with dropped attributes on events",
+				Timestamp:  time.Unix(0, 0).UTC(),
+				Attributes: map[string]interface{}{},
+				Events: []telemetry.Event{
+					{
+						EventType: "this is the event name",
+						Timestamp: now.UTC(),
+						Attributes: map[string]interface{}{
+							droppedAttributesCountKey: uint32(1),
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -842,6 +918,24 @@ func TestTransformer_Log(t *testing.T) {
 					"name":     "",
 					"trace.id": "01010101010101010101010101010101",
 					"span.id":  "0000000000000001",
+				},
+			},
+		},
+		{
+			name: "With dropped attribute count",
+			logFunc: func() pdata.LogRecord {
+				log := pdata.NewLogRecord()
+				timestamp := pdata.TimestampFromTime(time.Unix(0, 0).UTC())
+				log.SetTimestamp(timestamp)
+				log.SetDroppedAttributesCount(4)
+				return log
+			},
+			want: telemetry.Log{
+				Message:   "",
+				Timestamp: time.Unix(0, 0).UTC(),
+				Attributes: map[string]interface{}{
+					"name":                    "",
+					droppedAttributesCountKey: uint32(4),
 				},
 			},
 		},
