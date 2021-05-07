@@ -22,12 +22,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver/ecsmock"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver/internal/ecsmock"
 )
 
 func TestFetcher_GetAllTasks(t *testing.T) {
 	c := ecsmock.NewCluster()
-	f, err := NewTaskFetcher(TaskFetcherOptions{
+	f, err := newTaskFetcher(taskFetcherOptions{
 		Logger:      zap.NewExample(),
 		Cluster:     "not used",
 		Region:      "not used",

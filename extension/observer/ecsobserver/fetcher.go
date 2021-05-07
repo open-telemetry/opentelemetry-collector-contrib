@@ -24,19 +24,19 @@ import (
 	"go.uber.org/zap"
 )
 
-// ecsClient includes API required by TaskFetcher.
+// ecsClient includes API required by taskFetcher.
 type ecsClient interface {
 	ListTasksWithContext(ctx context.Context, input *ecs.ListTasksInput, opts ...request.Option) (*ecs.ListTasksOutput, error)
 	DescribeTasksWithContext(ctx context.Context, input *ecs.DescribeTasksInput, opts ...request.Option) (*ecs.DescribeTasksOutput, error)
 }
 
-type TaskFetcher struct {
+type taskFetcher struct {
 	logger  *zap.Logger
 	ecs     ecsClient
 	cluster string
 }
 
-type TaskFetcherOptions struct {
+type taskFetcherOptions struct {
 	Logger  *zap.Logger
 	Cluster string
 	Region  string
@@ -45,8 +45,8 @@ type TaskFetcherOptions struct {
 	ecsOverride ecsClient
 }
 
-func NewTaskFetcher(opts TaskFetcherOptions) (*TaskFetcher, error) {
-	fetcher := TaskFetcher{
+func newTaskFetcher(opts taskFetcherOptions) (*taskFetcher, error) {
+	fetcher := taskFetcher{
 		logger:  opts.Logger,
 		ecs:     opts.ecsOverride,
 		cluster: opts.Cluster,
@@ -55,12 +55,12 @@ func NewTaskFetcher(opts TaskFetcherOptions) (*TaskFetcher, error) {
 	if fetcher.ecs != nil {
 		return &fetcher, nil
 	}
-	panic("actual aws init logic not implemented")
+	return nil, fmt.Errorf("actual aws init logic not implemented")
 }
 
 // GetAllTasks get arns of all running tasks and describe those tasks.
 // There is no API to list task detail without arn so we need to call two APIs.
-func (f *TaskFetcher) GetAllTasks(ctx context.Context) ([]*ecs.Task, error) {
+func (f *taskFetcher) GetAllTasks(ctx context.Context) ([]*ecs.Task, error) {
 	svc := f.ecs
 	cluster := aws.String(f.cluster)
 	req := ecs.ListTasksInput{Cluster: cluster}
