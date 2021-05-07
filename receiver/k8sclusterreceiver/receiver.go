@@ -47,7 +47,7 @@ type kubernetesReceiver struct {
 
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
 	var c context.Context
-	c, kr.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, kr.config.ID().String(), transport))
+	c, kr.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, kr.config.ID(), transport))
 
 	exporters := host.GetExporters()
 	if err := kr.resourceWatcher.setupMetadataExporters(
@@ -101,7 +101,7 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 	mds := kr.resourceWatcher.dataCollector.CollectMetricData(now)
 	resourceMetrics := internaldata.OCSliceToMetrics(mds)
 
-	c := obsreport.StartMetricsReceiveOp(ctx, typeStr, transport)
+	c := obsreport.StartMetricsReceiveOp(ctx, kr.config.ID(), transport)
 
 	_, numPoints := resourceMetrics.MetricAndDataPointCount()
 

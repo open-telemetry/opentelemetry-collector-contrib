@@ -18,6 +18,7 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -31,6 +32,7 @@ var _ interval.Runnable = (*redisRunnable)(nil)
 // Runs intermittently, fetching info from Redis, creating metrics/datapoints,
 // and feeding them to a metricsConsumer.
 type redisRunnable struct {
+	id              config.ComponentID
 	ctx             context.Context
 	metricsConsumer consumer.Metrics
 	redisSvc        *redisSvc
@@ -42,12 +44,14 @@ type redisRunnable struct {
 
 func newRedisRunnable(
 	ctx context.Context,
+	id config.ComponentID,
 	client client,
 	serviceName string,
 	metricsConsumer consumer.Metrics,
 	logger *zap.Logger,
 ) *redisRunnable {
 	return &redisRunnable{
+		id:              id,
 		ctx:             ctx,
 		serviceName:     serviceName,
 		redisSvc:        newRedisSvc(client),
@@ -56,7 +60,7 @@ func newRedisRunnable(
 	}
 }
 
-// Builds a data structure of all of the keys, types, converters and such to
+// Setup builds a data structure of all of the keys, types, converters and such to
 // later extract data from Redis.
 func (r *redisRunnable) Setup() error {
 	r.redisMetrics = getDefaultRedisMetrics()
@@ -71,7 +75,7 @@ func (r *redisRunnable) Setup() error {
 func (r *redisRunnable) Run() error {
 	const dataFormat = "redis"
 	const transport = "http" // todo verify this
-	ctx := obsreport.StartMetricsReceiveOp(r.ctx, dataFormat, transport)
+	ctx := obsreport.StartMetricsReceiveOp(r.ctx, r.id, transport)
 
 	inf, err := r.redisSvc.info()
 	if err != nil {

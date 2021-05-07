@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -35,7 +36,7 @@ var _ interval.Runnable = (*runnable)(nil)
 
 type runnable struct {
 	ctx                   context.Context
-	receiverName          string
+	receiverID            config.ComponentID
 	statsProvider         *kubelet.StatsProvider
 	metadataProvider      *kubelet.MetadataProvider
 	consumer              consumer.Metrics
@@ -56,7 +57,7 @@ func newRunnable(
 ) *runnable {
 	return &runnable{
 		ctx:                   ctx,
-		receiverName:          rOptions.name,
+		receiverID:            rOptions.id,
 		consumer:              consumer,
 		restClient:            restClient,
 		logger:                logger,
@@ -97,8 +98,8 @@ func (r *runnable) Run() error {
 	metrics := internaldata.OCSliceToMetrics(mds)
 
 	var numPoints int
-	ctx := obsreport.ReceiverContext(r.ctx, r.receiverName, transport)
-	ctx = obsreport.StartMetricsReceiveOp(ctx, typeStr, transport)
+	ctx := obsreport.ReceiverContext(r.ctx, r.receiverID, transport)
+	ctx = obsreport.StartMetricsReceiveOp(ctx, r.receiverID, transport)
 	err = r.consumer.ConsumeMetrics(ctx, metrics)
 	if err != nil {
 		r.logger.Error("ConsumeMetricsData failed", zap.Error(err))

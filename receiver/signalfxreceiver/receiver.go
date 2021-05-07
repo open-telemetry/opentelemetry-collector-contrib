@@ -211,8 +211,8 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 		transport = "https"
 	}
 
-	ctx := obsreport.ReceiverContext(req.Context(), r.config.ID().String(), transport)
-	ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.ID().String(), transport)
+	ctx := obsreport.ReceiverContext(req.Context(), r.config.ID(), transport)
+	ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.ID(), transport)
 
 	if r.metricsConsumer == nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errMetricsNotConfigured, nil)
@@ -264,8 +264,8 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 		transport = "https"
 	}
 
-	ctx := obsreport.ReceiverContext(req.Context(), r.config.ID().String(), transport)
-	ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.ID().String(), transport)
+	ctx := obsreport.ReceiverContext(req.Context(), r.config.ID(), transport)
+	ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.ID(), transport)
 
 	if r.logsConsumer == nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errLogsNotConfigured, nil)

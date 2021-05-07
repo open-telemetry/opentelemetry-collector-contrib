@@ -21,6 +21,7 @@ import (
 	"net"
 	"sync"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
@@ -64,14 +65,14 @@ type RawSegment struct {
 // Config represents the configurations needed to
 // start the UDP poller
 type Config struct {
-	ReceiverInstanceName string
-	Transport            string
-	Endpoint             string
-	NumOfPollerToStart   int
+	ReceiverID         config.ComponentID
+	Transport          string
+	Endpoint           string
+	NumOfPollerToStart int
 }
 
 type poller struct {
-	receiverInstanceName string
+	receiverID           config.ComponentID
 	udpSock              socketconn.SocketConn
 	logger               *zap.Logger
 	wg                   sync.WaitGroup
@@ -106,12 +107,12 @@ func New(cfg *Config, logger *zap.Logger) (Poller, error) {
 		zap.String(Transport, addr.String()))
 
 	return &poller{
-		receiverInstanceName: cfg.ReceiverInstanceName,
-		udpSock:              sock,
-		logger:               logger,
-		maxPollerCount:       cfg.NumOfPollerToStart,
-		shutDown:             make(chan struct{}),
-		segChan:              make(chan RawSegment, segChanSize),
+		receiverID:     cfg.ReceiverID,
+		udpSock:        sock,
+		logger:         logger,
+		maxPollerCount: cfg.NumOfPollerToStart,
+		shutDown:       make(chan struct{}),
+		segChan:        make(chan RawSegment, segChanSize),
 	}, nil
 }
 
@@ -169,7 +170,7 @@ func (p *poller) poll() {
 		default:
 			ctx := obsreport.StartTraceDataReceiveOp(
 				p.receiverLongLivedCtx,
-				p.receiverInstanceName,
+				p.receiverID,
 				Transport,
 				obsreport.WithLongLivedCtx())
 
