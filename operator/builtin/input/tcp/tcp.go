@@ -36,9 +36,9 @@ const (
 	// TCP input
 	minBufferSize = 64 * 1024
 
-	// DefaultMaxBufferSize is the max buffer sized used
-	// if MaxBufferSize is not set
-	DefaultMaxBufferSize = 1024 * 1024
+	// DefaultMaxLogSize is the max buffer sized used
+	// if MaxLogSize is not set
+	DefaultMaxLogSize = 1024 * 1024
 )
 
 func init() {
@@ -49,6 +49,8 @@ func init() {
 func NewTCPInputConfig(operatorID string) *TCPInputConfig {
 	return &TCPInputConfig{
 		InputConfig: helper.NewInputConfig(operatorID, "tcp_input"),
+		Multiline:   helper.NewMultilineConfig(),
+		Encoding:    helper.NewEncodingConfig(),
 	}
 }
 
@@ -56,10 +58,12 @@ func NewTCPInputConfig(operatorID string) *TCPInputConfig {
 type TCPInputConfig struct {
 	helper.InputConfig `yaml:",inline"`
 
-	MaxBufferSize helper.ByteSize         `json:"max_buffer_size,omitempty" yaml:"max_buffer_size,omitempty"`
-	ListenAddress string                  `json:"listen_address,omitempty" yaml:"listen_address,omitempty"`
-	TLS           *helper.TLSServerConfig `json:"tls,omitempty" yaml:"tls,omitempty"`
-	AddAttributes bool                    `json:"add_attributes,omitempty" yaml:"add_attributes,omitempty"`
+	MaxLogSize    helper.ByteSize         `mapstructure:"max_log_size,omitempty"          json:"max_log_size,omitempty"         yaml:"max_log_size,omitempty"`
+	ListenAddress string                  `mapstructure:"listen_address,omitempty"        json:"listen_address,omitempty"       yaml:"listen_address,omitempty"`
+	TLS           *helper.TLSServerConfig `mapstructure:"tls,omitempty"                   json:"tls,omitempty"                  yaml:"tls,omitempty"`
+	AddAttributes bool                    `mapstructure:"add_attributes,omitempty"        json:"add_attributes,omitempty"       yaml:"add_attributes,omitempty"`
+	Encoding      helper.EncodingConfig   `mapstructure:",squash,omitempty"               json:",inline,omitempty"              yaml:",inline,omitempty"`
+	Multiline     helper.MultilineConfig  `mapstructure:"multiline,omitempty"             json:"multiline,omitempty"            yaml:"multiline,omitempty"`
 }
 
 // Build will build a tcp input operator.
@@ -69,14 +73,14 @@ func (c TCPInputConfig) Build(context operator.BuildContext) ([]operator.Operato
 		return nil, err
 	}
 
-	// If MaxBufferSize not set, set sane default in order to remain
+	// If MaxLogSize not set, set sane default in order to remain
 	// backwards compatible with existing plugins and configurations
-	if c.MaxBufferSize == 0 {
-		c.MaxBufferSize = DefaultMaxBufferSize
+	if c.MaxLogSize == 0 {
+		c.MaxLogSize = DefaultMaxLogSize
 	}
 
-	if c.MaxBufferSize < minBufferSize {
-		return nil, fmt.Errorf("invalid value for parameter 'max_buffer_size', must be equal to or greater than %d bytes", minBufferSize)
+	if c.MaxLogSize < minBufferSize {
+		return nil, fmt.Errorf("invalid value for parameter 'max_log_size', must be equal to or greater than %d bytes", minBufferSize)
 	}
 
 	if c.ListenAddress == "" {
@@ -88,11 +92,23 @@ func (c TCPInputConfig) Build(context operator.BuildContext) ([]operator.Operato
 		return nil, fmt.Errorf("failed to resolve listen_address: %s", err)
 	}
 
+	encoding, err := c.Encoding.Build(context)
+	if err != nil {
+		return nil, err
+	}
+
+	splitFunc, err := c.Multiline.Build(context, encoding.Encoding, true)
+	if err != nil {
+		return nil, err
+	}
+
 	tcpInput := &TCPInput{
 		InputOperator: inputOperator,
 		address:       c.ListenAddress,
-		maxBufferSize: int(c.MaxBufferSize),
+		MaxLogSize:    int(c.MaxLogSize),
 		addAttributes: c.AddAttributes,
+		encoding:      encoding,
+		splitFunc:     splitFunc,
 	}
 
 	if c.TLS != nil {
@@ -109,13 +125,16 @@ func (c TCPInputConfig) Build(context operator.BuildContext) ([]operator.Operato
 type TCPInput struct {
 	helper.InputOperator
 	address       string
-	maxBufferSize int
+	MaxLogSize    int
 	addAttributes bool
 
 	listener net.Listener
 	cancel   context.CancelFunc
 	wg       sync.WaitGroup
 	tls      *tls.Config
+
+	encoding  helper.Encoding
+	splitFunc bufio.SplitFunc
 }
 
 // Start will start listening for log entries over tcp.
@@ -203,9 +222,18 @@ func (t *TCPInput) goHandleMessages(ctx context.Context, conn net.Conn, cancel c
 		// Initial buffer size is 64k
 		buf := make([]byte, 0, 64*1024)
 		scanner := bufio.NewScanner(conn)
-		scanner.Buffer(buf, t.maxBufferSize*1024)
+		scanner.Buffer(buf, t.MaxLogSize*1024)
+
+		scanner.Split(t.splitFunc)
+
 		for scanner.Scan() {
-			entry, err := t.NewEntry(scanner.Text())
+			decoded, err := t.encoding.Decode(scanner.Bytes())
+			if err != nil {
+				t.Errorw("Failed to decode data", zap.Error(err))
+				continue
+			}
+
+			entry, err := t.NewEntry(decoded)
 			if err != nil {
 				t.Errorw("Failed to create entry", zap.Error(err))
 				continue

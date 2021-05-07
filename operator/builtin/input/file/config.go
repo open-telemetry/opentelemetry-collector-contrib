@@ -15,16 +15,10 @@
 package file
 
 import (
-	"bufio"
 	"fmt"
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/bmatcuk/doublestar/v3"
-	"golang.org/x/text/encoding"
-	"golang.org/x/text/encoding/ianaindex"
-	"golang.org/x/text/encoding/unicode"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
@@ -50,7 +44,7 @@ func NewInputConfig(operatorID string) *InputConfig {
 		StartAt:            "end",
 		MaxLogSize:         defaultMaxLogSize,
 		MaxConcurrentFiles: defaultMaxConcurrentFiles,
-		Encoding:           "nop",
+		Encoding:           helper.NewEncodingConfig(),
 	}
 }
 
@@ -61,21 +55,15 @@ type InputConfig struct {
 	Include []string `mapstructure:"include,omitempty" json:"include,omitempty" yaml:"include,omitempty"`
 	Exclude []string `mapstructure:"exclude,omitempty" json:"exclude,omitempty" yaml:"exclude,omitempty"`
 
-	PollInterval       helper.Duration  `mapstructure:"poll_interval,omitempty"         json:"poll_interval,omitempty"        yaml:"poll_interval,omitempty"`
-	Multiline          *MultilineConfig `mapstructure:"multiline,omitempty"             json:"multiline,omitempty"            yaml:"multiline,omitempty"`
-	IncludeFileName    bool             `mapstructure:"include_file_name,omitempty"     json:"include_file_name,omitempty"    yaml:"include_file_name,omitempty"`
-	IncludeFilePath    bool             `mapstructure:"include_file_path,omitempty"     json:"include_file_path,omitempty"    yaml:"include_file_path,omitempty"`
-	StartAt            string           `mapstructure:"start_at,omitempty"              json:"start_at,omitempty"             yaml:"start_at,omitempty"`
-	FingerprintSize    helper.ByteSize  `mapstructure:"fingerprint_size,omitempty"      json:"fingerprint_size,omitempty"     yaml:"fingerprint_size,omitempty"`
-	MaxLogSize         helper.ByteSize  `mapstructure:"max_log_size,omitempty"          json:"max_log_size,omitempty"         yaml:"max_log_size,omitempty"`
-	MaxConcurrentFiles int              `mapstructure:"max_concurrent_files,omitempty"  json:"max_concurrent_files,omitempty" yaml:"max_concurrent_files,omitempty"`
-	Encoding           string           `mapstructure:"encoding,omitempty"              json:"encoding,omitempty"             yaml:"encoding,omitempty"`
-}
-
-// MultilineConfig is the configuration a multiline operation
-type MultilineConfig struct {
-	LineStartPattern string `mapstructure:"line_start_pattern"  json:"line_start_pattern" yaml:"line_start_pattern"`
-	LineEndPattern   string `mapstructure:"line_end_pattern"    json:"line_end_pattern"   yaml:"line_end_pattern"`
+	PollInterval       helper.Duration        `mapstructure:"poll_interval,omitempty"         json:"poll_interval,omitempty"        yaml:"poll_interval,omitempty"`
+	Multiline          helper.MultilineConfig `mapstructure:"multiline,omitempty"             json:"multiline,omitempty"            yaml:"multiline,omitempty"`
+	IncludeFileName    bool                   `mapstructure:"include_file_name,omitempty"     json:"include_file_name,omitempty"    yaml:"include_file_name,omitempty"`
+	IncludeFilePath    bool                   `mapstructure:"include_file_path,omitempty"     json:"include_file_path,omitempty"    yaml:"include_file_path,omitempty"`
+	StartAt            string                 `mapstructure:"start_at,omitempty"              json:"start_at,omitempty"             yaml:"start_at,omitempty"`
+	FingerprintSize    helper.ByteSize        `mapstructure:"fingerprint_size,omitempty"      json:"fingerprint_size,omitempty"     yaml:"fingerprint_size,omitempty"`
+	MaxLogSize         helper.ByteSize        `mapstructure:"max_log_size,omitempty"          json:"max_log_size,omitempty"         yaml:"max_log_size,omitempty"`
+	MaxConcurrentFiles int                    `mapstructure:"max_concurrent_files,omitempty"  json:"max_concurrent_files,omitempty" yaml:"max_concurrent_files,omitempty"`
+	Encoding           helper.EncodingConfig  `mapstructure:",squash,omitempty"               json:",inline,omitempty"              yaml:",inline,omitempty"`
 }
 
 // Build will build a file input operator from the supplied configuration
@@ -119,12 +107,12 @@ func (c InputConfig) Build(context operator.BuildContext) ([]operator.Operator, 
 		return nil, fmt.Errorf("`fingerprint_size` must be at least %d bytes", minFingerprintSize)
 	}
 
-	encoding, err := lookupEncoding(c.Encoding)
+	encoding, err := c.Encoding.Build(context)
 	if err != nil {
 		return nil, err
 	}
 
-	splitFunc, err := c.getSplitFunc(encoding)
+	splitFunc, err := c.Multiline.Build(context, encoding.Encoding, false)
 	if err != nil {
 		return nil, err
 	}
@@ -170,58 +158,4 @@ func (c InputConfig) Build(context operator.BuildContext) ([]operator.Operator, 
 	}
 
 	return []operator.Operator{op}, nil
-}
-
-var encodingOverrides = map[string]encoding.Encoding{
-	"utf-16":   unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM),
-	"utf16":    unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM),
-	"utf8":     unicode.UTF8,
-	"ascii":    unicode.UTF8,
-	"us-ascii": unicode.UTF8,
-	"nop":      encoding.Nop,
-	"":         encoding.Nop,
-}
-
-func lookupEncoding(enc string) (encoding.Encoding, error) {
-	if encoding, ok := encodingOverrides[strings.ToLower(enc)]; ok {
-		return encoding, nil
-	}
-	encoding, err := ianaindex.IANA.Encoding(enc)
-	if err != nil {
-		return nil, fmt.Errorf("unsupported encoding '%s'", enc)
-	}
-	if encoding == nil {
-		return nil, fmt.Errorf("no charmap defined for encoding '%s'", enc)
-	}
-	return encoding, nil
-}
-
-// getSplitFunc will return the split function associated the configured mode.
-func (c InputConfig) getSplitFunc(encoding encoding.Encoding) (bufio.SplitFunc, error) {
-	if c.Multiline == nil {
-		return NewNewlineSplitFunc(encoding)
-	}
-	endPattern := c.Multiline.LineEndPattern
-	startPattern := c.Multiline.LineStartPattern
-
-	switch {
-	case endPattern != "" && startPattern != "":
-		return nil, fmt.Errorf("only one of line_start_pattern or line_end_pattern can be set")
-	case endPattern == "" && startPattern == "":
-		return nil, fmt.Errorf("one of line_start_pattern or line_end_pattern must be set")
-	case endPattern != "":
-		re, err := regexp.Compile("(?m)" + c.Multiline.LineEndPattern)
-		if err != nil {
-			return nil, fmt.Errorf("compile line end regex: %s", err)
-		}
-		return NewLineEndSplitFunc(re), nil
-	case startPattern != "":
-		re, err := regexp.Compile("(?m)" + c.Multiline.LineStartPattern)
-		if err != nil {
-			return nil, fmt.Errorf("compile line start regex: %s", err)
-		}
-		return NewLineStartSplitFunc(re), nil
-	default:
-		return nil, fmt.Errorf("unreachable")
-	}
 }

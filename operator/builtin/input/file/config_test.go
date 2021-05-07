@@ -387,7 +387,7 @@ func TestConfig(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *InputConfig {
 				cfg := defaultCfg()
-				newMulti := new(MultilineConfig)
+				newMulti := helper.MultilineConfig{}
 				newMulti.LineStartPattern = "Start"
 				cfg.Multiline = newMulti
 				return cfg
@@ -398,7 +398,7 @@ func TestConfig(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *InputConfig {
 				cfg := defaultCfg()
-				newMulti := new(MultilineConfig)
+				newMulti := helper.MultilineConfig{}
 				newMulti.LineStartPattern = "%"
 				cfg.Multiline = newMulti
 				return cfg
@@ -409,7 +409,7 @@ func TestConfig(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *InputConfig {
 				cfg := defaultCfg()
-				newMulti := new(MultilineConfig)
+				newMulti := helper.MultilineConfig{}
 				newMulti.LineEndPattern = "Start"
 				cfg.Multiline = newMulti
 				return cfg
@@ -420,7 +420,7 @@ func TestConfig(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *InputConfig {
 				cfg := defaultCfg()
-				newMulti := new(MultilineConfig)
+				newMulti := helper.MultilineConfig{}
 				newMulti.LineEndPattern = "%"
 				cfg.Multiline = newMulti
 				return cfg
@@ -490,7 +490,7 @@ func TestConfig(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *InputConfig {
 				cfg := defaultCfg()
-				cfg.Encoding = "utf-16le"
+				cfg.Encoding = helper.EncodingConfig{Encoding: "utf-16le"}
 				return cfg
 			}(),
 		},
@@ -499,7 +499,7 @@ func TestConfig(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *InputConfig {
 				cfg := defaultCfg()
-				cfg.Encoding = "UTF-16lE"
+				cfg.Encoding = helper.EncodingConfig{Encoding: "UTF-16lE"}
 				return cfg
 			}(),
 		},
@@ -521,9 +521,12 @@ func NewTestInputConfig() *InputConfig {
 	cfg.WriteTo = entry.NewBodyField([]string{}...)
 	cfg.Include = []string{"i1", "i2"}
 	cfg.Exclude = []string{"e1", "e2"}
-	cfg.Multiline = &MultilineConfig{"start", "end"}
+	cfg.Multiline = helper.MultilineConfig{
+		LineStartPattern: "start",
+		LineEndPattern:   "end",
+	}
 	cfg.FingerprintSize = 1024
-	cfg.Encoding = "utf16"
+	cfg.Encoding = helper.EncodingConfig{Encoding: "utf16"}
 	return cfg
 }
 
