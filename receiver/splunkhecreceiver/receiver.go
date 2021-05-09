@@ -194,9 +194,9 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		transport = "https"
 	}
 
-	ctx := obsreport.ReceiverContext(req.Context(), r.config.ID().String(), transport)
+	ctx := obsreport.ReceiverContext(req.Context(), r.config.ID(), transport)
 	if r.logsConsumer == nil {
-		ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.ID().String(), transport)
+		ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.ID(), transport)
 	}
 	reqPath := req.URL.Path
 	if !r.config.pathGlob.Match(reqPath) {

@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 )
@@ -26,7 +27,7 @@ import (
 func TestRedisRunnable(t *testing.T) {
 	consumer := new(consumertest.MetricsSink)
 	logger, _ := zap.NewDevelopment()
-	runner := newRedisRunnable(context.Background(), newFakeClient(), "", consumer, logger)
+	runner := newRedisRunnable(context.Background(), config.NewID(typeStr), newFakeClient(), "", consumer, logger)
 	err := runner.Setup()
 	require.Nil(t, err)
 	err = runner.Run()

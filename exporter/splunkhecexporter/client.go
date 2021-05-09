@@ -113,7 +113,7 @@ func (c *client) sendSplunkEvents(ctx context.Context, splunkEvents []*splunk.Ev
 	return c.postEvents(ctx, body, compressed)
 }
 
-func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (err error) {
+func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) error {
 	c.wg.Add(1)
 	defer c.wg.Done()
 
@@ -151,7 +151,7 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (err error) {
 // pushLogDataInBatches sends batches of Splunk events in JSON format.
 // The batch content length is restricted to MaxContentLengthLogs.
 // ld log records are parsed to Splunk events.
-func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send func(context.Context, *bytes.Buffer) error) (err error) {
+func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send func(context.Context, *bytes.Buffer) error) error {
 	// Length of retained bytes in buffer after truncation.
 	var bufLen int
 	// Buffer capacity.
@@ -186,7 +186,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 				// Parsing log record to Splunk event.
 				event := mapLogRecordToSplunkEvent(res, logs.At(k), c.config, c.logger)
 				// JSON encoding event and writing to buffer.
-				if err = encoder.Encode(event); err != nil {
+				if err := encoder.Encode(event); err != nil {
 					permanentErrors = append(permanentErrors, consumererror.Permanent(fmt.Errorf("dropped log event: %v, error: %v", event, err)))
 					continue
 				}
@@ -214,7 +214,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 				// Truncating buffer at tracked length below capacity and sending.
 				buf.Truncate(bufLen)
 				if buf.Len() > 0 {
-					if err = send(ctx, buf); err != nil {
+					if err := send(ctx, buf); err != nil {
 						return consumererror.NewLogs(err, *subLogs(&ld, bufFront))
 					}
 				}
@@ -229,7 +229,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 	}
 
 	if buf.Len() > 0 {
-		if err = send(ctx, buf); err != nil {
+		if err := send(ctx, buf); err != nil {
 			return consumererror.NewLogs(err, *subLogs(&ld, bufFront))
 		}
 	}
@@ -255,11 +255,13 @@ func (c *client) postEvents(ctx context.Context, events io.Reader, compressed bo
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
+
+	err = splunk.HandleHTTPCode(resp)
 
 	io.Copy(ioutil.Discard, resp.Body)
-	resp.Body.Close()
 
-	return splunk.HandleHTTPCode(resp)
+	return err
 }
 
 // subLogs returns a subset of `ld` starting from index `from` to the end.

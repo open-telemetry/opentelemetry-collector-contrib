@@ -182,7 +182,7 @@ func TestGetReceiverOptions(t *testing.T) {
 				},
 			},
 			want: &receiverOptions{
-				name: typeStr,
+				id: config.NewID(typeStr),
 				extraMetadataLabels: []kubelet.MetadataLabel{
 					kubelet.MetadataLabelContainerID,
 				},

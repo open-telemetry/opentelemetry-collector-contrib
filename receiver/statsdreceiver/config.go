@@ -67,7 +67,7 @@ func (c *Config) validate() error {
 	}
 
 	if TimerHistogramMappingMissingObjectName {
-		errors = append(errors, fmt.Errorf("must specify object name for all TimerHistogramMappings"))
+		errors = append(errors, fmt.Errorf("must specify object id for all TimerHistogramMappings"))
 	}
 
 	return consumererror.Combine(errors)
