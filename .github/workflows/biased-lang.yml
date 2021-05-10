@@ -12,5 +12,3 @@ jobs:
       - id: pink-panther
         uses: splunk/pink-panther@main
         continue-on-error: true
-        with:
-          token: ${{secrets.GITHUB_TOKEN}}
