@@ -57,6 +57,10 @@ transforms:
   - include: <metric_name>
     # match_type specifies whether the include name should be used as a strict match or regexp match, default = strict
     match_type: {strict, regexp}
+
+    # experimental_match_labels specifies the label set against which the metric filter will work. If experimental_match_labels is specified, transforms will only be applied to those metrics which 
+    # have the provided metric label values. This works for both strict and regexp match_type. This is an experimental feature.
+    experimental_match_labels: {<label1>: <label_value1>, <label2>: <label_value2>}
     
     # SPECIFY THE ACTION TO TAKE ON THE MATCHED METRIC(S)
     
@@ -105,6 +109,30 @@ transforms:
 include: host.cpu.usage
 action: insert
 new_name: host.cpu.utilization
+operations:
+  ...
+```
+
+### Create a new metric from an existing metric with matching label values
+```yaml
+# create host.cpu.utilization from host.cpu.usage where we have metric label "container=my_container"
+include: host.cpu.usage
+action: insert
+new_name: host.cpu.utilization
+match_type: strict
+experimental_match_labels: {"container": "my_container"}
+operations:
+  ...
+```
+
+### Create a new metric from an existing metric with matching label values with regexp
+```yaml
+# create host.cpu.utilization from host.cpu.usage where we have metric label pod with non-empty values
+include: host.cpu.usage
+action: insert
+new_name: host.cpu.utilization
+match_type: regexp
+experimental_match_labels: {"pod": "(.|\\s)*\\S(.|\\s)*"}
 operations:
   ...
 ```

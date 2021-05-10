@@ -71,6 +71,28 @@ func TestLoadingFullConfig(t *testing.T) {
 					},
 					{
 						MetricIncludeFilter: FilterConfig{
+							Include:   "new_name",
+							MatchType: "strict",
+							MatchLabels: map[string]string{
+								"my_label": "my_value",
+							},
+						},
+						Action:  "insert",
+						NewName: "new_name_copy_1",
+					},
+					{
+						MetricIncludeFilter: FilterConfig{
+							Include:   "new_name",
+							MatchType: "regexp",
+							MatchLabels: map[string]string{
+								"my_label": ".*label",
+							},
+						},
+						Action:  "insert",
+						NewName: "new_name_copy_2",
+					},
+					{
+						MetricIncludeFilter: FilterConfig{
 							Include:   "name2",
 							MatchType: "",
 						},

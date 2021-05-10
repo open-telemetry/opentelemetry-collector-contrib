@@ -180,9 +180,9 @@ func buildHelperConfig(config *Config, version string) []internalTransform {
 func createFilter(filterConfig FilterConfig) internalFilter {
 	switch filterConfig.MatchType {
 	case StrictMatchType:
-		return internalFilterStrict{include: filterConfig.Include}
+		return internalFilterStrict{include: filterConfig.Include, matchLabels: filterConfig.MatchLabels}
 	case RegexpMatchType:
-		return internalFilterRegexp{include: regexp.MustCompile(filterConfig.Include)}
+		return internalFilterRegexp{include: regexp.MustCompile(filterConfig.Include), matchLabels: getFilterRegexpMap(filterConfig.MatchLabels)}
 	}
 
 	return nil
@@ -206,4 +206,13 @@ func sliceToSet(slice []string) map[string]bool {
 		set[s] = true
 	}
 	return set
+}
+
+func getFilterRegexpMap(strMap map[string]string) map[string]*regexp.Regexp {
+	regexpMap := make(map[string]*regexp.Regexp)
+
+	for k, value := range strMap {
+		regexpMap[k] = regexp.MustCompile(value)
+	}
+	return regexpMap
 }
