@@ -5,7 +5,7 @@ Supported pipeline types: metrics
 
 ## Description
 
-The metrics generation processor (`metricsgenerationprocessor`) can be used to create new metrics using existing metrics following a given rule. Currently it supports following two approaches for creating a new metric.
+The metrics generation processor (`experimental_metricsgenerationprocessor`) can be used to create new metrics using existing metrics following a given rule. Currently it supports following two approaches for creating a new metric.
 
 1. It can create a new metric from two existing metrics by applying one of the folliwing arithmetic operations: add, subtract, multiply, divide and percent. One use case is to calculate the `pod.memory.utilization` metric like the following equation-
 `pod.memory.utilization` = (`pod.memory.usage.bytes` / `node.memory.limit`)
