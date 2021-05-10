@@ -211,7 +211,7 @@ func (f BodyField) MarshalYAML() (interface{}, error) {
 func fromJSONDot(value string) BodyField {
 	keys := strings.Split(value, ".")
 
-	if keys[0] == "$" || keys[0] == bodyPrefix {
+	if keys[0] == "$" || keys[0] == BodyPrefix {
 		keys = keys[1:]
 	}
 
@@ -221,7 +221,7 @@ func fromJSONDot(value string) BodyField {
 // toJSONDot returns the JSON dot notation for a field.
 func toJSONDot(field BodyField) string {
 	if field.isRoot() {
-		return bodyPrefix
+		return BodyPrefix
 	}
 
 	containsDots := false
@@ -233,7 +233,7 @@ func toJSONDot(field BodyField) string {
 
 	var b strings.Builder
 	if containsDots {
-		b.WriteString(bodyPrefix)
+		b.WriteString(BodyPrefix)
 		for _, key := range field.Keys {
 			b.WriteString(`['`)
 			b.WriteString(key)

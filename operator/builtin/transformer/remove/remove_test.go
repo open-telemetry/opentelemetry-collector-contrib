@@ -33,6 +33,7 @@ type testCase struct {
 	expectErr bool
 }
 
+// Test building and processing a given remove config
 func TestProcessAndBuild(t *testing.T) {
 	newTestEntry := func() *entry.Entry {
 		e := entry.New()
@@ -51,7 +52,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"remove_one",
 			func() *RemoveOperatorConfig {
 				cfg := defaultCfg()
-				cfg.Field = entry.NewBodyField("key")
+				cfg.Field = newBodyField("key")
 				return cfg
 			}(),
 			newTestEntry,
@@ -70,7 +71,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"remove_nestedkey",
 			func() *RemoveOperatorConfig {
 				cfg := defaultCfg()
-				cfg.Field = entry.NewBodyField("nested", "nestedkey")
+				cfg.Field = newBodyField("nested", "nestedkey")
 				return cfg
 			}(),
 			newTestEntry,
@@ -88,7 +89,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"remove_obj",
 			func() *RemoveOperatorConfig {
 				cfg := defaultCfg()
-				cfg.Field = entry.NewBodyField("nested")
+				cfg.Field = newBodyField("nested")
 				return cfg
 			}(),
 			newTestEntry,
@@ -105,7 +106,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"remove_single_attribute",
 			func() *RemoveOperatorConfig {
 				cfg := defaultCfg()
-				cfg.Field = entry.NewAttributeField("key")
+				cfg.Field = newAttributeField("key")
 				return cfg
 			}(),
 			func() *entry.Entry {
@@ -126,7 +127,7 @@ func TestProcessAndBuild(t *testing.T) {
 			"remove_single_resource",
 			func() *RemoveOperatorConfig {
 				cfg := defaultCfg()
-				cfg.Field = entry.NewResourceField("key")
+				cfg.Field = newResourceField("key")
 				return cfg
 			}(),
 			func() *entry.Entry {
@@ -139,6 +140,63 @@ func TestProcessAndBuild(t *testing.T) {
 			func() *entry.Entry {
 				e := newTestEntry()
 				e.Resource = map[string]string{}
+				return e
+			},
+			false,
+		},
+		{
+			"remove_body",
+			func() *RemoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.Field.Field = entry.NewBodyField()
+				return cfg
+			}(),
+			newTestEntry,
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Body = nil
+				return e
+			},
+			false,
+		},
+		{
+			"remove_resource",
+			func() *RemoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.Field.allResource = true
+				return cfg
+			}(),
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Resource = map[string]string{
+					"key": "val",
+				}
+				return e
+			},
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Resource = nil
+				return e
+			},
+			false,
+		},
+		{
+			"remove_attributes",
+			func() *RemoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.Field.allAttributes = true
+				return cfg
+			}(),
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Attributes = map[string]string{
+					"key": "val",
+				}
+				return e
+			},
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Attributes = nil
 				return e
 			},
 			false,

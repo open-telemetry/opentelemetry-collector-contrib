@@ -234,7 +234,7 @@ func TestFieldFromString(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			f, err := fieldFromString(tc.input)
+			f, err := NewField(tc.input)
 			if tc.expectedError {
 				require.Error(t, err)
 				return
