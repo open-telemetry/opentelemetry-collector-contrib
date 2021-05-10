@@ -141,7 +141,7 @@ func TestResourceMapper(t *testing.T) {
 			},
 			// Resource without matching config should be converted via default implementation
 			wantResource: &monitoredres.MonitoredResource{
-				Type: "global",
+				Type: "generic_task",
 				// All labels are transformed by default function
 				Labels: map[string]string{
 					"project_id": "123",
@@ -165,7 +165,7 @@ func TestResourceMapper(t *testing.T) {
 				},
 			},
 			wantResource: &monitoredres.MonitoredResource{
-				Type: "global",
+				Type: "generic_task",
 				// All labels are transformed by default function
 				Labels: map[string]string{
 					"project_id": "123",
