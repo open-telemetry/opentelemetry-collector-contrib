@@ -619,7 +619,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 			md := tt.metricsDataFn()
 			gotMetrics, gotNumDroppedTimeSeries := metricDataToSplunk(logger, md, &Config{})
 			assert.Equal(t, tt.wantNumDroppedTimeseries, gotNumDroppedTimeSeries)
-			assert.Equal(t, len(gotMetrics), len(tt.wantSplunkMetrics))
 			for i, want := range tt.wantSplunkMetrics {
 				assert.Equal(t, want, gotMetrics[i])
 			}
