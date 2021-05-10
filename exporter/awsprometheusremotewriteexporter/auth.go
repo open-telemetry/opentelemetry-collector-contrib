@@ -36,10 +36,11 @@ const defaultAMPSigV4Service = "aps"
 
 // signingRoundTripper is a Custom RoundTripper that performs AWS Sig V4.
 type signingRoundTripper struct {
-	transport http.RoundTripper
-	signer    *v4.Signer
-	region    string
-	service   string
+	transport   http.RoundTripper
+	signer      *v4.Signer
+	region      string
+	service     string
+	runtimeInfo string
 }
 
 func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -57,6 +58,17 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 
 	// Clone request to ensure thread safety.
 	req2 := cloneRequest(req)
+
+	// Add the runtime information to the User-Agent header of the request
+	ua := req2.Header.Get("User-Agent")
+	if len(ua) > 0 {
+		ua = ua + " " + si.runtimeInfo
+	} else {
+		ua = si.runtimeInfo
+	}
+	req2.Header.Set("User-Agent", ua)
+
+	// Sign the request
 	_, err = si.signer.Sign(req2, body, si.service, si.region, time.Now())
 	if err != nil {
 		return nil, err
@@ -71,7 +83,7 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	return resp, err
 }
 
-func newSigningRoundTripper(cfg *Config, next http.RoundTripper) (http.RoundTripper, error) {
+func newSigningRoundTripper(cfg *Config, next http.RoundTripper, runtimeInfo string) (http.RoundTripper, error) {
 	auth := cfg.AuthConfig
 	if auth.Region == "" {
 		region, err := parseEndpointRegion(cfg.Config.HTTPClientSettings.Endpoint)
@@ -88,7 +100,7 @@ func newSigningRoundTripper(cfg *Config, next http.RoundTripper) (http.RoundTrip
 	if err != nil {
 		return next, err
 	}
-	return newSigningRoundTripperWithCredentials(auth, creds, next)
+	return newSigningRoundTripperWithCredentials(auth, creds, next, runtimeInfo)
 }
 
 func getCredsFromConfig(auth AuthConfig) (*credentials.Credentials, error) {
@@ -122,16 +134,17 @@ func parseEndpointRegion(endpoint string) (region string, err error) {
 	return p[1], nil
 }
 
-func newSigningRoundTripperWithCredentials(auth AuthConfig, creds *credentials.Credentials, next http.RoundTripper) (http.RoundTripper, error) {
+func newSigningRoundTripperWithCredentials(auth AuthConfig, creds *credentials.Credentials, next http.RoundTripper, runtimeInfo string) (http.RoundTripper, error) {
 	if creds == nil {
 		return nil, errors.New("no AWS credentials exist")
 	}
 	signer := v4.NewSigner(creds)
 	rt := signingRoundTripper{
-		transport: next,
-		signer:    signer,
-		region:    auth.Region,
-		service:   auth.Service,
+		transport:   next,
+		signer:      signer,
+		region:      auth.Region,
+		service:     auth.Service,
+		runtimeInfo: runtimeInfo,
 	}
 	return &rt, nil
 }
