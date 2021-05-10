@@ -23,8 +23,8 @@ import (
 type storage interface {
 	// createOrAppend will check whether the given trace ID is already in the storage and
 	// will either append the given spans to the existing record, or create a new trace with
-	// the given resource spans
-	createOrAppend(pdata.TraceID, pdata.ResourceSpans) error
+	// the given spans from trace
+	createOrAppend(pdata.TraceID, pdata.Traces) error
 
 	// get will retrieve the trace based on the given trace ID, returning nil in case a trace
 	// cannot be found

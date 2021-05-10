@@ -40,16 +40,18 @@ func newMemoryStorage() *memoryStorage {
 	}
 }
 
-func (st *memoryStorage) createOrAppend(traceID pdata.TraceID, rs pdata.ResourceSpans) error {
+func (st *memoryStorage) createOrAppend(traceID pdata.TraceID, td pdata.Traces) error {
 	st.Lock()
 	defer st.Unlock()
 
 	// getting zero value is fine
 	content := st.content[traceID]
 
-	newRS := pdata.NewResourceSpans()
-	rs.CopyTo(newRS)
-	content = append(content, newRS)
+	newRss := pdata.NewResourceSpansSlice()
+	td.ResourceSpans().CopyTo(newRss)
+	for i := 0; i < newRss.Len(); i++ {
+		content = append(content, newRss.At(i))
+	}
 	st.content[traceID] = content
 
 	return nil

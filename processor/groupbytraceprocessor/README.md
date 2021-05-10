@@ -41,7 +41,7 @@ The following metrics are recorded by this processor:
 
 * `otelcol_processor_groupbytrace_conf_num_traces` represents the maximum number of traces that can be kept by the internal storage. This value comes from the processor's configuration and will never change over the lifecycle of the processor.
 * `otelcol_processor_groupbytrace_event_latency_bucket`, with the following `event` tag values:
-  * `onBatchReceived` represents the number of batches the processor has received from the previous components
+  * `onTraceReceived` represents the number of traces' parts the processor has received from the previous components
   * `onTraceExpired` represents the number of traces that finished waiting in memory for spans to arrive
   * `onTraceReleased` represents the number of traces that have been marked as released to the next component
   * `onTraceRemoved` represents the number of traces that have been marked for removal from the internal storage
