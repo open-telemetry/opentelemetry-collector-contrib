@@ -14,7 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#473](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/473))
 - Distros can now implement `load_instrumentor(EntryPoint)` method to customize instrumentor
   loading behaviour.
-  ([#480](https://github.com/open-telemetry/opentelemetry-python/pull/480))
+  ([#480](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/480))
+- Fix entrypoint for ottrace propagator
+  ([#492](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/492))
 
 ### Added
 - Move `opentelemetry-instrumentation` from core repository
