@@ -26,7 +26,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "metricsgeneration"
+	typeStr = "experimental_metricsgeneration"
 )
 
 var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: true}

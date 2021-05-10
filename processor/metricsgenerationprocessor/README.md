@@ -18,8 +18,8 @@ match the given metric names and apply the specified operation to those metrics.
 
 ```yaml
 processors:
-    # processor name: metricsgeneration
-    metricsgeneration:
+    # processor name: experimental_metricsgeneration
+    experimental_metricsgeneration:
 
         # specify the metric generation rules
         rules:

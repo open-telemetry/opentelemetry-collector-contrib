@@ -33,7 +33,7 @@ import (
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	pType := factory.Type()
-	assert.Equal(t, pType, config.Type("metricsgeneration"))
+	assert.Equal(t, pType, config.Type("experimental_metricsgeneration"))
 }
 
 func TestCreateDefaultConfig(t *testing.T) {

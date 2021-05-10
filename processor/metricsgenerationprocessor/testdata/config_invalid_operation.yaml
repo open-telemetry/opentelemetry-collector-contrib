@@ -2,7 +2,7 @@ receivers:
   nop:
 
 processors:
-  metricsgeneration:
+  experimental_metricsgeneration:
     rules:
       - name: new_metric
         type: calculate
@@ -17,9 +17,9 @@ service:
   pipelines:
     traces:
       receivers: [nop]
-      processors: [metricsgeneration]
+      processors: [experimental_metricsgeneration]
       exporters: [nop]
     metrics:
       receivers: [nop]
-      processors: [metricsgeneration]
+      processors: [experimental_metricsgeneration]
       exporters: [nop]

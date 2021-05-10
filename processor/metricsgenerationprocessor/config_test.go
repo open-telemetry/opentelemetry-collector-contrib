@@ -34,7 +34,7 @@ func TestLoadingFullConfig(t *testing.T) {
 	}{
 		{
 			configFile: "config_full.yaml",
-			filterName: "metricsgeneration",
+			filterName: "experimental_metricsgeneration",
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(typeStr),
 				Rules: []Rule{
