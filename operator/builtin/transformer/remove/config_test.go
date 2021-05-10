@@ -27,7 +27,7 @@ func TestGoldenConfig(t *testing.T) {
 			Name: "remove_body",
 			Expect: func() *RemoveOperatorConfig {
 				cfg := defaultCfg()
-				cfg.Field = entry.NewBodyField("nested")
+				cfg.Field = newBodyField("nested")
 				return cfg
 			}(),
 		},
@@ -35,7 +35,7 @@ func TestGoldenConfig(t *testing.T) {
 			Name: "remove_single_attribute",
 			Expect: func() *RemoveOperatorConfig {
 				cfg := defaultCfg()
-				cfg.Field = entry.NewAttributeField("key")
+				cfg.Field = newAttributeField("key")
 				return cfg
 			}(),
 		},
@@ -43,7 +43,31 @@ func TestGoldenConfig(t *testing.T) {
 			Name: "remove_single_resource",
 			Expect: func() *RemoveOperatorConfig {
 				cfg := defaultCfg()
-				cfg.Field = entry.NewResourceField("key")
+				cfg.Field = newResourceField("key")
+				return cfg
+			}(),
+		},
+		{
+			Name: "remove_entire_resource",
+			Expect: func() *RemoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.Field.allResource = true
+				return cfg
+			}(),
+		},
+		{
+			Name: "remove_entire_body",
+			Expect: func() *RemoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.Field.Field = entry.NewBodyField()
+				return cfg
+			}(),
+		},
+		{
+			Name: "remove_entire_attributes",
+			Expect: func() *RemoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.Field.allAttributes = true
 				return cfg
 			}(),
 		},
@@ -57,4 +81,19 @@ func TestGoldenConfig(t *testing.T) {
 
 func defaultCfg() *RemoveOperatorConfig {
 	return NewRemoveOperatorConfig("move")
+}
+
+func newBodyField(keys ...string) rootableField {
+	field := entry.NewBodyField(keys...)
+	return rootableField{Field: field}
+}
+
+func newResourceField(key string) rootableField {
+	field := entry.NewResourceField(key)
+	return rootableField{Field: field}
+}
+
+func newAttributeField(key string) rootableField {
+	field := entry.NewAttributeField(key)
+	return rootableField{Field: field}
 }

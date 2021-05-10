@@ -257,19 +257,19 @@ func TestSplitField(t *testing.T) {
 }
 
 func TestFieldFromStringInvalidSplit(t *testing.T) {
-	_, err := fieldFromString("$resource[test]")
+	_, err := NewField("$resource[test]")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "splitting field")
 }
 
 func TestFieldFromStringWithResource(t *testing.T) {
-	field, err := fieldFromString(`$resource["test"]`)
+	field, err := NewField(`$resource["test"]`)
 	require.NoError(t, err)
 	require.Equal(t, "$resource.test", field.String())
 }
 
 func TestFieldFromStringWithInvalidResource(t *testing.T) {
-	_, err := fieldFromString(`$resource["test"]["key"]`)
+	_, err := NewField(`$resource["test"]["key"]`)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "resource fields cannot be nested")
 }
