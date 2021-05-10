@@ -28,6 +28,10 @@ type Config struct {
 	// Default: 1_000_000.
 	NumTraces int `mapstructure:"num_traces"`
 
+	// NumWorkers is a number of workers processing event queue. Should be equal to physical processors number.
+	// Default: 1.
+	NumWorkers int `mapstructure:"num_workers"`
+
 	// WaitDuration tells the processor to wait for the specified duration for the trace to be complete.
 	// Default: 1s.
 	WaitDuration time.Duration `mapstructure:"wait_duration"`

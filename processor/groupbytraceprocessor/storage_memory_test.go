@@ -31,8 +31,10 @@ func TestMemoryCreateAndGetTrace(t *testing.T) {
 		pdata.NewTraceID([16]byte{2, 3, 4, 5}),
 	}
 
-	baseTrace := pdata.NewResourceSpans()
-	ils := baseTrace.InstrumentationLibrarySpans().AppendEmpty()
+	baseTrace := pdata.NewTraces()
+	rss := baseTrace.ResourceSpans()
+	rs := rss.AppendEmpty()
+	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 
 	// test
@@ -44,11 +46,11 @@ func TestMemoryCreateAndGetTrace(t *testing.T) {
 	// verify
 	assert.Equal(t, 2, st.count())
 	for _, traceID := range traceIDs {
-		expected := []pdata.ResourceSpans{baseTrace}
+		expected := []pdata.ResourceSpans{baseTrace.ResourceSpans().At(0)}
 		expected[0].InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(traceID)
 
 		retrieved, err := st.get(traceID)
-		st.createOrAppend(traceID, expected[0])
+		st.createOrAppend(traceID, baseTrace)
 
 		require.NoError(t, err)
 		assert.Equal(t, expected, retrieved)
@@ -61,8 +63,10 @@ func TestMemoryDeleteTrace(t *testing.T) {
 
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
-	trace := pdata.NewResourceSpans()
-	ils := trace.InstrumentationLibrarySpans().AppendEmpty()
+	trace := pdata.NewTraces()
+	rss := trace.ResourceSpans()
+	rs := rss.AppendEmpty()
+	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 
@@ -73,7 +77,7 @@ func TestMemoryDeleteTrace(t *testing.T) {
 
 	// verify
 	require.NoError(t, err)
-	assert.Equal(t, []pdata.ResourceSpans{trace}, deleted)
+	assert.Equal(t, []pdata.ResourceSpans{trace.ResourceSpans().At(0)}, deleted)
 
 	retrieved, err := st.get(traceID)
 	require.NoError(t, err)
@@ -86,16 +90,20 @@ func TestMemoryAppendSpans(t *testing.T) {
 
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
-	batch := pdata.NewResourceSpans()
-	ils := batch.InstrumentationLibrarySpans().AppendEmpty()
+	trace := pdata.NewTraces()
+	rss := trace.ResourceSpans()
+	rs := rss.AppendEmpty()
+	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
 
-	st.createOrAppend(traceID, batch)
+	st.createOrAppend(traceID, trace)
 
-	secondBatch := pdata.NewResourceSpans()
-	secondIls := secondBatch.InstrumentationLibrarySpans().AppendEmpty()
+	secondTrace := pdata.NewTraces()
+	secondRss := secondTrace.ResourceSpans()
+	secondRs := secondRss.AppendEmpty()
+	secondIls := secondRs.InstrumentationLibrarySpans().AppendEmpty()
 	secondSpan := secondIls.Spans().AppendEmpty()
 	secondSpan.SetName("second-name")
 	secondSpan.SetTraceID(traceID)
@@ -109,7 +117,7 @@ func TestMemoryAppendSpans(t *testing.T) {
 	secondIls.CopyTo(expected[1].InstrumentationLibrarySpans().AppendEmpty())
 
 	// test
-	err := st.createOrAppend(traceID, secondBatch)
+	err := st.createOrAppend(traceID, secondTrace)
 	require.NoError(t, err)
 
 	// override something in the second span, to make sure we are storing a copy
@@ -118,6 +126,7 @@ func TestMemoryAppendSpans(t *testing.T) {
 	// verify
 	retrieved, err := st.get(traceID)
 	require.NoError(t, err)
+	require.Len(t, retrieved, 2)
 	assert.Equal(t, "second-name", retrieved[1].InstrumentationLibrarySpans().At(0).Spans().At(0).Name())
 
 	// now that we checked that the secondSpan change here didn't have an effect, revert
@@ -131,15 +140,17 @@ func TestMemoryTraceIsBeingCloned(t *testing.T) {
 	st := newMemoryStorage()
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
-	batch := pdata.NewResourceSpans()
-	ils := batch.InstrumentationLibrarySpans().AppendEmpty()
+	trace := pdata.NewTraces()
+	rss := trace.ResourceSpans()
+	rs := rss.AppendEmpty()
+	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
 	span.SetName("should-not-be-changed")
 
 	// test
-	err := st.createOrAppend(traceID, batch)
+	err := st.createOrAppend(traceID, trace)
 	require.NoError(t, err)
 	span.SetName("changed-trace")
 
