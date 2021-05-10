@@ -23,13 +23,13 @@ processors:
         action: insert
         new_name: new_name_copy_1
         match_type: strict
-        match_labels: {"my_label": "my_value"}
+        experimental_match_labels: {"my_label": "my_value"}
 
       - include: new_name
         action: insert
         new_name: new_name_copy_2
         match_type: regexp
-        match_labels: {"my_label": ".*label"}
+        experimental_match_labels: {"my_label": ".*label"}
 
       - include: name2
         action: update

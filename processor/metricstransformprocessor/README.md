@@ -58,9 +58,9 @@ transforms:
     # match_type specifies whether the include name should be used as a strict match or regexp match, default = strict
     match_type: {strict, regexp}
 
-    # match_labels specifies the label set against which the metric filter will work. If match_labels is specified, transforms will only be applied to those metrics which 
-    # have the provided metric label values. This works for both strict and regexp match_type.
-    match_labels: {<label1>: <label_value1>, <label2>: <label_value2>}
+    # experimental_match_labels specifies the label set against which the metric filter will work. If experimental_match_labels is specified, transforms will only be applied to those metrics which 
+    # have the provided metric label values. This works for both strict and regexp match_type. This is an experimental feature.
+    experimental_match_labels: {<label1>: <label_value1>, <label2>: <label_value2>}
     
     # SPECIFY THE ACTION TO TAKE ON THE MATCHED METRIC(S)
     
@@ -120,7 +120,7 @@ include: host.cpu.usage
 action: insert
 new_name: host.cpu.utilization
 match_type: strict
-match_labels: {"container": "my_container"}
+experimental_match_labels: {"container": "my_container"}
 operations:
   ...
 ```
@@ -132,7 +132,7 @@ include: host.cpu.usage
 action: insert
 new_name: host.cpu.utilization
 match_type: regexp
-match_labels: {"pod": "(.|\\s)*\\S(.|\\s)*"}
+experimental_match_labels: {"pod": "(.|\\s)*\\S(.|\\s)*"}
 operations:
   ...
 ```
