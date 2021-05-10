@@ -16,7 +16,7 @@
 
 exporter/alibabacloudlogserviceexporter/             @open-telemetry/collector-contrib-approvers @shabicheng @kongluoxing
 exporter/awsemfexporter/                             @open-telemetry/collector-contrib-approvers @anuraaga @shaochengwang @mxiamxia
-exporter/awsprometheusremotewriteexporter/           @open-telemetry/collector-contrib-approvers @rakyll @alolita
+exporter/awsprometheusremotewriteexporter/           @open-telemetry/collector-contrib-approvers @anuraaga @rakyll @alolita
 exporter/awsxrayexporter/                            @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga
 exporter/azuremonitorexporter/                       @open-telemetry/collector-contrib-approvers @pcwiese
 exporter/carbonexporter/                             @open-telemetry/collector-contrib-approvers @pjanotti
@@ -27,7 +27,7 @@ exporter/elasticsearchexporter/                      @open-telemetry/collector-c
 exporter/f5cloudexporter/                            @open-telemetry/collector-contrib-approvers @gramidt
 exporter/honeycombexporter/                          @open-telemetry/collector-contrib-approvers @paulosman @lizthegrey @MikeGoldsmith
 exporter/jaegerthrifthttpexporter/                   @open-telemetry/collector-contrib-approvers @jpkrohling @pavolloffay
-exporter/awskinesisexporter/                         @open-telemetry/collector-contrib-approvers @owais
+exporter/awskinesisexporter/                         @open-telemetry/collector-contrib-approvers @owais @anuraaga
 exporter/loadbalancingexporter/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logzioexporter/                             @open-telemetry/collector-contrib-approvers @yyyogev @jkowall @albertteoh
 exporter/lokiexporter/                               @open-telemetry/collector-contrib-approvers @gramidt
