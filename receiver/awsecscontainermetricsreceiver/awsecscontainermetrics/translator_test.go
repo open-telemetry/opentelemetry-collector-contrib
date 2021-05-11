@@ -17,12 +17,12 @@ import (
 	"testing"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestConvertToOTMetrics(t *testing.T) {
-	timestamp := timestampProto(time.Now())
+	timestamp := pdata.TimestampFromTime(time.Now())
 	m := ECSMetrics{}
 
 	m.MemoryUsage = 100
@@ -31,66 +31,42 @@ func TestConvertToOTMetrics(t *testing.T) {
 	m.MemoryReserved = 100
 	m.CPUTotalUsage = 100
 
-	labelKeys := []*metricspb.LabelKey{
-		{Key: "label_key_1"},
-	}
-	labelValues := []*metricspb.LabelValue{
-		{Value: "label_value_1"},
-	}
-
-	metrics := convertToOCMetrics("container.", m, labelKeys, labelValues, timestamp)
-	require.EqualValues(t, 26, len(metrics))
+	resource := pdata.NewResource()
+	md := convertToOTLPMetrics("container.", m, resource, timestamp)
+	require.EqualValues(t, 26, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len())
 }
 
 func TestIntGauge(t *testing.T) {
-	intValue := uint64(100)
+	intValue := int64(100)
+	timestamp := pdata.TimestampFromTime(time.Now())
 
-	labelKeys := []*metricspb.LabelKey{
-		{Key: "label_key_1"},
-	}
-	labelValues := []*metricspb.LabelValue{
-		{Value: "label_value_1"},
-	}
-
-	m := intGauge("cpu_utilized", "Count", &intValue, labelKeys, labelValues)
-	require.NotNil(t, m)
-
-	m = intGauge("cpu_utilized", "Count", nil, labelKeys, labelValues)
-	require.Nil(t, m)
+	ilm := pdata.NewInstrumentationLibraryMetrics()
+	appendIntGauge("cpu_utilized", "Count", intValue, timestamp, ilm)
+	require.NotNil(t, ilm)
 }
 
 func TestDoubleGauge(t *testing.T) {
-	floatValue := float64(100.01)
+	timestamp := pdata.TimestampFromTime(time.Now())
+	floatValue := 100.01
 
-	labelKeys := []*metricspb.LabelKey{
-		{Key: "label_key_1"},
-	}
-	labelValues := []*metricspb.LabelValue{
-		{Value: "label_value_1"},
-	}
-
-	m := doubleGauge("cpu_utilized", "Count", &floatValue, labelKeys, labelValues)
-	require.NotNil(t, m)
-
-	m = doubleGauge("cpu_utilized", "Count", nil, labelKeys, labelValues)
-	require.Nil(t, m)
-
+	ilm := pdata.NewInstrumentationLibraryMetrics()
+	appendDoubleGauge("cpu_utilized", "Count", floatValue, timestamp, ilm)
+	require.NotNil(t, ilm)
 }
 
-func TestIntCumulative(t *testing.T) {
-	floatValue := uint64(100)
+func TestIntSum(t *testing.T) {
+	timestamp := pdata.TimestampFromTime(time.Now())
+	intValue := int64(100)
 
-	labelKeys := []*metricspb.LabelKey{
-		{Key: "label_key_1"},
-	}
-	labelValues := []*metricspb.LabelValue{
-		{Value: "label_value_1"},
-	}
+	ilm := pdata.NewInstrumentationLibraryMetrics()
+	appendIntSum("cpu_utilized", "Count", intValue, timestamp, ilm)
+	require.NotNil(t, ilm)
+}
 
-	m := intCumulative("cpu_utilized", "Count", &floatValue, labelKeys, labelValues)
-	require.NotNil(t, m)
-
-	m = intCumulative("cpu_utilized", "Count", nil, labelKeys, labelValues)
-	require.Nil(t, m)
-
+func TestConvertStoppedContainerDataToOTMetrics(t *testing.T) {
+	timestamp := pdata.TimestampFromTime(time.Now())
+	resource := pdata.NewResource()
+	duration := 1200000000.32132
+	md := convertStoppedContainerDataToOTMetrics("container.", resource, timestamp, duration)
+	require.EqualValues(t, 1, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len())
 }

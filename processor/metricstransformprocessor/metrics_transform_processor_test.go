@@ -23,9 +23,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -35,16 +34,13 @@ import (
 func TestMetricsTransformProcessor(t *testing.T) {
 	for _, test := range standardTests {
 		t.Run(test.name, func(t *testing.T) {
-			next := &exportertest.SinkMetricsExporter{}
+			next := new(consumertest.MetricsSink)
 
 			p := newMetricsTransformProcessor(zap.NewExample(), test.transforms)
 
 			mtp, err := processorhelper.NewMetricsProcessor(
 				&Config{
-					ProcessorSettings: configmodels.ProcessorSettings{
-						TypeVal: typeStr,
-						NameVal: typeStr,
-					},
+					ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 				},
 				next,
 				p,
@@ -56,7 +52,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			ctx := context.Background()
 
 			// construct metrics data to feed into the processor
-			md := consumerdata.MetricsData{Metrics: test.in}
+			md := internaldata.MetricsData{Metrics: test.in}
 
 			// process
 			cErr := mtp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(md))
@@ -161,9 +157,9 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 
 	transforms := []internalTransform{
 		{
-			MetricName: "metric1",
-			Action:     Insert,
-			NewName:    "new/metric1",
+			MetricIncludeFilter: internalFilterStrict{include: "metric"},
+			Action:              Insert,
+			NewName:             "new/metric1",
 		},
 	}
 
@@ -171,10 +167,10 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 	for i := 0; i < metricCount; i++ {
 		in[i] = metricBuilder().setName("metric1").build()
 	}
-	md := consumerdata.MetricsData{Metrics: in}
+	md := internaldata.MetricsData{Metrics: in}
 
 	p := newMetricsTransformProcessor(nil, transforms)
-	mtp, _ := processorhelper.NewMetricsProcessor(&Config{}, exportertest.NewNopMetricsExporter(), p)
+	mtp, _ := processorhelper.NewMetricsProcessor(&Config{}, consumertest.NewNop(), p)
 
 	b.ResetTimer()
 

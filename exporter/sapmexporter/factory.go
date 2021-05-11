@@ -16,14 +16,12 @@ package sapmexporter
 
 import (
 	"context"
-	"time"
 
-	"github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 const (
@@ -36,42 +34,27 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter))
+		exporterhelper.WithTraces(createTracesExporter))
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		NumWorkers: defaultNumWorkers,
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		NumWorkers:       defaultNumWorkers,
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
 		},
-		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
-		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
-		QueueSettings:   exporterhelper.CreateDefaultQueueSettings(),
-		Correlation: CorrelationConfig{
-			Enabled:             false,
-			StaleServiceTimeout: 5 * time.Minute,
-			Config: correlations.Config{
-				MaxRequests:     20,
-				MaxBuffered:     10_000,
-				MaxRetries:      2,
-				LogUpdates:      false,
-				RetryDelay:      30 * time.Second,
-				CleanupInterval: 1 * time.Minute,
-			},
-		},
+		TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:   exporterhelper.DefaultRetrySettings(),
+		QueueSettings:   exporterhelper.DefaultQueueSettings(),
 	}
 }
 
-func createTraceExporter(
+func createTracesExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
-) (component.TraceExporter, error) {
+	cfg config.Exporter,
+) (component.TracesExporter, error) {
 	eCfg := cfg.(*Config)
-	return newSAPMTraceExporter(eCfg, params)
+	return newSAPMTracesExporter(eCfg, params)
 }

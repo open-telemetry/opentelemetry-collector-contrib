@@ -1,11 +1,12 @@
 receivers:
-  examplereceiver:
+  nop:
   
 processors:
-  exampleprocessor:
+  nop:
   
 exporters:
   elastic:
+    apm_server_url: https://elastic.example.com
   elastic/customname:
     apm_server_url: https://elastic.example.com
     api_key: RTNxMjlXNEJt
@@ -14,6 +15,6 @@ exporters:
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
+      receivers: [nop]
+      processors: [nop]
       exporters: [elastic]

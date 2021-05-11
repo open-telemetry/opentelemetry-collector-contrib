@@ -1,24 +1,24 @@
 receivers:
-    examplereceiver:
+    nop:
 
 processors:
     metricstransform:
         transforms:
-            - metric_name: old_name
+            - include: old_name
               action: update
               operations:
                 - action: update_label # missing label key
 
 exporters:
-    exampleexporter:
+    nop:
 
 service:
     pipelines:
         traces:
-            receivers: [examplereceiver]
+            receivers: [nop]
             processors: [metricstransform]
-            exporters: [exampleexporter]
+            exporters: [nop]
         metrics:
-            receivers: [examplereceiver]
+            receivers: [nop]
             processors: [metricstransform]
-            exporters: [exampleexporter]
+            exporters: [nop]

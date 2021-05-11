@@ -22,7 +22,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/go-logr/logr"
+	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
 
@@ -55,7 +55,7 @@ func (c *Config) Flags(fs *flag.FlagSet) {
 }
 
 // Run executes the test scenario.
-func Run(c *Config, logger logr.Logger) error {
+func Run(c *Config, logger *zap.Logger) error {
 	if c.TotalDuration > 0 {
 		c.NumTraces = 0
 	} else if c.NumTraces <= 0 {
@@ -67,7 +67,7 @@ func Run(c *Config, logger logr.Logger) error {
 		limit = rate.Inf
 		logger.Info("generation of traces isn't being throttled")
 	} else {
-		logger.Info("generation of traces is limited", "per-second", limit)
+		logger.Info("generation of traces is limited", zap.Float64("per-second", float64(limit)))
 	}
 
 	wg := sync.WaitGroup{}
@@ -75,14 +75,13 @@ func Run(c *Config, logger logr.Logger) error {
 	for i := 0; i < c.WorkerCount; i++ {
 		wg.Add(1)
 		w := worker{
-			id:               i,
 			numTraces:        c.NumTraces,
 			propagateContext: c.PropagateContext,
 			limitPerSecond:   limit,
 			totalDuration:    c.TotalDuration,
 			running:          &running,
 			wg:               &wg,
-			logger:           logger.WithValues("worker", i),
+			logger:           logger.With(zap.Int("worker", i)),
 		}
 
 		go w.simulateTraces()

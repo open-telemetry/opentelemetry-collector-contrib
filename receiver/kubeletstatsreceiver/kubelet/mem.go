@@ -16,10 +16,13 @@ package kubelet
 
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
+	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 )
 
 func memMetrics(prefix string, s *stats.MemoryStats) []*metricspb.Metric {
+	if s == nil {
+		return nil
+	}
 	return []*metricspb.Metric{
 		memAvailableMetric(prefix, s),
 		memUsageMetric(prefix, s),

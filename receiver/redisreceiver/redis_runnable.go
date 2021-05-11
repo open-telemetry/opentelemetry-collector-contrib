@@ -18,9 +18,10 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/interval"
@@ -31,8 +32,9 @@ var _ interval.Runnable = (*redisRunnable)(nil)
 // Runs intermittently, fetching info from Redis, creating metrics/datapoints,
 // and feeding them to a metricsConsumer.
 type redisRunnable struct {
+	id              config.ComponentID
 	ctx             context.Context
-	metricsConsumer consumer.MetricsConsumer
+	metricsConsumer consumer.Metrics
 	redisSvc        *redisSvc
 	redisMetrics    []*redisMetric
 	logger          *zap.Logger
@@ -42,12 +44,14 @@ type redisRunnable struct {
 
 func newRedisRunnable(
 	ctx context.Context,
+	id config.ComponentID,
 	client client,
 	serviceName string,
-	metricsConsumer consumer.MetricsConsumer,
+	metricsConsumer consumer.Metrics,
 	logger *zap.Logger,
 ) *redisRunnable {
 	return &redisRunnable{
+		id:              id,
 		ctx:             ctx,
 		serviceName:     serviceName,
 		redisSvc:        newRedisSvc(client),
@@ -56,7 +60,7 @@ func newRedisRunnable(
 	}
 }
 
-// Builds a data structure of all of the keys, types, converters and such to
+// Setup builds a data structure of all of the keys, types, converters and such to
 // later extract data from Redis.
 func (r *redisRunnable) Setup() error {
 	r.redisMetrics = getDefaultRedisMetrics()
@@ -71,17 +75,17 @@ func (r *redisRunnable) Setup() error {
 func (r *redisRunnable) Run() error {
 	const dataFormat = "redis"
 	const transport = "http" // todo verify this
-	ctx := obsreport.StartMetricsReceiveOp(r.ctx, dataFormat, transport)
+	ctx := obsreport.StartMetricsReceiveOp(r.ctx, r.id, transport)
 
 	inf, err := r.redisSvc.info()
 	if err != nil {
-		obsreport.EndMetricsReceiveOp(ctx, dataFormat, 0, 0, err)
+		obsreport.EndMetricsReceiveOp(ctx, dataFormat, 0, err)
 		return nil
 	}
 
 	uptime, err := inf.getUptimeInSeconds()
 	if err != nil {
-		obsreport.EndMetricsReceiveOp(ctx, dataFormat, 0, 0, err)
+		obsreport.EndMetricsReceiveOp(ctx, dataFormat, 0, err)
 		return nil
 	}
 
@@ -91,7 +95,14 @@ func (r *redisRunnable) Run() error {
 		r.timeBundle.update(time.Now(), uptime)
 	}
 
-	metrics, warnings := inf.buildFixedProtoMetrics(r.redisMetrics, r.timeBundle)
+	pdm := pdata.NewMetrics()
+	rm := pdm.ResourceMetrics().AppendEmpty()
+	resource := rm.Resource()
+	rattrs := resource.Attributes()
+	rattrs.InsertString("service.name", r.serviceName)
+	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	fixedMS, warnings := inf.buildFixedMetrics(r.redisMetrics, r.timeBundle)
+	fixedMS.MoveAndAppendTo(ilm.Metrics())
 	if warnings != nil {
 		r.logger.Warn(
 			"errors parsing redis string",
@@ -99,20 +110,18 @@ func (r *redisRunnable) Run() error {
 		)
 	}
 
-	keyspaceMetrics, warnings := inf.buildKeyspaceProtoMetrics(r.timeBundle)
-	metrics = append(metrics, keyspaceMetrics...)
+	keyspaceMS, warnings := inf.buildKeyspaceMetrics(r.timeBundle)
 	if warnings != nil {
 		r.logger.Warn(
 			"errors parsing keyspace string",
 			zap.Errors("parsing errors", warnings),
 		)
 	}
+	keyspaceMS.MoveAndAppendTo(ilm.Metrics())
 
-	md := newMetricsData(metrics, r.serviceName)
-
-	err = r.metricsConsumer.ConsumeMetrics(r.ctx, internaldata.OCToMetrics(md))
-	numTimeSeries, numPoints := obsreport.CountMetricPoints(md)
-	obsreport.EndMetricsReceiveOp(ctx, dataFormat, numPoints, numTimeSeries, err)
+	err = r.metricsConsumer.ConsumeMetrics(r.ctx, pdm)
+	_, numPoints := pdm.MetricAndDataPointCount()
+	obsreport.EndMetricsReceiveOp(ctx, dataFormat, numPoints, err)
 
 	return nil
 }

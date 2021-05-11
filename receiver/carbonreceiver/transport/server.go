@@ -36,7 +36,7 @@ type Server interface {
 	// the Parser and passed to the next consumer.
 	ListenAndServe(
 		p protocol.Parser,
-		mc consumer.MetricsConsumer,
+		mc consumer.Metrics,
 		r Reporter,
 	) error
 
@@ -65,8 +65,7 @@ type Reporter interface {
 	// the next consumer - the reporter is expected to handle nil error too.
 	OnMetricsProcessed(
 		ctx context.Context,
-		numReceivedTimeSeries int,
-		numInvalidTimeSeries int,
+		numReceivedMetricPoints int,
 		err error)
 
 	// OnDebugf allows less structured reporting for debugging scenarios.

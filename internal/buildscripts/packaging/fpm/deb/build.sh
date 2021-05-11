@@ -32,4 +32,6 @@ fpm -s dir -t deb -n $PKG_NAME -v ${VERSION#v} -f -p "$OUTPUT_DIR" \
     --after-install "$POSTINSTALL_PATH" \
     --pre-uninstall "$PREUNINSTALL_PATH" \
     $SERVICE_PATH=/lib/systemd/system/$SERVICE_NAME.service \
-    $OTELCONTRIBCOL_PATH=/usr/bin/otelcontribcol
+    $OTELCONTRIBCOL_PATH=/usr/bin/otelcontribcol \
+    $CONFIG_PATH=/etc/otel-contrib-collector/config.yaml \
+    $ENVFILE_PATH=/etc/otel-contrib-collector/otel-contrib-collector.conf

@@ -17,46 +17,79 @@ package awsecscontainermetrics
 import (
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.uber.org/zap"
 )
 
 // metricDataAccumulator defines the accumulator
 type metricDataAccumulator struct {
-	md []*consumerdata.MetricsData
+	mds []pdata.Metrics
 }
 
 // getMetricsData generates OT Metrics data from task metadata and docker stats
-func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]ContainerStats, metadata TaskMetadata) {
+func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*ContainerStats, metadata TaskMetadata, logger *zap.Logger) {
 
 	taskMetrics := ECSMetrics{}
-	timestamp := timestampProto(time.Now())
+	timestamp := pdata.TimestampFromTime(time.Now())
 	taskResource := taskResource(metadata)
 
 	for _, containerMetadata := range metadata.Containers {
-		stats := containerStatsMap[containerMetadata.DockerID]
-		containerMetrics := getContainerMetrics(stats)
-		containerMetrics.MemoryReserved = *containerMetadata.Limits.Memory
-		containerMetrics.CPUReserved = *containerMetadata.Limits.CPU
-
-		if containerMetrics.CPUReserved > 0 {
-			containerMetrics.CPUUtilized = (containerMetrics.CPUUtilized / containerMetrics.CPUReserved)
-		}
 
 		containerResource := containerResource(containerMetadata)
-		for k, v := range taskResource.Labels {
-			containerResource.Labels[k] = v
+		taskResource.Attributes().Range(func(k string, av pdata.AttributeValue) bool {
+			containerResource.Attributes().Upsert(k, av)
+			return true
+		})
+
+		stats, ok := containerStatsMap[containerMetadata.DockerID]
+
+		if ok && !isEmptyStats(stats) {
+
+			containerMetrics := convertContainerMetrics(stats, logger, containerMetadata)
+			acc.accumulate(convertToOTLPMetrics(ContainerPrefix, containerMetrics, containerResource, timestamp))
+			aggregateTaskMetrics(&taskMetrics, containerMetrics)
+
+		} else if containerMetadata.FinishedAt != "" && containerMetadata.StartedAt != "" {
+
+			duration, err := calculateDuration(containerMetadata.StartedAt, containerMetadata.FinishedAt)
+
+			if err != nil {
+				logger.Warn("Error time format error found for this container:" + containerMetadata.ContainerName)
+			}
+
+			acc.accumulate(convertStoppedContainerDataToOTMetrics(ContainerPrefix, containerResource, timestamp, duration))
+
 		}
+	}
+	overrideWithTaskLevelLimit(&taskMetrics, metadata)
+	acc.accumulate(convertToOTLPMetrics(TaskPrefix, taskMetrics, taskResource, timestamp))
+}
 
-		acc.accumulate(
-			containerResource,
-			convertToOCMetrics(ContainerPrefix, containerMetrics, nil, nil, timestamp),
-		)
+func (acc *metricDataAccumulator) accumulate(md pdata.Metrics) {
+	acc.mds = append(acc.mds, md)
+}
 
-		aggregateTaskMetrics(&taskMetrics, containerMetrics)
+func isEmptyStats(stats *ContainerStats) bool {
+	return stats == nil || stats.ID == ""
+}
+
+func convertContainerMetrics(stats *ContainerStats, logger *zap.Logger, containerMetadata ContainerMetadata) ECSMetrics {
+	containerMetrics := getContainerMetrics(stats, logger)
+	if containerMetadata.Limits.Memory != nil {
+		containerMetrics.MemoryReserved = *containerMetadata.Limits.Memory
 	}
 
+	if containerMetadata.Limits.CPU != nil {
+		containerMetrics.CPUReserved = *containerMetadata.Limits.CPU
+	}
+
+	if containerMetrics.CPUReserved > 0 {
+		containerMetrics.CPUUtilized = (containerMetrics.CPUUtilized / containerMetrics.CPUReserved)
+	}
+	return containerMetrics
+}
+
+func overrideWithTaskLevelLimit(taskMetrics *ECSMetrics, metadata TaskMetadata) {
 	// Overwrite Memory limit with task level limit
 	if metadata.Limits.Memory != nil {
 		taskMetrics.MemoryReserved = *metadata.Limits.Memory
@@ -73,29 +106,20 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 	// at least in one place (either in task level or in container level). If the
 	// task level CPULimit is not present, we calculate it from the summation of
 	// all container CPU limits.
-	taskMetrics.CPUUtilized = ((taskMetrics.CPUUsageInVCPU / taskMetrics.CPUReserved) * 100)
-
-	acc.accumulate(
-		taskResource,
-		convertToOCMetrics(TaskPrefix, taskMetrics, nil, nil, timestamp),
-	)
+	if taskMetrics.CPUReserved > 0 {
+		taskMetrics.CPUUtilized = ((taskMetrics.CPUUsageInVCPU / taskMetrics.CPUReserved) * 100)
+	}
 }
 
-func (acc *metricDataAccumulator) accumulate(
-	r *resourcepb.Resource,
-	m ...[]*metricspb.Metric,
-) {
-	var resourceMetrics []*metricspb.Metric
-	for _, metrics := range m {
-		for _, metric := range metrics {
-			if metric != nil {
-				resourceMetrics = append(resourceMetrics, metric)
-			}
-		}
+func calculateDuration(startTime, endTime string) (float64, error) {
+	start, err := time.Parse(time.RFC3339Nano, startTime)
+	if err != nil {
+		return 0, err
 	}
-
-	acc.md = append(acc.md, &consumerdata.MetricsData{
-		Metrics:  resourceMetrics,
-		Resource: r,
-	})
+	end, err := time.Parse(time.RFC3339Nano, endTime)
+	if err != nil {
+		return 0, err
+	}
+	duration := end.Sub(start)
+	return duration.Seconds(), nil
 }

@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
+	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
 func addAWSToResource(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
@@ -32,13 +32,13 @@ func addAWSToResource(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
 		return
 	}
 
-	attrs.UpsertString(conventions.AttributeCloudProvider, "aws")
+	attrs.UpsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	addString(aws.AccountID, conventions.AttributeCloudAccount, attrs)
 
 	// based on https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html#api-segmentdocuments-aws
 	// it's possible to have all ec2, ecs and beanstalk fields at the same time.
 	if ec2 := aws.EC2; ec2 != nil {
-		addString(ec2.AvailabilityZone, conventions.AttributeCloudZone, attrs)
+		addString(ec2.AvailabilityZone, conventions.AttributeCloudAvailabilityZone, attrs)
 		addString(ec2.InstanceID, conventions.AttributeHostID, attrs)
 		addString(ec2.InstanceSize, conventions.AttributeHostType, attrs)
 		addString(ec2.AmiID, conventions.AttributeHostImageID, attrs)
@@ -46,6 +46,8 @@ func addAWSToResource(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
 
 	if ecs := aws.ECS; ecs != nil {
 		addString(ecs.ContainerName, conventions.AttributeContainerName, attrs)
+		addString(ecs.AvailabilityZone, conventions.AttributeCloudAvailabilityZone, attrs)
+		addString(ecs.ContainerID, conventions.AttributeContainerID, attrs)
 	}
 
 	if bs := aws.Beanstalk; bs != nil {
@@ -54,6 +56,13 @@ func addAWSToResource(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
 			attrs.UpsertString(conventions.AttributeServiceInstance, strconv.FormatInt(*bs.DeploymentID, 10))
 		}
 		addString(bs.VersionLabel, conventions.AttributeServiceVersion, attrs)
+	}
+
+	if eks := aws.EKS; eks != nil {
+		addString(eks.ContainerID, conventions.AttributeContainerID, attrs)
+		addString(eks.ClusterName, conventions.AttributeK8sCluster, attrs)
+		addString(eks.Pod, conventions.AttributeK8sPod, attrs)
+
 	}
 }
 

@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -35,10 +36,10 @@ var _ interval.Runnable = (*runnable)(nil)
 
 type runnable struct {
 	ctx                   context.Context
-	receiverName          string
+	receiverID            config.ComponentID
 	statsProvider         *kubelet.StatsProvider
 	metadataProvider      *kubelet.MetadataProvider
-	consumer              consumer.MetricsConsumer
+	consumer              consumer.Metrics
 	logger                *zap.Logger
 	restClient            kubelet.RestClient
 	extraMetadataLabels   []kubelet.MetadataLabel
@@ -49,14 +50,14 @@ type runnable struct {
 
 func newRunnable(
 	ctx context.Context,
-	consumer consumer.MetricsConsumer,
+	consumer consumer.Metrics,
 	restClient kubelet.RestClient,
 	logger *zap.Logger,
 	rOptions *receiverOptions,
 ) *runnable {
 	return &runnable{
 		ctx:                   ctx,
-		receiverName:          rOptions.name,
+		receiverID:            rOptions.id,
 		consumer:              consumer,
 		restClient:            restClient,
 		logger:                logger,
@@ -96,16 +97,16 @@ func (r *runnable) Run() error {
 	mds := kubelet.MetricsData(r.logger, summary, metadata, typeStr, r.metricGroupsToCollect)
 	metrics := internaldata.OCSliceToMetrics(mds)
 
-	var numTimeSeries, numPoints int
-	ctx := obsreport.ReceiverContext(r.ctx, typeStr, transport, r.receiverName)
-	ctx = obsreport.StartMetricsReceiveOp(ctx, typeStr, transport)
+	var numPoints int
+	ctx := obsreport.ReceiverContext(r.ctx, r.receiverID, transport)
+	ctx = obsreport.StartMetricsReceiveOp(ctx, r.receiverID, transport)
 	err = r.consumer.ConsumeMetrics(ctx, metrics)
 	if err != nil {
 		r.logger.Error("ConsumeMetricsData failed", zap.Error(err))
 	} else {
-		numTimeSeries, numPoints = metrics.MetricAndDataPointCount()
+		_, numPoints = metrics.MetricAndDataPointCount()
 	}
-	obsreport.EndMetricsReceiveOp(ctx, typeStr, numTimeSeries, numPoints, err)
+	obsreport.EndMetricsReceiveOp(ctx, typeStr, numPoints, err)
 
 	return nil
 }

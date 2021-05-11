@@ -1,0 +1,18 @@
+receivers:
+  nop:
+
+processors:
+  groupbyattrs/custom:
+    keys:
+      - key1
+      - key2
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [groupbyattrs/custom]
+      exporters: [nop]

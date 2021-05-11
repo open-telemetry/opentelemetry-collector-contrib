@@ -564,3 +564,40 @@ func Test_extractFieldRules(t *testing.T) {
 		})
 	}
 }
+
+func TestWithExtractPodAssociation(t *testing.T) {
+	tests := []struct {
+		name string
+		args []PodAssociationConfig
+		want []kube.Association
+	}{
+		{
+			"empty",
+			[]PodAssociationConfig{},
+			[]kube.Association{},
+		},
+		{
+			"basic",
+			[]PodAssociationConfig{
+				{
+					From: "label",
+					Name: "ip",
+				},
+			},
+			[]kube.Association{
+				{
+					From: "label",
+					Name: "ip",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &kubernetesprocessor{}
+			option := WithExtractPodAssociations(tt.args...)
+			option(p)
+			assert.Equal(t, tt.want, p.podAssociations)
+		})
+	}
+}

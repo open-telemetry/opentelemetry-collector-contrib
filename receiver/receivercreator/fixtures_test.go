@@ -19,7 +19,9 @@ import (
 )
 
 var pod = observer.Pod{
-	Name: "pod-1",
+	UID:       "uid-1",
+	Namespace: "default",
+	Name:      "pod-1",
 	Labels: map[string]string{
 		"app":    "redis",
 		"region": "west-1",
@@ -32,13 +34,13 @@ var pod = observer.Pod{
 var podEndpoint = observer.Endpoint{
 	ID:      "pod-1",
 	Target:  "localhost",
-	Details: pod,
+	Details: &pod,
 }
 
 var portEndpoint = observer.Endpoint{
 	ID:     "port-1",
 	Target: "localhost:1234",
-	Details: observer.Port{
+	Details: &observer.Port{
 		Name:      "http",
 		Pod:       pod,
 		Port:      1234,
@@ -46,8 +48,19 @@ var portEndpoint = observer.Endpoint{
 	},
 }
 
+var hostportEndpoint = observer.Endpoint{
+	ID:     "port-1",
+	Target: "localhost:1234",
+	Details: &observer.HostPort{
+		ProcessName: "splunk",
+		Command:     "./splunk",
+		Port:        1234,
+		Transport:   observer.ProtocolTCP,
+	},
+}
+
 var unsupportedEndpoint = observer.Endpoint{
 	ID:      "endpoint-1",
 	Target:  "localhost:1234",
-	Details: map[string]interface{}{},
+	Details: nil,
 }

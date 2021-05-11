@@ -21,8 +21,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 
@@ -31,17 +31,14 @@ import (
 
 func TestFactory(t *testing.T) {
 	f := NewFactory()
-	require.Equal(t, configmodels.Type("k8s_cluster"), f.Type())
+	require.Equal(t, config.Type("k8s_cluster"), f.Type())
 
 	cfg := f.CreateDefaultConfig()
 	rCfg, ok := cfg.(*Config)
 	require.True(t, ok)
 
 	require.Equal(t, &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ReceiverSettings:           config.NewReceiverSettings(config.NewID(typeStr)),
 		CollectionInterval:         10 * time.Second,
 		NodeConditionTypesToReport: defaultNodeConditionsToReport,
 		APIConfig: k8sconfig.APIConfig{
@@ -49,9 +46,9 @@ func TestFactory(t *testing.T) {
 		},
 	}, rCfg)
 
-	r, err := f.CreateTraceReceiver(
+	r, err := f.CreateTracesReceiver(
 		context.Background(), component.ReceiverCreateParams{},
-		&configmodels.ReceiverSettings{}, &exportertest.SinkTraceExporter{},
+		&config.ReceiverSettings{}, consumertest.NewNop(),
 	)
 	require.Error(t, err)
 	require.Nil(t, r)
@@ -59,7 +56,7 @@ func TestFactory(t *testing.T) {
 	// Fails with bad K8s Config.
 	r, err = f.CreateMetricsReceiver(
 		context.Background(), component.ReceiverCreateParams{},
-		rCfg, &exportertest.SinkMetricsExporter{},
+		rCfg, consumertest.NewNop(),
 	)
 	require.Error(t, err)
 	require.Nil(t, r)
@@ -70,7 +67,7 @@ func TestFactory(t *testing.T) {
 	}
 	r, err = f.CreateMetricsReceiver(
 		context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()},
-		rCfg, &exportertest.SinkMetricsExporter{},
+		rCfg, consumertest.NewNop(),
 	)
 	require.NoError(t, err)
 	require.NotNil(t, r)
@@ -79,7 +76,7 @@ func TestFactory(t *testing.T) {
 	ctx := context.Background()
 	require.NoError(t, r.Start(ctx, nopHostWithExporters{}))
 	require.NoError(t, r.Shutdown(ctx))
-	rCfg.MetadataExporters = []string{"exampleexporter/withoutmetadata"}
+	rCfg.MetadataExporters = []string{"nop/withoutmetadata"}
 	require.Error(t, r.Start(context.Background(), nopHostWithExporters{}))
 }
 
@@ -92,19 +89,19 @@ var _ component.Host = (*nopHostWithExporters)(nil)
 func (n nopHostWithExporters) ReportFatalError(error) {
 }
 
-func (n nopHostWithExporters) GetFactory(component.Kind, configmodels.Type) component.Factory {
+func (n nopHostWithExporters) GetFactory(component.Kind, config.Type) component.Factory {
 	return nil
 }
 
-func (n nopHostWithExporters) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
+func (n nopHostWithExporters) GetExtensions() map[config.ComponentID]component.Extension {
 	return nil
 }
 
-func (n nopHostWithExporters) GetExporters() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
-	return map[configmodels.DataType]map[configmodels.Exporter]component.Exporter{
-		configmodels.MetricsDataType: {
-			&configmodels.ExporterSettings{TypeVal: "exampleexporter", NameVal: "exampleexporter/withoutmetadata"}: MockExporter{},
-			&configmodels.ExporterSettings{TypeVal: "exampleexporter", NameVal: "exampleexporter/withmetadata"}:    mockExporterWithK8sMetadata{},
+func (n nopHostWithExporters) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
+	return map[config.DataType]map[config.ComponentID]component.Exporter{
+		config.MetricsDataType: {
+			config.MustIDFromString("nop/withoutmetadata"): MockExporter{},
+			config.MustIDFromString("nop/withmetadata"):    mockExporterWithK8sMetadata{},
 		},
 	}
 }

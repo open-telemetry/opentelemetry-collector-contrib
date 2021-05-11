@@ -1,8 +1,5 @@
 # AWS X-Ray Receiver
 
-**Status: Not fully implemented**
-This receiver can not be used yet.
-
 ## Overview
 The AWS X-Ray receiver accepts segments (i.e. spans) in the [X-Ray Segment format](https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html).
 This enables the collector to receive spans emitted by the existing X-Ray SDK. [Centralized sampling](https://github.com/aws/aws-xray-daemon/blob/master/CHANGELOG.md#300-2018-08-28) is also supported via a local TCP port.
@@ -15,7 +12,7 @@ Example:
 
 ```yaml
 receivers:
-  aws_xray:
+  awsxray:
     endpoint: 0.0.0.0:2000
     transport: udp
     proxy_server:
@@ -52,7 +49,7 @@ Default: `0.0.0.0:2000`
 ### proxy_address (Optional)
 Defines the proxy address that the local TCP server forwards HTTP requests to AWS X-Ray backend through. If left unconfigured, requests will be sent directly.
 
-### insecure
+### insecure (Optional)
 Enables or disables TLS certificate verification when the local TCP server forwards HTTP requests to the AWS X-Ray backend. This sets the `InsecureSkipVerify` in the [TLSConfig](https://godoc.org/crypto/tls#Config). When setting to true, TLS is susceptible to man-in-the-middle attacks so it should be used only for testing.
 
 Default: `false`
@@ -69,7 +66,7 @@ The IAM role used by the local TCP server when communicating with the AWS X-Ray 
 ### aws_endpoint (Optional)
 The X-Ray service endpoint which the local TCP server forwards requests to.
 
-### local_mode
+### local_mode (Optional)
 Determines whether the ECS/EC2 instance metadata endpoint will be called to fetch the AWS region to send requests to. Set to `true` to skip metadata check.
 
 Default: `false`

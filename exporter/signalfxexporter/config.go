@@ -20,16 +20,24 @@ import (
 	"net/url"
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
+
+const (
+	translationRulesConfigKey = "translation_rules"
+)
+
+var _ config.CustomUnmarshable = (*Config)(nil)
 
 // Config defines configuration for SignalFx exporter.
 type Config struct {
-	configmodels.ExporterSettings  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	config.ExporterSettings        `mapstructure:",squash"`
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
@@ -62,10 +70,6 @@ type Config struct {
 
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
 
-	// SendCompatibleMetrics specifies if metrics must be sent in a format backward-compatible with
-	// SignalFx naming conventions, "false" by default.
-	SendCompatibleMetrics bool `mapstructure:"send_compatible_metrics"`
-
 	// TranslationRules defines a set of rules how to translate metrics to a SignalFx compatible format
 	// Rules defined in translation/constants.go are used by default.
 	TranslationRules []translation.Rule `mapstructure:"translation_rules"`
@@ -84,10 +88,22 @@ type Config struct {
 	//            And keep `override=true` in resourcedetection config.
 	SyncHostMetadata bool `mapstructure:"sync_host_metadata"`
 
-	// ExcludeMetrics defines metrics that will be excluded from sending to Signalfx
-	// backend. If translations enabled with SendCompatibleMetrics or TranslationRules
-	// options, the exclusion will be applied on translated metrics.
-	ExcludeMetrics []string `mapstructure:"exclude_metrics"`
+	// ExcludeMetrics defines dpfilter.MetricFilters that will determine metrics to be
+	// excluded from sending to SignalFx backend. If translations enabled with
+	// TranslationRules options, the exclusion will be applie on translated metrics.
+	ExcludeMetrics []dpfilters.MetricFilter `mapstructure:"exclude_metrics"`
+
+	// IncludeMetrics defines dpfilter.MetricFilters to override exclusion any of metric.
+	// This option can be used to included metrics that are otherwise dropped by default.
+	// See ./translation/default_metrics.go for a list of metrics that are dropped by default.
+	IncludeMetrics []dpfilters.MetricFilter `mapstructure:"include_metrics"`
+
+	// Correlation configuration for syncing traces service and environment to metrics.
+	Correlation *correlation.Config `mapstructure:"correlation"`
+
+	// NonAlphanumericDimensionChars is a list of allowable characters, in addition to alphanumeric ones,
+	// to be used in a dimension key.
+	NonAlphanumericDimensionChars string `mapstructure:"nonalphanumeric_dimension_chars"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
@@ -109,12 +125,9 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 		cfg.Timeout = 5 * time.Second
 	}
 
-	var metricTranslator *translation.MetricTranslator
-	if cfg.SendCompatibleMetrics {
-		metricTranslator, err = translation.NewMetricTranslator(cfg.TranslationRules, cfg.DeltaTranslationTTL)
-		if err != nil {
-			return nil, fmt.Errorf("invalid \"translation_rules\": %v", err)
-		}
+	metricTranslator, err := translation.NewMetricTranslator(cfg.TranslationRules, cfg.DeltaTranslationTTL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid \"%s\": %v", translationRulesConfigKey, err)
 	}
 
 	return &exporterOptions{
@@ -129,41 +142,54 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 
 func (cfg *Config) validateConfig() error {
 	if cfg.AccessToken == "" {
-		return errors.New("requires a non-empty \"access_token\"")
+		return errors.New(`requires a non-empty "access_token"`)
 	}
 
 	if cfg.Realm == "" && (cfg.IngestURL == "" || cfg.APIURL == "") {
-		return errors.New("requires a non-empty \"realm\", or" +
-			" \"ingest_url\" and \"api_url\" should be explicitly set")
+		return errors.New(`requires a non-empty "realm", or` +
+			` "ingest_url" and "api_url" should be explicitly set`)
 	}
 
 	if cfg.Timeout < 0 {
-		return errors.New("cannot have a negative \"timeout\"")
+		return errors.New(`cannot have a negative "timeout"`)
 	}
 
 	return nil
 }
 
-func (cfg *Config) getIngestURL() (out *url.URL, err error) {
-	if cfg.IngestURL == "" {
-		out, err = url.Parse(fmt.Sprintf("https://ingest.%s.signalfx.com", cfg.Realm))
-		if err != nil {
-			return out, err
-		}
-	} else {
+func (cfg *Config) getIngestURL() (*url.URL, error) {
+	if cfg.IngestURL != "" {
 		// Ignore realm and use the IngestURL. Typically used for debugging.
-		out, err = url.Parse(cfg.IngestURL)
-		if err != nil {
-			return out, err
-		}
+		return url.Parse(cfg.IngestURL)
 	}
 
-	return out, err
+	return url.Parse(fmt.Sprintf("https://ingest.%s.signalfx.com", cfg.Realm))
 }
 
 func (cfg *Config) getAPIURL() (*url.URL, error) {
-	if cfg.APIURL == "" {
-		return url.Parse(fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm))
+	if cfg.APIURL != "" {
+		// Ignore realm and use the APIURL. Typically used for debugging.
+		return url.Parse(cfg.APIURL)
 	}
-	return url.Parse(cfg.APIURL)
+
+	return url.Parse(fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm))
+}
+
+func (cfg *Config) Unmarshal(componentParser *config.Parser) (err error) {
+	if componentParser == nil {
+		// Nothing to do if there is no config given.
+		return nil
+	}
+
+	if err = componentParser.Unmarshal(cfg); err != nil {
+		return err
+	}
+
+	// If translations_config is not set in the config, set it to the defaults and return.
+	if !componentParser.IsSet(translationRulesConfigKey) {
+		cfg.TranslationRules, err = loadDefaultTranslationRules()
+		return err
+	}
+
+	return nil
 }

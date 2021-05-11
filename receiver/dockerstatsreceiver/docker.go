@@ -26,7 +26,7 @@ import (
 	dtypes "github.com/docker/docker/api/types"
 	dfilters "github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 )
 
@@ -131,7 +131,7 @@ func (dc *dockerClient) LoadContainerList(ctx context.Context) error {
 func (dc *dockerClient) FetchContainerStatsAndConvertToMetrics(
 	ctx context.Context,
 	container DockerContainer,
-) (*consumerdata.MetricsData, error) {
+) (*internaldata.MetricsData, error) {
 	dc.logger.Debug("Fetching container stats.", zap.String("id", container.ID))
 	statsCtx, cancel := context.WithTimeout(ctx, dc.config.Timeout)
 	containerStats, err := dc.client.ContainerStats(statsCtx, container.ID, false)

@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -32,29 +32,38 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter))
+		exporterhelper.WithTraces(createTracesExporter))
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
+		ExporterSettings:    config.NewExporterSettings(config.NewID(typeStr)),
 		APIKey:              "",
 		Dataset:             "",
 		APIURL:              "https://api.honeycomb.io",
-		SampleRate:          1,
 		SampleRateAttribute: "",
 		Debug:               false,
+		RetrySettings:       exporterhelper.DefaultRetrySettings(),
+		QueueSettings:       exporterhelper.DefaultQueueSettings(),
 	}
 }
 
-func createTraceExporter(
+func createTracesExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
-) (component.TraceExporter, error) {
+	cfg config.Exporter,
+) (component.TracesExporter, error) {
 	eCfg := cfg.(*Config)
-	return newHoneycombTraceExporter(eCfg, params.Logger)
+	exporter, err := newHoneycombTracesExporter(eCfg, params.Logger)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewTracesExporter(
+		cfg,
+		params.Logger,
+		exporter.pushTraceData,
+		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithRetry(eCfg.RetrySettings),
+		exporterhelper.WithQueue(eCfg.QueueSettings))
 }

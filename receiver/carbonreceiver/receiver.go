@@ -31,8 +31,7 @@ import (
 )
 
 var (
-	errNilNextConsumer = errors.New("nil nextConsumer")
-	errEmptyEndpoint   = errors.New("empty endpoint")
+	errEmptyEndpoint = errors.New("empty endpoint")
 )
 
 // carbonreceiver implements a component.MetricsReceiver for Carbon plaintext, aka "line", protocol.
@@ -45,10 +44,7 @@ type carbonReceiver struct {
 	server       transport.Server
 	reporter     transport.Reporter
 	parser       protocol.Parser
-	nextConsumer consumer.MetricsConsumer
-
-	startOnce sync.Once
-	stopOnce  sync.Once
+	nextConsumer consumer.Metrics
 }
 
 var _ component.MetricsReceiver = (*carbonReceiver)(nil)
@@ -57,11 +53,11 @@ var _ component.MetricsReceiver = (*carbonReceiver)(nil)
 func New(
 	logger *zap.Logger,
 	config Config,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 
 	if nextConsumer == nil {
-		return nil, errNilNextConsumer
+		return nil, componenterror.ErrNilNextConsumer
 	}
 
 	if config.Endpoint == "" {
@@ -83,7 +79,7 @@ func New(
 
 	// This should be the last one built, or if any other error is raised after
 	// it, the server should be closed.
-	server, err := buildTransportServer(config, logger)
+	server, err := buildTransportServer(config)
 	if err != nil {
 		return nil, err
 	}
@@ -93,14 +89,14 @@ func New(
 		config:       &config,
 		nextConsumer: nextConsumer,
 		server:       server,
-		reporter:     newReporter(config.Name(), logger),
+		reporter:     newReporter(config.ID(), logger),
 		parser:       parser,
 	}
 
 	return &r, nil
 }
 
-func buildTransportServer(config Config, logger *zap.Logger) (transport.Server, error) {
+func buildTransportServer(config Config) (transport.Server, error) {
 	switch strings.ToLower(config.Transport) {
 	case "", "tcp":
 		return transport.NewTCPServer(config.Endpoint, config.TCPIdleTimeout)
@@ -108,7 +104,7 @@ func buildTransportServer(config Config, logger *zap.Logger) (transport.Server, 
 		return transport.NewUDPServer(config.Endpoint)
 	}
 
-	return nil, fmt.Errorf("unsupported transport %q for receiver %q", config.Transport, config.Name())
+	return nil, fmt.Errorf("unsupported transport %q for receiver %v", config.Transport, config.ID())
 }
 
 // Start tells the receiver to start its processing.
@@ -118,18 +114,12 @@ func (r *carbonReceiver) Start(_ context.Context, host component.Host) error {
 	r.Lock()
 	defer r.Unlock()
 
-	err := componenterror.ErrAlreadyStarted
-	r.startOnce.Do(func() {
-		err = nil
-		go func() {
-			err = r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter)
-			if err != nil {
-				host.ReportFatalError(err)
-			}
-		}()
-	})
-
-	return err
+	go func() {
+		if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter); err != nil {
+			host.ReportFatalError(err)
+		}
+	}()
+	return nil
 }
 
 // Shutdown tells the receiver that should stop reception,
@@ -138,9 +128,5 @@ func (r *carbonReceiver) Shutdown(context.Context) error {
 	r.Lock()
 	defer r.Unlock()
 
-	err := componenterror.ErrAlreadyStopped
-	r.stopOnce.Do(func() {
-		err = r.server.Close()
-	})
-	return err
+	return r.server.Close()
 }

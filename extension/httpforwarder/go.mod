@@ -1,9 +1,11 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder
 
-go 1.14
+go 1.15
 
 require (
-	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.12.1-0.20201012183541-526f34200197
+	github.com/pelletier/go-toml v1.8.0 // indirect
+	github.com/stretchr/testify v1.7.0
+	go.opentelemetry.io/collector v0.26.1-0.20210510162429-51281a719256
 	go.uber.org/zap v1.16.0
+	gopkg.in/ini.v1 v1.57.0 // indirect
 )

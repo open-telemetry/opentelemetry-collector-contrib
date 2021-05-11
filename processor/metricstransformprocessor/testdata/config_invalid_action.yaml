@@ -1,23 +1,22 @@
 receivers:
-    examplereceiver:
+    nop:
 
 processors:
     metricstransform:
         transforms:
-          - metric_name: old_name
+          - include: old_name
             action: invalid # invalid action type
-            
 
 exporters:
-    exampleexporter:
+    nop:
 
 service:
     pipelines:
         traces:
-            receivers: [examplereceiver]
+            receivers: [nop]
             processors: [metricstransform]
-            exporters: [exampleexporter]
+            exporters: [nop]
         metrics:
-            receivers: [examplereceiver]
+            receivers: [nop]
             processors: [metricstransform]
-            exporters: [exampleexporter]
+            exporters: [nop]

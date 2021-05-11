@@ -17,14 +17,14 @@ package elasticexporter
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
 // Config defines configuration for Elastic APM exporter.
 type Config struct {
-	configmodels.ExporterSettings `mapstructure:",squash"`
-	configtls.TLSClientSetting    `mapstructure:",squash"`
+	config.ExporterSettings    `mapstructure:",squash"`
+	configtls.TLSClientSetting `mapstructure:",squash"`
 
 	// APMServerURLs holds the APM Server URL.
 	//

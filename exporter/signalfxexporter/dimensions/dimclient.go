@@ -35,7 +35,7 @@ import (
 )
 
 // DimensionClient sends updates to dimensions to the SignalFx API
-// This is a port of https://github.com/signalfx/signalfx-agent/blob/master/pkg/core/writer/dimensions/client.go
+// This is a port of https://github.com/signalfx/signalfx-agent/blob/main/pkg/core/writer/dimensions/client.go
 // with the only major difference being deduplication of dimension
 // updates are currently not done by this port.
 type DimensionClient struct {
@@ -72,7 +72,7 @@ type DimensionClient struct {
 	TotalSuccessfulUpdates       int64
 	logUpdates                   bool
 	logger                       *zap.Logger
-	metricTranslator             *translation.MetricTranslator
+	metricsConverter             translation.MetricsConverter
 }
 
 type queuedDimension struct {
@@ -87,12 +87,11 @@ type DimensionClientOptions struct {
 	Logger                *zap.Logger
 	SendDelay             int
 	PropertiesMaxBuffered int
-	MetricTranslator      *translation.MetricTranslator
+	MetricsConverter      translation.MetricsConverter
 }
 
 // NewDimensionClient returns a new client
 func NewDimensionClient(ctx context.Context, options DimensionClientOptions) *DimensionClient {
-
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 		Transport: &http.Transport{
@@ -122,7 +121,7 @@ func NewDimensionClient(ctx context.Context, options DimensionClientOptions) *Di
 		now:              time.Now,
 		logger:           options.Logger,
 		logUpdates:       options.LogUpdates,
-		metricTranslator: options.MetricTranslator,
+		metricsConverter: options.MetricsConverter,
 	}
 }
 
@@ -243,6 +242,7 @@ func (dc *DimensionClient) handleDimensionUpdate(dimUpdate *DimensionUpdate) err
 					zap.Error(err),
 					zap.String("URL", req.URL.String()),
 					zap.String("dimensionUpdate", dimUpdate.String()),
+					zap.Int("statusCode", statusCode),
 				)
 
 				// Don't retry if it is a 4xx error (except 404) since these
@@ -258,6 +258,7 @@ func (dc *DimensionClient) handleDimensionUpdate(dimUpdate *DimensionUpdate) err
 				zap.Error(err),
 				zap.String("URL", req.URL.String()),
 				zap.String("dimensionUpdate", dimUpdate.String()),
+				zap.Int("statusCode", statusCode),
 			)
 			atomic.AddInt64(&dc.TotalRetriedUpdates, int64(1))
 			// The retry is meant to provide some measure of robustness against
@@ -270,6 +271,7 @@ func (dc *DimensionClient) handleDimensionUpdate(dimUpdate *DimensionUpdate) err
 					zap.Error(err),
 					zap.String("URL", req.URL.String()),
 					zap.String("dimensionUpdate", dimUpdate.String()),
+					zap.Int("statusCode", statusCode),
 				)
 			}
 		})))

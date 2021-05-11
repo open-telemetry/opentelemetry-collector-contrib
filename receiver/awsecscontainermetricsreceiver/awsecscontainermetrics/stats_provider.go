@@ -30,8 +30,8 @@ func NewStatsProvider(rc RestClient) *StatsProvider {
 }
 
 // GetStats calls the ecs task metadata endpoint and unmarshals the data
-func (p *StatsProvider) GetStats() (map[string]ContainerStats, TaskMetadata, error) {
-	stats := make(map[string]ContainerStats)
+func (p *StatsProvider) GetStats() (map[string]*ContainerStats, TaskMetadata, error) {
+	stats := make(map[string]*ContainerStats)
 	var metadata TaskMetadata
 
 	taskStats, taskMetadata, err := p.rc.EndpointResponse()

@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -32,7 +32,7 @@ import (
 const (
 	typeStr               = "collectd"
 	defaultBindEndpoint   = "localhost:8081"
-	defaultTimeout        = time.Duration(time.Second * 30)
+	defaultTimeout        = time.Second * 30
 	defaultEncodingFormat = "json"
 )
 
@@ -43,12 +43,9 @@ func NewFactory() component.ReceiverFactory {
 		createDefaultConfig,
 		receiverhelper.WithMetrics(createMetricsReceiver))
 }
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: defaultBindEndpoint,
 		},
@@ -60,8 +57,8 @@ func createDefaultConfig() configmodels.Receiver {
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumer,
+	cfg config.Receiver,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	c := cfg.(*Config)
 	c.Encoding = strings.ToLower(c.Encoding)

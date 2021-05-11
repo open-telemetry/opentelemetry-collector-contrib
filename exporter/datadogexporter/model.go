@@ -12,21 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !windows
-
 package datadogexporter
 
 import (
-	"github.com/DataDog/datadog-agent/pkg/trace/event"
-	"github.com/DataDog/datadog-agent/pkg/trace/obfuscate"
-	"github.com/DataDog/datadog-agent/pkg/trace/pb"
-	"github.com/DataDog/datadog-agent/pkg/trace/sampler"
-	"github.com/DataDog/datadog-agent/pkg/trace/stats"
-	"github.com/DataDog/datadog-agent/pkg/trace/traceutil"
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/event"
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/obfuscate"
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/sampler"
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/stats"
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/traceutil"
 )
 
-// ObfuscatePayload applies obfuscator rules to the trace payloads
-func ObfuscatePayload(obfuscator *obfuscate.Obfuscator, tracePayloads []*pb.TracePayload) {
+// obfuscatePayload applies obfuscator rules to the trace payloads
+func obfuscatePayload(obfuscator *obfuscate.Obfuscator, tracePayloads []*pb.TracePayload) {
 	for _, tracePayload := range tracePayloads {
 
 		// Obfuscate the traces in the payload
@@ -38,7 +36,7 @@ func ObfuscatePayload(obfuscator *obfuscate.Obfuscator, tracePayloads []*pb.Trac
 	}
 }
 
-// GetAnalyzedSpans finds all the analyzed spans in a trace, including top level spans
+// getAnalyzedSpans finds all the analyzed spans in a trace, including top level spans
 // and spans marked as analyzed by the tracer.
 // A span is considered top-level if:
 // - it's a root span
@@ -46,7 +44,7 @@ func ObfuscatePayload(obfuscator *obfuscate.Obfuscator, tracePayloads []*pb.Trac
 // - its parent belongs to another service (in that case it's a "local root"
 //   being the highest ancestor of other spans belonging to this service and
 //   attached to it).
-func GetAnalyzedSpans(sps []*pb.Span) []*pb.Span {
+func getAnalyzedSpans(sps []*pb.Span) []*pb.Span {
 	// build a lookup map
 	spanIDToIdx := make(map[uint64]int, len(sps))
 	for i, span := range sps {
@@ -79,14 +77,14 @@ func GetAnalyzedSpans(sps []*pb.Span) []*pb.Span {
 
 // Compute Sublayers updates a spans metrics with relevant metadata so that it's duration and breakdown between different services can
 // be accurately displayed in the Datadog UI
-func ComputeSublayerMetrics(t pb.Trace) {
+func computeSublayerMetrics(calculator *sublayerCalculator, t pb.Trace) {
 	root := traceutil.GetRoot(t)
 	traceutil.ComputeTopLevel(t)
 
 	subtraces := stats.ExtractSubtraces(t, root)
 	sublayers := make(map[*pb.Span][]stats.SublayerValue)
 	for _, subtrace := range subtraces {
-		subtraceSublayers := stats.ComputeSublayers(subtrace.Trace)
+		subtraceSublayers := calculator.computeSublayers(subtrace.Trace)
 		sublayers[subtrace.Root] = subtraceSublayers
 		stats.SetSublayersOnSpan(subtrace.Root, subtraceSublayers)
 	}

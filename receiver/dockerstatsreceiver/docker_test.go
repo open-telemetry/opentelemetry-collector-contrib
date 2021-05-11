@@ -74,10 +74,6 @@ func tmpSock(t *testing.T) (net.Listener, string) {
 	return listener, addr
 }
 
-func expectedConnectError(addr string) string {
-	return fmt.Sprintf("Cannot connect to the Docker daemon at unix://%s.", addr)
-}
-
 func TestWatchingTimeouts(t *testing.T) {
 	listener, addr := tmpSock(t)
 	defer listener.Close()
@@ -92,7 +88,7 @@ func TestWatchingTimeouts(t *testing.T) {
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
-	expectedError := expectedConnectError(addr)
+	expectedError := "context deadline exceeded"
 
 	shouldHaveTaken := time.Now().Add(100 * time.Millisecond).UnixNano()
 
@@ -133,7 +129,7 @@ func TestFetchingTimeouts(t *testing.T) {
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
-	expectedError := expectedConnectError(addr)
+	expectedError := "context deadline exceeded"
 
 	shouldHaveTaken := time.Now().Add(50 * time.Millisecond).UnixNano()
 

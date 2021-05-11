@@ -18,16 +18,12 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
+	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
 func makeService(resource pdata.Resource) *awsxray.ServiceData {
-	var (
-		service *awsxray.ServiceData
-	)
-	if resource.IsNil() {
-		return service
-	}
+	var service *awsxray.ServiceData
+
 	verStr, ok := resource.Attributes().Get(semconventions.AttributeServiceVersion)
 	if !ok {
 		verStr, ok = resource.Attributes().Get(semconventions.AttributeContainerTag)

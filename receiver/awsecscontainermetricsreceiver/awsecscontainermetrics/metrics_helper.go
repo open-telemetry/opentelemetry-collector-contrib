@@ -14,60 +14,77 @@
 
 package awsecscontainermetrics
 
+import "go.uber.org/zap"
+
 // getContainerMetrics generate ECS Container metrics from Container stats
-func getContainerMetrics(stats ContainerStats) ECSMetrics {
-	memoryUtilizedInMb := (*stats.Memory.Usage - stats.Memory.Stats["cache"]) / BytesInMiB
-	numOfCores := (uint64)(len(stats.CPU.CPUUsage.PerCPUUsage))
-	timeDiffSinceLastRead := (float64)(stats.Read.Sub(stats.PreviousRead).Nanoseconds())
-
-	cpuUsageInVCpu := float64(0)
-	if timeDiffSinceLastRead > 0 {
-		cpuDelta := (float64)(*stats.CPU.CPUUsage.TotalUsage - *stats.PreviousCPU.CPUUsage.TotalUsage)
-		cpuUsageInVCpu = cpuDelta / timeDiffSinceLastRead
-	}
-	cpuUtilized := cpuUsageInVCpu * 100
-
-	netStatArray := getNetworkStats(stats.Network)
-
-	storageReadBytes, storageWriteBytes := extractStorageUsage(&stats.Disk)
-	floatZero := float64(0)
-
+func getContainerMetrics(stats *ContainerStats, logger *zap.Logger) ECSMetrics {
 	m := ECSMetrics{}
 
-	m.MemoryUsage = *stats.Memory.Usage
-	m.MemoryMaxUsage = *stats.Memory.MaxUsage
-	m.MemoryLimit = *stats.Memory.Limit
-	m.MemoryUtilized = memoryUtilizedInMb
+	if stats.Memory != nil {
+		m.MemoryUsage = *stats.Memory.Usage
+		m.MemoryMaxUsage = *stats.Memory.MaxUsage
+		m.MemoryLimit = *stats.Memory.Limit
 
-	m.CPUTotalUsage = *stats.CPU.CPUUsage.TotalUsage
-	m.CPUUsageInKernelmode = *stats.CPU.CPUUsage.UsageInKernelmode
-	m.CPUUsageInUserMode = *stats.CPU.CPUUsage.UsageInUserMode
-	m.NumOfCPUCores = numOfCores
-	m.CPUOnlineCpus = *stats.CPU.OnlineCpus
-	m.SystemCPUUsage = *stats.CPU.SystemCPUUsage
-	m.CPUUsageInVCPU = cpuUsageInVCpu
-	m.CPUUtilized = cpuUtilized
-
-	if stats.NetworkRate == (NetworkRateStats{}) {
-		m.NetworkRateRxBytesPerSecond = floatZero
-		m.NetworkRateTxBytesPerSecond = floatZero
+		if stats.Memory.Stats != nil {
+			m.MemoryUtilized = (*stats.Memory.Usage - stats.Memory.Stats["cache"]) / BytesInMiB
+		}
 	} else {
-		m.NetworkRateRxBytesPerSecond = *stats.NetworkRate.RxBytesPerSecond
-		m.NetworkRateTxBytesPerSecond = *stats.NetworkRate.TxBytesPerSecond
+		logger.Debug("Nil memory stats found for docker container:" + stats.Name)
 	}
 
-	m.NetworkRxBytes = netStatArray[0]
-	m.NetworkRxPackets = netStatArray[1]
-	m.NetworkRxErrors = netStatArray[2]
-	m.NetworkRxDropped = netStatArray[3]
+	if stats.CPU != nil && stats.CPU.CPUUsage != nil {
+		numOfCores := (uint64)(len(stats.CPU.CPUUsage.PerCPUUsage))
+		timeDiffSinceLastRead := (float64)(stats.Read.Sub(stats.PreviousRead).Nanoseconds())
 
-	m.NetworkTxBytes = netStatArray[4]
-	m.NetworkTxPackets = netStatArray[5]
-	m.NetworkTxErrors = netStatArray[6]
-	m.NetworkTxDropped = netStatArray[7]
+		cpuUsageInVCpu := float64(0)
+		if timeDiffSinceLastRead > 0 {
+			cpuDelta := (float64)(*stats.CPU.CPUUsage.TotalUsage - *stats.PreviousCPU.CPUUsage.TotalUsage)
+			cpuUsageInVCpu = cpuDelta / timeDiffSinceLastRead
+		}
+		cpuUtilized := cpuUsageInVCpu * 100
 
-	m.StorageReadBytes = storageReadBytes
-	m.StorageWriteBytes = storageWriteBytes
+		m.CPUTotalUsage = *stats.CPU.CPUUsage.TotalUsage
+		m.CPUUsageInKernelmode = *stats.CPU.CPUUsage.UsageInKernelmode
+		m.CPUUsageInUserMode = *stats.CPU.CPUUsage.UsageInUserMode
+		m.NumOfCPUCores = numOfCores
+		m.CPUOnlineCpus = *stats.CPU.OnlineCpus
+		m.SystemCPUUsage = *stats.CPU.SystemCPUUsage
+		m.CPUUsageInVCPU = cpuUsageInVCpu
+		m.CPUUtilized = cpuUtilized
+	} else {
+		logger.Debug("Nil CPUUsage stats found for docker container:" + stats.Name)
+	}
+
+	if stats.NetworkRate != nil {
+		m.NetworkRateRxBytesPerSecond = *stats.NetworkRate.RxBytesPerSecond
+		m.NetworkRateTxBytesPerSecond = *stats.NetworkRate.TxBytesPerSecond
+	} else {
+		logger.Debug("Nil NetworkRate stats found for docker container:" + stats.Name)
+	}
+
+	if stats.Network != nil {
+		netStatArray := getNetworkStats(stats.Network)
+
+		m.NetworkRxBytes = netStatArray[0]
+		m.NetworkRxPackets = netStatArray[1]
+		m.NetworkRxErrors = netStatArray[2]
+		m.NetworkRxDropped = netStatArray[3]
+
+		m.NetworkTxBytes = netStatArray[4]
+		m.NetworkTxPackets = netStatArray[5]
+		m.NetworkTxErrors = netStatArray[6]
+		m.NetworkTxDropped = netStatArray[7]
+	} else {
+		logger.Debug("Nil Network stats found for docker container:" + stats.Name)
+	}
+
+	if stats.Disk != nil {
+		storageReadBytes, storageWriteBytes := extractStorageUsage(stats.Disk)
+
+		m.StorageReadBytes = storageReadBytes
+		m.StorageWriteBytes = storageWriteBytes
+	}
+
 	return m
 }
 

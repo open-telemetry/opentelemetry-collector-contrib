@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
@@ -117,13 +117,14 @@ func (c *Containers) pullImage(image string) {
 	}
 }
 
-func (c *Containers) createContainer(image string) container.ContainerCreateCreatedBody {
+func (c *Containers) createContainer(image string, env []string) container.ContainerCreateCreatedBody {
 	created, err := c.cli.ContainerCreate(context.Background(), &container.Config{
 		Image:  image,
 		Labels: map[string]string{"started-by": "opentelemetry-testing"},
+		Env:    env,
 	}, &container.HostConfig{
 		PublishAllPorts: true,
-	}, &network.NetworkingConfig{}, "")
+	}, &network.NetworkingConfig{}, nil, "")
 	if err != nil {
 		c.t.Fatalf("failed creating container with image %v: %v", image, err)
 	}
@@ -179,8 +180,12 @@ func (c *Containers) waitForPorts(con Container) {
 
 // StartImage starts a container with the given image and zero or more ContainerOptions.
 func (c *Containers) StartImage(image string, opts ...Option) Container {
+	return c.StartImageWithEnv(image, nil, opts...)
+}
+
+func (c *Containers) StartImageWithEnv(image string, env []string, opts ...Option) Container {
 	c.pullImage(image)
-	created := c.createContainer(image)
+	created := c.createContainer(image, env)
 	con := c.startContainer(created)
 	c.runningContainers[con.ID] = con
 

@@ -1,8 +1,8 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
   splunk_hec:
@@ -14,6 +14,11 @@ exporters:
     source: "otel"
     sourcetype: "otel"
     index: "metrics"
+    insecure_skip_verify: false
+    insecure: true
+    ca_file: ""
+    cert_file: ""
+    key_file: ""
     timeout: 10s
     sending_queue:
       enabled: true
@@ -28,6 +33,6 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
+      receivers: [nop]
+      processors: [nop]
       exporters: [splunk_hec, splunk_hec/allsettings]

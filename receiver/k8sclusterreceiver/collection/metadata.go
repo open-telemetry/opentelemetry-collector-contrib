@@ -21,16 +21,17 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
+	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 const (
 	// Keys for K8s metadata
 	k8sKeyWorkLoadKind = "k8s.workload.kind"
 	k8sKeyWorkLoadName = "k8s.workload.name"
-)
 
-type ResourceID string
+	k8sServicePrefix = "k8s.service."
+)
 
 // KubernetesMetadata associates a resource to a set of properties.
 type KubernetesMetadata struct {
@@ -38,7 +39,7 @@ type KubernetesMetadata struct {
 	resourceIDKey string
 	// resourceID is the Kubernetes UID of the resource. In case of
 	// containers, this value is the container id.
-	resourceID ResourceID
+	resourceID metadataPkg.ResourceID
 	// metadata is a set of key-value pairs that describe a resource.
 	metadata map[string]string
 }
@@ -47,7 +48,7 @@ type KubernetesMetadata struct {
 // live on v1.ObjectMeta.
 func getGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetadata {
 	rType := strings.ToLower(resourceType)
-	metadata := utils.MergeStringMaps(map[string]string{}, om.Labels)
+	metadata := util.MergeStringMaps(map[string]string{}, om.Labels)
 
 	metadata[k8sKeyWorkLoadKind] = resourceType
 	metadata[k8sKeyWorkLoadName] = om.Name
@@ -55,25 +56,30 @@ func getGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetad
 		rType)] = om.GetCreationTimestamp().Format(time.RFC3339)
 
 	for _, or := range om.OwnerReferences {
-		metadata[strings.ToLower(or.Kind)] = or.Name
-		metadata[strings.ToLower(or.Kind)+"_uid"] = string(or.UID)
+		kind := strings.ToLower(or.Kind)
+		metadata[getOTelNameFromKind(kind)] = or.Name
+		metadata[getOTelUIDFromKind(kind)] = string(or.UID)
 	}
 
 	return &KubernetesMetadata{
-		resourceIDKey: getResourceIDKey(rType),
-		resourceID:    ResourceID(om.UID),
+		resourceIDKey: getOTelUIDFromKind(rType),
+		resourceID:    metadataPkg.ResourceID(om.UID),
 		metadata:      metadata,
 	}
 }
 
-func getResourceIDKey(rType string) string {
-	return fmt.Sprintf("k8s.%s.uid", rType)
+func getOTelUIDFromKind(kind string) string {
+	return fmt.Sprintf("k8s.%s.uid", kind)
+}
+
+func getOTelNameFromKind(kind string) string {
+	return fmt.Sprintf("k8s.%s.name", kind)
 }
 
 // mergeKubernetesMetadataMaps merges maps of string (resource id) to
 // KubernetesMetadata into a single map.
-func mergeKubernetesMetadataMaps(maps ...map[ResourceID]*KubernetesMetadata) map[ResourceID]*KubernetesMetadata {
-	out := map[ResourceID]*KubernetesMetadata{}
+func mergeKubernetesMetadataMaps(maps ...map[metadataPkg.ResourceID]*KubernetesMetadata) map[metadataPkg.ResourceID]*KubernetesMetadata {
+	out := map[metadataPkg.ResourceID]*KubernetesMetadata{}
 	for _, m := range maps {
 		for id, km := range m {
 			out[id] = km
@@ -83,36 +89,17 @@ func mergeKubernetesMetadataMaps(maps ...map[ResourceID]*KubernetesMetadata) map
 	return out
 }
 
-// MetadataExporter provides an interface to implement
-// ConsumeMetadata in Exporters that support metadata.
-type MetadataExporter interface {
-	// ConsumeMetadata will be invoked every time there's an
-	// update to a resource that results in one or more MetadataUpdate.
-	ConsumeMetadata(metadata []*MetadataUpdate) error
-}
-
-// MetadataUpdate provides a delta view of metadata on a resource between
-// two revisions of a resource.
-type MetadataUpdate struct {
-	// ResourceIDKey is the label key of UID label for the resource.
-	ResourceIDKey string
-	// ResourceID is the Kubernetes UID of the resource. In case of
-	// containers, this value is the container id.
-	ResourceID ResourceID
-	MetadataDelta
-}
-
 // GetMetadataUpdate processes metadata updates and returns
 // a map of a delta of metadata mapped to each resource.
-func GetMetadataUpdate(old, new map[ResourceID]*KubernetesMetadata) []*MetadataUpdate {
-	var out []*MetadataUpdate
+func GetMetadataUpdate(old, new map[metadataPkg.ResourceID]*KubernetesMetadata) []*metadataPkg.MetadataUpdate {
+	var out []*metadataPkg.MetadataUpdate
 
 	for id, oldMetadata := range old {
 		// if an object with the same id has a previous revision, take a delta
 		// of the metadata.
 		if newMetadata, ok := new[id]; ok {
 			if metadataDelta := getMetadataDelta(oldMetadata.metadata, newMetadata.metadata); metadataDelta != nil {
-				out = append(out, &MetadataUpdate{
+				out = append(out, &metadataPkg.MetadataUpdate{
 					ResourceIDKey: oldMetadata.resourceIDKey,
 					ResourceID:    id,
 					MetadataDelta: *metadataDelta,
@@ -126,10 +113,10 @@ func GetMetadataUpdate(old, new map[ResourceID]*KubernetesMetadata) []*MetadataU
 	for id, km := range new {
 		// if an id is seen for the first time, all metadata need to be added.
 		if _, ok := old[id]; !ok {
-			out = append(out, &MetadataUpdate{
+			out = append(out, &metadataPkg.MetadataUpdate{
 				ResourceIDKey: km.resourceIDKey,
 				ResourceID:    id,
-				MetadataDelta: MetadataDelta{MetadataToAdd: km.metadata},
+				MetadataDelta: metadataPkg.MetadataDelta{MetadataToAdd: km.metadata},
 			})
 		}
 	}
@@ -137,38 +124,10 @@ func GetMetadataUpdate(old, new map[ResourceID]*KubernetesMetadata) []*MetadataU
 	return out
 }
 
-// MetadataDelta keeps track of changes to metadata on resources.
-// The fields on this struct should help determine if there have
-// been changes to resource metadata such as Kubernetes labels.
-// An example of how this is used. Let's say we are dealing with a
-// Pod that has the following labels -
-// {"env": "test", "team": "otell", "usser": "bob"}. Now, let's say
-// there's an update to one or more labels on the same Pod and the
-// labels now look like the following -
-// {"env": "test", "team": "otel", "user": "bob"}. The k8sclusterreceiver
-// upon receiving the event corresponding to the labels updates will
-// generate a MetadataDelta with the following values -
-// 					MetadataToAdd: {"user": "bob"}
-// 					MetadataToRemove: {"usser": "bob"}
-// 					MetadataToUpdate: {"team": "otel"}
-// Apart from Kubernetes labels, the other metadata collected by this
-// receiver are also handled in the same manner.
-type MetadataDelta struct {
-	// MetadataToAdd contains key-value pairs that are newly added to
-	// the resource description in the current revision.
-	MetadataToAdd map[string]string
-	// MetadataToRemove contains key-value pairs that no longer describe
-	// a resource and needs to be removed.
-	MetadataToRemove map[string]string
-	// MetadataToUpdate contains key-value pairs that have been updated
-	// in the current revision compared to the previous revisions(s).
-	MetadataToUpdate map[string]string
-}
-
 // getMetadataDelta returns MetadataDelta between two sets for properties.
 // If the delta between old (oldProps) and new (newProps) revisions of a
 // resource end up being empty, nil is returned.
-func getMetadataDelta(oldProps, newProps map[string]string) *MetadataDelta {
+func getMetadataDelta(oldProps, newProps map[string]string) *metadataPkg.MetadataDelta {
 
 	toAdd, toRemove, toUpdate := map[string]string{}, map[string]string{}, map[string]string{}
 
@@ -193,7 +152,7 @@ func getMetadataDelta(oldProps, newProps map[string]string) *MetadataDelta {
 	}
 
 	if len(toAdd) > 0 || len(toRemove) > 0 || len(toUpdate) > 0 {
-		return &MetadataDelta{
+		return &metadataPkg.MetadataDelta{
 			MetadataToAdd:    toAdd,
 			MetadataToRemove: toRemove,
 			MetadataToUpdate: toUpdate,

@@ -21,21 +21,25 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/client/metadata"
+	"github.com/aws/aws-sdk-go/aws/request"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 )
 
-func NewAlwaysPassMockLogClient() LogClient {
+func NewAlwaysPassMockLogClient(putLogEventsFunc func(args mock.Arguments)) LogClient {
 	logger := zap.NewNop()
 	svc := new(mockCloudWatchLogsClient)
 
 	svc.On("PutLogEvents", mock.Anything).Return(
 		&cloudwatchlogs.PutLogEventsOutput{
 			NextSequenceToken: &expectedNextSequenceToken},
-		nil)
+		nil).Run(putLogEventsFunc)
 
 	svc.On("CreateLogGroup", mock.Anything).Return(new(cloudwatchlogs.CreateLogGroupOutput), nil)
 
@@ -433,4 +437,24 @@ func TestLogUnknownError(t *testing.T) {
 	actualLog := fmt.Sprintf("E! cloudwatchlogs: code: %s, message: %s, original error: %+v, %#v", err.Code(), err.Message(), err.OrigErr(), err)
 	expectedLog := "E! cloudwatchlogs: code: Code, message: Message, original error: OrigErr, &awsemfexporter.UnknownError{otherField:\"otherFieldValue\"}"
 	assert.Equal(t, expectedLog, actualLog)
+}
+
+func TestUserAgent(t *testing.T) {
+	logger := zap.NewNop()
+
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
+
+	session, _ := session.NewSession()
+	cwlog := NewCloudWatchLogsClient(logger, &aws.Config{}, buildInfo, session)
+	logClient := cwlog.(*cloudWatchLogClient).svc.(*cloudwatchlogs.CloudWatchLogs)
+
+	req := request.New(aws.Config{}, metadata.ClientInfo{}, logClient.Handlers, nil, &request.Operation{
+		HTTPMethod: "GET",
+		HTTPPath:   "/",
+	}, nil, nil)
+
+	logClient.Handlers.Build.Run(req)
+	assert.Contains(t, req.HTTPRequest.UserAgent(), "opentelemetry-collector-contrib/1.0")
 }

@@ -24,7 +24,7 @@ import (
 
 func TestToTime(t *testing.T) {
 	// 61 seconds after the Unix epoch of 1970-01-01T00:00:00Z
-	input := pdata.TimestampUnixNano(60000000001)
+	input := pdata.Timestamp(60000000001)
 	output := toTime(input)
 
 	assert.NotNil(t, output)

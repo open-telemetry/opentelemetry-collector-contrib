@@ -22,17 +22,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
 	factory := NewFactory()
 	receiverType := "awsecscontainermetrics"
-	factories.Receivers[configmodels.Type(receiverType)] = factory
+	factories.Receivers[config.Type(receiverType)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -42,16 +42,13 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 2)
 
-	r1 := cfg.Receivers["awsecscontainermetrics"]
+	r1 := cfg.Receivers[config.NewID(typeStr)]
 	assert.Equal(t, r1, factory.CreateDefaultConfig())
 
-	r2 := cfg.Receivers["awsecscontainermetrics/collection_interval_settings"].(*Config)
+	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "collection_interval_settings")].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(receiverType),
-				NameVal: "awsecscontainermetrics/collection_interval_settings",
-			},
+			ReceiverSettings:   config.NewReceiverSettings(config.NewIDWithName(typeStr, "collection_interval_settings")),
 			CollectionInterval: 10 * time.Second,
 		})
 }

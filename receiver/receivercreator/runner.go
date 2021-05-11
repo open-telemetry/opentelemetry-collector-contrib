@@ -18,38 +18,40 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configloader"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
 )
 
 // runner starts and stops receiver instances.
 type runner interface {
 	// start a receiver instance from its static config and discovered config.
-	start(receiver receiverConfig, discoveredConfig userConfigMap) (component.Receiver, error)
+	start(receiver receiverConfig, discoveredConfig userConfigMap, nextConsumer consumer.Metrics) (component.Receiver, error)
 	// shutdown a receiver.
 	shutdown(rcvr component.Receiver) error
 }
 
 // receiverRunner handles starting/stopping of a concrete subreceiver instance.
 type receiverRunner struct {
-	logger       *zap.Logger
-	nextConsumer consumer.MetricsConsumer
-	idNamespace  string
-	ctx          context.Context
-	host         component.Host
+	params      component.ReceiverCreateParams
+	idNamespace config.ComponentID
+	host        component.Host
 }
 
 var _ runner = (*receiverRunner)(nil)
 
 // start a receiver instance from its static config and discovered config.
-func (run *receiverRunner) start(receiver receiverConfig, discoveredConfig userConfigMap) (component.Receiver, error) {
-	factory := run.host.GetFactory(component.KindReceiver, receiver.typeStr)
+func (run *receiverRunner) start(
+	receiver receiverConfig,
+	discoveredConfig userConfigMap,
+	nextConsumer consumer.Metrics,
+) (component.Receiver, error) {
+	factory := run.host.GetFactory(component.KindReceiver, receiver.id.Type())
 
 	if factory == nil {
-		return nil, fmt.Errorf("unable to lookup factory for receiver %q", receiver.typeStr)
+		return nil, fmt.Errorf("unable to lookup factory for receiver %q", receiver.id.String())
 	}
 
 	receiverFactory := factory.(component.ReceiverFactory)
@@ -58,13 +60,13 @@ func (run *receiverRunner) start(receiver receiverConfig, discoveredConfig userC
 	if err != nil {
 		return nil, err
 	}
-	recvr, err := run.createRuntimeReceiver(receiverFactory, cfg)
+	recvr, err := run.createRuntimeReceiver(receiverFactory, cfg, nextConsumer)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := recvr.Start(run.ctx, run.host); err != nil {
-		return nil, fmt.Errorf("failed starting receiver %s: %v", cfg.Name(), err)
+	if err := recvr.Start(context.Background(), run.host); err != nil {
+		return nil, fmt.Errorf("failed starting receiver %v: %v", cfg.ID(), err)
 	}
 
 	return recvr, nil
@@ -72,7 +74,7 @@ func (run *receiverRunner) start(receiver receiverConfig, discoveredConfig userC
 
 // shutdown the given receiver.
 func (run *receiverRunner) shutdown(rcvr component.Receiver) error {
-	return rcvr.Shutdown(run.ctx)
+	return rcvr.Shutdown(context.Background())
 }
 
 // loadRuntimeReceiverConfig loads the given receiverTemplate merged with config values
@@ -81,31 +83,34 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	factory component.ReceiverFactory,
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
-) (configmodels.Receiver, error) {
-	mergedConfig := config.NewViper()
+) (config.Receiver, error) {
+	mergedConfig := config.NewParser()
 
 	// Merge in the config values specified in the config file.
-	if err := mergedConfig.MergeConfigMap(receiver.config); err != nil {
+	if err := mergedConfig.MergeStringMap(receiver.config); err != nil {
 		return nil, fmt.Errorf("failed to merge template config from config file: %v", err)
 	}
 
 	// Merge in discoveredConfig containing values discovered at runtime.
-	if err := mergedConfig.MergeConfigMap(discoveredConfig); err != nil {
+	if err := mergedConfig.MergeStringMap(discoveredConfig); err != nil {
 		return nil, fmt.Errorf("failed to merge template config from discovered runtime values: %v", err)
 	}
 
-	receiverConfig, err := config.LoadReceiver(mergedConfig, configmodels.Type(receiver.typeStr), receiver.fullName, factory)
+	receiverConfig, err := configloader.LoadReceiver(mergedConfig, receiver.id, factory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template config: %v", err)
 	}
 	// Sets dynamically created receiver to something like receiver_creator/1/redis{endpoint="localhost:6380"}.
 	// TODO: Need to make sure this is unique (just endpoint is probably not totally sufficient).
-	receiverConfig.SetName(fmt.Sprintf("%s/%s{endpoint=%q}", run.idNamespace, receiver.fullName, mergedConfig.GetString(endpointConfigKey)))
+	receiverConfig.SetIDName(fmt.Sprintf("%s/%s{endpoint=%q}", receiver.id.Name(), run.idNamespace, cast.ToString(mergedConfig.Get(endpointConfigKey))))
 	return receiverConfig, nil
 }
 
 // createRuntimeReceiver creates a receiver that is discovered at runtime.
-func (run *receiverRunner) createRuntimeReceiver(factory component.ReceiverFactory, cfg configmodels.Receiver) (component.MetricsReceiver, error) {
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	return factory.CreateMetricsReceiver(context.Background(), params, cfg, run.nextConsumer)
+func (run *receiverRunner) createRuntimeReceiver(
+	factory component.ReceiverFactory,
+	cfg config.Receiver,
+	nextConsumer consumer.Metrics,
+) (component.MetricsReceiver, error) {
+	return factory.CreateMetricsReceiver(context.Background(), run.params, cfg, nextConsumer)
 }

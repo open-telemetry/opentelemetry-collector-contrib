@@ -15,108 +15,99 @@
 package awsecscontainermetrics
 
 import (
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-func convertToOCMetrics(prefix string, m ECSMetrics, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue, timestamp *timestamp.Timestamp) []*metricspb.Metric {
+func convertToOTLPMetrics(prefix string, m ECSMetrics, r pdata.Resource, timestamp pdata.Timestamp) pdata.Metrics {
+	md := pdata.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	r.CopyTo(rm.Resource())
 
-	return applyTimestamp([]*metricspb.Metric{
-		intGauge(prefix+AttributeMemoryUsage, UnitBytes, &m.MemoryUsage, labelKeys, labelValues),
-		intGauge(prefix+AttributeMemoryMaxUsage, UnitBytes, &m.MemoryMaxUsage, labelKeys, labelValues),
-		intGauge(prefix+AttributeMemoryLimit, UnitBytes, &m.MemoryLimit, labelKeys, labelValues),
-		intGauge(prefix+AttributeMemoryUtilized, UnitMegaBytes, &m.MemoryUtilized, labelKeys, labelValues),
-		intGauge(prefix+AttributeMemoryReserved, UnitMegaBytes, &m.MemoryReserved, labelKeys, labelValues),
+	ilms := rm.InstrumentationLibraryMetrics()
 
-		intCumulative(prefix+AttributeCPUTotalUsage, UnitNanoSecond, &m.CPUTotalUsage, labelKeys, labelValues),
-		intCumulative(prefix+AttributeCPUKernelModeUsage, UnitNanoSecond, &m.CPUUsageInKernelmode, labelKeys, labelValues),
-		intCumulative(prefix+AttributeCPUUserModeUsage, UnitNanoSecond, &m.CPUUsageInUserMode, labelKeys, labelValues),
-		intGauge(prefix+AttributeCPUCores, UnitCount, &m.NumOfCPUCores, labelKeys, labelValues),
-		intGauge(prefix+AttributeCPUOnlines, UnitCount, &m.CPUOnlineCpus, labelKeys, labelValues),
-		intCumulative(prefix+AttributeCPUSystemUsage, UnitNanoSecond, &m.SystemCPUUsage, labelKeys, labelValues),
-		doubleGauge(prefix+AttributeCPUUtilized, UnitPercent, &m.CPUUtilized, labelKeys, labelValues),
-		doubleGauge(prefix+AttributeCPUReserved, UnitVCpu, &m.CPUReserved, labelKeys, labelValues),
-		doubleGauge(prefix+AttributeCPUUsageInVCPU, UnitVCpu, &m.CPUUsageInVCPU, labelKeys, labelValues),
+	appendIntGauge(prefix+AttributeMemoryUsage, UnitBytes, int64(m.MemoryUsage), timestamp, ilms.AppendEmpty())
+	appendIntGauge(prefix+AttributeMemoryMaxUsage, UnitBytes, int64(m.MemoryMaxUsage), timestamp, ilms.AppendEmpty())
+	appendIntGauge(prefix+AttributeMemoryLimit, UnitBytes, int64(m.MemoryLimit), timestamp, ilms.AppendEmpty())
+	appendIntGauge(prefix+AttributeMemoryUtilized, UnitMegaBytes, int64(m.MemoryUtilized), timestamp, ilms.AppendEmpty())
+	appendIntGauge(prefix+AttributeMemoryReserved, UnitMegaBytes, int64(m.MemoryReserved), timestamp, ilms.AppendEmpty())
 
-		doubleGauge(prefix+AttributeNetworkRateRx, UnitBytesPerSec, &m.NetworkRateRxBytesPerSecond, labelKeys, labelValues),
-		doubleGauge(prefix+AttributeNetworkRateTx, UnitBytesPerSec, &m.NetworkRateTxBytesPerSecond, labelKeys, labelValues),
+	appendIntSum(prefix+AttributeCPUTotalUsage, UnitNanoSecond, int64(m.CPUTotalUsage), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeCPUKernelModeUsage, UnitNanoSecond, int64(m.CPUUsageInKernelmode), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeCPUUserModeUsage, UnitNanoSecond, int64(m.CPUUsageInUserMode), timestamp, ilms.AppendEmpty())
+	appendIntGauge(prefix+AttributeCPUCores, UnitCount, int64(m.NumOfCPUCores), timestamp, ilms.AppendEmpty())
+	appendIntGauge(prefix+AttributeCPUOnlines, UnitCount, int64(m.CPUOnlineCpus), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeCPUSystemUsage, UnitNanoSecond, int64(m.SystemCPUUsage), timestamp, ilms.AppendEmpty())
+	appendDoubleGauge(prefix+AttributeCPUUtilized, UnitPercent, m.CPUUtilized, timestamp, ilms.AppendEmpty())
+	appendDoubleGauge(prefix+AttributeCPUReserved, UnitVCpu, m.CPUReserved, timestamp, ilms.AppendEmpty())
+	appendDoubleGauge(prefix+AttributeCPUUsageInVCPU, UnitVCpu, m.CPUUsageInVCPU, timestamp, ilms.AppendEmpty())
 
-		intCumulative(prefix+AttributeNetworkRxBytes, UnitBytes, &m.NetworkRxBytes, labelKeys, labelValues),
-		intCumulative(prefix+AttributeNetworkRxPackets, UnitCount, &m.NetworkRxPackets, labelKeys, labelValues),
-		intCumulative(prefix+AttributeNetworkRxErrors, UnitCount, &m.NetworkRxErrors, labelKeys, labelValues),
-		intCumulative(prefix+AttributeNetworkRxDropped, UnitCount, &m.NetworkRxDropped, labelKeys, labelValues),
-		intCumulative(prefix+AttributeNetworkTxBytes, UnitBytes, &m.NetworkTxBytes, labelKeys, labelValues),
-		intCumulative(prefix+AttributeNetworkTxPackets, UnitCount, &m.NetworkTxPackets, labelKeys, labelValues),
-		intCumulative(prefix+AttributeNetworkTxErrors, UnitCount, &m.NetworkTxErrors, labelKeys, labelValues),
-		intCumulative(prefix+AttributeNetworkTxDropped, UnitCount, &m.NetworkTxDropped, labelKeys, labelValues),
+	appendDoubleGauge(prefix+AttributeNetworkRateRx, UnitBytesPerSec, m.NetworkRateRxBytesPerSecond, timestamp, ilms.AppendEmpty())
+	appendDoubleGauge(prefix+AttributeNetworkRateTx, UnitBytesPerSec, m.NetworkRateTxBytesPerSecond, timestamp, ilms.AppendEmpty())
 
-		intCumulative(prefix+AttributeStorageRead, UnitBytes, &m.StorageReadBytes, labelKeys, labelValues),
-		intCumulative(prefix+AttributeStorageWrite, UnitBytes, &m.StorageWriteBytes, labelKeys, labelValues),
-	}, timestamp)
+	appendIntSum(prefix+AttributeNetworkRxBytes, UnitBytes, int64(m.NetworkRxBytes), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeNetworkRxPackets, UnitCount, int64(m.NetworkRxPackets), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeNetworkRxErrors, UnitCount, int64(m.NetworkRxErrors), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeNetworkRxDropped, UnitCount, int64(m.NetworkRxDropped), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeNetworkTxBytes, UnitBytes, int64(m.NetworkTxBytes), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeNetworkTxPackets, UnitCount, int64(m.NetworkTxPackets), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeNetworkTxErrors, UnitCount, int64(m.NetworkTxErrors), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeNetworkTxDropped, UnitCount, int64(m.NetworkTxDropped), timestamp, ilms.AppendEmpty())
+
+	appendIntSum(prefix+AttributeStorageRead, UnitBytes, int64(m.StorageReadBytes), timestamp, ilms.AppendEmpty())
+	appendIntSum(prefix+AttributeStorageWrite, UnitBytes, int64(m.StorageWriteBytes), timestamp, ilms.AppendEmpty())
+
+	return md
 }
 
-func intGauge(metricName string, unit string, value *uint64, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue) *metricspb.Metric {
-	if value == nil {
-		return nil
-	}
-	return &metricspb.Metric{
-		MetricDescriptor: &metricspb.MetricDescriptor{
-			Name:      metricName,
-			Unit:      unit,
-			Type:      metricspb.MetricDescriptor_GAUGE_INT64,
-			LabelKeys: labelKeys,
-		},
-		Timeseries: []*metricspb.TimeSeries{{
-			LabelValues: labelValues,
-			Points: []*metricspb.Point{{
-				Value: &metricspb.Point_Int64Value{
-					Int64Value: int64(*value),
-				},
-			}},
-		}},
-	}
+func convertStoppedContainerDataToOTMetrics(prefix string, containerResource pdata.Resource, timestamp pdata.Timestamp, duration float64) pdata.Metrics {
+	md := pdata.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	containerResource.CopyTo(rm.Resource())
+	ilms := rm.InstrumentationLibraryMetrics()
+
+	appendDoubleGauge(prefix+AttributeDuration, UnitSecond, duration, timestamp, ilms.AppendEmpty())
+
+	return md
 }
 
-func doubleGauge(metricName string, unit string, value *float64, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue) *metricspb.Metric {
-	if value == nil {
-		return nil
-	}
-	return &metricspb.Metric{
-		MetricDescriptor: &metricspb.MetricDescriptor{
-			Name:      metricName,
-			Unit:      unit,
-			Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
-			LabelKeys: labelKeys,
-		},
-		Timeseries: []*metricspb.TimeSeries{{
-			LabelValues: labelValues,
-			Points: []*metricspb.Point{{
-				Value: &metricspb.Point_DoubleValue{
-					DoubleValue: *value,
-				},
-			}},
-		}},
-	}
+func appendIntGauge(metricName string, unit string, value int64, ts pdata.Timestamp, ilm pdata.InstrumentationLibraryMetrics) {
+	metric := appendMetric(ilm, metricName, unit)
+
+	metric.SetDataType(pdata.MetricDataTypeIntGauge)
+	intGauge := metric.IntGauge()
+
+	appendIntDataPoint(intGauge.DataPoints(), value, ts)
 }
 
-func intCumulative(metricName string, unit string, value *uint64, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue) *metricspb.Metric {
-	if value == nil {
-		return nil
-	}
-	return &metricspb.Metric{
-		MetricDescriptor: &metricspb.MetricDescriptor{
-			Name:      metricName,
-			Unit:      unit,
-			Type:      metricspb.MetricDescriptor_CUMULATIVE_INT64,
-			LabelKeys: labelKeys,
-		},
-		Timeseries: []*metricspb.TimeSeries{{
-			LabelValues: labelValues,
-			Points: []*metricspb.Point{{
-				Value: &metricspb.Point_Int64Value{
-					Int64Value: int64(*value),
-				},
-			}},
-		}},
-	}
+func appendIntSum(metricName string, unit string, value int64, ts pdata.Timestamp, ilm pdata.InstrumentationLibraryMetrics) {
+	metric := appendMetric(ilm, metricName, unit)
+
+	metric.SetDataType(pdata.MetricDataTypeIntSum)
+	intSum := metric.IntSum()
+	intSum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+
+	appendIntDataPoint(intSum.DataPoints(), value, ts)
+}
+
+func appendDoubleGauge(metricName string, unit string, value float64, ts pdata.Timestamp, ilm pdata.InstrumentationLibraryMetrics) {
+	metric := appendMetric(ilm, metricName, unit)
+	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+	doubleGauge := metric.DoubleGauge()
+	dataPoint := doubleGauge.DataPoints().AppendEmpty()
+	dataPoint.SetValue(value)
+	dataPoint.SetTimestamp(ts)
+}
+
+func appendIntDataPoint(dataPoints pdata.IntDataPointSlice, value int64, ts pdata.Timestamp) {
+	dataPoint := dataPoints.AppendEmpty()
+	dataPoint.SetValue(value)
+	dataPoint.SetTimestamp(ts)
+}
+
+func appendMetric(ilm pdata.InstrumentationLibraryMetrics, name, unit string) pdata.Metric {
+	metric := ilm.Metrics().AppendEmpty()
+	metric.SetName(name)
+	metric.SetUnit(unit)
+
+	return metric
 }

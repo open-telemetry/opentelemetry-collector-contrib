@@ -1,22 +1,20 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
 
-go 1.14
+go 1.15
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.0.0-00010101000000-000000000000
-	github.com/pkg/errors v0.9.1
-	github.com/spf13/viper v1.7.1
-	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.12.1-0.20201012183541-526f34200197
+	github.com/stretchr/testify v1.7.0
+	go.opentelemetry.io/collector v0.26.1-0.20210510162429-51281a719256
 	go.uber.org/zap v1.16.0
-	google.golang.org/protobuf v1.25.0
-	gopkg.in/yaml.v2 v2.3.0
-	k8s.io/api v0.19.2
-	k8s.io/apimachinery v0.19.2
-	k8s.io/client-go v0.19.2
-	k8s.io/kubernetes v1.12.0
+	google.golang.org/protobuf v1.26.0
+	gopkg.in/yaml.v2 v2.4.0
+	k8s.io/api v0.21.0
+	k8s.io/apimachinery v0.21.0
+	k8s.io/client-go v0.21.0
+	k8s.io/kubelet v0.21.0
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common

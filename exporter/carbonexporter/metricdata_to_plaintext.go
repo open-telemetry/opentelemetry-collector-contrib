@@ -20,7 +20,7 @@ import (
 	"strings"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 const (
@@ -81,7 +81,7 @@ const (
 // 	  a single Carbon metric.
 //  - number of time series successfully converted to carbon.
 // 	- number of time series that could not be converted to Carbon.
-func metricDataToPlaintext(mds []consumerdata.MetricsData) (string, int, int) {
+func metricDataToPlaintext(mds []internaldata.MetricsData) (string, int, int) {
 	if len(mds) == 0 {
 		return "", 0, 0
 	}

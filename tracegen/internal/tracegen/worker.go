@@ -17,29 +17,27 @@ package tracegen
 
 import (
 	"context"
-	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/go-logr/logr"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/propagation"
-	"go.opentelemetry.io/otel/api/trace"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/semconv"
+	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
 
 type worker struct {
 	running          *uint32         // pointer to shared flag that indicates it's time to stop the test
-	id               int             // worker id
 	numTraces        int             // how many traces the worker has to generate (only when duration==0)
 	propagateContext bool            // whether the worker needs to propagate the trace context via HTTP headers
 	totalDuration    time.Duration   // how long to run the test for (overrides `numTraces`)
 	limitPerSecond   rate.Limit      // how many spans per second to generate
 	wg               *sync.WaitGroup // notify when done
-	logger           logr.Logger
+	logger           *zap.Logger
 }
 
 const (
@@ -49,28 +47,28 @@ const (
 )
 
 func (w worker) simulateTraces() {
-	tracer := global.Tracer("tracegen")
+	tracer := otel.Tracer("tracegen")
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 	var i int
 	for atomic.LoadUint32(w.running) == 1 {
 		ctx, sp := tracer.Start(context.Background(), "lets-go", trace.WithAttributes(
-			label.String("span.kind", "client"), // is there a semantic convention for this?
+			attribute.String("span.kind", "client"), // is there a semantic convention for this?
 			semconv.NetPeerIPKey.String(fakeIP),
 			semconv.PeerServiceKey.String("tracegen-server"),
 		))
 
 		childCtx := ctx
 		if w.propagateContext {
-			header := http.Header{}
+			header := propagation.HeaderCarrier{}
 			// simulates going remote
-			propagation.InjectHTTP(childCtx, global.Propagators(), header)
+			otel.GetTextMapPropagator().Inject(childCtx, header)
 
 			// simulates getting a request from a client
-			childCtx = propagation.ExtractHTTP(childCtx, global.Propagators(), header)
+			childCtx = otel.GetTextMapPropagator().Extract(childCtx, header)
 		}
 
 		_, child := tracer.Start(childCtx, "okey-dokey", trace.WithAttributes(
-			label.String("span.kind", "server"),
+			attribute.String("span.kind", "server"),
 			semconv.NetPeerIPKey.String(fakeIP),
 			semconv.PeerServiceKey.String("tracegen-client"),
 		))
@@ -88,6 +86,6 @@ func (w worker) simulateTraces() {
 			}
 		}
 	}
-	w.logger.Info("traces generated", "worker", w.id, "traces", i)
+	w.logger.Info("traces generated", zap.Int("traces", i))
 	w.wg.Done()
 }

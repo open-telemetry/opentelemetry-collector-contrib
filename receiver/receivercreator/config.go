@@ -15,12 +15,12 @@
 package receivercreator
 
 import (
-	"reflect"
+	"fmt"
 
 	"github.com/spf13/cast"
-	"github.com/spf13/viper"
-	otelconfig "go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
 const (
@@ -34,10 +34,8 @@ const (
 
 // receiverConfig describes a receiver instance with a default config.
 type receiverConfig struct {
-	// fullName is the full subreceiver name (ie <receiver type>/<id>).
-	fullName string
-	// typeStr is set based on the configured receiver name.
-	typeStr configmodels.Type
+	// id is the id of the subreceiver (ie <receiver type>/<id>).
+	id config.ComponentID
 	// config is the map configured by the user in the config file. It is the contents of the map from
 	// the "config" section. The keys and values are arbitrarily configured by the user.
 	config userConfigMap
@@ -56,43 +54,77 @@ type receiverTemplate struct {
 	rule rule
 }
 
+// resourceAttributes holds a map of default resource attributes for each Endpoint type.
+type resourceAttributes map[observer.EndpointType]map[string]string
+
 // newReceiverTemplate creates a receiverTemplate instance from the full name of a subreceiver
 // and its arbitrary config map values.
-func newReceiverTemplate(name string, config userConfigMap) (receiverTemplate, error) {
-	typeStr, fullName, err := otelconfig.DecodeTypeAndName(name)
+func newReceiverTemplate(name string, cfg userConfigMap) (receiverTemplate, error) {
+	id, err := config.IDFromString(name)
 	if err != nil {
 		return receiverTemplate{}, err
 	}
 
 	return receiverTemplate{
 		receiverConfig: receiverConfig{
-			typeStr:  typeStr,
-			fullName: fullName,
-			config:   config,
+			id:     id,
+			config: cfg,
 		},
 	}, nil
 }
 
+var _ config.CustomUnmarshable = (*Config)(nil)
+
 // Config defines configuration for receiver_creator.
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
-	receiverTemplates             map[string]receiverTemplate
+	config.ReceiverSettings `mapstructure:",squash"`
+	receiverTemplates       map[string]receiverTemplate
 	// WatchObservers are the extensions to listen to endpoints from.
-	WatchObservers []configmodels.Type `mapstructure:"watch_observers"`
+	WatchObservers []config.Type `mapstructure:"watch_observers"`
+	// ResourceAttributes is a map of default resource attributes to add to each resource
+	// object received by this receiver from dynamically created receivers.
+	ResourceAttributes resourceAttributes `mapstructure:"resource_attributes"`
 }
 
-// Copied from the Viper but changed to use the same delimiter.
-// See https://github.com/spf13/viper/issues/871
-func viperSub(v *viper.Viper, key string) *viper.Viper {
-	subv := otelconfig.NewViper()
-	data := v.Get(key)
-	if data == nil {
-		return subv
+func (cfg *Config) Unmarshal(componentParser *config.Parser) error {
+	if componentParser == nil {
+		// Nothing to do if there is no config given.
+		return nil
 	}
 
-	if reflect.TypeOf(data).Kind() == reflect.Map {
-		subv.MergeConfigMap(cast.ToStringMap(data))
-		return subv
+	if err := componentParser.Unmarshal(cfg); err != nil {
+		return err
 	}
-	return subv
+
+	receiversCfg, err := componentParser.Sub(receiversConfigKey)
+	if err != nil {
+		return fmt.Errorf("unable to extract key %v: %v", receiversConfigKey, err)
+	}
+
+	receiversSettings := cast.ToStringMap(componentParser.Get(receiversConfigKey))
+	for subreceiverKey := range receiversSettings {
+		subreceiverSection, err := receiversCfg.Sub(subreceiverKey)
+		if err != nil {
+			return fmt.Errorf("unable to extract subreceiver key %v: %v", subreceiverKey, err)
+		}
+		cfgSection := cast.ToStringMap(subreceiverSection.Get(configKey))
+		subreceiver, err := newReceiverTemplate(subreceiverKey, cfgSection)
+		if err != nil {
+			return err
+		}
+
+		// Unmarshals receiver_creator configuration like rule.
+		if err = subreceiverSection.Unmarshal(&subreceiver); err != nil {
+			return fmt.Errorf("failed to deserialize sub-receiver %q: %s", subreceiverKey, err)
+		}
+
+		subreceiver.rule, err = newRule(subreceiver.Rule)
+		if err != nil {
+			return fmt.Errorf("subreceiver %q rule is invalid: %v", subreceiverKey, err)
+		}
+
+		cfg.receiverTemplates[subreceiverKey] = subreceiver
+	}
+
+	return nil
 }

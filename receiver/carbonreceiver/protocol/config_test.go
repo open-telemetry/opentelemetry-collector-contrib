@@ -18,9 +18,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
 )
 
 func TestLoadParserConfig(t *testing.T) {
@@ -69,12 +69,11 @@ config:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v := viper.New()
-			v.SetConfigType("yaml")
-			require.NoError(t, v.ReadConfig(strings.NewReader(tt.yaml)))
+			v, err := config.NewParserFromBuffer(strings.NewReader(tt.yaml))
+			require.NoError(t, err)
 
 			got := tt.cfg // Not strictly necessary but it makes easier to debug issues.
-			err := LoadParserConfig(v, &got)
+			err = LoadParserConfig(v, &got)
 			assert.Equal(t, tt.want, got)
 			assert.Equal(t, tt.wantErr, err != nil)
 		})

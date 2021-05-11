@@ -58,19 +58,19 @@ func (v *traceVisitor) visit(
 	return true
 }
 
-func (exporter *traceExporter) onTraceData(context context.Context, traceData pdata.Traces) (droppedSpans int, err error) {
+func (exporter *traceExporter) onTraceData(context context.Context, traceData pdata.Traces) error {
 	spanCount := traceData.SpanCount()
 	if spanCount == 0 {
-		return 0, nil
+		return nil
 	}
 
 	visitor := &traceVisitor{exporter: exporter}
 	Accept(traceData, visitor)
-	return (spanCount - visitor.processed), visitor.err
+	return visitor.err
 }
 
 // Returns a new instance of the trace exporter
-func newTraceExporter(config *Config, transportChannel transportChannel, logger *zap.Logger) (component.TraceExporter, error) {
+func newTracesExporter(config *Config, transportChannel transportChannel, logger *zap.Logger) (component.TracesExporter, error) {
 
 	exporter := &traceExporter{
 		config:           config,
@@ -78,5 +78,5 @@ func newTraceExporter(config *Config, transportChannel transportChannel, logger 
 		logger:           logger,
 	}
 
-	return exporterhelper.NewTraceExporter(config, exporter.onTraceData)
+	return exporterhelper.NewTracesExporter(config, logger, exporter.onTraceData)
 }

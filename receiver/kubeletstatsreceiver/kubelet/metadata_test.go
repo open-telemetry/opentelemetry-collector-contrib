@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 func TestValidateMetadataLabelsConfig(t *testing.T) {
@@ -88,7 +87,7 @@ func TestSetExtraLabels(t *testing.T) {
 				Items: []v1.Pod{
 					{
 						ObjectMeta: metav1.ObjectMeta{
-							UID: types.UID("uid-1234"),
+							UID: "uid-1234",
 						},
 						Status: v1.PodStatus{
 							ContainerStatuses: []v1.ContainerStatus{
@@ -118,7 +117,7 @@ func TestSetExtraLabels(t *testing.T) {
 				Items: []v1.Pod{
 					{
 						ObjectMeta: metav1.ObjectMeta{
-							UID: types.UID("uid-1234"),
+							UID: "uid-1234",
 						},
 						Status: v1.PodStatus{
 							ContainerStatuses: []v1.ContainerStatus{
@@ -146,7 +145,7 @@ func TestSetExtraLabels(t *testing.T) {
 				Items: []v1.Pod{
 					{
 						ObjectMeta: metav1.ObjectMeta{
-							UID: types.UID("uid-1234"),
+							UID: "uid-1234",
 						},
 						Spec: v1.PodSpec{
 							Volumes: []v1.Volume{
@@ -312,7 +311,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 				Items: []v1.Pod{
 					{
 						ObjectMeta: metav1.ObjectMeta{
-							UID: types.UID("uid-1234"),
+							UID: "uid-1234",
 						},
 						Spec: v1.PodSpec{
 							Volumes: []v1.Volume{

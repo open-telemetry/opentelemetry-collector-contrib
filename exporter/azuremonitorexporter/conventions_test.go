@@ -52,7 +52,7 @@ func TestHTTPAttributeMapping(t *testing.T) {
 	appendToAttributeMap(attributeMap, getNetworkAttributes())
 
 	httpAttributes := &HTTPAttributes{}
-	attributeMap.ForEach(httpAttributes.MapAttribute)
+	attributeMap.Range(httpAttributes.MapAttribute)
 
 	assert.Equal(t, conventions.AttributeHTTPMethod, httpAttributes.HTTPMethod)
 	assert.Equal(t, conventions.AttributeHTTPURL, httpAttributes.HTTPURL)
@@ -88,7 +88,7 @@ func TestRPCPAttributeMapping(t *testing.T) {
 	appendToAttributeMap(attributeMap, getNetworkAttributes())
 
 	rpcAttributes := &RPCAttributes{}
-	attributeMap.ForEach(rpcAttributes.MapAttribute)
+	attributeMap.Range(rpcAttributes.MapAttribute)
 
 	assert.Equal(t, conventions.AttributeRPCSystem, rpcAttributes.RPCSystem)
 	assert.Equal(t, conventions.AttributeRPCService, rpcAttributes.RPCService)
@@ -99,17 +99,17 @@ func TestRPCPAttributeMapping(t *testing.T) {
 
 func TestDatabaseAttributeMapping(t *testing.T) {
 	databaseAttributeValues := map[string]pdata.AttributeValue{
-		attributeDBSystem:                pdata.NewAttributeValueString(attributeDBSystem),
-		attributeDBConnectionString:      pdata.NewAttributeValueString(attributeDBConnectionString),
-		conventions.AttributeDBUser:      pdata.NewAttributeValueString(conventions.AttributeDBUser),
-		conventions.AttributeDBStatement: pdata.NewAttributeValueString(conventions.AttributeDBStatement),
-		attributeDBOperation:             pdata.NewAttributeValueString(attributeDBOperation),
-		attributeDBMSSQLInstanceName:     pdata.NewAttributeValueString(attributeDBMSSQLInstanceName),
-		attributeDBJDBCDriverClassName:   pdata.NewAttributeValueString(attributeDBJDBCDriverClassName),
-		attributeDBCassandraKeyspace:     pdata.NewAttributeValueString(attributeDBCassandraKeyspace),
-		attributeDBHBaseNamespace:        pdata.NewAttributeValueString(attributeDBHBaseNamespace),
-		attributeDBRedisDatabaseIndex:    pdata.NewAttributeValueString(attributeDBRedisDatabaseIndex),
-		attributeDBMongoDBCollection:     pdata.NewAttributeValueString(attributeDBMongoDBCollection),
+		conventions.AttributeDBSystem:              pdata.NewAttributeValueString(conventions.AttributeDBSystem),
+		conventions.AttributeDBConnectionString:    pdata.NewAttributeValueString(conventions.AttributeDBConnectionString),
+		conventions.AttributeDBUser:                pdata.NewAttributeValueString(conventions.AttributeDBUser),
+		conventions.AttributeDBStatement:           pdata.NewAttributeValueString(conventions.AttributeDBStatement),
+		conventions.AttributeDBOperation:           pdata.NewAttributeValueString(conventions.AttributeDBOperation),
+		conventions.AttributeDBMsSQLInstanceName:   pdata.NewAttributeValueString(conventions.AttributeDBMsSQLInstanceName),
+		conventions.AttributeDBJDBCDriverClassname: pdata.NewAttributeValueString(conventions.AttributeDBJDBCDriverClassname),
+		conventions.AttributeDBCassandraKeyspace:   pdata.NewAttributeValueString(conventions.AttributeDBCassandraKeyspace),
+		conventions.AttributeDBHBaseNamespace:      pdata.NewAttributeValueString(conventions.AttributeDBHBaseNamespace),
+		conventions.AttributeDBRedisDatabaseIndex:  pdata.NewAttributeValueString(conventions.AttributeDBRedisDatabaseIndex),
+		conventions.AttributeDBMongoDBCollection:   pdata.NewAttributeValueString(conventions.AttributeDBMongoDBCollection),
 	}
 
 	attributeMap := pdata.NewAttributeMap()
@@ -119,18 +119,18 @@ func TestDatabaseAttributeMapping(t *testing.T) {
 	appendToAttributeMap(attributeMap, getNetworkAttributes())
 
 	databaseAttributes := &DatabaseAttributes{}
-	attributeMap.ForEach(databaseAttributes.MapAttribute)
+	attributeMap.Range(databaseAttributes.MapAttribute)
 
-	assert.Equal(t, attributeDBSystem, databaseAttributes.DBSystem)
-	assert.Equal(t, attributeDBConnectionString, databaseAttributes.DBConnectionString)
+	assert.Equal(t, conventions.AttributeDBSystem, databaseAttributes.DBSystem)
+	assert.Equal(t, conventions.AttributeDBConnectionString, databaseAttributes.DBConnectionString)
 	assert.Equal(t, conventions.AttributeDBUser, databaseAttributes.DBUser)
 	assert.Equal(t, conventions.AttributeDBStatement, databaseAttributes.DBStatement)
-	assert.Equal(t, attributeDBOperation, databaseAttributes.DBOperation)
-	assert.Equal(t, attributeDBMSSQLInstanceName, databaseAttributes.DBMSSQLInstanceName)
-	assert.Equal(t, attributeDBJDBCDriverClassName, databaseAttributes.DBJDBCDriverClassName)
-	assert.Equal(t, attributeDBCassandraKeyspace, databaseAttributes.DBCassandraKeyspace)
-	assert.Equal(t, attributeDBHBaseNamespace, databaseAttributes.DBHBaseNamespace)
-	assert.Equal(t, attributeDBMongoDBCollection, databaseAttributes.DBMongoDBCollection)
+	assert.Equal(t, conventions.AttributeDBOperation, databaseAttributes.DBOperation)
+	assert.Equal(t, conventions.AttributeDBMsSQLInstanceName, databaseAttributes.DBMSSQLInstanceName)
+	assert.Equal(t, conventions.AttributeDBJDBCDriverClassname, databaseAttributes.DBJDBCDriverClassName)
+	assert.Equal(t, conventions.AttributeDBCassandraKeyspace, databaseAttributes.DBCassandraKeyspace)
+	assert.Equal(t, conventions.AttributeDBHBaseNamespace, databaseAttributes.DBHBaseNamespace)
+	assert.Equal(t, conventions.AttributeDBMongoDBCollection, databaseAttributes.DBMongoDBCollection)
 	networkAttributesValidations(t, databaseAttributes.NetworkAttributes)
 }
 
@@ -157,7 +157,7 @@ func TestMessagingAttributeMapping(t *testing.T) {
 	appendToAttributeMap(attributeMap, getNetworkAttributes())
 
 	messagingAttributes := &MessagingAttributes{}
-	attributeMap.ForEach(messagingAttributes.MapAttribute)
+	attributeMap.Range(messagingAttributes.MapAttribute)
 
 	assert.Equal(t, conventions.AttributeMessagingSystem, messagingAttributes.MessagingSystem)
 	assert.Equal(t, conventions.AttributeMessagingDestination, messagingAttributes.MessagingDestination)
@@ -185,7 +185,7 @@ func TestAttributeMappingWithSomeBadValues(t *testing.T) {
 	attributeMap.InitFromMap(values)
 
 	attrs := &NetworkAttributes{}
-	attributeMap.ForEach(attrs.MapAttribute)
+	attributeMap.Range(attrs.MapAttribute)
 
 	// unset from default
 	assert.Equal(t, int64(0), attrs.NetPeerPort)

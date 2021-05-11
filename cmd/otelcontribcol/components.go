@@ -16,37 +16,57 @@ package main
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kinesisexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
@@ -56,20 +76,25 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
 )
 
 func components() (component.Factories, error) {
-	var errs []error
 	factories, err := defaultcomponents.Components()
 	if err != nil {
 		return component.Factories{}, err
 	}
 
 	extensions := []component.ExtensionFactory{
+		fluentbitextension.NewFactory(),
 		hostobserver.NewFactory(),
 		httpforwarder.NewFactory(),
 		k8sobserver.NewFactory(),
+		filestorage.NewFactory(),
 	}
 
 	for _, ext := range factories.Extensions {
@@ -78,7 +103,7 @@ func components() (component.Factories, error) {
 
 	factories.Extensions, err = component.MakeExtensionFactoryMap(extensions...)
 	if err != nil {
-		errs = append(errs, err)
+		return component.Factories{}, err
 	}
 
 	receivers := []component.ReceiverFactory{
@@ -87,6 +112,11 @@ func components() (component.Factories, error) {
 		carbonreceiver.NewFactory(),
 		collectdreceiver.NewFactory(),
 		dockerstatsreceiver.NewFactory(),
+		dotnetdiagnosticsreceiver.NewFactory(),
+		filelogreceiver.NewFactory(),
+		fluentforwardreceiver.NewFactory(),
+		jmxreceiver.NewFactory(),
+		kafkametricsreceiver.NewFactory(),
 		k8sclusterreceiver.NewFactory(),
 		kubeletstatsreceiver.NewFactory(),
 		prometheusexecreceiver.NewFactory(),
@@ -98,53 +128,74 @@ func components() (component.Factories, error) {
 		splunkhecreceiver.NewFactory(),
 		statsdreceiver.NewFactory(),
 		wavefrontreceiver.NewFactory(),
+		windowsperfcountersreceiver.NewFactory(),
+		zookeeperreceiver.NewFactory(),
+		syslogreceiver.NewFactory(),
+		tcplogreceiver.NewFactory(),
 	}
+
+	receivers = append(receivers, extraReceivers()...)
+
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)
 	}
 	factories.Receivers, err = component.MakeReceiverFactoryMap(receivers...)
 	if err != nil {
-		errs = append(errs, err)
+		return component.Factories{}, err
 	}
 
 	exporters := []component.ExporterFactory{
 		alibabacloudlogserviceexporter.NewFactory(),
 		awsemfexporter.NewFactory(),
+		awskinesisexporter.NewFactory(),
+		awsprometheusremotewriteexporter.NewFactory(),
 		awsxrayexporter.NewFactory(),
 		azuremonitorexporter.NewFactory(),
 		carbonexporter.NewFactory(),
+		datadogexporter.NewFactory(),
+		dynatraceexporter.NewFactory(),
 		elasticexporter.NewFactory(),
+		f5cloudexporter.NewFactory(),
+		googlecloudexporter.NewFactory(),
 		honeycombexporter.NewFactory(),
+		influxdbexporter.NewFactory(),
 		jaegerthrifthttpexporter.NewFactory(),
-		kinesisexporter.NewFactory(),
+		loadbalancingexporter.NewFactory(),
+		logzioexporter.NewFactory(),
+		lokiexporter.NewFactory(),
 		newrelicexporter.NewFactory(),
 		sapmexporter.NewFactory(),
 		sentryexporter.NewFactory(),
 		signalfxexporter.NewFactory(),
 		splunkhecexporter.NewFactory(),
 		stackdriverexporter.NewFactory(),
+		sumologicexporter.NewFactory(),
 	}
 	for _, exp := range factories.Exporters {
 		exporters = append(exporters, exp)
 	}
 	factories.Exporters, err = component.MakeExporterFactoryMap(exporters...)
 	if err != nil {
-		errs = append(errs, err)
+		return component.Factories{}, err
 	}
 
 	processors := []component.ProcessorFactory{
+		groupbyattrsprocessor.NewFactory(),
+		groupbytraceprocessor.NewFactory(),
 		k8sprocessor.NewFactory(),
 		metricstransformprocessor.NewFactory(),
 		resourcedetectionprocessor.NewFactory(),
 		routingprocessor.NewFactory(),
+		tailsamplingprocessor.NewFactory(),
+		spanmetricsprocessor.NewFactory(),
 	}
 	for _, pr := range factories.Processors {
 		processors = append(processors, pr)
 	}
 	factories.Processors, err = component.MakeProcessorFactoryMap(processors...)
 	if err != nil {
-		errs = append(errs, err)
+		return component.Factories{}, err
 	}
 
-	return factories, componenterror.CombineErrors(errs)
+	return factories, nil
 }

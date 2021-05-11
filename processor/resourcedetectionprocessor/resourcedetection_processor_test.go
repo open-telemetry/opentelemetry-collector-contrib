@@ -26,9 +26,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
@@ -62,62 +62,62 @@ func TestResourceProcessor(t *testing.T) {
 			name:     "Resource is not overridden",
 			override: false,
 			sourceResource: internal.NewResource(map[string]interface{}{
-				"type":           "original-type",
-				"original-label": "original-value",
-				"cloud.zone":     "original-zone",
+				"type":                    "original-type",
+				"original-label":          "original-value",
+				"cloud.availability_zone": "original-zone",
 			}),
 			detectedResource: internal.NewResource(map[string]interface{}{
-				"cloud.zone":       "will-be-ignored",
-				"k8s.cluster.name": "k8s-cluster",
-				"host.name":        "k8s-node",
-				"bool":             true,
-				"int":              int64(100),
-				"double":           0.1,
+				"cloud.availability_zone": "will-be-ignored",
+				"k8s.cluster.name":        "k8s-cluster",
+				"host.name":               "k8s-node",
+				"bool":                    true,
+				"int":                     int64(100),
+				"double":                  0.1,
 			}),
 			expectedResource: internal.NewResource(map[string]interface{}{
-				"type":             "original-type",
-				"original-label":   "original-value",
-				"cloud.zone":       "original-zone",
-				"k8s.cluster.name": "k8s-cluster",
-				"host.name":        "k8s-node",
-				"bool":             true,
-				"int":              int64(100),
-				"double":           0.1,
+				"type":                    "original-type",
+				"original-label":          "original-value",
+				"cloud.availability_zone": "original-zone",
+				"k8s.cluster.name":        "k8s-cluster",
+				"host.name":               "k8s-node",
+				"bool":                    true,
+				"int":                     int64(100),
+				"double":                  0.1,
 			}),
 		},
 		{
 			name:     "Resource is overridden",
 			override: true,
 			sourceResource: internal.NewResource(map[string]interface{}{
-				"type":           "original-type",
-				"original-label": "original-value",
-				"cloud.zone":     "will-be-overridden",
+				"type":                    "original-type",
+				"original-label":          "original-value",
+				"cloud.availability_zone": "will-be-overridden",
 			}),
 			detectedResource: internal.NewResource(map[string]interface{}{
-				"cloud.zone":       "zone-1",
-				"k8s.cluster.name": "k8s-cluster",
-				"host.name":        "k8s-node",
+				"cloud.availability_zone": "zone-1",
+				"k8s.cluster.name":        "k8s-cluster",
+				"host.name":               "k8s-node",
 			}),
 			expectedResource: internal.NewResource(map[string]interface{}{
-				"type":             "original-type",
-				"original-label":   "original-value",
-				"cloud.zone":       "zone-1",
-				"k8s.cluster.name": "k8s-cluster",
-				"host.name":        "k8s-node",
+				"type":                    "original-type",
+				"original-label":          "original-value",
+				"cloud.availability_zone": "zone-1",
+				"k8s.cluster.name":        "k8s-cluster",
+				"host.name":               "k8s-node",
 			}),
 		},
 		{
 			name: "Empty detected resource",
 			sourceResource: internal.NewResource(map[string]interface{}{
-				"type":           "original-type",
-				"original-label": "original-value",
-				"cloud.zone":     "original-zone",
+				"type":                    "original-type",
+				"original-label":          "original-value",
+				"cloud.availability_zone": "original-zone",
 			}),
 			detectedResource: internal.NewResource(map[string]interface{}{}),
 			expectedResource: internal.NewResource(map[string]interface{}{
-				"type":           "original-type",
-				"original-label": "original-value",
-				"cloud.zone":     "original-zone",
+				"type":                    "original-type",
+				"original-label":          "original-value",
+				"cloud.availability_zone": "original-zone",
 			}),
 		},
 		{
@@ -141,9 +141,9 @@ func TestResourceProcessor(t *testing.T) {
 		{
 			name: "Detection error",
 			sourceResource: internal.NewResource(map[string]interface{}{
-				"type":           "original-type",
-				"original-label": "original-value",
-				"cloud.zone":     "original-zone",
+				"type":                    "original-type",
+				"original-label":          "original-value",
+				"cloud.availability_zone": "original-zone",
 			}),
 			detectedError:      errors.New("err1"),
 			expectedStartError: "err1",
@@ -157,12 +157,12 @@ func TestResourceProcessor(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := &factory{providers: map[string]*internal.ResourceProvider{}}
+			factory := &factory{providers: map[config.ComponentID]*internal.ResourceProvider{}}
 
 			md1 := &MockDetector{}
 			md1.On("Detect").Return(tt.detectedResource, tt.detectedError)
 			factory.resourceProviderFactory = internal.NewProviderFactory(
-				map[internal.DetectorType]internal.DetectorFactory{"mock": func() (internal.Detector, error) {
+				map[internal.DetectorType]internal.DetectorFactory{"mock": func(component.ProcessorCreateParams, internal.DetectorConfig) (internal.Detector, error) {
 					return md1, nil
 				}})
 
@@ -170,11 +170,16 @@ func TestResourceProcessor(t *testing.T) {
 				tt.detectorKeys = []string{"mock"}
 			}
 
-			cfg := &Config{Override: tt.override, Detectors: tt.detectorKeys, Timeout: time.Second}
+			cfg := &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+				Override:          tt.override,
+				Detectors:         tt.detectorKeys,
+				Timeout:           time.Second,
+			}
 
 			// Test trace consuner
-			ttn := &exportertest.SinkTraceExporter{}
-			rtp, err := factory.createTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, ttn)
+			ttn := new(consumertest.TracesSink)
+			rtp, err := factory.createTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, ttn)
 
 			if tt.expectedNewError != "" {
 				assert.EqualError(t, err, tt.expectedNewError)
@@ -195,8 +200,7 @@ func TestResourceProcessor(t *testing.T) {
 			defer func() { assert.NoError(t, rtp.Shutdown(context.Background())) }()
 
 			td := pdata.NewTraces()
-			td.ResourceSpans().Resize(1)
-			tt.sourceResource.CopyTo(td.ResourceSpans().At(0).Resource())
+			tt.sourceResource.CopyTo(td.ResourceSpans().AppendEmpty().Resource())
 
 			err = rtp.ConsumeTraces(context.Background(), td)
 			require.NoError(t, err)
@@ -207,7 +211,7 @@ func TestResourceProcessor(t *testing.T) {
 			assert.Equal(t, tt.expectedResource, got)
 
 			// Test metrics consumer
-			tmn := &exportertest.SinkMetricsExporter{}
+			tmn := new(consumertest.MetricsSink)
 			rmp, err := factory.createMetricsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, tmn)
 
 			if tt.expectedNewError != "" {
@@ -229,7 +233,7 @@ func TestResourceProcessor(t *testing.T) {
 			defer func() { assert.NoError(t, rmp.Shutdown(context.Background())) }()
 
 			// TODO create pdata.Metrics directly when this is no longer internal
-			err = rmp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(consumerdata.MetricsData{
+			err = rmp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(internaldata.MetricsData{
 				Resource: oCensusResource(tt.sourceResource),
 			}))
 			require.NoError(t, err)
@@ -240,7 +244,7 @@ func TestResourceProcessor(t *testing.T) {
 			assert.Equal(t, tt.expectedResource, got)
 
 			// Test logs consumer
-			tln := &exportertest.SinkLogsExporter{}
+			tln := new(consumertest.LogsSink)
 			rlp, err := factory.createLogsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, tln)
 
 			if tt.expectedNewError != "" {
@@ -262,8 +266,7 @@ func TestResourceProcessor(t *testing.T) {
 			defer func() { assert.NoError(t, rlp.Shutdown(context.Background())) }()
 
 			ld := pdata.NewLogs()
-			ld.ResourceLogs().Resize(1)
-			tt.sourceResource.CopyTo(ld.ResourceLogs().At(0).Resource())
+			tt.sourceResource.CopyTo(ld.ResourceLogs().AppendEmpty().Resource())
 
 			err = rlp.ConsumeLogs(context.Background(), ld)
 			require.NoError(t, err)
@@ -277,13 +280,14 @@ func TestResourceProcessor(t *testing.T) {
 }
 
 func oCensusResource(res pdata.Resource) *resourcepb.Resource {
-	if res.IsNil() {
+	if res.Attributes().Len() == 0 {
 		return &resourcepb.Resource{}
 	}
 
 	mp := make(map[string]string, res.Attributes().Len())
-	res.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+	res.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		mp[k] = v.StringVal()
+		return true
 	})
 
 	return &resourcepb.Resource{Labels: mp}
@@ -291,8 +295,8 @@ func oCensusResource(res pdata.Resource) *resourcepb.Resource {
 
 func benchmarkConsumeTraces(b *testing.B, cfg *Config) {
 	factory := NewFactory()
-	sink := &exportertest.SinkTraceExporter{}
-	processor, _ := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, sink)
+	sink := new(consumertest.TracesSink)
+	processor, _ := factory.CreateTracesProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, sink)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -313,7 +317,7 @@ func BenchmarkConsumeTracesAll(b *testing.B) {
 
 func benchmarkConsumeMetrics(b *testing.B, cfg *Config) {
 	factory := NewFactory()
-	sink := &exportertest.SinkMetricsExporter{}
+	sink := new(consumertest.MetricsSink)
 	processor, _ := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, sink)
 
 	b.ResetTimer()
@@ -335,7 +339,7 @@ func BenchmarkConsumeMetricsAll(b *testing.B) {
 
 func benchmarkConsumeLogs(b *testing.B, cfg *Config) {
 	factory := NewFactory()
-	sink := &exportertest.SinkLogsExporter{}
+	sink := new(consumertest.LogsSink)
 	processor, _ := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, sink)
 
 	b.ResetTimer()

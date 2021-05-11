@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
@@ -34,18 +34,18 @@ var (
 	errExporterNotFound       = errors.New("exporter not found")
 )
 
-var _ component.TraceProcessor = (*processorImp)(nil)
+var _ component.TracesProcessor = (*processorImp)(nil)
 
 type processorImp struct {
 	logger *zap.Logger
 	config Config
 
-	defaultTraceExporters []component.TraceExporter
-	traceExporters        map[string][]component.TraceExporter
+	defaultTracesExporters []component.TracesExporter
+	traceExporters         map[string][]component.TracesExporter
 }
 
 // Crete new processor
-func newProcessor(logger *zap.Logger, cfg configmodels.Exporter) (*processorImp, error) {
+func newProcessor(logger *zap.Logger, cfg config.Processor) (*processorImp, error) {
 	logger.Info("building processor")
 
 	oCfg := cfg.(*Config)
@@ -70,20 +70,20 @@ func newProcessor(logger *zap.Logger, cfg configmodels.Exporter) (*processorImp,
 	return &processorImp{
 		logger:         logger,
 		config:         *oCfg,
-		traceExporters: make(map[string][]component.TraceExporter),
+		traceExporters: make(map[string][]component.TracesExporter),
 	}, nil
 }
 
 func (e *processorImp) Start(_ context.Context, host component.Host) error {
 	// first, let's build a map of exporter names with the exporter instances
 	source := host.GetExporters()
-	availableExporters := map[string]component.TraceExporter{}
-	for k, exp := range source[configmodels.TracesDataType] {
-		traceExp, ok := exp.(component.TraceExporter)
+	availableExporters := map[string]component.TracesExporter{}
+	for k, exp := range source[config.TracesDataType] {
+		traceExp, ok := exp.(component.TracesExporter)
 		if !ok {
 			return fmt.Errorf("the exporter %q isn't a trace exporter", k.Name())
 		}
-		availableExporters[k.Name()] = traceExp
+		availableExporters[k.String()] = traceExp
 	}
 
 	// default exporters
@@ -101,19 +101,19 @@ func (e *processorImp) Start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (e *processorImp) registerExportersForDefaultRoute(available map[string]component.TraceExporter, requested []string) error {
+func (e *processorImp) registerExportersForDefaultRoute(available map[string]component.TracesExporter, requested []string) error {
 	for _, exp := range requested {
 		v, ok := available[exp]
 		if !ok {
 			return fmt.Errorf("error registering default exporter %q: %w", exp, errExporterNotFound)
 		}
-		e.defaultTraceExporters = append(e.defaultTraceExporters, v)
+		e.defaultTracesExporters = append(e.defaultTracesExporters, v)
 	}
 
 	return nil
 }
 
-func (e *processorImp) registerExportersForRoute(route string, available map[string]component.TraceExporter, requested []string) error {
+func (e *processorImp) registerExportersForRoute(route string, available map[string]component.TracesExporter, requested []string) error {
 	for _, exp := range requested {
 		v, ok := available[exp]
 		if !ok {
@@ -133,12 +133,12 @@ func (e *processorImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error
 	value := e.extractValueFromContext(ctx)
 	if len(value) == 0 {
 		// the attribute's value hasn't been found, send data to the default exporter
-		return e.pushDataToExporters(ctx, td, e.defaultTraceExporters)
+		return e.pushDataToExporters(ctx, td, e.defaultTracesExporters)
 	}
 
 	if _, ok := e.traceExporters[value]; !ok {
 		// the value has been found, but there are no exporters for the value
-		return e.pushDataToExporters(ctx, td, e.defaultTraceExporters)
+		return e.pushDataToExporters(ctx, td, e.defaultTracesExporters)
 	}
 
 	// found the appropriate router, using it
@@ -149,7 +149,7 @@ func (e *processorImp) GetCapabilities() component.ProcessorCapabilities {
 	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
-func (e *processorImp) pushDataToExporters(ctx context.Context, td pdata.Traces, exporters []component.TraceExporter) error {
+func (e *processorImp) pushDataToExporters(ctx context.Context, td pdata.Traces, exporters []component.TracesExporter) error {
 	// TODO: determine the proper action when errors happen
 	for _, exp := range exporters {
 		if err := exp.ConsumeTraces(ctx, td); err != nil {

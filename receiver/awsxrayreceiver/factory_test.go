@@ -23,31 +23,23 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
+	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
 type mockMetricsConsumer struct {
 }
 
-var _ (consumer.MetricsConsumer) = (*mockMetricsConsumer)(nil)
+var _ (consumer.Metrics) = (*mockMetricsConsumer)(nil)
 
 func (m *mockMetricsConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	return nil
-}
-
-type mockTraceConsumer struct {
-}
-
-var _ (consumer.TraceConsumer) = (*mockTraceConsumer)(nil)
-
-func (m *mockTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	return nil
 }
 
@@ -57,10 +49,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 
-	assert.Equal(t, configmodels.Type(awsxray.TypeStr), factory.Type())
+	assert.Equal(t, config.Type(awsxray.TypeStr), factory.Type())
 }
 
-func TestCreateTraceReceiver(t *testing.T) {
+func TestCreateTracesReceiver(t *testing.T) {
 	// TODO review if test should succeed on Windows
 	if runtime.GOOS == "windows" {
 		t.Skip()
@@ -71,13 +63,13 @@ func TestCreateTraceReceiver(t *testing.T) {
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
 	factory := NewFactory()
-	_, err := factory.CreateTraceReceiver(
+	_, err := factory.CreateTracesReceiver(
 		context.Background(),
 		component.ReceiverCreateParams{
 			Logger: zap.NewNop(),
 		},
 		factory.CreateDefaultConfig().(*Config),
-		&mockTraceConsumer{},
+		consumertest.NewNop(),
 	)
 	assert.Nil(t, err, "trace receiver can be created")
 }
@@ -93,7 +85,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		&mockMetricsConsumer{},
 	)
 	assert.NotNil(t, err, "a trace receiver factory should not create a metric receiver")
-	assert.EqualError(t, err, configerror.ErrDataTypeIsNotSupported.Error())
+	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
 }
 
 func stashEnv() []string {

@@ -3,7 +3,6 @@ receivers:
     collection_interval: 5s
     scrapers:
       cpu:
-        report_per_cpu: true
       disk:
       load:
       filesystem:

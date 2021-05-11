@@ -66,6 +66,9 @@ linters-settings:
           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
 
     enable-all: true
+    # TODO: Enable this and fix the alignment issues.
+    disable:
+      - fieldalignment
 
   golint:
     # minimal confidence for issues, default is 0.8
@@ -91,20 +94,27 @@ linters-settings:
       - kilometres
 
 linters:
-  disable-all: true
+  disable:
+    - errcheck
   enable:
+    - exportloopref
     - gofmt
     - goimports
     - golint
+    - gosec
     - govet
-    - staticcheck
     - misspell
-    - scopelint
+    - staticcheck
+    - unconvert
+    - unparam
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
     # Exclude some linters from running on tests files.
-    - path: _test\.go
+    - text: "G404:"
       linters:
-        - scopelint
+        - gosec
+    - text: "G402:"
+      linters:
+        - gosec

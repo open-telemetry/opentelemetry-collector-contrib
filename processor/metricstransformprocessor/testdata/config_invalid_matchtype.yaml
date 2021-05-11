@@ -1,0 +1,23 @@
+receivers:
+    nop:
+
+processors:
+    metricstransform:
+        transforms:
+            - include: metric_name
+              match_type: invalid
+              action: update
+
+exporters:
+    nop:
+
+service:
+    pipelines:
+        traces:
+            receivers: [nop]
+            processors: [metricstransform]
+            exporters: [nop]
+        metrics:
+            receivers: [nop]
+            processors: [metricstransform]
+            exporters: [nop]

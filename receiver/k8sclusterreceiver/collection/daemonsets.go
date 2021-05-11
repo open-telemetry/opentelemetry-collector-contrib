@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	appsv1 "k8s.io/api/apps/v1"
 
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
@@ -99,8 +100,8 @@ func getResourceForDaemonSet(ds *appsv1.DaemonSet) *resourcepb.Resource {
 	}
 }
 
-func getMetadataForDaemonSet(ds *appsv1.DaemonSet) map[ResourceID]*KubernetesMetadata {
-	return map[ResourceID]*KubernetesMetadata{
-		ResourceID(ds.UID): getGenericMetadata(&ds.ObjectMeta, k8sKindDaemonSet),
+func getMetadataForDaemonSet(ds *appsv1.DaemonSet) map[metadata.ResourceID]*KubernetesMetadata {
+	return map[metadata.ResourceID]*KubernetesMetadata{
+		metadata.ResourceID(ds.UID): getGenericMetadata(&ds.ObjectMeta, k8sKindDaemonSet),
 	}
 }
