@@ -528,6 +528,80 @@ func Test_metricDataToSplunk(t *testing.T) {
 			},
 		},
 		{
+			name: "summary",
+			metricsDataFn: func() pdata.Metrics {
+				metrics := newMetricsWithResources()
+				ilm := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0)
+				summary := ilm.Metrics().AppendEmpty()
+				summary.SetName("summary")
+				summary.SetDataType(pdata.MetricDataTypeSummary)
+				doubleDataPt := summary.Summary().DataPoints().AppendEmpty()
+				doubleDataPt.SetTimestamp(ts)
+				doubleDataPt.SetStartTimestamp(ts)
+				doubleDataPt.SetCount(2)
+				doubleDataPt.SetSum(42)
+				qt1 := doubleDataPt.QuantileValues().AppendEmpty()
+				qt1.SetQuantile(0.5)
+				qt1.SetValue(34)
+				qt2 := doubleDataPt.QuantileValues().AppendEmpty()
+				qt2.SetQuantile(0.6)
+				qt2.SetValue(45)
+				return metrics
+			},
+			wantSplunkMetrics: []*splunk.Event{
+				{
+					Host:       "unknown",
+					Source:     "",
+					SourceType: "",
+					Event:      "metric",
+					Time:       tsMSecs,
+					Fields: map[string]interface{}{
+						"k0":                      "v0",
+						"k1":                      "v1",
+						"metric_name:summary_sum": float64(42),
+					},
+				},
+				{
+					Host:       "unknown",
+					Source:     "",
+					SourceType: "",
+					Event:      "metric",
+					Time:       tsMSecs,
+					Fields: map[string]interface{}{
+						"k0":                        "v0",
+						"k1":                        "v1",
+						"metric_name:summary_count": uint64(2),
+					},
+				},
+				{
+					Host:       "unknown",
+					Source:     "",
+					SourceType: "",
+					Event:      "metric",
+					Time:       tsMSecs,
+					Fields: map[string]interface{}{
+						"k0":                      "v0",
+						"k1":                      "v1",
+						"qt":                      "0.5",
+						"metric_name:summary_0.5": float64(34),
+					},
+				},
+				{
+					Host:       "unknown",
+					Source:     "",
+					SourceType: "",
+					Event:      "metric",
+					Time:       tsMSecs,
+					Fields: map[string]interface{}{
+						"k0":                      "v0",
+						"k1":                      "v1",
+						"qt":                      "0.6",
+						"metric_name:summary_0.6": float64(45),
+					},
+				},
+			},
+		},
+		{
 			name: "unknown_type",
 			metricsDataFn: func() pdata.Metrics {
 				metrics := newMetricsWithResources()
