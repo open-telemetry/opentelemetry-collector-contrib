@@ -335,7 +335,14 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 			"w/ 2nd delta calculation",
 			false,
 			float64(0.5),
-			float64(0.1),
+			float64(0.5),
+		},
+		{
+			"w/ 3nd delta calculation",
+			true,
+			float64(0.6),
+			// 2nd is not stored in cache as it's skipped
+			float64(0.2),
 		},
 	}
 
@@ -369,7 +376,7 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 
 			assert.Equal(t, 1, dps.Len())
 			dp := dps.At(0)
-			assert.True(t, (expectedDP.Value.(float64)-dp.Value.(float64)) < 0.002)
+			assert.InDelta(t, expectedDP.Value.(float64), dp.Value.(float64), 0.002)
 		})
 	}
 }
@@ -517,6 +524,7 @@ func TestGetDataPoints(t *testing.T) {
 			LogStream:   "log-stream",
 		},
 		InstrumentationLibraryName: "cloudwatch-otel",
+		receiver:                   containerInsightsPrometheusReceiver,
 	}
 
 	dmm := deltaMetricMetadata{

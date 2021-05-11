@@ -52,7 +52,7 @@ func createMetricTestData() internaldata.MetricsData {
 			Labels: map[string]string{
 				conventions.AttributeServiceName:      "myServiceName",
 				conventions.AttributeServiceNamespace: "myServiceNS",
-				attributeReceiver:                     prometheusReceiver,
+				attributeReceiver:                     containerInsightsPrometheusReceiver,
 			},
 		},
 		Metrics: []*metricspb.Metric{
@@ -832,7 +832,7 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 						Namespace:   namespace,
 						TimestampMs: timestamp,
 					},
-					receiver:       prometheusReceiver,
+					receiver:       containerInsightsPrometheusReceiver,
 					metricDataType: pdata.MetricDataTypeDoubleGauge,
 				},
 			},

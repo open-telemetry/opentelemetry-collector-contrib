@@ -224,6 +224,8 @@ func getDataPoints(pmd *pdata.Metric, metadata CWMetricMetadata, logger *zap.Log
 		return
 	}
 
+	// We only calculate delta when metrics are generated for container insights prometheus
+	isContainerInsightsPromMetric := metadata.receiver == containerInsightsPrometheusReceiver
 	adjusterMetadata := deltaMetricMetadata{
 		false,
 		pmd.Name(),
@@ -250,7 +252,8 @@ func getDataPoints(pmd *pdata.Metric, metadata CWMetricMetadata, logger *zap.Log
 		}
 	case pdata.MetricDataTypeIntSum:
 		metric := pmd.IntSum()
-		adjusterMetadata.adjustToDelta = metric.AggregationTemporality() == pdata.AggregationTemporalityCumulative
+		adjusterMetadata.adjustToDelta = metric.AggregationTemporality() == pdata.AggregationTemporalityCumulative &&
+			isContainerInsightsPromMetric
 		dps = IntDataPointSlice{
 			metadata.InstrumentationLibraryName,
 			adjusterMetadata,
@@ -258,7 +261,8 @@ func getDataPoints(pmd *pdata.Metric, metadata CWMetricMetadata, logger *zap.Log
 		}
 	case pdata.MetricDataTypeDoubleSum:
 		metric := pmd.DoubleSum()
-		adjusterMetadata.adjustToDelta = metric.AggregationTemporality() == pdata.AggregationTemporalityCumulative
+		adjusterMetadata.adjustToDelta = metric.AggregationTemporality() == pdata.AggregationTemporalityCumulative &&
+			isContainerInsightsPromMetric
 		dps = DoubleDataPointSlice{
 			metadata.InstrumentationLibraryName,
 			adjusterMetadata,
@@ -272,7 +276,7 @@ func getDataPoints(pmd *pdata.Metric, metadata CWMetricMetadata, logger *zap.Log
 		}
 	case pdata.MetricDataTypeSummary:
 		metric := pmd.Summary()
-		adjusterMetadata.adjustToDelta = true
+		adjusterMetadata.adjustToDelta = isContainerInsightsPromMetric
 		dps = SummaryDataPointSlice{
 			metadata.InstrumentationLibraryName,
 			adjusterMetadata,

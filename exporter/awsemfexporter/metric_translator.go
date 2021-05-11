@@ -34,9 +34,9 @@ const (
 	zeroAndSingleDimensionRollup = "ZeroAndSingleDimensionRollup"
 	singleDimensionRollupOnly    = "SingleDimensionRollupOnly"
 
-	prometheusReceiver        = "prometheus"
-	attributeReceiver         = "receiver"
-	fieldPrometheusMetricType = "prom_metric_type"
+	containerInsightsPrometheusReceiver = "container_insights_prometheus"
+	attributeReceiver                   = "receiver"
+	fieldPrometheusMetricType           = "prom_metric_type"
 )
 
 var fieldPrometheusTypes = map[pdata.MetricDataType]string{
@@ -146,8 +146,8 @@ func translateGroupedMetricToCWMetric(groupedMetric *GroupedMetric, config *Conf
 	labels := groupedMetric.Labels
 	fieldsLength := len(labels) + len(groupedMetric.Metrics)
 
-	isPrometheusMetric := groupedMetric.Metadata.receiver == prometheusReceiver
-	if isPrometheusMetric {
+	isContainerInsightsPromMetric := groupedMetric.Metadata.receiver == containerInsightsPrometheusReceiver
+	if isContainerInsightsPromMetric {
 		fieldsLength++
 	}
 	fields := make(map[string]interface{}, fieldsLength)
@@ -160,7 +160,7 @@ func translateGroupedMetricToCWMetric(groupedMetric *GroupedMetric, config *Conf
 	for metricName, metricInfo := range groupedMetric.Metrics {
 		fields[metricName] = metricInfo.Value
 	}
-	if isPrometheusMetric {
+	if isContainerInsightsPromMetric {
 		fields[fieldPrometheusMetricType] = fieldPrometheusTypes[groupedMetric.Metadata.metricDataType]
 	}
 
