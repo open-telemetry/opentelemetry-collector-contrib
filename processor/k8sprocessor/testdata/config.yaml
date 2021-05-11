@@ -24,19 +24,26 @@ processors:
 #        - namespace
 #        - node
 #        - startTime
+        - # extract the following well-known metadata fields from namespaces
+        - k8s.namespace.uid
+        - k8s.namespace.start_time
 
       annotations:
         - tag_name: a1 # extracts value of annotation with key `annotation-one` and inserts it as a tag with key `a1`
           key: annotation-one
+          from: pod
         - tag_name: a2 # extracts value of annotation with key `annotation-two` with regexp and inserts it as a tag with key `a2`
           key: annotation-two
           regex: field=(?P<value>.+)
+          from: pod
       labels:
         - tag_name: l1 # extracts value of label with key `label1` and inserts it as a tag with key `l1`
           key: label1
+          from: pod
         - tag_name: l2 # extracts value of label with key `label1` with regexp and inserts it as a tag with key `l2`
           key: label2
           regex: field=(?P<value>.+)
+          from: pod
 
     filter:
       namespace: ns2 # only look for pods running in ns2 namespace

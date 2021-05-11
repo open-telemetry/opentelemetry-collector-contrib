@@ -86,13 +86,38 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj interfac
 
 }
 
+func namespaceAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj interface{})) {
+	assert.Equal(t, len(c.Namespaces), 0)
+
+	namespace := &api_v1.Namespace{}
+	handler(namespace)
+	assert.Equal(t, len(c.Namespaces), 0)
+
+	namespace = &api_v1.Namespace{}
+	namespace.Name = "namespaceA"
+	handler(namespace)
+	assert.Equal(t, len(c.Namespaces), 1)
+	got := c.Namespaces["namespaceA"]
+	assert.Equal(t, got.Name, "namespaceA")
+	assert.Equal(t, got.NamespaceUID, "")
+
+	namespace = &api_v1.Namespace{}
+	namespace.Name = "namespaceB"
+	namespace.UID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+	handler(namespace)
+	assert.Equal(t, len(c.Namespaces), 2)
+	got = c.Namespaces["namespaceB"]
+	assert.Equal(t, got.Name, "namespaceB")
+	assert.Equal(t, got.NamespaceUID, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+}
+
 func TestDefaultClientset(t *testing.T) {
-	c, err := New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, nil, nil)
+	c, err := New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, nil, nil, nil)
 	assert.Error(t, err)
 	assert.Equal(t, "invalid authType for kubernetes: ", err.Error())
 	assert.Nil(t, c)
 
-	c, err = New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, newFakeAPIClientset, nil)
+	c, err = New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, newFakeAPIClientset, nil, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, c)
 }
@@ -106,6 +131,7 @@ func TestBadFilters(t *testing.T) {
 		[]Association{},
 		newFakeAPIClientset,
 		NewFakeInformer,
+		NewFakeNamespaceInformer,
 	)
 	assert.Error(t, err)
 	assert.Nil(t, c)
@@ -141,7 +167,7 @@ func TestConstructorErrors(t *testing.T) {
 			gotAPIConfig = c
 			return nil, fmt.Errorf("error creating k8s client")
 		}
-		c, err := New(zap.NewNop(), apiCfg, er, ff, []Association{}, clientProvider, NewFakeInformer)
+		c, err := New(zap.NewNop(), apiCfg, er, ff, []Association{}, clientProvider, NewFakeInformer, NewFakeNamespaceInformer)
 		assert.Nil(t, c)
 		assert.Error(t, err)
 		assert.Equal(t, err.Error(), "error creating k8s client")
@@ -152,6 +178,11 @@ func TestConstructorErrors(t *testing.T) {
 func TestPodAdd(t *testing.T) {
 	c, _ := newTestClient(t)
 	podAddAndUpdateTest(t, c, c.handlePodAdd)
+}
+
+func TestNamespaceAdd(t *testing.T) {
+	c, _ := newTestClient(t)
+	namespaceAddAndUpdateTest(t, c, c.handleNamespaceAdd)
 }
 
 func TestPodHostNetwork(t *testing.T) {
@@ -202,6 +233,14 @@ func TestPodUpdate(t *testing.T) {
 	podAddAndUpdateTest(t, c, func(obj interface{}) {
 		// first argument (old pod) is not used right now
 		c.handlePodUpdate(&api_v1.Pod{}, obj)
+	})
+}
+
+func TestNamespaceUpdate(t *testing.T) {
+	c, _ := newTestClient(t)
+	namespaceAddAndUpdateTest(t, c, func(obj interface{}) {
+		// first argument (old namespace) is not used right now
+		c.handleNamespaceUpdate(&api_v1.Namespace{}, obj)
 	})
 }
 
@@ -264,6 +303,24 @@ func TestPodDelete(t *testing.T) {
 	assert.Equal(t, deleteRequest.podName, "podC")
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
+}
+
+func TestNamespaceDelete(t *testing.T) {
+	c, _ := newTestClient(t)
+	namespaceAddAndUpdateTest(t, c, c.handleNamespaceAdd)
+	assert.Equal(t, len(c.Namespaces), 2)
+	assert.Equal(t, c.Namespaces["namespaceA"].Name, "namespaceA")
+
+	// delete empty namespace
+	c.handleNamespaceDelete(&api_v1.Namespace{})
+
+	// delete non-existent namespace
+	namespace := &api_v1.Namespace{}
+	namespace.Name = "namespaceC"
+	c.handleNamespaceDelete(namespace)
+	assert.Equal(t, len(c.Namespaces), 2)
+	got := c.Namespaces["namespaceA"]
+	assert.Equal(t, got.Name, "namespaceA")
 }
 
 func TestDeleteQueue(t *testing.T) {
@@ -401,7 +458,7 @@ func TestExtractionRules(t *testing.T) {
 			"k8s.node.name":       "node1",
 			"k8s.pod.name":        "auth-service-abc12-xyz3",
 			"k8s.pod.uid":         "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-			"k8s.pod.startTime":   pod.GetCreationTimestamp().String(),
+			"k8s.pod.start_time":  pod.GetCreationTimestamp().String(),
 		},
 	}, {
 		name: "labels",
@@ -409,15 +466,18 @@ func TestExtractionRules(t *testing.T) {
 			Annotations: []FieldExtractionRule{{
 				Name: "a1",
 				Key:  "annotation1",
+				From: "pod",
 			},
 			},
 			Labels: []FieldExtractionRule{{
 				Name: "l1",
 				Key:  "label1",
+				From: "pod",
 			}, {
 				Name:  "l2",
 				Key:   "label2",
 				Regex: regexp.MustCompile(`k5=(?P<value>[^\s]+)`),
+				From:  "pod",
 			},
 			},
 		},
@@ -433,6 +493,80 @@ func TestExtractionRules(t *testing.T) {
 			c.Rules = tc.rules
 			c.handlePodAdd(pod)
 			p, ok := c.GetPod(PodIdentifier(pod.Status.PodIP))
+			require.True(t, ok)
+
+			assert.Equal(t, len(tc.attributes), len(p.Attributes))
+			for k, v := range tc.attributes {
+				got, ok := p.Attributes[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
+	}
+}
+
+func TestNamespaceExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
+
+	namespace := &api_v1.Namespace{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "auth-service-namespace-abc12-xyz3",
+			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			CreationTimestamp: meta_v1.Now(),
+			Labels: map[string]string{
+				"label1": "lv1",
+			},
+			Annotations: map[string]string{
+				"annotation1": "av1",
+			},
+		},
+	}
+
+	testCases := []struct {
+		name       string
+		rules      ExtractionRules
+		attributes map[string]string
+	}{{
+		name:       "no-rules",
+		rules:      ExtractionRules{},
+		attributes: nil,
+	}, {
+		name: "metadata",
+		rules: ExtractionRules{
+			NamespaceUID:       true,
+			NamespaceStartTime: true,
+		},
+		attributes: map[string]string{
+			"k8s.namespace.uid":        "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			"k8s.namespace.start_time": namespace.GetCreationTimestamp().String(),
+		},
+	}, {
+		name: "labels",
+		rules: ExtractionRules{
+			Annotations: []FieldExtractionRule{{
+				Name: "a1",
+				Key:  "annotation1",
+				From: "namespace",
+			},
+			},
+			Labels: []FieldExtractionRule{{
+				Name: "l1",
+				Key:  "label1",
+				From: "namespace",
+			},
+			},
+		},
+		attributes: map[string]string{
+			"l1": "lv1",
+			"a1": "av1",
+		},
+	},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			c.handleNamespaceAdd(namespace)
+			p, ok := c.GetNamespace(namespace.Name)
 			require.True(t, ok)
 
 			assert.Equal(t, len(tc.attributes), len(p.Attributes))
@@ -675,7 +809,7 @@ func Test_selectorsFromFilters(t *testing.T) {
 func newTestClientWithRulesAndFilters(t *testing.T, e ExtractionRules, f Filters) (*WatchClient, *observer.ObservedLogs) {
 	observedLogger, logs := observer.New(zapcore.WarnLevel)
 	logger := zap.New(observedLogger)
-	c, err := New(logger, k8sconfig.APIConfig{}, e, f, []Association{}, newFakeAPIClientset, NewFakeInformer)
+	c, err := New(logger, k8sconfig.APIConfig{}, e, f, []Association{}, newFakeAPIClientset, NewFakeInformer, NewFakeNamespaceInformer)
 	require.NoError(t, err)
 	return c.(*WatchClient), logs
 }

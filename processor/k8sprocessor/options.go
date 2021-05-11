@@ -40,7 +40,9 @@ const (
 	metadataCluster    = "cluster"
 	metadataNode       = "node"
 	// Will be removed when new fields get merged to https://github.com/open-telemetry/opentelemetry-collector/blob/main/translator/conventions/opentelemetry.go
-	metadataPodStartTime = "k8s.pod.start_time"
+	metadataPodStartTime       = "k8s.pod.start_time"
+	metadataNamespaceUID       = "k8s.namespace.uid"
+	metadataNamespaceStartTime = "k8s.namespace.start_time"
 )
 
 // Option represents a configuration option that can be passes.
@@ -78,6 +80,8 @@ func WithExtractMetadata(fields ...string) Option {
 				conventions.AttributeK8sDeployment,
 				conventions.AttributeK8sCluster,
 				conventions.AttributeK8sNodeName,
+				metadataNamespaceUID,
+				metadataNamespaceStartTime,
 			}
 		}
 		for _, field := range fields {
@@ -99,6 +103,10 @@ func WithExtractMetadata(fields ...string) Option {
 				p.rules.Cluster = true
 			case metadataNode, conventions.AttributeK8sNodeName:
 				p.rules.Node = true
+			case metadataNamespaceUID:
+				p.rules.NamespaceUID = true
+			case metadataNamespaceStartTime:
+				p.rules.NamespaceStartTime = true
 			default:
 				return fmt.Errorf("\"%s\" is not a supported metadata field", field)
 			}
@@ -136,7 +144,11 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 	for _, a := range fields {
 		name := a.TagName
 		if name == "" {
-			name = fmt.Sprintf("k8s.pod.%s.%s", fieldType, a.Key)
+			if a.From == "pod" {
+				name = fmt.Sprintf("k8s.pod.%s.%s", fieldType, a.Key)
+			} else if a.From == "namespace" {
+				name = fmt.Sprintf("k8s.namespace.%s.%s", fieldType, a.Key)
+			}
 		}
 
 		var r *regexp.Regexp
@@ -153,7 +165,7 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 		}
 
 		rules = append(rules, kube.FieldExtractionRule{
-			Name: name, Key: a.Key, Regex: r,
+			Name: name, Key: a.Key, Regex: r, From: a.From,
 		})
 	}
 	return rules, nil

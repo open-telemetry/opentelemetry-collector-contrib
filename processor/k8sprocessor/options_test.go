@@ -90,6 +90,7 @@ func TestWithExtractAnnotations(t *testing.T) {
 					TagName: "tag1",
 					Key:     "key1",
 					Regex:   "[",
+					From:    "pod",
 				},
 			},
 			[]kube.FieldExtractionRule{},
@@ -102,6 +103,7 @@ func TestWithExtractAnnotations(t *testing.T) {
 					TagName: "tag1",
 					Key:     "key1",
 					Regex:   "field=(?P<value>.+)",
+					From:    "pod",
 				},
 			},
 			[]kube.FieldExtractionRule{
@@ -109,6 +111,25 @@ func TestWithExtractAnnotations(t *testing.T) {
 					Name:  "tag1",
 					Key:   "key1",
 					Regex: regexp.MustCompile(`field=(?P<value>.+)`),
+					From:  "pod",
+				},
+			},
+			"",
+		},
+		{
+			"basic-namespace",
+			[]FieldExtractConfig{
+				{
+					TagName: "tag1",
+					Key:     "key1",
+					From:    "namespace",
+				},
+			},
+			[]kube.FieldExtractionRule{
+				{
+					Name: "tag1",
+					Key:  "key1",
+					From: "namespace",
 				},
 			},
 			"",
@@ -153,6 +174,7 @@ func TestWithExtractLabels(t *testing.T) {
 				TagName: "t1",
 				Key:     "k1",
 				Regex:   "[",
+				From:    "pod",
 			}},
 			[]kube.FieldExtractionRule{},
 			"error parsing regexp: missing closing ]: `[`",
@@ -164,6 +186,7 @@ func TestWithExtractLabels(t *testing.T) {
 					TagName: "tag1",
 					Key:     "key1",
 					Regex:   "field=(?P<value>.+)",
+					From:    "pod",
 				},
 			},
 			[]kube.FieldExtractionRule{
@@ -171,6 +194,25 @@ func TestWithExtractLabels(t *testing.T) {
 					Name:  "tag1",
 					Key:   "key1",
 					Regex: regexp.MustCompile(`field=(?P<value>.+)`),
+					From:  "pod",
+				},
+			},
+			"",
+		},
+		{
+			"basic-namespace",
+			[]FieldExtractConfig{
+				{
+					TagName: "tag1",
+					Key:     "key1",
+					From:    "namespace",
+				},
+			},
+			[]kube.FieldExtractionRule{
+				{
+					Name: "tag1",
+					Key:  "key1",
+					From: "namespace",
 				},
 			},
 			"",
@@ -206,13 +248,15 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.True(t, p.rules.Deployment)
 	assert.True(t, p.rules.Cluster)
 	assert.True(t, p.rules.Node)
+	assert.True(t, p.rules.NamespaceUID)
+	assert.True(t, p.rules.NamespaceStartTime)
 
 	p = &kubernetesprocessor{}
 	err := WithExtractMetadata("randomfield")(p)
 	assert.Error(t, err)
 	assert.Equal(t, err.Error(), `"randomfield" is not a supported metadata field`)
 
-	assert.NoError(t, WithExtractMetadata("namespace", "cluster")(p))
+	assert.NoError(t, WithExtractMetadata("namespace", "cluster", "k8s.namespace.uid")(p))
 	assert.True(t, p.rules.Namespace)
 	assert.True(t, p.rules.Cluster)
 	assert.False(t, p.rules.PodName)
@@ -231,6 +275,22 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.False(t, p.rules.StartTime)
 	assert.False(t, p.rules.Deployment)
 	assert.False(t, p.rules.Node)
+
+	p = &kubernetesprocessor{}
+	assert.NoError(t, WithExtractMetadata()(p))
+	assert.True(t, p.rules.Namespace)
+	assert.True(t, p.rules.NamespaceUID)
+	assert.True(t, p.rules.NamespaceStartTime)
+
+	p = &kubernetesprocessor{}
+	err = WithExtractMetadata("randomfield")(p)
+	assert.Error(t, err)
+	assert.Equal(t, err.Error(), `"randomfield" is not a supported metadata field`)
+
+	assert.NoError(t, WithExtractMetadata("k8s.namespace.name", "k8s.namespace.uid")(p))
+	assert.True(t, p.rules.Namespace)
+	assert.True(t, p.rules.NamespaceUID)
+	assert.False(t, p.rules.NamespaceStartTime)
 }
 
 func TestWithFilterLabels(t *testing.T) {

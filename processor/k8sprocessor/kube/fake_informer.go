@@ -59,6 +59,31 @@ func (f *FakeInformer) GetController() cache.Controller {
 	return f.FakeController
 }
 
+type FakeNamespaceInformer struct {
+	*FakeController
+}
+
+func NewFakeNamespaceInformer(
+	_ kubernetes.Interface,
+) cache.SharedInformer {
+	return &FakeInformer{
+		FakeController: &FakeController{},
+	}
+}
+
+func (f *FakeNamespaceInformer) AddEventHandler(handler cache.ResourceEventHandler) {}
+
+func (f *FakeNamespaceInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, period time.Duration) {
+}
+
+func (f *FakeNamespaceInformer) GetStore() cache.Store {
+	return cache.NewStore(func(obj interface{}) (string, error) { return "", nil })
+}
+
+func (f *FakeNamespaceInformer) GetController() cache.Controller {
+	return f.FakeController
+}
+
 type FakeController struct {
 	sync.Mutex
 	stopped bool
