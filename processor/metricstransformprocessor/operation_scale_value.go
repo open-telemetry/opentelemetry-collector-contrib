@@ -1,4 +1,4 @@
-// Copyright 2020 OpenTelemetry Authors
+// Copyright 2021 OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ func (mtp *metricsTransformProcessor) scaleValueOp(metric *metricspb.Metric, op 
 			case metricspb.MetricDescriptor_GAUGE_INT64, metricspb.MetricDescriptor_CUMULATIVE_INT64:
 				dp.Value = &metricspb.Point_Int64Value{Int64Value: int64(float64(dp.GetInt64Value()) * op.configOperation.Scale)}
 			case metricspb.MetricDescriptor_GAUGE_DOUBLE, metricspb.MetricDescriptor_CUMULATIVE_DOUBLE:
-				dp.Value = &metricspb.Point_DoubleValue{DoubleValue: float64(dp.GetDoubleValue() * op.configOperation.Scale)}
+				dp.Value = &metricspb.Point_DoubleValue{DoubleValue: dp.GetDoubleValue() * op.configOperation.Scale}
 			}
 		}
 	}

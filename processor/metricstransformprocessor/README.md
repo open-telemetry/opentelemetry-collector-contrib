@@ -5,9 +5,10 @@ Supported pipeline types: metrics
 ## Description
 
 The metrics transform processor can be used to rename metrics, and add, rename
-or delete label keys and values. It can also be used to perform aggregations on
-metrics across labels or label values. The complete list of supported operations
-that can be applied to one or more metrics is provided in the below table.
+or delete label keys and values. It can also be used to perform scaling and
+aggregations on metrics across labels or label values. The complete list of
+supported operations that can be applied to one or more metrics is provided in
+the below table.
 
 :information_source: This processor only supports renames/aggregations **within
 a batch of metrics**. It does not do any aggregation across batches, so it is
