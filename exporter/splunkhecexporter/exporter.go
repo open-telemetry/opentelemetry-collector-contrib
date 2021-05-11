@@ -33,10 +33,11 @@ import (
 )
 
 const (
-	idleConnTimeout     = 30 * time.Second
-	tlsHandshakeTimeout = 10 * time.Second
-	dialerTimeout       = 30 * time.Second
-	dialerKeepAlive     = 30 * time.Second
+	idleConnTimeout      = 30 * time.Second
+	tlsHandshakeTimeout  = 10 * time.Second
+	dialerTimeout        = 30 * time.Second
+	dialerKeepAlive      = 30 * time.Second
+	defaultSplunkAppName = "OpenTelemetry Collector Contrib"
 )
 
 type splunkExporter struct {
@@ -56,9 +57,18 @@ type exporterOptions struct {
 func createExporter(
 	config *Config,
 	logger *zap.Logger,
+	buildinfo *component.BuildInfo,
 ) (*splunkExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
+	}
+
+	if config.SplunkAppName == "" {
+		config.SplunkAppName = defaultSplunkAppName
+	}
+
+	if config.SplunkAppVersion == "" {
+		config.SplunkAppVersion = buildinfo.Version
 	}
 
 	options, err := config.getOptionsFromConfig()
@@ -108,10 +118,12 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) (
 			return gzip.NewWriter(nil)
 		}},
 		headers: map[string]string{
-			"Connection":    "keep-alive",
-			"Content-Type":  "application/json",
-			"User-Agent":    "OpenTelemetry-Collector Splunk Exporter/v0.0.1",
-			"Authorization": splunk.HECTokenHeader + " " + config.Token,
+			"Connection":           "keep-alive",
+			"Content-Type":         "application/json",
+			"User-Agent":           config.SplunkAppName + "/" + config.SplunkAppVersion,
+			"Authorization":        splunk.HECTokenHeader + " " + config.Token,
+			"__splunk_app_name":    config.SplunkAppName,
+			"__splunk_app_version": config.SplunkAppVersion,
 		},
 		config: config,
 	}, nil

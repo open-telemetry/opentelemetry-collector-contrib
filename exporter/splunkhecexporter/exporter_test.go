@@ -31,6 +31,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -45,7 +46,8 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	got, err := createExporter(nil, zap.NewNop())
+	buildInfo := component.DefaultBuildInfo()
+	got, err := createExporter(nil, zap.NewNop(), &buildInfo)
 	assert.EqualError(t, err, "nil config")
 	assert.Nil(t, got)
 
@@ -54,7 +56,7 @@ func TestNew(t *testing.T) {
 		Endpoint:        "https://example.com:8088",
 		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
 	}
-	got, err = createExporter(config, zap.NewNop())
+	got, err = createExporter(config, zap.NewNop(), &buildInfo)
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 
@@ -72,7 +74,7 @@ func TestNew(t *testing.T) {
 			InsecureSkipVerify: false,
 		},
 	}
-	got, err = createExporter(config, zap.NewNop())
+	got, err = createExporter(config, zap.NewNop(), &buildInfo)
 	assert.Error(t, err)
 	require.Nil(t, got)
 }
@@ -165,6 +167,8 @@ func TestConsumeMetricsData(t *testing.T) {
 			config.SourceType = "test_type"
 			config.Token = "1234"
 			config.Index = "test_index"
+			config.SplunkAppName = "OpenTelemetry-Collector Splunk Exporter"
+			config.SplunkAppVersion = "v0.0.1"
 
 			sender, err := buildClient(options, config, zap.NewNop())
 			assert.NoError(t, err)
@@ -309,6 +313,8 @@ func TestConsumeLogsData(t *testing.T) {
 			config.SourceType = "test_type"
 			config.Token = "1234"
 			config.Index = "test_index"
+			config.SplunkAppName = "OpenTelemetry-Collector Splunk Exporter"
+			config.SplunkAppVersion = "v0.0.1"
 
 			sender, err := buildClient(options, config, zap.NewNop())
 			assert.NoError(t, err)
@@ -325,11 +331,12 @@ func TestConsumeLogsData(t *testing.T) {
 }
 
 func TestExporterStartAlwaysReturnsNil(t *testing.T) {
+	buildInfo := component.DefaultBuildInfo()
 	config := &Config{
 		Endpoint: "https://example.com:8088",
 		Token:    "abc",
 	}
-	e, err := createExporter(config, zap.NewNop())
+	e, err := createExporter(config, zap.NewNop(), &buildInfo)
 	assert.NoError(t, err)
 	assert.NoError(t, e.start(context.Background(), componenttest.NewNopHost()))
 }

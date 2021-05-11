@@ -65,7 +65,7 @@ func createTracesExporter(
 	}
 	expCfg := config.(*Config)
 
-	exp, err := createExporter(expCfg, params.Logger)
+	exp, err := createExporter(expCfg, params.Logger, &params.BuildInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func createMetricsExporter(
 	}
 	expCfg := config.(*Config)
 
-	exp, err := createExporter(expCfg, params.Logger)
+	exp, err := createExporter(expCfg, params.Logger, &params.BuildInfo)
 
 	if err != nil {
 		return nil, err
@@ -120,7 +120,7 @@ func createLogsExporter(
 	}
 	expCfg := config.(*Config)
 
-	exp, err := createExporter(expCfg, params.Logger)
+	exp, err := createExporter(expCfg, params.Logger, &params.BuildInfo)
 
 	if err != nil {
 		return nil, err

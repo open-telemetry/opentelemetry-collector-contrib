@@ -59,6 +59,8 @@ func TestLoadConfig(t *testing.T) {
 		Source:               "otel",
 		SourceType:           "otel",
 		Index:                "metrics",
+		SplunkAppName:        "OpenTelemetry-Collector Splunk Exporter",
+		SplunkAppVersion:     "v0.0.1",
 		MaxConnections:       100,
 		MaxContentLengthLogs: 2 * 1024 * 1024,
 		TimeoutSettings: exporterhelper.TimeoutSettings{
