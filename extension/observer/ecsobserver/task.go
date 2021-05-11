@@ -23,7 +23,7 @@ import (
 )
 
 // Task contains both raw task info and its definition.
-// It is generated from TaskFetcher.
+// It is generated from taskFetcher.
 type Task struct {
 	Task       *ecs.Task
 	Definition *ecs.TaskDefinition
