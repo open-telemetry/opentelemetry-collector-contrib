@@ -95,8 +95,8 @@ transforms:
         label_set: [labels...]
         # aggregation_type defines how data points will be aggregated; if action is aggregate_labels or aggregate_label_values, aggregation_type is required
         aggregation_type: {sum, mean, min, max}
-        # scale specifies the scalar to apply to values
-        scale: <scalar>
+        # experimental_scale specifies the scalar to apply to values
+        experimental_scale: <scalar>
         # value_actions contain a list of operations that will be performed on the selected label
         value_actions:
             # value specifies the value to operate on
@@ -240,12 +240,12 @@ operation:
 
 ### Scale value
 ```yaml
-# scale CPU usage from seconds to milliseconds
+# experimental_scale CPU usage from seconds to milliseconds
 include: system.cpu.usage
 action: update
 operation:
   - action: experimental_scale_value
-    scale: 1000
+    experimental_scale: 1000
 ```
 
 ### Aggregate labels

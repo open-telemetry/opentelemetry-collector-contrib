@@ -50,7 +50,7 @@ const (
 	NewValueFieldName = "new_value"
 
 	// ScaleFieldName is the mapstructure field name for Scale field
-	ScaleFieldName = "scale"
+	ScaleFieldName = "experimental_scale"
 
 	// SubmatchCaseFieldName is the mapstructure field name for SubmatchCase field
 	SubmatchCaseFieldName = "submatch_case"
@@ -147,7 +147,7 @@ type Operation struct {
 	ValueActions []ValueAction `mapstructure:"value_actions"`
 
 	// Scale is a scalar to multiply the values with.
-	Scale float64 `mapstructure:"scale"`
+	Scale float64 `mapstructure:"experimental_scale"`
 
 	// LabelValue identifies the exact label value to operate on
 	LabelValue string `mapstructure:"label_value"`
