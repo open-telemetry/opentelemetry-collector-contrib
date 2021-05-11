@@ -25,6 +25,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jpillora/backoff"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
@@ -109,6 +110,9 @@ func (c TCPInputConfig) Build(context operator.BuildContext) ([]operator.Operato
 		addAttributes: c.AddAttributes,
 		encoding:      encoding,
 		splitFunc:     splitFunc,
+		backoff: backoff.Backoff{
+			Max: 3 * time.Second,
+		},
 	}
 
 	if c.TLS != nil {
@@ -132,6 +136,7 @@ type TCPInput struct {
 	cancel   context.CancelFunc
 	wg       sync.WaitGroup
 	tls      *tls.Config
+	backoff  backoff.Backoff
 
 	encoding  helper.Encoding
 	splitFunc bufio.SplitFunc
@@ -186,8 +191,11 @@ func (t *TCPInput) goListen(ctx context.Context) {
 					return
 				default:
 					t.Debugw("Listener accept error", zap.Error(err))
+					time.Sleep(t.backoff.Duration())
+					continue
 				}
 			}
+			t.backoff.Reset()
 
 			t.Debugf("Received connection: %s", conn.RemoteAddr().String())
 			subctx, cancel := context.WithCancel(ctx)
