@@ -66,10 +66,10 @@ type Config struct {
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.TLSClientSetting `mapstructure:",squash"`
 
-	// App name is used to track telemetry information for Splunk App's using HEC by App name.
+	// App name is used to track telemetry information for Splunk App's using HEC by App name. Defaults to "OpenTelemetry-Collector Splunk Exporter".
 	SplunkAppName string `mapstructure:"splunk_app_name"`
 
-	// App version is used to track telemetry information for Splunk App's using HEC by App version.
+	// App version is used to track telemetry information for Splunk App's using HEC by App version. Defaults to "v0.0.1".
 	SplunkAppVersion string `mapstructure:"splunk_app_version"`
 }
 
