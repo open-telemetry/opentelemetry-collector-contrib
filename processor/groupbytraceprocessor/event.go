@@ -16,6 +16,9 @@ package groupbytraceprocessor
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"hash/maphash"
 	"sync"
 	"time"
 
@@ -39,29 +42,48 @@ const (
 	traceRemoved
 )
 
+var (
+	errNoTraceID = errors.New("trace doesn't have traceID")
+
+	seed = maphash.MakeSeed()
+
+	hashPool = sync.Pool{
+		New: func() interface{} {
+			var hash maphash.Hash
+			hash.SetSeed(seed)
+			return &hash
+		},
+	}
+)
+
 type eventType int
 type event struct {
 	typ     eventType
 	payload interface{}
 }
 
-// eventMachine is a simple machine that accepts events in a typically non-blocking manner,
-// processing the events serially, to ensure that data at the consumer is consistent.
+type tracesWithID struct {
+	id pdata.TraceID
+	td pdata.Traces
+}
+
+// eventMachine is a machine that accepts events in a typically non-blocking manner,
+// processing the events serially per worker scope, to ensure that data at the consumer is consistent.
 // Just like the machine itself is non-blocking, consumers are expected to also not block
 // on the callbacks, otherwise, events might pile up. When enough events are piled up, firing an
 // event will block until enough capacity is available to accept the events.
 type eventMachine struct {
-	events                    chan event
+	workers                   []*eventMachineWorker
 	close                     chan struct{}
 	metricsCollectionInterval time.Duration
 	shutdownTimeout           time.Duration
 
 	logger *zap.Logger
 
-	onBatchReceived func(pdata.Traces)
-	onTraceExpired  func(pdata.TraceID) error
-	onTraceReleased func([]pdata.ResourceSpans) error
-	onTraceRemoved  func(pdata.TraceID) error
+	onTraceReceived func(td tracesWithID, worker *eventMachineWorker) error
+	onTraceExpired  func(traceID pdata.TraceID, worker *eventMachineWorker) error
+	onTraceReleased func(rss []pdata.ResourceSpans) error
+	onTraceRemoved  func(traceID pdata.TraceID) error
 
 	onError func(event)
 
@@ -70,25 +92,40 @@ type eventMachine struct {
 	closed       bool
 }
 
-func newEventMachine(logger *zap.Logger, bufferSize int) *eventMachine {
+func newEventMachine(logger *zap.Logger, bufferSize int, numWorkers int, numTraces int) *eventMachine {
 	em := &eventMachine{
 		logger:                    logger,
-		events:                    make(chan event, bufferSize),
+		workers:                   make([]*eventMachineWorker, numWorkers),
 		close:                     make(chan struct{}),
 		shutdownLock:              &sync.RWMutex{},
 		metricsCollectionInterval: time.Second,
 		shutdownTimeout:           10 * time.Second,
 	}
+	for i := range em.workers {
+		em.workers[i] = &eventMachineWorker{
+			machine: em,
+			buffer:  newRingBuffer(numTraces / numWorkers),
+			events:  make(chan event, bufferSize/numWorkers),
+		}
+	}
 	return em
 }
 
 func (em *eventMachine) startInBackground() {
-	go em.start()
+	em.startWorkers()
 	go em.periodicMetrics()
 }
 
+func (em *eventMachine) numEvents() int {
+	var result int
+	for _, worker := range em.workers {
+		result += len(worker.events)
+	}
+	return result
+}
+
 func (em *eventMachine) periodicMetrics() {
-	numEvents := len(em.events)
+	numEvents := em.numEvents()
 	em.logger.Debug("recording current state of the queue", zap.Int("num-events", numEvents))
 	stats.Record(context.Background(), mNumEventsInQueue.M(int64(numEvents)))
 
@@ -104,35 +141,29 @@ func (em *eventMachine) periodicMetrics() {
 	})
 }
 
-func (em *eventMachine) start() {
-	for {
-		select {
-		case e := <-em.events:
-			em.handleEvent(e)
-		case <-em.close:
-			return
-		}
+func (em *eventMachine) startWorkers() {
+	for _, worker := range em.workers {
+		go worker.start()
 	}
 }
 
-func (em *eventMachine) handleEvent(e event) {
+func (em *eventMachine) handleEvent(e event, w *eventMachineWorker) {
 	switch e.typ {
 	case traceReceived:
-		if em.onBatchReceived == nil {
-			em.logger.Debug("onBatchReceived not set, skipping event")
+		if em.onTraceReceived == nil {
+			em.logger.Debug("onTraceReceived not set, skipping event")
 			em.callOnError(e)
 			return
 		}
-		payload, ok := e.payload.(pdata.Traces)
+		payload, ok := e.payload.(tracesWithID)
 		if !ok {
 			// the payload had an unexpected type!
 			em.callOnError(e)
 			return
 		}
 
-		em.handleEventWithObservability("onBatchReceived", func() error {
-			em.onBatchReceived(payload)
-			return nil
+		em.handleEventWithObservability("onTraceReceived", func() error {
+			return em.onTraceReceived(payload, w)
 		})
 	case traceExpired:
 		if em.onTraceExpired == nil {
@@ -148,7 +179,7 @@ func (em *eventMachine) handleEvent(e event) {
 		}
 
 		em.handleEventWithObservability("onTraceExpired", func() error {
-			return em.onTraceExpired(payload)
+			return em.onTraceExpired(payload, w)
 		})
 	case traceReleased:
 		if em.onTraceReleased == nil {
@@ -189,22 +220,41 @@ func (em *eventMachine) handleEvent(e event) {
 	}
 }
 
-func (em *eventMachine) fire(events ...event) {
-	em.shutdownLock.RLock()
-	defer em.shutdownLock.RUnlock()
-
-	// we are not accepting new events
-	if em.closed {
-		return
+// consume takes a single trace and routes it to one of the workers.
+func (em *eventMachine) consume(td pdata.Traces) error {
+	traceID, err := getTraceID(td)
+	if err != nil {
+		return fmt.Errorf("eventmachine consume failed: %w", err)
 	}
 
-	for _, e := range events {
-		em.events <- e
+	var bucket uint64
+	if len(em.workers) != 1 {
+		bucket = workerIndexForTraceID(traceID, len(em.workers))
 	}
+
+	em.logger.Debug("scheduled trace to worker", zap.Uint64("id", bucket))
+
+	em.workers[bucket].fire(event{
+		typ:     traceReceived,
+		payload: tracesWithID{id: traceID, td: td},
+	})
+	return nil
+}
+
+func workerIndexForTraceID(traceID pdata.TraceID, numWorkers int) uint64 {
+	hash := hashPool.Get().(*maphash.Hash)
+	defer func() {
+		hash.Reset()
+		hashPool.Put(hash)
+	}()
+
+	bytes := traceID.Bytes()
+	hash.Write(bytes[:])
+	return hash.Sum64() % uint64(numWorkers)
 }
 
 func (em *eventMachine) shutdown() {
-	em.logger.Info("shutting down the event manager", zap.Int("pending-events", len(em.events)))
+	em.logger.Info("shutting down the event manager", zap.Int("pending-events", em.numEvents()))
 	em.shutdownLock.Lock()
 	em.closed = true
 	em.shutdownLock.Unlock()
@@ -214,7 +264,7 @@ func (em *eventMachine) shutdown() {
 	// we never return an error here
 	ok, _ := doWithTimeout(em.shutdownTimeout, func() error {
 		for {
-			if len(em.events) == 0 {
+			if em.numEvents() == 0 {
 				return nil
 			}
 			time.Sleep(100 * time.Millisecond)
@@ -230,7 +280,7 @@ func (em *eventMachine) shutdown() {
 	close(done)
 
 	if !ok {
-		em.logger.Info("forcing the shutdown of the event manager", zap.Int("pending-events", len(em.events)))
+		em.logger.Info("forcing the shutdown of the event manager", zap.Int("pending-events", em.numEvents()))
 	}
 	close(em.close)
 }
@@ -261,6 +311,40 @@ func (em *eventMachine) handleEventWithObservability(event string, do func() err
 	}
 }
 
+type eventMachineWorker struct {
+	machine *eventMachine
+
+	// the ring buffer holds the IDs for all the in-flight traces
+	buffer *ringBuffer
+
+	events chan event
+}
+
+func (w *eventMachineWorker) start() {
+	for {
+		select {
+		case e := <-w.events:
+			w.machine.handleEvent(e, w)
+		case <-w.machine.close:
+			return
+		}
+	}
+}
+
+func (w *eventMachineWorker) fire(events ...event) {
+	w.machine.shutdownLock.RLock()
+	defer w.machine.shutdownLock.RUnlock()
+
+	// we are not accepting new events
+	if w.machine.closed {
+		return
+	}
+
+	for _, e := range events {
+		w.events <- e
+	}
+}
+
 // doWithTimeout wraps a function in a timeout, returning whether it succeeded before timing out.
 // If the function returns an error within the timeout, it's considered as succeeded and the error will be returned back to the caller.
 func doWithTimeout(timeout time.Duration, do func() error) (bool, error) {
@@ -275,4 +359,23 @@ func doWithTimeout(timeout time.Duration, do func() error) (bool, error) {
 	case err := <-done:
 		return true, err
 	}
+}
+
+func getTraceID(td pdata.Traces) (pdata.TraceID, error) {
+	rss := td.ResourceSpans()
+	if rss.Len() == 0 {
+		return pdata.InvalidTraceID(), errNoTraceID
+	}
+
+	ilss := rss.At(0).InstrumentationLibrarySpans()
+	if ilss.Len() == 0 {
+		return pdata.InvalidTraceID(), errNoTraceID
+	}
+
+	spans := ilss.At(0).Spans()
+	if spans.Len() == 0 {
+		return pdata.InvalidTraceID(), errNoTraceID
+	}
+
+	return spans.At(0).TraceID(), nil
 }

@@ -78,7 +78,7 @@ func (r *Receiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	r.obsCtx = obsreport.ReceiverContext(ctx, r.config.ID().String(), r.transport)
+	r.obsCtx = obsreport.ReceiverContext(ctx, r.config.ID(), r.transport)
 
 	r.runnerCtx, r.runnerCancel = context.WithCancel(context.Background())
 	r.runner = interval.NewRunner(r.config.CollectionInterval, r)
@@ -119,7 +119,7 @@ func (r *Receiver) Run() error {
 		return r.Setup()
 	}
 
-	c := obsreport.StartMetricsReceiveOp(r.obsCtx, typeStr, r.transport)
+	c := obsreport.StartMetricsReceiveOp(r.obsCtx, r.config.ID(), r.transport)
 
 	containers := r.client.Containers()
 	results := make(chan result, len(containers))

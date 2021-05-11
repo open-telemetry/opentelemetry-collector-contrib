@@ -110,6 +110,10 @@ type FilterConfig struct {
 
 	// MatchType determines how the Include string is matched: <strict|regexp>.
 	MatchType MatchType `mapstructure:"match_type"`
+
+	// MatchLabels specifies the label set against which the metric filter will work.
+	// This field is optional.
+	MatchLabels map[string]string `mapstructure:"experimental_match_labels"`
 }
 
 // Operation defines the specific operation performed on the selected metrics.

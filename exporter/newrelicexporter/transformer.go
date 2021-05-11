@@ -35,6 +35,8 @@ const (
 	collectorVersionKey       = "collector.version"
 	instrumentationNameKey    = "instrumentation.name"
 	instrumentationVersionKey = "instrumentation.version"
+	droppedAttributesCountKey = "otel.dropped_attributes_count"
+	droppedEventsCountKey     = "otel.dropped_events_count"
 	statusCodeKey             = "otel.status_code"
 	statusDescriptionKey      = "otel.status_description"
 	spanKindKey               = "span.kind"
@@ -153,6 +155,10 @@ func (t *transformer) Log(log pdata.LogRecord) (telemetry.Log, error) {
 		attrs[logSeverityNumKey] = int32(log.SeverityNumber())
 	}
 
+	if droppedAttributesCount := log.DroppedAttributesCount(); droppedAttributesCount > 0 {
+		attrs[droppedAttributesCountKey] = droppedAttributesCount
+	}
+
 	return telemetry.Log{
 		Message:    message,
 		Timestamp:  log.Timestamp().AsTime(),
@@ -196,6 +202,14 @@ func (t *transformer) SpanAttributes(span pdata.Span) map[string]interface{} {
 		attrs[spanKindKey] = strings.ToLower(kind)
 	}
 
+	if droppedAttributesCount := span.DroppedAttributesCount(); droppedAttributesCount > 0 {
+		attrs[droppedAttributesCountKey] = droppedAttributesCount
+	}
+
+	if droppedEventsCount := span.DroppedEventsCount(); droppedEventsCount > 0 {
+		attrs[droppedEventsCountKey] = droppedEventsCount
+	}
+
 	for k, v := range tracetranslator.AttributeMapToMap(spanAttrs) {
 		// Only include attribute if not an override attribute
 		if _, isOverrideKey := t.OverrideAttributes[k]; !isOverrideKey {
@@ -224,6 +238,11 @@ func (t *transformer) SpanEvents(span pdata.Span) []telemetry.Event {
 			Timestamp:  event.Timestamp().AsTime(),
 			Attributes: tracetranslator.AttributeMapToMap(eventAttrs),
 		}
+
+		if droppedAttributesCount := event.DroppedAttributesCount(); droppedAttributesCount > 0 {
+			events[i].Attributes[droppedAttributesCountKey] = droppedAttributesCount
+		}
+
 		t.TrackAttributes(attributeLocationSpanEvent, eventAttrs)
 	}
 	return events

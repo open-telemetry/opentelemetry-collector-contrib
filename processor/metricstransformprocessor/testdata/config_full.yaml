@@ -19,6 +19,18 @@ processors:
             new_label: my_label
             new_value: my_value
 
+      - include: new_name
+        action: insert
+        new_name: new_name_copy_1
+        match_type: strict
+        experimental_match_labels: {"my_label": "my_value"}
+
+      - include: new_name
+        action: insert
+        new_name: new_name_copy_2
+        match_type: regexp
+        experimental_match_labels: {"my_label": ".*label"}
+
       - include: name2
         action: update
         operations:
