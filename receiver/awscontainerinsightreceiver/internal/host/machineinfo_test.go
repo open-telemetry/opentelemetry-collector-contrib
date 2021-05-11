@@ -28,7 +28,7 @@ func TestMachineInfo(t *testing.T) {
 	assert.Equal(t, "", m.GetInstanceType())
 	assert.Equal(t, int64(0), m.GetNumCores())
 	assert.Equal(t, int64(0), m.GetMemoryCapacity())
-	assert.Equal(t, "", m.GetEbsVolumeID("dev"))
+	assert.Equal(t, "", m.GetEBSVolumeID("dev"))
 	assert.Equal(t, "", m.GetClusterName())
 	assert.Equal(t, "", m.GetAutoScalingGroupName())
 	m.Shutdown()

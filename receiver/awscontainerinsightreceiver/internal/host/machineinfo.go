@@ -25,20 +25,81 @@ import (
 type MachineInfo struct {
 	sync.RWMutex
 	logger          *zap.Logger
+	nodeCapacity    *NodeCapacity
+	ec2metadata     *EC2Metadata
+	ebsVolume       *EBSVolume
+	ec2Tags         *EC2Tags
 	refreshInterval time.Duration
 	shutdownC       chan bool
 }
 
 // NewMachineInfo creates a new MachineInfo struct
 func NewMachineInfo(refreshInterval time.Duration, logger *zap.Logger) *MachineInfo {
+	nodeCapacity, err := NewNodeCapacity(logger)
+	if err != nil {
+		logger.Error("Failed to initialize NodeCapacity", zap.Error(err))
+	}
+
 	mInfo := &MachineInfo{
+		nodeCapacity:    nodeCapacity,
+		ec2metadata:     NewEC2Metadata(refreshInterval, logger),
 		refreshInterval: refreshInterval,
 		shutdownC:       make(chan bool),
 		logger:          logger,
 	}
 
-	// TODO: add more initializations
+	mInfo.lazyInitEBSVolume()
+	mInfo.lazyInitEC2Tags()
 	return mInfo
+}
+
+func (m *MachineInfo) lazyInitEBSVolume() {
+	if m.ebsVolume == nil {
+		//delay the initialization. If instance id is not available, ebsVolume is set to nil
+		//Because ebs volumes only change occasionally, we refresh every 5 collection intervals to reduce ec2 api calls
+		m.ebsVolume = NewEBSVolume(m.GetInstanceID(), 5*m.refreshInterval, m.logger)
+	}
+
+	go func() {
+		refreshTicker := time.NewTicker(m.refreshInterval)
+		defer refreshTicker.Stop()
+		for {
+			select {
+			case <-refreshTicker.C:
+				if m.ebsVolume != nil {
+					return
+				}
+				m.logger.Info("refresh to initialize ebsVolume")
+				m.ebsVolume = NewEBSVolume(m.GetInstanceID(), m.refreshInterval, m.logger)
+			case <-m.shutdownC:
+				return
+			}
+		}
+	}()
+}
+
+func (m *MachineInfo) lazyInitEC2Tags() {
+	if m.ec2Tags == nil {
+		//delay the initialization. If instance id is not available, c2Tags is set to nil
+		m.ec2Tags = NewEC2Tags(m.GetInstanceID(), m.refreshInterval, m.logger)
+	}
+
+	go func() {
+		refreshTicker := time.NewTicker(m.refreshInterval)
+		defer refreshTicker.Stop()
+		for {
+			select {
+			case <-refreshTicker.C:
+				if m.ec2Tags != nil {
+					return
+				}
+				m.logger.Info("refresh to initialize ec2Tags")
+				m.ec2Tags = NewEC2Tags(m.GetInstanceID(), m.refreshInterval, m.logger)
+			case <-m.shutdownC:
+				return
+			}
+		}
+	}()
 }
 
 // Shutdown stops the refreshing of machine info
@@ -48,42 +109,47 @@ func (m *MachineInfo) Shutdown() {
 
 // GetInstanceID returns the ec2 instance id for the host
 func (m *MachineInfo) GetInstanceID() string {
-	//TODO: add implementation
-	return ""
+	return m.ec2metadata.GetInstanceID()
 }
 
 // GetInstanceType returns the ec2 instance type for the host
 func (m *MachineInfo) GetInstanceType() string {
-	//TODO: add implementation
-	return ""
+	return m.ec2metadata.GetInstanceType()
 }
 
 // GetNumCores returns the number of cpu cores on the host
 func (m *MachineInfo) GetNumCores() int64 {
-	//TODO: add implementation
-	return 0
+	return m.nodeCapacity.CPUCapacity
 }
 
 // GetMemoryCapacity returns the total memory (in bytes) on the host
 func (m *MachineInfo) GetMemoryCapacity() int64 {
-	//TODO: add implementation
-	return 0
+	return m.nodeCapacity.MemCapacity
 }
 
-// GetEbsVolumeID returns the ebs volume id corresponding to the given device name
-func (m *MachineInfo) GetEbsVolumeID(devName string) string {
-	//TODO: add implementation
+// GetEBSVolumeID returns the ebs volume id corresponding to the given device name
+func (m *MachineInfo) GetEBSVolumeID(devName string) string {
+	if m.ebsVolume != nil {
+		return m.ebsVolume.GetEBSVolumeID(devName)
+	}
+
 	return ""
 }
 
 // GetClusterName returns the cluster name associated with the host
 func (m *MachineInfo) GetClusterName() string {
-	//TODO: add implementation
+	if m.ec2Tags != nil {
+		return m.ec2Tags.GetClusterName()
+	}
+
 	return ""
 }
 
 // GetAutoScalingGroupName returns the auto scaling group associated with the host
 func (m *MachineInfo) GetAutoScalingGroupName() string {
-	//TODO: add implementation
+	if m.ec2Tags != nil {
+		return m.ec2Tags.GetAutoScalingGroupName()
+	}
+
 	return ""
 }
