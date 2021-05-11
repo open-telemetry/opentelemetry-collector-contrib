@@ -4,10 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.18.0] - 2020-05-11
+
+### Added
+- `file_input` now supports multi-level directory globs (i.e. `/var/**/logs/**/*.log`) ([PR97](https://github.com/open-telemetry/opentelemetry-log-collection/pull/97))
+- `add`, `remove`, `move`, `copy`, `retain`, and `flatten` operators, as alternatives to the `restructure` operator. 
+- `add_attributes` option to `tcp_input` and `udp_input`, for capturing network attributes ([PR108](https://github.com/open-telemetry/opentelemetry-log-collection/pull/108))
+- `multiline`, `encoding`, and `max_log_size` options to `tcp_input` ([PR125](https://github.com/open-telemetry/opentelemetry-log-collection/pull/125))
+
+### Removed
+- Database package. The same functionality is supported via a `Persister` interface, passed to `Start` methods ([PR93](https://github.com/open-telemetry/opentelemetry-log-collection/pull/93))
 
 ### Fixed
-- TCP Input Operator panic ([Issue](https://github.com/open-telemetry/opentelemetry-log-collection/issues/129))
+- Issue where `tcp_input` could panic or spam logs ([PR130](https://github.com/open-telemetry/opentelemetry-log-collection/pull/130))
 
 ## [0.17.0] - 2020-04-07
 
