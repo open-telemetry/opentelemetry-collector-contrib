@@ -1555,7 +1555,7 @@ var (
 		},
 		// Scale Value
 		{
-			name: "metric_scale_value_int64",
+			name: "metric_experimental_scale_value_int64",
 			transforms: []internalTransform{
 				{
 					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
@@ -1600,7 +1600,7 @@ var (
 			},
 		},
 		{
-			name: "metric_scale_value_double",
+			name: "metric_experimental_scale_value_double",
 			transforms: []internalTransform{
 				{
 					MetricIncludeFilter: internalFilterStrict{include: "metric1"},

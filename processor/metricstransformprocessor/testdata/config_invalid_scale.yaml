@@ -7,7 +7,7 @@ processors:
             - include: old_name
               action: update
               operations:
-                - action: scale_value # missing scale key
+                - action: experimental_scale_value # missing scale key
 
 exporters:
     nop:

@@ -80,7 +80,7 @@ transforms:
     # operations contain a list of operations that will be performed on the resulting metric(s)
     operations:
         # action defines the type of operation that will be performed, see examples below for more details
-      - action: {add_label, update_label, delete_label_value, toggle_scalar_data_type, scale_value, aggregate_labels, aggregate_label_values}
+      - action: {add_label, update_label, delete_label_value, toggle_scalar_data_type, experimental_scale_value, aggregate_labels, aggregate_label_values}
         # label specifies the label to operate on
         label: <label>
         # new_label specifies the updated name of the label; if action is add_label, new_label is required
@@ -244,7 +244,7 @@ operation:
 include: system.cpu.usage
 action: update
 operation:
-  - action: scale_value
+  - action: experimental_scale_value
     scale: 1000
 ```
 

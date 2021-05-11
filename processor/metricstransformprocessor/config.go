@@ -208,7 +208,7 @@ const (
 	ToggleScalarDataType OperationAction = "toggle_scalar_data_type"
 
 	// ScaleValue multiplies the value by a constant scalar
-	ScaleValue OperationAction = "scale_value"
+	ScaleValue OperationAction = "experimental_scale_value"
 
 	// AggregateLabels aggregates away all labels other than the ones in Operation.LabelSet
 	// by the method indicated by Operation.AggregationType.
