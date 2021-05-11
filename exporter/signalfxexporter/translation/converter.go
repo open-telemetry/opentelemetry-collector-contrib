@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,15 +15,18 @@
 package translation
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -48,10 +51,10 @@ var (
 // MetricsConverter converts MetricsData to sfxpb DataPoints. It holds an optional
 // MetricTranslator to translate SFx metrics using translation rules.
 type MetricsConverter struct {
-	logger                  *zap.Logger
-	metricTranslator        *MetricTranslator
-	filterSet               *dpfilters.FilterSet
-	nonAlphanumericDimChars string
+	logger             *zap.Logger
+	metricTranslator   *MetricTranslator
+	filterSet          *dpfilters.FilterSet
+	datapointValidator *datapointValidator
 }
 
 // NewMetricsConverter creates a MetricsConverter from the passed in logger and
@@ -67,7 +70,12 @@ func NewMetricsConverter(
 	if err != nil {
 		return nil, err
 	}
-	return &MetricsConverter{logger: logger, metricTranslator: t, filterSet: fs, nonAlphanumericDimChars: nonAlphanumericDimChars}, nil
+	return &MetricsConverter{
+		logger:             logger,
+		metricTranslator:   t,
+		filterSet:          fs,
+		datapointValidator: newDatapointValidator(logger, nonAlphanumericDimChars),
+	}, nil
 }
 
 // MetricDataToSignalFxV2 converts the passed in MetricsData to SFx datapoints,
@@ -85,8 +93,8 @@ func (c *MetricsConverter) MetricDataToSignalFxV2(rm pdata.ResourceMetrics) []*s
 			sfxDatapoints = append(sfxDatapoints, dps...)
 		}
 	}
-	c.sanitizeDataPointDimensions(sfxDatapoints)
-	return sfxDatapoints
+
+	return c.datapointValidator.sanitizeDataPoints(sfxDatapoints)
 }
 
 func (c *MetricsConverter) metricToSfxDataPoints(metric pdata.Metric, extraDimensions []*sfxpb.Dimension) []*sfxpb.DataPoint {
@@ -119,10 +127,6 @@ func (c *MetricsConverter) metricToSfxDataPoints(metric pdata.Metric, extraDimen
 		dps = c.metricTranslator.TranslateDataPoints(c.logger, dps)
 	}
 
-	// TODO:
-	// 1) Add hard coded list of metrics to be excluded to omit non-default metrics
-	// 2) Add an include_metrics options that will serve as an override to the exclude
-	// list. This will help to include metrics that are excluded by default.
 	resultSliceLen := 0
 	for i, dp := range dps {
 		if !c.filterSet.Matches(dp) {
@@ -133,7 +137,6 @@ func (c *MetricsConverter) metricToSfxDataPoints(metric pdata.Metric, extraDimen
 		}
 	}
 	dps = dps[:resultSliceLen]
-
 	return dps
 }
 
@@ -405,16 +408,6 @@ func convertHistogram(histDPs pdata.HistogramDataPointSlice, basePoint *sfxpb.Da
 	return out
 }
 
-// sanitizeDataPointLabels replaces all characters unsupported by SignalFx backend
-// in metric label keys and with "_"
-func (c *MetricsConverter) sanitizeDataPointDimensions(dps []*sfxpb.DataPoint) {
-	for _, dp := range dps {
-		for _, d := range dp.Dimensions {
-			d.Key = filterKeyChars(d.Key, c.nonAlphanumericDimChars)
-		}
-	}
-}
-
 func filterKeyChars(str string, nonAlphanumericDimChars string) string {
 	filterMap := func(r rune) rune {
 		if unicode.IsLetter(r) || unicode.IsDigit(r) || strings.ContainsRune(nonAlphanumericDimChars, r) {
@@ -475,5 +468,128 @@ func (c *MetricsConverter) ConvertDimension(dim string) string {
 	if c.metricTranslator != nil {
 		res = c.metricTranslator.translateDimension(dim)
 	}
-	return filterKeyChars(res, c.nonAlphanumericDimChars)
+	return filterKeyChars(res, c.datapointValidator.nonAlphanumericDimChars)
+}
+
+// Values obtained from https://dev.splunk.com/observability/docs/datamodel/ingest#Criteria-for-metric-and-dimension-names-and-values
+const (
+	maxMetricNameLength     = 256
+	maxDimensionNameLength  = 128
+	maxDimensionValueLength = 256
+)
+
+var (
+	invalidMetricNameReason = fmt.Sprintf(
+		"metric name longer than %d characters", maxMetricNameLength)
+	invalidDimensionNameReason = fmt.Sprintf(
+		"dimension name longer than %d characters", maxDimensionNameLength)
+	invalidDimensionValueReason = fmt.Sprintf(
+		"dimension value longer than %d characters", maxDimensionValueLength)
+)
+
+type datapointValidator struct {
+	logger                  *zap.Logger
+	nonAlphanumericDimChars string
+}
+
+func newDatapointValidator(logger *zap.Logger, nonAlphanumericDimChars string) *datapointValidator {
+	return &datapointValidator{logger: createSampledLogger(logger), nonAlphanumericDimChars: nonAlphanumericDimChars}
+}
+
+// sanitizeDataPoints sanitizes datapoints prior to dispatching them to the backend.
+// Datapoints that do not conform to the requirements are removed. This method drops
+// datapoints with metric name greater than 256 characters.
+func (dpv *datapointValidator) sanitizeDataPoints(dps []*sfxpb.DataPoint) []*sfxpb.DataPoint {
+	resultDatapointsLen := 0
+	for dpIndex, dp := range dps {
+		if dpv.isValidMetricName(dp.Metric) {
+			dp.Dimensions = dpv.sanitizeDimensions(dp.Dimensions)
+			if resultDatapointsLen < dpIndex {
+				dps[resultDatapointsLen] = dp
+			}
+			resultDatapointsLen++
+		}
+	}
+
+	// Trim datapoints slice to account for any removed datapoints.
+	return dps[:resultDatapointsLen]
+}
+
+// sanitizeDimensions replaces all characters unsupported by SignalFx backend
+// in metric label keys and with "_" and drops dimensions when the key is greater
+// than 128 characters or when value is greater than 256 characters in length.
+func (dpv *datapointValidator) sanitizeDimensions(dimensions []*sfxpb.Dimension) []*sfxpb.Dimension {
+	resultDimensionsLen := 0
+	for dimensionIndex, d := range dimensions {
+		if dpv.isValidDimension(d) {
+			d.Key = filterKeyChars(d.Key, dpv.nonAlphanumericDimChars)
+			if resultDimensionsLen < dimensionIndex {
+				dimensions[resultDimensionsLen] = d
+			}
+			resultDimensionsLen++
+		}
+	}
+
+	// Trim dimensions slice to account for any removed dimensions.
+	return dimensions[:resultDimensionsLen]
+}
+
+func (dpv *datapointValidator) isValidMetricName(name string) bool {
+	if len(name) > maxMetricNameLength {
+		dpv.logger.Warn("dropping datapoint",
+			zap.String("reason", invalidMetricNameReason),
+			zap.String("metric_name", name),
+			zap.Int("metric_name_length", len(name)),
+		)
+		return false
+	}
+	return true
+}
+
+func (dpv *datapointValidator) isValidDimension(dimension *sfxpb.Dimension) bool {
+	return dpv.isValidDimensionName(dimension.Key) && dpv.isValidDimensionValue(dimension.Value)
+}
+
+func (dpv *datapointValidator) isValidDimensionName(name string) bool {
+	if len(name) > maxDimensionNameLength {
+		dpv.logger.Warn("dropping dimension",
+			zap.String("reason", invalidDimensionNameReason),
+			zap.String("dimension_name", name),
+			zap.Int("dimension_name_length", len(name)),
+		)
+		return false
+	}
+	return true
+}
+
+func (dpv *datapointValidator) isValidDimensionValue(value string) bool {
+	if len(value) > maxDimensionValueLength {
+		dpv.logger.Warn("dropping dimension",
+			zap.String("reason", invalidDimensionValueReason),
+			zap.String("dimension_value", value),
+			zap.Int("dimension_value_length", len(value)),
+		)
+		return false
+	}
+	return true
+}
+
+// Copied from https://github.com/open-telemetry/opentelemetry-collector/blob/v0.26.0/exporter/exporterhelper/queued_retry.go#L108
+func createSampledLogger(logger *zap.Logger) *zap.Logger {
+	if logger.Core().Enabled(zapcore.DebugLevel) {
+		// Debugging is enabled. Don't do any sampling.
+		return logger
+	}
+
+	// Create a logger that samples all messages to 1 per 10 seconds initially,
+	// and 1/10000 of messages after that.
+	opts := zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		return zapcore.NewSamplerWithOptions(
+			core,
+			10*time.Second,
+			1,
+			10000,
+		)
+	})
+	return logger.WithOptions(opts)
 }
