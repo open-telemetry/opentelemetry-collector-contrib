@@ -15,14 +15,14 @@
 package k8sprocessor
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 // Config defines configuration for k8s attributes processor.
 type Config struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
+	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	k8sconfig.APIConfig `mapstructure:",squash"`
 
@@ -39,6 +39,14 @@ type Config struct {
 	// Filter section allows specifying filters to filter
 	// pods by labels, fields, namespaces, nodes, etc.
 	Filter FilterConfig `mapstructure:"filter"`
+
+	// Association section allows to define rules for tagging spans, metrics,
+	// and logs with Pod metadata.
+	Association []PodAssociationConfig `mapstructure:"pod_association"`
+}
+
+func (cfg *Config) Validate() error {
+	return cfg.APIConfig.Validate()
 }
 
 // ExtractConfig section allows specifying extraction rules to extract
@@ -172,4 +180,16 @@ type FieldFilterConfig struct {
 	// Key: Value pair. The following operations are supported
 	//   equals, not-equals, exists, does-not-exist.
 	Op string `mapstructure:"op"`
+}
+
+// PodAssociationConfig contain single rule how to associate Pod metadata
+// with logs, spans and metrics
+type PodAssociationConfig struct {
+	// From represents the source of the association.
+	// Allowed values are "connection" and "labels".
+	From string `mapstructure:"from"`
+
+	// Name represents extracted key name.
+	// e.g. ip, pod_uid, k8s.pod.ip
+	Name string `mapstructure:"name"`
 }

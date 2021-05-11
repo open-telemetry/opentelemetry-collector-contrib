@@ -14,23 +14,28 @@
 
 package honeycombexporter
 
-import "go.opentelemetry.io/collector/config/configmodels"
+import (
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+)
 
 type Config struct {
-	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	config.ExporterSettings `mapstructure:",squash"`
 	// APIKey is the authentication token associated with the Honeycomb account.
 	APIKey string `mapstructure:"api_key"`
 	// Dataset is the Honeycomb dataset to send events to.
 	Dataset string `mapstructure:"dataset"`
 	// API URL to use (defaults to https://api.honeycomb.io)
 	APIURL string `mapstructure:"api_url"`
-	// SampleRate is the rate at which to sample this event. Default is 1,
-	// meaning no sampling. If you want to send one event out of every 250
-	// times Send() is called, you would specify 250 here.
+	// Deprecated - do not use. This will be removed in a future release.
 	SampleRate uint `mapstructure:"sample_rate"`
 	// The name of an attribute that contains the sample_rate for each span.
 	// If the attribute is on the span, it takes precedence over the static sample_rate configuration
 	SampleRateAttribute string `mapstructure:"sample_rate_attribute"`
 	// Debug enables more verbose logging from the Honeycomb SDK. It defaults to false.
 	Debug bool `mapstructure:"debug"`
+	// RetrySettings helps configure retry on traces which failed to send
+	exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
+	// QueueSettings enable queued processing
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
 }

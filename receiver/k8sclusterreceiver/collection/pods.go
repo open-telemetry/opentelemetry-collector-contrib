@@ -15,6 +15,7 @@
 package collection
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -30,6 +31,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
+	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
@@ -113,7 +116,7 @@ func getResourceForPod(pod *corev1.Pod) *resourcepb.Resource {
 		Labels: map[string]string{
 			conventions.AttributeK8sPodUID:    string(pod.UID),
 			conventions.AttributeK8sPod:       pod.Name,
-			k8sKeyNodeName:                    pod.Spec.NodeName,
+			conventions.AttributeK8sNodeName:  pod.Spec.NodeName,
 			conventions.AttributeK8sNamespace: pod.Namespace,
 			conventions.AttributeK8sCluster:   pod.ClusterName,
 		},
@@ -138,14 +141,15 @@ func phaseToInt(phase corev1.PodPhase) int32 {
 }
 
 // getMetadataForPod returns all metadata associated with the pod.
-func getMetadataForPod(pod *corev1.Pod, mc *metadataStore, logger *zap.Logger) map[ResourceID]*KubernetesMetadata {
-	metadata := utils.MergeStringMaps(map[string]string{}, pod.Labels)
+func getMetadataForPod(pod *corev1.Pod, mc *metadataStore, logger *zap.Logger) map[metadataPkg.ResourceID]*KubernetesMetadata {
+	metadata := util.MergeStringMaps(map[string]string{}, pod.Labels)
 
 	metadata[podCreationTime] = pod.CreationTimestamp.Format(time.RFC3339)
 
 	for _, or := range pod.OwnerReferences {
-		metadata[strings.ToLower(or.Kind)] = or.Name
-		metadata[strings.ToLower(or.Kind)+"_uid"] = string(or.UID)
+		kind := strings.ToLower(or.Kind)
+		metadata[getOTelNameFromKind(kind)] = or.Name
+		metadata[getOTelUIDFromKind(kind)] = string(or.UID)
 
 		// defer syncing replicaset and job workload metadata.
 		if or.Kind == k8sKindReplicaSet || or.Kind == k8sKindJob {
@@ -156,25 +160,25 @@ func getMetadataForPod(pod *corev1.Pod, mc *metadataStore, logger *zap.Logger) m
 	}
 
 	if mc.services != nil {
-		metadata = utils.MergeStringMaps(metadata,
+		metadata = util.MergeStringMaps(metadata,
 			getPodServiceTags(pod, mc.services),
 		)
 	}
 
 	if mc.jobs != nil {
-		metadata = utils.MergeStringMaps(metadata,
+		metadata = util.MergeStringMaps(metadata,
 			collectPodJobProperties(pod, mc.jobs, logger),
 		)
 	}
 
 	if mc.replicaSets != nil {
-		metadata = utils.MergeStringMaps(metadata,
+		metadata = util.MergeStringMaps(metadata,
 			collectPodReplicaSetProperties(pod, mc.replicaSets, logger),
 		)
 	}
 
-	podID := ResourceID(pod.UID)
-	return mergeKubernetesMetadataMaps(map[ResourceID]*KubernetesMetadata{
+	podID := metadataPkg.ResourceID(pod.UID)
+	return mergeKubernetesMetadataMaps(map[metadataPkg.ResourceID]*KubernetesMetadata{
 		podID: {
 			resourceIDKey: conventions.AttributeK8sPodUID,
 			resourceID:    podID,
@@ -254,7 +258,7 @@ func getPodServiceTags(pod *corev1.Pod, services cache.Store) map[string]string 
 		serObj := ser.(*corev1.Service)
 		if serObj.Namespace == pod.Namespace &&
 			labels.Set(serObj.Spec.Selector).AsSelectorPreValidated().Matches(labels.Set(pod.Labels)) {
-			properties["kubernetes_service_"+serObj.Name] = ""
+			properties[fmt.Sprintf("%s%s", k8sServicePrefix, serObj.Name)] = ""
 		}
 	}
 
@@ -263,18 +267,17 @@ func getPodServiceTags(pod *corev1.Pod, services cache.Store) map[string]string 
 
 // getWorkloadProperties returns workload metadata for provided owner reference.
 func getWorkloadProperties(ref *v1.OwnerReference, labelKey string) map[string]string {
-	kind := ref.Kind
-	uidKey := strings.ToLower(kind) + "_uid"
+	uidKey := getOTelUIDFromKind(strings.ToLower(ref.Kind))
 	return map[string]string{
-		k8sKeyWorkLoadKind: kind,
+		k8sKeyWorkLoadKind: ref.Kind,
 		k8sKeyWorkLoadName: ref.Name,
 		labelKey:           ref.Name,
 		uidKey:             string(ref.UID),
 	}
 }
 
-func getPodContainerProperties(pod *corev1.Pod) map[ResourceID]*KubernetesMetadata {
-	km := map[ResourceID]*KubernetesMetadata{}
+func getPodContainerProperties(pod *corev1.Pod) map[metadataPkg.ResourceID]*KubernetesMetadata {
+	km := map[metadataPkg.ResourceID]*KubernetesMetadata{}
 	for _, cs := range pod.Status.ContainerStatuses {
 		// Skip if container id returned is empty.
 		if cs.ContainerID == "" {

@@ -1,4 +1,4 @@
-// Copyright -c Google LLC
+// Copyright OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,34 +17,29 @@ package signalfxreceiver
 import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 // signalFxV2ToMetricsData converts SignalFx event proto data points to
 // pdata.LogSlice. Returning the converted data and the number of dropped log
 // records.
-func signalFxV2EventsToLogRecords(
-	logger *zap.Logger,
-	events []*sfxpb.Event,
-) pdata.LogSlice {
-	lrs := pdata.NewLogSlice()
+func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs pdata.LogSlice) {
 	lrs.Resize(len(events))
 
 	for i, event := range events {
 		lr := lrs.At(i)
-		lr.InitEmpty()
 
 		// The EventType field is the most logical "name" of the event.
 		lr.SetName(event.EventType)
 
 		// SignalFx timestamps are in millis so convert to nanos by multiplying
 		// by 1 million.
-		lr.SetTimestamp(pdata.TimestampUnixNano(event.Timestamp * 1e6))
+		lr.SetTimestamp(pdata.Timestamp(event.Timestamp * 1e6))
 
 		attrs := lr.Attributes()
-		attrs.InitEmptyWithCapacity(1 + len(event.Dimensions) + len(event.Properties))
+		attrs.Clear()
+		attrs.EnsureCapacity(1 + len(event.Dimensions) + len(event.Properties))
 
 		if event.Category != nil {
 			attrs.InsertInt(splunk.SFxEventCategoryKey, int64(*event.Category))
@@ -60,8 +55,9 @@ func signalFxV2EventsToLogRecords(
 		}
 
 		if len(event.Properties) > 0 {
-			propMap := pdata.NewAttributeMap()
-			propMap.InitEmptyWithCapacity(len(event.Properties))
+			propMapVal := pdata.NewAttributeValueMap()
+			propMap := propMapVal.MapVal()
+			propMap.EnsureCapacity(len(event.Properties))
 
 			for _, prop := range event.Properties {
 				// No way to tell what value type is without testing each
@@ -80,12 +76,8 @@ func signalFxV2EventsToLogRecords(
 					propMap.InsertNull(prop.Key)
 				}
 			}
-			propMapVal := pdata.NewAttributeValueMap()
-			propMapVal.SetMapVal(propMap)
 
 			attrs.Insert(splunk.SFxEventPropertiesKey, propMapVal)
 		}
 	}
-
-	return lrs
 }

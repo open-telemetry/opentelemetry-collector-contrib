@@ -21,13 +21,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 func TestNewDetector(t *testing.T) {
-	d, err := NewDetector()
+	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
 	assert.NotNil(t, d)
 	assert.NoError(t, err)
 }
@@ -48,6 +50,16 @@ func TestDetectFalse(t *testing.T) {
 	res, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.True(t, internal.IsEmptyResource(res))
+}
+
+func TestDetectDeprecatedEnv(t *testing.T) {
+	os.Setenv(envVar, "")
+	os.Setenv(deprecatedEnvVar, "key=value")
+
+	detector := &Detector{}
+	res, err := detector.Detect(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, internal.NewResource(map[string]interface{}{"key": "value"}), res)
 }
 
 func TestDetectError(t *testing.T) {

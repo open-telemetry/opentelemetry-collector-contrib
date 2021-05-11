@@ -1,17 +1,18 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver
 
-go 1.14
+go 1.15
 
 require (
+	github.com/gobwas/glob v0.2.3
 	github.com/gorilla/mux v1.8.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
-	github.com/stretchr/testify v1.6.1
-	go.opencensus.io v0.22.4
-	go.opentelemetry.io/collector v0.12.1-0.20201012183541-526f34200197
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.0.0-00010101000000-000000000000
+	github.com/stretchr/testify v1.7.0
+	go.opencensus.io v0.23.0
+	go.opentelemetry.io/collector v0.26.1-0.20210510162429-51281a719256
 	go.uber.org/zap v1.16.0
-	google.golang.org/grpc/examples v0.0.0-20200728194956-1c32b02682df // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter => ../../exporter/splunkhecexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ../../internal/splunk

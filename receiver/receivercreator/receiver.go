@@ -16,41 +16,37 @@ package receivercreator
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
-var (
-	errNilNextConsumer = errors.New("nil nextConsumer")
-)
-
 var _ component.MetricsReceiver = (*receiverCreator)(nil)
 
-// receiverCreator implements consumer.MetricsConsumer.
+// receiverCreator implements consumer.Metrics.
 type receiverCreator struct {
-	nextConsumer    consumer.MetricsConsumer
-	logger          *zap.Logger
+	params          component.ReceiverCreateParams
 	cfg             *Config
+	nextConsumer    consumer.Metrics
 	observerHandler observerHandler
 }
 
 // newReceiverCreator creates the receiver_creator with the given parameters.
-func newReceiverCreator(logger *zap.Logger, nextConsumer consumer.MetricsConsumer, cfg *Config) (component.MetricsReceiver, error) {
+func newReceiverCreator(params component.ReceiverCreateParams, cfg *Config, nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
-		return nil, errNilNextConsumer
+		return nil, componenterror.ErrNilNextConsumer
 	}
 
 	r := &receiverCreator{
-		logger:       logger,
-		nextConsumer: nextConsumer,
+		params:       params,
 		cfg:          cfg,
+		nextConsumer: nextConsumer,
 	}
 	return r, nil
 }
@@ -69,22 +65,19 @@ func (h *loggingHost) ReportFatalError(err error) {
 var _ component.Host = (*loggingHost)(nil)
 
 // Start receiver_creator.
-func (rc *receiverCreator) Start(ctx context.Context, host component.Host) error {
+func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 	rc.observerHandler = observerHandler{
-		logger:                rc.logger,
-		receiverTemplates:     rc.cfg.receiverTemplates,
+		config:                rc.cfg,
+		logger:                rc.params.Logger,
 		receiversByEndpointID: receiverMap{},
+		nextConsumer:          rc.nextConsumer,
 		runner: &receiverRunner{
-			logger:       rc.logger,
-			nextConsumer: rc.nextConsumer,
-			idNamespace:  rc.cfg.Name(),
-			// TODO: not really sure what context should be used here for starting subreceivers
-			// as don't think it makes sense to use Start context as the lifetimes are different.
-			ctx:  context.Background(),
-			host: &loggingHost{host, rc.logger},
+			params:      rc.params,
+			idNamespace: rc.cfg.ID(),
+			host:        &loggingHost{host, rc.params.Logger},
 		}}
 
-	observers := map[configmodels.Type]observer.Observable{}
+	observers := map[config.Type]observer.Observable{}
 
 	// Match all configured observers to the extensions that are running.
 	for _, watchObserver := range rc.cfg.WatchObservers {
@@ -109,8 +102,7 @@ func (rc *receiverCreator) Start(ctx context.Context, host component.Host) error
 	}
 
 	if len(observers) == 0 {
-		rc.logger.Warn("no observers were configured and no subreceivers will be started. receiver_creator will be disabled",
-			zap.String("receiver", rc.cfg.Name()))
+		rc.params.Logger.Warn("no observers were configured and no subreceivers will be started. receiver_creator will be disabled")
 	}
 
 	// Start all configured watchers.
@@ -122,6 +114,6 @@ func (rc *receiverCreator) Start(ctx context.Context, host component.Host) error
 }
 
 // Shutdown stops the receiver_creator and all its receivers started at runtime.
-func (rc *receiverCreator) Shutdown(ctx context.Context) error {
-	return rc.observerHandler.Shutdown()
+func (rc *receiverCreator) Shutdown(context.Context) error {
+	return rc.observerHandler.shutdown()
 }

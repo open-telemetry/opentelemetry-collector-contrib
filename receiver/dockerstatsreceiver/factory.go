@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
@@ -35,12 +35,9 @@ func NewFactory() component.ReceiverFactory {
 		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
 		Endpoint:           "unix:///var/run/docker.sock",
 		CollectionInterval: 10 * time.Second,
 		Timeout:            5 * time.Second,
@@ -50,8 +47,8 @@ func createDefaultConfig() configmodels.Receiver {
 func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	config configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
+	config config.Receiver,
+	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	dockerConfig := config.(*Config)
 

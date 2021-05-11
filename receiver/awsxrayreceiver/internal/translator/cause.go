@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
+	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
 func addCause(seg *awsxray.Segment, span *pdata.Span) {
@@ -37,10 +37,9 @@ func addCause(seg *awsxray.Segment, span *pdata.Span) {
 	// temporarily setting the status to otlptrace.Status_UnknownError. This will be
 	// updated to a more specific error in the `segToSpans()` in translator.go once
 	// we traverse through all the subsegments.
-	if span.Status().Code() == pdata.StatusCodeOk {
-		// otlptrace.Status_Ok is the default value after span.Status().InitEmpty()
-		// is called
-		span.Status().SetCode(pdata.StatusCodeUnknownError)
+	if span.Status().Code() == pdata.StatusCodeUnset {
+		// StatusCodeUnset is the default value for the span.Status().
+		span.Status().SetCode(pdata.StatusCodeError)
 	}
 
 	switch seg.Cause.Type {
@@ -61,10 +60,10 @@ func addCause(seg *awsxray.Segment, span *pdata.Span) {
 
 		for i, excp := range seg.Cause.Exceptions {
 			evt := evts.At(exceptionEventStartIndex + i)
-			evt.InitEmpty()
 			evt.SetName(conventions.AttributeExceptionEventName)
 			attrs := evt.Attributes()
-			attrs.InitEmptyWithCapacity(8)
+			attrs.Clear()
+			attrs.EnsureCapacity(8)
 
 			// ID is a required field
 			attrs.UpsertString(awsxray.AWSXrayExceptionIDAttribute, *excp.ID)

@@ -1,0 +1,17 @@
+receivers:
+  nop:
+
+processors:
+  groupbytrace/custom:
+    wait_duration: 10s
+    num_traces: 1000
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [groupbytrace/custom]
+      exporters: [nop]

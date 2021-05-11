@@ -21,14 +21,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := &Factory{}
@@ -40,18 +40,30 @@ func TestLoadConfig(t *testing.T) {
 
 	require.Len(t, cfg.Extensions, 2)
 
-	ext0 := cfg.Extensions["k8s_observer"]
+	ext0 := cfg.Extensions[config.NewID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), ext0)
 
-	ext1 := cfg.Extensions["k8s_observer/1"]
+	ext1 := cfg.Extensions[config.NewIDWithName(typeStr, "1")]
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: configmodels.ExtensionSettings{
-				TypeVal: "k8s_observer",
-				NameVal: "k8s_observer/1",
-			},
-			Node:      "node-1",
-			APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
+			ExtensionSettings: config.NewExtensionSettings(config.NewIDWithName(typeStr, "1")),
+			Node:              "node-1",
+			APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
 		},
 		ext1)
+}
+
+func TestValidate(t *testing.T) {
+	cfg := &Config{
+		ExtensionSettings: config.NewExtensionSettings(config.NewIDWithName(typeStr, "1")),
+		Node:              "node-1",
+		APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
+	}
+
+	err := cfg.Validate()
+	require.Nil(t, err)
+
+	cfg.APIConfig.AuthType = "invalid"
+	err = cfg.Validate()
+	require.NotNil(t, err)
 }

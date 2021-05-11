@@ -27,15 +27,15 @@ import (
 
 type redisReceiver struct {
 	logger         *zap.Logger
-	config         *config
-	consumer       consumer.MetricsConsumer
+	config         *Config
+	consumer       consumer.Metrics
 	intervalRunner *interval.Runner
 }
 
 func newRedisReceiver(
 	logger *zap.Logger,
-	config *config,
-	consumer consumer.MetricsConsumer,
+	config *Config,
+	consumer consumer.Metrics,
 ) *redisReceiver {
 	return &redisReceiver{
 		logger:   logger,
@@ -50,7 +50,7 @@ func (r *redisReceiver) Start(ctx context.Context, host component.Host) error {
 		Addr:     r.config.Endpoint,
 		Password: r.config.Password,
 	})
-	redisRunnable := newRedisRunnable(ctx, c, r.config.ServiceName, r.consumer, r.logger)
+	redisRunnable := newRedisRunnable(ctx, r.config.ID(), c, r.config.ServiceName, r.consumer, r.logger)
 	r.intervalRunner = interval.NewRunner(r.config.CollectionInterval, redisRunnable)
 
 	go func() {

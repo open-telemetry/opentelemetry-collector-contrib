@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -34,11 +34,9 @@ import (
 
 func TestReceiver(t *testing.T) {
 	client := fake.NewSimpleClientset()
-	consumer := &exportertest.SinkMetricsExporter{}
+	consumer := new(consumertest.MetricsSink)
 
-	r, err := setupReceiver(client, consumer, 10*time.Second)
-
-	require.NoError(t, err)
+	r := setupReceiver(client, consumer, 10*time.Second)
 
 	// Setup k8s resources.
 	numPods := 2
@@ -76,11 +74,10 @@ func TestReceiver(t *testing.T) {
 
 func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	client := fake.NewSimpleClientset()
-	consumer := &exportertest.SinkMetricsExporter{}
+	consumer := new(consumertest.MetricsSink)
 
 	// Mock initial cache sync timing out, using a small timeout.
-	r, err := setupReceiver(client, consumer, 1*time.Millisecond)
-	require.NoError(t, err)
+	r := setupReceiver(client, consumer, 1*time.Millisecond)
 
 	createPods(t, client, 1)
 
@@ -94,10 +91,9 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 
 func TestReceiverWithManyResources(t *testing.T) {
 	client := fake.NewSimpleClientset()
-	consumer := &exportertest.SinkMetricsExporter{}
+	consumer := new(consumertest.MetricsSink)
 
-	r, err := setupReceiver(client, consumer, 10*time.Second)
-	require.NoError(t, err)
+	r := setupReceiver(client, consumer, 10*time.Second)
 
 	numPods := 1000
 	createPods(t, client, numPods)
@@ -122,12 +118,11 @@ var consumeMetadataInvocation = func() {
 
 func TestReceiverWithMetadata(t *testing.T) {
 	client := fake.NewSimpleClientset()
-	consumer := &mockExporterWithK8sMetadata{SinkMetricsExporter: &exportertest.SinkMetricsExporter{}}
+	consumer := &mockExporterWithK8sMetadata{MetricsSink: new(consumertest.MetricsSink)}
 	numCalls = atomic.NewInt32(0)
 
-	r, err := setupReceiver(client, consumer, 10*time.Second)
-	require.NoError(t, err)
-	r.config.MetadataExporters = []string{"exampleexporter/withmetadata"}
+	r := setupReceiver(client, consumer, 10*time.Second)
+	r.config.MetadataExporters = []string{"nop/withmetadata"}
 
 	// Setup k8s resources.
 	pods := createPods(t, client, 1)
@@ -171,8 +166,8 @@ func getUpdatedPod(pod *corev1.Pod) interface{} {
 
 func setupReceiver(
 	client *fake.Clientset,
-	consumer consumer.MetricsConsumer,
-	initialSyncTimeout time.Duration) (*kubernetesReceiver, error) {
+	consumer consumer.Metrics,
+	initialSyncTimeout time.Duration) *kubernetesReceiver {
 
 	logger := zap.NewNop()
 	config := &Config{
@@ -188,5 +183,5 @@ func setupReceiver(
 		logger:          logger,
 		config:          config,
 		consumer:        consumer,
-	}, nil
+	}
 }

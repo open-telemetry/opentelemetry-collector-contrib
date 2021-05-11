@@ -57,8 +57,10 @@ func TestExtensionObserve(t *testing.T) {
 	assert.Equal(t, observer.Endpoint{
 		ID:     "k8s_observer/pod1-UID",
 		Target: "1.2.3.4",
-		Details: observer.Pod{
-			Name: "pod1",
+		Details: &observer.Pod{
+			Name:      "pod1",
+			Namespace: "default",
+			UID:       "pod1-UID",
 			Labels: map[string]string{
 				"env": "prod",
 			},
@@ -74,8 +76,10 @@ func TestExtensionObserve(t *testing.T) {
 	assert.Equal(t, observer.Endpoint{
 		ID:     "k8s_observer/pod1-UID",
 		Target: "1.2.3.4",
-		Details: observer.Pod{
-			Name: "pod1",
+		Details: &observer.Pod{
+			Name:      "pod1",
+			Namespace: "default",
+			UID:       "pod1-UID",
 			Labels: map[string]string{
 				"env":         "prod",
 				"pod-version": "2",

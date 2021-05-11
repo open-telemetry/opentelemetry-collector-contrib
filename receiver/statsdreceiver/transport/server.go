@@ -35,8 +35,9 @@ type Server interface {
 	// the Parser and passed to the next consumer.
 	ListenAndServe(
 		p protocol.Parser,
-		mc consumer.MetricsConsumer,
+		mc consumer.Metrics,
 		r Reporter,
+		transferChan chan<- string,
 	) error
 
 	// Close stops any running ListenAndServe, however, it waits for any
@@ -62,11 +63,7 @@ type Reporter interface {
 	// consumer on the pipeline. The context passed to it should be the
 	// one returned by OnDataReceived. The error should be error returned by
 	// the next consumer - the reporter is expected to handle nil error too.
-	OnMetricsProcessed(
-		ctx context.Context,
-		numReceivedMessages int,
-		numInvalidMessages int,
-		err error)
+	OnMetricsProcessed(ctx context.Context, numReceivedMessages int, err error)
 
 	// OnDebugf allows less structured reporting for debugging scenarios.
 	OnDebugf(

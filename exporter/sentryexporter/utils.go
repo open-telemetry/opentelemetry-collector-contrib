@@ -22,16 +22,6 @@ import (
 
 // unixNanoToTime converts UNIX Epoch time in nanoseconds
 // to a Time struct.
-func unixNanoToTime(u pdata.TimestampUnixNano) time.Time {
+func unixNanoToTime(u pdata.Timestamp) time.Time {
 	return time.Unix(0, int64(u)).UTC()
-}
-
-// isAllZero checks if a byte slice contains only zeros
-func isAllZero(s []byte) bool {
-	for _, v := range s {
-		if v != 0 {
-			return false
-		}
-	}
-	return true
 }

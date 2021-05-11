@@ -15,58 +15,49 @@
 package datadogexporter
 
 import (
+	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
-	"gopkg.in/zorkian/go-datadog-api.v2"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/testutils"
 )
 
 func TestNewExporter(t *testing.T) {
-	cfg := &Config{}
-	cfg.API.Key = "ddog_32_characters_long_api_key1"
-	logger := zap.NewNop()
+	server := testutils.DatadogServerMock()
+	defer server.Close()
+
+	cfg := &config.Config{
+		API: config.APIConfig{
+			Key: "ddog_32_characters_long_api_key1",
+		},
+		Metrics: config.MetricsConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: server.URL,
+			},
+		},
+	}
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
 	// The client should have been created correctly
-	exp, err := newMetricsExporter(logger, cfg)
-	require.NoError(t, err)
+	exp := newMetricsExporter(context.Background(), params, cfg)
 	assert.NotNil(t, exp)
-}
+	_ = exp.PushMetricsData(context.Background(), testutils.TestMetrics.Clone())
+	assert.Equal(t, len(server.MetadataChan), 0)
 
-func TestProcessMetrics(t *testing.T) {
-	cfg := &Config{
-		TagsConfig: TagsConfig{
-			Hostname: "test_host",
-			Env:      "test_env",
-			Tags:     []string{"key:val"},
-		},
-		Metrics: MetricsConfig{
-			Namespace: "test.",
-		},
-	}
-	logger := zap.NewNop()
-
-	exp, err := newMetricsExporter(logger, cfg)
-
+	cfg.SendMetadata = true
+	cfg.UseResourceMetadata = true
+	_ = exp.PushMetricsData(context.Background(), testutils.TestMetrics.Clone())
+	body := <-server.MetadataChan
+	var recvMetadata metadata.HostMetadata
+	err := json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
-
-	metrics := []datadog.Metric{
-		newGauge(
-			"metric_name",
-			0,
-			0,
-			[]string{"key2:val2"},
-		),
-	}
-
-	exp.processMetrics(metrics)
-
-	assert.Equal(t, "test_host", *metrics[0].Host)
-	assert.Equal(t, "test.metric_name", *metrics[0].Metric)
-	assert.ElementsMatch(t,
-		[]string{"key:val", "env:test_env", "key2:val2"},
-		metrics[0].Tags,
-	)
-
+	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
 }

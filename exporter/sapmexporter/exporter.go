@@ -18,28 +18,35 @@ package sapmexporter
 import (
 	"context"
 
+	"github.com/jaegertracing/jaeger/model"
 	sapmclient "github.com/signalfx/sapm-proto/client"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/translator/trace/jaeger"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
 )
+
+// TODO: Find a place for this to be shared.
+type baseTracesExporter struct {
+	component.Component
+	consumer.Traces
+}
 
 // sapmExporter is a wrapper struct of SAPM exporter
 type sapmExporter struct {
-	client  *sapmclient.Client
-	logger  *zap.Logger
-	config  *Config
-	tracker *Tracker
+	client *sapmclient.Client
+	logger *zap.Logger
+	config *Config
 }
 
 func (se *sapmExporter) Shutdown(context.Context) error {
 	se.client.Stop()
-	se.tracker.Shutdown()
 	return nil
 }
 
@@ -54,99 +61,105 @@ func newSAPMExporter(cfg *Config, params component.ExporterCreateParams) (sapmEx
 		return sapmExporter{}, err
 	}
 
-	var tracker *Tracker
-
-	if cfg.Correlation.Enabled {
-		tracker = NewTracker(cfg, params)
-	}
-
 	return sapmExporter{
-		client:  client,
-		logger:  params.Logger,
-		config:  cfg,
-		tracker: tracker,
+		client: client,
+		logger: params.Logger,
+		config: cfg,
 	}, err
 }
 
-func newSAPMTraceExporter(cfg *Config, params component.ExporterCreateParams) (component.TraceExporter, error) {
+func newSAPMTracesExporter(cfg *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
 	se, err := newSAPMExporter(cfg, params)
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewTraceExporter(
+	te, err := exporterhelper.NewTracesExporter(
 		cfg,
+		params.Logger,
 		se.pushTraceData,
-		exporterhelper.WithShutdown(se.Shutdown))
-}
+		exporterhelper.WithShutdown(se.Shutdown),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+	)
 
-// tracesByAccessToken takes a pdata.Traces struct and will iterate through its ResourceSpans' attributes,
-// regrouping by any SFx access token label value if Config.AccessTokenPassthrough is enabled.  It will delete any
-// set token label in any case to prevent serialization.
-// It returns a map of newly constructed pdata.Traces keyed by access token, defaulting to empty string.
-func (se *sapmExporter) tracesByAccessToken(td pdata.Traces) map[string]pdata.Traces {
-	tracesByToken := make(map[string]pdata.Traces, 1)
-	resourceSpans := td.ResourceSpans()
-	for i := 0; i < resourceSpans.Len(); i++ {
-		resourceSpan := resourceSpans.At(i)
-		if resourceSpan.IsNil() {
-			// Invalid trace so nothing to export
-			continue
-		}
-
-		accessToken := ""
-		if !resourceSpan.Resource().IsNil() {
-			attrs := resourceSpan.Resource().Attributes()
-			attributeValue, ok := attrs.Get(splunk.SFxAccessTokenLabel)
-			if ok {
-				attrs.Delete(splunk.SFxAccessTokenLabel)
-				if se.config.AccessTokenPassthrough {
-					accessToken = attributeValue.StringVal()
-				}
-			}
-		}
-
-		traceForToken, ok := tracesByToken[accessToken]
-		if !ok {
-			traceForToken = pdata.NewTraces()
-			tracesByToken[accessToken] = traceForToken
-		}
-
-		// Append ResourceSpan to trace for this access token
-		traceForTokenSize := traceForToken.ResourceSpans().Len()
-		traceForToken.ResourceSpans().Resize(traceForTokenSize + 1)
-		traceForToken.ResourceSpans().At(traceForTokenSize).InitEmpty()
-		resourceSpan.CopyTo(traceForToken.ResourceSpans().At(traceForTokenSize))
+	if err != nil {
+		return nil, err
 	}
 
-	return tracesByToken
+	// If AccessTokenPassthrough enabled, split the incoming Traces data by splunk.SFxAccessTokenLabel,
+	// this ensures that we get batches of data for the same token when pushing to the backend.
+	if cfg.AccessTokenPassthrough {
+		te = &baseTracesExporter{
+			Component: te,
+			Traces:    batchperresourceattr.NewBatchPerResourceTraces(splunk.SFxAccessTokenLabel, te),
+		}
+	}
+	return te, nil
 }
 
 // pushTraceData exports traces in SAPM proto by associated SFx access token and returns number of dropped spans
 // and the last experienced error if any translation or export failed
-func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) (droppedSpansCount int, err error) {
-	traces := se.tracesByAccessToken(td)
-	droppedSpansCount = 0
-	for accessToken, trace := range traces {
-		batches, translateErr := jaeger.InternalTracesToJaegerProto(trace)
-		if translateErr != nil {
-			droppedSpansCount += trace.SpanCount()
-			err = consumererror.Permanent(translateErr)
+func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
+	rss := td.ResourceSpans()
+	if rss.Len() == 0 {
+		return nil
+	}
+
+	// All metrics in the pdata.Metrics will have the same access token because of the BatchPerResourceMetrics.
+	accessToken := se.retrieveAccessToken(rss.At(0))
+	batches, err := jaeger.InternalTracesToJaegerProto(td)
+	if err != nil {
+		return consumererror.Permanent(err)
+	}
+
+	// Cannot remove the access token from the pdata, because exporters required to not modify incoming pdata,
+	// so need to remove that after conversion.
+	filterToken(batches)
+
+	err = se.client.ExportWithAccessToken(ctx, batches, accessToken)
+	if err != nil {
+		if sendErr, ok := err.(*sapmclient.ErrSend); ok && sendErr.Permanent {
+			return consumererror.Permanent(sendErr)
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (se *sapmExporter) retrieveAccessToken(md pdata.ResourceSpans) string {
+	if !se.config.AccessTokenPassthrough {
+		// Nothing to do if token is pass through not configured or resource is nil.
+		return ""
+	}
+
+	attrs := md.Resource().Attributes()
+	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok {
+		return accessToken.StringVal()
+	}
+	return ""
+}
+
+// filterToken filters the access token from the batch processor to avoid leaking credentials to the backend.
+func filterToken(batches []*model.Batch) {
+	for _, batch := range batches {
+		filterTokenFromProcess(batch.Process)
+	}
+}
+
+func filterTokenFromProcess(proc *model.Process) {
+	if proc == nil {
+		return
+	}
+	for i := 0; i < len(proc.Tags); {
+		if proc.Tags[i].Key == splunk.SFxAccessTokenLabel {
+			proc.Tags[i] = proc.Tags[len(proc.Tags)-1]
+			// We do not need to put proc.Tags[i] at the end, as it will be discarded anyway
+			proc.Tags = proc.Tags[:len(proc.Tags)-1]
 			continue
 		}
-
-		exportErr := se.client.ExportWithAccessToken(ctx, batches, accessToken)
-		if exportErr != nil {
-			if sendErr, ok := exportErr.(*sapmclient.ErrSend); ok {
-				if sendErr.Permanent {
-					err = consumererror.Permanent(sendErr)
-				}
-			}
-			droppedSpansCount += trace.SpanCount()
-		}
-
-		// NOTE: Correlation does not currently support inline access token.
-		se.tracker.AddSpans(ctx, trace)
+		i++
 	}
-	return
 }

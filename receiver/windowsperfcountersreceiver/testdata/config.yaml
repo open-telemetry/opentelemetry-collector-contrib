@@ -1,0 +1,29 @@
+receivers:
+  windowsperfcounters:
+    perfcounters:
+      - object: "object"
+        counters:
+          - "counter"
+  windowsperfcounters/customname:
+    collection_interval: 30s
+    perfcounters:
+      - object: "object1"
+        counters:
+          - "counter1"
+      - object: "object2"
+        counters:
+          - "counter1"
+          - "counter2"
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [windowsperfcounters]
+      processors: [nop]
+      exporters: [nop]

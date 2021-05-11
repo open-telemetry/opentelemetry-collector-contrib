@@ -21,7 +21,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 )
 
@@ -49,7 +49,7 @@ func TestMetricAccumulator(t *testing.T) {
 	require.Equal(t, 0, len(MetricsData(zap.NewNop(), summary, metadata, "", map[MetricGroup]bool{})))
 }
 
-func requireMetricsDataOk(t *testing.T, mds []consumerdata.MetricsData) {
+func requireMetricsDataOk(t *testing.T, mds []internaldata.MetricsData) {
 	for _, md := range mds {
 		requireResourceOk(t, md.Resource)
 		for _, metric := range md.Metrics {
@@ -161,7 +161,7 @@ func indexedFakeMetrics() map[string][]*metricspb.Metric {
 	return metrics
 }
 
-func fakeMetrics() []consumerdata.MetricsData {
+func fakeMetrics() []internaldata.MetricsData {
 	rc := &fakeRestClient{}
 	statsProvider := NewStatsProvider(rc)
 	summary, _ := statsProvider.StatsSummary()

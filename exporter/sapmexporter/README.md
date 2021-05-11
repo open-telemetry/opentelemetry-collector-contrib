@@ -6,12 +6,18 @@ and some useful related utilities can be found [here](https://github.com/signalf
 
 Supported pipeline types: traces
 
+> Please review the Collector's [security
+> documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
+> which contains recommendations on securing sensitive information such as the
+> API key required by this exporter.
+
 ## Configuration
 
 The following configuration options are required:
 
 - `access_token` (no default): AccessToken is the authentication token provided by SignalFx or
-another backend that supports the SAPM proto.
+another backend that supports the SAPM proto. The SignalFx access token can be obtained from the
+web app. For details on how to do so please refer the documentation [here](https://docs.signalfx.com/en/latest/admin-guide/tokens.html#access-tokens).
 - `endpoint` (no default): This is the destination to where traces will be sent to in SAPM
 format. It must be a full URL and include the scheme, port and path e.g,
 https://ingest.us0.signalfx.com/v2/trace. This can be pointed to the SignalFx backend or to
@@ -29,20 +35,10 @@ trace resource attribute, if any, as SFx access token.  In either case this attr
 during final translation.  Intended to be used in tandem with identical configuration option for
 [SAPM receiver](../../receiver/sapmreceiver/README.md) to preserve trace origin.
 - `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.
-- `correlation`
-  - `enabled` (default = false): Whether to enable spans to metric correlation. If this block is not set at all then correlation is not enabled due to the default.
-  - `endpoint` (default = ""): Required if `enabled` is `true`. This is the base URL for API requests (e.g. https://api.signalfx.com).
-  - `stale_service_timeout` (default = 5 minutes): How long to wait after a span's service name is last seen before uncorrelating it.
-  - `max_requests` (default = 20): Max HTTP requests to be made in parallel.
-  - `max_buffered` (default = 10,000): Max number of correlation updates that can be buffered before updates are dropped.
-  - `max_retries` (default = 2): Max number of retries that will be made for failed correlation updates.
-  - `log_updates` (default = false): Whether or not to log correlation updates to dimensions (at DEBUG level).
-  - `retry_delay` (default = 30 seconds): How long to wait between retries.
-  - `cleanup_interval` (default = 1 minute): How frequently to purge duplicate requests.
 
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
-[here](https://github.com/open-telemetry/opentelemetry-collector/blob/master/exporter/exporterhelper/README.md).
+[here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
 
 Example:
 
@@ -60,4 +56,4 @@ The full list of settings exposed for this exporter are documented [here](config
 with detailed sample configurations [here](testdata/config.yaml).
 
 This exporter also offers proxy support as documented
-[here](https://github.com/open-telemetry/opentelemetry-collector/tree/master/exporter#proxy-support).
+[here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).

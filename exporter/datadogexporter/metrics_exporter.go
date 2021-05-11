@@ -16,55 +16,63 @@ package datadogexporter
 
 import (
 	"context"
+	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
 type metricsExporter struct {
-	logger *zap.Logger
-	cfg    *Config
-	client *datadog.Client
-	tags   []string
+	params  component.ExporterCreateParams
+	cfg     *config.Config
+	ctx     context.Context
+	client  *datadog.Client
+	prevPts *ttlmap.TTLMap
 }
 
-func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, error) {
-	client := datadog.NewClient(cfg.API.Key, "")
-	client.SetBaseUrl(cfg.Metrics.TCPAddr.Endpoint)
+func newMetricsExporter(ctx context.Context, params component.ExporterCreateParams, cfg *config.Config) *metricsExporter {
+	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
+	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.BuildInfo)
+	client.HttpClient = utils.NewHTTPClient(10 * time.Second)
 
-	// Calculate tags at startup
-	tags := cfg.TagsConfig.GetTags(false)
+	utils.ValidateAPIKey(params.Logger, client)
 
-	return &metricsExporter{logger, cfg, client, tags}, nil
-}
-
-func (exp *metricsExporter) processMetrics(metrics []datadog.Metric) {
-	addNamespace := exp.cfg.Metrics.Namespace != ""
-	overrideHostname := exp.cfg.Hostname != ""
-	addTags := len(exp.tags) > 0
-
-	for i := range metrics {
-		if addNamespace {
-			newName := exp.cfg.Metrics.Namespace + *metrics[i].Metric
-			metrics[i].Metric = &newName
-		}
-
-		if overrideHostname || metrics[i].GetHost() == "" {
-			metrics[i].Host = GetHost(exp.cfg)
-		}
-
-		if addTags {
-			metrics[i].Tags = append(metrics[i].Tags, exp.tags...)
-		}
-
+	var sweepInterval int64 = 1
+	if cfg.Metrics.DeltaTTL > 1 {
+		sweepInterval = cfg.Metrics.DeltaTTL / 2
 	}
+	prevPts := ttlmap.New(sweepInterval, cfg.Metrics.DeltaTTL)
+	prevPts.Start()
+
+	return &metricsExporter{params, cfg, ctx, client, prevPts}
 }
 
-func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
-	metrics, droppedTimeSeries := MapMetrics(exp.logger, exp.cfg.Metrics, md)
-	exp.processMetrics(metrics)
+func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error {
 
-	err := exp.client.PostMetrics(metrics)
-	return droppedTimeSeries, err
+	// Start host metadata with resource attributes from
+	// the first payload.
+	if exp.cfg.SendMetadata {
+		once := exp.cfg.OnceMetadata()
+		once.Do(func() {
+			attrs := pdata.NewAttributeMap()
+			if md.ResourceMetrics().Len() > 0 {
+				attrs = md.ResourceMetrics().At(0).Resource().Attributes()
+			}
+			go metadata.Pusher(exp.ctx, exp.params, exp.cfg, attrs)
+		})
+	}
+
+	ms, _ := mapMetrics(exp.cfg.Metrics, exp.prevPts, md)
+
+	metrics.ProcessMetrics(ms, exp.params.Logger, exp.cfg)
+
+	err := exp.client.PostMetrics(ms)
+	return err
 }

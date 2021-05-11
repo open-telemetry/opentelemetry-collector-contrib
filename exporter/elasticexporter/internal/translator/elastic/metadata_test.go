@@ -28,7 +28,7 @@ import (
 )
 
 func TestMetadataDefaults(t *testing.T) {
-	out := metadataWithResource(t, pdata.NewResource()) // resource.IsNil()
+	out := metadataWithResource(t, pdata.NewResource())
 	assert.Equal(t, metadata{
 		service: model.Service{
 			Name: "unknown",
@@ -76,7 +76,7 @@ func TestMetadataServiceEnvironment(t *testing.T) {
 
 func TestMetadataSystemHostname(t *testing.T) {
 	resource := resourceFromAttributesMap(map[string]pdata.AttributeValue{
-		"host.hostname": pdata.NewAttributeValueString("foo"),
+		"host.name": pdata.NewAttributeValueString("foo"),
 	})
 	out := metadataWithResource(t, resource)
 	assert.Equal(t, "foo", out.system.Hostname)
@@ -139,7 +139,6 @@ func TestMetadataKubernetes(t *testing.T) {
 
 func resourceFromAttributesMap(attrs map[string]pdata.AttributeValue) pdata.Resource {
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	resource.Attributes().InitFromMap(attrs)
 	return resource
 }

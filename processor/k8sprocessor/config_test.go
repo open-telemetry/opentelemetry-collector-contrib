@@ -21,50 +21,44 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Processors[configmodels.Type(typeStr)] = factory
+	factories.Processors[config.Type(typeStr)] = factory
 	require.NoError(t, err)
 
 	err = configcheck.ValidateConfig(factory.CreateDefaultConfig())
 	require.NoError(t, err)
 
-	config, err := configtest.LoadConfigFile(
+	cfg, err := configtest.LoadConfigFile(
 		t,
 		path.Join(".", "testdata", "config.yaml"),
 		factories)
 
 	require.Nil(t, err)
-	require.NotNil(t, config)
+	require.NotNil(t, cfg)
 
-	p0 := config.Processors["k8s_tagger"]
+	p0 := cfg.Processors[config.NewID(typeStr)]
 	assert.Equal(t, p0,
 		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: "k8s_tagger",
-				NameVal: "k8s_tagger",
-			},
-			APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+			APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 		})
 
-	p1 := config.Processors["k8s_tagger/2"]
+	p1 := cfg.Processors[config.NewIDWithName(typeStr, "2")]
 	assert.Equal(t, p1,
 		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: "k8s_tagger",
-				NameVal: "k8s_tagger/2",
-			},
-			APIConfig:   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
-			Passthrough: false,
+			ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "2")),
+			APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
+			Passthrough:       false,
 			Extract: ExtractConfig{
 				Metadata: []string{"podName", "podUID", "deployment", "cluster", "namespace", "node", "startTime"},
 				Annotations: []FieldExtractConfig{
@@ -87,6 +81,28 @@ func TestLoadConfig(t *testing.T) {
 				Fields: []FieldFilterConfig{
 					{Key: "key1", Value: "value1"},
 					{Key: "key2", Value: "value2", Op: "not-equals"},
+				},
+			},
+			Association: []PodAssociationConfig{
+				{
+					From: "resource_attribute",
+					Name: "ip",
+				},
+				{
+					From: "resource_attribute",
+					Name: "k8s.pod.ip",
+				},
+				{
+					From: "resource_attribute",
+					Name: "host.name",
+				},
+				{
+					From: "connection",
+					Name: "ip",
+				},
+				{
+					From: "resource_attribute",
+					Name: "k8s.pod.uid",
 				},
 			},
 		})

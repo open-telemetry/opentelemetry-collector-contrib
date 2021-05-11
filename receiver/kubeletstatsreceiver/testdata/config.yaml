@@ -30,9 +30,9 @@ receivers:
     auth_type: "serviceAccount"
     metric_groups: [pod, node, volume]
 exporters:
-  exampleexporter:
+  nop:
 service:
   pipelines:
     metrics:
       receivers: [kubeletstats/sa]
-      exporters: [exampleexporter]
+      exporters: [nop]

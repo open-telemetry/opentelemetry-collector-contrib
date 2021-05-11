@@ -85,10 +85,19 @@ func (pc *PerfCounter) ScrapeData() ([]win_perf_counters.CounterValue, error) {
 }
 
 func removeTotalIfMultipleValues(vals []win_perf_counters.CounterValue) []win_perf_counters.CounterValue {
-	if len(vals) <= 1 {
+	if len(vals) == 0 {
 		return vals
 	}
 
+	if len(vals) == 1 {
+		// if there is only one item & the instance name is "_Total", clear the instance name
+		if vals[0].InstanceName == totalInstanceName {
+			vals[0].InstanceName = ""
+		}
+		return vals
+	}
+
+	// if there is more than one item, remove an item that has the instance name "_Total"
 	for i, val := range vals {
 		if val.InstanceName == totalInstanceName {
 			return removeItemAt(vals, i)

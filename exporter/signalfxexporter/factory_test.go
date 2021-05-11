@@ -27,14 +27,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -51,6 +53,25 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 	_, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	assert.NoError(t, err)
+}
+
+func TestCreateTracesExporter(t *testing.T) {
+	cfg := createDefaultConfig()
+	c := cfg.(*Config)
+	c.AccessToken = "access_token"
+	c.Realm = "us0"
+
+	_, err := createTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+	assert.NoError(t, err)
+}
+
+func TestCreateTracesExporterNoAccessToken(t *testing.T) {
+	cfg := createDefaultConfig()
+	c := cfg.(*Config)
+	c.Realm = "us0"
+
+	_, err := createTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+	assert.EqualError(t, err, "access_token is required")
 }
 
 func TestCreateInstanceViaFactory(t *testing.T) {
@@ -91,12 +112,9 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 	config := &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		AccessToken: "testToken",
-		Realm:       "us1",
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		AccessToken:      "testToken",
+		Realm:            "us1",
 		Headers: map[string]string{
 			"added-entry": "added value",
 			"dot.test":    "test",
@@ -118,24 +136,18 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "negative_duration",
 			config: &Config{
-				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: configmodels.Type(typeStr),
-					NameVal: typeStr,
-				},
-				AccessToken:     "testToken",
-				Realm:           "lab",
-				TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: -2 * time.Second},
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				AccessToken:      "testToken",
+				Realm:            "lab",
+				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: -2 * time.Second},
 			},
 			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"timeout\"",
 		},
 		{
 			name: "empty_realm_and_urls",
 			config: &Config{
-				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: configmodels.Type(typeStr),
-					NameVal: typeStr,
-				},
-				AccessToken: "testToken",
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				AccessToken:      "testToken",
 			},
 			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
 				" or \"ingest_url\" and \"api_url\" should be explicitly set",
@@ -143,12 +155,9 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "empty_realm_and_api_url",
 			config: &Config{
-				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: configmodels.Type(typeStr),
-					NameVal: typeStr,
-				},
-				AccessToken: "testToken",
-				IngestURL:   "http://localhost:123",
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				AccessToken:      "testToken",
+				IngestURL:        "http://localhost:123",
 			},
 			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
 				" or \"ingest_url\" and \"api_url\" should be explicitly set",
@@ -163,109 +172,6 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 	}
 }
 
-func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
-	config := &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		AccessToken:           "testToken",
-		Realm:                 "us1",
-		SendCompatibleMetrics: true,
-	}
-
-	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
-	assert.NoError(t, err)
-	assert.NotNil(t, te)
-
-	// Validate that default translation rules are loaded
-	// Expected values has to be updated once default config changed
-	assert.Equal(t, 51, len(config.TranslationRules))
-	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
-	assert.Equal(t, 33, len(config.TranslationRules[0].Mapping))
-}
-
-func TestCreateMetricsExporterWithSpecifiedTranslaitonRules(t *testing.T) {
-	config := &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		AccessToken:           "testToken",
-		Realm:                 "us1",
-		SendCompatibleMetrics: true,
-		TranslationRules: []translation.Rule{
-			{
-				Action: translation.ActionRenameDimensionKeys,
-				Mapping: map[string]string{
-					"old_dimension": "new_dimension",
-				},
-			},
-		},
-	}
-
-	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
-	assert.NoError(t, err)
-	assert.NotNil(t, te)
-
-	// Validate that specified translation rules are loaded instead of default ones
-	assert.Equal(t, 1, len(config.TranslationRules))
-	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
-	assert.Equal(t, 1, len(config.TranslationRules[0].Mapping))
-	assert.Equal(t, "new_dimension", config.TranslationRules[0].Mapping["old_dimension"])
-}
-
-func TestCreateMetricsExporterWithExcludedMetrics(t *testing.T) {
-	config := &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		AccessToken:    "testToken",
-		Realm:          "us1",
-		ExcludeMetrics: []string{"metric1"},
-	}
-
-	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
-	require.NoError(t, err)
-	require.NotNil(t, te)
-
-	assert.Equal(t, 1, len(config.TranslationRules))
-	assert.Equal(t, translation.ActionDropMetrics, config.TranslationRules[0].Action)
-	assert.Equal(t, 1, len(config.TranslationRules[0].MetricNames))
-	assert.True(t, config.TranslationRules[0].MetricNames["metric1"])
-}
-
-func TestCreateMetricsExporterWithDefinedRulesAndExcludedMetrics(t *testing.T) {
-	config := &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		AccessToken: "testToken",
-		Realm:       "us1",
-		TranslationRules: []translation.Rule{
-			{
-				Action: translation.ActionRenameDimensionKeys,
-				Mapping: map[string]string{
-					"old_dimension": "new_dimension",
-				},
-			},
-		},
-		ExcludeMetrics: []string{"metric1"},
-	}
-
-	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
-	require.NoError(t, err)
-	require.NotNil(t, te)
-
-	assert.Equal(t, 2, len(config.TranslationRules))
-	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
-	assert.Equal(t, translation.ActionDropMetrics, config.TranslationRules[1].Action)
-	assert.Equal(t, 1, len(config.TranslationRules[1].MetricNames))
-	assert.True(t, config.TranslationRules[1].MetricNames["metric1"])
-}
-
 func TestDefaultTranslationRules(t *testing.T) {
 	rules, err := loadDefaultTranslationRules()
 	require.NoError(t, err)
@@ -274,8 +180,9 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.NoError(t, err)
 	data := testMetricsData()
 
-	c := translation.NewMetricsConverter(zap.NewNop(), tr)
-	translated, _ := c.MetricDataToSignalFxV2(data, nil)
+	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "")
+	require.NoError(t, err)
+	translated := c.MetricDataToSignalFxV2(data)
 	require.NotNil(t, translated)
 
 	metrics := make(map[string][]*sfxpb.DataPoint)
@@ -292,28 +199,28 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Equal(t, 1, len(dps))
 	require.Equal(t, 40.0, *dps[0].Value.DoubleValue)
 
-	// system.disk.ops metric split and dimension rename
-	dps, ok = metrics["disk_ops.read"]
-	require.True(t, ok, "disk_ops.read metrics not found")
+	// system.network.operations.total new metric calculation
+	dps, ok = metrics["system.disk.operations.total"]
+	require.True(t, ok, "system.network.operations.total metrics not found")
 	require.Equal(t, 4, len(dps))
-	require.Equal(t, int64(4e3), *dps[0].Value.IntValue)
-	require.Equal(t, "disk", dps[0].Dimensions[1].Key)
-	require.Equal(t, "sda1", dps[0].Dimensions[1].Value)
-	require.Equal(t, int64(6e3), *dps[1].Value.IntValue)
-	require.Equal(t, "disk", dps[1].Dimensions[1].Key)
-	require.Equal(t, "sda2", dps[1].Dimensions[1].Value)
+	require.Equal(t, 2, len(dps[0].Dimensions))
 
-	dps, ok = metrics["disk_ops.write"]
-	require.True(t, ok, "disk_ops.write metrics not found")
-	require.Equal(t, 4, len(dps))
-	require.Equal(t, int64(1e3), *dps[0].Value.IntValue)
-	require.Equal(t, "disk", dps[0].Dimensions[1].Key)
-	require.Equal(t, "sda1", dps[0].Dimensions[1].Value)
-	require.Equal(t, int64(5e3), *dps[1].Value.IntValue)
-	require.Equal(t, "disk", dps[1].Dimensions[1].Key)
-	require.Equal(t, "sda2", dps[1].Dimensions[1].Value)
+	// system.network.io.total new metric calculation
+	dps, ok = metrics["system.disk.io.total"]
+	require.True(t, ok, "system.network.io.total metrics not found")
+	require.Equal(t, 2, len(dps))
+	require.Equal(t, 2, len(dps[0].Dimensions))
+	for _, dp := range dps {
+		require.Equal(t, "direction", dp.Dimensions[1].Key)
+		switch dp.Dimensions[1].Value {
+		case "write":
+			require.Equal(t, int64(11e9), *dp.Value.IntValue)
+		case "read":
+			require.Equal(t, int64(3e9), *dp.Value.IntValue)
+		}
+	}
 
-	// disk_ops.total gauge from system.disk.ops cumulative, where is disk_ops.total
+	// disk_ops.total gauge from system.disk.operations cumulative, where is disk_ops.total
 	// is the cumulative across devices and directions.
 	dps, ok = metrics["disk_ops.total"]
 	require.True(t, ok, "disk_ops.total metrics not found")
@@ -323,24 +230,83 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Equal(t, "host", dps[0].Dimensions[0].Key)
 	require.Equal(t, "host0", dps[0].Dimensions[0].Value)
 
+	// system.network.io.total new metric calculation
+	dps, ok = metrics["system.network.io.total"]
+	require.True(t, ok, "system.network.io.total metrics not found")
+	require.Equal(t, 2, len(dps))
+	require.Equal(t, 4, len(dps[0].Dimensions))
+
+	// system.network.packets.total new metric calculation
+	dps, ok = metrics["system.network.packets.total"]
+	require.True(t, ok, "system.network.packets.total metrics not found")
+	require.Equal(t, 1, len(dps))
+	require.Equal(t, 4, len(dps[0].Dimensions))
+	require.Equal(t, int64(350), *dps[0].Value.IntValue)
+	require.Equal(t, "direction", dps[0].Dimensions[0].Key)
+	require.Equal(t, "receive", dps[0].Dimensions[0].Value)
+
 	// network.total new metric calculation
 	dps, ok = metrics["network.total"]
 	require.True(t, ok, "network.total metrics not found")
 	require.Equal(t, 1, len(dps))
 	require.Equal(t, 3, len(dps[0].Dimensions))
 	require.Equal(t, int64(10e9), *dps[0].Value.IntValue)
-
-	// memory page faults and working set renames
-	_, ok = metrics["container_memory_working_set_bytes"]
-	require.True(t, ok, "container_memory_working_set_bytes not found")
-	_, ok = metrics["container_memory_page_faults"]
-	require.True(t, ok, "container_memory_page_faults not found")
-	_, ok = metrics["container_memory_major_page_faults"]
-	require.True(t, ok, "container_memory_major_page_faults not found")
 }
 
-func testMetricsData() []consumerdata.MetricsData {
-	md := consumerdata.MetricsData{
+func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
+	config := &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		AccessToken:      "testToken",
+		Realm:            "us1",
+	}
+
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	// Validate that default excludes are always loaded.
+	assert.Equal(t, 11, len(config.ExcludeMetrics))
+}
+
+func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
+	config := &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		AccessToken:      "testToken",
+		Realm:            "us1",
+		ExcludeMetrics: []dpfilters.MetricFilter{
+			{
+				MetricNames: []string{"metric1"},
+			},
+		},
+	}
+
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	// Validate that default excludes are always loaded.
+	assert.Equal(t, 12, len(config.ExcludeMetrics))
+}
+
+func TestCreateMetricsExporterWithEmptyExcludeMetrics(t *testing.T) {
+	config := &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		AccessToken:      "testToken",
+		Realm:            "us1",
+		ExcludeMetrics:   []dpfilters.MetricFilter{},
+	}
+
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	// Validate that default excludes are overridden when exclude metrics
+	// is explicitly set to an empty slice.
+	assert.Equal(t, 0, len(config.ExcludeMetrics))
+}
+
+func testMetricsData() pdata.ResourceMetrics {
+	md := internaldata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
@@ -408,7 +374,105 @@ func testMetricsData() []consumerdata.MetricsData {
 			},
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "system.disk.ops",
+					Name:        "system.disk.io",
+					Description: "Disk I/O.",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "host"},
+						{Key: "direction"},
+						{Key: "device"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "read",
+							HasValue: true,
+						}, {
+							Value:    "sda1",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 1e9,
+							},
+						}},
+					},
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "read",
+							HasValue: true,
+						}, {
+							Value:    "sda2",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 2e9,
+							},
+						}},
+					},
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "write",
+							HasValue: true,
+						}, {
+							Value:    "sda1",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 3e9,
+							},
+						}},
+					},
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "write",
+							HasValue: true,
+						}, {
+							Value:    "sda2",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 8e9,
+							},
+						}},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "system.disk.operations",
 					Description: "Disk operations count.",
 					Unit:        "bytes",
 					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
@@ -507,7 +571,7 @@ func testMetricsData() []consumerdata.MetricsData {
 			},
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "system.disk.ops",
+					Name:        "system.disk.operations",
 					Description: "Disk operations count.",
 					Unit:        "bytes",
 					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
@@ -612,7 +676,7 @@ func testMetricsData() []consumerdata.MetricsData {
 					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 					LabelKeys: []*metricspb.LabelKey{
 						{Key: "direction"},
-						{Key: "interface"},
+						{Key: "device"},
 						{Key: "host"},
 						{Key: "kubernetes_node"},
 						{Key: "kubernetes_cluster"},
@@ -670,6 +734,76 @@ func testMetricsData() []consumerdata.MetricsData {
 							},
 							Value: &metricspb.Point_Int64Value{
 								Int64Value: 6e9,
+							},
+						}},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "system.network.packets",
+					Description: "The number of packets transferred",
+					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "direction"},
+						{Key: "device"},
+						{Key: "host"},
+						{Key: "kubernetes_node"},
+						{Key: "kubernetes_cluster"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "receive",
+							HasValue: true,
+						}, {
+							Value:    "eth0",
+							HasValue: true,
+						}, {
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "node0",
+							HasValue: true,
+						}, {
+							Value:    "cluster0",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 200,
+							},
+						}},
+					},
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "receive",
+							HasValue: true,
+						}, {
+							Value:    "eth1",
+							HasValue: true,
+						}, {
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "node0",
+							HasValue: true,
+						}, {
+							Value:    "cluster0",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 150,
 							},
 						}},
 					},
@@ -782,7 +916,7 @@ func testMetricsData() []consumerdata.MetricsData {
 			},
 		},
 	}
-	return []consumerdata.MetricsData{md}
+	return internaldata.OCSliceToMetrics([]internaldata.MetricsData{md}).ResourceMetrics().At(0)
 }
 
 func TestDefaultDiskTranslations(t *testing.T) {
@@ -861,6 +995,70 @@ func TestDefaultCPUTranslations(t *testing.T) {
 	for _, pt := range cpuUtil {
 		require.Equal(t, 66, int(*pt.Value.DoubleValue))
 	}
+}
+
+func TestDefaultExcludes_translated(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	setDefaultExcludes(cfg)
+
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "")
+	require.NoError(t, err)
+
+	var metrics []map[string]string
+	err = testReadJSON("testdata/json/non_default_metrics.json", &metrics)
+	require.NoError(t, err)
+
+	rms := getResourceMetrics(metrics)
+	require.Equal(t, 9, rms.InstrumentationLibraryMetrics().At(0).Metrics().Len())
+	dps := converter.MetricDataToSignalFxV2(rms)
+
+	// the default cpu.utilization metric is added after applying the default translations
+	// (because cpu.utilization_per_core is supplied) and should not be excluded
+	require.Equal(t, 1, len(dps))
+	require.Equal(t, "cpu.utilization", dps[0].Metric)
+
+}
+
+func TestDefaultExcludes_not_translated(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	setDefaultExcludes(cfg)
+
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), nil, cfg.ExcludeMetrics, cfg.IncludeMetrics, "")
+	require.NoError(t, err)
+
+	var metrics []map[string]string
+	err = testReadJSON("testdata/json/non_default_metrics_otel_convention.json", &metrics)
+	require.NoError(t, err)
+
+	rms := getResourceMetrics(metrics)
+	require.Equal(t, 71, rms.InstrumentationLibraryMetrics().At(0).Metrics().Len())
+	dps := converter.MetricDataToSignalFxV2(rms)
+	require.Equal(t, 0, len(dps))
+}
+
+func getResourceMetrics(metrics []map[string]string) pdata.ResourceMetrics {
+	rms := pdata.NewResourceMetrics()
+	ilms := rms.InstrumentationLibraryMetrics().AppendEmpty()
+	ilms.Metrics().Resize(len(metrics))
+
+	for i, mp := range metrics {
+		m := ilms.Metrics().At(i)
+		// Set data type to some arbitrary since it does not matter for this test.
+		m.SetDataType(pdata.MetricDataTypeIntSum)
+		dp := m.IntSum().DataPoints().AppendEmpty()
+		dp.SetValue(0)
+		labelsMap := dp.LabelsMap()
+		for k, v := range mp {
+			if v == "" {
+				m.SetName(k)
+				continue
+			}
+			labelsMap.Insert(k, v)
+		}
+	}
+	return rms
 }
 
 func testReadJSON(f string, v interface{}) error {

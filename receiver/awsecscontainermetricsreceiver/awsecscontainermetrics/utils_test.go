@@ -15,9 +15,7 @@ package awsecscontainermetrics
 
 import (
 	"testing"
-	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/require"
 )
 
@@ -31,22 +29,4 @@ func TestCreateGaugeIntMetric(t *testing.T) {
 	m := createGaugeIntMetric(100)
 
 	require.EqualValues(t, 1, len(m.Timeseries))
-}
-
-func TestTimestampProto(t *testing.T) {
-	timestamp := timestampProto(time.Now())
-
-	require.NotNil(t, timestamp)
-}
-
-func TestApplyTimestamp(t *testing.T) {
-	timestamp := timestampProto(time.Now())
-	m := []*metricspb.Metric{
-		createGaugeIntMetric(1),
-	}
-
-	metrics := applyTimestamp(m, timestamp)
-
-	require.NotNil(t, metrics)
-	require.EqualValues(t, timestamp, metrics[0].Timeseries[0].Points[0].Timestamp)
 }

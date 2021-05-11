@@ -1,0 +1,257 @@
+# This manifest file is meant as an example of how to deploy otel-agent as daemonset and otel-collector as a standalone service.
+# Using this example should correctly identifies hostnames for individual k8s nodes. 
+# This is meant as an example only and may differ depending on deployment scenario and specifics of the environment the collector is used.
+---
+# The k8s_tagger processor may require additional
+# RBAC Config. More on this here:
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/12dbcfc3faf80ec532d832fc7e6650222be33ff9/processor/k8sprocessor/doc.go#L26-L28
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-agent-conf
+  labels:
+    app: opentelemetry
+    component: otel-agent-conf
+data:
+  otel-agent-config: |
+    receivers:
+      hostmetrics:
+        collection_interval: 10s
+        scrapers:
+          load:
+      otlp:
+        protocols:
+          grpc:
+          http:
+      jaeger:
+        protocols:
+          grpc:
+          thrift_compact:
+          thrift_http:
+      zipkin:
+    exporters:
+      otlp:
+        endpoint: "otel-collector.default:55680"
+        insecure: true
+    processors:
+      batch:
+      memory_limiter:
+        # Same as --mem-ballast-size-mib CLI argument
+        ballast_size_mib: 165
+        # 80% of maximum memory up to 2G
+        limit_mib: 400
+        # 25% of limit up to 2G
+        spike_limit_mib: 100
+        check_interval: 5s      
+
+      # The resource detector injects the pod IP
+      # to every metric so that the k8s_tagger can
+      # fetch information afterwards.
+      resourcedetection:
+        detectors: [env]
+        timeout: 5s
+        override: false
+      # The k8s_tagger in the Agent is in passthrough mode
+      # so that it only tags with the minimal info for the
+      # collector k8s_tagger to complete
+      k8s_tagger:
+        passthrough: true
+    extensions:
+      health_check: {}
+    service:
+      extensions: [health_check]
+      pipelines:
+        metrics:
+          receivers: [otlp]
+          # resourcedetection must come before k8s_tagger
+          processors: [batch, resourcedetection, k8s_tagger]
+          exporters: [otlp]
+        traces:
+          receivers: [otlp, jaeger, zipkin]
+          # resourcedetection must come before k8s_tagger
+          processors: [memory_limiter, resourcedetection, k8s_tagger, batch]
+          exporters: [otlp]
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: otel-agent
+  labels:
+    app: opentelemetry
+    component: otel-agent
+spec:
+  selector:
+    matchLabels:
+      app: opentelemetry
+      component: otel-agent
+  template:
+    metadata:
+      labels:
+        app: opentelemetry
+        component: otel-agent
+    spec:
+      containers:
+      - command:
+          - "/otelcontribcol"
+          - "--config=/conf/otel-agent-config.yaml"
+          # Memory Ballast size should be max 1/3 to 1/2 of memory.
+          - "--mem-ballast-size-mib=165"          
+        image: otel/opentelemetry-collector-contrib:latest
+        name: otel-agent
+        resources:
+          limits:
+            cpu: 500m
+            memory: 500Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+        - containerPort: 6831 # Jaeger Thrift Compact
+          protocol: UDP
+        - containerPort: 8888 # Prometheus Metrics
+        - containerPort: 9411 # Default endpoint for Zipkin receiver.
+        - containerPort: 14250 # Default endpoint for Jaeger gRPC receiver.
+        - containerPort: 14268 # Default endpoint for Jaeger HTTP receiver.
+        - containerPort: 55680 # Default OpenTelemetry gRPC receiver port.
+        - containerPort: 55681 # Default OpenTelemetry HTTP receiver port.
+        env:
+           # Get pod ip so that k8s_tagger can tag resources
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+            # This is picked up by the resource detector
+          - name: OTEL_RESOURCE_ATTRIBUTES
+            value: "k8s.pod.ip=$(POD_IP)"
+        volumeMounts:
+        - name: otel-agent-config-vol
+          mountPath: /conf
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 13133 # Health Check extension default port.
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 13133 # Health Check extension default port.
+      volumes:
+        - configMap:
+            name: otel-agent-conf
+            items:
+              - key: otel-agent-config
+                path: otel-agent-config.yaml
+          name: otel-agent-config-vol
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-conf
+  labels:
+    app: opentelemetry
+    component: otel-collector-conf
+data:
+  otel-collector-config: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+          http:
+    processors:
+      batch:
+        timeout: 10s
+      k8s_tagger:
+    extensions:
+      health_check: {}
+      zpages: {}
+    exporters:
+      datadog:
+        api:
+          key: <YOUR_API_KEY>
+    service:
+      extensions: [health_check, zpages]
+      pipelines:
+        metrics/2:
+          receivers: [otlp]
+          processors: [batch, k8s_tagger]
+          exporters: [datadog]
+        traces/2:
+          receivers: [otlp]
+          processors: [batch, k8s_tagger]
+          exporters: [datadog]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  labels:
+    app: opentelemetry
+    component: otel-collector
+spec:
+  ports:
+  - name: otlp # Default endpoint for OpenTelemetry receiver.
+    port: 55680
+    protocol: TCP
+    targetPort: 55680
+  - name: metrics # Default endpoint for querying metrics.
+    port: 8888
+  selector:
+   component: otel-collector
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  labels:
+    app: opentelemetry
+    component: otel-collector
+spec:
+  selector:
+    matchLabels:
+      app: opentelemetry
+      component: otel-collector
+  minReadySeconds: 5
+  progressDeadlineSeconds: 120
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: opentelemetry
+        component: otel-collector
+    spec:
+      containers:
+      - command:
+          - "/otelcontribcol"
+          - "--config=/conf/otel-collectorcollector-config.yaml"
+          - "--log-level=debug"
+        image: otel/opentelemetry-collector-contrib:latest
+        name: otel-collector
+        resources:
+          limits:
+            cpu: 1
+            memory: 2Gi
+          requests:
+            cpu: 200m
+            memory: 400Mi
+        ports:
+        - containerPort: 55679 # Default endpoint for ZPages.
+        - containerPort: 55680 # Default endpoint for OpenTelemetry receiver.
+        - containerPort: 8888  # Default endpoint for querying metrics.
+        volumeMounts:
+        - name: otel-collector-config-vol
+          mountPath: /conf
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 13133 # Health Check extension default port.
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 13133 # Health Check extension default port.
+      volumes:
+        - configMap:
+            name: otel-collector-conf
+            items:
+              - key: otel-collector-config
+                path: otel-collector-config.yaml
+          name: otel-collector-config-vol

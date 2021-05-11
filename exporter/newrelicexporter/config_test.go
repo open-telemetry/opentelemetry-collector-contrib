@@ -19,20 +19,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -42,40 +41,143 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Exporters), 2)
 
-	r0 := cfg.Exporters["newrelic"]
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
+	r0 := cfg.Exporters[config.NewID(typeStr)]
+	defaultConfig := factory.CreateDefaultConfig().(*Config)
+	assert.Equal(t, r0, defaultConfig)
 
-	r1 := cfg.Exporters["newrelic/alt"].(*Config)
+	r1 := cfg.Exporters[config.NewIDWithName(typeStr, "alt")].(*Config)
 	assert.Equal(t, r1, &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: "newrelic/alt",
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "alt")),
+		CommonConfig: EndpointConfig{
+			APIKey:  "a1b2c3d4",
+			Timeout: time.Second * 30,
 		},
-		APIKey:  "a1b2c3d4",
-		Timeout: time.Second * 30,
-		CommonAttributes: map[string]interface{}{
-			"server": "test-server",
-			"prod":   true,
-			"weight": 3,
+		MetricsConfig: EndpointConfig{
+			HostOverride: "alt.metrics.newrelic.com",
+			insecure:     false,
 		},
-		MetricsURLOverride: "http://alt.metrics.newrelic.com",
-		SpansURLOverride:   "http://alt.spans.newrelic.com",
+		TracesConfig: EndpointConfig{
+			HostOverride: "alt.spans.newrelic.com",
+			insecure:     false,
+		},
+		LogsConfig: EndpointConfig{
+			HostOverride: "alt.logs.newrelic.com",
+			insecure:     false,
+		},
 	})
+}
 
-	nrConfig := new(telemetry.Config)
-	r1.HarvestOption(nrConfig)
-
-	assert.Equal(t, nrConfig, &telemetry.Config{
-		APIKey:         "a1b2c3d4",
-		HarvestTimeout: time.Second * 30,
-		CommonAttributes: map[string]interface{}{
-			"server": "test-server",
-			"prod":   true,
-			"weight": 3,
+func TestEndpointSpecificConfigTakesPrecedence(t *testing.T) {
+	cfg := Config{
+		CommonConfig: EndpointConfig{
+			APIKey:       "commonapikey",
+			APIKeyHeader: "commonapikeyheader",
+			HostOverride: "commonhost",
+			Timeout:      time.Second * 10,
 		},
-		MetricsURLOverride: "http://alt.metrics.newrelic.com",
-		SpansURLOverride:   "http://alt.spans.newrelic.com",
-		Product:            product,
-		ProductVersion:     version,
-	})
+		TracesConfig: EndpointConfig{
+			APIKey:       "tracesapikey",
+			APIKeyHeader: "tracesapikeyheader",
+			HostOverride: "traceshost",
+			Timeout:      time.Second * 20,
+		},
+		MetricsConfig: EndpointConfig{
+			APIKey:       "metricsapikey",
+			APIKeyHeader: "metricsapikeyheader",
+			HostOverride: "metricshost",
+			Timeout:      time.Second * 30,
+		},
+		LogsConfig: EndpointConfig{
+			APIKey:       "logsapikey",
+			APIKeyHeader: "logsapikeyheader",
+			HostOverride: "logshost",
+			Timeout:      time.Second * 40,
+		},
+	}
+
+	assert.Equal(t, cfg.TracesConfig, cfg.GetTracesConfig())
+	assert.Equal(t, cfg.MetricsConfig, cfg.GetMetricsConfig())
+	assert.Equal(t, cfg.LogsConfig, cfg.GetLogsConfig())
+}
+
+func TestEndpointSpecificConfigUsedWhenDefined(t *testing.T) {
+	cfg := Config{
+		CommonConfig: EndpointConfig{
+			APIKey:       "commonapikey",
+			APIKeyHeader: "commonapikeyheader",
+			HostOverride: "commonhost",
+			Timeout:      time.Second * 10,
+		},
+		TracesConfig: EndpointConfig{
+			APIKey:       "tracesapikey",
+			HostOverride: "traceshost",
+			Timeout:      time.Second * 20,
+		},
+		MetricsConfig: EndpointConfig{
+			APIKeyHeader: "metricsapikeyheader",
+			HostOverride: "metricshost",
+			Timeout:      time.Second * 30,
+		},
+		LogsConfig: EndpointConfig{
+			APIKey:       "logsapikey",
+			APIKeyHeader: "logsapikeyheader",
+			HostOverride: "logshost",
+		},
+	}
+
+	expectedTraceConfig := EndpointConfig{
+		APIKey:       "tracesapikey",
+		APIKeyHeader: "commonapikeyheader",
+		HostOverride: "traceshost",
+		Timeout:      time.Second * 20,
+	}
+	expectedMetricConfig := EndpointConfig{
+		APIKey:       "commonapikey",
+		APIKeyHeader: "metricsapikeyheader",
+		HostOverride: "metricshost",
+		Timeout:      time.Second * 30,
+	}
+	expectedLogConfig := EndpointConfig{
+		APIKey:       "logsapikey",
+		APIKeyHeader: "logsapikeyheader",
+		HostOverride: "logshost",
+		Timeout:      time.Second * 10,
+	}
+
+	assert.Equal(t, expectedTraceConfig, cfg.GetTracesConfig())
+	assert.Equal(t, expectedMetricConfig, cfg.GetMetricsConfig())
+	assert.Equal(t, expectedLogConfig, cfg.GetLogsConfig())
+}
+
+func TestCommonConfigValuesUsed(t *testing.T) {
+	cfg := Config{
+		CommonConfig: EndpointConfig{
+			APIKey:       "commonapikey",
+			APIKeyHeader: "commonapikeyheader",
+			HostOverride: "commonhost",
+			Timeout:      time.Second * 10,
+		},
+		TracesConfig: EndpointConfig{
+			APIKey:       "",
+			APIKeyHeader: "",
+			HostOverride: "",
+			Timeout:      0,
+		},
+		MetricsConfig: EndpointConfig{
+			APIKey:       "",
+			APIKeyHeader: "",
+			HostOverride: "",
+			Timeout:      0,
+		},
+		LogsConfig: EndpointConfig{
+			APIKey:       "",
+			APIKeyHeader: "",
+			HostOverride: "",
+			Timeout:      0,
+		},
+	}
+
+	assert.Equal(t, cfg.CommonConfig, cfg.GetTracesConfig())
+	assert.Equal(t, cfg.CommonConfig, cfg.GetMetricsConfig())
+	assert.Equal(t, cfg.CommonConfig, cfg.GetLogsConfig())
 }

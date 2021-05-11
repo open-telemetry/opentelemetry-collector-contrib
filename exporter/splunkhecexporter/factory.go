@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -36,32 +36,30 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithTraces(createTracesExporter),
 		exporterhelper.WithMetrics(createMetricsExporter),
 		exporterhelper.WithLogs(createLogsExporter))
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: defaultHTTPTimeout,
 		},
-		RetrySettings:      exporterhelper.CreateDefaultRetrySettings(),
-		QueueSettings:      exporterhelper.CreateDefaultQueueSettings(),
-		DisableCompression: false,
-		MaxConnections:     defaultMaxIdleCons,
+		RetrySettings:        exporterhelper.DefaultRetrySettings(),
+		QueueSettings:        exporterhelper.DefaultQueueSettings(),
+		DisableCompression:   false,
+		MaxConnections:       defaultMaxIdleCons,
+		MaxContentLengthLogs: maxContentLengthLogsLimit,
 	}
 }
 
-func createTraceExporter(
+func createTracesExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	config configmodels.Exporter,
-) (component.TraceExporter, error) {
+	config config.Exporter,
+) (component.TracesExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
 	}
@@ -72,8 +70,9 @@ func createTraceExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		expCfg,
+		params.Logger,
 		exp.pushTraceData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -86,7 +85,7 @@ func createTraceExporter(
 func createMetricsExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	config configmodels.Exporter,
+	config config.Exporter,
 ) (component.MetricsExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
@@ -101,6 +100,7 @@ func createMetricsExporter(
 
 	return exporterhelper.NewMetricsExporter(
 		expCfg,
+		params.Logger,
 		exp.pushMetricsData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -113,7 +113,7 @@ func createMetricsExporter(
 func createLogsExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	config configmodels.Exporter,
+	config config.Exporter,
 ) (exporter component.LogsExporter, err error) {
 	if config == nil {
 		return nil, errors.New("nil config")
@@ -128,6 +128,7 @@ func createLogsExporter(
 
 	return exporterhelper.NewLogsExporter(
 		expCfg,
+		params.Logger,
 		exp.pushLogData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),

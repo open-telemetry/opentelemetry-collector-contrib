@@ -15,6 +15,7 @@
 package simpleprometheusreceiver
 
 import (
+	"net/url"
 	"path"
 	"testing"
 	"time"
@@ -22,18 +23,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	receiverType := "prometheus_simple"
-	factories.Receivers[configmodels.Type(receiverType)] = factory
+	factories.Receivers[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -43,16 +43,13 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 4)
 
-	r1 := cfg.Receivers[receiverType]
+	r1 := cfg.Receivers[config.NewID(typeStr)]
 	assert.Equal(t, r1, factory.CreateDefaultConfig())
 
-	r2 := cfg.Receivers["prometheus_simple/all_settings"].(*Config)
+	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "all_settings")].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(receiverType),
-				NameVal: "prometheus_simple/all_settings",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "all_settings")),
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "localhost:1234",
 			},
@@ -67,16 +64,14 @@ func TestLoadConfig(t *testing.T) {
 			},
 			CollectionInterval: 30 * time.Second,
 			MetricsPath:        "/v2/metrics",
+			Params:             url.Values{"columns": []string{"name", "messages"}, "key": []string{"foo", "bar"}},
 			UseServiceAccount:  true,
 		})
 
-	r3 := cfg.Receivers["prometheus_simple/partial_settings"].(*Config)
+	r3 := cfg.Receivers[config.NewIDWithName(typeStr, "partial_settings")].(*Config)
 	assert.Equal(t, r3,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(receiverType),
-				NameVal: "prometheus_simple/partial_settings",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "partial_settings")),
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "localhost:1234",
 			},
@@ -84,13 +79,10 @@ func TestLoadConfig(t *testing.T) {
 			MetricsPath:        "/metrics",
 		})
 
-	r4 := cfg.Receivers["prometheus_simple/partial_tls_settings"].(*Config)
+	r4 := cfg.Receivers[config.NewIDWithName(typeStr, "partial_tls_settings")].(*Config)
 	assert.Equal(t, r4,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(receiverType),
-				NameVal: "prometheus_simple/partial_tls_settings",
-			},
+			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "partial_tls_settings")),
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "localhost:1234",
 			},

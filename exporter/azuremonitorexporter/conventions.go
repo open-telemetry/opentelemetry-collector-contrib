@@ -26,22 +26,15 @@ import (
 */
 
 const (
-	// TODO replace with convention.* values once available
-	attributeDBSystem              string = "db.system"
-	attributeDBConnectionString    string = "db.connection_string"
-	attributeDBMSSQLInstanceName   string = "db.mssql.instance_name"
-	attributeDBJDBCDriverClassName string = "db.jdbc.driver_classname"
-	attributeDBName                string = "db.name"
-	attributeDBOperation           string = "db.operation"
-	attributeDBCassandraKeyspace   string = "db.cassandra.keyspace"
-	attributeDBHBaseNamespace      string = "db.hbase.namespace"
-	attributeDBRedisDatabaseIndex  string = "db.redis.database_index"
-	attributeDBMongoDBCollection   string = "db.mongodb.collection"
+	// TODO replace with convention.* values once/if available
+	attributeRPCGRPCStatusCode     string = "rpc.grpc.status_code"
+	attributeOtelStatusCode        string = "otel.status_code"
+	attributeOtelStatusDescription string = "otel.status_description"
 )
 
 // NetworkAttributes is the set of known network attributes
 type NetworkAttributes struct {
-	// see https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes
+	// see https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes
 	NetTransport string
 	NetPeerIP    string
 	NetPeerPort  int64
@@ -52,7 +45,7 @@ type NetworkAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *NetworkAttributes) MapAttribute(k string, v pdata.AttributeValue) {
+func (attrs *NetworkAttributes) MapAttribute(k string, v pdata.AttributeValue) bool {
 	switch k {
 	case conventions.AttributeNetTransport:
 		attrs.NetTransport = v.StringVal()
@@ -73,12 +66,13 @@ func (attrs *NetworkAttributes) MapAttribute(k string, v pdata.AttributeValue) {
 	case conventions.AttributeNetHostName:
 		attrs.NetHostName = v.StringVal()
 	}
+	return true
 }
 
 // HTTPAttributes is the set of known attributes for HTTP Spans
 type HTTPAttributes struct {
 	// common attributes
-	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/http.md#common-attributes
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#common-attributes
 	HTTPMethod                            string
 	HTTPURL                               string
 	HTTPTarget                            string
@@ -94,7 +88,7 @@ type HTTPAttributes struct {
 	HTTPResponseContentLengthUncompressed int64
 
 	// Server Span specific
-	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/http.md#http-server-semantic-conventions
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#http-server-semantic-conventions
 	HTTPRoute      string
 	HTTPServerName string
 	HTTPClientIP   string
@@ -104,7 +98,7 @@ type HTTPAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *HTTPAttributes) MapAttribute(k string, v pdata.AttributeValue) {
+func (attrs *HTTPAttributes) MapAttribute(k string, v pdata.AttributeValue) bool {
 	switch k {
 	case conventions.AttributeHTTPMethod:
 		attrs.HTTPMethod = v.StringVal()
@@ -153,6 +147,8 @@ func (attrs *HTTPAttributes) MapAttribute(k string, v pdata.AttributeValue) {
 	default:
 		attrs.NetworkAttributes.MapAttribute(k, v)
 	}
+
+	return true
 }
 
 // RPCAttributes is the set of known attributes for RPC Spans
@@ -160,11 +156,12 @@ type RPCAttributes struct {
 	RPCSystem         string
 	RPCService        string
 	RPCMethod         string
+	RPCGRPCStatusCode int64
 	NetworkAttributes NetworkAttributes
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *RPCAttributes) MapAttribute(k string, v pdata.AttributeValue) {
+func (attrs *RPCAttributes) MapAttribute(k string, v pdata.AttributeValue) bool {
 	switch k {
 	case conventions.AttributeRPCSystem:
 		attrs.RPCSystem = v.StringVal()
@@ -172,10 +169,13 @@ func (attrs *RPCAttributes) MapAttribute(k string, v pdata.AttributeValue) {
 		attrs.RPCService = v.StringVal()
 	case conventions.AttributeRPCMethod:
 		attrs.RPCMethod = v.StringVal()
+	case attributeRPCGRPCStatusCode:
+		attrs.RPCGRPCStatusCode = v.IntVal()
 
 	default:
 		attrs.NetworkAttributes.MapAttribute(k, v)
 	}
+	return true
 }
 
 // DatabaseAttributes is the set of known attributes for Database Spans
@@ -196,34 +196,35 @@ type DatabaseAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *DatabaseAttributes) MapAttribute(k string, v pdata.AttributeValue) {
+func (attrs *DatabaseAttributes) MapAttribute(k string, v pdata.AttributeValue) bool {
 	switch k {
-	case attributeDBSystem:
+	case conventions.AttributeDBSystem:
 		attrs.DBSystem = v.StringVal()
-	case attributeDBConnectionString:
+	case conventions.AttributeDBConnectionString:
 		attrs.DBConnectionString = v.StringVal()
 	case conventions.AttributeDBUser:
 		attrs.DBUser = v.StringVal()
 	case conventions.AttributeDBStatement:
 		attrs.DBStatement = v.StringVal()
-	case attributeDBOperation:
+	case conventions.AttributeDBOperation:
 		attrs.DBOperation = v.StringVal()
-	case attributeDBMSSQLInstanceName:
+	case conventions.AttributeDBMsSQLInstanceName:
 		attrs.DBMSSQLInstanceName = v.StringVal()
-	case attributeDBJDBCDriverClassName:
+	case conventions.AttributeDBJDBCDriverClassname:
 		attrs.DBJDBCDriverClassName = v.StringVal()
-	case attributeDBCassandraKeyspace:
+	case conventions.AttributeDBCassandraKeyspace:
 		attrs.DBCassandraKeyspace = v.StringVal()
-	case attributeDBHBaseNamespace:
+	case conventions.AttributeDBHBaseNamespace:
 		attrs.DBHBaseNamespace = v.StringVal()
-	case attributeDBRedisDatabaseIndex:
+	case conventions.AttributeDBRedisDatabaseIndex:
 		attrs.DBRedisDatabaseIndex = v.StringVal()
-	case attributeDBMongoDBCollection:
+	case conventions.AttributeDBMongoDBCollection:
 		attrs.DBMongoDBCollection = v.StringVal()
 
 	default:
 		attrs.NetworkAttributes.MapAttribute(k, v)
 	}
+	return true
 }
 
 // MessagingAttributes is the set of known attributes for Messaging Spans
@@ -244,7 +245,7 @@ type MessagingAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *MessagingAttributes) MapAttribute(k string, v pdata.AttributeValue) {
+func (attrs *MessagingAttributes) MapAttribute(k string, v pdata.AttributeValue) bool {
 	switch k {
 	case conventions.AttributeMessagingSystem:
 		attrs.MessagingSystem = v.StringVal()
@@ -278,6 +279,7 @@ func (attrs *MessagingAttributes) MapAttribute(k string, v pdata.AttributeValue)
 	default:
 		attrs.NetworkAttributes.MapAttribute(k, v)
 	}
+	return true
 }
 
 // Tries to return the value of the attribute as an int64

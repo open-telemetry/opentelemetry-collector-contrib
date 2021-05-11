@@ -15,13 +15,13 @@
 package httpforwarder
 
 import (
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // Config defines configuration for http forwarder extension.
 type Config struct {
-	configmodels.ExtensionSettings `mapstructure:",squash"`
+	config.ExtensionSettings `mapstructure:",squash"`
 
 	// Ingress holds config settings for HTTP server listening for requests.
 	Ingress confighttp.HTTPServerSettings `mapstructure:"ingress"`

@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
@@ -29,7 +30,7 @@ import (
 // SapmDataSender implements TraceDataSender for SAPM protocol.
 type SapmDataSender struct {
 	testbed.DataSenderBase
-	consumer.TraceConsumer
+	consumer.Traces
 }
 
 // Ensure SapmDataSender implements TraceDataSenderOld.
@@ -48,22 +49,23 @@ func NewSapmDataSender(port int) *SapmDataSender {
 
 // Start the sender.
 func (je *SapmDataSender) Start() error {
+	factory := sapmexporter.NewFactory()
 	cfg := &sapmexporter.Config{
+		ExporterSettings:   config.NewExporterSettings(config.NewID(factory.Type())),
 		Endpoint:           fmt.Sprintf("http://%s/v2/trace", je.GetEndpoint()),
 		DisableCompression: true,
 		AccessToken:        "MyToken",
 	}
 
 	var err error
-	factory := sapmexporter.NewFactory()
 	params := component.ExporterCreateParams{Logger: zap.L()}
-	exporter, err := factory.CreateTraceExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 
 	if err != nil {
 		return err
 	}
 
-	je.TraceConsumer = exporter
+	je.Traces = exporter
 	return err
 }
 

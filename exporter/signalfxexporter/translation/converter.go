@@ -15,17 +15,18 @@
 package translation
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 	"strings"
 	"unicode"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 // Some fields on SignalFx protobuf are pointers, in order to reduce
@@ -34,366 +35,389 @@ var (
 	// SignalFx metric types used in the conversions.
 	sfxMetricTypeGauge             = sfxpb.MetricType_GAUGE
 	sfxMetricTypeCumulativeCounter = sfxpb.MetricType_CUMULATIVE_COUNTER
-
-	// Array used to map OpenCensus metric descriptor to SignaFx metric type.
-	ocDescriptorToMetricType = [8]*sfxpb.MetricType{
-		nil, // index metricspb.MetricDescriptor_UNSPECIFIED = 0
-
-		&sfxMetricTypeGauge, // index metricspb.MetricDescriptor_GAUGE_INT64 = 1
-		&sfxMetricTypeGauge, // index metricspb.MetricDescriptor_GAUGE_DOUBLE = 2
-
-		// For distribution total count, sum, and individual buckets are all
-		// cumulative counters.
-		&sfxMetricTypeCumulativeCounter, // index metricspb.MetricDescriptor_GAUGE_DISTRIBUTION = 3
-
-		&sfxMetricTypeCumulativeCounter, // index metricspb.MetricDescriptor_CUMULATIVE_INT64 = 4
-		&sfxMetricTypeCumulativeCounter, // index metricspb.MetricDescriptor_CUMULATIVE_DOUBLE = 5
-
-		// For distribution total count, sum, and individual buckets are all
-		// cumulative counters.
-		&sfxMetricTypeCumulativeCounter, // index metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION = 6
-
-		// For summary total count and sum are cumulative counters, however,
-		// quantiles are gauges.
-		&sfxMetricTypeGauge, // index metricspb.MetricDescriptor_SUMMARY = 7
-	}
-
-	// Pre-defined SignalFx Metric types according to their usage. These are
-	// handy because the SignalFx protobuf needs pointers not constants.
-	// The mapping of these comes from SignalFx docs regarding Prometheus metrics.
-	// https://docs.signalfx.com/en/latest/integrations/agent/monitors/prometheus-exporter.html#overview
-	bucketMetricType     = &sfxMetricTypeCumulativeCounter
-	quantileMetricType   = &sfxMetricTypeGauge
-	sumMetricType        = &sfxMetricTypeCumulativeCounter
-	totalCountMetricType = &sfxMetricTypeCumulativeCounter
+	sfxMetricTypeCounter           = sfxpb.MetricType_COUNTER
 
 	// Some standard dimension keys.
 	// upper bound dimension key for histogram buckets.
 	upperBoundDimensionKey = "upper_bound"
-	// quantile dimension key for summary quantiles.
-	quantileDimensionKey = "quantile"
 
 	// infinity bound dimension value is used on all histograms.
 	infinityBoundSFxDimValue = float64ToDimValue(math.Inf(1))
-
-	// TODO: expose the constants somewhere in the project and share with resource detector processor
-	cloudProviderAWS = "aws"
-	cloudProviderGCP = "gcp"
 )
 
 // MetricsConverter converts MetricsData to sfxpb DataPoints. It holds an optional
 // MetricTranslator to translate SFx metrics using translation rules.
 type MetricsConverter struct {
-	logger           *zap.Logger
-	metricTranslator *MetricTranslator
+	logger                  *zap.Logger
+	metricTranslator        *MetricTranslator
+	filterSet               *dpfilters.FilterSet
+	nonAlphanumericDimChars string
 }
 
 // NewMetricsConverter creates a MetricsConverter from the passed in logger and
 // MetricTranslator. Pass in a nil MetricTranslator to not use translation
 // rules.
-func NewMetricsConverter(logger *zap.Logger, t *MetricTranslator) *MetricsConverter {
-	return &MetricsConverter{logger: logger, metricTranslator: t}
+func NewMetricsConverter(
+	logger *zap.Logger,
+	t *MetricTranslator,
+	excludes []dpfilters.MetricFilter,
+	includes []dpfilters.MetricFilter,
+	nonAlphanumericDimChars string) (*MetricsConverter, error) {
+	fs, err := dpfilters.NewFilterSet(excludes, includes)
+	if err != nil {
+		return nil, err
+	}
+	return &MetricsConverter{logger: logger, metricTranslator: t, filterSet: fs, nonAlphanumericDimChars: nonAlphanumericDimChars}, nil
 }
 
 // MetricDataToSignalFxV2 converts the passed in MetricsData to SFx datapoints,
 // returning those datapoints and the number of time series that had to be
 // dropped because of errors or warnings.
-func (c *MetricsConverter) MetricDataToSignalFxV2(mds []consumerdata.MetricsData, sfxDataPoints []*sfxpb.DataPoint) ([]*sfxpb.DataPoint, int) {
-	var numDroppedTimeSeries int
-	var droppedDPCount int
-	for _, md := range mds {
-		sfxDataPoints, droppedDPCount = c.metricDataToSfxDataPoints(md, sfxDataPoints)
-		numDroppedTimeSeries += droppedDPCount
+func (c *MetricsConverter) MetricDataToSignalFxV2(rm pdata.ResourceMetrics) []*sfxpb.DataPoint {
+	var sfxDatapoints []*sfxpb.DataPoint
+
+	extraDimensions := resourceToDimensions(rm.Resource())
+
+	for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
+		ilm := rm.InstrumentationLibraryMetrics().At(j)
+		for k := 0; k < ilm.Metrics().Len(); k++ {
+			dps := c.metricToSfxDataPoints(ilm.Metrics().At(k), extraDimensions)
+			sfxDatapoints = append(sfxDatapoints, dps...)
+		}
 	}
-	sanitizeDataPointDimensions(sfxDataPoints)
-	return sfxDataPoints, numDroppedTimeSeries
+	c.sanitizeDataPointDimensions(sfxDatapoints)
+	return sfxDatapoints
 }
 
-func (c *MetricsConverter) metricDataToSfxDataPoints(md consumerdata.MetricsData, sfxDataPoints []*sfxpb.DataPoint) ([]*sfxpb.DataPoint, int) {
-	var numDroppedTimeSeries int
+func (c *MetricsConverter) metricToSfxDataPoints(metric pdata.Metric, extraDimensions []*sfxpb.Dimension) []*sfxpb.DataPoint {
+	// TODO: Figure out some efficient way to know how many datapoints there
+	// will be in the given metric.
+	var dps []*sfxpb.DataPoint
 
-	// Labels from Node and Resource.
-	// TODO: Options to add lib, service name, etc as dimensions?
-	//  Q.: what about resource type?
-	nodeAttribs := md.Node.GetAttributes()
-	resourceAttribs := md.Resource.GetLabels()
+	basePoint := makeBaseDataPoint(metric)
 
-	extraDimensions := make([]*sfxpb.Dimension, 0, len(nodeAttribs)+len(resourceAttribs))
-
-	extraDimensions = appendResourceAttributesToDimensions(extraDimensions, resourceAttribs)
-	extraDimensions = appendAttributesToDimensions(extraDimensions, nodeAttribs)
-
-	for _, metric := range md.Metrics {
-		if metric == nil || metric.MetricDescriptor == nil {
-			c.logger.Warn("Received nil metrics data or nil descriptor for metrics")
-			numDroppedTimeSeries += len(metric.GetTimeseries())
-			continue
-		}
-
-		metricDataPoints := make([]*sfxpb.DataPoint, 0, len(metric.Timeseries))
-
-		// Build the fixed parts for this metrics from the descriptor.
-		descriptor := metric.MetricDescriptor
-		metricName := descriptor.Name
-
-		metricType := fromOCMetricDescriptorToMetricType(descriptor.Type)
-		numLabels := len(descriptor.LabelKeys)
-
-		for _, series := range metric.Timeseries {
-			dimensions := make([]*sfxpb.Dimension, numLabels+len(extraDimensions))
-			copy(dimensions, extraDimensions)
-			for i := 0; i < numLabels; i++ {
-				dimension := &sfxpb.Dimension{
-					Key:   descriptor.LabelKeys[i].Key,
-					Value: series.LabelValues[i].Value,
-				}
-				dimensions[len(extraDimensions)+i] = dimension
-			}
-
-			for _, dp := range series.Points {
-
-				var msec int64
-				if dp.Timestamp != nil {
-					msec = dp.Timestamp.Seconds*1e3 + int64(dp.Timestamp.Nanos)/1e6
-				}
-
-				sfxDataPoint := &sfxpb.DataPoint{
-					// Source field is not set by code seen at
-					// github.com/signalfx/golib/sfxclient/httpsink.go
-					Metric:     metricName,
-					MetricType: metricType,
-					Timestamp:  msec,
-					Dimensions: dimensions,
-				}
-
-				switch pv := dp.Value.(type) {
-				case *metricspb.Point_Int64Value:
-					sfxDataPoint.Value = sfxpb.Datum{IntValue: &pv.Int64Value}
-					metricDataPoints = append(metricDataPoints, sfxDataPoint)
-
-				case *metricspb.Point_DoubleValue:
-					sfxDataPoint.Value = sfxpb.Datum{DoubleValue: &pv.DoubleValue}
-					metricDataPoints = append(metricDataPoints, sfxDataPoint)
-
-				case *metricspb.Point_DistributionValue:
-					metricDataPoints = appendDistributionValues(
-						metricDataPoints,
-						sfxDataPoint,
-						pv.DistributionValue)
-				case *metricspb.Point_SummaryValue:
-					metricDataPoints = appendSummaryValues(
-						metricDataPoints,
-						sfxDataPoint,
-						pv.SummaryValue)
-				default:
-					numDroppedTimeSeries++
-					c.logger.Warn(
-						"Timeseries dropped to unexpected metric type",
-						zap.String("metric", sfxDataPoint.Metric))
-				}
-
-			}
-		}
-
-		if c.metricTranslator != nil {
-			metricDataPoints = c.metricTranslator.TranslateDataPoints(c.logger, metricDataPoints)
-		}
-
-		sfxDataPoints = append(sfxDataPoints, metricDataPoints...)
+	switch metric.DataType() {
+	case pdata.MetricDataTypeNone:
+		return nil
+	case pdata.MetricDataTypeIntGauge:
+		dps = convertIntDatapoints(metric.IntGauge().DataPoints(), basePoint, extraDimensions)
+	case pdata.MetricDataTypeIntSum:
+		dps = convertIntDatapoints(metric.IntSum().DataPoints(), basePoint, extraDimensions)
+	case pdata.MetricDataTypeDoubleGauge:
+		dps = convertDoubleDatapoints(metric.DoubleGauge().DataPoints(), basePoint, extraDimensions)
+	case pdata.MetricDataTypeDoubleSum:
+		dps = convertDoubleDatapoints(metric.DoubleSum().DataPoints(), basePoint, extraDimensions)
+	case pdata.MetricDataTypeIntHistogram:
+		dps = convertIntHistogram(metric.IntHistogram().DataPoints(), basePoint, extraDimensions)
+	case pdata.MetricDataTypeHistogram:
+		dps = convertHistogram(metric.Histogram().DataPoints(), basePoint, extraDimensions)
+	case pdata.MetricDataTypeSummary:
+		dps = convertSummaryDataPoints(metric.Summary().DataPoints(), metric.Name(), extraDimensions)
 	}
 
-	return sfxDataPoints, numDroppedTimeSeries
+	if c.metricTranslator != nil {
+		dps = c.metricTranslator.TranslateDataPoints(c.logger, dps)
+	}
+
+	// TODO:
+	// 1) Add hard coded list of metrics to be excluded to omit non-default metrics
+	// 2) Add an include_metrics options that will serve as an override to the exclude
+	// list. This will help to include metrics that are excluded by default.
+	resultSliceLen := 0
+	for i, dp := range dps {
+		if !c.filterSet.Matches(dp) {
+			if resultSliceLen < i {
+				dps[resultSliceLen] = dp
+			}
+			resultSliceLen++
+		}
+	}
+	dps = dps[:resultSliceLen]
+
+	return dps
 }
 
-func appendAttributesToDimensions(
-	dimensions []*sfxpb.Dimension,
-	attribs map[string]string,
-) []*sfxpb.Dimension {
-
-	for k, v := range attribs {
-		dim := &sfxpb.Dimension{
-			Key:   k,
-			Value: v,
-		}
-		dimensions = append(dimensions, dim)
+func labelsToDimensions(labels pdata.StringMap, extraDims []*sfxpb.Dimension) []*sfxpb.Dimension {
+	dimensions := make([]*sfxpb.Dimension, len(extraDims), labels.Len()+len(extraDims))
+	copy(dimensions, extraDims)
+	if labels.Len() == 0 {
+		return dimensions
 	}
+	dimensionsValue := make([]sfxpb.Dimension, labels.Len())
+	pos := 0
+	labels.Range(func(k string, v string) bool {
+		dimensionsValue[pos].Key = k
+		dimensionsValue[pos].Value = v
+		dimensions = append(dimensions, &dimensionsValue[pos])
+		pos++
+		return true
+	})
 	return dimensions
 }
 
-func fromOCMetricDescriptorToMetricType(ocType metricspb.MetricDescriptor_Type) *sfxpb.MetricType {
-	if ocType > metricspb.MetricDescriptor_UNSPECIFIED &&
-		ocType <= metricspb.MetricDescriptor_SUMMARY {
-		return ocDescriptorToMetricType[int(ocType)]
+func convertSummaryDataPoints(
+	in pdata.SummaryDataPointSlice,
+	name string,
+	extraDims []*sfxpb.Dimension,
+) []*sfxpb.DataPoint {
+	out := make([]*sfxpb.DataPoint, 0, in.Len())
+
+	for i := 0; i < in.Len(); i++ {
+		inDp := in.At(i)
+
+		dims := labelsToDimensions(inDp.LabelsMap(), extraDims)
+		ts := timestampToSignalFx(inDp.Timestamp())
+
+		countPt := sfxpb.DataPoint{
+			Metric:     name + "_count",
+			Timestamp:  ts,
+			Dimensions: dims,
+			MetricType: &sfxMetricTypeCumulativeCounter,
+		}
+		c := int64(inDp.Count())
+		countPt.Value.IntValue = &c
+		out = append(out, &countPt)
+
+		sumPt := sfxpb.DataPoint{
+			Metric:     name,
+			Timestamp:  ts,
+			Dimensions: dims,
+			MetricType: &sfxMetricTypeCumulativeCounter,
+		}
+		sum := inDp.Sum()
+		sumPt.Value.DoubleValue = &sum
+		out = append(out, &sumPt)
+
+		qvs := inDp.QuantileValues()
+		for j := 0; j < qvs.Len(); j++ {
+			qPt := sfxpb.DataPoint{
+				Metric:     name + "_quantile",
+				Timestamp:  ts,
+				MetricType: &sfxMetricTypeGauge,
+			}
+			qv := qvs.At(j)
+			qdim := sfxpb.Dimension{
+				Key:   "quantile",
+				Value: strconv.FormatFloat(qv.Quantile(), 'f', -1, 64),
+			}
+			qPt.Dimensions = append(dims, &qdim)
+			v := qv.Value()
+			qPt.Value.DoubleValue = &v
+			out = append(out, &qPt)
+		}
+	}
+	return out
+}
+
+func convertIntDatapoints(in pdata.IntDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
+	out := make([]*sfxpb.DataPoint, 0, in.Len())
+
+	for i := 0; i < in.Len(); i++ {
+		inDp := in.At(i)
+
+		dp := *basePoint
+		dp.Timestamp = timestampToSignalFx(inDp.Timestamp())
+		dp.Dimensions = labelsToDimensions(inDp.LabelsMap(), extraDims)
+
+		val := inDp.Value()
+		dp.Value.IntValue = &val
+
+		out = append(out, &dp)
+	}
+	return out
+}
+
+func convertDoubleDatapoints(in pdata.DoubleDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
+	out := make([]*sfxpb.DataPoint, 0, in.Len())
+
+	for i := 0; i < in.Len(); i++ {
+		inDp := in.At(i)
+
+		dp := *basePoint
+		dp.Timestamp = timestampToSignalFx(inDp.Timestamp())
+		dp.Dimensions = labelsToDimensions(inDp.LabelsMap(), extraDims)
+
+		val := inDp.Value()
+		dp.Value.DoubleValue = &val
+
+		out = append(out, &dp)
+	}
+	return out
+}
+
+func makeBaseDataPoint(m pdata.Metric) *sfxpb.DataPoint {
+	return &sfxpb.DataPoint{
+		Metric:     m.Name(),
+		MetricType: fromMetricDataTypeToMetricType(m),
+	}
+}
+
+func fromMetricDataTypeToMetricType(metric pdata.Metric) *sfxpb.MetricType {
+	switch metric.DataType() {
+
+	case pdata.MetricDataTypeIntGauge:
+		return &sfxMetricTypeGauge
+
+	case pdata.MetricDataTypeDoubleGauge:
+		return &sfxMetricTypeGauge
+
+	case pdata.MetricDataTypeIntSum:
+		if !metric.IntSum().IsMonotonic() {
+			return &sfxMetricTypeGauge
+		}
+		if metric.IntSum().AggregationTemporality() == pdata.AggregationTemporalityDelta {
+			return &sfxMetricTypeCounter
+		}
+		return &sfxMetricTypeCumulativeCounter
+
+	case pdata.MetricDataTypeDoubleSum:
+		if !metric.DoubleSum().IsMonotonic() {
+			return &sfxMetricTypeGauge
+		}
+		if metric.DoubleSum().AggregationTemporality() == pdata.AggregationTemporalityDelta {
+			return &sfxMetricTypeCounter
+		}
+		return &sfxMetricTypeCumulativeCounter
+
+	case pdata.MetricDataTypeIntHistogram:
+		if metric.IntHistogram().AggregationTemporality() == pdata.AggregationTemporalityDelta {
+			return &sfxMetricTypeCounter
+		}
+		return &sfxMetricTypeCumulativeCounter
+
+	case pdata.MetricDataTypeHistogram:
+		if metric.Histogram().AggregationTemporality() == pdata.AggregationTemporalityDelta {
+			return &sfxMetricTypeCounter
+		}
+		return &sfxMetricTypeCumulativeCounter
 	}
 
 	return nil
 }
 
-func appendDistributionValues(
-	sfxDataPoints []*sfxpb.DataPoint,
-	sfxBaseDataPoint *sfxpb.DataPoint,
-	distributionValue *metricspb.DistributionValue,
-) []*sfxpb.DataPoint {
+func convertIntHistogram(histDPs pdata.IntHistogramDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
+	var out []*sfxpb.DataPoint
 
-	// Translating distribution values per symmetrical recommendations to Prometheus:
-	// https://docs.signalfx.com/en/latest/integrations/agent/monitors/prometheus-exporter.html#overview
+	for i := 0; i < histDPs.Len(); i++ {
+		histDP := histDPs.At(i)
+		ts := timestampToSignalFx(histDP.Timestamp())
 
-	// 1. The total count gets converted to a cumulative counter called
-	// <basename>_count.
-	// 2. The total sum gets converted to a cumulative counter called <basename>.
-	sfxDataPoints = appendTotalAndSum(
-		sfxDataPoints,
-		sfxBaseDataPoint,
-		&distributionValue.Count,
-		&distributionValue.Sum)
+		countDP := *basePoint
+		countDP.Metric = basePoint.Metric + "_count"
+		countDP.Timestamp = ts
+		countDP.Dimensions = labelsToDimensions(histDP.LabelsMap(), extraDims)
+		count := int64(histDP.Count())
+		countDP.Value.IntValue = &count
 
-	// 3. Each histogram bucket is converted to a cumulative counter called
-	// <basename>_bucket and will include a dimension called upper_bound that
-	// specifies the maximum value in that bucket. This metric specifies the
-	// number of events with a value that is less than or equal to the upper
-	// bound.
-	metricName := sfxBaseDataPoint.Metric + "_bucket"
-	explicitBuckets := distributionValue.BucketOptions.GetExplicit()
-	if explicitBuckets == nil {
-		return sfxDataPoints
-	}
-	bounds := explicitBuckets.Bounds
-	sfxBounds := make([]string, len(bounds)+1)
-	for i := 0; i < len(bounds); i++ {
-		sfxBounds[i] = float64ToDimValue(bounds[i])
-	}
-	sfxBounds[len(sfxBounds)-1] = infinityBoundSFxDimValue
+		sumDP := *basePoint
+		sumDP.Timestamp = ts
+		sumDP.Dimensions = labelsToDimensions(histDP.LabelsMap(), extraDims)
+		sum := histDP.Sum()
+		sumDP.Value.IntValue = &sum
 
-	for i, bucket := range distributionValue.Buckets {
+		out = append(out, &countDP, &sumDP)
 
-		// Adding the "upper_bound" dimension.
-		bucketDimensions := make([]*sfxpb.Dimension, len(sfxBaseDataPoint.Dimensions)+1)
-		copy(bucketDimensions, sfxBaseDataPoint.Dimensions)
+		bounds := histDP.ExplicitBounds()
+		counts := histDP.BucketCounts()
 
-		bucketDimensions[len(bucketDimensions)-1] = &sfxpb.Dimension{
-			Key:   upperBoundDimensionKey,
-			Value: sfxBounds[i],
+		// Spec says counts is optional but if present it must have one more
+		// element than the bounds array.
+		if len(counts) > 0 && len(counts) != len(bounds)+1 {
+			continue
 		}
 
-		bucketDP := *sfxBaseDataPoint
-		bucketDP.Dimensions = bucketDimensions
-		bucketDP.Metric = metricName
-		bucketDP.MetricType = bucketMetricType
-		count := bucket.Count
-		bucketDP.Value = sfxpb.Datum{IntValue: &count}
+		for j, c := range counts {
+			bound := infinityBoundSFxDimValue
+			if j < len(bounds) {
+				bound = float64ToDimValue(bounds[j])
+			}
 
-		sfxDataPoints = append(sfxDataPoints, &bucketDP)
+			dp := *basePoint
+			dp.Metric = basePoint.Metric + "_bucket"
+			dp.Timestamp = ts
+			dp.Dimensions = labelsToDimensions(histDP.LabelsMap(), extraDims)
+			dp.Dimensions = append(dp.Dimensions, &sfxpb.Dimension{
+				Key:   upperBoundDimensionKey,
+				Value: bound,
+			})
+			cInt := int64(c)
+			dp.Value.IntValue = &cInt
+
+			out = append(out, &dp)
+		}
 	}
 
-	return sfxDataPoints
+	return out
 }
 
-func appendSummaryValues(
-	sfxDataPoints []*sfxpb.DataPoint,
-	sfxBaseDataPoint *sfxpb.DataPoint,
-	summaryValue *metricspb.SummaryValue,
-) []*sfxpb.DataPoint {
+func convertHistogram(histDPs pdata.HistogramDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
+	var out []*sfxpb.DataPoint
 
-	// Translating summary values per symmetrical recommendations to Prometheus:
-	// https://docs.signalfx.com/en/latest/integrations/agent/monitors/prometheus-exporter.html#overview
+	for i := 0; i < histDPs.Len(); i++ {
+		histDP := histDPs.At(i)
+		ts := timestampToSignalFx(histDP.Timestamp())
 
-	// 1. The total count gets converted to a cumulative counter called
-	// <basename>_count.
-	// 2. The total sum gets converted to a cumulative counter called <basename>
-	count := summaryValue.GetCount().GetValue()
-	sum := summaryValue.GetSum().GetValue()
-	sfxDataPoints = appendTotalAndSum(
-		sfxDataPoints,
-		sfxBaseDataPoint,
-		&count,
-		&sum)
+		countDP := *basePoint
+		countDP.Metric = basePoint.Metric + "_count"
+		countDP.Timestamp = ts
+		countDP.Dimensions = labelsToDimensions(histDP.LabelsMap(), extraDims)
+		count := int64(histDP.Count())
+		countDP.Value.IntValue = &count
 
-	// 3. Each quantile value is converted to a gauge called <basename>_quantile
-	// and will include a dimension called quantile that specifies the quantile.
-	percentiles := summaryValue.GetSnapshot().GetPercentileValues()
-	if percentiles == nil {
-		return sfxDataPoints
-	}
-	metricName := sfxBaseDataPoint.Metric + "_quantile"
-	for _, quantile := range percentiles {
+		sumDP := *basePoint
+		sumDP.Timestamp = ts
+		sumDP.Dimensions = labelsToDimensions(histDP.LabelsMap(), extraDims)
+		sum := histDP.Sum()
+		sumDP.Value.DoubleValue = &sum
 
-		// Adding the "quantile" dimension.
-		quantileDimensions := make([]*sfxpb.Dimension, len(sfxBaseDataPoint.Dimensions)+1)
-		copy(quantileDimensions, sfxBaseDataPoint.Dimensions)
+		out = append(out, &countDP, &sumDP)
 
-		// If a dimension "quantile" was already specified: the last one wins.
-		quantileDimensions[len(quantileDimensions)-1] = &sfxpb.Dimension{
-			Key:   quantileDimensionKey,
-			Value: float64ToDimValue(quantile.Percentile),
+		bounds := histDP.ExplicitBounds()
+		counts := histDP.BucketCounts()
+
+		// Spec says counts is optional but if present it must have one more
+		// element than the bounds array.
+		if len(counts) > 0 && len(counts) != len(bounds)+1 {
+			continue
 		}
 
-		quantileDP := *sfxBaseDataPoint
-		quantileDP.Dimensions = quantileDimensions
-		quantileDP.Metric = metricName
-		quantileDP.MetricType = quantileMetricType
-		value := quantile.Value
-		quantileDP.Value = sfxpb.Datum{DoubleValue: &value}
+		for j, c := range counts {
+			bound := infinityBoundSFxDimValue
+			if j < len(bounds) {
+				bound = float64ToDimValue(bounds[j])
+			}
 
-		sfxDataPoints = append(sfxDataPoints, &quantileDP)
+			dp := *basePoint
+			dp.Metric = basePoint.Metric + "_bucket"
+			dp.Timestamp = ts
+			dp.Dimensions = labelsToDimensions(histDP.LabelsMap(), extraDims)
+			dp.Dimensions = append(dp.Dimensions, &sfxpb.Dimension{
+				Key:   upperBoundDimensionKey,
+				Value: bound,
+			})
+			cInt := int64(c)
+			dp.Value.IntValue = &cInt
+
+			out = append(out, &dp)
+		}
 	}
 
-	return sfxDataPoints
-}
-
-func appendTotalAndSum(
-	sfxDataPoints []*sfxpb.DataPoint,
-	sfxBaseDataPoint *sfxpb.DataPoint,
-	count *int64,
-	sum *float64,
-) []*sfxpb.DataPoint {
-
-	sfxDataPoints = append(
-		sfxDataPoints,
-		buildTotalDataPoint(sfxBaseDataPoint, count),
-		buildSumDataPoint(sfxBaseDataPoint, sum))
-
-	return sfxDataPoints
-}
-
-func buildTotalDataPoint(
-	sfxBaseDataPoint *sfxpb.DataPoint,
-	count *int64,
-) *sfxpb.DataPoint {
-
-	totalCountDP := *sfxBaseDataPoint
-	totalCountName := sfxBaseDataPoint.Metric + "_count"
-	totalCountDP.Metric = totalCountName
-	totalCountDP.MetricType = totalCountMetricType
-	totalCountDP.Value = sfxpb.Datum{IntValue: count}
-
-	return &totalCountDP
-}
-
-func buildSumDataPoint(
-	sfxBaseDataPoint *sfxpb.DataPoint,
-	sum *float64,
-) *sfxpb.DataPoint {
-
-	sumDP := *sfxBaseDataPoint
-	sumDP.MetricType = sumMetricType
-	sumDP.Value = sfxpb.Datum{DoubleValue: sum}
-
-	return &sumDP
+	return out
 }
 
 // sanitizeDataPointLabels replaces all characters unsupported by SignalFx backend
 // in metric label keys and with "_"
-func sanitizeDataPointDimensions(dps []*sfxpb.DataPoint) {
+func (c *MetricsConverter) sanitizeDataPointDimensions(dps []*sfxpb.DataPoint) {
 	for _, dp := range dps {
 		for _, d := range dp.Dimensions {
-			d.Key = filterKeyChars(d.Key)
+			d.Key = filterKeyChars(d.Key, c.nonAlphanumericDimChars)
 		}
 	}
 }
 
-func filterKeyChars(str string) string {
+func filterKeyChars(str string, nonAlphanumericDimChars string) string {
 	filterMap := func(r rune) rune {
-		if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' || r == '-' {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) || strings.ContainsRune(nonAlphanumericDimChars, r) {
 			return r
 		}
 		return '_'
@@ -412,59 +436,44 @@ func float64ToDimValue(f float64) string {
 	return strconv.FormatFloat(f, 'g', -1, 64)
 }
 
-// resourceAttributesToDimensions will return a set of dimension from the
+// resourceToDimensions will return a set of dimension from the
 // resource attributes, including a cloud host id (AWSUniqueId, gcp_id, etc.)
 // if it can be constructed from the provided metadata.
-func appendResourceAttributesToDimensions(dims []*sfxpb.Dimension, resourceAttr map[string]string) []*sfxpb.Dimension {
-	// TODO: Replace with internal/common/splunk/hostid.go once signalfxexporter is converted to pdata.
-	accountID := resourceAttr[conventions.AttributeCloudAccount]
-	region := resourceAttr[conventions.AttributeCloudRegion]
-	instanceID := resourceAttr[conventions.AttributeHostID]
-	provider := resourceAttr[conventions.AttributeCloudProvider]
+func resourceToDimensions(res pdata.Resource) []*sfxpb.Dimension {
+	var dims []*sfxpb.Dimension
 
-	filter := func(k string) bool { return true }
-
-	switch provider {
-	case cloudProviderAWS:
-		if instanceID == "" || region == "" || accountID == "" {
-			break
-		}
-		filter = func(k string) bool {
-			return k != conventions.AttributeCloudAccount &&
-				k != conventions.AttributeCloudRegion &&
-				k != conventions.AttributeHostID &&
-				k != conventions.AttributeCloudProvider
-		}
+	if hostID, ok := splunk.ResourceToHostID(res); ok && hostID.Key != splunk.HostIDKeyHost {
 		dims = append(dims, &sfxpb.Dimension{
-			Key:   "AWSUniqueId",
-			Value: fmt.Sprintf("%s_%s_%s", instanceID, region, accountID),
+			Key:   string(hostID.Key),
+			Value: hostID.ID,
 		})
-	case cloudProviderGCP:
-		if accountID == "" || instanceID == "" {
-			break
-		}
-		filter = func(k string) bool {
-			return k != conventions.AttributeCloudAccount &&
-				k != conventions.AttributeHostID &&
-				k != conventions.AttributeCloudProvider
-		}
-		dims = append(dims, &sfxpb.Dimension{
-			Key:   "gcp_id",
-			Value: fmt.Sprintf("%s_%s", accountID, instanceID),
-		})
-	default:
 	}
 
-	for k, v := range resourceAttr {
-		if !filter(k) {
-			continue
+	res.Attributes().Range(func(k string, val pdata.AttributeValue) bool {
+		// Never send the SignalFX token
+		if k == splunk.SFxAccessTokenLabel {
+			return true
 		}
 
 		dims = append(dims, &sfxpb.Dimension{
 			Key:   k,
-			Value: v,
+			Value: tracetranslator.AttributeValueToString(val, false),
 		})
-	}
+		return true
+	})
 
 	return dims
+}
+
+func timestampToSignalFx(ts pdata.Timestamp) int64 {
+	// Convert nanosecs to millisecs.
+	return int64(ts) / 1e6
+}
+
+func (c *MetricsConverter) ConvertDimension(dim string) string {
+	res := dim
+	if c.metricTranslator != nil {
+		res = c.metricTranslator.translateDimension(dim)
+	}
+	return filterKeyChars(res, c.nonAlphanumericDimChars)
 }

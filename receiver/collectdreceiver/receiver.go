@@ -17,7 +17,6 @@ package collectdreceiver
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -26,16 +25,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
-)
-
-var (
-	errNilNextConsumer = errors.New("nil nextConsumer")
-	errAlreadyStarted  = errors.New("already started")
-	errAlreadyStopped  = errors.New("already stopped")
 )
 
 var _ component.MetricsReceiver = (*collectdReceiver)(nil)
@@ -47,10 +40,7 @@ type collectdReceiver struct {
 	addr               string
 	server             *http.Server
 	defaultAttrsPrefix string
-	nextConsumer       consumer.MetricsConsumer
-
-	startOnce sync.Once
-	stopOnce  sync.Once
+	nextConsumer       consumer.Metrics
 }
 
 // newCollectdReceiver creates the CollectD receiver with the given parameters.
@@ -59,9 +49,9 @@ func newCollectdReceiver(
 	addr string,
 	timeout time.Duration,
 	defaultAttrsPrefix string,
-	nextConsumer consumer.MetricsConsumer) (component.MetricsReceiver, error) {
+	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
-		return nil, errNilNextConsumer
+		return nil, componenterror.ErrNilNextConsumer
 	}
 
 	r := &collectdReceiver{
@@ -79,35 +69,25 @@ func newCollectdReceiver(
 	return r, nil
 }
 
-// StartMetricsReception starts an HTTP server that can process CollectD JSON requests.
+// Start starts an HTTP server that can process CollectD JSON requests.
 func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error {
 	cdr.Lock()
 	defer cdr.Unlock()
 
-	err := errAlreadyStarted
-	cdr.startOnce.Do(func() {
-		err = nil
-		go func() {
-			err = cdr.server.ListenAndServe()
-			if err != nil {
-				host.ReportFatalError(fmt.Errorf("error starting collectd receiver: %v", err))
-			}
-		}()
-	})
-
-	return err
+	go func() {
+		if err := cdr.server.ListenAndServe(); err != http.ErrServerClosed {
+			host.ReportFatalError(fmt.Errorf("error starting collectd receiver: %v", err))
+		}
+	}()
+	return nil
 }
 
-// StopMetricsReception stops the CollectD receiver.
+// Shutdown stops the CollectD receiver.
 func (cdr *collectdReceiver) Shutdown(context.Context) error {
 	cdr.Lock()
 	defer cdr.Unlock()
 
-	var err = errAlreadyStopped
-	cdr.stopOnce.Do(func() {
-		err = cdr.server.Shutdown(context.Background())
-	})
-	return err
+	return cdr.server.Shutdown(context.Background())
 }
 
 // ServeHTTP acts as the default and only HTTP handler for the CollectD receiver.
@@ -135,7 +115,7 @@ func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	defaultAttrs := cdr.defaultAttributes(r)
 
-	md := consumerdata.MetricsData{}
+	md := internaldata.MetricsData{}
 	ctx := context.Background()
 	for _, record := range records {
 		md.Metrics, err = record.appendToMetrics(md.Metrics, defaultAttrs)

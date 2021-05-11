@@ -15,6 +15,7 @@
 package elastic_test
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -28,7 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter/internal/translator/elastic"
 )
 
-func TestEncodeResourceSpan(t *testing.T) {
+func TestEncodeSpan(t *testing.T) {
 	var w fastjson.Writer
 	var recorder transporttest.RecorderTransport
 	elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
@@ -42,8 +43,7 @@ func TestEncodeResourceSpan(t *testing.T) {
 	endTime := startTime.Add(time.Millisecond * 5)
 
 	rootSpan := pdata.NewSpan()
-	rootSpan.InitEmpty()
-	rootSpan.SetSpanID(pdata.NewSpanID(rootTransactionID[:]))
+	rootSpan.SetSpanID(pdata.NewSpanID(rootTransactionID))
 	rootSpan.SetName("root_span")
 	rootSpan.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"string.attr": pdata.NewAttributeValueString("string_value"),
@@ -53,12 +53,11 @@ func TestEncodeResourceSpan(t *testing.T) {
 	})
 
 	clientSpan := pdata.NewSpan()
-	clientSpan.InitEmpty()
-	clientSpan.SetSpanID(pdata.NewSpanID(clientSpanID[:]))
-	clientSpan.SetParentSpanID(pdata.NewSpanID(rootTransactionID[:]))
+	clientSpan.SetSpanID(pdata.NewSpanID(clientSpanID))
+	clientSpan.SetParentSpanID(pdata.NewSpanID(rootTransactionID))
 	clientSpan.SetKind(pdata.SpanKindCLIENT)
 	clientSpan.SetName("client_span")
-	clientSpan.Status().InitEmpty()
+	clientSpan.Status().SetCode(pdata.StatusCodeError)
 	clientSpan.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"string.attr": pdata.NewAttributeValueString("string_value"),
 		"int.attr":    pdata.NewAttributeValueInt(123),
@@ -67,22 +66,20 @@ func TestEncodeResourceSpan(t *testing.T) {
 	})
 
 	serverSpan := pdata.NewSpan()
-	serverSpan.InitEmpty()
-	serverSpan.SetSpanID(pdata.NewSpanID(serverTransactionID[:]))
-	serverSpan.SetParentSpanID(pdata.NewSpanID(clientSpanID[:]))
+	serverSpan.SetSpanID(pdata.NewSpanID(serverTransactionID))
+	serverSpan.SetParentSpanID(pdata.NewSpanID(clientSpanID))
 	serverSpan.SetKind(pdata.SpanKindSERVER)
 	serverSpan.SetName("server_span")
-	serverSpan.Status().InitEmpty()
-	serverSpan.Status().SetCode(-1)
+	serverSpan.Status().SetCode(pdata.StatusCodeOk)
 
 	for _, span := range []pdata.Span{rootSpan, clientSpan, serverSpan} {
-		span.SetTraceID(pdata.NewTraceID(traceID[:]))
-		span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
-		span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+		span.SetTraceID(pdata.NewTraceID(traceID))
+		span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
+		span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 	}
 
 	for _, span := range []pdata.Span{rootSpan, clientSpan, serverSpan} {
-		err := elastic.EncodeSpan(span, pdata.NewInstrumentationLibrary(), &w)
+		err := elastic.EncodeSpan(span, pdata.NewInstrumentationLibrary(), pdata.NewResource(), &w)
 		require.NoError(t, err)
 	}
 	sendStream(t, &w, &recorder)
@@ -95,7 +92,6 @@ func TestEncodeResourceSpan(t *testing.T) {
 		Duration:  5.0,
 		Name:      "root_span",
 		Type:      "unknown",
-		Result:    "STATUS_CODE_OK",
 		Context: &model.Context{
 			Tags: model.IfaceMap{{
 				Key:   "bool_attr",
@@ -119,7 +115,8 @@ func TestEncodeResourceSpan(t *testing.T) {
 		Duration:  5.0,
 		Name:      "server_span",
 		Type:      "unknown",
-		Result:    "-1",
+		Result:    "OK",
+		Outcome:   "success",
 	}}, payloads.Transactions)
 
 	assert.Equal(t, []model.Span{{
@@ -145,9 +142,58 @@ func TestEncodeResourceSpan(t *testing.T) {
 				Value: "string_value",
 			}},
 		},
+		Outcome: "failure",
 	}}, payloads.Spans)
 
 	assert.Empty(t, payloads.Errors)
+}
+
+func TestEncodeSpanStatus(t *testing.T) {
+	testStatusCode := func(t *testing.T, statusCode pdata.StatusCode, expectedResult, expectedOutcome string) {
+		t.Helper()
+
+		var w fastjson.Writer
+		var recorder transporttest.RecorderTransport
+		elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
+
+		span := pdata.NewSpan()
+		span.SetTraceID(pdata.NewTraceID([16]byte{1}))
+		span.SetSpanID(pdata.NewSpanID([8]byte{1}))
+		span.SetName("span")
+
+		if statusCode >= 0 {
+			span.Status().SetCode(statusCode)
+		}
+
+		err := elastic.EncodeSpan(span, pdata.NewInstrumentationLibrary(), pdata.NewResource(), &w)
+		require.NoError(t, err)
+		sendStream(t, &w, &recorder)
+		payloads := recorder.Payloads()
+		require.Len(t, payloads.Transactions, 1)
+		assert.Equal(t, expectedResult, payloads.Transactions[0].Result)
+		assert.Equal(t, expectedOutcome, payloads.Transactions[0].Outcome)
+	}
+
+	testStatusCode(t, -1, "", "")
+	testStatusCode(t, pdata.StatusCodeUnset, "", "")
+	testStatusCode(t, pdata.StatusCodeOk, "OK", "success")
+	testStatusCode(t, pdata.StatusCodeError, "Error", "failure")
+}
+
+func TestEncodeSpanTruncation(t *testing.T) {
+	span := pdata.NewSpan()
+	span.SetName(strings.Repeat("x", 1300))
+
+	var w fastjson.Writer
+	var recorder transporttest.RecorderTransport
+	elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
+	err := elastic.EncodeSpan(span, pdata.NewInstrumentationLibrary(), pdata.NewResource(), &w)
+	require.NoError(t, err)
+	sendStream(t, &w, &recorder)
+
+	payloads := recorder.Payloads()
+	require.Len(t, payloads.Transactions, 1)
+	assert.Equal(t, strings.Repeat("x", 1024), payloads.Transactions[0].Name)
 }
 
 func TestTransactionHTTPRequestURL(t *testing.T) {
@@ -401,7 +447,7 @@ func TestSpanHTTPStatusCode(t *testing.T) {
 }
 
 func TestSpanDatabaseContext(t *testing.T) {
-	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/database.md#mysql
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/database.md#mysql
 	connectionString := "Server=shopdb.example.com;Database=ShopDb;Uid=billing_user;TableCache=true;UseCompression=True;MinimumPoolSize=10;MaximumPoolSize=50;"
 	span := spanWithAttributes(t, map[string]pdata.AttributeValue{
 		"db.system":            pdata.NewAttributeValueString("mysql"),
@@ -447,16 +493,15 @@ func TestInstrumentationLibrary(t *testing.T) {
 	var recorder transporttest.RecorderTransport
 
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetName("root_span")
 
 	library := pdata.NewInstrumentationLibrary()
-	library.InitEmpty()
 	library.SetName("library-name")
 	library.SetVersion("1.2.3")
 
-	elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
-	err := elastic.EncodeSpan(span, library, &w)
+	resource := pdata.NewResource()
+	elastic.EncodeResourceMetadata(resource, &w)
+	err := elastic.EncodeSpan(span, library, resource, &w)
 	assert.NoError(t, err)
 	sendStream(t, &w, &recorder)
 
@@ -477,11 +522,11 @@ func transactionWithAttributes(t *testing.T, attrs map[string]pdata.AttributeVal
 	var recorder transporttest.RecorderTransport
 
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.Attributes().InitFromMap(attrs)
 
-	elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
-	err := elastic.EncodeSpan(span, pdata.NewInstrumentationLibrary(), &w)
+	resource := pdata.NewResource()
+	elastic.EncodeResourceMetadata(resource, &w)
+	err := elastic.EncodeSpan(span, pdata.NewInstrumentationLibrary(), resource, &w)
 	assert.NoError(t, err)
 	sendStream(t, &w, &recorder)
 
@@ -495,12 +540,12 @@ func spanWithAttributes(t *testing.T, attrs map[string]pdata.AttributeValue) mod
 	var recorder transporttest.RecorderTransport
 
 	span := pdata.NewSpan()
-	span.InitEmpty()
-	span.SetParentSpanID(pdata.NewSpanID([]byte{1}))
+	span.SetParentSpanID(pdata.NewSpanID([8]byte{1}))
 	span.Attributes().InitFromMap(attrs)
 
-	elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
-	err := elastic.EncodeSpan(span, pdata.NewInstrumentationLibrary(), &w)
+	resource := pdata.NewResource()
+	elastic.EncodeResourceMetadata(resource, &w)
+	err := elastic.EncodeSpan(span, pdata.NewInstrumentationLibrary(), resource, &w)
 	assert.NoError(t, err)
 	sendStream(t, &w, &recorder)
 

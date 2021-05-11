@@ -15,20 +15,29 @@
 package awsecscontainermetrics
 
 const (
-	AttributeECSDockerName   = "ecs.docker-name"
-	AttributeECSCluster      = "ecs.cluster"
-	AttributeECSTaskARN      = "ecs.task-arn"
-	AttributeECSTaskID       = "ecs.task-id"
-	AttributeECSTaskFamily   = "ecs.task-definition-family"
-	AttributeECSTaskRevesion = "ecs.task-definition-version"
-	AttributeECSServiceName  = "ecs.service"
+	AttributeECSDockerName        = "aws.ecs.docker.name"
+	AttributeECSCluster           = "aws.ecs.cluster.name"
+	AttributeECSTaskARN           = "aws.ecs.task.arn"
+	AttributeECSTaskID            = "aws.ecs.task.id"
+	AttributeECSTaskFamily        = "aws.ecs.task.family"
+	AttributeECSTaskRevision      = "aws.ecs.task.version"
+	AttributeECSServiceName       = "aws.ecs.service.name"
+	AttributeECSTaskPullStartedAt = "aws.ecs.task.pull_started_at"
+	AttributeECSTaskPullStoppedAt = "aws.ecs.task.pull_stopped_at"
+	AttributeECSTaskKnownStatus   = "aws.ecs.task.known_status"
+	AttributeECSTaskLaunchType    = "aws.ecs.task.launch_type"
+	AttributeContainerImageID     = "aws.ecs.container.image.id"
+	AttributeContainerCreatedAt   = "aws.ecs.container.created_at"
+	AttributeContainerStartedAt   = "aws.ecs.container.started_at"
+	AttributeContainerFinishedAt  = "aws.ecs.container.finished_at"
+	AttributeContainerKnownStatus = "aws.ecs.container.know_status"
+	AttributeContainerExitCode    = "aws.ecs.container.exit_code"
 
 	CPUsInVCpu = 1024
 	BytesInMiB = 1024 * 1024
 
-	TaskPrefix         = "ecs.task."
-	ContainerPrefix    = "container."
-	MetricResourceType = "aoc.ecs"
+	TaskPrefix      = "ecs.task."
+	ContainerPrefix = "container."
 
 	EndpointEnvKey   = "ECS_CONTAINER_METADATA_URI_V4"
 	TaskStatsPath    = "/task/stats"
@@ -65,11 +74,14 @@ const (
 	AttributeStorageRead  = "storage.read_bytes"
 	AttributeStorageWrite = "storage.write_bytes"
 
+	AttributeDuration = "duration"
+
 	UnitBytes       = "Bytes"
-	UnitMegaBytes   = "MB"
-	UnitNanoSecond  = "NS"
-	UnitBytesPerSec = "Bytes/Sec"
+	UnitMegaBytes   = "Megabytes"
+	UnitNanoSecond  = "Nanoseconds"
+	UnitBytesPerSec = "Bytes/Second"
 	UnitCount       = "Count"
 	UnitVCpu        = "vCPU"
 	UnitPercent     = "Percent"
+	UnitSecond      = "Seconds"
 )

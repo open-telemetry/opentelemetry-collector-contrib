@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
+	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
 func addHTTP(seg *awsxray.Segment, span *pdata.Span) {
@@ -45,16 +45,24 @@ func addHTTP(seg *awsxray.Segment, span *pdata.Span) {
 
 	if resp := seg.HTTP.Response; resp != nil {
 		if resp.Status != nil {
-			otStatus := tracetranslator.OCStatusCodeFromHTTP(int32(*resp.Status))
+			otStatus := tracetranslator.StatusCodeFromHTTP(int(*resp.Status))
 			// in X-Ray exporter, the segment status is set:
 			// first via the span attribute, conventions.AttributeHTTPStatusCode
 			// then the span status. Since we are also setting the span attribute
 			// below, the span status code here will not be actually used
-			span.Status().SetCode(pdata.StatusCode(otStatus))
+			span.Status().SetCode(otStatus)
 			attrs.UpsertInt(conventions.AttributeHTTPStatusCode, *resp.Status)
 		}
 
-		addInt64(resp.ContentLength, conventions.AttributeHTTPResponseContentLength, &attrs)
+		switch resp.ContentLength.(type) {
+		case string:
+			lengthPointer := resp.ContentLength.(string)
+			addString(&lengthPointer, conventions.AttributeHTTPResponseContentLength, &attrs)
+		case float64:
+			length := resp.ContentLength.(float64)
+			lengthPointer := int64(length)
+			addInt64(&lengthPointer, conventions.AttributeHTTPResponseContentLength, &attrs)
+		}
 	}
 
 }

@@ -1,0 +1,15 @@
+receivers:
+  nop:
+
+exporters:
+  awskinesis:
+
+processors:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [awskinesis]

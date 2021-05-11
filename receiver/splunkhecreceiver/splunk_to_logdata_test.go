@@ -21,10 +21,13 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func Test_SplunkHecToLogData(t *testing.T) {
+
+	time := 0.123
+	nanoseconds := 123000000
 
 	tests := []struct {
 		name    string
@@ -35,7 +38,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 		{
 			name: "happy_path",
 			event: splunk.Event{
-				Time:       0.123,
+				Time:       &time,
 				Host:       "localhost",
 				Source:     "mysource",
 				SourceType: "mysourcetype",
@@ -46,14 +49,14 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				},
 			},
 			output: func() pdata.ResourceLogsSlice {
-				return createLogsSlice("value")
+				return createLogsSlice(nanoseconds)
 			}(),
 			wantErr: nil,
 		},
 		{
 			name: "double",
 			event: splunk.Event{
-				Time:       0.123,
+				Time:       &time,
 				Host:       "localhost",
 				Source:     "mysource",
 				SourceType: "mysourcetype",
@@ -64,7 +67,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				},
 			},
 			output: func() pdata.ResourceLogsSlice {
-				logsSlice := createLogsSlice("value")
+				logsSlice := createLogsSlice(nanoseconds)
 				logsSlice.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetDoubleVal(12.3)
 				return logsSlice
 			}(),
@@ -73,7 +76,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 		{
 			name: "array",
 			event: splunk.Event{
-				Time:       0.123,
+				Time:       &time,
 				Host:       "localhost",
 				Source:     "mysource",
 				SourceType: "mysourcetype",
@@ -84,11 +87,12 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				},
 			},
 			output: func() pdata.ResourceLogsSlice {
-				logsSlice := createLogsSlice("value")
-				arr := pdata.NewAnyValueArray()
-				arr.Append(pdata.NewAttributeValueString("foo"))
-				arr.Append(pdata.NewAttributeValueString("bar"))
-				logsSlice.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetArrayVal(arr)
+				logsSlice := createLogsSlice(nanoseconds)
+				arrVal := pdata.NewAttributeValueArray()
+				arr := arrVal.ArrayVal()
+				arr.AppendEmpty().SetStringVal("foo")
+				arr.AppendEmpty().SetStringVal("bar")
+				arrVal.CopyTo(logsSlice.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body())
 				return logsSlice
 			}(),
 			wantErr: nil,
@@ -96,7 +100,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 		{
 			name: "complex_structure",
 			event: splunk.Event{
-				Time:       0.123,
+				Time:       &time,
 				Host:       "localhost",
 				Source:     "mysource",
 				SourceType: "mysourcetype",
@@ -107,19 +111,39 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				},
 			},
 			output: func() pdata.ResourceLogsSlice {
-				logsSlice := createLogsSlice("value")
-				attMap := pdata.NewAttributeMap()
-				foos := pdata.NewAnyValueArray()
-				foos.Append(pdata.NewAttributeValueString("foo"))
-				foos.Append(pdata.NewAttributeValueString("bar"))
-				foos.Append(pdata.NewAttributeValueString("foobar"))
+				logsSlice := createLogsSlice(nanoseconds)
 				foosArr := pdata.NewAttributeValueArray()
-				foosArr.SetArrayVal(foos)
+				foos := foosArr.ArrayVal()
+				foos.Resize(3)
+				foos.At(0).SetStringVal("foo")
+				foos.At(1).SetStringVal("bar")
+				foos.At(2).SetStringVal("foobar")
+
+				attVal := pdata.NewAttributeValueMap()
+				attMap := attVal.MapVal()
 				attMap.InsertBool("bool", false)
 				attMap.Insert("foos", foosArr)
 				attMap.InsertInt("someInt", 12)
-				logsSlice.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetMapVal(attMap)
+				attVal.CopyTo(logsSlice.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body())
 				return logsSlice
+			}(),
+			wantErr: nil,
+		},
+		{
+			name: "nil_timestamp",
+			event: splunk.Event{
+				Time:       new(float64),
+				Host:       "localhost",
+				Source:     "mysource",
+				SourceType: "mysourcetype",
+				Index:      "myindex",
+				Event:      "value",
+				Fields: map[string]interface{}{
+					"foo": "bar",
+				},
+			},
+			output: func() pdata.ResourceLogsSlice {
+				return createLogsSlice(0)
 			}(),
 			wantErr: nil,
 		},
@@ -134,26 +158,19 @@ func Test_SplunkHecToLogData(t *testing.T) {
 	}
 }
 
-func createLogsSlice(body string) pdata.ResourceLogsSlice {
+func createLogsSlice(nanoseconds int) pdata.ResourceLogsSlice {
 	lrs := pdata.NewResourceLogsSlice()
-	lrs.Resize(1)
-	lr := lrs.At(0)
-	lr.InitEmpty()
-	lr.Resource().InitEmpty()
-	logRecord := pdata.NewLogRecord()
-	logRecord.InitEmpty()
-
+	lr := lrs.AppendEmpty()
+	ill := lr.InstrumentationLibraryLogs().AppendEmpty()
+	logRecord := ill.Logs().AppendEmpty()
 	logRecord.SetName("mysourcetype")
-	logRecord.Body().SetStringVal(body)
-	logRecord.SetTimestamp(pdata.TimestampUnixNano(123000000))
-	lr.Resource().Attributes().InsertString("host.hostname", "localhost")
-	lr.Resource().Attributes().InsertString("service.name", "mysource")
-	lr.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
+	logRecord.Body().SetStringVal("value")
+	logRecord.SetTimestamp(pdata.Timestamp(nanoseconds))
+	logRecord.Attributes().InsertString("host.name", "localhost")
+	logRecord.Attributes().InsertString("service.name", "mysource")
+	logRecord.Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
+	logRecord.Attributes().InsertString("com.splunk.index", "myindex")
 	logRecord.Attributes().InsertString("foo", "bar")
-	ill := pdata.NewInstrumentationLibraryLogs()
-	ill.InitEmpty()
-	ill.Logs().Append(logRecord)
-	lr.InstrumentationLibraryLogs().Append(ill)
 
 	return lrs
 }
@@ -186,20 +203,18 @@ func Test_ConvertAttributeValueMap(t *testing.T) {
 	value, err := convertInterfaceToAttributeValue(zap.NewNop(), map[string]interface{}{"foo": "bar"})
 	assert.NoError(t, err)
 	atts := pdata.NewAttributeValueMap()
-	attMap := pdata.NewAttributeMap()
+	attMap := atts.MapVal()
 	attMap.InsertString("foo", "bar")
-	atts.SetMapVal(attMap)
 	assert.Equal(t, atts, value)
 }
 
 func Test_ConvertAttributeValueArray(t *testing.T) {
 	value, err := convertInterfaceToAttributeValue(zap.NewNop(), []interface{}{"foo"})
 	assert.NoError(t, err)
-	arr := pdata.NewAttributeValueArray()
-	arrValue := pdata.NewAnyValueArray()
-	arrValue.Append(pdata.NewAttributeValueString("foo"))
-	arr.SetArrayVal(arrValue)
-	assert.Equal(t, arr, value)
+	arrValue := pdata.NewAttributeValueArray()
+	arr := arrValue.ArrayVal()
+	arr.AppendEmpty().SetStringVal("foo")
+	assert.Equal(t, arrValue, value)
 }
 
 func Test_ConvertAttributeValueInvalid(t *testing.T) {

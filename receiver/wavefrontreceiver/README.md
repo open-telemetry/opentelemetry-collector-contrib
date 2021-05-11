@@ -2,7 +2,7 @@
 
 The Wavefront receiver accepts metrics and depends on [carbonreceiver proto
 and
-transport](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/master/receiver/carbonreceiver),
+transport](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/carbonreceiver),
 It's very similar to Carbon: it is TCP based in which each received text line
 represents a single metric data point. They differ on the format of their
 textual representation. The Wavefront receiver leverages the Carbon receiver

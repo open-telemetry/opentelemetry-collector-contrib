@@ -35,25 +35,11 @@ const (
 )
 
 // canonicalCodes maps OpenTelemetry span codes to Sentry's span status.
-// See numeric codes in https://godoc.org/github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1#Status_StatusCode.
+// See numeric codes in https://github.com/open-telemetry/opentelemetry-proto/blob/6cf77b2f544f6bc7fe1e4b4a8a52e5a42cb50ead/opentelemetry/proto/trace/v1/trace.proto#L303
 var canonicalCodes = [...]string{
+	"unknown",
 	"ok",
-	"cancelled",
-	sentryStatusUnknown,
-	"invalid_argument",
-	"deadline_exceeded",
-	"not_found",
-	"already_exists",
-	"permission_denied",
-	"resource_exhausted",
-	"failed_precondition",
-	"aborted",
-	"out_of_range",
-	"unimplemented",
-	"internal",
-	"unavailable",
-	"data_loss",
-	"unauthenticated",
+	"unknown",
 }
 
 // SentryExporter defines the Sentry Exporter.
@@ -63,12 +49,10 @@ type SentryExporter struct {
 
 // pushTraceData takes an incoming OpenTelemetry trace, converts them into Sentry spans and transactions
 // and sends them using Sentry's transport.
-func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) (droppedSpans int, err error) {
-	// For a ResourceSpan, InstrumentationLibrarySpan and Span struct if IsNil()
-	// is "true", all other methods will cause a runtime error.
+func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error {
 	resourceSpans := td.ResourceSpans()
 	if resourceSpans.Len() == 0 {
-		return 0, nil
+		return nil
 	}
 
 	maybeOrphanSpans := make([]*sentry.Span, 0, td.SpanCount())
@@ -80,29 +64,16 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) (drop
 
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
-		if rs.IsNil() {
-			continue
-		}
-
 		resourceTags := generateTagsFromResource(rs.Resource())
 
 		ilss := rs.InstrumentationLibrarySpans()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
-			if ils.IsNil() {
-				continue
-			}
-
 			library := ils.InstrumentationLibrary()
 
 			spans := ils.Spans()
 			for k := 0; k < spans.Len(); k++ {
-				otelSpan := spans.At(k)
-				if otelSpan.IsNil() {
-					continue
-				}
-
-				sentrySpan := convertToSentrySpan(otelSpan, library, resourceTags)
+				sentrySpan := convertToSentrySpan(spans.At(k), library, resourceTags)
 
 				// If a span is a root span, we consider it the start of a Sentry transaction.
 				// We should then create a new transaction for that root span, and keep track of it.
@@ -125,7 +96,7 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) (drop
 	}
 
 	if len(transactionMap) == 0 {
-		return 0, nil
+		return nil
 	}
 
 	// After the first pass through, we can't necessarily make the assumption we have not associated all
@@ -136,7 +107,7 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) (drop
 
 	s.transport.SendTransactions(transactions)
 
-	return 0, nil
+	return nil
 }
 
 // generateTransactions creates a set of Sentry transactions from a transaction map and orphan spans.
@@ -178,12 +149,8 @@ func classifyAsOrphanSpans(orphanSpans []*sentry.Span, prevLength int, idMap map
 }
 
 func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, resourceTags map[string]string) (sentrySpan *sentry.Span) {
-	if span.IsNil() {
-		return nil
-	}
-
 	parentSpanID := ""
-	if psID := span.ParentSpanID(); !isAllZero(psID.Bytes()) {
+	if psID := span.ParentSpanID(); !psID.IsEmpty() {
 		parentSpanID = psID.HexString()
 	}
 
@@ -208,10 +175,8 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 		tags["span_kind"] = spanKind.String()
 	}
 
-	if !library.IsNil() {
-		tags["library_name"] = library.Name()
-		tags["library_version"] = library.Version()
-	}
+	tags["library_name"] = library.Name()
+	tags["library_version"] = library.Version()
 
 	sentrySpan = &sentry.Span{
 		TraceID:        span.TraceID().HexString(),
@@ -220,8 +185,8 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 		Description:    description,
 		Op:             op,
 		Tags:           tags,
-		StartTimestamp: unixNanoToTime(span.StartTime()),
-		EndTimestamp:   unixNanoToTime(span.EndTime()),
+		StartTimestamp: unixNanoToTime(span.StartTimestamp()),
+		EndTimestamp:   unixNanoToTime(span.EndTimestamp()),
 		Status:         status,
 	}
 
@@ -299,17 +264,13 @@ func generateSpanDescriptors(name string, attrs pdata.AttributeMap, spanKind pda
 }
 
 func generateTagsFromResource(resource pdata.Resource) map[string]string {
-	if resource.IsNil() {
-		return nil
-	}
-
 	return generateTagsFromAttributes(resource.Attributes())
 }
 
 func generateTagsFromAttributes(attrs pdata.AttributeMap) map[string]string {
 	tags := make(map[string]string)
 
-	attrs.ForEach(func(key string, attr pdata.AttributeValue) {
+	attrs.Range(func(key string, attr pdata.AttributeValue) bool {
 		switch attr.Type() {
 		case pdata.AttributeValueSTRING:
 			tags[key] = attr.StringVal()
@@ -320,16 +281,13 @@ func generateTagsFromAttributes(attrs pdata.AttributeMap) map[string]string {
 		case pdata.AttributeValueINT:
 			tags[key] = strconv.FormatInt(attr.IntVal(), 10)
 		}
+		return true
 	})
 
 	return tags
 }
 
 func statusFromSpanStatus(spanStatus pdata.SpanStatus) (status string, message string) {
-	if spanStatus.IsNil() {
-		return "", ""
-	}
-
 	code := spanStatus.Code()
 	if code < 0 || int(code) >= len(canonicalCodes) {
 		return sentryStatusUnknown, fmt.Sprintf("error code %d", code)
@@ -369,7 +327,7 @@ func transactionFromSpan(span *sentry.Span) *sentry.Event {
 }
 
 // CreateSentryExporter returns a new Sentry Exporter.
-func CreateSentryExporter(config *Config) (component.TraceExporter, error) {
+func CreateSentryExporter(config *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
 	transport := newSentryTransport()
 	transport.Configure(sentry.ClientOptions{
 		Dsn: config.DSN,
@@ -379,8 +337,9 @@ func CreateSentryExporter(config *Config) (component.TraceExporter, error) {
 		transport: transport,
 	}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		config,
+		params.Logger,
 		s.pushTraceData,
 		exporterhelper.WithShutdown(func(ctx context.Context) error {
 			allEventsFlushed := transport.Flush(ctx)

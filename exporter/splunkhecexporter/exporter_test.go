@@ -32,15 +32,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func TestNew(t *testing.T) {
@@ -56,10 +57,28 @@ func TestNew(t *testing.T) {
 	got, err = createExporter(config, zap.NewNop())
 	assert.NoError(t, err)
 	require.NotNil(t, got)
+
+	config = &Config{
+		Token:           "someToken",
+		Endpoint:        "https://example.com:8088",
+		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
+		TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: configtls.TLSSetting{
+				CAFile:   "file-not-found",
+				CertFile: "file-not-found",
+				KeyFile:  "file-not-found",
+			},
+			Insecure:           false,
+			InsecureSkipVerify: false,
+		},
+	}
+	got, err = createExporter(config, zap.NewNop())
+	assert.Error(t, err)
+	require.Nil(t, got)
 }
 
 func TestConsumeMetricsData(t *testing.T) {
-	smallBatch := consumerdata.MetricsData{
+	smallBatch := internaldata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test_splunk"},
 		},
@@ -75,12 +94,11 @@ func TestConsumeMetricsData(t *testing.T) {
 		},
 	}
 	tests := []struct {
-		name                 string
-		md                   consumerdata.MetricsData
-		reqTestFunc          func(t *testing.T, r *http.Request)
-		httpResponseCode     int
-		numDroppedTimeSeries int
-		wantErr              bool
+		name             string
+		md               internaldata.MetricsData
+		reqTestFunc      func(t *testing.T, r *http.Request)
+		httpResponseCode int
+		wantErr          bool
 	}{
 		{
 			name: "happy_path",
@@ -103,7 +121,7 @@ func TestConsumeMetricsData(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				assert.Equal(t, "test", metric.Source)
+				assert.Equal(t, "test_splunk", metric.Source)
 				assert.Equal(t, "test_type", metric.SourceType)
 				assert.Equal(t, "test_index", metric.Index)
 
@@ -111,16 +129,15 @@ func TestConsumeMetricsData(t *testing.T) {
 			httpResponseCode: http.StatusAccepted,
 		},
 		{
-			name:                 "response_forbidden",
-			md:                   smallBatch,
-			reqTestFunc:          nil,
-			httpResponseCode:     http.StatusForbidden,
-			numDroppedTimeSeries: 1,
-			wantErr:              true,
+			name:             "response_forbidden",
+			md:               smallBatch,
+			reqTestFunc:      nil,
+			httpResponseCode: http.StatusForbidden,
+			wantErr:          true,
 		},
 		{
 			name:             "large_batch",
-			md:               generateLargeBatch(t),
+			md:               generateLargeBatch(),
 			reqTestFunc:      nil,
 			httpResponseCode: http.StatusAccepted,
 		},
@@ -142,18 +159,18 @@ func TestConsumeMetricsData(t *testing.T) {
 				url:   serverURL,
 				token: "1234",
 			}
-			config := &Config{
-				Source:     "test",
-				SourceType: "test_type",
-				Token:      "1234",
-				Index:      "test_index",
-			}
-			sender := buildClient(options, config, zap.NewNop())
+
+			config := NewFactory().CreateDefaultConfig().(*Config)
+			config.Source = "test"
+			config.SourceType = "test_type"
+			config.Token = "1234"
+			config.Index = "test_index"
+
+			sender, err := buildClient(options, config, zap.NewNop())
+			assert.NoError(t, err)
 
 			md := internaldata.OCToMetrics(tt.md)
-			numDroppedTimeSeries, err := sender.pushMetricsData(context.Background(), md)
-			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
-
+			err = sender.pushMetricsData(context.Background(), md)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -164,8 +181,8 @@ func TestConsumeMetricsData(t *testing.T) {
 	}
 }
 
-func generateLargeBatch(t *testing.T) consumerdata.MetricsData {
-	md := consumerdata.MetricsData{
+func generateLargeBatch() internaldata.MetricsData {
+	md := internaldata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test_splunkhec"},
 		},
@@ -182,7 +199,7 @@ func generateLargeBatch(t *testing.T) consumerdata.MetricsData {
 					time.Now(),
 					[]string{"v0", "v1"},
 					&metricspb.Point{
-						Timestamp: metricstestutil.Timestamp(ts),
+						Timestamp: timestamppb.New(ts),
 						Value:     &metricspb.Point_Int64Value{Int64Value: int64(i)},
 					},
 				),
@@ -193,23 +210,19 @@ func generateLargeBatch(t *testing.T) consumerdata.MetricsData {
 	return md
 }
 
-func generateLargeLogsBatch(t *testing.T) pdata.Logs {
+func generateLargeLogsBatch() pdata.Logs {
 	logs := pdata.NewLogs()
-	rl := pdata.NewResourceLogs()
-	rl.InitEmpty()
-	logs.ResourceLogs().Append(rl)
-	ill := pdata.NewInstrumentationLibraryLogs()
-	ill.InitEmpty()
-	rl.InstrumentationLibraryLogs().Append(ill)
-
-	ts := pdata.TimestampUnixNano(123)
+	rl := logs.ResourceLogs().AppendEmpty()
+	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
+	ill.Logs().Resize(65000)
+	ts := pdata.Timestamp(123)
 	for i := 0; i < 65000; i++ {
-		logRecord := pdata.NewLogRecord()
-		logRecord.InitEmpty()
+		logRecord := ill.Logs().At(i)
 		logRecord.Body().SetStringVal("mylog")
 		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-		logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
+		logRecord.Attributes().InsertString(splunk.IndexLabel, "myindex")
+		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)
 	}
@@ -218,19 +231,17 @@ func generateLargeLogsBatch(t *testing.T) pdata.Logs {
 }
 
 func TestConsumeLogsData(t *testing.T) {
-	logRecord := pdata.NewLogRecord()
-	logRecord.InitEmpty()
+	smallBatch := pdata.NewLogs()
+	logRecord := smallBatch.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
 	logRecord.Body().SetStringVal("mylog")
-	logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
+	logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 	logRecord.Attributes().InsertString("custom", "custom")
 	logRecord.SetTimestamp(123)
-	smallBatch := makeLog(logRecord)
 	tests := []struct {
 		name             string
 		ld               pdata.Logs
 		reqTestFunc      func(t *testing.T, r *http.Request)
 		httpResponseCode int
-		numDroppedLogs   int
 		wantErr          bool
 	}{
 		{
@@ -266,12 +277,11 @@ func TestConsumeLogsData(t *testing.T) {
 			ld:               smallBatch,
 			reqTestFunc:      nil,
 			httpResponseCode: http.StatusForbidden,
-			numDroppedLogs:   1,
 			wantErr:          true,
 		},
 		{
 			name:             "large_batch",
-			ld:               generateLargeLogsBatch(t),
+			ld:               generateLargeLogsBatch(),
 			reqTestFunc:      nil,
 			httpResponseCode: http.StatusAccepted,
 		},
@@ -293,17 +303,17 @@ func TestConsumeLogsData(t *testing.T) {
 				url:   serverURL,
 				token: "1234",
 			}
-			config := &Config{
-				Source:     "test",
-				SourceType: "test_type",
-				Token:      "1234",
-				Index:      "test_index",
-			}
-			sender := buildClient(options, config, zap.NewNop())
 
-			numDroppedLogs, err := sender.pushLogData(context.Background(), tt.ld)
-			assert.Equal(t, tt.numDroppedLogs, numDroppedLogs)
+			config := NewFactory().CreateDefaultConfig().(*Config)
+			config.Source = "test"
+			config.SourceType = "test_type"
+			config.Token = "1234"
+			config.Index = "test_index"
 
+			sender, err := buildClient(options, config, zap.NewNop())
+			assert.NoError(t, err)
+
+			err = sender.pushLogData(context.Background(), tt.ld)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

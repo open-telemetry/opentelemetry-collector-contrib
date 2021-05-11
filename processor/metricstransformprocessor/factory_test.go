@@ -24,27 +24,24 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 )
 
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	pType := factory.Type()
-	assert.Equal(t, pType, configmodels.Type("metricstransform"))
+	assert.Equal(t, pType, config.Type("metricstransform"))
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			NameVal: typeStr,
-			TypeVal: typeStr,
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 	})
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
@@ -58,27 +55,71 @@ func TestCreateProcessors(t *testing.T) {
 		{
 			configName: "config_full.yaml",
 			succeed:    true,
-		}, {
+		},
+		{
 			configName:   "config_invalid_newname.yaml",
 			succeed:      false,
 			errorMessage: fmt.Sprintf("missing required field %q while %q is %v", NewNameFieldName, ActionFieldName, Insert),
-		}, {
+		},
+		{
+			configName:   "config_invalid_group.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("missing required field %q while %q is %v", GroupResouceLabelsFieldName, ActionFieldName, Group),
+		},
+		{
 			configName:   "config_invalid_action.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("unsupported %q: %v, the supported actions are %q and %q", ActionFieldName, "invalid", Insert, Update),
-		}, {
-			configName:   "config_invalid_metricname.yaml",
+			errorMessage: fmt.Sprintf("%q must be in %q", ActionFieldName, Actions),
+		},
+		{
+			configName:   "config_invalid_include.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q", MetricNameFieldName),
-		}, {
+			errorMessage: fmt.Sprintf("missing required field %q", IncludeFieldName),
+		},
+		{
+			configName:   "config_invalid_include_and_metricname.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("cannot supply both %q and %q, use %q with %q match type", IncludeFieldName, MetricNameFieldName, IncludeFieldName, StrictMatchType),
+		},
+		{
+			configName:   "config_invalid_matchtype.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("%q must be in %q", MatchTypeFieldName, MatchTypes),
+		},
+		{
 			configName:   "config_invalid_label.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q while %q is %v in the %vth operation", LabelFieldName, ActionFieldName, UpdateLabel, 0),
+			errorMessage: fmt.Sprintf("operation %v: missing required field %q while %q is %v", 1, LabelFieldName, ActionFieldName, UpdateLabel),
+		},
+		{
+			configName:   "config_invalid_regexp.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("%q, error parsing regexp: missing closing ]: `[\\da`", IncludeFieldName),
+		},
+		{
+			configName:   "config_invalid_aggregationtype.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("%q must be in %q", AggregationTypeFieldName, AggregationTypes),
+		},
+		{
+			configName:   "config_invalid_operation_action.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("operation %v: %q must be in %q", 1, ActionFieldName, OperationActions),
+		},
+		{
+			configName:   "config_invalid_operation_aggregationtype.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("operation %v: %q must be in %q", 1, AggregationTypeFieldName, AggregationTypes),
+		},
+		{
+			configName:   "config_invalid_submatchcase.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("%q must be in %q", SubmatchCaseFieldName, SubmatchCases),
 		},
 	}
 
 	for _, test := range tests {
-		factories, err := componenttest.ExampleComponents()
+		factories, err := componenttest.NopFactories()
 		assert.NoError(t, err)
 
 		factory := NewFactory()
@@ -88,11 +129,11 @@ func TestCreateProcessors(t *testing.T) {
 
 		for name, cfg := range config.Processors {
 			t.Run(fmt.Sprintf("%s/%s", test.configName, name), func(t *testing.T) {
-				tp, tErr := factory.CreateTraceProcessor(
+				tp, tErr := factory.CreateTracesProcessor(
 					context.Background(),
 					component.ProcessorCreateParams{Logger: zap.NewNop()},
 					cfg,
-					exportertest.NewNopTraceExporter())
+					consumertest.NewNop())
 				// Not implemented error
 				assert.Error(t, tErr)
 				assert.Nil(t, tp)
@@ -101,7 +142,7 @@ func TestCreateProcessors(t *testing.T) {
 					context.Background(),
 					component.ProcessorCreateParams{Logger: zap.NewNop()},
 					cfg,
-					exportertest.NewNopMetricsExporter())
+					consumertest.NewNop())
 				if test.succeed {
 					assert.NotNil(t, mp)
 					assert.NoError(t, mErr)
@@ -129,7 +170,7 @@ func TestFactory_validateConfiguration(t *testing.T) {
 		},
 	}
 	err := validateConfiguration(&v1)
-	assert.Equal(t, "missing required field \"new_label\" while \"action\" is add_label in the 0th operation", err.Error())
+	assert.Equal(t, "operation 1: missing required field \"new_label\" while \"action\" is add_label", err.Error())
 
 	v2 := Config{
 		Transforms: []Transform{
@@ -147,7 +188,7 @@ func TestFactory_validateConfiguration(t *testing.T) {
 	}
 
 	err = validateConfiguration(&v2)
-	assert.Equal(t, "missing required field \"new_value\" while \"action\" is add_label in the 0th operation", err.Error())
+	assert.Equal(t, "operation 1: missing required field \"new_value\" while \"action\" is add_label", err.Error())
 }
 
 func TestCreateProcessorsFilledData(t *testing.T) {
@@ -195,9 +236,9 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 
 	expData := []internalTransform{
 		{
-			MetricName: "name",
-			Action:     Update,
-			NewName:    "new-name",
+			MetricIncludeFilter: internalFilterStrict{include: "name"},
+			Action:              Update,
+			NewName:             "new-name",
 			Operations: []internalOperation{
 				{
 					configOperation: Operation{
@@ -254,7 +295,7 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 		mtpT := internalTransforms[i]
 		assert.Equal(t, expTr.NewName, mtpT.NewName)
 		assert.Equal(t, expTr.Action, mtpT.Action)
-		assert.Equal(t, expTr.MetricName, mtpT.MetricName)
+		assert.Equal(t, expTr.MetricIncludeFilter.(internalFilterStrict).include, mtpT.MetricIncludeFilter.(internalFilterStrict).include)
 		for j, expOp := range expTr.Operations {
 			mtpOp := mtpT.Operations[j]
 			assert.Equal(t, expOp.configOperation, mtpOp.configOperation)

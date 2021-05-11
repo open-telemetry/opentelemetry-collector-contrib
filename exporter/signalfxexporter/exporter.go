@@ -25,30 +25,42 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
+
+// TODO: Find a place for this to be shared.
+type baseMetricsExporter struct {
+	component.Component
+	consumer.Metrics
+}
+
+// TODO: Find a place for this to be shared.
+type baseLogsExporter struct {
+	component.Component
+	consumer.Logs
+}
 
 type signalfMetadataExporter struct {
 	component.MetricsExporter
-	pushMetadata func(metadata []*collection.MetadataUpdate) error
+	pushMetadata func(metadata []*metadata.MetadataUpdate) error
 }
 
-func (sme *signalfMetadataExporter) ConsumeMetadata(metadata []*collection.MetadataUpdate) error {
+func (sme *signalfMetadataExporter) ConsumeMetadata(metadata []*metadata.MetadataUpdate) error {
 	return sme.pushMetadata(metadata)
 }
 
 type signalfxExporter struct {
 	logger             *zap.Logger
 	pushMetricsData    func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
-	pushMetadata       func(metadata []*collection.MetadataUpdate) error
-	pushResourceLogs   func(ctx context.Context, ld pdata.ResourceLogs) (droppedLogRecords int, err error)
+	pushMetadata       func(metadata []*metadata.MetadataUpdate) error
+	pushLogsData       func(ctx context.Context, ld pdata.Logs) (droppedLogRecords int, err error)
 	hostMetadataSyncer *hostmetadata.Syncer
 }
 
@@ -73,10 +85,15 @@ func newSignalFxExporter(
 	options, err := config.getOptionsFromConfig()
 	if err != nil {
 		return nil,
-			fmt.Errorf("failed to process %q config: %v", config.Name(), err)
+			fmt.Errorf("failed to process %q config: %v", config.ID().String(), err)
 	}
 
 	headers := buildHeaders(config)
+
+	converter, err := translation.NewMetricsConverter(logger, options.metricTranslator, config.ExcludeMetrics, config.IncludeMetrics, config.NonAlphanumericDimensionChars)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create metric converter: %v", err)
+	}
 
 	dpClient := &sfxDPClient{
 		sfxClientBase: sfxClientBase{
@@ -91,7 +108,7 @@ func newSignalFxExporter(
 		},
 		logger:                 logger,
 		accessTokenPassthrough: config.AccessTokenPassthrough,
-		converter:              translation.NewMetricsConverter(logger, options.metricTranslator),
+		converter:              converter,
 	}
 
 	dimClient := dimensions.NewDimensionClient(
@@ -108,7 +125,7 @@ func newSignalFxExporter(
 			// buffer a fixed number of updates. Might also be a good candidate
 			// to make configurable.
 			PropertiesMaxBuffered: 10000,
-			MetricTranslator:      options.metricTranslator,
+			MetricsConverter:      *converter,
 		})
 	dimClient.Start()
 
@@ -139,7 +156,7 @@ func newEventExporter(config *Config, logger *zap.Logger) (*signalfxExporter, er
 	options, err := config.getOptionsFromConfig()
 	if err != nil {
 		return nil,
-			fmt.Errorf("failed to process %q config: %v", config.Name(), err)
+			fmt.Errorf("failed to process %q config: %v", config.ID().String(), err)
 	}
 
 	headers := buildHeaders(config)
@@ -160,28 +177,20 @@ func newEventExporter(config *Config, logger *zap.Logger) (*signalfxExporter, er
 	}
 
 	return &signalfxExporter{
-		logger:           logger,
-		pushResourceLogs: eventClient.pushResourceLogs,
+		logger:       logger,
+		pushLogsData: eventClient.pushLogsData,
 	}, nil
 }
 
-func (se *signalfxExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
-	numDroppedTimeSeries, err := se.pushMetricsData(ctx, md)
+func (se *signalfxExporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
+	_, err := se.pushMetricsData(ctx, md)
 	if err == nil && se.hostMetadataSyncer != nil {
 		se.hostMetadataSyncer.Sync(md)
 	}
-	return numDroppedTimeSeries, err
+	return err
 }
 
-func (se *signalfxExporter) pushLogs(ctx context.Context, ld pdata.Logs) (int, error) {
-	var numDroppedRecords int
-	var err error
-	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
-		dropped, thisErr := se.pushResourceLogs(ctx, rls.At(i))
-		numDroppedRecords += dropped
-		err = multierr.Append(err, thisErr)
-	}
-
-	return numDroppedRecords, err
+func (se *signalfxExporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
+	_, err := se.pushLogsData(ctx, ld)
+	return err
 }

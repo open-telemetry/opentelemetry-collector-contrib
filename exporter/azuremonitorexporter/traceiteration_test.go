@@ -17,7 +17,7 @@ package azuremonitorexporter
 import (
 	"testing"
 
-	mock "github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -42,22 +42,9 @@ func TestTraceDataIterationNoResourceSpans(t *testing.T) {
 }
 
 // Tests the iteration logic over a pdata.Traces type when a ResourceSpans is nil
-func TestTraceDataIterationResourceSpansIsNil(t *testing.T) {
+func TestTraceDataIterationResourceSpansIsEmpty(t *testing.T) {
 	traces := pdata.NewTraces()
-	resourceSpans := pdata.NewResourceSpans()
-	traces.ResourceSpans().Append(resourceSpans)
-
-	visitor := getMockVisitor(true)
-
-	Accept(traces, visitor)
-
-	visitor.AssertNumberOfCalls(t, "visit", 0)
-}
-
-// Tests the iteration logic over a pdata.Traces type when a Resource is nil
-func TestTraceDataIterationResourceIsNil(t *testing.T) {
-	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
+	traces.ResourceSpans().AppendEmpty()
 
 	visitor := getMockVisitor(true)
 
@@ -67,14 +54,10 @@ func TestTraceDataIterationResourceIsNil(t *testing.T) {
 }
 
 // Tests the iteration logic over a pdata.Traces type when InstrumentationLibrarySpans is nil
-func TestTraceDataIterationInstrumentationLibrarySpansIsNil(t *testing.T) {
+func TestTraceDataIterationInstrumentationLibrarySpansIsEmpty(t *testing.T) {
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
-	r := rs.Resource()
-	r.InitEmpty()
-	instrumentationLibrarySpans := pdata.NewInstrumentationLibrarySpans()
-	rs.InstrumentationLibrarySpans().Append(instrumentationLibrarySpans)
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.InstrumentationLibrarySpans().AppendEmpty()
 
 	visitor := getMockVisitor(true)
 
@@ -86,30 +69,8 @@ func TestTraceDataIterationInstrumentationLibrarySpansIsNil(t *testing.T) {
 // Tests the iteration logic over a pdata.Traces type when there are no Spans
 func TestTraceDataIterationNoSpans(t *testing.T) {
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
-	r := rs.Resource()
-	r.InitEmpty()
-	rs.InstrumentationLibrarySpans().Resize(1)
-
-	visitor := getMockVisitor(true)
-
-	Accept(traces, visitor)
-
-	visitor.AssertNumberOfCalls(t, "visit", 0)
-}
-
-// Tests the iteration logic over a pdata.Traces type when the Span is nil
-func TestTraceDataIterationSpanIsNil(t *testing.T) {
-	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
-	r := rs.Resource()
-	r.InitEmpty()
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ilss := rs.InstrumentationLibrarySpans().At(0)
-	span := pdata.NewSpan()
-	ilss.Spans().Append(span)
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.InstrumentationLibrarySpans().AppendEmpty()
 
 	visitor := getMockVisitor(true)
 
@@ -121,13 +82,10 @@ func TestTraceDataIterationSpanIsNil(t *testing.T) {
 // Tests the iteration logic if the visitor returns true
 func TestTraceDataIterationNoShortCircuit(t *testing.T) {
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
-	r := rs.Resource()
-	r.InitEmpty()
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ilss := rs.InstrumentationLibrarySpans().At(0)
-	ilss.Spans().Resize(2)
+	rs := traces.ResourceSpans().AppendEmpty()
+	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ilss.Spans().AppendEmpty()
+	ilss.Spans().AppendEmpty()
 
 	visitor := getMockVisitor(true)
 
@@ -139,13 +97,10 @@ func TestTraceDataIterationNoShortCircuit(t *testing.T) {
 // Tests the iteration logic short circuit if the visitor returns false
 func TestTraceDataIterationShortCircuit(t *testing.T) {
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
-	r := rs.Resource()
-	r.InitEmpty()
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ilss := rs.InstrumentationLibrarySpans().At(0)
-	ilss.Spans().Resize(2)
+	rs := traces.ResourceSpans().AppendEmpty()
+	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ilss.Spans().AppendEmpty()
+	ilss.Spans().AppendEmpty()
 
 	visitor := getMockVisitor(false)
 

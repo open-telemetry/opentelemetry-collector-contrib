@@ -5,6 +5,6 @@
 set -e
 
 if grep -q "$MODULE " go.mod; then
-  go get $MODULE@$VERSION
+  go get "$MODULE"@"$VERSION"
 fi
 

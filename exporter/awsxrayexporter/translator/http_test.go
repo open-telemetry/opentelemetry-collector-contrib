@@ -229,7 +229,7 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 	attributes[semconventions.AttributeHTTPClientIP] = "192.168.15.32"
 	attributes[semconventions.AttributeHTTPStatusCode] = 200
 	span := constructHTTPServerSpan(attributes)
-	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTime())
+	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTimestamp())
 	timeEvents.CopyTo(span.Events())
 
 	filtered, httpData := makeHTTP(span)
@@ -245,23 +245,30 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))
 }
 
-func TestHttpStatusFromSpanStatus(t *testing.T) {
+func TestSpanWithNotEnoughHTTPRequestURLAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
-	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
-	span := constructHTTPClientSpan(attributes)
+	attributes[semconventions.AttributeHTTPScheme] = "http"
+	attributes[semconventions.AttributeHTTPClientIP] = "192.168.15.32"
+	attributes[semconventions.AttributeHTTPUserAgent] = "PostmanRuntime/7.21.0"
+	attributes[semconventions.AttributeHTTPTarget] = "/users/junit"
+	attributes[semconventions.AttributeHTTPHostPort] = 443
+	attributes[semconventions.AttributeNetPeerPort] = 8080
+	attributes[semconventions.AttributeHTTPStatusCode] = 200
+	span := constructHTTPServerSpan(attributes)
+	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTimestamp())
+	timeEvents.CopyTo(span.Events())
 
 	filtered, httpData := makeHTTP(span)
 
-	assert.NotNil(t, httpData)
+	assert.Nil(t, httpData.Request.URL)
+	assert.Equal(t, "192.168.15.32", *httpData.Request.ClientIP)
+	assert.Equal(t, "GET", *httpData.Request.Method)
+	assert.Equal(t, "PostmanRuntime/7.21.0", *httpData.Request.UserAgent)
+	contentLength := *httpData.Response.ContentLength.(*int64)
+	assert.Equal(t, int64(12452), contentLength)
+	assert.Equal(t, int64(200), *httpData.Response.Status)
 	assert.NotNil(t, filtered)
-	w := testWriters.borrow()
-	if err := w.Encode(httpData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
-	jsonStr := w.String()
-	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "200"))
 }
 
 func constructHTTPClientSpan(attributes map[string]interface{}) pdata.Span {
@@ -270,17 +277,15 @@ func constructHTTPClientSpan(attributes map[string]interface{}) pdata.Span {
 	spanAttributes := constructSpanAttributes(attributes)
 
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindCLIENT)
-	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
-	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
-	status.InitEmpty()
 	status.SetCode(0)
 	status.SetMessage("OK")
 	status.CopyTo(span.Status())
@@ -295,17 +300,15 @@ func constructHTTPServerSpan(attributes map[string]interface{}) pdata.Span {
 	spanAttributes := constructSpanAttributes(attributes)
 
 	span := pdata.NewSpan()
-	span.InitEmpty()
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindSERVER)
-	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
-	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
-	status.InitEmpty()
 	status.SetCode(0)
 	status.SetMessage("OK")
 	status.CopyTo(span.Status())

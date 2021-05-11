@@ -30,13 +30,15 @@ func init() {
 		viewPodsAdded,
 		viewPodsDeleted,
 		viewIPLookupMiss,
+		viewPodTableSize,
 	)
 }
 
 var (
-	mPodsUpdated = stats.Int64("otelsvc/k8s/pod_updated", "Number of pod update events received", "1")
-	mPodsAdded   = stats.Int64("otelsvc/k8s/pod_added", "Number of pod add events received", "1")
-	mPodsDeleted = stats.Int64("otelsvc/k8s/pod_deleted", "Number of pod delete events received", "1")
+	mPodsUpdated  = stats.Int64("otelsvc/k8s/pod_updated", "Number of pod update events received", "1")
+	mPodsAdded    = stats.Int64("otelsvc/k8s/pod_added", "Number of pod add events received", "1")
+	mPodsDeleted  = stats.Int64("otelsvc/k8s/pod_deleted", "Number of pod delete events received", "1")
+	mPodTableSize = stats.Int64("otelsvc/k8s/pod_table_size", "Size of table containing pod info", "1")
 
 	mIPLookupMiss = stats.Int64("otelsvc/k8s/ip_lookup_miss", "Number of times pod by IP lookup failed.", "1")
 )
@@ -68,6 +70,12 @@ var viewIPLookupMiss = &view.View{
 	Measure:     mIPLookupMiss,
 	Aggregation: view.Sum(),
 }
+var viewPodTableSize = &view.View{
+	Name:        mPodTableSize.Name(),
+	Description: mPodTableSize.Description(),
+	Measure:     mPodTableSize,
+	Aggregation: view.LastValue(),
+}
 
 // RecordPodUpdated increments the metric that records pod update events received.
 func RecordPodUpdated() {
@@ -87,4 +95,9 @@ func RecordPodDeleted() {
 // RecordIPLookupMiss increments the metric that records Pod lookup by IP misses.
 func RecordIPLookupMiss() {
 	stats.Record(context.Background(), mIPLookupMiss.M(int64(1)))
+}
+
+// RecordPodTableSize store size of pod table field in WatchClient
+func RecordPodTableSize(podTableSize int64) {
+	stats.Record(context.Background(), mPodTableSize.M(podTableSize))
 }

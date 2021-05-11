@@ -33,7 +33,7 @@ This is configuration that will be used when creating the receiver at
 runtime.
 
 This option can use static and dynamic configuration values. Static values
-are normal YAML values. However the value can also be dynamically constructed
+are normal YAML values. However, the value can also be dynamically constructed
 from the discovered endpoint object. Dynamic values are surrounded by
 backticks (\`). If a literal backtick is needed use \\` to escape it. Dynamic
 values can be used with static values in which case they are concatenated.
@@ -53,12 +53,40 @@ port but the port needs to be set inside endpoint. You could do:
 
 ```yaml
 config:
-   endpoint: `endpoint`:8080
+   endpoint: '`endpoint`:8080'
 ```
+
+**receivers.&lt;receiver_type/id&gt;.resource_attributes**
+
+This setting controls what resource attributes are set on metrics emitted from the created receiver. These attributes can be set from [values in the endpoint](#rule-expressions) that was matched by the `rule`. These attributes vary based on the endpoint type. These defaults can be disabled by setting the attribute to be removed to an empty value. Note that the values can be dynamic and processed the same as in `config`.
+
+Note that the backticks below are not typos--they indicate the value is set dynamically.
+
+`type == "pod"`
+
+| Resource Attribute | Default       |
+|--------------------|---------------|
+| k8s.pod.name       | \`name\`      |
+| k8s.pod.uid        | \`uid\`       |
+| k8s.namespace.name | \`namespace\` |
+
+`type == "port"`
+
+| Resource Attribute | Default           |
+|--------------------|-------------------|
+| k8s.pod.name       | \`pod.name\`      |
+| k8s.pod.uid        | \`pod.uid\`       |
+| k8s.namespace.name | \`pod.namespace\` |
+
+`type == "hostport"`
+
+None
+
+See `redis/2` in [examples](#examples).
 
 ## Rule Expressions
 
-Each rule must start with `type.(pod|port) &&` such that the rule matches
+Each rule must start with `type == ("pod"|"port"|"hostport") &&` such that the rule matches
 only one endpoint type. Depending on the type of endpoint the rule is
 targeting it will have different variables available.
 
@@ -66,24 +94,39 @@ targeting it will have different variables available.
 
 | Variable    | Description                       |
 |-------------|-----------------------------------|
-| type.pod    | `true`                            |
+| type        | `"pod"`                            |
 | name        | name of the pod                   |
+| namespace   | namespace of the pod              |
+| uid         | unique id of the pod              |
 | labels      | map of labels set on the pod      |
 | annotations | map of annotations set on the pod |
 
 ### Port
 
-| Variable        | Description                          |
-|-----------------|--------------------------------------|
-| type.port       | `true`                               |
-| name            | container port name                  |
-| port            | port number                          |
-| pod.name        | name of the owning pod               |
-| pod.labels      | map of labels of the owning pod      |
-| pod.annotations | map of annotations of the owning pod |
-| protocol        | `TCP` or `UDP`                       |
+| Variable        | Description                             |
+|-----------------|-----------------------------------------|
+| type            | `"port"`                                  |
+| name            | container port name                     |
+| port            | port number                             |
+| protocol        | The transport protocol ("TCP" or "UDP") |
+| pod.name        | name of the owning pod                  |
+| pod.namespace   | namespace of the pod                    |
+| pod.uid         | unique id of the pod                    |
+| pod.labels      | map of labels of the owning pod         |
+| pod.annotations | map of annotations of the owning pod    |
 
-## Example
+### Host Port
+
+| Variable      | Description                                      |
+|---------------|--------------------------------------------------|
+| type          | `"hostport"`                                           |
+| process_name  | Name of the process                              |
+| command       | Command line with the used to invoke the process |
+| is_ipv6       | true if endpoint is IPv6, otherwise false        |
+| port          | Port number                                      |
+| transport     | The transport protocol ("TCP" or "UDP")          |
+
+## Examples
 
 ```yaml
 extensions:
@@ -98,26 +141,35 @@ receivers:
     receivers:
       prometheus_simple:
         # Configure prometheus scraping if standard prometheus annotations are set on the pod.
-        rule: type.pod && annotations["prometheus.io/scrape"] == "true"
+        rule: type == "pod" && annotations["prometheus.io/scrape"] == "true"
         config:
           metrics_path: '`"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/metrics"`'
           endpoint: '`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090`'
 
       redis/1:
         # If this rule matches an instance of this receiver will be started.
-        rule: type.port && port == 6379
+        rule: type == "port" && port == 6379
         config:
           # Static receiver-specific config.
           password: secret
           # Dynamic configuration value.
           service_name: `pod.labels["service_name"]`
+
+      redis/2:
+        # Set a resource attribute based on endpoint value.
+        rule: type == "port" && port == 6379
+        resource_attributes:
+          # Dynamic value.
+          app: `pod.labels["app"]`
+          # Static value.
+          source: redis
   receiver_creator/2:
     # Name of the extensions to watch for endpoints to start and stop.
     watch_observers: [host_observer]
     receivers:
       redis/on_host:
         # If this rule matches an instance of this receiver will be started.
-        rule: type.port && port == 6379 && is_ipv6 == true
+        rule: type == "port" && port == 6379 && is_ipv6 == true
         config:
           service_name: redis_on_host
 

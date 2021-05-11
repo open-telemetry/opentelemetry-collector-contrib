@@ -21,80 +21,66 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-func logDataToSplunk(logger *zap.Logger, ld pdata.Logs, config *Config) ([]*splunk.Event, int) {
-	numDroppedLogs := 0
-	splunkEvents := make([]*splunk.Event, 0)
-	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
-		rl := rls.At(i)
-		if rl.IsNil() {
-			continue
-		}
-
-		ills := rl.InstrumentationLibraryLogs()
-		for j := 0; j < ills.Len(); j++ {
-			ils := ills.At(j)
-			if ils.IsNil() {
-				continue
-			}
-
-			logs := ils.Logs()
-			for j := 0; j < logs.Len(); j++ {
-				lr := logs.At(j)
-				if lr.IsNil() {
-					continue
-				}
-				ev := mapLogRecordToSplunkEvent(lr, config, logger)
-				if ev == nil {
-					numDroppedLogs++
-				} else {
-					splunkEvents = append(splunkEvents, ev)
-				}
-			}
-		}
-	}
-
-	return splunkEvents, numDroppedLogs
+// Composite index of a log record in pdata.Logs.
+type logIndex struct {
+	// Index in orig list (i.e. root parent index).
+	resource int
+	// Index in InstrumentationLibraryLogs list (i.e. immediate parent index).
+	library int
+	// Index in Logs list (i.e. the log record index).
+	record int
 }
 
-func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
-	if lr.Body().IsNil() {
-		return nil
-	}
-	var host string
-	var source string
-	var sourcetype string
+func (i *logIndex) zero() bool {
+	return i.resource == 0 && i.library == 0 && i.record == 0
+}
+
+func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
+	host := unknownHostName
+	source := config.Source
+	sourcetype := config.SourceType
+	index := config.Index
 	fields := map[string]interface{}{}
-	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-		if v.Type() != pdata.AttributeValueSTRING {
-			logger.Debug("Failed to convert log record attribute value to Splunk property value, value is not a string", zap.String("key", k))
-			return
-		}
-		if k == conventions.AttributeHostHostname {
+	if lr.Name() != "" {
+		fields[splunk.NameLabel] = lr.Name()
+	}
+	res.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		switch k {
+		case conventions.AttributeHostName:
 			host = v.StringVal()
-		} else if k == conventions.AttributeServiceName {
-			source = v.StringVal()
-		} else if k == splunk.SourcetypeLabel {
-			sourcetype = v.StringVal()
-		} else {
 			fields[k] = v.StringVal()
+		case conventions.AttributeServiceName:
+			source = v.StringVal()
+			fields[k] = v.StringVal()
+		case splunk.SourcetypeLabel:
+			sourcetype = v.StringVal()
+		case splunk.IndexLabel:
+			index = v.StringVal()
+		default:
+			fields[k] = convertAttributeValue(v, logger)
 		}
+		return true
 	})
-
-	if host == "" {
-		host = unknownHostName
-	}
-
-	if source == "" {
-		source = config.Source
-	}
-
-	if sourcetype == "" {
-		sourcetype = config.SourceType
-	}
+	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		switch k {
+		case conventions.AttributeHostName:
+			host = v.StringVal()
+			fields[k] = v.StringVal()
+		case conventions.AttributeServiceName:
+			source = v.StringVal()
+			fields[k] = v.StringVal()
+		case splunk.SourcetypeLabel:
+			sourcetype = v.StringVal()
+		case splunk.IndexLabel:
+			index = v.StringVal()
+		default:
+			fields[k] = convertAttributeValue(v, logger)
+		}
+		return true
+	})
 
 	eventValue := convertAttributeValue(lr.Body(), logger)
 	return &splunk.Event{
@@ -102,7 +88,7 @@ func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config, logger *zap.L
 		Host:       host,
 		Source:     source,
 		SourceType: sourcetype,
-		Index:      config.Index,
+		Index:      index,
 		Event:      eventValue,
 		Fields:     fields,
 	}
@@ -120,8 +106,9 @@ func convertAttributeValue(value pdata.AttributeValue, logger *zap.Logger) inter
 		return value.StringVal()
 	case pdata.AttributeValueMAP:
 		values := map[string]interface{}{}
-		value.MapVal().ForEach(func(k string, v pdata.AttributeValue) {
+		value.MapVal().Range(func(k string, v pdata.AttributeValue) bool {
 			values[k] = convertAttributeValue(v, logger)
+			return true
 		})
 		return values
 	case pdata.AttributeValueARRAY:
@@ -140,6 +127,16 @@ func convertAttributeValue(value pdata.AttributeValue, logger *zap.Logger) inter
 }
 
 // nanoTimestampToEpochMilliseconds transforms nanoseconds into <sec>.<ms>. For example, 1433188255.500 indicates 1433188255 seconds and 500 milliseconds after epoch.
-func nanoTimestampToEpochMilliseconds(ts pdata.TimestampUnixNano) float64 {
-	return time.Duration(ts).Round(time.Millisecond).Seconds()
+func nanoTimestampToEpochMilliseconds(ts pdata.Timestamp) *float64 {
+	duration := time.Duration(ts)
+	if duration == 0 {
+		// some telemetry sources send data with timestamps set to 0 by design, as their original target destinations
+		// (i.e. before Open Telemetry) are setup with the know-how on how to consume them. In this case,
+		// we want to omit the time field when sending data to the Splunk HEC so that the HEC adds a timestamp
+		// at indexing time, which will be much more useful than a 0-epoch-time value.
+		return nil
+	}
+
+	val := duration.Round(time.Millisecond).Seconds()
+	return &val
 }

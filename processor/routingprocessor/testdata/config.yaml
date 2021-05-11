@@ -1,5 +1,5 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
   routing:
@@ -26,7 +26,7 @@ service:
   pipelines:
     traces:
       receivers:
-      - examplereceiver
+      - nop
       processors:
       - routing
       exporters:

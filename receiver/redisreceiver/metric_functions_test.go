@@ -18,8 +18,8 @@ import (
 	"strings"
 	"testing"
 
-	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestDefaultMetrics(t *testing.T) {
@@ -29,10 +29,10 @@ func TestDefaultMetrics(t *testing.T) {
 		require.True(t, strings.HasPrefix(metric.name, "redis/"))
 		require.True(
 			t,
-			metric.mdType == v1.MetricDescriptor_GAUGE_INT64 ||
-				metric.mdType == v1.MetricDescriptor_GAUGE_DOUBLE ||
-				metric.mdType == v1.MetricDescriptor_CUMULATIVE_INT64 ||
-				metric.mdType == v1.MetricDescriptor_CUMULATIVE_DOUBLE,
+			metric.pdType == pdata.MetricDataTypeIntSum ||
+				metric.pdType == pdata.MetricDataTypeIntGauge ||
+				metric.pdType == pdata.MetricDataTypeDoubleSum ||
+				metric.pdType == pdata.MetricDataTypeDoubleGauge,
 		)
 	}
 }

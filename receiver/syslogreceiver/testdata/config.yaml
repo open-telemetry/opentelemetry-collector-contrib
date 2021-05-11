@@ -1,0 +1,20 @@
+receivers:
+  syslog:
+    tcp:
+      listen_address: "0.0.0.0:29018"
+    protocol: rfc5424
+    converter:
+      flush_interval: 100ms
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    logs:
+      receivers: [syslog]
+      processors: [ nop ]
+      exporters: [ nop ]

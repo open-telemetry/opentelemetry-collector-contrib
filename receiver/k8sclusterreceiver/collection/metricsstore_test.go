@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -27,7 +27,7 @@ import (
 
 func TestMetricsStoreOperations(t *testing.T) {
 	ms := metricsStore{
-		metricsCache: map[types.UID][]consumerdata.MetricsData{},
+		metricsCache: map[types.UID][]internaldata.MetricsData{},
 	}
 
 	updates := []struct {
@@ -65,7 +65,7 @@ func TestMetricsStoreOperations(t *testing.T) {
 	// Remove non existent item
 	ms.remove(&corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
-			UID: types.UID("1"),
+			UID: "1",
 		},
 	})
 	require.Equal(t, len(updates), len(ms.metricsCache))

@@ -26,18 +26,18 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -46,12 +46,14 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Exporters), 2)
 
-	r0 := cfg.Exporters["elastic"]
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
+	defaultCfg := factory.CreateDefaultConfig()
+	defaultCfg.(*Config).APMServerURL = "https://elastic.example.com"
+	r0 := cfg.Exporters[config.NewID(typeStr)]
+	assert.Equal(t, r0, defaultCfg)
 
-	r1 := cfg.Exporters["elastic/customname"].(*Config)
+	r1 := cfg.Exporters[config.NewIDWithName(typeStr, "customname")]
 	assert.Equal(t, r1, &Config{
-		ExporterSettings: configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "elastic/customname"},
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "customname")),
 		APMServerURL:     "https://elastic.example.com",
 		APIKey:           "RTNxMjlXNEJt",
 		SecretToken:      "hunter2",
@@ -63,7 +65,7 @@ func TestConfigValidate(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
-	_, err := factory.CreateTraceExporter(context.Background(), params, cfg)
+	_, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	require.Error(t, err)
 	assert.EqualError(t, err, "cannot configure Elastic APM trace exporter: invalid config: APMServerURL must be specified")
 
@@ -72,7 +74,7 @@ func TestConfigValidate(t *testing.T) {
 	assert.EqualError(t, err, "cannot configure Elastic APM metrics exporter: invalid config: APMServerURL must be specified")
 
 	cfg.APMServerURL = "foo"
-	_, err = factory.CreateTraceExporter(context.Background(), params, cfg)
+	_, err = factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	_, err = factory.CreateMetricsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
@@ -100,17 +102,12 @@ func testAuth(t *testing.T, apiKey, secretToken, expectedAuthorization string) {
 	defer srv.Close()
 	cfg.APMServerURL = srv.URL
 
-	te, err := factory.CreateTraceExporter(context.Background(), params, cfg)
+	te, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
 	traces := pdata.NewTraces()
-	resourceSpans := traces.ResourceSpans()
-	resourceSpans.Resize(1)
-	resourceSpans.At(0).InitEmpty()
-	resourceSpans.At(0).InstrumentationLibrarySpans().Resize(1)
-	resourceSpans.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	span := resourceSpans.At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span := traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foobar")
 	assert.NoError(t, te.ConsumeTraces(context.Background(), traces))
 }

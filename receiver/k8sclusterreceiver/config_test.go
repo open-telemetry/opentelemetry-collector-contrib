@@ -22,19 +22,19 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
 	factory := NewFactory()
 	receiverType := "k8s_cluster"
-	factories.Receivers[configmodels.Type(receiverType)] = factory
+	factories.Receivers[config.Type(receiverType)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -44,31 +44,25 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 3)
 
-	r1 := cfg.Receivers["k8s_cluster"]
+	r1 := cfg.Receivers[config.NewID(typeStr)]
 	assert.Equal(t, r1, factory.CreateDefaultConfig())
 
-	r2 := cfg.Receivers["k8s_cluster/all_settings"].(*Config)
+	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "all_settings")].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(receiverType),
-				NameVal: "k8s_cluster/all_settings",
-			},
+			ReceiverSettings:           config.NewReceiverSettings(config.NewIDWithName(typeStr, "all_settings")),
 			CollectionInterval:         30 * time.Second,
 			NodeConditionTypesToReport: []string{"Ready", "MemoryPressure"},
-			MetadataExporters:          []string{"exampleexporter"},
+			MetadataExporters:          []string{"nop"},
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: k8sconfig.AuthTypeServiceAccount,
 			},
 		})
 
-	r3 := cfg.Receivers["k8s_cluster/partial_settings"].(*Config)
+	r3 := cfg.Receivers[config.NewIDWithName(typeStr, "partial_settings")].(*Config)
 	assert.Equal(t, r3,
 		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(receiverType),
-				NameVal: "k8s_cluster/partial_settings",
-			},
+			ReceiverSettings:           config.NewReceiverSettings(config.NewIDWithName(typeStr, "partial_settings")),
 			CollectionInterval:         30 * time.Second,
 			NodeConditionTypesToReport: []string{"Ready"},
 			APIConfig: k8sconfig.APIConfig{

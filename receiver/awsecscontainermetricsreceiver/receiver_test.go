@@ -16,13 +16,13 @@ package awsecscontainermetricsreceiver
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 )
 
@@ -46,7 +46,7 @@ func TestReceiver(t *testing.T) {
 	metricsReceiver, err := New(
 		zap.NewNop(),
 		cfg,
-		exportertest.NewNopMetricsExporter(),
+		consumertest.NewNop(),
 		&fakeRestClient{},
 	)
 
@@ -81,7 +81,7 @@ func TestCollectDataFromEndpoint(t *testing.T) {
 	metricsReceiver, err := New(
 		zap.NewNop(),
 		cfg,
-		new(exportertest.SinkMetricsExporter),
+		new(consumertest.MetricsSink),
 		&fakeRestClient{},
 	)
 
@@ -91,21 +91,17 @@ func TestCollectDataFromEndpoint(t *testing.T) {
 	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
 	ctx := context.Background()
 
-	err = r.collectDataFromEndpoint(ctx, "")
+	err = r.collectDataFromEndpoint(ctx)
 	require.NoError(t, err)
 }
 
 func TestCollectDataFromEndpointWithConsumerError(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
-	sme := new(exportertest.SinkMetricsExporter)
-	e := fmt.Errorf("Test Error for Metrics Consumer")
-	sme.SetConsumeMetricsError(e)
-
 	metricsReceiver, err := New(
 		zap.NewNop(),
 		cfg,
-		sme,
+		consumertest.NewErr(errors.New("Test Error for Metrics Consumer")),
 		&fakeRestClient{},
 	)
 
@@ -115,7 +111,7 @@ func TestCollectDataFromEndpointWithConsumerError(t *testing.T) {
 	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
 	ctx := context.Background()
 
-	err = r.collectDataFromEndpoint(ctx, "")
+	err = r.collectDataFromEndpoint(ctx)
 	require.EqualError(t, err, "Test Error for Metrics Consumer")
 }
 
@@ -139,7 +135,7 @@ func TestCollectDataFromEndpointWithEndpointError(t *testing.T) {
 	metricsReceiver, err := New(
 		zap.NewNop(),
 		cfg,
-		new(exportertest.SinkMetricsExporter),
+		new(consumertest.MetricsSink),
 		&invalidFakeClient{},
 	)
 
@@ -149,6 +145,6 @@ func TestCollectDataFromEndpointWithEndpointError(t *testing.T) {
 	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
 	ctx := context.Background()
 
-	err = r.collectDataFromEndpoint(ctx, "")
+	err = r.collectDataFromEndpoint(ctx)
 	require.Error(t, err)
 }

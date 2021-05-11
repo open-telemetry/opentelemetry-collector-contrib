@@ -18,8 +18,10 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 const (
@@ -36,32 +38,28 @@ func NewFactory() component.ExporterFactory {
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		LogGroupName:          "",
-		LogStreamName:         "",
-		Namespace:             "",
-		Endpoint:              "",
-		RequestTimeoutSeconds: 30,
-		MaxRetries:            1,
-		NoVerifySSL:           false,
-		ProxyAddress:          "",
-		Region:                "",
-		RoleARN:               "",
-		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+		ExporterSettings:                config.NewExporterSettings(config.NewID(typeStr)),
+		AWSSessionSettings:              awsutil.CreateDefaultSessionConfig(),
+		LogGroupName:                    "",
+		LogStreamName:                   "",
+		Namespace:                       "",
+		DimensionRollupOption:           "ZeroAndSingleDimensionRollup",
+		ParseJSONEncodedAttributeValues: make([]string, 0),
+		MetricDeclarations:              make([]*MetricDeclaration, 0),
+		MetricDescriptors:               make([]MetricDescriptor, 0),
+		OutputDestination:               "cloudwatch",
+		logger:                          nil,
 	}
 }
 
 // createMetricsExporter creates a metrics exporter based on this config.
 func createMetricsExporter(_ context.Context,
 	params component.ExporterCreateParams,
-	config configmodels.Exporter) (component.MetricsExporter, error) {
+	config config.Exporter) (component.MetricsExporter, error) {
 
 	expCfg := config.(*Config)
 
-	return New(expCfg, params)
+	return NewEmfExporter(expCfg, params)
 }

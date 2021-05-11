@@ -1,4 +1,4 @@
-// Copyright -c Google LLC
+// Copyright OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 			EventType:  "shutdown",
 			Timestamp:  msec,
 			Category:   &userDefinedCat,
-			Dimensions: buildNDimensions(3),
+			Dimensions: buildNDimensions(4),
 			Properties: mapToEventProps(map[string]interface{}{
 				"env":      "prod",
 				"isActive": true,
@@ -51,14 +51,20 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 		}
 	}
 
-	buildDefaultLogs := func() pdata.LogSlice {
-		logSlice := pdata.NewLogSlice()
+	buildDefaultLogs := func() pdata.Logs {
+		logs := pdata.NewLogs()
+		resourceLogs := logs.ResourceLogs()
+		resourceLog := resourceLogs.AppendEmpty()
+		resourceLog.Resource().Attributes().InsertString("k0", "should use ILL attr value instead")
+		resourceLog.Resource().Attributes().InsertString("k3", "v3")
+		resourceLog.Resource().Attributes().InsertInt("k4", 123)
 
-		logSlice.Resize(1)
-		l := logSlice.At(0)
+		ilLogs := resourceLog.InstrumentationLibraryLogs()
+		logSlice := ilLogs.AppendEmpty().Logs()
 
+		l := logSlice.AppendEmpty()
 		l.SetName("shutdown")
-		l.SetTimestamp(pdata.TimestampUnixNano(now.Truncate(time.Millisecond).UnixNano()))
+		l.SetTimestamp(pdata.TimestampFromTime(now.Truncate(time.Millisecond)))
 		attrs := l.Attributes()
 
 		attrs.InitFromMap(map[string]pdata.AttributeValue{
@@ -67,7 +73,8 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 			"k2": pdata.NewAttributeValueString("v2"),
 		})
 
-		propMap := pdata.NewAttributeMap()
+		propMapVal := pdata.NewAttributeValueMap()
+		propMap := propMapVal.MapVal()
 		propMap.InitFromMap(map[string]pdata.AttributeValue{
 			"env":      pdata.NewAttributeValueString("prod"),
 			"isActive": pdata.NewAttributeValueBool(true),
@@ -75,20 +82,18 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 			"temp":     pdata.NewAttributeValueDouble(40.5),
 		})
 		propMap.Sort()
-		propMapVal := pdata.NewAttributeValueMap()
-		propMapVal.SetMapVal(propMap)
 		attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
 		attrs.Insert("com.splunk.signalfx.event_category", pdata.NewAttributeValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
 
 		l.Attributes().Sort()
 
-		return logSlice
+		return logs
 	}
 
 	tests := []struct {
 		name       string
 		sfxEvents  []*sfxpb.Event
-		logData    pdata.LogSlice
+		logData    pdata.Logs
 		numDropped int
 	}{
 		{
@@ -103,19 +108,22 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 				e.Category = nil
 				return []*sfxpb.Event{e}
 			}(),
-			logData: func() pdata.LogSlice {
-				lrs := buildDefaultLogs()
+			logData: func() pdata.Logs {
+				logs := buildDefaultLogs()
+				lrs := logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
 				lrs.At(0).Attributes().Upsert("com.splunk.signalfx.event_category", pdata.NewAttributeValueNull())
-				return lrs
+				return logs
 			}(),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			events, dropped := LogSliceToSignalFxV2(zap.NewNop(), tt.logData)
-			for i := 0; i < tt.logData.Len(); i++ {
-				tt.logData.At(i).Attributes().Sort()
+			resource := tt.logData.ResourceLogs().At(0).Resource()
+			logSlice := tt.logData.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
+			events, dropped := LogSliceToSignalFxV2(zap.NewNop(), logSlice, resource.Attributes())
+			for i := 0; i < logSlice.Len(); i++ {
+				logSlice.At(i).Attributes().Sort()
 			}
 
 			for k := range events {

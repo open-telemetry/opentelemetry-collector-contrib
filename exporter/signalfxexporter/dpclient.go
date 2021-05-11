@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -28,16 +27,12 @@ import (
 	"sync"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
-	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 type sfxClientBase struct {
@@ -77,56 +72,28 @@ type sfxDPClient struct {
 func (s *sfxDPClient) pushMetricsData(
 	ctx context.Context,
 	md pdata.Metrics,
-) (droppedTimeSeries int, err error) {
-	metricsData := internaldata.MetricsToOC(md)
-	var numDroppedTimeseries int
-	var errs []error
-
-	var currentToken string
-	var batchStartIdx int
-	for i := range metricsData {
-		metricToken := s.retrieveAccessToken(metricsData[i])
-		if currentToken != metricToken {
-			if batchStartIdx < i {
-				// TODO:
-				// 1) To leverage the queued retry mechanism available in new exporters,
-				// 	  look for error cases that are non-permanent and track the list of metric
-				//    data that needs to be retried. This will be done once partial retry support
-				//    is added for metrics type.
-				// 2) Also consider invoking in a goroutine to some concurrency going, in case
-				//    there are a lot of tokens.
-				droppedCount, err := s.pushMetricsDataForToken(ctx, metricsData[batchStartIdx:i], currentToken)
-				numDroppedTimeseries += droppedCount
-				if err != nil {
-					errs = append(errs, err)
-				}
-				batchStartIdx = i
-			}
-			currentToken = metricToken
-		}
+) (droppedDataPoints int, err error) {
+	rms := md.ResourceMetrics()
+	if rms.Len() == 0 {
+		return 0, nil
 	}
 
-	// Ensure to get the last chunk of metrics.
-	if len(metricsData[batchStartIdx:]) > 0 {
-		droppedCount, err := s.pushMetricsDataForToken(ctx, metricsData[batchStartIdx:], currentToken)
-		numDroppedTimeseries += droppedCount
-		if err != nil {
-			errs = append(errs, err)
-		}
+	// All metrics in the pdata.Metrics will have the same access token because of the BatchPerResourceMetrics.
+	metricToken := s.retrieveAccessToken(rms.At(0))
+
+	var sfxDataPoints []*sfxpb.DataPoint
+
+	for i := 0; i < rms.Len(); i++ {
+		sfxDataPoints = append(sfxDataPoints, s.converter.MetricDataToSignalFxV2(rms.At(i))...)
 	}
 
-	return numDroppedTimeseries, componenterror.CombineErrors(errs)
+	return s.pushMetricsDataForToken(ctx, sfxDataPoints, metricToken)
 }
 
-func (s *sfxDPClient) pushMetricsDataForToken(ctx context.Context,
-	metricsData []consumerdata.MetricsData, accessToken string) (int, error) {
-	numTimeseries := timeseriesCount(metricsData)
-	sfxDataPoints := make([]*sfxpb.DataPoint, 0, numTimeseries)
-	sfxDataPoints, numDroppedTimeseries := s.converter.MetricDataToSignalFxV2(metricsData, sfxDataPoints)
-
+func (s *sfxDPClient) pushMetricsDataForToken(ctx context.Context, sfxDataPoints []*sfxpb.DataPoint, accessToken string) (int, error) {
 	body, compressed, err := s.encodeBody(sfxDataPoints)
 	if err != nil {
-		return numTimeseries, consumererror.Permanent(err)
+		return len(sfxDataPoints), consumererror.Permanent(err)
 	}
 
 	datapointURL := *s.ingestURL
@@ -135,7 +102,7 @@ func (s *sfxDPClient) pushMetricsDataForToken(ctx context.Context,
 	}
 	req, err := http.NewRequestWithContext(ctx, "POST", datapointURL.String(), body)
 	if err != nil {
-		return numTimeseries, consumererror.Permanent(err)
+		return len(sfxDataPoints), consumererror.Permanent(err)
 	}
 
 	for k, v := range s.headers {
@@ -155,31 +122,17 @@ func (s *sfxDPClient) pushMetricsDataForToken(ctx context.Context,
 	// error for metrics is available.
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return numTimeseries, err
+		return len(sfxDataPoints), err
 	}
 
 	io.Copy(ioutil.Discard, resp.Body)
 	resp.Body.Close()
 
-	// SignalFx accepts all 2XX codes.
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		err = fmt.Errorf(
-			"HTTP %d %q",
-			resp.StatusCode,
-			http.StatusText(resp.StatusCode))
-		return numTimeseries, err
+	err = splunk.HandleHTTPCode(resp)
+	if err != nil {
+		return len(sfxDataPoints), err
 	}
-
-	return numDroppedTimeseries, nil
-
-}
-
-func timeseriesCount(metricsData []consumerdata.MetricsData) int {
-	numTimeseries := 0
-	for _, metricData := range metricsData {
-		numTimeseries += exporterhelper.NumTimeSeries(metricData)
-	}
-	return numTimeseries
+	return 0, nil
 }
 
 func buildHeaders(config *Config) map[string]string {
@@ -214,17 +167,15 @@ func (s *sfxDPClient) encodeBody(dps []*sfxpb.DataPoint) (bodyReader io.Reader, 
 	return s.getReader(body)
 }
 
-func (s *sfxDPClient) retrieveAccessToken(md consumerdata.MetricsData) string {
-	if !s.accessTokenPassthrough || md.Resource == nil {
+func (s *sfxDPClient) retrieveAccessToken(md pdata.ResourceMetrics) string {
+	if !s.accessTokenPassthrough {
 		// Nothing to do if token is pass through not configured or resource is nil.
 		return ""
 	}
 
-	accessToken := ""
-	if labels := md.Resource.GetLabels(); labels != nil {
-		accessToken = labels[splunk.SFxAccessTokenLabel]
-		// Drop internally passed access token in all cases
-		delete(labels, splunk.SFxAccessTokenLabel)
+	attrs := md.Resource().Attributes()
+	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok {
+		return accessToken.StringVal()
 	}
-	return accessToken
+	return ""
 }

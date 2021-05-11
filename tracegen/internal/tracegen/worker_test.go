@@ -19,11 +19,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-logr/zapr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/api/global"
-	export "go.opentelemetry.io/otel/sdk/export/trace"
+	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 )
@@ -35,7 +33,7 @@ func TestFixedNumberOfTraces(t *testing.T) {
 	tracerProvider := sdktrace.NewTracerProvider()
 	sp := sdktrace.NewSimpleSpanProcessor(syncer)
 	tracerProvider.RegisterSpanProcessor(sp)
-	global.SetTracerProvider(tracerProvider)
+	otel.SetTracerProvider(tracerProvider)
 
 	cfg := &Config{
 		NumTraces:   1,
@@ -43,7 +41,7 @@ func TestFixedNumberOfTraces(t *testing.T) {
 	}
 
 	// test
-	Run(cfg, zapr.NewLogger(zap.NewNop()))
+	require.NoError(t, Run(cfg, zap.NewNop()))
 
 	// verify
 	assert.Len(t, syncer.spans, 2) // each trace has two spans
@@ -56,7 +54,7 @@ func TestRateOfSpans(t *testing.T) {
 	tracerProvider := sdktrace.NewTracerProvider()
 	sp := sdktrace.NewSimpleSpanProcessor(syncer)
 	tracerProvider.RegisterSpanProcessor(sp)
-	global.SetTracerProvider(tracerProvider)
+	otel.SetTracerProvider(tracerProvider)
 
 	cfg := &Config{
 		Rate:          10,
@@ -68,7 +66,7 @@ func TestRateOfSpans(t *testing.T) {
 	require.Len(t, syncer.spans, 0)
 
 	// test
-	Run(cfg, zapr.NewLogger(zap.NewNop()))
+	require.NoError(t, Run(cfg, zap.NewNop()))
 
 	// verify
 	// the minimum acceptable number of spans for the rate of 10/sec for half a second
@@ -84,7 +82,7 @@ func TestUnthrottled(t *testing.T) {
 	tracerProvider := sdktrace.NewTracerProvider()
 	sp := sdktrace.NewSimpleSpanProcessor(syncer)
 	tracerProvider.RegisterSpanProcessor(sp)
-	global.SetTracerProvider(tracerProvider)
+	otel.SetTracerProvider(tracerProvider)
 
 	cfg := &Config{
 		TotalDuration: 50 * time.Millisecond,
@@ -95,20 +93,20 @@ func TestUnthrottled(t *testing.T) {
 	require.Len(t, syncer.spans, 0)
 
 	// test
-	Run(cfg, zapr.NewLogger(zap.NewNop()))
+	require.NoError(t, Run(cfg, zap.NewNop()))
 
 	// verify
 	// the minimum acceptable number of spans -- the real number should be > 10k, but CI env might be slower
 	assert.True(t, len(syncer.spans) > 100, "there should have been more than 100 spans, had %d", len(syncer.spans))
 }
 
-var _ export.SpanExporter = (*mockSyncer)(nil)
+var _ sdktrace.SpanExporter = (*mockSyncer)(nil)
 
 type mockSyncer struct {
-	spans []*export.SpanData
+	spans []*sdktrace.SpanSnapshot
 }
 
-func (m *mockSyncer) ExportSpans(_ context.Context, spanData []*export.SpanData) error {
+func (m *mockSyncer) ExportSpans(_ context.Context, spanData []*sdktrace.SpanSnapshot) error {
 	m.spans = append(m.spans, spanData...)
 	return nil
 }
@@ -118,5 +116,5 @@ func (m *mockSyncer) Shutdown(context.Context) error {
 }
 
 func (m *mockSyncer) Reset() {
-	m.spans = []*export.SpanData{}
+	m.spans = []*sdktrace.SpanSnapshot{}
 }

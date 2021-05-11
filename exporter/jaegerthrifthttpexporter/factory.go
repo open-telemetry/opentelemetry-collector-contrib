@@ -20,8 +20,9 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 )
 
 const (
@@ -34,42 +35,34 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter))
+		exporterhelper.WithTraces(createTracesExporter))
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		Timeout: defaultHTTPTimeout,
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		Timeout:          defaultHTTPTimeout,
 	}
 }
 
-func createTraceExporter(
+func createTracesExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
-	config configmodels.Exporter,
-) (component.TraceExporter, error) {
+	config config.Exporter,
+) (component.TracesExporter, error) {
 
 	expCfg := config.(*Config)
 	_, err := url.ParseRequestURI(expCfg.URL)
 	if err != nil {
 		// TODO: Improve error message, see #215
-		err = fmt.Errorf(
-			"%q config requires a valid \"url\": %v",
-			expCfg.Name(),
-			err)
+		err = fmt.Errorf("%q config requires a valid \"url\": %v", expCfg.ID().String(), err)
 		return nil, err
 	}
 
 	if expCfg.Timeout <= 0 {
-		err := fmt.Errorf(
-			"%q config requires a positive value for \"timeout\"",
-			expCfg.Name())
+		err := fmt.Errorf("%q config requires a positive value for \"timeout\"", expCfg.ID().String())
 		return nil, err
 	}
 
-	return newTraceExporter(config, expCfg.URL, expCfg.Headers, expCfg.Timeout)
+	return newTracesExporter(config, component.ExporterCreateParams{Logger: zap.NewNop()}, expCfg.URL, expCfg.Headers, expCfg.Timeout)
 }

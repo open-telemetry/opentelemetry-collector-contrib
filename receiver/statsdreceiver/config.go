@@ -15,12 +15,60 @@
 package statsdreceiver
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"fmt"
+	"time"
+
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
 
 // Config defines configuration for StatsD receiver.
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
-	NetAddr                       confignet.NetAddr `mapstructure:",squash"`
+	config.ReceiverSettings `mapstructure:",squash"`
+	NetAddr                 confignet.NetAddr                `mapstructure:",squash"`
+	AggregationInterval     time.Duration                    `mapstructure:"aggregation_interval"`
+	EnableMetricType        bool                             `mapstructure:"enable_metric_type"`
+	TimerHistogramMapping   []protocol.TimerHistogramMapping `mapstructure:"timer_histogram_mapping"`
+}
+
+func (c *Config) validate() error {
+
+	var errors []error
+	supportedStatsdType := []string{"timing", "timer", "histogram"}
+	supportedObserverType := []string{"gauge", "summary"}
+
+	if c.AggregationInterval <= 0 {
+		errors = append(errors, fmt.Errorf("aggregation_interval must be a positive duration"))
+	}
+
+	var TimerHistogramMappingMissingObjectName bool
+	for _, eachMap := range c.TimerHistogramMapping {
+
+		if eachMap.StatsdType == "" {
+			TimerHistogramMappingMissingObjectName = true
+			break
+		}
+
+		if !protocol.Contains(supportedStatsdType, eachMap.StatsdType) {
+			errors = append(errors, fmt.Errorf("statsd_type is not supported: %s", eachMap.StatsdType))
+		}
+
+		if eachMap.ObserverType == "" {
+			TimerHistogramMappingMissingObjectName = true
+			break
+		}
+
+		if !protocol.Contains(supportedObserverType, eachMap.ObserverType) {
+			errors = append(errors, fmt.Errorf("observer_type is not supported: %s", eachMap.ObserverType))
+		}
+	}
+
+	if TimerHistogramMappingMissingObjectName {
+		errors = append(errors, fmt.Errorf("must specify object id for all TimerHistogramMappings"))
+	}
+
+	return consumererror.Combine(errors)
 }

@@ -35,6 +35,8 @@ func TestValidConfig(t *testing.T) {
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
+	os.Unsetenv(awsecscontainermetrics.EndpointEnvKey)
+
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
 		component.ReceiverCreateParams{Logger: zap.NewNop()},
