@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
@@ -28,6 +29,7 @@ import (
 
 func TestDefaultConfig(t *testing.T) {
 	t.Parallel()
+
 	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
@@ -62,8 +64,9 @@ func TestDefaultConfig(t *testing.T) {
 
 func TestConfig(t *testing.T) {
 	t.Parallel()
+
 	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
 	cfg, err := configtest.LoadConfigFile(
