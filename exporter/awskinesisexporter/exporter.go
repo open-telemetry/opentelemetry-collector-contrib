@@ -16,57 +16,87 @@ package awskinesisexporter
 
 import (
 	"context"
+	"errors"
 
-	awskinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 	"go.uber.org/zap"
 )
 
-// Exporter implements an OpenTelemetry trace exporter that exports all spans to AWS Kinesis
-type Exporter struct {
-	awskinesis *awskinesis.Exporter
+// exporter implements an OpenTelemetry exporter that pushes OpenTelemetry data to AWS Kinesis
+type exporter struct {
+	producer   producer
 	logger     *zap.Logger
+	marshaller Marshaller
 }
 
-var _ component.TracesExporter = (*Exporter)(nil)
+// Ensuring that the exporter meets the interface at compile time
+var (
+	_ component.TracesExporter  = (*exporter)(nil)
+	_ component.MetricsExporter = (*exporter)(nil)
+)
+
+// newExporter creates a new exporter with the passed in configurations.
+// It starts the AWS session and setups the relevant connections.
+func newExporter(c *Config, logger *zap.Logger) (*exporter, error) {
+	// Get marshaller based on config
+	marshaller := defaultMarshallers()[c.Encoding]
+	if marshaller == nil {
+		return nil, errors.New("unrecognized encoding")
+	}
+
+	pr, err := newKinesisProducer(c, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	return &exporter{producer: pr, marshaller: marshaller, logger: logger}, nil
+}
 
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
-// with the host after Start() has already returned. If error is returned by
-// Start() then the collector startup will be aborted.
-func (e Exporter) Start(_ context.Context, _ component.Host) error {
+// with the host after start() has already returned. If error is returned by
+// start() then the collector startup will be aborted.
+func (e *exporter) Start(ctx context.Context, _ component.Host) error {
+	if ctx == nil || ctx.Err() != nil {
+		return errors.New("invalid context provided")
+	}
+
+	e.producer.start()
 	return nil
 }
 
 // Shutdown is invoked during exporter shutdown.
-func (e Exporter) Shutdown(context.Context) error {
-	e.awskinesis.Flush()
+func (e *exporter) Shutdown(_ context.Context) error {
+	e.producer.stop()
 	return nil
 }
 
-// ConsumeTraceData receives a span batch and exports it to AWS Kinesis
-func (e Exporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
-	pBatches, err := jaegertranslator.InternalTracesToJaegerProto(td)
+func (e *exporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	if ctx == nil || ctx.Err() != nil {
+		return errors.New("invalid context provided")
+	}
+
+	pBatches, err := e.marshaller.MarshalTraces(td)
 	if err != nil {
-		e.logger.Error("error translating span batch", zap.Error(err))
+		consumererror.Permanent(err)
+	}
+
+	return e.producer.put(pBatches, uuid.New().String())
+}
+
+func (e *exporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+	if ctx == nil || ctx.Err() != nil {
+		return errors.New("invalid context provided")
+	}
+
+	pBatches, err := e.marshaller.MarshalMetrics(md)
+	if err != nil {
+		e.logger.Error("error translating metrics batch", zap.Error(err))
 		return consumererror.Permanent(err)
 	}
-	// TODO: Use a multi error type
-	var exportErr error
-	for _, pBatch := range pBatches {
-		for _, span := range pBatch.GetSpans() {
-			if span.Process == nil {
-				span.Process = pBatch.Process
-			}
-			err := e.awskinesis.ExportSpan(span)
-			if err != nil {
-				e.logger.Error("error exporting span to awskinesis", zap.Error(err))
-				exportErr = err
-			}
-		}
-	}
-	return exportErr
+
+	return e.producer.put(pBatches, uuid.New().String())
 }
