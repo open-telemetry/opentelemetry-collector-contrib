@@ -60,8 +60,12 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.Instru
 	return ilm
 }
 
-func buildSummaryMetric(summaryMetric summaryMetric) pdata.InstrumentationLibraryMetrics {
-	dp := pdata.NewSummaryDataPoint()
+func buildSummaryMetric(summaryMetric summaryMetric, dest pdata.InstrumentationLibraryMetrics) {
+	nm := dest.Metrics().AppendEmpty()
+	nm.SetName(summaryMetric.name)
+	nm.SetDataType(pdata.MetricDataTypeSummary)
+
+	dp := nm.Summary().DataPoints().AppendEmpty()
 	dp.SetCount(uint64(len(summaryMetric.summaryPoints)))
 	sum, _ := stats.Sum(summaryMetric.summaryPoints)
 	dp.SetSum(sum)
@@ -75,15 +79,4 @@ func buildSummaryMetric(summaryMetric summaryMetric) pdata.InstrumentationLibrar
 		eachQuantile.SetValue(eachQuantileValue)
 		dp.QuantileValues().Append(eachQuantile)
 	}
-
-	nm := pdata.NewMetric()
-	nm.SetName(summaryMetric.name)
-	nm.SetDataType(pdata.MetricDataTypeSummary)
-	nm.Summary().DataPoints().Append(dp)
-
-	ilm := pdata.NewInstrumentationLibraryMetrics()
-	ilm.Metrics().Append(nm)
-
-	return ilm
-
 }

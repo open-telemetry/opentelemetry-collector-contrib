@@ -293,7 +293,8 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			accessTokenPassthrough: false,
 			metrics: func() pdata.Metrics {
 				forFirstToken := validMetricsWithToken(true, fromLabels[0])
-				forFirstToken.ResourceMetrics().Append(validMetricsWithToken(true, fromLabels[1]).ResourceMetrics().At(0))
+				forSecondToken := validMetricsWithToken(true, fromLabels[1])
+				forSecondToken.ResourceMetrics().MoveAndAppendTo(forFirstToken.ResourceMetrics())
 				return forFirstToken
 			}(),
 			pushedTokens: []string{fromHeaders},
