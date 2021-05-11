@@ -80,7 +80,7 @@ func (r *metricsReceiver) Start(_ context.Context, host component.Host) error {
 	r.server = r.httpServerSettings.ToServer(nr)
 	go func() {
 		defer r.wg.Done()
-		if err := r.server.Serve(ln); err != nil {
+		if err := r.server.Serve(ln); err != nil && err != http.ErrServerClosed {
 			host.ReportFatalError(err)
 		}
 	}()
