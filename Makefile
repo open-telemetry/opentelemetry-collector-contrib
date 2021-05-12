@@ -7,7 +7,7 @@ PROJECT_ROOT = $(shell pwd)
 ARTIFACTS = ${PROJECT_ROOT}/artifacts
 ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort )
 ALL_SRC := $(shell find . -name '*.go' -type f | sort)
-ADDLICENCESE=addlicense
+ADDLICENSE=addlicense
 
 TOOLS_MOD_DIR := ./internal/tools
 .PHONY: install-tools
@@ -63,10 +63,10 @@ generate:
 
 .PHONY: check-license
 check-license:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) 2>&1`; \
-		if [ "$$ADDLICENCESEOUT" ]; then \
-			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
-			echo "$$ADDLICENCESEOUT\n"; \
+	@ADDLICENSEOUT=`$(ADDLICENSE) -check $(ALL_SRC) 2>&1`; \
+		if [ "$$ADDLICENSEOUT" ]; then \
+			echo "$(ADDLICENSE) FAILED => add License errors:\n"; \
+			echo "$$ADDLICENSEOUT\n"; \
 			echo "Use 'make add-license' to fix this."; \
 			exit 1; \
 		else \
@@ -75,10 +75,10 @@ check-license:
 
 .PHONY: add-license
 add-license:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y "" -c "The OpenTelemetry Authors" $(ALL_SRC) 2>&1`; \
-		if [ "$$ADDLICENCESEOUT" ]; then \
-			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
-			echo "$$ADDLICENCESEOUT\n"; \
+	@ADDLICENSEOUT=`$(ADDLICENSE) -y "" -c "The OpenTelemetry Authors" $(ALL_SRC) 2>&1`; \
+		if [ "$$ADDLICENSEOUT" ]; then \
+			echo "$(ADDLICENSE) FAILED => add License errors:\n"; \
+			echo "$$ADDLICENSEOUT\n"; \
 			exit 1; \
 		else \
 			echo "Add License finished successfully"; \
