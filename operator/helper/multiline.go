@@ -77,6 +77,10 @@ func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		firstLoc := re.FindIndex(data)
 		if firstLoc == nil {
+			// Flush if no more data is expected
+			if len(data) != 0 && atEOF && flushAtEOF {
+				return len(data), data, nil
+			}
 			return 0, nil, nil // read more data and try again.
 		}
 		firstMatchStart := firstLoc[0]
