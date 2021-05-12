@@ -44,11 +44,11 @@ func TestMetricsTransformProcessor(t *testing.T) {
 				},
 				next,
 				p,
-				processorhelper.WithCapabilities(processorCapabilities))
+				processorhelper.WithCapabilities(consumerCapabilities))
 			require.NoError(t, err)
 
-			caps := mtp.GetCapabilities()
-			assert.Equal(t, true, caps.MutatesConsumedData)
+			caps := mtp.Capabilities()
+			assert.Equal(t, true, caps.MutatesData)
 			ctx := context.Background()
 
 			// construct metrics data to feed into the processor

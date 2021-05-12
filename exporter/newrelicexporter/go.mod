@@ -10,13 +10,13 @@ require (
 	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
 	github.com/mattn/go-colorable v0.1.7 // indirect
-	github.com/newrelic/newrelic-telemetry-sdk-go v0.7.0
+	github.com/newrelic/newrelic-telemetry-sdk-go v0.7.1
 	github.com/onsi/ginkgo v1.14.1 // indirect
 	github.com/onsi/gomega v1.10.2 // indirect
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.26.1-0.20210510162429-51281a719256
+	go.opentelemetry.io/collector v0.26.1-0.20210511231347-ffb332b37b52
 	go.uber.org/zap v1.16.0
 	google.golang.org/genproto v0.0.0-20210312152112-fc591d9ea70f
 	google.golang.org/grpc v1.37.0

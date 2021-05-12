@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
@@ -60,6 +61,10 @@ func NewFluentBitFileLogWriter(host string, port int) *FluentBitFileLogWriter {
 	}
 	f.setupParsers()
 	return f
+}
+
+func (f *FluentBitFileLogWriter) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (f *FluentBitFileLogWriter) Start() error {

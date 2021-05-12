@@ -1058,14 +1058,32 @@ func TestSpanNameNormalization(t *testing.T) {
 
 // ensure that the datadog span type gets mapped from span kind
 func TestSpanTypeTranslation(t *testing.T) {
-	spanTypeClient := spanKindToDatadogType(pdata.SpanKindCLIENT)
-	spanTypeServer := spanKindToDatadogType(pdata.SpanKindSERVER)
-	spanTypeCustom := spanKindToDatadogType(pdata.SpanKindUNSPECIFIED)
+	spanTypeClient := inferDatadogType(pdata.SpanKindCLIENT, map[string]string{})
+	spanTypeServer := inferDatadogType(pdata.SpanKindSERVER, map[string]string{})
+	spanTypeCustom := inferDatadogType(pdata.SpanKindUNSPECIFIED, map[string]string{})
+
+	ddTagsDb := map[string]string{
+		"db.system": "postgresql",
+	}
+
+	ddTagsCache := map[string]string{
+		"db.system": "redis",
+	}
+
+	ddTagsCacheAlt := map[string]string{
+		"db.system": "memcached",
+	}
+
+	spanTypeDb := inferDatadogType(pdata.SpanKindCLIENT, ddTagsDb)
+	spanTypeCache := inferDatadogType(pdata.SpanKindCLIENT, ddTagsCache)
+	spanTypeCacheAlt := inferDatadogType(pdata.SpanKindCLIENT, ddTagsCacheAlt)
 
 	assert.Equal(t, "http", spanTypeClient)
 	assert.Equal(t, "web", spanTypeServer)
 	assert.Equal(t, "custom", spanTypeCustom)
-
+	assert.Equal(t, "db", spanTypeDb)
+	assert.Equal(t, "cache", spanTypeCache)
+	assert.Equal(t, "cache", spanTypeCacheAlt)
 }
 
 // ensure that the IL Tags extraction handles nil case

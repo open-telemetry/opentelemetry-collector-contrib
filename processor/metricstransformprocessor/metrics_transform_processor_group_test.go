@@ -173,12 +173,12 @@ func TestMetricsGrouping(t *testing.T) {
 
 			mtp, err := processorhelper.NewMetricsProcessor(&Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
-			}, next, p, processorhelper.WithCapabilities(processorCapabilities))
+			}, next, p, processorhelper.WithCapabilities(consumerCapabilities))
 
 			require.NoError(t, err)
 
-			caps := mtp.GetCapabilities()
-			assert.Equal(t, true, caps.MutatesConsumedData)
+			caps := mtp.Capabilities()
+			assert.Equal(t, true, caps.MutatesData)
 
 			// process
 			cErr := mtp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(test.in))

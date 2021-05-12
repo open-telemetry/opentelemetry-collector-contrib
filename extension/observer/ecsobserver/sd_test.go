@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestNewDiscovery(t *testing.T) {
@@ -32,3 +33,27 @@ func TestNewDiscovery(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+// Util Start
+
+func newMatcher(t *testing.T, cfg MatcherConfig) Matcher {
+	require.NoError(t, cfg.Init())
+	m, err := cfg.NewMatcher(testMatcherOptions())
+	require.NoError(t, err)
+	return m
+}
+
+func newMatcherAndMatch(t *testing.T, cfg MatcherConfig, tasks []*Task) *MatchResult {
+	m := newMatcher(t, cfg)
+	res, err := matchContainers(tasks, m, 0)
+	require.NoError(t, err)
+	return res
+}
+
+func testMatcherOptions() MatcherOptions {
+	return MatcherOptions{
+		Logger: zap.NewExample(),
+	}
+}
+
+// Util End

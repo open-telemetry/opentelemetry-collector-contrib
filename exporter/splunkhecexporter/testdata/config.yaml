@@ -29,7 +29,8 @@ exporters:
       initial_interval: 10s
       max_interval: 60s
       max_elapsed_time: 10m
-
+    splunk_app_name: "OpenTelemetry-Collector Splunk Exporter"
+    splunk_app_version: "v0.0.1"
 service:
   pipelines:
     metrics:

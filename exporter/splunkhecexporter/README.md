@@ -26,6 +26,8 @@ The following configuration options can also be configured:
 - `cert_file` (no default) Path to the TLS cert to use for client connections when TLS client auth is required.
 - `key_file` (no default) Path to the TLS key to use for TLS required connections.
 - `max_content_length_logs` (default: 2097152): Maximum log data size in bytes per HTTP post limited to 2097152 bytes (2 MiB).
+- `splunk_app_name` (default: "OpenTelemetry Collector Contrib") App name is used to track telemetry information for Splunk App's using HEC by App name.
+- `splunk_app_version` (default: Current OpenTelemetry Collector Contrib Build Version): App version is used to track telemetry information for Splunk App's using HEC by App version.
 
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
@@ -62,6 +64,10 @@ exporters:
     cert_file: /certs/HECclient.crt
     # Path to the TLS key to use for TLS required connections. Should only be used if `insecure` is set to false.
     key_file: /certs/HECclient.key
+    # Application name is used to track telemetry information for Splunk App's using HEC by App name.
+    splunk_app_name: "OpenTelemetry-Collector Splunk Exporter"
+    # Application version is used to track telemetry information for Splunk App's using HEC by App version.
+    splunk_app_version: "v0.0.1"
 ```
 
 The full list of settings exposed for this exporter are documented [here](config.go)

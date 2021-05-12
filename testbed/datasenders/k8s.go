@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
@@ -77,6 +78,10 @@ func NewFileLogK8sWriter(config string) *FileLogK8sWriter {
 	}
 
 	return f
+}
+
+func (f *FileLogK8sWriter) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (f *FileLogK8sWriter) Start() error {
