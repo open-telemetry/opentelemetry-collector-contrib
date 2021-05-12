@@ -21,7 +21,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/config/configdefs"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/obfuscate"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
-	"github.com/DataDog/datadog-agent/pkg/trace/exportable/stats"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"

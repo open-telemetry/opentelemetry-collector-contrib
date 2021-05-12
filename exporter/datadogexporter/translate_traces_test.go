@@ -260,7 +260,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	// ensure that span.type is based on otlp span.kind
 	assert.Equal(t, "web", datadogPayload.Traces[0].Spans[0].Type)
 
-	// ensure that span.meta and span.metrics pick up attibutes, instrumentation ibrary and resource attribs
+	// ensure that span.meta and span.metrics pick up attributes, instrumentation ibrary and resource attribs
 	assert.Equal(t, 10, len(datadogPayload.Traces[0].Spans[0].Meta))
 	assert.Equal(t, 0, len(datadogPayload.Traces[0].Spans[0].Metrics))
 
@@ -728,9 +728,9 @@ func TestTracesTranslationServicePeerName(t *testing.T) {
 	// ensure that span.type is based on otlp span.kind
 	assert.Equal(t, "web", datadogPayload.Traces[0].Spans[0].Type)
 
-	// ensure that span.meta and span.metrics pick up attibutes, instrumentation ibrary and resource attribs
+	// ensure that span.meta and span.metrics pick up attributes, instrumentation ibrary and resource attribs
 	assert.Equal(t, 11, len(datadogPayload.Traces[0].Spans[0].Meta))
-	assert.Equal(t, 1, len(datadogPayload.Traces[0].Spans[0].Metrics))
+	assert.Equal(t, 0, len(datadogPayload.Traces[0].Spans[0].Metrics))
 
 	// ensure that span error is based on otlp span status
 	assert.Equal(t, int32(0), datadogPayload.Traces[0].Spans[0].Error)
@@ -803,9 +803,9 @@ func TestTracesTranslationTruncatetag(t *testing.T) {
 	// ensure that span.type is based on otlp span.kind
 	assert.Equal(t, "web", datadogPayload.Traces[0].Spans[0].Type)
 
-	// ensure that span.meta and span.metrics pick up attibutes, instrumentation ibrary and resource attribs
+	// ensure that span.meta and span.metrics pick up attributes, instrumentation ibrary and resource attribs
 	assert.Equal(t, 11, len(datadogPayload.Traces[0].Spans[0].Meta))
-	assert.Equal(t, 1, len(datadogPayload.Traces[0].Spans[0].Metrics))
+	assert.Equal(t, 0, len(datadogPayload.Traces[0].Spans[0].Metrics))
 
 	// ensure that span error is based on otlp span status
 	assert.Equal(t, int32(0), datadogPayload.Traces[0].Spans[0].Error)
