@@ -33,9 +33,9 @@ import (
 )
 
 const (
-	// minBufferSize is the initial size used for buffering
+	// minMaxLogSize is the minimal size which can be used for buffering
 	// TCP input
-	minBufferSize = 64 * 1024
+	minMaxLogSize = 64 * 1024
 
 	// DefaultMaxLogSize is the max buffer sized used
 	// if MaxLogSize is not set
@@ -80,8 +80,8 @@ func (c TCPInputConfig) Build(context operator.BuildContext) ([]operator.Operato
 		c.MaxLogSize = DefaultMaxLogSize
 	}
 
-	if c.MaxLogSize < minBufferSize {
-		return nil, fmt.Errorf("invalid value for parameter 'max_log_size', must be equal to or greater than %d bytes", minBufferSize)
+	if c.MaxLogSize < minMaxLogSize {
+		return nil, fmt.Errorf("invalid value for parameter 'max_log_size', must be equal to or greater than %d bytes", minMaxLogSize)
 	}
 
 	if c.ListenAddress == "" {
@@ -227,10 +227,9 @@ func (t *TCPInput) goHandleMessages(ctx context.Context, conn net.Conn, cancel c
 		defer t.wg.Done()
 		defer cancel()
 
-		// Initial buffer size is 64k
-		buf := make([]byte, 0, 64*1024)
+		buf := make([]byte, 0, t.MaxLogSize)
 		scanner := bufio.NewScanner(conn)
-		scanner.Buffer(buf, t.MaxLogSize*1024)
+		scanner.Buffer(buf, t.MaxLogSize)
 
 		scanner.Split(t.splitFunc)
 

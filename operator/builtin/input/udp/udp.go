@@ -15,6 +15,8 @@
 package udp
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"net"
@@ -27,6 +29,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 )
 
+const (
+	// Maximum UDP packet size
+	MaxUDPSize = 64 * 1024
+)
+
 func init() {
 	operator.Register("udp_input", func() operator.Builder { return NewUDPInputConfig("") })
 }
@@ -35,6 +42,11 @@ func init() {
 func NewUDPInputConfig(operatorID string) *UDPInputConfig {
 	return &UDPInputConfig{
 		InputConfig: helper.NewInputConfig(operatorID, "udp_input"),
+		Encoding:    helper.NewEncodingConfig(),
+		Multiline: helper.MultilineConfig{
+			LineStartPattern: "",
+			LineEndPattern:   ".^", // Use never matching regex to not split data by default
+		},
 	}
 }
 
@@ -42,8 +54,10 @@ func NewUDPInputConfig(operatorID string) *UDPInputConfig {
 type UDPInputConfig struct {
 	helper.InputConfig `yaml:",inline"`
 
-	ListenAddress string `json:"listen_address,omitempty" yaml:"listen_address,omitempty"`
-	AddAttributes bool   `json:"add_attributes,omitempty" yaml:"add_attributes,omitempty"`
+	ListenAddress string                 `mapstructure:"listen_address,omitempty"        json:"listen_address,omitempty"       yaml:"listen_address,omitempty"`
+	AddAttributes bool                   `mapstructure:"add_attributes,omitempty"        json:"add_attributes,omitempty"       yaml:"add_attributes,omitempty"`
+	Encoding      helper.EncodingConfig  `mapstructure:",squash,omitempty"               json:",inline,omitempty"              yaml:",inline,omitempty"`
+	Multiline     helper.MultilineConfig `mapstructure:"multiline,omitempty"             json:"multiline,omitempty"            yaml:"multiline,omitempty"`
 }
 
 // Build will build a udp input operator.
@@ -62,11 +76,23 @@ func (c UDPInputConfig) Build(context operator.BuildContext) ([]operator.Operato
 		return nil, fmt.Errorf("failed to resolve listen_address: %s", err)
 	}
 
+	encoding, err := c.Encoding.Build(context)
+	if err != nil {
+		return nil, err
+	}
+
+	splitFunc, err := c.Multiline.Build(context, encoding.Encoding, true)
+	if err != nil {
+		return nil, err
+	}
+
 	udpInput := &UDPInput{
 		InputOperator: inputOperator,
 		address:       address,
-		buffer:        make([]byte, 8192),
+		buffer:        make([]byte, MaxUDPSize),
 		addAttributes: c.AddAttributes,
+		encoding:      encoding,
+		splitFunc:     splitFunc,
 	}
 	return []operator.Operator{udpInput}, nil
 }
@@ -81,6 +107,9 @@ type UDPInput struct {
 	connection net.PacketConn
 	cancel     context.CancelFunc
 	wg         sync.WaitGroup
+
+	encoding  helper.Encoding
+	splitFunc bufio.SplitFunc
 }
 
 // Start will start listening for messages on a socket.
@@ -117,42 +146,59 @@ func (u *UDPInput) goHandleMessages(ctx context.Context) {
 				break
 			}
 
-			entry, err := u.NewEntry(message)
-			if err != nil {
-				u.Errorw("Failed to create entry", zap.Error(err))
-				continue
-			}
+			buf := make([]byte, 0, MaxUDPSize)
+			scanner := bufio.NewScanner(bytes.NewReader(message))
+			scanner.Buffer(buf, MaxUDPSize)
 
-			if u.addAttributes {
-				entry.AddAttribute("net.transport", "IP.UDP")
-				if addr, ok := u.connection.LocalAddr().(*net.UDPAddr); ok {
-					entry.AddAttribute("net.host.ip", addr.IP.String())
-					entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
+			scanner.Split(u.splitFunc)
+
+			for scanner.Scan() {
+				decoded, err := u.encoding.Decode(scanner.Bytes())
+				if err != nil {
+					u.Errorw("Failed to decode data", zap.Error(err))
+					continue
 				}
 
-				if addr, ok := remoteAddr.(*net.UDPAddr); ok {
-					entry.AddAttribute("net.peer.ip", addr.IP.String())
-					entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
+				entry, err := u.NewEntry(decoded)
+				if err != nil {
+					u.Errorw("Failed to create entry", zap.Error(err))
+					continue
 				}
-			}
 
-			u.Write(ctx, entry)
+				if u.addAttributes {
+					entry.AddAttribute("net.transport", "IP.UDP")
+					if addr, ok := u.connection.LocalAddr().(*net.UDPAddr); ok {
+						entry.AddAttribute("net.host.ip", addr.IP.String())
+						entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
+					}
+
+					if addr, ok := remoteAddr.(*net.UDPAddr); ok {
+						entry.AddAttribute("net.peer.ip", addr.IP.String())
+						entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
+					}
+				}
+
+				u.Write(ctx, entry)
+			}
+			if err := scanner.Err(); err != nil {
+				u.Errorw("Scanner error", zap.Error(err))
+			}
 		}
 	}()
 }
 
 // readMessage will read log messages from the connection.
-func (u *UDPInput) readMessage() (string, net.Addr, error) {
+func (u *UDPInput) readMessage() ([]byte, net.Addr, error) {
 	n, addr, err := u.connection.ReadFrom(u.buffer)
 	if err != nil {
-		return "", nil, err
+		return nil, nil, err
 	}
 
 	// Remove trailing characters and NULs
 	for ; (n > 0) && (u.buffer[n-1] < 32); n-- {
 	}
 
-	return string(u.buffer[:n]), addr, nil
+	return u.buffer[:n], addr, nil
 }
 
 // Stop will stop listening for udp messages.
