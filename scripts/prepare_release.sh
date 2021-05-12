@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/bash
 #
 # This script:
 #   1. parses the version number from the branch name
@@ -11,30 +11,22 @@
 #      triggering unnecessary pull requests
 #
 
-VERSION=`echo $1 | awk -F "/" '{print $NF}'`
+VERSION=$(./scripts/eachdist.py version --mode stable)-$(./scripts/eachdist.py version --mode prerelease)
 echo "Using version ${VERSION}"
 
-# check the version matches expected versioning e.g
-# 0.6, 0.6b, 0.6b0, 0.6.0
-if [[ ! "${VERSION}" =~ ^([0-9])(\.*[0-9]{1,5}[a-b]*){1,3}$ ]]; then
-    echo "Version number invalid: $VERSION"
-    exit 1
-fi
 
 # create the release branch
 git checkout -b release/${VERSION}
 git push origin release/${VERSION}
 
-# create a temporary branch to create a PR for updated version and changelogs
-git checkout -b release/${VERSION}-auto
-./scripts/eachdist.py release --version ${VERSION}
+./scripts/eachdist.py update_versions --versions stable,prerelease
 rc=$?
 if [ $rc != 0 ]; then
     echo "::set-output name=version_updated::0"
     exit 0
 fi
 
-git add **/version.py **/setup.cfg **/CHANGELOG.md
+git add .
 
 git commit -m "updating changelogs and version to ${VERSION}"
 

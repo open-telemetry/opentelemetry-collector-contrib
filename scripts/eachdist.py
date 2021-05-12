@@ -229,10 +229,11 @@ def parse_args(args=None):
     )
 
     releaseparser = subparsers.add_parser(
-        "release", help="Prepares release, used by maintainers and CI",
+        "update_versions",
+        help="Updates version numbers, used by maintainers and CI",
     )
     releaseparser.set_defaults(func=release_args)
-    releaseparser.add_argument("--version", required=True)
+    releaseparser.add_argument("--versions", required=True)
     releaseparser.add_argument(
         "releaseargs", nargs=argparse.REMAINDER, help=extraargs_help("pytest")
     )
@@ -245,6 +246,20 @@ def parse_args(args=None):
         "--path",
         required=False,
         help="Format only this path instead of entire repository",
+    )
+
+    versionparser = subparsers.add_parser(
+        "version", help="Get the version for a release",
+    )
+    versionparser.set_defaults(func=version_args)
+    versionparser.add_argument(
+        "--mode",
+        "-m",
+        default="DEFAULT",
+        help=cleandoc(
+            """Section of config file to use for target selection configuration.
+        See description of exec for available options."""
+        ),
     )
 
     return parser.parse_args(args)
@@ -353,7 +368,7 @@ def runsubprocess(dry_run, params, *args, **kwargs):
 
     check = kwargs.pop("check")  # Enforce specifying check
 
-    print(">>>", cmdstr, file=sys.stderr)
+    print(">>>", cmdstr, file=sys.stderr, flush=True)
 
     # This is a workaround for subprocess.run(['python']) leaving the virtualenv on Win32.
     # The cause for this is that when running the python.exe in a virtualenv,
@@ -366,7 +381,7 @@ def runsubprocess(dry_run, params, *args, **kwargs):
     # Only this would find the "correct" python.exe.
 
     params = list(params)
-    executable = shutil.which(params[0])  # On Win32, pytho
+    executable = shutil.which(params[0])
     if executable:
         params[0] = executable
     try:
@@ -532,13 +547,13 @@ def update_changelog(path, version, new_entry):
     try:
         with open(path) as changelog:
             text = changelog.read()
-            if "## Version {}".format(version) in text:
+            if "## [{}]".format(version) in text:
                 raise AttributeError(
                     "{} already contans version {}".format(path, version)
                 )
         with open(path) as changelog:
             for line in changelog:
-                if line.startswith("## Unreleased"):
+                if line.startswith("## [Unreleased]"):
                     unreleased_changes = False
                 elif line.startswith("## "):
                     break
@@ -551,26 +566,26 @@ def update_changelog(path, version, new_entry):
 
     if unreleased_changes:
         print("updating: {}".format(path))
-        text = re.sub("## Unreleased", new_entry, text)
+        text = re.sub(r"## \[Unreleased\].*", new_entry, text)
         with open(path, "w") as changelog:
             changelog.write(text)
 
 
-def update_changelogs(targets, version):
-    print("updating CHANGELOG")
+def update_changelogs(version):
     today = datetime.now().strftime("%Y-%m-%d")
-    new_entry = "## Unreleased\n\n## Version {}\n\nReleased {}".format(
-        version, today
+    new_entry = """## [Unreleased](https://github.com/open-telemetry/opentelemetry-python/compare/v{version}...HEAD)
+
+## [{version}](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v{version}) - {today}
+
+""".format(
+        version=version, today=today
     )
     errors = False
-    for target in targets:
-        try:
-            update_changelog(
-                "{}/CHANGELOG.md".format(target), version, new_entry
-            )
-        except Exception as err:  # pylint: disable=broad-except
-            print(str(err))
-            errors = True
+    try:
+        update_changelog("./CHANGELOG.md", version, new_entry)
+    except Exception as err:  # pylint: disable=broad-except
+        print(str(err))
+        errors = True
 
     if errors:
         sys.exit(1)
@@ -583,29 +598,47 @@ def find(name, path):
     return None
 
 
-def update_version_files(targets, version):
+def filter_packages(targets, packages):
+    if not packages:
+        return targets
+    filtered_packages = []
+    for target in targets:
+        for pkg in packages:
+            if str(pkg) in str(target):
+                filtered_packages.append(target)
+                break
+    return filtered_packages
+
+
+def update_version_files(targets, version, packages):
     print("updating version.py files")
+    targets = filter_packages(targets, packages)
     update_files(
         targets,
-        version,
         "version.py",
         "__version__ .*",
         '__version__ = "{}"'.format(version),
     )
 
 
-def update_dependencies(targets, version):
+def update_dependencies(targets, version, packages):
     print("updating dependencies")
-    update_files(
-        targets,
-        version,
-        "setup.cfg",
-        r"(opentelemetry-.*)==(.*)",
-        r"\1== " + version,
-    )
+    if "all" in packages:
+        packages.extend(targets)
+    for pkg in packages:
+        print(pkg)
+        package_name = str(pkg).split("/")[-1]
+        print(package_name)
+
+        update_files(
+            targets,
+            "setup.cfg",
+            r"({}.*)==(.*)".format(package_name),
+            r"\1== " + version,
+        )
 
 
-def update_files(targets, version, filename, search, replace):
+def update_files(targets, filename, search, replace):
     errors = False
     for target in targets:
         curr_file = find(filename, target)
@@ -616,9 +649,8 @@ def update_files(targets, version, filename, search, replace):
         with open(curr_file) as _file:
             text = _file.read()
 
-        if version in text:
-            print("{} already contans version {}".format(curr_file, version))
-            errors = True
+        if replace in text:
+            print("{} already contains {}".format(curr_file, replace))
             continue
 
         with open(curr_file, "w") as _file:
@@ -633,10 +665,22 @@ def release_args(args):
 
     rootpath = find_projectroot()
     targets = list(find_targets_unordered(rootpath))
-    version = args.version
-    update_dependencies(targets, version)
-    update_version_files(targets, version)
-    update_changelogs(targets, version)
+    cfg = ConfigParser()
+    cfg.read(str(find_projectroot() / "eachdist.ini"))
+    versions = args.versions
+    updated_versions = []
+    for group in versions.split(","):
+        mcfg = cfg[group]
+        version = mcfg["version"]
+        updated_versions.append(version)
+        packages = None
+        if "packages" in mcfg:
+            packages = mcfg["packages"].split()
+        print("update {} packages to {}".format(group, version))
+        update_dependencies(targets, version, packages)
+        update_version_files(targets, version, packages)
+
+    update_changelogs("-".join(updated_versions))
 
 
 def test_args(args):
@@ -668,6 +712,12 @@ def format_args(args):
         cwd=format_dir,
         check=True,
     )
+
+
+def version_args(args):
+    cfg = ConfigParser()
+    cfg.read(str(find_projectroot() / "eachdist.ini"))
+    print(cfg[args.mode]["version"])
 
 
 def main():
