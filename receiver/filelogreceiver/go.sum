@@ -800,10 +800,8 @@ github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7J
 github.com/onsi/gomega v1.9.0 h1:R1uwffexN6Pr340GtYRIdZmAiN4J+iw6WG4wog1DUXg=
 github.com/onsi/gomega v1.9.0/go.mod h1:Ho0h+IUsWyvy1OpqCwxlQ/21gkhVunqlU8fDGcoTdcA=
 github.com/op/go-logging v0.0.0-20160315200505-970db520ece7/go.mod h1:HzydrMdWErDVzsI23lYNej1Htcns9BCg93Dk0bBINWk=
-github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.24.1-0.20210416221238-c731ffe72642 h1:5Sjm4DuIvLD3Q8vEm3pH9kLOnCds02spFkSHxCiTgzM=
-github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.24.1-0.20210416221238-c731ffe72642/go.mod h1:T65QCSfBidWoiJGSY7/pm69mIoE78KYyIRLcxfkKqGs=
-github.com/open-telemetry/opentelemetry-log-collection v0.17.1-0.20210409145101-a881ed8b0592 h1:F2r5ZIeScW8c7MBITkh7VeZI20rLomFyj6Co5ls8+SI=
-github.com/open-telemetry/opentelemetry-log-collection v0.17.1-0.20210409145101-a881ed8b0592/go.mod h1:il86Oyz8LT0tM8akQogbFWCN8HYusmX/ZXpS3a8hKx8=
+github.com/open-telemetry/opentelemetry-log-collection v0.18.0 h1:jBoA9FTaaTKbQMp8ysvoXGdn13moHsdz9PQx9Nn0Vic=
+github.com/open-telemetry/opentelemetry-log-collection v0.18.0/go.mod h1:DnIJ0WpDuMOlY/jf8ZYGv1NQCtcy5udL6DOEdnca8Fo=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.0.1 h1:JMemWkRwHx4Zj+fVxWoMCFm/8sYGGrUVojFA6h/TRcI=
