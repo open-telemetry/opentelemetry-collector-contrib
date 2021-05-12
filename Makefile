@@ -26,6 +26,7 @@ INTEGRATION_TEST_MODULES := \
 	receiver/redisreceiver \
 	receiver/zookeeperreceiver \
 	receiver/kafkametricsreceiver \
+	receiver/nginxreceiver \
 	internal/common
 
 .DEFAULT_GOAL := all
