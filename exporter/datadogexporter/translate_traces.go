@@ -64,7 +64,7 @@ const (
 )
 
 // converts Traces into an array of datadog trace payloads grouped by env
-func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *config.Config, blk *Denylister) ([]*pb.TracePayload, []datadog.Metric) {
+func convertToDatadogTd(td pdata.Traces, cfg *config.Config, blk *Denylister) ([]*pb.TracePayload, []datadog.Metric) {
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
 	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
@@ -84,7 +84,7 @@ func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *co
 			hostname = resHostname
 		}
 
-		payload := resourceSpansToDatadogSpans(rs, calculator, hostname, cfg, blk)
+		payload := resourceSpansToDatadogSpans(rs, hostname, cfg, blk)
 		traces = append(traces, &payload)
 
 		ms := metrics.DefaultMetrics("traces", uint64(pushTime))
@@ -122,7 +122,7 @@ func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePa
 }
 
 // converts a Trace's resource spans into a trace payload
-func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCalculator, hostname string, cfg *config.Config, blk *Denylister) pb.TracePayload {
+func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *config.Config, blk *Denylister) pb.TracePayload {
 	// get env tag
 	env := utils.NormalizeTag(cfg.Env)
 
@@ -202,10 +202,6 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 		// TODO: allow users to configure specific spans to be marked as an analyzed spans for app analytics
 		top := getAnalyzedSpans(apiTrace.Spans)
 
-		// calculates span metrics for representing direction and timing among it's different services for display in
-		// service overview graphs
-		// see: https://github.com/DataDog/datadog-agent/blob/f69a7d35330c563e9cad4c5b8865a357a87cd0dc/pkg/trace/stats/sublayers.go#L204
-		computeSublayerMetrics(calculator, apiTrace.Spans)
 		payload.Transactions = append(payload.Transactions, top...)
 		payload.Traces = append(payload.Traces, apiTrace)
 	}
