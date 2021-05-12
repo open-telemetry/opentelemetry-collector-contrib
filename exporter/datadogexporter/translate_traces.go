@@ -392,7 +392,7 @@ func buildDatadogContainerTags(spanTags map[string]string) string {
 func inferDatadogType(kind pdata.SpanKind, datadogTags map[string]string) string {
 	switch kind {
 	case pdata.SpanKindCLIENT:
-		if dbSysOtlp, okDbSysOtlp := datadogTags[conventions.AttributeDBSystem]; okDbSysOtlp {
+		if dbSysOtlp, ok := datadogTags[conventions.AttributeDBSystem]; ok {
 			if dbSysOtlp == kindRedis || dbSysOtlp == kindMemcached {
 				return kindCache
 			}

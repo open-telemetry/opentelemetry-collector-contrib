@@ -1063,22 +1063,27 @@ func TestSpanTypeTranslation(t *testing.T) {
 	spanTypeCustom := inferDatadogType(pdata.SpanKindUNSPECIFIED, map[string]string{})
 
 	ddTagsDb := map[string]string{
-		"db.system": "postgres",
+		"db.system": "postgresql",
 	}
 
 	ddTagsCache := map[string]string{
 		"db.system": "redis",
 	}
 
+	ddTagsCacheAlt := map[string]string{
+		"db.system": "memcached",
+	}
+
 	spanTypeDb := inferDatadogType(pdata.SpanKindCLIENT, ddTagsDb)
 	spanTypeCache := inferDatadogType(pdata.SpanKindCLIENT, ddTagsCache)
+	spanTypeCacheAlt := inferDatadogType(pdata.SpanKindCLIENT, ddTagsCacheAlt)
 
 	assert.Equal(t, "http", spanTypeClient)
 	assert.Equal(t, "web", spanTypeServer)
 	assert.Equal(t, "custom", spanTypeCustom)
 	assert.Equal(t, "db", spanTypeDb)
 	assert.Equal(t, "cache", spanTypeCache)
-
+	assert.Equal(t, "cache", spanTypeCacheAlt)
 }
 
 // ensure that the IL Tags extraction handles nil case
