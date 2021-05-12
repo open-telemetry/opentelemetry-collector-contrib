@@ -34,6 +34,11 @@ func NewBatchPerResourceTraces(attrKey string, next consumer.Traces) consumer.Tr
 	}
 }
 
+// Capabilities implements the consumer interface.
+func (bt batchTraces) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
 func (bt *batchTraces) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	rss := td.ResourceSpans()
 	lenRss := rss.Len()
@@ -81,6 +86,11 @@ func NewBatchPerResourceMetrics(attrKey string, next consumer.Metrics) consumer.
 	}
 }
 
+// Capabilities implements the consumer interface.
+func (bt batchMetrics) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
 func (bt *batchMetrics) ConsumeMetrics(ctx context.Context, td pdata.Metrics) error {
 	rms := td.ResourceMetrics()
 	lenRms := rms.Len()
@@ -126,6 +136,11 @@ func NewBatchPerResourceLogs(attrKey string, next consumer.Logs) consumer.Logs {
 		attrKey: attrKey,
 		next:    next,
 	}
+}
+
+// Capabilities implements the consumer interface.
+func (bt batchLogs) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
 }
 
 func (bt *batchLogs) ConsumeLogs(ctx context.Context, td pdata.Logs) error {

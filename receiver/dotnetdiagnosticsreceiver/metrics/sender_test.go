@@ -15,12 +15,11 @@
 package metrics
 
 import (
-	"context"
 	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -28,13 +27,7 @@ import (
 
 func TestSendError(t *testing.T) {
 	observedLogger, logs := observer.New(zapcore.WarnLevel)
-	s := NewSender(errConsumer{}, zap.New(observedLogger))
+	s := NewSender(consumertest.NewErr(errors.New("")), zap.New(observedLogger))
 	s.Send(nil)
 	require.Equal(t, 1, logs.Len())
-}
-
-type errConsumer struct{}
-
-func (errConsumer) ConsumeMetrics(context.Context, pdata.Metrics) error {
-	return errors.New("")
 }

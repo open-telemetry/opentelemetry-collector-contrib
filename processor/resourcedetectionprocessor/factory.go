@@ -43,7 +43,7 @@ const (
 	typeStr = "resourcedetection"
 )
 
-var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: true}
+var consumerCapabilities = consumer.Capabilities{MutatesData: true}
 
 type factory struct {
 	resourceProviderFactory *internal.ResourceProviderFactory
@@ -111,7 +111,7 @@ func (f *factory) createTracesProcessor(
 		cfg,
 		nextConsumer,
 		rdp,
-		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(rdp.Start))
 }
 
@@ -130,7 +130,7 @@ func (f *factory) createMetricsProcessor(
 		cfg,
 		nextConsumer,
 		rdp,
-		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(rdp.Start))
 }
 
@@ -149,7 +149,7 @@ func (f *factory) createLogsProcessor(
 		cfg,
 		nextConsumer,
 		rdp,
-		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(rdp.Start))
 }
 

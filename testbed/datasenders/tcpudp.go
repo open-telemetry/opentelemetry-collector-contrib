@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
@@ -58,6 +59,10 @@ func (f *TCPUDPWriter) GetEndpoint() net.Addr {
 		addr, _ = net.ResolveTCPAddr(f.network, fmt.Sprintf("%s:%d", f.Host, f.Port))
 	}
 	return addr
+}
+
+func (f *TCPUDPWriter) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (f *TCPUDPWriter) Start() (err error) {

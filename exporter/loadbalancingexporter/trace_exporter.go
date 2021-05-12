@@ -25,6 +25,7 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -76,6 +77,10 @@ func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
 	oCfg.ExporterSettings = config.NewExporterSettings(config.NewID("otlp"))
 	oCfg.Endpoint = endpoint
 	return oCfg
+}
+
+func (e *traceExporterImp) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (e *traceExporterImp) Start(ctx context.Context, host component.Host) error {

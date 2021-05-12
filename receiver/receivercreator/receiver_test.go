@@ -30,8 +30,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	zapObserver "go.uber.org/zap/zaptest/observer"
@@ -44,19 +43,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
-}
-
-type mockMetricsConsumer struct {
-	Metrics      []pdata.Metrics
-	TotalMetrics int
-}
-
-var _ consumer.Metrics = &mockMetricsConsumer{}
-
-func (p *mockMetricsConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	p.Metrics = append(p.Metrics, md)
-	p.TotalMetrics += md.MetricCount()
-	return nil
 }
 
 type mockObserver struct {
@@ -86,7 +72,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	dynCfg := cfg.Receivers[config.NewIDWithName(typeStr, "1")]
 	factory := NewFactory()
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	mockConsumer := &mockMetricsConsumer{}
+	mockConsumer := new(consumertest.MetricsSink)
 	rcvr, err := factory.CreateMetricsReceiver(context.Background(), params, dynCfg, mockConsumer)
 	require.NoError(t, err)
 	dyn := rcvr.(*receiverCreator)
@@ -139,7 +125,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	}
 
 	// TODO: Will have to rework once receivers are started asynchronously to Start().
-	assert.Len(t, mockConsumer.Metrics, 1)
+	assert.Len(t, mockConsumer.AllMetrics(), 1)
 }
 
 func TestLoggingHost(t *testing.T) {

@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
@@ -145,8 +146,8 @@ func (e *processorImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error
 	return e.pushDataToExporters(ctx, td, e.traceExporters[value])
 }
 
-func (e *processorImp) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: false}
+func (e *processorImp) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (e *processorImp) pushDataToExporters(ctx context.Context, td pdata.Traces, exporters []component.TracesExporter) error {

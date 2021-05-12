@@ -62,6 +62,10 @@ func newResourceEnhancer(
 	}, nil
 }
 
+func (r *resourceEnhancer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
 func (r *resourceEnhancer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
