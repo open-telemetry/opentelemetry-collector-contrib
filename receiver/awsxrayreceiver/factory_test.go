@@ -26,22 +26,11 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
-
-type mockMetricsConsumer struct {
-}
-
-var _ (consumer.Metrics) = (*mockMetricsConsumer)(nil)
-
-func (m *mockMetricsConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	return nil
-}
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
@@ -82,7 +71,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 			Logger: zap.NewNop(),
 		},
 		factory.CreateDefaultConfig().(*Config),
-		&mockMetricsConsumer{},
+		consumertest.NewNop(),
 	)
 	assert.NotNil(t, err, "a trace receiver factory should not create a metric receiver")
 	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)

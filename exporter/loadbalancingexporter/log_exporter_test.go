@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
@@ -520,6 +521,10 @@ func simpleLogWithoutID() pdata.Logs {
 type mockLogsExporter struct {
 	component.Component
 	ConsumeLogsFn func(ctx context.Context, ld pdata.Logs) error
+}
+
+func (e *mockLogsExporter) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (e *mockLogsExporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {

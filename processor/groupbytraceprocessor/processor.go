@@ -89,8 +89,8 @@ func (sp *groupByTraceProcessor) ConsumeTraces(_ context.Context, td pdata.Trace
 	return consumererror.Combine(errors)
 }
 
-func (sp *groupByTraceProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: true}
+func (sp *groupByTraceProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
 }
 
 // Start is invoked during service startup.

@@ -24,7 +24,6 @@ import (
 	"path"
 	"runtime"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -36,7 +35,6 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
@@ -187,8 +185,7 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 	receiverID := config.MustIDFromString("TestSegmentsConsumerErrorsOut")
 
 	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverID,
-		&mockConsumer{consumeErr: errors.New("can't consume traces")},
-		true)
+		consumertest.NewErr(errors.New("can't consume traces")), true)
 	defer rcvr.Shutdown(context.Background())
 
 	content, err := ioutil.ReadFile(path.Join("../../internal/aws/xray", "testdata", "serverSample.txt"))
@@ -247,22 +244,6 @@ func TestBothPollerAndProxyCloseError(t *testing.T) {
 		fmt.Sprintf("failed to close proxy: %s: failed to close poller: %s",
 			mProxy.closeErr.Error(), mPoller.closeErr.Error()),
 		"expected error")
-}
-
-type mockConsumer struct {
-	mu         sync.Mutex
-	consumeErr error
-	traces     pdata.Traces
-}
-
-func (m *mockConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.consumeErr != nil {
-		return m.consumeErr
-	}
-	m.traces = td
-	return nil
 }
 
 type mockPoller struct {

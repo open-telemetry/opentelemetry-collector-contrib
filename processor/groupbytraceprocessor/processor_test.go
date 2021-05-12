@@ -155,11 +155,11 @@ func TestProcessorCapabilities(t *testing.T) {
 
 	// test
 	p := newGroupByTraceProcessor(logger, st, next, config)
-	caps := p.GetCapabilities()
+	caps := p.Capabilities()
 
 	// verify
 	assert.NotNil(t, p)
-	assert.Equal(t, true, caps.MutatesConsumedData)
+	assert.Equal(t, true, caps.MutatesData)
 }
 
 func TestProcessBatchDoesntFail(t *testing.T) {
@@ -685,8 +685,8 @@ func (m *mockProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) erro
 	}
 	return nil
 }
-func (m *mockProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: true}
+func (m *mockProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
 }
 func (m *mockProcessor) Shutdown(context.Context) error {
 	return nil
@@ -742,6 +742,9 @@ type blockingConsumer struct {
 
 var _ consumer.Traces = (*blockingConsumer)(nil)
 
+func (b *blockingConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
 func (b *blockingConsumer) ConsumeTraces(context.Context, pdata.Traces) error {
 	<-b.blockCh
 	return nil

@@ -43,9 +43,13 @@ const (
 	currentILNameTag    string = "otel.library.name"
 	errorCode           int32  = 1
 	okCode              int32  = 0
-	httpKind            string = "http"
-	webKind             string = "web"
-	customKind          string = "custom"
+	kindDb              string = "db"
+	kindHTTP            string = "http"
+	kindWeb             string = "web"
+	kindCustom          string = "custom"
+	kindCache           string = "cache"
+	kindMemcached       string = "memcached"
+	kindRedis           string = "redis"
 	grpcPath            string = "grpc.path"
 	eventsTag           string = "events"
 	eventNameTag        string = "name"
@@ -282,7 +286,7 @@ func spanToDatadogSpan(s pdata.Span,
 		Duration: duration,
 		Metrics:  map[string]float64{},
 		Meta:     make(map[string]string, len(tags)),
-		Type:     spanKindToDatadogType(s.Kind()),
+		Type:     inferDatadogType(s.Kind(), tags),
 		Error:    isSpanError,
 	}
 
@@ -376,16 +380,31 @@ func buildDatadogContainerTags(spanTags map[string]string) string {
 	return strings.TrimSuffix(b.String(), ",")
 }
 
-// TODO: some clients send SPAN_KIND_UNSPECIFIED for valid kinds
-// we also need a more formal mapping for cache and db types
-func spanKindToDatadogType(kind pdata.SpanKind) string {
+// inferDatadogTypes returns a string for the datadog type based on metadata
+// in the otel span. DB semantic conventions state that what datadog
+// would mark as a db or cache span type, otel marks as a CLIENT span kind, but
+// has a required attribute 'db.system'. This is the only required attribute for
+// db or cache spans, so we can reliably use it as a heuristic for infering the
+// difference between client, db, and cache span types. The only "cache" spans
+// in datadog currently are redis and memcached, so those are the only two db.system
+// attribute values we have to check to determine whether it's a db or cache span
+// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/database.md#semantic-conventions-for-database-client-calls
+func inferDatadogType(kind pdata.SpanKind, datadogTags map[string]string) string {
 	switch kind {
 	case pdata.SpanKindCLIENT:
-		return httpKind
+		if dbSysOtlp, ok := datadogTags[conventions.AttributeDBSystem]; ok {
+			if dbSysOtlp == kindRedis || dbSysOtlp == kindMemcached {
+				return kindCache
+			}
+
+			return kindDb
+		}
+
+		return kindHTTP
 	case pdata.SpanKindSERVER:
-		return webKind
+		return kindWeb
 	default:
-		return customKind
+		return kindCustom
 	}
 }
 

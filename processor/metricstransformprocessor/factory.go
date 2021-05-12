@@ -31,7 +31,7 @@ const (
 	typeStr = "metricstransform"
 )
 
-var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: true}
+var consumerCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Metrics Transform processor.
 func NewFactory() component.ProcessorFactory {
@@ -64,7 +64,7 @@ func createMetricsProcessor(
 		cfg,
 		nextConsumer,
 		metricsProcessor,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(consumerCapabilities))
 }
 
 // validateConfiguration validates the input configuration has all of the required fields for the processor

@@ -25,6 +25,7 @@ import (
 
 	"github.com/fluent/fluent-logger-golang/fluent"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
@@ -70,6 +71,10 @@ func NewFluentLogsForwarder(t *testing.T, port int) *FluentLogsForwarder {
 		f.fluentLogger = logger
 	}
 	return f
+}
+
+func (f *FluentLogsForwarder) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (f *FluentLogsForwarder) Start() error {

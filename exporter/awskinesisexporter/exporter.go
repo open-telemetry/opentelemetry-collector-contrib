@@ -19,6 +19,7 @@ import (
 
 	awskinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
@@ -41,13 +42,18 @@ func (e Exporter) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
+// Capabilities implements the consumer interface.
+func (e Exporter) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
 // Shutdown is invoked during exporter shutdown.
 func (e Exporter) Shutdown(context.Context) error {
 	e.awskinesis.Flush()
 	return nil
 }
 
-// ConsumeTraceData receives a span batch and exports it to AWS Kinesis
+// ConsumeTraces receives a span batch and exports it to AWS Kinesis
 func (e Exporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	pBatches, err := jaegertranslator.InternalTracesToJaegerProto(td)
 	if err != nil {

@@ -5,7 +5,7 @@ go 1.15
 require (
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.26.1-0.20210510162429-51281a719256
+	go.opentelemetry.io/collector v0.26.1-0.20210511231347-ffb332b37b52
 	go.uber.org/zap v1.16.0
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )

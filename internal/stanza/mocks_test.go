@@ -26,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/noop"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -77,6 +78,10 @@ type mockLogsConsumer struct {
 	received int32
 }
 
+func (m *mockLogsConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
 func (m *mockLogsConsumer) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	atomic.AddInt32(&m.received, 1)
 	return nil
@@ -89,6 +94,10 @@ func (m *mockLogsConsumer) Received() int {
 
 type mockLogsRejecter struct {
 	rejected int32
+}
+
+func (m *mockLogsRejecter) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (m *mockLogsRejecter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
