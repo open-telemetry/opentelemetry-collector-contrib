@@ -25,7 +25,6 @@ import (
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -43,7 +42,7 @@ import (
 type datadogReceiver struct {
 	config       *Config
 	params       component.ReceiverCreateParams
-	nextConsumer consumer.TracesConsumer
+	nextConsumer consumer.Traces
 	server       *http.Server
 
 	mu        sync.Mutex
@@ -53,7 +52,7 @@ type datadogReceiver struct {
 
 func newDataDogReceiver(
 	config *Config,
-	nextConsumer consumer.TracesConsumer,
+	nextConsumer consumer.Traces,
 	params component.ReceiverCreateParams,
 ) *datadogReceiver {
 	return &datadogReceiver{
@@ -81,31 +80,32 @@ func putBuffer(buffer *bytes.Buffer) {
 	bufferPool.Put(buffer)
 }
 
-func (d *datadogReceiver) Start(ctx context.Context, host component.Host) error {
-	var err = componenterror.ErrAlreadyStarted
-	d.startOnce.Do(func() {
+func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) error {
+	var err error
+	ddr.startOnce.Do(func() {
 		ddmux := mux.NewRouter()
-		ddmux.HandleFunc("/v0.3/traces", d.handleTraces)
-		ddmux.HandleFunc("/v0.4/traces", d.handleTraces)
-		ddmux.HandleFunc("/v0.5/traces", d.handleTraces05)
-		d.server = &http.Server{
+		ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
+		ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
+		ddmux.HandleFunc("/v0.5/traces", ddr.handleTraces05)
+		ddr.server = &http.Server{
 			Handler: ddmux,
-			Addr:    d.config.HTTPServerSettings.Endpoint,
+			Addr:    ddr.config.HTTPServerSettings.Endpoint,
 		}
-		err = d.server.ListenAndServe()
+		if err := ddr.server.ListenAndServe(); err != http.ErrServerClosed {
+			host.ReportFatalError(fmt.Errorf("error starting datadog receiver: %v", err))
+		}
 	})
 	return err
 }
 
-func (d *datadogReceiver) Shutdown(ctx context.Context) error {
-	var err = componenterror.ErrAlreadyStopped
-	d.stopOnce.Do(func() {
-		err = d.server.Shutdown(ctx)
+func (ddr *datadogReceiver) Shutdown(ctx context.Context) error {
+	ddr.stopOnce.Do(func() {
+		_ = ddr.server.Shutdown(context.Background())
 	})
-	return err
+	return nil
 }
 
-func (d *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
+func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	if c, ok := client.FromHTTP(req); ok {
 		ctx = client.NewContext(ctx, c)
@@ -118,10 +118,10 @@ func (d *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	d.processTraces(ctx, traces, w)
+	ddr.processTraces(ctx, traces, w)
 }
 
-func (d *datadogReceiver) handleTraces05(w http.ResponseWriter, req *http.Request) {
+func (ddr *datadogReceiver) handleTraces05(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	if c, ok := client.FromHTTP(req); ok {
 		ctx = client.NewContext(ctx, c)
@@ -134,13 +134,13 @@ func (d *datadogReceiver) handleTraces05(w http.ResponseWriter, req *http.Reques
 		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
 		return
 	}
-	err := d.UnmarshalMsgDictionary(&traces, buf.Bytes())
+	err := ddr.UnmarshalMsgDictionary(&traces, buf.Bytes())
 	if err != nil {
 		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
 		return
 	}
 	putBuffer(buf)
-	d.processTraces(ctx, traces, w)
+	ddr.processTraces(ctx, traces, w)
 }
 
 func (d *datadogReceiver) processTraces(ctx context.Context, traces pb.Traces, w http.ResponseWriter) {
@@ -154,8 +154,8 @@ func (d *datadogReceiver) processTraces(ctx context.Context, traces pb.Traces, w
 			newSpan := pdata.NewSpan()
 			newSpan.SetTraceID(tracetranslator.UInt64ToTraceID(span.TraceID, span.TraceID))
 			newSpan.SetSpanID(tracetranslator.UInt64ToSpanID(span.SpanID))
-			newSpan.SetStartTime(pdata.TimestampUnixNano(span.Start))
-			newSpan.SetEndTime(pdata.TimestampUnixNano(span.Start + span.Duration))
+			newSpan.SetStartTimestamp(pdata.Timestamp(span.Start))
+			newSpan.SetEndTimestamp(pdata.Timestamp(span.Start + span.Duration))
 			newSpan.SetParentSpanID(tracetranslator.UInt64ToSpanID(span.ParentID))
 			newSpan.SetName(span.Name)
 			for k, v := range span.GetMeta() {

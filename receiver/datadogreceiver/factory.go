@@ -17,8 +17,8 @@ package datadogreceiver
 import (
 	"context"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
@@ -35,12 +35,11 @@ func NewFactory() component.ReceiverFactory {
 		receiverhelper.WithTraces(createTracesReceiver))
 }
 
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
+	var receiverSettings = config.ReceiverSettings{}
+	receiverSettings.SetIDName(typeStr)
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
+		ReceiverSettings: receiverSettings,
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "0.0.0.0:8126",
 		},
@@ -48,10 +47,10 @@ func createDefaultConfig() configmodels.Receiver {
 }
 
 func createTracesReceiver(
-	ctx context.Context,
+	_ context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.TracesConsumer,
+	cfg config.Receiver,
+	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	oCfg := cfg.(*Config)
 

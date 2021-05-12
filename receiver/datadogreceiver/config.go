@@ -15,11 +15,11 @@
 package datadogreceiver
 
 import (
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
+	config.ReceiverSettings       `mapstructure:",squash"`
 	confighttp.HTTPServerSettings `mapstructure:",squash"`
 }
