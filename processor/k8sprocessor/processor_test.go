@@ -876,8 +876,8 @@ func TestCapabilities(t *testing.T) {
 		consumertest.NewNop(),
 	)
 	assert.NoError(t, err)
-	caps := p.GetCapabilities()
-	assert.True(t, caps.MutatesConsumedData)
+	caps := p.Capabilities()
+	assert.True(t, caps.MutatesData)
 }
 
 func TestStartStop(t *testing.T) {

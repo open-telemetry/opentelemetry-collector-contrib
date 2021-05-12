@@ -145,11 +145,11 @@ func TestProcessorCapabilities(t *testing.T) {
 	next := new(consumertest.TracesSink)
 	p, err := newProcessor(zap.NewNop(), cfg, next)
 	assert.NoError(t, err)
-	caps := p.GetCapabilities()
+	caps := p.Capabilities()
 
 	// Verify
 	assert.NotNil(t, p)
-	assert.Equal(t, false, caps.MutatesConsumedData)
+	assert.Equal(t, false, caps.MutatesData)
 }
 
 func TestProcessorConsumeTracesErrors(t *testing.T) {

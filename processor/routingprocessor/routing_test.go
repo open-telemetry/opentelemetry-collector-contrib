@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.uber.org/zap"
@@ -403,12 +404,12 @@ func TestProcessorCapabilities(t *testing.T) {
 
 	// test
 	p, err := newProcessor(zap.NewNop(), config)
-	caps := p.GetCapabilities()
+	caps := p.Capabilities()
 
 	// verify
 	assert.NoError(t, err)
 	assert.NotNil(t, p)
-	assert.Equal(t, false, caps.MutatesConsumedData)
+	assert.Equal(t, false, caps.MutatesData)
 }
 
 type mockHost struct {
@@ -435,6 +436,10 @@ func (m *mockComponent) Shutdown(context.Context) error {
 type mockExporter struct {
 	mockComponent
 	ConsumeTracesFunc func(ctx context.Context, td pdata.Traces) error
+}
+
+func (m *mockExporter) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (m *mockExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {

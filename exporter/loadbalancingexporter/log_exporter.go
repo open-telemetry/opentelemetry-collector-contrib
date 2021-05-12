@@ -25,6 +25,7 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -65,6 +66,10 @@ func newLogsExporter(params component.ExporterCreateParams, cfg config.Exporter)
 		logger:       params.Logger,
 		loadBalancer: loadBalancer,
 	}, nil
+}
+
+func (e *logExporterImp) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (e *logExporterImp) Start(ctx context.Context, host component.Host) error {

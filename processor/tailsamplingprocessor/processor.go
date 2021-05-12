@@ -349,8 +349,8 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans pdata.Resource
 	stats.Record(tsp.ctx, statNewTraceIDReceivedCount.M(newTraceIDs))
 }
 
-func (tsp *tailSamplingSpanProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: false}
+func (tsp *tailSamplingSpanProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 // Start is invoked during service startup.
