@@ -15,9 +15,13 @@
 package stanza
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math"
+	"runtime"
 	"sync"
 	"time"
 
@@ -36,43 +40,42 @@ const (
 // Logs are being sent out based on the flush interval and/or the maximum
 // batch size.
 //
-// The diagram below illustrates the internal communication inside the Converter.
+// The diagram below illustrates the internal communication inside the Converter:
 //
-//        ┌─────────────────────────────────┐
-//        │ Batch()                         │
-//        │  Ingests and converts log       │
-//        │  entries and then spawns        │
-//    ┌───┼─ go queueForFlush()             │
-//    │   │  if maxFlushCount was reached   │
-//    │   └─────────────────────────────────┘
-//    │
-//    │  ┌──────────────────────────────────────┐
-//    ├──► queueForFlush goroutine(s)           │
-//    │  │   Spawned whenever a batch of logs   │
-//    │  │ ┌─is queued to be flushed.           │
-//    │  │ │ Sends received logs onto flushChan │
-//    │  └─┼────────────────────────────────────┘
-//    │    │
-//    │    │
-//    │  ┌─┼───────────────────────────────────┐
-//    │  │ │ Start()                           │
-//    │  │ │  Starts a goroutine listening on: │
-//    │  │ │                                   │
-//    │  │ └► * flushChan   ───────────────────┼──┐
-//    │  │                                     │  │
-//    │  │    * ticker.C                       │  │
-//    └──┼───── calls go queueForFlush() if    │  │
-//       │      there's anything in the buffer │  │
-//       └─────────────────────────────────────┘  │
-//                                                │
-//                                                │
-//       ┌──────────────────────────────────────┐ │
-//       │ flush()   ◄──────────────────────────┼─┘
-//       │   Flushes converted and aggregated   │
-//       │   logs onto pLogsChan which is       │
-//       │   consumed by downstream consumers   │
-//       │   viaoOutChannel()                   │
-//       └──────────────────────────────────────┘
+//            ┌─────────────────────────────────┐
+//            │ Batch()                         │
+//  ┌─────────┤  Ingests log entries and sends  │
+//  │         │  them onto a workerChan         │
+//  │         └─────────────────────────────────┘
+//  │
+//  │ ┌───────────────────────────────────────────────────┐
+//  ├─► workerLoop()                                      │
+//  │ │ ┌─────────────────────────────────────────────────┴─┐
+//  ├─┼─► workerLoop()                                      │
+//  │ │ │ ┌─────────────────────────────────────────────────┴─┐
+//  └─┼─┼─► workerLoop()                                      │
+//    └─┤ │   consumes sent log entries from workerChan,      │
+//      │ │   translates received entries to pdata.LogRecords,│
+//      └─┤   marshalls them to JSON and send them onto       │
+//        │   batchChan                                       │
+//        └─────────────────────────┬─────────────────────────┘
+//                                  │
+//                                  ▼
+//      ┌─────────────────────────────────────────────────────┐
+//      │ batchLoop()                                         │
+//      │   consumes from batchChan, aggregates log records   │
+//      │   by marshaled Resource and based on flush interval │
+//      │   and maxFlushCount decides whether to send the     │
+//      │   aggregated buffer to flushChan                    │
+//      └───────────────────────────┬─────────────────────────┘
+//                                  │
+//                                  ▼
+//      ┌─────────────────────────────────────────────────────┐
+//      │ flushLoop()                                         │
+//      │   receives log records from flushChan and sends     │
+//      │   them onto pLogsChan which is consumed by          │
+//      │   downstream consumers via OutChannel()             │
+//      └─────────────────────────────────────────────────────┘
 //
 type Converter struct {
 	// pLogsChan is a channel on which batched logs will be sent to.
@@ -81,20 +84,30 @@ type Converter struct {
 	stopOnce sync.Once
 	stopChan chan struct{}
 
+	// workerChan is an internal communication channel that gets the log
+	// entries from Batch() calls and it receives the data in workerLoop().
+	workerChan chan *entry.Entry
+	// workerCount configures the amount of workers started.
+	workerCount int
+	// batchChan obtains log entries converted by the pool of workers,
+	// in a form of logRecords grouped by Resource and then after aggregating
+	// them decides based on maxFlushCount if the flush should be triggered.
+	// If also serves the ticker flushes configured by flushInterval.
+	batchChan chan *workerItem
+
 	// flushInterval defines how often we flush the aggregated log entries.
 	flushInterval time.Duration
 	// maxFlushCount defines what's the amount of entries in the buffer that
 	// will trigger a flush of log entries.
 	maxFlushCount uint
 	// flushChan is an internal channel used for transporting batched pdata.Logs.
-	flushChan chan []pdata.Logs
+	flushChan chan pdata.Logs
 
-	// data is the internal cache which is flushed regularly, either when
-	// flushInterval ticker ticks or when max number of entries for a
-	// particular Resource is reached.
-	data      map[string][]*entry.Entry
-	dataMutex sync.RWMutex
-	dataCount uint
+	// data holds currently converted and aggregated log entries, grouped by Resource.
+	data map[string]pdata.Logs
+	// logRecordCount holds the number of translated and accumulated log Records
+	// and is compared against maxFlushCount to make a decision whether to flush.
+	logRecordCount uint
 
 	// wg is a WaitGroup that makes sure that we wait for spun up goroutines exit
 	// when Stop() is called.
@@ -131,16 +144,24 @@ func WithLogger(logger *zap.Logger) ConverterOption {
 	})
 }
 
+func WithWorkerCount(workerCount int) ConverterOption {
+	return optionFunc(func(c *Converter) {
+		c.workerCount = workerCount
+	})
+}
+
 func NewConverter(opts ...ConverterOption) *Converter {
 	c := &Converter{
+		workerChan:    make(chan *entry.Entry),
+		workerCount:   int(math.Max(1, float64(runtime.NumCPU()/4))),
+		batchChan:     make(chan *workerItem),
+		data:          make(map[string]pdata.Logs),
 		pLogsChan:     make(chan pdata.Logs),
 		stopChan:      make(chan struct{}),
 		logger:        zap.NewNop(),
-		flushChan:     make(chan []pdata.Logs),
+		flushChan:     make(chan pdata.Logs),
 		flushInterval: DefaultFlushInterval,
 		maxFlushCount: DefaultMaxFlushCount,
-		data:          make(map[string][]*entry.Entry),
-		wg:            sync.WaitGroup{},
 	}
 
 	for _, opt := range opts {
@@ -151,41 +172,18 @@ func NewConverter(opts ...ConverterOption) *Converter {
 }
 
 func (c *Converter) Start() {
-	c.logger.Debug("Starting log converter")
+	c.logger.Debug("Starting log converter", zap.Int("worker_count", c.workerCount))
+
+	for i := 0; i < c.workerCount; i++ {
+		c.wg.Add(1)
+		go c.workerLoop()
+	}
 
 	c.wg.Add(1)
-	go func(c *Converter) {
-		defer c.wg.Done()
+	go c.batchLoop()
 
-		ticker := time.NewTicker(c.flushInterval)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-c.stopChan:
-				return
-
-			case pLogs := <-c.flushChan:
-				if err := c.flush(context.Background(), pLogs); err != nil {
-					c.logger.Debug("Problem sending log entries",
-						zap.Error(err),
-					)
-				}
-				// NOTE:
-				// Since we've received a flush signal independently of flush
-				// ticker do we want to reset the flush ticker?
-
-			case <-ticker.C:
-				c.dataMutex.Lock()
-				count := c.dataCount
-				if count > 0 {
-					pLogs := c.convertBuffer()
-					go c.queueForFlush(pLogs)
-				}
-				c.dataMutex.Unlock()
-			}
-		}
-	}(c)
+	c.wg.Add(1)
+	go c.flushLoop()
 }
 
 func (c *Converter) Stop() {
@@ -201,115 +199,165 @@ func (c *Converter) OutChannel() <-chan pdata.Logs {
 	return c.pLogsChan
 }
 
+type workerItem struct {
+	Resource       map[string]string
+	LogRecord      pdata.LogRecord
+	ResourceString string
+}
+
+// workerLoop is responsible for obtaining log entries from Batch() calls,
+// converting them to pdata.LogRecords and sending them together with the
+// associated Resource through the batchChan for aggregation.
+func (c *Converter) workerLoop() {
+	defer c.wg.Done()
+
+	var (
+		buff    = bytes.Buffer{}
+		encoder = json.NewEncoder(&buff)
+	)
+
+	for {
+
+		select {
+		case <-c.stopChan:
+			return
+
+		case e, ok := <-c.workerChan:
+			if !ok {
+				return
+			}
+
+			buff.Reset()
+			lr := convert(e)
+
+			if err := encoder.Encode(e.Resource); err != nil {
+				c.logger.Debug("Failed marshaling entry.Resource to JSON",
+					zap.Any("resource", e.Resource),
+				)
+				continue
+			}
+
+			select {
+			case c.batchChan <- &workerItem{
+				Resource:       e.Resource,
+				ResourceString: buff.String(),
+				LogRecord:      lr,
+			}:
+			case <-c.stopChan:
+			}
+		}
+	}
+}
+
+// batchLoop is responsible for receiving the converted log entries and aggregating
+// them by Resource.
+// Whenever maxFlushCount is reached or the ticker ticks a flush is triggered.
+func (c *Converter) batchLoop() {
+	defer c.wg.Done()
+
+	ticker := time.NewTicker(c.flushInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case wi, ok := <-c.batchChan:
+			if !ok {
+				return
+			}
+
+			pLogs, ok := c.data[wi.ResourceString]
+			if ok {
+				pLogs.ResourceLogs().
+					At(0).InstrumentationLibraryLogs().
+					At(0).Logs().Append(wi.LogRecord)
+			} else {
+				pLogs = pdata.NewLogs()
+				logs := pLogs.ResourceLogs()
+				logs.Resize(1)
+				rls := logs.At(0)
+
+				resource := rls.Resource()
+				resourceAtts := resource.Attributes()
+				resourceAtts.EnsureCapacity(len(wi.Resource))
+				for k, v := range wi.Resource {
+					resourceAtts.InsertString(k, v)
+				}
+
+				ills := rls.InstrumentationLibraryLogs()
+				ills.Resize(1)
+				ills.At(0).Logs().Append(wi.LogRecord)
+			}
+
+			c.data[wi.ResourceString] = pLogs
+			c.logRecordCount++
+
+			if c.logRecordCount >= c.maxFlushCount {
+				for r, pLogs := range c.data {
+					c.flushChan <- pLogs
+					delete(c.data, r)
+				}
+				c.logRecordCount = 0
+			}
+
+		case <-ticker.C:
+			for r, pLogs := range c.data {
+				c.flushChan <- pLogs
+				delete(c.data, r)
+			}
+			c.logRecordCount = 0
+
+		case <-c.stopChan:
+			return
+		}
+	}
+}
+
+func (c *Converter) flushLoop() {
+	defer c.wg.Done()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	for {
+		select {
+		case <-c.stopChan:
+			return
+
+		case pLogs := <-c.flushChan:
+			if err := c.flush(ctx, pLogs); err != nil {
+				c.logger.Debug("Problem sending log entries",
+					zap.Error(err),
+				)
+			}
+		}
+	}
+}
+
 // flush flushes provided pdata.Logs entries onto a channel.
-func (c *Converter) flush(ctx context.Context, pLogs []pdata.Logs) error {
+func (c *Converter) flush(ctx context.Context, pLogs pdata.Logs) error {
 	doneChan := ctx.Done()
 
-	for _, pLog := range pLogs {
-		select {
-		case <-doneChan:
-			return fmt.Errorf("flushing log entries interrupted, err: %v", ctx.Err())
-
-		case c.pLogsChan <- pLog:
-
-		// The converter has been stopped so bail the flush.
-		case <-c.stopChan:
-			return nil
-		}
-	}
-
-	return nil
-}
-
-// Batch takes in an entry.Entry and aggregates it with other entries
-// that came from the same Resource.
-// If the maxFlushCount has been reached then trigger a flush via the flushChan.
-func (c *Converter) Batch(e *entry.Entry) error {
-	b, err := json.Marshal(e.Resource)
-	if err != nil {
-		return err
-	}
-
-	resource := string(b)
-
-	// This is locked also for the possible conversion so that no entries are
-	// added in the meantime so that the expected maximum batch size is not
-	// exceeded.
-	c.dataMutex.Lock()
-
-	resourceEntries, ok := c.data[resource]
-	if !ok {
-		// If we don't have any log entries for this Resource then create
-		// the provider entry in the cache for it.
-		resourceEntries = make([]*entry.Entry, 0, 1)
-	}
-
-	c.data[resource] = append(resourceEntries, e)
-	c.dataCount++
-
-	needToFlush := c.dataCount >= c.maxFlushCount
-
-	if needToFlush {
-		// Flush max size has been reached: schedule a log flush.
-		pLogs := c.convertBuffer()
-		go c.queueForFlush(pLogs)
-	}
-	c.dataMutex.Unlock()
-
-	return nil
-}
-
-// convertBuffer converts the accumulated entries in the buffer and empties it.
-//
-// NOTE: The caller needs to ensure that c.dataMutex is locked when this is called.
-func (c *Converter) convertBuffer() []pdata.Logs {
-	pLogs := make([]pdata.Logs, 0, len(c.data))
-	for h, entries := range c.data {
-		pLogs = append(pLogs, convertEntries(entries))
-		delete(c.data, h)
-	}
-	c.dataCount = 0
-
-	return pLogs
-}
-
-// queueForFlush queues the provided slice of pdata.Logs for flushing.
-func (c *Converter) queueForFlush(pLogs []pdata.Logs) {
 	select {
-	case c.flushChan <- pLogs:
+	case <-doneChan:
+		return fmt.Errorf("flushing log entries interrupted, err: %w", ctx.Err())
+
+	case c.pLogsChan <- pLogs:
+
+	// The converter has been stopped so bail the flush.
 	case <-c.stopChan:
+		return errors.New("Logs converter has been stopped")
 	}
+
+	return nil
 }
 
-// convertEntries converts takes in a slice of entries coming from the same
-// Resource and converts them into a pdata.Logs.
-func convertEntries(entries []*entry.Entry) pdata.Logs {
-	out := pdata.NewLogs()
-	if len(entries) == 0 {
-		return out
+// Batch takes in an entry.Entry and sends it to an available worker for processing.
+func (c *Converter) Batch(e *entry.Entry) error {
+	select {
+	case c.workerChan <- e:
+		return nil
+	case <-c.stopChan:
+		return errors.New("Logs converter has been stopped")
 	}
-
-	logs := out.ResourceLogs()
-	rls := logs.AppendEmpty()
-
-	// NOTE: This assumes that passed in entries all come from the same Resource.
-	if len(entries[0].Resource) > 0 {
-		resource := rls.Resource()
-		resourceAtts := resource.Attributes()
-		resourceAtts.EnsureCapacity(len(entries[0].Resource))
-		for k, v := range entries[0].Resource {
-			resourceAtts.InsertString(k, v)
-		}
-	}
-
-	ills := rls.InstrumentationLibraryLogs().AppendEmpty()
-	ills.Logs().Resize(len(entries))
-	for i := 0; i < len(entries); i++ {
-		ent := entries[i]
-		convertInto(ent, ills.Logs().At(i))
-	}
-
-	return out
 }
 
 // convert converts one entry.Entry into pdata.LogRecord allocating it.
@@ -317,6 +365,28 @@ func convert(ent *entry.Entry) pdata.LogRecord {
 	dest := pdata.NewLogRecord()
 	convertInto(ent, dest)
 	return dest
+}
+
+// Convert converts one entry.Entry into pdata.Logs.
+// To be used in a stateless setting like tests where ease of use is more
+// important than performance or throughput.
+func Convert(ent *entry.Entry) pdata.Logs {
+	pLogs := pdata.NewLogs()
+	logs := pLogs.ResourceLogs()
+
+	rls := logs.AppendEmpty()
+
+	resource := rls.Resource()
+	resourceAtts := resource.Attributes()
+	resourceAtts.EnsureCapacity(len(ent.Resource))
+	for k, v := range ent.Resource {
+		resourceAtts.InsertString(k, v)
+	}
+
+	ills := rls.InstrumentationLibraryLogs().AppendEmpty()
+	lr := ills.Logs().AppendEmpty()
+	convertInto(ent, lr)
+	return pLogs
 }
 
 // convertInto converts entry.Entry into provided pdata.LogRecord.
@@ -327,8 +397,9 @@ func convertInto(ent *entry.Entry, dest pdata.LogRecord) {
 	dest.SetSeverityText(sevText)
 	dest.SetSeverityNumber(sevNum)
 
-	if len(ent.Attributes) > 0 {
+	if l := len(ent.Attributes); l > 0 {
 		attributes := dest.Attributes()
+		attributes.EnsureCapacity(l)
 		for k, v := range ent.Attributes {
 			attributes.InsertString(k, v)
 		}
@@ -449,10 +520,9 @@ func toAttributeMap(obsMap map[string]interface{}) pdata.AttributeValue {
 func toAttributeArray(obsArr []interface{}) pdata.AttributeValue {
 	arrVal := pdata.NewAttributeValueArray()
 	arr := arrVal.ArrayVal()
-	for _, v := range obsArr {
-		attVal := pdata.NewAttributeValueNull()
-		insertToAttributeVal(v, attVal)
-		arr.Append(attVal)
+	arr.Resize(len(obsArr))
+	for i, v := range obsArr {
+		insertToAttributeVal(v, arr.At(i))
 	}
 	return arrVal
 }

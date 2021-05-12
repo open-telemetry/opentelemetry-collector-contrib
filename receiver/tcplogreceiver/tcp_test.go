@@ -96,6 +96,9 @@ func testdataConfigYamlAsMap() *TCPLogConfig {
 		BaseConfig: stanza.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 			Operators:        stanza.OperatorConfigs{},
+			Converter: stanza.ConverterConfig{
+				WorkerCount: 1,
+			},
 		},
 		Input: stanza.InputConfig{
 			"listen_address": "0.0.0.0:29018",
