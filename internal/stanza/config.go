@@ -43,6 +43,10 @@ type ConverterConfig struct {
 	// FlushInterval defines how often to flush the converted and accumulated
 	// log entries.
 	FlushInterval time.Duration `mapstructure:"flush_interval"`
+	// WorkerCount defines how many worker goroutines used for entry.Entry to
+	// log records translation should be spawned.
+	// By default: math.Max(1, runtime.NumCPU()/4) workers are spawned.
+	WorkerCount int `mapstructure:"worker_count"`
 }
 
 // InputConfig is an alias that allows unmarshaling outside of mapstructure

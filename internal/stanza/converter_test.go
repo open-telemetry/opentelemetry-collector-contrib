@@ -49,13 +49,17 @@ func BenchmarkConvertComplex(b *testing.B) {
 }
 
 func complexEntries(count int) []*entry.Entry {
+	return complexEntriesForNDifferentHosts(count, 1)
+}
+
+func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
 	ret := make([]*entry.Entry, count)
-	for i := int64(0); i < int64(count); i++ {
+	for i := 0; i < count; i++ {
 		e := entry.New()
 		e.Severity = entry.Error
 		e.AddResourceKey("type", "global")
 		e.Resource = map[string]string{
-			"host": "host",
+			"host": fmt.Sprintf("host-%d", i%n),
 		}
 		e.Body = map[string]interface{}{
 			"bool":   true,
@@ -94,23 +98,88 @@ func complexEntry() *entry.Entry {
 		"int":    123,
 		"double": 12.34,
 		"string": "hello",
-		"bytes":  []byte("asdf"),
+		// "bytes":  []byte("asdf"),
 		"object": map[string]interface{}{
 			"bool":   true,
 			"int":    123,
 			"double": 12.34,
 			"string": "hello",
-			"bytes":  []byte("asdf"),
+			// "bytes":  []byte("asdf"),
 			"object": map[string]interface{}{
-				"bool":   true,
-				"int":    123,
-				"double": 12.34,
+				"bool": true,
+				"int":  123,
+				// "double": 12.34,
 				"string": "hello",
-				"bytes":  []byte("asdf"),
+				// "bytes":  []byte("asdf"),
 			},
 		},
 	}
 	return e
+}
+
+func TestConvert(t *testing.T) {
+	ent := func() *entry.Entry {
+		e := entry.New()
+		e.Severity = entry.Error
+		e.AddResourceKey("type", "global")
+		e.AddAttribute("one", "two")
+		e.AddAttribute("two", "three")
+		e.Body = map[string]interface{}{
+			"bool":   true,
+			"int":    123,
+			"double": 12.34,
+			"string": "hello",
+			"bytes":  []byte("asdf"),
+		}
+		return e
+	}()
+
+	pLogs := Convert(ent)
+	require.Equal(t, 1, pLogs.ResourceLogs().Len())
+	rls := pLogs.ResourceLogs().At(0)
+	require.Equal(t, 1, rls.Resource().Attributes().Len())
+	{
+		att, ok := rls.Resource().Attributes().Get("type")
+		if assert.True(t, ok) {
+			if assert.Equal(t, att.Type(), pdata.AttributeValueSTRING) {
+				assert.Equal(t, att.StringVal(), "global")
+			}
+		}
+	}
+
+	ills := rls.InstrumentationLibraryLogs()
+	require.Equal(t, 1, ills.Len())
+
+	logs := ills.At(0).Logs()
+	require.Equal(t, 1, logs.Len())
+
+	lr := logs.At(0)
+
+	assert.Equal(t, pdata.SeverityNumberERROR, lr.SeverityNumber())
+	assert.Equal(t, "Error", lr.SeverityText())
+
+	if atts := lr.Attributes(); assert.Equal(t, 2, atts.Len()) {
+		m := pdata.NewAttributeMap()
+		m.InitFromMap(map[string]pdata.AttributeValue{
+			"one": pdata.NewAttributeValueString("two"),
+			"two": pdata.NewAttributeValueString("three"),
+		})
+		assert.EqualValues(t, m.Sort(), atts.Sort())
+	}
+
+	if assert.Equal(t, pdata.AttributeValueMAP, lr.Body().Type()) {
+		m := pdata.NewAttributeMap()
+		m.InitFromMap(map[string]pdata.AttributeValue{
+			"bool":   pdata.NewAttributeValueBool(true),
+			"int":    pdata.NewAttributeValueInt(123),
+			"double": pdata.NewAttributeValueDouble(12.34),
+			"string": pdata.NewAttributeValueString("hello"),
+			"bytes":  pdata.NewAttributeValueString("asdf"),
+			// Don't include a nested object because AttributeValueMap sorting
+			// doesn't sort recursively.
+		})
+		assert.EqualValues(t, m.Sort(), lr.Body().MapVal().Sort())
+	}
 }
 
 func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
@@ -141,6 +210,7 @@ func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
 			t.Parallel()
 
 			converter := NewConverter(
+				WithWorkerCount(1),
 				WithMaxFlushCount(tc.maxFlushCount),
 				WithFlushInterval(10*time.Millisecond), // To minimize time spent in test
 			)
@@ -154,10 +224,9 @@ func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
 			}()
 
 			var (
-				actualCount      int
-				actualFlushCount int
-				timeoutTimer     = time.NewTimer(10 * time.Second)
-				ch               = converter.OutChannel()
+				actualCount  int
+				timeoutTimer = time.NewTimer(10 * time.Second)
+				ch           = converter.OutChannel()
 			)
 			defer timeoutTimer.Stop()
 
@@ -172,8 +241,6 @@ func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
 					if !ok {
 						break forLoop
 					}
-
-					actualFlushCount++
 
 					rLogs := pLogs.ResourceLogs()
 					require.Equal(t, 1, rLogs.Len())
@@ -207,27 +274,38 @@ func TestAllConvertedEntriesAreSentAndReceivedWithinAnExpectedTimeDuration(t *te
 
 	testcases := []struct {
 		entries       int
+		hostsCount    int
 		maxFlushCount uint
 		flushInterval time.Duration
 	}{
 		{
 			entries:       10,
+			hostsCount:    1,
 			maxFlushCount: 20,
 			flushInterval: 100 * time.Millisecond,
 		},
 		{
 			entries:       50,
+			hostsCount:    1,
 			maxFlushCount: 51,
 			flushInterval: 100 * time.Millisecond,
 		},
 		{
 			entries:       500,
+			hostsCount:    1,
 			maxFlushCount: 501,
 			flushInterval: 100 * time.Millisecond,
 		},
 		{
 			entries:       500,
+			hostsCount:    1,
 			maxFlushCount: 100,
+			flushInterval: 100 * time.Millisecond,
+		},
+		{
+			entries:       500,
+			hostsCount:    4,
+			maxFlushCount: 501,
 			flushInterval: 100 * time.Millisecond,
 		},
 	}
@@ -239,6 +317,7 @@ func TestAllConvertedEntriesAreSentAndReceivedWithinAnExpectedTimeDuration(t *te
 			t.Parallel()
 
 			converter := NewConverter(
+				WithWorkerCount(1),
 				WithMaxFlushCount(tc.maxFlushCount),
 				WithFlushInterval(tc.flushInterval),
 			)
@@ -246,7 +325,7 @@ func TestAllConvertedEntriesAreSentAndReceivedWithinAnExpectedTimeDuration(t *te
 			defer converter.Stop()
 
 			go func() {
-				for _, ent := range complexEntries(tc.entries) {
+				for _, ent := range complexEntriesForNDifferentHosts(tc.entries, tc.hostsCount) {
 					assert.NoError(t, converter.Batch(ent))
 				}
 			}()
@@ -321,8 +400,17 @@ func TestConverterCancelledContextCancellsTheFlush(t *testing.T) {
 
 	go func() {
 		defer wg.Done()
-		logs := convertEntries(complexEntries(1))
-		assert.Error(t, converter.flush(ctx, []pdata.Logs{logs}))
+		pLogs := pdata.NewLogs()
+		logs := pLogs.ResourceLogs()
+		logs.Resize(1)
+		rls := logs.At(0)
+		rls.InstrumentationLibraryLogs().Resize(1)
+		ills := rls.InstrumentationLibraryLogs().At(0)
+
+		lr := convert(complexEntry())
+		ills.Logs().Append(lr)
+
+		assert.Error(t, converter.flush(ctx, pLogs))
 	}()
 	wg.Wait()
 }
@@ -573,4 +661,77 @@ func TestConvertTrace(t *testing.T) {
 			0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
 		}), record.SpanID())
 	require.Equal(t, uint32(0x01), record.Flags())
+}
+
+func BenchmarkConverter(b *testing.B) {
+	const (
+		entryCount = 1_000_000
+		hostsCount = 4
+	)
+
+	var (
+		workerCounts = []int{1, 2, 4, 6, 8}
+		entries      = complexEntriesForNDifferentHosts(entryCount, hostsCount)
+	)
+
+	for _, wc := range workerCounts {
+		b.Run(fmt.Sprintf("worker_count=%d", wc), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+
+				converter := NewConverter(
+					WithWorkerCount(wc),
+					WithMaxFlushCount(1_000),
+					WithFlushInterval(250*time.Millisecond),
+				)
+				converter.Start()
+				defer converter.Stop()
+				b.ResetTimer()
+
+				go func() {
+					for _, ent := range entries {
+						assert.NoError(b, converter.Batch(ent))
+					}
+				}()
+
+				var (
+					timeoutTimer = time.NewTimer(10 * time.Second)
+					ch           = converter.OutChannel()
+				)
+				defer timeoutTimer.Stop()
+
+				var n int
+			forLoop:
+				for {
+					if n == entryCount {
+						break
+					}
+
+					select {
+					case pLogs, ok := <-ch:
+						if !ok {
+							break forLoop
+						}
+
+						rLogs := pLogs.ResourceLogs()
+						require.Equal(b, 1, rLogs.Len())
+
+						rLog := rLogs.At(0)
+						ills := rLog.InstrumentationLibraryLogs()
+						require.Equal(b, 1, ills.Len())
+
+						ill := ills.At(0)
+
+						n += ill.Logs().Len()
+
+					case <-timeoutTimer.C:
+						break forLoop
+					}
+				}
+
+				assert.Equal(b, entryCount, n,
+					"didn't receive expected number of entries after conversion",
+				)
+			}
+		})
+	}
 }
