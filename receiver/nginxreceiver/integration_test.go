@@ -48,7 +48,7 @@ func nginxContainer(t *testing.T) testcontainers.Container {
 			Context:    path.Join(".", "testdata"),
 			Dockerfile: "Dockerfile.nginx",
 		},
-		ExposedPorts: []string{"80:80"},
+		ExposedPorts: []string{"8080:80"},
 		WaitingFor:   wait.ForListeningPort("80"),
 	}
 
@@ -75,7 +75,7 @@ func (suite *NginxIntegrationSuite) TestNginxScraperHappyPath() {
 			CollectionInterval: 100 * time.Millisecond,
 		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: fmt.Sprintf("http://%s:80/status", hostname),
+			Endpoint: fmt.Sprintf("http://%s:8080/status", hostname),
 		},
 	}
 
