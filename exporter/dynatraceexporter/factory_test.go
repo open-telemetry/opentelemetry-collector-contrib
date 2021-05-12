@@ -23,14 +23,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
+	dtconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 )
 
 // Test that the factory creates the default configuration
@@ -38,13 +38,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, &config.Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		RetrySettings: exporterhelper.DefaultRetrySettings(),
-		QueueSettings: exporterhelper.DefaultQueueSettings(),
+	assert.Equal(t, &dtconfig.Config{
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 		ResourceToTelemetrySettings: exporterhelper.ResourceToTelemetrySettings{
 			Enabled: false,
 		},
@@ -57,7 +54,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 // TestLoadConfig tests that the configuration is loaded correctly
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -67,18 +64,14 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	apiConfig := cfg.Exporters["dynatrace/valid"].(*config.Config)
+	apiConfig := cfg.Exporters[config.NewIDWithName(typeStr, "valid")].(*dtconfig.Config)
 	err = apiConfig.Sanitize()
 
 	require.NoError(t, err)
-	assert.Equal(t, &config.Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			NameVal: "dynatrace/valid",
-			TypeVal: typeStr,
-		},
-
-		RetrySettings: exporterhelper.DefaultRetrySettings(),
-		QueueSettings: exporterhelper.DefaultQueueSettings(),
+	assert.Equal(t, &dtconfig.Config{
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "valid")),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://example.com/api/v2/metrics/ingest",
@@ -94,7 +87,7 @@ func TestLoadConfig(t *testing.T) {
 		Tags: []string{"example=tag"},
 	}, apiConfig)
 
-	invalidConfig2 := cfg.Exporters["dynatrace/invalid"].(*config.Config)
+	invalidConfig2 := cfg.Exporters[config.NewIDWithName(typeStr, "invalid")].(*dtconfig.Config)
 	err = invalidConfig2.Sanitize()
 	require.Error(t, err)
 }
@@ -102,24 +95,21 @@ func TestLoadConfig(t *testing.T) {
 func TestCreateAPIMetricsExporter(t *testing.T) {
 	logger := zap.NewNop()
 
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	c := (cfg.Exporters["dynatrace/valid"]).(*config.Config)
-	cfg.Exporters["dynatrace/valid"] = c
-
 	ctx := context.Background()
 	exp, err := factory.CreateMetricsExporter(
 		ctx,
 		component.ExporterCreateParams{Logger: logger},
-		cfg.Exporters["dynatrace/valid"],
+		cfg.Exporters[config.NewIDWithName(typeStr, "valid")],
 	)
 
 	assert.NoError(t, err)
@@ -129,24 +119,21 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 func TestCreateAPIMetricsExporterInvalid(t *testing.T) {
 	logger := zap.NewNop()
 
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	c := (cfg.Exporters["dynatrace/invalid"]).(*config.Config)
-	cfg.Exporters["dynatrace/invalid"] = c
-
 	ctx := context.Background()
 	exp, err := factory.CreateMetricsExporter(
 		ctx,
 		component.ExporterCreateParams{Logger: logger},
-		cfg.Exporters["dynatrace/invalid"],
+		cfg.Exporters[config.NewIDWithName(typeStr, "invalid")],
 	)
 
 	assert.Error(t, err)

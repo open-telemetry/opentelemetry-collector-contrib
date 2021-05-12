@@ -21,13 +21,13 @@ import (
 	"time"
 
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/config"
+	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -39,19 +39,18 @@ import (
 )
 
 // loadConfigAssertNoError loads the test config and asserts there are no errors, and returns the receiver wanted
-func loadConfigAssertNoError(t *testing.T, receiverConfigName string) configmodels.Receiver {
-	factories, err := componenttest.ExampleComponents()
+func loadConfigAssertNoError(t *testing.T, receiverConfigName string) config.Receiver {
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Receivers[factory.Type()] = factory
 
-	config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
-
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 	assert.NoError(t, err)
-	assert.NotNil(t, config)
+	assert.NotNil(t, cfg)
 
-	return config.Receivers[receiverConfigName]
+	return cfg.Receivers[config.MustIDFromString(receiverConfigName)]
 }
 
 // TestExecKeyMissing loads config and asserts there is an error with that config
@@ -62,7 +61,7 @@ func TestExecKeyMissing(t *testing.T) {
 }
 
 // assertErrorWhenExecKeyMissing makes sure the config passed throws an error, since it's missing the exec key
-func assertErrorWhenExecKeyMissing(t *testing.T, errorReceiverConfig configmodels.Receiver) {
+func assertErrorWhenExecKeyMissing(t *testing.T, errorReceiverConfig config.Receiver) {
 	_, err := newPromExecReceiver(component.ReceiverCreateParams{Logger: zap.NewNop()}, errorReceiverConfig.(*Config), nil)
 	assert.Error(t, err, "newPromExecReceiver() didn't return an error")
 }
@@ -76,7 +75,7 @@ func TestEndToEnd(t *testing.T) {
 }
 
 // endToEndScrapeTest creates a receiver that invokes `go run test_prometheus_exporter.go` and waits until it has scraped the /metrics endpoint twice - the application will crash between each scrape
-func endToEndScrapeTest(t *testing.T, receiverConfig configmodels.Receiver, testName string) {
+func endToEndScrapeTest(t *testing.T, receiverConfig config.Receiver, testName string) {
 	sink := new(consumertest.MetricsSink)
 	wrapper, err := newPromExecReceiver(component.ReceiverCreateParams{Logger: zap.NewNop()}, receiverConfig.(*Config), sink)
 	assert.NoError(t, err, "newPromExecReceiver() returned an error")
@@ -124,29 +123,26 @@ func TestConfigBuilderFunctions(t *testing.T) {
 	configTests := []struct {
 		name                 string
 		customName           string
-		config               *Config
+		cfg                  *Config
 		wantReceiverConfig   *prometheusreceiver.Config
 		wantSubprocessConfig *subprocessmanager.SubprocessConfig
 		wantErr              bool
 	}{
 		{
-			name:       "no command",
-			customName: "prometheus_exec",
-			config: &Config{
-				ScrapeInterval: 60 * time.Second,
-				Port:           9104,
+			name: "no command",
+			cfg: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+				ScrapeInterval:   60 * time.Second,
+				Port:             9104,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "",
 					Env:     []subprocessmanager.EnvConfig{},
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal: "prometheus_exec",
-					NameVal: "prometheus_exec",
-				},
-				PrometheusConfig: &config.Config{
-					ScrapeConfigs: []*config.ScrapeConfig{
+				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+				PrometheusConfig: &promconfig.Config{
+					ScrapeConfigs: []*promconfig.ScrapeConfig{
 						{
 							ScrapeInterval:  model.Duration(60 * time.Second),
 							ScrapeTimeout:   model.Duration(10 * time.Second),
@@ -174,11 +170,11 @@ func TestConfigBuilderFunctions(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:       "normal config",
-			customName: "prometheus_exec/mysqld",
-			config: &Config{
-				ScrapeInterval: 90 * time.Second,
-				Port:           9104,
+			name: "normal config",
+			cfg: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "mysqld")),
+				ScrapeInterval:   90 * time.Second,
+				Port:             9104,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "mysqld_exporter",
 					Env: []subprocessmanager.EnvConfig{
@@ -190,12 +186,9 @@ func TestConfigBuilderFunctions(t *testing.T) {
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal: "prometheus_exec",
-					NameVal: "prometheus_exec/mysqld",
-				},
-				PrometheusConfig: &config.Config{
-					ScrapeConfigs: []*config.ScrapeConfig{
+				ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "mysqld")),
+				PrometheusConfig: &promconfig.Config{
+					ScrapeConfigs: []*promconfig.ScrapeConfig{
 						{
 							ScrapeInterval:  model.Duration(90 * time.Second),
 							ScrapeTimeout:   model.Duration(10 * time.Second),
@@ -229,10 +222,10 @@ func TestConfigBuilderFunctions(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:       "lots of defaults",
-			customName: "prometheus_exec/postgres/test",
-			config: &Config{
-				ScrapeInterval: 60 * time.Second,
+			name: "lots of defaults",
+			cfg: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "postgres/test")),
+				ScrapeInterval:   60 * time.Second,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "postgres_exporter",
 					Env: []subprocessmanager.EnvConfig{
@@ -244,12 +237,9 @@ func TestConfigBuilderFunctions(t *testing.T) {
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal: "prometheus_exec",
-					NameVal: "prometheus_exec/postgres/test",
-				},
-				PrometheusConfig: &config.Config{
-					ScrapeConfigs: []*config.ScrapeConfig{
+				ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "postgres/test")),
+				PrometheusConfig: &promconfig.Config{
+					ScrapeConfigs: []*promconfig.ScrapeConfig{
 						{
 							ScrapeInterval:  model.Duration(60 * time.Second),
 							ScrapeTimeout:   model.Duration(10 * time.Second),
@@ -286,72 +276,15 @@ func TestConfigBuilderFunctions(t *testing.T) {
 
 	for _, test := range configTests {
 		t.Run(test.name, func(t *testing.T) {
-			test.config.SetName(test.customName)
-			got := getPromReceiverConfig(test.config)
+			got := getPromReceiverConfig(test.cfg)
 			assert.Equal(t, test.wantReceiverConfig, got)
 		})
 	}
 
 	for _, test := range configTests {
 		t.Run(test.name, func(t *testing.T) {
-			got := getSubprocessConfig(test.config)
+			got := getSubprocessConfig(test.cfg)
 			assert.Equal(t, test.wantSubprocessConfig, got)
-		})
-	}
-}
-
-func TestExtractName(t *testing.T) {
-	customNameTests := []struct {
-		name   string
-		config *Config
-		want   string
-	}{
-		{
-			name: "no custom name",
-			config: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal: "prometheus_exec",
-					NameVal: "prometheus_exec",
-				},
-			},
-			want: "prometheus_exec",
-		},
-		{
-			name: "no custom name, only trailing slash",
-			config: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal: "prometheus_exec",
-					NameVal: "prometheus_exec/",
-				},
-			},
-			want: "prometheus_exec",
-		},
-		{
-			name: "custom name",
-			config: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal: "prometheus_exec",
-					NameVal: "prometheus_exec/custom",
-				},
-			},
-			want: "custom",
-		},
-		{
-			name: "custom name with slashes inside",
-			config: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal: "prometheus_exec",
-					NameVal: "prometheus_exec/custom/name",
-				},
-			},
-			want: "custom/name",
-		},
-	}
-
-	for _, test := range customNameTests {
-		t.Run(test.name, func(t *testing.T) {
-			got := extractName(test.config)
-			assert.Equal(t, test.want, got)
 		})
 	}
 }

@@ -15,7 +15,7 @@
 package metricstransformprocessor
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 const (
@@ -33,6 +33,9 @@ const (
 
 	// NewNameFieldName is the mapstructure field name for NewName field
 	NewNameFieldName = "new_name"
+
+	// GroupResouceLabelsFieldName is the mapstructure field name for GroupResouceLabels field
+	GroupResouceLabelsFieldName = "group_resource_labels"
 
 	// AggregationTypeFieldName is the mapstructure field name for AggregationType field
 	AggregationTypeFieldName = "aggregation_type"
@@ -52,7 +55,7 @@ const (
 
 // Config defines configuration for Resource processor.
 type Config struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
+	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Transform specifies a list of transforms on metrics with each transform focusing on one metric.
 	Transforms []Transform `mapstructure:"transforms"`
@@ -60,6 +63,9 @@ type Config struct {
 
 // Transform defines the transformation applied to the specific metric
 type Transform struct {
+
+	// --- SPECIFY WHICH METRIC(S) TO MATCH ---
+
 	// MetricIncludeFilter is used to select the metric(s) to operate on.
 	// REQUIRED
 	MetricIncludeFilter FilterConfig `mapstructure:",squash"`
@@ -68,13 +74,24 @@ type Transform struct {
 	// DEPRECATED. Use MetricIncludeFilter instead.
 	MetricName string `mapstructure:"metric_name"`
 
-	// Action specifies the action performed on the matched metric.
+	// --- SPECIFY THE ACTION TO TAKE ON THE MATCHED METRIC(S) ---
+
+	// Action specifies the action performed on the matched metric. Action specifies
+	// if the operations (specified below) are performed on metrics in place (update),
+	// on an inserted clone (insert), or on a new combined metric that includes all
+	// data points from the set of matching metrics (combine).
 	// REQUIRED
 	Action ConfigAction `mapstructure:"action"`
+
+	// --- SPECIFY HOW TO TRANSFORM THE METRIC GENERATED AS A RESULT OF APPLYING THE ABOVE ACTION ---
 
 	// NewName specifies the name of the new metric when inserting or updating.
 	// REQUIRED only if Action is INSERT.
 	NewName string `mapstructure:"new_name"`
+
+	// GroupResourceLabels specifes resource labels that will be appended to this group's new ResourceMetrics message
+	// REQUIRED only if Action is GROUP
+	GroupResourceLabels map[string]string `mapstructure:"group_resource_labels"`
 
 	// AggregationType specifies how to aggregate.
 	// REQUIRED only if Action is COMBINE.
@@ -83,7 +100,7 @@ type Transform struct {
 	// SubmatchCase specifies what case to use for label values created from regexp submatches.
 	SubmatchCase SubmatchCase `mapstructure:"submatch_case"`
 
-	// Operations contains a list of operations that will be performed on the selected metric.
+	// Operations contains a list of operations that will be performed on the resulting metric(s).
 	Operations []Operation `mapstructure:"operations"`
 }
 
@@ -93,6 +110,10 @@ type FilterConfig struct {
 
 	// MatchType determines how the Include string is matched: <strict|regexp>.
 	MatchType MatchType `mapstructure:"match_type"`
+
+	// MatchLabels specifies the label set against which the metric filter will work.
+	// This field is optional.
+	MatchLabels map[string]string `mapstructure:"experimental_match_labels"`
 }
 
 // Operation defines the specific operation performed on the selected metrics.
@@ -147,9 +168,12 @@ const (
 
 	// Combine combines multiple metrics into a single metric.
 	Combine ConfigAction = "combine"
+
+	// Group groups mutiple metrics matching the predicate into multiple ResourceMetrics messages
+	Group ConfigAction = "group"
 )
 
-var Actions = []ConfigAction{Insert, Update, Combine}
+var Actions = []ConfigAction{Insert, Update, Combine, Group}
 
 func (ca ConfigAction) isValid() bool {
 	for _, configAction := range Actions {

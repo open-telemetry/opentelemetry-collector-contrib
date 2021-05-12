@@ -25,7 +25,7 @@ import (
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -35,7 +35,7 @@ import (
 // Default timeout for http request in seconds
 const defaultHTTPTimeout = time.Second * 5
 
-// newTraceExporter returns a new Jaeger Thrift over HTTP exporter.
+// newTracesExporter returns a new Jaeger Thrift over HTTP exporter.
 // The exporterName is the name to be used in the observability of the exporter.
 // The httpAddress should be the URL of the collector to handle POST requests,
 // typically something like: http://hostname:14268/api/traces.
@@ -43,8 +43,8 @@ const defaultHTTPTimeout = time.Second * 5
 // collector.
 // The timeout is used to set the timeout for the HTTP requests, if the
 // value is equal or smaller than zero the default of 5 seconds is used.
-func newTraceExporter(
-	config configmodels.Exporter,
+func newTracesExporter(
+	config config.Exporter,
 	params component.ExporterCreateParams,
 	httpAddress string,
 	headers map[string]string,
@@ -61,7 +61,7 @@ func newTraceExporter(
 		client:  &http.Client{Timeout: clientTimeout},
 	}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		config,
 		params.Logger,
 		s.pushTraceData)
@@ -78,23 +78,25 @@ type jaegerThriftHTTPSender struct {
 func (s *jaegerThriftHTTPSender) pushTraceData(
 	_ context.Context,
 	td pdata.Traces,
-) (droppedSpans int, err error) {
-	octds := internaldata.TraceDataToOC(td)
-	for _, octd := range octds {
+) error {
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		var octd traceData
+		octd.Node, octd.Resource, octd.Spans = internaldata.ResourceSpansToOC(rss.At(i))
 
 		tBatch, err := oCProtoToJaegerThrift(octd)
 		if err != nil {
-			return td.SpanCount(), consumererror.Permanent(err)
+			return consumererror.Permanent(err)
 		}
 
 		body, err := serializeThrift(tBatch)
 		if err != nil {
-			return td.SpanCount(), err
+			return err
 		}
 
 		req, err := http.NewRequest("POST", s.url, body)
 		if err != nil {
-			return td.SpanCount(), err
+			return err
 		}
 
 		req.Header.Set("Content-Type", "application/x-thrift")
@@ -106,7 +108,7 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 
 		resp, err := s.client.Do(req)
 		if err != nil {
-			return td.SpanCount(), err
+			return err
 		}
 
 		io.Copy(ioutil.Discard, resp.Body)
@@ -117,11 +119,11 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 				"HTTP %d %q",
 				resp.StatusCode,
 				http.StatusText(resp.StatusCode))
-			return td.SpanCount(), err
+			return err
 		}
 	}
 
-	return 0, nil
+	return nil
 }
 
 func serializeThrift(obj thrift.TStruct) (*bytes.Buffer, error) {

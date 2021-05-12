@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -39,7 +41,7 @@ func TestCreateExporter(t *testing.T) {
 	ctx := context.Background()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	eCfg := cfg.(*Config)
+	eCfg := cfg.(*googlecloudexporter.Config)
 	eCfg.ProjectID = "test"
 
 	te, err := factory.CreateTracesExporter(ctx, component.ExporterCreateParams{

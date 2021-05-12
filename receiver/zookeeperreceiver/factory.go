@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -41,13 +41,10 @@ func NewFactory() component.ReceiverFactory {
 	)
 }
 
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: typeStr,
-			},
+			ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
 			CollectionInterval: defaultCollectionInterval,
 		},
 		TCPAddr: confignet.TCPAddr{
@@ -61,8 +58,8 @@ func createDefaultConfig() configmodels.Receiver {
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
-	config configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
+	config config.Receiver,
+	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	rConfig := config.(*Config)
 	zms, err := newZookeeperMetricsScraper(params.Logger, rConfig)
@@ -76,7 +73,7 @@ func createMetricsReceiver(
 		consumer,
 		scraperhelper.AddResourceMetricsScraper(
 			scraperhelper.NewResourceMetricsScraper(
-				typeStr,
+				rConfig.ID(),
 				zms.scrape,
 				scraperhelper.WithShutdown(zms.shutdown),
 			),

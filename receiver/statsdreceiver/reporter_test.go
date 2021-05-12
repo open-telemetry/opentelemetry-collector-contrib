@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.uber.org/zap"
 )
@@ -29,19 +30,19 @@ func TestReporterObservability(t *testing.T) {
 	require.NoError(t, err)
 	defer doneFn()
 
-	const receiverName = "fake_statsd_receiver"
-	reporter := newReporter(receiverName, zap.NewNop())
+	receiverID := config.NewIDWithName(typeStr, "fake_receiver")
+	reporter := newReporter(receiverID, zap.NewNop())
 
 	ctx := reporter.OnDataReceived(context.Background())
 
 	reporter.OnMetricsProcessed(ctx, 17, nil)
 
-	obsreporttest.CheckReceiverMetricsViews(t, receiverName, "tcp", 17, 0)
+	obsreporttest.CheckReceiverMetrics(t, receiverID, "tcp", 17, 0)
 
 	// Below just exercise the error paths.
 	err = errors.New("fake error for tests")
 	reporter.OnTranslationError(ctx, err)
 	reporter.OnMetricsProcessed(ctx, 10, err)
 
-	obsreporttest.CheckReceiverMetricsViews(t, receiverName, "tcp", 17, 10)
+	obsreporttest.CheckReceiverMetrics(t, receiverID, "tcp", 17, 10)
 }

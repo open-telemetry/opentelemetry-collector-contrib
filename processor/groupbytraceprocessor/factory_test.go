@@ -28,6 +28,7 @@ func TestDefaultConfiguration(t *testing.T) {
 
 	// verify
 	assert.Equal(t, defaultNumTraces, c.NumTraces)
+	assert.Equal(t, defaultNumWorkers, c.NumWorkers)
 	assert.Equal(t, defaultWaitDuration, c.WaitDuration)
 	assert.Equal(t, defaultDiscardOrphans, c.DiscardOrphans)
 	assert.Equal(t, defaultStoreOnDisk, c.StoreOnDisk)
@@ -42,7 +43,7 @@ func TestCreateTestProcessor(t *testing.T) {
 	next := &mockProcessor{}
 
 	// test
-	p, err := createTraceProcessor(context.Background(), params, c, next)
+	p, err := createTracesProcessor(context.Background(), params, c, next)
 
 	// verify
 	assert.NoError(t, err)

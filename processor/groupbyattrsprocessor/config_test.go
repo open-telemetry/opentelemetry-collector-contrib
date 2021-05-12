@@ -21,13 +21,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
@@ -36,21 +36,18 @@ func TestLoadConfig(t *testing.T) {
 	err = configcheck.ValidateConfig(factory.CreateDefaultConfig())
 	require.NoError(t, err)
 
-	config, err := configtest.LoadConfigFile(
+	cfg, err := configtest.LoadConfigFile(
 		t,
 		path.Join(".", "testdata", "config.yaml"),
 		factories)
 
 	require.Nil(t, err)
-	require.NotNil(t, config)
+	require.NotNil(t, cfg)
 
-	conf := config.Processors["groupbyattrs/custom"]
+	conf := cfg.Processors[config.NewIDWithName(typeStr, "custom")]
 	assert.Equal(t, conf,
 		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: "groupbyattrs",
-				NameVal: "groupbyattrs/custom",
-			},
-			GroupByKeys: []string{"key1", "key2"},
+			ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "custom")),
+			GroupByKeys:       []string{"key1", "key2"},
 		})
 }

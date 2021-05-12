@@ -42,7 +42,7 @@ func newMemcachedScraper(
 		logger: logger,
 		config: config,
 	}
-	return scraperhelper.NewResourceMetricsScraper(config.Name(), ms.scrape)
+	return scraperhelper.NewResourceMetricsScraper(config.ID(), ms.scrape)
 }
 
 func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) {

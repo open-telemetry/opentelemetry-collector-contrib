@@ -1,14 +1,20 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver
 
-go 1.14
+go 1.15
 
 require (
-	github.com/shirou/gopsutil v3.20.11+incompatible
-	github.com/stretchr/testify v1.6.1
-	github.com/testcontainers/testcontainers-go v0.9.0
-	go.opentelemetry.io/collector v0.17.0
+	github.com/armon/go-metrics v0.3.3 // indirect
+	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
+	github.com/hashicorp/go-msgpack v0.5.5 // indirect
+	github.com/mattn/go-colorable v0.1.7 // indirect
+	github.com/onsi/ginkgo v1.14.1 // indirect
+	github.com/onsi/gomega v1.10.2 // indirect
+	github.com/pelletier/go-toml v1.8.0 // indirect
+	github.com/shirou/gopsutil v3.21.4+incompatible
+	github.com/stretchr/testify v1.7.0
+	github.com/testcontainers/testcontainers-go v0.10.0
+	go.opentelemetry.io/collector v0.26.1-0.20210511231347-ffb332b37b52
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.16.0
+	gopkg.in/ini.v1 v1.57.0 // indirect
 )
-
-replace github.com/docker/docker => github.com/docker/engine v17.12.0-ce-rc1.0.20200309214505-aa6a9891b09c+incompatible

@@ -29,9 +29,6 @@ func DefaultConfig() *Config {
 	return &Config{
 		HTTPClientSettings:  confighttp.HTTPClientSettings{Timeout: 5 * time.Second},
 		StaleServiceTimeout: 5 * time.Minute,
-		HostTranslations: map[string]string{
-			conventions.AttributeHostName: "host",
-		},
 		SyncAttributes: map[string]string{
 			conventions.AttributeK8sPodUID:   conventions.AttributeK8sPodUID,
 			conventions.AttributeContainerID: conventions.AttributeContainerID,
@@ -57,10 +54,6 @@ type Config struct {
 	StaleServiceTimeout time.Duration `mapstructure:"stale_service_timeout"`
 	// SyncAttributes is a key of the span attribute name to sync to the dimension as the value.
 	SyncAttributes map[string]string `mapstructure:"sync_attributes"`
-
-	// HostTranslations is a map where the key is the host attribute name to rename to the value.
-	// TODO: Remove once translations are removed from signalfx exporter.
-	HostTranslations map[string]string `mapstructure:"host_translations"`
 }
 
 func (c *Config) validate() error {

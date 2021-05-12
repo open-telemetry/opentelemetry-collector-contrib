@@ -16,7 +16,7 @@ package kubelet
 
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
+	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 )
 
 func cpuMetrics(prefix string, s *stats.CPUStats) []*metricspb.Metric {
@@ -40,5 +40,5 @@ func cpuUsageMetric(prefix string, s *stats.CPUStats) *metricspb.Metric {
 
 func cpuCumulativeUsageMetric(prefix string, s *stats.CPUStats) *metricspb.Metric {
 	value := float64(*s.UsageCoreNanoSeconds) / 1_000_000_000
-	return cumulativeDouble(prefix+"cpu.time", "s", &value)
+	return cumulativeDouble(prefix+"cpu.time", &value)
 }

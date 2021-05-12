@@ -6,6 +6,11 @@ This enables Dynatrace to receive metrics collected by the OpenTelemetry Collect
 
 The requests sent to Dynatrace are authenticated using an API token mechanism documented [here](https://www.dynatrace.com/support/help/dynatrace-api/basics/dynatrace-api-authentication/).
 
+> Please review the Collector's [security
+> documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
+> which contains recommendations on securing sensitive information such as the
+> API key required by this exporter.
+
 ## Configuration
 
 A Dynatrace API Token and metrics ingest endpoint are required.
@@ -22,6 +27,10 @@ dynatrace:
   endpoint: https://abc12345.live.dynatrace.com/api/v2/metrics/ingest
  ```
 
+### Metric Batching
+
+Dynatrace recommends the use of the batch processor with a maximum batch size of 1000 metrics and a timeout between 10 and 60 seconds. Batches with more than 1000 metrics may be throttled by Dynatrace.
+
 Full example:
 
  ```yaml
@@ -37,6 +46,9 @@ receivers:
 
 processors:
   batch:
+    # Batch size must be less than or equal to 1000
+    send_batch_max_size: 1000
+    timeout: 30s
 
 exporters:
   dynatrace:
@@ -64,9 +76,9 @@ service:
 
 Several helper files are leveraged to provide additional capabilities automatically:
 
-- [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/config/confighttp/README.md)
-- [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/config/configtls/README.md)
-- [Queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/master/exporter/exporterhelper/README.md) except timeout which is handled by the HTTP settings
+- [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md)
+- [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
+- [Queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md) except timeout which is handled by the HTTP settings
 
 ```yaml
 receivers:
@@ -85,7 +97,7 @@ exporters:
       - header1: value1
     read_buffer_size: 4000
     write_buffer_size: 4000
-    timeout: 10s
+    timeout: 30s
     insecure_skip_verify: false
     retry_on_failure:
       enabled: true

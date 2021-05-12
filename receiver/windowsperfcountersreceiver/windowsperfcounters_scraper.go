@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
@@ -49,7 +49,7 @@ type scraper struct {
 }
 
 func newScraper(cfg *Config, logger *zap.Logger) (*scraper, error) {
-	if err := cfg.validate(); err != nil {
+	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
 
@@ -77,7 +77,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 
 	// log a warning if some counters cannot be loaded, but do not crash the app
 	if len(errors) > 0 {
-		s.logger.Warn("some performance counters could not be initialized", zap.Error(componenterror.CombineErrors(errors)))
+		s.logger.Warn("some performance counters could not be initialized", zap.Error(consumererror.Combine(errors)))
 	}
 
 	return nil
@@ -100,13 +100,13 @@ func (s *scraper) shutdown(context.Context) error {
 		}
 	}
 
-	return componenterror.CombineErrors(errors)
+	return consumererror.Combine(errors)
 }
 
 func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 	metrics := pdata.NewMetricSlice()
 
-	now := pdata.TimestampUnixNano(uint64(time.Now().UnixNano()))
+	now := pdata.TimestampFromTime(time.Now())
 
 	var errors []error
 
@@ -124,10 +124,10 @@ func (s *scraper) scrape(context.Context) (pdata.MetricSlice, error) {
 	}
 	metrics.Resize(len(s.counters) - len(errors))
 
-	return metrics, componenterror.CombineErrors(errors)
+	return metrics, consumererror.Combine(errors)
 }
 
-func initializeDoubleGaugeMetric(metric pdata.Metric, now pdata.TimestampUnixNano, name string, counterValues []win_perf_counters.CounterValue) {
+func initializeDoubleGaugeMetric(metric pdata.Metric, now pdata.Timestamp, name string, counterValues []win_perf_counters.CounterValue) {
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
 
@@ -139,7 +139,7 @@ func initializeDoubleGaugeMetric(metric pdata.Metric, now pdata.TimestampUnixNan
 	}
 }
 
-func initializeDoubleDataPoint(dataPoint pdata.DoubleDataPoint, now pdata.TimestampUnixNano, instanceLabel string, value float64) {
+func initializeDoubleDataPoint(dataPoint pdata.DoubleDataPoint, now pdata.Timestamp, instanceLabel string, value float64) {
 	if instanceLabel != "" {
 		labelsMap := dataPoint.LabelsMap()
 		labelsMap.Insert(instanceLabelName, instanceLabel)

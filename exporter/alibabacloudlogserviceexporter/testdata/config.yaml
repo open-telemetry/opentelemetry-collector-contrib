@@ -1,8 +1,8 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
   alibabacloud_logservice:
@@ -13,11 +13,10 @@ exporters:
     logstore: "demo-logstore"
     access_key_id: "test-id"
     access_key_secret: "test-secret"
-    ecs_ram_role: "test-role"
 
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
+      receivers: [nop]
+      processors: [nop]
       exporters: [alibabacloud_logservice, alibabacloud_logservice/2]

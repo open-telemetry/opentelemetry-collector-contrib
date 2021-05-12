@@ -21,8 +21,9 @@ import (
 	"strconv"
 	"strings"
 
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -42,6 +43,7 @@ type internalTransform struct {
 	MetricIncludeFilter internalFilter
 	Action              ConfigAction
 	NewName             string
+	GroupResourceLabels map[string]string
 	AggregationType     AggregationType
 	SubmatchCase        SubmatchCase
 	Operations          []internalOperation
@@ -57,6 +59,7 @@ type internalOperation struct {
 type internalFilter interface {
 	getMatches(toMatch metricNameMapping) []*match
 	getSubexpNames() []string
+	labelMatched(metric *metricspb.Metric) bool
 }
 
 type match struct {
@@ -66,14 +69,17 @@ type match struct {
 }
 
 type internalFilterStrict struct {
-	include string
+	include     string
+	matchLabels map[string]string
 }
 
 func (f internalFilterStrict) getMatches(toMatch metricNameMapping) []*match {
 	if metrics, ok := toMatch[f.include]; ok {
-		matches := make([]*match, len(metrics))
-		for i, metric := range metrics {
-			matches[i] = &match{metric: metric}
+		matches := make([]*match, 0, 10)
+		for _, metric := range metrics {
+			if f.labelMatched(metric) {
+				matches = append(matches, &match{metric: metric})
+			}
 		}
 		return matches
 	}
@@ -85,8 +91,37 @@ func (f internalFilterStrict) getSubexpNames() []string {
 	return nil
 }
 
+func (f internalFilterStrict) labelMatched(metric *metricspb.Metric) bool {
+	if len(f.matchLabels) == 0 {
+		return true
+	}
+
+	for key, value := range f.matchLabels {
+		keyFound := false
+
+		for idx, label := range metric.MetricDescriptor.LabelKeys {
+			if label.Key != key {
+				continue
+			}
+
+			keyFound = true
+			if len(metric.Timeseries) > 0 && metric.Timeseries[0].LabelValues[idx].Value != value {
+				return false
+			}
+		}
+
+		// if a label-key is not found then return false only if the given label-value is non-empty. If a given label-value is empty
+		// and the key is not found then return true. In this approach we can make sure certain key is not present which is a valid use case.
+		if !keyFound && value != "" {
+			return false
+		}
+	}
+	return true
+}
+
 type internalFilterRegexp struct {
-	include *regexp.Regexp
+	include     *regexp.Regexp
+	matchLabels map[string]*regexp.Regexp
 }
 
 func (f internalFilterRegexp) getMatches(toMatch metricNameMapping) []*match {
@@ -94,7 +129,9 @@ func (f internalFilterRegexp) getMatches(toMatch metricNameMapping) []*match {
 	for name, metrics := range toMatch {
 		if submatches := f.include.FindStringSubmatchIndex(name); submatches != nil {
 			for _, metric := range metrics {
-				matches = append(matches, &match{metric: metric, pattern: f.include, submatches: submatches})
+				if f.labelMatched(metric) {
+					matches = append(matches, &match{metric: metric, pattern: f.include, submatches: submatches})
+				}
 			}
 		}
 	}
@@ -105,9 +142,37 @@ func (f internalFilterRegexp) getSubexpNames() []string {
 	return f.include.SubexpNames()
 }
 
+func (f internalFilterRegexp) labelMatched(metric *metricspb.Metric) bool {
+	if len(f.matchLabels) == 0 {
+		return true
+	}
+
+	for key, value := range f.matchLabels {
+		keyFound := false
+
+		for idx, label := range metric.MetricDescriptor.LabelKeys {
+			if label.Key != key {
+				continue
+			}
+
+			keyFound = true
+			if len(metric.Timeseries) > 0 && !value.MatchString(metric.Timeseries[0].LabelValues[idx].Value) {
+				return false
+			}
+		}
+
+		// if a label-key is not found then return false only if the given label-value is non-empty. If a given label-value is empty
+		// and the key is not found then return true. In this approach we can make sure certain key is not present which is a valid use case.
+		if !keyFound && !value.MatchString("") {
+			return false
+		}
+	}
+	return true
+}
+
 type metricNameMapping map[string][]*metricspb.Metric
 
-func newMetricNameMapping(data *consumerdata.MetricsData) metricNameMapping {
+func newMetricNameMapping(data *internaldata.MetricsData) metricNameMapping {
 	mnm := metricNameMapping(make(map[string][]*metricspb.Metric, len(data.Metrics)))
 	for _, m := range data.Metrics {
 		mnm.add(m.MetricDescriptor.Name, m)
@@ -140,6 +205,7 @@ func newMetricsTransformProcessor(logger *zap.Logger, internalTransforms []inter
 // ProcessMetrics implements the MProcessor interface.
 func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 	mds := internaldata.MetricsToOC(md)
+	groupedMds := make([]internaldata.MetricsData, 0)
 
 	for i := range mds {
 		data := &mds[i]
@@ -147,6 +213,12 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 		nameToMetricMapping := newMetricNameMapping(data)
 		for _, transform := range mtp.transforms {
 			matchedMetrics := transform.MetricIncludeFilter.getMatches(nameToMetricMapping)
+
+			if transform.Action == Group && len(matchedMetrics) > 0 {
+				nData := mtp.groupMatchedMetrics(data, matchedMetrics, transform)
+				groupedMds = append(groupedMds, *nData)
+				data.Metrics = mtp.removeMatchedMetrics(data.Metrics, matchedMetrics)
+			}
 
 			if transform.Action == Combine && len(matchedMetrics) > 0 {
 				if err := mtp.canBeCombined(matchedMetrics); err != nil {
@@ -158,7 +230,8 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 				combined := mtp.combine(matchedMetrics, transform)
 				data.Metrics = mtp.removeMatchedMetricsAndAppendCombined(data.Metrics, matchedMetrics, combined)
 
-				// set matchedMetrics to the combined metric so that any additional operations are performed on the combined metric
+				// set matchedMetrics to the combined metric so that any additional operations are performed on
+				// the combined metric
 				matchedMetrics = []*match{{metric: combined}}
 			}
 
@@ -182,7 +255,37 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 		}
 	}
 
-	return internaldata.OCSliceToMetrics(mds), nil
+	resultmds := append(mds, groupedMds...)
+	return internaldata.OCSliceToMetrics(resultmds), nil
+}
+
+// groupMatchedMetrics groups matched metrics into a new MetricsData with a new Resource and returns it.
+func (mtp *metricsTransformProcessor) groupMatchedMetrics(oData *internaldata.MetricsData, matchedMetrics []*match,
+	transform internalTransform) (nData *internaldata.MetricsData) {
+	// create new ResouceMetrics bucket
+	nData = &internaldata.MetricsData{
+		Node:     proto.Clone(oData.Node).(*commonpb.Node),
+		Resource: proto.Clone(oData.Resource).(*resourcepb.Resource),
+		Metrics:  make([]*metricspb.Metric, 0),
+	}
+
+	// update new resource labels to the new ResouceMetrics bucket
+	if nData.Resource == nil || nData.Resource.GetLabels() == nil {
+		nData.Resource = &resourcepb.Resource{
+			Labels: make(map[string]string),
+		}
+	}
+
+	rlabels := nData.Resource.GetLabels()
+	for k, v := range transform.GroupResourceLabels {
+		rlabels[k] = v
+	}
+
+	// reassign matched metrics to the new ResouceMetrics bucket
+	for _, match := range matchedMetrics {
+		nData.Metrics = append(nData.Metrics, match.metric)
+	}
+	return nData
 }
 
 // canBeCombined returns true if all the provided metrics share the same type, unit, and labels
@@ -275,8 +378,8 @@ func replaceCaseOfSubmatch(replacement SubmatchCase, submatch string) string {
 	return submatch
 }
 
-// removeMatchedMetricsAndAppendCombined removes the set of matched metrics from metrics and appends the combined metric at the end.
-func (mtp *metricsTransformProcessor) removeMatchedMetricsAndAppendCombined(metrics []*metricspb.Metric, matchedMetrics []*match, combined *metricspb.Metric) []*metricspb.Metric {
+// removeMatchedMetrics removes the set of matched metrics from metrics
+func (mtp *metricsTransformProcessor) removeMatchedMetrics(metrics []*metricspb.Metric, matchedMetrics []*match) []*metricspb.Metric {
 	filteredMetrics := make([]*metricspb.Metric, 0, len(metrics)-len(matchedMetrics))
 	for _, metric := range metrics {
 		var matched bool
@@ -290,7 +393,12 @@ func (mtp *metricsTransformProcessor) removeMatchedMetricsAndAppendCombined(metr
 			filteredMetrics = append(filteredMetrics, metric)
 		}
 	}
+	return filteredMetrics
+}
 
+// removeMatchedMetricsAndAppendCombined removes the set of matched metrics from metrics and appends the combined metric at the end.
+func (mtp *metricsTransformProcessor) removeMatchedMetricsAndAppendCombined(metrics []*metricspb.Metric, matchedMetrics []*match, combined *metricspb.Metric) []*metricspb.Metric {
+	filteredMetrics := mtp.removeMatchedMetrics(metrics, matchedMetrics)
 	return append(filteredMetrics, combined)
 }
 

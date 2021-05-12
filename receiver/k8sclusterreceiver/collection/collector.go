@@ -18,7 +18,7 @@ import (
 	"reflect"
 	"time"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/autoscaling/v2beta1"
@@ -29,11 +29,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 // TODO: Consider moving some of these constants to
-// https://go.opentelemetry.io/collector/blob/master/translator/conventions/opentelemetry.go.
+// https://go.opentelemetry.io/collector/blob/main/translator/conventions/opentelemetry.go.
 
 // Resource label keys.
 const (
@@ -43,14 +43,12 @@ const (
 	containerType = "container"
 
 	// Resource labels keys for UID.
-	k8sKeyNodeUID                  = "k8s.node.uid"
 	k8sKeyNamespaceUID             = "k8s.namespace.uid"
 	k8sKeyReplicationControllerUID = "k8s.replicationcontroller.uid"
 	k8sKeyHPAUID                   = "k8s.hpa.uid"
 	k8sKeyResourceQuotaUID         = "k8s.resourcequota.uid"
 
 	// Resource labels keys for Name.
-	k8sKeyNodeName                  = "k8s.node.name"
 	k8sKeyReplicationControllerName = "k8s.replicationcontroller.name"
 	k8sKeyHPAName                   = "k8s.hpa.name"
 	k8sKeyResourceQuotaName         = "k8s.resourcequota.name"
@@ -62,7 +60,6 @@ const (
 	k8sKindJob                   = "Job"
 	k8sKindReplicationController = "ReplicationController"
 	k8sKindReplicaSet            = "ReplicaSet"
-	k8sKindService               = "Service"
 	k8sStatefulSet               = "StatefulSet"
 )
 
@@ -82,7 +79,7 @@ func NewDataCollector(logger *zap.Logger, nodeConditionsToReport []string) *Data
 	return &DataCollector{
 		logger: logger,
 		metricsStore: &metricsStore{
-			metricsCache: map[types.UID][]consumerdata.MetricsData{},
+			metricsCache: map[types.UID][]internaldata.MetricsData{},
 		},
 		metadataStore:          &metadataStore{},
 		nodeConditionsToReport: nodeConditionsToReport,
@@ -114,7 +111,7 @@ func (dc *DataCollector) UpdateMetricsStore(obj interface{}, rm []*resourceMetri
 	}
 }
 
-func (dc *DataCollector) CollectMetricData(currentTime time.Time) []consumerdata.MetricsData {
+func (dc *DataCollector) CollectMetricData(currentTime time.Time) []internaldata.MetricsData {
 	return dc.metricsStore.getMetricData(currentTime)
 }
 
@@ -159,8 +156,8 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 }
 
 // SyncMetadata updates the metric store with latest metrics from the kubernetes object
-func (dc *DataCollector) SyncMetadata(obj interface{}) map[metrics.ResourceID]*KubernetesMetadata {
-	km := map[metrics.ResourceID]*KubernetesMetadata{}
+func (dc *DataCollector) SyncMetadata(obj interface{}) map[metadata.ResourceID]*KubernetesMetadata {
+	km := map[metadata.ResourceID]*KubernetesMetadata{}
 	switch o := obj.(type) {
 	case *corev1.Pod:
 		km = getMetadataForPod(o, dc.metadataStore, dc.logger)

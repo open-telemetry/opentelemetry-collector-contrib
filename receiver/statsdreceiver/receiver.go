@@ -21,12 +21,10 @@ import (
 	"sync"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/translator/internaldata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
@@ -44,18 +42,15 @@ type statsdReceiver struct {
 	server       transport.Server
 	reporter     transport.Reporter
 	parser       protocol.Parser
-	nextConsumer consumer.MetricsConsumer
+	nextConsumer consumer.Metrics
 	cancel       context.CancelFunc
-
-	startOnce sync.Once
-	stopOnce  sync.Once
 }
 
 // New creates the StatsD receiver with the given parameters.
 func New(
 	logger *zap.Logger,
 	config Config,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
@@ -75,7 +70,7 @@ func New(
 		config:       &config,
 		nextConsumer: nextConsumer,
 		server:       server,
-		reporter:     newReporter(config.Name(), logger),
+		reporter:     newReporter(config.ID(), logger),
 		parser:       &protocol.StatsDParser{},
 	}
 	return r, nil
@@ -88,65 +83,55 @@ func buildTransportServer(config Config) (transport.Server, error) {
 		return transport.NewUDPServer(config.NetAddr.Endpoint)
 	}
 
-	return nil, fmt.Errorf("unsupported transport %q for receiver %q", config.NetAddr.Transport, config.Name())
+	return nil, fmt.Errorf("unsupported transport %q for receiver %v", config.NetAddr.Transport, config.ID())
 }
 
-// StartMetricsReception starts a UDP server that can process StatsD messages.
+// Start starts a UDP server that can process StatsD messages.
 func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 	r.Lock()
 	defer r.Unlock()
-	err := componenterror.ErrAlreadyStarted
-	r.startOnce.Do(func() {
-		ctx, r.cancel = context.WithCancel(ctx)
-		var transferChan = make(chan string, 10)
-		ticker := time.NewTicker(r.config.AggregationInterval)
-		err = nil
-		r.parser.Initialize()
-		go func() {
-			err = r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter, transferChan)
-			if err != nil {
-				host.ReportFatalError(err)
-			}
-		}()
-		go func() {
-			for {
-				select {
-				case <-ticker.C:
-					metrics := r.parser.GetMetrics()
-					if len(metrics) > 0 {
-						r.Flush(ctx, metrics, r.nextConsumer)
-					}
-				case rawMetric := <-transferChan:
-					r.parser.Aggregate(rawMetric)
-				case <-ctx.Done():
-					ticker.Stop()
-					return
-				}
-			}
-		}()
-	})
 
-	return err
+	ctx, r.cancel = context.WithCancel(ctx)
+	var transferChan = make(chan string, 10)
+	ticker := time.NewTicker(r.config.AggregationInterval)
+	r.parser.Initialize(r.config.EnableMetricType, r.config.TimerHistogramMapping)
+	go func() {
+		if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter, transferChan); err != nil {
+			host.ReportFatalError(err)
+		}
+	}()
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				metrics := r.parser.GetMetrics()
+				if metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len() > 0 {
+					r.Flush(ctx, metrics, r.nextConsumer)
+				}
+			case rawMetric := <-transferChan:
+				r.parser.Aggregate(rawMetric)
+			case <-ctx.Done():
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+
+	return nil
 }
 
-// StopMetricsReception stops the StatsD receiver.
+// Shutdown stops the StatsD receiver.
 func (r *statsdReceiver) Shutdown(context.Context) error {
 	r.Lock()
 	defer r.Unlock()
 
-	var err = componenterror.ErrAlreadyStopped
-	r.stopOnce.Do(func() {
-		err = r.server.Close()
-		r.cancel()
-	})
+	err := r.server.Close()
+	r.cancel()
 	return err
 }
 
-func (r *statsdReceiver) Flush(ctx context.Context, metrics []*metricspb.Metric, nextConsumer consumer.MetricsConsumer) error {
-	md := consumerdata.MetricsData{
-		Metrics: metrics,
-	}
-	error := nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
+func (r *statsdReceiver) Flush(ctx context.Context, metrics pdata.Metrics, nextConsumer consumer.Metrics) error {
+	error := nextConsumer.ConsumeMetrics(ctx, metrics)
 	if error != nil {
 		return error
 	}

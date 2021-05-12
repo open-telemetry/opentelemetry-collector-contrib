@@ -19,20 +19,18 @@ import (
 	"fmt"
 	"strconv"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // A map of the INFO data returned from Redis.
 type info map[string]string
 
-// Builds protobuf metrics from the combination of a metrics map
+// Builds metrics from the combination of a metrics map
 // (INFO from Redis) and redisMetrics (built at startup). These are the fixed,
 // non keyspace metrics. Returns a list of parsing errors, which can be treated
 // like warnings.
-func (i info) buildFixedProtoMetrics(metrics []*redisMetric, t *timeBundle) (
-	protoMetrics []*metricspb.Metric,
-	warnings []error,
-) {
+func (i info) buildFixedMetrics(metrics []*redisMetric, t *timeBundle) (pdms pdata.MetricSlice, warnings []error) {
+	pdms = pdata.NewMetricSlice()
 	for _, redisMetric := range metrics {
 		strVal, ok := i[redisMetric.key]
 		if !ok {
@@ -42,23 +40,21 @@ func (i info) buildFixedProtoMetrics(metrics []*redisMetric, t *timeBundle) (
 		if strVal == "" {
 			continue
 		}
-		protoMetric, parsingError := redisMetric.parseMetric(strVal, t)
+		pdm, parsingError := redisMetric.parseMetric(strVal, t)
 		if parsingError != nil {
 			warnings = append(warnings, parsingError)
 			continue
 		}
-		protoMetrics = append(protoMetrics, protoMetric)
+		pdms.Append(pdm)
 	}
-	return protoMetrics, warnings
+	return pdms, warnings
 }
 
-// Builds proto metrics from any 'keyspace' metrics in Redis INFO:
-// e.g. "db0:keys=1,expires=2, avg_ttl=3". Returns proto metrics and parsing
+// Builds metrics from any 'keyspace' metrics in Redis INFO:
+// e.g. "db0:keys=1,expires=2, avg_ttl=3". Returns metrics and parsing
 // errors, to be treated as warnings, if there were any.
-func (i info) buildKeyspaceProtoMetrics(t *timeBundle) (
-	protoMetrics []*metricspb.Metric,
-	warnings []error,
-) {
+func (i info) buildKeyspaceMetrics(t *timeBundle) (outMS pdata.MetricSlice, warnings []error) {
+	outMS = pdata.NewMetricSlice()
 	const RedisMaxDbs = 16
 	for db := 0; db < RedisMaxDbs; db++ {
 		key := "db" + strconv.Itoa(db)
@@ -71,10 +67,10 @@ func (i info) buildKeyspaceProtoMetrics(t *timeBundle) (
 			warnings = append(warnings, parsingError)
 			continue
 		}
-		keyspaceMetrics := buildKeyspaceTriplet(keyspace, t)
-		protoMetrics = append(protoMetrics, keyspaceMetrics...)
+		ms := buildKeyspaceTriplet(keyspace, t)
+		ms.MoveAndAppendTo(outMS)
 	}
-	return protoMetrics, warnings
+	return outMS, warnings
 }
 
 func (i info) getUptimeInSeconds() (int, error) {

@@ -32,7 +32,7 @@ var _ component.MetricsReceiver = (*awsEcsContainerMetricsReceiver)(nil)
 // awsEcsContainerMetricsReceiver implements the component.MetricsReceiver for aws ecs container metrics.
 type awsEcsContainerMetricsReceiver struct {
 	logger       *zap.Logger
-	nextConsumer consumer.MetricsConsumer
+	nextConsumer consumer.Metrics
 	config       *Config
 	cancel       context.CancelFunc
 	restClient   awsecscontainermetrics.RestClient
@@ -43,7 +43,7 @@ type awsEcsContainerMetricsReceiver struct {
 func New(
 	logger *zap.Logger,
 	config *Config,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 	rest awsecscontainermetrics.RestClient) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
@@ -60,7 +60,7 @@ func New(
 
 // Start begins collecting metrics from Amazon ECS task metadata endpoint.
 func (aecmr *awsEcsContainerMetricsReceiver) Start(ctx context.Context, host component.Host) error {
-	ctx, aecmr.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, aecmr.config.Name(), "http"))
+	ctx, aecmr.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, aecmr.config.ID(), "http"))
 	go func() {
 		ticker := time.NewTicker(aecmr.config.CollectionInterval)
 		defer ticker.Stop()
@@ -68,7 +68,7 @@ func (aecmr *awsEcsContainerMetricsReceiver) Start(ctx context.Context, host com
 		for {
 			select {
 			case <-ticker.C:
-				aecmr.collectDataFromEndpoint(ctx, typeStr)
+				aecmr.collectDataFromEndpoint(ctx)
 			case <-ctx.Done():
 				return
 			}
@@ -84,7 +84,7 @@ func (aecmr *awsEcsContainerMetricsReceiver) Shutdown(context.Context) error {
 }
 
 // collectDataFromEndpoint collects container stats from Amazon ECS Task Metadata Endpoint
-func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context.Context, typeStr string) error {
+func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context.Context) error {
 	aecmr.provider = awsecscontainermetrics.NewStatsProvider(aecmr.restClient)
 	stats, metadata, err := aecmr.provider.GetStats()
 

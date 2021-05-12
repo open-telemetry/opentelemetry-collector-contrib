@@ -1,4 +1,4 @@
-// Copyright -c Google LLC
+// Copyright OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,10 +35,11 @@ func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs pdata.LogSlice) {
 
 		// SignalFx timestamps are in millis so convert to nanos by multiplying
 		// by 1 million.
-		lr.SetTimestamp(pdata.TimestampUnixNano(event.Timestamp * 1e6))
+		lr.SetTimestamp(pdata.Timestamp(event.Timestamp * 1e6))
 
 		attrs := lr.Attributes()
-		attrs.InitEmptyWithCapacity(1 + len(event.Dimensions) + len(event.Properties))
+		attrs.Clear()
+		attrs.EnsureCapacity(1 + len(event.Dimensions) + len(event.Properties))
 
 		if event.Category != nil {
 			attrs.InsertInt(splunk.SFxEventCategoryKey, int64(*event.Category))
@@ -56,7 +57,7 @@ func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs pdata.LogSlice) {
 		if len(event.Properties) > 0 {
 			propMapVal := pdata.NewAttributeValueMap()
 			propMap := propMapVal.MapVal()
-			propMap.InitEmptyWithCapacity(len(event.Properties))
+			propMap.EnsureCapacity(len(event.Properties))
 
 			for _, prop := range event.Properties {
 				// No way to tell what value type is without testing each

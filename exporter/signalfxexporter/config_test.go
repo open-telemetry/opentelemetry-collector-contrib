@@ -26,45 +26,44 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters["signalfx"]
+	e0 := cfg.Exporters[config.NewID(typeStr)]
 
 	// Realm doesn't have a default value so set it directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
 	defaultCfg.Realm = "ap0"
+	defaultTranslationRules, err := loadDefaultTranslationRules()
+	require.NoError(t, err)
+	defaultCfg.TranslationRules = defaultTranslationRules
 	assert.Equal(t, defaultCfg, e0)
 
-	expectedName := "signalfx/allsettings"
-
-	e1 := cfg.Exporters[expectedName]
+	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "allsettings")]
 	expectedCfg := Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: expectedName,
-		},
-		AccessToken: "testToken",
-		Realm:       "us1",
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "allsettings")),
+		AccessToken:      "testToken",
+		Realm:            "us1",
 		Headers: map[string]string{
 			"added-entry": "added value",
 			"dot.test":    "test",
@@ -85,13 +84,78 @@ func TestLoadConfig(t *testing.T) {
 		}, AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: false,
 		},
-		SendCompatibleMetrics: true,
 		TranslationRules: []translation.Rule{
 			{
 				Action: translation.ActionRenameDimensionKeys,
 				Mapping: map[string]string{
 					"k8s.cluster.name": "kubernetes_cluster",
 				},
+			},
+			{
+				Action: translation.ActionDropDimensions,
+				DimensionPairs: map[string]map[string]bool{
+					"foo":  nil,
+					"foo1": {"bar": true},
+				},
+			},
+			{
+				Action:     translation.ActionDropDimensions,
+				MetricName: "metric",
+				DimensionPairs: map[string]map[string]bool{
+					"foo":  nil,
+					"foo1": {"bar": true},
+				},
+			},
+			{
+				Action: translation.ActionDropDimensions,
+				MetricNames: map[string]bool{
+					"metric1": true,
+					"metric2": true,
+				},
+				DimensionPairs: map[string]map[string]bool{
+					"foo":  nil,
+					"foo1": {"bar": true},
+				},
+			},
+		},
+		ExcludeMetrics: []dpfilters.MetricFilter{
+			{
+				MetricName: "metric1",
+			},
+			{
+				MetricNames: []string{"metric2", "metric3"},
+			},
+			{
+				MetricName: "metric4",
+				Dimensions: map[string]interface{}{
+					"dimension_key": "dimension_val",
+				},
+			},
+			{
+				MetricName: "metric5",
+				Dimensions: map[string]interface{}{
+					"dimension_key": []interface{}{"dimension_val1", "dimension_val2"},
+				},
+			},
+			{
+				MetricName: `/cpu\..*/`,
+			},
+			{
+				MetricNames: []string{"cpu.util*", "memory.util*"},
+			},
+			{
+				MetricName: "cpu.utilization",
+				Dimensions: map[string]interface{}{
+					"container_name": "/^[A-Z][A-Z]$/",
+				},
+			},
+		},
+		IncludeMetrics: []dpfilters.MetricFilter{
+			{
+				MetricName: "metric1",
+			},
+			{
+				MetricNames: []string{"metric2", "metric3"},
 			},
 		},
 		DeltaTranslationTTL: 3600,
@@ -113,10 +177,8 @@ func TestLoadConfig(t *testing.T) {
 				RetryDelay:      30 * time.Second,
 				CleanupInterval: 1 * time.Minute,
 			},
-			HostTranslations: map[string]string{
-				"host.name": "host",
-			},
 		},
+		NonAlphanumericDimensionChars: "_-.",
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
@@ -126,17 +188,20 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestConfig_getOptionsFromConfig(t *testing.T) {
+	emptyTranslator := func() *translation.MetricTranslator {
+		translator, err := translation.NewMetricTranslator(nil, 3600)
+		require.NoError(t, err)
+		return translator
+	}
 	type fields struct {
-		ExporterSettings      configmodels.ExporterSettings
-		AccessToken           string
-		Realm                 string
-		IngestURL             string
-		APIURL                string
-		Timeout               time.Duration
-		Headers               map[string]string
-		SendCompatibleMetrics bool
-		TranslationRules      []translation.Rule
-		SyncHostMetadata      bool
+		AccessToken      string
+		Realm            string
+		IngestURL        string
+		APIURL           string
+		Timeout          time.Duration
+		Headers          map[string]string
+		TranslationRules []translation.Rule
+		SyncHostMetadata bool
 	}
 	tests := []struct {
 		name    string
@@ -163,8 +228,9 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 					Host:   "api.us1.signalfx.com",
 					Path:   "/",
 				},
-				httpTimeout: 5 * time.Second,
-				token:       "access_token",
+				httpTimeout:      5 * time.Second,
+				token:            "access_token",
+				metricTranslator: emptyTranslator(),
 			},
 			wantErr: false,
 		},
@@ -185,8 +251,9 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 					Scheme: "https",
 					Host:   "api.us0.signalfx.com",
 				},
-				httpTimeout: 10 * time.Second,
-				token:       "access_token",
+				httpTimeout:      10 * time.Second,
+				token:            "access_token",
+				metricTranslator: emptyTranslator(),
 			},
 			wantErr: false,
 		},
@@ -229,9 +296,8 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 		{
 			name: "Test invalid translation rules",
 			fields: fields{
-				Realm:                 "us0",
-				AccessToken:           "access_token",
-				SendCompatibleMetrics: true,
+				Realm:       "us0",
+				AccessToken: "access_token",
 				TranslationRules: []translation.Rule{
 					{
 						Action: translation.ActionRenameDimensionKeys,
@@ -245,7 +311,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ExporterSettings: tt.fields.ExporterSettings,
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				AccessToken:      tt.fields.AccessToken,
 				Realm:            tt.fields.Realm,
 				IngestURL:        tt.fields.IngestURL,
@@ -253,11 +319,12 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: tt.fields.Timeout,
 				},
-				Headers:               tt.fields.Headers,
-				SendCompatibleMetrics: tt.fields.SendCompatibleMetrics,
-				TranslationRules:      tt.fields.TranslationRules,
-				SyncHostMetadata:      tt.fields.SyncHostMetadata,
+				Headers:             tt.fields.Headers,
+				TranslationRules:    tt.fields.TranslationRules,
+				SyncHostMetadata:    tt.fields.SyncHostMetadata,
+				DeltaTranslationTTL: 3600,
 			}
+
 			got, err := cfg.getOptionsFromConfig()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getOptionsFromConfig() error = %v, wantErr %v", err, tt.wantErr)

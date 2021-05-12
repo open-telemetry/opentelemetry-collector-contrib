@@ -40,6 +40,43 @@ func TestHostTags(t *testing.T) {
 		},
 		tc.GetHostTags(),
 	)
+
+	tc = TagsConfig{
+		Hostname: "customhost",
+		Env:      "customenv",
+		// Service and version should be only used for traces
+		Service:    "customservice",
+		Version:    "customversion",
+		Tags:       []string{"key1:val1", "key2:val2"},
+		EnvVarTags: "key3:val3 key4:val4",
+	}
+
+	assert.ElementsMatch(t,
+		[]string{
+			"env:customenv",
+			"key1:val1",
+			"key2:val2",
+		},
+		tc.GetHostTags(),
+	)
+
+	tc = TagsConfig{
+		Hostname: "customhost",
+		Env:      "customenv",
+		// Service and version should be only used for traces
+		Service:    "customservice",
+		Version:    "customversion",
+		EnvVarTags: "key3:val3 key4:val4",
+	}
+
+	assert.ElementsMatch(t,
+		[]string{
+			"env:customenv",
+			"key3:val3",
+			"key4:val4",
+		},
+		tc.GetHostTags(),
+	)
 }
 
 // TestOverrideMetricsURL tests that the metrics URL is overridden
@@ -62,6 +99,18 @@ func TestOverrideMetricsURL(t *testing.T) {
 	assert.Equal(t, cfg.Metrics.Endpoint, DebugEndpoint)
 }
 
+// TestDefaultSite tests that the Site option is set to the
+// default value when no value was set prior to running Sanitize
+func TestDefaultSite(t *testing.T) {
+	cfg := Config{
+		API: APIConfig{Key: "notnull"},
+	}
+
+	err := cfg.Sanitize()
+	require.NoError(t, err)
+	assert.Equal(t, cfg.API.Site, DefaultSite)
+}
+
 func TestAPIKeyUnset(t *testing.T) {
 	cfg := Config{}
 	err := cfg.Sanitize()
@@ -78,6 +127,13 @@ func TestNoMetadata(t *testing.T) {
 	assert.Equal(t, err, errNoMetadata)
 }
 
+func TestInvalidHostname(t *testing.T) {
+	cfg := Config{TagsConfig: TagsConfig{Hostname: "invalid_host"}}
+
+	err := cfg.Sanitize()
+	require.Error(t, err)
+}
+
 func TestCensorAPIKey(t *testing.T) {
 	cfg := APIConfig{
 		Key: "ddog_32_characters_long_api_key1",
@@ -88,4 +144,14 @@ func TestCensorAPIKey(t *testing.T) {
 		"***************************_key1",
 		cfg.GetCensoredKey(),
 	)
+}
+
+func TestIgnoreResourcesValidation(t *testing.T) {
+	validCfg := Config{Traces: TracesConfig{IgnoreResources: []string{"[123]"}}}
+	invalidCfg := Config{Traces: TracesConfig{IgnoreResources: []string{"[123"}}}
+
+	noErr := validCfg.Validate()
+	err := invalidCfg.Validate()
+	require.NoError(t, noErr)
+	require.Error(t, err)
 }

@@ -15,28 +15,31 @@
 package simpleprometheusreceiver
 
 import (
+	"net/url"
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 )
 
 // Config defines configuration for simple prometheus receiver.
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
-	httpConfig                    `mapstructure:",squash"`
-	confignet.TCPAddr             `mapstructure:",squash"`
+	config.ReceiverSettings `mapstructure:",squash"`
+	httpConfig              `mapstructure:",squash"`
+	confignet.TCPAddr       `mapstructure:",squash"`
 	// CollectionInterval is the interval at which metrics should be collected
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 	// MetricsPath the path to the metrics endpoint.
 	MetricsPath string `mapstructure:"metrics_path"`
+	// Params the parameters to the metrics endpoint.
+	Params url.Values `mapstructure:"params,omitempty"`
 	// Whether or not to use pod service account to authenticate.
 	UseServiceAccount bool `mapstructure:"use_service_account"`
 }
 
 // TODO: Move to a common package for use by other receivers and also pull
 // in other utilities from
-// https://github.com/signalfx/signalfx-agent/blob/master/pkg/core/common/httpclient/http.go.
+// https://github.com/signalfx/signalfx-agent/blob/main/pkg/core/common/httpclient/http.go.
 type httpConfig struct {
 	// Whether not TLS is enabled
 	TLSEnabled bool      `mapstructure:"tls_enabled"`

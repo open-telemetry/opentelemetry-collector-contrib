@@ -17,7 +17,7 @@ package azuremonitorexporter
 import (
 	"testing"
 
-	mock "github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -44,7 +44,7 @@ func TestTraceDataIterationNoResourceSpans(t *testing.T) {
 // Tests the iteration logic over a pdata.Traces type when a ResourceSpans is nil
 func TestTraceDataIterationResourceSpansIsEmpty(t *testing.T) {
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
+	traces.ResourceSpans().AppendEmpty()
 
 	visitor := getMockVisitor(true)
 
@@ -56,9 +56,8 @@ func TestTraceDataIterationResourceSpansIsEmpty(t *testing.T) {
 // Tests the iteration logic over a pdata.Traces type when InstrumentationLibrarySpans is nil
 func TestTraceDataIterationInstrumentationLibrarySpansIsEmpty(t *testing.T) {
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
-	rs.InstrumentationLibrarySpans().Resize(1)
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.InstrumentationLibrarySpans().AppendEmpty()
 
 	visitor := getMockVisitor(true)
 
@@ -70,9 +69,8 @@ func TestTraceDataIterationInstrumentationLibrarySpansIsEmpty(t *testing.T) {
 // Tests the iteration logic over a pdata.Traces type when there are no Spans
 func TestTraceDataIterationNoSpans(t *testing.T) {
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
-	rs.InstrumentationLibrarySpans().Resize(1)
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.InstrumentationLibrarySpans().AppendEmpty()
 
 	visitor := getMockVisitor(true)
 
@@ -84,11 +82,10 @@ func TestTraceDataIterationNoSpans(t *testing.T) {
 // Tests the iteration logic if the visitor returns true
 func TestTraceDataIterationNoShortCircuit(t *testing.T) {
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ilss := rs.InstrumentationLibrarySpans().At(0)
-	ilss.Spans().Resize(2)
+	rs := traces.ResourceSpans().AppendEmpty()
+	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ilss.Spans().AppendEmpty()
+	ilss.Spans().AppendEmpty()
 
 	visitor := getMockVisitor(true)
 
@@ -100,11 +97,10 @@ func TestTraceDataIterationNoShortCircuit(t *testing.T) {
 // Tests the iteration logic short circuit if the visitor returns false
 func TestTraceDataIterationShortCircuit(t *testing.T) {
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ilss := rs.InstrumentationLibrarySpans().At(0)
-	ilss.Spans().Resize(2)
+	rs := traces.ResourceSpans().AppendEmpty()
+	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ilss.Spans().AppendEmpty()
+	ilss.Spans().AppendEmpty()
 
 	visitor := getMockVisitor(false)
 

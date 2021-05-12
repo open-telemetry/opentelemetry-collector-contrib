@@ -25,13 +25,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils/cache"
 )
 
-func TestNewGauge(t *testing.T) {
+func TestNewMetric(t *testing.T) {
 	name := "test.metric"
 	ts := uint64(1e9)
 	value := 2.0
 	tags := []string{"tag:value"}
 
-	metric := NewGauge(name, ts, value, tags)
+	metric := newMetric(name, ts, value, tags)
 
 	assert.Equal(t, "test.metric", *metric.Metric)
 	// Assert timestamp conversion from uint64 ns to float64 s
@@ -42,9 +42,30 @@ func TestNewGauge(t *testing.T) {
 	assert.Equal(t, []string{"tag:value"}, metric.Tags)
 }
 
+func TestNewType(t *testing.T) {
+	name := "test.metric"
+	ts := uint64(1e9)
+	value := 2.0
+	tags := []string{"tag:value"}
+
+	gauge := NewGauge(name, ts, value, tags)
+	assert.Equal(t, gauge.GetType(), Gauge)
+
+	count := NewCount(name, ts, value, tags)
+	assert.Equal(t, count.GetType(), Count)
+
+}
+
 func TestDefaultMetrics(t *testing.T) {
 	logger := zap.NewNop()
-	cfg := &config.Config{}
+	cfg := &config.Config{
+		// Global tags should be ignored and sent as metadata
+		TagsConfig: config.TagsConfig{
+			Hostname: "test-host",
+			Env:      "test_env",
+			Tags:     []string{"key:val"},
+		},
+	}
 
 	ms := DefaultMetrics("metrics", uint64(2e9))
 	ProcessMetrics(ms, logger, cfg)
@@ -56,6 +77,10 @@ func TestDefaultMetrics(t *testing.T) {
 	assert.Equal(t, 2.0, *ms[0].Points[0][0])
 	// Assert value (should always be 1.0)
 	assert.Equal(t, 1.0, *ms[0].Points[0][1])
+	// Assert hostname tag is set
+	assert.Equal(t, "test-host", *ms[0].Host)
+	// Assert no other tags are set
+	assert.ElementsMatch(t, []string{}, ms[0].Tags)
 }
 
 func TestProcessMetrics(t *testing.T) {
@@ -81,17 +106,29 @@ func TestProcessMetrics(t *testing.T) {
 			0,
 			[]string{"key2:val2"},
 		),
+		NewGauge(
+			"system.cpu.time",
+			0,
+			0,
+			[]string{"key3:val3"},
+		),
 	}
 
 	ProcessMetrics(ms, logger, cfg)
 
 	assert.Equal(t, "test-host", *ms[0].Host)
-	assert.Equal(t, "otel.metric_name", *ms[0].Metric)
+	assert.Equal(t, "metric_name", *ms[0].Metric)
 	assert.ElementsMatch(t,
 		[]string{"key2:val2"},
 		ms[0].Tags,
 	)
 
+	assert.Equal(t, "test-host", *ms[1].Host)
+	assert.Equal(t, "otel.system.cpu.time", *ms[1].Metric)
+	assert.ElementsMatch(t,
+		[]string{"key3:val3"},
+		ms[1].Tags,
+	)
 }
 
 func TestAddHostname(t *testing.T) {
@@ -140,14 +177,25 @@ func TestAddHostname(t *testing.T) {
 	assert.Equal(t, "thathost", *ms[0].Host)
 }
 
+func TestShouldPrepend(t *testing.T) {
+	assert.True(t, shouldPrepend("system.memory.usage"))
+	assert.True(t, shouldPrepend("datadog_exporter.traces.running"))
+	assert.True(t, shouldPrepend("process.cpu.time"))
+	assert.False(t, shouldPrepend("processes.cpu.time"))
+	assert.False(t, shouldPrepend("systemd.metric.name"))
+	assert.False(t, shouldPrepend("random.metric.name"))
+}
+
 func TestAddNamespace(t *testing.T) {
 	ms := []datadog.Metric{
 		NewGauge("test.metric", 0, 1.0, []string{}),
-		NewGauge("test.metric2", 0, 2.0, []string{}),
+		NewGauge("system.cpu.time", 0, 2.0, []string{}),
+		NewGauge("process.memory.physical_usage", 0, 3.0, []string{}),
 	}
 
 	addNamespace(ms, "namespace")
 
-	assert.Equal(t, "namespace.test.metric", *ms[0].Metric)
-	assert.Equal(t, "namespace.test.metric2", *ms[1].Metric)
+	assert.Equal(t, "test.metric", *ms[0].Metric)
+	assert.Equal(t, "namespace.system.cpu.time", *ms[1].Metric)
+	assert.Equal(t, "namespace.process.memory.physical_usage", *ms[2].Metric)
 }

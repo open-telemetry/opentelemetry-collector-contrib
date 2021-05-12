@@ -18,15 +18,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 type sumologicexporter struct {
-	config  *Config
-	sources sourceFormats
+	sources             sourceFormats
+	config              *Config
+	client              *http.Client
+	filter              filter
+	prometheusFormatter prometheusFormatter
+	graphiteFormatter   graphiteFormatter
 }
 
 func initExporter(cfg *Config) (*sumologicexporter, error) {
@@ -62,9 +68,33 @@ func initExporter(cfg *Config) (*sumologicexporter, error) {
 		return nil, err
 	}
 
+	f, err := newFilter(cfg.MetadataAttributes)
+	if err != nil {
+		return nil, err
+	}
+
+	pf, err := newPrometheusFormatter()
+	if err != nil {
+		return nil, err
+	}
+
+	gf, err := newGraphiteFormatter(cfg.GraphiteTemplate)
+	if err != nil {
+		return nil, err
+	}
+
+	httpClient, err := cfg.HTTPClientSettings.ToClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
+	}
+
 	se := &sumologicexporter{
-		config:  cfg,
-		sources: sfs,
+		config:              cfg,
+		sources:             sfs,
+		client:              httpClient,
+		filter:              f,
+		prometheusFormatter: pf,
+		graphiteFormatter:   gf,
 	}
 
 	return se, nil
@@ -85,12 +115,227 @@ func newLogsExporter(
 		se.pushLogsData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 	)
 }
 
-// pushLogsData groups data with common metadata and send them together to Sumo Logic
-func (se *sumologicexporter) pushLogsData(context.Context, pdata.Logs) (droppedTimeSeries int, err error) {
-	return 0, nil
+func newMetricsExporter(
+	cfg *Config,
+	params component.ExporterCreateParams,
+) (component.MetricsExporter, error) {
+	se, err := initExporter(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewMetricsExporter(
+		cfg,
+		params.Logger,
+		se.pushMetricsData,
+		// Disable exporterhelper Timeout, since we are using a custom mechanism
+		// within exporter itself
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+	)
+}
+
+// pushLogsData groups data with common metadata and sends them as separate batched requests.
+// It returns the number of unsent logs and an error which contains a list of dropped records
+// so they can be handled by OTC retry mechanism
+func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) error {
+	var (
+		currentMetadata  fields = newFields(pdata.NewAttributeMap())
+		previousMetadata fields = newFields(pdata.NewAttributeMap())
+		errs             []error
+		droppedRecords   []pdata.LogRecord
+		err              error
+	)
+
+	c, err := newCompressor(se.config.CompressEncoding)
+	if err != nil {
+		return consumererror.NewLogs(fmt.Errorf("failed to initialize compressor: %w", err), ld)
+	}
+	sdr := newSender(
+		se.config,
+		se.client,
+		se.filter,
+		se.sources,
+		c,
+		se.prometheusFormatter,
+		se.graphiteFormatter,
+	)
+
+	// Iterate over ResourceLogs
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		rl := rls.At(i)
+
+		ills := rl.InstrumentationLibraryLogs()
+		// iterate over InstrumentationLibraryLogs
+		for j := 0; j < ills.Len(); j++ {
+			ill := ills.At(j)
+
+			// iterate over Logs
+			logs := ill.Logs()
+			for k := 0; k < logs.Len(); k++ {
+				log := logs.At(k)
+
+				// copy resource attributes into logs attributes
+				// log attributes have precedence over resource attributes
+				rl.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+					log.Attributes().Insert(k, v)
+					return true
+				})
+
+				currentMetadata = sdr.filter.filterIn(log.Attributes())
+
+				// If metadata differs from currently buffered, flush the buffer
+				if currentMetadata.string() != previousMetadata.string() && previousMetadata.string() != "" {
+					var dropped []pdata.LogRecord
+					dropped, err = sdr.sendLogs(ctx, previousMetadata)
+					if err != nil {
+						errs = append(errs, err)
+						droppedRecords = append(droppedRecords, dropped...)
+					}
+					sdr.cleanLogsBuffer()
+				}
+
+				// assign metadata
+				previousMetadata = currentMetadata
+
+				// add log to the buffer
+				var dropped []pdata.LogRecord
+				dropped, err = sdr.batchLog(ctx, log, previousMetadata)
+				if err != nil {
+					droppedRecords = append(droppedRecords, dropped...)
+					errs = append(errs, err)
+				}
+			}
+		}
+	}
+
+	// Flush pending logs
+	dropped, err := sdr.sendLogs(ctx, previousMetadata)
+	if err != nil {
+		droppedRecords = append(droppedRecords, dropped...)
+		errs = append(errs, err)
+	}
+
+	if len(droppedRecords) > 0 {
+		// Move all dropped records to Logs
+		droppedLogs := pdata.NewLogs()
+		rls = droppedLogs.ResourceLogs()
+		ills := rls.AppendEmpty().InstrumentationLibraryLogs()
+		logs := ills.AppendEmpty().Logs()
+
+		for _, log := range droppedRecords {
+			logs.Append(log)
+		}
+
+		return consumererror.NewLogs(consumererror.Combine(errs), droppedLogs)
+	}
+
+	return nil
+}
+
+// pushMetricsData groups data with common metadata and send them as separate batched requests
+// it returns number of unsent metrics and error which contains list of dropped records
+// so they can be handle by the OTC retry mechanism
+func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metrics) error {
+	var (
+		currentMetadata  fields = newFields(pdata.NewAttributeMap())
+		previousMetadata fields = newFields(pdata.NewAttributeMap())
+		errs             []error
+		droppedRecords   []metricPair
+		attributes       pdata.AttributeMap
+	)
+
+	c, err := newCompressor(se.config.CompressEncoding)
+	if err != nil {
+		return consumererror.NewMetrics(fmt.Errorf("failed to initialize compressor: %w", err), md)
+	}
+	sdr := newSender(
+		se.config,
+		se.client,
+		se.filter,
+		se.sources,
+		c,
+		se.prometheusFormatter,
+		se.graphiteFormatter,
+	)
+
+	// Iterate over ResourceMetrics
+	rms := md.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		rm := rms.At(i)
+
+		attributes = rm.Resource().Attributes()
+
+		// iterate over InstrumentationLibraryMetrics
+		ilms := rm.InstrumentationLibraryMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			ilm := ilms.At(j)
+
+			// iterate over Metrics
+			ms := ilm.Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				m := ms.At(k)
+				mp := metricPair{
+					metric:     m,
+					attributes: attributes,
+				}
+
+				currentMetadata = sdr.filter.filterIn(attributes)
+
+				// If metadata differs from currently buffered, flush the buffer
+				if currentMetadata.string() != previousMetadata.string() && previousMetadata.string() != "" {
+					var dropped []metricPair
+					dropped, err = sdr.sendMetrics(ctx, previousMetadata)
+					if err != nil {
+						errs = append(errs, err)
+						droppedRecords = append(droppedRecords, dropped...)
+					}
+					sdr.cleanMetricBuffer()
+				}
+
+				// assign metadata
+				previousMetadata = currentMetadata
+				var dropped []metricPair
+				// add metric to the buffer
+				dropped, err = sdr.batchMetric(ctx, mp, currentMetadata)
+				if err != nil {
+					droppedRecords = append(droppedRecords, dropped...)
+					errs = append(errs, err)
+				}
+			}
+		}
+	}
+
+	// Flush pending metrics
+	dropped, err := sdr.sendMetrics(ctx, previousMetadata)
+	if err != nil {
+		droppedRecords = append(droppedRecords, dropped...)
+		errs = append(errs, err)
+	}
+
+	if len(droppedRecords) > 0 {
+		// Move all dropped records to Metrics
+		droppedMetrics := pdata.NewMetrics()
+		rms := droppedMetrics.ResourceMetrics()
+		rms.Resize(len(droppedRecords))
+		for num, record := range droppedRecords {
+			rm := droppedMetrics.ResourceMetrics().At(num)
+			record.attributes.CopyTo(rm.Resource().Attributes())
+
+			ilms := rm.InstrumentationLibraryMetrics()
+			ilms.AppendEmpty().Metrics().Append(record.metric)
+		}
+
+		return consumererror.NewMetrics(consumererror.Combine(errs), droppedMetrics)
+	}
+
+	return nil
 }

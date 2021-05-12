@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package awsprometheusremotewriteexporter provides a Prometheus Remote Write Exporter with AWS Sigv4 authentication
 package awsprometheusremotewriteexporter
 
 import (
@@ -22,16 +21,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 )
 
 func TestType(t *testing.T) {
 	af := NewFactory()
-	assert.Equal(t, af.Type(), configmodels.Type(typeStr))
+	assert.Equal(t, af.Type(), config.Type(typeStr))
 }
 
 //Tests whether or not the default Exporter factory can instantiate a properly interfaced Exporter with default conditions
@@ -73,24 +72,14 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		cfg         configmodels.Exporter
+		cfg         config.Exporter
 		params      component.ExporterCreateParams
 		returnError bool
 	}{
-		{"success_case_default",
-			af.CreateDefaultConfig(),
-			component.ExporterCreateParams{Logger: zap.NewNop()},
-			false,
-		},
 		{"success_case_with_auth",
 			validConfigWithAuth,
 			component.ExporterCreateParams{Logger: zap.NewNop()},
 			false,
-		},
-		{"invalid_auth_case",
-			invalidConfigWithAuth,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
-			true,
 		},
 		{"invalid_config_case",
 			invalidConfig,
@@ -103,7 +92,6 @@ func TestCreateMetricsExporter(t *testing.T) {
 			true,
 		},
 	}
-	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := af.CreateMetricsExporter(context.Background(), tt.params, tt.cfg)

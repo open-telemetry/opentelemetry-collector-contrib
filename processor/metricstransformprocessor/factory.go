@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
@@ -31,7 +31,7 @@ const (
 	typeStr = "metricstransform"
 )
 
-var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: true}
+var consumerCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Metrics Transform processor.
 func NewFactory() component.ProcessorFactory {
@@ -41,33 +41,30 @@ func NewFactory() component.ProcessorFactory {
 		processorhelper.WithMetrics(createMetricsProcessor))
 }
 
-func createDefaultConfig() configmodels.Processor {
+func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 	}
 }
 
 func createMetricsProcessor(
 	ctx context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.MetricsConsumer,
+	cfg config.Processor,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	oCfg := cfg.(*Config)
 	if err := validateConfiguration(oCfg); err != nil {
 		return nil, err
 	}
 
-	metricsProcessor := newMetricsTransformProcessor(params.Logger, buildHelperConfig(oCfg, params.ApplicationStartInfo.Version))
+	metricsProcessor := newMetricsTransformProcessor(params.Logger, buildHelperConfig(oCfg, params.BuildInfo.Version))
 
 	return processorhelper.NewMetricsProcessor(
 		cfg,
 		nextConsumer,
 		metricsProcessor,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(consumerCapabilities))
 }
 
 // validateConfiguration validates the input configuration has all of the required fields for the processor
@@ -99,6 +96,10 @@ func validateConfiguration(config *Config) error {
 
 		if transform.Action == Insert && transform.NewName == "" {
 			return fmt.Errorf("missing required field %q while %q is %v", NewNameFieldName, ActionFieldName, Insert)
+		}
+
+		if transform.Action == Group && transform.GroupResourceLabels == nil {
+			return fmt.Errorf("missing required field %q while %q is %v", GroupResouceLabelsFieldName, ActionFieldName, Group)
 		}
 
 		if transform.AggregationType != "" && !transform.AggregationType.isValid() {
@@ -150,6 +151,7 @@ func buildHelperConfig(config *Config, version string) []internalTransform {
 			MetricIncludeFilter: createFilter(t.MetricIncludeFilter),
 			Action:              t.Action,
 			NewName:             t.NewName,
+			GroupResourceLabels: t.GroupResourceLabels,
 			AggregationType:     t.AggregationType,
 			Operations:          make([]internalOperation, len(t.Operations)),
 		}
@@ -178,9 +180,9 @@ func buildHelperConfig(config *Config, version string) []internalTransform {
 func createFilter(filterConfig FilterConfig) internalFilter {
 	switch filterConfig.MatchType {
 	case StrictMatchType:
-		return internalFilterStrict{include: filterConfig.Include}
+		return internalFilterStrict{include: filterConfig.Include, matchLabels: filterConfig.MatchLabels}
 	case RegexpMatchType:
-		return internalFilterRegexp{include: regexp.MustCompile(filterConfig.Include)}
+		return internalFilterRegexp{include: regexp.MustCompile(filterConfig.Include), matchLabels: getFilterRegexpMap(filterConfig.MatchLabels)}
 	}
 
 	return nil
@@ -204,4 +206,13 @@ func sliceToSet(slice []string) map[string]bool {
 		set[s] = true
 	}
 	return set
+}
+
+func getFilterRegexpMap(strMap map[string]string) map[string]*regexp.Regexp {
+	regexpMap := make(map[string]*regexp.Regexp)
+
+	for k, value := range strMap {
+		regexpMap[k] = regexp.MustCompile(value)
+	}
+	return regexpMap
 }

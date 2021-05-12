@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package awsprometheusremotewriteexporter provides a Prometheus Remote Write Exporter with AWS Sigv4 authentication
 package awsprometheusremotewriteexporter
 
 import (
@@ -23,17 +22,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	prw "go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter"
 )
 
-// TestLoadConfig checks whether yaml configuration can be loaded correctly
+// TestLoadConfig checks whether yaml configuration can be loaded correctly.
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -44,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	// From the default configurations -- checks if a correct exporter is instantiated
-	e0 := cfg.Exporters["awsprometheusremotewrite"]
+	e0 := cfg.Exporters[config.NewID(typeStr)]
 	cfgDefault := factory.CreateDefaultConfig()
 	// testing function equality is not supported in Go hence these will be ignored for this test
 	cfgDefault.(*Config).HTTPClientSettings.CustomRoundTripper = nil
@@ -52,19 +51,11 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, e0, cfgDefault)
 
 	// checks if the correct Config struct can be instantiated from testdata/config.yaml
-	e1 := cfg.Exporters["awsprometheusremotewrite/2"]
+	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
 	cfgComplete := &Config{
 		Config: prw.Config{
-			ExporterSettings: configmodels.ExporterSettings{
-				NameVal: "awsprometheusremotewrite/2",
-				TypeVal: "awsprometheusremotewrite",
-			},
-			TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),
-			QueueSettings: exporterhelper.QueueSettings{
-				Enabled:      true,
-				NumConsumers: 2,
-				QueueSize:    10,
-			},
+			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
+			TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         true,
 				InitialInterval: 10 * time.Second,
@@ -74,19 +65,16 @@ func TestLoadConfig(t *testing.T) {
 			Namespace:      "test-space",
 			ExternalLabels: map[string]string{"key1": "value1", "key2": "value2"},
 			HTTPClientSettings: confighttp.HTTPClientSettings{
-				Endpoint: "http://localhost:9009",
+				Endpoint: "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write",
 				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile: "/var/lib/mycert.pem",
 					},
 					Insecure: false,
 				},
-				ReadBufferSize: 0,
-
+				ReadBufferSize:  0,
 				WriteBufferSize: 512 * 1024,
-
-				Timeout: 5 * time.Second,
-
+				Timeout:         5 * time.Second,
 				Headers: map[string]string{
 					"prometheus-remote-write-version": "0.1.0",
 					"x-scope-orgid":                   "234"},
@@ -95,6 +83,7 @@ func TestLoadConfig(t *testing.T) {
 		AuthConfig: AuthConfig{
 			Region:  "us-west-2",
 			Service: "service-name",
+			RoleArn: "arn:aws:iam::123456789012:role/IAMRole",
 		},
 	}
 	// testing function equality is not supported in Go hence these will be ignored for this test

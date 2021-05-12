@@ -17,7 +17,7 @@ package kubelet
 import (
 	"encoding/json"
 
-	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
+	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 )
 
 // StatsProvider wraps a RestClient, returning an unmarshaled

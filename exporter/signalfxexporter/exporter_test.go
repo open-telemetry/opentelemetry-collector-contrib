@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -34,6 +35,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -41,8 +43,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 func TestNew(t *testing.T) {
@@ -60,22 +63,35 @@ func TestNew(t *testing.T) {
 		{
 			name: "bad config fails",
 			config: &Config{
-				APIURL: "abc",
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				APIURL:           "abc",
+			},
+			wantErr: true,
+		},
+		{
+			name: "fails to create metrics converter",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				AccessToken:      "test",
+				Realm:            "realm",
+				ExcludeMetrics:   []dpfilters.MetricFilter{{}},
 			},
 			wantErr: true,
 		},
 		{
 			name: "successfully create exporter",
 			config: &Config{
-				AccessToken:     "someToken",
-				Realm:           "xyz",
-				TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
-				Headers:         nil,
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				AccessToken:      "someToken",
+				Realm:            "xyz",
+				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
+				Headers:          nil,
 			},
 		},
 		{
 			name: "create exporter with host metadata syncer",
 			config: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 				AccessToken:      "someToken",
 				Realm:            "xyz",
 				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
@@ -102,17 +118,13 @@ func TestNew(t *testing.T) {
 
 func TestConsumeMetrics(t *testing.T) {
 	smallBatch := pdata.NewMetrics()
-	smallBatch.ResourceMetrics().Resize(1)
-	rm := smallBatch.ResourceMetrics().At(0)
-	rm.InstrumentationLibraryMetrics().Resize(1)
-	ilm := rm.InstrumentationLibraryMetrics().At(0)
-	ilm.Metrics().Resize(1)
-	m := ilm.Metrics().At(0)
+	rm := smallBatch.ResourceMetrics().AppendEmpty()
+	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	m := ilm.Metrics().AppendEmpty()
 
 	m.SetName("test_gauge")
 	m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-	m.DoubleGauge().DataPoints().Resize(1)
-	dp := m.DoubleGauge().DataPoints().At(0)
+	dp := m.DoubleGauge().DataPoints().AppendEmpty()
 	dp.LabelsMap().InitFromMap(map[string]string{
 		"k0": "v0",
 		"k1": "v1",
@@ -184,6 +196,9 @@ func TestConsumeMetrics(t *testing.T) {
 			serverURL, err := url.Parse(server.URL)
 			assert.NoError(t, err)
 
+			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "")
+			require.NoError(t, err)
+			require.NotNil(t, c)
 			dpClient := &sfxDPClient{
 				sfxClientBase: sfxClientBase{
 					ingestURL: serverURL,
@@ -196,7 +211,7 @@ func TestConsumeMetrics(t *testing.T) {
 					}},
 				},
 				logger:    zap.NewNop(),
-				converter: translation.NewMetricsConverter(zap.NewNop(), nil),
+				converter: c,
 			}
 
 			numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), tt.md)
@@ -231,8 +246,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 
 	validMetricsWithToken := func(includeToken bool, token string) pdata.Metrics {
 		out := pdata.NewMetrics()
-		out.ResourceMetrics().Resize(1)
-		rm := out.ResourceMetrics().At(0)
+		rm := out.ResourceMetrics().AppendEmpty()
 
 		if includeToken {
 			rm.Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{
@@ -240,16 +254,13 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			})
 		}
 
-		rm.InstrumentationLibraryMetrics().Resize(1)
-		ilm := rm.InstrumentationLibraryMetrics().At(0)
-		ilm.Metrics().Resize(1)
-		m := ilm.Metrics().At(0)
+		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+		m := ilm.Metrics().AppendEmpty()
 
 		m.SetName("test_gauge")
 		m.SetDataType(pdata.MetricDataTypeDoubleGauge)
 
-		m.DoubleGauge().DataPoints().Resize(1)
-		dp := m.DoubleGauge().DataPoints().At(0)
+		dp := m.DoubleGauge().DataPoints().AppendEmpty()
 		dp.LabelsMap().InitFromMap(map[string]string{
 			"k0": "v0",
 			"k1": "v1",
@@ -307,18 +318,13 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			accessTokenPassthrough: true,
 			metrics: func() pdata.Metrics {
 				out := pdata.NewMetrics()
-				out.ResourceMetrics().Resize(1)
-				rm := out.ResourceMetrics().At(0)
-
-				rm.InstrumentationLibraryMetrics().Resize(1)
-				ilm := rm.InstrumentationLibraryMetrics().At(0)
-				ilm.Metrics().Resize(1)
-				m := ilm.Metrics().At(0)
+				rm := out.ResourceMetrics().AppendEmpty()
+				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+				m := ilm.Metrics().AppendEmpty()
 
 				m.SetName("test_gauge")
 				m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-				m.DoubleGauge().DataPoints().Resize(1)
-				dp := m.DoubleGauge().DataPoints().At(0)
+				dp := m.DoubleGauge().DataPoints().AppendEmpty()
 				dp.LabelsMap().InitFromMap(map[string]string{
 					"k0": "v0",
 					"k1": "v1",
@@ -442,45 +448,41 @@ func TestNewEventExporter(t *testing.T) {
 	assert.EqualError(t, err, "nil config")
 	assert.Nil(t, got)
 
-	config := &Config{
-		AccessToken:     "someToken",
-		IngestURL:       "asdf://:%",
-		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
-		Headers:         nil,
+	cfg := &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		AccessToken:      "someToken",
+		IngestURL:        "asdf://:%",
+		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
+		Headers:          nil,
 	}
 
-	got, err = newEventExporter(config, zap.NewNop())
+	got, err = newEventExporter(cfg, zap.NewNop())
 	assert.NotNil(t, err)
 	assert.Nil(t, got)
 
-	config = &Config{
+	cfg = &Config{
 		AccessToken:     "someToken",
 		Realm:           "xyz",
 		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
 		Headers:         nil,
 	}
 
-	got, err = newEventExporter(config, zap.NewNop())
+	got, err = newEventExporter(cfg, zap.NewNop())
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 
 	// This is expected to fail.
 	ld := makeSampleResourceLogs()
-	_, err = got.pushLogs(context.Background(), ld)
+	err = got.pushLogs(context.Background(), ld)
 	assert.Error(t, err)
 }
 
 func makeSampleResourceLogs() pdata.Logs {
 	out := pdata.NewLogs()
-	out.ResourceLogs().Resize(1)
-	out.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
-
-	logSlice := out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
-	logSlice.Resize(1)
-	l := logSlice.At(0)
+	l := out.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
 
 	l.SetName("shutdown")
-	l.SetTimestamp(pdata.TimestampUnixNano(1000))
+	l.SetTimestamp(pdata.Timestamp(1000))
 	attrs := l.Attributes()
 
 	attrs.InitFromMap(map[string]pdata.AttributeValue{
@@ -611,7 +613,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 
 	newLogData := func(includeToken bool) pdata.Logs {
 		out := makeSampleResourceLogs()
-		out.ResourceLogs().Append(makeSampleResourceLogs().ResourceLogs().At(0))
+		makeSampleResourceLogs().ResourceLogs().At(0).CopyTo(out.ResourceLogs().AppendEmpty())
 
 		if includeToken {
 			out.ResourceLogs().At(0).Resource().Attributes().InsertString("com.splunk.signalfx.access_token", fromLabels)
@@ -698,24 +700,19 @@ func generateLargeDPBatch() pdata.Metrics {
 	ts := time.Now()
 	for i := 0; i < 6500; i++ {
 		rm := md.ResourceMetrics().At(i)
-
-		rm.InstrumentationLibraryMetrics().Resize(1)
-		ilm := rm.InstrumentationLibraryMetrics().At(0)
-		ilm.Metrics().Resize(1)
-		m := ilm.Metrics().At(0)
+		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+		m := ilm.Metrics().AppendEmpty()
 
 		m.SetName("test_" + strconv.Itoa(i))
 		m.SetDataType(pdata.MetricDataTypeIntGauge)
 
-		dp := pdata.NewIntDataPoint()
-		dp.SetTimestamp(pdata.TimestampUnixNano(ts.UnixNano()))
+		dp := m.IntGauge().DataPoints().AppendEmpty()
+		dp.SetTimestamp(pdata.TimestampFromTime(ts))
 		dp.LabelsMap().InitFromMap(map[string]string{
 			"k0": "v0",
 			"k1": "v1",
 		})
 		dp.SetValue(int64(i))
-
-		m.IntGauge().DataPoints().Append(dp)
 	}
 
 	return md
@@ -723,9 +720,7 @@ func generateLargeDPBatch() pdata.Metrics {
 
 func generateLargeEventBatch() pdata.Logs {
 	out := pdata.NewLogs()
-	out.ResourceLogs().Resize(1)
-	out.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
-	logs := out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
+	logs := out.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs()
 
 	batchSize := 65000
 	logs.Resize(batchSize)
@@ -735,44 +730,55 @@ func generateLargeEventBatch() pdata.Logs {
 		lr.SetName("test_" + strconv.Itoa(i))
 		lr.Attributes().InsertString("k0", "k1")
 		lr.Attributes().InsertNull("com.splunk.signalfx.event_category")
-		lr.SetTimestamp(pdata.TimestampUnixNano(ts.UnixNano()))
+		lr.SetTimestamp(pdata.TimestampFromTime(ts))
 	}
 
 	return out
 }
 
 func TestConsumeMetadata(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	converter, err := translation.NewMetricsConverter(
+		zap.NewNop(),
+		nil,
+		cfg.ExcludeMetrics,
+		cfg.IncludeMetrics,
+		cfg.NonAlphanumericDimensionChars,
+	)
+	require.NoError(t, err)
 	type args struct {
-		metadata []*metrics.MetadataUpdate
+		metadata []*metadata.MetadataUpdate
 	}
 	type fields struct {
 		payLoad map[string]interface{}
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
+		name                   string
+		fields                 fields
+		args                   args
+		expectedDimensionKey   string
+		expectedDimensionValue string
 	}{
 		{
-			"Test property updates",
-			fields{
+			name: "Test property updates",
+			fields: fields{
 				map[string]interface{}{
 					"customProperties": map[string]interface{}{
-						"prop_erty1": "val1",
+						"prop.erty1": "val1",
 						"property2":  nil,
-						"prop_erty3": "val33",
+						"prop.erty3": "val33",
 						"property4":  nil,
 					},
 					"tags":         nil,
 					"tagsToRemove": nil,
 				},
 			},
-			args{
-				[]*metrics.MetadataUpdate{
+			args: args{
+				[]*metadata.MetadataUpdate{
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
-						MetadataDelta: metrics.MetadataDelta{
+						MetadataDelta: metadata.MetadataDelta{
 							MetadataToAdd: map[string]string{
 								"prop.erty1": "val1",
 							},
@@ -787,26 +793,28 @@ func TestConsumeMetadata(t *testing.T) {
 					},
 				},
 			},
+			expectedDimensionKey:   "key",
+			expectedDimensionValue: "id",
 		},
 		{
-			"Test tag updates",
-			fields{
+			name: "Test tag updates",
+			fields: fields{
 				map[string]interface{}{
 					"customProperties": map[string]interface{}{},
 					"tags": []interface{}{
-						"tag_1",
+						"tag.1",
 					},
 					"tagsToRemove": []interface{}{
-						"tag_2",
+						"tag/2",
 					},
 				},
 			},
-			args{
-				[]*metrics.MetadataUpdate{
+			args: args{
+				[]*metadata.MetadataUpdate{
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
-						MetadataDelta: metrics.MetadataDelta{
+						MetadataDelta: metadata.MetadataDelta{
 							MetadataToAdd: map[string]string{
 								"tag.1": "",
 							},
@@ -818,10 +826,12 @@ func TestConsumeMetadata(t *testing.T) {
 					},
 				},
 			},
+			expectedDimensionKey:   "key",
+			expectedDimensionValue: "id",
 		},
 		{
-			"Test quick successive updates",
-			fields{
+			name: "Test quick successive updates",
+			fields: fields{
 				map[string]interface{}{
 					"customProperties": map[string]interface{}{
 						"property1": nil,
@@ -829,19 +839,19 @@ func TestConsumeMetadata(t *testing.T) {
 						"property3": nil,
 					},
 					"tags": []interface{}{
-						"tag_2",
+						"tag/2",
 					},
 					"tagsToRemove": []interface{}{
-						"tag_1",
+						"tag.1",
 					},
 				},
 			},
-			args{
-				[]*metrics.MetadataUpdate{
+			args: args{
+				[]*metadata.MetadataUpdate{
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
-						MetadataDelta: metrics.MetadataDelta{
+						MetadataDelta: metadata.MetadataDelta{
 							MetadataToAdd: map[string]string{
 								"tag.1":     "",
 								"property1": "val1",
@@ -858,7 +868,7 @@ func TestConsumeMetadata(t *testing.T) {
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
-						MetadataDelta: metrics.MetadataDelta{
+						MetadataDelta: metadata.MetadataDelta{
 							MetadataToAdd: map[string]string{
 								"tag/2": "",
 							},
@@ -875,7 +885,7 @@ func TestConsumeMetadata(t *testing.T) {
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
-						MetadataDelta: metrics.MetadataDelta{
+						MetadataDelta: metadata.MetadataDelta{
 							MetadataToAdd: map[string]string{},
 							MetadataToRemove: map[string]string{
 								"property3": "val33",
@@ -885,6 +895,45 @@ func TestConsumeMetadata(t *testing.T) {
 					},
 				},
 			},
+			expectedDimensionKey:   "key",
+			expectedDimensionValue: "id",
+		},
+		{
+			name: "Test updates on dimensions with nonalphanumeric characters (other than the default allow list)",
+			fields: fields{
+				map[string]interface{}{
+					"customProperties": map[string]interface{}{
+						"prop.erty1": "val1",
+						"property2":  nil,
+						"prop.erty3": "val33",
+						"property4":  nil,
+					},
+					"tags":         nil,
+					"tagsToRemove": nil,
+				},
+			},
+			args: args{
+				[]*metadata.MetadataUpdate{
+					{
+						ResourceIDKey: "k!e=y",
+						ResourceID:    "id",
+						MetadataDelta: metadata.MetadataDelta{
+							MetadataToAdd: map[string]string{
+								"prop.erty1": "val1",
+							},
+							MetadataToRemove: map[string]string{
+								"property2": "val2",
+							},
+							MetadataToUpdate: map[string]string{
+								"prop.erty3": "val33",
+								"property4":  "",
+							},
+						},
+					},
+				},
+			},
+			expectedDimensionKey:   "k_e_y",
+			expectedDimensionValue: "id",
 		},
 	}
 	for _, tt := range tests {
@@ -896,7 +945,12 @@ func TestConsumeMetadata(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				b, err := ioutil.ReadAll(r.Body)
-				require.NoError(t, err)
+				assert.NoError(t, err)
+
+				// Test metadata updates are sent onto the right dimensions.
+				dimPair := strings.Split(r.RequestURI, "/")[3:5]
+				assert.Equal(t, tt.expectedDimensionKey, dimPair[0])
+				assert.Equal(t, tt.expectedDimensionValue, dimPair[1])
 
 				p := map[string]interface{}{
 					"customProperties": map[string]*string{},
@@ -905,9 +959,9 @@ func TestConsumeMetadata(t *testing.T) {
 				}
 
 				err = json.Unmarshal(b, &p)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
-				require.Equal(t, tt.fields.payLoad, p)
+				assert.Equal(t, tt.fields.payLoad, p)
 				wg.Done()
 			}))
 			defer server.Close()
@@ -926,6 +980,7 @@ func TestConsumeMetadata(t *testing.T) {
 					Logger:                logger,
 					SendDelay:             1,
 					PropertiesMaxBuffered: 10,
+					MetricsConverter:      *converter,
 				})
 			dimClient.Start()
 
@@ -950,8 +1005,9 @@ func TestConsumeMetadata(t *testing.T) {
 func BenchmarkExporterConsumeData(b *testing.B) {
 	batchSize := 1000
 	metrics := pdata.NewMetrics()
+	tmd := testMetricsData()
 	for i := 0; i < batchSize; i++ {
-		metrics.ResourceMetrics().Append(testMetricsData())
+		tmd.CopyTo(metrics.ResourceMetrics().AppendEmpty())
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -961,6 +1017,9 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 	serverURL, err := url.Parse(server.URL)
 	assert.NoError(b, err)
 
+	c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "")
+	require.NoError(b, err)
+	require.NotNil(b, c)
 	dpClient := &sfxDPClient{
 		sfxClientBase: sfxClientBase{
 			ingestURL: serverURL,
@@ -972,7 +1031,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 			}},
 		},
 		logger:    zap.NewNop(),
-		converter: translation.NewMetricsConverter(zap.NewNop(), nil),
+		converter: c,
 	}
 
 	for i := 0; i < b.N; i++ {
@@ -982,7 +1041,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 	}
 }
 
-// Test to ensure SignalFx exporter implements metrics.MetadataExporter in k8s_cluster receiver.
+// Test to ensure SignalFx exporter implements metadata.MetadataExporter in k8s_cluster receiver.
 func TestSignalFxExporterConsumeMetadata(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig()
@@ -992,7 +1051,7 @@ func TestSignalFxExporterConsumeMetadata(t *testing.T) {
 	exp, err := f.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, rCfg)
 	require.NoError(t, err)
 
-	kme, ok := exp.(metrics.MetadataExporter)
-	require.True(t, ok, "SignalFx exporter does not implement metrics.MetadataExporter")
+	kme, ok := exp.(metadata.MetadataExporter)
+	require.True(t, ok, "SignalFx exporter does not implement metadata.MetadataExporter")
 	require.NotNil(t, kme)
 }

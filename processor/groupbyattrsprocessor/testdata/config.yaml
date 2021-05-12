@@ -1,5 +1,5 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
   groupbyattrs/custom:
@@ -8,11 +8,11 @@ processors:
       - key2
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors: [groupbyattrs/custom]
-      exporters: [exampleexporter]
+      exporters: [nop]

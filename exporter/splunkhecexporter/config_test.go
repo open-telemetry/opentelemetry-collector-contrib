@@ -25,24 +25,25 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[typeStr] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters["splunk_hec"]
+	e0 := cfg.Exporters[config.NewID(typeStr)]
 
 	// Endpoint and Token do not have a default value so set them directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
@@ -50,20 +51,18 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg.Endpoint = "https://splunk:8088/services/collector"
 	assert.Equal(t, defaultCfg, e0)
 
-	expectedName := "splunk_hec/allsettings"
-
-	e1 := cfg.Exporters[expectedName]
+	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "allsettings")]
 	expectedCfg := Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: expectedName,
-		},
-		Token:          "00000000-0000-0000-0000-0000000000000",
-		Endpoint:       "https://splunk:8088/services/collector",
-		Source:         "otel",
-		SourceType:     "otel",
-		Index:          "metrics",
-		MaxConnections: 100,
+		ExporterSettings:     config.NewExporterSettings(config.NewIDWithName(typeStr, "allsettings")),
+		Token:                "00000000-0000-0000-0000-0000000000000",
+		Endpoint:             "https://splunk:8088/services/collector",
+		Source:               "otel",
+		SourceType:           "otel",
+		Index:                "metrics",
+		SplunkAppName:        "OpenTelemetry-Collector Splunk Exporter",
+		SplunkAppVersion:     "v0.0.1",
+		MaxConnections:       100,
+		MaxContentLengthLogs: 2 * 1024 * 1024,
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: 10 * time.Second,
 		},
@@ -78,6 +77,15 @@ func TestLoadConfig(t *testing.T) {
 			NumConsumers: 2,
 			QueueSize:    10,
 		},
+		TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: configtls.TLSSetting{
+				CAFile:   "",
+				CertFile: "",
+				KeyFile:  "",
+			},
+			Insecure:           true,
+			InsecureSkipVerify: false,
+		},
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
@@ -89,12 +97,12 @@ func TestLoadConfig(t *testing.T) {
 
 func TestConfig_getOptionsFromConfig(t *testing.T) {
 	type fields struct {
-		ExporterSettings configmodels.ExporterSettings
-		Endpoint         string
-		Token            string
-		Source           string
-		SourceType       string
-		Index            string
+		Endpoint             string
+		Token                string
+		Source               string
+		SourceType           string
+		Index                string
+		MaxContentLengthLogs uint
 	}
 	tests := []struct {
 		name    string
@@ -139,16 +147,26 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 		},
+		{
+			name: "Test max content length logs greater than limit",
+			fields: fields{
+				Token:                "1234",
+				Endpoint:             "https://example.com:8000",
+				MaxContentLengthLogs: maxContentLengthLogsLimit + 1,
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ExporterSettings: tt.fields.ExporterSettings,
-				Token:            tt.fields.Token,
-				Endpoint:         tt.fields.Endpoint,
-				Source:           tt.fields.Source,
-				SourceType:       tt.fields.SourceType,
-				Index:            tt.fields.Index,
+				Token:                tt.fields.Token,
+				Endpoint:             tt.fields.Endpoint,
+				Source:               tt.fields.Source,
+				SourceType:           tt.fields.SourceType,
+				Index:                tt.fields.Index,
+				MaxContentLengthLogs: tt.fields.MaxContentLengthLogs,
 			}
 			got, err := cfg.getOptionsFromConfig()
 			if (err != nil) != tt.wantErr {

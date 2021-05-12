@@ -16,15 +16,15 @@ package kubelet
 
 import (
 	"crypto/x509"
+	"errors"
+	"fmt"
 	"io/ioutil"
-
-	"github.com/pkg/errors"
 )
 
 func systemCertPoolPlusPath(certPath string) (*x509.CertPool, error) {
 	sysCerts, err := x509.SystemCertPool()
 	if err != nil {
-		return nil, errors.WithMessage(err, "Could not load system x509 cert pool")
+		return nil, fmt.Errorf("could not load system x509 cert pool: %w", err)
 	}
 	return certPoolPlusPath(sysCerts, certPath)
 }
@@ -32,7 +32,7 @@ func systemCertPoolPlusPath(certPath string) (*x509.CertPool, error) {
 func certPoolPlusPath(certPool *x509.CertPool, certPath string) (*x509.CertPool, error) {
 	certBytes, err := ioutil.ReadFile(certPath)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Cert path %s could not be read", certPath)
+		return nil, fmt.Errorf("cert path %s could not be read: %w", certPath, err)
 	}
 	ok := certPool.AppendCertsFromPEM(certBytes)
 	if !ok {

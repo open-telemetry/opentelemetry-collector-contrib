@@ -20,19 +20,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.uber.org/zap"
 )
 
-func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
+func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
 	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	cfg := &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			NameVal: "loadbalancing",
-			TypeVal: "loadbalancing",
-		},
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
 		},
@@ -40,6 +37,25 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 
 	// test
 	exp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
+
+	// verify
+	assert.Nil(t, err)
+	assert.NotNil(t, exp)
+}
+
+func TestLogExporterGetsCreatedWithValidConfiguration(t *testing.T) {
+	// prepare
+	factory := NewFactory()
+	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	cfg := &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		Resolver: ResolverSettings{
+			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
+		},
+	}
+
+	// test
+	exp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
 
 	// verify
 	assert.Nil(t, err)

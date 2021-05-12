@@ -22,15 +22,15 @@ import (
 	"testing"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -43,7 +43,7 @@ func Test_statsdreceiver_New(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 	type args struct {
 		config       Config
-		nextConsumer consumer.MetricsConsumer
+		nextConsumer consumer.Metrics
 	}
 	tests := []struct {
 		name    string
@@ -67,9 +67,9 @@ func Test_statsdreceiver_New(t *testing.T) {
 						Transport: "unknown",
 					},
 				},
-				nextConsumer: consumertest.NewMetricsNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
-			wantErr: errors.New("unsupported transport \"unknown\" for receiver \"statsd\""),
+			wantErr: errors.New("unsupported transport \"unknown\" for receiver statsd"),
 		},
 	}
 	for _, tt := range tests {
@@ -83,11 +83,11 @@ func Test_statsdreceiver_New(t *testing.T) {
 func TestStatsdReceiver_Flush(t *testing.T) {
 	ctx := context.Background()
 	cfg := createDefaultConfig().(*Config)
-	nextConsumer := consumertest.NewMetricsNop()
+	nextConsumer := consumertest.NewNop()
 	rcv, err := New(zap.NewNop(), *cfg, nextConsumer)
 	assert.NoError(t, err)
 	r := rcv.(*statsdReceiver)
-	var metrics = []*metricspb.Metric{}
+	var metrics = pdata.NewMetrics()
 	assert.Nil(t, r.Flush(ctx, metrics, nextConsumer))
 	r.Start(ctx, componenttest.NewNopHost())
 	r.Shutdown(ctx)
@@ -109,10 +109,7 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 			name: "default_config with 9s interval",
 			configFn: func() *Config {
 				return &Config{
-					ReceiverSettings: configmodels.ReceiverSettings{
-						TypeVal: configmodels.Type(typeStr),
-						NameVal: typeStr,
-					},
+					ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 					NetAddr: confignet.NetAddr{
 						Endpoint:  defaultBindEndpoint,
 						Transport: defaultTransport,
@@ -140,7 +137,7 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 			r.reporter = mr
 
 			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-			require.Equal(t, componenterror.ErrAlreadyStarted, r.Start(context.Background(), componenttest.NewNopHost()))
+			defer r.Shutdown(context.Background())
 
 			statsdClient := tt.clientFn(t)
 
@@ -162,9 +159,6 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 			assert.Equal(t, statsdMetric.Name, metric.GetMetricDescriptor().GetName())
 			tss := metric.GetTimeseries()
 			require.Equal(t, 1, len(tss))
-
-			assert.NoError(t, r.Shutdown(context.Background()))
-			assert.Equal(t, componenterror.ErrAlreadyStopped, r.Shutdown(context.Background()))
 		})
 	}
 }

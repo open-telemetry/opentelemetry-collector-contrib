@@ -28,7 +28,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -90,7 +90,7 @@ func TestThriftInvalidOCProtoIDs(t *testing.T) {
 }
 
 func TestNilOCProtoNodeToJaegerThrift(t *testing.T) {
-	nilNodeBatch := consumerdata.TraceData{
+	nilNodeBatch := traceData{
 		Spans: []*tracepb.Span{
 			{
 				TraceId: []byte("0123456789abcdef"),
@@ -335,7 +335,7 @@ func TestOCStatusToJaegerThriftTags(t *testing.T) {
 			},
 			wantTags: []*jaeger.Tag{
 				{
-					Key:   tracetranslator.TagHTTPStatusCode,
+					Key:   conventions.AttributeHTTPStatusCode,
 					VLong: func() *int64 { v := int64(404); return &v }(),
 					VType: jaeger.TagType_LONG,
 				},
@@ -361,7 +361,7 @@ func TestOCStatusToJaegerThriftTags(t *testing.T) {
 	fakeTraceID := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
 	fakeSpanID := []byte{0, 1, 2, 3, 4, 5, 6, 7}
 	for i, c := range cases {
-		gb, err := oCProtoToJaegerThrift(consumerdata.TraceData{
+		gb, err := oCProtoToJaegerThrift(traceData{
 			Spans: []*tracepb.Span{{
 				TraceId:    fakeTraceID,
 				SpanId:     fakeSpanID,
@@ -385,7 +385,7 @@ func TestOCStatusToJaegerThriftTags(t *testing.T) {
 
 // tds has the TraceData proto used in the test. They are hard coded because
 // structs like tracepb.AttributeMap cannot be ready from JSON.
-var tds = []consumerdata.TraceData{
+var tds = []traceData{
 	{
 		Node: &commonpb.Node{
 			Identifier: &commonpb.ProcessIdentifier{

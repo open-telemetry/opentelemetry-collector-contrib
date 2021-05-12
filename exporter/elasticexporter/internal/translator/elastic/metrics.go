@@ -94,9 +94,9 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 			// TODO(axw) requires https://github.com/elastic/apm-server/issues/3195
 			intHistogram := metric.IntHistogram()
 			dropped += intHistogram.DataPoints().Len()
-		case pdata.MetricDataTypeDoubleHistogram:
+		case pdata.MetricDataTypeHistogram:
 			// TODO(axw) requires https://github.com/elastic/apm-server/issues/3195
-			doubleHistogram := metric.DoubleHistogram()
+			doubleHistogram := metric.Histogram()
 			dropped += doubleHistogram.DataPoints().Len()
 		default:
 			// Unknown type, so just increment dropped by 1 as a best effort.
@@ -113,18 +113,19 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 	return dropped, nil
 }
 
-func asTime(in pdata.TimestampUnixNano) model.Time {
+func asTime(in pdata.Timestamp) model.Time {
 	return model.Time(time.Unix(0, int64(in)))
 }
 
 func asStringMap(in pdata.StringMap) model.StringMap {
 	var out model.StringMap
 	in.Sort()
-	in.ForEach(func(k string, v string) {
+	in.Range(func(k string, v string) bool {
 		out = append(out, model.StringMapItem{
 			Key:   k,
 			Value: v,
 		})
+		return true
 	})
 	return out
 }

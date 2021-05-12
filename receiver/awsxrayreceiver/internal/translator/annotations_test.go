@@ -31,7 +31,7 @@ func TestAddAnnotations(t *testing.T) {
 	input["float64"] = 5.5
 
 	attrMap := pdata.NewAttributeMap()
-	attrMap.InitEmptyWithCapacity(initAttrCapacity)
+	attrMap.EnsureCapacity(initAttrCapacity)
 	addAnnotations(input, &attrMap)
 
 	expectedAttrMap := pdata.NewAttributeMap()

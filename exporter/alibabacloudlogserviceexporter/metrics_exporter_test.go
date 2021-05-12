@@ -22,7 +22,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -30,9 +30,10 @@ import (
 
 func TestNewMetricsExporter(t *testing.T) {
 	got, err := newMetricsExporter(zap.NewNop(), &Config{
-		Endpoint: "us-west-1.log.aliyuncs.com",
-		Project:  "demo-project",
-		Logstore: "demo-logstore",
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		Endpoint:         "us-west-1.log.aliyuncs.com",
+		Project:          "demo-project",
+		Logstore:         "demo-logstore",
 	})
 	assert.NoError(t, err)
 	require.NotNil(t, got)
@@ -45,13 +46,12 @@ func TestNewMetricsExporter(t *testing.T) {
 	doublePt := metricstestutil.Double(tsUnix, doubleVal)
 
 	// This will put trace data to send buffer and return success.
-	err = got.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(consumerdata.MetricsData{
+	err = got.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(internaldata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			metricstestutil.Gauge("gauge_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
 		},
 	}))
-	// a
-	assert.Error(t, err)
+	assert.NoError(t, err)
 }
 
 func TestNewFailsWithEmptyMetricsExporterName(t *testing.T) {

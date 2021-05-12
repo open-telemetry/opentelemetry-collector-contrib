@@ -31,7 +31,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -54,9 +54,9 @@ var testSpans = []*tracepb.Span{
 	},
 }
 
-func testTraceExporter(td pdata.Traces, t *testing.T, cfg *Config) {
+func testTracesExporter(td pdata.Traces, t *testing.T, cfg *Config) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exporter, err := createTraceExporter(context.Background(), params, cfg)
+	exporter, err := createTracesExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -66,9 +66,9 @@ func testTraceExporter(td pdata.Traces, t *testing.T, cfg *Config) {
 	require.NoError(t, err)
 }
 
-func TestNullTraceExporterConfig(tester *testing.T) {
+func TestNullTracesExporterConfig(tester *testing.T) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := newLogzioTraceExporter(nil, params)
+	_, err := newLogzioTracesExporter(nil, params)
 	assert.Error(tester, err, "Null exporter config should produce error")
 }
 
@@ -91,30 +91,23 @@ func TestNullTokenConfig(tester *testing.T) {
 		Region: "eu",
 	}
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	_, err := createTraceExporter(context.Background(), params, &cfg)
+	_, err := createTracesExporter(context.Background(), params, &cfg)
 	assert.Error(tester, err, "Empty token should produce error")
 }
 
 func TestEmptyNode(tester *testing.T) {
 	cfg := Config{
-		TracesToken: "test",
-		Region:      "eu",
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		TracesToken:      "test",
+		Region:           "eu",
 	}
-	td := consumerdata.TraceData{
-		Node:  nil,
-		Spans: nil,
-	}
-	testTraceExporter(internaldata.OCToTraceData(td), tester, &cfg)
+	testTracesExporter(internaldata.OCToTraces(nil, nil, nil), tester, &cfg)
 }
 
 func TestWriteSpanError(tester *testing.T) {
 	cfg := Config{
 		TracesToken: "test",
 		Region:      "eu",
-	}
-	td := consumerdata.TraceData{
-		Node:  nil,
-		Spans: testSpans,
 	}
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exporter, _ := newLogzioExporter(&cfg, params)
@@ -123,18 +116,14 @@ func TestWriteSpanError(tester *testing.T) {
 	exporter.WriteSpanFunc = func(context.Context, *model.Span) error {
 		return errors.New("fail")
 	}
-	droppedSpans, _ := exporter.pushTraceData(context.Background(), internaldata.OCToTraceData(td))
-	assert.Equal(tester, 1, droppedSpans)
+	err := exporter.pushTraceData(context.Background(), internaldata.OCToTraces(nil, nil, testSpans))
+	assert.NoError(tester, err)
 }
 
 func TestConversionTraceError(tester *testing.T) {
 	cfg := Config{
 		TracesToken: "test",
 		Region:      "eu",
-	}
-	td := consumerdata.TraceData{
-		Node:  nil,
-		Spans: testSpans,
 	}
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exporter, _ := newLogzioExporter(&cfg, params)
@@ -143,7 +132,7 @@ func TestConversionTraceError(tester *testing.T) {
 	exporter.InternalTracesToJaegerTraces = func(td pdata.Traces) ([]*model.Batch, error) {
 		return nil, errors.New("fail")
 	}
-	_, err := exporter.pushTraceData(context.Background(), internaldata.OCToTraceData(td))
+	err := exporter.pushTraceData(context.Background(), internaldata.OCToTraces(nil, nil, testSpans))
 	assert.Error(tester, err)
 }
 
@@ -154,24 +143,22 @@ func TestPushTraceData(tester *testing.T) {
 		rw.WriteHeader(http.StatusOK)
 	}))
 	cfg := Config{
-		TracesToken:    "test",
-		Region:         "eu",
-		CustomEndpoint: server.URL,
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		TracesToken:      "test",
+		Region:           "eu",
+		CustomEndpoint:   server.URL,
 	}
 	defer server.Close()
 
-	td := consumerdata.TraceData{
-		Node: &commonpb.Node{
-			ServiceInfo: &commonpb.ServiceInfo{
-				Name: testService,
-			},
-			Identifier: &commonpb.ProcessIdentifier{
-				HostName: testHost,
-			},
+	node := &commonpb.Node{
+		ServiceInfo: &commonpb.ServiceInfo{
+			Name: testService,
 		},
-		Spans: testSpans,
+		Identifier: &commonpb.ProcessIdentifier{
+			HostName: testHost,
+		},
 	}
-	testTraceExporter(internaldata.OCToTraceData(td), tester, &cfg)
+	testTracesExporter(internaldata.OCToTraces(node, nil, testSpans), tester, &cfg)
 	requests := strings.Split(string(recordedRequests), "\n")
 	var logzioSpan objects.LogzioSpan
 	assert.NoError(tester, json.Unmarshal([]byte(requests[0]), &logzioSpan))
@@ -188,9 +175,10 @@ func TestPushTraceData(tester *testing.T) {
 
 func TestPushMetricsData(tester *testing.T) {
 	cfg := Config{
-		MetricsToken:   "test",
-		Region:         "eu",
-		CustomEndpoint: "url",
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		MetricsToken:     "test",
+		Region:           "eu",
+		CustomEndpoint:   "url",
 	}
 	md := pdata.NewMetrics()
 

@@ -4,6 +4,9 @@ receivers:
     endpoint: "localhost:1234"
     collection_interval: 30s
     metrics_path: /v2/metrics
+    params:
+      columns: "name,messages"
+      key: ["foo","bar"]
     use_service_account: true
     tls_enabled: true
     tls_config:
@@ -21,10 +24,10 @@ receivers:
 
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
@@ -33,5 +36,5 @@ service:
         - prometheus_simple
         - prometheus_simple/all_settings
         - prometheus_simple/partial_settings
-      processors: [exampleprocessor]
-      exporters: [exampleexporter]
+      processors: [nop]
+      exporters: [nop]

@@ -11,8 +11,6 @@ ALL_SRC_AND_DOC := $(shell find . \( -name "*.md" -o -name "*.go" -o -name "*.ya
 
 # ALL_PKGS is used with 'go cover'
 ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))) 2>/dev/null)
-# ALL_MODULES includes ./* dirs (excludes . dir)
-ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
 
 GOTEST_OPT?= -race -timeout 30s
 GOTEST_INTEGRATION_OPT?= -race -timeout 60s
@@ -24,14 +22,10 @@ GOARCH=$(shell go env GOARCH)
 ADDLICENCESE= addlicense
 MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
-STATICCHECK=staticcheck
 LINT=golangci-lint
 IMPI=impi
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
-
-all-modules:
-	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
 
 all-pkgs:
 	@echo $(ALL_PKGS) | tr ' ' '\n' | sort
@@ -42,15 +36,11 @@ all-srcs:
 .DEFAULT_GOAL := common
 
 .PHONY: common
-common: checklicense impi lint misspell test
+common: checklicense checkdoc impi lint misspell
 
 .PHONY: test
 test:
-	@set -e; for dir in $(ALL_MODULES); do \
-	  echo "go test ./... in $${dir}"; \
-	  (cd "$${dir}" && \
-	    $(GOTEST) ./... ); \
-	done
+	$(GOTEST) ./...
 
 .PHONY: do-unit-tests-with-cover
 do-unit-tests-with-cover:
@@ -72,7 +62,7 @@ benchmark:
 
 .PHONY: addlicense
 addlicense:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y -c 'OpenTelemetry Authors' $(ALL_SRC) 2>&1`; \
+	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y "" -c 'OpenTelemetry Authors' $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENCESEOUT" ]; then \
 			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
 			echo "$$ADDLICENCESEOUT\n"; \
@@ -93,25 +83,13 @@ checklicense:
 			echo "Check License finished successfully"; \
 		fi
 
-.PHONY: lint-static-check
-lint-static-check:
-	@STATIC_CHECK_OUT=`$(STATICCHECK) ./... 2>&1`; \
-		if [ "$$STATIC_CHECK_OUT" ]; then \
-			echo "$(STATICCHECK) FAILED => static check errors:\n"; \
-			echo "$$STATIC_CHECK_OUT\n"; \
-			exit 1; \
-		else \
-			echo "Static check finished successfully"; \
-		fi
-
-
 .PHONY: fmt
 fmt:
 	gofmt  -w -s ./
 	goimports -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
 .PHONY: lint
-lint: lint-static-check
+lint:
 	$(LINT) run --allow-parallel-runners
 
 .PHONY: misspell
@@ -126,6 +104,6 @@ misspell-correction:
 impi:
 	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal ./...
 
-.PHONY: dep 
+.PHONY: dep
 dep:
 	go mod download

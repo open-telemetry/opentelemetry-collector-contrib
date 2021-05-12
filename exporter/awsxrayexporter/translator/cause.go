@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
+	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
 func makeCause(span pdata.Span, attributes map[string]string, resource pdata.Resource) (isError, isFault bool,
@@ -151,6 +151,10 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 		exceptions = fillJavaStacktrace(stacktrace, exceptions)
 	case "python":
 		exceptions = fillPythonStacktrace(stacktrace, exceptions)
+	case "javascript":
+		exceptions = fillJavaScriptStacktrace(stacktrace, exceptions)
+	case "dotnet":
+		exceptions = fillDotnetStacktrace(stacktrace, exceptions)
 	}
 
 	return exceptions
@@ -345,4 +349,139 @@ func fillPythonStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 	}
 
 	return exceptions
+}
+
+func fillJavaScriptStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxray.Exception {
+	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
+
+	// Skip first line containing top level exception / message
+	r.ReadLine()
+	exception := &exceptions[0]
+	var line string
+	line, err := r.ReadLine()
+	if err != nil {
+		return exceptions
+	}
+
+	exception.Stack = make([]awsxray.StackFrame, 0)
+	for {
+		if strings.HasPrefix(line, "    at ") {
+			parenIdx := strings.IndexByte(line, '(')
+			label := ""
+			path := ""
+			lineIdx := 0
+			if parenIdx >= 0 && line[len(line)-1] == ')' {
+				label = line[7:parenIdx]
+				path = line[parenIdx+1 : len(line)-1]
+			} else if parenIdx < 0 {
+				label = ""
+				path = line[7:]
+			}
+
+			colonFirstIdx := strings.IndexByte(path, ':')
+			colonSecondIdx := indexOf(path, ':', colonFirstIdx)
+
+			if colonFirstIdx >= 0 && colonSecondIdx >= 0 && colonFirstIdx != colonSecondIdx {
+				lineStr := path[colonFirstIdx+1 : colonSecondIdx]
+				path = path[0:colonFirstIdx]
+				lineIdx, _ = strconv.Atoi(lineStr)
+			} else if colonFirstIdx < 0 && strings.Contains(path, "native") {
+				path = "native"
+			}
+
+			// only append the exception if all the values of the exception are not default
+			if path != "" || label != "" || lineIdx != 0 {
+				stack := awsxray.StackFrame{
+					Path:  aws.String(path),
+					Label: aws.String(label),
+					Line:  aws.Int(lineIdx),
+				}
+				exception.Stack = append(exception.Stack, stack)
+			}
+		}
+		line, err = r.ReadLine()
+		if err != nil {
+			break
+		}
+	}
+	return exceptions
+}
+
+func fillDotnetStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxray.Exception {
+	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
+
+	// Skip first line containing top level exception / message
+	r.ReadLine()
+	exception := &exceptions[0]
+	var line string
+	line, err := r.ReadLine()
+	if err != nil {
+		return exceptions
+	}
+
+	exception.Stack = make([]awsxray.StackFrame, 0)
+	for {
+		if strings.HasPrefix(line, "\tat ") {
+			index := strings.Index(line, " in ")
+			if index >= 0 {
+				parts := strings.Split(line, " in ")
+
+				label := parts[0][len("\tat "):]
+				path := parts[1]
+				lineNumber := 0
+
+				colonIdx := strings.LastIndexByte(parts[1], ':')
+				if colonIdx >= 0 {
+					lineStr := path[colonIdx+1:]
+
+					if strings.HasPrefix(lineStr, "line") {
+						lineStr = lineStr[5:]
+					}
+					path = path[0:colonIdx]
+					lineNumber, _ = strconv.Atoi(lineStr)
+				}
+
+				stack := awsxray.StackFrame{
+					Path:  aws.String(path),
+					Label: aws.String(label),
+					Line:  aws.Int(lineNumber),
+				}
+
+				exception.Stack = append(exception.Stack, stack)
+			} else {
+				idx := strings.LastIndexByte(line, ')')
+				if idx >= 0 {
+					label := line[len("\tat ") : idx+1]
+					path := ""
+					lineNumber := 0
+
+					stack := awsxray.StackFrame{
+						Path:  aws.String(path),
+						Label: aws.String(label),
+						Line:  aws.Int(lineNumber),
+					}
+
+					exception.Stack = append(exception.Stack, stack)
+				}
+			}
+		}
+
+		line, err = r.ReadLine()
+		if err != nil {
+			break
+		}
+	}
+	return exceptions
+}
+
+// indexOf returns position of the first occurrence of a Byte in str starting at pos index.
+func indexOf(str string, c byte, pos int) int {
+	if pos < 0 {
+		return -1
+	}
+	index := strings.IndexByte(str[pos+1:], c)
+	if index > -1 {
+		return index + pos + 1
+	}
+	return -1
 }

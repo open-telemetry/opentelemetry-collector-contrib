@@ -25,7 +25,7 @@ import (
 func spanAttributesToMap(spanAttrs pdata.AttributeMap) map[string]interface{} {
 	var attrs = make(map[string]interface{}, spanAttrs.Len())
 
-	spanAttrs.ForEach(func(key string, value pdata.AttributeValue) {
+	spanAttrs.Range(func(key string, value pdata.AttributeValue) bool {
 		switch value.Type() {
 		case pdata.AttributeValueSTRING:
 			attrs[key] = value.StringVal()
@@ -36,13 +36,14 @@ func spanAttributesToMap(spanAttrs pdata.AttributeMap) map[string]interface{} {
 		case pdata.AttributeValueDOUBLE:
 			attrs[key] = value.DoubleVal()
 		}
+		return true
 	})
 
 	return attrs
 }
 
 // timestampToTime converts a protobuf timestamp into a time.Time.
-func timestampToTime(ts pdata.TimestampUnixNano) (t time.Time) {
+func timestampToTime(ts pdata.Timestamp) (t time.Time) {
 	if ts == 0 {
 		return
 	}

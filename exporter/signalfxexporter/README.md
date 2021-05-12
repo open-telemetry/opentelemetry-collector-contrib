@@ -14,7 +14,8 @@ Supported pipeline types: logs (events), metrics, traces (trace to metric correl
 The following configuration options are required:
 
 - `access_token` (no default): The access token is the authentication token
-  provided by SignalFx.
+  provided by SignalFx. The SignalFx access token can be obtained from the
+  web app. For details on how to do so please refer the documentation [here](https://docs.signalfx.com/en/latest/admin-guide/tokens.html#access-tokens).
 - Either `realm` or both `api_url` and `ingest_url`. Both `api_url` and
   `ingest_url` take precedence over `realm`.
   - `realm` (no default): SignalFx realm where the data will be received.
@@ -40,19 +41,35 @@ The following configuration options can also be configured:
   configuration option for [SignalFx
   receiver](../../receiver/signalfxreceiver/README.md) to preserve datapoint
   origin.
-- `exclude_metrics`: metric names that will be excluded from sending
-  to Signalfx backend. If `send_compatible_metrics` or `translation_rules`
-  options are enabled, the exclusion will be applied on translated metrics.
+- `exclude_metrics`: List of metric filters that will determine metrics to be
+  excluded from sending to Signalfx backend. If `translation_rules` options
+  are enabled, the exclusion will be applied on translated metrics.
+  See [here](./testdata/config.yaml) for examples. Apart from the values explicitly
+  provided via this option, by default, [these](./translation/default_metrics.go) are
+  also appended to this list. Setting this option to `[]` will override all the default
+  excludes.
+- `include_metrics`: List of filters to override exclusion of any metrics.
+  This option can be used to included metrics that are otherwise dropped by
+  default. See [here](./translation/default_metrics.go) for a list of metrics
+  that are dropped by default. For example, the following configuration can be
+  used to send through some of that are dropped by default.
+  ```yaml
+  include_metrics:
+    # When sending in translated metrics.
+    - metric_names: [cpu.interrupt, cpu.user, cpu.system]
+    # When sending in metrics in OTel convention.
+    - metric_name: system.cpu.time
+      dimensions:
+        state: [interrupt, user, system]
+  ```
 - `headers` (no default): Headers to pass in the payload.
 - `log_dimension_updates` (default = `false`): Whether or not to log dimension
   updates.
-- `send_compatible_metrics` (default = `false`): Whether metrics must be
-  translated to a format backward-compatible with SignalFx naming conventions.
 - `timeout` (default = 5s): Amount of time to wait for a send operation to
   complete.
 - `translation_rules`: Set of rules on how to translate metrics to a SignalFx
   compatible format. Rules defined in `translation/constants.go` are used by
-  default. Applicable only when `send_compatible_metrics` set to `true`.
+  default. Set this option to `[]` to override the default behavior.
 - `sync_host_metadata`: Defines whether the exporter should scrape host metadata
   and send it as property updates to SignalFx backend. Disabled by default.
   IMPORTANT: Host metadata synchronization relies on `resourcedetection`
@@ -60,10 +77,14 @@ The following configuration options can also be configured:
   processor is enabled in the pipeline with one of the cloud provider detectors
   or environment variable detector setting a unique value to `host.name` attribute
   within your k8s cluster. And keep `override=true` in resourcedetection config.
+- `nonalphanumeric_dimension_chars`: (default = `"_-."`) A string of characters 
+that are allowed to be used as a dimension key in addition to alphanumeric 
+characters. Each nonalphanumeric dimension key character that isn't in this string 
+will be replaced with a `_`.
 
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
-[here](https://github.com/open-telemetry/opentelemetry-collector/blob/master/exporter/exporterhelper/README.md).
+[here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
 
 ## Traces Configuration (correlation only)
 
@@ -130,4 +151,4 @@ The full list of settings exposed for this exporter are documented [here](config
 with detailed sample configurations [here](testdata/config.yaml).
 
 This exporter also offers proxy support as documented
-[here](https://github.com/open-telemetry/opentelemetry-collector/tree/master/exporter#proxy-support).
+[here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).

@@ -14,40 +14,8 @@
 
 package version
 
-import (
-	"bytes"
-	"fmt"
-	"runtime"
-)
-
 // Version variable will be replaced at link time after `make` has been run.
 var Version = "latest"
 
 // GitHash variable will be replaced at link time after `make` has been run.
 var GitHash = "<NOT PROPERLY GENERATED>"
-
-// Info returns a formatted string, with linebreaks, intended to be displayed
-// on stdout.
-func Info() string {
-	buf := new(bytes.Buffer)
-	rows := [][2]string{
-		{"Version", Version},
-		{"GitHash", GitHash},
-		{"Goversion", runtime.Version()},
-		{"OS", runtime.GOOS},
-		{"Architecture", runtime.GOARCH},
-		// Add other valuable build-time information here.
-	}
-	maxRow1Alignment := 0
-	for _, row := range rows {
-		if cl0 := len(row[0]); cl0 > maxRow1Alignment {
-			maxRow1Alignment = cl0
-		}
-	}
-
-	for _, row := range rows {
-		// Then finally print them with left alignment
-		fmt.Fprintf(buf, "%*s %s\n", -maxRow1Alignment, row[0], row[1])
-	}
-	return buf.String()
-}

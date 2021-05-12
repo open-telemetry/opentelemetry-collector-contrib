@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,14 +19,16 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -49,15 +51,31 @@ var (
 // MetricsConverter converts MetricsData to sfxpb DataPoints. It holds an optional
 // MetricTranslator to translate SFx metrics using translation rules.
 type MetricsConverter struct {
-	logger           *zap.Logger
-	metricTranslator *MetricTranslator
+	logger             *zap.Logger
+	metricTranslator   *MetricTranslator
+	filterSet          *dpfilters.FilterSet
+	datapointValidator *datapointValidator
 }
 
 // NewMetricsConverter creates a MetricsConverter from the passed in logger and
 // MetricTranslator. Pass in a nil MetricTranslator to not use translation
 // rules.
-func NewMetricsConverter(logger *zap.Logger, t *MetricTranslator) *MetricsConverter {
-	return &MetricsConverter{logger: logger, metricTranslator: t}
+func NewMetricsConverter(
+	logger *zap.Logger,
+	t *MetricTranslator,
+	excludes []dpfilters.MetricFilter,
+	includes []dpfilters.MetricFilter,
+	nonAlphanumericDimChars string) (*MetricsConverter, error) {
+	fs, err := dpfilters.NewFilterSet(excludes, includes)
+	if err != nil {
+		return nil, err
+	}
+	return &MetricsConverter{
+		logger:             logger,
+		metricTranslator:   t,
+		filterSet:          fs,
+		datapointValidator: newDatapointValidator(logger, nonAlphanumericDimChars),
+	}, nil
 }
 
 // MetricDataToSignalFxV2 converts the passed in MetricsData to SFx datapoints,
@@ -66,11 +84,7 @@ func NewMetricsConverter(logger *zap.Logger, t *MetricTranslator) *MetricsConver
 func (c *MetricsConverter) MetricDataToSignalFxV2(rm pdata.ResourceMetrics) []*sfxpb.DataPoint {
 	var sfxDatapoints []*sfxpb.DataPoint
 
-	res := rm.Resource()
-
-	var extraDimensions []*sfxpb.Dimension
-	resourceAttribs := res.Attributes()
-	extraDimensions = resourceAttributesToDimensions(resourceAttribs)
+	extraDimensions := resourceToDimensions(rm.Resource())
 
 	for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
 		ilm := rm.InstrumentationLibraryMetrics().At(j)
@@ -79,8 +93,8 @@ func (c *MetricsConverter) MetricDataToSignalFxV2(rm pdata.ResourceMetrics) []*s
 			sfxDatapoints = append(sfxDatapoints, dps...)
 		}
 	}
-	sanitizeDataPointDimensions(sfxDatapoints)
-	return sfxDatapoints
+
+	return c.datapointValidator.sanitizeDataPoints(sfxDatapoints)
 }
 
 func (c *MetricsConverter) metricToSfxDataPoints(metric pdata.Metric, extraDimensions []*sfxpb.Dimension) []*sfxpb.DataPoint {
@@ -103,14 +117,26 @@ func (c *MetricsConverter) metricToSfxDataPoints(metric pdata.Metric, extraDimen
 		dps = convertDoubleDatapoints(metric.DoubleSum().DataPoints(), basePoint, extraDimensions)
 	case pdata.MetricDataTypeIntHistogram:
 		dps = convertIntHistogram(metric.IntHistogram().DataPoints(), basePoint, extraDimensions)
-	case pdata.MetricDataTypeDoubleHistogram:
-		dps = convertDoubleHistogram(metric.DoubleHistogram().DataPoints(), basePoint, extraDimensions)
+	case pdata.MetricDataTypeHistogram:
+		dps = convertHistogram(metric.Histogram().DataPoints(), basePoint, extraDimensions)
+	case pdata.MetricDataTypeSummary:
+		dps = convertSummaryDataPoints(metric.Summary().DataPoints(), metric.Name(), extraDimensions)
 	}
 
 	if c.metricTranslator != nil {
 		dps = c.metricTranslator.TranslateDataPoints(c.logger, dps)
 	}
 
+	resultSliceLen := 0
+	for i, dp := range dps {
+		if !c.filterSet.Matches(dp) {
+			if resultSliceLen < i {
+				dps[resultSliceLen] = dp
+			}
+			resultSliceLen++
+		}
+	}
+	dps = dps[:resultSliceLen]
 	return dps
 }
 
@@ -122,13 +148,68 @@ func labelsToDimensions(labels pdata.StringMap, extraDims []*sfxpb.Dimension) []
 	}
 	dimensionsValue := make([]sfxpb.Dimension, labels.Len())
 	pos := 0
-	labels.ForEach(func(k string, v string) {
+	labels.Range(func(k string, v string) bool {
 		dimensionsValue[pos].Key = k
 		dimensionsValue[pos].Value = v
 		dimensions = append(dimensions, &dimensionsValue[pos])
 		pos++
+		return true
 	})
 	return dimensions
+}
+
+func convertSummaryDataPoints(
+	in pdata.SummaryDataPointSlice,
+	name string,
+	extraDims []*sfxpb.Dimension,
+) []*sfxpb.DataPoint {
+	out := make([]*sfxpb.DataPoint, 0, in.Len())
+
+	for i := 0; i < in.Len(); i++ {
+		inDp := in.At(i)
+
+		dims := labelsToDimensions(inDp.LabelsMap(), extraDims)
+		ts := timestampToSignalFx(inDp.Timestamp())
+
+		countPt := sfxpb.DataPoint{
+			Metric:     name + "_count",
+			Timestamp:  ts,
+			Dimensions: dims,
+			MetricType: &sfxMetricTypeCumulativeCounter,
+		}
+		c := int64(inDp.Count())
+		countPt.Value.IntValue = &c
+		out = append(out, &countPt)
+
+		sumPt := sfxpb.DataPoint{
+			Metric:     name,
+			Timestamp:  ts,
+			Dimensions: dims,
+			MetricType: &sfxMetricTypeCumulativeCounter,
+		}
+		sum := inDp.Sum()
+		sumPt.Value.DoubleValue = &sum
+		out = append(out, &sumPt)
+
+		qvs := inDp.QuantileValues()
+		for j := 0; j < qvs.Len(); j++ {
+			qPt := sfxpb.DataPoint{
+				Metric:     name + "_quantile",
+				Timestamp:  ts,
+				MetricType: &sfxMetricTypeGauge,
+			}
+			qv := qvs.At(j)
+			qdim := sfxpb.Dimension{
+				Key:   "quantile",
+				Value: strconv.FormatFloat(qv.Quantile(), 'f', -1, 64),
+			}
+			qPt.Dimensions = append(dims, &qdim)
+			v := qv.Value()
+			qPt.Value.DoubleValue = &v
+			out = append(out, &qPt)
+		}
+	}
+	return out
 }
 
 func convertIntDatapoints(in pdata.IntDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
@@ -207,8 +288,8 @@ func fromMetricDataTypeToMetricType(metric pdata.Metric) *sfxpb.MetricType {
 		}
 		return &sfxMetricTypeCumulativeCounter
 
-	case pdata.MetricDataTypeDoubleHistogram:
-		if metric.DoubleHistogram().AggregationTemporality() == pdata.AggregationTemporalityDelta {
+	case pdata.MetricDataTypeHistogram:
+		if metric.Histogram().AggregationTemporality() == pdata.AggregationTemporalityDelta {
 			return &sfxMetricTypeCounter
 		}
 		return &sfxMetricTypeCumulativeCounter
@@ -272,7 +353,7 @@ func convertIntHistogram(histDPs pdata.IntHistogramDataPointSlice, basePoint *sf
 	return out
 }
 
-func convertDoubleHistogram(histDPs pdata.DoubleHistogramDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
+func convertHistogram(histDPs pdata.HistogramDataPointSlice, basePoint *sfxpb.DataPoint, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
 	var out []*sfxpb.DataPoint
 
 	for i := 0; i < histDPs.Len(); i++ {
@@ -327,19 +408,9 @@ func convertDoubleHistogram(histDPs pdata.DoubleHistogramDataPointSlice, basePoi
 	return out
 }
 
-// sanitizeDataPointLabels replaces all characters unsupported by SignalFx backend
-// in metric label keys and with "_"
-func sanitizeDataPointDimensions(dps []*sfxpb.DataPoint) {
-	for _, dp := range dps {
-		for _, d := range dp.Dimensions {
-			d.Key = filterKeyChars(d.Key)
-		}
-	}
-}
-
-func filterKeyChars(str string) string {
+func filterKeyChars(str string, nonAlphanumericDimChars string) string {
 	filterMap := func(r rune) rune {
-		if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' || r == '-' {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) || strings.ContainsRune(nonAlphanumericDimChars, r) {
 			return r
 		}
 		return '_'
@@ -358,78 +429,167 @@ func float64ToDimValue(f float64) string {
 	return strconv.FormatFloat(f, 'g', -1, 64)
 }
 
-// resourceAttributesToDimensions will return a set of dimension from the
+// resourceToDimensions will return a set of dimension from the
 // resource attributes, including a cloud host id (AWSUniqueId, gcp_id, etc.)
 // if it can be constructed from the provided metadata.
-func resourceAttributesToDimensions(resourceAttr pdata.AttributeMap) []*sfxpb.Dimension {
+func resourceToDimensions(res pdata.Resource) []*sfxpb.Dimension {
 	var dims []*sfxpb.Dimension
 
-	// TODO: Replace with internal/splunk/hostid.go once signalfxexporter is converted to pdata.
-	accountID := getStringAttr(resourceAttr, conventions.AttributeCloudAccount)
-	region := getStringAttr(resourceAttr, conventions.AttributeCloudRegion)
-	instanceID := getStringAttr(resourceAttr, conventions.AttributeHostID)
-	provider := getStringAttr(resourceAttr, conventions.AttributeCloudProvider)
-
-	filter := func(k string) bool { return true }
-
-	switch provider {
-	case conventions.AttributeCloudProviderAWS:
-		if instanceID == "" || region == "" || accountID == "" {
-			break
-		}
-		filter = func(k string) bool {
-			return k != conventions.AttributeCloudAccount &&
-				k != conventions.AttributeCloudRegion &&
-				k != conventions.AttributeHostID &&
-				k != conventions.AttributeCloudProvider
-		}
+	if hostID, ok := splunk.ResourceToHostID(res); ok && hostID.Key != splunk.HostIDKeyHost {
 		dims = append(dims, &sfxpb.Dimension{
-			Key:   "AWSUniqueId",
-			Value: fmt.Sprintf("%s_%s_%s", instanceID, region, accountID),
+			Key:   string(hostID.Key),
+			Value: hostID.ID,
 		})
-	case conventions.AttributeCloudProviderGCP:
-		if accountID == "" || instanceID == "" {
-			break
-		}
-		filter = func(k string) bool {
-			return k != conventions.AttributeCloudAccount &&
-				k != conventions.AttributeHostID &&
-				k != conventions.AttributeCloudProvider
-		}
-		dims = append(dims, &sfxpb.Dimension{
-			Key:   "gcp_id",
-			Value: fmt.Sprintf("%s_%s", accountID, instanceID),
-		})
-	default:
 	}
 
-	resourceAttr.ForEach(func(k string, val pdata.AttributeValue) {
+	res.Attributes().Range(func(k string, val pdata.AttributeValue) bool {
 		// Never send the SignalFX token
 		if k == splunk.SFxAccessTokenLabel {
-			return
-		}
-
-		if !filter(k) {
-			return
+			return true
 		}
 
 		dims = append(dims, &sfxpb.Dimension{
 			Key:   k,
 			Value: tracetranslator.AttributeValueToString(val, false),
 		})
+		return true
 	})
 
 	return dims
 }
 
-func getStringAttr(attrs pdata.AttributeMap, key string) string {
-	if a, ok := attrs.Get(key); ok {
-		return a.StringVal()
-	}
-	return ""
-}
-
-func timestampToSignalFx(ts pdata.TimestampUnixNano) int64 {
+func timestampToSignalFx(ts pdata.Timestamp) int64 {
 	// Convert nanosecs to millisecs.
 	return int64(ts) / 1e6
+}
+
+func (c *MetricsConverter) ConvertDimension(dim string) string {
+	res := dim
+	if c.metricTranslator != nil {
+		res = c.metricTranslator.translateDimension(dim)
+	}
+	return filterKeyChars(res, c.datapointValidator.nonAlphanumericDimChars)
+}
+
+// Values obtained from https://dev.splunk.com/observability/docs/datamodel/ingest#Criteria-for-metric-and-dimension-names-and-values
+const (
+	maxMetricNameLength     = 256
+	maxDimensionNameLength  = 128
+	maxDimensionValueLength = 256
+)
+
+var (
+	invalidMetricNameReason = fmt.Sprintf(
+		"metric name longer than %d characters", maxMetricNameLength)
+	invalidDimensionNameReason = fmt.Sprintf(
+		"dimension name longer than %d characters", maxDimensionNameLength)
+	invalidDimensionValueReason = fmt.Sprintf(
+		"dimension value longer than %d characters", maxDimensionValueLength)
+)
+
+type datapointValidator struct {
+	logger                  *zap.Logger
+	nonAlphanumericDimChars string
+}
+
+func newDatapointValidator(logger *zap.Logger, nonAlphanumericDimChars string) *datapointValidator {
+	return &datapointValidator{logger: createSampledLogger(logger), nonAlphanumericDimChars: nonAlphanumericDimChars}
+}
+
+// sanitizeDataPoints sanitizes datapoints prior to dispatching them to the backend.
+// Datapoints that do not conform to the requirements are removed. This method drops
+// datapoints with metric name greater than 256 characters.
+func (dpv *datapointValidator) sanitizeDataPoints(dps []*sfxpb.DataPoint) []*sfxpb.DataPoint {
+	resultDatapointsLen := 0
+	for dpIndex, dp := range dps {
+		if dpv.isValidMetricName(dp.Metric) {
+			dp.Dimensions = dpv.sanitizeDimensions(dp.Dimensions)
+			if resultDatapointsLen < dpIndex {
+				dps[resultDatapointsLen] = dp
+			}
+			resultDatapointsLen++
+		}
+	}
+
+	// Trim datapoints slice to account for any removed datapoints.
+	return dps[:resultDatapointsLen]
+}
+
+// sanitizeDimensions replaces all characters unsupported by SignalFx backend
+// in metric label keys and with "_" and drops dimensions when the key is greater
+// than 128 characters or when value is greater than 256 characters in length.
+func (dpv *datapointValidator) sanitizeDimensions(dimensions []*sfxpb.Dimension) []*sfxpb.Dimension {
+	resultDimensionsLen := 0
+	for dimensionIndex, d := range dimensions {
+		if dpv.isValidDimension(d) {
+			d.Key = filterKeyChars(d.Key, dpv.nonAlphanumericDimChars)
+			if resultDimensionsLen < dimensionIndex {
+				dimensions[resultDimensionsLen] = d
+			}
+			resultDimensionsLen++
+		}
+	}
+
+	// Trim dimensions slice to account for any removed dimensions.
+	return dimensions[:resultDimensionsLen]
+}
+
+func (dpv *datapointValidator) isValidMetricName(name string) bool {
+	if len(name) > maxMetricNameLength {
+		dpv.logger.Warn("dropping datapoint",
+			zap.String("reason", invalidMetricNameReason),
+			zap.String("metric_name", name),
+			zap.Int("metric_name_length", len(name)),
+		)
+		return false
+	}
+	return true
+}
+
+func (dpv *datapointValidator) isValidDimension(dimension *sfxpb.Dimension) bool {
+	return dpv.isValidDimensionName(dimension.Key) && dpv.isValidDimensionValue(dimension.Value)
+}
+
+func (dpv *datapointValidator) isValidDimensionName(name string) bool {
+	if len(name) > maxDimensionNameLength {
+		dpv.logger.Warn("dropping dimension",
+			zap.String("reason", invalidDimensionNameReason),
+			zap.String("dimension_name", name),
+			zap.Int("dimension_name_length", len(name)),
+		)
+		return false
+	}
+	return true
+}
+
+func (dpv *datapointValidator) isValidDimensionValue(value string) bool {
+	if len(value) > maxDimensionValueLength {
+		dpv.logger.Warn("dropping dimension",
+			zap.String("reason", invalidDimensionValueReason),
+			zap.String("dimension_value", value),
+			zap.Int("dimension_value_length", len(value)),
+		)
+		return false
+	}
+	return true
+}
+
+// Copied from https://github.com/open-telemetry/opentelemetry-collector/blob/v0.26.0/exporter/exporterhelper/queued_retry.go#L108
+func createSampledLogger(logger *zap.Logger) *zap.Logger {
+	if logger.Core().Enabled(zapcore.DebugLevel) {
+		// Debugging is enabled. Don't do any sampling.
+		return logger
+	}
+
+	// Create a logger that samples all messages to 1 per 10 seconds initially,
+	// and 1/10000 of messages after that.
+	opts := zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		return zapcore.NewSamplerWithOptions(
+			core,
+			10*time.Second,
+			1,
+			10000,
+		)
+	})
+	return logger.WithOptions(opts)
 }

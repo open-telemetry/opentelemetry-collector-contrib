@@ -49,10 +49,10 @@ type SentryExporter struct {
 
 // pushTraceData takes an incoming OpenTelemetry trace, converts them into Sentry spans and transactions
 // and sends them using Sentry's transport.
-func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) (droppedSpans int, err error) {
+func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error {
 	resourceSpans := td.ResourceSpans()
 	if resourceSpans.Len() == 0 {
-		return 0, nil
+		return nil
 	}
 
 	maybeOrphanSpans := make([]*sentry.Span, 0, td.SpanCount())
@@ -96,7 +96,7 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) (drop
 	}
 
 	if len(transactionMap) == 0 {
-		return 0, nil
+		return nil
 	}
 
 	// After the first pass through, we can't necessarily make the assumption we have not associated all
@@ -107,7 +107,7 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) (drop
 
 	s.transport.SendTransactions(transactions)
 
-	return 0, nil
+	return nil
 }
 
 // generateTransactions creates a set of Sentry transactions from a transaction map and orphan spans.
@@ -150,7 +150,7 @@ func classifyAsOrphanSpans(orphanSpans []*sentry.Span, prevLength int, idMap map
 
 func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, resourceTags map[string]string) (sentrySpan *sentry.Span) {
 	parentSpanID := ""
-	if psID := span.ParentSpanID(); psID.IsValid() {
+	if psID := span.ParentSpanID(); !psID.IsEmpty() {
 		parentSpanID = psID.HexString()
 	}
 
@@ -185,8 +185,8 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 		Description:    description,
 		Op:             op,
 		Tags:           tags,
-		StartTimestamp: unixNanoToTime(span.StartTime()),
-		EndTimestamp:   unixNanoToTime(span.EndTime()),
+		StartTimestamp: unixNanoToTime(span.StartTimestamp()),
+		EndTimestamp:   unixNanoToTime(span.EndTimestamp()),
 		Status:         status,
 	}
 
@@ -270,7 +270,7 @@ func generateTagsFromResource(resource pdata.Resource) map[string]string {
 func generateTagsFromAttributes(attrs pdata.AttributeMap) map[string]string {
 	tags := make(map[string]string)
 
-	attrs.ForEach(func(key string, attr pdata.AttributeValue) {
+	attrs.Range(func(key string, attr pdata.AttributeValue) bool {
 		switch attr.Type() {
 		case pdata.AttributeValueSTRING:
 			tags[key] = attr.StringVal()
@@ -281,6 +281,7 @@ func generateTagsFromAttributes(attrs pdata.AttributeMap) map[string]string {
 		case pdata.AttributeValueINT:
 			tags[key] = strconv.FormatInt(attr.IntVal(), 10)
 		}
+		return true
 	})
 
 	return tags
@@ -336,7 +337,7 @@ func CreateSentryExporter(config *Config, params component.ExporterCreateParams)
 		transport: transport,
 	}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		config,
 		params.Logger,
 		s.pushTraceData,

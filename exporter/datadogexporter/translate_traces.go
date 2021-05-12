@@ -16,8 +16,11 @@ package datadogexporter
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -25,9 +28,11 @@ import (
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
+	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
 )
 
@@ -38,13 +43,28 @@ const (
 	currentILNameTag    string = "otel.library.name"
 	errorCode           int32  = 1
 	okCode              int32  = 0
-	httpKind            string = "http"
-	webKind             string = "web"
-	customKind          string = "custom"
+	kindDb              string = "db"
+	kindHTTP            string = "http"
+	kindWeb             string = "web"
+	kindCustom          string = "custom"
+	kindCache           string = "cache"
+	kindMemcached       string = "memcached"
+	kindRedis           string = "redis"
+	grpcPath            string = "grpc.path"
+	eventsTag           string = "events"
+	eventNameTag        string = "name"
+	eventAttrTag        string = "attributes"
+	eventTimeTag        string = "time"
+	// max meta value from
+	// https://github.com/DataDog/datadog-agent/blob/140a4ee164261ef2245340c50371ba989fbeb038/pkg/trace/traceutil/truncate.go#L23.
+	MaxMetaValLen int = 5000
+	// tagContainersTags specifies the name of the tag which holds key/value
+	// pairs representing information about the container (Docker, EC2, etc).
+	tagContainersTags = "_dd.tags.container"
 )
 
 // converts Traces into an array of datadog trace payloads grouped by env
-func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *config.Config) ([]*pb.TracePayload, error) {
+func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *config.Config, blk *Denylister) ([]*pb.TracePayload, []datadog.Metric) {
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
 	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
@@ -53,6 +73,8 @@ func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *co
 
 	var traces []*pb.TracePayload
 
+	var runningMetrics []datadog.Metric
+	pushTime := pdata.TimestampFromTime(time.Now())
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
 		// TODO pass logger here once traces code stabilizes
@@ -62,16 +84,15 @@ func convertToDatadogTd(td pdata.Traces, calculator *sublayerCalculator, cfg *co
 			hostname = resHostname
 		}
 
-		payload, err := resourceSpansToDatadogSpans(rs, calculator, hostname, cfg)
-		if err != nil {
-			return traces, err
-		}
-
+		payload := resourceSpansToDatadogSpans(rs, calculator, hostname, cfg, blk)
 		traces = append(traces, &payload)
 
+		ms := metrics.DefaultMetrics("traces", uint64(pushTime))
+		ms[0].Host = &hostname
+		runningMetrics = append(runningMetrics, ms...)
 	}
 
-	return traces, nil
+	return traces, runningMetrics
 }
 
 func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePayload {
@@ -101,9 +122,9 @@ func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePa
 }
 
 // converts a Trace's resource spans into a trace payload
-func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCalculator, hostname string, cfg *config.Config) (pb.TracePayload, error) {
+func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCalculator, hostname string, cfg *config.Config, blk *Denylister) pb.TracePayload {
 	// get env tag
-	env := cfg.Env
+	env := utils.NormalizeTag(cfg.Env)
 
 	resource := rs.Resource()
 	ilss := rs.InstrumentationLibrarySpans()
@@ -116,15 +137,15 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 	}
 
 	if resource.Attributes().Len() == 0 && ilss.Len() == 0 {
-		return payload, nil
+		return payload
 	}
 
 	resourceServiceName, datadogTags := resourceToDatadogServiceNameAndAttributeMap(resource)
 
 	// specification states that the resource level deployment.environment should be used for passing env, so defer to that
-	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/deployment_environment.md#deployment
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/deployment_environment.md#deployment
 	if resourceEnv, ok := datadogTags[conventions.AttributeDeploymentEnvironment]; ok {
-		payload.Env = resourceEnv
+		payload.Env = utils.NormalizeTag(resourceEnv)
 	}
 
 	apiTraces := map[uint64]*pb.APITrace{}
@@ -134,12 +155,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 		extractInstrumentationLibraryTags(ils.InstrumentationLibrary(), datadogTags)
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
-			span, err := spanToDatadogSpan(spans.At(j), resourceServiceName, datadogTags, cfg)
-
-			if err != nil {
-				return payload, err
-			}
-
+			span := spanToDatadogSpan(spans.At(j), resourceServiceName, datadogTags, cfg)
 			var apiTrace *pb.APITrace
 			var ok bool
 
@@ -160,6 +176,27 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 	}
 
 	for _, apiTrace := range apiTraces {
+		// first drop trace if root span exists in trace chunk that is on denylist (drop trace no stats).
+		// In the dd-agent, the denylist/blacklist behavior can be performed before most of the expensive
+		// operations on the span.
+		// See: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/agent/agent.go#L200
+		// However, in our case, the span must be converted from otlp span into a dd span first. This is for 2 reasons.
+		// First, DD trace chunks rec'd by datadog-agent v0.4+ endpoint are expected as arrays of spans grouped by trace id.
+		// But, since OTLP groups by arrays of spans from the same instrumentation library, not trace-id,
+		// (contrib-instrumention-redis, contrib-instrumention-rails, etc), we have to iterate
+		// over batch and group all spans by trace id.
+		// Second, otlp->dd conversion is what creates the resource name that we are checking in the denylist.
+		// Note: OTLP also groups by ResourceSpans but practically speaking a payload will usually only
+		// contain 1 ResourceSpan array.
+
+		// Root span is used to carry some trace-level metadata, such as sampling rate and priority.
+		rootSpan := utils.GetRoot(apiTrace)
+
+		if !blk.Allows(rootSpan) {
+			// drop trace by not adding to payload if it's root span matches denylist
+			continue
+		}
+
 		// calculates analyzed spans for use in trace search and app analytics
 		// appends a specific piece of metadata to these spans marking them as analyzed
 		// TODO: allow users to configure specific spans to be marked as an analyzed spans for app analytics
@@ -173,7 +210,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 		payload.Traces = append(payload.Traces, apiTrace)
 	}
 
-	return payload, nil
+	return payload
 }
 
 // convertSpan takes an internal span representation and returns a Datadog span.
@@ -181,15 +218,25 @@ func spanToDatadogSpan(s pdata.Span,
 	serviceName string,
 	datadogTags map[string]string,
 	cfg *config.Config,
-) (*pb.Span, error) {
+) *pb.Span {
 
 	tags := aggregateSpanTags(s, datadogTags)
 
 	// otel specification resource service.name takes precedence
 	// and configuration DD_ENV as fallback if it exists
-	if serviceName == "" && cfg.Service != "" {
-		serviceName = cfg.Service
+	if cfg.Service != "" {
+		// prefer the collector level service name over an empty string or otel default
+		if serviceName == "" || serviceName == tracetranslator.ResourceNoServiceName {
+			serviceName = cfg.Service
+		}
 	}
+
+	// peer.service should always be prioritized for service names when set because it is what the user decided.
+	if peerService, ok := tags[conventions.AttributePeerService]; ok {
+		serviceName = peerService
+	}
+
+	normalizedServiceName := utils.NormalizeServiceName(serviceName)
 
 	//  canonical resource attribute version should override others if it exists
 	if rsTagVersion := tags[conventions.AttributeServiceVersion]; rsTagVersion != "" {
@@ -208,13 +255,18 @@ func spanToDatadogSpan(s pdata.Span,
 		tags[tracetranslator.TagW3CTraceState] = string(s.TraceState())
 	}
 
+	// get events as just a general tag
+	if s.Events().Len() > 0 {
+		tags[eventsTag] = eventsToString(s.Events())
+	}
+
 	// get start/end time to calc duration
-	startTime := s.StartTime()
-	endTime := s.EndTime()
+	startTime := s.StartTimestamp()
+	endTime := s.EndTimestamp()
 	duration := int64(endTime) - int64(startTime)
 
 	// it's possible end time is unset, so default to 0 rather than using a negative number
-	if s.EndTime() == 0 {
+	if s.EndTimestamp() == 0 {
 		duration = 0
 	}
 
@@ -222,21 +274,23 @@ func spanToDatadogSpan(s pdata.Span,
 	// we can then set Error field when creating and predefine a max meta capacity
 	isSpanError := getSpanErrorAndSetTags(s, tags)
 
+	resourceName := getDatadogResourceName(s, tags)
+
 	span := &pb.Span{
 		TraceID:  decodeAPMTraceID(s.TraceID().Bytes()),
 		SpanID:   decodeAPMSpanID(s.SpanID().Bytes()),
 		Name:     getDatadogSpanName(s, tags),
-		Resource: getDatadogResourceName(s, tags),
-		Service:  serviceName,
+		Resource: resourceName,
+		Service:  normalizedServiceName,
 		Start:    int64(startTime),
 		Duration: duration,
 		Metrics:  map[string]float64{},
 		Meta:     make(map[string]string, len(tags)),
-		Type:     spanKindToDatadogType(s.Kind()),
+		Type:     inferDatadogType(s.Kind(), tags),
 		Error:    isSpanError,
 	}
 
-	if s.ParentSpanID().IsValid() {
+	if !s.ParentSpanID().IsEmpty() {
 		span.ParentID = decodeAPMSpanID(s.ParentSpanID().Bytes())
 	}
 
@@ -245,22 +299,23 @@ func spanToDatadogSpan(s pdata.Span,
 		setStringTag(span, key, val)
 	}
 
-	return span, nil
+	return span
 }
 
 func resourceToDatadogServiceNameAndAttributeMap(
 	resource pdata.Resource,
 ) (serviceName string, datadogTags map[string]string) {
 	attrs := resource.Attributes()
-	// predefine capacity where possible
-	datadogTags = make(map[string]string, attrs.Len())
+	// predefine capacity where possible with extra for _dd.tags.container payload
+	datadogTags = make(map[string]string, attrs.Len()+1)
 
 	if attrs.Len() == 0 {
 		return tracetranslator.ResourceNoServiceName, datadogTags
 	}
 
-	attrs.ForEach(func(k string, v pdata.AttributeValue) {
+	attrs.Range(func(k string, v pdata.AttributeValue) bool {
 		datadogTags[k] = tracetranslator.AttributeValueToString(v, false)
+		return true
 	})
 
 	serviceName = extractDatadogServiceName(datadogTags)
@@ -280,10 +335,10 @@ func extractDatadogServiceName(datadogTags map[string]string) string {
 
 func extractInstrumentationLibraryTags(il pdata.InstrumentationLibrary, datadogTags map[string]string) {
 	if ilName := il.Name(); ilName != "" {
-		datadogTags[tracetranslator.TagInstrumentationName] = ilName
+		datadogTags[conventions.InstrumentationLibraryName] = ilName
 	}
 	if ilVer := il.Version(); ilVer != "" {
-		datadogTags[tracetranslator.TagInstrumentationVersion] = ilVer
+		datadogTags[conventions.InstrumentationLibraryVersion] = ilVer
 	}
 }
 
@@ -291,27 +346,65 @@ func aggregateSpanTags(span pdata.Span, datadogTags map[string]string) map[strin
 	// predefine capacity as at most the size attributes and global tags
 	// there may be overlap between the two.
 	spanTags := make(map[string]string, span.Attributes().Len()+len(datadogTags))
+
 	for key, val := range datadogTags {
-		spanTags[key] = val
+		spanTags[utils.NormalizeTag(key)] = val
 	}
 
-	span.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-		spanTags[k] = tracetranslator.AttributeValueToString(v, false)
+	span.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		spanTags[utils.NormalizeTag(k)] = tracetranslator.AttributeValueToString(v, false)
+		return true
 	})
 
+	// we don't want to normalize these tags since `_dd` is a special case
+	spanTags[tagContainersTags] = buildDatadogContainerTags(spanTags)
 	return spanTags
 }
 
-// TODO: this seems to resolve to SPAN_KIND_UNSPECIFIED in e2e using jaeger receiver
-// even though span.kind is getting set at the app tracer level. Need to file bug ticket
-func spanKindToDatadogType(kind pdata.SpanKind) string {
+// buildDatadogContainerTags returns container and orchestrator tags belonging to containerID
+// as a comma delimeted list for datadog's special container tag key
+func buildDatadogContainerTags(spanTags map[string]string) string {
+	var b strings.Builder
+
+	if val, ok := spanTags[conventions.AttributeContainerID]; ok {
+		b.WriteString(fmt.Sprintf("%s:%s,", "container_id", val))
+	}
+	if val, ok := spanTags[conventions.AttributeK8sPod]; ok {
+		b.WriteString(fmt.Sprintf("%s:%s,", "pod_name", val))
+	}
+
+	if val, ok := spanTags[conventions.AttributeAWSECSTaskARN]; ok {
+		b.WriteString(fmt.Sprintf("%s:%s,", "task_arn", val))
+	}
+
+	return strings.TrimSuffix(b.String(), ",")
+}
+
+// inferDatadogTypes returns a string for the datadog type based on metadata
+// in the otel span. DB semantic conventions state that what datadog
+// would mark as a db or cache span type, otel marks as a CLIENT span kind, but
+// has a required attribute 'db.system'. This is the only required attribute for
+// db or cache spans, so we can reliably use it as a heuristic for infering the
+// difference between client, db, and cache span types. The only "cache" spans
+// in datadog currently are redis and memcached, so those are the only two db.system
+// attribute values we have to check to determine whether it's a db or cache span
+// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/database.md#semantic-conventions-for-database-client-calls
+func inferDatadogType(kind pdata.SpanKind, datadogTags map[string]string) string {
 	switch kind {
 	case pdata.SpanKindCLIENT:
-		return httpKind
+		if dbSysOtlp, ok := datadogTags[conventions.AttributeDBSystem]; ok {
+			if dbSysOtlp == kindRedis || dbSysOtlp == kindMemcached {
+				return kindCache
+			}
+
+			return kindDb
+		}
+
+		return kindHTTP
 	case pdata.SpanKindSERVER:
-		return webKind
+		return kindWeb
 	default:
-		return customKind
+		return kindCustom
 	}
 }
 
@@ -325,13 +418,18 @@ func setMetric(s *pb.Span, key string, v float64) {
 }
 
 func setStringTag(s *pb.Span, key, v string) {
+	if len(v) > MaxMetaValLen {
+		v = utils.TruncateUTF8(v, MaxMetaValLen)
+	}
+
 	switch key {
 	// if a span has `service.name` set as the tag
 	case ext.ServiceName:
-		s.Service = v
+		s.Service = utils.NormalizeTag(v)
 	case ext.SpanType:
-		s.Type = v
+		s.Type = utils.NormalizeTag(v)
 	case ext.AnalyticsEvent:
+		// we dont want to normalize ints
 		if v != "false" {
 			setMetric(s, ext.EventSampleRate, 1)
 		} else {
@@ -379,39 +477,62 @@ func getDatadogSpanName(s pdata.Span, datadogTags map[string]string) string {
 
 	// The spec has changed over time and, depending on the original exporter, IL Name could represented a few different ways
 	// so we try to account for all permutations
-	if ilnOtlp, okOtlp := datadogTags[tracetranslator.TagInstrumentationName]; okOtlp {
-		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtlp, s.Kind()))
+	if ilnOtlp, okOtlp := datadogTags[conventions.InstrumentationLibraryName]; okOtlp {
+		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtlp, utils.NormalizeSpanKind(s.Kind())), false)
 	}
 
 	if ilnOtelCur, okOtelCur := datadogTags[currentILNameTag]; okOtelCur {
-		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtelCur, s.Kind()))
+		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtelCur, utils.NormalizeSpanKind(s.Kind())), false)
 	}
 
 	if ilnOtelOld, okOtelOld := datadogTags[oldILNameTag]; okOtelOld {
-		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtelOld, s.Kind()))
+		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtelOld, utils.NormalizeSpanKind(s.Kind())), false)
 	}
 
-	return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", "opentelemetry", s.Kind()))
+	return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", "opentelemetry", utils.NormalizeSpanKind(s.Kind())), false)
 }
 
 func getDatadogResourceName(s pdata.Span, datadogTags map[string]string) string {
 	// largely a port of logic here
 	// https://github.com/open-telemetry/opentelemetry-python/blob/b2559409b2bf82e693f3e68ed890dd7fd1fa8eae/exporter/opentelemetry-exporter-datadog/src/opentelemetry/exporter/datadog/exporter.py#L229
 	// Get span resource name by checking for existence http.method + http.route 'GET /api'
+	// Also check grpc path as fallback for http requests
 	// backing off to just http.method, and then span.name if unrelated to http
 	if method, methodOk := datadogTags[conventions.AttributeHTTPMethod]; methodOk {
 		if route, routeOk := datadogTags[conventions.AttributeHTTPRoute]; routeOk {
 			return fmt.Sprintf("%s %s", method, route)
 		}
 
+		if grpcRoute, grpcRouteOk := datadogTags[grpcPath]; grpcRouteOk {
+			return fmt.Sprintf("%s %s", method, grpcRoute)
+		}
+
 		return method
+	}
+
+	//add resource conventions for messaging queues, operaton + destination
+	if msgOperation, msgOperationOk := datadogTags[conventions.AttributeMessagingOperation]; msgOperationOk {
+		if destination, destinationOk := datadogTags[conventions.AttributeMessagingDestination]; destinationOk {
+			return fmt.Sprintf("%s %s", msgOperation, destination)
+		}
+
+		return msgOperation
+	}
+
+	// add resource convention for rpc services , method+service, fallback to just method if no service attribute
+	if rpcMethod, rpcMethodOk := datadogTags[conventions.AttributeRPCMethod]; rpcMethodOk {
+		if rpcService, rpcServiceOk := datadogTags[conventions.AttributeRPCService]; rpcServiceOk {
+			return fmt.Sprintf("%s %s", rpcMethod, rpcService)
+		}
+
+		return rpcMethod
 	}
 
 	return s.Name()
 }
 
 func getSpanErrorAndSetTags(s pdata.Span, tags map[string]string) int32 {
-	isError := okCode
+	var isError int32
 	// Set Span Status and any response or error details
 	status := s.Status()
 	switch status.Code() {
@@ -424,13 +545,19 @@ func getSpanErrorAndSetTags(s pdata.Span, tags map[string]string) int32 {
 	}
 
 	if isError == errorCode {
-		tags[ext.ErrorType] = "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10)
+		extractErrorTagsFromEvents(s, tags)
+		// If we weren't able to pull an error type or message, go ahead and set
+		// these to the old defaults
+		if _, ok := tags[ext.ErrorType]; !ok {
+			tags[ext.ErrorType] = "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10)
+		}
 
-		// try to add a message if possible
-		if status.Message() != "" {
-			tags[ext.ErrorMsg] = status.Message()
-		} else {
-			tags[ext.ErrorMsg] = "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10)
+		if _, ok := tags[ext.ErrorMsg]; !ok {
+			if status.Message() != "" {
+				tags[ext.ErrorMsg] = status.Message()
+			} else {
+				tags[ext.ErrorMsg] = "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10)
+			}
 		}
 	}
 
@@ -449,4 +576,61 @@ func getSpanErrorAndSetTags(s pdata.Span, tags map[string]string) int32 {
 	}
 
 	return isError
+}
+
+// Finds the last exception event in the span, and surfaces it to DataDog. DataDog spans only support a single
+// exception per span, but otel supports many exceptions as "Events" on a given span. The last exception was
+// chosen for now as most otel-instrumented libraries (http, pg, etc.) only capture a single exception (if any)
+// per span. If multiple exceptions are logged, it's my assumption that the last exception is most likely the
+// exception that escaped the scope of the span.
+//
+// TODO:
+//  Seems that the spec has an attribute that hasn't made it to the collector yet -- "exception.escaped".
+//  This seems optional (SHOULD vs. MUST be set), but it's likely that we want to bubble up the exception
+//  that escaped the scope of the span ("exception.escaped" == true) instead of the last exception event
+//  in the case that these events differ.
+//
+//  https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/exceptions.md#attributes
+func extractErrorTagsFromEvents(s pdata.Span, tags map[string]string) {
+	evts := s.Events()
+	for i := evts.Len() - 1; i >= 0; i-- {
+		evt := evts.At(i)
+		if evt.Name() == conventions.AttributeExceptionEventName {
+			attribs := evt.Attributes()
+			if errType, ok := attribs.Get(conventions.AttributeExceptionType); ok {
+				tags[ext.ErrorType] = errType.StringVal()
+			}
+			if errMsg, ok := attribs.Get(conventions.AttributeExceptionMessage); ok {
+				tags[ext.ErrorMsg] = errMsg.StringVal()
+			}
+			if errStack, ok := attribs.Get(conventions.AttributeExceptionStacktrace); ok {
+				tags[ext.ErrorStack] = errStack.StringVal()
+			}
+			return
+		}
+	}
+}
+
+// Convert Span Events to a string so that they can be appended to the span as a tag.
+// Span events are probably better served as Structured Logs sent to the logs API
+// with the trace id and span id added for log/trace correlation. However this would
+// mean a separate API intake endpoint and also Logs and Traces may not be enabled for
+// a user, so for now just surfacing this information as a string is better than not
+// including it at all. The tradeoff is that this increases the size of the span and the
+// span may have a tag that exceeds max size allowed in backend/ui/etc.
+//
+// TODO: Expose configuration option for collecting Span Events as Logs within Datadog
+// and add forwarding to Logs API intake.
+func eventsToString(evts pdata.SpanEventSlice) string {
+	eventArray := make([]map[string]interface{}, 0, evts.Len())
+	for i := 0; i < evts.Len(); i++ {
+		spanEvent := evts.At(i)
+		event := map[string]interface{}{}
+		event[eventNameTag] = spanEvent.Name()
+		event[eventTimeTag] = spanEvent.Timestamp()
+		event[eventAttrTag] = tracetranslator.AttributeMapToMap(spanEvent.Attributes())
+		eventArray = append(eventArray, event)
+	}
+	eventArrayBytes, _ := json.Marshal(&eventArray)
+	return string(eventArrayBytes)
 }

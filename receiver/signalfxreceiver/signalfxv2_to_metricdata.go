@@ -40,11 +40,8 @@ func signalFxV2ToMetrics(
 	// 	data point.
 	numDroppedDataPoints := 0
 	md := pdata.NewMetrics()
-	md.ResourceMetrics().Resize(1)
-	rm := md.ResourceMetrics().At(0)
-
-	rm.InstrumentationLibraryMetrics().Resize(1)
-	ilm := rm.InstrumentationLibraryMetrics().At(0)
+	rm := md.ResourceMetrics().AppendEmpty()
+	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 
 	metrics := ilm.Metrics()
 	metrics.Resize(len(sfxDataPoints))
@@ -158,9 +155,7 @@ func fillIntDataPoint(sfxDataPoint *sfxpb.DataPoint, dps pdata.IntDataPointSlice
 		return errSFxNoDatumValue
 	}
 
-	dps.Resize(1)
-	dp := dps.At(0)
-
+	dp := dps.AppendEmpty()
 	dp.SetTimestamp(dpTimestamp(sfxDataPoint))
 	dp.SetValue(*sfxDataPoint.Value.IntValue)
 	fillInLabels(sfxDataPoint.Dimensions, dp.LabelsMap())
@@ -173,9 +168,7 @@ func fillDoubleDataPoint(sfxDataPoint *sfxpb.DataPoint, dps pdata.DoubleDataPoin
 		return errSFxNoDatumValue
 	}
 
-	dps.Resize(1)
-	dp := dps.At(0)
-
+	dp := dps.AppendEmpty()
 	dp.SetTimestamp(dpTimestamp(sfxDataPoint))
 	dp.SetValue(*sfxDataPoint.Value.DoubleValue)
 	fillInLabels(sfxDataPoint.Dimensions, dp.LabelsMap())
@@ -184,16 +177,17 @@ func fillDoubleDataPoint(sfxDataPoint *sfxpb.DataPoint, dps pdata.DoubleDataPoin
 
 }
 
-func dpTimestamp(dp *sfxpb.DataPoint) pdata.TimestampUnixNano {
+func dpTimestamp(dp *sfxpb.DataPoint) pdata.Timestamp {
 	// Convert from SignalFx millis to pdata nanos
-	return pdata.TimestampUnixNano(dp.GetTimestamp() * 1e6)
+	return pdata.Timestamp(dp.GetTimestamp() * 1e6)
 }
 
 func fillInLabels(
 	dimensions []*sfxpb.Dimension,
 	labels pdata.StringMap,
 ) {
-	labels.InitEmptyWithCapacity(len(dimensions))
+	labels.Clear()
+	labels.EnsureCapacity(len(dimensions))
 
 	for _, dim := range dimensions {
 		if dim == nil {

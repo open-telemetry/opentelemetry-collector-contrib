@@ -61,8 +61,8 @@ var (
 	defaultSpanIDAsHex            = fmt.Sprintf("%02x", defaultSpanID)
 	defaultParentSpanID           = [8]byte{35, 191, 77, 229, 162, 242, 217, 77}
 	defaultParentSpanIDAsHex      = fmt.Sprintf("%02x", defaultParentSpanID)
-	defaultSpanStartTime          = pdata.TimestampUnixNano(0)
-	defaultSpanEndTme             = pdata.TimestampUnixNano(60000000000)
+	defaultSpanStartTime          = pdata.Timestamp(0)
+	defaultSpanEndTme             = pdata.Timestamp(60000000000)
 	defaultSpanDuration           = formatDuration(toTime(defaultSpanEndTme).Sub(toTime(defaultSpanStartTime)))
 	defaultHTTPStatusCodeAsString = strconv.FormatInt(defaultHTTPStatusCode, 10)
 	defaultRPCStatusCodeAsString  = strconv.FormatInt(defaultRPCStatusCode, 10)
@@ -82,8 +82,8 @@ var (
 	}
 
 	requiredDatabaseAttributes = map[string]pdata.AttributeValue{
-		attributeDBSystem: pdata.NewAttributeValueString(defaultDBSystem),
-		attributeDBName:   pdata.NewAttributeValueString(defaultDBName),
+		conventions.AttributeDBSystem: pdata.NewAttributeValueString(defaultDBSystem),
+		conventions.AttributeDBName:   pdata.NewAttributeValueString(defaultDBName),
 	}
 
 	requiredMessagingAttributes = map[string]pdata.AttributeValue{
@@ -96,7 +96,7 @@ var (
 )
 
 /*
-	https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/http.md#http-server-semantic-conventions
+	https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#http-server-semantic-conventions
 	We need to test the following attribute sets for HTTP Server Spans:
 	http.scheme, http.host, http.target
 	http.scheme, http.server_name, net.host.port, http.target
@@ -108,13 +108,14 @@ var (
 // http.scheme, http.host, http.target => data.Url
 // Also sets a few other things to increase code coverage:
 // - a specific SpanStatus as opposed to none
-// - an error  http.status_code
+// - an error http.status_code
 // - http.route is specified which should replace Span name as part of the RequestData name
 // - no  http.client_ip or net.peer.ip specified which causes data.Source to be empty
 // - adds a few different types of attributes
 func TestHTTPServerSpanToRequestDataAttributeSet1(t *testing.T) {
 	span := getDefaultHTTPServerSpan()
-	span.Status().SetCode(0)
+	span.Status().SetCode(pdata.StatusCodeError)
+	span.Status().SetMessage("Fubar")
 	spanAttributes := span.Attributes()
 
 	set := map[string]pdata.AttributeValue{
@@ -148,6 +149,7 @@ func TestHTTPServerSpanToRequestDataAttributeSet1(t *testing.T) {
 	assert.Equal(t, "", data.Source)
 	assert.Equal(t, "GET /bizzle", data.Name)
 	assert.Equal(t, "https://foo/bar?biz=baz", data.Url)
+	assert.Equal(t, span.Status().Message(), data.Properties[attributeOtelStatusDescription])
 }
 
 // Tests proper assignment for a HTTP server span
@@ -229,7 +231,7 @@ func TestHTTPServerSpanToRequestDataAttributeSet4(t *testing.T) {
 }
 
 /*
-	https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/http.md#http-server-semantic-conventions
+	https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#http-server-semantic-conventions
 	We need to test the following attribute sets for HTTP Client Spans:
 	http.url
 	http.scheme, http.host, http.target
@@ -404,6 +406,18 @@ func TestRPCClientSpanToRemoteDependencyData(t *testing.T) {
 	envelope, _ = spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
 	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
 	defaultRPCRemoteDependencyDataValidations(t, span, data, "127.0.0.1:81")
+
+	// test RPC error using the new rpc.grpc.status_code attribute
+	span.Status().SetCode(pdata.StatusCodeError)
+	span.Status().SetMessage("Resource exhausted")
+	spanAttributes.InsertInt(attributeRPCGRPCStatusCode, 8)
+
+	envelope, _ = spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
+	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
+
+	assert.Equal(t, "8", data.ResultCode)
+	assert.Equal(t, span.Status().Code().String(), data.Properties[attributeOtelStatusCode])
+	assert.Equal(t, span.Status().Message(), data.Properties[attributeOtelStatusDescription])
 }
 
 // Tests proper assignment for a Database client span
@@ -432,7 +446,7 @@ func TestDatabaseClientSpanToRemoteDependencyData(t *testing.T) {
 		spanAttributes,
 		map[string]pdata.AttributeValue{
 			conventions.AttributeDBStatement: pdata.NewAttributeValueString(""),
-			attributeDBOperation:             pdata.NewAttributeValueString(defaultDBOperation),
+			conventions.AttributeDBOperation: pdata.NewAttributeValueString(defaultDBOperation),
 		})
 
 	envelope, _ = spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
@@ -566,7 +580,7 @@ func commonEnvelopeValidations(
 
 	assert.NotNil(t, envelope)
 	assert.Equal(t, expectedEnvelopeName, envelope.Name)
-	assert.Equal(t, toTime(span.StartTime()).Format(time.RFC3339Nano), envelope.Time)
+	assert.Equal(t, toTime(span.StartTimestamp()).Format(time.RFC3339Nano), envelope.Time)
 	assert.Equal(t, defaultTraceIDAsHex, envelope.Tags[contracts.OperationId])
 	assert.Equal(t, defaultParentSpanIDAsHex, envelope.Tags[contracts.OperationParentId])
 	assert.Equal(t, defaultServiceNamespace+"."+defaultServiceName, envelope.Tags[contracts.CloudRole])
@@ -718,27 +732,27 @@ func assertAttributesCopiedToPropertiesOrMeasurements(
 	properties map[string]string,
 	measurements map[string]float64) {
 
-	attributeMap.ForEach(
-		func(k string, v pdata.AttributeValue) {
-			switch v.Type() {
-			case pdata.AttributeValueSTRING:
-				p, exists := properties[k]
-				assert.True(t, exists)
-				assert.Equal(t, v.StringVal(), p)
-			case pdata.AttributeValueBOOL:
-				p, exists := properties[k]
-				assert.True(t, exists)
-				assert.Equal(t, strconv.FormatBool(v.BoolVal()), p)
-			case pdata.AttributeValueINT:
-				m, exists := measurements[k]
-				assert.True(t, exists)
-				assert.Equal(t, float64(v.IntVal()), m)
-			case pdata.AttributeValueDOUBLE:
-				m, exists := measurements[k]
-				assert.True(t, exists)
-				assert.Equal(t, v.DoubleVal(), m)
-			}
-		})
+	attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+		switch v.Type() {
+		case pdata.AttributeValueSTRING:
+			p, exists := properties[k]
+			assert.True(t, exists)
+			assert.Equal(t, v.StringVal(), p)
+		case pdata.AttributeValueBOOL:
+			p, exists := properties[k]
+			assert.True(t, exists)
+			assert.Equal(t, strconv.FormatBool(v.BoolVal()), p)
+		case pdata.AttributeValueINT:
+			m, exists := measurements[k]
+			assert.True(t, exists)
+			assert.Equal(t, float64(v.IntVal()), m)
+		case pdata.AttributeValueDOUBLE:
+			m, exists := measurements[k]
+			assert.True(t, exists)
+			assert.Equal(t, v.DoubleVal(), m)
+		}
+		return true
+	})
 }
 
 /*
@@ -751,8 +765,8 @@ func getSpan(spanName string, spanKind pdata.SpanKind, initialAttributes map[str
 	span.SetParentSpanID(pdata.NewSpanID(defaultParentSpanID))
 	span.SetName(spanName)
 	span.SetKind(spanKind)
-	span.SetStartTime(defaultSpanStartTime)
-	span.SetEndTime(defaultSpanEndTme)
+	span.SetStartTimestamp(defaultSpanStartTime)
+	span.SetEndTimestamp(defaultSpanEndTme)
 	span.Attributes().InitFromMap(initialAttributes)
 	return span
 }

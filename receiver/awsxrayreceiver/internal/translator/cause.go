@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
+	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
 func addCause(seg *awsxray.Segment, span *pdata.Span) {
@@ -62,7 +62,8 @@ func addCause(seg *awsxray.Segment, span *pdata.Span) {
 			evt := evts.At(exceptionEventStartIndex + i)
 			evt.SetName(conventions.AttributeExceptionEventName)
 			attrs := evt.Attributes()
-			attrs.InitEmptyWithCapacity(8)
+			attrs.Clear()
+			attrs.EnsureCapacity(8)
 
 			// ID is a required field
 			attrs.UpsertString(awsxray.AWSXrayExceptionIDAttribute, *excp.ID)

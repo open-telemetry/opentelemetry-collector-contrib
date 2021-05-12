@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
@@ -33,7 +33,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
@@ -50,7 +50,7 @@ type resourceWatcher struct {
 	initialSyncTimedOut        *atomic.Bool
 }
 
-type metadataConsumer func(metadata []*metrics.MetadataUpdate) error
+type metadataConsumer func(metadata []*metadata.MetadataUpdate) error
 
 // newResourceWatcher creates a Kubernetes resource watcher.
 func newResourceWatcher(
@@ -133,7 +133,7 @@ func (rw *resourceWatcher) onAdd(obj interface{}) {
 	}
 
 	newMetadata := rw.dataCollector.SyncMetadata(obj)
-	rw.syncMetadataUpdate(map[metrics.ResourceID]*collection.KubernetesMetadata{}, newMetadata)
+	rw.syncMetadataUpdate(map[metadata.ResourceID]*collection.KubernetesMetadata{}, newMetadata)
 }
 
 func (rw *resourceWatcher) onDelete(obj interface{}) {
@@ -172,7 +172,7 @@ func (rw *resourceWatcher) waitForInitialInformerSync() {
 }
 
 func (rw *resourceWatcher) setupMetadataExporters(
-	exporters map[configmodels.Exporter]component.Exporter,
+	exporters map[config.ComponentID]component.Exporter,
 	metadataExportersFromConfig []string,
 ) error {
 
@@ -184,16 +184,16 @@ func (rw *resourceWatcher) setupMetadataExporters(
 	}
 
 	for cfg, exp := range exporters {
-		if !metadataExportersSet[cfg.Name()] {
+		if !metadataExportersSet[cfg.String()] {
 			continue
 		}
-		kme, ok := exp.(metrics.MetadataExporter)
+		kme, ok := exp.(metadata.MetadataExporter)
 		if !ok {
 			return fmt.Errorf("%s exporter does not implement MetadataExporter", cfg.Name())
 		}
 		out = append(out, kme.ConsumeMetadata)
 		rw.logger.Info("Configured Kubernetes MetadataExporter",
-			zap.String("exporter_name", cfg.Name()),
+			zap.String("exporter_name", cfg.String()),
 		)
 	}
 
@@ -202,11 +202,11 @@ func (rw *resourceWatcher) setupMetadataExporters(
 }
 
 func validateMetadataExporters(metadataExporters map[string]bool,
-	exporters map[configmodels.Exporter]component.Exporter) error {
+	exporters map[config.ComponentID]component.Exporter) error {
 
 	configuredExporters := map[string]bool{}
 	for cfg := range exporters {
-		configuredExporters[cfg.Name()] = true
+		configuredExporters[cfg.String()] = true
 	}
 
 	for e := range metadataExporters {
@@ -219,7 +219,7 @@ func validateMetadataExporters(metadataExporters map[string]bool,
 }
 
 func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata,
-	newMetadata map[metrics.ResourceID]*collection.KubernetesMetadata) {
+	newMetadata map[metadata.ResourceID]*collection.KubernetesMetadata) {
 
 	metadataUpdate := collection.GetMetadataUpdate(oldMetadata, newMetadata)
 	if len(metadataUpdate) == 0 {

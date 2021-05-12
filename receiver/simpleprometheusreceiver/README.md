@@ -1,7 +1,7 @@
 # Simple Prometheus Receiver
 
 The `prometheus_simple` receiver is a wrapper around the [prometheus
-receiver](https://github.com/open-telemetry/opentelemetry-collector/tree/master/receiver/prometheusreceiver).
+receiver](https://github.com/open-telemetry/opentelemetry-collector/tree/main/receiver/prometheusreceiver).
 This receiver provides a simple configuration interface to configure the
 prometheus receiver to scrape metrics from a single target.
 
@@ -19,6 +19,7 @@ The following settings are optional:
 - `collection_interval` (default = `10s`): The internal at which metrics should
 be emitted by this receiver.
 - `metrics_path` (default = `/metrics`): The path to the metrics endpoint.
+- `params` (default = `{}`): The query parameters to pass to the metrics endpoint. If specified, params are appended to `metrics_path` to form the URL with which the target is scraped.
 - `use_service_account` (default = `false`): Whether or not to use the
 Kubernetes Pod service account for authentication.
 - `tls_enabled` (default = `false`): Whether or not to use TLS. Only if

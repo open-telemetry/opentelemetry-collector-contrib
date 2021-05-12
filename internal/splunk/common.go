@@ -14,17 +14,22 @@
 
 package splunk
 
-import "strings"
+import (
+	"encoding/json"
+	"strconv"
+	"strings"
+)
 
 const (
-	SFxAccessTokenHeader  = "X-Sf-Token"
-	SFxAccessTokenLabel   = "com.splunk.signalfx.access_token"
+	SFxAccessTokenHeader  = "X-Sf-Token"                       // #nosec
+	SFxAccessTokenLabel   = "com.splunk.signalfx.access_token" // #nosec
 	SFxEventCategoryKey   = "com.splunk.signalfx.event_category"
 	SFxEventPropertiesKey = "com.splunk.signalfx.event_properties"
 	SourcetypeLabel       = "com.splunk.sourcetype"
 	IndexLabel            = "com.splunk.index"
+	NameLabel             = "otlp.log.name"
 	HECTokenHeader        = "Splunk"
-	HecTokenLabel         = "com.splunk.hec.access_token"
+	HecTokenLabel         = "com.splunk.hec.access_token" // #nosec
 	// HecEventMetricType is the type of HEC event. Set to metric, as per https://docs.splunk.com/Documentation/Splunk/8.0.3/Metrics/GetMetricsInOther.
 	HecEventMetricType = "metric"
 )
@@ -47,17 +52,55 @@ type Event struct {
 }
 
 // IsMetric returns true if the Splunk event is a metric.
-func (m Event) IsMetric() bool {
-	return m.Event == HecEventMetricType || (m.Event == nil && len(m.GetMetricValues()) > 0)
+func (e Event) IsMetric() bool {
+	return e.Event == HecEventMetricType || (e.Event == nil && len(e.GetMetricValues()) > 0)
 }
 
 // GetMetricValues extracts metric key value pairs from a Splunk HEC metric.
-func (m Event) GetMetricValues() map[string]interface{} {
+func (e Event) GetMetricValues() map[string]interface{} {
 	values := map[string]interface{}{}
-	for k, v := range m.Fields {
+	for k, v := range e.Fields {
 		if strings.HasPrefix(k, "metric_name:") {
 			values[k[12:]] = v
 		}
 	}
 	return values
+}
+
+// UnmarshalJSON unmarshals the JSON representation of an event
+func (e *Event) UnmarshalJSON(b []byte) error {
+	rawEvent := struct {
+		Time       interface{}            `json:"time,omitempty"`
+		Host       string                 `json:"host"`
+		Source     string                 `json:"source,omitempty"`
+		SourceType string                 `json:"sourcetype,omitempty"`
+		Index      string                 `json:"index,omitempty"`
+		Event      interface{}            `json:"event"`
+		Fields     map[string]interface{} `json:"fields,omitempty"`
+	}{}
+	err := json.Unmarshal(b, &rawEvent)
+	if err != nil {
+		return err
+	}
+	*e = Event{
+		Host:       rawEvent.Host,
+		Source:     rawEvent.Source,
+		SourceType: rawEvent.SourceType,
+		Index:      rawEvent.Index,
+		Event:      rawEvent.Event,
+		Fields:     rawEvent.Fields,
+	}
+	switch t := rawEvent.Time.(type) {
+	case float64:
+		e.Time = &t
+	case string:
+		{
+			time, err := strconv.ParseFloat(t, 64)
+			if err != nil {
+				return err
+			}
+			e.Time = &time
+		}
+	}
+	return nil
 }

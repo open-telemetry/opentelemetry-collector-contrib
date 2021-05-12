@@ -19,53 +19,48 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 // MetadataUpdateClient is an interface for pushing metadata updates
 type MetadataUpdateClient interface {
-	PushMetadata([]*metrics.MetadataUpdate) error
+	PushMetadata([]*metadata.MetadataUpdate) error
 }
 
-var propNameSanitizer = strings.NewReplacer(
-	".", "_",
-	"/", "_")
-
 func getDimensionUpdateFromMetadata(
-	metadata metrics.MetadataUpdate,
-	metricTranslator *translation.MetricTranslator,
-) *DimensionUpdate {
-
-	translateDimension := func(dim string) string {
-		res := dim
-		if metricTranslator != nil {
-			res = metricTranslator.TranslateDimension(res)
-		}
-		return propNameSanitizer.Replace(res)
-	}
-
-	properties, tags := getPropertiesAndTags(metadata, translateDimension)
+	metadata metadata.MetadataUpdate,
+	metricsConverter translation.MetricsConverter) *DimensionUpdate {
+	properties, tags := getPropertiesAndTags(metadata)
 
 	return &DimensionUpdate{
-		Name:       translateDimension(metadata.ResourceIDKey),
+		Name:       metricsConverter.ConvertDimension(metadata.ResourceIDKey),
 		Value:      string(metadata.ResourceID),
 		Properties: properties,
 		Tags:       tags,
 	}
 }
 
-func getPropertiesAndTags(
-	kmu metrics.MetadataUpdate,
-	translate func(string) string,
-) (map[string]*string, map[string]bool) {
+const (
+	oTelK8sServicePrefix = "k8s.service."
+	sfxK8sServicePrefix  = "kubernetes_service_"
+)
+
+func sanitizeProperty(property string) string {
+	if strings.HasPrefix(property, oTelK8sServicePrefix) {
+		return strings.Replace(property, oTelK8sServicePrefix, sfxK8sServicePrefix, 1)
+	}
+	return property
+}
+
+func getPropertiesAndTags(kmu metadata.MetadataUpdate) (map[string]*string, map[string]bool) {
 	properties := map[string]*string{}
 	tags := map[string]bool{}
 
 	for label, val := range kmu.MetadataToAdd {
-		key := translate(label)
+		key := sanitizeProperty(label)
 		if key == "" {
 			continue
 		}
@@ -79,7 +74,7 @@ func getPropertiesAndTags(
 	}
 
 	for label, val := range kmu.MetadataToRemove {
-		key := translate(label)
+		key := sanitizeProperty(label)
 		if key == "" {
 			continue
 		}
@@ -92,7 +87,7 @@ func getPropertiesAndTags(
 	}
 
 	for label, val := range kmu.MetadataToUpdate {
-		key := translate(label)
+		key := sanitizeProperty(label)
 		if key == "" {
 			continue
 		}
@@ -110,10 +105,10 @@ func getPropertiesAndTags(
 	return properties, tags
 }
 
-func (dc *DimensionClient) PushMetadata(metadata []*metrics.MetadataUpdate) error {
+func (dc *DimensionClient) PushMetadata(metadata []*metadata.MetadataUpdate) error {
 	var errs []error
 	for _, m := range metadata {
-		dimensionUpdate := getDimensionUpdateFromMetadata(*m, dc.metricTranslator)
+		dimensionUpdate := getDimensionUpdateFromMetadata(*m, dc.metricsConverter)
 
 		if dimensionUpdate.Name == "" || dimensionUpdate.Value == "" {
 			atomic.AddInt64(&dc.TotalInvalidDimensions, int64(1))
@@ -125,5 +120,5 @@ func (dc *DimensionClient) PushMetadata(metadata []*metrics.MetadataUpdate) erro
 		}
 	}
 
-	return componenterror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }

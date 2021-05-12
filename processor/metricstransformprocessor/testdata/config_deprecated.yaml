@@ -1,5 +1,5 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
   metricstransform:
@@ -9,15 +9,15 @@ processors:
           new_name: new_name
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
       traces:
-          receivers: [examplereceiver]
+          receivers: [nop]
           processors: [metricstransform]
-          exporters: [exampleexporter]
+          exporters: [nop]
       metrics:
-          receivers: [examplereceiver]
+          receivers: [nop]
           processors: [metricstransform]
-          exporters: [exampleexporter]
+          exporters: [nop]

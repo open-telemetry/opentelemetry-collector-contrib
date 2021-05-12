@@ -28,7 +28,10 @@ func TestCauseWithExceptions(t *testing.T) {
 	errorMsg := "this is a test"
 	attributeMap := make(map[string]interface{})
 
-	event1 := pdata.NewSpanEvent()
+	span := constructExceptionServerSpan(attributeMap, pdata.StatusCodeError)
+	span.Status().SetMessage(errorMsg)
+
+	event1 := span.Events().AppendEmpty()
 	event1.SetName(semconventions.AttributeExceptionEventName)
 	attributes := pdata.NewAttributeMap()
 	attributes.InsertString(semconventions.AttributeExceptionType, "java.lang.IllegalStateException")
@@ -40,16 +43,12 @@ func TestCauseWithExceptions(t *testing.T) {
 Caused by: java.lang.IllegalArgumentException: bad argument`)
 	attributes.CopyTo(event1.Attributes())
 
-	event2 := pdata.NewSpanEvent()
+	event2 := span.Events().AppendEmpty()
 	event2.SetName(semconventions.AttributeExceptionEventName)
 	attributes = pdata.NewAttributeMap()
 	attributes.InsertString(semconventions.AttributeExceptionType, "EmptyError")
 	attributes.CopyTo(event2.Attributes())
 
-	span := constructExceptionServerSpan(attributeMap, pdata.StatusCodeError)
-	span.Status().SetMessage(errorMsg)
-	span.Events().Append(event1)
-	span.Events().Append(event2)
 	filtered, _ := makeHTTP(span)
 
 	res := pdata.NewResource()
@@ -178,8 +177,8 @@ func constructExceptionServerSpan(attributes map[string]interface{}, statuscode 
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/widgets")
 	span.SetKind(pdata.SpanKindSERVER)
-	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
-	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(statuscode)
@@ -628,4 +627,171 @@ TypeError: must be str, not int`
 	assert.Equal(t, "<module>", *exceptions[0].Stack[1].Label)
 	assert.Equal(t, "main.py", *exceptions[0].Stack[1].Path)
 	assert.Equal(t, 14, *exceptions[0].Stack[1].Line)
+}
+
+func TestParseExceptionWithJavaScriptStacktrace(t *testing.T) {
+	exceptionType := "TypeError"
+	message := "Cannot read property 'value' of null"
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `TypeError: Cannot read property 'value' of null
+    at speedy (/home/gbusey/file.js:6:11)
+    at makeFaster (/home/gbusey/file.js:5:3)
+    at Object.<anonymous> (/home/gbusey/file.js:10:1)
+    at node.js:906:3
+    at Array.forEach (native)
+    at native`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "javascript")
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "TypeError", *exceptions[0].Type)
+	assert.Equal(t, "Cannot read property 'value' of null", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 6)
+	assert.Equal(t, "speedy ", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "/home/gbusey/file.js", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 6, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "makeFaster ", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "/home/gbusey/file.js", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 5, *exceptions[0].Stack[1].Line)
+	assert.Equal(t, "Object.<anonymous> ", *exceptions[0].Stack[2].Label)
+	assert.Equal(t, "/home/gbusey/file.js", *exceptions[0].Stack[2].Path)
+	assert.Equal(t, 10, *exceptions[0].Stack[2].Line)
+	assert.Equal(t, "", *exceptions[0].Stack[3].Label)
+	assert.Equal(t, "node.js", *exceptions[0].Stack[3].Path)
+	assert.Equal(t, 906, *exceptions[0].Stack[3].Line)
+	assert.Equal(t, "Array.forEach ", *exceptions[0].Stack[4].Label)
+	assert.Equal(t, "native", *exceptions[0].Stack[4].Path)
+	assert.Equal(t, 0, *exceptions[0].Stack[4].Line)
+	assert.Equal(t, "", *exceptions[0].Stack[5].Label)
+	assert.Equal(t, "native", *exceptions[0].Stack[5].Path)
+	assert.Equal(t, 0, *exceptions[0].Stack[5].Line)
+}
+
+func TestParseExceptionWithStacktraceNotJavaScript(t *testing.T) {
+	exceptionType := "TypeError"
+	message := "Cannot read property 'value' of null"
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `TypeError: Cannot read property 'value' of null
+    at speedy (/home/gbusey/file.js:6:11)
+    at makeFaster (/home/gbusey/file.js:5:3)
+    at Object.<anonymous> (/home/gbusey/file.js:10:1)`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "")
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "TypeError", *exceptions[0].Type)
+	assert.Equal(t, "Cannot read property 'value' of null", *exceptions[0].Message)
+	assert.Empty(t, exceptions[0].Stack)
+}
+
+func TestParseExceptionWithJavaScriptStactracekMalformedLines(t *testing.T) {
+	exceptionType := "TypeError"
+	message := "Cannot read property 'value' of null"
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `TypeError: Cannot read property 'value' of null
+    at speedy (/home/gbusey/file.js)
+    at makeFaster (/home/gbusey/file.js:5:3)malformed123
+    at Object.<anonymous> (/home/gbusey/file.js:10`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "javascript")
+	assert.Len(t, exceptions, 1)
+	assert.NotEmpty(t, exceptions[0].ID)
+	assert.Equal(t, "TypeError", *exceptions[0].Type)
+	assert.Equal(t, "Cannot read property 'value' of null", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 1)
+	assert.Equal(t, "speedy ", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "/home/gbusey/file.js", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 0, *exceptions[0].Stack[0].Line)
+}
+
+func TestParseExceptionWithSimpleStacktrace(t *testing.T) {
+	exceptionType := "System.FormatException"
+	message := "Input string was not in a correct format"
+
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `System.FormatException: Input string was not in a correct format.
+	at System.Number.ThrowOverflowOrFormatException(ParsingStatus status, TypeCode type)
+	at System.Number.ParseInt32(ReadOnlySpan1 value, NumberStyles styles, NumberFormatInfo info)
+	at System.Int32.Parse(String s)
+	at MyNamespace.IntParser.Parse(String s) in C:\apps\MyNamespace\IntParser.cs:line 11
+	at MyNamespace.Program.Main(String[] args) in C:\apps\MyNamespace\Program.cs:line 12`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "dotnet")
+	assert.Len(t, exceptions, 1)
+	assert.Equal(t, "System.FormatException", *exceptions[0].Type)
+	assert.Equal(t, "Input string was not in a correct format", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 5)
+	assert.Equal(t, "System.Number.ThrowOverflowOrFormatException(ParsingStatus status, TypeCode type)", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 0, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "System.Number.ParseInt32(ReadOnlySpan1 value, NumberStyles styles, NumberFormatInfo info)", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 0, *exceptions[0].Stack[1].Line)
+	assert.Equal(t, "System.Int32.Parse(String s)", *exceptions[0].Stack[2].Label)
+	assert.Equal(t, "", *exceptions[0].Stack[2].Path)
+	assert.Equal(t, 0, *exceptions[0].Stack[2].Line)
+	assert.Equal(t, "MyNamespace.IntParser.Parse(String s)", *exceptions[0].Stack[3].Label)
+	assert.Equal(t, "C:\\apps\\MyNamespace\\IntParser.cs", *exceptions[0].Stack[3].Path)
+	assert.Equal(t, 11, *exceptions[0].Stack[3].Line)
+	assert.Equal(t, "MyNamespace.Program.Main(String[] args)", *exceptions[0].Stack[4].Label)
+	assert.Equal(t, "C:\\apps\\MyNamespace\\Program.cs", *exceptions[0].Stack[4].Path)
+	assert.Equal(t, 12, *exceptions[0].Stack[4].Line)
+}
+
+func TestParseExceptionWithInnerExceptionStacktrace(t *testing.T) {
+	exceptionType := "System.Exception"
+	message := "test"
+
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `System.Exception: test
+	at integration_test_app.Controllers.AppController.OutgoingHttp() in /Users/bhautip/Documents/otel-dotnet/aws-otel-dotnet/integration-test-app/integration-test-app/Controllers/AppController.cs:line 21
+	at lambda_method(Closure , Object , Object[] )
+	at Microsoft.Extensions.Internal.ObjectMethodExecutor.Execute(Object target, Object[] parameters)
+	at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.SyncObjectResultExecutor.Execute(IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
+	at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Logged|12_1(ControllerActionInvoker invoker)
+	at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+	at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
+	at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
+	at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
+	--- End of stack trace from previous location where exception was thrown ---
+	at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|19_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
+	at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)
+	at Microsoft.AspNetCore.Routing.EndpointMiddleware.<Invoke>g__AwaitRequestTask|6_0(Endpoint endpoint, Task requestTask, ILogger logger)
+	at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+	at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware.Invoke(HttpContext context)`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "dotnet")
+	assert.Len(t, exceptions, 1)
+	assert.Equal(t, "System.Exception", *exceptions[0].Type)
+	assert.Equal(t, "test", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 14)
+	assert.Equal(t, "integration_test_app.Controllers.AppController.OutgoingHttp()", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "/Users/bhautip/Documents/otel-dotnet/aws-otel-dotnet/integration-test-app/integration-test-app/Controllers/AppController.cs", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 21, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|19_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)", *exceptions[0].Stack[9].Label)
+	assert.Equal(t, "", *exceptions[0].Stack[9].Path)
+	assert.Equal(t, 0, *exceptions[0].Stack[9].Line)
+}
+
+func TestParseExceptionWithMalformedStacktrace(t *testing.T) {
+	exceptionType := "System.Exception"
+	message := "test"
+
+	// We ignore the exception type / message from the stacktrace
+	stacktrace := `System.Exception: test
+	at integration_test_app.Controllers.AppController.OutgoingHttp() in /Users/bhautip/Documents/otel-dotnet/aws-otel-dotnet/integration-test-app/integration-test-app/Controllers/AppController.cs:line 21
+	at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware.Invoke(HttpContext context malformed
+	at System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean allowHttp2, CancellationToken cancellationToken) non-malformed`
+
+	exceptions := parseException(exceptionType, message, stacktrace, "dotnet")
+	assert.Len(t, exceptions, 1)
+	assert.Equal(t, "System.Exception", *exceptions[0].Type)
+	assert.Equal(t, "test", *exceptions[0].Message)
+	assert.Len(t, exceptions[0].Stack, 2)
+	assert.Equal(t, "integration_test_app.Controllers.AppController.OutgoingHttp()", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "/Users/bhautip/Documents/otel-dotnet/aws-otel-dotnet/integration-test-app/integration-test-app/Controllers/AppController.cs", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 21, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "System.Net.Http.HttpConnectionPool.ConnectAsync(HttpRequestMessage request, Boolean allowHttp2, CancellationToken cancellationToken)", *exceptions[0].Stack[1].Label)
+	assert.Equal(t, "", *exceptions[0].Stack[1].Path)
+	assert.Equal(t, 0, *exceptions[0].Stack[1].Line)
 }

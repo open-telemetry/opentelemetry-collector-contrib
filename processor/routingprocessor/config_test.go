@@ -21,14 +21,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/jaegerexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -43,15 +43,12 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	parsed := cfg.Processors["routing"]
+	parsed := cfg.Processors[config.NewID(typeStr)]
 	assert.Equal(t, parsed,
 		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
-				NameVal: "routing",
-				TypeVal: "routing",
-			},
-			DefaultExporters: []string{"otlp"},
-			FromAttribute:    "X-Tenant",
+			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+			DefaultExporters:  []string{"otlp"},
+			FromAttribute:     "X-Tenant",
 			Table: []RoutingTableItem{
 				{
 					Value:     "acme",

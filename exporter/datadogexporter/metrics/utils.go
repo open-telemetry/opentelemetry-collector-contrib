@@ -16,6 +16,7 @@ package metrics
 
 import (
 	"fmt"
+	"strings"
 
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
@@ -27,23 +28,39 @@ import (
 const (
 	// Gauge is the Datadog Gauge metric type
 	Gauge               string = "gauge"
+	Count               string = "count"
 	otelNamespacePrefix string = "otel"
 )
 
-// NewGauge creates a new Datadog Gauge metric given a name, a Unix nanoseconds timestamp
+// newMetric creates a new Datadog metric given a name, a Unix nanoseconds timestamp
 // a value and a slice of tags
-func NewGauge(name string, ts uint64, value float64, tags []string) datadog.Metric {
+func newMetric(name string, ts uint64, value float64, tags []string) datadog.Metric {
 	// Transform UnixNano timestamp into Unix timestamp
 	// 1 second = 1e9 ns
 	timestamp := float64(ts / 1e9)
 
-	gauge := datadog.Metric{
+	metric := datadog.Metric{
 		Points: []datadog.DataPoint{[2]*float64{&timestamp, &value}},
 		Tags:   tags,
 	}
-	gauge.SetMetric(name)
+	metric.SetMetric(name)
+	return metric
+}
+
+// NewGauge creates a new Datadog Gauge metric given a name, a Unix nanoseconds timestamp
+// a value and a slice of tags
+func NewGauge(name string, ts uint64, value float64, tags []string) datadog.Metric {
+	gauge := newMetric(name, ts, value, tags)
 	gauge.SetType(Gauge)
 	return gauge
+}
+
+// NewCount creates a new Datadog count metric given a name, a Unix nanoseconds timestamp
+// a value and a slice of tags
+func NewCount(name string, ts uint64, value float64, tags []string) datadog.Metric {
+	count := newMetric(name, ts, value, tags)
+	count.SetType(Count)
+	return count
 }
 
 // DefaultMetrics creates built-in metrics to report that an exporter is running
@@ -72,10 +89,27 @@ func addHostname(metrics []datadog.Metric, logger *zap.Logger, cfg *config.Confi
 	}
 }
 
-// addNamespace prepends all metric names with a given namespace
+// shouldPrepend decides if a given metric name should be prepended by `otel.`.
+// By default, this happens for
+// - hostmetrics receiver metrics (since they clash with Datadog Agent system check) and
+// - running metrics
+func shouldPrepend(name string) bool {
+	namespaces := [...]string{"datadog_exporter.", "system.", "process."}
+	for _, ns := range namespaces {
+		if strings.HasPrefix(name, ns) {
+			return true
+		}
+	}
+	return false
+}
+
+// addNamespace prepends some metric names with a given namespace.
+// This is used to namespace metrics that clash with the Datadog Agent
 func addNamespace(metrics []datadog.Metric, namespace string) {
 	for i := range metrics {
-		newName := namespace + "." + *metrics[i].Metric
-		metrics[i].Metric = &newName
+		if shouldPrepend(*metrics[i].Metric) {
+			newName := namespace + "." + *metrics[i].Metric
+			metrics[i].Metric = &newName
+		}
 	}
 }

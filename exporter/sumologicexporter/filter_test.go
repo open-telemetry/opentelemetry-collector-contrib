@@ -35,8 +35,13 @@ func TestGetMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	metadata := f.filterIn(attributes)
-	expected := fields{"key1": "value1", "key2": "value2", "key3": "value3"}
-	assert.Equal(t, expected, metadata)
+	expected := fieldsFromMap(map[string]string{
+		"key1": "value1",
+		"key2": "value2",
+		"key3": "value3",
+	})
+	// Use string() because object comparison has not been reliable
+	assert.Equal(t, expected.string(), metadata.string())
 }
 
 func TestFilterOutMetadata(t *testing.T) {
@@ -52,9 +57,10 @@ func TestFilterOutMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	data := f.filterOut(attributes)
-	expected := fields{
+	expected := fieldsFromMap(map[string]string{
 		"additional_key2": "value2",
 		"additional_key3": "value3",
-	}
-	assert.Equal(t, expected, data)
+	})
+	// Use string() because object comparison has not been reliable
+	assert.Equal(t, expected.string(), data.string())
 }

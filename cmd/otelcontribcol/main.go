@@ -33,14 +33,13 @@ func main() {
 		log.Fatalf("failed to build components: %v", err)
 	}
 
-	info := component.ApplicationStartInfo{
-		ExeName:  "otelcontribcol",
-		LongName: "OpenTelemetry Contrib Collector",
-		Version:  version.Version,
-		GitHash:  version.GitHash,
+	info := component.BuildInfo{
+		Command:     "otelcontribcol",
+		Description: "OpenTelemetry Collector Contrib",
+		Version:     version.Version,
 	}
 
-	if err := run(service.Parameters{ApplicationStartInfo: info, Factories: factories}); err != nil {
+	if err := run(service.Parameters{BuildInfo: info, Factories: factories}); err != nil {
 		log.Fatal(err)
 	}
 }

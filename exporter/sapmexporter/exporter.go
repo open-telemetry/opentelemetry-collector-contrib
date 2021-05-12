@@ -35,7 +35,7 @@ import (
 // TODO: Find a place for this to be shared.
 type baseTracesExporter struct {
 	component.Component
-	consumer.TracesConsumer
+	consumer.Traces
 }
 
 // sapmExporter is a wrapper struct of SAPM exporter
@@ -68,13 +68,13 @@ func newSAPMExporter(cfg *Config, params component.ExporterCreateParams) (sapmEx
 	}, err
 }
 
-func newSAPMTraceExporter(cfg *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
+func newSAPMTracesExporter(cfg *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
 	se, err := newSAPMExporter(cfg, params)
 	if err != nil {
 		return nil, err
 	}
 
-	te, err := exporterhelper.NewTraceExporter(
+	te, err := exporterhelper.NewTracesExporter(
 		cfg,
 		params.Logger,
 		se.pushTraceData,
@@ -92,8 +92,8 @@ func newSAPMTraceExporter(cfg *Config, params component.ExporterCreateParams) (c
 	// this ensures that we get batches of data for the same token when pushing to the backend.
 	if cfg.AccessTokenPassthrough {
 		te = &baseTracesExporter{
-			Component:      te,
-			TracesConsumer: batchperresourceattr.NewBatchPerResourceTraces(splunk.SFxAccessTokenLabel, te),
+			Component: te,
+			Traces:    batchperresourceattr.NewBatchPerResourceTraces(splunk.SFxAccessTokenLabel, te),
 		}
 	}
 	return te, nil
@@ -101,17 +101,17 @@ func newSAPMTraceExporter(cfg *Config, params component.ExporterCreateParams) (c
 
 // pushTraceData exports traces in SAPM proto by associated SFx access token and returns number of dropped spans
 // and the last experienced error if any translation or export failed
-func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, error) {
+func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
 	rss := td.ResourceSpans()
 	if rss.Len() == 0 {
-		return 0, nil
+		return nil
 	}
 
 	// All metrics in the pdata.Metrics will have the same access token because of the BatchPerResourceMetrics.
 	accessToken := se.retrieveAccessToken(rss.At(0))
 	batches, err := jaeger.InternalTracesToJaegerProto(td)
 	if err != nil {
-		return td.SpanCount(), consumererror.Permanent(err)
+		return consumererror.Permanent(err)
 	}
 
 	// Cannot remove the access token from the pdata, because exporters required to not modify incoming pdata,
@@ -121,12 +121,12 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) (int
 	err = se.client.ExportWithAccessToken(ctx, batches, accessToken)
 	if err != nil {
 		if sendErr, ok := err.(*sapmclient.ErrSend); ok && sendErr.Permanent {
-			return td.SpanCount(), consumererror.Permanent(sendErr)
+			return consumererror.Permanent(sendErr)
 		}
-		return td.SpanCount(), err
+		return err
 	}
 
-	return 0, nil
+	return nil
 }
 
 func (se *sapmExporter) retrieveAccessToken(md pdata.ResourceSpans) string {
@@ -153,14 +153,13 @@ func filterTokenFromProcess(proc *model.Process) {
 	if proc == nil {
 		return
 	}
-	for i := range proc.Tags {
+	for i := 0; i < len(proc.Tags); {
 		if proc.Tags[i].Key == splunk.SFxAccessTokenLabel {
-			// Switch this tag with last one.
-			lastPos := len(proc.Tags) - 1
-			tmp := proc.Tags[lastPos]
-			proc.Tags[lastPos] = proc.Tags[i]
-			proc.Tags[i] = tmp
-			proc.Tags = proc.Tags[0:lastPos]
+			proc.Tags[i] = proc.Tags[len(proc.Tags)-1]
+			// We do not need to put proc.Tags[i] at the end, as it will be discarded anyway
+			proc.Tags = proc.Tags[:len(proc.Tags)-1]
+			continue
 		}
+		i++
 	}
 }

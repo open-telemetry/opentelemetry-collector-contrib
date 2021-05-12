@@ -1,5 +1,5 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
   metricstransform:
@@ -18,6 +18,18 @@ processors:
           - action: add_label
             new_label: my_label
             new_value: my_value
+
+      - include: new_name
+        action: insert
+        new_name: new_name_copy_1
+        match_type: strict
+        experimental_match_labels: {"my_label": "my_value"}
+
+      - include: new_name
+        action: insert
+        new_name: new_name_copy_2
+        match_type: regexp
+        experimental_match_labels: {"my_label": ".*label"}
 
       - include: name2
         action: update
@@ -51,16 +63,21 @@ processors:
         new_name: combined_metric_name
         submatch_case: lower
 
+      - include: name2
+        match_type: strict
+        action: group
+        group_resource_labels: {"metric_group": "2"}
+
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors: [metricstransform]
-      exporters: [exampleexporter]
+      exporters: [nop]
     metrics:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors: [metricstransform]
-      exporters: [exampleexporter]
+      exporters: [nop]

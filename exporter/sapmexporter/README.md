@@ -6,12 +6,18 @@ and some useful related utilities can be found [here](https://github.com/signalf
 
 Supported pipeline types: traces
 
+> Please review the Collector's [security
+> documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
+> which contains recommendations on securing sensitive information such as the
+> API key required by this exporter.
+
 ## Configuration
 
 The following configuration options are required:
 
 - `access_token` (no default): AccessToken is the authentication token provided by SignalFx or
-another backend that supports the SAPM proto.
+another backend that supports the SAPM proto. The SignalFx access token can be obtained from the
+web app. For details on how to do so please refer the documentation [here](https://docs.signalfx.com/en/latest/admin-guide/tokens.html#access-tokens).
 - `endpoint` (no default): This is the destination to where traces will be sent to in SAPM
 format. It must be a full URL and include the scheme, port and path e.g,
 https://ingest.us0.signalfx.com/v2/trace. This can be pointed to the SignalFx backend or to
@@ -32,7 +38,7 @@ during final translation.  Intended to be used in tandem with identical configur
 
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
-[here](https://github.com/open-telemetry/opentelemetry-collector/blob/master/exporter/exporterhelper/README.md).
+[here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
 
 Example:
 
@@ -50,4 +56,4 @@ The full list of settings exposed for this exporter are documented [here](config
 with detailed sample configurations [here](testdata/config.yaml).
 
 This exporter also offers proxy support as documented
-[here](https://github.com/open-telemetry/opentelemetry-collector/tree/master/exporter#proxy-support).
+[here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).

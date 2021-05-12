@@ -19,6 +19,7 @@ import (
 	"compress/gzip"
 	"errors"
 	"io"
+	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -94,15 +95,14 @@ func TestCompressTwice(t *testing.T) {
 }
 
 func decodeGzip(t *testing.T, data io.Reader) string {
-	var buf strings.Builder
-
 	r, err := gzip.NewReader(data)
 	require.NoError(t, err)
 
-	_, err = io.Copy(&buf, r)
+	var buf []byte
+	buf, err = ioutil.ReadAll(r)
 	require.NoError(t, err)
 
-	return buf.String()
+	return string(buf)
 }
 
 func TestCompressDeflate(t *testing.T) {
@@ -120,13 +120,13 @@ func TestCompressDeflate(t *testing.T) {
 }
 
 func decodeDeflate(t *testing.T, data io.Reader) string {
-	var buf strings.Builder
 	r := flate.NewReader(data)
 
-	_, err := io.Copy(&buf, r)
+	var buf []byte
+	buf, err := ioutil.ReadAll(r)
 	require.NoError(t, err)
 
-	return buf.String()
+	return string(buf)
 }
 
 func TestCompressReadError(t *testing.T) {

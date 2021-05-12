@@ -1,8 +1,8 @@
 receivers:
-  examplereceiver:
+  nop:
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
   datadog/api:
@@ -21,6 +21,32 @@ exporters:
     traces:
       sample_rate: 1
 
+  datadog/api2:
+    hostname: customhostname
+    env: prod
+    service: myservice
+    version: myversion
+
+    tags:
+      - example:tag
+
+    api:
+      key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      site: datadoghq.eu
+
+    metrics:
+      endpoint: https://api.datadoghq.test
+
+    traces:
+      sample_rate: 1
+      endpoint: https://trace.agent.datadoghq.test
+
+  datadog/default:
+    api:
+      key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+  datadog/default2:
+
   datadog/invalid:
     metrics:
       endpoint: "invalid:"
@@ -31,11 +57,11 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
+      receivers: [nop]
+      processors: [nop]
       exporters: [datadog/api, datadog/invalid]
 
     traces:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
+      receivers: [nop]
+      processors: [nop]
       exporters: [datadog/api, datadog/invalid]

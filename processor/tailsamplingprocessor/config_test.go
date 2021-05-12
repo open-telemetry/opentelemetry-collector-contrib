@@ -22,12 +22,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -37,12 +37,9 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, cfg.Processors["tail_sampling"],
+	assert.Equal(t, cfg.Processors[config.NewID(typeStr)],
 		&Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: "tail_sampling",
-				NameVal: "tail_sampling",
-			},
+			ProcessorSettings:       config.NewProcessorSettings(config.NewID(typeStr)),
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,
 			ExpectedNewTracesPerSec: 10,

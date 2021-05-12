@@ -53,7 +53,7 @@ func getHoneycombTraceID(traceID pdata.TraceID) string {
 
 // getHoneycombSpanID just takes a byte array and hex encodes it.
 func getHoneycombSpanID(id pdata.SpanID) string {
-	if id.IsValid() {
+	if !id.IsEmpty() {
 		return fmt.Sprintf("%x", id.Bytes())
 	}
 	return ""

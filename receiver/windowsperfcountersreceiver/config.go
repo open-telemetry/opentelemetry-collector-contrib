@@ -17,7 +17,7 @@ package windowsperfcountersreceiver
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
@@ -35,9 +35,7 @@ type PerfCounterConfig struct {
 	Counters  []string `mapstructure:"counters"`
 }
 
-func (c *Config) validate() error {
-	// TODO: consider validating duplicate configuration of counters
-
+func (c *Config) Validate() error {
 	var errors []error
 
 	if c.CollectionInterval <= 0 {
@@ -71,5 +69,5 @@ func (c *Config) validate() error {
 		errors = append(errors, fmt.Errorf("must specify object name for all perf counters"))
 	}
 
-	return componenterror.CombineErrors(errors)
+	return consumererror.Combine(errors)
 }

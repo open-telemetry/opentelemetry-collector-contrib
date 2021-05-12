@@ -33,7 +33,13 @@ type Detector interface {
 	Detect(ctx context.Context) (pdata.Resource, error)
 }
 
-type DetectorFactory func(component.ProcessorCreateParams) (Detector, error)
+type DetectorConfig interface{}
+
+type ResourceDetectorConfig interface {
+	GetConfigFromType(DetectorType) DetectorConfig
+}
+
+type DetectorFactory func(component.ProcessorCreateParams, DetectorConfig) (Detector, error)
 
 type ResourceProviderFactory struct {
 	// detectors holds all possible detector types.
@@ -47,8 +53,9 @@ func NewProviderFactory(detectors map[DetectorType]DetectorFactory) *ResourcePro
 func (f *ResourceProviderFactory) CreateResourceProvider(
 	params component.ProcessorCreateParams,
 	timeout time.Duration,
+	detectorConfigs ResourceDetectorConfig,
 	detectorTypes ...DetectorType) (*ResourceProvider, error) {
-	detectors, err := f.getDetectors(params, detectorTypes)
+	detectors, err := f.getDetectors(params, detectorConfigs, detectorTypes)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +64,7 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 	return provider, nil
 }
 
-func (f *ResourceProviderFactory) getDetectors(params component.ProcessorCreateParams, detectorTypes []DetectorType) ([]Detector, error) {
+func (f *ResourceProviderFactory) getDetectors(params component.ProcessorCreateParams, detectorConfigs ResourceDetectorConfig, detectorTypes []DetectorType) ([]Detector, error) {
 	detectors := make([]Detector, 0, len(detectorTypes))
 	for _, detectorType := range detectorTypes {
 		detectorFactory, ok := f.detectors[detectorType]
@@ -65,7 +72,7 @@ func (f *ResourceProviderFactory) getDetectors(params component.ProcessorCreateP
 			return nil, fmt.Errorf("invalid detector key: %v", detectorType)
 		}
 
-		detector, err := detectorFactory(params)
+		detector, err := detectorFactory(params, detectorConfigs.GetConfigFromType(detectorType))
 		if err != nil {
 			return nil, fmt.Errorf("failed creating detector type %q: %w", detectorType, err)
 		}
@@ -132,8 +139,9 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 
 func AttributesToMap(am pdata.AttributeMap) map[string]interface{} {
 	mp := make(map[string]interface{}, am.Len())
-	am.ForEach(func(k string, v pdata.AttributeValue) {
+	am.Range(func(k string, v pdata.AttributeValue) bool {
 		mp[k] = UnwrapAttribute(v)
+		return true
 	})
 	return mp
 }
@@ -172,12 +180,13 @@ func MergeResource(to, from pdata.Resource, overrideTo bool) {
 	}
 
 	toAttr := to.Attributes()
-	from.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+	from.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		if overrideTo {
 			toAttr.Upsert(k, v)
 		} else {
 			toAttr.Insert(k, v)
 		}
+		return true
 	})
 }
 

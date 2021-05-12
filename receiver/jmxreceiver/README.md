@@ -2,7 +2,7 @@
 
 ### Overview
 
-The JMX Receiver will work in conjunction with the [OpenTelemetry JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/master/contrib/jmx-metrics/README.md)
+The JMX Receiver will work in conjunction with the [OpenTelemetry JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/main/contrib/jmx-metrics/README.md)
 to report metrics from a target MBean server using a built-in or your custom `otel` helper-utilizing
 Groovy script.
 
@@ -12,7 +12,7 @@ Status: alpha
 
 This receiver will launch a child JRE process running the JMX Metric Gatherer configured with your specified JMX
 connection information and target Groovy script.  It then reports metrics to an implicitly created OTLP receiver.
-In order to use you will need to download the most [recent release](https://oss.jfrog.org/artifactory/oss-snapshot-local/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/)
+In order to use you will need to download the most [recent release](https://oss.sonatype.org/content/repositories/snapshots/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics)
 of the JMX Metric Gatherer JAR and configure the receiver with its path.  It is assumed that the JRE is
 available on your system.
 

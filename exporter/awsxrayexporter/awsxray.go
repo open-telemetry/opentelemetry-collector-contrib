@@ -20,37 +20,38 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/xray"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/translator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 const (
 	maxSegmentsPerPut = int(50) // limit imposed by PutTraceSegments API
 )
 
-// newTraceExporter creates an component.TraceExporter that converts to an X-Ray PutTraceSegments
+// newTracesExporter creates an component.TracesExporter that converts to an X-Ray PutTraceSegments
 // request and then posts the request to the configured region's X-Ray endpoint.
-func newTraceExporter(
-	config configmodels.Exporter, params component.ExporterCreateParams, cn connAttr) (component.TracesExporter, error) {
-	typeLog := zap.String("type", string(config.Type()))
-	nameLog := zap.String("name", config.Name())
+func newTracesExporter(
+	config config.Exporter, params component.ExporterCreateParams, cn awsutil.ConnAttr) (component.TracesExporter, error) {
+	typeLog := zap.String("type", string(config.ID().Type()))
+	nameLog := zap.String("name", config.ID().String())
 	logger := params.Logger
-	awsConfig, session, err := GetAWSConfigSession(logger, cn, config.(*Config))
+	awsConfig, session, err := awsutil.GetAWSConfigSession(logger, cn, &config.(*Config).AWSSessionSettings)
 	if err != nil {
 		return nil, err
 	}
-	xrayClient := newXRay(logger, awsConfig, params.ApplicationStartInfo, session)
-	return exporterhelper.NewTraceExporter(
+	xrayClient := newXRay(logger, awsConfig, params.BuildInfo, session)
+	return exporterhelper.NewTracesExporter(
 		config,
 		logger,
-		func(ctx context.Context, td pdata.Traces) (totalDroppedSpans int, err error) {
-			logger.Debug("TraceExporter", typeLog, nameLog, zap.Int("#spans", td.SpanCount()))
-			totalDroppedSpans = 0
+		func(ctx context.Context, td pdata.Traces) error {
+			var err error
+			logger.Debug("TracesExporter", typeLog, nameLog, zap.Int("#spans", td.SpanCount()))
 			documents := make([]*string, 0, td.SpanCount())
 			for i := 0; i < td.ResourceSpans().Len(); i++ {
 				rspans := td.ResourceSpans().At(i)
@@ -61,7 +62,7 @@ func newTraceExporter(
 						document, localErr := translator.MakeSegmentDocumentString(spans.At(k), resource,
 							config.(*Config).IndexedAttributes, config.(*Config).IndexAllAttributes)
 						if localErr != nil {
-							totalDroppedSpans++
+							logger.Debug("Error translating span.", zap.Error(localErr))
 							continue
 						}
 						documents = append(documents, &document)
@@ -82,18 +83,16 @@ func newTraceExporter(
 				}
 				if output != nil {
 					logger.Debug("response: " + output.String())
-					if output.UnprocessedTraceSegments != nil {
-						totalDroppedSpans += len(output.UnprocessedTraceSegments)
-					}
 				}
 				if err != nil {
 					break
 				}
 			}
-			return totalDroppedSpans, err
+			return err
 		},
 		exporterhelper.WithShutdown(func(context.Context) error {
-			return logger.Sync()
+			_ = logger.Sync()
+			return nil
 		}),
 	)
 }

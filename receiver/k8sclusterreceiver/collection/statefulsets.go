@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	appsv1 "k8s.io/api/apps/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
@@ -110,10 +110,10 @@ func getResourceForStatefulSet(ss *appsv1.StatefulSet) *resourcepb.Resource {
 	}
 }
 
-func getMetadataForStatefulSet(ss *appsv1.StatefulSet) map[metrics.ResourceID]*KubernetesMetadata {
+func getMetadataForStatefulSet(ss *appsv1.StatefulSet) map[metadata.ResourceID]*KubernetesMetadata {
 	km := getGenericMetadata(&ss.ObjectMeta, k8sStatefulSet)
 	km.metadata[statefulSetCurrentVersion] = ss.Status.CurrentRevision
 	km.metadata[statefulSetUpdateVersion] = ss.Status.UpdateRevision
 
-	return map[metrics.ResourceID]*KubernetesMetadata{metrics.ResourceID(ss.UID): km}
+	return map[metadata.ResourceID]*KubernetesMetadata{metadata.ResourceID(ss.UID): km}
 }

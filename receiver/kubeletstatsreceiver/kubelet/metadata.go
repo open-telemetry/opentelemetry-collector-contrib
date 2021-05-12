@@ -15,10 +15,10 @@
 package kubelet
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/collector/translator/conventions"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"

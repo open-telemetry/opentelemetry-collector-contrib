@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
@@ -124,7 +124,7 @@ func (c *Containers) createContainer(image string, env []string) container.Conta
 		Env:    env,
 	}, &container.HostConfig{
 		PublishAllPorts: true,
-	}, &network.NetworkingConfig{}, "")
+	}, &network.NetworkingConfig{}, nil, "")
 	if err != nil {
 		c.t.Fatalf("failed creating container with image %v: %v", image, err)
 	}

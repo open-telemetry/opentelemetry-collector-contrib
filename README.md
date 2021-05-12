@@ -2,11 +2,11 @@
 
 <p align="center">
   <strong>
-    <a href="https://opentelemetry.io/docs/collector/getting-started/">Getting Started<a/>
+    <a href="https://opentelemetry.io/docs/collector/getting-started/">Getting Started</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/community#agentcollector">Getting Involved<a/>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md">Getting Involved</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://gitter.im/open-telemetry/opentelemetry-service">Getting In Touch<a/>
+    <a href="https://gitter.im/open-telemetry/opentelemetry-service">Getting In Touch</a>
   </strong>
 </p>
 
@@ -28,17 +28,17 @@
 
 <p align="center">
   <strong>
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/master/CONTRIBUTING.md">Contributing<a/>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/vision.md">Vision</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/master/docs/vision.md">Vision<a/>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/design.md">Design</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/master/docs/design.md">Design<a/>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/monitoring.md">Monitoring</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/master/docs/monitoring.md">Monitoring<a/>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/performance.md">Performance</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/master/docs/performance.md">Performance<a/>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md">Security</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/master/docs/roadmap.md">Roadmap<a/>
+    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/roadmap.md">Roadmap</a>
   </strong>
 </p>
 
@@ -46,40 +46,33 @@
 
 # OpenTelemetry Collector Contrib
 
-This is a repository for OpenTelemetry Collector contributions that are not part of the
-[core repository](https://github.com/open-telemetry/opentelemetry-collector) and
-core distribution of the Collector. Typically, these contributions are vendor
-specific receivers/exporters and/or components that are only
-useful to a relatively small number of users.
+This is a repository for OpenTelemetry Collector contributions that are not
+part of the [core
+distribution](https://github.com/open-telemetry/opentelemetry-collector) of the
+Collector. Typically, these contributions are vendor specific
+receivers/exporters and/or components that are only useful to a relatively
+small number of users.
 
-Please note that this repository and its releases are a superset of the core repository.
-
-## Creating your own OpenTelemetry Collector distribution
-
-A guide on how to create your own distribution is available in this blog post:
-["Building your own OpenTelemetry Collector distribution"](https://medium.com/p/42337e994b63)
-
-If you are building your own distribution, the [OpenTelemetry Collector
-Builder](https://github.com/observatorium/opentelemetry-collector-builder)
-might be a good starting point.
+> Please note that this repository and its releases are a superset of the core repository.
 
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/open-telemetry/teams/collector-contrib-triagers))
-- [Andrew Hsu](https://github.com/andrewhsu), Lightstep
+- [Alolita Sharma](https://github.com/alolita), AWS
 - [Steve Flanders](https://github.com/flands), Splunk
 
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
+- [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [Anuraag Agrawal](https://github.com/anuraaga), AWS
+- [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
-- [James Bebbington](https://github.com/james-bebbington), Google
 - [Jay Camp](https://github.com/jrcamp), Splunk
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Red Hat
 - [Kevin Brockhoff](https://github.com/kbrockhoff), Daugherty Business Solutions
-- [Nail Islamov](https://github.com/nilebox), Google
+- [Pablo Baeyens](https://github.com/mx-psi), DataDog
 - [Owais Lone](https://github.com/owais), Splunk
 
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
@@ -87,24 +80,24 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 - [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
-Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md).
+Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md).
 
 ## PRs and Reviews
 
 When creating a PR please following the process [described
-here](https://github.com/open-telemetry/opentelemetry-collector/blob/master/CONTRIBUTING.md#how-to-structure-prs-to-get-expedient-reviews).
+here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md#how-to-structure-prs-to-get-expedient-reviews).
 
 News PRs will be automatically associated with the reviewers based on
 [CODEOWNERS](.github/CODEOWNERS). PRs will be also automatically assigned to one of the
 maintainers or approvers for facilitation.
- 
+
 The facilitator is responsible for helping the PR author and reviewers to make progress
 or if progress cannot be made for closing the PR.
- 
+
 If the reviewers do not have approval rights the facilitator is also responsible
 for the official approval that is required for the PR to be merged and if the facilitator
 is a maintainer they are responsible for merging the PR as well.
- 
+
 The facilitator is not required to perform a thorough review, but they are encouraged to
 enforce Collector best practices and consistency across the codebase and component
 behavior. The facilitators will typically rely on codeowner's detailed review of the code

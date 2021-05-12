@@ -22,11 +22,11 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
+	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
 const (
-	attributeInfrastructureService = "cloud.infrastructure_service"
+	attributeInfrastructureService = "cloud.platform"
 	awsEcsClusterArn               = "aws.ecs.cluster.arn"
 	awsEcsContainerArn             = "aws.ecs.container.arn"
 	awsEcsTaskArn                  = "aws.ecs.task.arn"
@@ -77,7 +77,7 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 	)
 
 	filtered := make(map[string]string)
-	resource.Attributes().ForEach(func(key string, value pdata.AttributeValue) {
+	resource.Attributes().Range(func(key string, value pdata.AttributeValue) bool {
 		switch key {
 		case semconventions.AttributeCloudProvider:
 			cloud = value.StringVal()
@@ -85,7 +85,7 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 			service = value.StringVal()
 		case semconventions.AttributeCloudAccount:
 			account = value.StringVal()
-		case semconventions.AttributeCloudZone:
+		case semconventions.AttributeCloudAvailabilityZone:
 			zone = value.StringVal()
 		case semconventions.AttributeHostID:
 			hostID = value.StringVal()
@@ -132,6 +132,7 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 		case awsLogGroupArns:
 			logGroupArns = value.ArrayVal()
 		}
+		return true
 	})
 
 	for key, value := range attributes {

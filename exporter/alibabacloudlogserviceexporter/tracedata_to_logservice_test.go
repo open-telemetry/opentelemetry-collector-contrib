@@ -40,9 +40,8 @@ func (kv logKeyValuePairs) Swap(i, j int)      { kv[i], kv[j] = kv[j], kv[i] }
 func (kv logKeyValuePairs) Less(i, j int) bool { return kv[i].Key < kv[j].Key }
 
 func TestTraceDataToLogService(t *testing.T) {
-	gotLogs, dropped := traceDataToLogServiceData(constructSpanData())
+	gotLogs := traceDataToLogServiceData(constructSpanData())
 	assert.Equal(t, len(gotLogs), 2)
-	assert.Equal(t, dropped, 0)
 
 	gotLogPairs := make([][]logKeyValuePair, 0, len(gotLogs))
 
@@ -53,14 +52,10 @@ func TestTraceDataToLogService(t *testing.T) {
 				Key:   content.GetKey(),
 				Value: content.GetValue(),
 			})
-			fmt.Printf("%s : %s\n", content.GetKey(), content.GetValue())
 		}
 		gotLogPairs = append(gotLogPairs, pairs)
 
-		fmt.Println("#################")
 	}
-	str, _ := json.Marshal(gotLogPairs)
-	fmt.Println(string(str))
 
 	wantLogs := make([][]logKeyValuePair, 0, len(gotLogs))
 	resultLogFile := "./testdata/logservice_trace_data.json"
@@ -111,12 +106,11 @@ func fillResource(resource pdata.Resource) {
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
 	attrs.InsertString(semconventions.AttributeCloudAccount, "999999998")
 	attrs.InsertString(semconventions.AttributeCloudRegion, "us-west-2")
-	attrs.InsertString(semconventions.AttributeCloudZone, "us-west-1b")
+	attrs.InsertString(semconventions.AttributeCloudAvailabilityZone, "us-west-1b")
 }
 
 func fillHTTPClientSpan(span pdata.Span) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[semconventions.AttributeHTTPStatusCode] = 200
@@ -129,18 +123,16 @@ func fillHTTPClientSpan(span pdata.Span) {
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindCLIENT)
-	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
-	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 	span.SetTraceState("x:y")
 
-	span.Events().Resize(1)
-	event := span.Events().At(0)
+	event := span.Events().AppendEmpty()
 	event.SetName("event")
 	event.SetTimestamp(1024)
 	event.Attributes().InsertString("key", "value")
 
-	span.Links().Resize(1)
-	link := span.Links().At(0)
+	link := span.Links().AppendEmpty()
 	link.SetTraceState("link:state")
 	link.Attributes().InsertString("link", "true")
 
@@ -151,7 +143,6 @@ func fillHTTPClientSpan(span pdata.Span) {
 
 func fillHTTPServerSpan(span pdata.Span) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[semconventions.AttributeHTTPClientIP] = "192.168.15.32"
@@ -165,8 +156,8 @@ func fillHTTPServerSpan(span pdata.Span) {
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindSERVER)
-	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
-	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 
 	status := span.Status()
 	status.SetCode(2)

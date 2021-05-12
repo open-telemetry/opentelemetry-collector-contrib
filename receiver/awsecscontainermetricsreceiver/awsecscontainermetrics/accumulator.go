@@ -30,38 +30,66 @@ type metricDataAccumulator struct {
 func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*ContainerStats, metadata TaskMetadata, logger *zap.Logger) {
 
 	taskMetrics := ECSMetrics{}
-	timestamp := pdata.TimeToUnixNano(time.Now())
+	timestamp := pdata.TimestampFromTime(time.Now())
 	taskResource := taskResource(metadata)
 
 	for _, containerMetadata := range metadata.Containers {
-		stats, ok := containerStatsMap[containerMetadata.DockerID]
-		if !ok || stats == nil {
-			continue
-		}
-
-		containerMetrics := getContainerMetrics(stats, logger)
-		if containerMetadata.Limits.Memory != nil {
-			containerMetrics.MemoryReserved = *containerMetadata.Limits.Memory
-		}
-
-		if containerMetadata.Limits.CPU != nil {
-			containerMetrics.CPUReserved = *containerMetadata.Limits.CPU
-		}
-
-		if containerMetrics.CPUReserved > 0 {
-			containerMetrics.CPUUtilized = (containerMetrics.CPUUtilized / containerMetrics.CPUReserved)
-		}
 
 		containerResource := containerResource(containerMetadata)
-		taskResource.Attributes().ForEach(func(k string, av pdata.AttributeValue) {
+		taskResource.Attributes().Range(func(k string, av pdata.AttributeValue) bool {
 			containerResource.Attributes().Upsert(k, av)
+			return true
 		})
 
-		acc.accumulate(convertToOTLPMetrics(ContainerPrefix, containerMetrics, containerResource, timestamp))
+		stats, ok := containerStatsMap[containerMetadata.DockerID]
 
-		aggregateTaskMetrics(&taskMetrics, containerMetrics)
+		if ok && !isEmptyStats(stats) {
+
+			containerMetrics := convertContainerMetrics(stats, logger, containerMetadata)
+			acc.accumulate(convertToOTLPMetrics(ContainerPrefix, containerMetrics, containerResource, timestamp))
+			aggregateTaskMetrics(&taskMetrics, containerMetrics)
+
+		} else if containerMetadata.FinishedAt != "" && containerMetadata.StartedAt != "" {
+
+			duration, err := calculateDuration(containerMetadata.StartedAt, containerMetadata.FinishedAt)
+
+			if err != nil {
+				logger.Warn("Error time format error found for this container:" + containerMetadata.ContainerName)
+			}
+
+			acc.accumulate(convertStoppedContainerDataToOTMetrics(ContainerPrefix, containerResource, timestamp, duration))
+
+		}
+	}
+	overrideWithTaskLevelLimit(&taskMetrics, metadata)
+	acc.accumulate(convertToOTLPMetrics(TaskPrefix, taskMetrics, taskResource, timestamp))
+}
+
+func (acc *metricDataAccumulator) accumulate(md pdata.Metrics) {
+	acc.mds = append(acc.mds, md)
+}
+
+func isEmptyStats(stats *ContainerStats) bool {
+	return stats == nil || stats.ID == ""
+}
+
+func convertContainerMetrics(stats *ContainerStats, logger *zap.Logger, containerMetadata ContainerMetadata) ECSMetrics {
+	containerMetrics := getContainerMetrics(stats, logger)
+	if containerMetadata.Limits.Memory != nil {
+		containerMetrics.MemoryReserved = *containerMetadata.Limits.Memory
 	}
 
+	if containerMetadata.Limits.CPU != nil {
+		containerMetrics.CPUReserved = *containerMetadata.Limits.CPU
+	}
+
+	if containerMetrics.CPUReserved > 0 {
+		containerMetrics.CPUUtilized = (containerMetrics.CPUUtilized / containerMetrics.CPUReserved)
+	}
+	return containerMetrics
+}
+
+func overrideWithTaskLevelLimit(taskMetrics *ECSMetrics, metadata TaskMetadata) {
 	// Overwrite Memory limit with task level limit
 	if metadata.Limits.Memory != nil {
 		taskMetrics.MemoryReserved = *metadata.Limits.Memory
@@ -81,12 +109,17 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 	if taskMetrics.CPUReserved > 0 {
 		taskMetrics.CPUUtilized = ((taskMetrics.CPUUsageInVCPU / taskMetrics.CPUReserved) * 100)
 	}
-
-	acc.accumulate(convertToOTLPMetrics(TaskPrefix, taskMetrics, taskResource, timestamp))
 }
 
-func (acc *metricDataAccumulator) accumulate(rms pdata.ResourceMetricsSlice) {
-	md := pdata.Metrics(rms)
-
-	acc.mds = append(acc.mds, md)
+func calculateDuration(startTime, endTime string) (float64, error) {
+	start, err := time.Parse(time.RFC3339Nano, startTime)
+	if err != nil {
+		return 0, err
+	}
+	end, err := time.Parse(time.RFC3339Nano, endTime)
+	if err != nil {
+		return 0, err
+	}
+	duration := end.Sub(start)
+	return duration.Seconds(), nil
 }

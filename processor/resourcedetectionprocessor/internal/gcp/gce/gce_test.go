@@ -20,68 +20,30 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 )
 
-type mockMetadata struct {
-	mock.Mock
-}
-
-func (m *mockMetadata) OnGCE() bool {
-	return m.MethodCalled("OnGCE").Bool(0)
-}
-
-func (m *mockMetadata) ProjectID() (string, error) {
-	args := m.MethodCalled("ProjectID")
-	return args.String(0), args.Error(1)
-}
-
-func (m *mockMetadata) Zone() (string, error) {
-	args := m.MethodCalled("Zone")
-	return args.String(0), args.Error(1)
-}
-
-func (m *mockMetadata) Hostname() (string, error) {
-	args := m.MethodCalled("Hostname")
-	return args.String(0), args.Error(1)
-}
-
-func (m *mockMetadata) InstanceID() (string, error) {
-	args := m.MethodCalled("InstanceID")
-	return args.String(0), args.Error(1)
-}
-
-func (m *mockMetadata) InstanceName() (string, error) {
-	args := m.MethodCalled("InstanceName")
-	return args.String(0), args.Error(1)
-}
-
-func (m *mockMetadata) Get(suffix string) (string, error) {
-	args := m.MethodCalled("Get")
-	return args.String(0), args.Error(1)
-}
-
 func TestNewDetector(t *testing.T) {
-	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()})
+	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
 	assert.NotNil(t, d)
 	assert.NoError(t, err)
 }
 
 func TestDetectTrue(t *testing.T) {
-	md := &mockMetadata{}
+	md := &gcp.MockMetadata{}
 	md.On("OnGCE").Return(true)
 	md.On("ProjectID").Return("1", nil)
 	md.On("Zone").Return("zone", nil)
 	md.On("Hostname").Return("hostname", nil)
 	md.On("InstanceID").Return("2", nil)
 	md.On("InstanceName").Return("name", nil)
-	md.On("Get").Return("machine-type", nil)
+	md.On("Get", "instance/machine-type").Return("machine-type", nil)
 
 	detector := &Detector{metadata: md}
 	res, err := detector.Detect(context.Background())
@@ -89,9 +51,10 @@ func TestDetectTrue(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := internal.NewResource(map[string]interface{}{
-		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP,
-		conventions.AttributeCloudAccount:  "1",
-		conventions.AttributeCloudZone:     "zone",
+		conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
+		conventions.AttributeCloudPlatform:         conventions.AttributeCloudPlatformGCPComputeEngine,
+		conventions.AttributeCloudAccount:          "1",
+		conventions.AttributeCloudAvailabilityZone: "zone",
 
 		conventions.AttributeHostID:   "2",
 		conventions.AttributeHostName: "hostname",
@@ -104,7 +67,7 @@ func TestDetectTrue(t *testing.T) {
 }
 
 func TestDetectFalse(t *testing.T) {
-	md := &mockMetadata{}
+	md := &gcp.MockMetadata{}
 	md.On("OnGCE").Return(false)
 
 	detector := &Detector{metadata: md}
@@ -115,21 +78,24 @@ func TestDetectFalse(t *testing.T) {
 }
 
 func TestDetectError(t *testing.T) {
-	md := &mockMetadata{}
+	md := &gcp.MockMetadata{}
 	md.On("OnGCE").Return(true)
 	md.On("ProjectID").Return("", errors.New("err1"))
 	md.On("Zone").Return("", errors.New("err2"))
 	md.On("Hostname").Return("", errors.New("err3"))
 	md.On("InstanceID").Return("", errors.New("err4"))
 	md.On("InstanceName").Return("", errors.New("err5"))
-	md.On("Get").Return("", errors.New("err6"))
+	md.On("Get", "instance/machine-type").Return("", errors.New("err6"))
 
 	detector := &Detector{metadata: md}
 	res, err := detector.Detect(context.Background())
 
 	assert.EqualError(t, err, "[err1; err2; err3; err4; err6]")
 
-	expected := internal.NewResource(map[string]interface{}{conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP})
+	expected := internal.NewResource(map[string]interface{}{
+		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP,
+		conventions.AttributeCloudPlatform: conventions.AttributeCloudPlatformGCPComputeEngine,
+	})
 
 	res.Attributes().Sort()
 	expected.Attributes().Sort()

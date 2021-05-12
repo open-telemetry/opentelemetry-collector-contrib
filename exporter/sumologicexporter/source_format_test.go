@@ -23,7 +23,7 @@ import (
 )
 
 func getTestSourceFormat(t *testing.T, template string) sourceFormat {
-	r, err := regexp.Compile(`\%\{(\w+)\}`)
+	r, err := regexp.Compile(sourceRegex)
 	require.NoError(t, err)
 
 	return newSourceFormat(r, template)
@@ -37,7 +37,7 @@ func TestNewSourceFormat(t *testing.T) {
 		template: "%s/test",
 	}
 
-	r, err := regexp.Compile(`\%\{(\w+)\}`)
+	r, err := regexp.Compile(sourceRegex)
 	require.NoError(t, err)
 
 	s := newSourceFormat(r, "%{test}/test")
@@ -80,8 +80,11 @@ func TestNewSourceFormats(t *testing.T) {
 }
 
 func TestFormat(t *testing.T) {
-	f := fields{"key_1": "value_1", "key_2": "value_2"}
-	s := getTestSourceFormat(t, "%{key_1}/%{key_2}")
+	f := fieldsFromMap(map[string]string{
+		"key_1":        "value_1",
+		"key_2.subkey": "value_2",
+	})
+	s := getTestSourceFormat(t, "%{key_1}/%{key_2.subkey}")
 	expected := "value_1/value_2"
 
 	result := s.format(f)
@@ -89,8 +92,9 @@ func TestFormat(t *testing.T) {
 }
 
 func TestFormatNonExistingKey(t *testing.T) {
-	f := fields{"key_2": "value_2"}
+	f := fieldsFromMap(map[string]string{"key_2": "value_2"})
 	s := getTestSourceFormat(t, "%{key_1}/%{key_2}")
+
 	expected := "/value_2"
 
 	result := s.format(f)

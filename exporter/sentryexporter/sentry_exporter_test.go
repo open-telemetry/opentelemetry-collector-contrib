@@ -169,8 +169,8 @@ func TestSpanToSentrySpan(t *testing.T) {
 		spanID := pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 		parentSpanID := pdata.NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 		name := "span_name"
-		var startTime pdata.TimestampUnixNano = 123
-		var endTime pdata.TimestampUnixNano = 1234567890
+		var startTime pdata.Timestamp = 123
+		var endTime pdata.Timestamp = 1234567890
 		kind := pdata.SpanKindCLIENT
 		statusMessage := "message"
 
@@ -180,8 +180,8 @@ func TestSpanToSentrySpan(t *testing.T) {
 		testSpan.SetSpanID(spanID)
 		testSpan.SetParentSpanID(parentSpanID)
 		testSpan.SetName(name)
-		testSpan.SetStartTime(startTime)
-		testSpan.SetEndTime(endTime)
+		testSpan.SetStartTimestamp(startTime)
+		testSpan.SetEndTimestamp(endTime)
 		testSpan.SetKind(kind)
 
 		testSpan.Status().SetMessage(statusMessage)
@@ -520,8 +520,7 @@ func TestPushTraceData(t *testing.T) {
 			td: func() pdata.Traces {
 				traces := pdata.NewTraces()
 				resourceSpans := traces.ResourceSpans()
-				resourceSpans.Resize(1)
-				resourceSpans.At(0).InstrumentationLibrarySpans().Resize(1)
+				resourceSpans.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
 				return traces
 			}(),
 			called: false,
@@ -531,9 +530,7 @@ func TestPushTraceData(t *testing.T) {
 			td: func() pdata.Traces {
 				traces := pdata.NewTraces()
 				resourceSpans := traces.ResourceSpans()
-				resourceSpans.Resize(1)
-				resourceSpans.At(0).InstrumentationLibrarySpans().Resize(1)
-				resourceSpans.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
+				resourceSpans.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 				return traces
 			}(),
 			called: true,

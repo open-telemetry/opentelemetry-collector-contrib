@@ -23,43 +23,37 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.uber.org/zap"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
+	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
+	factories.Exporters[config.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters[typeStr]
+	e0 := cfg.Exporters[config.NewID(typeStr)]
 
 	// Endpoint doesn't have a default value so set it directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
 	defaultCfg.Endpoint = "cn-hangzhou.log.aliyuncs.com"
 	assert.Equal(t, defaultCfg, e0)
 
-	expectedName := typeStr + "/2"
-
-	e1 := cfg.Exporters[expectedName]
+	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
 	expectedCfg := Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: expectedName,
-		},
-		Endpoint:        "cn-hangzhou.log.aliyuncs.com",
-		Project:         "demo-project",
-		Logstore:        "demo-logstore",
-		AccessKeyID:     "test-id",
-		AccessKeySecret: "test-secret",
-		ECSRamRole:      "test-role",
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
+		Endpoint:         "cn-hangzhou.log.aliyuncs.com",
+		Project:          "demo-project",
+		Logstore:         "demo-logstore",
+		AccessKeyID:      "test-id",
+		AccessKeySecret:  "test-secret",
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
@@ -85,5 +79,4 @@ func TestLoadConfig(t *testing.T) {
 	le, err = factory.CreateLogsExporter(context.Background(), params, e1)
 	require.NoError(t, err)
 	require.NotNil(t, le)
-
 }

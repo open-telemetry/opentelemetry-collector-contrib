@@ -17,21 +17,26 @@ package batchperresourceattr
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 type batchTraces struct {
 	attrKey string
-	next    consumer.TracesConsumer
+	next    consumer.Traces
 }
 
-func NewBatchPerResourceTraces(attrKey string, next consumer.TracesConsumer) consumer.TracesConsumer {
+func NewBatchPerResourceTraces(attrKey string, next consumer.Traces) consumer.Traces {
 	return &batchTraces{
 		attrKey: attrKey,
 		next:    next,
 	}
+}
+
+// Capabilities implements the consumer interface.
+func (bt batchTraces) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
 }
 
 func (bt *batchTraces) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
@@ -66,19 +71,24 @@ func (bt *batchTraces) ConsumeTraces(ctx context.Context, td pdata.Traces) error
 			errs = append(errs, err)
 		}
 	}
-	return componenterror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 type batchMetrics struct {
 	attrKey string
-	next    consumer.MetricsConsumer
+	next    consumer.Metrics
 }
 
-func NewBatchPerResourceMetrics(attrKey string, next consumer.MetricsConsumer) consumer.MetricsConsumer {
+func NewBatchPerResourceMetrics(attrKey string, next consumer.Metrics) consumer.Metrics {
 	return &batchMetrics{
 		attrKey: attrKey,
 		next:    next,
 	}
+}
+
+// Capabilities implements the consumer interface.
+func (bt batchMetrics) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
 }
 
 func (bt *batchMetrics) ConsumeMetrics(ctx context.Context, td pdata.Metrics) error {
@@ -113,19 +123,24 @@ func (bt *batchMetrics) ConsumeMetrics(ctx context.Context, td pdata.Metrics) er
 			errs = append(errs, err)
 		}
 	}
-	return componenterror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 type batchLogs struct {
 	attrKey string
-	next    consumer.LogsConsumer
+	next    consumer.Logs
 }
 
-func NewBatchPerResourceLogs(attrKey string, next consumer.LogsConsumer) consumer.LogsConsumer {
+func NewBatchPerResourceLogs(attrKey string, next consumer.Logs) consumer.Logs {
 	return &batchLogs{
 		attrKey: attrKey,
 		next:    next,
 	}
+}
+
+// Capabilities implements the consumer interface.
+func (bt batchLogs) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
 }
 
 func (bt *batchLogs) ConsumeLogs(ctx context.Context, td pdata.Logs) error {
@@ -160,5 +175,5 @@ func (bt *batchLogs) ConsumeLogs(ctx context.Context, td pdata.Logs) error {
 			errs = append(errs, err)
 		}
 	}
-	return componenterror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }

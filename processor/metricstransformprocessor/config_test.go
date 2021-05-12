@@ -21,24 +21,21 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestLoadingFullConfig(t *testing.T) {
 	tests := []struct {
 		configFile string
-		filterName string
+		filterName config.ComponentID
 		expCfg     *Config
 	}{
 		{
 			configFile: "config_full.yaml",
-			filterName: "metricstransform",
+			filterName: config.NewID(typeStr),
 			expCfg: &Config{
-				ProcessorSettings: configmodels.ProcessorSettings{
-					TypeVal: "metricstransform",
-					NameVal: "metricstransform",
-				},
+				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 				Transforms: []Transform{
 					{
 						MetricIncludeFilter: FilterConfig{
@@ -53,12 +50,9 @@ func TestLoadingFullConfig(t *testing.T) {
 		},
 		{
 			configFile: "config_full.yaml",
-			filterName: "metricstransform/multiple",
+			filterName: config.NewIDWithName(typeStr, "multiple"),
 			expCfg: &Config{
-				ProcessorSettings: configmodels.ProcessorSettings{
-					TypeVal: "metricstransform",
-					NameVal: "metricstransform/multiple",
-				},
+				ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "multiple")),
 				Transforms: []Transform{
 					{
 						MetricIncludeFilter: FilterConfig{
@@ -74,6 +68,28 @@ func TestLoadingFullConfig(t *testing.T) {
 								NewValue: "my_value",
 							},
 						},
+					},
+					{
+						MetricIncludeFilter: FilterConfig{
+							Include:   "new_name",
+							MatchType: "strict",
+							MatchLabels: map[string]string{
+								"my_label": "my_value",
+							},
+						},
+						Action:  "insert",
+						NewName: "new_name_copy_1",
+					},
+					{
+						MetricIncludeFilter: FilterConfig{
+							Include:   "new_name",
+							MatchType: "regexp",
+							MatchLabels: map[string]string{
+								"my_label": ".*label",
+							},
+						},
+						Action:  "insert",
+						NewName: "new_name_copy_2",
 					},
 					{
 						MetricIncludeFilter: FilterConfig{
@@ -127,17 +143,22 @@ func TestLoadingFullConfig(t *testing.T) {
 						NewName:      "combined_metric_name",
 						SubmatchCase: "lower",
 					},
+					{
+						MetricIncludeFilter: FilterConfig{
+							Include:   "name2",
+							MatchType: "strict",
+						},
+						Action:              "group",
+						GroupResourceLabels: map[string]string{"metric_group": "2"},
+					},
 				},
 			},
 		},
 		{
 			configFile: "config_deprecated.yaml",
-			filterName: "metricstransform",
+			filterName: config.NewID(typeStr),
 			expCfg: &Config{
-				ProcessorSettings: configmodels.ProcessorSettings{
-					NameVal: "metricstransform",
-					TypeVal: typeStr,
-				},
+				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 				Transforms: []Transform{
 					{
 						MetricName: "old_name",
@@ -150,19 +171,17 @@ func TestLoadingFullConfig(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.filterName, func(t *testing.T) {
+		t.Run(test.filterName.String(), func(t *testing.T) {
 
-			factories, err := componenttest.ExampleComponents()
+			factories, err := componenttest.NopFactories()
 			assert.NoError(t, err)
 
 			factory := NewFactory()
-			factories.Processors[configmodels.Type(typeStr)] = factory
-			config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", test.configFile), factories)
+			factories.Processors[typeStr] = factory
+			cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", test.configFile), factories)
 			assert.NoError(t, err)
-			require.NotNil(t, config)
-
-			cfg := config.Processors[test.filterName]
-			assert.Equal(t, test.expCfg, cfg)
+			require.NotNil(t, cfg)
+			assert.Equal(t, test.expCfg, cfg.Processors[test.filterName])
 		})
 	}
 }

@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -34,18 +34,16 @@ func NewFactory() component.ExporterFactory {
 		typeStr,
 		createDefaultConfig,
 		exporterhelper.WithLogs(createLogsExporter),
+		exporterhelper.WithMetrics(createMetricsExporter),
 	)
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	qs := exporterhelper.DefaultQueueSettings()
 	qs.Enabled = false
 
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 
 		CompressEncoding:   DefaultCompressEncoding,
 		MaxRequestBodySize: DefaultMaxRequestBodySize,
@@ -55,6 +53,7 @@ func createDefaultConfig() configmodels.Exporter {
 		SourceName:         DefaultSourceName,
 		SourceHost:         DefaultSourceHost,
 		Client:             DefaultClient,
+		GraphiteTemplate:   DefaultGraphiteTemplate,
 
 		HTTPClientSettings: CreateDefaultHTTPClientSettings(),
 		RetrySettings:      exporterhelper.DefaultRetrySettings(),
@@ -65,11 +64,24 @@ func createDefaultConfig() configmodels.Exporter {
 func createLogsExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter,
+	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	exp, err := newLogsExporter(cfg.(*Config), params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the logs exporter: %w", err)
+	}
+
+	return exp, nil
+}
+
+func createMetricsExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
+	cfg config.Exporter,
+) (component.MetricsExporter, error) {
+	exp, err := newMetricsExporter(cfg.(*Config), params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create the metrics exporter: %w", err)
 	}
 
 	return exp, nil

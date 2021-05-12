@@ -25,21 +25,21 @@ import (
 )
 
 var (
-	startInfo = component.ApplicationStartInfo{
-		ExeName: "otelcontribcol",
+	buildInfo = component.BuildInfo{
+		Command: "otelcontribcol",
 		Version: "1.0",
 	}
 )
 
 func TestUserAgent(t *testing.T) {
 
-	assert.Equal(t, UserAgent(startInfo), "otelcontribcol/1.0")
+	assert.Equal(t, UserAgent(buildInfo), "otelcontribcol/1.0")
 }
 
 func TestDDHeaders(t *testing.T) {
 	header := http.Header{}
 	apiKey := "apikey"
-	SetDDHeaders(header, startInfo, apiKey)
+	SetDDHeaders(header, buildInfo, apiKey)
 	assert.Equal(t, header.Get("DD-Api-Key"), apiKey)
 	assert.Equal(t, header.Get("USer-Agent"), "otelcontribcol/1.0")
 

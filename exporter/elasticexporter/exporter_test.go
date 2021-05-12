@@ -32,7 +32,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestTraceExporter(t *testing.T) {
+func TestTracesExporter(t *testing.T) {
 	cleanup, err := obsreporttest.SetupRecordedMetricsTest()
 	require.NoError(t, err)
 	defer cleanup()
@@ -46,15 +46,12 @@ func TestTraceExporter(t *testing.T) {
 
 	traces := pdata.NewTraces()
 	resourceSpans := traces.ResourceSpans()
-	resourceSpans.Resize(1)
-	resourceSpans.At(0).InstrumentationLibrarySpans().Resize(1)
-	resourceSpans.At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(1)
-	span := resourceSpans.At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span := resourceSpans.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foobar")
 
 	err = te.ConsumeTraces(context.Background(), traces)
 	assert.NoError(t, err)
-	obsreporttest.CheckExporterTracesViews(t, "elastic", 1, 0)
+	obsreporttest.CheckExporterTraces(t, cfg.ID(), 1, 0)
 
 	payloads := recorder.Payloads()
 	require.Len(t, payloads.Transactions, 1)
@@ -81,7 +78,7 @@ func TestMetricsExporter(t *testing.T) {
 	payloads := recorder.Payloads()
 	require.Len(t, payloads.Metrics, 2)
 	assert.Contains(t, payloads.Metrics[0].Samples, "foobar")
-	obsreporttest.CheckExporterMetricsViews(t, "elastic", 2, 0)
+	obsreporttest.CheckExporterMetrics(t, cfg.ID(), 2, 0)
 
 	assert.NoError(t, me.Shutdown(context.Background()))
 }
@@ -103,7 +100,7 @@ func TestMetricsExporterSendError(t *testing.T) {
 
 	err = me.ConsumeMetrics(context.Background(), sampleMetrics())
 	assert.Error(t, err)
-	obsreporttest.CheckExporterMetricsViews(t, "elastic", 0, 2)
+	obsreporttest.CheckExporterMetrics(t, cfg.ID(), 0, 2)
 
 	assert.NoError(t, me.Shutdown(context.Background()))
 }
@@ -113,13 +110,10 @@ func sampleMetrics() pdata.Metrics {
 	resourceMetrics := metrics.ResourceMetrics()
 	resourceMetrics.Resize(2)
 	for i := 0; i < 2; i++ {
-		resourceMetrics.At(i).InstrumentationLibraryMetrics().Resize(1)
-		resourceMetrics.At(i).InstrumentationLibraryMetrics().At(0).Metrics().Resize(1)
-		metric := resourceMetrics.At(i).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+		metric := resourceMetrics.At(i).InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
 		metric.SetName("foobar")
 		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		metric.DoubleGauge().DataPoints().Resize(1)
-		metric.DoubleGauge().DataPoints().At(0).SetValue(123)
+		metric.DoubleGauge().DataPoints().AppendEmpty().SetValue(123)
 	}
 	return metrics
 }

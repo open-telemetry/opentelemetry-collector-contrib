@@ -18,15 +18,14 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
 
 // newLogsExporter return a new LogService logs exporter.
-func newLogsExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.LogsExporter, error) {
+func newLogsExporter(logger *zap.Logger, cfg config.Exporter) (component.LogsExporter, error) {
 
 	l := &logServiceLogsSender{
 		logger: logger,
@@ -50,13 +49,11 @@ type logServiceLogsSender struct {
 
 func (s *logServiceLogsSender) pushLogsData(
 	ctx context.Context,
-	md pdata.Logs) (droppedTimeSeries int, err error) {
-	slsLogs, dropped := logDataToLogService(s.logger, md)
-	var errs []error
+	md pdata.Logs) error {
+	var err error
+	slsLogs := logDataToLogService(md)
 	if len(slsLogs) > 0 {
-		if err := s.client.SendLogs(slsLogs); err != nil {
-			errs = append(errs, err)
-		}
+		err = s.client.SendLogs(slsLogs)
 	}
-	return dropped, componenterror.CombineErrors(errs)
+	return err
 }

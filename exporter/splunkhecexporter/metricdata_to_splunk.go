@@ -39,7 +39,7 @@ const (
 	bucketSuffix = "_bucket"
 )
 
-func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) ([]*splunk.Event, int, error) {
+func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) ([]*splunk.Event, int) {
 	numDroppedTimeSeries := 0
 	_, dpCount := data.MetricAndDataPointCount()
 	splunkMetrics := make([]*splunk.Event, 0, dpCount)
@@ -65,12 +65,14 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 		if indexSet, isSet := attributes.Get(splunk.IndexLabel); isSet {
 			index = indexSet.StringVal()
 		}
-		attributes.ForEach(func(k string, v pdata.AttributeValue) {
+		attributes.Range(func(k string, v pdata.AttributeValue) bool {
 			commonFields[k] = tracetranslator.AttributeValueToString(v, false)
+			return true
 		})
 
-		rm.Resource().Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		rm.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 			commonFields[k] = tracetranslator.AttributeValueToString(v, false)
+			return true
 		})
 		ilms := rm.InstrumentationLibraryMetrics()
 		for ilmi := 0; ilmi < ilms.Len(); ilmi++ {
@@ -101,8 +103,8 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 						splunkMetrics = append(splunkMetrics, sm)
 					}
-				case pdata.MetricDataTypeDoubleHistogram:
-					pts := tm.DoubleHistogram().DataPoints()
+				case pdata.MetricDataTypeHistogram:
+					pts := tm.Histogram().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
 						bounds := dataPt.ExplicitBounds()
@@ -217,6 +219,37 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 						splunkMetrics = append(splunkMetrics, sm)
 					}
+				case pdata.MetricDataTypeSummary:
+					pts := tm.Summary().DataPoints()
+					for gi := 0; gi < pts.Len(); gi++ {
+						dataPt := pts.At(gi)
+						// first, add one event for sum, and one for count
+						{
+							fields := cloneMap(commonFields)
+							populateLabels(fields, dataPt.LabelsMap())
+							fields[metricFieldName+sumSuffix] = dataPt.Sum()
+							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
+							splunkMetrics = append(splunkMetrics, sm)
+						}
+						{
+							fields := cloneMap(commonFields)
+							populateLabels(fields, dataPt.LabelsMap())
+							fields[metricFieldName+countSuffix] = dataPt.Count()
+							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
+							splunkMetrics = append(splunkMetrics, sm)
+						}
+
+						// now create values for each quantile.
+						for bi := 0; bi < dataPt.QuantileValues().Len(); bi++ {
+							fields := cloneMap(commonFields)
+							populateLabels(fields, dataPt.LabelsMap())
+							dp := dataPt.QuantileValues().At(bi)
+							fields["qt"] = float64ToDimValue(dp.Quantile())
+							fields[metricFieldName+"_"+strconv.FormatFloat(dp.Quantile(), 'f', -1, 64)] = dp.Value()
+							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
+							splunkMetrics = append(splunkMetrics, sm)
+						}
+					}
 				case pdata.MetricDataTypeNone:
 					fallthrough
 				default:
@@ -229,10 +262,10 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 		}
 	}
 
-	return splunkMetrics, numDroppedTimeSeries, nil
+	return splunkMetrics, numDroppedTimeSeries
 }
 
-func createEvent(timestamp pdata.TimestampUnixNano, host string, source string, sourceType string, index string, fields map[string]interface{}) *splunk.Event {
+func createEvent(timestamp pdata.Timestamp, host string, source string, sourceType string, index string, fields map[string]interface{}) *splunk.Event {
 	return &splunk.Event{
 		Time:       timestampToSecondsWithMillisecondPrecision(timestamp),
 		Host:       host,
@@ -246,8 +279,9 @@ func createEvent(timestamp pdata.TimestampUnixNano, host string, source string, 
 }
 
 func populateLabels(fields map[string]interface{}, labelsMap pdata.StringMap) {
-	labelsMap.ForEach(func(k string, v string) {
+	labelsMap.Range(func(k string, v string) bool {
 		fields[k] = v
+		return true
 	})
 }
 
@@ -259,7 +293,7 @@ func cloneMap(fields map[string]interface{}) map[string]interface{} {
 	return newFields
 }
 
-func timestampToSecondsWithMillisecondPrecision(ts pdata.TimestampUnixNano) *float64 {
+func timestampToSecondsWithMillisecondPrecision(ts pdata.Timestamp) *float64 {
 	if ts == 0 {
 		// some telemetry sources send data with timestamps set to 0 by design, as their original target destinations
 		// (i.e. before Open Telemetry) are setup with the know-how on how to consume them. In this case,

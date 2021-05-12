@@ -61,7 +61,6 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 	metricsV3414 = append(metricsV3414, commonMetrics...)
 	metricsV3414 = append(metricsV3414, metadata.Metrics.ZookeeperFsyncThresholdExceeds.New())
 
-	localAddr := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
 		name                         string
 		expectedMetrics              []pdata.Metric
@@ -192,10 +191,12 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			localAddr := testutil.GetAvailableLocalAddress(t)
 			if !tt.mockZKConnectionErr {
-				go mockZKServer(t, localAddr, tt.mockedZKOutputSourceFilename)
+				ms := mockedServer{ready: make(chan bool, 1)}
+				go ms.mockZKServer(t, localAddr, tt.mockedZKOutputSourceFilename)
+				<-ms.ready
 			}
-			time.Sleep(100 * time.Millisecond)
 
 			cfg := &Config{
 				TCPAddr: confignet.TCPAddr{
@@ -243,8 +244,9 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			for i := 0; i < tt.expectedNumResourceMetrics; i++ {
 				resource := got.At(i).Resource()
 				require.Equal(t, len(tt.expectedResourceAttributes), resource.Attributes().Len())
-				resource.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+				resource.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 					require.Equal(t, tt.expectedResourceAttributes[k], v.StringVal())
+					return true
 				})
 
 				ilms := got.At(0).InstrumentationLibraryMetrics()
@@ -280,10 +282,16 @@ func assertDescriptorEqual(t *testing.T, expected pdata.Metric, actual pdata.Met
 	require.Equal(t, expected.DataType(), actual.DataType())
 }
 
-func mockZKServer(t *testing.T, endpoint string, filename string) {
+type mockedServer struct {
+	ready chan bool
+}
+
+func (ms *mockedServer) mockZKServer(t *testing.T, endpoint string, filename string) {
 	listener, err := net.Listen("tcp", endpoint)
 	require.NoError(t, err)
 	defer listener.Close()
+
+	ms.ready <- true
 
 	conn, err := listener.Accept()
 	require.NoError(t, err)

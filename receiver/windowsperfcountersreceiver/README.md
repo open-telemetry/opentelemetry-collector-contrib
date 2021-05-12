@@ -81,7 +81,7 @@ service:
 
 To report metrics in the desired output format, it's recommended you use this
 receiver with the [metrics transform
-processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/master/processor/metricstransformprocessor).
+processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor).
 
 e.g. To output the `Memory/Committed Bytes` counter as a metric with the name
 `system.memory.usage`:

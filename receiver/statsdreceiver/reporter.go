@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opencensus.io/trace"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
@@ -27,18 +28,16 @@ import (
 // reporter struct implements the transport.Reporter interface to give consistent
 // observability per Collector metric observability package.
 type reporter struct {
-	name          string
-	spanName      string
+	id            config.ComponentID
 	logger        *zap.Logger
 	sugaredLogger *zap.SugaredLogger // Used for generic debug logging
 }
 
 var _ transport.Reporter = (*reporter)(nil)
 
-func newReporter(receiverName string, logger *zap.Logger) transport.Reporter {
+func newReporter(receiverID config.ComponentID, logger *zap.Logger) transport.Reporter {
 	return &reporter{
-		name:          receiverName,
-		spanName:      receiverName + ".receiver",
+		id:            receiverID,
 		logger:        logger,
 		sugaredLogger: logger.Sugar(),
 	}
@@ -49,8 +48,8 @@ func newReporter(receiverName string, logger *zap.Logger) transport.Reporter {
 // reporter instance. The caller code should include a call to end the
 // returned span.
 func (r *reporter) OnDataReceived(ctx context.Context) context.Context {
-	ctx = obsreport.ReceiverContext(ctx, r.name, "tcp")
-	return obsreport.StartMetricsReceiveOp(ctx, r.name, "tcp")
+	ctx = obsreport.ReceiverContext(ctx, r.id, "tcp")
+	return obsreport.StartMetricsReceiveOp(ctx, r.id, "tcp")
 }
 
 // OnTranslationError is used to report a translation error from original
@@ -61,10 +60,7 @@ func (r *reporter) OnTranslationError(ctx context.Context, err error) {
 		return
 	}
 
-	r.logger.Debug(
-		"StatsD translation error",
-		zap.String("receiver", r.name),
-		zap.Error(err))
+	r.logger.Debug("StatsD translation error", zap.Error(err))
 
 	// Using annotations since multiple translation errors can happen in the
 	// same client message/request. The time itself is not relevant.
@@ -87,7 +83,6 @@ func (r *reporter) OnMetricsProcessed(
 	if err != nil {
 		r.logger.Debug(
 			"StatsD receiver failed to push metrics into pipeline",
-			zap.String("receiver", r.name),
 			zap.Int("numReceivedMessages", numReceivedMessages),
 			zap.Error(err))
 

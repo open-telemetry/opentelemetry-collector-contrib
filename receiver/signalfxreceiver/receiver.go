@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -63,8 +62,7 @@ const (
 )
 
 var (
-	errNilNextConsumer = errors.New("nil nextConsumer")
-	errEmptyEndpoint   = errors.New("empty endpoint")
+	errEmptyEndpoint = errors.New("empty endpoint")
 
 	okRespBody               = initJSONResponse(responseOK)
 	invalidMethodRespBody    = initJSONResponse(responseInvalidMethod)
@@ -83,12 +81,9 @@ type sfxReceiver struct {
 	sync.Mutex
 	logger          *zap.Logger
 	config          *Config
-	metricsConsumer consumer.MetricsConsumer
-	logsConsumer    consumer.LogsConsumer
+	metricsConsumer consumer.Metrics
+	logsConsumer    consumer.Logs
 	server          *http.Server
-
-	startOnce sync.Once
-	stopOnce  sync.Once
 }
 
 var _ component.MetricsReceiver = (*sfxReceiver)(nil)
@@ -106,21 +101,21 @@ func newReceiver(
 	return r
 }
 
-func (r *sfxReceiver) RegisterMetricsConsumer(mc consumer.MetricsConsumer) {
+func (r *sfxReceiver) RegisterMetricsConsumer(mc consumer.Metrics) {
 	r.Lock()
 	defer r.Unlock()
 
 	r.metricsConsumer = mc
 }
 
-func (r *sfxReceiver) RegisterLogsConsumer(lc consumer.LogsConsumer) {
+func (r *sfxReceiver) RegisterLogsConsumer(lc consumer.Logs) {
 	r.Lock()
 	defer r.Unlock()
 
 	r.logsConsumer = lc
 }
 
-// StartMetricsReception tells the receiver to start its processing.
+// Start tells the receiver to start its processing.
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
 func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
@@ -128,53 +123,41 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 	defer r.Unlock()
 
 	if r.metricsConsumer == nil && r.logsConsumer == nil {
-		return errNilNextConsumer
+		return componenterror.ErrNilNextConsumer
 	}
 
-	err := componenterror.ErrAlreadyStarted
-	r.startOnce.Do(func() {
-		err = nil
+	// set up the listener
+	ln, err := r.config.HTTPServerSettings.ToListener()
+	if err != nil {
+		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
+	}
 
-		var ln net.Listener
-		// set up the listener
-		ln, err = r.config.HTTPServerSettings.ToListener()
-		if err != nil {
-			err = fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
-			return
+	mx := mux.NewRouter()
+	mx.HandleFunc("/v2/datapoint", r.handleDatapointReq)
+	mx.HandleFunc("/v2/event", r.handleEventReq)
+
+	r.server = r.config.HTTPServerSettings.ToServer(mx)
+
+	// TODO: Evaluate what properties should be configurable, for now
+	//		set some hard-coded values.
+	r.server.ReadHeaderTimeout = defaultServerTimeout
+	r.server.WriteTimeout = defaultServerTimeout
+
+	go func() {
+		if errHTTP := r.server.Serve(ln); errHTTP != http.ErrServerClosed {
+			host.ReportFatalError(errHTTP)
 		}
-
-		mx := mux.NewRouter()
-		mx.HandleFunc("/v2/datapoint", r.handleDatapointReq)
-		mx.HandleFunc("/v2/event", r.handleEventReq)
-
-		r.server = r.config.HTTPServerSettings.ToServer(mx)
-
-		// TODO: Evaluate what properties should be configurable, for now
-		//		set some hard-coded values.
-		r.server.ReadHeaderTimeout = defaultServerTimeout
-		r.server.WriteTimeout = defaultServerTimeout
-
-		go func() {
-			if errHTTP := r.server.Serve(ln); errHTTP != nil {
-				host.ReportFatalError(errHTTP)
-			}
-		}()
-	})
-
-	return err
+	}()
+	return nil
 }
 
-// StopMetricsReception tells the receiver that should stop reception,
+// Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 func (r *sfxReceiver) Shutdown(context.Context) error {
 	r.Lock()
 	defer r.Unlock()
 
-	err := componenterror.ErrAlreadyStopped
-	r.stopOnce.Do(func() {
-		err = r.server.Close()
-	})
-	return err
+	return r.server.Close()
 }
 
 func (r *sfxReceiver) readBody(ctx context.Context, resp http.ResponseWriter, req *http.Request) ([]byte, bool) {
@@ -228,8 +211,8 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 		transport = "https"
 	}
 
-	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), transport)
-	ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.Name(), transport)
+	ctx := obsreport.ReceiverContext(req.Context(), r.config.ID(), transport)
+	ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.ID(), transport)
 
 	if r.metricsConsumer == nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errMetricsNotConfigured, nil)
@@ -281,8 +264,8 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 		transport = "https"
 	}
 
-	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), transport)
-	ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.Name(), transport)
+	ctx := obsreport.ReceiverContext(req.Context(), r.config.ID(), transport)
+	ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.ID(), transport)
 
 	if r.logsConsumer == nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errLogsNotConfigured, nil)
@@ -307,13 +290,8 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 	}
 
 	ld := pdata.NewLogs()
-	rls := ld.ResourceLogs()
-	rls.Resize(1)
-	rl := rls.At(0)
-
-	ills := rl.InstrumentationLibraryLogs()
-	ills.Resize(1)
-	ill := ills.At(0)
+	rl := ld.ResourceLogs().AppendEmpty()
+	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
 	signalFxV2EventsToLogRecords(msg.Events, ill.Logs())
 
 	if r.config.AccessTokenPassthrough {
@@ -347,7 +325,7 @@ func (r *sfxReceiver) failRequest(
 			r.logger.Warn(
 				"Error writing HTTP response message",
 				zap.Error(writeErr),
-				zap.String("receiver", r.config.Name()))
+				zap.String("receiver", r.config.ID().String()))
 		}
 	}
 
@@ -375,7 +353,7 @@ func (r *sfxReceiver) failRequest(
 		zap.Int("http_status_code", httpStatusCode),
 		zap.String("msg", msg),
 		zap.Error(err), // It handles nil error
-		zap.String("receiver", r.config.Name()))
+	)
 }
 
 func initJSONResponse(s string) []byte {

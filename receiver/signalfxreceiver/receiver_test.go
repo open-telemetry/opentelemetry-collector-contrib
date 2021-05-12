@@ -18,13 +18,12 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"runtime"
@@ -37,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
@@ -53,7 +53,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 	type args struct {
 		config       Config
-		nextConsumer consumer.MetricsConsumer
+		nextConsumer consumer.Metrics
 	}
 	tests := []struct {
 		name         string
@@ -65,13 +65,13 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			args: args{
 				config: *defaultConfig,
 			},
-			wantStartErr: errNilNextConsumer,
+			wantStartErr: componenterror.ErrNilNextConsumer,
 		},
 		{
 			name: "default_endpoint",
 			args: args{
 				config:       *defaultConfig,
-				nextConsumer: consumertest.NewMetricsNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 		},
 		{
@@ -82,7 +82,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 						Endpoint: "localhost:1234",
 					},
 				},
-				nextConsumer: consumertest.NewMetricsNop(),
+				nextConsumer: consumertest.NewNop(),
 			},
 		},
 	}
@@ -110,66 +110,59 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 	runtime.Gosched()
 	defer r.Shutdown(context.Background())
-	require.Equal(t, componenterror.ErrAlreadyStarted, r.Start(context.Background(), componenttest.NewNopHost()))
 
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
-	ts := pdata.TimestampUnixNano(time.Unix(unixSecs, unixNSecs).UnixNano())
+	ts := pdata.TimestampFromTime(time.Unix(unixSecs, unixNSecs))
 
-	doubleVal := 1234.5678
-	doublePt := pdata.NewDoubleDataPoint()
-	doublePt.SetTimestamp(ts)
-	doublePt.SetValue(doubleVal)
-	doublePt.LabelsMap().InitEmptyWithCapacity(0)
-
-	int64Val := int64(123)
-	int64Pt := pdata.NewIntDataPoint()
-	int64Pt.SetTimestamp(ts)
-	int64Pt.SetValue(int64Val)
-	int64Pt.LabelsMap().InitEmptyWithCapacity(0)
+	const doubleVal = 1234.5678
+	const int64Val = int64(123)
 
 	want := pdata.NewMetrics()
-	rms := want.ResourceMetrics()
-	rms.Resize(1)
-	rm := rms.At(0)
-
-	rm.InstrumentationLibraryMetrics().Resize(1)
-	ilm := rm.InstrumentationLibraryMetrics().At(0)
-	ilm.Metrics().Resize(4)
+	ilm := want.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 
 	{
-		m := ilm.Metrics().At(0)
+		m := ilm.Metrics().AppendEmpty()
 		m.SetName("gauge_double_with_dims")
 		m.SetDataType(pdata.MetricDataTypeDoubleGauge)
-		m.DoubleGauge().DataPoints().Append(doublePt)
+		doublePt := m.DoubleGauge().DataPoints().AppendEmpty()
+		doublePt.SetTimestamp(ts)
+		doublePt.SetValue(doubleVal)
 	}
 	{
-		m := ilm.Metrics().At(1)
+		m := ilm.Metrics().AppendEmpty()
 		m.SetName("gauge_int_with_dims")
 		m.SetDataType(pdata.MetricDataTypeIntGauge)
-		m.IntGauge().DataPoints().Append(int64Pt)
+		int64Pt := m.IntGauge().DataPoints().AppendEmpty()
+		int64Pt.SetTimestamp(ts)
+		int64Pt.SetValue(int64Val)
 	}
 	{
-		m := ilm.Metrics().At(2)
+		m := ilm.Metrics().AppendEmpty()
 		m.SetName("cumulative_double_with_dims")
 		m.SetDataType(pdata.MetricDataTypeDoubleSum)
 		m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		m.DoubleSum().SetIsMonotonic(true)
-		m.DoubleSum().DataPoints().Append(doublePt)
+		doublePt := m.DoubleSum().DataPoints().AppendEmpty()
+		doublePt.SetTimestamp(ts)
+		doublePt.SetValue(doubleVal)
 	}
 	{
-		m := ilm.Metrics().At(3)
+		m := ilm.Metrics().AppendEmpty()
 		m.SetName("cumulative_int_with_dims")
 		m.SetDataType(pdata.MetricDataTypeIntSum)
 		m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 		m.IntSum().SetIsMonotonic(true)
-		m.IntSum().DataPoints().Append(int64Pt)
+		int64Pt := m.IntSum().DataPoints().AppendEmpty()
+		int64Pt.SetTimestamp(ts)
+		int64Pt.SetValue(int64Val)
 	}
 
 	expCfg := &signalfxexporter.Config{
-		IngestURL:   "http://" + addr + "/v2/datapoint",
-		APIURL:      "http://localhost",
-		AccessToken: "access_token",
+		ExporterSettings: config.NewExporterSettings(config.NewID("signalfx")),
+		IngestURL:        "http://" + addr + "/v2/datapoint",
+		APIURL:           "http://localhost",
+		AccessToken:      "access_token",
 	}
 	exp, err := signalfxexporter.NewFactory().CreateMetricsExporter(
 		context.Background(),
@@ -177,7 +170,14 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		expCfg)
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, testutil.WaitForPort(t, port))
+	assert.Eventually(t, func() bool {
+		conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
+		if err == nil && conn != nil {
+			conn.Close()
+			return true
+		}
+		return false
+	}, 10*time.Second, 5*time.Millisecond, "failed to wait for the port to be open")
 	defer exp.Shutdown(context.Background())
 	require.NoError(t, exp.ConsumeMetrics(context.Background(), want))
 
@@ -186,9 +186,6 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	got := mds[0]
 	require.Equal(t, 1, got.ResourceMetrics().Len())
 	assert.Equal(t, want, got)
-
-	assert.NoError(t, r.Shutdown(context.Background()))
-	assert.Equal(t, componenterror.ErrAlreadyStopped, r.Shutdown(context.Background()))
 }
 
 func Test_sfxReceiver_handleReq(t *testing.T) {
@@ -371,7 +368,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 
 	currentTime := time.Now().Unix() * 1e3
-	sFxMsg := buildSFxEventMsg(currentTime, 13, 3)
+	sFxMsg := buildSFxEventMsg(currentTime, 3)
 
 	tests := []struct {
 		name             string
@@ -547,8 +544,8 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	cfg.Endpoint = addr
 	cfg.HTTPServerSettings.TLSSetting = &configtls.TLSServerSetting{
 		TLSSetting: configtls.TLSSetting{
-			CertFile: "./testdata/testcert.crt",
-			KeyFile:  "./testdata/testkey.key",
+			CertFile: "./testdata/server.crt",
+			KeyFile:  "./testdata/server.key",
 		},
 	}
 	sink := new(consumertest.MetricsSink)
@@ -556,36 +553,23 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	r.RegisterMetricsConsumer(sink)
 	defer r.Shutdown(context.Background())
 
-	// NewNopHost swallows errors so using NewErrorWaitingHost to catch any potential errors starting the
-	// receiver.
-	mh := componenttest.NewErrorWaitingHost()
+	mh := newAssertNoErrorHost(t)
 	require.NoError(t, r.Start(context.Background(), mh), "should not have failed to start metric reception")
 
 	// If there are errors reported through host.ReportFatalError() this will retrieve it.
-	receivedError, receivedErr := mh.WaitForFatalError(500 * time.Millisecond)
-	require.NoError(t, receivedErr, "should not have failed to start metric reception")
-	require.False(t, receivedError)
+	<-time.After(500 * time.Millisecond)
 	t.Log("Metric Reception Started")
 
 	msec := time.Now().Unix() * 1e3
 
 	want := pdata.NewMetrics()
-	want.ResourceMetrics().Resize(1)
-	rm := want.ResourceMetrics().At(0)
-	rm.InstrumentationLibraryMetrics().Resize(1)
-	ilm := rm.InstrumentationLibraryMetrics().At(0)
-	ms := ilm.Metrics()
-
-	ms.Resize(1)
-	m := ms.At(0)
+	m := want.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
 
 	m.SetDataType(pdata.MetricDataTypeIntGauge)
 	m.SetName("single")
 	dps := m.IntGauge().DataPoints()
-
-	dps.Resize(1)
-	dp := dps.At(0)
-	dp.SetTimestamp(pdata.TimestampUnixNano(msec * 1e6))
+	dp := dps.AppendEmpty()
+	dp.SetTimestamp(pdata.Timestamp(msec * 1e6))
 	dp.SetValue(13)
 
 	dp.LabelsMap().InitFromMap(map[string]string{
@@ -607,16 +591,19 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	require.NoErrorf(t, err, "should have no errors with new request: %v", err)
 	req.Header.Set("Content-Type", "application/x-protobuf")
 
-	caCert, err := ioutil.ReadFile("./testdata/testcert.crt")
-	require.NoErrorf(t, err, "failed to load certificate: %v", err)
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
-
+	tlscs := configtls.TLSClientSetting{
+		TLSSetting: configtls.TLSSetting{
+			CAFile:   "./testdata/ca.crt",
+			CertFile: "./testdata/client.crt",
+			KeyFile:  "./testdata/client.key",
+		},
+		ServerName: "localhost",
+	}
+	tls, errTLS := tlscs.LoadTLSConfig()
+	assert.NoError(t, errTLS)
 	client := &http.Client{
 		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				RootCAs: caCertPool,
-			},
+			TLSClientConfig: tls,
 		},
 	}
 
@@ -749,7 +736,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 			rcv.RegisterLogsConsumer(sink)
 
 			currentTime := time.Now().Unix() * 1e3
-			sFxMsg := buildSFxEventMsg(currentTime, 13, 3)
+			sFxMsg := buildSFxEventMsg(currentTime, 3)
 			msgBytes, _ := sFxMsg.Marshal()
 			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
 			req.Header.Set("Content-Type", "application/x-protobuf")
@@ -803,7 +790,7 @@ func buildSFxDatapointMsg(time int64, value int64, dimensions uint) *sfxpb.DataP
 	}
 }
 
-func buildSFxEventMsg(time int64, value int64, dimensions uint) *sfxpb.EventUploadMessage {
+func buildSFxEventMsg(time int64, dimensions uint) *sfxpb.EventUploadMessage {
 	return &sfxpb.EventUploadMessage{
 		Events: []*sfxpb.Event{
 			{
@@ -834,4 +821,22 @@ func (b badReqBody) Read(p []byte) (n int, err error) {
 
 func (b badReqBody) Close() error {
 	return nil
+}
+
+// assertNoErrorHost implements a component.Host that asserts that there were no errors.
+type assertNoErrorHost struct {
+	component.Host
+	*testing.T
+}
+
+// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
+func newAssertNoErrorHost(t *testing.T) component.Host {
+	return &assertNoErrorHost{
+		Host: componenttest.NewNopHost(),
+		T:    t,
+	}
+}
+
+func (aneh *assertNoErrorHost) ReportFatalError(err error) {
+	assert.NoError(aneh, err)
 }

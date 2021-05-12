@@ -22,7 +22,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -31,8 +31,25 @@ var (
 	unknownProcess = &jaeger.Process{ServiceName: "unknown-service-name"}
 )
 
+const (
+	annotationDescriptionKey = "description"
+
+	messageEventIDKey               = "message.id"
+	messageEventTypeKey             = "message.type"
+	messageEventCompressedSizeKey   = "message.compressed_size"
+	messageEventUncompressedSizeKey = "message.uncompressed_size"
+)
+
+// traceData helper struct for conversion.
+// TODO: Remove this when exporter translates directly to pdata.
+type traceData struct {
+	Node     *commonpb.Node
+	Resource *resourcepb.Resource
+	Spans    []*tracepb.Span
+}
+
 // oCProtoToJaegerThrift translates OpenCensus trace data into the Jaeger Thrift format.
-func oCProtoToJaegerThrift(td consumerdata.TraceData) (*jaeger.Batch, error) {
+func oCProtoToJaegerThrift(td traceData) (*jaeger.Batch, error) {
 	jSpans, err := ocSpansToJaegerSpans(td.Spans)
 	if err != nil {
 		return nil, err
@@ -216,12 +233,12 @@ func ocSpansToJaegerSpans(ocSpans []*tracepb.Span) ([]*jaeger.Span, error) {
 		}
 
 		// Only add the "span.kind" tag if not set in the OC span attributes.
-		if !tracetranslator.OCAttributeKeyExist(ocSpan.Attributes, tracetranslator.TagSpanKind) {
+		if !ocAttributeKeyExist(ocSpan.Attributes, tracetranslator.TagSpanKind) {
 			jSpan.Tags = appendJaegerTagFromOCSpanKind(jSpan.Tags, ocSpan.Kind)
 		}
 		// Only add status tags if neither status.code and status.message are set in the OC span attributes.
-		if !tracetranslator.OCAttributeKeyExist(ocSpan.Attributes, tracetranslator.TagStatusCode) &&
-			!tracetranslator.OCAttributeKeyExist(ocSpan.Attributes, tracetranslator.TagStatusMsg) {
+		if !ocAttributeKeyExist(ocSpan.Attributes, tracetranslator.TagStatusCode) &&
+			!ocAttributeKeyExist(ocSpan.Attributes, tracetranslator.TagStatusMsg) {
 			jSpan.Tags = appendJaegerThriftTagFromOCStatus(jSpan.Tags, ocSpan.Status)
 		}
 		jSpans = append(jSpans, jSpan)
@@ -359,7 +376,7 @@ func ocAnnotationToJagerTags(annotation *tracepb.Span_TimeEvent_Annotation) []*j
 	desc := truncableStringToStr(annotation.Description)
 	if desc != "" {
 		jDescTag := &jaeger.Tag{
-			Key:   tracetranslator.AnnotationDescriptionKey,
+			Key:   annotationDescriptionKey,
 			VStr:  &desc,
 			VType: jaeger.TagType_STRING,
 		}
@@ -376,14 +393,14 @@ func ocMessageEventToJaegerTags(msgEvent *tracepb.Span_TimeEvent_MessageEvent) [
 
 	jID := int64(msgEvent.Id)
 	idTag := &jaeger.Tag{
-		Key:   tracetranslator.MessageEventIDKey,
+		Key:   messageEventIDKey,
 		VLong: &jID,
 		VType: jaeger.TagType_LONG,
 	}
 
 	msgTypeStr := msgEvent.Type.String()
 	msgType := &jaeger.Tag{
-		Key:   tracetranslator.MessageEventTypeKey,
+		Key:   messageEventTypeKey,
 		VStr:  &msgTypeStr,
 		VType: jaeger.TagType_STRING,
 	}
@@ -399,14 +416,14 @@ func ocMessageEventToJaegerTags(msgEvent *tracepb.Span_TimeEvent_MessageEvent) [
 	// seems a good compromise since the risk of such large values are small.
 	compSize := int64(msgEvent.CompressedSize)
 	compressedSize := &jaeger.Tag{
-		Key:   tracetranslator.MessageEventCompressedSizeKey,
+		Key:   messageEventCompressedSizeKey,
 		VLong: &compSize,
 		VType: jaeger.TagType_LONG,
 	}
 
 	uncompSize := int64(msgEvent.UncompressedSize)
 	uncompressedSize := &jaeger.Tag{
-		Key:   tracetranslator.MessageEventUncompressedSizeKey,
+		Key:   messageEventUncompressedSizeKey,
 		VLong: &uncompSize,
 		VType: jaeger.TagType_LONG,
 	}
@@ -479,8 +496,8 @@ func traceIDToInt64(traceID []byte) (int64, int64, error) {
 	}
 	tid := [16]byte{}
 	copy(tid[:], traceID)
-	hi, lo := tracetranslator.BytesToInt64TraceID(tid)
-	return hi, lo, nil
+	hi, lo := tracetranslator.TraceIDToUInt64Pair(pdata.NewTraceID(tid))
+	return int64(hi), int64(lo), nil
 }
 
 func spanIDToInt64(spanID []byte) (int64, error) {
@@ -489,5 +506,15 @@ func spanIDToInt64(spanID []byte) (int64, error) {
 	}
 	sid := [8]byte{}
 	copy(sid[:], spanID)
-	return tracetranslator.BytesToInt64SpanID(sid), nil
+	return int64(tracetranslator.SpanIDToUInt64(pdata.NewSpanID(sid))), nil
+}
+
+// ocAttributeKeyExist returns true if a key in attribute of an OC Span exists.
+// It returns false, if attributes is nil, the map itself is nil or the key wasn't found.
+func ocAttributeKeyExist(ocAttributes *tracepb.Span_Attributes, key string) bool {
+	if ocAttributes == nil || ocAttributes.AttributeMap == nil {
+		return false
+	}
+	_, foundKey := ocAttributes.AttributeMap[key]
+	return foundKey
 }

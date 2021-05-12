@@ -17,10 +17,11 @@ package groupbyattrsprocessor
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
@@ -28,38 +29,39 @@ import (
 
 const (
 	// typeStr is the value of "type" for this processor in the configuration.
-	typeStr configmodels.Type = "groupbyattrs"
+	typeStr config.Type = "groupbyattrs"
 )
 
 var (
 	errAtLeastOneAttributeNeeded = fmt.Errorf("option 'groupByKeys' must include at least one non-empty attribute name")
-	processorCapabilities        = component.ProcessorCapabilities{MutatesConsumedData: true}
+	consumerCapabilities         = consumer.Capabilities{MutatesData: true}
 )
+
+var once sync.Once
 
 // NewFactory returns a new factory for the Filter processor.
 func NewFactory() component.ProcessorFactory {
-	// TODO: as with other -contrib factories registering metrics, this is causing the error being ignored
-	_ = view.Register(MetricViews()...)
+	once.Do(func() {
+		// TODO: as with other -contrib factories registering metrics, this is causing the error being ignored
+		_ = view.Register(MetricViews()...)
+	})
 
 	return processorhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTraceProcessor),
+		processorhelper.WithTraces(createTracesProcessor),
 		processorhelper.WithLogs(createLogsProcessor))
 }
 
 // createDefaultConfig creates the default configuration for the processor.
-func createDefaultConfig() configmodels.Processor {
+func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: string(typeStr),
-		},
-		GroupByKeys: []string{},
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		GroupByKeys:       []string{},
 	}
 }
 
-func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) (*groupbyattrsprocessor, error) {
+func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) (*groupByAttrsProcessor, error) {
 	var nonEmptyAttributes []string
 	presentAttributes := make(map[string]struct{})
 
@@ -79,15 +81,15 @@ func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) (*grou
 		return nil, errAtLeastOneAttributeNeeded
 	}
 
-	return &groupbyattrsprocessor{logger: logger, groupByKeys: nonEmptyAttributes}, nil
+	return &groupByAttrsProcessor{logger: logger, groupByKeys: nonEmptyAttributes}, nil
 }
 
-// createTraceProcessor creates a trace processor based on this config.
-func createTraceProcessor(
+// createTracesProcessor creates a trace processor based on this config.
+func createTracesProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.TracesConsumer) (component.TracesProcessor, error) {
+	cfg config.Processor,
+	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 
 	oCfg := cfg.(*Config)
 	gap, err := createGroupByAttrsProcessor(params.Logger, oCfg.GroupByKeys)
@@ -95,19 +97,19 @@ func createTraceProcessor(
 		return nil, err
 	}
 
-	return processorhelper.NewTraceProcessor(
+	return processorhelper.NewTracesProcessor(
 		cfg,
 		nextConsumer,
 		gap,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(consumerCapabilities))
 }
 
 // createLogsProcessor creates a metrics processor based on this config.
 func createLogsProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.LogsConsumer) (component.LogsProcessor, error) {
+	cfg config.Processor,
+	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 
 	oCfg := cfg.(*Config)
 	gap, err := createGroupByAttrsProcessor(params.Logger, oCfg.GroupByKeys)
@@ -119,5 +121,5 @@ func createLogsProcessor(
 		cfg,
 		nextConsumer,
 		gap,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(consumerCapabilities))
 }

@@ -16,11 +16,13 @@ package alibabacloudlogserviceexporter
 
 import (
 	"context"
+	"path"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
@@ -28,42 +30,52 @@ import (
 
 func createSimpleLogData(numberOfLogs int) pdata.Logs {
 	logs := pdata.NewLogs()
-	logs.ResourceLogs().Resize(2)
-	rl := logs.ResourceLogs().At(0)
-	rl.InstrumentationLibraryLogs().Resize(2)
-	ill := rl.InstrumentationLibraryLogs().At(0)
+	logs.ResourceLogs().AppendEmpty() // Add an empty ResourceLogs
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.InstrumentationLibraryLogs().AppendEmpty() // Add an empty InstrumentationLibraryLogs
+	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
 
 	for i := 0; i < numberOfLogs; i++ {
-		ts := pdata.TimestampUnixNano(int64(i) * time.Millisecond.Nanoseconds())
-		logRecord := pdata.NewLogRecord()
+		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
+		logRecord := ill.Logs().AppendEmpty()
 		logRecord.Body().SetStringVal("mylog")
 		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 		logRecord.Attributes().InsertString("my-label", "myapp-type")
 		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)
-
-		ill.Logs().Append(logRecord)
 	}
-	nilRecord := pdata.NewLogRecord()
-	ill.Logs().Append(nilRecord)
+	ill.Logs().AppendEmpty()
 
 	return logs
 }
 
 func TestNewLogsExporter(t *testing.T) {
 	got, err := newLogsExporter(zap.NewNop(), &Config{
-		Endpoint: "us-west-1.log.aliyuncs.com",
-		Project:  "demo-project",
-		Logstore: "demo-logstore",
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		Endpoint:         "us-west-1.log.aliyuncs.com",
+		Project:          "demo-project",
+		Logstore:         "demo-logstore",
 	})
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 
 	// This will put trace data to send buffer and return success.
 	err = got.ConsumeLogs(context.Background(), createSimpleLogData(3))
-	// a
-	assert.Error(t, err)
+	assert.NoError(t, err)
+	time.Sleep(time.Second * 4)
+}
+
+func TestSTSTokenExporter(t *testing.T) {
+	got, err := newLogsExporter(zap.NewNop(), &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		Endpoint:         "us-west-1.log.aliyuncs.com",
+		Project:          "demo-project",
+		Logstore:         "demo-logstore",
+		TokenFilePath:    path.Join(".", "testdata", "config.yaml"),
+	})
+	assert.NoError(t, err)
+	require.NotNil(t, got)
 }
 
 func TestNewFailsWithEmptyLogsExporterName(t *testing.T) {

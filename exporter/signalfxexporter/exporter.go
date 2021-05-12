@@ -32,34 +32,34 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 // TODO: Find a place for this to be shared.
 type baseMetricsExporter struct {
 	component.Component
-	consumer.MetricsConsumer
+	consumer.Metrics
 }
 
 // TODO: Find a place for this to be shared.
 type baseLogsExporter struct {
 	component.Component
-	consumer.LogsConsumer
+	consumer.Logs
 }
 
 type signalfMetadataExporter struct {
 	component.MetricsExporter
-	pushMetadata func(metadata []*metrics.MetadataUpdate) error
+	pushMetadata func(metadata []*metadata.MetadataUpdate) error
 }
 
-func (sme *signalfMetadataExporter) ConsumeMetadata(metadata []*metrics.MetadataUpdate) error {
+func (sme *signalfMetadataExporter) ConsumeMetadata(metadata []*metadata.MetadataUpdate) error {
 	return sme.pushMetadata(metadata)
 }
 
 type signalfxExporter struct {
 	logger             *zap.Logger
 	pushMetricsData    func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
-	pushMetadata       func(metadata []*metrics.MetadataUpdate) error
+	pushMetadata       func(metadata []*metadata.MetadataUpdate) error
 	pushLogsData       func(ctx context.Context, ld pdata.Logs) (droppedLogRecords int, err error)
 	hostMetadataSyncer *hostmetadata.Syncer
 }
@@ -85,10 +85,15 @@ func newSignalFxExporter(
 	options, err := config.getOptionsFromConfig()
 	if err != nil {
 		return nil,
-			fmt.Errorf("failed to process %q config: %v", config.Name(), err)
+			fmt.Errorf("failed to process %q config: %v", config.ID().String(), err)
 	}
 
 	headers := buildHeaders(config)
+
+	converter, err := translation.NewMetricsConverter(logger, options.metricTranslator, config.ExcludeMetrics, config.IncludeMetrics, config.NonAlphanumericDimensionChars)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create metric converter: %v", err)
+	}
 
 	dpClient := &sfxDPClient{
 		sfxClientBase: sfxClientBase{
@@ -103,7 +108,7 @@ func newSignalFxExporter(
 		},
 		logger:                 logger,
 		accessTokenPassthrough: config.AccessTokenPassthrough,
-		converter:              translation.NewMetricsConverter(logger, options.metricTranslator),
+		converter:              converter,
 	}
 
 	dimClient := dimensions.NewDimensionClient(
@@ -120,7 +125,7 @@ func newSignalFxExporter(
 			// buffer a fixed number of updates. Might also be a good candidate
 			// to make configurable.
 			PropertiesMaxBuffered: 10000,
-			MetricTranslator:      options.metricTranslator,
+			MetricsConverter:      *converter,
 		})
 	dimClient.Start()
 
@@ -151,7 +156,7 @@ func newEventExporter(config *Config, logger *zap.Logger) (*signalfxExporter, er
 	options, err := config.getOptionsFromConfig()
 	if err != nil {
 		return nil,
-			fmt.Errorf("failed to process %q config: %v", config.Name(), err)
+			fmt.Errorf("failed to process %q config: %v", config.ID().String(), err)
 	}
 
 	headers := buildHeaders(config)
@@ -177,14 +182,15 @@ func newEventExporter(config *Config, logger *zap.Logger) (*signalfxExporter, er
 	}, nil
 }
 
-func (se *signalfxExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
-	numDroppedTimeSeries, err := se.pushMetricsData(ctx, md)
+func (se *signalfxExporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
+	_, err := se.pushMetricsData(ctx, md)
 	if err == nil && se.hostMetadataSyncer != nil {
 		se.hostMetadataSyncer.Sync(md)
 	}
-	return numDroppedTimeSeries, err
+	return err
 }
 
-func (se *signalfxExporter) pushLogs(ctx context.Context, ld pdata.Logs) (int, error) {
-	return se.pushLogsData(ctx, ld)
+func (se *signalfxExporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
+	_, err := se.pushLogsData(ctx, ld)
+	return err
 }

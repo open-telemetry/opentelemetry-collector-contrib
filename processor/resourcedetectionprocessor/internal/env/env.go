@@ -35,13 +35,19 @@ import (
 const TypeStr = "env"
 
 // Environment variable used by "env" to decode a resource.
-const envVar = "OTEL_RESOURCE"
+const envVar = "OTEL_RESOURCE_ATTRIBUTES"
+
+// Deprecated environment variable used by "env" to decode a resource.
+// Specification states to use OTEL_RESOURCE_ATTRIBUTES however to avoid
+// breaking existing usage, maintain support for OTEL_RESOURCE
+// https://github.com/open-telemetry/opentelemetry-specification/blob/1afab39e5658f807315abf2f3256809293bfd421/specification/resource/sdk.md#specifying-resource-information-via-an-environment-variable
+const deprecatedEnvVar = "OTEL_RESOURCE"
 
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct{}
 
-func NewDetector(component.ProcessorCreateParams) (internal.Detector, error) {
+func NewDetector(component.ProcessorCreateParams, internal.DetectorConfig) (internal.Detector, error) {
 	return &Detector{}, nil
 }
 
@@ -50,12 +56,15 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 
 	labels := strings.TrimSpace(os.Getenv(envVar))
 	if labels == "" {
-		return res, nil
+		labels = strings.TrimSpace(os.Getenv(deprecatedEnvVar))
+		if labels == "" {
+			return res, nil
+		}
 	}
 
 	err := initializeAttributeMap(res.Attributes(), labels)
 	if err != nil {
-		res.Attributes().InitEmptyWithCapacity(0)
+		res.Attributes().Clear()
 		return res, err
 	}
 

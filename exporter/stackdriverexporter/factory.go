@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright 2021, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,63 +17,60 @@ package stackdriverexporter
 import (
 	"context"
 	"sync"
-	"time"
 
-	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/config"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 )
+
+type factory struct {
+	component.ExporterFactory
+}
 
 const (
 	// The value of "type" key in configuration.
-	typeStr        = "stackdriver"
-	defaultTimeout = 12 * time.Second // Consistent with Cloud Monitoring's timeout
+	typeVal = config.Type("stackdriver")
 )
 
 var once sync.Once
 
 // NewFactory creates a factory for the stackdriver exporter
 func NewFactory() component.ExporterFactory {
-	// register view for self-observability
+	return &factory{ExporterFactory: googlecloudexporter.NewFactory()}
+}
+
+func logDeprecation(logger *zap.Logger) {
 	once.Do(func() {
-		view.Register(viewPointCount)
+		logger.Warn("stackdriver exporter is deprecated. Use googlecloudexporter instead.")
 	})
-
-	return exporterhelper.NewFactory(
-		typeStr,
-		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter),
-		exporterhelper.WithMetrics(createMetricsExporter),
-	)
 }
 
-// createDefaultConfig creates the default configuration for exporter.
-func createDefaultConfig() configmodels.Exporter {
-	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
-		UserAgent:       "opentelemetry-collector-contrib {{version}}",
-	}
+func (f *factory) Type() config.Type {
+	return typeVal
 }
 
-// createTraceExporter creates a trace exporter based on this config.
-func createTraceExporter(
-	_ context.Context,
+func (f *factory) CreateDefaultConfig() config.Exporter {
+	cfg := f.ExporterFactory.CreateDefaultConfig()
+	cfg.(*googlecloudexporter.Config).ExporterSettings = config.NewExporterSettings(config.NewID(typeVal))
+	return cfg
+}
+
+func (f *factory) CreateTracesExporter(
+	ctx context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter) (component.TracesExporter, error) {
-	eCfg := cfg.(*Config)
-	return newStackdriverTraceExporter(eCfg, params)
+	cfg config.Exporter,
+) (component.TracesExporter, error) {
+	logDeprecation(params.Logger)
+	return f.ExporterFactory.CreateTracesExporter(ctx, params, cfg)
 }
 
-// createMetricsExporter creates a metrics exporter based on this config.
-func createMetricsExporter(
-	_ context.Context,
+func (f *factory) CreateMetricsExporter(
+	ctx context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter) (component.MetricsExporter, error) {
-	eCfg := cfg.(*Config)
-	return newStackdriverMetricsExporter(eCfg, params)
+	cfg config.Exporter,
+) (component.MetricsExporter, error) {
+	logDeprecation(params.Logger)
+	return f.ExporterFactory.CreateMetricsExporter(ctx, params, cfg)
 }

@@ -22,8 +22,8 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
+	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
@@ -172,7 +172,7 @@ func getMetadataForContainer(cs corev1.ContainerStatus) *KubernetesMetadata {
 
 	return &KubernetesMetadata{
 		resourceIDKey: conventions.AttributeContainerID,
-		resourceID:    metrics.ResourceID(utils.StripContainerID(cs.ContainerID)),
+		resourceID:    metadataPkg.ResourceID(utils.StripContainerID(cs.ContainerID)),
 		metadata:      metadata,
 	}
 }

@@ -14,6 +14,7 @@
 package ec2
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
@@ -23,11 +24,16 @@ import (
 	"go.uber.org/zap"
 )
 
-var defaultPrefixes = [3]string{"ip-", "domu", "ec2amaz-"}
+var (
+	defaultPrefixes  = [3]string{"ip-", "domu", "ec2amaz-"}
+	ec2TagPrefix     = "ec2.tag."
+	clusterTagPrefix = ec2TagPrefix + "kubernetes.io/cluster/"
+)
 
 type HostInfo struct {
 	InstanceID  string
 	EC2Hostname string
+	EC2Tags     []string
 }
 
 // isDefaultHostname checks if a hostname is an EC2 default
@@ -94,4 +100,42 @@ func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
 	}
 
 	return "", false
+}
+
+// HostInfoFromAttributes gets EC2 host info from attributes following
+// OpenTelemetry semantic conventions
+func HostInfoFromAttributes(attrs pdata.AttributeMap) (hostInfo *HostInfo) {
+	hostInfo = &HostInfo{}
+
+	if hostID, ok := attrs.Get(conventions.AttributeHostID); ok {
+		hostInfo.InstanceID = hostID.StringVal()
+	}
+
+	if hostName, ok := attrs.Get(conventions.AttributeHostName); ok {
+		hostInfo.EC2Hostname = hostName.StringVal()
+	}
+
+	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+		if strings.HasPrefix(k, ec2TagPrefix) {
+			tag := fmt.Sprintf("%s:%s", strings.TrimPrefix(k, ec2TagPrefix), v.StringVal())
+			hostInfo.EC2Tags = append(hostInfo.EC2Tags, tag)
+		}
+		return true
+	})
+
+	return
+}
+
+// ClusterNameFromAttributes gets the AWS cluster name from attributes
+func ClusterNameFromAttributes(attrs pdata.AttributeMap) (clusterName string, ok bool) {
+	// Get cluster name from tag keys
+	// https://github.com/DataDog/datadog-agent/blob/1c94b11/pkg/util/ec2/ec2.go#L238
+	attrs.Range(func(k string, _ pdata.AttributeValue) bool {
+		if strings.HasPrefix(k, clusterTagPrefix) {
+			clusterName = strings.Split(k, "/")[2]
+			ok = true
+		}
+		return true
+	})
+	return
 }

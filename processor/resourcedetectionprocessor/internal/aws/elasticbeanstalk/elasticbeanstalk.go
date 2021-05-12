@@ -46,7 +46,7 @@ type EbMetaData struct {
 	VersionLabel    string `json:"version_label"`
 }
 
-func NewDetector(component.ProcessorCreateParams) (internal.Detector, error) {
+func NewDetector(component.ProcessorCreateParams, internal.DetectorConfig) (internal.Detector, error) {
 	return &Detector{fs: &ebFileSystem{}}, nil
 }
 
@@ -78,7 +78,7 @@ func (d Detector) Detect(context.Context) (pdata.Resource, error) {
 
 	attr := res.Attributes()
 	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.InsertString("cloud.infrastructure_service", "ElasticBeanstalk")
+	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSElasticBeanstalk)
 	attr.InsertString(conventions.AttributeServiceInstance, strconv.Itoa(ebmd.DeploymentID))
 	attr.InsertString(conventions.AttributeDeploymentEnvironment, ebmd.EnvironmentName)
 	attr.InsertString(conventions.AttributeServiceVersion, ebmd.VersionLabel)

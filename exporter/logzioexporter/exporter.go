@@ -70,7 +70,7 @@ func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*
 	}, nil
 }
 
-func newLogzioTraceExporter(config *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
+func newLogzioTracesExporter(config *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
 	exporter, err := newLogzioExporter(config, params)
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func newLogzioTraceExporter(config *Config, params component.ExporterCreateParam
 		return nil, err
 	}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTracesExporter(
 		config,
 		params.Logger,
 		exporter.pushTraceData,
@@ -95,26 +95,24 @@ func newLogzioMetricsExporter(config *Config, params component.ExporterCreatePar
 		exporterhelper.WithShutdown(exporter.Shutdown))
 }
 
-func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces pdata.Traces) (droppedSpansCount int, err error) {
-	droppedSpans := 0
+func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces pdata.Traces) error {
 	batches, err := exporter.InternalTracesToJaegerTraces(traces)
 	if err != nil {
-		return traces.SpanCount(), err
+		return err
 	}
 	for _, batch := range batches {
 		for _, span := range batch.Spans {
 			span.Process = batch.Process
 			if err := exporter.WriteSpanFunc(ctx, span); err != nil {
 				exporter.logger.Debug(fmt.Sprintf("dropped bad span: %s", span.String()))
-				droppedSpans++
 			}
 		}
 	}
-	return droppedSpans, nil
+	return nil
 }
 
-func (exporter *logzioExporter) pushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
-	return 0, nil
+func (exporter *logzioExporter) pushMetricsData(ctx context.Context, md pdata.Metrics) error {
+	return nil
 }
 
 func (exporter *logzioExporter) Shutdown(ctx context.Context) error {

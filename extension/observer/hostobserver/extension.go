@@ -42,15 +42,15 @@ type endpointsLister struct {
 	collectProcessDetails func(proc *process.Process) (*processDetails, error)
 }
 
-var _ component.ServiceExtension = (*hostObserver)(nil)
+var _ component.Extension = (*hostObserver)(nil)
 
-func newObserver(logger *zap.Logger, config *Config) (component.ServiceExtension, error) {
+func newObserver(logger *zap.Logger, config *Config) (component.Extension, error) {
 	h := &hostObserver{
 		EndpointsWatcher: observer.EndpointsWatcher{
 			RefreshInterval: config.RefreshInterval,
 			Endpointslister: endpointsLister{
 				logger:                logger,
-				observerName:          config.Name(),
+				observerName:          config.ID().String(),
 				getConnections:        getConnections,
 				getProcess:            process.NewProcess,
 				collectProcessDetails: collectProcessDetails,
@@ -124,7 +124,7 @@ func (e endpointsLister) collectEndpoints(conns []net.ConnectionStat) []observer
 			endpoints = append(endpoints, observer.Endpoint{
 				ID:     id,
 				Target: cd.target,
-				Details: observer.HostPort{
+				Details: &observer.HostPort{
 					Port:      cd.port,
 					Transport: cd.transport,
 					// TODO: Move this field to observer.Endpoint and
@@ -166,11 +166,11 @@ func (e endpointsLister) collectEndpoints(conns []net.ConnectionStat) []observer
 			e := observer.Endpoint{
 				ID:     id,
 				Target: cd.target,
-				Details: observer.HostPort{
-					Name:      pd.name,
-					Command:   pd.args,
-					Port:      cd.port,
-					Transport: cd.transport,
+				Details: &observer.HostPort{
+					ProcessName: pd.name,
+					Command:     pd.args,
+					Port:        cd.port,
+					Transport:   cd.transport,
 					// TODO: Move this field to observer.Endpoint and
 					// update receiver_creator to filter IPv4/IPv6.
 					IsIPv6: cd.isIPv6,

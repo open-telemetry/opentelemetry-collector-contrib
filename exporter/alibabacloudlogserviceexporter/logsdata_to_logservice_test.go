@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
-	"go.uber.org/zap"
 )
 
 func getComplexAttributeValueMap() pdata.AttributeValue {
@@ -35,7 +34,7 @@ func getComplexAttributeValueMap() pdata.AttributeValue {
 	mapValReal.InsertInt("code", 200)
 	mapValReal.InsertNull("null")
 	arrayVal := pdata.NewAttributeValueArray()
-	arrayVal.ArrayVal().Append(pdata.NewAttributeValueString("array"))
+	arrayVal.ArrayVal().AppendEmpty().SetStringVal("array")
 	mapValReal.Insert("array", arrayVal)
 
 	subMapVal := pdata.NewAttributeValueMap()
@@ -48,19 +47,18 @@ func getComplexAttributeValueMap() pdata.AttributeValue {
 
 func createLogData(numberOfLogs int) pdata.Logs {
 	logs := pdata.NewLogs()
-	logs.ResourceLogs().Resize(2)
-	rl := logs.ResourceLogs().At(0)
+	logs.ResourceLogs().AppendEmpty() // Add an empty ResourceLogs
+	rl := logs.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("resouceKey", "resourceValue")
 	rl.Resource().Attributes().InsertString(conventions.AttributeServiceName, "test-log-service-exporter")
 	rl.Resource().Attributes().InsertString(conventions.AttributeHostName, "test-host")
-	rl.InstrumentationLibraryLogs().Resize(1)
-	ill := rl.InstrumentationLibraryLogs().At(0)
+	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
 	ill.InstrumentationLibrary().SetName("collector")
 	ill.InstrumentationLibrary().SetVersion("v0.1.0")
 
 	for i := 0; i < numberOfLogs; i++ {
-		ts := pdata.TimestampUnixNano(int64(i) * time.Millisecond.Nanoseconds())
-		logRecord := pdata.NewLogRecord()
+		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
+		logRecord := ill.Logs().AppendEmpty()
 		switch i {
 		case 0:
 			// do nothing, left body null
@@ -78,7 +76,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 			logRecord.Body().SetStringVal("log contents")
 		case 6:
 			arrayVal := pdata.NewAttributeValueArray()
-			arrayVal.ArrayVal().Append(pdata.NewAttributeValueString("array"))
+			arrayVal.ArrayVal().AppendEmpty().SetStringVal("array")
 			logRecord.Attributes().Insert("array-value", arrayVal)
 			logRecord.Body().SetStringVal("log contents")
 		default:
@@ -91,8 +89,6 @@ func createLogData(numberOfLogs int) pdata.Logs {
 		logRecord.Attributes().InsertNull("null-value")
 
 		logRecord.SetTimestamp(ts)
-
-		ill.Logs().Append(logRecord)
 	}
 
 	return logs
@@ -101,9 +97,8 @@ func createLogData(numberOfLogs int) pdata.Logs {
 func TestLogsDataToLogService(t *testing.T) {
 	totalLogCount := 10
 	validLogCount := totalLogCount - 1
-	gotLogs, dropped := logDataToLogService(zap.NewNop(), createLogData(10))
+	gotLogs := logDataToLogService(createLogData(10))
 	assert.Equal(t, len(gotLogs), 9)
-	assert.Equal(t, dropped, 1)
 
 	gotLogPairs := make([][]logKeyValuePair, 0, len(gotLogs))
 
@@ -114,14 +109,10 @@ func TestLogsDataToLogService(t *testing.T) {
 				Key:   content.GetKey(),
 				Value: content.GetValue(),
 			})
-			//fmt.Printf("%s : %s\n", content.GetKey(), content.GetValue())
 		}
 		gotLogPairs = append(gotLogPairs, pairs)
 
-		//fmt.Println("#################")
 	}
-	//str, _ := json.Marshal(gotLogPairs)
-	//fmt.Println(string(str))
 
 	wantLogs := make([][]logKeyValuePair, 0, validLogCount)
 	resultLogFile := "./testdata/logservice_log_data.json"

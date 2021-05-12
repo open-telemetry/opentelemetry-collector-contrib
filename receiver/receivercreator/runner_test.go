@@ -20,14 +20,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.uber.org/zap"
 )
 
 func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
-	run := &receiverRunner{params: component.ReceiverCreateParams{Logger: zap.NewNop()}, nextConsumer: &mockMetricsConsumer{}, idNamespace: "receiver_creator/1"}
-	exampleFactory := &componenttest.ExampleReceiverFactory{}
-	template, err := newReceiverTemplate("examplereceiver/1", nil)
+	run := &receiverRunner{params: component.ReceiverCreateParams{Logger: zap.NewNop()}, idNamespace: config.NewIDWithName(typeStr, "1")}
+	exampleFactory := &nopWithEndpointFactory{}
+	template, err := newReceiverTemplate("nop/1", nil)
 	require.NoError(t, err)
 
 	loadedConfig, err := run.loadRuntimeReceiverConfig(exampleFactory, template.receiverConfig, userConfigMap{
@@ -35,17 +35,16 @@ func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.NotNil(t, loadedConfig)
-	exampleConfig := loadedConfig.(*componenttest.ExampleReceiver)
+	nopConfig := loadedConfig.(*nopWithEndpointConfig)
 	// Verify that the overridden endpoint is used instead of the one in the config file.
-	assert.Equal(t, "localhost:12345", exampleConfig.Endpoint)
-	assert.Equal(t, "receiver_creator/1/examplereceiver/1{endpoint=\"localhost:12345\"}", exampleConfig.Name())
+	assert.Equal(t, "localhost:12345", nopConfig.Endpoint)
+	assert.Equal(t, "nop/1/receiver_creator/1{endpoint=\"localhost:12345\"}", nopConfig.ID().String())
 
 	// Test that metric receiver can be created from loaded config.
 	t.Run("test create receiver from loaded config", func(t *testing.T) {
-		recvr, err := run.createRuntimeReceiver(exampleFactory, loadedConfig)
+		recvr, err := run.createRuntimeReceiver(exampleFactory, loadedConfig, nil)
 		require.NoError(t, err)
 		assert.NotNil(t, recvr)
-		exampleReceiver := recvr.(*componenttest.ExampleReceiverProducer)
-		assert.Equal(t, run.nextConsumer, exampleReceiver.MetricsConsumer)
+		assert.IsType(t, &nopWithEndpointReceiver{}, recvr)
 	})
 }

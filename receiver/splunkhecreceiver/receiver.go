@@ -41,8 +41,8 @@ const (
 	defaultServerTimeout = 20 * time.Second
 
 	responseOK                        = "OK"
+	responseNotFound                  = "Not found"
 	responseInvalidMethod             = `Only "POST" method is supported`
-	responseInvalidContentType        = `"Content-Type" must be "application/json"`
 	responseInvalidEncoding           = `"Content-Encoding" must be "gzip" or empty`
 	responseErrGzipReader             = "Error on gzip body"
 	responseErrUnmarshalBody          = "Failed to unmarshal message body"
@@ -51,9 +51,7 @@ const (
 	responseErrUnsupportedLogEvent    = "Unsupported log event"
 
 	// Centralizing some HTTP and related string constants.
-	jsonContentType           = "application/json"
 	gzipEncoding              = "gzip"
-	httpContentTypeHeader     = "Content-Type"
 	httpContentEncodingHeader = "Content-Encoding"
 )
 
@@ -63,8 +61,8 @@ var (
 	errEmptyEndpoint          = errors.New("empty endpoint")
 
 	okRespBody                = initJSONResponse(responseOK)
+	notFoundRespBody          = initJSONResponse(responseNotFound)
 	invalidMethodRespBody     = initJSONResponse(responseInvalidMethod)
-	invalidContentRespBody    = initJSONResponse(responseInvalidContentType)
 	invalidEncodingRespBody   = initJSONResponse(responseInvalidEncoding)
 	errGzipReaderRespBody     = initJSONResponse(responseErrGzipReader)
 	errUnmarshalBodyRespBody  = initJSONResponse(responseErrUnmarshalBody)
@@ -78,8 +76,8 @@ type splunkReceiver struct {
 	sync.Mutex
 	logger          *zap.Logger
 	config          *Config
-	logsConsumer    consumer.LogsConsumer
-	metricsConsumer consumer.MetricsConsumer
+	logsConsumer    consumer.Logs
+	metricsConsumer consumer.Metrics
 	server          *http.Server
 }
 
@@ -89,7 +87,7 @@ var _ component.MetricsReceiver = (*splunkReceiver)(nil)
 func NewMetricsReceiver(
 	logger *zap.Logger,
 	config Config,
-	nextConsumer consumer.MetricsConsumer,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextMetricsConsumer
@@ -119,7 +117,7 @@ func NewMetricsReceiver(
 func NewLogsReceiver(
 	logger *zap.Logger,
 	config Config,
-	nextConsumer consumer.LogsConsumer,
+	nextConsumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextLogsConsumer
@@ -145,7 +143,7 @@ func NewLogsReceiver(
 	return r, nil
 }
 
-// StartMetricsReception tells the receiver to start its processing.
+// Start tells the receiver to start its processing.
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
 func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
@@ -160,7 +158,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	}
 
 	mx := mux.NewRouter()
-	mx.HandleFunc(hecPath, r.handleReq)
+	mx.NewRoute().HandlerFunc(r.handleReq)
 
 	r.server = r.config.HTTPServerSettings.ToServer(mx)
 
@@ -170,7 +168,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	r.server.WriteTimeout = defaultServerTimeout
 
 	go func() {
-		if errHTTP := r.server.Serve(ln); errHTTP != nil {
+		if errHTTP := r.server.Serve(ln); errHTTP != http.ErrServerClosed {
 			host.ReportFatalError(errHTTP)
 		}
 	}()
@@ -178,7 +176,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	return err
 }
 
-// StopMetricsReception tells the receiver that should stop reception,
+// Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 func (r *splunkReceiver) Shutdown(context.Context) error {
 	r.Lock()
@@ -190,22 +188,24 @@ func (r *splunkReceiver) Shutdown(context.Context) error {
 }
 
 func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
+
 	transport := "http"
 	if r.config.TLSSetting != nil {
 		transport = "https"
 	}
-	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), transport)
+
+	ctx := obsreport.ReceiverContext(req.Context(), r.config.ID(), transport)
 	if r.logsConsumer == nil {
-		ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.Name(), transport)
+		ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.ID(), transport)
+	}
+	reqPath := req.URL.Path
+	if !r.config.pathGlob.Match(reqPath) {
+		r.failRequest(ctx, resp, http.StatusNotFound, notFoundRespBody, nil)
+		return
 	}
 
 	if req.Method != http.MethodPost {
 		r.failRequest(ctx, resp, http.StatusBadRequest, invalidMethodRespBody, nil)
-		return
-	}
-
-	if req.Header.Get(httpContentTypeHeader) != jsonContentType {
-		r.failRequest(ctx, resp, http.StatusUnsupportedMediaType, invalidContentRespBody, nil)
 		return
 	}
 
@@ -314,10 +314,7 @@ func (r *splunkReceiver) failRequest(
 		// The response needs to be written as a JSON string.
 		_, writeErr := resp.Write(jsonResponse)
 		if writeErr != nil {
-			r.logger.Warn(
-				"Error writing HTTP response message",
-				zap.Error(writeErr),
-				zap.String("receiver", r.config.Name()))
+			r.logger.Warn("Error writing HTTP response message", zap.Error(writeErr))
 		}
 	}
 
@@ -344,7 +341,7 @@ func (r *splunkReceiver) failRequest(
 		zap.Int("http_status_code", httpStatusCode),
 		zap.String("msg", msg),
 		zap.Error(err), // It handles nil error
-		zap.String("receiver", r.config.Name()))
+	)
 }
 
 func initJSONResponse(s string) []byte {

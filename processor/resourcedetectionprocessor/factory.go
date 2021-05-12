@@ -21,16 +21,20 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/elasticbeanstalk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/gce"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/gke"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
@@ -39,82 +43,83 @@ const (
 	typeStr = "resourcedetection"
 )
 
-var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: true}
+var consumerCapabilities = consumer.Capabilities{MutatesData: true}
 
 type factory struct {
 	resourceProviderFactory *internal.ResourceProviderFactory
 
 	// providers stores a provider for each named processor that
 	// may a different set of detectors configured.
-	providers map[string]*internal.ResourceProvider
+	providers map[config.ComponentID]*internal.ResourceProvider
 	lock      sync.Mutex
 }
 
 // NewFactory creates a new factory for ResourceDetection processor.
 func NewFactory() component.ProcessorFactory {
 	resourceProviderFactory := internal.NewProviderFactory(map[internal.DetectorType]internal.DetectorFactory{
-		env.TypeStr:              env.NewDetector,
-		system.TypeStr:           system.NewDetector,
-		gce.TypeStr:              gce.NewDetector,
+		aks.TypeStr:              aks.NewDetector,
+		azure.TypeStr:            azure.NewDetector,
 		ec2.TypeStr:              ec2.NewDetector,
 		ecs.TypeStr:              ecs.NewDetector,
+		eks.TypeStr:              eks.NewDetector,
 		elasticbeanstalk.TypeStr: elasticbeanstalk.NewDetector,
+		env.TypeStr:              env.NewDetector,
+		gce.TypeStr:              gce.NewDetector,
+		gke.TypeStr:              gke.NewDetector,
+		system.TypeStr:           system.NewDetector,
 	})
 
 	f := &factory{
 		resourceProviderFactory: resourceProviderFactory,
-		providers:               map[string]*internal.ResourceProvider{},
+		providers:               map[config.ComponentID]*internal.ResourceProvider{},
 	}
 
 	return processorhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(f.createTraceProcessor),
+		processorhelper.WithTraces(f.createTracesProcessor),
 		processorhelper.WithMetrics(f.createMetricsProcessor),
 		processorhelper.WithLogs(f.createLogsProcessor))
 }
 
 // Type gets the type of the Option config created by this factory.
-func (*factory) Type() configmodels.Type {
+func (*factory) Type() config.Type {
 	return typeStr
 }
 
-func createDefaultConfig() configmodels.Processor {
+func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
-		Detectors: []string{env.TypeStr},
-		Timeout:   5 * time.Second,
-		Override:  true,
+		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+		Detectors:         []string{env.TypeStr},
+		Timeout:           5 * time.Second,
+		Override:          true,
 	}
 }
 
-func (f *factory) createTraceProcessor(
+func (f *factory) createTracesProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.TracesConsumer,
+	cfg config.Processor,
+	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	rdp, err := f.getResourceDetectionProcessor(params, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return processorhelper.NewTraceProcessor(
+	return processorhelper.NewTracesProcessor(
 		cfg,
 		nextConsumer,
 		rdp,
-		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(rdp.Start))
 }
 
 func (f *factory) createMetricsProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.MetricsConsumer,
+	cfg config.Processor,
+	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	rdp, err := f.getResourceDetectionProcessor(params, cfg)
 	if err != nil {
@@ -125,15 +130,15 @@ func (f *factory) createMetricsProcessor(
 		cfg,
 		nextConsumer,
 		rdp,
-		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(rdp.Start))
 }
 
 func (f *factory) createLogsProcessor(
 	_ context.Context,
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
-	nextConsumer consumer.LogsConsumer,
+	cfg config.Processor,
+	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	rdp, err := f.getResourceDetectionProcessor(params, cfg)
 	if err != nil {
@@ -144,17 +149,17 @@ func (f *factory) createLogsProcessor(
 		cfg,
 		nextConsumer,
 		rdp,
-		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(rdp.Start))
 }
 
 func (f *factory) getResourceDetectionProcessor(
 	params component.ProcessorCreateParams,
-	cfg configmodels.Processor,
+	cfg config.Processor,
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	provider, err := f.getResourceProvider(params, cfg.Name(), oCfg.Timeout, oCfg.Detectors)
+	provider, err := f.getResourceProvider(params, cfg.ID(), oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -167,9 +172,10 @@ func (f *factory) getResourceDetectionProcessor(
 
 func (f *factory) getResourceProvider(
 	params component.ProcessorCreateParams,
-	processorName string,
+	processorName config.ComponentID,
 	timeout time.Duration,
 	configuredDetectors []string,
+	detectorConfigs DetectorConfig,
 ) (*internal.ResourceProvider, error) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
@@ -183,7 +189,7 @@ func (f *factory) getResourceProvider(
 		detectorTypes = append(detectorTypes, internal.DetectorType(strings.TrimSpace(key)))
 	}
 
-	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, timeout, detectorTypes...)
+	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, timeout, &detectorConfigs, detectorTypes...)
 	if err != nil {
 		return nil, err
 	}

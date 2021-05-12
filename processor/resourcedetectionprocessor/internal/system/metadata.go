@@ -15,6 +15,7 @@
 package system
 
 import (
+	"os"
 	"runtime"
 	"strings"
 
@@ -22,6 +23,9 @@ import (
 )
 
 type systemMetadata interface {
+	// Hostname returns the OS hostname
+	Hostname() (string, error)
+
 	// FQDN returns the fully qualified domain name
 	FQDN() (string, error)
 
@@ -31,10 +35,23 @@ type systemMetadata interface {
 
 type systemMetadataImpl struct{}
 
+// goosToOSType maps a runtime.GOOS-like value to os.type style.
+func goosToOSType(goos string) string {
+	switch goos {
+	case "dragonfly":
+		return "DRAGONFLYBSD"
+	}
+	return strings.ToUpper(goos)
+}
+
 func (*systemMetadataImpl) OSType() (string, error) {
-	return strings.ToUpper(runtime.GOOS), nil
+	return goosToOSType(runtime.GOOS), nil
 }
 
 func (*systemMetadataImpl) FQDN() (string, error) {
 	return fqdn.FqdnHostname()
+}
+
+func (*systemMetadataImpl) Hostname() (string, error) {
+	return os.Hostname()
 }

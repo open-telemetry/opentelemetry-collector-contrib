@@ -4,16 +4,22 @@ receivers:
     endpoint: "localhost:12345"
     transport: "custom_transport"
     aggregation_interval: 70s
+    enable_metric_type: false
+    timer_histogram_mapping:
+      - statsd_type: "histogram"
+        observer_type: "gauge"
+      - statsd_type: "timing"
+        observer_type: "gauge"
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     metrics:
      receivers: [statsd]
-     processors: [exampleprocessor]
-     exporters: [exampleexporter]
+     processors: [nop]
+     exporters: [nop]

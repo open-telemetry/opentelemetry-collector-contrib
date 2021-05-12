@@ -20,14 +20,14 @@ receivers:
     scrape_interval: 0.1s
 
 processors:
-  exampleprocessor:
+  nop:
 
 exporters:
-  exampleexporter:
+  nop:
 
 service:
   pipelines:
     metrics:
       receivers: [prometheus_exec, prometheus_exec/test, prometheus_exec/end_to_end_test/1, prometheus_exec/end_to_end_test/2]
-      processors: [exampleprocessor]
-      exporters: [exampleexporter]
+      processors: [nop]
+      exporters: [nop]

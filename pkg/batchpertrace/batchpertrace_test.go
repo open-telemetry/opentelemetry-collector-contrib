@@ -24,19 +24,16 @@ import (
 func TestSplitDifferentTracesIntoDifferentBatches(t *testing.T) {
 	// we have 1 ResourceSpans with 1 ILS and two traceIDs, resulting in two batches
 	inBatch := pdata.NewTraces()
-	inBatch.ResourceSpans().Resize(1)
-	rs := inBatch.ResourceSpans().At(0)
-	rs.InstrumentationLibrarySpans().Resize(1)
+	rs := inBatch.ResourceSpans().AppendEmpty()
 
 	// the first ILS has two spans
-	ils := rs.InstrumentationLibrarySpans().At(0)
+	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
 	library := ils.InstrumentationLibrary()
 	library.SetName("first-library")
-	ils.Spans().Resize(2)
-	firstSpan := ils.Spans().At(0)
+	firstSpan := ils.Spans().AppendEmpty()
 	firstSpan.SetName("first-batch-first-span")
 	firstSpan.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
-	secondSpan := ils.Spans().At(1)
+	secondSpan := ils.Spans().AppendEmpty()
 	secondSpan.SetName("first-batch-second-span")
 	secondSpan.SetTraceID(pdata.NewTraceID([16]byte{2, 3, 4, 5}))
 

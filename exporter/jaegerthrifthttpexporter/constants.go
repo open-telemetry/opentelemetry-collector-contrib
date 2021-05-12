@@ -21,7 +21,6 @@ import (
 const (
 	// Jaeger Tags
 	ocTimeEventUnknownType    = "oc.timeevent.unknown.type"
-	ocSameProcessAsParentSpan = "oc.sameprocessasparentspan"
 	opencensusLanguage        = "opencensus.language"
 	opencensusExporterVersion = "opencensus.exporterversion"
 	opencensusCoreLibVersion  = "opencensus.corelibversion"

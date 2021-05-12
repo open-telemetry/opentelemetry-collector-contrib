@@ -32,14 +32,14 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewAlwaysPassMockLogClient() LogClient {
+func NewAlwaysPassMockLogClient(putLogEventsFunc func(args mock.Arguments)) LogClient {
 	logger := zap.NewNop()
 	svc := new(mockCloudWatchLogsClient)
 
 	svc.On("PutLogEvents", mock.Anything).Return(
 		&cloudwatchlogs.PutLogEventsOutput{
 			NextSequenceToken: &expectedNextSequenceToken},
-		nil)
+		nil).Run(putLogEventsFunc)
 
 	svc.On("CreateLogGroup", mock.Anything).Return(new(cloudwatchlogs.CreateLogGroupOutput), nil)
 
@@ -442,13 +442,12 @@ func TestLogUnknownError(t *testing.T) {
 func TestUserAgent(t *testing.T) {
 	logger := zap.NewNop()
 
-	startInfo := component.ApplicationStartInfo{
+	buildInfo := component.BuildInfo{
 		Version: "1.0",
-		GitHash: "beef",
 	}
 
 	session, _ := session.NewSession()
-	cwlog := NewCloudWatchLogsClient(logger, &aws.Config{}, startInfo, session)
+	cwlog := NewCloudWatchLogsClient(logger, &aws.Config{}, buildInfo, session)
 	logClient := cwlog.(*cloudWatchLogClient).svc.(*cloudwatchlogs.CloudWatchLogs)
 
 	req := request.New(aws.Config{}, metadata.ClientInfo{}, logClient.Handlers, nil, &request.Operation{
@@ -457,5 +456,5 @@ func TestUserAgent(t *testing.T) {
 	}, nil, nil)
 
 	logClient.Handlers.Build.Run(req)
-	assert.Contains(t, req.HTTPRequest.UserAgent(), "opentelemetry-collector-contrib/1.0 (beef)")
+	assert.Contains(t, req.HTTPRequest.UserAgent(), "opentelemetry-collector-contrib/1.0")
 }

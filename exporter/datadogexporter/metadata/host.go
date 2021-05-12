@@ -20,28 +20,32 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/valid"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils/cache"
 )
 
+const (
+	AttributeDatadogHostname = "datadog.host.name"
+	AttributeK8sNodeName     = "k8s.node.name"
+)
+
 // GetHost gets the hostname according to configuration.
 // It checks in the following order
-// 1. Cache
-// 2. Configuration
+// 1. Configuration
+// 2. Cache
 // 3. EC2 instance metadata
 // 4. System
 func GetHost(logger *zap.Logger, cfg *config.Config) *string {
-	if cacheVal, ok := cache.Cache.Get(cache.CanonicalHostnameKey); ok {
-		return cacheVal.(*string)
+	if cfg.Hostname != "" {
+		return &cfg.Hostname
 	}
 
-	if err := valid.Hostname(cfg.Hostname); err == nil {
-		cache.Cache.Add(cache.CanonicalHostnameKey, &cfg.Hostname, cache.NoExpiration)
-		return &cfg.Hostname
-	} else if cfg.Hostname != "" {
-		logger.Error("Hostname set in configuration is invalid", zap.Error(err))
+	if cacheVal, ok := cache.Cache.Get(cache.CanonicalHostnameKey); ok {
+		return cacheVal.(*string)
 	}
 
 	ec2Info := ec2.GetHostInfo(logger)
@@ -63,30 +67,67 @@ func GetHost(logger *zap.Logger, cfg *config.Config) *string {
 	return &hostname
 }
 
+func getClusterName(attrs pdata.AttributeMap) (string, bool) {
+	if k8sClusterName, ok := attrs.Get(conventions.AttributeK8sCluster); ok {
+		return k8sClusterName.StringVal(), true
+	}
+
+	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
+	if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure {
+		return azure.ClusterNameFromAttributes(attrs)
+	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS {
+		return ec2.ClusterNameFromAttributes(attrs)
+	}
+
+	return "", false
+}
+
 // HostnameFromAttributes tries to get a valid hostname from attributes by checking, in order:
 //
-//   1. the container ID,
-//   2. the cloud provider host ID and
-//   3. the host.name attribute.
+//   1. a custom Datadog hostname provided by the "datadog.host.name" attribute
+//   2. the Kubernetes node name (and cluster name if available),
+//   3. cloud provider specific hostname for AWS or GCP
+//   4. the container ID,
+//   5. the cloud provider host ID and
+//   6. the host.name attribute.
 //
 //  It returns a boolean value indicated if any name was found
 func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
-	if containerID, ok := attrs.Get(conventions.AttributeContainerID); ok {
-		return containerID.StringVal(), true
+	// Custom hostname: useful for overriding in k8s/cloud envs
+	if customHostname, ok := attrs.Get(AttributeDatadogHostname); ok {
+		return customHostname.StringVal(), true
 	}
 
-	// handle AWS case separately to have similar behavior to the Datadog Agent
+	// Kubernetes: node-cluster if cluster name is available, else node
+	if k8sNodeName, ok := attrs.Get(AttributeK8sNodeName); ok {
+		if k8sClusterName, ok := getClusterName(attrs); ok {
+			return k8sNodeName.StringVal() + "-" + k8sClusterName, true
+		}
+		return k8sNodeName.StringVal(), true
+	}
+
 	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
 	if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS {
 		return ec2.HostnameFromAttributes(attrs)
+	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP {
+		return gcp.HostnameFromAttributes(attrs)
+	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure {
+		return azure.HostnameFromAttributes(attrs)
 	}
 
+	// host id from cloud provider
 	if hostID, ok := attrs.Get(conventions.AttributeHostID); ok {
 		return hostID.StringVal(), true
 	}
 
+	// hostname from cloud provider or OS
 	if hostName, ok := attrs.Get(conventions.AttributeHostName); ok {
 		return hostName.StringVal(), true
+	}
+
+	// container id (e.g. from Docker)
+	if containerID, ok := attrs.Get(conventions.AttributeContainerID); ok {
+		return containerID.StringVal(), true
 	}
 
 	return "", false

@@ -22,31 +22,32 @@ import (
 	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
 // groupByTraceProcessor is a processor that keeps traces in memory for a given duration, with the expectation
 // that the trace will be complete once this duration expires. After the duration, the trace is sent to the next consumer.
 // This processor uses a buffered event machine, which converts operations into events for non-blocking processing, but
-// keeping all operations serialized. This ensures that we don't need locks but that the state is consistent across go routines.
-// Each in-flight trace is registered with a go routine, which will be called after the given duration and dispatched to the event
+// keeping all operations serialized per worker scope. This ensures that we don't need locks but that the state is consistent across go routines.
+// Initially, all incoming batches are split into different traces and distributed among workers by a hash of traceID in eventMachine.consume method.
+// Afterwards, the trace is registered with a go routine, which will be called after the given duration and dispatched to the event
 // machine for further processing.
 // The typical data flow looks like this:
-// ConsumeTraces -> event(traceReceived) -> onBatchReceived -> AfterFunc(duration, event(traceExpired)) -> onTraceExpired
+// ConsumeTraces -> eventMachine.consume(trace) -> event(traceReceived) -> onTraceReceived -> AfterFunc(duration, event(traceExpired)) -> onTraceExpired
 // async markAsReleased -> event(traceReleased) -> onTraceReleased -> nextConsumer
-// This processor uses also a ring buffer to hold the in-flight trace IDs, so that we don't hold more than the given maximum number
+// Each worker in the eventMachine also uses a ring buffer to hold the in-flight trace IDs, so that we don't hold more than the given maximum number
 // of traces in memory/storage. Items that are evicted from the buffer are discarded without warning.
 type groupByTraceProcessor struct {
-	nextConsumer consumer.TracesConsumer
+	nextConsumer consumer.Traces
 	config       Config
 	logger       *zap.Logger
 
 	// the event machine handling all operations for this processor
 	eventMachine *eventMachine
-
-	// the ring buffer holding the IDs for all the in-flight traces
-	ringBuffer *ringBuffer
 
 	// the trace storage
 	st storage
@@ -54,39 +55,42 @@ type groupByTraceProcessor struct {
 
 var _ component.TracesProcessor = (*groupByTraceProcessor)(nil)
 
+const bufferSize = 10_000
+
 // newGroupByTraceProcessor returns a new processor.
-func newGroupByTraceProcessor(logger *zap.Logger, st storage, nextConsumer consumer.TracesConsumer, config Config) (*groupByTraceProcessor, error) {
+func newGroupByTraceProcessor(logger *zap.Logger, st storage, nextConsumer consumer.Traces, config Config) *groupByTraceProcessor {
 	// the event machine will buffer up to N concurrent events before blocking
-	eventMachine := newEventMachine(logger, 10000)
+	eventMachine := newEventMachine(logger, 10000, config.NumWorkers, config.NumTraces)
 
 	sp := &groupByTraceProcessor{
 		logger:       logger,
 		nextConsumer: nextConsumer,
 		config:       config,
 		eventMachine: eventMachine,
-		ringBuffer:   newRingBuffer(config.NumTraces),
 		st:           st,
 	}
 
 	// register the callbacks
-	eventMachine.onBatchReceived = sp.onBatchReceived
+	eventMachine.onTraceReceived = sp.onTraceReceived
 	eventMachine.onTraceExpired = sp.onTraceExpired
 	eventMachine.onTraceReleased = sp.onTraceReleased
 	eventMachine.onTraceRemoved = sp.onTraceRemoved
 
-	return sp, nil
+	return sp
 }
 
 func (sp *groupByTraceProcessor) ConsumeTraces(_ context.Context, td pdata.Traces) error {
-	sp.eventMachine.fire(event{
-		typ:     traceReceived,
-		payload: td,
-	})
-	return nil
+	var errors []error
+	for _, singleTrace := range batchpersignal.SplitTraces(td) {
+		if err := sp.eventMachine.consume(singleTrace); err != nil {
+			errors = append(errors, err)
+		}
+	}
+	return consumererror.Combine(errors)
 }
 
-func (sp *groupByTraceProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: true}
+func (sp *groupByTraceProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
 }
 
 // Start is invoked during service startup.
@@ -106,32 +110,13 @@ func (sp *groupByTraceProcessor) Shutdown(_ context.Context) error {
 	return sp.st.shutdown()
 }
 
-func (sp *groupByTraceProcessor) onBatchReceived(batch pdata.Traces) error {
-	for i := 0; i < batch.ResourceSpans().Len(); i++ {
-		if err := sp.processResourceSpans(batch.ResourceSpans().At(i)); err != nil {
-			sp.logger.Info("failed to process batch", zap.Error(err))
-		}
-	}
+func (sp *groupByTraceProcessor) onTraceReceived(trace tracesWithID, worker *eventMachineWorker) error {
+	traceID := trace.id
+	if worker.buffer.contains(traceID) {
+		sp.logger.Debug("trace is already in memory storage")
 
-	return nil
-}
-
-func (sp *groupByTraceProcessor) processResourceSpans(rs pdata.ResourceSpans) error {
-	for _, batch := range splitByTrace(rs) {
-		if err := sp.processBatch(batch); err != nil {
-			sp.logger.Warn("failed to process batch", zap.Error(err),
-				zap.String("traceID", batch.traceID.HexString()))
-		}
-	}
-
-	return nil
-}
-
-func (sp *groupByTraceProcessor) processBatch(batch *singleTraceBatch) error {
-	traceID := batch.traceID
-	if sp.ringBuffer.contains(traceID) {
 		// it exists in memory already, just append the spans to the trace in the storage
-		if err := sp.addSpans(traceID, batch.rs); err != nil {
+		if err := sp.addSpans(traceID, trace.td); err != nil {
 			return fmt.Errorf("couldn't add spans to existing trace: %w", err)
 		}
 
@@ -143,10 +128,10 @@ func (sp *groupByTraceProcessor) processBatch(batch *singleTraceBatch) error {
 	// traceID in the map and the spans to the storage
 
 	// place the trace ID in the buffer, and check if an item had to be evicted
-	evicted := sp.ringBuffer.put(traceID)
-	if evicted.IsValid() {
+	evicted := worker.buffer.put(traceID)
+	if !evicted.IsEmpty() {
 		// delete from the storage
-		sp.eventMachine.fire(event{
+		worker.fire(event{
 			typ:     traceRemoved,
 			payload: evicted,
 		})
@@ -158,28 +143,27 @@ func (sp *groupByTraceProcessor) processBatch(batch *singleTraceBatch) error {
 	}
 
 	// we have the traceID in the memory, place the spans in the storage too
-	if err := sp.addSpans(traceID, batch.rs); err != nil {
-		return fmt.Errorf("couldn't add spans to new trace: %w", err)
+	if err := sp.addSpans(traceID, trace.td); err != nil {
+		return fmt.Errorf("couldn't add spans to existing trace: %w", err)
 	}
 
 	sp.logger.Debug("scheduled to release trace", zap.Duration("duration", sp.config.WaitDuration))
 
 	time.AfterFunc(sp.config.WaitDuration, func() {
 		// if the event machine has stopped, it will just discard the event
-		sp.eventMachine.fire(event{
+		worker.fire(event{
 			typ:     traceExpired,
 			payload: traceID,
 		})
 	})
-
 	return nil
 }
 
-func (sp *groupByTraceProcessor) onTraceExpired(traceID pdata.TraceID) error {
+func (sp *groupByTraceProcessor) onTraceExpired(traceID pdata.TraceID, worker *eventMachineWorker) error {
 	sp.logger.Debug("processing expired", zap.String("traceID",
 		traceID.HexString()))
 
-	if !sp.ringBuffer.contains(traceID) {
+	if !worker.buffer.contains(traceID) {
 		// we likely received multiple batches with spans for the same trace
 		// and released this trace already
 		sp.logger.Debug("skipping the processing of expired trace",
@@ -190,17 +174,17 @@ func (sp *groupByTraceProcessor) onTraceExpired(traceID pdata.TraceID) error {
 	}
 
 	// delete from the map and erase its memory entry
-	sp.ringBuffer.delete(traceID)
+	worker.buffer.delete(traceID)
 
 	// this might block, but we don't need to wait
 	sp.logger.Debug("marking the trace as released",
 		zap.String("traceID", traceID.HexString()))
-	go sp.markAsReleased(traceID)
+	go sp.markAsReleased(traceID, worker.fire)
 
 	return nil
 }
 
-func (sp *groupByTraceProcessor) markAsReleased(traceID pdata.TraceID) error {
+func (sp *groupByTraceProcessor) markAsReleased(traceID pdata.TraceID, fire func(...event)) error {
 	// #get is a potentially blocking operation
 	trace, err := sp.st.get(traceID)
 	if err != nil {
@@ -216,7 +200,7 @@ func (sp *groupByTraceProcessor) markAsReleased(traceID pdata.TraceID) error {
 
 	// atomically fire the two events, so that a concurrent shutdown won't leave
 	// an orphaned trace in the storage
-	sp.eventMachine.fire(event{
+	fire(event{
 		typ:     traceReleased,
 		payload: trace,
 	}, event{
@@ -231,9 +215,18 @@ func (sp *groupByTraceProcessor) onTraceReleased(rss []pdata.ResourceSpans) erro
 	for _, rs := range rss {
 		trace.ResourceSpans().Append(rs)
 	}
-	stats.Record(context.Background(), mReleasedSpans.M(int64(trace.SpanCount())))
-	stats.Record(context.Background(), mReleasedTraces.M(1))
-	return sp.nextConsumer.ConsumeTraces(context.Background(), trace)
+	stats.Record(context.Background(),
+		mReleasedSpans.M(int64(trace.SpanCount())),
+		mReleasedTraces.M(1),
+	)
+
+	// Do async consuming not to block event worker
+	go func() {
+		if err := sp.nextConsumer.ConsumeTraces(context.Background(), trace); err != nil {
+			sp.logger.Error("consume failed", zap.Error(err))
+		}
+	}()
+	return nil
 }
 
 func (sp *groupByTraceProcessor) onTraceRemoved(traceID pdata.TraceID) error {
@@ -249,7 +242,7 @@ func (sp *groupByTraceProcessor) onTraceRemoved(traceID pdata.TraceID) error {
 	return nil
 }
 
-func (sp *groupByTraceProcessor) addSpans(traceID pdata.TraceID, trace pdata.ResourceSpans) error {
+func (sp *groupByTraceProcessor) addSpans(traceID pdata.TraceID, trace pdata.Traces) error {
 	sp.logger.Debug("creating trace at the storage", zap.String("traceID", traceID.HexString()))
 	return sp.st.createOrAppend(traceID, trace)
 }
@@ -271,7 +264,7 @@ func splitByTrace(rs pdata.ResourceSpans) []*singleTraceBatch {
 		ils := rs.InstrumentationLibrarySpans().At(i)
 		for j := 0; j < ils.Spans().Len(); j++ {
 			span := ils.Spans().At(j)
-			if !span.TraceID().IsValid() {
+			if span.TraceID().IsEmpty() {
 				// this should have already been caught before our processor, but let's
 				// protect ourselves against bad clients
 				continue
@@ -287,11 +280,10 @@ func splitByTrace(rs pdata.ResourceSpans) []*singleTraceBatch {
 				// and set our own ILS
 				rs.Resource().CopyTo(newRS.Resource())
 
-				newILS := pdata.NewInstrumentationLibrarySpans()
+				newILS := newRS.InstrumentationLibrarySpans().AppendEmpty()
 				// currently, the ILS implementation has only an InstrumentationLibrary and spans. We'll copy the library
 				// and set our own spans
 				ils.InstrumentationLibrary().CopyTo(newILS.InstrumentationLibrary())
-				newRS.InstrumentationLibrarySpans().Append(newILS)
 
 				batch := &singleTraceBatch{
 					traceID: span.TraceID(),

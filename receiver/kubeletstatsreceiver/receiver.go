@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
@@ -32,13 +33,13 @@ var _ component.MetricsReceiver = (*receiver)(nil)
 type receiver struct {
 	options  *receiverOptions
 	logger   *zap.Logger
-	consumer consumer.MetricsConsumer
+	consumer consumer.Metrics
 	runner   *interval.Runner
 	rest     kubelet.RestClient
 }
 
 type receiverOptions struct {
-	name                  string
+	id                    config.ComponentID
 	collectionInterval    time.Duration
 	extraMetadataLabels   []kubelet.MetadataLabel
 	metricGroupsToCollect map[kubelet.MetricGroup]bool
@@ -47,16 +48,16 @@ type receiverOptions struct {
 
 func newReceiver(rOptions *receiverOptions,
 	logger *zap.Logger, rest kubelet.RestClient,
-	next consumer.MetricsConsumer) (*receiver, error) {
+	next consumer.Metrics) *receiver {
 	return &receiver{
 		options:  rOptions,
 		logger:   logger,
 		consumer: next,
 		rest:     rest,
-	}, nil
+	}
 }
 
-// Creates and starts the kubelet stats runnable.
+// Start the kubelet stats runnable.
 func (r *receiver) Start(ctx context.Context, host component.Host) error {
 	runnable := newRunnable(ctx, r.consumer, r.rest, r.logger, r.options)
 	r.runner = interval.NewRunner(r.options.collectionInterval, runnable)
@@ -69,7 +70,7 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-// Stops the kubelet stats runner.
+// Shutdown the kubelet stats runner.
 func (r *receiver) Shutdown(ctx context.Context) error {
 	r.runner.Stop()
 	return nil

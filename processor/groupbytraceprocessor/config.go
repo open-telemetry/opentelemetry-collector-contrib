@@ -17,16 +17,20 @@ package groupbytraceprocessor
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 )
 
 // Config is the configuration for the processor.
 type Config struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
+	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// NumTraces is the max number of traces to keep in memory waiting for the duration.
 	// Default: 1_000_000.
 	NumTraces int `mapstructure:"num_traces"`
+
+	// NumWorkers is a number of workers processing event queue. Should be equal to physical processors number.
+	// Default: 1.
+	NumWorkers int `mapstructure:"num_workers"`
 
 	// WaitDuration tells the processor to wait for the specified duration for the trace to be complete.
 	// Default: 1s.

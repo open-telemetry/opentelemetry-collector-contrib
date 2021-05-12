@@ -16,35 +16,31 @@ package receivercreator
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
-var (
-	errNilNextConsumer = errors.New("nil nextConsumer")
-)
-
 var _ component.MetricsReceiver = (*receiverCreator)(nil)
 
-// receiverCreator implements consumer.MetricsConsumer.
+// receiverCreator implements consumer.Metrics.
 type receiverCreator struct {
 	params          component.ReceiverCreateParams
 	cfg             *Config
-	nextConsumer    consumer.MetricsConsumer
+	nextConsumer    consumer.Metrics
 	observerHandler observerHandler
 }
 
 // newReceiverCreator creates the receiver_creator with the given parameters.
-func newReceiverCreator(params component.ReceiverCreateParams, cfg *Config, nextConsumer consumer.MetricsConsumer) (component.MetricsReceiver, error) {
+func newReceiverCreator(params component.ReceiverCreateParams, cfg *Config, nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
-		return nil, errNilNextConsumer
+		return nil, componenterror.ErrNilNextConsumer
 	}
 
 	r := &receiverCreator{
@@ -71,17 +67,17 @@ var _ component.Host = (*loggingHost)(nil)
 // Start receiver_creator.
 func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 	rc.observerHandler = observerHandler{
+		config:                rc.cfg,
 		logger:                rc.params.Logger,
-		receiverTemplates:     rc.cfg.receiverTemplates,
 		receiversByEndpointID: receiverMap{},
+		nextConsumer:          rc.nextConsumer,
 		runner: &receiverRunner{
-			params:       rc.params,
-			nextConsumer: rc.nextConsumer,
-			idNamespace:  rc.cfg.Name(),
-			host:         &loggingHost{host, rc.params.Logger},
+			params:      rc.params,
+			idNamespace: rc.cfg.ID(),
+			host:        &loggingHost{host, rc.params.Logger},
 		}}
 
-	observers := map[configmodels.Type]observer.Observable{}
+	observers := map[config.Type]observer.Observable{}
 
 	// Match all configured observers to the extensions that are running.
 	for _, watchObserver := range rc.cfg.WatchObservers {
@@ -106,8 +102,7 @@ func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 	}
 
 	if len(observers) == 0 {
-		rc.params.Logger.Warn("no observers were configured and no subreceivers will be started. receiver_creator will be disabled",
-			zap.String("receiver", rc.cfg.Name()))
+		rc.params.Logger.Warn("no observers were configured and no subreceivers will be started. receiver_creator will be disabled")
 	}
 
 	// Start all configured watchers.

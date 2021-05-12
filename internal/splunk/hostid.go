@@ -16,6 +16,7 @@ package splunk
 
 import (
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -29,6 +30,8 @@ const (
 	HostIDKeyAWS HostIDKey = "AWSUniqueId"
 	// GCP
 	HostIDKeyGCP HostIDKey = "gcp_id"
+	// Azure
+	HostIDKeyAzure HostIDKey = "azure_resource_id"
 	// Host
 	HostIDKeyHost HostIDKey = conventions.AttributeHostName
 )
@@ -45,27 +48,32 @@ type HostID struct {
 // ResourceToHostID returns a boolean determining whether or not a HostID was able to be
 // computed or not.
 func ResourceToHostID(res pdata.Resource) (HostID, bool) {
-	var cloudAccount, region, hostID, provider string
+	var cloudAccount, hostID, provider string
 
-	if res.Attributes().Len() == 0 {
+	attrs := res.Attributes()
+
+	if attrs.Len() == 0 {
 		return HostID{}, false
 	}
 
-	if attr, ok := res.Attributes().Get(conventions.AttributeCloudAccount); ok {
+	if attr, ok := attrs.Get(conventions.AttributeCloudAccount); ok {
 		cloudAccount = attr.StringVal()
 	}
-	if attr, ok := res.Attributes().Get(conventions.AttributeCloudRegion); ok {
-		region = attr.StringVal()
-	}
-	if attr, ok := res.Attributes().Get(conventions.AttributeHostID); ok {
+
+	if attr, ok := attrs.Get(conventions.AttributeHostID); ok {
 		hostID = attr.StringVal()
 	}
-	if attr, ok := res.Attributes().Get(conventions.AttributeCloudProvider); ok {
+
+	if attr, ok := attrs.Get(conventions.AttributeCloudProvider); ok {
 		provider = attr.StringVal()
 	}
 
 	switch provider {
 	case conventions.AttributeCloudProviderAWS:
+		var region string
+		if attr, ok := attrs.Get(conventions.AttributeCloudRegion); ok {
+			region = attr.StringVal()
+		}
 		if hostID == "" || region == "" || cloudAccount == "" {
 			break
 		}
@@ -81,9 +89,21 @@ func ResourceToHostID(res pdata.Resource) (HostID, bool) {
 			Key: HostIDKeyGCP,
 			ID:  fmt.Sprintf("%s_%s", cloudAccount, hostID),
 		}, true
+	case conventions.AttributeCloudProviderAzure:
+		if cloudAccount == "" {
+			break
+		}
+		id := azureID(attrs, cloudAccount)
+		if id == "" {
+			break
+		}
+		return HostID{
+			Key: HostIDKeyAzure,
+			ID:  id,
+		}, true
 	}
 
-	if attr, ok := res.Attributes().Get(conventions.AttributeHostName); ok {
+	if attr, ok := attrs.Get(conventions.AttributeHostName); ok {
 		return HostID{
 			Key: HostIDKeyHost,
 			ID:  attr.StringVal(),
@@ -91,4 +111,44 @@ func ResourceToHostID(res pdata.Resource) (HostID, bool) {
 	}
 
 	return HostID{}, false
+}
+
+func azureID(attrs pdata.AttributeMap, cloudAccount string) string {
+	var resourceGroupName string
+	if attr, ok := attrs.Get("azure.resourcegroup.name"); ok {
+		resourceGroupName = attr.StringVal()
+	}
+	if resourceGroupName == "" {
+		return ""
+	}
+
+	var hostname string
+	if attr, ok := attrs.Get(conventions.AttributeHostName); ok {
+		hostname = attr.StringVal()
+	}
+	if hostname == "" {
+		return ""
+	}
+
+	var vmScaleSetName string
+	if attr, ok := attrs.Get("azure.vm.scaleset.name"); ok {
+		vmScaleSetName = attr.StringVal()
+	}
+	if vmScaleSetName == "" {
+		return strings.ToLower(fmt.Sprintf(
+			"%s/%s/microsoft.compute/virtualmachines/%s",
+			cloudAccount,
+			resourceGroupName,
+			hostname,
+		))
+	}
+
+	instanceID := strings.TrimPrefix(hostname, vmScaleSetName+"_")
+	return strings.ToLower(fmt.Sprintf(
+		"%s/%s/microsoft.compute/virtualmachinescalesets/%s/virtualmachines/%s",
+		cloudAccount,
+		resourceGroupName,
+		vmScaleSetName,
+		instanceID,
+	))
 }

@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
-	"go.uber.org/zap"
 )
 
 const (
@@ -43,8 +42,7 @@ const (
 	slsLogInstrumentationVersion = "otlp.version"
 )
 
-func logDataToLogService(logger *zap.Logger, ld pdata.Logs) ([]*sls.Log, int) {
-	numDroppedLogs := 0
+func logDataToLogService(ld pdata.Logs) []*sls.Log {
 	slsLogs := make([]*sls.Log, 0)
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
@@ -58,16 +56,14 @@ func logDataToLogService(logger *zap.Logger, ld pdata.Logs) ([]*sls.Log, int) {
 			logs := ils.Logs()
 			for j := 0; j < logs.Len(); j++ {
 				slsLog := mapLogRecordToLogService(logs.At(j), resourceContents, instrumentationLibraryContents)
-				if slsLog == nil {
-					numDroppedLogs++
-				} else {
+				if slsLog != nil {
 					slsLogs = append(slsLogs, slsLog)
 				}
 			}
 		}
 	}
 
-	return slsLogs, numDroppedLogs
+	return slsLogs
 }
 
 func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
@@ -98,11 +94,12 @@ func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
 	}
 
 	fields := map[string]interface{}{}
-	attrs.ForEach(func(k string, v pdata.AttributeValue) {
+	attrs.Range(func(k string, v pdata.AttributeValue) bool {
 		if k == conventions.AttributeServiceName || k == conventions.AttributeHostName {
-			return
+			return true
 		}
 		fields[k] = tracetranslator.AttributeValueToString(v, false)
+		return true
 	})
 	attributeBuffer, _ := json.Marshal(fields)
 	logContents[2] = &sls.LogContent{
@@ -163,8 +160,9 @@ func mapLogRecordToLogService(lr pdata.LogRecord,
 	})
 
 	fields := map[string]interface{}{}
-	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		fields[k] = tracetranslator.AttributeValueToString(v, false)
+		return true
 	})
 	attributeBuffer, _ := json.Marshal(fields)
 	contentsBuffer = append(contentsBuffer, sls.LogContent{

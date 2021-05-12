@@ -1,8 +1,8 @@
 receivers:
-  examplereceiver:
+  nop:
 
 exporters:
-  exampleexporter:
+  nop:
 
 processors:
   tail_sampling:
@@ -35,6 +35,6 @@ processors:
 service:
   pipelines:
     traces:
-      receivers: [examplereceiver]
+      receivers: [nop]
       processors: [tail_sampling]
-      exporters: [exampleexporter]
+      exporters: [nop]

@@ -23,10 +23,14 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
 )
@@ -58,6 +62,9 @@ type HostMetadata struct {
 type HostTags struct {
 	// OTel are host tags set in the configuration
 	OTel []string `json:"otel,omitempty"`
+
+	// GCP are Google Cloud Platform tags
+	GCP []string `json:"google cloud platform,omitempty"`
 }
 
 // Meta includes metadata about the host aliases
@@ -81,33 +88,69 @@ type Meta struct {
 	HostAliases []string `json:"host-aliases,omitempty"`
 }
 
-func getHostMetadata(params component.ExporterCreateParams, cfg *config.Config) *HostMetadata {
-	hostname := *GetHost(params.Logger, cfg)
-	tags := cfg.GetHostTags()
+// metadataFromAttributes gets metadata info from attributes following
+// OpenTelemetry semantic conventions
+func metadataFromAttributes(attrs pdata.AttributeMap) *HostMetadata {
+	hm := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
 
-	ec2HostInfo := ec2.GetHostInfo(params.Logger)
-	systemHostInfo := system.GetHostInfo(params.Logger)
+	if hostname, ok := HostnameFromAttributes(attrs); ok {
+		hm.InternalHostname = hostname
+		hm.Meta.Hostname = hostname
+	}
 
-	return &HostMetadata{
-		InternalHostname: hostname,
-		Flavor:           params.ApplicationStartInfo.ExeName,
-		Version:          params.ApplicationStartInfo.Version,
-		Tags:             &HostTags{tags},
-		Meta: &Meta{
-			InstanceID:     ec2HostInfo.InstanceID,
-			EC2Hostname:    ec2HostInfo.EC2Hostname,
-			Hostname:       hostname,
-			SocketHostname: systemHostInfo.OS,
-			SocketFqdn:     systemHostInfo.FQDN,
-		},
+	// AWS EC2 resource metadata
+	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
+	if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS {
+		ec2HostInfo := ec2.HostInfoFromAttributes(attrs)
+		hm.Meta.InstanceID = ec2HostInfo.InstanceID
+		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
+		hm.Tags.OTel = append(hm.Tags.OTel, ec2HostInfo.EC2Tags...)
+	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP {
+		gcpHostInfo := gcp.HostInfoFromAttributes(attrs)
+		hm.Tags.GCP = gcpHostInfo.GCPTags
+		hm.Meta.HostAliases = append(hm.Meta.HostAliases, gcpHostInfo.HostAliases...)
+	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure {
+		azureHostInfo := azure.HostInfoFromAttributes(attrs)
+		hm.Meta.HostAliases = append(hm.Meta.HostAliases, azureHostInfo.HostAliases...)
+	}
+
+	return hm
+}
+
+func fillHostMetadata(params component.ExporterCreateParams, cfg *config.Config, hm *HostMetadata) {
+	// Could not get hostname from attributes
+	if hm.InternalHostname == "" {
+		hostname := *GetHost(params.Logger, cfg)
+		hm.InternalHostname = hostname
+		hm.Meta.Hostname = hostname
+	}
+
+	// This information always gets filled in here
+	// since it does not come from OTEL conventions
+	hm.Flavor = params.BuildInfo.Command
+	hm.Version = params.BuildInfo.Version
+	hm.Tags.OTel = append(hm.Tags.OTel, cfg.GetHostTags()...)
+
+	// EC2 data was not set from attributes
+	if hm.Meta.EC2Hostname == "" {
+		ec2HostInfo := ec2.GetHostInfo(params.Logger)
+		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
+		hm.Meta.InstanceID = ec2HostInfo.InstanceID
+	}
+
+	// System data was not set from attributes
+	if hm.Meta.SocketHostname == "" {
+		systemHostInfo := system.GetHostInfo(params.Logger)
+		hm.Meta.SocketHostname = systemHostInfo.OS
+		hm.Meta.SocketFqdn = systemHostInfo.FQDN
 	}
 }
 
-func pushMetadata(cfg *config.Config, startInfo component.ApplicationStartInfo, metadata *HostMetadata) error {
+func pushMetadata(cfg *config.Config, buildInfo component.BuildInfo, metadata *HostMetadata) error {
 	path := cfg.Metrics.TCPAddr.Endpoint + "/intake"
 	buf, _ := json.Marshal(metadata)
 	req, _ := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(buf))
-	utils.SetDDHeaders(req.Header, startInfo, cfg.API.Key)
+	utils.SetDDHeaders(req.Header, buildInfo, cfg.API.Key)
 	utils.SetExtraHeaders(req.Header, utils.JSONHeaders)
 	client := utils.NewHTTPClient(10 * time.Second)
 	resp, err := client.Do(req)
@@ -129,14 +172,13 @@ func pushMetadata(cfg *config.Config, startInfo component.ApplicationStartInfo, 
 	return nil
 }
 
-func getAndPushMetadata(params component.ExporterCreateParams, cfg *config.Config) {
+func pushMetadataWithRetry(params component.ExporterCreateParams, cfg *config.Config, hostMetadata *HostMetadata) {
 	const maxRetries = 5
-	hostMetadata := getHostMetadata(params, cfg)
 
 	params.Logger.Debug("Sending host metadata payload", zap.Any("payload", hostMetadata))
 
 	numRetries, err := utils.DoWithRetries(maxRetries, func() error {
-		return pushMetadata(cfg, params.ApplicationStartInfo, hostMetadata)
+		return pushMetadata(cfg, params.BuildInfo, hostMetadata)
 	})
 
 	if err != nil {
@@ -148,21 +190,34 @@ func getAndPushMetadata(params component.ExporterCreateParams, cfg *config.Confi
 }
 
 // Pusher pushes host metadata payloads periodically to Datadog intake
-func Pusher(ctx context.Context, params component.ExporterCreateParams, cfg *config.Config) {
+func Pusher(ctx context.Context, params component.ExporterCreateParams, cfg *config.Config, attrs pdata.AttributeMap) {
 	// Push metadata every 30 minutes
 	ticker := time.NewTicker(30 * time.Minute)
 	defer ticker.Stop()
 	defer params.Logger.Debug("Shut down host metadata routine")
 
+	// Get host metadata from resources and fill missing info using our exporter.
+	// Currently we only retrieve it once but still send the same payload
+	// every 30 minutes for consistency with the Datadog Agent behavior.
+	//
+	// All fields that are being filled in by our exporter
+	// do not change over time. If this ever changes `hostMetadata`
+	// *must* be deep copied before calling `fillHostMetadata`.
+	hostMetadata := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
+	if cfg.UseResourceMetadata {
+		hostMetadata = metadataFromAttributes(attrs)
+	}
+	fillHostMetadata(params, cfg, hostMetadata)
+
 	// Run one first time at startup
-	getAndPushMetadata(params, cfg)
+	pushMetadataWithRetry(params, cfg, hostMetadata)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C: // Send host metadata
-			getAndPushMetadata(params, cfg)
+			pushMetadataWithRetry(params, cfg, hostMetadata)
 		}
 	}
 }

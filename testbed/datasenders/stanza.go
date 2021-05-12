@@ -18,46 +18,51 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
-// TODO: Extract common bits from StanzaFileLogWriter and NewFluentBitFileLogWriter
+// TODO: Extract common bits from FileLogWriter and NewFluentBitFileLogWriter
 // and generalize as FileLogWriter.
 
-type StanzaFileLogWriter struct {
-	testbed.DataSenderBase
+type FileLogWriter struct {
 	file *os.File
 }
 
-// Ensure StanzaFileLogWriter implements LogDataSender.
-var _ testbed.LogDataSender = (*StanzaFileLogWriter)(nil)
+// Ensure FileLogWriter implements LogDataSender.
+var _ testbed.LogDataSender = (*FileLogWriter)(nil)
 
-// NewStanzaFileLogWriter creates a new data sender that will write log entries to a
+// NewFileLogWriter creates a new data sender that will write log entries to a
 // file, to be tailed by FluentBit and sent to the collector.
-func NewStanzaFileLogWriter() *StanzaFileLogWriter {
+func NewFileLogWriter() *FileLogWriter {
 	file, err := ioutil.TempFile("", "perf-logs.log")
 	if err != nil {
 		panic("failed to create temp file")
 	}
 
-	f := &StanzaFileLogWriter{
+	f := &FileLogWriter{
 		file: file,
 	}
 
 	return f
 }
 
-func (f *StanzaFileLogWriter) Start() error {
+func (f *FileLogWriter) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+func (f *FileLogWriter) Start() error {
 	return nil
 }
 
-func (f *StanzaFileLogWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) error {
+func (f *FileLogWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		for j := 0; j < logs.ResourceLogs().At(i).InstrumentationLibraryLogs().Len(); j++ {
 			ills := logs.ResourceLogs().At(i).InstrumentationLibraryLogs().At(j)
@@ -72,7 +77,7 @@ func (f *StanzaFileLogWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) er
 	return nil
 }
 
-func (f *StanzaFileLogWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
+func (f *FileLogWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
 	sb := strings.Builder{}
 
 	// Timestamp
@@ -87,7 +92,7 @@ func (f *StanzaFileLogWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
 		sb.WriteString(lr.Body().StringVal())
 	}
 
-	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		sb.WriteString(" ")
 		sb.WriteString(k)
 		sb.WriteString("=")
@@ -103,24 +108,24 @@ func (f *StanzaFileLogWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
 		default:
 			panic("missing case")
 		}
+		return true
 	})
 
 	return []byte(sb.String())
 }
 
-func (f *StanzaFileLogWriter) Flush() {
+func (f *FileLogWriter) Flush() {
 	_ = f.file.Sync()
 }
 
-func (f *StanzaFileLogWriter) GenConfigYAMLStr() string {
+func (f *FileLogWriter) GenConfigYAMLStr() string {
 	// Note that this generates a receiver config for agent.
 	// We are testing stanza receiver here.
 	return fmt.Sprintf(`
-  stanza:
+  filelog:
+    include: [ %s ]
+    start_at: beginning
     operators:
-      - type: file_input
-        include: [ %s ]
-        start_at: beginning
       - type: regex_parser
         regex: '^(?P<time>\d{4}-\d{2}-\d{2}) (?P<sev>[A-Z0-9]*) (?P<msg>.*)$'
         timestamp:
@@ -128,14 +133,27 @@ func (f *StanzaFileLogWriter) GenConfigYAMLStr() string {
           layout: '%%Y-%%m-%%d'
         severity:
           parse_from: sev
-`,
-		f.file.Name())
+`, f.file.Name())
 }
 
-func (f *StanzaFileLogWriter) ProtocolName() string {
-	return "stanza"
+func (f *FileLogWriter) ProtocolName() string {
+	return "filelog"
 }
 
-func (f *StanzaFileLogWriter) GetEndpoint() string {
-	return ""
+func (f *FileLogWriter) GetEndpoint() net.Addr {
+	return nil
+}
+
+func NewLocalFileStorageExtension() map[string]string {
+	tempDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		panic("failed to create temp storage dir")
+	}
+
+	return map[string]string{
+		"file_storage": fmt.Sprintf(`
+  file_storage:
+    directory: %s
+`, tempDir),
+	}
 }

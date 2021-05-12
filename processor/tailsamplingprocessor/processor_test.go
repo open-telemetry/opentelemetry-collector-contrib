@@ -46,7 +46,7 @@ func TestSequentialTraceArrival(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTraceProcessor(zap.NewNop(), consumertest.NewTracesNop(), cfg)
+	sp, _ := newTracesProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		tsp.ConsumeTraces(context.Background(), batch)
@@ -70,7 +70,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTraceProcessor(zap.NewNop(), consumertest.NewTracesNop(), cfg)
+	sp, _ := newTracesProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		// Add the same traceId twice.
@@ -104,7 +104,7 @@ func TestSequentialTraceMapSize(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTraceProcessor(zap.NewNop(), consumertest.NewTracesNop(), cfg)
+	sp, _ := newTracesProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		tsp.ConsumeTraces(context.Background(), batch)
@@ -127,7 +127,7 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTraceProcessor(zap.NewNop(), consumertest.NewTracesNop(), cfg)
+	sp, _ := newTracesProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		wg.Add(1)
@@ -363,16 +363,16 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 	expectedSpanIds := make(map[int][]pdata.SpanID)
 	expectedSpanIds[0] = []pdata.SpanID{
-		pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(1))),
+		tracetranslator.UInt64ToSpanID(uint64(1)),
 	}
 	expectedSpanIds[1] = []pdata.SpanID{
-		pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(2))),
-		pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(3))),
+		tracetranslator.UInt64ToSpanID(uint64(2)),
+		tracetranslator.UInt64ToSpanID(uint64(3)),
 	}
 	expectedSpanIds[2] = []pdata.SpanID{
-		pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(4))),
-		pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(5))),
-		pdata.NewSpanID(tracetranslator.UInt64ToByteSpanID(uint64(6))),
+		tracetranslator.UInt64ToSpanID(uint64(4)),
+		tracetranslator.UInt64ToSpanID(uint64(5)),
+		tracetranslator.UInt64ToSpanID(uint64(6)),
 	}
 
 	receivedTraces := msp.AllTraces()
@@ -386,8 +386,8 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 		// might have received out of order, sort for comparison
 		sort.Slice(got, func(i, j int) bool {
-			a := tracetranslator.BytesToInt64SpanID(got[i].Bytes())
-			b := tracetranslator.BytesToInt64SpanID(got[j].Bytes())
+			a := tracetranslator.SpanIDToUInt64(got[i])
+			b := tracetranslator.SpanIDToUInt64(got[j])
 			return a < b
 		})
 
@@ -521,11 +521,6 @@ func simpleTraces() pdata.Traces {
 
 func simpleTracesWithID(traceID pdata.TraceID) pdata.Traces {
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rs := traces.ResourceSpans().At(0)
-	rs.InstrumentationLibrarySpans().Resize(1)
-	ils := rs.InstrumentationLibrarySpans().At(0)
-	ils.Spans().Resize(1)
-	ils.Spans().At(0).SetTraceID(traceID)
+	traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
 	return traces
 }

@@ -28,18 +28,22 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 func TestTraceExport(t *testing.T) {
-	traceExporter := initializeTraceExporter()
+	traceExporter := initializeTracesExporter()
 	ctx := context.Background()
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
 	assert.NotNil(t, err)
+	err = traceExporter.Shutdown(ctx)
+	assert.Nil(t, err)
 }
 
-func BenchmarkForTraceExporter(b *testing.B) {
-	traceExporter := initializeTraceExporter()
+func BenchmarkForTracesExporter(b *testing.B) {
+	traceExporter := initializeTracesExporter()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
 		ctx := context.Background()
@@ -49,7 +53,7 @@ func BenchmarkForTraceExporter(b *testing.B) {
 	}
 }
 
-func initializeTraceExporter() component.TracesExporter {
+func initializeTracesExporter() component.TracesExporter {
 	os.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
 	os.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
 	os.Setenv("AWS_DEFAULT_REGION", "us-east-1")
@@ -59,9 +63,8 @@ func initializeTraceExporter() component.TracesExporter {
 	config := factory.CreateDefaultConfig()
 	config.(*Config).Region = "us-east-1"
 	config.(*Config).LocalMode = true
-	mconn := new(mockConn)
-	mconn.sn, _ = getDefaultSession(logger)
-	traceExporter, err := newTraceExporter(config, component.ExporterCreateParams{Logger: logger}, mconn)
+	mconn := new(awsutil.Conn)
+	traceExporter, err := newTracesExporter(config, component.ExporterCreateParams{Logger: logger}, mconn)
 	if err != nil {
 		panic(err)
 	}
@@ -72,14 +75,11 @@ func constructSpanData() pdata.Traces {
 	resource := constructResource()
 
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().Resize(1)
-	rspans := traces.ResourceSpans().At(0)
+	rspans := traces.ResourceSpans().AppendEmpty()
 	resource.CopyTo(rspans.Resource())
-	rspans.InstrumentationLibrarySpans().Resize(1)
-	ispans := rspans.InstrumentationLibrarySpans().At(0)
-	ispans.Spans().Resize(2)
-	constructHTTPClientSpan().CopyTo(ispans.Spans().At(0))
-	constructHTTPServerSpan().CopyTo(ispans.Spans().At(1))
+	ispans := rspans.InstrumentationLibrarySpans().AppendEmpty()
+	constructHTTPClientSpan().CopyTo(ispans.Spans().AppendEmpty())
+	constructHTTPServerSpan().CopyTo(ispans.Spans().AppendEmpty())
 	return traces
 }
 
@@ -93,14 +93,13 @@ func constructResource() pdata.Resource {
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
 	attrs.InsertString(semconventions.AttributeCloudAccount, "999999998")
 	attrs.InsertString(semconventions.AttributeCloudRegion, "us-west-2")
-	attrs.InsertString(semconventions.AttributeCloudZone, "us-west-1b")
+	attrs.InsertString(semconventions.AttributeCloudAvailabilityZone, "us-west-1b")
 	attrs.CopyTo(resource.Attributes())
 	return resource
 }
 
 func constructHTTPClientSpan() pdata.Span {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[semconventions.AttributeHTTPStatusCode] = 200
@@ -114,8 +113,8 @@ func constructHTTPClientSpan() pdata.Span {
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindCLIENT)
-	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
-	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(0)
@@ -128,7 +127,6 @@ func constructHTTPClientSpan() pdata.Span {
 
 func constructHTTPServerSpan() pdata.Span {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[semconventions.AttributeHTTPClientIP] = "192.168.15.32"
@@ -143,8 +141,8 @@ func constructHTTPServerSpan() pdata.Span {
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
 	span.SetKind(pdata.SpanKindSERVER)
-	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
-	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
+	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 
 	status := pdata.NewSpanStatus()
 	status.SetCode(0)

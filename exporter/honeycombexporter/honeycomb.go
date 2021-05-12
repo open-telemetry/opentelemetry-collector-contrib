@@ -20,7 +20,7 @@ import (
 
 	"github.com/honeycombio/libhoney-go"
 	"github.com/honeycombio/libhoney-go/transmission"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
@@ -68,9 +68,9 @@ type link struct {
 	AnnotationType string `json:"meta.annotation_type"`
 }
 
-// newHoneycombTraceExporter creates and returns a new honeycombExporter. It
-// wraps the exporter in the component.TraceExporterOld helper method.
-func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (*honeycombExporter, error) {
+// newHoneycombTracesExporter creates and returns a new honeycombExporter. It
+// wraps the exporter in the component.TracesExporterOld helper method.
+func newHoneycombTracesExporter(cfg *Config, logger *zap.Logger) (*honeycombExporter, error) {
 	libhoneyConfig := libhoney.Config{
 		WriteKey: cfg.APIKey,
 		Dataset:  cfg.Dataset,
@@ -101,9 +101,8 @@ func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (*honeycombExpor
 
 // pushTraceData is the method called when trace data is available. It will be
 // responsible for sending a batch of events.
-func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, error) {
+func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
 	var errs []error
-	goodSpans := 0
 
 	// Run the error logger. This just listens for messages in the error
 	// response queue and writes them out using the logger.
@@ -146,9 +145,9 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) 
 					e.addSampleRate(ev, attrs)
 				}
 
-				ev.Timestamp = timestampToTime(span.StartTime())
-				startTime := timestampToTime(span.StartTime())
-				endTime := timestampToTime(span.EndTime())
+				ev.Timestamp = timestampToTime(span.StartTimestamp())
+				startTime := timestampToTime(span.StartTimestamp())
+				endTime := timestampToTime(span.EndTimestamp())
 
 				ev.Add(event{
 					ID:            getHoneycombSpanID(span.SpanID()),
@@ -167,14 +166,12 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) 
 
 				if err := ev.SendPresampled(); err != nil {
 					errs = append(errs, err)
-				} else {
-					goodSpans++
 				}
 			}
 		}
 	}
 
-	return td.SpanCount() - goodSpans, componenterror.CombineErrors(errs)
+	return consumererror.Combine(errs)
 }
 
 func getSpanKind(kind pdata.SpanKind) string {

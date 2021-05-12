@@ -17,38 +17,49 @@
 package metadata
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // Type is the component type name.
-const Type configmodels.Type = "memcachedreceiver"
+const Type config.Type = "memcachedreceiver"
 
-type metricIntf interface {
+// MetricIntf is an interface to generically interact with generated metric.
+type MetricIntf interface {
 	Name() string
 	New() pdata.Metric
+	Init(metric pdata.Metric)
 }
 
 // Intentionally not exposing this so that it is opaque and can change freely.
 type metricImpl struct {
-	name    string
-	newFunc func() pdata.Metric
+	name     string
+	initFunc func(pdata.Metric)
 }
 
+// Name returns the metric name.
 func (m *metricImpl) Name() string {
 	return m.name
 }
 
+// New creates a metric object preinitialized.
 func (m *metricImpl) New() pdata.Metric {
-	return m.newFunc()
+	metric := pdata.NewMetric()
+	m.Init(metric)
+	return metric
+}
+
+// Init initializes the provided metric object.
+func (m *metricImpl) Init(metric pdata.Metric) {
+	m.initFunc(metric)
 }
 
 type metricStruct struct {
-	MemcachedBytes              metricIntf
-	MemcachedCurrentConnections metricIntf
-	MemcachedGetHits            metricIntf
-	MemcachedGetMisses          metricIntf
-	MemcachedTotalConnections   metricIntf
+	MemcachedBytes              MetricIntf
+	MemcachedCurrentConnections MetricIntf
+	MemcachedGetHits            MetricIntf
+	MemcachedGetMisses          MetricIntf
+	MemcachedTotalConnections   MetricIntf
 }
 
 // Names returns a list of all the metric name strings.
@@ -62,7 +73,7 @@ func (m *metricStruct) Names() []string {
 	}
 }
 
-var metricsByName = map[string]metricIntf{
+var metricsByName = map[string]MetricIntf{
 	"memcached.bytes":               Metrics.MemcachedBytes,
 	"memcached.current_connections": Metrics.MemcachedCurrentConnections,
 	"memcached.get_hits":            Metrics.MemcachedGetHits,
@@ -70,17 +81,17 @@ var metricsByName = map[string]metricIntf{
 	"memcached.total_connections":   Metrics.MemcachedTotalConnections,
 }
 
-func (m *metricStruct) ByName(n string) metricIntf {
+func (m *metricStruct) ByName(n string) MetricIntf {
 	return metricsByName[n]
 }
 
-func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
-	return map[string]func() pdata.Metric{
-		Metrics.MemcachedBytes.Name():              Metrics.MemcachedBytes.New,
-		Metrics.MemcachedCurrentConnections.Name(): Metrics.MemcachedCurrentConnections.New,
-		Metrics.MemcachedGetHits.Name():            Metrics.MemcachedGetHits.New,
-		Metrics.MemcachedGetMisses.Name():          Metrics.MemcachedGetMisses.New,
-		Metrics.MemcachedTotalConnections.Name():   Metrics.MemcachedTotalConnections.New,
+func (m *metricStruct) FactoriesByName() map[string]func(pdata.Metric) {
+	return map[string]func(pdata.Metric){
+		Metrics.MemcachedBytes.Name():              Metrics.MemcachedBytes.Init,
+		Metrics.MemcachedCurrentConnections.Name(): Metrics.MemcachedCurrentConnections.Init,
+		Metrics.MemcachedGetHits.Name():            Metrics.MemcachedGetHits.Init,
+		Metrics.MemcachedGetMisses.Name():          Metrics.MemcachedGetMisses.Init,
+		Metrics.MemcachedTotalConnections.Name():   Metrics.MemcachedTotalConnections.Init,
 	}
 }
 
@@ -89,68 +100,53 @@ func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
 var Metrics = &metricStruct{
 	&metricImpl{
 		"memcached.bytes",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("memcached.bytes")
 			metric.SetDescription("Current number of bytes used by this server to store items")
 			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"memcached.current_connections",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("memcached.current_connections")
 			metric.SetDescription("The current number of open connections")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"memcached.get_hits",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("memcached.get_hits")
 			metric.SetDescription("Number of keys that have been requested and found present")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			metric.IntSum().SetIsMonotonic(true)
 			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"memcached.get_misses",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("memcached.get_misses")
 			metric.SetDescription("Number of items that have been requested and not found")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			metric.IntSum().SetIsMonotonic(true)
 			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-
-			return metric
 		},
 	},
 	&metricImpl{
 		"memcached.total_connections",
-		func() pdata.Metric {
-			metric := pdata.NewMetric()
+		func(metric pdata.Metric) {
 			metric.SetName("memcached.total_connections")
 			metric.SetDescription("Total number of connections opened since the server started running")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			metric.IntSum().SetIsMonotonic(true)
 			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-
-			return metric
 		},
 	},
 }

@@ -25,7 +25,7 @@ import (
 
 type memoryStorage struct {
 	sync.RWMutex
-	content                   map[string][]pdata.ResourceSpans
+	content                   map[pdata.TraceID][]pdata.ResourceSpans
 	stopped                   bool
 	stoppedLock               sync.RWMutex
 	metricsCollectionInterval time.Duration
@@ -35,34 +35,31 @@ var _ storage = (*memoryStorage)(nil)
 
 func newMemoryStorage() *memoryStorage {
 	return &memoryStorage{
-		content:                   make(map[string][]pdata.ResourceSpans),
+		content:                   make(map[pdata.TraceID][]pdata.ResourceSpans),
 		metricsCollectionInterval: time.Second,
 	}
 }
 
-func (st *memoryStorage) createOrAppend(traceID pdata.TraceID, rs pdata.ResourceSpans) error {
-	sTraceID := traceID.HexString()
-
+func (st *memoryStorage) createOrAppend(traceID pdata.TraceID, td pdata.Traces) error {
 	st.Lock()
 	defer st.Unlock()
 
-	if _, ok := st.content[sTraceID]; !ok {
-		st.content[sTraceID] = []pdata.ResourceSpans{}
-	}
+	// getting zero value is fine
+	content := st.content[traceID]
 
-	newRS := pdata.NewResourceSpans()
-	rs.CopyTo(newRS)
-	st.content[sTraceID] = append(st.content[sTraceID], newRS)
+	newRss := pdata.NewResourceSpansSlice()
+	td.ResourceSpans().CopyTo(newRss)
+	for i := 0; i < newRss.Len(); i++ {
+		content = append(content, newRss.At(i))
+	}
+	st.content[traceID] = content
 
 	return nil
 }
 func (st *memoryStorage) get(traceID pdata.TraceID) ([]pdata.ResourceSpans, error) {
-	sTraceID := traceID.HexString()
-
 	st.RLock()
-	defer st.RUnlock()
-
-	rss, ok := st.content[sTraceID]
+	rss, ok := st.content[traceID]
+	st.RUnlock()
 	if !ok {
 		return nil, nil
 	}
@@ -80,21 +77,11 @@ func (st *memoryStorage) get(traceID pdata.TraceID) ([]pdata.ResourceSpans, erro
 // delete will return a reference to a ResourceSpans. Changes to the returned object may not be applied
 // to the version in the storage.
 func (st *memoryStorage) delete(traceID pdata.TraceID) ([]pdata.ResourceSpans, error) {
-	sTraceID := traceID.HexString()
-
 	st.Lock()
 	defer st.Unlock()
 
-	rss := st.content[sTraceID]
-	var result []pdata.ResourceSpans
-	for _, rs := range rss {
-		newRS := pdata.NewResourceSpans()
-		rs.CopyTo(newRS)
-		result = append(result, newRS)
-	}
-	delete(st.content, sTraceID)
-
-	return result, nil
+	defer delete(st.content, traceID)
+	return st.content[traceID], nil
 }
 
 func (st *memoryStorage) start() error {
@@ -109,7 +96,7 @@ func (st *memoryStorage) shutdown() error {
 	return nil
 }
 
-func (st *memoryStorage) periodicMetrics() error {
+func (st *memoryStorage) periodicMetrics() {
 	numTraces := st.count()
 	stats.Record(context.Background(), mNumTracesInMemory.M(int64(numTraces)))
 
@@ -117,14 +104,12 @@ func (st *memoryStorage) periodicMetrics() error {
 	stopped := st.stopped
 	st.stoppedLock.RUnlock()
 	if stopped {
-		return nil
+		return
 	}
 
 	time.AfterFunc(st.metricsCollectionInterval, func() {
 		st.periodicMetrics()
 	})
-
-	return nil
 }
 
 func (st *memoryStorage) count() int {

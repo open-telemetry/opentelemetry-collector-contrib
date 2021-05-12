@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/metrics"
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 func getMetricsForReplicationController(rc *corev1.ReplicationController) []*resourceMetrics {
@@ -52,8 +52,8 @@ func getResourceForReplicationController(rc *corev1.ReplicationController) *reso
 	}
 }
 
-func getMetadataForReplicationController(rc *corev1.ReplicationController) map[metrics.ResourceID]*KubernetesMetadata {
-	return map[metrics.ResourceID]*KubernetesMetadata{
-		metrics.ResourceID(rc.UID): getGenericMetadata(&rc.ObjectMeta, k8sKindReplicationController),
+func getMetadataForReplicationController(rc *corev1.ReplicationController) map[metadata.ResourceID]*KubernetesMetadata {
+	return map[metadata.ResourceID]*KubernetesMetadata{
+		metadata.ResourceID(rc.UID): getGenericMetadata(&rc.ObjectMeta, k8sKindReplicationController),
 	}
 }

@@ -42,6 +42,7 @@ func (md *mockMetaDataProvider) fetchTaskMetaData(tmde string) (*TaskMetaData, e
 		TaskARN:          "arn:aws:ecs:us-west-2:123456789123:task/123",
 		Family:           "family",
 		AvailabilityZone: "us-west-2a",
+		Revision:         "26",
 		Containers:       cs,
 	}
 
@@ -58,7 +59,7 @@ func (md *mockMetaDataProvider) fetchContainerMetaData(string) (*Container, erro
 }
 
 func Test_ecsNewDetector(t *testing.T) {
-	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()})
+	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
 
 	assert.NotNil(t, d)
 	assert.Nil(t, err)
@@ -66,7 +67,7 @@ func Test_ecsNewDetector(t *testing.T) {
 
 func Test_detectorReturnsIfNoEnvVars(t *testing.T) {
 	os.Clearenv()
-	d, _ := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()})
+	d, _ := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
 	res, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
@@ -114,12 +115,13 @@ func Test_ecsDetectV4(t *testing.T) {
 	want := pdata.NewResource()
 	attr := want.Attributes()
 	attr.InsertString("cloud.provider", "aws")
-	attr.InsertString("cloud.infrastructure_service", "ECS")
+	attr.InsertString("cloud.platform", "aws_ecs")
 	attr.InsertString("aws.ecs.cluster.arn", "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster")
 	attr.InsertString("aws.ecs.task.arn", "arn:aws:ecs:us-west-2:123456789123:task/123")
 	attr.InsertString("aws.ecs.task.family", "family")
+	attr.InsertString("aws.ecs.task.revision", "26")
 	attr.InsertString("cloud.region", "us-west-2")
-	attr.InsertString("cloud.zone", "us-west-2a")
+	attr.InsertString("cloud.availability_zone", "us-west-2a")
 	attr.InsertString("cloud.account.id", "123456789123")
 	attr.InsertString("aws.ecs.launchtype", "ec2")
 
@@ -148,12 +150,13 @@ func Test_ecsDetectV3(t *testing.T) {
 	want := pdata.NewResource()
 	attr := want.Attributes()
 	attr.InsertString("cloud.provider", "aws")
-	attr.InsertString("cloud.infrastructure_service", "ECS")
+	attr.InsertString("cloud.platform", "aws_ecs")
 	attr.InsertString("aws.ecs.cluster.arn", "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster")
 	attr.InsertString("aws.ecs.task.arn", "arn:aws:ecs:us-west-2:123456789123:task/123")
 	attr.InsertString("aws.ecs.task.family", "family")
+	attr.InsertString("aws.ecs.task.revision", "26")
 	attr.InsertString("cloud.region", "us-west-2")
-	attr.InsertString("cloud.zone", "us-west-2a")
+	attr.InsertString("cloud.availability_zone", "us-west-2a")
 	attr.InsertString("cloud.account.id", "123456789123")
 
 	d := Detector{provider: &mockMetaDataProvider{isV4: false}}

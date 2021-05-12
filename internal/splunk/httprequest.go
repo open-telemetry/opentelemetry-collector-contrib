@@ -17,6 +17,7 @@ package splunk
 import (
 	"fmt"
 	"net/http"
+	"net/http/httputil"
 	"strconv"
 	"time"
 
@@ -28,7 +29,7 @@ const HeaderRetryAfter = "Retry-After"
 
 // HandleHTTPCode handles an http response and returns the right type of error in case of a failure.
 func HandleHTTPCode(resp *http.Response) error {
-	// SignalFx accepts all 2XX codes.
+	// Splunk accepts all 2XX codes.
 	if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices {
 		return nil
 	}
@@ -53,7 +54,12 @@ func HandleHTTPCode(resp *http.Response) error {
 		err = exporterhelper.NewThrottleRetry(err, time.Duration(retryAfter)*time.Second)
 	// Check for permanent errors.
 	case http.StatusBadRequest, http.StatusUnauthorized:
-		err = consumererror.Permanent(err)
+		dump, err2 := httputil.DumpResponse(resp, true)
+		if err2 == nil {
+			err = consumererror.Permanent(fmt.Errorf("%w", fmt.Errorf("%q", dump)))
+		} else {
+			err = consumererror.Combine([]error{err, err2})
+		}
 	}
 
 	return err

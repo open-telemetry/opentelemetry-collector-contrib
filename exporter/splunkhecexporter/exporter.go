@@ -17,7 +17,6 @@ package splunkhecexporter
 import (
 	"compress/gzip"
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -34,16 +33,17 @@ import (
 )
 
 const (
-	idleConnTimeout     = 30 * time.Second
-	tlsHandshakeTimeout = 10 * time.Second
-	dialerTimeout       = 30 * time.Second
-	dialerKeepAlive     = 30 * time.Second
+	idleConnTimeout      = 30 * time.Second
+	tlsHandshakeTimeout  = 10 * time.Second
+	dialerTimeout        = 30 * time.Second
+	dialerKeepAlive      = 30 * time.Second
+	defaultSplunkAppName = "OpenTelemetry Collector Contrib"
 )
 
 type splunkExporter struct {
-	pushMetricsData func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
-	pushTraceData   func(ctx context.Context, td pdata.Traces) (numDroppedSpans int, err error)
-	pushLogData     func(ctx context.Context, td pdata.Logs) (numDroppedSpans int, err error)
+	pushMetricsData func(ctx context.Context, md pdata.Metrics) error
+	pushTraceData   func(ctx context.Context, td pdata.Traces) error
+	pushLogData     func(ctx context.Context, td pdata.Logs) error
 	stop            func(ctx context.Context) (err error)
 	start           func(ctx context.Context, host component.Host) (err error)
 }
@@ -57,18 +57,30 @@ type exporterOptions struct {
 func createExporter(
 	config *Config,
 	logger *zap.Logger,
+	buildinfo *component.BuildInfo,
 ) (*splunkExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
 	}
 
+	if config.SplunkAppName == "" {
+		config.SplunkAppName = defaultSplunkAppName
+	}
+
+	if config.SplunkAppVersion == "" {
+		config.SplunkAppVersion = buildinfo.Version
+	}
+
 	options, err := config.getOptionsFromConfig()
 	if err != nil {
 		return nil,
-			fmt.Errorf("failed to process %q config: %v", config.Name(), err)
+			fmt.Errorf("failed to process %q config: %v", config.ID().String(), err)
 	}
 
-	client := buildClient(options, config, logger)
+	client, err := buildClient(options, config, logger)
+	if err != nil {
+		return nil, err
+	}
 
 	return &splunkExporter{
 		pushMetricsData: client.pushMetricsData,
@@ -79,7 +91,11 @@ func createExporter(
 	}, nil
 }
 
-func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) *client {
+func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) (*client, error) {
+	tlsCfg, err := config.TLSSetting.LoadTLSConfig()
+	if err != nil {
+		return nil, fmt.Errorf("could not retrieve TLS config for Splunk HEC Exporter: %w", err)
+	}
 	return &client{
 		url: options.url,
 		client: &http.Client{
@@ -94,9 +110,7 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) *
 				MaxIdleConnsPerHost: int(config.MaxConnections),
 				IdleConnTimeout:     idleConnTimeout,
 				TLSHandshakeTimeout: tlsHandshakeTimeout,
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: config.InsecureSkipVerify,
-				},
+				TLSClientConfig:     tlsCfg,
 			},
 		},
 		logger: logger,
@@ -104,11 +118,13 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) *
 			return gzip.NewWriter(nil)
 		}},
 		headers: map[string]string{
-			"Connection":    "keep-alive",
-			"Content-Type":  "application/json",
-			"User-Agent":    "OpenTelemetry-Collector Splunk Exporter/v0.0.1",
-			"Authorization": splunk.HECTokenHeader + " " + config.Token,
+			"Connection":           "keep-alive",
+			"Content-Type":         "application/json",
+			"User-Agent":           config.SplunkAppName + "/" + config.SplunkAppVersion,
+			"Authorization":        splunk.HECTokenHeader + " " + config.Token,
+			"__splunk_app_name":    config.SplunkAppName,
+			"__splunk_app_version": config.SplunkAppVersion,
 		},
 		config: config,
-	}
+	}, nil
 }

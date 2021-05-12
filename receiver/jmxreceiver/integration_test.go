@@ -60,7 +60,7 @@ func (suite *JMXIntegrationSuite) TearDownSuite() {
 }
 
 func downloadJMXMetricGathererJAR() (string, error) {
-	url := "https://oss.jfrog.org/artifactory/list/oss-snapshot-local/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/0.0.1-SNAPSHOT/opentelemetry-java-contrib-jmx-metrics-0.0.1-20201110.155252-5.jar"
+	url := "https://oss.sonatype.org/content/repositories/snapshots/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/1.0.0-alpha-SNAPSHOT/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha-20210429.213723-5.jar"
 	resp, err := http.Get(url)
 	if err != nil {
 		return "", err
@@ -137,7 +137,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 	logger := zap.New(logCore)
 	params := component.ReceiverCreateParams{Logger: logger}
 
-	config := &config{
+	cfg := &Config{
 		CollectionInterval: 100 * time.Millisecond,
 		Endpoint:           fmt.Sprintf("%v:7199", hostname),
 		JARPath:            suite.JARPath,
@@ -155,7 +155,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 	consumer := new(consumertest.MetricsSink)
 	require.NotNil(t, consumer)
 
-	receiver := newJMXMetricReceiver(params, config, consumer)
+	receiver := newJMXMetricReceiver(params, cfg, consumer)
 	require.NotNil(t, receiver)
 	defer func() {
 		require.Nil(t, receiver.Shutdown(context.Background()))
@@ -191,7 +191,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 
 		ilm := rm.InstrumentationLibraryMetrics().At(0)
 		require.Equal(t, "io.opentelemetry.contrib.jmxmetrics", ilm.InstrumentationLibrary().Name())
-		require.Equal(t, "0.0.1", ilm.InstrumentationLibrary().Version())
+		require.Equal(t, "1.0.0-alpha", ilm.InstrumentationLibrary().Version())
 
 		met := ilm.Metrics().At(0)
 
@@ -210,7 +210,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 
 func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	config := &config{
+	cfg := &Config{
 		CollectionInterval: 100 * time.Millisecond,
 		Endpoint:           fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),
 		JARPath:            "/notavalidpath",
@@ -222,12 +222,12 @@ func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 			},
 		},
 	}
-	receiver := newJMXMetricReceiver(params, config, consumertest.NewMetricsNop())
+	receiver := newJMXMetricReceiver(params, cfg, consumertest.NewNop())
 	require.NotNil(t, receiver)
 	defer func() {
 		require.EqualError(t, receiver.Shutdown(context.Background()), "no subprocess.cancel().  Has it been started properly?")
 	}()
 
 	err := receiver.Start(context.Background(), componenttest.NewNopHost())
-	require.EqualError(t, err, "listen tcp: lookup <invalid>: no such host")
+	require.Contains(t, err.Error(), "listen tcp: lookup <invalid>:")
 }

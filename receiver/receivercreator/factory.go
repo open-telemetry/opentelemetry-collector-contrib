@@ -16,13 +16,14 @@ package receivercreator
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/translator/conventions"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
 // This file implements factory for receiver_creator. A receiver_creator can create other receivers at runtime.
@@ -36,15 +37,23 @@ func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithCustomUnmarshaler(customUnmarshaler),
 		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
-func createDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ResourceAttributes: resourceAttributes{
+			observer.PodType: map[string]string{
+				conventions.AttributeK8sPod:       "`name`",
+				conventions.AttributeK8sPodUID:    "`uid`",
+				conventions.AttributeK8sNamespace: "`namespace`",
+			},
+			observer.PortType: map[string]string{
+				conventions.AttributeK8sPod:       "`pod.name`",
+				conventions.AttributeK8sPodUID:    "`pod.uid`",
+				conventions.AttributeK8sNamespace: "`pod.namespace`",
+			},
 		},
 		receiverTemplates: map[string]receiverTemplate{},
 	}
@@ -53,44 +62,8 @@ func createDefaultConfig() configmodels.Receiver {
 func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
+	cfg config.Receiver,
+	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	return newReceiverCreator(params, cfg.(*Config), consumer)
-}
-
-func customUnmarshaler(sourceViperSection *viper.Viper, intoCfg interface{}) error {
-	if sourceViperSection == nil {
-		// Nothing to do if there is no config given.
-		return nil
-	}
-	c := intoCfg.(*Config)
-
-	if err := sourceViperSection.Unmarshal(&c); err != nil {
-		return err
-	}
-
-	receiversCfg := viperSub(sourceViperSection, receiversConfigKey)
-
-	for subreceiverKey := range receiversCfg.AllSettings() {
-		cfgSection := viperSub(receiversCfg, subreceiverKey).GetStringMap(configKey)
-		subreceiver, err := newReceiverTemplate(subreceiverKey, cfgSection)
-		if err != nil {
-			return err
-		}
-
-		// Unmarshals receiver_creator configuration like rule.
-		if err = receiversCfg.UnmarshalKey(subreceiverKey, &subreceiver); err != nil {
-			return fmt.Errorf("failed to deserialize sub-receiver %q: %s", subreceiverKey, err)
-		}
-
-		subreceiver.rule, err = newRule(subreceiver.Rule)
-		if err != nil {
-			return fmt.Errorf("subreceiver %q rule is invalid: %v", subreceiverKey, err)
-		}
-
-		c.receiverTemplates[subreceiverKey] = subreceiver
-	}
-
-	return nil
 }
