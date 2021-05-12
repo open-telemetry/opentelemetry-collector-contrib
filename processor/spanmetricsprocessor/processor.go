@@ -195,18 +195,15 @@ func (p *processorImp) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// GetCapabilities implements the component.Processor interface.
-func (p *processorImp) GetCapabilities() component.ProcessorCapabilities {
-	p.logger.Info("GetCapabilities for spanmetricsprocessor")
-	return component.ProcessorCapabilities{MutatesConsumedData: false}
+// Capabilities implements the consumer interface.
+func (p *processorImp) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 // ConsumeTraces implements the consumer.Traces interface.
 // It aggregates the trace data to generate metrics, forwarding these metrics to the discovered metrics exporter.
 // The original input trace data will be forwarded to the next consumer, unmodified.
 func (p *processorImp) ConsumeTraces(ctx context.Context, traces pdata.Traces) error {
-	p.logger.Info("Consuming trace data")
-
 	p.aggregateMetrics(traces)
 
 	m := p.buildMetrics()

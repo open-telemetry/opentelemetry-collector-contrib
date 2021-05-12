@@ -187,7 +187,7 @@ func TestResourceProcessor(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
+			assert.True(t, rtp.Capabilities().MutatesData)
 
 			err = rtp.Start(context.Background(), componenttest.NewNopHost())
 
@@ -220,7 +220,7 @@ func TestResourceProcessor(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.True(t, rmp.GetCapabilities().MutatesConsumedData)
+			assert.True(t, rmp.Capabilities().MutatesData)
 
 			err = rmp.Start(context.Background(), componenttest.NewNopHost())
 
@@ -253,7 +253,7 @@ func TestResourceProcessor(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.True(t, rlp.GetCapabilities().MutatesConsumedData)
+			assert.True(t, rlp.Capabilities().MutatesData)
 
 			err = rlp.Start(context.Background(), componenttest.NewNopHost())
 

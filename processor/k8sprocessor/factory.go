@@ -32,7 +32,7 @@ const (
 )
 
 var kubeClientProvider = kube.ClientProvider(nil)
-var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: true}
+var consumerCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the k8s processor.
 func NewFactory() component.ProcessorFactory {
@@ -95,7 +95,7 @@ func createTracesProcessorWithOptions(
 		cfg,
 		next,
 		kp,
-		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(kp.Start),
 		processorhelper.WithShutdown(kp.Shutdown))
 }
@@ -116,7 +116,7 @@ func createMetricsProcessorWithOptions(
 		cfg,
 		nextMetricsConsumer,
 		kp,
-		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(kp.Start),
 		processorhelper.WithShutdown(kp.Shutdown))
 }
@@ -137,7 +137,7 @@ func createLogsProcessorWithOptions(
 		cfg,
 		nextLogsConsumer,
 		kp,
-		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(kp.Start),
 		processorhelper.WithShutdown(kp.Shutdown))
 }

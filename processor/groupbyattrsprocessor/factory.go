@@ -34,7 +34,7 @@ const (
 
 var (
 	errAtLeastOneAttributeNeeded = fmt.Errorf("option 'groupByKeys' must include at least one non-empty attribute name")
-	processorCapabilities        = component.ProcessorCapabilities{MutatesConsumedData: true}
+	consumerCapabilities         = consumer.Capabilities{MutatesData: true}
 )
 
 var once sync.Once
@@ -101,7 +101,7 @@ func createTracesProcessor(
 		cfg,
 		nextConsumer,
 		gap,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(consumerCapabilities))
 }
 
 // createLogsProcessor creates a metrics processor based on this config.
@@ -121,5 +121,5 @@ func createLogsProcessor(
 		cfg,
 		nextConsumer,
 		gap,
-		processorhelper.WithCapabilities(processorCapabilities))
+		processorhelper.WithCapabilities(consumerCapabilities))
 }

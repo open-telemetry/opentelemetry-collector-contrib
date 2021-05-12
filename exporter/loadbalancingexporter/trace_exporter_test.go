@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -531,6 +532,10 @@ func newNopMockTracesExporter() component.TracesExporter {
 			return nil
 		},
 	}
+}
+
+func (e *mockTracesExporter) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (e *mockTracesExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
