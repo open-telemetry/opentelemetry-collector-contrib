@@ -36,10 +36,8 @@ func NewFactory() component.ReceiverFactory {
 }
 
 func createDefaultConfig() config.Receiver {
-	var receiverSettings = config.ReceiverSettings{}
-	receiverSettings.SetIDName(typeStr)
 	return &Config{
-		ReceiverSettings: receiverSettings,
+		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "0.0.0.0:8126",
 		},
@@ -53,6 +51,5 @@ func createTracesReceiver(
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	oCfg := cfg.(*Config)
-
 	return newDataDogReceiver(oCfg, nextConsumer, params), nil
 }

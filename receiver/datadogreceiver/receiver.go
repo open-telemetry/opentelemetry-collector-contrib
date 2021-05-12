@@ -143,7 +143,7 @@ func (ddr *datadogReceiver) handleTraces05(w http.ResponseWriter, req *http.Requ
 	ddr.processTraces(ctx, traces, w)
 }
 
-func (d *datadogReceiver) processTraces(ctx context.Context, traces pb.Traces, w http.ResponseWriter) {
+func (ddr *datadogReceiver) processTraces(ctx context.Context, traces pb.Traces, w http.ResponseWriter) {
 	newTraces := pdata.NewTraces()
 	newTraces.ResourceSpans().Resize(len(traces))
 	totalSpansCount := 0
@@ -171,7 +171,7 @@ func (d *datadogReceiver) processTraces(ctx context.Context, traces pb.Traces, w
 			newTraces.ResourceSpans().At(i).InstrumentationLibrarySpans().At(i2).Spans().Append(newSpan)
 		}
 	}
-	err := d.nextConsumer.ConsumeTraces(ctx, newTraces)
+	err := ddr.nextConsumer.ConsumeTraces(ctx, newTraces)
 	if err != nil {
 		http.Error(w, "Trace consumer errored out", http.StatusInternalServerError)
 		obsreport.EndTraceDataReceiveOp(ctx, typeStr, totalSpansCount, err)
@@ -230,7 +230,7 @@ func dictionaryString(bts []byte, dict []string) (string, []byte, error) {
 
 // UnmarshalMsgDictionary decodes a trace using the specification from the v0.5 endpoint.
 // For details, see the documentation for endpoint v0.5 in pkg/trace/api/version.go
-func (d *datadogReceiver) UnmarshalMsgDictionary(t *pb.Traces, bts []byte) error {
+func (ddr *datadogReceiver) UnmarshalMsgDictionary(t *pb.Traces, bts []byte) error {
 	var err error
 	if _, bts, err = msgp.ReadArrayHeaderBytes(bts); err != nil {
 		return err
@@ -273,7 +273,7 @@ func (d *datadogReceiver) UnmarshalMsgDictionary(t *pb.Traces, bts []byte) error
 			if (*t)[i][j] == nil {
 				(*t)[i][j] = new(pb.Span)
 			}
-			if bts, err = d.SpanUnmarshalMsgDictionary((*t)[i][j], bts, dict); err != nil {
+			if bts, err = ddr.SpanUnmarshalMsgDictionary((*t)[i][j], bts, dict); err != nil {
 				return err
 			}
 		}
@@ -288,7 +288,7 @@ const spanPropertyCount = 12
 // UnmarshalMsgDictionary decodes a span from the given decoder dc, looking up strings
 // in the given dictionary dict. For details, see the documentation for endpoint v0.5
 // in pkg/trace/api/version.go
-func (d *datadogReceiver) SpanUnmarshalMsgDictionary(z *pb.Span, bts []byte, dict []string) ([]byte, error) {
+func (ddr *datadogReceiver) SpanUnmarshalMsgDictionary(z *pb.Span, bts []byte, dict []string) ([]byte, error) {
 	var (
 		sz  uint32
 		err error
