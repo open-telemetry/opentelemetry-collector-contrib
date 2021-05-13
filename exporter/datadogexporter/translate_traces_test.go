@@ -30,7 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
-	"go.uber.org/zap"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
@@ -140,7 +139,7 @@ func TestConvertToDatadogTd(t *testing.T) {
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
 
-	outputTraces, runningMetrics := convertToDatadogTd(traces, calculator, &config.Config{}, denylister)
+	outputTraces, runningMetrics := convertToDatadogTd(traces, "test-host", calculator, &config.Config{}, denylister)
 	assert.Equal(t, 1, len(outputTraces))
 	assert.Equal(t, 1, len(runningMetrics))
 }
@@ -150,7 +149,7 @@ func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
 
-	outputTraces, runningMetrics := convertToDatadogTd(traces, calculator, &config.Config{}, denylister)
+	outputTraces, runningMetrics := convertToDatadogTd(traces, "test-host", calculator, &config.Config{}, denylister)
 	assert.Equal(t, 0, len(outputTraces))
 	assert.Equal(t, 0, len(runningMetrics))
 }
@@ -174,20 +173,18 @@ func TestRunningTraces(t *testing.T) {
 
 	rts.AppendEmpty()
 
-	_, runningMetrics := convertToDatadogTd(td, newSublayerCalculator(), &config.Config{}, NewDenylister([]string{}))
+	_, runningMetrics := convertToDatadogTd(td, "fallbackHost", newSublayerCalculator(), &config.Config{}, NewDenylister([]string{}))
 
 	runningHostnames := []string{}
 	for _, metric := range runningMetrics {
-		require.Equal(t, *metric.Metric, "datadog_exporter.traces.running")
+		require.Equal(t, *metric.Metric, "otel.datadog_exporter.traces.running")
 		require.NotNil(t, metric.Host)
 		runningHostnames = append(runningHostnames, *metric.Host)
 	}
 
-	defaultHostname := *metadata.GetHost(zap.NewNop(), &config.Config{})
-
 	assert.ElementsMatch(t,
 		runningHostnames,
-		[]string{"resource-hostname-1", "resource-hostname-1", "resource-hostname-2", defaultHostname},
+		[]string{"resource-hostname-1", "resource-hostname-1", "resource-hostname-2", "fallbackHost"},
 	)
 }
 
@@ -212,7 +209,7 @@ func TestObfuscation(t *testing.T) {
 	// of them is currently not supported.
 	span.Attributes().InsertString("testinfo?=123", "http.route")
 
-	outputTraces, _ := convertToDatadogTd(traces, calculator, &config.Config{}, denylister)
+	outputTraces, _ := convertToDatadogTd(traces, "test-host", calculator, &config.Config{}, denylister)
 	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
 
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
@@ -1224,7 +1221,7 @@ func TestSanitization(t *testing.T) {
 	instrumentationLibrary.SetVersion("v1")
 	ilss.Spans().Resize(1)
 
-	outputTraces, _ := convertToDatadogTd(traces, calculator, &config.Config{}, denylister)
+	outputTraces, _ := convertToDatadogTd(traces, "test-host", calculator, &config.Config{}, denylister)
 	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
 
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
