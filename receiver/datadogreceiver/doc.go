@@ -12,18 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Receives traces from Datadog APM Agent
+
 package datadogreceiver
-
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/config/configcheck"
-)
-
-func TestCreateDefaultConfig(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
-}

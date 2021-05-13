@@ -14,16 +14,9 @@
 
 package datadogreceiver
 
-import (
-	"testing"
+import "testing"
 
-	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/config/configcheck"
-)
+func BenchmarkTranslator(b *testing.B) {
 
-func TestCreateDefaultConfig(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	return
 }
