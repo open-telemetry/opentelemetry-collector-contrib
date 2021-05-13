@@ -133,13 +133,11 @@ func (ddr *datadogReceiver) handleTraces05(w http.ResponseWriter, req *http.Requ
 
 func (ddr *datadogReceiver) processTraces(ctx context.Context, traces pb.Traces, w http.ResponseWriter) {
 	newTraces := pdata.NewTraces()
-	newTraces.ResourceSpans().Resize(len(traces))
 	totalSpansCount := 0
-	for i, trace := range traces {
+	for _, trace := range traces {
 		totalSpansCount += len(trace)
-		newTraces.ResourceSpans().At(i).InstrumentationLibrarySpans().Resize(len(trace))
-		for i2, span := range trace {
-			newSpan := pdata.NewSpan()
+		for _, span := range trace {
+			newSpan := newTraces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 			newSpan.SetTraceID(tracetranslator.UInt64ToTraceID(span.TraceID, span.TraceID))
 			newSpan.SetSpanID(tracetranslator.UInt64ToSpanID(span.SpanID))
 			newSpan.SetStartTimestamp(pdata.Timestamp(span.Start))
@@ -156,16 +154,16 @@ func (ddr *datadogReceiver) processTraces(ctx context.Context, traces pb.Traces,
 			} else {
 				newSpan.SetKind(pdata.SpanKindINTERNAL)
 			}
-			newTraces.ResourceSpans().At(i).InstrumentationLibrarySpans().At(i2).Spans().Append(newSpan)
 		}
 	}
+
 	err := ddr.nextConsumer.ConsumeTraces(ctx, newTraces)
 	if err != nil {
 		http.Error(w, "Trace consumer errored out", http.StatusInternalServerError)
-		obsreport.EndTraceDataReceiveOp(ddr.longLivedCtx, typeStr, totalSpansCount, err)
+		obsreport.EndTraceDataReceiveOp(ddr.longLivedCtx, typeStr, newTraces.SpanCount(), err)
 	}
-	obsreport.EndTraceDataReceiveOp(ddr.longLivedCtx, typeStr, totalSpansCount, nil)
 	_, _ = w.Write([]byte("OK"))
+	obsreport.EndTraceDataReceiveOp(ddr.longLivedCtx, typeStr, newTraces.SpanCount(), nil)
 }
 
 /// Thanks Datadog!
