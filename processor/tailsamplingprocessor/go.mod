@@ -5,6 +5,7 @@ go 1.15
 require (
 	github.com/armon/go-metrics v0.3.3 // indirect
 	github.com/gogo/googleapis v1.3.0 // indirect
+	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/google/uuid v1.2.0
 	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
