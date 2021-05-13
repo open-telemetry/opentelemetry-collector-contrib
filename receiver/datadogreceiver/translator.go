@@ -31,6 +31,7 @@ func ToTraces(traces pb.Traces) pdata.Traces {
 			}
 			newSpan.Attributes().InsertString("resource", span.Resource)
 
+			//TODO: Confirm these are correct
 			switch span.Type {
 			case "web":
 				newSpan.SetKind(pdata.SpanKindSERVER)
