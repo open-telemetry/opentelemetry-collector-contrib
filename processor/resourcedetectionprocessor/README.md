@@ -17,6 +17,16 @@ details of which are currently pending confirmation in the OpenTelemetry specifi
     * host.name
     * os.type
 
+Use the Docker detector (see below) if running the Collector as a Docker container.
+
+* Docker metadata: Queries the Docker daemon to retrieve the following resource attributes from the host machine:
+
+    * host.name
+    * os.type
+
+You need to mount the Docker socket (`/var/run/docker.sock` on Linux) to contact the Docker daemon.
+Docker detection does not work on macOS.
+
 * GCE Metadata: Uses the [Google Cloud Client Libraries for Go](https://github.com/googleapis/google-cloud-go)
 to read resource information from the [GCE metadata server](https://cloud.google.com/compute/docs/storing-retrieving-metadata) to retrieve the following resource attributes:
 
