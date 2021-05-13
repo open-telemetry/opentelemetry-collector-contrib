@@ -86,6 +86,11 @@ func (c UDPInputConfig) Build(context operator.BuildContext) ([]operator.Operato
 		return nil, err
 	}
 
+	var resolver *helper.IPResolver = nil
+	if c.AddAttributes {
+		resolver = helper.NewIpResolver()
+	}
+
 	udpInput := &UDPInput{
 		InputOperator: inputOperator,
 		address:       address,
@@ -93,6 +98,7 @@ func (c UDPInputConfig) Build(context operator.BuildContext) ([]operator.Operato
 		addAttributes: c.AddAttributes,
 		encoding:      encoding,
 		splitFunc:     splitFunc,
+		resolver:      resolver,
 	}
 	return []operator.Operator{udpInput}, nil
 }
@@ -110,6 +116,7 @@ type UDPInput struct {
 
 	encoding  helper.Encoding
 	splitFunc bufio.SplitFunc
+	resolver  *helper.IPResolver
 }
 
 // Start will start listening for messages on a socket.
@@ -168,13 +175,17 @@ func (u *UDPInput) goHandleMessages(ctx context.Context) {
 				if u.addAttributes {
 					entry.AddAttribute("net.transport", "IP.UDP")
 					if addr, ok := u.connection.LocalAddr().(*net.UDPAddr); ok {
+						ip := addr.IP.String()
 						entry.AddAttribute("net.host.ip", addr.IP.String())
 						entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
+						entry.AddAttribute("net.host.name", u.resolver.GetHostFromIp(ip))
 					}
 
 					if addr, ok := remoteAddr.(*net.UDPAddr); ok {
-						entry.AddAttribute("net.peer.ip", addr.IP.String())
+						ip := addr.IP.String()
+						entry.AddAttribute("net.peer.ip", ip)
 						entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
+						entry.AddAttribute("net.peer.name", u.resolver.GetHostFromIp(ip))
 					}
 				}
 
@@ -206,5 +217,8 @@ func (u *UDPInput) Stop() error {
 	u.cancel()
 	u.connection.Close()
 	u.wg.Wait()
+	if u.resolver != nil {
+		u.resolver.Stop()
+	}
 	return nil
 }
