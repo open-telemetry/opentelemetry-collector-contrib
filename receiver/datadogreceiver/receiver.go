@@ -88,7 +88,7 @@ func (ddr *datadogReceiver) Shutdown(ctx context.Context) error {
 }
 
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
-	obsreport.StartTraceDataReceiveOp(ddr.longLivedCtx, "datadogReceiver", "http")
+	obsreport.StartTraceDataReceiveOp(ddr.longLivedCtx, typeStr, "http")
 	var traces pb.Traces
 	err := decodeRequest(req, &traces)
 	if err != nil {
