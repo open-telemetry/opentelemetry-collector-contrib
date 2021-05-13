@@ -116,9 +116,7 @@ func (ddr *datadogReceiver) handleTraces05(w http.ResponseWriter, req *http.Requ
 
 func (ddr *datadogReceiver) processTraces(ctx context.Context, traces pb.Traces, w http.ResponseWriter) {
 	newTraces := pdata.NewTraces()
-	totalSpansCount := 0
 	for _, trace := range traces {
-		totalSpansCount += len(trace)
 		for _, span := range trace {
 			newSpan := newTraces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 			newSpan.SetTraceID(tracetranslator.UInt64ToTraceID(span.TraceID, span.TraceID))
