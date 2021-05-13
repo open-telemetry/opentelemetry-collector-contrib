@@ -143,10 +143,10 @@ func (ddr *datadogReceiver) processTraces(ctx context.Context, traces pb.Traces,
 	err := ddr.nextConsumer.ConsumeTraces(ctx, newTraces)
 	if err != nil {
 		http.Error(w, "Trace consumer errored out", http.StatusInternalServerError)
-		obsreport.EndTraceDataReceiveOp(ddr.longLivedCtx, typeStr, newTraces.SpanCount(), err)
+	} else {
+		_, _ = w.Write([]byte("OK"))
 	}
-	_, _ = w.Write([]byte("OK"))
-	obsreport.EndTraceDataReceiveOp(ddr.longLivedCtx, typeStr, newTraces.SpanCount(), nil)
+	obsreport.EndTraceDataReceiveOp(ddr.longLivedCtx, typeStr, newTraces.SpanCount(), err)
 }
 
 /// Thanks Datadog!
