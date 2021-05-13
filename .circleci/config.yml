@@ -165,9 +165,13 @@ workflows:
           requires:
             - setup
       - run-stability-tests:
+          context:
+            - github-release-and-issues-api-token
           requires:
             - cross-compile 
       - publish-dev:
+          context:
+            - dockerhub-token
           requires:
             - run-stability-tests
 
@@ -175,6 +179,8 @@ workflows:
     when: << pipeline.parameters.run-build-publish >>
     jobs:
       - windows-test:
+          context:
+            - github-release-and-issues-api-token
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
@@ -201,6 +207,8 @@ workflows:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - loadtest:
+          context:
+            - github-release-and-issues-api-token
           requires:
             - cross-compile 
           filters:
@@ -230,6 +238,9 @@ workflows:
             - deb-package
             - rpm-package
       - publish-stable:
+          context:
+            - github-release-and-issues-api-token
+            - dockerhub-token
           requires:
             - lint
             - unit-tests
