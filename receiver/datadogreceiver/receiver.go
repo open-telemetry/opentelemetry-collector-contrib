@@ -53,35 +53,37 @@ func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params com
 		params:       params,
 		config:       config,
 		nextConsumer: nextConsumer,
+		server: &http.Server{
+			Addr: config.HTTPServerSettings.Endpoint,
+		},
 	}, nil
 }
 
 const collectorHTTPTransport = "http_collector"
 
 func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) error {
-	var err error
-	ddr.longLivedCtx = obsreport.ReceiverContext(ctx, "datadog", "http")
+	ddr.longLivedCtx = obsreport.ReceiverContext(ctx, "datadog", collectorHTTPTransport)
+	ddmux := mux.NewRouter()
+	ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
+	ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
+	ddmux.HandleFunc("/v0.5/traces", ddr.handleTraces)
+	ddr.server.Handler = ddmux
 	ddr.startOnce.Do(func() {
-		ddmux := mux.NewRouter()
-		ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
-		ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
-		ddmux.HandleFunc("/v0.5/traces", ddr.handleTraces)
-		ddr.server = &http.Server{
-			Handler: ddmux,
-			Addr:    ddr.config.HTTPServerSettings.Endpoint,
-		}
-		if err := ddr.server.ListenAndServe(); err != http.ErrServerClosed {
-			host.ReportFatalError(fmt.Errorf("error starting datadog receiver: %v", err))
-		}
+		go func() {
+			if err := ddr.server.ListenAndServe(); err != http.ErrServerClosed {
+				host.ReportFatalError(fmt.Errorf("error starting datadog receiver: %v", err))
+			}
+		}()
 	})
-	return err
+	return nil
 }
 
 func (ddr *datadogReceiver) Shutdown(ctx context.Context) error {
+	var err error
 	ddr.stopOnce.Do(func() {
-		_ = ddr.server.Shutdown(context.Background())
+		err = ddr.server.Shutdown(ctx)
 	})
-	return nil
+	return err
 }
 
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {

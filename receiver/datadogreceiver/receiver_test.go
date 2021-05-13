@@ -15,8 +15,10 @@
 package datadogreceiver
 
 import (
+	"context"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -26,7 +28,7 @@ import (
 
 func TestDatadogReceiver_Lifecycle(t *testing.T) {
 
-	_, err := newDataDogReceiver(&Config{
+	ddr, err := newDataDogReceiver(&Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewID("datadog")),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "0.0.0.0:8126",
@@ -34,5 +36,11 @@ func TestDatadogReceiver_Lifecycle(t *testing.T) {
 	}, consumertest.NewNop(), component.ReceiverCreateParams{Logger: zap.NewNop()})
 
 	assert.NoError(t, err, "Receiver should be created")
+
+	err = ddr.Start(context.Background(), componenttest.NewNopHost())
+	assert.NoError(t, err, "Server should start")
+
+	err = ddr.Shutdown(context.Background())
+	assert.NoError(t, err, "Server should stop")
 
 }
