@@ -28,8 +28,11 @@ import (
 
 func ToTraces(traces pb.Traces, req *http.Request) pdata.Traces {
 	dest := pdata.NewTraces()
-	ils := dest.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
-
+	res := dest.ResourceSpans().AppendEmpty()
+	ils := res.InstrumentationLibrarySpans().AppendEmpty()
+	// TODO: Figure resource tags
+	// For the semantics of status codes see
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/README.md
 	// TODO: Pull from HTTP headers ils.InstrumentationLibrary().SetName()
 	// TODO: Pull from HTTP headers ils.InstrumentationLibrary().SetVersion()
 	for _, trace := range traces {
