@@ -15,7 +15,6 @@
 package datadogreceiver
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -62,22 +61,6 @@ func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params com
 
 const collectorHTTPTransport = "http_collector"
 
-var bufferPool = sync.Pool{
-	New: func() interface{} {
-		return new(bytes.Buffer)
-	},
-}
-
-func getBuffer() *bytes.Buffer {
-	buffer := bufferPool.Get().(*bytes.Buffer)
-	buffer.Reset()
-	return buffer
-}
-
-func putBuffer(buffer *bytes.Buffer) {
-	bufferPool.Put(buffer)
-}
-
 func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) error {
 	var err error
 	ddr.longLivedCtx = obsreport.ReceiverContext(ctx, "datadog", "http")
@@ -119,10 +102,10 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 
 func (ddr *datadogReceiver) handleTraces05(w http.ResponseWriter, req *http.Request) {
 	obsreport.StartTraceDataReceiveOp(ddr.longLivedCtx, typeStr, collectorHTTPTransport)
-	var traces pb.Traces
+	traces := pb.Traces{}
 	reader := ddr.NewMsgpReader(req.Body)
-	defer ddr.FreeMsgpReader(reader)
 	err := traces.DecodeMsgDictionary(reader)
+	ddr.FreeMsgpReader(reader)
 	if err != nil {
 		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
 		obsreport.EndTraceDataReceiveOp(ddr.longLivedCtx, typeStr, 0, err)
