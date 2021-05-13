@@ -12,9 +12,10 @@ import (
 	"strings"
 )
 
-func ToTraces(traces pb.Traces) pdata.Traces {
+func ToTraces(traces pb.Traces, req *http.Request) pdata.Traces {
 	dest := pdata.NewTraces()
 	ils := dest.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
+
 	// TODO: Pull from HTTP headers ils.InstrumentationLibrary().SetName()
 	// TODO: Pull from HTTP headers ils.InstrumentationLibrary().SetVersion()
 	for _, trace := range traces {

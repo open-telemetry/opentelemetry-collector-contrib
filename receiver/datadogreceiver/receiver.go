@@ -91,7 +91,7 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	otelTraces := ToTraces(ddTraces)
+	otelTraces := ToTraces(ddTraces, req)
 
 	err = ddr.nextConsumer.ConsumeTraces(req.Context(), otelTraces)
 	if err != nil {
