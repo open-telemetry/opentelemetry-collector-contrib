@@ -39,7 +39,7 @@ import (
 )
 
 // loadConfigAssertNoError loads the test config and asserts there are no errors, and returns the receiver wanted
-func loadConfigAssertNoError(t *testing.T, receiverConfigName string) config.Receiver {
+func loadConfigAssertNoError(t *testing.T, receiverConfigID config.ComponentID) config.Receiver {
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
@@ -50,12 +50,12 @@ func loadConfigAssertNoError(t *testing.T, receiverConfigName string) config.Rec
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 
-	return cfg.Receivers[config.MustIDFromString(receiverConfigName)]
+	return cfg.Receivers[receiverConfigID]
 }
 
 // TestExecKeyMissing loads config and asserts there is an error with that config
 func TestExecKeyMissing(t *testing.T) {
-	receiverConfig := loadConfigAssertNoError(t, "prometheus_exec")
+	receiverConfig := loadConfigAssertNoError(t, config.NewID(typeStr))
 
 	assertErrorWhenExecKeyMissing(t, receiverConfig)
 }
@@ -68,7 +68,7 @@ func assertErrorWhenExecKeyMissing(t *testing.T, errorReceiverConfig config.Rece
 
 // TestEndToEnd loads the test config and completes an 2e2 test where Prometheus metrics are scrapped twice from `test_prometheus_exporter.go`
 func TestEndToEnd(t *testing.T) {
-	receiverConfig := loadConfigAssertNoError(t, "prometheus_exec/end_to_end_test/2")
+	receiverConfig := loadConfigAssertNoError(t, config.NewIDWithName(typeStr, "end_to_end_test/2"))
 
 	// e2e test with port undefined by user
 	endToEndScrapeTest(t, receiverConfig, "end-to-end port not defined")

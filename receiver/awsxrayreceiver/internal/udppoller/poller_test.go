@@ -125,7 +125,7 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
 	defer doneFn()
 
-	receiverID := config.MustIDFromString("TestSuccessfullyPollPacket")
+	receiverID := config.NewID("TestSuccessfullyPollPacket")
 
 	addr, p, _ := createAndOptionallyStartPoller(t, receiverID, true)
 	defer p.Close()
@@ -153,7 +153,7 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
 	defer doneFn()
 
-	receiverID := config.MustIDFromString("TestIncompletePacketNoSeparator")
+	receiverID := config.NewID("TestIncompletePacketNoSeparator")
 
 	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true)
 	defer p.Close()
@@ -182,7 +182,7 @@ func TestIncompletePacketNoBody(t *testing.T) {
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
 	defer doneFn()
 
-	receiverID := config.MustIDFromString("TestIncompletePacketNoBody")
+	receiverID := config.NewID("TestIncompletePacketNoBody")
 
 	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true)
 	defer p.Close()
@@ -206,7 +206,7 @@ func TestNonJsonHeader(t *testing.T) {
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
 	defer doneFn()
 
-	receiverID := config.MustIDFromString("TestNonJsonHeader")
+	receiverID := config.NewID("TestNonJsonHeader")
 
 	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true)
 	defer p.Close()
@@ -235,7 +235,7 @@ func TestJsonInvalidHeader(t *testing.T) {
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
 	defer doneFn()
 
-	receiverID := config.MustIDFromString("TestJsonInvalidHeader")
+	receiverID := config.NewID("TestJsonInvalidHeader")
 
 	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true)
 	defer p.Close()
@@ -270,7 +270,7 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
 	defer doneFn()
 
-	receiverID := config.MustIDFromString("TestSocketReadIrrecoverableNetError")
+	receiverID := config.NewID("TestSocketReadIrrecoverableNetError")
 
 	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, false)
 	// close the actual socket because we are going to mock it out below
@@ -306,7 +306,7 @@ func TestSocketReadTemporaryNetError(t *testing.T) {
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
 	defer doneFn()
 
-	receiverID := config.MustIDFromString("TestSocketReadTemporaryNetError")
+	receiverID := config.NewID("TestSocketReadTemporaryNetError")
 
 	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, false)
 	// close the actual socket because we are going to mock it out below
@@ -343,7 +343,7 @@ func TestSocketGenericReadError(t *testing.T) {
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
 	defer doneFn()
 
-	receiverID := config.MustIDFromString("TestSocketGenericReadError")
+	receiverID := config.NewID("TestSocketGenericReadError")
 
 	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, false)
 	// close the actual socket because we are going to mock it out below
