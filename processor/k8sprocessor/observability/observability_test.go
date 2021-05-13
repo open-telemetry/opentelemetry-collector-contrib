@@ -56,6 +56,9 @@ func (e *exporter) ExportMetrics(ctx context.Context, data []*metricdata.Metric)
 	return nil
 }
 
+// NOTE:
+// This test can only be run with -count 1 because of static
+// metricproducer.GlobalManager() used in metricexport.NewReader().
 func TestMetrics(t *testing.T) {
 	type testCase struct {
 		name       string
@@ -81,17 +84,30 @@ func TestMetrics(t *testing.T) {
 	}
 
 	e := newExporter()
-	metricReader := metricexport.NewReader()
+	var (
+		data []*metricdata.Metric
+		fail = make(chan struct{})
+		sig  = make(chan struct{})
+	)
+	go func() {
+		select {
+		case <-time.After(time.Second * 2):
+			fail <- struct{}{}
+
+		case data = <-e.ReturnAfter(len(tests)):
+			sig <- struct{}{}
+		}
+	}()
+
+	go metricexport.NewReader().ReadAndExport(e)
 	for _, tt := range tests {
 		tt.recordFunc()
 	}
-	go metricReader.ReadAndExport(e)
 
-	var data []*metricdata.Metric
 	select {
-	case <-time.After(time.Second * 2):
+	case <-fail:
 		t.Fatalf("timedout waiting for metrics to arrive")
-	case data = <-e.ReturnAfter(len(tests)):
+	case <-sig:
 	}
 
 	sort.Slice(tests, func(i, j int) bool {
