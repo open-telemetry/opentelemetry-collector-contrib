@@ -31,6 +31,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"strings"
 	"sync"
 )
 
@@ -68,7 +69,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 		ddmux := mux.NewRouter()
 		ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
 		ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
-		ddmux.HandleFunc("/v0.5/traces", ddr.handleTraces05)
+		ddmux.HandleFunc("/v0.5/traces", ddr.handleTraces)
 		ddr.server = &http.Server{
 			Handler: ddmux,
 			Addr:    ddr.config.HTTPServerSettings.Endpoint,
@@ -90,35 +91,27 @@ func (ddr *datadogReceiver) Shutdown(ctx context.Context) error {
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
 	obsreport.StartTraceDataReceiveOp(ddr.longLivedCtx, typeStr, "http")
 	var traces pb.Traces
-	err := decodeRequest(req, &traces)
+	err := ddr.decodeRequest(req, &traces)
 	if err != nil {
 		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
 		obsreport.EndTraceDataReceiveOp(ddr.longLivedCtx, typeStr, 0, err)
 		return
 	}
 
-	ddr.processTraces(req.Context(), traces, w)
-}
-
-func (ddr *datadogReceiver) handleTraces05(w http.ResponseWriter, req *http.Request) {
-	obsreport.StartTraceDataReceiveOp(ddr.longLivedCtx, typeStr, collectorHTTPTransport)
-	traces := pb.Traces{}
-	reader := ddr.NewMsgpReader(req.Body)
-	err := traces.DecodeMsgDictionary(reader)
-	ddr.FreeMsgpReader(reader)
+	otelTraces, err := ddr.processTraces(req.Context(), traces)
 	if err != nil {
-		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
-		obsreport.EndTraceDataReceiveOp(ddr.longLivedCtx, typeStr, 0, err)
-		return
+		http.Error(w, "Trace consumer errored out", http.StatusInternalServerError)
+	} else {
+		_, _ = w.Write([]byte("OK"))
 	}
-	ddr.processTraces(req.Context(), traces, w)
+	obsreport.EndTraceDataReceiveOp(ddr.longLivedCtx, typeStr, otelTraces.SpanCount(), err)
 }
 
-func (ddr *datadogReceiver) processTraces(ctx context.Context, traces pb.Traces, w http.ResponseWriter) {
-	newTraces := pdata.NewTraces()
+func (ddr *datadogReceiver) processTraces(ctx context.Context, traces pb.Traces) (pdata.Traces, error) {
+	dest := pdata.NewTraces()
 	for _, trace := range traces {
 		for _, span := range trace {
-			newSpan := newTraces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+			newSpan := dest.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 			newSpan.SetTraceID(tracetranslator.UInt64ToTraceID(span.TraceID, span.TraceID))
 			newSpan.SetSpanID(tracetranslator.UInt64ToSpanID(span.SpanID))
 			newSpan.SetStartTimestamp(pdata.Timestamp(span.Start))
@@ -137,35 +130,35 @@ func (ddr *datadogReceiver) processTraces(ctx context.Context, traces pb.Traces,
 			}
 		}
 	}
-
-	err := ddr.nextConsumer.ConsumeTraces(ctx, newTraces)
-	if err != nil {
-		http.Error(w, "Trace consumer errored out", http.StatusInternalServerError)
-	} else {
-		_, _ = w.Write([]byte("OK"))
-	}
-	obsreport.EndTraceDataReceiveOp(ddr.longLivedCtx, typeStr, newTraces.SpanCount(), err)
+	err := ddr.nextConsumer.ConsumeTraces(ctx, dest)
+	return dest, err
 }
 
-/// Thanks Datadog!
-func decodeRequest(req *http.Request, dest *pb.Traces) error {
-	switch mediaType := getMediaType(req); mediaType {
-	case "application/msgpack":
-		return msgp.Decode(req.Body, dest)
-	case "application/json":
-		fallthrough
-	case "text/json":
-		fallthrough
-	case "":
-		return json.NewDecoder(req.Body).Decode(dest)
-	default:
-		// do our best
-		if err1 := json.NewDecoder(req.Body).Decode(dest); err1 != nil {
-			if err2 := msgp.Decode(req.Body, dest); err2 != nil {
-				return fmt.Errorf("could not decode JSON (%q), nor Msgpack (%q)", err1, err2)
+func (ddr *datadogReceiver) decodeRequest(req *http.Request, dest *pb.Traces) error {
+	if strings.Contains(req.RequestURI, "0.5") {
+		reader := ddr.NewMsgpReader(req.Body)
+		err := dest.DecodeMsgDictionary(reader)
+		ddr.FreeMsgpReader(reader)
+		return err
+	} else {
+		switch mediaType := getMediaType(req); mediaType {
+		case "application/msgpack":
+			return msgp.Decode(req.Body, dest)
+		case "application/json":
+			fallthrough
+		case "text/json":
+			fallthrough
+		case "":
+			return json.NewDecoder(req.Body).Decode(dest)
+		default:
+			// do our best
+			if err1 := json.NewDecoder(req.Body).Decode(dest); err1 != nil {
+				if err2 := msgp.Decode(req.Body, dest); err2 != nil {
+					return fmt.Errorf("could not decode JSON (%q), nor Msgpack (%q)", err1, err2)
+				}
 			}
+			return nil
 		}
-		return nil
 	}
 }
 
