@@ -119,13 +119,15 @@ func (ddr *datadogReceiver) processTraces(ctx context.Context, traces pb.Traces)
 			for k, v := range span.GetMeta() {
 				newSpan.Attributes().InsertString(k, v)
 			}
-			if span.Type == "web" {
+			switch span.Type {
+			case "web":
 				newSpan.SetKind(pdata.SpanKindSERVER)
-			} else if span.Type == "client" {
+			case "client":
 				newSpan.SetKind(pdata.SpanKindCLIENT)
-			} else {
-				newSpan.SetKind(pdata.SpanKindINTERNAL)
+			default:
+				newSpan.SetKind(pdata.SpanKindUNSPECIFIED)
 			}
+
 		}
 	}
 	err := ddr.nextConsumer.ConsumeTraces(ctx, dest)
