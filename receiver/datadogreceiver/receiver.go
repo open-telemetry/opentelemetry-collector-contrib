@@ -23,7 +23,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/gorilla/mux"
 	"github.com/tinylib/msgp/msgp"
-	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
@@ -45,6 +44,7 @@ type datadogReceiver struct {
 	params       component.ReceiverCreateParams
 	nextConsumer consumer.Traces
 	server       *http.Server
+	longLivedCtx context.Context
 
 	mu        sync.Mutex
 	startOnce sync.Once
@@ -82,6 +82,7 @@ func putBuffer(buffer *bytes.Buffer) {
 
 func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) error {
 	var err error
+	ddr.longLivedCtx = obsreport.ReceiverContext(ctx, "datadog", "http")
 	ddr.startOnce.Do(func() {
 		ddmux := mux.NewRouter()
 		ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
@@ -106,41 +107,35 @@ func (ddr *datadogReceiver) Shutdown(ctx context.Context) error {
 }
 
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
-	ctx := req.Context()
-	if c, ok := client.FromHTTP(req); ok {
-		ctx = client.NewContext(ctx, c)
-	}
-	ctx = obsreport.StartTraceDataReceiveOp(ctx, typeStr, collectorHTTPTransport)
+	obsreport.StartTraceDataReceiveOp(ddr.longLivedCtx, "datadogReceiver", "http")
 	var traces pb.Traces
 	err := decodeRequest(req, &traces)
 	if err != nil {
 		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
+		obsreport.EndTraceDataReceiveOp(ddr.longLivedCtx, typeStr, 0, err)
 		return
 	}
 
-	ddr.processTraces(ctx, traces, w)
+	ddr.processTraces(req.Context(), traces, w)
 }
 
 func (ddr *datadogReceiver) handleTraces05(w http.ResponseWriter, req *http.Request) {
-	ctx := req.Context()
-	if c, ok := client.FromHTTP(req); ok {
-		ctx = client.NewContext(ctx, c)
-	}
-
-	ctx = obsreport.StartTraceDataReceiveOp(ctx, typeStr, collectorHTTPTransport)
+	obsreport.StartTraceDataReceiveOp(ddr.longLivedCtx, typeStr, collectorHTTPTransport)
 	var traces pb.Traces
 	buf := getBuffer()
 	if _, err := io.Copy(buf, req.Body); err != nil {
 		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
+		obsreport.EndTraceDataReceiveOp(ddr.longLivedCtx, typeStr, 0, err)
 		return
 	}
 	err := ddr.UnmarshalMsgDictionary(&traces, buf.Bytes())
 	if err != nil {
 		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
+		obsreport.EndTraceDataReceiveOp(ddr.longLivedCtx, typeStr, 0, err)
 		return
 	}
 	putBuffer(buf)
-	ddr.processTraces(ctx, traces, w)
+	ddr.processTraces(req.Context(), traces, w)
 }
 
 func (ddr *datadogReceiver) processTraces(ctx context.Context, traces pb.Traces, w http.ResponseWriter) {
@@ -174,9 +169,9 @@ func (ddr *datadogReceiver) processTraces(ctx context.Context, traces pb.Traces,
 	err := ddr.nextConsumer.ConsumeTraces(ctx, newTraces)
 	if err != nil {
 		http.Error(w, "Trace consumer errored out", http.StatusInternalServerError)
-		obsreport.EndTraceDataReceiveOp(ctx, typeStr, totalSpansCount, err)
+		obsreport.EndTraceDataReceiveOp(ddr.longLivedCtx, typeStr, totalSpansCount, err)
 	}
-	obsreport.EndTraceDataReceiveOp(ctx, typeStr, totalSpansCount, nil)
+	obsreport.EndTraceDataReceiveOp(ddr.longLivedCtx, typeStr, totalSpansCount, nil)
 	_, _ = w.Write([]byte("OK"))
 }
 
