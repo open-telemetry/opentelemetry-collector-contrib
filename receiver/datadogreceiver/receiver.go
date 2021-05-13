@@ -25,6 +25,7 @@ import (
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
@@ -50,16 +51,15 @@ type datadogReceiver struct {
 	stopOnce  sync.Once
 }
 
-func newDataDogReceiver(
-	config *Config,
-	nextConsumer consumer.Traces,
-	params component.ReceiverCreateParams,
-) *datadogReceiver {
+func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params component.ReceiverCreateParams) (component.TracesReceiver, error) {
+	if nextConsumer == nil {
+		return nil, componenterror.ErrNilNextConsumer
+	}
 	return &datadogReceiver{
 		params:       params,
 		config:       config,
 		nextConsumer: nextConsumer,
-	}
+	}, nil
 }
 
 const collectorHTTPTransport = "http_collector"

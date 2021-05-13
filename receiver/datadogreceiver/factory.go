@@ -51,5 +51,5 @@ func createTracesReceiver(
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	oCfg := cfg.(*Config)
-	return newDataDogReceiver(oCfg, nextConsumer, params), nil
+	return newDataDogReceiver(oCfg, nextConsumer, params)
 }
