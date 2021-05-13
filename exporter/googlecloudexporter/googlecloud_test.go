@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
@@ -204,7 +205,7 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 	require.NoError(t, err)
 	defer func() { require.NoError(t, sde.Shutdown(context.Background())) }()
 
-	md := internaldata.MetricsData{
+	md := agentmetricspb.ExportMetricsServiceRequest{
 		Resource: &resourcepb.Resource{
 			Type: "host",
 			Labels: map[string]string{
@@ -271,7 +272,7 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 		Type: "test",
 	}
 
-	assert.NoError(t, sde.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(md)), err)
+	assert.NoError(t, sde.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(md.Node, md.Resource, md.Metrics)), err)
 
 	expectedNames := map[string]struct{}{
 		"projects/idk/metricDescriptors/custom.googleapis.com/opencensus/test_gauge1": {},

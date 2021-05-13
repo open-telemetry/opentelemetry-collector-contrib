@@ -18,10 +18,10 @@ import (
 	"errors"
 	"testing"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -208,7 +208,7 @@ func TestMetadataErrorCases(t *testing.T) {
 			observedLogger, logs := observer.New(zapcore.WarnLevel)
 			logger := zap.New(observedLogger)
 
-			var mds []internaldata.MetricsData
+			var mds []*agentmetricspb.ExportMetricsServiceRequest
 			tt.metadata.DetailedPVCLabelsSetter = tt.detailedPVCLabelsSetterOverride
 			acc := metricDataAccumulator{
 				m:                     mds,

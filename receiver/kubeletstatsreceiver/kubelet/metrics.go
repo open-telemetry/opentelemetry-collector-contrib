@@ -17,7 +17,7 @@ package kubelet
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/translator/internaldata"
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	"go.uber.org/zap"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 )
@@ -25,7 +25,7 @@ import (
 func MetricsData(
 	logger *zap.Logger, summary *stats.Summary,
 	metadata Metadata, typeStr string,
-	metricGroupsToCollect map[MetricGroup]bool) []internaldata.MetricsData {
+	metricGroupsToCollect map[MetricGroup]bool) []*agentmetricspb.ExportMetricsServiceRequest {
 	acc := &metricDataAccumulator{
 		metadata:              metadata,
 		logger:                logger,

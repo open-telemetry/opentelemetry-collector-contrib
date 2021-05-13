@@ -227,12 +227,10 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 
 			mdd := sink.AllMetrics()
 			require.Len(t, mdd, 1)
-			ocmd := internaldata.MetricsToOC(mdd[0])
-			require.Len(t, ocmd, 1)
-			require.Len(t, ocmd[0].Metrics, 1)
-			metric := ocmd[0].Metrics[0]
-			assert.Equal(t, carbonMetric.Name, metric.GetMetricDescriptor().GetName())
-			tss := metric.GetTimeseries()
+			_, _, metrics := internaldata.ResourceMetricsToOC(mdd[0].ResourceMetrics().At(0))
+			require.Len(t, metrics, 1)
+			assert.Equal(t, carbonMetric.Name, metrics[0].GetMetricDescriptor().GetName())
+			tss := metrics[0].GetTimeseries()
 			require.Equal(t, 1, len(tss))
 		})
 	}

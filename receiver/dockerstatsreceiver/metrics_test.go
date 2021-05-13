@@ -20,12 +20,12 @@ import (
 	"path"
 	"testing"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	dtypes "github.com/docker/docker/api/types"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 type Metric struct {
@@ -46,9 +46,9 @@ func metricsData(
 	ts *timestamp.Timestamp,
 	resourceLabels map[string]string,
 	metrics ...Metric,
-) *internaldata.MetricsData {
+) *agentmetricspb.ExportMetricsServiceRequest {
 	rlabels := mergeMaps(defaultLabels(), resourceLabels)
-	md := &internaldata.MetricsData{
+	md := &agentmetricspb.ExportMetricsServiceRequest{
 		Resource: &resourcepb.Resource{
 			Type:   "container",
 			Labels: rlabels,
@@ -193,7 +193,7 @@ func assertMetricsDataEqual(
 	t *testing.T,
 	expected []Metric,
 	labels map[string]string,
-	actual *internaldata.MetricsData,
+	actual *agentmetricspb.ExportMetricsServiceRequest,
 ) {
 	// Timestamps are generated per ContainerStatsToMetrics call so should be conserved
 	ts := actual.Metrics[0].Timeseries[0].Points[0].Timestamp

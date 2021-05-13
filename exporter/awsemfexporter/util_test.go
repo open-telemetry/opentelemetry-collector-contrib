@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -110,7 +111,7 @@ func TestGetNamespace(t *testing.T) {
 	defaultMetric := createMetricTestData()
 	testCases := []struct {
 		testName        string
-		metric          internaldata.MetricsData
+		metric          *agentmetricspb.ExportMetricsServiceRequest
 		configNamespace string
 		namespace       string
 	}{
@@ -128,7 +129,7 @@ func TestGetNamespace(t *testing.T) {
 		},
 		{
 			"empty namespace, no service namespace",
-			internaldata.MetricsData{
+			&agentmetricspb.ExportMetricsServiceRequest{
 				Resource: &resourcepb.Resource{
 					Labels: map[string]string{
 						conventions.AttributeServiceName: "myServiceName",
@@ -140,7 +141,7 @@ func TestGetNamespace(t *testing.T) {
 		},
 		{
 			"empty namespace, no service name",
-			internaldata.MetricsData{
+			&agentmetricspb.ExportMetricsServiceRequest{
 				Resource: &resourcepb.Resource{
 					Labels: map[string]string{
 						conventions.AttributeServiceNamespace: "myServiceNS",
@@ -154,7 +155,7 @@ func TestGetNamespace(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			rms := internaldata.OCToMetrics(tc.metric)
+			rms := internaldata.OCToMetrics(tc.metric.Node, tc.metric.Resource, tc.metric.Metrics)
 			rm := rms.ResourceMetrics().At(0)
 			namespace := getNamespace(&rm, tc.configNamespace)
 			assert.Equal(t, tc.namespace, namespace)
@@ -163,7 +164,7 @@ func TestGetNamespace(t *testing.T) {
 }
 
 func TestGetLogInfo(t *testing.T) {
-	metrics := []internaldata.MetricsData{
+	metrics := []*agentmetricspb.ExportMetricsServiceRequest{
 		{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
@@ -195,8 +196,8 @@ func TestGetLogInfo(t *testing.T) {
 	}
 
 	var rms []pdata.ResourceMetrics
-	for _, m := range metrics {
-		rms = append(rms, internaldata.OCToMetrics(m).ResourceMetrics().At(0))
+	for _, md := range metrics {
+		rms = append(rms, internaldata.OCToMetrics(md.Node, md.Resource, md.Metrics).ResourceMetrics().At(0))
 	}
 
 	testCases := []struct {

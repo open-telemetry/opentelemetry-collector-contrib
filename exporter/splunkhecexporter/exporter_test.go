@@ -27,6 +27,7 @@ import (
 	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
@@ -80,7 +81,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestConsumeMetricsData(t *testing.T) {
-	smallBatch := internaldata.MetricsData{
+	smallBatch := &agentmetricspb.ExportMetricsServiceRequest{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test_splunk"},
 		},
@@ -97,7 +98,7 @@ func TestConsumeMetricsData(t *testing.T) {
 	}
 	tests := []struct {
 		name             string
-		md               internaldata.MetricsData
+		md               *agentmetricspb.ExportMetricsServiceRequest
 		reqTestFunc      func(t *testing.T, r *http.Request)
 		httpResponseCode int
 		wantErr          bool
@@ -173,7 +174,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			sender, err := buildClient(options, config, zap.NewNop())
 			assert.NoError(t, err)
 
-			md := internaldata.OCToMetrics(tt.md)
+			md := internaldata.OCToMetrics(tt.md.Node, tt.md.Resource, tt.md.Metrics)
 			err = sender.pushMetricsData(context.Background(), md)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -185,8 +186,8 @@ func TestConsumeMetricsData(t *testing.T) {
 	}
 }
 
-func generateLargeBatch() internaldata.MetricsData {
-	md := internaldata.MetricsData{
+func generateLargeBatch() *agentmetricspb.ExportMetricsServiceRequest {
+	md := &agentmetricspb.ExportMetricsServiceRequest{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test_splunkhec"},
 		},

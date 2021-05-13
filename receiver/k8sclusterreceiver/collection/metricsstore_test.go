@@ -18,8 +18,9 @@ import (
 	"testing"
 	"time"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -27,7 +28,7 @@ import (
 
 func TestMetricsStoreOperations(t *testing.T) {
 	ms := metricsStore{
-		metricsCache: map[types.UID][]internaldata.MetricsData{},
+		metricsCache: map[types.UID][]*agentmetricspb.ExportMetricsServiceRequest{},
 	}
 
 	updates := []struct {
@@ -36,11 +37,13 @@ func TestMetricsStoreOperations(t *testing.T) {
 	}{
 		{
 			id: types.UID("test-uid-1"),
-			rm: []*resourceMetrics{{}, {}},
+			rm: []*resourceMetrics{
+				{resource: &resourcepb.Resource{Labels: map[string]string{"k1": "v1"}}},
+				{resource: &resourcepb.Resource{Labels: map[string]string{"k2": "v2"}}}},
 		},
 		{
 			id: types.UID("test-uid-2"),
-			rm: []*resourceMetrics{{}},
+			rm: []*resourceMetrics{{resource: &resourcepb.Resource{Labels: map[string]string{"k3": "v3"}}}},
 		},
 	}
 
@@ -60,7 +63,7 @@ func TestMetricsStoreOperations(t *testing.T) {
 		require.True(t, len(ms.metricsCache[u.id]) == len(u.rm))
 		expectedMetricData += len(u.rm)
 	}
-	require.Equal(t, expectedMetricData, len(ms.getMetricData(time.Now())))
+	require.Equal(t, expectedMetricData, ms.getMetricData(time.Now()).ResourceMetrics().Len())
 
 	// Remove non existent item
 	ms.remove(&corev1.Pod{
@@ -78,6 +81,5 @@ func TestMetricsStoreOperations(t *testing.T) {
 	})
 	expectedMetricData -= len(updates[1].rm)
 	require.Equal(t, len(updates)-1, len(ms.metricsCache))
-	require.Equal(t, expectedMetricData, len(ms.getMetricData(time.Now())))
-
+	require.Equal(t, expectedMetricData, ms.getMetricData(time.Now()).ResourceMetrics().Len())
 }
