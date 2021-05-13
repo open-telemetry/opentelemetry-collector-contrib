@@ -150,7 +150,11 @@ func (ddr *datadogReceiver) decodeRequest(req *http.Request, dest *pb.Traces) er
 		// do our best
 		if err1 := json.NewDecoder(req.Body).Decode(dest); err1 != nil {
 			if err2 := msgp.Decode(req.Body, dest); err2 != nil {
-				return fmt.Errorf("could not decode JSON (%q), nor Msgpack (%q)", err1, err2)
+				reader := pb.NewMsgpReader(req.Body)
+				defer pb.FreeMsgpReader(reader)
+				if err3 := dest.DecodeMsgDictionary(reader); err3 != nil {
+					return fmt.Errorf("could not decode JSON (%q), nor Msgpack (%q), nor v0.5 (%q)", err1, err2, err3)
+				}
 			}
 		}
 		return nil
