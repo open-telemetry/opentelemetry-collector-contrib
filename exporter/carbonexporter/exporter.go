@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -59,7 +60,14 @@ type carbonSender struct {
 }
 
 func (cs *carbonSender) pushMetricsData(_ context.Context, md pdata.Metrics) error {
-	lines, _, _ := metricDataToPlaintext(internaldata.MetricsToOC(md))
+	rms := md.ResourceMetrics()
+	mds := make([]*agentmetricspb.ExportMetricsServiceRequest, 0, rms.Len())
+	for i := 0; i < rms.Len(); i++ {
+		emsr := &agentmetricspb.ExportMetricsServiceRequest{}
+		emsr.Node, emsr.Resource, emsr.Metrics = internaldata.ResourceMetricsToOC(rms.At(i))
+		mds = append(mds, emsr)
+	}
+	lines, _, _ := metricDataToPlaintext(mds)
 
 	if _, err := cs.connPool.Write([]byte(lines)); err != nil {
 		// Use the sum of converted and dropped since the write failed for all.

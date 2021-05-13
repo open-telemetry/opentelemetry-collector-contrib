@@ -24,6 +24,7 @@ import (
 	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -209,14 +210,14 @@ func testTraceData(t *testing.T, expected []Batch, resource *resourcepb.Resource
 	}
 }
 
-func testMetricData(t *testing.T, expected []Batch, md internaldata.MetricsData, apiKey string) {
+func testMetricData(t *testing.T, expected []Batch, md *agentmetricspb.ExportMetricsServiceRequest, apiKey string) {
 	ctx := context.Background()
 	useAPIKeyHeader := apiKey != ""
 	if useAPIKeyHeader {
 		ctx = metadata.NewIncomingContext(ctx, metadata.MD{"api-key": []string{apiKey}})
 	}
 
-	m, err := runMetricMock(ctx, internaldata.OCToMetrics(md), mockConfig{useAPIKeyHeader: useAPIKeyHeader})
+	m, err := runMetricMock(ctx, internaldata.OCToMetrics(md.Node, md.Resource, md.Metrics), mockConfig{useAPIKeyHeader: useAPIKeyHeader})
 	require.NoError(t, err)
 	assert.Equal(t, expected, m.Batches)
 }
@@ -456,7 +457,7 @@ func TestExportMetricUnsupported(t *testing.T) {
 func TestExportMetricDataMinimal(t *testing.T) {
 	desc := "physical property of matter that quantitatively expresses hot and cold"
 	unit := "K"
-	md := internaldata.MetricsData{
+	md := &agentmetricspb.ExportMetricsServiceRequest{
 		Metrics: []*metricspb.Metric{
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
@@ -524,7 +525,7 @@ func TestExportMetricDataMinimal(t *testing.T) {
 func TestExportMetricDataFull(t *testing.T) {
 	desc := "physical property of matter that quantitatively expresses hot and cold"
 	unit := "K"
-	md := internaldata.MetricsData{
+	md := &agentmetricspb.ExportMetricsServiceRequest{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test-service"},
 		},

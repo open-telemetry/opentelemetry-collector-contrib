@@ -94,8 +94,8 @@ func TestMockedEndToEnd(t *testing.T) {
 	// Test that we can send metrics.
 	for _, receiver := range dyn.observerHandler.receiversByEndpointID.Values() {
 		example := receiver.(*nopWithEndpointReceiver)
-		md := internaldata.OCToMetrics(internaldata.MetricsData{
-			Node: &commonpb.Node{
+		md := internaldata.OCToMetrics(
+			&commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "dynamictest"},
 				LibraryInfo: &commonpb.LibraryInfo{},
 				Identifier:  &commonpb.ProcessIdentifier{},
@@ -103,8 +103,8 @@ func TestMockedEndToEnd(t *testing.T) {
 					"attr": "1",
 				},
 			},
-			Resource: &resourcepb.Resource{Type: "test"},
-			Metrics: []*metricspb.Metric{
+			&resourcepb.Resource{Type: "test"},
+			[]*metricspb.Metric{
 				{
 					MetricDescriptor: &metricspb.MetricDescriptor{
 						Name:        "my-metric",
@@ -119,8 +119,7 @@ func TestMockedEndToEnd(t *testing.T) {
 						},
 					},
 				},
-			},
-		})
+			})
 		assert.NoError(t, example.ConsumeMetrics(context.Background(), md))
 	}
 

@@ -51,19 +51,14 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			assert.Equal(t, true, caps.MutatesData)
 			ctx := context.Background()
 
-			// construct metrics data to feed into the processor
-			md := internaldata.MetricsData{Metrics: test.in}
-
 			// process
-			cErr := mtp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(md))
+			cErr := mtp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(nil, nil, test.in))
 			assert.NoError(t, cErr)
 
 			// get and check results
 			got := next.AllMetrics()
 			require.Equal(t, 1, len(got))
-			gotMD := internaldata.MetricsToOC(got[0])
-			require.Equal(t, 1, len(gotMD))
-			actualOutMetrics := gotMD[0].Metrics
+			_, _, actualOutMetrics := internaldata.ResourceMetricsToOC(got[0].ResourceMetrics().At(0))
 			require.Equal(t, len(test.out), len(actualOutMetrics))
 
 			for idx, out := range test.out {
@@ -167,14 +162,12 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 	for i := 0; i < metricCount; i++ {
 		in[i] = metricBuilder().setName("metric1").build()
 	}
-	md := internaldata.MetricsData{Metrics: in}
-
 	p := newMetricsTransformProcessor(nil, transforms)
 	mtp, _ := processorhelper.NewMetricsProcessor(&Config{}, consumertest.NewNop(), p)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		mtp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(md))
+		mtp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(nil, nil, in))
 	}
 }

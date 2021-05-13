@@ -105,11 +105,9 @@ func Test_Server_ListenAndServe(t *testing.T) {
 
 			mdd := mc.AllMetrics()
 			require.Len(t, mdd, 1)
-			ocmd := internaldata.MetricsToOC(mdd[0])
-			require.Len(t, ocmd, 1)
-			require.Len(t, ocmd[0].Metrics, 1)
-			metric := ocmd[0].Metrics[0]
-			assert.Equal(t, "test.metric", metric.GetMetricDescriptor().GetName())
+			_, _, metrics := internaldata.ResourceMetricsToOC(mdd[0].ResourceMetrics().At(0))
+			require.Len(t, metrics, 1)
+			assert.Equal(t, "test.metric", metrics[0].GetMetricDescriptor().GetName())
 		})
 	}
 }

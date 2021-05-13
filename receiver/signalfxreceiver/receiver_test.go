@@ -43,7 +43,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testutil"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
@@ -681,11 +680,10 @@ func Test_sfxReceiver_DatapointAccessTokenPassthrough(t *testing.T) {
 
 			mds := sink.AllMetrics()
 			require.Len(t, mds, 1)
-			got := internaldata.MetricsToOC(mds[0])
-			require.Len(t, got, 1)
+			resource := mds[0].ResourceMetrics().At(0).Resource()
 			tokenLabel := ""
-			if got[0].Resource != nil && got[0].Resource.Labels != nil {
-				tokenLabel = got[0].Resource.Labels["com.splunk.signalfx.access_token"]
+			if label, ok := resource.Attributes().Get("com.splunk.signalfx.access_token"); ok {
+				tokenLabel = label.StringVal()
 			}
 
 			if tt.passthrough {
