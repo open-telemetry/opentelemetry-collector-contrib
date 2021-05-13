@@ -27,6 +27,7 @@ func ToTraces(traces pb.Traces, req *http.Request) pdata.Traces {
 			newSpan.SetEndTimestamp(pdata.Timestamp(span.Start + span.Duration))
 			newSpan.SetParentSpanID(tracetranslator.UInt64ToSpanID(span.ParentID))
 			newSpan.SetName(span.Name)
+			// TODO: Figure out tag to pull from newSpan.Status().SetCode()
 			for k, v := range span.GetMeta() {
 				newSpan.Attributes().InsertString(k, v)
 			}
