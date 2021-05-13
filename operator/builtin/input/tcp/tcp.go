@@ -103,6 +103,11 @@ func (c TCPInputConfig) Build(context operator.BuildContext) ([]operator.Operato
 		return nil, err
 	}
 
+	var resolver *helper.IPResolver = nil
+	if c.AddAttributes {
+		resolver = helper.NewIpResolver()
+	}
+
 	tcpInput := &TCPInput{
 		InputOperator: inputOperator,
 		address:       c.ListenAddress,
@@ -113,6 +118,7 @@ func (c TCPInputConfig) Build(context operator.BuildContext) ([]operator.Operato
 		backoff: backoff.Backoff{
 			Max: 3 * time.Second,
 		},
+		resolver: resolver,
 	}
 
 	if c.TLS != nil {
@@ -140,6 +146,7 @@ type TCPInput struct {
 
 	encoding  helper.Encoding
 	splitFunc bufio.SplitFunc
+	resolver  *helper.IPResolver
 }
 
 // Start will start listening for log entries over tcp.
@@ -249,13 +256,17 @@ func (t *TCPInput) goHandleMessages(ctx context.Context, conn net.Conn, cancel c
 			if t.addAttributes {
 				entry.AddAttribute("net.transport", "IP.TCP")
 				if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
-					entry.AddAttribute("net.peer.ip", addr.IP.String())
+					ip := addr.IP.String()
+					entry.AddAttribute("net.peer.ip", ip)
 					entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
+					entry.AddAttribute("net.peer.name", t.resolver.GetHostFromIp(ip))
 				}
 
 				if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
+					ip := addr.IP.String()
 					entry.AddAttribute("net.host.ip", addr.IP.String())
 					entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
+					entry.AddAttribute("net.host.name", t.resolver.GetHostFromIp(ip))
 				}
 			}
 
@@ -276,5 +287,8 @@ func (t *TCPInput) Stop() error {
 	}
 
 	t.wg.Wait()
+	if t.resolver != nil {
+		t.resolver.Stop()
+	}
 	return nil
 }

@@ -117,13 +117,17 @@ func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 				}
 				// LocalAddr for udpInput.connection is a server address
 				if addr, ok := udpInput.connection.LocalAddr().(*net.UDPAddr); ok {
+					ip := addr.IP.String()
 					expectedAttributes["net.host.ip"] = addr.IP.String()
 					expectedAttributes["net.host.port"] = strconv.FormatInt(int64(addr.Port), 10)
+					expectedAttributes["net.host.name"] = udpInput.resolver.GetHostFromIp(ip)
 				}
 				// LocalAddr for conn is a client (peer) address
 				if addr, ok := conn.LocalAddr().(*net.UDPAddr); ok {
-					expectedAttributes["net.peer.ip"] = addr.IP.String()
+					ip := addr.IP.String()
+					expectedAttributes["net.peer.ip"] = ip
 					expectedAttributes["net.peer.port"] = strconv.FormatInt(int64(addr.Port), 10)
+					expectedAttributes["net.peer.name"] = udpInput.resolver.GetHostFromIp(ip)
 				}
 				require.Equal(t, expectedBody, entry.Body)
 				require.Equal(t, expectedAttributes, entry.Attributes)
