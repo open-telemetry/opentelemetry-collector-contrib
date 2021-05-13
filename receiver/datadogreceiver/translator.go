@@ -15,30 +15,16 @@
 package datadogreceiver
 
 import (
-	"bytes"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
-	"io"
 	"mime"
 	"net/http"
 	"strings"
 )
-
-func covertDDTraceId(ddTraceId uint64) pdata.TraceID {
-	// Convert uint64 into BigEndian Byte Array
-	var buf bytes.Buffer
-	_ = binary.Write(io.Writer(&buf), binary.BigEndian, ddTraceId)
-
-	// Convert to sized slice for OTel Api
-	var traceIdBytes [16]byte
-	copy(traceIdBytes[:], buf.Bytes())
-	return pdata.NewTraceID(traceIdBytes)
-}
 
 func ToTraces(traces pb.Traces, req *http.Request) pdata.Traces {
 	dest := pdata.NewTraces()
@@ -49,13 +35,16 @@ func ToTraces(traces pb.Traces, req *http.Request) pdata.Traces {
 	for _, trace := range traces {
 		for _, span := range trace {
 			newSpan := ils.Spans().AppendEmpty() // TODO: Might be more efficient to resize spans and then populate it
-			newSpan.SetTraceID(covertDDTraceId(span.TraceID))
+			newSpan.SetTraceID(tracetranslator.UInt64ToTraceID(0, span.TraceID))
 			newSpan.SetSpanID(tracetranslator.UInt64ToSpanID(span.SpanID))
 			newSpan.SetStartTimestamp(pdata.Timestamp(span.Start))
 			newSpan.SetEndTimestamp(pdata.Timestamp(span.Start + span.Duration))
 			newSpan.SetParentSpanID(tracetranslator.UInt64ToSpanID(span.ParentID))
 			newSpan.SetName(span.Name)
+
 			// TODO: Figure out tag to pull from newSpan.Status().SetCode()
+			// For the semantics of status codes see
+			// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/api.md#set-status
 			for k, v := range span.GetMeta() {
 				newSpan.Attributes().InsertString(k, v)
 			}

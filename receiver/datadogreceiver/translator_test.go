@@ -44,7 +44,7 @@ func BenchmarkTranslator(b *testing.B) {
 					6,
 					4,
 					7,
-					uint64(1),
+					uint64(12345678901234561234),
 					uint64(2),
 					uint64(3),
 					int64(123),
