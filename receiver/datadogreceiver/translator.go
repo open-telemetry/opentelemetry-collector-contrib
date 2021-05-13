@@ -30,9 +30,7 @@ func ToTraces(traces pb.Traces, req *http.Request) pdata.Traces {
 			for k, v := range span.GetMeta() {
 				newSpan.Attributes().InsertString(k, v)
 			}
-			newSpan.Attributes().InsertString("resource", span.Resource)
 
-			//TODO: Confirm these are correct
 			switch span.Type {
 			case "web":
 				newSpan.SetKind(pdata.SpanKindSERVER)
