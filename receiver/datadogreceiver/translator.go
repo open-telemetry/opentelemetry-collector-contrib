@@ -15,6 +15,8 @@ import (
 func ToTraces(traces pb.Traces) pdata.Traces {
 	dest := pdata.NewTraces()
 	ils := dest.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
+	// TODO: Pull from HTTP headers ils.InstrumentationLibrary().SetName()
+	// TODO: Pull from HTTP headers ils.InstrumentationLibrary().SetVersion()
 	for _, trace := range traces {
 		for _, span := range trace {
 			newSpan := ils.Spans().AppendEmpty() // TODO: Might be more efficient to resize spans and then populate it
