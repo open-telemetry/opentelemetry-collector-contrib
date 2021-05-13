@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/gorilla/mux"
-	"github.com/philhofer/fwd"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -28,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
-	"io"
 	"mime"
 	"net/http"
 	"strings"
@@ -42,10 +40,9 @@ type datadogReceiver struct {
 	server       *http.Server
 	longLivedCtx context.Context
 
-	mu         sync.Mutex
-	startOnce  sync.Once
-	stopOnce   sync.Once
-	readerPool sync.Pool
+	mu        sync.Mutex
+	startOnce sync.Once
+	stopOnce  sync.Once
 }
 
 func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params component.ReceiverCreateParams) (component.TracesReceiver, error) {
@@ -56,7 +53,6 @@ func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params com
 		params:       params,
 		config:       config,
 		nextConsumer: nextConsumer,
-		readerPool:   sync.Pool{New: func() interface{} { return &msgp.Reader{} }},
 	}, nil
 }
 
@@ -135,31 +131,31 @@ func (ddr *datadogReceiver) processTraces(ctx context.Context, traces pb.Traces)
 }
 
 func (ddr *datadogReceiver) decodeRequest(req *http.Request, dest *pb.Traces) error {
-	if strings.Contains(req.RequestURI, "0.5") {
-		reader := ddr.NewMsgpReader(req.Body)
-		err := dest.DecodeMsgDictionary(reader)
-		ddr.FreeMsgpReader(reader)
-		return err
-	} else {
-		switch mediaType := getMediaType(req); mediaType {
-		case "application/msgpack":
+	switch mediaType := getMediaType(req); mediaType {
+	case "application/msgpack":
+		if strings.Contains(req.RequestURI, "v0.5") {
+			reader := pb.NewMsgpReader(req.Body)
+			defer pb.FreeMsgpReader(reader)
+			return dest.DecodeMsgDictionary(reader)
+		} else {
 			return msgp.Decode(req.Body, dest)
-		case "application/json":
-			fallthrough
-		case "text/json":
-			fallthrough
-		case "":
-			return json.NewDecoder(req.Body).Decode(dest)
-		default:
-			// do our best
-			if err1 := json.NewDecoder(req.Body).Decode(dest); err1 != nil {
-				if err2 := msgp.Decode(req.Body, dest); err2 != nil {
-					return fmt.Errorf("could not decode JSON (%q), nor Msgpack (%q)", err1, err2)
-				}
-			}
-			return nil
 		}
+	case "application/json":
+		fallthrough
+	case "text/json":
+		fallthrough
+	case "":
+		return json.NewDecoder(req.Body).Decode(dest)
+	default:
+		// do our best
+		if err1 := json.NewDecoder(req.Body).Decode(dest); err1 != nil {
+			if err2 := msgp.Decode(req.Body, dest); err2 != nil {
+				return fmt.Errorf("could not decode JSON (%q), nor Msgpack (%q)", err1, err2)
+			}
+		}
+		return nil
 	}
+
 }
 
 func getMediaType(req *http.Request) string {
@@ -169,16 +165,3 @@ func getMediaType(req *http.Request) string {
 	}
 	return mt
 }
-
-func (ddr *datadogReceiver) NewMsgpReader(r io.Reader) *msgp.Reader {
-	p := ddr.readerPool.Get().(*msgp.Reader)
-	if p.R == nil {
-		p.R = fwd.NewReader(r)
-	} else {
-		p.R.Reset(r)
-	}
-	return p
-}
-
-// FreeMsgpReader marks reader r as done.
-func (ddr *datadogReceiver) FreeMsgpReader(r *msgp.Reader) { ddr.readerPool.Put(r) }
