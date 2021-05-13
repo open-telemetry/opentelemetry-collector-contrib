@@ -40,18 +40,18 @@ func TestHost(t *testing.T) {
 	host := GetHost(logger, &config.Config{
 		TagsConfig: config.TagsConfig{Hostname: "test-host"},
 	})
-	assert.Equal(t, *host, "test-host")
+	assert.Equal(t, host, "test-host")
 
 	// config.Config.Hostname does not get stored in the cache
 	host = GetHost(logger, &config.Config{
 		TagsConfig: config.TagsConfig{Hostname: "test-host-2"},
 	})
-	assert.Equal(t, *host, "test-host-2")
+	assert.Equal(t, host, "test-host-2")
 
 	host = GetHost(logger, &config.Config{})
 	osHostname, err := os.Hostname()
 	require.NoError(t, err)
-	assert.Equal(t, *host, osHostname)
+	assert.Equal(t, host, osHostname)
 }
 
 const (

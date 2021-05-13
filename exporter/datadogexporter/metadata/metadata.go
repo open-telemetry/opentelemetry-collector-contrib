@@ -120,7 +120,7 @@ func metadataFromAttributes(attrs pdata.AttributeMap) *HostMetadata {
 func fillHostMetadata(params component.ExporterCreateParams, cfg *config.Config, hm *HostMetadata) {
 	// Could not get hostname from attributes
 	if hm.InternalHostname == "" {
-		hostname := *GetHost(params.Logger, cfg)
+		hostname := GetHost(params.Logger, cfg)
 		hm.InternalHostname = hostname
 		hm.Meta.Hostname = hostname
 	}
