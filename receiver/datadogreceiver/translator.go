@@ -14,10 +14,10 @@ import (
 
 func ToTraces(traces pb.Traces) pdata.Traces {
 	dest := pdata.NewTraces()
+	ils := dest.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
 	for _, trace := range traces {
-		ils := dest.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
 		for _, span := range trace {
-			newSpan := ils.Spans().AppendEmpty()
+			newSpan := ils.Spans().AppendEmpty() // TODO: Might be more efficient to resize spans and then populate it
 			newSpan.SetTraceID(tracetranslator.UInt64ToTraceID(span.TraceID, span.TraceID))
 			newSpan.SetSpanID(tracetranslator.UInt64ToSpanID(span.SpanID))
 			newSpan.SetStartTimestamp(pdata.Timestamp(span.Start))
