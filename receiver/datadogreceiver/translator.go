@@ -15,6 +15,7 @@
 package datadogreceiver
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
@@ -35,7 +36,13 @@ func ToTraces(traces pb.Traces, req *http.Request) pdata.Traces {
 	for _, trace := range traces {
 		for _, span := range trace {
 			newSpan := ils.Spans().AppendEmpty() // TODO: Might be more efficient to resize spans and then populate it
-			newSpan.SetTraceID(tracetranslator.UInt64ToTraceID(span.TraceID, span.TraceID))
+
+			buf := make([]byte, 16)
+			binary.PutUvarint(buf, span.TraceID)
+			var traceId [16]byte
+			copy(traceId[:], buf)
+			// TODO  Verify this is making correct translations
+			newSpan.SetTraceID(pdata.NewTraceID(traceId))
 			newSpan.SetSpanID(tracetranslator.UInt64ToSpanID(span.SpanID))
 			newSpan.SetStartTimestamp(pdata.Timestamp(span.Start))
 			newSpan.SetEndTimestamp(pdata.Timestamp(span.Start + span.Duration))
