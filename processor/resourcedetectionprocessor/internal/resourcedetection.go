@@ -19,6 +19,7 @@ package internal
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -192,4 +193,13 @@ func MergeResource(to, from pdata.Resource, overrideTo bool) {
 
 func IsEmptyResource(res pdata.Resource) bool {
 	return res.Attributes().Len() == 0
+}
+
+// GOOSToOSType maps a runtime.GOOS-like value to os.type style.
+func GOOSToOSType(goos string) string {
+	switch goos {
+	case "dragonfly":
+		return "DRAGONFLYBSD"
+	}
+	return strings.ToUpper(goos)
 }
