@@ -18,7 +18,8 @@ import (
 	"reflect"
 	"time"
 
-	"go.opentelemetry.io/collector/translator/internaldata"
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/autoscaling/v2beta1"
@@ -79,7 +80,7 @@ func NewDataCollector(logger *zap.Logger, nodeConditionsToReport []string) *Data
 	return &DataCollector{
 		logger: logger,
 		metricsStore: &metricsStore{
-			metricsCache: map[types.UID][]internaldata.MetricsData{},
+			metricsCache: map[types.UID][]*agentmetricspb.ExportMetricsServiceRequest{},
 		},
 		metadataStore:          &metadataStore{},
 		nodeConditionsToReport: nodeConditionsToReport,
@@ -111,7 +112,7 @@ func (dc *DataCollector) UpdateMetricsStore(obj interface{}, rm []*resourceMetri
 	}
 }
 
-func (dc *DataCollector) CollectMetricData(currentTime time.Time) []internaldata.MetricsData {
+func (dc *DataCollector) CollectMetricData(currentTime time.Time) pdata.Metrics {
 	return dc.metricsStore.getMetricData(currentTime)
 }
 

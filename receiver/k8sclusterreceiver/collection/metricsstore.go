@@ -18,8 +18,10 @@ import (
 	"sync"
 	"time"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -34,7 +36,7 @@ import (
 // until the next Kubernetes event pertaining to an object.
 type metricsStore struct {
 	sync.RWMutex
-	metricsCache map[types.UID][]internaldata.MetricsData
+	metricsCache map[types.UID][]*agentmetricspb.ExportMetricsServiceRequest
 }
 
 // This probably wouldn't be required once the new OTLP ResourceMetrics
@@ -54,8 +56,10 @@ func (ms *metricsStore) update(obj runtime.Object, rms []*resourceMetrics) error
 		return err
 	}
 
-	mds := make([]internaldata.MetricsData, len(rms))
+	origMds := make([]agentmetricspb.ExportMetricsServiceRequest, len(rms))
+	mds := make([]*agentmetricspb.ExportMetricsServiceRequest, len(rms))
 	for i, rm := range rms {
+		mds[i] = &origMds[i]
 		mds[i].Resource = rm.resource
 		mds[i].Metrics = rm.metrics
 	}
@@ -79,17 +83,16 @@ func (ms *metricsStore) remove(obj runtime.Object) error {
 }
 
 // getMetricData returns metricsCache stored in the cache at a given point in time.
-func (ms *metricsStore) getMetricData(currentTime time.Time) []internaldata.MetricsData {
+func (ms *metricsStore) getMetricData(currentTime time.Time) pdata.Metrics {
 	ms.RLock()
 	defer ms.RUnlock()
 
-	var out []internaldata.MetricsData
-
+	out := pdata.NewMetrics()
 	for _, mds := range ms.metricsCache {
-		for _, md := range mds {
+		for i := range mds {
 			// Set datapoint timestamp to be time of retrieval from cache.
-			applyCurrentTime(md.Metrics, currentTime)
-			out = append(out, md)
+			applyCurrentTime(mds[i].Metrics, currentTime)
+			internaldata.OCToMetrics(mds[i].Node, mds[i].Resource, mds[i].Metrics).ResourceMetrics().MoveAndAppendTo(out.ResourceMetrics())
 		}
 	}
 

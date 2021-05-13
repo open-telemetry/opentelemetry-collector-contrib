@@ -596,12 +596,10 @@ func TestGetDataPoints(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		oc := internaldata.MetricsData{
-			Metrics: []*metricspb.Metric{tc.metric},
-		}
+		ocMetrics := []*metricspb.Metric{tc.metric}
 
 		// Retrieve *pdata.Metric
-		rm := internaldata.OCToMetrics(oc).ResourceMetrics().At(0)
+		rm := internaldata.OCToMetrics(nil, nil, ocMetrics).ResourceMetrics().At(0)
 		metric := rm.InstrumentationLibraryMetrics().At(0).Metrics().At(0)
 
 		logger := zap.NewNop()
@@ -684,17 +682,15 @@ func TestGetDataPoints(t *testing.T) {
 }
 
 func BenchmarkGetDataPoints(b *testing.B) {
-	oc := internaldata.MetricsData{
-		Metrics: []*metricspb.Metric{
-			generateTestIntGauge("int-gauge"),
-			generateTestDoubleGauge("double-gauge"),
-			generateTestIntSum("int-sum"),
-			generateTestDoubleSum("double-sum"),
-			generateTestHistogram("double-histogram"),
-			generateTestSummary("summary"),
-		},
+	ocMetrics := []*metricspb.Metric{
+		generateTestIntGauge("int-gauge"),
+		generateTestDoubleGauge("double-gauge"),
+		generateTestIntSum("int-sum"),
+		generateTestDoubleSum("double-sum"),
+		generateTestHistogram("double-histogram"),
+		generateTestSummary("summary"),
 	}
-	rms := internaldata.OCToMetrics(oc).ResourceMetrics()
+	rms := internaldata.OCToMetrics(nil, nil, ocMetrics).ResourceMetrics()
 	metrics := rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 	numMetrics := metrics.Len()
 

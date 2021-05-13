@@ -126,10 +126,10 @@ func TestRunnableWithMetadata(t *testing.T) {
 			require.Equal(t, tt.dataLen, consumer.MetricsCount())
 
 			for _, metrics := range consumer.AllMetrics() {
-				md := internaldata.MetricsToOC(metrics)[0]
-				for _, m := range md.Metrics {
+				_, resource, metrics := internaldata.ResourceMetricsToOC(metrics.ResourceMetrics().At(0))
+				for _, m := range metrics {
 					if strings.HasPrefix(m.MetricDescriptor.GetName(), tt.metricPrefix) {
-						_, ok := md.Resource.Labels[tt.requiredLabel]
+						_, ok := resource.Labels[tt.requiredLabel]
 						require.True(t, ok)
 						continue
 					}
@@ -366,9 +366,10 @@ func TestRunnableWithPVCDetailedLabels(t *testing.T) {
 			// If Kubernetes API is set, assert additional labels as well.
 			if test.k8sAPIClient != nil && len(test.expectedVolumes) > 0 {
 				for _, m := range consumer.AllMetrics() {
-					mds := internaldata.MetricsToOC(m)
-					for _, md := range mds {
-						claimName, ok := md.Resource.Labels["k8s.persistentvolumeclaim.name"]
+					rms := m.ResourceMetrics()
+					for i := 0; i < rms.Len(); i++ {
+						_, resource, _ := internaldata.ResourceMetricsToOC(rms.At(i))
+						claimName, ok := resource.Labels["k8s.persistentvolumeclaim.name"]
 						// claimName will be non empty only when PVCs are used, all test cases
 						// in this method are interested only in such cases.
 						if !ok {
@@ -376,13 +377,13 @@ func TestRunnableWithPVCDetailedLabels(t *testing.T) {
 						}
 
 						ev := test.expectedVolumes[claimName]
-						requireExpectedVolume(t, ev, md.Resource.Labels)
+						requireExpectedVolume(t, ev, resource.Labels)
 
 						// Assert metrics from certain volume claims expected to be missed
 						// are not collected.
 						if test.volumeClaimsToMiss != nil {
 							for c := range test.volumeClaimsToMiss {
-								require.False(t, md.Resource.Labels["k8s.persistentvolumeclaim.name"] == c)
+								require.False(t, resource.Labels["k8s.persistentvolumeclaim.name"] == c)
 							}
 						}
 					}

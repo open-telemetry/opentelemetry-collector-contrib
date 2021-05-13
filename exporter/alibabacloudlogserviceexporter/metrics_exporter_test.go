@@ -46,10 +46,8 @@ func TestNewMetricsExporter(t *testing.T) {
 	doublePt := metricstestutil.Double(tsUnix, doubleVal)
 
 	// This will put trace data to send buffer and return success.
-	err = got.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(internaldata.MetricsData{
-		Metrics: []*metricspb.Metric{
-			metricstestutil.Gauge("gauge_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
-		},
+	err = got.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(nil, nil, []*metricspb.Metric{
+		metricstestutil.Gauge("gauge_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
 	}))
 	assert.NoError(t, err)
 }

@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -43,8 +44,8 @@ func readFromFile(filename string) string {
 	return str
 }
 
-func createMetricTestData() internaldata.MetricsData {
-	return internaldata.MetricsData{
+func createMetricTestData() *agentmetricspb.ExportMetricsServiceRequest {
+	return &agentmetricspb.ExportMetricsServiceRequest{
 		Node: &commonpb.Node{
 			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
 		},
@@ -393,16 +394,16 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 		DimensionRollupOption: zeroAndSingleDimensionRollup,
 		logger:                zap.NewNop(),
 	}
-	md := createMetricTestData()
+	oc := createMetricTestData()
 
 	translator := newMetricTranslator(*config)
 
-	noInstrLibMetric := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
-	instrLibMetric := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
+	noInstrLibMetric := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
+	instrLibMetric := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
 	ilm := instrLibMetric.InstrumentationLibraryMetrics().At(0)
 	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
 
-	noNamespaceMetric := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
+	noNamespaceMetric := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
 	noNamespaceMetric.Resource().Attributes().Delete(conventions.AttributeServiceNamespace)
 	noNamespaceMetric.Resource().Attributes().Delete(conventions.AttributeServiceName)
 
@@ -503,7 +504,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	}
 
 	t.Run("No metrics", func(t *testing.T) {
-		md = internaldata.MetricsData{
+		oc = &agentmetricspb.ExportMetricsServiceRequest{
 			Node: &commonpb.Node{
 				LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
 			},
@@ -514,7 +515,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 			},
 			Metrics: []*metricspb.Metric{},
 		}
-		rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
+		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
 		groupedMetrics := make(map[interface{}]*GroupedMetric)
 		translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
 		assert.Equal(t, 0, len(groupedMetrics))
@@ -2042,8 +2043,8 @@ func TestTranslateCWMetricToEMFNoMeasurements(t *testing.T) {
 }
 
 func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {
-	md := createMetricTestData()
-	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
+	oc := createMetricTestData()
+	rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
 	ilms := rm.InstrumentationLibraryMetrics()
 	ilm := ilms.At(0)
 	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
@@ -2062,8 +2063,8 @@ func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {
 }
 
 func BenchmarkTranslateOtToGroupedMetricWithoutInstrLibrary(b *testing.B) {
-	md := createMetricTestData()
-	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
+	oc := createMetricTestData()
+	rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
 	config := &Config{
 		Namespace:             "",
 		DimensionRollupOption: zeroAndSingleDimensionRollup,

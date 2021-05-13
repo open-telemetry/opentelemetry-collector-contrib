@@ -17,10 +17,10 @@ package kubelet
 import (
 	"time"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
@@ -43,7 +43,7 @@ var ValidMetricGroups = map[MetricGroup]bool{
 }
 
 type metricDataAccumulator struct {
-	m                     []internaldata.MetricsData
+	m                     []*agentmetricspb.ExportMetricsServiceRequest
 	metadata              Metadata
 	logger                *zap.Logger
 	metricGroupsToCollect map[MetricGroup]bool
@@ -151,7 +151,7 @@ func (a *metricDataAccumulator) accumulate(
 			}
 		}
 	}
-	a.m = append(a.m, internaldata.MetricsData{
+	a.m = append(a.m, &agentmetricspb.ExportMetricsServiceRequest{
 		Resource: r,
 		Metrics:  resourceMetrics,
 	})

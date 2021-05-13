@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -91,7 +92,7 @@ func TestCollectDServer(t *testing.T) {
 		queryParams  string
 		requestBody  string
 		responseCode int
-		wantData     []internaldata.MetricsData
+		wantData     []*agentmetricspb.ExportMetricsServiceRequest
 	}
 
 	testCases := []testCase{{
@@ -118,7 +119,7 @@ func TestCollectDServer(t *testing.T) {
     }
 ]`,
 		responseCode: 200,
-		wantData: []internaldata.MetricsData{{
+		wantData: []*agentmetricspb.ExportMetricsServiceRequest{{
 			Metrics: []*metricspb.Metric{{
 				MetricDescriptor: &metricspb.MetricDescriptor{
 					Name: "memory.free",
@@ -150,7 +151,7 @@ func TestCollectDServer(t *testing.T) {
 		name:         "invalid-request-body",
 		requestBody:  `invalid-body`,
 		responseCode: 400,
-		wantData:     []internaldata.MetricsData{},
+		wantData:     []*agentmetricspb.ExportMetricsServiceRequest{},
 	}}
 
 	sink := new(consumertest.MetricsSink)
@@ -196,13 +197,19 @@ func TestCollectDServer(t *testing.T) {
 			}, 10*time.Second, 5*time.Millisecond)
 			mds := sink.AllMetrics()
 			require.Len(t, mds, 1)
-			got := internaldata.MetricsToOC(mds[0])
+			rms := mds[0].ResourceMetrics()
+			got := make([]*agentmetricspb.ExportMetricsServiceRequest, 0, rms.Len())
+			for i := 0; i < rms.Len(); i++ {
+				emsr := &agentmetricspb.ExportMetricsServiceRequest{}
+				emsr.Node, emsr.Resource, emsr.Metrics = internaldata.ResourceMetricsToOC(rms.At(i))
+				got = append(got, emsr)
+			}
 			assertMetricsDataAreEqual(t, got, tt.wantData)
 		})
 	}
 }
 
-func assertMetricsDataAreEqual(t *testing.T, metricsData1, metricsData2 []internaldata.MetricsData) {
+func assertMetricsDataAreEqual(t *testing.T, metricsData1, metricsData2 []*agentmetricspb.ExportMetricsServiceRequest) {
 	if len(metricsData1) != len(metricsData2) {
 		t.Errorf("metrics data length mismatch. got:\n%d\nwant:\n%d\n", len(metricsData1), len(metricsData2))
 		return

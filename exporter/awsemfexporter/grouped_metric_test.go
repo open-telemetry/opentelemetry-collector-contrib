@@ -19,6 +19,7 @@ import (
 	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
@@ -127,7 +128,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			setupDataPointCache()
 
 			groupedMetrics := make(map[interface{}]*GroupedMetric)
-			oc := internaldata.MetricsData{
+			oc := agentmetricspb.ExportMetricsServiceRequest{
 				Node: &commonpb.Node{},
 				Resource: &resourcepb.Resource{
 					Labels: map[string]string{
@@ -139,7 +140,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			}
 
 			// Retrieve *pdata.Metric
-			rm := internaldata.OCToMetrics(oc)
+			rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 			rms := rm.ResourceMetrics()
 			assert.Equal(t, 1, rms.Len())
 			ilms := rms.At(0).InstrumentationLibraryMetrics()
@@ -166,7 +167,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 	t.Run("Add multiple different metrics", func(t *testing.T) {
 		groupedMetrics := make(map[interface{}]*GroupedMetric)
-		oc := internaldata.MetricsData{
+		oc := agentmetricspb.ExportMetricsServiceRequest{
 			Node: &commonpb.Node{},
 			Resource: &resourcepb.Resource{
 				Labels: map[string]string{
@@ -183,7 +184,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 				generateTestSummary("summary"),
 			},
 		}
-		rm := internaldata.OCToMetrics(oc)
+		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 		rms := rm.ResourceMetrics()
 		ilms := rms.At(0).InstrumentationLibraryMetrics()
 		metrics := ilms.At(0).Metrics()
@@ -215,7 +216,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 	t.Run("Add multiple metrics w/ different timestamps", func(t *testing.T) {
 		groupedMetrics := make(map[interface{}]*GroupedMetric)
-		oc := internaldata.MetricsData{
+		oc := agentmetricspb.ExportMetricsServiceRequest{
 			Node: &commonpb.Node{},
 			Resource: &resourcepb.Resource{
 				Labels: map[string]string{
@@ -246,7 +247,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		// Give summary a different timestamp
 		oc.Metrics[3].Timeseries[0].Points[0].Timestamp = timestamp2
 
-		rm := internaldata.OCToMetrics(oc)
+		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 		rms := rm.ResourceMetrics()
 		ilms := rms.At(0).InstrumentationLibraryMetrics()
 		metrics := ilms.At(0).Metrics()
@@ -283,12 +284,12 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 	t.Run("Add same metric but different log group", func(t *testing.T) {
 		groupedMetrics := make(map[interface{}]*GroupedMetric)
-		oc := internaldata.MetricsData{
+		oc := agentmetricspb.ExportMetricsServiceRequest{
 			Metrics: []*metricspb.Metric{
 				generateTestIntGauge("int-gauge"),
 			},
 		}
-		rm := internaldata.OCToMetrics(oc)
+		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 		ilms := rm.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
 		metric := ilms.At(0).Metrics().At(0)
 
@@ -344,7 +345,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 	t.Run("Duplicate metric names", func(t *testing.T) {
 		groupedMetrics := make(map[interface{}]*GroupedMetric)
-		oc := internaldata.MetricsData{
+		oc := agentmetricspb.ExportMetricsServiceRequest{
 			Resource: &resourcepb.Resource{
 				Labels: map[string]string{
 					conventions.AttributeServiceName:      "myServiceName",
@@ -356,7 +357,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 				generateTestDoubleGauge("foo"),
 			},
 		}
-		rm := internaldata.OCToMetrics(oc)
+		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 		rms := rm.ResourceMetrics()
 		ilms := rms.At(0).InstrumentationLibraryMetrics()
 		metrics := ilms.At(0).Metrics()
@@ -426,7 +427,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 }
 
 func BenchmarkAddToGroupedMetric(b *testing.B) {
-	oc := internaldata.MetricsData{
+	oc := agentmetricspb.ExportMetricsServiceRequest{
 		Metrics: []*metricspb.Metric{
 			generateTestIntGauge("int-gauge"),
 			generateTestDoubleGauge("double-gauge"),
@@ -436,7 +437,7 @@ func BenchmarkAddToGroupedMetric(b *testing.B) {
 			generateTestSummary("summary"),
 		},
 	}
-	rms := internaldata.OCToMetrics(oc).ResourceMetrics()
+	rms := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics()
 	metrics := rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 	numMetrics := metrics.Len()
 

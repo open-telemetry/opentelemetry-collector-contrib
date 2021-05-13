@@ -35,7 +35,7 @@ type udpServer struct {
 	reporter   Reporter
 }
 
-var _ (Server) = (*udpServer)(nil)
+var _ Server = (*udpServer)(nil)
 
 // NewUDPServer creates a transport.Server using UDP as its transport.
 func NewUDPServer(addr string) (Server, error) {
@@ -124,9 +124,6 @@ func (u *udpServer) handlePacket(
 		}
 	}
 
-	md := internaldata.MetricsData{
-		Metrics: metrics,
-	}
-	err := nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
+	err := nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(nil, nil, metrics))
 	u.reporter.OnMetricsProcessed(ctx, numReceivedMetricPoints, err)
 }

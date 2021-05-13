@@ -23,6 +23,7 @@ import (
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -181,9 +182,17 @@ func newGoogleCloudMetricsExporter(cfg *Config, params component.ExporterCreateP
 
 // pushMetrics calls StackdriverExporter.PushMetricsProto on each element of the given metrics
 func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) error {
+	rms := m.ResourceMetrics()
+	mds := make([]*agentmetricspb.ExportMetricsServiceRequest, 0, rms.Len())
+	for i := 0; i < rms.Len(); i++ {
+		emsr := &agentmetricspb.ExportMetricsServiceRequest{}
+		emsr.Node, emsr.Resource, emsr.Metrics = internaldata.ResourceMetricsToOC(rms.At(i))
+		mds = append(mds, emsr)
+	}
 	// PushMetricsProto doesn't bundle subsequent calls, so we need to
 	// combine the data here to avoid generating too many RPC calls.
-	mds := exportAdditionalLabels(internaldata.MetricsToOC(m))
+	mds = exportAdditionalLabels(mds)
+
 	count := 0
 	for _, md := range mds {
 		count += len(md.Metrics)
@@ -209,7 +218,7 @@ func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) err
 	return err
 }
 
-func exportAdditionalLabels(mds []internaldata.MetricsData) []internaldata.MetricsData {
+func exportAdditionalLabels(mds []*agentmetricspb.ExportMetricsServiceRequest) []*agentmetricspb.ExportMetricsServiceRequest {
 	for _, md := range mds {
 		if md.Resource == nil ||
 			md.Resource.Labels == nil ||
