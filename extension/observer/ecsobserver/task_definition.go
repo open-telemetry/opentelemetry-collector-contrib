@@ -58,11 +58,21 @@ func (t *TaskDefinitionConfig) Init() error {
 	return nil
 }
 
-func (t *TaskDefinitionConfig) NewMatcher(opts MatcherOptions) (Matcher, error) {
+func (t *TaskDefinitionConfig) NewMatcher(opts MatcherOptions) Matcher {
 	return &taskDefinitionMatcher{
 		logger: opts.Logger,
 		cfg:    *t,
-	}, nil
+	}
+}
+
+func taskDefinitionConfigsToMatchers(cfgs []TaskDefinitionConfig) []MatcherConfig {
+	var matchers []MatcherConfig
+	for _, cfg := range cfgs {
+		// NOTE: &cfg points to the temp var, whose value would end up be the last one in the slice.
+		copied := cfg
+		matchers = append(matchers, &copied)
+	}
+	return matchers
 }
 
 type taskDefinitionMatcher struct {

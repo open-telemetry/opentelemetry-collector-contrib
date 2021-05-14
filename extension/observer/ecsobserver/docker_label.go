@@ -51,11 +51,21 @@ func (d *DockerLabelConfig) Init() error {
 	return nil
 }
 
-func (d *DockerLabelConfig) NewMatcher(options MatcherOptions) (Matcher, error) {
+func (d *DockerLabelConfig) NewMatcher(options MatcherOptions) Matcher {
 	return &dockerLabelMatcher{
 		logger: options.Logger,
 		cfg:    *d,
-	}, nil
+	}
+}
+
+func dockerLabelConfigToMatchers(cfgs []DockerLabelConfig) []MatcherConfig {
+	var matchers []MatcherConfig
+	for _, cfg := range cfgs {
+		// NOTE: &cfg points to the temp var, whose value would end up be the last one in the slice.
+		copied := cfg
+		matchers = append(matchers, &copied)
+	}
+	return matchers
 }
 
 // dockerLabelMatcher implements Matcher interface.

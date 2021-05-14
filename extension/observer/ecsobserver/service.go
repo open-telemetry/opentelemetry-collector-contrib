@@ -38,13 +38,6 @@ type ServiceConfig struct {
 	containerNameRegex *regexp.Regexp
 }
 
-func (s *ServiceConfig) NewMatcher(opts MatcherOptions) (Matcher, error) {
-	return &serviceMatcher{
-		logger: opts.Logger,
-		cfg:    *s,
-	}, nil
-}
-
 func (s *ServiceConfig) Init() error {
 	if s.NamePattern == "" {
 		return fmt.Errorf("name_pattern is empty")
@@ -63,6 +56,23 @@ func (s *ServiceConfig) Init() error {
 		s.containerNameRegex = r
 	}
 	return nil
+}
+
+func (s *ServiceConfig) NewMatcher(opts MatcherOptions) Matcher {
+	return &serviceMatcher{
+		logger: opts.Logger,
+		cfg:    *s,
+	}
+}
+
+func serviceConfigsToMatchers(cfgs []ServiceConfig) []MatcherConfig {
+	var matchers []MatcherConfig
+	for _, cfg := range cfgs {
+		// NOTE: &cfg points to the temp var, whose value would end up be the last one in the slice.
+		copied := cfg
+		matchers = append(matchers, &copied)
+	}
+	return matchers
 }
 
 type serviceMatcher struct {

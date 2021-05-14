@@ -32,9 +32,10 @@ type Matcher interface {
 }
 
 type MatcherConfig interface {
-	// Init validates the configuration and initializes some internal strcutrues like regexp.
+	// Init validates the configuration and initializes some internal structures like regexp.
 	Init() error
-	NewMatcher(options MatcherOptions) (Matcher, error)
+	// NewMatcher creates a Matcher implementation using initialized config.
+	NewMatcher(options MatcherOptions) Matcher
 }
 
 type MatcherOptions struct {
@@ -48,6 +49,20 @@ const (
 	MatcherTypeTaskDefinition
 	MatcherTypeDockerLabel
 )
+
+func (t MatcherType) String() string {
+	switch t {
+	case MatcherTypeService:
+		return "service"
+	case MatcherTypeTaskDefinition:
+		return "task_definition"
+	case MatcherTypeDockerLabel:
+		return "docker_label"
+	default:
+		// Give it a _matcher_type suffix so people can find it by string search.
+		return "unknown_matcher_type"
+	}
+}
 
 type MatchResult struct {
 	// Tasks are index for tasks that include matched containers
@@ -88,6 +103,30 @@ type MatchedTarget struct {
 	Port         int
 	MetricsPath  string
 	Job          string
+}
+
+func newMatchers(c Config, mOpt MatcherOptions) (map[MatcherType][]Matcher, error) {
+	// We can have a registry or factory methods etc. but since we only have three type of metchers in filter.
+	matcherConfigs := map[MatcherType][]MatcherConfig{
+		MatcherTypeService:        serviceConfigsToMatchers(c.Services),
+		MatcherTypeTaskDefinition: taskDefinitionConfigsToMatchers(c.TaskDefinitions),
+		MatcherTypeDockerLabel:    dockerLabelConfigToMatchers(c.DockerLabels),
+	}
+	matchers := make(map[MatcherType][]Matcher)
+	matcherCount := 0
+	for tpe, cfgs := range matcherConfigs {
+		for i, cfg := range cfgs {
+			if err := cfg.Init(); err != nil {
+				return nil, fmt.Errorf("init matcher config failed type %s index %d: %w", tpe, i, err)
+			}
+			matchers[tpe] = append(matchers[tpe], cfg.NewMatcher(mOpt))
+			matcherCount++
+		}
+	}
+	if matcherCount == 0 {
+		return nil, fmt.Errorf("no matcher specified in config")
+	}
+	return matchers, nil
 }
 
 // a global instance because it's expected and we don't care about why the container didn't match (for now).
