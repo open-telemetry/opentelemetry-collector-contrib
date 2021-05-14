@@ -49,6 +49,5 @@ func (c *Config) Validate() error {
 	if c.Traces.DefaultService == "" {
 		return fmt.Errorf("A non-empty traces.default_service is required")
 	}
-	fmt.Printf("\n\n%#v\n\n", c)
 	return nil
 }
