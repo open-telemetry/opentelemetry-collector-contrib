@@ -29,7 +29,7 @@ func TestCluster_ListTasksWithContext(t *testing.T) {
 	ctx := context.Background()
 	c := NewCluster()
 	count := DefaultPageLimit().ListTaskOutput*2 + 1
-	c.SetTasks(GenTasks("p", count))
+	c.SetTasks(GenTasks("p", count, nil))
 
 	t.Run("get all", func(t *testing.T) {
 		req := &ecs.ListTasksInput{}
@@ -60,7 +60,9 @@ func TestCluster_DescribeTasksWithContext(t *testing.T) {
 	ctx := context.Background()
 	c := NewCluster()
 	count := 10
-	c.SetTasks(GenTasks("p", count))
+	c.SetTasks(GenTasks("p", count, func(i int, task *ecs.Task) {
+		task.LastStatus = aws.String("running")
+	}))
 
 	t.Run("exists", func(t *testing.T) {
 		req := &ecs.DescribeTasksInput{Tasks: []*string{aws.String("p0"), aws.String(fmt.Sprintf("p%d", count-1))}}
@@ -68,6 +70,7 @@ func TestCluster_DescribeTasksWithContext(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, res.Tasks, 2)
 		assert.Len(t, res.Failures, 0)
+		assert.Equal(t, "running", aws.StringValue(res.Tasks[0].LastStatus))
 	})
 
 	t.Run("not found", func(t *testing.T) {
@@ -77,4 +80,31 @@ func TestCluster_DescribeTasksWithContext(t *testing.T) {
 		assert.Len(t, res.Tasks, 1)
 		assert.Len(t, res.Failures, 1)
 	})
+}
+
+func TestCluster_DescribeTaskDefinitionWithContext(t *testing.T) {
+	ctx := context.Background()
+	c := NewCluster()
+	c.SetTaskDefinitions(GenTaskDefinitions("foo", 10, 1, nil)) // accept nil
+	c.SetTaskDefinitions(GenTaskDefinitions("foo", 10, 1, func(i int, def *ecs.TaskDefinition) {
+		def.NetworkMode = aws.String(ecs.NetworkModeBridge)
+	}))
+
+	t.Run("exists", func(t *testing.T) {
+		req := &ecs.DescribeTaskDefinitionInput{TaskDefinition: aws.String("foo0:1")}
+		res, err := c.DescribeTaskDefinitionWithContext(ctx, req)
+		require.NoError(t, err)
+		assert.Equal(t, "foo0:1", aws.StringValue(res.TaskDefinition.TaskDefinitionArn))
+		assert.Equal(t, ecs.NetworkModeBridge, aws.StringValue(res.TaskDefinition.NetworkMode))
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		before := c.Stats()
+		req := &ecs.DescribeTaskDefinitionInput{TaskDefinition: aws.String("foo0:1+404")}
+		_, err := c.DescribeTaskDefinitionWithContext(ctx, req)
+		require.Error(t, err)
+		after := c.Stats()
+		assert.Equal(t, before.DescribeTaskDefinition.Error+1, after.DescribeTaskDefinition.Error)
+	})
+
 }

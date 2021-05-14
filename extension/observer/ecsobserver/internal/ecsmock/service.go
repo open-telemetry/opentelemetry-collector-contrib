@@ -48,9 +48,11 @@ func DefaultPageLimit() PageLimit {
 
 // Cluster implements both ECS and EC2 API for a single cluster.
 type Cluster struct {
-	taskList []*ecs.Task
-	taskMap  map[string]*ecs.Task
-	limit    PageLimit
+	definitions map[string]*ecs.TaskDefinition
+	taskList    []*ecs.Task
+	taskMap     map[string]*ecs.Task
+	limit       PageLimit
+	stats       ClusterStats
 }
 
 // NewCluster creates a mock ECS cluster with default limits.
@@ -61,7 +63,23 @@ func NewCluster() *Cluster {
 	}
 }
 
+// APIStat keep track of individual API calls.
+type APIStat struct {
+	Called int
+	Error  int
+}
+
+// ClusterStats keep track of API methods for one ECS cluster.
+// Not all methods are tracked
+type ClusterStats struct {
+	DescribeTaskDefinition APIStat
+}
+
 // API Start
+
+func (c *Cluster) Stats() ClusterStats {
+	return c.stats
+}
 
 func (c *Cluster) ListTasksWithContext(_ context.Context, input *ecs.ListTasksInput, _ ...request.Option) (*ecs.ListTasksOutput, error) {
 	page, err := getPage(pageInput{
@@ -102,6 +120,17 @@ func (c *Cluster) DescribeTasksWithContext(_ context.Context, input *ecs.Describ
 	return &ecs.DescribeTasksOutput{Failures: failures, Tasks: tasks}, nil
 }
 
+func (c *Cluster) DescribeTaskDefinitionWithContext(_ context.Context, input *ecs.DescribeTaskDefinitionInput, opts ...request.Option) (*ecs.DescribeTaskDefinitionOutput, error) {
+	c.stats.DescribeTaskDefinition.Called++
+	defArn := aws.StringValue(input.TaskDefinition)
+	def, ok := c.definitions[defArn]
+	if !ok {
+		c.stats.DescribeTaskDefinition.Error++
+		return nil, fmt.Errorf("task definition not found for arn %q", defArn)
+	}
+	return &ecs.DescribeTaskDefinitionOutput{TaskDefinition: def}, nil
+}
+
 // API End
 
 // Hook Start
@@ -116,22 +145,52 @@ func (c *Cluster) SetTasks(tasks []*ecs.Task) {
 	c.taskMap = m
 }
 
+// SetTaskDefinitions updates the map.
+// NOTE: we could have both list and map, but we are not using list task def in ecsobserver.
+func (c *Cluster) SetTaskDefinitions(defs []*ecs.TaskDefinition) {
+	m := make(map[string]*ecs.TaskDefinition, len(defs))
+	for _, d := range defs {
+		m[aws.StringValue(d.TaskDefinitionArn)] = d
+	}
+	c.definitions = m
+}
+
 // Hook End
 
-// Util Start
+// Generator Start
 
 // GenTasks returns tasks with TaskArn set to arnPrefix+offset, where offset is [0, count).
-func GenTasks(arnPrefix string, count int) []*ecs.Task {
+func GenTasks(arnPrefix string, count int, modifier func(i int, task *ecs.Task)) []*ecs.Task {
 	var tasks []*ecs.Task
 	for i := 0; i < count; i++ {
-		tasks = append(tasks, &ecs.Task{
+		t := &ecs.Task{
 			TaskArn: aws.String(arnPrefix + strconv.Itoa(i)),
-		})
+		}
+		if modifier != nil {
+			modifier(i, t)
+		}
+		tasks = append(tasks, t)
 	}
 	return tasks
 }
 
-// Util End
+// GenTaskDefinitions returns tasks with TaskArn set to arnPrefix+offset+version, where offset is [0, count).
+// e.g. foo0:1, foo1:1 the `:` is following the task family version syntax.
+func GenTaskDefinitions(arnPrefix string, count int, version int, modifier func(i int, def *ecs.TaskDefinition)) []*ecs.TaskDefinition {
+	var defs []*ecs.TaskDefinition
+	for i := 0; i < count; i++ {
+		d := &ecs.TaskDefinition{
+			TaskDefinitionArn: aws.String(fmt.Sprintf("%s%d:%d", arnPrefix, i, version)),
+		}
+		if modifier != nil {
+			modifier(i, d)
+		}
+		defs = append(defs, d)
+	}
+	return defs
+}
+
+// Generator End
 
 // pagination Start
 

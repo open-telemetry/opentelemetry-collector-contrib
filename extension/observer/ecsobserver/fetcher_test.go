@@ -16,8 +16,11 @@ package ecsobserver
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -34,9 +37,60 @@ func TestFetcher_GetAllTasks(t *testing.T) {
 		ecsOverride: c,
 	})
 	require.NoError(t, err)
-	c.SetTasks(ecsmock.GenTasks("p", 203))
+	const nTasks = 203
+	c.SetTasks(ecsmock.GenTasks("p", nTasks, nil))
 	ctx := context.Background()
 	tasks, err := f.GetAllTasks(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, 203, len(tasks))
+	assert.Equal(t, nTasks, len(tasks))
+}
+
+func TestFetcher_AttachTaskDefinitions(t *testing.T) {
+	c := ecsmock.NewCluster()
+	f, err := newTaskFetcher(taskFetcherOptions{
+		Logger:      zap.NewExample(),
+		Cluster:     "not used",
+		Region:      "not used",
+		ecsOverride: c,
+	})
+	require.NoError(t, err)
+
+	const nTasks = 5
+	ctx := context.Background()
+	// one task per def
+	c.SetTasks(ecsmock.GenTasks("p", nTasks, func(i int, task *ecs.Task) {
+		task.TaskDefinitionArn = aws.String(fmt.Sprintf("pdef%d:1", i))
+	}))
+	c.SetTaskDefinitions(ecsmock.GenTaskDefinitions("pdef", nTasks, 1, nil))
+
+	// no cache
+	tasks, err := f.GetAllTasks(ctx)
+	require.NoError(t, err)
+	attached, err := f.AttachTaskDefinition(ctx, tasks)
+	stats := c.Stats()
+	require.NoError(t, err)
+	assert.Equal(t, len(tasks), len(attached))
+	assert.Equal(t, nTasks, stats.DescribeTaskDefinition.Called)
+
+	// all cached
+	tasks, err = f.GetAllTasks(ctx)
+	require.NoError(t, err)
+	// do it again to trigger cache logic
+	attached, err = f.AttachTaskDefinition(ctx, tasks)
+	stats = c.Stats()
+	require.NoError(t, err)
+	assert.Equal(t, len(tasks), len(attached))
+	assert.Equal(t, nTasks, stats.DescribeTaskDefinition.Called) // no api call due to cache
+
+	// add a new task
+	c.SetTasks(ecsmock.GenTasks("p", nTasks+1, func(i int, task *ecs.Task) {
+		task.TaskDefinitionArn = aws.String(fmt.Sprintf("pdef%d:1", i))
+	}))
+	c.SetTaskDefinitions(ecsmock.GenTaskDefinitions("pdef", nTasks+1, 1, nil))
+	tasks, err = f.GetAllTasks(ctx)
+	require.NoError(t, err)
+	_, err = f.AttachTaskDefinition(ctx, tasks)
+	stats = c.Stats()
+	require.NoError(t, err)
+	assert.Equal(t, nTasks+1, stats.DescribeTaskDefinition.Called) // +1 for new task
 }
