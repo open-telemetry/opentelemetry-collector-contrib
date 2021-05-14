@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import io
+import json
+import zipfile
 from unittest.mock import Mock, patch
 
 import botocore.session
@@ -19,6 +21,7 @@ from botocore.exceptions import ParamValidationError
 from moto import (  # pylint: disable=import-error
     mock_dynamodb2,
     mock_ec2,
+    mock_iam,
     mock_kinesis,
     mock_kms,
     mock_lambda,
@@ -35,6 +38,24 @@ from opentelemetry.propagate import get_global_textmap, set_global_textmap
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.mock_textmap import MockTextMapPropagator
 from opentelemetry.test.test_base import TestBase
+
+
+def get_as_zip_file(file_name, content):
+    zip_output = io.BytesIO()
+    with zipfile.ZipFile(zip_output, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        zip_file.writestr(file_name, content)
+    zip_output.seek(0)
+    return zip_output.read()
+
+
+def return_headers_lambda_str():
+    pfunc = """
+def lambda_handler(event, context):
+    print("custom log event")
+    headers = event.get('headers', event.get('attributes', {}))
+    return headers
+"""
+    return pfunc
 
 
 class TestBotocoreInstrumentor(TestBase):
@@ -327,6 +348,64 @@ class TestBotocoreInstrumentor(TestBase):
                 SpanAttributes.HTTP_STATUS_CODE: 200,
             },
         )
+
+    @mock_iam
+    def get_role_name(self):
+        iam = self.session.create_client("iam", "us-east-1")
+        return iam.create_role(
+            RoleName="my-role",
+            AssumeRolePolicyDocument="some policy",
+            Path="/my-path/",
+        )["Role"]["Arn"]
+
+    @mock_lambda
+    def test_lambda_invoke_propagation(self):
+
+        previous_propagator = get_global_textmap()
+        try:
+            set_global_textmap(MockTextMapPropagator())
+
+            lamb = self.session.create_client(
+                "lambda", region_name="us-east-1"
+            )
+            lamb.create_function(
+                FunctionName="testFunction",
+                Runtime="python2.7",
+                Role=self.get_role_name(),
+                Handler="lambda_function.lambda_handler",
+                Code={
+                    "ZipFile": get_as_zip_file(
+                        "lambda_function.py", return_headers_lambda_str()
+                    )
+                },
+                Description="test lambda function",
+                Timeout=3,
+                MemorySize=128,
+                Publish=True,
+            )
+            response = lamb.invoke(
+                Payload=json.dumps({}),
+                FunctionName="testFunction",
+                InvocationType="RequestResponse",
+            )
+
+            spans = self.memory_exporter.get_finished_spans()
+            assert spans
+            self.assertEqual(len(spans), 3)
+
+            results = response["Payload"].read().decode("utf-8")
+            headers = json.loads(results)
+
+            self.assertIn(MockTextMapPropagator.TRACE_ID_KEY, headers)
+            self.assertEqual(
+                "0", headers[MockTextMapPropagator.TRACE_ID_KEY],
+            )
+            self.assertIn(MockTextMapPropagator.SPAN_ID_KEY, headers)
+            self.assertEqual(
+                "0", headers[MockTextMapPropagator.SPAN_ID_KEY],
+            )
+        finally:
+            set_global_textmap(previous_propagator)
 
     @mock_kms
     def test_kms_client(self):
