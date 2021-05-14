@@ -26,23 +26,23 @@ import (
 func TestServiceMatcher(t *testing.T) {
 	t.Run("must set name pattern", func(t *testing.T) {
 		var cfg ServiceConfig
-		require.Error(t, cfg.Validate())
+		require.Error(t, cfg.validate())
 	})
 
 	t.Run("invalid regex", func(t *testing.T) {
 		invalidRegex := "*" //  missing argument to repetition operator: `*`
 		cfg := ServiceConfig{NamePattern: invalidRegex}
-		require.Error(t, cfg.Validate())
+		require.Error(t, cfg.validate())
 
 		cfg = ServiceConfig{NamePattern: "valid", ContainerNamePattern: invalidRegex}
-		require.Error(t, cfg.Validate())
+		require.Error(t, cfg.validate())
 	})
 
 	t.Run("invalid export config", func(t *testing.T) {
 		cfg := ServiceConfig{NamePattern: "valid", CommonExporterConfig: CommonExporterConfig{
 			MetricsPorts: []int{8080, 8080},
 		}}
-		require.Error(t, cfg.Validate())
+		require.Error(t, cfg.validate())
 	})
 
 	emptyDef := &ecs.TaskDefinition{

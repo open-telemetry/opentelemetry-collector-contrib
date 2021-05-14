@@ -31,13 +31,15 @@ type Matcher interface {
 	MatchTargets(task *Task, container *ecs.ContainerDefinition) ([]MatchedTarget, error)
 }
 
-type MatcherConfig interface {
-	// Validate calls NewMatcher and only returns the error, it can be used in test
+// matcherConfig should be implemented by all the matcher config structs
+// for validation and initializing the actual matcher implementation.
+type matcherConfig interface {
+	// validate calls NewMatcher and only returns the error, it can be used in test
 	// and the new config validator interface.
-	Validate() error
-	// NewMatcher validates config and creates a Matcher implementation.
+	validate() error
+	// newMatcher validates config and creates a Matcher implementation.
 	// The error is a config validation error
-	NewMatcher(options MatcherOptions) (Matcher, error)
+	newMatcher(options MatcherOptions) (Matcher, error)
 }
 
 type MatcherOptions struct {
@@ -111,20 +113,20 @@ func newMatchers(c Config, mOpt MatcherOptions) (map[MatcherType][]Matcher, erro
 	// We can have a registry or factory methods etc. but we only have three type of matchers
 	// and likely not going to add anymore in forseable future, just hard code the map here.
 	// All the XXXConfigToMatchers looks like copy pasted funcs, but there is no generic way to do it.
-	matcherConfigs := map[MatcherType][]MatcherConfig{
+	matcherConfigs := map[MatcherType][]matcherConfig{
 		MatcherTypeService:        serviceConfigsToMatchers(c.Services),
 		MatcherTypeTaskDefinition: taskDefinitionConfigsToMatchers(c.TaskDefinitions),
 		MatcherTypeDockerLabel:    dockerLabelConfigToMatchers(c.DockerLabels),
 	}
 	matchers := make(map[MatcherType][]Matcher)
 	matcherCount := 0
-	for tpe, cfgs := range matcherConfigs {
+	for mType, cfgs := range matcherConfigs {
 		for i, cfg := range cfgs {
-			m, err := cfg.NewMatcher(mOpt)
+			m, err := cfg.newMatcher(mOpt)
 			if err != nil {
-				return nil, fmt.Errorf("init matcher config failed type %s index %d: %w", tpe, i, err)
+				return nil, fmt.Errorf("init matcher config failed type %s index %d: %w", mType, i, err)
 			}
-			matchers[tpe] = append(matchers[tpe], m)
+			matchers[mType] = append(matchers[mType], m)
 			matcherCount++
 		}
 	}

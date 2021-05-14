@@ -36,13 +36,13 @@ func TestNewDiscovery(t *testing.T) {
 
 // Util Start
 
-func newMatcher(t *testing.T, cfg MatcherConfig) Matcher {
-	m, err := cfg.NewMatcher(testMatcherOptions())
+func newMatcher(t *testing.T, cfg matcherConfig) Matcher {
+	m, err := cfg.newMatcher(testMatcherOptions())
 	require.NoError(t, err)
 	return m
 }
 
-func newMatcherAndMatch(t *testing.T, cfg MatcherConfig, tasks []*Task) *MatchResult {
+func newMatcherAndMatch(t *testing.T, cfg matcherConfig, tasks []*Task) *MatchResult {
 	m := newMatcher(t, cfg)
 	res, err := matchContainers(tasks, m, 0)
 	require.NoError(t, err)

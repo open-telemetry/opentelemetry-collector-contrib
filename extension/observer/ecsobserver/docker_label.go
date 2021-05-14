@@ -39,12 +39,12 @@ type DockerLabelConfig struct {
 	MetricsPathLabel string `mapstructure:"metrics_path_label" yaml:"metrics_path_label"`
 }
 
-func (d *DockerLabelConfig) Validate() error {
-	_, err := d.NewMatcher(MatcherOptions{})
+func (d *DockerLabelConfig) validate() error {
+	_, err := d.newMatcher(MatcherOptions{})
 	return err
 }
 
-func (d *DockerLabelConfig) NewMatcher(options MatcherOptions) (Matcher, error) {
+func (d *DockerLabelConfig) newMatcher(options MatcherOptions) (Matcher, error) {
 	// It's possible to support it in the future, but for now just fail at config,
 	// so user don't need to wonder which port is used in the exported target.
 	if len(d.MetricsPorts) != 0 {
@@ -64,8 +64,8 @@ func (d *DockerLabelConfig) NewMatcher(options MatcherOptions) (Matcher, error) 
 	}, nil
 }
 
-func dockerLabelConfigToMatchers(cfgs []DockerLabelConfig) []MatcherConfig {
-	var matchers []MatcherConfig
+func dockerLabelConfigToMatchers(cfgs []DockerLabelConfig) []matcherConfig {
+	var matchers []matcherConfig
 	for _, cfg := range cfgs {
 		// NOTE: &cfg points to the temp var, whose value would end up be the last one in the slice.
 		copied := cfg

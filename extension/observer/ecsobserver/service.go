@@ -33,12 +33,12 @@ type ServiceConfig struct {
 	ContainerNamePattern string `mapstructure:"container_name_pattern" yaml:"container_name_pattern"`
 }
 
-func (s *ServiceConfig) Validate() error {
-	_, err := s.NewMatcher(MatcherOptions{})
+func (s *ServiceConfig) validate() error {
+	_, err := s.newMatcher(MatcherOptions{})
 	return err
 }
 
-func (s *ServiceConfig) NewMatcher(opts MatcherOptions) (Matcher, error) {
+func (s *ServiceConfig) newMatcher(opts MatcherOptions) (Matcher, error) {
 	if s.NamePattern == "" {
 		return nil, fmt.Errorf("name_pattern is empty")
 	}
@@ -67,8 +67,8 @@ func (s *ServiceConfig) NewMatcher(opts MatcherOptions) (Matcher, error) {
 	}, nil
 }
 
-func serviceConfigsToMatchers(cfgs []ServiceConfig) []MatcherConfig {
-	var matchers []MatcherConfig
+func serviceConfigsToMatchers(cfgs []ServiceConfig) []matcherConfig {
+	var matchers []matcherConfig
 	for _, cfg := range cfgs {
 		// NOTE: &cfg points to the temp var, whose value would end up be the last one in the slice.
 		copied := cfg

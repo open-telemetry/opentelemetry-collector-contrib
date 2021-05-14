@@ -33,12 +33,12 @@ type TaskDefinitionConfig struct {
 	ContainerNamePattern string `mapstructure:"container_name_pattern" yaml:"container_name_pattern"`
 }
 
-func (t *TaskDefinitionConfig) Validate() error {
-	_, err := t.NewMatcher(MatcherOptions{})
+func (t *TaskDefinitionConfig) validate() error {
+	_, err := t.newMatcher(MatcherOptions{})
 	return err
 }
 
-func (t *TaskDefinitionConfig) NewMatcher(opts MatcherOptions) (Matcher, error) {
+func (t *TaskDefinitionConfig) newMatcher(opts MatcherOptions) (Matcher, error) {
 	if t.ArnPattern == "" {
 		return nil, fmt.Errorf("arn_pattern is empty")
 	}
@@ -67,8 +67,8 @@ func (t *TaskDefinitionConfig) NewMatcher(opts MatcherOptions) (Matcher, error) 
 	}, nil
 }
 
-func taskDefinitionConfigsToMatchers(cfgs []TaskDefinitionConfig) []MatcherConfig {
-	var matchers []MatcherConfig
+func taskDefinitionConfigsToMatchers(cfgs []TaskDefinitionConfig) []matcherConfig {
+	var matchers []matcherConfig
 	for _, cfg := range cfgs {
 		// NOTE: &cfg points to the temp var, whose value would end up be the last one in the slice.
 		copied := cfg

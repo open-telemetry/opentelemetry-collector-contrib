@@ -53,7 +53,8 @@ type Config struct {
 	DockerLabels []DockerLabelConfig `mapstructure:"docker_labels" yaml:"docker_labels"`
 }
 
-// Validate overrides the embedded noop validation.
+// Validate overrides the embedded noop validation so that load config can trigger
+// our own validation logic.
 func (c *Config) Validate() error {
 	if c.ClusterName == "" {
 		// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/3188
@@ -61,17 +62,17 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("must specify ECS cluster name directly")
 	}
 	for _, s := range c.Services {
-		if err := s.Validate(); err != nil {
+		if err := s.validate(); err != nil {
 			return err
 		}
 	}
 	for _, t := range c.TaskDefinitions {
-		if err := t.Validate(); err != nil {
+		if err := t.validate(); err != nil {
 			return err
 		}
 	}
 	for _, d := range c.DockerLabels {
-		if err := d.Validate(); err != nil {
+		if err := d.validate(); err != nil {
 			return err
 		}
 	}
