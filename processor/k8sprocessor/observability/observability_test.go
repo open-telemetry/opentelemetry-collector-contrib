@@ -83,31 +83,43 @@ func TestMetrics(t *testing.T) {
 		},
 	}
 
-	e := newExporter()
 	var (
-		data []*metricdata.Metric
-		fail = make(chan struct{})
-		sig  = make(chan struct{})
+		fail   = make(chan struct{})
+		chData = make(chan []*metricdata.Metric)
 	)
-	go func() {
-		select {
-		case <-time.After(time.Second * 2):
-			fail <- struct{}{}
 
-		case data = <-e.ReturnAfter(len(tests)):
-			sig <- struct{}{}
+	go func() {
+		reader := metricexport.NewReader()
+		e := newExporter()
+		ch := e.ReturnAfter(len(tests))
+
+		// Add a manual retry mechanism in case there's a hiccup reading the
+		// metrics from producers in ReadAndExport(): we can wait for the metrics
+		// to come instead of failing because they didn't come right away.
+		for i := 0; i < 10; i++ {
+			go reader.ReadAndExport(e)
+
+			select {
+			case <-time.After(500 * time.Millisecond):
+
+			case data := <-ch:
+				chData <- data
+				return
+			}
 		}
+
+		fail <- struct{}{}
 	}()
 
-	go metricexport.NewReader().ReadAndExport(e)
 	for _, tt := range tests {
 		tt.recordFunc()
 	}
 
+	var data []*metricdata.Metric
 	select {
 	case <-fail:
 		t.Fatalf("timedout waiting for metrics to arrive")
-	case <-sig:
+	case data = <-chData:
 	}
 
 	sort.Slice(tests, func(i, j int) bool {
