@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.0.0-00010101000000-000000000000
 	github.com/signalfx/sapm-proto v0.7.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.26.1-0.20210513162346-453d1d0dd603
+	go.opentelemetry.io/collector v0.26.1-0.20210514011731-65a43fe39980
 	go.uber.org/zap v1.16.0
 )
 
