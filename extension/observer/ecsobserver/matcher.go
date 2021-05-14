@@ -16,7 +16,9 @@ package ecsobserver
 
 import (
 	"fmt"
+	"regexp"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -134,4 +136,27 @@ func matchContainers(tasks []*Task, matcher Matcher, matcherIndex int) (*MatchRe
 		Tasks:      matchedTasks,
 		Containers: matchedContainers,
 	}, merr
+}
+
+// matchContainerByName is used by TaskDefinitionMatcher and serviceMatcher.
+// The only exception is DockerLabelMatcher because it get ports from docker label.
+func matchContainerByName(nameRegex *regexp.Regexp, expCfg CommonExporterConfig, container *ecs.ContainerDefinition) ([]MatchedTarget, error) {
+	if nameRegex != nil && !nameRegex.MatchString(aws.StringValue(container.Name)) {
+		return nil, errNotMatched
+	}
+	// Match based on port
+	var targets []MatchedTarget
+	// Only export container if it has at least one matching port.
+	for _, portMapping := range container.PortMappings {
+		for _, port := range expCfg.MetricsPorts {
+			if aws.Int64Value(portMapping.ContainerPort) == int64(port) {
+				targets = append(targets, MatchedTarget{
+					Port:        port,
+					MetricsPath: expCfg.MetricsPath,
+					Job:         expCfg.JobName,
+				})
+			}
+		}
+	}
+	return targets, nil
 }
