@@ -21,6 +21,7 @@ import (
 	"strings"
 	"testing"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/google/go-cmp/cmp"
@@ -37,8 +38,8 @@ import (
 type metricsGroupingTest struct {
 	name       string // test name
 	transforms []internalTransform
-	in         internaldata.MetricsData
-	out        []internaldata.MetricsData
+	in         *agentmetricspb.ExportMetricsServiceRequest
+	out        []*agentmetricspb.ExportMetricsServiceRequest
 }
 
 var (
@@ -52,7 +53,7 @@ var (
 					GroupResourceLabels: map[string]string{"resource.type": "foo"},
 				},
 			},
-			in: internaldata.MetricsData{
+			in: &agentmetricspb.ExportMetricsServiceRequest{
 				Resource: &resourcepb.Resource{
 					Labels: map[string]string{
 						"original": "label",
@@ -65,7 +66,7 @@ var (
 						setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
 				},
 			},
-			out: []internaldata.MetricsData{
+			out: []*agentmetricspb.ExportMetricsServiceRequest{
 				{
 					Resource: &resourcepb.Resource{
 						Labels: map[string]string{
@@ -105,7 +106,7 @@ var (
 					GroupResourceLabels: map[string]string{"resource.type": "k8s.pod"},
 				},
 			},
-			in: internaldata.MetricsData{
+			in: &agentmetricspb.ExportMetricsServiceRequest{
 				Metrics: []*metricspb.Metric{
 					metricBuilder().setName("container.cpu.utilization").
 						setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
@@ -117,7 +118,7 @@ var (
 						setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
 				},
 			},
-			out: []internaldata.MetricsData{
+			out: []*agentmetricspb.ExportMetricsServiceRequest{
 				{
 					Resource: &resourcepb.Resource{
 						Labels: map[string]string{
@@ -149,7 +150,7 @@ var (
 	}
 )
 
-func sortResourceMetricsByResourceType(l []internaldata.MetricsData) {
+func sortResourceMetricsByResourceType(l []*agentmetricspb.ExportMetricsServiceRequest) {
 	sort.Slice(l, func(i, j int) bool {
 		return strings.Compare(
 			l[i].Resource.GetLabels()["resource.type"],
@@ -181,7 +182,7 @@ func TestMetricsGrouping(t *testing.T) {
 			assert.Equal(t, true, caps.MutatesData)
 
 			// process
-			cErr := mtp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(test.in))
+			cErr := mtp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(test.in.Node, test.in.Resource, test.in.Metrics))
 			assert.NoError(t, cErr)
 
 			// get and check results
@@ -189,7 +190,12 @@ func TestMetricsGrouping(t *testing.T) {
 			got := next.AllMetrics()
 			require.Equal(t, 1, len(got))
 
-			gotMD := internaldata.MetricsToOC(got[0])
+			var gotMD []*agentmetricspb.ExportMetricsServiceRequest
+			for i := 0; i < got[0].ResourceMetrics().Len(); i++ {
+				ocmd := &agentmetricspb.ExportMetricsServiceRequest{}
+				ocmd.Node, ocmd.Resource, ocmd.Metrics = internaldata.ResourceMetricsToOC(got[0].ResourceMetrics().At(i))
+				gotMD = append(gotMD, ocmd)
+			}
 			require.Equal(t, len(test.out), len(gotMD))
 
 			sortResourceMetricsByResourceType(gotMD)

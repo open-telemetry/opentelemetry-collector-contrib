@@ -184,10 +184,7 @@ func (t *tcpServer) handleConnection(
 				continue
 			}
 
-			md := internaldata.MetricsData{
-				Metrics: []*metricspb.Metric{metric},
-			}
-			err = nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
+			err = nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(nil, nil, []*metricspb.Metric{metric}))
 			t.reporter.OnMetricsProcessed(ctx, numReceivedMetricPoints, err)
 			if err != nil {
 				// The protocol doesn't account for returning errors.

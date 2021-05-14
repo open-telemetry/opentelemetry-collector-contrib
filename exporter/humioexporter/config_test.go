@@ -44,7 +44,7 @@ func loadConfig(t *testing.T, file string) (*config.Config, error) {
 }
 
 // Helper method to handle boilerplate of loading exporter configuration from file
-func loadExporterConfig(t *testing.T, file string, name string) (config.Exporter, *Config) {
+func loadExporterConfig(t *testing.T, file string, id config.ComponentID) (config.Exporter, *Config) {
 	// Initialize exporter factory
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
@@ -56,7 +56,7 @@ func loadExporterConfig(t *testing.T, file string, name string) (config.Exporter
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", file), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
-	actual := cfg.Exporters[config.MustIDFromString(name)]
+	actual := cfg.Exporters[id]
 
 	def := factory.CreateDefaultConfig().(*Config)
 	require.NotNil(t, def)
@@ -66,7 +66,7 @@ func loadExporterConfig(t *testing.T, file string, name string) (config.Exporter
 
 func TestLoadWithDefaults(t *testing.T) {
 	// Arrange / Act
-	actual, expected := loadExporterConfig(t, "config.yaml", typeStr)
+	actual, expected := loadExporterConfig(t, "config.yaml", config.NewID(typeStr))
 	expected.Traces.IngestToken = "00000000-0000-0000-0000-0000000000000"
 	expected.Endpoint = "https://cloud.humio.com/"
 
@@ -140,7 +140,7 @@ func TestLoadAllSettings(t *testing.T) {
 	}
 
 	// Act
-	actual, _ := loadExporterConfig(t, "config.yaml", typeStr+"/allsettings")
+	actual, _ := loadExporterConfig(t, "config.yaml", config.NewIDWithName(typeStr, "allsettings"))
 
 	// Assert
 	assert.Equal(t, expected, actual)

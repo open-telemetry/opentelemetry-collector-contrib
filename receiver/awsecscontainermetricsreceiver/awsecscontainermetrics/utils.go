@@ -18,16 +18,16 @@ import (
 	"strconv"
 	"time"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // GenerateDummyMetrics generates two dummy metrics
 // TODO: Remove once this is replaced with actuall metrics generation code
-func GenerateDummyMetrics() internaldata.MetricsData {
-	md := internaldata.MetricsData{}
+func GenerateDummyMetrics() *agentmetricspb.ExportMetricsServiceRequest {
+	md := &agentmetricspb.ExportMetricsServiceRequest{}
 
 	for i := 0; i < 2; i++ {
 		md.Metrics = append(md.Metrics, createGaugeIntMetric(i))

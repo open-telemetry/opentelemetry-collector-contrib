@@ -23,6 +23,10 @@ processors:
     detectors: [env, system]
     timeout: 2s
     override: false
+  resourcedetection/docker:
+    detectors: [env, docker]
+    timeout: 2s
+    override: false
   resourcedetection/azure:
     detectors: [env, azure]
     timeout: 2s
@@ -38,6 +42,7 @@ service:
       processors:
       # Choose one depending on your cloud provider and environment:
       # - resourcedetection/system
+      # - resourcedetection/docker
       # - resourcedetection/gce
       # - resourcedetection/ec2
       # - resourcedetection/ecs

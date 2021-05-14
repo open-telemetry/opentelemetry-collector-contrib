@@ -39,13 +39,13 @@ const (
 // 2. Cache
 // 3. EC2 instance metadata
 // 4. System
-func GetHost(logger *zap.Logger, cfg *config.Config) *string {
+func GetHost(logger *zap.Logger, cfg *config.Config) string {
 	if cfg.Hostname != "" {
-		return &cfg.Hostname
+		return cfg.Hostname
 	}
 
 	if cacheVal, ok := cache.Cache.Get(cache.CanonicalHostnameKey); ok {
-		return cacheVal.(*string)
+		return cacheVal.(string)
 	}
 
 	ec2Info := ec2.GetHostInfo(logger)
@@ -63,8 +63,8 @@ func GetHost(logger *zap.Logger, cfg *config.Config) *string {
 	}
 
 	logger.Debug("Canonical hostname automatically set", zap.String("hostname", hostname))
-	cache.Cache.Set(cache.CanonicalHostnameKey, &hostname, cache.NoExpiration)
-	return &hostname
+	cache.Cache.Set(cache.CanonicalHostnameKey, hostname, cache.NoExpiration)
+	return hostname
 }
 
 func getClusterName(attrs pdata.AttributeMap) (string, bool) {

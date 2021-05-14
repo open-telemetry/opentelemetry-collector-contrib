@@ -233,9 +233,7 @@ func TestResourceProcessor(t *testing.T) {
 			defer func() { assert.NoError(t, rmp.Shutdown(context.Background())) }()
 
 			// TODO create pdata.Metrics directly when this is no longer internal
-			err = rmp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(internaldata.MetricsData{
-				Resource: oCensusResource(tt.sourceResource),
-			}))
+			err = rmp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(nil, oCensusResource(tt.sourceResource), nil))
 			require.NoError(t, err)
 			got = tmn.AllMetrics()[0].ResourceMetrics().At(0).Resource()
 

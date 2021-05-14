@@ -143,9 +143,9 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 		metrics := sink.AllMetrics()
 		var gotOldMetrics []*metricspb.Metric
 		for _, md := range metrics {
-			ocmds := internaldata.MetricsToOC(md)
-			for _, ocmd := range ocmds {
-				gotOldMetrics = append(gotOldMetrics, ocmd.Metrics...)
+			for i := 0; i < md.ResourceMetrics().Len(); i++ {
+				_, _, metrics := internaldata.ResourceMetricsToOC(md.ResourceMetrics().At(i))
+				gotOldMetrics = append(gotOldMetrics, metrics...)
 			}
 		}
 		assert.Equal(t, tt.want, gotOldMetrics)
