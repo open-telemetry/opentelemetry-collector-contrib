@@ -24,13 +24,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestTaskExporter(t *testing.T) {
 	exp := newTaskExporter(zap.NewExample(), "ecs-cluster-1")
 
 	t.Run("invalid ip", func(t *testing.T) {
-		_, err := exp.ExportTask(&Task{
+		_, err := exp.exportTask(&Task{
 			Task:       &ecs.Task{},
 			Definition: &ecs.TaskDefinition{},
 		})
@@ -50,6 +51,11 @@ func TestTaskExporter(t *testing.T) {
 						Value: aws.String("172.168.1.1"),
 					},
 				},
+			},
+		},
+		Containers: []*ecs.Container{
+			{
+				Name: aws.String("c1"),
 			},
 		},
 	}
@@ -83,7 +89,7 @@ func TestTaskExporter(t *testing.T) {
 			},
 		}
 
-		targets, err := exp.ExportTask(task)
+		targets, err := exp.exportTask(task)
 		require.NoError(t, err)
 		assert.Len(t, targets, 1)
 		assert.Equal(t, "172.168.1.1:2113", targets[0].Address)
@@ -116,7 +122,7 @@ func TestTaskExporter(t *testing.T) {
 			},
 		}
 
-		targets, err := exp.ExportTask(task)
+		targets, err := exp.exportTask(task)
 		require.Error(t, err)
 		merr := multierr.Errors(err)
 		require.Len(t, merr, 1)
@@ -168,7 +174,7 @@ func TestTaskExporter(t *testing.T) {
 			},
 		}
 
-		targets, err := exp.ExportTask(task)
+		targets, err := exp.exportTask(task)
 		require.NoError(t, err)
 		assert.Len(t, targets, 1)
 		assert.Equal(t, "172.168.1.2:2114", targets[0].Address)
@@ -206,25 +212,39 @@ func TestTaskExporter(t *testing.T) {
 		Definition: awsVpcTaskDef,
 		Matched:    validMatched,
 	}
-	invalidTask := &Task{
+	invalidTargetTask := &Task{
 		Task:       awsVpcTask,
 		Definition: awsVpcTaskDef,
 		Matched:    invalidMatched,
 	}
+	invalidIPTask := &Task{
+		Task:       &ecs.Task{TaskArn: aws.String("invalid task's invalid arn")},
+		Definition: &ecs.TaskDefinition{},
+	}
 	t.Run("all valid tasks", func(t *testing.T) {
 		// Just make sure the for loop is right, done care about the content, they are tested in previous cases
-		targets, err := exp.ExportTasks([]*Task{validTask, validTask})
+		targets, err := exp.exportTasks([]*Task{validTask, validTask})
 		assert.NoError(t, err)
 		assert.Len(t, targets, 2)
 	})
 
 	t.Run("invalid tasks", func(t *testing.T) {
-		targets, err := exp.ExportTasks([]*Task{validTask, invalidTask, validTask, invalidTask, invalidTask})
+		targets, err := exp.exportTasks([]*Task{
+			validTask,
+			invalidTargetTask, validTask, invalidTargetTask, invalidTargetTask,
+			invalidIPTask,
+		})
 		require.Error(t, err)
 		assert.Len(t, targets, 2)
 		merr := multierr.Errors(err)
 		// each invalid task has two invalid match, we have 3 invalid tasks
 		// multierr flatten multierr when appending
-		assert.Len(t, merr, 2*3)
+		assert.Len(t, merr, 2*3+1)
+
+		zCore, logs := observer.New(zap.ErrorLevel)
+		printErrors(zap.New(zCore), err)
+		assert.Equal(t, len(merr), len(logs.All()))
+
+		printErrors(zap.NewExample(), err) // inspect during development
 	})
 }
