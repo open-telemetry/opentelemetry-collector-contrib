@@ -1,6 +1,8 @@
 # Sumo Logic Exporter
 
 This exporter supports sending logs and metrics data to [Sumo Logic](https://www.sumologic.com/).
+Traces are exported using native otlphttp exporter as described
+[here](https://help.sumologic.com/Traces/Getting_Started_with_Transaction_Tracing)
 
 The following configuration options are supported:
 
