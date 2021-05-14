@@ -32,10 +32,12 @@ type Matcher interface {
 }
 
 type MatcherConfig interface {
-	// Init validates the configuration and initializes some internal structures like regexp.
-	Init() error
-	// NewMatcher creates a Matcher implementation using initialized config.
-	NewMatcher(options MatcherOptions) Matcher
+	// Validate calls NewMatcher and only returns the error, it can be used in test
+	// and the new config validator interface.
+	Validate() error
+	// NewMatcher validates config and creates a Matcher implementation.
+	// The error is a config validation error
+	NewMatcher(options MatcherOptions) (Matcher, error)
 }
 
 type MatcherOptions struct {
@@ -106,7 +108,9 @@ type MatchedTarget struct {
 }
 
 func newMatchers(c Config, mOpt MatcherOptions) (map[MatcherType][]Matcher, error) {
-	// We can have a registry or factory methods etc. but since we only have three type of metchers in filter.
+	// We can have a registry or factory methods etc. but we only have three type of matchers
+	// and likely not going to add anymore in forseable future, just hard code the map here.
+	// All the XXXConfigToMatchers looks like copy pasted funcs, but there is no generic way to do it.
 	matcherConfigs := map[MatcherType][]MatcherConfig{
 		MatcherTypeService:        serviceConfigsToMatchers(c.Services),
 		MatcherTypeTaskDefinition: taskDefinitionConfigsToMatchers(c.TaskDefinitions),
@@ -116,10 +120,11 @@ func newMatchers(c Config, mOpt MatcherOptions) (map[MatcherType][]Matcher, erro
 	matcherCount := 0
 	for tpe, cfgs := range matcherConfigs {
 		for i, cfg := range cfgs {
-			if err := cfg.Init(); err != nil {
+			m, err := cfg.NewMatcher(mOpt)
+			if err != nil {
 				return nil, fmt.Errorf("init matcher config failed type %s index %d: %w", tpe, i, err)
 			}
-			matchers[tpe] = append(matchers[tpe], cfg.NewMatcher(mOpt))
+			matchers[tpe] = append(matchers[tpe], m)
 			matcherCount++
 		}
 	}
@@ -179,7 +184,7 @@ func matchContainers(tasks []*Task, matcher Matcher, matcherIndex int) (*MatchRe
 
 // matchContainerByName is used by taskDefinitionMatcher and serviceMatcher.
 // The only exception is DockerLabelMatcher because it get ports from docker label.
-func matchContainerByName(nameRegex *regexp.Regexp, expCfg CommonExporterConfig, container *ecs.ContainerDefinition) ([]MatchedTarget, error) {
+func matchContainerByName(nameRegex *regexp.Regexp, expSetting *commonExportSetting, container *ecs.ContainerDefinition) ([]MatchedTarget, error) {
 	if nameRegex != nil && !nameRegex.MatchString(aws.StringValue(container.Name)) {
 		return nil, errNotMatched
 	}
@@ -187,14 +192,13 @@ func matchContainerByName(nameRegex *regexp.Regexp, expCfg CommonExporterConfig,
 	var targets []MatchedTarget
 	// Only export container if it has at least one matching port.
 	for _, portMapping := range container.PortMappings {
-		for _, port := range expCfg.MetricsPorts {
-			if aws.Int64Value(portMapping.ContainerPort) == int64(port) {
-				targets = append(targets, MatchedTarget{
-					Port:        port,
-					MetricsPath: expCfg.MetricsPath,
-					Job:         expCfg.JobName,
-				})
-			}
+		port := int(aws.Int64Value(portMapping.ContainerPort))
+		if expSetting.hasContainerPort(port) {
+			targets = append(targets, MatchedTarget{
+				Port:        port,
+				MetricsPath: expSetting.MetricsPath,
+				Job:         expSetting.JobName,
+			})
 		}
 	}
 	return targets, nil

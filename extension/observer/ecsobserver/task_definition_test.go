@@ -26,16 +26,23 @@ import (
 func TestTaskDefinitionMatcher(t *testing.T) {
 	t.Run("must set arn pattern", func(t *testing.T) {
 		var cfg TaskDefinitionConfig
-		require.Error(t, cfg.Init())
+		require.Error(t, cfg.Validate())
 	})
 
 	t.Run("invalid regex", func(t *testing.T) {
 		invalidRegex := "*" //  missing argument to repetition operator: `*`
 		cfg := TaskDefinitionConfig{ArnPattern: invalidRegex}
-		require.Error(t, cfg.Init())
+		require.Error(t, cfg.Validate())
 
 		cfg = TaskDefinitionConfig{ArnPattern: "arn:is:valid:regexp", ContainerNamePattern: invalidRegex}
-		require.Error(t, cfg.Init())
+		require.Error(t, cfg.Validate())
+	})
+
+	t.Run("invalid export config", func(t *testing.T) {
+		cfg := TaskDefinitionConfig{ArnPattern: "a", CommonExporterConfig: CommonExporterConfig{
+			MetricsPorts: []int{8080, 8080},
+		}}
+		require.Error(t, cfg.Validate())
 	})
 
 	emptyTask := &Task{

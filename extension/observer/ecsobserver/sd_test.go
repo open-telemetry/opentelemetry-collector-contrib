@@ -37,8 +37,9 @@ func TestNewDiscovery(t *testing.T) {
 // Util Start
 
 func newMatcher(t *testing.T, cfg MatcherConfig) Matcher {
-	require.NoError(t, cfg.Init())
-	return cfg.NewMatcher(testMatcherOptions())
+	m, err := cfg.NewMatcher(testMatcherOptions())
+	require.NoError(t, err)
+	return m
 }
 
 func newMatcherAndMatch(t *testing.T, cfg MatcherConfig, tasks []*Task) *MatchResult {

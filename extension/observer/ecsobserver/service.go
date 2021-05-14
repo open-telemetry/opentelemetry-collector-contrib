@@ -31,38 +31,40 @@ type ServiceConfig struct {
 	// ContainerNamePattern is optional, empty string means all containers in that service would be exported.
 	// Otherwise both service and container name petterns need to metch.
 	ContainerNamePattern string `mapstructure:"container_name_pattern" yaml:"container_name_pattern"`
-
-	// should never be nil because Init must reject it and caller should stop
-	nameRegex *regexp.Regexp
-	// if nil, matches all the container in the task (whose service name is matched by nameRegex)
-	containerNameRegex *regexp.Regexp
 }
 
-func (s *ServiceConfig) Init() error {
+func (s *ServiceConfig) Validate() error {
+	_, err := s.NewMatcher(MatcherOptions{})
+	return err
+}
+
+func (s *ServiceConfig) NewMatcher(opts MatcherOptions) (Matcher, error) {
 	if s.NamePattern == "" {
-		return fmt.Errorf("name_pattern is empty")
+		return nil, fmt.Errorf("name_pattern is empty")
 	}
 
-	r, err := regexp.Compile(s.NamePattern)
+	nameRegex, err := regexp.Compile(s.NamePattern)
 	if err != nil {
-		return fmt.Errorf("invalid name pattern %w", err)
+		return nil, fmt.Errorf("invalid name pattern %w", err)
 	}
-	s.nameRegex = r
+	var containerRegex *regexp.Regexp
 	if s.ContainerNamePattern != "" {
-		r, err = regexp.Compile(s.ContainerNamePattern)
+		containerRegex, err = regexp.Compile(s.ContainerNamePattern)
 		if err != nil {
-			return fmt.Errorf("invalid container name pattern %w", err)
+			return nil, fmt.Errorf("invalid container name pattern %w", err)
 		}
-		s.containerNameRegex = r
 	}
-	return nil
-}
-
-func (s *ServiceConfig) NewMatcher(opts MatcherOptions) Matcher {
+	expSetting, err := s.newExportSetting()
+	if err != nil {
+		return nil, err
+	}
 	return &serviceMatcher{
-		logger: opts.Logger,
-		cfg:    *s,
-	}
+		logger:             opts.Logger,
+		cfg:                *s,
+		nameRegex:          nameRegex,
+		containerNameRegex: containerRegex,
+		exportSetting:      expSetting,
+	}, nil
 }
 
 func serviceConfigsToMatchers(cfgs []ServiceConfig) []MatcherConfig {
@@ -76,8 +78,12 @@ func serviceConfigsToMatchers(cfgs []ServiceConfig) []MatcherConfig {
 }
 
 type serviceMatcher struct {
-	logger *zap.Logger
-	cfg    ServiceConfig
+	logger    *zap.Logger
+	cfg       ServiceConfig
+	nameRegex *regexp.Regexp
+	// can be nil, which means matching all the container in the task (whose service name is matched by nameRegex)
+	containerNameRegex *regexp.Regexp
+	exportSetting      *commonExportSetting
 }
 
 func (s *serviceMatcher) Type() MatcherType {
@@ -90,10 +96,9 @@ func (s *serviceMatcher) MatchTargets(t *Task, c *ecs.ContainerDefinition) ([]Ma
 	if t.Service == nil {
 		return nil, errNotMatched
 	}
-	// nameRegex should never be nil
-	if !s.cfg.nameRegex.MatchString(aws.StringValue(t.Service.ServiceName)) {
+	if !s.nameRegex.MatchString(aws.StringValue(t.Service.ServiceName)) {
 		return nil, errNotMatched
 	}
 	// The rest is same as taskDefinitionMatcher
-	return matchContainerByName(s.cfg.containerNameRegex, s.cfg.CommonExporterConfig, c)
+	return matchContainerByName(s.containerNameRegex, s.exportSetting, c)
 }
