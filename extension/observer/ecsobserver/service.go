@@ -84,6 +84,6 @@ func (s *serviceMatcher) MatchTargets(t *Task, c *ecs.ContainerDefinition) ([]Ma
 	if !s.cfg.nameRegex.MatchString(aws.StringValue(t.Service.ServiceName)) {
 		return nil, errNotMatched
 	}
-	// The rest is same as TaskDefinitionMatcher
+	// The rest is same as taskDefinitionMatcher
 	return matchContainerByName(s.cfg.containerNameRegex, s.cfg.CommonExporterConfig, c)
 }

@@ -58,7 +58,7 @@ type MatchResult struct {
 
 type MatchedContainer struct {
 	TaskIndex      int // Index in task list
-	ContainerIndex int // Index within a tasks defintion's container list
+	ContainerIndex int // Index within a tasks definition's container list
 	Targets        []MatchedTarget
 }
 
@@ -138,7 +138,7 @@ func matchContainers(tasks []*Task, matcher Matcher, matcherIndex int) (*MatchRe
 	}, merr
 }
 
-// matchContainerByName is used by TaskDefinitionMatcher and serviceMatcher.
+// matchContainerByName is used by taskDefinitionMatcher and serviceMatcher.
 // The only exception is DockerLabelMatcher because it get ports from docker label.
 func matchContainerByName(nameRegex *regexp.Regexp, expCfg CommonExporterConfig, container *ecs.ContainerDefinition) ([]MatchedTarget, error) {
 	if nameRegex != nil && !nameRegex.MatchString(aws.StringValue(container.Name)) {

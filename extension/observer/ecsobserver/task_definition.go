@@ -14,6 +14,15 @@
 
 package ecsobserver
 
+import (
+	"fmt"
+	"regexp"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/ecs"
+	"go.uber.org/zap"
+)
+
 type TaskDefinitionConfig struct {
 	CommonExporterConfig `mapstructure:",squash" yaml:",inline"`
 
@@ -22,4 +31,54 @@ type TaskDefinitionConfig struct {
 	// ContainerNamePattern is optional, empty string means all containers in that task definition would be exported.
 	// Otherwise both service and container name petterns need to metch.
 	ContainerNamePattern string `mapstructure:"container_name_pattern" yaml:"container_name_pattern"`
+
+	// should never be nil because Init must reject it and caller should stop
+	arnRegex *regexp.Regexp
+	// if nil, matches all the container in the task (whose task definition name is matched by arnRegex)
+	containerNameRegex *regexp.Regexp
+}
+
+func (t *TaskDefinitionConfig) Init() error {
+	if t.ArnPattern == "" {
+		return fmt.Errorf("arn_pattern is empty")
+	}
+
+	r, err := regexp.Compile(t.ArnPattern)
+	if err != nil {
+		return fmt.Errorf("invalid arn pattern %w", err)
+	}
+	t.arnRegex = r
+	if t.ContainerNamePattern != "" {
+		r, err = regexp.Compile(t.ContainerNamePattern)
+		if err != nil {
+			return fmt.Errorf("invalid container name pattern %w", err)
+		}
+		t.containerNameRegex = r
+	}
+	return nil
+}
+
+func (t *TaskDefinitionConfig) NewMatcher(opts MatcherOptions) (Matcher, error) {
+	return &taskDefinitionMatcher{
+		logger: opts.Logger,
+		cfg:    *t,
+	}, nil
+}
+
+type taskDefinitionMatcher struct {
+	logger *zap.Logger
+	cfg    TaskDefinitionConfig
+}
+
+func (m *taskDefinitionMatcher) Type() MatcherType {
+	return MatcherTypeTaskDefinition
+}
+
+func (m *taskDefinitionMatcher) MatchTargets(t *Task, c *ecs.ContainerDefinition) ([]MatchedTarget, error) {
+	// Check arn
+	if !m.cfg.arnRegex.MatchString(aws.StringValue(t.Task.TaskDefinitionArn)) {
+		return nil, errNotMatched
+	}
+	// The rest is same as ServiceMatcher
+	return matchContainerByName(m.cfg.containerNameRegex, m.cfg.CommonExporterConfig, c)
 }
