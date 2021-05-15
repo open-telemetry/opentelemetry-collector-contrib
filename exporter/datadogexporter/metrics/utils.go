@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strings"
 
+	"go.opentelemetry.io/collector/component"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
@@ -66,7 +67,7 @@ func DefaultMetrics(exporterType string, hostname string, timestamp uint64, buil
 	tags := []string{}
 
 	if withCollectorVersion {
-		append(tags, "version:"+buildInfo.Version)
+		tags = append(tags, "version:"+buildInfo.Version)
 	}
 
 	metrics := []datadog.Metric{

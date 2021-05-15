@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"

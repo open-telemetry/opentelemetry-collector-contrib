@@ -86,7 +86,7 @@ func TestDefaultMetrics(t *testing.T) {
 	assert.Equal(t, 1.0, *ms_with_version[0].Points[0][1])
 	// Assert hostname tag is set
 	assert.Equal(t, "test-host", *ms_with_version[0].Host)
-	
+
 	// Assert version tag is set
 	assert.ElementsMatch(t, []string{"Version:1.0"}, ms_with_version[0].Tags)
 }

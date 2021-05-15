@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
