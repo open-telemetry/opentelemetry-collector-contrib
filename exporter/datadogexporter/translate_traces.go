@@ -84,7 +84,7 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, calculator *sublay
 		payload := resourceSpansToDatadogSpans(rs, calculator, host, cfg, blk)
 		traces = append(traces, &payload)
 
-		ms := metrics.DefaultMetrics("traces", host, uint64(pushTime))
+		ms := metrics.DefaultMetrics("traces", host, uint64(pushTime), true)
 		runningMetrics = append(runningMetrics, ms...)
 	}
 
