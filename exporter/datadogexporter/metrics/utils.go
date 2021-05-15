@@ -62,11 +62,11 @@ func NewCount(name string, ts uint64, value float64, tags []string) datadog.Metr
 }
 
 // DefaultMetrics creates built-in metrics to report that an exporter is running
-func DefaultMetrics(exporterType string, hostname string, timestamp uint64, withCollectorVersion bool) []datadog.Metric {
+func DefaultMetrics(exporterType string, hostname string, timestamp uint64, buildInfo component.BuildInfo, withCollectorVersion bool) []datadog.Metric {
 	tags := []string{}
 
 	if withCollectorVersion {
-		append(tags, "version:"+version.AgentVersion)
+		append(tags, "version:"+buildInfo.Version)
 	}
 
 	metrics := []datadog.Metric{

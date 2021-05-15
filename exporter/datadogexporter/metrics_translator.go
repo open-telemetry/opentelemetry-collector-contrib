@@ -250,7 +250,7 @@ func mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, bucke
 }
 
 // mapMetrics maps OTLP metrics into the DataDog format
-func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, fallbackHost string, md pdata.Metrics) (series []datadog.Metric, droppedTimeSeries int) {
+func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, fallbackHost string, md pdata.Metrics, buildInfo component.BuildInfo) (series []datadog.Metric, droppedTimeSeries int) {
 	pushTime := uint64(time.Now().UTC().UnixNano())
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
@@ -270,7 +270,7 @@ func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, fallbackHost s
 		}
 
 		// Report the host as running
-		runningMetric := metrics.DefaultMetrics("metrics", host, pushTime, true)
+		runningMetric := metrics.DefaultMetrics("metrics", host, pushTime, buildInfo, true)
 
 		series = append(series, runningMetric...)
 

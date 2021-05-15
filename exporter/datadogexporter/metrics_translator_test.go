@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
@@ -534,7 +535,11 @@ func TestRunningMetrics(t *testing.T) {
 	cfg := config.MetricsConfig{}
 	prevPts := newTTLMap()
 
-	series, _ := mapMetrics(cfg, prevPts, "fallbackHostname", ms)
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
+
+	series, _ := mapMetrics(cfg, prevPts, "fallbackHostname", ms, buildInfo)
 
 	runningHostnames := []string{}
 
@@ -685,7 +690,11 @@ func testCount(name string, val float64) datadog.Metric {
 func TestMapMetrics(t *testing.T) {
 	md := createTestMetrics()
 	cfg := config.MetricsConfig{SendMonotonic: true}
-	series, dropped := mapMetrics(cfg, newTTLMap(), "", md)
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
+
+	series, dropped := mapMetrics(cfg, newTTLMap(), "", md, buildInfo)
 	assert.Equal(t, dropped, 0)
 	filtered := removeRunningMetrics(series)
 	assert.ElementsMatch(t, filtered, []datadog.Metric{

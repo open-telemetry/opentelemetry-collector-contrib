@@ -28,6 +28,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/stats"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
@@ -138,8 +139,11 @@ func TestConvertToDatadogTd(t *testing.T) {
 	traces.ResourceSpans().AppendEmpty()
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
 
-	outputTraces, runningMetrics := convertToDatadogTd(traces, "test-host", calculator, &config.Config{}, denylister)
+	outputTraces, runningMetrics := convertToDatadogTd(traces, "test-host", calculator, &config.Config{}, denylister, buildInfo)
 	assert.Equal(t, 1, len(outputTraces))
 	assert.Equal(t, 1, len(runningMetrics))
 }
@@ -148,8 +152,11 @@ func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 	traces := pdata.NewTraces()
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
 
-	outputTraces, runningMetrics := convertToDatadogTd(traces, "test-host", calculator, &config.Config{}, denylister)
+	outputTraces, runningMetrics := convertToDatadogTd(traces, "test-host", calculator, &config.Config{}, denylister, buildInfo)
 	assert.Equal(t, 0, len(outputTraces))
 	assert.Equal(t, 0, len(runningMetrics))
 }
@@ -191,6 +198,9 @@ func TestRunningTraces(t *testing.T) {
 func TestObfuscation(t *testing.T) {
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
 
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -209,7 +219,7 @@ func TestObfuscation(t *testing.T) {
 	// of them is currently not supported.
 	span.Attributes().InsertString("testinfo?=123", "http.route")
 
-	outputTraces, _ := convertToDatadogTd(traces, "test-host", calculator, &config.Config{}, denylister)
+	outputTraces, _ := convertToDatadogTd(traces, "test-host", calculator, &config.Config{}, denylister, buildInfo)
 	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
 
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
@@ -223,6 +233,9 @@ func TestBasicTracesTranslation(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -235,7 +248,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeUnset, false, mockEndTime)
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{}, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{}, denylister, buildInfo)
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -308,7 +321,7 @@ func TestBasicTracesDenylist(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeUnset, false, mockEndTime)
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{}, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{}, denylister, buildInfo)
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -321,6 +334,9 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -340,7 +356,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 		},
 	}
 
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister, buildInfo)
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -375,6 +391,9 @@ func TestTracesTranslationErrorsFromEventsUsesLast(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -422,7 +441,7 @@ func TestTracesTranslationErrorsFromEventsUsesLast(t *testing.T) {
 		},
 	}
 
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister, buildInfo)
 
 	// Ensure the error type is copied over from the last error event logged
 	assert.Equal(t, attribs[conventions.AttributeExceptionType].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorType])
@@ -439,6 +458,9 @@ func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -477,7 +499,7 @@ func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 		},
 	}
 
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister, buildInfo)
 
 	// Ensure the error type is copied over
 	assert.Equal(t, attribs[conventions.AttributeExceptionType].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorType])
@@ -515,6 +537,9 @@ func TestTracesTranslationOkStatus(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -534,7 +559,7 @@ func TestTracesTranslationOkStatus(t *testing.T) {
 		},
 	}
 
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister, buildInfo)
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -565,6 +590,9 @@ func TestTracesTranslationConfig(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -585,7 +613,7 @@ func TestTracesTranslationConfig(t *testing.T) {
 	}
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister, buildInfo)
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -613,6 +641,9 @@ func TestTracesTranslationNoIls(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
 
 	rs := pdata.NewResourceSpans()
 
@@ -624,7 +655,7 @@ func TestTracesTranslationNoIls(t *testing.T) {
 	}
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister, buildInfo)
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -638,6 +669,9 @@ func TestTracesTranslationInvalidService(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -675,9 +709,9 @@ func TestTracesTranslationInvalidService(t *testing.T) {
 	}
 
 	// translate mocks to datadog traces
-	datadogPayloadInvalidService := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfgInvalidService, denylister)
-	datadogPayloadEmptyService := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfgEmptyService, denylister)
-	datadogPayloadStartWithInvalidService := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfgStartWithInvalidService, denylister)
+	datadogPayloadInvalidService := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfgInvalidService, denylister, buildInfo)
+	datadogPayloadEmptyService := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfgEmptyService, denylister, buildInfo)
+	datadogPayloadStartWithInvalidService := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfgStartWithInvalidService, denylister, buildInfo)
 
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayloadInvalidService)
@@ -697,6 +731,9 @@ func TestTracesTranslationServicePeerName(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -712,7 +749,7 @@ func TestTracesTranslationServicePeerName(t *testing.T) {
 	span.Attributes().InsertString(conventions.AttributePeerService, "my_peer_service_name")
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{}, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{}, denylister, buildInfo)
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -772,6 +809,9 @@ func TestTracesTranslationTruncatetag(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -788,7 +828,7 @@ func TestTracesTranslationTruncatetag(t *testing.T) {
 	span.Attributes().InsertString(conventions.AttributeExceptionStacktrace, RandStringBytes(5500))
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{}, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{}, denylister, buildInfo)
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -1169,6 +1209,9 @@ func TestStatsAggregations(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -1184,7 +1227,7 @@ func TestStatsAggregations(t *testing.T) {
 	// translate mocks to datadog traces
 	cfg := config.Config{}
 
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister, buildInfo)
 
 	statsOutput := computeAPMStats(&datadogPayload, calculator, time.Now().UTC().UnixNano())
 
@@ -1206,6 +1249,9 @@ func TestStatsAggregations(t *testing.T) {
 func TestSanitization(t *testing.T) {
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
 
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
@@ -1221,7 +1267,7 @@ func TestSanitization(t *testing.T) {
 	instrumentationLibrary.SetVersion("v1")
 	ilss.Spans().Resize(1)
 
-	outputTraces, _ := convertToDatadogTd(traces, "test-host", calculator, &config.Config{}, denylister)
+	outputTraces, _ := convertToDatadogTd(traces, "test-host", calculator, &config.Config{}, denylister, buildInfo)
 	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
 
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)

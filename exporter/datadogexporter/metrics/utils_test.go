@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
@@ -56,7 +57,11 @@ func TestNewType(t *testing.T) {
 }
 
 func TestDefaultMetrics(t *testing.T) {
-	ms := DefaultMetrics("metrics", "test-host", uint64(2e9))
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
+
+	ms := DefaultMetrics("metrics", "test-host", uint64(2e9), buildInfo, false)
 
 	assert.Equal(t, "otel.datadog_exporter.metrics.running", *ms[0].Metric)
 	// Assert metrics list length (should be 1)
@@ -69,6 +74,21 @@ func TestDefaultMetrics(t *testing.T) {
 	assert.Equal(t, "test-host", *ms[0].Host)
 	// Assert no other tags are set
 	assert.ElementsMatch(t, []string{}, ms[0].Tags)
+
+	ms_with_version := DefaultMetrics("metrics", "test-host", uint64(2e9), buildInfo, true)
+
+	assert.Equal(t, "otel.datadog_exporter.metrics.running", *ms_with_version[0].Metric)
+	// Assert metrics list length (should be 1)
+	assert.Equal(t, 1, len(ms_with_version))
+	// Assert timestamp
+	assert.Equal(t, 2.0, *ms_with_version[0].Points[0][0])
+	// Assert value (should always be 1.0)
+	assert.Equal(t, 1.0, *ms_with_version[0].Points[0][1])
+	// Assert hostname tag is set
+	assert.Equal(t, "test-host", *ms_with_version[0].Host)
+	
+	// Assert version tag is set
+	assert.ElementsMatch(t, []string{"Version:1.0"}, ms_with_version[0].Tags)
 }
 
 func TestProcessMetrics(t *testing.T) {
