@@ -16,6 +16,8 @@ package datadogreceiver
 
 import (
 	"context"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -23,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
-	"testing"
 )
 
 func TestDatadogReceiver_Lifecycle(t *testing.T) {

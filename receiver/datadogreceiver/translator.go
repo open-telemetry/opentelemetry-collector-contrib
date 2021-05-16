@@ -17,41 +17,51 @@ package datadogreceiver
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+
 	"mime"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
 func ToTraces(traces pb.Traces, req *http.Request) pdata.Traces {
 	dest := pdata.NewTraces()
-	res := dest.ResourceSpans().AppendEmpty()
-	ils := res.InstrumentationLibrarySpans().AppendEmpty()
-	// TODO: Figure resource tags
-	// For the semantics of status codes see
-	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/README.md
-	// TODO: Pull from HTTP headers ils.InstrumentationLibrary().SetName()
-	// TODO: Pull from HTTP headers ils.InstrumentationLibrary().SetVersion()
+	resSpans := dest.ResourceSpans().AppendEmpty()
+	resAttributes := resSpans.Resource().Attributes()
+	ils := resSpans.InstrumentationLibrarySpans().AppendEmpty()
+
+	resAttributes.InsertString(conventions.AttributeServiceName, traces[0][0].Service)
 	for _, trace := range traces {
 		for _, span := range trace {
 			newSpan := ils.Spans().AppendEmpty() // TODO: Might be more efficient to resize spans and then populate it
 			newSpan.SetTraceID(tracetranslator.UInt64ToTraceID(0, span.TraceID))
 			newSpan.SetSpanID(tracetranslator.UInt64ToSpanID(span.SpanID))
-			newSpan.SetStartTimestamp(pdata.Timestamp(span.Start))
-			newSpan.SetEndTimestamp(pdata.Timestamp(span.Start + span.Duration))
+			newSpan.SetStartTimestamp(pdata.TimestampFromTime(time.Now()))
+			newSpan.SetEndTimestamp(pdata.TimestampFromTime(time.Now()))
 			newSpan.SetParentSpanID(tracetranslator.UInt64ToSpanID(span.ParentID))
 			newSpan.SetName(span.Name)
+			newSpan.Attributes().InsertString(conventions.AttributeServiceName, span.Service)
 
-			// TODO: Figure out tag to pull from newSpan.Status().SetCode()
-			// For the semantics of status codes see
-			// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/api.md#set-status
+			if val, ok := span.GetMeta()[conventions.AttributeHTTPStatusCode]; ok {
+				code, _ := strconv.Atoi(val)
+				newSpan.Status().SetCode(tracetranslator.StatusCodeFromHTTP(code))
+			}
 			for k, v := range span.GetMeta() {
 				newSpan.Attributes().InsertString(k, v)
 			}
-
+			if span.Error > 0 {
+				_, errorExists := newSpan.Attributes().Get("error")
+				if errorExists == false {
+					newSpan.Attributes().InsertInt("error", int64(span.Error))
+				}
+			}
 			switch span.Type {
 			case "web":
 				newSpan.SetKind(pdata.SpanKindSERVER)
@@ -63,6 +73,7 @@ func ToTraces(traces pb.Traces, req *http.Request) pdata.Traces {
 
 		}
 	}
+
 	return dest
 }
 

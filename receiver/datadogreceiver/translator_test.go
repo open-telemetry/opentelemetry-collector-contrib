@@ -16,11 +16,12 @@ package datadogreceiver
 
 import (
 	"bytes"
+	"net/http"
+	"testing"
+
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/stretchr/testify/assert"
 	vmsgp "github.com/vmihailenco/msgpack/v4"
-	"net/http"
-	"testing"
 )
 
 func BenchmarkTranslator(b *testing.B) {

@@ -17,18 +17,21 @@ package datadogreceiver
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/config"
+	"net/http"
+	"sync"
+
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
-	"net/http"
-	"sync"
 )
 
 type datadogReceiver struct {
 	config       *Config
+	id           config.ComponentID
 	params       component.ReceiverCreateParams
 	nextConsumer consumer.Traces
 	server       *http.Server
@@ -57,7 +60,7 @@ func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params com
 const collectorHTTPTransport = "http_collector"
 
 func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) error {
-	ddr.longLivedCtx = obsreport.ReceiverContext(ctx, "datadog", collectorHTTPTransport)
+	ddr.longLivedCtx = obsreport.ReceiverContext(ctx, ddr.config.ID(), collectorHTTPTransport)
 	ddmux := mux.NewRouter()
 	ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
 	ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
@@ -80,7 +83,7 @@ func (ddr *datadogReceiver) Shutdown(ctx context.Context) error {
 }
 
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
-	obsreport.StartTraceDataReceiveOp(ddr.longLivedCtx, typeStr, "http")
+	obsreport.StartTraceDataReceiveOp(ddr.longLivedCtx, ddr.config.ID(), "http")
 	var ddTraces pb.Traces
 
 	err := decodeRequest(req, &ddTraces)
@@ -91,7 +94,7 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 	}
 
 	otelTraces := ToTraces(ddTraces, req)
-
+	spanCount := otelTraces.SpanCount()
 	err = ddr.nextConsumer.ConsumeTraces(req.Context(), otelTraces)
 	if err != nil {
 		http.Error(w, "Trace consumer errored out", http.StatusInternalServerError)
@@ -99,5 +102,5 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
 	}
-	obsreport.EndTraceDataReceiveOp(ddr.longLivedCtx, typeStr, otelTraces.SpanCount(), err)
+	obsreport.EndTraceDataReceiveOp(ddr.longLivedCtx, typeStr, spanCount, err)
 }
