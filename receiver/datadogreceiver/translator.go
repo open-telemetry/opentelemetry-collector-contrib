@@ -17,8 +17,6 @@ package datadogreceiver
 import (
 	"encoding/json"
 	"fmt"
-	"time"
-
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -43,8 +41,8 @@ func ToTraces(traces pb.Traces, req *http.Request) pdata.Traces {
 			newSpan := ils.Spans().AppendEmpty() // TODO: Might be more efficient to resize spans and then populate it
 			newSpan.SetTraceID(tracetranslator.UInt64ToTraceID(0, span.TraceID))
 			newSpan.SetSpanID(tracetranslator.UInt64ToSpanID(span.SpanID))
-			newSpan.SetStartTimestamp(pdata.TimestampFromTime(time.Now()))
-			newSpan.SetEndTimestamp(pdata.TimestampFromTime(time.Now()))
+			newSpan.SetStartTimestamp(pdata.Timestamp(span.Start))
+			newSpan.SetEndTimestamp(pdata.Timestamp(span.Start + span.Duration))
 			newSpan.SetParentSpanID(tracetranslator.UInt64ToSpanID(span.ParentID))
 			newSpan.SetName(span.Name)
 			newSpan.Attributes().InsertString(conventions.AttributeServiceName, span.Service)
