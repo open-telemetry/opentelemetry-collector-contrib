@@ -88,7 +88,7 @@ func TestDefaultMetrics(t *testing.T) {
 	assert.Equal(t, "test-host", *ms_with_version[0].Host)
 
 	// Assert version tag is set
-	assert.ElementsMatch(t, []string{"Version:1.0"}, ms_with_version[0].Tags)
+	assert.ElementsMatch(t, []string{"version:1.0"}, ms_with_version[0].Tags)
 }
 
 func TestProcessMetrics(t *testing.T) {
