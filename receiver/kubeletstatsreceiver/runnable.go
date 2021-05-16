@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -95,7 +96,10 @@ func (r *runnable) Run() error {
 
 	metadata := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, r.detailedPVCLabelsSetter())
 	mds := kubelet.MetricsData(r.logger, summary, metadata, typeStr, r.metricGroupsToCollect)
-	metrics := internaldata.OCSliceToMetrics(mds)
+	metrics := pdata.NewMetrics()
+	for i := range mds {
+		internaldata.OCToMetrics(mds[i].Node, mds[i].Resource, mds[i].Metrics).ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
+	}
 
 	var numPoints int
 	ctx := obsreport.ReceiverContext(r.ctx, r.receiverID, transport)

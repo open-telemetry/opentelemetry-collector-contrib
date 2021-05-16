@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -98,7 +99,7 @@ func createMetricsExporter(
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	var pushMetricsFn exporterhelper.PushMetrics
+	var pushMetricsFn consumerhelper.ConsumeMetricsFunc
 
 	if cfg.OnlyMetadata {
 		pushMetricsFn = func(_ context.Context, md pdata.Metrics) error {
@@ -148,7 +149,7 @@ func createTracesExporter(
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	var pushTracesFn exporterhelper.PushTraces
+	var pushTracesFn consumerhelper.ConsumeTracesFunc
 
 	if cfg.OnlyMetadata {
 		pushTracesFn = func(_ context.Context, td pdata.Traces) error {

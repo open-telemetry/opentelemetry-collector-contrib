@@ -534,25 +534,21 @@ func TestRunningMetrics(t *testing.T) {
 	cfg := config.MetricsConfig{}
 	prevPts := newTTLMap()
 
-	series, _ := mapMetrics(cfg, prevPts, ms)
+	series, _ := mapMetrics(cfg, prevPts, "fallbackHostname", ms)
 
 	runningHostnames := []string{}
-	noHostname := 0
 
 	for _, metric := range series {
-		if *metric.Metric == "datadog_exporter.metrics.running" {
+		if *metric.Metric == "otel.datadog_exporter.metrics.running" {
 			if metric.Host != nil {
 				runningHostnames = append(runningHostnames, *metric.Host)
-			} else {
-				noHostname++
 			}
 		}
 	}
 
-	assert.Equal(t, noHostname, 1)
 	assert.ElementsMatch(t,
 		runningHostnames,
-		[]string{"resource-hostname-1", "resource-hostname-1", "resource-hostname-2"},
+		[]string{"fallbackHostname", "resource-hostname-1", "resource-hostname-1", "resource-hostname-2"},
 	)
 
 }
@@ -667,7 +663,7 @@ func createTestMetrics() pdata.Metrics {
 func removeRunningMetrics(series []datadog.Metric) []datadog.Metric {
 	filtered := []datadog.Metric{}
 	for _, m := range series {
-		if m.GetMetric() != "datadog_exporter.metrics.running" {
+		if m.GetMetric() != "otel.datadog_exporter.metrics.running" {
 			filtered = append(filtered, m)
 		}
 	}
@@ -689,7 +685,7 @@ func testCount(name string, val float64) datadog.Metric {
 func TestMapMetrics(t *testing.T) {
 	md := createTestMetrics()
 	cfg := config.MetricsConfig{SendMonotonic: true}
-	series, dropped := mapMetrics(cfg, newTTLMap(), md)
+	series, dropped := mapMetrics(cfg, newTTLMap(), "", md)
 	assert.Equal(t, dropped, 0)
 	filtered := removeRunningMetrics(series)
 	assert.ElementsMatch(t, filtered, []datadog.Metric{

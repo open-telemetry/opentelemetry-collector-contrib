@@ -100,8 +100,8 @@ func (n nopHostWithExporters) GetExtensions() map[config.ComponentID]component.E
 func (n nopHostWithExporters) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
 	return map[config.DataType]map[config.ComponentID]component.Exporter{
 		config.MetricsDataType: {
-			config.MustIDFromString("nop/withoutmetadata"): MockExporter{},
-			config.MustIDFromString("nop/withmetadata"):    mockExporterWithK8sMetadata{},
+			config.NewIDWithName("nop", "withoutmetadata"): MockExporter{},
+			config.NewIDWithName("nop", "withmetadata"):    mockExporterWithK8sMetadata{},
 		},
 	}
 }

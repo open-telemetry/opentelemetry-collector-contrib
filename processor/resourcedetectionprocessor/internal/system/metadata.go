@@ -17,9 +17,10 @@ package system
 import (
 	"os"
 	"runtime"
-	"strings"
 
 	"github.com/Showmax/go-fqdn"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 type systemMetadata interface {
@@ -35,17 +36,8 @@ type systemMetadata interface {
 
 type systemMetadataImpl struct{}
 
-// goosToOSType maps a runtime.GOOS-like value to os.type style.
-func goosToOSType(goos string) string {
-	switch goos {
-	case "dragonfly":
-		return "DRAGONFLYBSD"
-	}
-	return strings.ToUpper(goos)
-}
-
 func (*systemMetadataImpl) OSType() (string, error) {
-	return goosToOSType(runtime.GOOS), nil
+	return internal.GOOSToOSType(runtime.GOOS), nil
 }
 
 func (*systemMetadataImpl) FQDN() (string, error) {

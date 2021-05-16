@@ -125,7 +125,7 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	receiverID := config.MustIDFromString("TestSegmentsPassedToConsumer")
+	receiverID := config.NewID("TestSegmentsPassedToConsumer")
 
 	addr, rcvr, _ := createAndOptionallyStartReceiver(t, receiverID, nil, true)
 	defer rcvr.Shutdown(context.Background())
@@ -155,7 +155,7 @@ func TestTranslatorErrorsOut(t *testing.T) {
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	receiverID := config.MustIDFromString("TestTranslatorErrorsOut")
+	receiverID := config.NewID("TestTranslatorErrorsOut")
 
 	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverID, nil, true)
 	defer rcvr.Shutdown(context.Background())
@@ -182,7 +182,7 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	receiverID := config.MustIDFromString("TestSegmentsConsumerErrorsOut")
+	receiverID := config.NewID("TestSegmentsConsumerErrorsOut")
 
 	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverID,
 		consumertest.NewErr(errors.New("can't consume traces")), true)
@@ -208,7 +208,7 @@ func TestPollerCloseError(t *testing.T) {
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.MustIDFromString("TestPollerCloseError"), nil, false)
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewID("TestPollerCloseError"), nil, false)
 	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
 	rcvr.(*xrayReceiver).poller = mPoller
 	rcvr.(*xrayReceiver).server = &mockProxy{}
@@ -221,7 +221,7 @@ func TestProxyCloseError(t *testing.T) {
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.MustIDFromString("TestPollerCloseError"), nil, false)
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewID("TestPollerCloseError"), nil, false)
 	mProxy := &mockProxy{closeErr: errors.New("mockProxyCloseErr")}
 	rcvr.(*xrayReceiver).poller = &mockPoller{}
 	rcvr.(*xrayReceiver).server = mProxy
@@ -234,7 +234,7 @@ func TestBothPollerAndProxyCloseError(t *testing.T) {
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
-	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.MustIDFromString("TestBothPollerAndProxyCloseError"), nil, false)
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, config.NewID("TestBothPollerAndProxyCloseError"), nil, false)
 	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
 	mProxy := &mockProxy{closeErr: errors.New("mockProxyCloseErr")}
 	rcvr.(*xrayReceiver).poller = mPoller

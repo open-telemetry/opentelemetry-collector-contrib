@@ -34,9 +34,9 @@ import (
 
 func TestReceiver(t *testing.T) {
 	client := fake.NewSimpleClientset()
-	consumer := new(consumertest.MetricsSink)
+	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, consumer, 10*time.Second)
+	r := setupReceiver(client, sink, 10*time.Second)
 
 	// Setup k8s resources.
 	numPods := 2
@@ -52,7 +52,7 @@ func TestReceiver(t *testing.T) {
 	expectedNumMetrics := numPods + numNodes
 	var initialMetricsCount int
 	require.Eventually(t, func() bool {
-		initialMetricsCount = consumer.MetricsCount()
+		initialMetricsCount = sink.MetricsCount()
 		return initialMetricsCount == expectedNumMetrics
 	}, 10*time.Second, 100*time.Millisecond,
 		"metrics not collected")
@@ -64,7 +64,7 @@ func TestReceiver(t *testing.T) {
 	expectedNumMetrics = (numPods - numPodsToDelete) + numNodes
 	var metricsCountDelta int
 	require.Eventually(t, func() bool {
-		metricsCountDelta = consumer.MetricsCount() - initialMetricsCount
+		metricsCountDelta = sink.MetricsCount() - initialMetricsCount
 		return metricsCountDelta == expectedNumMetrics
 	}, 10*time.Second, 100*time.Millisecond,
 		"updated metrics not collected")
@@ -74,10 +74,9 @@ func TestReceiver(t *testing.T) {
 
 func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	client := fake.NewSimpleClientset()
-	consumer := new(consumertest.MetricsSink)
 
 	// Mock initial cache sync timing out, using a small timeout.
-	r := setupReceiver(client, consumer, 1*time.Millisecond)
+	r := setupReceiver(client, consumertest.NewNop(), 1*time.Millisecond)
 
 	createPods(t, client, 1)
 
@@ -91,9 +90,9 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 
 func TestReceiverWithManyResources(t *testing.T) {
 	client := fake.NewSimpleClientset()
-	consumer := new(consumertest.MetricsSink)
+	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, consumer, 10*time.Second)
+	r := setupReceiver(client, sink, 10*time.Second)
 
 	numPods := 1000
 	createPods(t, client, numPods)
@@ -102,7 +101,7 @@ func TestReceiverWithManyResources(t *testing.T) {
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
 	require.Eventually(t, func() bool {
-		return consumer.MetricsCount() == numPods
+		return sink.MetricsCount() == numPods
 	}, 10*time.Second, 100*time.Millisecond,
 		"metrics not collected")
 
@@ -118,10 +117,10 @@ var consumeMetadataInvocation = func() {
 
 func TestReceiverWithMetadata(t *testing.T) {
 	client := fake.NewSimpleClientset()
-	consumer := &mockExporterWithK8sMetadata{MetricsSink: new(consumertest.MetricsSink)}
+	next := &mockExporterWithK8sMetadata{MetricsSink: new(consumertest.MetricsSink)}
 	numCalls = atomic.NewInt32(0)
 
-	r := setupReceiver(client, consumer, 10*time.Second)
+	r := setupReceiver(client, next, 10*time.Second)
 	r.config.MetadataExporters = []string{"nop/withmetadata"}
 
 	// Setup k8s resources.

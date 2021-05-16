@@ -24,6 +24,7 @@ import (
 	"sync"
 	"time"
 
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
@@ -115,17 +116,17 @@ func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	defaultAttrs := cdr.defaultAttributes(r)
 
-	md := internaldata.MetricsData{}
+	var metrics []*metricspb.Metric
 	ctx := context.Background()
 	for _, record := range records {
-		md.Metrics, err = record.appendToMetrics(md.Metrics, defaultAttrs)
+		metrics, err = record.appendToMetrics(metrics, defaultAttrs)
 		if err != nil {
 			cdr.handleHTTPErr(w, err, "unable to process metrics")
 			return
 		}
 	}
 
-	err = cdr.nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
+	err = cdr.nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(nil, nil, metrics))
 	if err != nil {
 		cdr.handleHTTPErr(w, err, "unable to process metrics")
 		return

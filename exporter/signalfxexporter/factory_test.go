@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
@@ -306,7 +307,7 @@ func TestCreateMetricsExporterWithEmptyExcludeMetrics(t *testing.T) {
 }
 
 func testMetricsData() pdata.ResourceMetrics {
-	md := internaldata.MetricsData{
+	md := agentmetricspb.ExportMetricsServiceRequest{
 		Metrics: []*metricspb.Metric{
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
@@ -916,7 +917,7 @@ func testMetricsData() pdata.ResourceMetrics {
 			},
 		},
 	}
-	return internaldata.OCSliceToMetrics([]internaldata.MetricsData{md}).ResourceMetrics().At(0)
+	return internaldata.OCToMetrics(md.Node, md.Resource, md.Metrics).ResourceMetrics().At(0)
 }
 
 func TestDefaultDiskTranslations(t *testing.T) {
