@@ -48,7 +48,8 @@ func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params com
 		config:       config,
 		nextConsumer: nextConsumer,
 		server: &http.Server{
-			Addr: config.HTTPServerSettings.Endpoint,
+			ReadTimeout: config.ReadTimeout,
+			Addr:        config.HTTPServerSettings.Endpoint,
 		},
 	}, nil
 }
@@ -62,12 +63,10 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 	ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
 	ddmux.HandleFunc("/v0.5/traces", ddr.handleTraces)
 	ddr.server.Handler = ddmux
-	ddr.startOnce.Do(func() {
-		go func() {
-			if err := ddr.server.ListenAndServe(); err != http.ErrServerClosed {
-				host.ReportFatalError(fmt.Errorf("error starting datadog receiver: %v", err))
-			}
-		}()
+	go ddr.startOnce.Do(func() {
+		if err := ddr.server.ListenAndServe(); err != http.ErrServerClosed {
+			host.ReportFatalError(fmt.Errorf("error starting datadog receiver: %v", err))
+		}
 	})
 	return nil
 }

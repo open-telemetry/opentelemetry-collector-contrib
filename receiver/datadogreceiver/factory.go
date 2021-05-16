@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"time"
 )
 
 const (
@@ -41,6 +42,7 @@ func createDefaultConfig() config.Receiver {
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "0.0.0.0:8126",
 		},
+		ReadTimeout: 60 * time.Second,
 	}
 }
 

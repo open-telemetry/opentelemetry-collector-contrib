@@ -18,9 +18,11 @@ package datadogreceiver
 import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"time"
 )
 
 type Config struct {
 	config.ReceiverSettings       `mapstructure:",squash"`
 	confighttp.HTTPServerSettings `mapstructure:",squash"`
+	ReadTimeout                   time.Duration
 }
