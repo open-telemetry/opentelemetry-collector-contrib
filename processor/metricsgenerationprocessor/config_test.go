@@ -29,14 +29,12 @@ import (
 func TestLoadingFullConfig(t *testing.T) {
 	tests := []struct {
 		configFile string
-		filterName string
 		expCfg     *Config
 	}{
 		{
 			configFile: "config_full.yaml",
-			filterName: "experimental_metricsgeneration",
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(typeStr),
+				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 				Rules: []Rule{
 					{
 						Name:      "new_metric",
@@ -58,18 +56,17 @@ func TestLoadingFullConfig(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.filterName, func(t *testing.T) {
-
+		t.Run(test.expCfg.ID().String(), func(t *testing.T) {
 			factories, err := componenttest.NopFactories()
 			assert.NoError(t, err)
 
 			factory := NewFactory()
-			factories.Processors[config.Type(typeStr)] = factory
+			factories.Processors[typeStr] = factory
 			config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", test.configFile), factories)
 			assert.NoError(t, err)
 			require.NotNil(t, config)
 
-			cfg := config.Processors[test.filterName]
+			cfg := config.Processors[test.expCfg.ID()]
 			assert.Equal(t, test.expCfg, cfg)
 		})
 	}
