@@ -310,7 +310,7 @@ func resourceToDatadogServiceNameAndAttributeMap(
 	}
 
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
-		datadogTags[k] = tracetranslator.AttributeValueToString(v, false)
+		datadogTags[k] = tracetranslator.AttributeValueToString(v)
 		return true
 	})
 
@@ -348,7 +348,7 @@ func aggregateSpanTags(span pdata.Span, datadogTags map[string]string) map[strin
 	}
 
 	span.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-		spanTags[utils.NormalizeTag(k)] = tracetranslator.AttributeValueToString(v, false)
+		spanTags[utils.NormalizeTag(k)] = tracetranslator.AttributeValueToString(v)
 		return true
 	})
 
