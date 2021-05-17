@@ -15,7 +15,7 @@ require (
 	github.com/prometheus/common v0.24.0
 	github.com/prometheus/prometheus v1.8.2-0.20210430082741-2a4b8e12bbf2
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.26.1-0.20210514011731-65a43fe39980
+	go.opentelemetry.io/collector v0.26.1-0.20210517162416-a7313e99b1bc
 	go.uber.org/zap v1.16.0
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )

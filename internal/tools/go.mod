@@ -9,7 +9,7 @@ require (
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/pavius/impi v0.0.3
 	github.com/tcnksm/ghr v0.13.0
-	go.opentelemetry.io/collector/cmd/checkdoc v0.26.1-0.20210514011731-65a43fe39980
-	go.opentelemetry.io/collector/cmd/issuegenerator v0.26.1-0.20210514011731-65a43fe39980
-	go.opentelemetry.io/collector/cmd/mdatagen v0.26.1-0.20210514011731-65a43fe39980
+	go.opentelemetry.io/collector/cmd/checkdoc v0.26.1-0.20210517162416-a7313e99b1bc
+	go.opentelemetry.io/collector/cmd/issuegenerator v0.26.1-0.20210517162416-a7313e99b1bc
+	go.opentelemetry.io/collector/cmd/mdatagen v0.26.1-0.20210517162416-a7313e99b1bc
 )
