@@ -17,6 +17,7 @@ package tanzuobservabilityexporter
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -33,7 +34,7 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	tracesCfg := TracesConfig{
-		Endpoint:           "http://localhost:30001",
+		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:30001"},
 		DefaultApplication: "defaultApp",
 		DefaultService:     "defaultService",
 	}

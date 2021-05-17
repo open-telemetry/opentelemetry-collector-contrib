@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -55,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 	expected := &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID("tanzuobservability")),
 		Traces: TracesConfig{
-			Endpoint:           "http://localhost:40001",
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:40001"},
 			DefaultApplication: "an_application",
 			DefaultService:     "a_service",
 		},

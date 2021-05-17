@@ -19,13 +19,14 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 func TestConfigRequiresNonEmptyEndpoint(t *testing.T) {
 	c := &Config{
 		ExporterSettings: config.ExporterSettings{},
 		Traces: TracesConfig{
-			Endpoint:           "",
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
 			DefaultApplication: "application",
 			DefaultService:     "service",
 		},
@@ -38,7 +39,7 @@ func TestConfigRequiresNonEmptyDefaultApplication(t *testing.T) {
 	c := &Config{
 		ExporterSettings: config.ExporterSettings{},
 		Traces: TracesConfig{
-			Endpoint:           "http://localhost:8080",
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:8080"},
 			DefaultApplication: "",
 			DefaultService:     "service",
 		},
@@ -51,7 +52,7 @@ func TestConfigRequiresNonEmptyDefaultService(t *testing.T) {
 	c := &Config{
 		ExporterSettings: config.ExporterSettings{},
 		Traces: TracesConfig{
-			Endpoint:           "http://localhost:8080",
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:8080"},
 			DefaultApplication: "application",
 			DefaultService:     "",
 		},

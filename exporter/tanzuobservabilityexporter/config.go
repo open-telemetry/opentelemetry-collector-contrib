@@ -18,11 +18,11 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 type TracesConfig struct {
-	// Wavefront Proxy URL of the form protocol://host[:port]
-	Endpoint string `mapstructure:"endpoint"`
+	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// A default value to use if a span doesn't contain an "application" label
 	DefaultApplication string `mapstructure:"default_application"`
