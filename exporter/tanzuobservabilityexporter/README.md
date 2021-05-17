@@ -19,8 +19,8 @@ This exporter supports sending traces to [Tanzu Observability](https://tanzu.vmw
 ## Tanzu Observability Specific Attributes
 
 - Application identity tags, which are [required by Tanzu Observability](https://docs.wavefront.com/trace_data_details.html#how-wavefront-uses-application-tags), are added if they are missing.
-    - `application` is set to "defaultApp". You can override the default value using the exporter configuration.
-    - `service` is set to "defaultService". You can override the default value using the exporter configuration.
+    - `application` is set to "defaultApp".
+    - `service` is set to "defaultService".
 
 ## Exporter Configuration
 
@@ -37,10 +37,6 @@ exporters:
     traces:
       # Hostname and `customTracingListenerPorts` of the Wavefront Proxy
       endpoint: "http://localhost:30001"
-      # Override the default of 'application=defaultApp' for spans missing the tag
-      default_application: "my-application"
-      # Override the default of 'service=defaultService' for spans missing the tag
-      default_service: "queue-service"
 
 service:
   pipelines:
