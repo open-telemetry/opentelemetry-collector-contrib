@@ -633,7 +633,7 @@ func TestTransformSum(t *testing.T) {
 		telemetry.Gauge{
 			Name:      "sum",
 			Value:     42.0,
-			Timestamp: start.AsTime(),
+			Timestamp: end.AsTime(),
 			Attributes: map[string]interface{}{
 				"unit":        "1",
 				"description": "description",
