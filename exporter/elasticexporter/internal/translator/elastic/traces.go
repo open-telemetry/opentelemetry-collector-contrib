@@ -91,10 +91,7 @@ func EncodeSpan(
 		}
 		w.RawString("}\n")
 	}
-	if err := encodeSpanEvents(otlpSpan.Events(), otlpResource, traceID, spanID, w); err != nil {
-		return err
-	}
-	return nil
+	return encodeSpanEvents(otlpSpan.Events(), otlpResource, traceID, spanID, w)
 }
 
 func setTransactionProperties(

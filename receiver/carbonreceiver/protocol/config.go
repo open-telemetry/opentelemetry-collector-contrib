@@ -87,9 +87,5 @@ func LoadParserConfig(cp *config.Parser, cfg *Config) error {
 		return errSub
 	}
 
-	if err := vParserCfg.UnmarshalExact(cfg.Config); err != nil {
-		return err
-	}
-
-	return nil
+	return vParserCfg.UnmarshalExact(cfg.Config)
 }
