@@ -132,7 +132,7 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) ([]string, int) {
 	return lines, dropped
 }
 
-var lastLog int64 = 0
+var lastLog int64
 
 // send sends a serialized metric batch to Dynatrace.
 // Returns the number of lines rejected by Dynatrace.

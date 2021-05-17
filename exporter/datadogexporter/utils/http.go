@@ -25,11 +25,11 @@ import (
 )
 
 var (
-	JSONHeaders map[string]string = map[string]string{
+	JSONHeaders = map[string]string{
 		"Content-Type":     "application/json",
 		"Content-Encoding": "gzip",
 	}
-	ProtobufHeaders map[string]string = map[string]string{
+	ProtobufHeaders = map[string]string{
 		"Content-Type":     "application/x-protobuf",
 		"Content-Encoding": "identity",
 	}

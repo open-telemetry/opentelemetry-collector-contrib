@@ -190,7 +190,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 
 func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *sampling.TraceData, metrics *policyMetrics) (sampling.Decision, *Policy) {
 	finalDecision := sampling.NotSampled
-	var matchingPolicy *Policy = nil
+	var matchingPolicy *Policy
 
 	for i, policy := range tsp.policies {
 		policyEvaluateStartTime := time.Now()

@@ -31,10 +31,10 @@ import (
 
 func TestMetricValue(t *testing.T) {
 	var (
-		name  string   = "name"
-		value float64  = math.Pi
-		ts    uint64   = uint64(time.Now().UnixNano())
-		tags  []string = []string{"tool:opentelemetry", "version:0.1.0"}
+		name  = "name"
+		value = math.Pi
+		ts    = uint64(time.Now().UnixNano())
+		tags  = []string{"tool:opentelemetry", "version:0.1.0"}
 	)
 
 	metric := metrics.NewGauge(name, ts, value, tags)

@@ -214,11 +214,7 @@ func (p *processorImp) ConsumeTraces(ctx context.Context, traces pdata.Traces) e
 	}
 
 	// Forward trace data unmodified.
-	if err := p.nextConsumer.ConsumeTraces(ctx, traces); err != nil {
-		return err
-	}
-
-	return nil
+	return p.nextConsumer.ConsumeTraces(ctx, traces)
 }
 
 // buildMetrics collects the computed raw metrics data, builds the metrics object and

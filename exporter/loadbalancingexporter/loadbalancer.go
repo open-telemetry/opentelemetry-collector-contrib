@@ -101,11 +101,7 @@ func newLoadBalancer(params component.ExporterCreateParams, cfg config.Exporter,
 func (lb *loadBalancerImp) Start(ctx context.Context, host component.Host) error {
 	lb.res.onChange(lb.onBackendChanges)
 	lb.host = host
-	if err := lb.res.start(ctx); err != nil {
-		return err
-	}
-
-	return nil
+	return lb.res.start(ctx)
 }
 
 func (lb *loadBalancerImp) onBackendChanges(resolved []string) {

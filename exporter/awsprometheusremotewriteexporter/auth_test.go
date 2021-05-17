@@ -35,7 +35,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
-var sdkInformation string = fmt.Sprintf("%s/%s (%s; %s; %s)", aws.SDKName, aws.SDKVersion, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+var sdkInformation = fmt.Sprintf("%s/%s (%s; %s; %s)", aws.SDKName, aws.SDKVersion, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 func TestRequestSignature(t *testing.T) {
 	// Some form of AWS credentials must be set up for tests to succeed
