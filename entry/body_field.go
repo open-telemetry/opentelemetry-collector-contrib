@@ -40,8 +40,8 @@ func (f BodyField) Parent() BodyField {
 func (f BodyField) Child(key string) BodyField {
 	child := make([]string, len(f.Keys), len(f.Keys)+1)
 	copy(child, f.Keys)
-	keys := append(child, key)
-	return BodyField{keys}
+	child = append(child, key)
+	return BodyField{child}
 }
 
 // IsRoot returns a boolean indicating if this is a root level field.

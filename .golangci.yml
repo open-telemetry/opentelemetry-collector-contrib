@@ -26,6 +26,9 @@ linters-settings:
     local-prefixes: github.com/open-telemetry/opentelemetry-log-collection
   goconst:
     min-occurrences: 5
+  revive:
+    # minimal confidence for issues, default is 0.8
+    min-confidence: 0.8
 issues:
   exclude-rules:
     - path: operator/builtin/input/windows/xml\.go
