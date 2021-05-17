@@ -78,7 +78,7 @@ func (s *sourceFormat) format(f fields) string {
 	for _, matchset := range s.matches {
 		v, ok := f.orig.Get(matchset)
 		if ok {
-			labels = append(labels, tracetranslator.AttributeValueToString(v, false))
+			labels = append(labels, tracetranslator.AttributeValueToString(v))
 		} else {
 			labels = append(labels, "")
 		}

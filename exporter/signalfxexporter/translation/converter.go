@@ -450,7 +450,7 @@ func resourceToDimensions(res pdata.Resource) []*sfxpb.Dimension {
 
 		dims = append(dims, &sfxpb.Dimension{
 			Key:   k,
-			Value: tracetranslator.AttributeValueToString(val, false),
+			Value: tracetranslator.AttributeValueToString(val),
 		})
 		return true
 	})
