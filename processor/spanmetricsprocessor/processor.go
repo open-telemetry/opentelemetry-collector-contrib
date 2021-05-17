@@ -341,7 +341,7 @@ func buildDimensionKVs(serviceName string, span pdata.Span, optionalDims []Dimen
 	spanAttr := span.Attributes()
 	for _, d := range optionalDims {
 		if attr, ok := spanAttr.Get(d.Name); ok {
-			dims[d.Name] = tracetranslator.AttributeValueToString(attr, false)
+			dims[d.Name] = tracetranslator.AttributeValueToString(attr)
 		} else if d.Default != nil {
 			// Set the default if configured, otherwise this metric should have no value set for the dimension.
 			dims[d.Name] = *d.Default
@@ -377,7 +377,7 @@ func buildKey(serviceName string, span pdata.Span, optionalDims []Dimension) met
 			value = *d.Default
 		}
 		if attr, ok := spanAttr.Get(d.Name); ok {
-			value = tracetranslator.AttributeValueToString(attr, false)
+			value = tracetranslator.AttributeValueToString(attr)
 		}
 		concatDimensionValue(&metricKeyBuilder, value, true)
 	}
