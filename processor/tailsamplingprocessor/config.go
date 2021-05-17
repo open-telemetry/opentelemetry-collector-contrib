@@ -66,8 +66,15 @@ type NumericAttributeCfg struct {
 type StringAttributeCfg struct {
 	// Tag that the filter is going to be matching against.
 	Key string `mapstructure:"key"`
-	// Values is the set of attribute values that if any is equal to the actual attribute value to be considered a match.
+	// Values indicate the set of values or regular expressions to use when matching against attribute values.
+	// StringAttribute Policy will apply exact value match on Values unless EnabledRegexMatching is true.
 	Values []string `mapstructure:"values"`
+	// EnabledRegexMatching determines whether match attribute values by regexp string.
+	EnabledRegexMatching bool `mapstructure:"enabled_regex_matching"`
+	// CacheMaxSize is the maximum number of attribute entries of LRU Cache that stores the matched result
+	// from the regular expressions defined in Values.
+	// CacheMaxSize will not be used if EnabledRegexMatching is set to false.
+	CacheMaxSize int `mapstructure:"cache_max_size"`
 }
 
 // RateLimitingCfg holds the configurable settings to create a rate limiting
