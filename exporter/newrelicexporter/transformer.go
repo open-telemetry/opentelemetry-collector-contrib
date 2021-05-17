@@ -326,7 +326,7 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 					Name:       m.Name(),
 					Attributes: attributes,
 					Value:      float64(point.Value()),
-					Timestamp:  point.StartTimestamp().AsTime(),
+					Timestamp:  point.Timestamp().AsTime(),
 				}
 				output = append(output, nrMetric)
 			} else {
@@ -362,7 +362,7 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 					Name:       m.Name(),
 					Attributes: attributes,
 					Value:      point.Value(),
-					Timestamp:  point.StartTimestamp().AsTime(),
+					Timestamp:  point.Timestamp().AsTime(),
 				}
 				output = append(output, nrMetric)
 			} else {
