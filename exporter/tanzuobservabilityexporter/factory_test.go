@@ -35,8 +35,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	actual, ok := cfg.(*Config)
 	require.True(t, ok, "invalid Config: %#v", cfg)
 	assert.Equal(t, "http://localhost:30001", actual.Traces.Endpoint)
-	assert.Equal(t, "defaultApp", actual.Traces.DefaultApplication)
-	assert.Equal(t, "defaultService", actual.Traces.DefaultService)
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -57,8 +55,6 @@ func TestLoadConfig(t *testing.T) {
 		ExporterSettings: config.NewExporterSettings(config.NewID("tanzuobservability")),
 		Traces: TracesConfig{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:40001"},
-			DefaultApplication: "an_application",
-			DefaultService:     "a_service",
 		},
 	}
 	assert.Equal(t, expected, actual)

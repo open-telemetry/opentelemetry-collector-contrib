@@ -8,8 +8,6 @@ exporters:
   tanzuobservability:
     traces:
       endpoint: "http://localhost:40001"
-      default_application: an_application
-      default_service: a_service
 
 service:
   pipelines:

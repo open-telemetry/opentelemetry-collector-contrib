@@ -35,8 +35,6 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	tracesCfg := TracesConfig{
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:30001"},
-		DefaultApplication: "defaultApp",
-		DefaultService:     "defaultService",
 	}
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(exporterType)),

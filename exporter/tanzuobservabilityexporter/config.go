@@ -23,12 +23,6 @@ import (
 
 type TracesConfig struct {
 	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-
-	// A default value to use if a span doesn't contain an "application" label
-	DefaultApplication string `mapstructure:"default_application"`
-
-	// A default value to use if a span doesn't contain a "service" or "service.name" label
-	DefaultService string `mapstructure:"default_service"`
 }
 
 // Config defines configuration options for the exporter.
@@ -42,12 +36,6 @@ type Config struct {
 func (c *Config) Validate() error {
 	if c.Traces.Endpoint == "" {
 		return fmt.Errorf("A non-empty traces.endpoint is required")
-	}
-	if c.Traces.DefaultApplication == "" {
-		return fmt.Errorf("A non-empty traces.default_application is required")
-	}
-	if c.Traces.DefaultService == "" {
-		return fmt.Errorf("A non-empty traces.default_service is required")
 	}
 	return nil
 }

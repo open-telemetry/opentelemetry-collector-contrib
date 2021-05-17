@@ -27,34 +27,6 @@ func TestConfigRequiresNonEmptyEndpoint(t *testing.T) {
 		ExporterSettings: config.ExporterSettings{},
 		Traces: TracesConfig{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
-			DefaultApplication: "application",
-			DefaultService:     "service",
-		},
-	}
-
-	require.Error(t, c.Validate())
-}
-
-func TestConfigRequiresNonEmptyDefaultApplication(t *testing.T) {
-	c := &Config{
-		ExporterSettings: config.ExporterSettings{},
-		Traces: TracesConfig{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:8080"},
-			DefaultApplication: "",
-			DefaultService:     "service",
-		},
-	}
-
-	require.Error(t, c.Validate())
-}
-
-func TestConfigRequiresNonEmptyDefaultService(t *testing.T) {
-	c := &Config{
-		ExporterSettings: config.ExporterSettings{},
-		Traces: TracesConfig{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:8080"},
-			DefaultApplication: "application",
-			DefaultService:     "",
 		},
 	}
 
