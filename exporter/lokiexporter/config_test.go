@@ -98,7 +98,7 @@ func TestConfig_validate(t *testing.T) {
 		Attributes: testValidAttributesWithMapping,
 	}
 	validResourceLabelsConfig := LabelsConfig{
-		ResourceAttributes: testValidAttributesWithMapping,
+		ResourceAttributes: testValidResourceWithMapping,
 	}
 
 	type fields struct {
@@ -168,14 +168,6 @@ func TestConfig_validate(t *testing.T) {
 			},
 			shouldError: false,
 		},
-		{
-			name: "with valid `labels` config",
-			fields: fields{
-				Endpoint: validEndpoint,
-				Labels:   validAttribLabelsConfig,
-			},
-			shouldError: false,
-		},
 	}
 
 	for _, tt := range tests {
@@ -228,6 +220,15 @@ func TestLabelsConfig_validate(t *testing.T) {
 			shouldError: false,
 		},
 		{
+			name: "with valid resource label map",
+			labels: LabelsConfig{
+				ResourceAttributes: map[string]string{
+					"other.attribute": "other",
+				},
+			},
+			shouldError: false,
+		},
+		{
 			name: "with invalid attribute label map",
 			labels: LabelsConfig{
 				Attributes: map[string]string{
@@ -241,7 +242,7 @@ func TestLabelsConfig_validate(t *testing.T) {
 			name: "with invalid resource label map",
 			labels: LabelsConfig{
 				ResourceAttributes: map[string]string{
-					"some.attribute": "invalid.label.name",
+					"other.attribute": "invalid.label.name",
 				},
 			},
 			errorMessage: "the label `invalid.label.name` in \"labels.resource\" is not a valid label name. Label names must match " + model.LabelNameRE.String(),

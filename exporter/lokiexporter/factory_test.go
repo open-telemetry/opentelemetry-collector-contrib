@@ -64,7 +64,7 @@ func TestFactory_CreateLogExporter(t *testing.T) {
 				},
 				Labels: LabelsConfig{
 					Attributes:         testValidAttributesWithMapping,
-					ResourceAttributes: testValidAttributesWithMapping,
+					ResourceAttributes: testValidResourceWithMapping,
 				},
 			},
 			shouldError: false,

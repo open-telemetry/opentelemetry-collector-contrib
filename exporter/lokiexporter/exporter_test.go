@@ -373,6 +373,43 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		require.Len(t, pr.Streams[0].Entries, 1)
 		require.Len(t, pr.Streams[1].Entries, 1)
 	})
+
+	t.Run("with attributes and resource attributes that match config", func(t *testing.T) {
+		logs := pdata.NewLogs()
+		ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
+		lr := logs.ResourceLogs().AppendEmpty()
+		lr.Resource().Attributes().InsertString("not.in.config", "not allowed")
+
+		lri := lr.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+		lri.Body().SetStringVal("log message")
+		lri.Attributes().InsertString("not.in.config", "not allowed")
+		lri.SetTimestamp(ts)
+
+		pr, numDroppedLogs := exp.logDataToLoki(logs)
+		expectedPr := &logproto.PushRequest{Streams: make([]logproto.Stream, 0)}
+		require.Equal(t, 1, numDroppedLogs)
+		require.Equal(t, expectedPr, pr)
+	})
+
+	t.Run("with attributes and resource attributes", func(t *testing.T) {
+		logs := pdata.NewLogs()
+		ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
+		lr := logs.ResourceLogs().AppendEmpty()
+		lr.Resource().Attributes().InsertString("resource.name", "myresource")
+
+		lri := lr.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+		lri.Body().SetStringVal("log message")
+		lri.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
+		lri.Attributes().InsertString("severity", "info")
+		lri.Attributes().InsertString("random.attribute", "random")
+		lri.SetTimestamp(ts)
+
+		pr, numDroppedLogs := exp.logDataToLoki(logs)
+		require.Equal(t, 0, numDroppedLogs)
+		require.NotNil(t, pr)
+		require.Len(t, pr.Streams, 1)
+	})
+
 }
 
 func TestExporter_convertAttributesToLabels(t *testing.T) {
