@@ -83,7 +83,7 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 	var segmentType string
 
 	storeResource := true
-	if span.Kind() != pdata.SpanKindSERVER &&
+	if span.Kind() != pdata.SpanKindServer &&
 		!span.ParentSpanID().IsEmpty() {
 		segmentType = "subsegment"
 		// We only store the resource information for segments, the local root.
@@ -143,7 +143,7 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 		}
 	}
 
-	if name == "" && span.Kind() == pdata.SpanKindSERVER {
+	if name == "" && span.Kind() == pdata.SpanKindServer {
 		// Only for a server span, we can use the resource.
 		if service, ok := resource.Attributes().Get(semconventions.AttributeServiceName); ok {
 			name = service.StringVal()
@@ -172,7 +172,7 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 		name = fixSegmentName(span.Name())
 	}
 
-	if namespace == "" && span.Kind() == pdata.SpanKindCLIENT {
+	if namespace == "" && span.Kind() == pdata.SpanKindClient {
 		namespace = "remote"
 	}
 
@@ -392,13 +392,13 @@ func makeXRayAttributes(attributes map[string]string, resource pdata.Resource, s
 
 func annotationValue(value pdata.AttributeValue) interface{} {
 	switch value.Type() {
-	case pdata.AttributeValueSTRING:
+	case pdata.AttributeValueTypeString:
 		return value.StringVal()
-	case pdata.AttributeValueINT:
+	case pdata.AttributeValueTypeInt:
 		return value.IntVal()
-	case pdata.AttributeValueDOUBLE:
+	case pdata.AttributeValueTypeDouble:
 		return value.DoubleVal()
-	case pdata.AttributeValueBOOL:
+	case pdata.AttributeValueTypeBool:
 		return value.BoolVal()
 	}
 	return nil
@@ -406,22 +406,22 @@ func annotationValue(value pdata.AttributeValue) interface{} {
 
 func metadataValue(value pdata.AttributeValue) interface{} {
 	switch value.Type() {
-	case pdata.AttributeValueSTRING:
+	case pdata.AttributeValueTypeString:
 		return value.StringVal()
-	case pdata.AttributeValueINT:
+	case pdata.AttributeValueTypeInt:
 		return value.IntVal()
-	case pdata.AttributeValueDOUBLE:
+	case pdata.AttributeValueTypeDouble:
 		return value.DoubleVal()
-	case pdata.AttributeValueBOOL:
+	case pdata.AttributeValueTypeBool:
 		return value.BoolVal()
-	case pdata.AttributeValueMAP:
+	case pdata.AttributeValueTypeMap:
 		converted := map[string]interface{}{}
 		value.MapVal().Range(func(key string, value pdata.AttributeValue) bool {
 			converted[key] = metadataValue(value)
 			return true
 		})
 		return converted
-	case pdata.AttributeValueARRAY:
+	case pdata.AttributeValueTypeArray:
 		arrVal := value.ArrayVal()
 		converted := make([]interface{}, arrVal.Len())
 		for i := 0; i < arrVal.Len(); i++ {

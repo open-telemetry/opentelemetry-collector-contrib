@@ -136,7 +136,7 @@ func TestSpanNoParentId(t *testing.T) {
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(pdata.InvalidSpanID())
-	span.SetKind(pdata.SpanKindPRODUCER)
+	span.SetKind(pdata.SpanKindProducer)
 	span.SetStartTimestamp(pdata.TimestampFromTime(time.Now()))
 	span.SetEndTimestamp(pdata.TimestampFromTime(time.Now().Add(10)))
 	resource := pdata.NewResource()
@@ -151,7 +151,7 @@ func TestSpanWithNoStatus(t *testing.T) {
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
-	span.SetKind(pdata.SpanKindSERVER)
+	span.SetKind(pdata.SpanKindServer)
 	span.SetStartTimestamp(pdata.TimestampFromTime(time.Now()))
 	span.SetEndTimestamp(pdata.TimestampFromTime(time.Now().Add(10)))
 
@@ -634,7 +634,7 @@ func constructClientSpan(parentSpanID pdata.SpanID, name string, code pdata.Stat
 	span.SetSpanID(spanID)
 	span.SetParentSpanID(parentSpanID)
 	span.SetName(name)
-	span.SetKind(pdata.SpanKindCLIENT)
+	span.SetKind(pdata.SpanKindClient)
 	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
 	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 
@@ -661,7 +661,7 @@ func constructServerSpan(parentSpanID pdata.SpanID, name string, code pdata.Stat
 	span.SetSpanID(spanID)
 	span.SetParentSpanID(parentSpanID)
 	span.SetName(name)
-	span.SetKind(pdata.SpanKindSERVER)
+	span.SetKind(pdata.SpanKindServer)
 	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
 	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 

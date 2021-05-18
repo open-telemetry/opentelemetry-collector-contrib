@@ -210,7 +210,7 @@ func TestSpanToHumioEvent(t *testing.T) {
 	span.SetTraceID(pdata.NewTraceID(createTraceID("10")))
 	span.SetSpanID(pdata.NewSpanID(createSpanID("20")))
 	span.SetName("span")
-	span.SetKind(pdata.SpanKindSERVER)
+	span.SetKind(pdata.SpanKindServer)
 	span.SetStartTimestamp(pdata.TimestampFromTime(
 		time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC),
 	))

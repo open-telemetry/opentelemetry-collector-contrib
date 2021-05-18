@@ -67,11 +67,11 @@ func getNamespace(rm *pdata.ResourceMetrics, namespace string) string {
 	if len(namespace) == 0 {
 		serviceName, svcNameOk := rm.Resource().Attributes().Get(conventions.AttributeServiceName)
 		serviceNamespace, svcNsOk := rm.Resource().Attributes().Get(conventions.AttributeServiceNamespace)
-		if svcNameOk && svcNsOk && serviceName.Type() == pdata.AttributeValueSTRING && serviceNamespace.Type() == pdata.AttributeValueSTRING {
+		if svcNameOk && svcNsOk && serviceName.Type() == pdata.AttributeValueTypeString && serviceNamespace.Type() == pdata.AttributeValueTypeString {
 			namespace = fmt.Sprintf("%s/%s", serviceNamespace.StringVal(), serviceName.StringVal())
-		} else if svcNameOk && serviceName.Type() == pdata.AttributeValueSTRING {
+		} else if svcNameOk && serviceName.Type() == pdata.AttributeValueTypeString {
 			namespace = serviceName.StringVal()
-		} else if svcNsOk && serviceNamespace.Type() == pdata.AttributeValueSTRING {
+		} else if svcNsOk && serviceNamespace.Type() == pdata.AttributeValueTypeString {
 			namespace = serviceNamespace.StringVal()
 		}
 	}

@@ -307,12 +307,12 @@ func TestSpanKinds(t *testing.T) {
 	initSpan(instrLibrarySpans.Spans().AppendEmpty())
 
 	spanKinds := []pdata.SpanKind{
-		pdata.SpanKindINTERNAL,
-		pdata.SpanKindCLIENT,
-		pdata.SpanKindSERVER,
-		pdata.SpanKindPRODUCER,
-		pdata.SpanKindCONSUMER,
-		pdata.SpanKindUNSPECIFIED,
+		pdata.SpanKindInternal,
+		pdata.SpanKindClient,
+		pdata.SpanKindServer,
+		pdata.SpanKindProducer,
+		pdata.SpanKindConsumer,
+		pdata.SpanKindUnspecified,
 		pdata.SpanKind(1000),
 	}
 

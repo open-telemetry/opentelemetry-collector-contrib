@@ -299,7 +299,7 @@ func subLogs(ld *pdata.Logs, from *logIndex) *pdata.Logs {
 				k = from.record
 			}
 
-			for kSub := 0; k < logs.Len(); k++ {
+			for kSub := 0; k < logs.Len(); k++ { //revive:disable-line:var-naming
 				logsSub.AppendEmpty()
 				logs.At(k).CopyTo(logsSub.At(kSub))
 				kSub++

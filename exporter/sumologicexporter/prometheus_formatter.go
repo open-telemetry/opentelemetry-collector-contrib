@@ -75,7 +75,7 @@ func (f *prometheusFormatter) tags2String(attr pdata.AttributeMap, labels pdata.
 			fmt.Sprintf(
 				`%s="%s"`,
 				f.sanitizeKey(k),
-				f.sanitizeValue(tracetranslator.AttributeValueToString(v, false)),
+				f.sanitizeValue(tracetranslator.AttributeValueToString(v)),
 			),
 		)
 		return true

@@ -147,8 +147,8 @@ func (s *consumerScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, e
 			}
 			grpTopicMetrics := grpMetrics.WithLabels(map[string]string{metadata.L.Topic: topic})
 			if isConsumed {
-				var lagSum int64 = 0
-				var offsetSum int64 = 0
+				var lagSum int64
+				var offsetSum int64
 				for partition, block := range partitions {
 					grpPartitionMetrics := grpTopicMetrics.WithLabels(map[string]string{metadata.L.Partition: string(partition)})
 					consumerOffset := block.Offset

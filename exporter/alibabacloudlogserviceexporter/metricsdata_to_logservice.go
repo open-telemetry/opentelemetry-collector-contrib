@@ -166,7 +166,7 @@ func resourceToMetricLabels(labels *KeyValues, resource pdata.Resource) {
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
 		labels.keyValues = append(labels.keyValues, KeyValue{
 			Key:   k,
-			Value: tracetranslator.AttributeValueToString(v, false),
+			Value: tracetranslator.AttributeValueToString(v),
 		})
 		return true
 	})

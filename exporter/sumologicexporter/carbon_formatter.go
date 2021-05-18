@@ -45,7 +45,7 @@ func carbon2TagString(record metricPair) string {
 		returnValue = append(returnValue, fmt.Sprintf(
 			"%s=%s",
 			sanitizeCarbonString(k),
-			sanitizeCarbonString(tracetranslator.AttributeValueToString(v, false)),
+			sanitizeCarbonString(tracetranslator.AttributeValueToString(v)),
 		))
 		return true
 	})

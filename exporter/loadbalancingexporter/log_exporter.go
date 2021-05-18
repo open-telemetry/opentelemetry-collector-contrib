@@ -73,11 +73,7 @@ func (e *logExporterImp) Capabilities() consumer.Capabilities {
 }
 
 func (e *logExporterImp) Start(ctx context.Context, host component.Host) error {
-	if err := e.loadBalancer.Start(ctx, host); err != nil {
-		return err
-	}
-
-	return nil
+	return e.loadBalancer.Start(ctx, host)
 }
 
 func (e *logExporterImp) Shutdown(context.Context) error {
