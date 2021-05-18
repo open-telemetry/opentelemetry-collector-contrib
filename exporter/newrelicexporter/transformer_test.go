@@ -53,7 +53,7 @@ func TestCommonAttributes(t *testing.T) {
 	assert.Equal(t, "test version", commonAttrs[instrumentationVersionKey])
 
 	assert.Equal(t, 1, len(details.attributeMetadataCount))
-	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationResource, attributeType: pdata.AttributeValueSTRING}])
+	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationResource, attributeType: pdata.AttributeValueTypeString}])
 }
 
 func TestDoesNotCaptureResourceAttributeMetadata(t *testing.T) {
@@ -168,8 +168,8 @@ func TestCaptureSpanAttributeMetadata(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(details.attributeMetadataCount))
-	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationSpan, attributeType: pdata.AttributeValueINT}])
-	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationSpanEvent, attributeType: pdata.AttributeValueBOOL}])
+	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationSpan, attributeType: pdata.AttributeValueTypeInt}])
+	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationSpanEvent, attributeType: pdata.AttributeValueTypeBool}])
 }
 
 func TestDoesNotCaptureSpanAttributeMetadata(t *testing.T) {
@@ -401,7 +401,7 @@ func TestTransformSpan(t *testing.T) {
 				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 6}))
 				s.SetName("span kind server")
-				s.SetKind(pdata.SpanKindSERVER)
+				s.SetKind(pdata.SpanKindServer)
 				return s
 			},
 			want: telemetry.Span{
@@ -962,7 +962,7 @@ func TestCaptureLogAttributeMetadata(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(details.attributeMetadataCount))
-	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationLog, attributeType: pdata.AttributeValueSTRING}])
+	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationLog, attributeType: pdata.AttributeValueTypeString}])
 }
 
 func TestDoesNotCaptureLogAttributeMetadata(t *testing.T) {

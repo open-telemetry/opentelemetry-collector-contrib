@@ -88,7 +88,7 @@ func extractPodID(ctx context.Context, attrs pdata.AttributeMap, associations []
 
 func stringAttributeFromMap(attrs pdata.AttributeMap, key string) string {
 	if val, ok := attrs.Get(key); ok {
-		if val.Type() == pdata.AttributeValueSTRING {
+		if val.Type() == pdata.AttributeValueTypeString {
 			return val.StringVal()
 		}
 	}
