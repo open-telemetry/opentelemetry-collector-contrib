@@ -13,7 +13,7 @@ The `file_input` operator reads logs from files. It will place the lines read in
 | `poll_interval`        | 200ms            | The duration between filesystem polls                                                                              |
 | `multiline`            |                  | A `multiline` configuration block. See below for details                                                           |
 | `write_to`             | `$body`          | The body [field](/docs/types/field.md) written to when creating a new log entry                                  |
-| `encoding`             | `nop`            | The encoding of the file being read. See the list of supported encodings below for available options               |
+| `encoding`             | `utf-8`            | The encoding of the file being read. See the list of supported encodings below for available options               |
 | `include_file_name`    | `true`           | Whether to add the file name as the attribute `file_name`                                                              |
 | `include_file_path`    | `false`          | Whether to add the file path as the label `file_path`                                                              |
 | `start_at`             | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`                            |

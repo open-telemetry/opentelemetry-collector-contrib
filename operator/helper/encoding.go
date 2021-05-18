@@ -29,7 +29,7 @@ import (
 // NewBasicConfig creates a new Encoding config
 func NewEncodingConfig() EncodingConfig {
 	return EncodingConfig{
-		Encoding: "nop",
+		Encoding: "utf-8",
 	}
 }
 
@@ -76,11 +76,12 @@ func (e *Encoding) Decode(msgBuf []byte) (string, error) {
 var encodingOverrides = map[string]encoding.Encoding{
 	"utf-16":   unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM),
 	"utf16":    unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM),
+	"utf-8":    unicode.UTF8,
 	"utf8":     unicode.UTF8,
 	"ascii":    unicode.UTF8,
 	"us-ascii": unicode.UTF8,
 	"nop":      encoding.Nop,
-	"":         encoding.Nop,
+	"":         unicode.UTF8,
 }
 
 func lookupEncoding(enc string) (encoding.Encoding, error) {

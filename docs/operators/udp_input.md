@@ -14,7 +14,7 @@ The `udp_input` operator listens for logs from UDP packets.
 | `resource`        | {}               | A map of `key: value` pairs to add to the entry's resource                                                         |
 | `add_attributes`  | false            | Adds `net.*` attributes according to [semantic convention][https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes] |
 | `multiline`       |                  | A `multiline` configuration block. See below for details                                                           |
-| `encoding`        | `nop`            | The encoding of the file being read. See the list of supported encodings below for available options               |
+| `encoding`        | `utf-8`            | The encoding of the file being read. See the list of supported encodings below for available options               |
 
 #### `multiline` configuration
 
