@@ -33,6 +33,7 @@ const (
 
 var kubeClientProvider = kube.ClientProvider(nil)
 var consumerCapabilities = consumer.Capabilities{MutatesData: true}
+var defaultIgnoredNames = PodIgnoredConfig{Name: []string{"jaeger-agent", "jaeger-collector"}}
 
 // NewFactory returns a new factory for the k8s processor.
 func NewFactory() component.ProcessorFactory {
@@ -49,6 +50,7 @@ func createDefaultConfig() config.Processor {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+		Ignore:            defaultIgnoredNames,
 	}
 }
 

@@ -43,6 +43,10 @@ type Config struct {
 	// Association section allows to define rules for tagging spans, metrics,
 	// and logs with Pod metadata.
 	Association []PodAssociationConfig `mapstructure:"pod_association"`
+
+	// Ignore section allows to define names of pod that should be
+	// ignored while tagging.
+	Ignore PodIgnoredConfig `mapstructure:"ignored_pod_names"`
 }
 
 func (cfg *Config) Validate() error {
@@ -192,4 +196,9 @@ type PodAssociationConfig struct {
 	// Name represents extracted key name.
 	// e.g. ip, pod_uid, k8s.pod.ip
 	Name string `mapstructure:"name"`
+}
+
+// IgnoredPodNames represent a list of Pod names to ignore
+type PodIgnoredConfig struct {
+	Name []string `mapstructure:"name"`
 }

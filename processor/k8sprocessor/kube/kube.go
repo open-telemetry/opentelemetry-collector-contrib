@@ -39,10 +39,6 @@ type PodIdentifier string
 
 var (
 	// TODO: move these to config with default values
-	podNameIgnorePatterns = []*regexp.Regexp{
-		regexp.MustCompile(`jaeger-agent`),
-		regexp.MustCompile(`jaeger-collector`),
-	}
 	defaultPodDeleteGracePeriod = time.Second * 120
 	watchSyncPeriod             = time.Minute * 5
 )
@@ -55,7 +51,7 @@ type Client interface {
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(*zap.Logger, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, APIClientsetProvider, InformerProvider) (Client, error)
+type ClientProvider func(*zap.Logger, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, IgnoredPodNames, APIClientsetProvider, InformerProvider) (Client, error)
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
@@ -141,4 +137,9 @@ type Associations struct {
 type Association struct {
 	From string
 	Name string
+}
+
+// IgnoredPodNames represent a list of Pod names to ignore
+type IgnoredPodNames struct {
+	Name []string
 }

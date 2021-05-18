@@ -58,6 +58,11 @@ processors:
         name: ip
       - from: resource_attribute
         name: k8s.pod.uid
+    
+    ignored_pod_names:
+      name: 
+        - jaeger-agent
+        - jaeger-collector
 
 exporters:
   nop:
