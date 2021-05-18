@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -67,9 +68,9 @@ func (f *SyslogWriter) Capabilities() consumer.Capabilities {
 
 func (f *SyslogWriter) Start() (err error) {
 	f.conn, err = net.Dial(f.GetEndpoint().Network(), f.GetEndpoint().String())
-	// udp not ack, can't use net.Dial to check udp server is ready, use sleep 1 second to wait udp server start
+	// udp not ack, can't use net.Dial to check udp server is ready, use sleep 2 second to wait udp server start
 	if f.network == "udp" {
-		time.Sleep(1 * time.Second)
+		time.Sleep(2 * time.Second)
 	}
 	return err
 }
@@ -102,13 +103,23 @@ func (f *SyslogWriter) Send(lr pdata.LogRecord) error {
 	sdid := strings.Builder{}
 	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "trace_id", lr.TraceID().HexString()))
 	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "span_id", lr.SpanID().HexString()))
-	sdid.WriteString(fmt.Sprintf("%s=\"%d\" ", "trace_flags", lr.Flags()))
+	sdid.WriteString(fmt.Sprintf("%s=\"%d\"", "trace_flags", lr.Flags()))
 	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", k, v.StringVal()))
+		var str string
+		switch v.Type() {
+		case pdata.AttributeValueSTRING:
+			str = v.StringVal()
+		case pdata.AttributeValueDOUBLE:
+			str = strconv.FormatFloat(v.DoubleVal(), 'g', -1, 64)
+		case pdata.AttributeValueINT:
+			str = strconv.FormatInt(v.IntVal(), 10)
+		case pdata.AttributeValueBOOL:
+			str = strconv.FormatBool(v.BoolVal())
+		}
+		sdid.WriteString(fmt.Sprintf(" %s=\"%s\"", k, str))
 		return true
 	})
-	msg := fmt.Sprintf("<166> %s localhost %s - - [%s] %s\n", ts, lr.Name(), sdid.String(), lr.Body().StringVal())
-
+	msg := fmt.Sprintf("<86>1 %s 192.168.1.1 %s 23108 ID52020 [otel %s] %s\n", ts, lr.Name(), sdid.String(), lr.Body().StringVal())
 	f.buf = append(f.buf, msg)
 	return f.SendCheck()
 }
