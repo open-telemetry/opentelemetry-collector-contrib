@@ -59,7 +59,7 @@ loki:
     attributes:
       # Allowing 'severity' attribute and not providing a mapping, since the attribute name is a valid Loki label name.
       severity: ""
-      rquest: "urlofrequest" 
+      http.status_code: "http_status_code" 
       
   headers:
     "X-Custom-Header": "loki_rocks"
