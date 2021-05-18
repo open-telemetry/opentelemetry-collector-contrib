@@ -181,7 +181,7 @@ func (t *transformer) SpanAttributes(span pdata.Span) map[string]interface{} {
 		}
 	}
 
-	validSpanKind := span.Kind() != pdata.SpanKindUNSPECIFIED
+	validSpanKind := span.Kind() != pdata.SpanKindUnspecified
 	if validSpanKind {
 		length++
 	}

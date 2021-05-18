@@ -171,7 +171,7 @@ func TestSpanToSentrySpan(t *testing.T) {
 		name := "span_name"
 		var startTime pdata.Timestamp = 123
 		var endTime pdata.Timestamp = 1234567890
-		kind := pdata.SpanKindCLIENT
+		kind := pdata.SpanKindClient
 		statusMessage := "message"
 
 		testSpan.Attributes().InsertString("key", "value")
@@ -213,7 +213,7 @@ func TestSpanToSentrySpan(t *testing.T) {
 				"library_version": "1.4.3",
 				"aws_instance":    "ca-central-1",
 				"unique_id":       "abcd1234",
-				"span_kind":       pdata.SpanKindCLIENT.String(),
+				"span_kind":       pdata.SpanKindClient.String(),
 				"status_message":  statusMessage,
 			},
 			StartTimestamp: unixNanoToTime(startTime),
@@ -246,7 +246,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
 				conventions.AttributeHTTPMethod: pdata.NewAttributeValueString("GET"),
 			}),
-			spanKind:    pdata.SpanKindCLIENT,
+			spanKind:    pdata.SpanKindClient,
 			op:          "http.client",
 			description: "GET /api/users/{user_id}",
 		},
@@ -256,7 +256,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
 				conventions.AttributeHTTPMethod: pdata.NewAttributeValueString("POST"),
 			}),
-			spanKind:    pdata.SpanKindSERVER,
+			spanKind:    pdata.SpanKindServer,
 			op:          "http.server",
 			description: "POST /api/users/{user_id}",
 		},
@@ -266,7 +266,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
 				conventions.AttributeDBSystem: pdata.NewAttributeValueString("redis"),
 			}),
-			spanKind:    pdata.SpanKindCLIENT,
+			spanKind:    pdata.SpanKindClient,
 			op:          "db",
 			description: "SET mykey 'Val'",
 		},
@@ -277,7 +277,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 				conventions.AttributeDBSystem:    pdata.NewAttributeValueString("sqlite"),
 				conventions.AttributeDBStatement: pdata.NewAttributeValueString("SELECT * FROM table"),
 			}),
-			spanKind:    pdata.SpanKindCLIENT,
+			spanKind:    pdata.SpanKindClient,
 			op:          "db",
 			description: "SELECT * FROM table",
 		},
@@ -287,7 +287,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
 				conventions.AttributeRPCService: pdata.NewAttributeValueString("EchoService"),
 			}),
-			spanKind:    pdata.SpanKindCLIENT,
+			spanKind:    pdata.SpanKindClient,
 			op:          "rpc",
 			description: "grpc.test.EchoService/Echo",
 		},
@@ -297,7 +297,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
 				"messaging.system": pdata.NewAttributeValueString("kafka"),
 			}),
-			spanKind:    pdata.SpanKindPRODUCER,
+			spanKind:    pdata.SpanKindProducer,
 			op:          "message",
 			description: "message-destination",
 		},
@@ -307,7 +307,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
 				"faas.trigger": pdata.NewAttributeValueString("pubsub"),
 			}),
-			spanKind:    pdata.SpanKindSERVER,
+			spanKind:    pdata.SpanKindServer,
 			op:          "pubsub",
 			description: "message-destination",
 		},

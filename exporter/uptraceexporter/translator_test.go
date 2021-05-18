@@ -114,11 +114,11 @@ func TestSpanKind(t *testing.T) {
 	}
 
 	tests := []Test{
-		{pdata.SpanKindCLIENT, "client"},
-		{pdata.SpanKindSERVER, "server"},
-		{pdata.SpanKindPRODUCER, "producer"},
-		{pdata.SpanKindCONSUMER, "consumer"},
-		{pdata.SpanKindINTERNAL, "internal"},
+		{pdata.SpanKindClient, "client"},
+		{pdata.SpanKindServer, "server"},
+		{pdata.SpanKindProducer, "producer"},
+		{pdata.SpanKindConsumer, "consumer"},
+		{pdata.SpanKindInternal, "internal"},
 	}
 
 	for _, test := range tests {

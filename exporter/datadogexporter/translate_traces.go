@@ -387,7 +387,7 @@ func buildDatadogContainerTags(spanTags map[string]string) string {
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/database.md#semantic-conventions-for-database-client-calls
 func inferDatadogType(kind pdata.SpanKind, datadogTags map[string]string) string {
 	switch kind {
-	case pdata.SpanKindCLIENT:
+	case pdata.SpanKindClient:
 		if dbSysOtlp, ok := datadogTags[conventions.AttributeDBSystem]; ok {
 			if dbSysOtlp == kindRedis || dbSysOtlp == kindMemcached {
 				return kindCache
@@ -397,7 +397,7 @@ func inferDatadogType(kind pdata.SpanKind, datadogTags map[string]string) string
 		}
 
 		return kindHTTP
-	case pdata.SpanKindSERVER:
+	case pdata.SpanKindServer:
 		return kindWeb
 	default:
 		return kindCustom
@@ -565,7 +565,7 @@ func getSpanErrorAndSetTags(s pdata.Span, tags map[string]string) int32 {
 			if httpStatusCode >= 500 {
 				isError = errorCode
 				// for 400 type, mark as error if it is an http client
-			} else if s.Kind() == pdata.SpanKindCLIENT && httpStatusCode >= 400 {
+			} else if s.Kind() == pdata.SpanKindClient && httpStatusCode >= 400 {
 				isError = errorCode
 			}
 		}

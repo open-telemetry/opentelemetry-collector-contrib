@@ -93,17 +93,17 @@ func pdataSpanToOTSpanData(
 
 func pdataSpanKindToOTSpanKind(k pdata.SpanKind) apitrace.SpanKind {
 	switch k {
-	case pdata.SpanKindUNSPECIFIED:
+	case pdata.SpanKindUnspecified:
 		return apitrace.SpanKindInternal
-	case pdata.SpanKindINTERNAL:
+	case pdata.SpanKindInternal:
 		return apitrace.SpanKindInternal
-	case pdata.SpanKindSERVER:
+	case pdata.SpanKindServer:
 		return apitrace.SpanKindServer
-	case pdata.SpanKindCLIENT:
+	case pdata.SpanKindClient:
 		return apitrace.SpanKindClient
-	case pdata.SpanKindPRODUCER:
+	case pdata.SpanKindProducer:
 		return apitrace.SpanKindProducer
-	case pdata.SpanKindCONSUMER:
+	case pdata.SpanKindConsumer:
 		return apitrace.SpanKindConsumer
 	default:
 		return apitrace.SpanKindUnspecified
@@ -126,13 +126,13 @@ func pdataAttributesToOTAttributes(attrs pdata.AttributeMap, resource pdata.Reso
 	appendAttrs := func(m pdata.AttributeMap) {
 		m.Range(func(k string, v pdata.AttributeValue) bool {
 			switch v.Type() {
-			case pdata.AttributeValueSTRING:
+			case pdata.AttributeValueTypeString:
 				otAttrs = append(otAttrs, attribute.String(k, v.StringVal()))
-			case pdata.AttributeValueBOOL:
+			case pdata.AttributeValueTypeBool:
 				otAttrs = append(otAttrs, attribute.Bool(k, v.BoolVal()))
-			case pdata.AttributeValueINT:
+			case pdata.AttributeValueTypeInt:
 				otAttrs = append(otAttrs, attribute.Int64(k, v.IntVal()))
-			case pdata.AttributeValueDOUBLE:
+			case pdata.AttributeValueTypeDouble:
 				otAttrs = append(otAttrs, attribute.Float64(k, v.DoubleVal()))
 			}
 			return true
