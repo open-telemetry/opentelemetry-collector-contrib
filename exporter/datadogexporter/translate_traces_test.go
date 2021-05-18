@@ -69,7 +69,7 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	span.SetSpanID(spanID)
 	span.SetParentSpanID(parentSpanID)
 	span.SetName("End-To-End Here")
-	span.SetKind(pdata.SpanKindSERVER)
+	span.SetKind(pdata.SpanKindServer)
 	span.SetStartTimestamp(pdataStartTime)
 	span.SetEndTimestamp(pdataEndTime)
 	span.SetTraceState("tracestatekey=tracestatevalue")
@@ -260,7 +260,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, "End-To-End Here", datadogPayload.Traces[0].Spans[0].Resource)
 
 	// ensure that span.name defaults to string representing instrumentation library if present
-	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", datadogPayload.Traces[0].Spans[0].Meta[conventions.InstrumentationLibraryName], strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), datadogPayload.Traces[0].Spans[0].Name)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", datadogPayload.Traces[0].Spans[0].Meta[conventions.InstrumentationLibraryName], strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), datadogPayload.Traces[0].Spans[0].Name)
 
 	// ensure that span.type is based on otlp span.kind
 	assert.Equal(t, "web", datadogPayload.Traces[0].Spans[0].Type)
@@ -737,7 +737,7 @@ func TestTracesTranslationServicePeerName(t *testing.T) {
 	assert.Equal(t, "End-To-End Here", datadogPayload.Traces[0].Spans[0].Resource)
 
 	// ensure that span.name defaults to string representing instrumentation library if present
-	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", datadogPayload.Traces[0].Spans[0].Meta[conventions.InstrumentationLibraryName], strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), datadogPayload.Traces[0].Spans[0].Name)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", datadogPayload.Traces[0].Spans[0].Meta[conventions.InstrumentationLibraryName], strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), datadogPayload.Traces[0].Spans[0].Name)
 
 	// ensure that span.type is based on otlp span.kind
 	assert.Equal(t, "web", datadogPayload.Traces[0].Spans[0].Type)
@@ -813,7 +813,7 @@ func TestTracesTranslationTruncatetag(t *testing.T) {
 	assert.Equal(t, "End-To-End Here", datadogPayload.Traces[0].Spans[0].Resource)
 
 	// ensure that span.name defaults to string representing instrumentation library if present
-	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", datadogPayload.Traces[0].Spans[0].Meta[conventions.InstrumentationLibraryName], strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), datadogPayload.Traces[0].Spans[0].Name)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", datadogPayload.Traces[0].Spans[0].Meta[conventions.InstrumentationLibraryName], strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), datadogPayload.Traces[0].Spans[0].Name)
 
 	// ensure that span.type is based on otlp span.kind
 	assert.Equal(t, "web", datadogPayload.Traces[0].Spans[0].Type)
@@ -846,7 +846,7 @@ func TestTracesTranslationTruncatetag(t *testing.T) {
 // ensure that datadog span resource naming uses http method+route when available
 func TestSpanResourceTranslation(t *testing.T) {
 	span := pdata.NewSpan()
-	span.SetKind(pdata.SpanKindSERVER)
+	span.SetKind(pdata.SpanKindServer)
 	span.SetName("Default Name")
 
 	ddHTTPTags := map[string]string{
@@ -869,7 +869,7 @@ func TestSpanResourceTranslation(t *testing.T) {
 // ensure that datadog span resource naming uses http method+ grpc path when available
 func TestSpanResourceTranslationGRPC(t *testing.T) {
 	span := pdata.NewSpan()
-	span.SetKind(pdata.SpanKindSERVER)
+	span.SetKind(pdata.SpanKindServer)
 	span.SetName("Default Name")
 
 	ddHTTPTags := map[string]string{
@@ -892,7 +892,7 @@ func TestSpanResourceTranslationGRPC(t *testing.T) {
 // ensure that datadog span resource naming uses messaging operation+destination when available
 func TestSpanResourceTranslationMessaging(t *testing.T) {
 	span := pdata.NewSpan()
-	span.SetKind(pdata.SpanKindSERVER)
+	span.SetKind(pdata.SpanKindServer)
 	span.SetName("Default Name")
 
 	ddHTTPTags := map[string]string{
@@ -915,7 +915,7 @@ func TestSpanResourceTranslationMessaging(t *testing.T) {
 // ensure that datadog span resource naming uses messaging operation even when destination is not available
 func TestSpanResourceTranslationMessagingFallback(t *testing.T) {
 	span := pdata.NewSpan()
-	span.SetKind(pdata.SpanKindSERVER)
+	span.SetKind(pdata.SpanKindServer)
 	span.SetName("Default Name")
 
 	ddHTTPTags := map[string]string{
@@ -937,7 +937,7 @@ func TestSpanResourceTranslationMessagingFallback(t *testing.T) {
 // ensure that datadog span resource naming uses rpc method + rpc service when available
 func TestSpanResourceTranslationRpc(t *testing.T) {
 	span := pdata.NewSpan()
-	span.SetKind(pdata.SpanKindSERVER)
+	span.SetKind(pdata.SpanKindServer)
 	span.SetName("Default Name")
 
 	ddHTTPTags := map[string]string{
@@ -960,7 +960,7 @@ func TestSpanResourceTranslationRpc(t *testing.T) {
 // ensure that datadog span resource naming uses rpc method even when rpc service is not available
 func TestSpanResourceTranslationRpcFallback(t *testing.T) {
 	span := pdata.NewSpan()
-	span.SetKind(pdata.SpanKindSERVER)
+	span.SetKind(pdata.SpanKindServer)
 	span.SetName("Default Name")
 
 	ddHTTPTags := map[string]string{
@@ -983,7 +983,7 @@ func TestSpanResourceTranslationRpcFallback(t *testing.T) {
 func TestSpanNameTranslation(t *testing.T) {
 	span := pdata.NewSpan()
 	span.SetName("Default Name")
-	span.SetKind(pdata.SpanKindSERVER)
+	span.SetKind(pdata.SpanKindServer)
 
 	ddIlTags := map[string]string{
 		fmt.Sprintf(conventions.InstrumentationLibraryName): "il_name",
@@ -1016,12 +1016,12 @@ func TestSpanNameTranslation(t *testing.T) {
 	spanNameUnusual := getDatadogSpanName(span, ddIlTagsUnusual)
 	spanNameHyphen := getDatadogSpanName(span, ddIlTagsHyphen)
 
-	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "il_name", strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), spanNameIl)
-	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "opentelemetry", strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), spanNameDefault)
-	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "old_value", strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), spanNameOld)
-	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "current_value", strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), spanNameCur)
-	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "unusual_value", strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), spanNameUnusual)
-	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "hyphenated_value", strings.TrimPrefix(pdata.SpanKindSERVER.String(), "SPAN_KIND_"))), spanNameHyphen)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "il_name", strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), spanNameIl)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "opentelemetry", strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), spanNameDefault)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "old_value", strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), spanNameOld)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "current_value", strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), spanNameCur)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "unusual_value", strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), spanNameUnusual)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "hyphenated_value", strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), spanNameHyphen)
 }
 
 // ensure that the datadog span name uses IL name +kind when available and falls back to opetelemetry + kind
@@ -1055,9 +1055,9 @@ func TestSpanNameNormalization(t *testing.T) {
 
 // ensure that the datadog span type gets mapped from span kind
 func TestSpanTypeTranslation(t *testing.T) {
-	spanTypeClient := inferDatadogType(pdata.SpanKindCLIENT, map[string]string{})
-	spanTypeServer := inferDatadogType(pdata.SpanKindSERVER, map[string]string{})
-	spanTypeCustom := inferDatadogType(pdata.SpanKindUNSPECIFIED, map[string]string{})
+	spanTypeClient := inferDatadogType(pdata.SpanKindClient, map[string]string{})
+	spanTypeServer := inferDatadogType(pdata.SpanKindServer, map[string]string{})
+	spanTypeCustom := inferDatadogType(pdata.SpanKindUnspecified, map[string]string{})
 
 	ddTagsDb := map[string]string{
 		"db.system": "postgresql",
@@ -1071,9 +1071,9 @@ func TestSpanTypeTranslation(t *testing.T) {
 		"db.system": "memcached",
 	}
 
-	spanTypeDb := inferDatadogType(pdata.SpanKindCLIENT, ddTagsDb)
-	spanTypeCache := inferDatadogType(pdata.SpanKindCLIENT, ddTagsCache)
-	spanTypeCacheAlt := inferDatadogType(pdata.SpanKindCLIENT, ddTagsCacheAlt)
+	spanTypeDb := inferDatadogType(pdata.SpanKindClient, ddTagsDb)
+	spanTypeCache := inferDatadogType(pdata.SpanKindClient, ddTagsCache)
+	spanTypeCacheAlt := inferDatadogType(pdata.SpanKindClient, ddTagsCacheAlt)
 
 	assert.Equal(t, "http", spanTypeClient)
 	assert.Equal(t, "web", spanTypeServer)
@@ -1098,7 +1098,7 @@ func TestILTagsExctraction(t *testing.T) {
 func TestHttpResourceTag(t *testing.T) {
 	span := pdata.NewSpan()
 	span.SetName("Default Name")
-	span.SetKind(pdata.SpanKindSERVER)
+	span.SetKind(pdata.SpanKindServer)
 
 	ddTags := map[string]string{
 		"http.method": "POST",

@@ -199,17 +199,17 @@ func toHumioAttributes(attrMaps ...pdata.AttributeMap) map[string]interface{} {
 
 func toHumioAttributeValue(rawVal pdata.AttributeValue) interface{} {
 	switch rawVal.Type() {
-	case pdata.AttributeValueSTRING:
+	case pdata.AttributeValueTypeString:
 		return rawVal.StringVal()
-	case pdata.AttributeValueINT:
+	case pdata.AttributeValueTypeInt:
 		return rawVal.IntVal()
-	case pdata.AttributeValueDOUBLE:
+	case pdata.AttributeValueTypeDouble:
 		return rawVal.DoubleVal()
-	case pdata.AttributeValueBOOL:
+	case pdata.AttributeValueTypeBool:
 		return rawVal.BoolVal()
-	case pdata.AttributeValueMAP:
+	case pdata.AttributeValueTypeMap:
 		return toHumioAttributes(rawVal.MapVal())
-	case pdata.AttributeValueARRAY:
+	case pdata.AttributeValueTypeArray:
 		arrVal := rawVal.ArrayVal()
 		arr := make([]interface{}, 0, arrVal.Len())
 		for i := 0; i < arrVal.Len(); i++ {

@@ -122,7 +122,7 @@ func fillHTTPClientSpan(span pdata.Span) {
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
-	span.SetKind(pdata.SpanKindCLIENT)
+	span.SetKind(pdata.SpanKindClient)
 	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
 	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 	span.SetTraceState("x:y")
@@ -155,7 +155,7 @@ func fillHTTPServerSpan(span pdata.Span) {
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
-	span.SetKind(pdata.SpanKindSERVER)
+	span.SetKind(pdata.SpanKindServer)
 	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
 	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 
@@ -189,12 +189,12 @@ func newSegmentID() pdata.SpanID {
 }
 
 func TestSpanKindToShortString(t *testing.T) {
-	assert.Equal(t, spanKindToShortString(pdata.SpanKindCONSUMER), "consumer")
-	assert.Equal(t, spanKindToShortString(pdata.SpanKindPRODUCER), "producer")
-	assert.Equal(t, spanKindToShortString(pdata.SpanKindCLIENT), "client")
-	assert.Equal(t, spanKindToShortString(pdata.SpanKindSERVER), "server")
-	assert.Equal(t, spanKindToShortString(pdata.SpanKindINTERNAL), "internal")
-	assert.Equal(t, spanKindToShortString(pdata.SpanKindUNSPECIFIED), "")
+	assert.Equal(t, spanKindToShortString(pdata.SpanKindConsumer), "consumer")
+	assert.Equal(t, spanKindToShortString(pdata.SpanKindProducer), "producer")
+	assert.Equal(t, spanKindToShortString(pdata.SpanKindClient), "client")
+	assert.Equal(t, spanKindToShortString(pdata.SpanKindServer), "server")
+	assert.Equal(t, spanKindToShortString(pdata.SpanKindInternal), "internal")
+	assert.Equal(t, spanKindToShortString(pdata.SpanKindUnspecified), "")
 }
 
 func TestStatusCodeToShortString(t *testing.T) {

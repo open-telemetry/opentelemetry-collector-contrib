@@ -52,7 +52,7 @@ func EncodeSpan(
 
 	name := truncate(otlpSpan.Name())
 	var transactionContext transactionContext
-	if root || otlpSpan.Kind() == pdata.SpanKindSERVER {
+	if root || otlpSpan.Kind() == pdata.SpanKindServer {
 		transaction := model.Transaction{
 			ID:        spanID,
 			TraceID:   traceID,

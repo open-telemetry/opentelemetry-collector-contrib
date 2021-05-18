@@ -281,7 +281,7 @@ func constructHTTPClientSpan(attributes map[string]interface{}) pdata.Span {
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
-	span.SetKind(pdata.SpanKindCLIENT)
+	span.SetKind(pdata.SpanKindClient)
 	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
 	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 
@@ -304,7 +304,7 @@ func constructHTTPServerSpan(attributes map[string]interface{}) pdata.Span {
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
-	span.SetKind(pdata.SpanKindSERVER)
+	span.SetKind(pdata.SpanKindServer)
 	span.SetStartTimestamp(pdata.TimestampFromTime(startTime))
 	span.SetEndTimestamp(pdata.TimestampFromTime(endTime))
 
