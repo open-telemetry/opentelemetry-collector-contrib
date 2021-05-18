@@ -39,6 +39,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 	logger := zap.NewNop()
 
 	metadata := CWMetricMetadata{
+		receiver: prometheusReceiver,
 		GroupedMetricMetadata: GroupedMetricMetadata{
 			Namespace:   namespace,
 			TimestampMs: timestamp,
@@ -50,12 +51,12 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 	testCases := []struct {
 		testName string
-		metric   *metricspb.Metric
+		metric   []*metricspb.Metric
 		expected map[string]*MetricInfo
 	}{
 		{
 			"Int gauge",
-			generateTestIntGauge("foo"),
+			[]*metricspb.Metric{generateTestIntGauge("foo")},
 			map[string]*MetricInfo{
 				"foo": {
 					Value: float64(1),
@@ -65,7 +66,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		},
 		{
 			"Double gauge",
-			generateTestDoubleGauge("foo"),
+			[]*metricspb.Metric{generateTestDoubleGauge("foo")},
 			map[string]*MetricInfo{
 				"foo": {
 					Value: 0.1,
@@ -95,7 +96,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		},
 		{
 			"Double histogram",
-			generateTestHistogram("foo"),
+			[]*metricspb.Metric{generateTestHistogram("foo")},
 			map[string]*MetricInfo{
 				"foo": {
 					Value: &CWMetricStats{
@@ -136,9 +137,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 						conventions.AttributeServiceNamespace: "myServiceNS",
 					},
 				},
-				Metrics: []*metricspb.Metric{tc.metric},
+				Metrics: tc.metric,
 			}
-
 			// Retrieve *pdata.Metric
 			rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 			rms := rm.ResourceMetrics()
@@ -146,15 +146,19 @@ func TestAddToGroupedMetric(t *testing.T) {
 			ilms := rms.At(0).InstrumentationLibraryMetrics()
 			assert.Equal(t, 1, ilms.Len())
 			metrics := ilms.At(0).Metrics()
-			assert.Equal(t, 1, metrics.Len())
-			metric := metrics.At(0)
+			assert.Equal(t, len(tc.metric), metrics.Len())
 
-			addToGroupedMetric(&metric, groupedMetrics, metadata, zap.NewNop(), nil)
+			for i := 0; i < metrics.Len(); i++ {
+				metric := metrics.At(i)
+				addToGroupedMetric(&metric, groupedMetrics, metadata, zap.NewNop(), nil)
+			}
+
 			expectedLabels := map[string]string{
 				oTellibDimensionKey: instrumentationLibName,
 				"label1":            "value1",
 			}
 
+			assert.Equal(t, 1, len(groupedMetrics))
 			for _, v := range groupedMetrics {
 				assert.Equal(t, len(tc.expected), len(v.Metrics))
 				assert.Equal(t, tc.expected, v.Metrics)
@@ -166,6 +170,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 	}
 
 	t.Run("Add multiple different metrics", func(t *testing.T) {
+		setupDataPointCache()
+
 		groupedMetrics := make(map[interface{}]*GroupedMetric)
 		oc := agentmetricspb.ExportMetricsServiceRequest{
 			Node: &commonpb.Node{},
@@ -178,17 +184,17 @@ func TestAddToGroupedMetric(t *testing.T) {
 			Metrics: []*metricspb.Metric{
 				generateTestIntGauge("int-gauge"),
 				generateTestDoubleGauge("double-gauge"),
-				generateTestIntSum("int-sum"),
-				generateTestDoubleSum("double-sum"),
 				generateTestHistogram("double-histogram"),
-				generateTestSummary("summary"),
 			},
 		}
+		oc.Metrics = append(oc.Metrics, generateTestIntSum("int-sum")...)
+		oc.Metrics = append(oc.Metrics, generateTestDoubleSum("double-sum")...)
+		oc.Metrics = append(oc.Metrics, generateTestSummary("summary")...)
 		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 		rms := rm.ResourceMetrics()
 		ilms := rms.At(0).InstrumentationLibraryMetrics()
 		metrics := ilms.At(0).Metrics()
-		assert.Equal(t, 6, metrics.Len())
+		assert.Equal(t, 9, metrics.Len())
 
 		for i := 0; i < metrics.Len(); i++ {
 			metric := metrics.At(i)
@@ -227,8 +233,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 			Metrics: []*metricspb.Metric{
 				generateTestIntGauge("int-gauge"),
 				generateTestDoubleGauge("double-gauge"),
-				generateTestIntSum("int-sum"),
-				generateTestSummary("summary"),
+				generateTestIntSum("int-sum")[1],
+				generateTestSummary("summary")[1],
 			},
 		}
 
@@ -431,12 +437,12 @@ func BenchmarkAddToGroupedMetric(b *testing.B) {
 		Metrics: []*metricspb.Metric{
 			generateTestIntGauge("int-gauge"),
 			generateTestDoubleGauge("double-gauge"),
-			generateTestIntSum("int-sum"),
-			generateTestDoubleSum("double-sum"),
 			generateTestHistogram("double-histogram"),
-			generateTestSummary("summary"),
 		},
 	}
+	oc.Metrics = append(oc.Metrics, generateTestIntSum("int-sum")...)
+	oc.Metrics = append(oc.Metrics, generateTestDoubleSum("double-sum")...)
+	oc.Metrics = append(oc.Metrics, generateTestSummary("summary")...)
 	rms := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics()
 	metrics := rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 	numMetrics := metrics.Len()
