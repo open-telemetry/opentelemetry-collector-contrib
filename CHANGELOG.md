@@ -2,6 +2,42 @@
 
 ## Unreleased
 
+## v0.27.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.27.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.27.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+
+- `tcplog` receiver to receive logs from tcp using the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library
+- `influxdb` receiver to accept metrics data as [InfluxDB Line Protocol](https://docs.influxdata.com/influxdb/v2.0/reference/syntax/line-protocol/)
+
+## 💡 Enhancements 💡
+
+- `splunkhec` exporter:
+  - Include the response in returned 400 errors (#3338)
+  - Map summary metrics to Splunk HEC metrics (#3344)
+  - Add HEC telemetry (#3260)
+- `newrelic` exporter: Include dropped attributes and events counts (#3187)
+- `datadog` exporter:
+  - Add Fargate task ARN to container tags (#3326)
+  - Improve mappings for span kind dd span type (#3368)
+- `signalfx` exporter: Add info log for host metadata properties update (#3343)
+- `awsprometheusremotewrite` exporter: Add SDK and system information to User-Agent header (#3317)
+- `metricstransform` processor: Add filtering capabilities matching metric label values for applying changes (#3201)
+- `groupbytrace` processor: Added workers for queue processing (#2902)
+- `resourcedetection` processor: Add docker detector (#2775)
+- `tailsampling` processor: Support regex on span attribute filtering (#3335_
+
+## 🧰 Bug fixes 🧰
+
+- `datadog` exporter:
+  - Update Datadog attributes to tags mapping (#3292)
+  - Consistent `hostname` and default metrics behavior (#3286)
+- `signalfx` exporter: Handle character limits on metric names and dimensions (#3328)
+- `newrelic` exporter: Fix timestamp value for cumulative metrics (#3406)
+
 ## v0.26.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.26.0 (Beta) 🎉
