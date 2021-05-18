@@ -271,7 +271,7 @@ func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, fallbackHost s
 		}
 
 		// Report the host as running
-		runningMetric := metrics.DefaultMetrics("metrics", host, pushTime, buildInfo, true)
+		runningMetric := metrics.DefaultMetrics("metrics", host, pushTime, buildInfo)
 
 		series = append(series, runningMetric...)
 
