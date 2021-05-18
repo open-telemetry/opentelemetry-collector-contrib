@@ -109,7 +109,7 @@ var Metrics = &metricStruct{
 		"nginx.connections_current",
 		func(metric pdata.Metric) {
 			metric.SetName("nginx.connections_current")
-			metric.SetDescription("The current number of nginx connections. States include reading - where nginx is reading the request header, writing - where nginx is writing the response back the the client, active - the total number of open connections, and waiting - the number of idle client connections waiting for a request")
+			metric.SetDescription("The current number of nginx connections by state")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
