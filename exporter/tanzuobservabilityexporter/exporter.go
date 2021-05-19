@@ -43,23 +43,22 @@ const (
 
 // spanSender Interface for sending tracing spans to Tanzu Observability
 type spanSender interface {
-	// SendSpan sends a tracing span to Tanzu Observability.
+	// SendSpan mirrors sender.SpanSender from wavefront-sdk-go.
 	// traceId, spanId, parentIds and preceding spanIds are expected to be UUID strings.
 	// parents and preceding spans can be empty for a root span.
 	// span tag keys can be repeated (example: "user"="foo" and "user"="bar")
-	// span logs are currently omitted
 	SendSpan(name string, startMillis, durationMillis int64, source, traceID, spanID string, parents, followsFrom []string, tags []senders.SpanTag, spanLogs []senders.SpanLog) error
 	Flush() error
 	Close()
 }
 
-type exporter struct {
+type tracesExporter struct {
 	cfg    *Config
 	sender spanSender
 	logger *zap.Logger
 }
 
-func newExporter(l *zap.Logger, c config.Exporter) (*exporter, error) {
+func newTracesExporter(l *zap.Logger, c config.Exporter) (*tracesExporter, error) {
 	cfg, ok := c.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config: %#v", c)
@@ -84,14 +83,14 @@ func newExporter(l *zap.Logger, c config.Exporter) (*exporter, error) {
 		return nil, fmt.Errorf("failed to create proxy sender: %v", err)
 	}
 
-	return &exporter{
+	return &tracesExporter{
 		cfg:    cfg,
 		sender: s,
 		logger: l,
 	}, nil
 }
 
-func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
+func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
 	var errs []error
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
@@ -123,12 +122,12 @@ func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
 	return consumererror.Combine(errs)
 }
 
-func (e exporter) Shutdown(_ context.Context) error {
+func (e *tracesExporter) Shutdown(_ context.Context) error {
 	e.sender.Close()
 	return nil
 }
 
-func (e exporter) RecordSpan(span Span) error {
+func (e *tracesExporter) RecordSpan(span Span) error {
 	var parents []string
 	if span.ParentSpanID != uuid.Nil {
 		parents = []string{span.ParentSpanID.String()}

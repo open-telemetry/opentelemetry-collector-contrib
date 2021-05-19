@@ -224,7 +224,7 @@ func consumeTraces(ptrace pdata.Traces) ([]*Span, error) {
 	sender := &mockSender{}
 
 	cfg := createDefaultConfig()
-	exp := exporter{
+	exp := tracesExporter{
 		cfg:    cfg.(*Config),
 		sender: sender,
 		logger: zap.NewNop(),
