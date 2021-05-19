@@ -579,14 +579,14 @@ func TestPodIgnorePatterns(t *testing.T) {
 		ignore: true,
 		pod: api_v1.Pod{
 			ObjectMeta: meta_v1.ObjectMeta{
-				Name: "pod_name1",
+				Name: "jaeger-agent-b2zdv",
 			},
 		},
 	}, {
 		ignore: false,
 		pod: api_v1.Pod{
 			ObjectMeta: meta_v1.ObjectMeta{
-				Name: "pod_name_include",
+				Name: "jaeger",
 			},
 		},
 	},
@@ -691,7 +691,7 @@ func newTestClientWithRulesAndFilters(t *testing.T, e ExtractionRules, f Filters
 	observedLogger, logs := observer.New(zapcore.WarnLevel)
 	logger := zap.New(observedLogger)
 	ignore := IgnoredPodNames{
-		Name: []string{"jaeger-agent", "jaeger-collector", "pod_name1"},
+		Regex: []*regexp.Regexp{regexp.MustCompile("jaeger-agent"), regexp.MustCompile("jaeger-collector")},
 	}
 	c, err := New(logger, k8sconfig.APIConfig{}, e, f, []Association{}, ignore, newFakeAPIClientset, NewFakeInformer)
 	require.NoError(t, err)

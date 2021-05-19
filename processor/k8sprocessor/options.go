@@ -254,13 +254,22 @@ func WithExtractPodAssociations(podAssociations ...PodAssociationConfig) Option 
 func WithIgnoredPodNames(podIgnore PodIgnoredConfig) Option {
 	return func(p *kubernetesprocessor) error {
 		ignoredNames := kube.IgnoredPodNames{}
-		defaultIgnoredNames := kube.IgnoredPodNames{Name: []string{"jaeger-agent", "jaeger-collector"}}
+		defaultIgnoredNames := PodIgnoredConfig{Name: []string{"jaeger-agent", "jaeger-collector"}}
 
 		if len(podIgnore.Name) == 0 {
-			p.podIgnore = defaultIgnoredNames
-			return nil
+			podIgnore = defaultIgnoredNames
 		}
-		ignoredNames.Name = append(ignoredNames.Name, podIgnore.Name...)
+
+		for _, name := range podIgnore.Name {
+			var err error
+			r, err := regexp.Compile(name)
+			if err != nil {
+				return err
+			}
+			ignoredNames.Regex = append(ignoredNames.Regex, r)
+
+		}
+		//ignoredNames.Name = append(ignoredNames.Name, podIgnore.Name...)
 		p.podIgnore = ignoredNames
 		return nil
 	}
