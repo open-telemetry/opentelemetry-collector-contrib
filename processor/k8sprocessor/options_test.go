@@ -601,3 +601,36 @@ func TestWithExtractPodAssociation(t *testing.T) {
 		})
 	}
 }
+
+func TestWithIgnoredPodNames(t *testing.T) {
+	tests := []struct {
+		name string
+		args PodIgnoredConfig
+		want kube.IgnoredPodNames
+	}{
+		{
+			"default",
+			PodIgnoredConfig{},
+			kube.IgnoredPodNames{
+				Name: []string{"jaeger-agent", "jaeger-collector"},
+			},
+		},
+		{
+			"configured",
+			PodIgnoredConfig{
+				Name: []string{"ignore_pod1", "ignore_pod2"},
+			},
+			kube.IgnoredPodNames{
+				Name: []string{"ignore_pod1", "ignore_pod2"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &kubernetesprocessor{}
+			option := WithIgnoredPodNames(tt.args)
+			option(p)
+			assert.Equal(t, tt.want, p.podIgnore)
+		})
+	}
+}

@@ -97,12 +97,6 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 
 	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
 
-	if len(ignore.Name) == 0 {
-		c.Ignore = IgnoredPodNames{
-			Name: []string{"jaeger-agent", "jaeger-collector"},
-		}
-	}
-
 	return c, err
 }
 

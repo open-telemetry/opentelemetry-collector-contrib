@@ -191,5 +191,7 @@ func createProcessorOpts(cfg config.Processor) []Option {
 
 	opts = append(opts, WithExtractPodAssociations(oCfg.Association...))
 
+	opts = append(opts, WithIgnoredPodNames(oCfg.Ignore))
+
 	return opts
 }
