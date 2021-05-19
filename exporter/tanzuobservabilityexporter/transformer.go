@@ -101,17 +101,17 @@ func (t *traceTransformer) Span(orig pdata.Span) (Span, error) {
 
 func spanKind(span pdata.Span) string {
 	switch span.Kind() {
-	case pdata.SpanKindCLIENT:
+	case pdata.SpanKindClient:
 		return "client"
-	case pdata.SpanKindSERVER:
+	case pdata.SpanKindServer:
 		return "server"
-	case pdata.SpanKindPRODUCER:
+	case pdata.SpanKindProducer:
 		return "producer"
-	case pdata.SpanKindCONSUMER:
+	case pdata.SpanKindConsumer:
 		return "consumer"
-	case pdata.SpanKindINTERNAL:
+	case pdata.SpanKindInternal:
 		return "internal"
-	case pdata.SpanKindUNSPECIFIED:
+	case pdata.SpanKindUnspecified:
 		return "unspecified"
 	default:
 		return "unknown"
@@ -162,7 +162,7 @@ func attributesToTags(attributes ...pdata.AttributeMap) map[string]string {
 	tags := map[string]string{}
 
 	extractTag := func(k string, v pdata.AttributeValue) bool {
-		tags[k] = tracetranslator.AttributeValueToString(v, false)
+		tags[k] = tracetranslator.AttributeValueToString(v)
 		return true
 	}
 
