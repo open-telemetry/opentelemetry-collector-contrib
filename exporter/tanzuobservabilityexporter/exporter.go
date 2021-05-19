@@ -65,14 +65,13 @@ func newExporter(l *zap.Logger, c config.Exporter) (*exporter, error) {
 		return nil, fmt.Errorf("invalid config: %#v", c)
 	}
 
-	l.Info("Creating Tanzu Observability exporter", zap.String("tracing_endpoint", cfg.Traces.Endpoint))
 	endpoint, err := url.Parse(cfg.Traces.Endpoint)
 	if nil != err {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse traces endpoint: %v", err)
 	}
 	tracingPort, err := strconv.Atoi(endpoint.Port())
 	if nil != err {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse traces port: %v", err)
 	}
 
 	s, err := senders.NewProxySender(&senders.ProxyConfiguration{
@@ -82,7 +81,7 @@ func newExporter(l *zap.Logger, c config.Exporter) (*exporter, error) {
 		FlushIntervalSeconds: 1,
 	})
 	if nil != err {
-		return nil, err
+		return nil, fmt.Errorf("failed to create proxy sender: %v", err)
 	}
 
 	return &exporter{

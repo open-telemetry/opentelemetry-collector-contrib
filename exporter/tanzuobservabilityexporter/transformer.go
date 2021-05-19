@@ -120,8 +120,8 @@ func spanKind(span pdata.Span) string {
 
 func (t *traceTransformer) setRequiredTags(tags map[string]string) {
 	if _, ok := tags[labelService]; !ok {
-		if _, svcNameOk := tags[conventions.AttributeServiceName]; svcNameOk {
-			tags[labelService] = tags[conventions.AttributeServiceName]
+		if svcName, svcNameOk := tags[conventions.AttributeServiceName]; svcNameOk {
+			tags[labelService] = svcName
 			delete(tags, conventions.AttributeServiceName)
 		} else {
 			tags[labelService] = defaultServiceName
@@ -185,7 +185,7 @@ func errorTagsFromStatus(status pdata.SpanStatus) map[string]string {
 	tags[labelError] = "true"
 	if status.Message() != "" {
 		msg := status.Message()
-		maxLength := 255 - len(labelStatusMessage+"=")
+		const maxLength = 255 - len(labelStatusMessage+"=")
 		if len(msg) > maxLength {
 			msg = msg[:maxLength]
 		}
