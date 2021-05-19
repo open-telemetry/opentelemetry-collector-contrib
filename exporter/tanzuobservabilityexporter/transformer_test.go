@@ -183,37 +183,37 @@ func TestSpanEventsAreTranslatedToSpanLogs(t *testing.T) {
 func TestSpanKindIsTranslatedToTag(t *testing.T) {
 	transform := transformerFromAttributes(pdata.NewAttributeMap())
 
-	internalSpan, err := transform.Span(spanWithKind(pdata.SpanKindINTERNAL))
+	internalSpan, err := transform.Span(spanWithKind(pdata.SpanKindInternal))
 	require.NoError(t, err, "transforming span to wavefront format")
 	kind, ok := internalSpan.Tags["span.kind"]
 	assert.True(t, ok)
 	assert.Equal(t, "internal", kind)
 
-	serverSpan, err := transform.Span(spanWithKind(pdata.SpanKindSERVER))
+	serverSpan, err := transform.Span(spanWithKind(pdata.SpanKindServer))
 	require.NoError(t, err, "transforming span to wavefront format")
 	kind, ok = serverSpan.Tags["span.kind"]
 	assert.True(t, ok)
 	assert.Equal(t, "server", kind)
 
-	clientSpan, err := transform.Span(spanWithKind(pdata.SpanKindCLIENT))
+	clientSpan, err := transform.Span(spanWithKind(pdata.SpanKindClient))
 	require.NoError(t, err, "transforming span to wavefront format")
 	kind, ok = clientSpan.Tags["span.kind"]
 	assert.True(t, ok)
 	assert.Equal(t, "client", kind)
 
-	consumerSpan, err := transform.Span(spanWithKind(pdata.SpanKindCONSUMER))
+	consumerSpan, err := transform.Span(spanWithKind(pdata.SpanKindConsumer))
 	require.NoError(t, err, "transforming span to wavefront format")
 	kind, ok = consumerSpan.Tags["span.kind"]
 	assert.True(t, ok)
 	assert.Equal(t, "consumer", kind)
 
-	producerSpan, err := transform.Span(spanWithKind(pdata.SpanKindPRODUCER))
+	producerSpan, err := transform.Span(spanWithKind(pdata.SpanKindProducer))
 	require.NoError(t, err, "transforming span to wavefront format")
 	kind, ok = producerSpan.Tags["span.kind"]
 	assert.True(t, ok)
 	assert.Equal(t, "producer", kind)
 
-	unspecifiedSpan, err := transform.Span(spanWithKind(pdata.SpanKindUNSPECIFIED))
+	unspecifiedSpan, err := transform.Span(spanWithKind(pdata.SpanKindUnspecified))
 	require.NoError(t, err, "transforming span to wavefront format")
 	kind, ok = unspecifiedSpan.Tags["span.kind"]
 	assert.True(t, ok)

@@ -88,7 +88,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 		pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}),
 		rootSpan.SpanID(),
 	)
-	clientSpan.SetKind(pdata.SpanKindCLIENT)
+	clientSpan.SetKind(pdata.SpanKindClient)
 	event := pdata.NewSpanEvent()
 	event.SetName("client-event")
 	event.CopyTo(clientSpan.Events().AppendEmpty())
@@ -108,7 +108,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 		pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 3}),
 		clientSpan.SpanID(),
 	)
-	serverSpan.SetKind(pdata.SpanKindSERVER)
+	serverSpan.SetKind(pdata.SpanKindServer)
 	serverSpan.SetTraceState("key=val")
 	serverAttrs := pdata.NewAttributeMap()
 	serverAttrs.InsertString(conventions.AttributeServiceName, "the-server")
@@ -214,7 +214,7 @@ func constructTraces(spans []pdata.Span) pdata.Traces {
 	rs.InstrumentationLibrarySpans().Resize(1)
 	ils := rs.InstrumentationLibrarySpans().At(0)
 	for _, span := range spans {
-		ils.Spans().Append(span)
+		span.CopyTo(ils.Spans().AppendEmpty())
 	}
 	return traces
 }
