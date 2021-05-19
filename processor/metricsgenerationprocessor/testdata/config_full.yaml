@@ -5,11 +5,13 @@ processors:
   experimental_metricsgeneration:
     rules:
       - name: new_metric
+        unit: percent
         type: calculate
         metric1: metric1
         metric2: metric2
         operation: percent
       - name: new_metric
+        unit: unit
         type: scale
         metric1: metric1
         scale_by: 1000
