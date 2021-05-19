@@ -153,3 +153,16 @@ var Labels = struct {
 // L contains the possible metric labels that can be used. L is an alias for
 // Labels.
 var L = Labels
+
+// LabelState are the possible values that the label "state" can have.
+var LabelState = struct {
+	Active  string
+	Reading string
+	Writing string
+	Waiting string
+}{
+	"active",
+	"reading",
+	"writing",
+	"waiting",
+}

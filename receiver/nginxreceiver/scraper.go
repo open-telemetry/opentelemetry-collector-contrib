@@ -76,10 +76,10 @@ func (r *nginxScraper) scrape(ctx context.Context) (pdata.ResourceMetricsSlice, 
 	metrics.AddSumDataPoint(metadata.M.NginxConnectionsAccepted.Name(), stats.Connections.Accepted)
 	metrics.AddSumDataPoint(metadata.M.NginxConnectionsHandled.Name(), stats.Connections.Handled)
 
-	metrics.WithLabels(map[string]string{metadata.L.State: "active"}).AddGaugeDataPoint(metadata.M.NginxConnectionsCurrent.Name(), stats.Connections.Active)
-	metrics.WithLabels(map[string]string{metadata.L.State: "reading"}).AddGaugeDataPoint(metadata.M.NginxConnectionsCurrent.Name(), stats.Connections.Reading)
-	metrics.WithLabels(map[string]string{metadata.L.State: "writing"}).AddGaugeDataPoint(metadata.M.NginxConnectionsCurrent.Name(), stats.Connections.Writing)
-	metrics.WithLabels(map[string]string{metadata.L.State: "waiting"}).AddGaugeDataPoint(metadata.M.NginxConnectionsCurrent.Name(), stats.Connections.Waiting)
+	metrics.WithLabels(map[string]string{metadata.L.State: metadata.LabelState.Active}).AddGaugeDataPoint(metadata.M.NginxConnectionsCurrent.Name(), stats.Connections.Active)
+	metrics.WithLabels(map[string]string{metadata.L.State: metadata.LabelState.Reading}).AddGaugeDataPoint(metadata.M.NginxConnectionsCurrent.Name(), stats.Connections.Reading)
+	metrics.WithLabels(map[string]string{metadata.L.State: metadata.LabelState.Writing}).AddGaugeDataPoint(metadata.M.NginxConnectionsCurrent.Name(), stats.Connections.Writing)
+	metrics.WithLabels(map[string]string{metadata.L.State: metadata.LabelState.Waiting}).AddGaugeDataPoint(metadata.M.NginxConnectionsCurrent.Name(), stats.Connections.Waiting)
 
 	return metrics.Metrics.ResourceMetrics(), nil
 }

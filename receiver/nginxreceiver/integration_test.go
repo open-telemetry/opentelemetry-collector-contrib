@@ -116,13 +116,13 @@ func (suite *NginxIntegrationSuite) TestNginxScraperHappyPath() {
 				dp := dps.At(j)
 				state, _ := dp.LabelsMap().Get("state")
 				switch state {
-				case "active":
+				case metadata.LabelState.Active:
 					present[state] = true
-				case "reading":
+				case metadata.LabelState.Reading:
 					present[state] = true
-				case "writing":
+				case metadata.LabelState.Writing:
 					present[state] = true
-				case "waiting":
+				case metadata.LabelState.Waiting:
 					present[state] = true
 				default:
 					require.Nil(t, state, fmt.Sprintf("connections with state %s not expected", state))

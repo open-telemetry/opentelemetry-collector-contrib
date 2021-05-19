@@ -3,6 +3,11 @@ name: nginxreceiver
 labels:
   state:
     description: The state of a connection
+    enum:
+    - active
+    - reading
+    - writing
+    - waiting
 
 metrics:
   nginx.requests:
