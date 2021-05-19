@@ -1,3 +1,26 @@
+# Using Contexts:
+#   some jobs depend on secrets like API tokens to work correctly such as publishing to docker hub
+#   or reporting issues to GitHub. All such tokens are stored in CircleCI contexts (https://circleci.com/docs/2.0/contexts).
+#   
+#   All tokens stored in a contexts are injected into a job as environment variables IF the pipeline that runs the job
+#   explicitly enables the context for the job. 
+#
+#   Contexts are protected with security groups. Jobs that use contexts will not run for commits from people who are not
+#   part of the approved security groups for the given context. This means that contributors who are not part of the
+#   OpenTelemetry GitHub organisation will not be able to run jobs that depend on contexts. As a result, PR pipelines
+#   should never depend on any contexts and never use any tokens/secrets.
+#
+#   This CI pipeline uses two contexts:
+#      - github-release-and-issues-api-token
+#        This context makes GITHUB_TOKEN available to jobs. Jobs can use the token to authenticate with the GitHub API.
+#        We use this to report failures as issues back to the GitHub project.
+#        Any member of the OpenTelemetry GitHub organisation can run jobs that require this context e.g, loadtest-with-github-reports.
+#        
+#      - dockerhub-token
+#        This contexts makes DOCKER_HUB_USERNAME and DOCKER_HUB_PASSWORD environment variables available to the jobs.
+#        This is used to publish docker images to Docker Hub.
+#        Only project approvers and maintainers can run jobs that depend on this context such e.g, publish-stable.
+
 version: 2.1
 
 parameters:
@@ -152,6 +175,32 @@ commands:
                 command: issuegenerator ${TEST_RESULTS}
                 when: on_fail
 
+  run_loadtest:
+    steps:
+      - restore_workspace
+      - install_fluentbit
+      - run:
+          name: Loadtest
+          command: make e2e-test
+      - store_artifacts:
+          path: testbed/tests/results
+      - store_test_results:
+          path: testbed/tests/results/junit
+
+  run_windows_test:
+    steps:
+      - checkout
+      - restore_module_cache
+      - run:
+          name: Upgrade golang
+          command: |
+            choco upgrade golang --version=1.15
+            refreshenv
+      - run:
+          name: Unit tests
+          command: (Get-Childitem -Include go.mod -Recurse) | ForEach-Object { cd (Split-Path $_ -Parent); go test ./...; if ($LastExitCode -gt 0) { exit $LastExitCode } }
+      - save_module_cache
+
 workflows:
   version: 2
   stability-tests:
@@ -178,12 +227,18 @@ workflows:
   build-publish:
     when: << pipeline.parameters.run-build-publish >>
     jobs:
-      - windows-test:
+      - windows-test-with-github-reports:
           context:
             - github-release-and-issues-api-token
           filters:
+            branches:
+              only: main
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+      - windows-test:
+          filters:
+            branches:
+              ignore: main
       - setup:
           filters:
             tags:
@@ -206,14 +261,22 @@ workflows:
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - loadtest:
+      - loadtest-with-github-reports:
           context:
             - github-release-and-issues-api-token
           requires:
             - cross-compile 
           filters:
+            branches:
+              only: main
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+      - loadtest:
+          requires:
+            - cross-compile 
+          filters:
+            branches:
+              ignore: main
       - unit-tests:
           requires:
             - setup
@@ -226,21 +289,30 @@ workflows:
           filters:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+      # this publish-check step only runs on the main branch.
+      # it is identical to the other publish-check step in all ways except
+      # it runs loadtest-with-github-reports and windows-test-with-github-reports
+      # instead of loadtest and windows-test. This is because these jobs can access
+      # the GITHUB_TOKEN secret which is not available to PR builds.
       - publish-check:
           requires:
             - lint
             - unit-tests
             - integration-tests
             - cross-compile
-            - loadtest
-            - windows-test
+            - loadtest-with-github-reports
+            - windows-test-with-github-reports
             - windows-msi
             - deb-package
             - rpm-package
-      - publish-stable:
-          context:
-            - github-release-and-issues-api-token
-            - dockerhub-token
+          filters:
+            branches:
+              only: main
+      # this publish-check step run for PR builds (all branches except main).
+      # it runs the same jobs as the previous public-check step but
+      # it uses the versions that do not need access to the
+      # GITHUB_TOKEN secret. 
+      - publish-check:
           requires:
             - lint
             - unit-tests
@@ -253,6 +325,23 @@ workflows:
             - rpm-package
           filters:
             branches:
+              ignore: main
+      - publish-stable:
+          context:
+            - github-release-and-issues-api-token
+            - dockerhub-token
+          requires:
+            - lint
+            - unit-tests
+            - integration-tests
+            - cross-compile
+            - loadtest-with-github-reports
+            - windows-test-with-github-reports
+            - windows-msi
+            - deb-package
+            - rpm-package
+          filters:
+            branches:
               ignore: /.*/
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
@@ -260,8 +349,8 @@ workflows:
           requires:
             - lint
             - unit-tests
-            - loadtest
-            - windows-test
+            - loadtest-with-github-reports
+            - windows-test-with-github-reports
             - integration-tests
             - cross-compile
           filters:
@@ -353,21 +442,37 @@ jobs:
 #          name: Upload unit test coverage
 #          command: bash <(curl -s https://codecov.io/bash) -F unit
 
+  # this job is identical to the `loadtest` job defined below except that it
+  # reports failures as github issues.
+  # any pipeline using this job must enable "github-release-and-issues-api-token" context
+  loadtest-with-github-reports:
+    executor: golang
+    resource_class: medium+
+    environment:
+      TEST_RESULTS: testbed/tests/results/junit/results.xml
+    steps:
+      - run_loadtest
+      - github_issue_generator
+
   loadtest:
     executor: golang
     resource_class: medium+
     environment:
       TEST_RESULTS: testbed/tests/results/junit/results.xml
     steps:
-      - restore_workspace
-      - install_fluentbit
-      - run:
-          name: Loadtest
-          command: make e2e-test
-      - store_artifacts:
-          path: testbed/tests/results
-      - store_test_results:
-          path: testbed/tests/results/junit
+      - run_loadtest
+
+  # this job is identical to the `windows-test` job defined below except that it
+  # reports failures as github issues.
+  # any pipeline using this job must enable "github-release-and-issues-api-token" context
+  windows-test-with-github-reports:
+    executor:
+      name: win/default
+      shell: powershell.exe
+    environment:
+      GOPATH=~/go
+    steps:
+      - run_windows_test
       - github_issue_generator
 
   windows-test:
@@ -377,18 +482,7 @@ jobs:
     environment:
       GOPATH=~/go
     steps:
-      - checkout
-      - restore_module_cache
-      - run:
-          name: Upgrade golang
-          command: |
-            choco upgrade golang --version=1.15
-            refreshenv
-      - run:
-          name: Unit tests
-          command: (Get-Childitem -Include go.mod -Recurse) | ForEach-Object { cd (Split-Path $_ -Parent); go test ./...; if ($LastExitCode -gt 0) { exit $LastExitCode } }
-      - save_module_cache
-      - github_issue_generator
+      - run_windows_test
 
   windows-msi:
     executor:
@@ -429,6 +523,8 @@ jobs:
           command: echo "publish check failed. This means release CI jobs will likely fail as well"
           when: on_fail
 
+  # any pipeline using this job must enable "github-release-and-issues-api-token"
+  # and "dockerhub-token" contexts
   publish-stable:
     docker:
       - image: cimg/go:1.15
@@ -450,6 +546,8 @@ jobs:
           name: Create Github release and upload artifacts
           command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG dist/
 
+  # any pipeline using this job must enable "github-release-and-issues-api-token"
+  # and "dockerhub-token" contexts
   publish-dev:
     executor: golang
     steps:
@@ -486,6 +584,8 @@ jobs:
             git checkout << pipeline.parameters.collector-sha >>
             git status
 
+  # this jobs reports failures as github issues and as a result, any pipeline using this job
+  # must enable "github-release-and-issues-api-token" context
   run-stability-tests:
     parameters:
       # Number of runners must be always in sync with number of stability tests,
