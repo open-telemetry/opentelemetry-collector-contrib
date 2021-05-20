@@ -54,16 +54,16 @@ func TestCSVParserBuildFailureInvalidDelimiter(t *testing.T) {
 	require.Contains(t, err.Error(), "Invalid 'delimiter': ';;'")
 }
 
-func TestCSVParserStringFailure(t *testing.T) {
-	parser := newTestParser(t)
-	_, err := parser.parse("invalid")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "record on line 1: wrong number of fields")
-}
-
 func TestCSVParserByteFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]byte("invalid"))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "type '[]uint8' cannot be parsed as csv")
+}
+
+func TestCSVParserStringFailure(t *testing.T) {
+	parser := newTestParser(t)
+	_, err := parser.parse("invalid")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "record on line 1: wrong number of fields")
 }

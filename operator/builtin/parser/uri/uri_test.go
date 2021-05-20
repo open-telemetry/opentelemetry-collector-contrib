@@ -42,16 +42,16 @@ func TestURIParserBuildFailure(t *testing.T) {
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }
 
-func TestURIParserStringFailure(t *testing.T) {
-	parser := newTestParser(t)
-	_, err := parser.parse("invalid")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "parse \"invalid\": invalid URI for request")
-}
-
 func TestURIParserByteFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]byte("invalid"))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "type '[]uint8' cannot be parsed as URI")
+}
+
+func TestURIParserStringFailure(t *testing.T) {
+	parser := newTestParser(t)
+	_, err := parser.parse("invalid")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "parse \"invalid\": invalid URI for request")
 }
@@ -84,27 +84,6 @@ func TestURIParserParse(t *testing.T) {
 				},
 			},
 			false,
-		},
-		{
-			"byte",
-			[]byte("http://google.com/app?env=prod"),
-			map[string]interface{}{
-				"scheme": "http",
-				"host":   "google.com",
-				"path":   "/app",
-				"query": map[string]interface{}{
-					"env": []interface{}{
-						"prod",
-					},
-				},
-			},
-			false,
-		},
-		{
-			"byte",
-			[]int{},
-			map[string]interface{}{},
-			true,
 		},
 	}
 
