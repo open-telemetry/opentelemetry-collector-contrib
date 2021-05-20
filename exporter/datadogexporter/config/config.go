@@ -108,8 +108,8 @@ type TracesConfig struct {
 	// SpanNameRemappings is the list of datadog span names and preferred names to map to. This can be used to
 	// automatically map Datadog Span Operation Names to an updated value, and is useful when a user wants to
 	// shorten or modify span names to something more user friendly in the case of instrumentation libraries with
-	// particularly verbose names. All entries must be surrounded by double quotes and be seperated by commas, with each entry
-	// between old and updated name seperated by a space.
+	// particularly verbose names. All entries must be surrounded by double quotes and be separated by commas, with each entry
+	// between old and updated name separated by a space.
 	// span_name_remappings: ["io.opentelemetry.javaagent.spring.client spring.client", "instrumentation::express.server express"]
 	SpanNameRemappings []string `mapstructure:"span_name_remappings"`
 }
@@ -256,7 +256,7 @@ func (c *Config) Validate() error {
 		for _, entry := range c.Traces.SpanNameRemappings {
 			SpanNameAndUpdatedName := strings.Split(entry, " ")
 			if len(SpanNameAndUpdatedName) != 2 {
-				return fmt.Errorf("'%s' is not valid entry for span name remapping, entry should consist of two space seperated strings", entry)
+				return fmt.Errorf("'%s' is not valid entry for span name remapping, entry should consist of two space separated strings", entry)
 			}
 		}
 	}
