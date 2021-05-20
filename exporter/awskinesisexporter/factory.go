@@ -17,11 +17,12 @@ package awskinesisexporter
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/encoding"
 	awskinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/encoding"
 )
 
 const (

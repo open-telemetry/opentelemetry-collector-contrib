@@ -7,6 +7,7 @@ import (
 )
 
 var (
+	// ErrUnsupportedEncodedType is used when the encoder type does not the type of encoding
 	ErrUnsupportedEncodedType = errors.New("unsupported type to encode")
 )
 
