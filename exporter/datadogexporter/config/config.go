@@ -104,6 +104,13 @@ type TracesConfig struct {
 	// all entries must be surrounded by double quotes and separated by commas.
 	// ignore_resources: ["(GET|POST) /healthcheck"]
 	IgnoreResources []string `mapstructure:"ignore_resources"`
+
+	// SpanNameRemappings is the list of current_datadog_span_name:updated_datadog_span_name to use to remap
+	// automatically generated Datadog Span Operation Names to an updated value. This can be used to shorten
+	// or modify span names to something more user friendly in the case of instrumentation libraries with
+	// particularly verbos names
+	// span_name_remappings: [io.opentelemetry.javaagent.spring.client spring.client, instrumentation::express.server express]
+	SpanNameRemappings []string `mapstructure:"span_name_remappings"`
 }
 
 // TagsConfig defines the tag-related configuration
@@ -240,6 +247,15 @@ func (c *Config) Validate() error {
 			_, err := regexp.Compile(entry)
 			if err != nil {
 				return fmt.Errorf("'%s' is not valid resource filter regular expression", entry)
+			}
+		}
+	}
+
+	if c.Traces.SpanNameRemappings != nil {
+		for _, entry := range c.Traces.SpanNameRemappings {
+			SpanNameAndUpdatedName := strings.Split(entry, " ")
+			if len(SpanNameAndUpdatedName) != 2 {
+				return fmt.Errorf("'%s' is not valid entry for span name remapping, entry should consist of two space seperated strings", entry)
 			}
 		}
 	}

@@ -155,3 +155,13 @@ func TestIgnoreResourcesValidation(t *testing.T) {
 	require.NoError(t, noErr)
 	require.Error(t, err)
 }
+
+func TestSpanNameRemappingsValidation(t *testing.T) {
+	validCfg := Config{Traces: TracesConfig{SpanNameRemappings: []string{"old.opentelemetryspan.name updated.name"}}}
+	invalidCfg := Config{Traces: TracesConfig{SpanNameRemappings: []string{"oldname:newname"}}}
+
+	noErr := validCfg.Validate()
+	err := invalidCfg.Validate()
+	require.NoError(t, noErr)
+	require.Error(t, err)
+}

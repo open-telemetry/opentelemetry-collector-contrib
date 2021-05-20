@@ -74,6 +74,9 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, calculator *sublay
 
 	var runningMetrics []datadog.Metric
 	pushTime := pdata.TimestampFromTime(time.Now())
+
+	spanNameMap := generateSpanNameMap(cfg)
+
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
 		host, ok := metadata.HostnameFromAttributes(rs.Resource().Attributes())
@@ -81,7 +84,7 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, calculator *sublay
 			host = fallbackHost
 		}
 
-		payload := resourceSpansToDatadogSpans(rs, calculator, host, cfg, blk)
+		payload := resourceSpansToDatadogSpans(rs, calculator, host, cfg, blk, spanNameMap)
 		traces = append(traces, &payload)
 
 		ms := metrics.DefaultMetrics("traces", host, uint64(pushTime))
@@ -118,7 +121,7 @@ func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePa
 }
 
 // converts a Trace's resource spans into a trace payload
-func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCalculator, hostname string, cfg *config.Config, blk *Denylister) pb.TracePayload {
+func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCalculator, hostname string, cfg *config.Config, blk *Denylister, spanNameMap map[string]string) pb.TracePayload {
 	// get env tag
 	env := utils.NormalizeTag(cfg.Env)
 
@@ -151,7 +154,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 		extractInstrumentationLibraryTags(ils.InstrumentationLibrary(), datadogTags)
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
-			span := spanToDatadogSpan(spans.At(j), resourceServiceName, datadogTags, cfg)
+			span := spanToDatadogSpan(spans.At(j), resourceServiceName, datadogTags, cfg, spanNameMap)
 			var apiTrace *pb.APITrace
 			var ok bool
 
@@ -214,6 +217,7 @@ func spanToDatadogSpan(s pdata.Span,
 	serviceName string,
 	datadogTags map[string]string,
 	cfg *config.Config,
+	spanNameMap map[string]string,
 ) *pb.Span {
 
 	tags := aggregateSpanTags(s, datadogTags)
@@ -275,7 +279,7 @@ func spanToDatadogSpan(s pdata.Span,
 	span := &pb.Span{
 		TraceID:  decodeAPMTraceID(s.TraceID().Bytes()),
 		SpanID:   decodeAPMSpanID(s.SpanID().Bytes()),
-		Name:     getDatadogSpanName(s, tags),
+		Name:     remapDatadogSpanName(getDatadogSpanName(s, tags), spanNameMap),
 		Resource: resourceName,
 		Service:  normalizedServiceName,
 		Start:    int64(startTime),
@@ -629,4 +633,28 @@ func eventsToString(evts pdata.SpanEventSlice) string {
 	}
 	eventArrayBytes, _ := json.Marshal(&eventArray)
 	return string(eventArrayBytes)
+}
+
+func generateSpanNameMap(cfg *config.Config) map[string]string {
+	// we can preset the size to be at most the number of remapping entries
+	spanNameMap := make(map[string]string, len(cfg.Traces.SpanNameRemappings))
+	for _, entry := range cfg.Traces.SpanNameRemappings {
+		spanNameRemapTuple := strings.Split(entry, " ")
+		spanNameMap[spanNameRemapTuple[0]] = spanNameRemapTuple[1]
+	}
+
+	return spanNameMap
+}
+
+// remapDatadogSpanName allows users to map their datadog span operation names to
+// another string as they see fit.  It's unclear if this should be a set of regexes or simple string
+// matching. It's also unclear if we should expose arbitrary remapping, ie, allowing users to map
+// to some other dyanmic attribute or value on the span. This would probably cause issues in metric
+// computation
+func remapDatadogSpanName(name string, spanNameMap map[string]string) string {
+	if updatedSpanName := spanNameMap[name]; updatedSpanName != "" {
+		return updatedSpanName
+	}
+
+	return name
 }

@@ -235,7 +235,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeUnset, false, mockEndTime)
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{}, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{}, denylister, map[string]string{})
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -308,7 +308,7 @@ func TestBasicTracesDenylist(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeUnset, false, mockEndTime)
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{}, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{}, denylister, map[string]string{})
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -340,7 +340,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 		},
 	}
 
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister, map[string]string{})
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -422,7 +422,7 @@ func TestTracesTranslationErrorsFromEventsUsesLast(t *testing.T) {
 		},
 	}
 
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister, map[string]string{})
 
 	// Ensure the error type is copied over from the last error event logged
 	assert.Equal(t, attribs[conventions.AttributeExceptionType].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorType])
@@ -477,7 +477,7 @@ func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 		},
 	}
 
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister, map[string]string{})
 
 	// Ensure the error type is copied over
 	assert.Equal(t, attribs[conventions.AttributeExceptionType].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorType])
@@ -534,7 +534,7 @@ func TestTracesTranslationOkStatus(t *testing.T) {
 		},
 	}
 
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister, map[string]string{})
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -585,7 +585,7 @@ func TestTracesTranslationConfig(t *testing.T) {
 	}
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister, map[string]string{})
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -624,7 +624,7 @@ func TestTracesTranslationNoIls(t *testing.T) {
 	}
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister, map[string]string{})
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -675,9 +675,9 @@ func TestTracesTranslationInvalidService(t *testing.T) {
 	}
 
 	// translate mocks to datadog traces
-	datadogPayloadInvalidService := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfgInvalidService, denylister)
-	datadogPayloadEmptyService := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfgEmptyService, denylister)
-	datadogPayloadStartWithInvalidService := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfgStartWithInvalidService, denylister)
+	datadogPayloadInvalidService := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfgInvalidService, denylister, map[string]string{})
+	datadogPayloadEmptyService := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfgEmptyService, denylister, map[string]string{})
+	datadogPayloadStartWithInvalidService := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfgStartWithInvalidService, denylister, map[string]string{})
 
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayloadInvalidService)
@@ -712,7 +712,7 @@ func TestTracesTranslationServicePeerName(t *testing.T) {
 	span.Attributes().InsertString(conventions.AttributePeerService, "my_peer_service_name")
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{}, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{}, denylister, map[string]string{})
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -788,7 +788,7 @@ func TestTracesTranslationTruncatetag(t *testing.T) {
 	span.Attributes().InsertString(conventions.AttributeExceptionStacktrace, RandStringBytes(5500))
 
 	// translate mocks to datadog traces
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{}, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &config.Config{}, denylister, map[string]string{})
 	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
 
@@ -1184,7 +1184,7 @@ func TestStatsAggregations(t *testing.T) {
 	// translate mocks to datadog traces
 	cfg := config.Config{}
 
-	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister)
+	datadogPayload := resourceSpansToDatadogSpans(rs, calculator, hostname, &cfg, denylister, map[string]string{})
 
 	statsOutput := computeAPMStats(&datadogPayload, calculator, time.Now().UTC().UnixNano())
 
@@ -1289,4 +1289,54 @@ func TestNormalizeTag(t *testing.T) {
 			assert.Equal(t, tt.out, utils.NormalizeTag(tt.in), tt.in)
 		})
 	}
+}
+
+// ensure that sanitization  of trace payloads occurs
+func TestSpanNameMapping(t *testing.T) {
+	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
+	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
+	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
+	endTime := time.Now().Round(time.Second)
+	pdataEndTime := pdata.TimestampFromTime(endTime)
+	startTime := endTime.Add(-90 * time.Second)
+	pdataStartTime := pdata.TimestampFromTime(startTime)
+
+	calculator := newSublayerCalculator()
+	denylister := NewDenylister([]string{})
+
+	traces := pdata.NewTraces()
+	traces.ResourceSpans().Resize(1)
+	rs := traces.ResourceSpans().At(0)
+	resource := rs.Resource()
+	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		"deployment.environment": pdata.NewAttributeValueString("UpperCase"),
+	})
+	rs.InstrumentationLibrarySpans().Resize(1)
+	ilss := rs.InstrumentationLibrarySpans().At(0)
+	instrumentationLibrary := ilss.InstrumentationLibrary()
+	instrumentationLibrary.SetName("flash")
+	instrumentationLibrary.SetVersion("v1")
+	span := ilss.Spans().AppendEmpty()
+
+	traceID := pdata.NewTraceID(mockTraceID)
+	spanID := pdata.NewSpanID(mockSpanID)
+	parentSpanID := pdata.NewSpanID(mockParentSpanID)
+	span.SetTraceID(traceID)
+	span.SetSpanID(spanID)
+	span.SetParentSpanID(parentSpanID)
+	span.SetName("End-To-End Here")
+	span.SetKind(pdata.SpanKindServer)
+	span.SetStartTimestamp(pdataStartTime)
+	span.SetEndTimestamp(pdataEndTime)
+
+	config := config.Config{Traces: config.TracesConfig{SpanNameRemappings: []string{"flash.server bang.client"}}}
+
+	outputTraces, _ := convertToDatadogTd(traces, "test-host", calculator, &config, denylister)
+	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
+
+	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
+	obfuscatePayload(obfuscator, aggregatedTraces)
+	assert.Equal(t, 1, len(aggregatedTraces))
+
+	assert.Equal(t, "bang.client", aggregatedTraces[0].Traces[0].Spans[0].Name)
 }
