@@ -44,16 +44,16 @@ func TestRegexParserBuildFailure(t *testing.T) {
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }
 
-func TestRegexParserStringFailure(t *testing.T) {
-	parser := newTestParser(t, "^(?P<key>test)")
-	_, err := parser.parse("invalid")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "regex pattern does not match")
-}
-
 func TestRegexParserByteFailure(t *testing.T) {
 	parser := newTestParser(t, "^(?P<key>test)")
 	_, err := parser.parse([]byte("invalid"))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "type '[]uint8' cannot be parsed as regex")
+}
+
+func TestRegexParserStringFailure(t *testing.T) {
+	parser := newTestParser(t, "^(?P<key>test)")
+	_, err := parser.parse("invalid")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "regex pattern does not match")
 }
@@ -78,16 +78,6 @@ func TestParserRegex(t *testing.T) {
 				p.Regex = "a=(?P<a>.*)"
 			},
 			"a=b",
-			map[string]interface{}{
-				"a": "b",
-			},
-		},
-		{
-			"RootBytes",
-			func(p *RegexParserConfig) {
-				p.Regex = "a=(?P<a>.*)"
-			},
-			[]byte("a=b"),
 			map[string]interface{}{
 				"a": "b",
 			},

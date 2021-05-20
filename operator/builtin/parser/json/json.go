@@ -76,11 +76,6 @@ func (j *JSONParser) parse(value interface{}) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-	case []byte:
-		err := j.json.Unmarshal(m, &parsedValue)
-		if err != nil {
-			return nil, err
-		}
 	default:
 		return nil, fmt.Errorf("type %T cannot be parsed as JSON", value)
 	}

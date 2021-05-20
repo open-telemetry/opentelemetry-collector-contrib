@@ -100,8 +100,6 @@ func (r *CSVParser) parse(value interface{}) (interface{}, error) {
 	switch val := value.(type) {
 	case string:
 		csvLine = val
-	case []byte:
-		csvLine = string(val)
 	default:
 		return nil, fmt.Errorf("type '%T' cannot be parsed as csv", value)
 	}

@@ -70,8 +70,6 @@ func (u *URIParser) parse(value interface{}) (interface{}, error) {
 	switch m := value.(type) {
 	case string:
 		return parseURI(m)
-	case []byte:
-		return parseURI(string(m))
 	default:
 		return nil, fmt.Errorf("type '%T' cannot be parsed as URI", value)
 	}

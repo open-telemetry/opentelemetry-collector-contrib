@@ -100,16 +100,6 @@ func (r *RegexParser) parse(value interface{}) (interface{}, error) {
 		if matches == nil {
 			return nil, fmt.Errorf("regex pattern does not match")
 		}
-	case []byte:
-		byteMatches := r.regexp.FindSubmatch(m)
-		if byteMatches == nil {
-			return nil, fmt.Errorf("regex pattern does not match")
-		}
-
-		matches = make([]string, len(byteMatches))
-		for i, byteSlice := range byteMatches {
-			matches[i] = string(byteSlice)
-		}
 	default:
 		return nil, fmt.Errorf("type '%T' cannot be parsed as regex", value)
 	}

@@ -213,8 +213,6 @@ func toBytes(value interface{}) ([]byte, error) {
 	switch v := value.(type) {
 	case string:
 		return []byte(v), nil
-	case []byte:
-		return v, nil
 	default:
 		return nil, fmt.Errorf("unable to convert type '%T' to bytes", value)
 	}

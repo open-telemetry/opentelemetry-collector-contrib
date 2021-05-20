@@ -115,25 +115,6 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 			"crit",
 		},
 		{
-			"RFC3164Bytes",
-			func() *SyslogParserConfig {
-				cfg := basicConfig()
-				cfg.Protocol = RFC3164
-				return cfg
-			}(),
-			[]byte("<34>Jan 12 06:30:00 1.2.3.4 apache_server: test message"),
-			time.Date(time.Now().Year(), 1, 12, 6, 30, 0, 0, time.UTC),
-			map[string]interface{}{
-				"appname":  "apache_server",
-				"facility": 4,
-				"hostname": "1.2.3.4",
-				"message":  "test message",
-				"priority": 34,
-			},
-			entry.Critical,
-			"crit",
-		},
-		{
 			"RFC5424",
 			func() *SyslogParserConfig {
 				cfg := basicConfig()
