@@ -28,9 +28,10 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
 )
 
 type NginxIntegrationSuite struct {
@@ -92,24 +93,46 @@ func (suite *NginxIntegrationSuite) TestNginxScraperHappyPath() {
 	ilm := ilms.At(0)
 	ms := ilm.Metrics()
 
-	require.Equal(t, 7, ms.Len())
-
-	metricValues := make(map[string]int64, 7)
+	require.Equal(t, 4, ms.Len())
 
 	for i := 0; i < ms.Len(); i++ {
 		m := ms.At(i)
 
-		var dps pdata.IntDataPointSlice
-
-		switch m.DataType() {
-		case pdata.MetricDataTypeIntGauge:
-			dps = m.IntGauge().DataPoints()
-		case pdata.MetricDataTypeIntSum:
-			dps = m.IntSum().DataPoints()
+		switch m.Name() {
+		case metadata.M.NginxRequests.Name():
+			require.Equal(t, 1, m.IntSum().DataPoints().Len())
+			require.True(t, m.IntSum().IsMonotonic())
+		case metadata.M.NginxConnectionsAccepted.Name():
+			require.Equal(t, 1, m.IntSum().DataPoints().Len())
+			require.True(t, m.IntSum().IsMonotonic())
+		case metadata.M.NginxConnectionsHandled.Name():
+			require.Equal(t, 1, m.IntSum().DataPoints().Len())
+			require.True(t, m.IntSum().IsMonotonic())
+		case metadata.M.NginxConnectionsCurrent.Name():
+			dps := m.IntGauge().DataPoints()
+			require.Equal(t, 4, dps.Len())
+			present := map[string]bool{}
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				state, _ := dp.LabelsMap().Get("state")
+				switch state {
+				case metadata.LabelState.Active:
+					present[state] = true
+				case metadata.LabelState.Reading:
+					present[state] = true
+				case metadata.LabelState.Writing:
+					present[state] = true
+				case metadata.LabelState.Waiting:
+					present[state] = true
+				default:
+					require.Nil(t, state, fmt.Sprintf("connections with state %s not expected", state))
+				}
+			}
+			// Ensure all 4 expected states were present
+			require.Equal(t, 4, len(present))
+		default:
+			require.Nil(t, m.Name(), fmt.Sprintf("metric %s not expected", m.Name()))
 		}
 
-		require.Equal(t, 1, dps.Len())
-
-		metricValues[m.Name()] = dps.At(0).Value()
 	}
 }
