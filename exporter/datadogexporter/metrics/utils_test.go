@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
@@ -56,7 +57,12 @@ func TestNewType(t *testing.T) {
 }
 
 func TestDefaultMetrics(t *testing.T) {
-	ms := DefaultMetrics("metrics", "test-host", uint64(2e9))
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+		Command: "otelcontribcol",
+	}
+
+	ms := DefaultMetrics("metrics", "test-host", uint64(2e9), buildInfo)
 
 	assert.Equal(t, "otel.datadog_exporter.metrics.running", *ms[0].Metric)
 	// Assert metrics list length (should be 1)
@@ -68,7 +74,7 @@ func TestDefaultMetrics(t *testing.T) {
 	// Assert hostname tag is set
 	assert.Equal(t, "test-host", *ms[0].Host)
 	// Assert no other tags are set
-	assert.ElementsMatch(t, []string{}, ms[0].Tags)
+	assert.ElementsMatch(t, []string{"version:1.0", "command:otelcontribcol"}, ms[0].Tags)
 }
 
 func TestProcessMetrics(t *testing.T) {

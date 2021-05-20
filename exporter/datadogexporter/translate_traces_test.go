@@ -28,6 +28,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/stats"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
@@ -138,8 +139,11 @@ func TestConvertToDatadogTd(t *testing.T) {
 	traces.ResourceSpans().AppendEmpty()
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
 
-	outputTraces, runningMetrics := convertToDatadogTd(traces, "test-host", calculator, &config.Config{}, denylister)
+	outputTraces, runningMetrics := convertToDatadogTd(traces, "test-host", calculator, &config.Config{}, denylister, buildInfo)
 	assert.Equal(t, 1, len(outputTraces))
 	assert.Equal(t, 1, len(runningMetrics))
 }
@@ -148,8 +152,11 @@ func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 	traces := pdata.NewTraces()
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
 
-	outputTraces, runningMetrics := convertToDatadogTd(traces, "test-host", calculator, &config.Config{}, denylister)
+	outputTraces, runningMetrics := convertToDatadogTd(traces, "test-host", calculator, &config.Config{}, denylister, buildInfo)
 	assert.Equal(t, 0, len(outputTraces))
 	assert.Equal(t, 0, len(runningMetrics))
 }
@@ -173,7 +180,11 @@ func TestRunningTraces(t *testing.T) {
 
 	rts.AppendEmpty()
 
-	_, runningMetrics := convertToDatadogTd(td, "fallbackHost", newSublayerCalculator(), &config.Config{}, NewDenylister([]string{}))
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
+
+	_, runningMetrics := convertToDatadogTd(td, "fallbackHost", newSublayerCalculator(), &config.Config{}, NewDenylister([]string{}), buildInfo)
 
 	runningHostnames := []string{}
 	for _, metric := range runningMetrics {
@@ -191,6 +202,9 @@ func TestRunningTraces(t *testing.T) {
 func TestObfuscation(t *testing.T) {
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
 
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -209,7 +223,7 @@ func TestObfuscation(t *testing.T) {
 	// of them is currently not supported.
 	span.Attributes().InsertString("testinfo?=123", "http.route")
 
-	outputTraces, _ := convertToDatadogTd(traces, "test-host", calculator, &config.Config{}, denylister)
+	outputTraces, _ := convertToDatadogTd(traces, "test-host", calculator, &config.Config{}, denylister, buildInfo)
 	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
 
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
@@ -1206,6 +1220,9 @@ func TestStatsAggregations(t *testing.T) {
 func TestSanitization(t *testing.T) {
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
 
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
@@ -1221,7 +1238,7 @@ func TestSanitization(t *testing.T) {
 	instrumentationLibrary.SetVersion("v1")
 	ilss.Spans().Resize(1)
 
-	outputTraces, _ := convertToDatadogTd(traces, "test-host", calculator, &config.Config{}, denylister)
+	outputTraces, _ := convertToDatadogTd(traces, "test-host", calculator, &config.Config{}, denylister, buildInfo)
 	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
 
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)

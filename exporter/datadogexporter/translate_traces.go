@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -63,7 +64,7 @@ const (
 )
 
 // converts Traces into an array of datadog trace payloads grouped by env
-func convertToDatadogTd(td pdata.Traces, fallbackHost string, calculator *sublayerCalculator, cfg *config.Config, blk *Denylister) ([]*pb.TracePayload, []datadog.Metric) {
+func convertToDatadogTd(td pdata.Traces, fallbackHost string, calculator *sublayerCalculator, cfg *config.Config, blk *Denylister, buildInfo component.BuildInfo) ([]*pb.TracePayload, []datadog.Metric) {
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
 	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
@@ -84,7 +85,7 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, calculator *sublay
 		payload := resourceSpansToDatadogSpans(rs, calculator, host, cfg, blk)
 		traces = append(traces, &payload)
 
-		ms := metrics.DefaultMetrics("traces", host, uint64(pushTime))
+		ms := metrics.DefaultMetrics("traces", host, uint64(pushTime), buildInfo)
 		runningMetrics = append(runningMetrics, ms...)
 	}
 
