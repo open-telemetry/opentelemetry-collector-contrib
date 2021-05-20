@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/uptrace/uptrace-go/spanexp"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
@@ -29,32 +30,11 @@ type traceExporter struct {
 	upexp  *spanexp.Exporter
 }
 
-func newTracesExporter(cfg *Config, logger *zap.Logger) (*traceExporter, error) {
-	if cfg.HTTPClientSettings.Endpoint != "" {
-		logger.Warn("uptraceexporter: endpoint is not supported; use dsn instead")
-	}
-
-	client, err := cfg.HTTPClientSettings.ToClient()
-	if err != nil {
-		return nil, err
-	}
-
-	upexp, err := spanexp.NewExporter(&spanexp.Config{
-		DSN:        cfg.DSN,
-		HTTPClient: client,
-		MaxRetries: -1, // disable retries because Collector already handles it
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	exporter := &traceExporter{
+func newTracesExporter(cfg *Config, logger *zap.Logger) *traceExporter {
+	return &traceExporter{
 		cfg:    cfg,
 		logger: logger,
-		upexp:  upexp,
 	}
-
-	return exporter, nil
 }
 
 // pushTraceData is the method called when trace data is available.
@@ -115,6 +95,30 @@ func (e *traceExporter) pushTraceData(ctx context.Context, traces pdata.Traces) 
 		}
 		return consumererror.Permanent(err)
 	}
+
+	return nil
+}
+
+func (e *traceExporter) Start(_ context.Context, host component.Host) error {
+	if e.cfg.HTTPClientSettings.Endpoint != "" {
+		e.logger.Warn("uptraceexporter: endpoint is not supported; use dsn instead")
+	}
+
+	client, err := e.cfg.HTTPClientSettings.ToClient(host.GetExtensions())
+	if err != nil {
+		return err
+	}
+
+	upexp, err := spanexp.NewExporter(&spanexp.Config{
+		DSN:        e.cfg.DSN,
+		HTTPClient: client,
+		MaxRetries: -1, // disable retries because Collector already handles it
+	})
+	if err != nil {
+		return err
+	}
+
+	e.upexp = upexp
 
 	return nil
 }
