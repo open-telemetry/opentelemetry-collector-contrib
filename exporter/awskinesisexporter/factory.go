@@ -16,19 +16,24 @@ package awskinesisexporter
 
 import (
 	"context"
+	"errors"
 
-	awskinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/translate"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/kinesis"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/producer"
 )
 
 const (
 	// The value of "type" key in configuration.
-	typeStr      = "awskinesis"
-	exportFormat = "jaeger-proto"
+	typeStr = "awskinesis"
 )
 
 // NewFactory creates a factory for Kinesis exporter.
@@ -36,7 +41,10 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter))
+		exporterhelper.WithTraces(NewTracesExporter),
+		exporterhelper.WithMetrics(NewMetricsExporter),
+		exporterhelper.WithLogs(NewLogsExporter),
+	)
 }
 
 func createDefaultConfig() config.Exporter {
@@ -45,59 +53,49 @@ func createDefaultConfig() config.Exporter {
 		AWS: AWSConfig{
 			Region: "us-west-2",
 		},
-		KPL: KPLConfig{
-			BatchSize:            5242880,
-			BatchCount:           1000,
-			BacklogCount:         2000,
-			FlushIntervalSeconds: 5,
-			MaxConnections:       24,
-		},
-
-		QueueSize:            100000,
-		NumWorkers:           8,
-		FlushIntervalSeconds: 5,
-		MaxBytesPerBatch:     100000,
-		MaxBytesPerSpan:      900000,
+		MaxRecordsPerBatch: batch.MaxBatchedRecords,
+		MaxRecordSize:      batch.MaxRecordSize,
 	}
 }
 
-func createTracesExporter(
-	_ context.Context,
-	params component.ExporterCreateSettings,
-	config config.Exporter,
-) (component.TracesExporter, error) {
-	c := config.(*Config)
-	k, err := awskinesis.NewExporter(&awskinesis.Options{
-		Name:               c.ID().String(),
-		StreamName:         c.AWS.StreamName,
-		AWSRegion:          c.AWS.Region,
-		AWSRole:            c.AWS.Role,
-		AWSKinesisEndpoint: c.AWS.KinesisEndpoint,
+func NewTracesExporter(ctx context.Context, params component.ExporterCreateSettings, conf config.Exporter) (component.TracesExporter, error) {
+	return createExporter(ctx, params, conf)
+}
 
-		KPLAggregateBatchSize:   c.KPL.AggregateBatchSize,
-		KPLAggregateBatchCount:  c.KPL.AggregateBatchCount,
-		KPLBatchSize:            c.KPL.BatchSize,
-		KPLBatchCount:           c.KPL.BatchCount,
-		KPLBacklogCount:         c.KPL.BacklogCount,
-		KPLFlushIntervalSeconds: c.KPL.FlushIntervalSeconds,
-		KPLMaxConnections:       c.KPL.MaxConnections,
-		KPLMaxRetries:           c.KPL.MaxRetries,
-		KPLMaxBackoffSeconds:    c.KPL.MaxBackoffSeconds,
+func NewMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, conf config.Exporter) (component.MetricsExporter, error) {
+	return createExporter(ctx, params, conf)
+}
 
-		QueueSize:             c.QueueSize,
-		NumWorkers:            c.NumWorkers,
-		MaxAllowedSizePerSpan: c.MaxBytesPerSpan,
-		MaxListSize:           c.MaxBytesPerBatch,
-		ListFlushInterval:     c.FlushIntervalSeconds,
-		Encoding:              exportFormat,
-	}, params.Logger)
+func NewLogsExporter(ctx context.Context, params component.ExporterCreateSettings, conf config.Exporter) (component.LogsExporter, error) {
+	return createExporter(ctx, params, conf)
+}
+
+func createExporter(_ context.Context, params component.ExporterCreateSettings, conf config.Exporter) (*Exporter, error) {
+	c, ok := conf.(*Config)
+
+	if !ok {
+		return nil, errors.New("unable to cast provided config")
+	}
+
+	sess, err := session.NewSession(aws.NewConfig().WithRegion(c.AWS.Region))
 	if err != nil {
 		return nil, err
 	}
 
-	return Exporter{
-		awskinesis: k,
-		ew:         translate.JaegerExporter(k),
-		logger:     params.Logger,
-	}, nil
+	var cfgs []*aws.Config
+	if c.AWS.Role != "" {
+		cfgs = append(cfgs, &aws.Config{Credentials: stscreds.NewCredentials(sess, c.AWS.Role)})
+	}
+	if c.AWS.KinesisEndpoint != "" {
+		cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(c.AWS.KinesisEndpoint)})
+	}
+
+	producer, err := producer.NewBatcher(kinesis.New(sess, cfgs...), c.AWS.StreamName,
+		producer.WithLogger(params.Logger),
+	)
+
+	return &Exporter{
+		producer: producer,
+		batcher:  batch.NewJaeger(c.MaxRecordsPerBatch, c.MaxRecordSize),
+	}, err
 }

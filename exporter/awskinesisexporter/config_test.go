@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configtest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -44,19 +46,8 @@ func TestDefaultConfig(t *testing.T) {
 			AWS: AWSConfig{
 				Region: "us-west-2",
 			},
-			KPL: KPLConfig{
-				BatchSize:            5242880,
-				BatchCount:           1000,
-				BacklogCount:         2000,
-				FlushIntervalSeconds: 5,
-				MaxConnections:       24,
-			},
-
-			QueueSize:            100000,
-			NumWorkers:           8,
-			FlushIntervalSeconds: 5,
-			MaxBytesPerBatch:     100000,
-			MaxBytesPerSpan:      900000,
+			MaxRecordsPerBatch: batch.MaxBatchedRecords,
+			MaxRecordSize:      batch.MaxRecordSize,
 		},
 	)
 }
@@ -83,23 +74,8 @@ func TestConfig(t *testing.T) {
 				Region:          "mars-1",
 				Role:            "arn:test-role",
 			},
-			KPL: KPLConfig{
-				AggregateBatchCount:  10,
-				AggregateBatchSize:   11,
-				BatchSize:            12,
-				BatchCount:           13,
-				BacklogCount:         14,
-				FlushIntervalSeconds: 15,
-				MaxConnections:       16,
-				MaxRetries:           17,
-				MaxBackoffSeconds:    18,
-			},
-
-			QueueSize:            1,
-			NumWorkers:           2,
-			FlushIntervalSeconds: 3,
-			MaxBytesPerBatch:     4,
-			MaxBytesPerSpan:      5,
+			MaxRecordSize:      1000,
+			MaxRecordsPerBatch: 10,
 		},
 	)
 }

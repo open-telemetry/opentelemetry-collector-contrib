@@ -16,32 +16,33 @@ package awskinesisexporter
 
 import (
 	"context"
-	"fmt"
 
-	awskinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/translate"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/producer"
 )
 
 // Exporter implements an OpenTelemetry trace exporter that exports all spans to AWS Kinesis
 type Exporter struct {
-	awskinesis *awskinesis.Exporter
-	ew         translate.ExportWriter
-	logger     *zap.Logger
+	producer producer.Batcher
+	batcher  batch.Encoder
 }
 
-var _ component.TracesExporter = (*Exporter)(nil)
+var (
+	_ component.TracesExporter  = (*Exporter)(nil)
+	_ component.MetricsExporter = (*Exporter)(nil)
+	_ component.LogsExporter    = (*Exporter)(nil)
+)
 
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after Start() has already returned. If error is returned by
 // Start() then the collector startup will be aborted.
-func (e Exporter) Start(_ context.Context, _ component.Host) error {
-	return nil
+func (e Exporter) Start(ctx context.Context, _ component.Host) error {
+	return e.producer.Ready(ctx)
 }
 
 // Capabilities implements the consumer interface.
@@ -51,15 +52,30 @@ func (e Exporter) Capabilities() consumer.Capabilities {
 
 // Shutdown is invoked during exporter shutdown.
 func (e Exporter) Shutdown(context.Context) error {
-	e.awskinesis.Flush()
 	return nil
 }
 
 // ConsumeTraces receives a span batch and exports it to AWS Kinesis
-func (e Exporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
-	err := e.ew.WriteTraces(td)
+func (e Exporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	bt, err := e.batcher.Traces(td)
 	if err != nil {
-		err = fmt.Errorf("issues writing traces to kinesis: %w", err)
+		return err
 	}
-	return err
+	return e.producer.Put(ctx, bt)
+}
+
+func (e Exporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+	bt, err := e.batcher.Metrics(md)
+	if err != nil {
+		return err
+	}
+	return e.producer.Put(ctx, bt)
+}
+
+func (e Exporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+	bt, err := e.batcher.Logs(ld)
+	if err != nil {
+		return err
+	}
+	return e.producer.Put(ctx, bt)
 }
