@@ -166,17 +166,17 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 	return pr, numDroppedLogs
 }
 
-func (l *lokiExporter) convertAttributesAndMerge(logAttrs pdata.AttributeMap, resourceAttrs pdata.AttributeMap) (mergedLabels model.LabelSet, dropped bool) {
-	attribLabels := l.convertLogAttributesToLabels(logAttrs)
-	attribResources := l.convertResourceAttributesToLabels(resourceAttrs)
+func (l *lokiExporter) convertAttributesAndMerge(logAttrs pdata.AttributeMap, resourceAttrs pdata.AttributeMap) (mergedAttributes model.LabelSet, dropped bool) {
+	logRecordAttributes := l.convertLogAttributesToLabels(logAttrs)
+	ResourceAttributes := l.convertResourceAttributesToLabels(resourceAttrs)
 
 	// This prometheus model.labelset Merge function overwrites	the attribLabels with attribResources
-	mergedLabels = attribLabels.Merge(attribResources)
+	mergedAttributes = logRecordAttributes.Merge(ResourceAttributes)
 
-	if len(mergedLabels) == 0 {
+	if len(mergedAttributes) == 0 {
 		return nil, true
 	}
-	return mergedLabels, false
+	return mergedAttributes, false
 }
 
 func (l *lokiExporter) convertLogAttributesToLabels(attributes pdata.AttributeMap) model.LabelSet {
