@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	ErrUnsupportedEncodedType = errors.New("unsupport type to encode")
+	ErrUnsupportedEncodedType = errors.New("unsupported type to encode")
 )
 
 // Encoder allows for the internal types to be converted to an consumable

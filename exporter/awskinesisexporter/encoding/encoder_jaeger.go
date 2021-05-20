@@ -38,5 +38,4 @@ func (j *jaeger) EncodeTraces(td pdata.Traces) error {
 }
 
 func (j *jaeger) EncodeMetrics(_ pdata.Metrics) error { return ErrUnsupportedEncodedType }
-
-func (j *jaeger) EncodeLogs(_ pdata.Logs) error { return ErrUnsupportedEncodedType }
+func (j *jaeger) EncodeLogs(_ pdata.Logs) error       { return ErrUnsupportedEncodedType }
