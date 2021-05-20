@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/service/ec2"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stretchr/testify/assert"
@@ -106,5 +108,91 @@ func TestCluster_DescribeTaskDefinitionWithContext(t *testing.T) {
 		after := c.Stats()
 		assert.Equal(t, before.DescribeTaskDefinition.Error+1, after.DescribeTaskDefinition.Error)
 	})
+}
 
+func TestCluster_DescribeInstancesWithContext(t *testing.T) {
+	ctx := context.Background()
+	c := NewCluster()
+	count := 10000
+	c.SetEc2Instances(GenEc2Instances("i-", count, nil))
+	c.SetEc2Instances(GenEc2Instances("i-", count, func(i int, ins *ec2.Instance) {
+		ins.Tags = []*ec2.Tag{
+			{
+				Key:   aws.String("my-id"),
+				Value: aws.String(fmt.Sprintf("mid-%d", i)),
+			},
+		}
+	}))
+
+	t.Run("get all", func(t *testing.T) {
+		req := &ec2.DescribeInstancesInput{}
+		listedInstances := 0
+		pages := 0
+		for {
+			res, err := c.DescribeInstancesWithContext(ctx, req)
+			require.NoError(t, err)
+			listedInstances += len(res.Reservations[0].Instances)
+			pages++
+			if res.NextToken == nil {
+				break
+			}
+			req.NextToken = res.NextToken
+		}
+		assert.Equal(t, count, listedInstances)
+		assert.Equal(t, 10, pages)
+	})
+
+	t.Run("get by id", func(t *testing.T) {
+		var ids []*string
+		nIds := 100
+		for i := 0; i < nIds; i++ {
+			ids = append(ids, aws.String(fmt.Sprintf("i-%d", i*10)))
+		}
+		req := &ec2.DescribeInstancesInput{InstanceIds: ids}
+		res, err := c.DescribeInstancesWithContext(ctx, req)
+		require.NoError(t, err)
+		assert.Equal(t, nIds, len(res.Reservations[0].Instances))
+	})
+
+	t.Run("invalid id", func(t *testing.T) {
+		req := &ec2.DescribeInstancesInput{InstanceIds: []*string{aws.String("di-123")}}
+		_, err := c.DescribeInstancesWithContext(ctx, req)
+		require.Error(t, err)
+	})
+
+	t.Run("invalid token", func(t *testing.T) {
+		req := &ec2.DescribeInstancesInput{NextToken: aws.String("asd")}
+		_, err := c.DescribeInstancesWithContext(ctx, req)
+		require.Error(t, err)
+	})
+}
+
+func TestCluster_DescribeContainerInstancesWithContext(t *testing.T) {
+	ctx := context.Background()
+	c := NewCluster()
+	count := 10
+	c.SetContainerInstances(GenContainerInstances("foo", count, nil))
+	c.SetContainerInstances(GenContainerInstances("foo", count, func(i int, ci *ecs.ContainerInstance) {
+		ci.Ec2InstanceId = aws.String(fmt.Sprintf("i-%d", i))
+	}))
+
+	t.Run("get by id", func(t *testing.T) {
+		var ids []*string
+		nIds := count
+		for i := 0; i < nIds; i++ {
+			ids = append(ids, aws.String(fmt.Sprintf("foo%d", i)))
+		}
+		req := &ecs.DescribeContainerInstancesInput{ContainerInstances: ids}
+		res, err := c.DescribeContainerInstancesWithContext(ctx, req)
+		require.NoError(t, err)
+		assert.Equal(t, nIds, len(res.ContainerInstances))
+		assert.Equal(t, 0, len(res.Failures))
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		req := &ecs.DescribeContainerInstancesInput{ContainerInstances: []*string{aws.String("ci-123")}}
+		res, err := c.DescribeContainerInstancesWithContext(ctx, req)
+		require.NoError(t, err)
+		assert.Contains(t, aws.StringValue(res.Failures[0].Detail), "ci-123")
+	})
 }

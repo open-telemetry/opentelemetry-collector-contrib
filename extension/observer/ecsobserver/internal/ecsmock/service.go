@@ -22,6 +22,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
 )
 
@@ -34,6 +35,8 @@ type PageLimit struct {
 	ListServiceOutput              int // default 10, max 100
 	DescribeServiceInput           int // max 10
 	DescribeContainerInstanceInput int // max 100
+	DescribeInstanceOutput         int // max 1000
+
 }
 
 func DefaultPageLimit() PageLimit {
@@ -43,16 +46,21 @@ func DefaultPageLimit() PageLimit {
 		ListServiceOutput:              10,
 		DescribeServiceInput:           10,
 		DescribeContainerInstanceInput: 100,
+		DescribeInstanceOutput:         1000,
 	}
 }
 
 // Cluster implements both ECS and EC2 API for a single cluster.
 type Cluster struct {
-	definitions map[string]*ecs.TaskDefinition
-	taskList    []*ecs.Task
-	taskMap     map[string]*ecs.Task
-	limit       PageLimit
-	stats       ClusterStats
+	definitions           map[string]*ecs.TaskDefinition // key is task definition arn
+	taskMap               map[string]*ecs.Task           // key is task arn
+	taskList              []*ecs.Task
+	containerInstanceMap  map[string]*ecs.ContainerInstance // key is container instance arn
+	containerInstanceList []*ecs.ContainerInstance
+	ec2Map                map[string]*ec2.Instance // key is instance id
+	ec2List               []*ec2.Instance
+	limit                 PageLimit
+	stats                 ClusterStats
 }
 
 // NewCluster creates a mock ECS cluster with default limits.
@@ -120,7 +128,7 @@ func (c *Cluster) DescribeTasksWithContext(_ context.Context, input *ecs.Describ
 	return &ecs.DescribeTasksOutput{Failures: failures, Tasks: tasks}, nil
 }
 
-func (c *Cluster) DescribeTaskDefinitionWithContext(_ context.Context, input *ecs.DescribeTaskDefinitionInput, opts ...request.Option) (*ecs.DescribeTaskDefinitionOutput, error) {
+func (c *Cluster) DescribeTaskDefinitionWithContext(_ context.Context, input *ecs.DescribeTaskDefinitionInput, _ ...request.Option) (*ecs.DescribeTaskDefinitionOutput, error) {
 	c.stats.DescribeTaskDefinition.Called++
 	defArn := aws.StringValue(input.TaskDefinition)
 	def, ok := c.definitions[defArn]
@@ -131,18 +139,75 @@ func (c *Cluster) DescribeTaskDefinitionWithContext(_ context.Context, input *ec
 	return &ecs.DescribeTaskDefinitionOutput{TaskDefinition: def}, nil
 }
 
+func (c *Cluster) DescribeContainerInstancesWithContext(_ context.Context, input *ecs.DescribeContainerInstancesInput, _ ...request.Option) (*ecs.DescribeContainerInstancesOutput, error) {
+	var (
+		instances []*ecs.ContainerInstance
+		failures  []*ecs.Failure
+	)
+	for _, cid := range input.ContainerInstances {
+		ci, ok := c.containerInstanceMap[aws.StringValue(cid)]
+		if !ok {
+			failures = append(failures, &ecs.Failure{
+				Arn:    cid,
+				Detail: aws.String(fmt.Sprintf("container instance not found %s", aws.StringValue(cid))),
+				Reason: aws.String("container instance not found"),
+			})
+			continue
+		}
+		instances = append(instances, ci)
+	}
+	return &ecs.DescribeContainerInstancesOutput{ContainerInstances: instances, Failures: failures}, nil
+}
+
+// DescribeInstancesWithContext supports get all the instances and get instance by ids.
+// It does NOT support filter. Result always has a single reservation, which is not the case in actual EC2 API.
+func (c *Cluster) DescribeInstancesWithContext(_ context.Context, input *ec2.DescribeInstancesInput, _ ...request.Option) (*ec2.DescribeInstancesOutput, error) {
+	var (
+		instances []*ec2.Instance
+		nextToken *string
+	)
+	if len(input.InstanceIds) != 0 {
+		for _, id := range input.InstanceIds {
+			ins, ok := c.ec2Map[aws.StringValue(id)]
+			if !ok {
+				return nil, fmt.Errorf("instance %q not found", aws.StringValue(id))
+			}
+			instances = append(instances, ins)
+		}
+	} else {
+		page, err := getPage(pageInput{
+			nextToken: input.NextToken,
+			size:      len(c.ec2List),
+			limit:     c.limit.DescribeInstanceOutput,
+		})
+		if err != nil {
+			return nil, err
+		}
+		instances = c.ec2List[page.start:page.end]
+		nextToken = page.nextToken
+	}
+	return &ec2.DescribeInstancesOutput{
+		Reservations: []*ec2.Reservation{
+			{
+				Instances: instances,
+			},
+		},
+		NextToken: nextToken,
+	}, nil
+}
+
 // API End
 
 // Hook Start
 
 // SetTasks update both list and map.
 func (c *Cluster) SetTasks(tasks []*ecs.Task) {
-	c.taskList = tasks
 	m := make(map[string]*ecs.Task, len(tasks))
 	for _, t := range tasks {
 		m[aws.StringValue(t.TaskArn)] = t
 	}
 	c.taskMap = m
+	c.taskList = tasks
 }
 
 // SetTaskDefinitions updates the map.
@@ -153,6 +218,26 @@ func (c *Cluster) SetTaskDefinitions(defs []*ecs.TaskDefinition) {
 		m[aws.StringValue(d.TaskDefinitionArn)] = d
 	}
 	c.definitions = m
+}
+
+// SetContainerInstances updates the list and map.
+func (c *Cluster) SetContainerInstances(instances []*ecs.ContainerInstance) {
+	m := make(map[string]*ecs.ContainerInstance, len(instances))
+	for _, ci := range instances {
+		m[aws.StringValue(ci.ContainerInstanceArn)] = ci
+	}
+	c.containerInstanceMap = m
+	c.containerInstanceList = instances
+}
+
+// SetEc2Instances updates the list and map.
+func (c *Cluster) SetEc2Instances(instances []*ec2.Instance) {
+	m := make(map[string]*ec2.Instance, len(instances))
+	for _, i := range instances {
+		m[aws.StringValue(i.InstanceId)] = i
+	}
+	c.ec2Map = m
+	c.ec2List = instances
 }
 
 // Hook End
@@ -188,6 +273,34 @@ func GenTaskDefinitions(arnPrefix string, count int, version int, modifier func(
 		defs = append(defs, d)
 	}
 	return defs
+}
+
+func GenContainerInstances(arnPrefix string, count int, modifier func(i int, ci *ecs.ContainerInstance)) []*ecs.ContainerInstance {
+	var instances []*ecs.ContainerInstance
+	for i := 0; i < count; i++ {
+		ci := &ecs.ContainerInstance{
+			ContainerInstanceArn: aws.String(fmt.Sprintf("%s%d", arnPrefix, i)),
+		}
+		if modifier != nil {
+			modifier(i, ci)
+		}
+		instances = append(instances, ci)
+	}
+	return instances
+}
+
+func GenEc2Instances(idPrefix string, count int, modifier func(i int, ins *ec2.Instance)) []*ec2.Instance {
+	var instances []*ec2.Instance
+	for i := 0; i < count; i++ {
+		ins := &ec2.Instance{
+			InstanceId: aws.String(fmt.Sprintf("%s%d", idPrefix, i)),
+		}
+		if modifier != nil {
+			modifier(i, ins)
+		}
+		instances = append(instances, ins)
+	}
+	return instances
 }
 
 // Generator End
