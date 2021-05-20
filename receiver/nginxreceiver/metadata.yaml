@@ -1,6 +1,13 @@
 name: nginxreceiver
 
 labels:
+  state:
+    description: The state of a connection
+    enum:
+    - active
+    - reading
+    - writing
+    - waiting
 
 metrics:
   nginx.requests:
@@ -10,12 +17,6 @@ metrics:
       type: int sum
       monotonic: true
       aggregation: cumulative
-    labels: []
-  nginx.connections_active:
-    description: The current number of open connections
-    unit: connections
-    data:
-      type: int gauge
     labels: []
   nginx.connections_accepted:
     description: The total number of accepted client connections
@@ -33,21 +34,9 @@ metrics:
       monotonic: true
       aggregation: cumulative
     labels: []
-  nginx.connections_reading:
-    description: The current number of connections where nginx is reading the request headerhe current number of open connections
+  nginx.connections_current:
+    description: The current number of nginx connections by state
     unit: connections
     data:
       type: int gauge
-    labels: []
-  nginx.connections_writing:
-    description: The current number of connections where nginx is writing the response back to the client.
-    unit: connections
-    data:
-      type: int gauge
-    labels: []
-  nginx.connections_waiting:
-    description: The current number of idle client connections waiting for a request.
-    unit: connections
-    data:
-      type: int gauge
-    labels: []
+    labels: [state]
