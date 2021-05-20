@@ -137,7 +137,7 @@ func (exp *traceExporter) pushTraceData(
 	// we largely apply the same logic as the serverless implementation, simplified a bit
 	// https://github.com/DataDog/datadog-serverless-functions/blob/f5c3aedfec5ba223b11b76a4239fcbf35ec7d045/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L61-L83
 	fallbackHost := metadata.GetHost(exp.params.Logger, exp.cfg)
-	ddTraces, ms := convertToDatadogTd(td, fallbackHost, exp.calculator, exp.cfg, exp.denylister)
+	ddTraces, ms := convertToDatadogTd(td, fallbackHost, exp.calculator, exp.cfg, exp.denylister, exp.params.BuildInfo)
 
 	// group the traces by env to reduce the number of flushes
 	aggregatedTraces := aggregateTracePayloadsByEnv(ddTraces)
