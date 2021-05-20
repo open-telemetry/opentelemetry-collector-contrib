@@ -101,6 +101,143 @@ output: stdout
 	require.Equal(t, "noop", noop.OperatorType)
 }
 
+type PluginIDTestCase struct {
+	Name          string
+	PluginConfig  pipeline.Config
+	ExpectedOpIDs []string
+}
+
+func TestPluginIDs(t *testing.T) {
+	// TODO: ids shouldn't need to be specified once autogen IDs are implemented
+	pluginContent := []byte(`
+parameters:
+pipeline:
+  - id: noop
+    type: noop
+  - id: noop1
+    type: noop
+`)
+	pluginName := "my_plugin"
+	pluginVar, err := NewPlugin(pluginName, pluginContent)
+	require.NoError(t, err)
+	operator.RegisterPlugin(pluginVar.ID, pluginVar.NewBuilder)
+
+	// TODO: remove ID assignment
+	pluginContent2 := []byte(`
+parameters:
+pipeline:
+  - id: noop
+    type: noop
+  - id: noop1
+    type: noop
+`)
+	secondPlugin := "secondPlugin"
+	secondPluginVar, err := NewPlugin(secondPlugin, pluginContent2)
+	require.NoError(t, err)
+	operator.RegisterPlugin(secondPluginVar.ID, secondPluginVar.NewBuilder)
+
+	cases := []PluginIDTestCase{
+		{
+			Name: "basic_plugin",
+			PluginConfig: func() []operator.Config {
+				return pipeline.Config{
+					operator.Config{
+						Builder: &Config{
+							WriterConfig: helper.WriterConfig{
+								BasicConfig: helper.BasicConfig{
+									OperatorID:   pluginName,
+									OperatorType: pluginName,
+								},
+							},
+							Parameters: map[string]interface{}{},
+							Plugin:     pluginVar,
+						},
+					},
+				}
+			}(),
+			ExpectedOpIDs: []string{
+				"$." + pluginName + ".noop",
+				"$." + pluginName + ".noop1",
+			},
+		},
+		{
+			Name: "same_op_outside_plugin",
+			PluginConfig: func() []operator.Config {
+				return pipeline.Config{
+					operator.Config{
+						Builder: &Config{
+							WriterConfig: helper.WriterConfig{
+								BasicConfig: helper.BasicConfig{
+									OperatorID:   pluginName,
+									OperatorType: pluginName,
+								},
+							},
+							Parameters: map[string]interface{}{},
+							Plugin:     pluginVar,
+						},
+					},
+					operator.Config{
+						// TODO: ID should be noop to start then auto gened to noop2
+						Builder: noop.NewNoopOperatorConfig("noop2"),
+					},
+				}
+			}(),
+			ExpectedOpIDs: []string{
+				"$." + pluginName + ".noop",
+				"$." + pluginName + ".noop1",
+				"$.noop2",
+			},
+		},
+		{
+			Name: "two_plugins_with_same_ops",
+			PluginConfig: func() []operator.Config {
+				return pipeline.Config{
+					operator.Config{
+						Builder: &Config{
+							WriterConfig: helper.WriterConfig{
+								BasicConfig: helper.BasicConfig{
+									OperatorID:   pluginName,
+									OperatorType: pluginName,
+								},
+							},
+							Parameters: map[string]interface{}{},
+							Plugin:     pluginVar,
+						},
+					},
+					operator.Config{
+						Builder: &Config{
+							WriterConfig: helper.WriterConfig{
+								BasicConfig: helper.BasicConfig{
+									OperatorID:   secondPlugin,
+									OperatorType: secondPlugin,
+								},
+							},
+							Parameters: map[string]interface{}{},
+							Plugin:     secondPluginVar,
+						},
+					},
+				}
+			}(),
+			ExpectedOpIDs: []string{
+				"$." + pluginName + ".noop",
+				"$." + pluginName + ".noop1",
+				"$." + secondPlugin + ".noop",
+				"$." + secondPlugin + ".noop1",
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		ops, err := tc.PluginConfig.BuildOperators(testutil.NewBuildContext(t))
+		require.NoError(t, err)
+
+		require.Len(t, ops, len(tc.ExpectedOpIDs))
+		for i, op := range ops {
+			require.Equal(t, tc.ExpectedOpIDs[i], op.ID())
+		}
+	}
+}
+
 func TestBuildRecursiveFails(t *testing.T) {
 	pluginConfig1 := []byte(`
 pipeline:
