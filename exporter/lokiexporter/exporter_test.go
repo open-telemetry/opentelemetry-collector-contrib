@@ -442,12 +442,14 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 		am.InsertString("severity", "debug")
 		ram := pdata.NewAttributeMap()
 		ram.InsertString("resource.name", "myresource")
+		// this should overwrite log attribute of the same name
+		ram.InsertString("severity", "info")
 
 		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		expLs := model.LabelSet{
 			model.LabelName("container_name"):   model.LabelValue("mycontainer"),
 			model.LabelName("k8s_cluster_name"): model.LabelValue("mycluster"),
-			model.LabelName("severity"):         model.LabelValue("debug"),
+			model.LabelName("severity"):         model.LabelValue("info"),
 			model.LabelName("resource_name"):    model.LabelValue("myresource"),
 		}
 		require.Equal(t, expLs, ls)
