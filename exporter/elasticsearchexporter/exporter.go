@@ -29,6 +29,7 @@ import (
 	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
 	esutil7 "github.com/elastic/go-elasticsearch/v7/esutil"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -46,6 +47,7 @@ type elasticsearchExporter struct {
 
 	client      *esClientCurrent
 	bulkIndexer esBulkIndexerCurrent
+	model       mappingModel
 }
 
 var retryOnStatus = []int{500, 502, 503, 504, 429}
@@ -72,6 +74,9 @@ func newExporter(logger *zap.Logger, cfg *Config) (*elasticsearchExporter, error
 		maxAttempts = cfg.Retry.MaxRequests
 	}
 
+	// TODO: Apply encoding and field mapping settings.
+	model := &encodeModel{dedup: true, dedot: false}
+
 	return &elasticsearchExporter{
 		logger:      logger,
 		client:      client,
@@ -79,6 +84,7 @@ func newExporter(logger *zap.Logger, cfg *Config) (*elasticsearchExporter, error
 
 		index:       cfg.Index,
 		maxAttempts: maxAttempts,
+		model:       model,
 	}, nil
 }
 
@@ -87,7 +93,36 @@ func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 }
 
 func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld pdata.Logs) error {
-	panic("TODO")
+	var errs []error
+
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		rl := rls.At(i)
+		resource := rl.Resource()
+		ills := rl.InstrumentationLibraryLogs()
+		for j := 0; j < ills.Len(); j++ {
+			logs := ills.At(i).Logs()
+			for k := 0; k < logs.Len(); k++ {
+				if err := e.pushLogRecord(ctx, resource, logs.At(k)); err != nil {
+					if cerr := ctx.Err(); cerr != nil {
+						return cerr
+					}
+
+					errs = append(errs, err)
+				}
+			}
+		}
+	}
+
+	return multierr.Combine(errs...)
+}
+
+func (e *elasticsearchExporter) pushLogRecord(ctx context.Context, resource pdata.Resource, record pdata.LogRecord) error {
+	document, err := e.model.encodeLog(resource, record)
+	if err != nil {
+		return fmt.Errorf("Failed to encode log event: %w", err)
+	}
+	return e.pushEvent(ctx, document)
 }
 
 func (e *elasticsearchExporter) pushEvent(ctx context.Context, document []byte) error {
@@ -184,17 +219,10 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 
 	// maxRetries configures the maximum number of event publishing attempts,
 	// including the first send and additional retries.
-	// Issue: https://github.com/elastic/go-elasticsearch/issues/232
-	//
-	// The elasticsearch7.Client retry requires the count to be >= 1, otherwise
-	// it defaults to 3. Internally the Clients starts the number of send attempts with 1.
-	// When maxRetries is 1, retries are disabled, meaning that the event is
-	// dropped if the first HTTP request failed.
-	//
-	// Once the issue is resolved we want `maxRetries = config.Retry.MaxRequests - 1`.
-	maxRetries := config.Retry.MaxRequests
-	if maxRetries < 1 || !config.Retry.Enabled {
-		maxRetries = 1
+	maxRetries := config.Retry.MaxRequests - 1
+	retryDisabled := !config.Retry.Enabled || maxRetries <= 0
+	if retryDisabled {
+		maxRetries = 0
 	}
 
 	return elasticsearch7.NewClient(esConfigCurrent{
@@ -210,7 +238,7 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 
 		// configure retry behavior
 		RetryOnStatus:        retryOnStatus,
-		DisableRetry:         !config.Retry.Enabled,
+		DisableRetry:         retryDisabled,
 		EnableRetryOnTimeout: config.Retry.Enabled,
 		MaxRetries:           maxRetries,
 		RetryBackoff:         createElasticsearchBackoffFunc(&config.Retry),
