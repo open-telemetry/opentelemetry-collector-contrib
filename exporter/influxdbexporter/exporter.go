@@ -26,22 +26,19 @@ import (
 )
 
 type tracesExporter struct {
+	logger    common.Logger
+	cfg       *Config
 	writer    *influxHTTPWriter
 	converter *otel2influx.OtelTracesToLineProtocol
 }
 
-func newTracesExporter(config *Config, params component.ExporterCreateParams) (*tracesExporter, error) {
-	influxLogger := newZapInfluxLogger(params.Logger)
-	converter := otel2influx.NewOtelTracesToLineProtocol(influxLogger)
-	writer, err := newInfluxHTTPWriter(influxLogger, config)
-	if err != nil {
-		return nil, err
-	}
+func newTracesExporter(config *Config, params component.ExporterCreateParams) *tracesExporter {
+	logger := newZapInfluxLogger(params.Logger)
 
 	return &tracesExporter{
-		writer:    writer,
-		converter: converter,
-	}, nil
+		logger: logger,
+		cfg:    config,
+	}
 }
 
 func (e *tracesExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
@@ -58,7 +55,23 @@ func (e *tracesExporter) pushTraces(ctx context.Context, td pdata.Traces) error 
 	return batch.flushAndClose(ctx)
 }
 
+// start starts the traces exporter
+func (e *tracesExporter) start(_ context.Context, host component.Host) (err error) {
+	converter := otel2influx.NewOtelTracesToLineProtocol(e.logger)
+	writer, err := newInfluxHTTPWriter(e.logger, e.cfg, host)
+	if err != nil {
+		return err
+	}
+
+	e.converter = converter
+	e.writer = writer
+
+	return nil
+}
+
 type metricsExporter struct {
+	logger    common.Logger
+	cfg       *Config
 	writer    *influxHTTPWriter
 	converter *otel2influx.OtelMetricsToLineProtocol
 }
@@ -68,26 +81,13 @@ var metricsSchemata = map[string]common.MetricsSchema{
 	"telegraf-prometheus-v2": common.MetricsSchemaTelegrafPrometheusV2,
 }
 
-func newMetricsExporter(config *Config, params component.ExporterCreateParams) (*metricsExporter, error) {
-	influxLogger := newZapInfluxLogger(params.Logger)
-	schema, found := metricsSchemata[config.MetricsSchema]
-	if !found {
-		return nil, fmt.Errorf("schema '%s' not recognized", config.MetricsSchema)
-	}
-
-	converter, err := otel2influx.NewOtelMetricsToLineProtocol(influxLogger, schema)
-	if err != nil {
-		return nil, err
-	}
-	writer, err := newInfluxHTTPWriter(influxLogger, config)
-	if err != nil {
-		return nil, err
-	}
+func newMetricsExporter(config *Config, params component.ExporterCreateParams) *metricsExporter {
+	logger := newZapInfluxLogger(params.Logger)
 
 	return &metricsExporter{
-		writer:    writer,
-		converter: converter,
-	}, nil
+		logger: logger,
+		cfg:    config,
+	}
 }
 
 func (e *metricsExporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
@@ -104,23 +104,42 @@ func (e *metricsExporter) pushMetrics(ctx context.Context, md pdata.Metrics) err
 	return batch.flushAndClose(ctx)
 }
 
+// start starts the metrics exporter
+func (e *metricsExporter) start(_ context.Context, host component.Host) (err error) {
+	schema, found := metricsSchemata[e.cfg.MetricsSchema]
+	if !found {
+		return fmt.Errorf("schema '%s' not recognized", e.cfg.MetricsSchema)
+	}
+
+	converter, err := otel2influx.NewOtelMetricsToLineProtocol(e.logger, schema)
+	if err != nil {
+		return err
+	}
+	writer, err := newInfluxHTTPWriter(e.logger, e.cfg, host)
+	if err != nil {
+		return err
+	}
+
+	e.converter = converter
+	e.writer = writer
+
+	return nil
+}
+
 type logsExporter struct {
+	logger    common.Logger
+	cfg       *Config
 	writer    *influxHTTPWriter
 	converter *otel2influx.OtelLogsToLineProtocol
 }
 
-func newLogsExporter(config *Config, params component.ExporterCreateParams) (*logsExporter, error) {
-	influxLogger := newZapInfluxLogger(params.Logger)
-	converter := otel2influx.NewOtelLogsToLineProtocol(influxLogger)
-	writer, err := newInfluxHTTPWriter(influxLogger, config)
-	if err != nil {
-		return nil, err
-	}
+func newLogsExporter(config *Config, params component.ExporterCreateParams) *logsExporter {
+	logger := newZapInfluxLogger(params.Logger)
 
 	return &logsExporter{
-		writer:    writer,
-		converter: converter,
-	}, nil
+		logger: logger,
+		cfg:    config,
+	}
 }
 
 func (e *logsExporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
@@ -135,4 +154,18 @@ func (e *logsExporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
 		return consumererror.Permanent(err)
 	}
 	return batch.flushAndClose(ctx)
+}
+
+// start starts the logs exporter
+func (e *logsExporter) start(_ context.Context, host component.Host) (err error) {
+	converter := otel2influx.NewOtelLogsToLineProtocol(e.logger)
+	writer, err := newInfluxHTTPWriter(e.logger, e.cfg, host)
+	if err != nil {
+		return err
+	}
+
+	e.converter = converter
+	e.writer = writer
+
+	return nil
 }
