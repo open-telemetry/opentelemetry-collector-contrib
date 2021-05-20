@@ -77,3 +77,30 @@ func TestCreateTraceExporterNilConfigError(t *testing.T) {
 	_, err := createTraceExporter(context.Background(), params, nil)
 	assert.Error(t, err)
 }
+
+func TestCreateTraceExporterInvalidEndpointError(t *testing.T) {
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	defaultConfig := createDefaultConfig()
+	cfg := defaultConfig.(*Config)
+	cfg.Traces.Endpoint = "http:#$%^&#$%&#"
+	_, err := createTraceExporter(context.Background(), params, cfg)
+	assert.Error(t, err)
+}
+
+func TestCreateTraceExporterMissingPortError(t *testing.T) {
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	defaultConfig := createDefaultConfig()
+	cfg := defaultConfig.(*Config)
+	cfg.Traces.Endpoint = "http://localhost"
+	_, err := createTraceExporter(context.Background(), params, cfg)
+	assert.Error(t, err)
+}
+
+func TestCreateTraceExporterInvalidPortError(t *testing.T) {
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	defaultConfig := createDefaultConfig()
+	cfg := defaultConfig.(*Config)
+	cfg.Traces.Endpoint = "http://localhost:c42a"
+	_, err := createTraceExporter(context.Background(), params, cfg)
+	assert.Error(t, err)
+}

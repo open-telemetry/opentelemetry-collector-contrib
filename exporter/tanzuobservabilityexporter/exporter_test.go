@@ -66,12 +66,6 @@ func TestExportTraceDataMinimum(t *testing.T) {
 	validateTraces(t, expected, traces)
 }
 
-/*
- TODO logging?
- TODO InstrumentationLibrary tags (see DD translate_traces)
- TODO Trace Semantic Conventions: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/README.md
-*/
-
 func TestExportTraceDataFullTrace(t *testing.T) {
 	traceID := pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 
@@ -191,6 +185,34 @@ func validateTraces(t *testing.T, expected []*Span, traces pdata.Traces) {
 		assert.Equal(t, expected[i].DurationMillis, actual[i].DurationMillis)
 		assert.Equal(t, expected[i].SpanLogs, actual[i].SpanLogs)
 	}
+}
+
+func TestExportTraceDataRespectsContext(t *testing.T) {
+	traces := constructTraces([]pdata.Span{createSpan(
+		"root",
+		pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
+		pdata.NewSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}),
+		pdata.SpanID{},
+	)})
+
+	sender := &mockSender{}
+	cfg := createDefaultConfig()
+	exp := tracesExporter{
+		cfg:    cfg.(*Config),
+		sender: sender,
+		logger: zap.NewNop(),
+	}
+	mockOTelTracesExporter, err := exporterhelper.NewTracesExporter(
+		cfg,
+		zap.NewNop(),
+		exp.pushTraceData,
+		exporterhelper.WithShutdown(exp.Shutdown),
+	)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	require.Error(t, mockOTelTracesExporter.ConsumeTraces(ctx, traces))
 }
 
 func createSpan(

@@ -66,11 +66,6 @@ func (t *traceTransformer) Span(orig pdata.Span) (Span, error) {
 		return Span{}, errInvalidSpanID
 	}
 
-	parentSpanID, err := parentSpanIDtoUUID(orig.ParentSpanID())
-	if err != nil {
-		return Span{}, errInvalidSpanID
-	}
-
 	startMillis, durationMillis := calculateTimes(orig)
 
 	tags := attributesToTags(t.ResourceAttributes, orig.Attributes())
@@ -91,7 +86,7 @@ func (t *traceTransformer) Span(orig pdata.Span) (Span, error) {
 		Name:           orig.Name(),
 		TraceID:        traceID,
 		SpanID:         spanID,
-		ParentSpanID:   parentSpanID,
+		ParentSpanID:   parentSpanIDtoUUID(orig.ParentSpanID()),
 		Tags:           tags,
 		StartMillis:    startMillis,
 		DurationMillis: durationMillis,
@@ -210,15 +205,13 @@ func spanIDtoUUID(id pdata.SpanID) (uuid.UUID, error) {
 	return formatted, nil
 }
 
-func parentSpanIDtoUUID(id pdata.SpanID) (uuid.UUID, error) {
+func parentSpanIDtoUUID(id pdata.SpanID) uuid.UUID {
 	if id.IsEmpty() {
-		return uuid.Nil, nil
+		return uuid.Nil
 	}
-	formatted, err := uuid.FromBytes(padTo16Bytes(id.Bytes()))
-	if err != nil {
-		return uuid.Nil, errInvalidSpanID
-	}
-	return formatted, nil
+	// FromBytes only returns an error if the length is not 16 bytes, so the error case is unreachable
+	formatted, _ := uuid.FromBytes(padTo16Bytes(id.Bytes()))
+	return formatted
 }
 
 func padTo16Bytes(b [8]byte) []byte {
