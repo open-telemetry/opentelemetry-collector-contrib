@@ -65,21 +65,24 @@ func newTracesExporter(l *zap.Logger, c config.Exporter) (*tracesExporter, error
 	}
 
 	endpoint, err := url.Parse(cfg.Traces.Endpoint)
-	if nil != err {
-		return nil, fmt.Errorf("failed to parse traces endpoint: %v", err)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse traces.endpoint: %v", err)
 	}
 	tracingPort, err := strconv.Atoi(endpoint.Port())
-	if nil != err {
-		return nil, fmt.Errorf("failed to parse traces port: %v", err)
+	if err != nil {
+		// the port is empty, otherwise url.Parse would have failed above
+		return nil, fmt.Errorf("traces.endpoint requires a port")
 	}
 
+	// we specify a MetricsPort so the SDK can report its internal metrics
+	// but don't currently export any metrics from the pipeline
 	s, err := senders.NewProxySender(&senders.ProxyConfiguration{
 		Host:                 endpoint.Hostname(),
 		MetricsPort:          2878,
 		TracingPort:          tracingPort,
 		FlushIntervalSeconds: 1,
 	})
-	if nil != err {
+	if err != nil {
 		return nil, fmt.Errorf("failed to create proxy sender: %v", err)
 	}
 
