@@ -31,7 +31,7 @@ receivers:
     collection_interval: 10s
     # optional: the same as specifying OTLP receiver endpoint.
     otlp:
-      endpoint: mycollectorotlpreceiver:55680
+      endpoint: mycollectorotlpreceiver:4317
     username: my_jmx_username
     # determined by the environment variable value
     password: $MY_JMX_PASSWORD
