@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
+- GoSec workflow added to GitHub Actions ([PR154](https://github.com/open-telemetry/opentelemetry-log-collection/pull/154))
 - CodeQL workflow added to GitHub Actions ([PR153](https://github.com/open-telemetry/opentelemetry-log-collection/pull/153))
 
 ### Removed
