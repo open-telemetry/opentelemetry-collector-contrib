@@ -32,6 +32,7 @@ type reporter struct {
 	spanName      string
 	logger        *zap.Logger
 	sugaredLogger *zap.SugaredLogger // Used for generic debug logging
+	obsrecv       *obsreport.Receiver
 }
 
 var _ transport.Reporter = (*reporter)(nil)
@@ -42,6 +43,7 @@ func newReporter(id config.ComponentID, logger *zap.Logger) transport.Reporter {
 		spanName:      id.String() + ".receiver",
 		logger:        logger,
 		sugaredLogger: logger.Sugar(),
+		obsrecv:       obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: "tcp"}),
 	}
 }
 
@@ -51,7 +53,7 @@ func newReporter(id config.ComponentID, logger *zap.Logger) transport.Reporter {
 // returned span.
 func (r *reporter) OnDataReceived(ctx context.Context) context.Context {
 	ctx = obsreport.ReceiverContext(ctx, r.id, "tcp")
-	return obsreport.StartMetricsReceiveOp(ctx, r.id, "tcp")
+	return r.obsrecv.StartMetricsReceiveOp(ctx)
 }
 
 // OnTranslationError is used to report a translation error from original
@@ -95,7 +97,7 @@ func (r *reporter) OnMetricsProcessed(
 		})
 	}
 
-	obsreport.EndMetricsReceiveOp(ctx, "carbon", numReceivedMetricPoints, err)
+	r.obsrecv.EndMetricsReceiveOp(ctx, "carbon", numReceivedMetricPoints, err)
 }
 
 func (r *reporter) OnDebugf(template string, args ...interface{}) {
