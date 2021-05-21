@@ -387,45 +387,50 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 		am.InsertString(conventions.AttributeContainerName, "mycontainer")
 		am.InsertString(conventions.AttributeK8sCluster, "mycluster")
 		am.InsertString("severity", "debug")
-		ram := pdata.NewAttributeMap()
-		ls, _ := exp.convertAttributesAndMerge(am, ram)
+
+		ls, ok := exp.convertAttributesToLabels(am)
 		expLs := model.LabelSet{
 			model.LabelName("container_name"):   model.LabelValue("mycontainer"),
 			model.LabelName("k8s_cluster_name"): model.LabelValue("mycluster"),
 			model.LabelName("severity"):         model.LabelValue("debug"),
 		}
+		require.True(t, ok)
 		require.Equal(t, expLs, ls)
 	})
 
 	t.Run("with attribute matches and the value is a boolean", func(t *testing.T) {
 		am := pdata.NewAttributeMap()
 		am.InsertBool("severity", false)
-		ram := pdata.NewAttributeMap()
-		ls, _ := exp.convertAttributesAndMerge(am, ram)
+
+		ls, ok := exp.convertAttributesToLabels(am)
+		require.False(t, ok)
 		require.Nil(t, ls)
 	})
 
 	t.Run("with attribute that matches and the value is a double", func(t *testing.T) {
 		am := pdata.NewAttributeMap()
 		am.InsertDouble("severity", float64(0))
-		ram := pdata.NewAttributeMap()
-		ls, _ := exp.convertAttributesAndMerge(am, ram)
+
+		ls, ok := exp.convertAttributesToLabels(am)
+		require.False(t, ok)
 		require.Nil(t, ls)
 	})
 
 	t.Run("with attribute that matches and the value is an int", func(t *testing.T) {
 		am := pdata.NewAttributeMap()
 		am.InsertInt("severity", 0)
-		ram := pdata.NewAttributeMap()
-		ls, _ := exp.convertAttributesAndMerge(am, ram)
+
+		ls, ok := exp.convertAttributesToLabels(am)
+		require.False(t, ok)
 		require.Nil(t, ls)
 	})
 
 	t.Run("with attribute that matches and the value is null", func(t *testing.T) {
 		am := pdata.NewAttributeMap()
 		am.InsertNull("severity")
-		ram := pdata.NewAttributeMap()
-		ls, _ := exp.convertAttributesAndMerge(am, ram)
+
+		ls, ok := exp.convertAttributesToLabels(am)
+		require.False(t, ok)
 		require.Nil(t, ls)
 	})
 }

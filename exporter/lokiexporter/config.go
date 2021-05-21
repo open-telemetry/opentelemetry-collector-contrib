@@ -50,8 +50,6 @@ func (c *Config) validate() error {
 type LabelsConfig struct {
 	// Attributes are the attributes that are allowed to be added as labels on a log stream.
 	Attributes map[string]string `mapstructure:"attributes"`
-	// ResourceAttributes are the resource attributes that are allowed to be added as labels on a log stream.
-	ResourceAttributes map[string]string `mapstructure:"resource"`
 }
 
 func (c *LabelsConfig) validate() error {
@@ -76,38 +74,6 @@ func (c *LabelsConfig) getAttributes() map[string]model.LabelName {
 	attributes := map[string]model.LabelName{}
 
 	for attrName, lblName := range c.Attributes {
-		if len(lblName) > 0 {
-			attributes[attrName] = model.LabelName(lblName)
-			continue
-		}
-
-		attributes[attrName] = model.LabelName(attrName)
-	}
-
-	return attributes
-}
-
-// getLogRecordAttributes creates a lookup of allowed attributes to valid Loki label names.
-func (c *LabelsConfig) getLogRecordAttributes() map[string]model.LabelName {
-	attributes := map[string]model.LabelName{}
-
-	for attrName, lblName := range c.Attributes {
-		if len(lblName) > 0 {
-			attributes[attrName] = model.LabelName(lblName)
-			continue
-		}
-
-		attributes[attrName] = model.LabelName(attrName)
-	}
-
-	return attributes
-}
-
-// getResourceAttributes creates a lookup of allowed attributes to valid Loki label names.
-func (c *LabelsConfig) getResourceAttributes() map[string]model.LabelName {
-	attributes := map[string]model.LabelName{}
-
-	for attrName, lblName := range c.ResourceAttributes {
 		if len(lblName) > 0 {
 			attributes[attrName] = model.LabelName(lblName)
 			continue
