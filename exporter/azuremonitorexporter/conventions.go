@@ -285,12 +285,12 @@ func (attrs *MessagingAttributes) MapAttribute(k string, v pdata.AttributeValue)
 // Tries to return the value of the attribute as an int64
 func getAttributeValueAsInt(attributeValue pdata.AttributeValue) (int64, error) {
 	switch attributeValue.Type() {
-	case pdata.AttributeValueSTRING:
+	case pdata.AttributeValueTypeString:
 		// try to cast the string values to int64
 		if val, err := strconv.Atoi(attributeValue.StringVal()); err == nil {
 			return int64(val), nil
 		}
-	case pdata.AttributeValueINT:
+	case pdata.AttributeValueTypeInt:
 		return attributeValue.IntVal(), nil
 	}
 

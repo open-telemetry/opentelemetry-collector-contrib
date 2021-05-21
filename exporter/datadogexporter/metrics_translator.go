@@ -20,7 +20,9 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/attributes"
@@ -250,7 +252,7 @@ func mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, bucke
 }
 
 // mapMetrics maps OTLP metrics into the DataDog format
-func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, fallbackHost string, md pdata.Metrics) (series []datadog.Metric, droppedTimeSeries int) {
+func mapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, fallbackHost string, md pdata.Metrics, buildInfo component.BuildInfo) (series []datadog.Metric, droppedTimeSeries int) {
 	pushTime := uint64(time.Now().UTC().UnixNano())
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
@@ -270,7 +272,7 @@ func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, fallbackHost s
 		}
 
 		// Report the host as running
-		runningMetric := metrics.DefaultMetrics("metrics", host, pushTime)
+		runningMetric := metrics.DefaultMetrics("metrics", host, pushTime, buildInfo)
 
 		series = append(series, runningMetric...)
 
@@ -282,8 +284,6 @@ func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, fallbackHost s
 				md := metricsArray.At(k)
 				var datapoints []datadog.Metric
 				switch md.DataType() {
-				case pdata.MetricDataTypeNone:
-					continue
 				case pdata.MetricDataTypeIntGauge:
 					datapoints = mapIntMetrics(md.Name(), md.IntGauge().DataPoints(), attributeTags)
 				case pdata.MetricDataTypeDoubleGauge:
@@ -304,6 +304,9 @@ func mapMetrics(cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, fallbackHost s
 					datapoints = mapIntHistogramMetrics(md.Name(), md.IntHistogram().DataPoints(), cfg.Buckets, attributeTags)
 				case pdata.MetricDataTypeHistogram:
 					datapoints = mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), cfg.Buckets, attributeTags)
+				default: // pdata.MetricDataTypeNone or any other not supported type
+					logger.Debug("Unknown or unsupported metric type", zap.String("metric name", md.Name()), zap.Any("data type", md.DataType()))
+					continue
 				}
 
 				for i := range datapoints {

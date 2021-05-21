@@ -122,7 +122,7 @@ func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEval
 		return sampling.NewNumericAttributeFilter(logger, nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue), nil
 	case StringAttribute:
 		safCfg := cfg.StringAttributeCfg
-		return sampling.NewStringAttributeFilter(logger, safCfg.Key, safCfg.Values), nil
+		return sampling.NewStringAttributeFilter(logger, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize), nil
 	case RateLimiting:
 		rlfCfg := cfg.RateLimitingCfg
 		return sampling.NewRateLimiting(logger, rlfCfg.SpansPerSecond), nil
@@ -190,7 +190,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 
 func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *sampling.TraceData, metrics *policyMetrics) (sampling.Decision, *Policy) {
 	finalDecision := sampling.NotSampled
-	var matchingPolicy *Policy = nil
+	var matchingPolicy *Policy
 
 	for i, policy := range tsp.policies {
 		policyEvaluateStartTime := time.Now()

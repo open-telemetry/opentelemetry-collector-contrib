@@ -176,7 +176,7 @@ func populateSpan(
 	if parentIDBytes != [8]byte{} {
 		span.SetParentSpanID(pdata.NewSpanID(parentIDBytes))
 	} else {
-		span.SetKind(pdata.SpanKindSERVER)
+		span.SetKind(pdata.SpanKindServer)
 	}
 
 	addStartTime(seg.StartTime, span)

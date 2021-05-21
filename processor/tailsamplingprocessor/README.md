@@ -14,7 +14,7 @@ The following configuration options are required:
 Multiple policies exist today and it is straight forward to add more. These include:
 - `always_sample`: Sample all traces
 - `numeric_attribute`: Sample based on number attributes
-- `string_attribute`: Sample based on string attributes
+- `string_attribute`: Sample based on string attributes value matches, both exact and regex value matches are supported
 - `rate_limiting`: Sample based on rate
 
 The following configuration options can also be modified:
@@ -45,6 +45,11 @@ processors:
             name: test-policy-3,
             type: string_attribute,
             string_attribute: {key: key2, values: [value1, value2]}
+          },
+          {
+            name: test-policy-3,
+            type: string_attribute,
+            string_attribute: {key: key2, values: [value1, val*], enabled_regex_matching: true, cache_max_size: 10}
           },
           {
             name: test-policy-4,

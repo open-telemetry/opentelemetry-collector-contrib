@@ -421,12 +421,12 @@ func buildSampleTrace() pdata.Traces {
 			spans: []span{
 				{
 					operation:  "/ping",
-					kind:       pdata.SpanKindSERVER,
+					kind:       pdata.SpanKindServer,
 					statusCode: pdata.StatusCodeOk,
 				},
 				{
 					operation:  "/ping",
-					kind:       pdata.SpanKindCLIENT,
+					kind:       pdata.SpanKindClient,
 					statusCode: pdata.StatusCodeOk,
 				},
 			},
@@ -437,7 +437,7 @@ func buildSampleTrace() pdata.Traces {
 			spans: []span{
 				{
 					operation:  "/ping",
-					kind:       pdata.SpanKindSERVER,
+					kind:       pdata.SpanKindServer,
 					statusCode: pdata.StatusCodeError,
 				},
 			},

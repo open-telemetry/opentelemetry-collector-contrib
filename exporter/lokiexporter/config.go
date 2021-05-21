@@ -43,11 +43,7 @@ func (c *Config) validate() error {
 		return fmt.Errorf("\"endpoint\" must be a valid URL")
 	}
 
-	if err := c.Labels.validate(); err != nil {
-		return err
-	}
-
-	return nil
+	return c.Labels.validate()
 }
 
 // LabelsConfig defines the labels-related configuration

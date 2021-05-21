@@ -185,7 +185,7 @@ func (l *lokiExporter) convertLogAttributesToLabels(attributes pdata.AttributeMa
 	for attr, attrLabelName := range l.attribLogsToLabels {
 		av, ok := attributes.Get(attr)
 		if ok {
-			if av.Type() != pdata.AttributeValueSTRING {
+			if av.Type() != pdata.AttributeValueTypeString {
 				l.logger.Debug("Failed to convert attribute value to Loki label value, value is not a string", zap.String("attribute", attr))
 				continue
 			}
