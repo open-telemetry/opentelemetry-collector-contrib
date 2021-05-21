@@ -66,12 +66,16 @@ func testUDP(t *testing.T, cfg *UDPLogConfig) {
 
 	resourceLogs := sink.AllLogs()[0].ResourceLogs().At(0)
 	logs := resourceLogs.InstrumentationLibraryLogs().At(0).Logs()
+	require.Equal(t, logs.Len(), numLogs)
+
+	expectedLogs := make([]string, numLogs)
 
 	for i := 0; i < numLogs; i++ {
-		log := logs.At(i)
+		expectedLogs[i] = fmt.Sprintf("<86>1 2021-02-28T00:0%d:02.003Z test msg %d", i, i)
+	}
 
-		msg := log.Body()
-		require.Equal(t, msg.StringVal(), fmt.Sprintf("<86>1 2021-02-28T00:0%d:02.003Z test msg %d", i, i))
+	for i := 0; i < numLogs; i++ {
+		assert.Contains(t, expectedLogs, mlogs.At(i).Body().StringVal()sg)
 	}
 }
 
