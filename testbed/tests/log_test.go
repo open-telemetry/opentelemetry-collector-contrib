@@ -105,7 +105,7 @@ func TestLog10kDPS(t *testing.T) {
 			sender:   datasenders.NewSyslogWriter("udp", testbed.DefaultHost, testbed.GetAvailablePort(t), 1),
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 80,
+				ExpectedMaxCPU: 120,
 				ExpectedMaxRAM: 150,
 			},
 		},
@@ -169,7 +169,7 @@ func TestLog10kDPS(t *testing.T) {
 			sender:   datasenders.NewTCPUDPWriter("udp", testbed.DefaultHost, testbed.GetAvailablePort(t), 1),
 			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 80,
+				ExpectedMaxCPU: 120,
 				ExpectedMaxRAM: 150,
 			},
 		},
