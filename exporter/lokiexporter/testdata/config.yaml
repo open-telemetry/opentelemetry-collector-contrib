@@ -5,6 +5,8 @@ processors:
   nop:
 
 exporters:
+  loki/test:
+    json: enabled
   loki:
     endpoint: "https://loki:3100/loki/api/v1/push"
     tenant_id: "example"

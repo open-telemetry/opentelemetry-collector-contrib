@@ -387,50 +387,45 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 		am.InsertString(conventions.AttributeContainerName, "mycontainer")
 		am.InsertString(conventions.AttributeK8sCluster, "mycluster")
 		am.InsertString("severity", "debug")
-
-		ls, ok := exp.convertAttributesToLabels(am)
+		ram := pdata.NewAttributeMap()
+		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		expLs := model.LabelSet{
 			model.LabelName("container_name"):   model.LabelValue("mycontainer"),
 			model.LabelName("k8s_cluster_name"): model.LabelValue("mycluster"),
 			model.LabelName("severity"):         model.LabelValue("debug"),
 		}
-		require.True(t, ok)
 		require.Equal(t, expLs, ls)
 	})
 
 	t.Run("with attribute matches and the value is a boolean", func(t *testing.T) {
 		am := pdata.NewAttributeMap()
 		am.InsertBool("severity", false)
-
-		ls, ok := exp.convertAttributesToLabels(am)
-		require.False(t, ok)
+		ram := pdata.NewAttributeMap()
+		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		require.Nil(t, ls)
 	})
 
 	t.Run("with attribute that matches and the value is a double", func(t *testing.T) {
 		am := pdata.NewAttributeMap()
 		am.InsertDouble("severity", float64(0))
-
-		ls, ok := exp.convertAttributesToLabels(am)
-		require.False(t, ok)
+		ram := pdata.NewAttributeMap()
+		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		require.Nil(t, ls)
 	})
 
 	t.Run("with attribute that matches and the value is an int", func(t *testing.T) {
 		am := pdata.NewAttributeMap()
 		am.InsertInt("severity", 0)
-
-		ls, ok := exp.convertAttributesToLabels(am)
-		require.False(t, ok)
+		ram := pdata.NewAttributeMap()
+		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		require.Nil(t, ls)
 	})
 
 	t.Run("with attribute that matches and the value is null", func(t *testing.T) {
 		am := pdata.NewAttributeMap()
 		am.InsertNull("severity")
-
-		ls, ok := exp.convertAttributesToLabels(am)
-		require.False(t, ok)
+		ram := pdata.NewAttributeMap()
+		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		require.Nil(t, ls)
 	})
 }
@@ -522,4 +517,20 @@ func TestExporter_stopAlwaysReturnsNil(t *testing.T) {
 	e, err := newExporter(config, zap.NewNop())
 	require.NoError(t, err)
 	require.NoError(t, e.stop(context.Background()))
+}
+
+func TestExporter_convertLogtoJsonEntry(t *testing.T) {
+	ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
+	lr := pdata.NewLogRecord()
+	lr.Body().SetStringVal("log message")
+	lr.SetTimestamp(ts)
+
+	entry := convertLogToJsonEntry(lr)
+
+	expEntry := &logproto.Entry{
+		Timestamp: time.Unix(0, int64(lr.Timestamp())),
+		Line:      `{"body":"log message"}`,
+	}
+	require.NotNil(t, entry)
+	require.Equal(t, expEntry, entry)
 }

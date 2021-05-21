@@ -36,11 +36,12 @@ import (
 )
 
 type lokiExporter struct {
-	config             *Config
-	logger             *zap.Logger
-	client             *http.Client
-	attributesToLabels map[string]model.LabelName
-	wg                 sync.WaitGroup
+	config                 *Config
+	logger                 *zap.Logger
+	client                 *http.Client
+	attribLogsToLabels     map[string]model.LabelName
+	attribResoucesToLabels map[string]model.LabelName
+	wg                     sync.WaitGroup
 }
 
 func newExporter(config *Config, logger *zap.Logger) (*lokiExporter, error) {
@@ -110,7 +111,8 @@ func encode(pb proto.Message) ([]byte, error) {
 }
 
 func (l *lokiExporter) start(context.Context, component.Host) (err error) {
-	l.attributesToLabels = l.config.Labels.getAttributes()
+	l.attribLogsToLabels = l.config.Labels.getLogRecordAttributes()
+	l.attribResoucesToLabels = l.config.Labels.getResourceAttributes()
 	return nil
 }
 
@@ -124,19 +126,20 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		ills := rls.At(i).InstrumentationLibraryLogs()
+		resource := rls.At(i).Resource()
 		for j := 0; j < ills.Len(); j++ {
 			logs := ills.At(j).Logs()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
-				attribLabels, ok := l.convertAttributesToLabels(log.Attributes())
+				attribLabels, ok := l.convertAttributesAndMerge(log.Attributes(), resource.Attributes())
 				if !ok {
 					numDroppedLogs++
 					continue
 				}
 
 				labels := attribLabels.String()
-
-				entry := convertLogToLokiEntry(log)
+				// entry := convertLogToLokiEntry(log)
+				entry := convertLogToJsonEntry(log)
 
 				if stream, ok := streams[labels]; ok {
 					stream.Entries = append(stream.Entries, *entry)
@@ -164,10 +167,21 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 	return pr, numDroppedLogs
 }
 
-func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap) (model.LabelSet, bool) {
+func (l *lokiExporter) convertAttributesAndMerge(logAttrs pdata.AttributeMap, resourceAttrs pdata.AttributeMap) (mergedLabels model.LabelSet, dropped bool) {
+	attribLabels := l.convertLogAttributesToLabels(logAttrs)
+	attribResources := l.convertResourceAttributesToLabels(resourceAttrs)
+	mergedLabels = attribResources.Merge(attribLabels)
+	// TODO: decide on ordering and deduplication
+	if len(mergedLabels) == 0 {
+		return nil, true
+	}
+	return mergedLabels, false
+}
+
+func (l *lokiExporter) convertLogAttributesToLabels(attributes pdata.AttributeMap) model.LabelSet {
 	ls := model.LabelSet{}
 
-	for attr, attrLabelName := range l.attributesToLabels {
+	for attr, attrLabelName := range l.attribLogsToLabels {
 		av, ok := attributes.Get(attr)
 		if ok {
 			if av.Type() != pdata.AttributeValueTypeString {
@@ -178,16 +192,37 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap) 
 		}
 	}
 
-	if len(ls) == 0 {
-		return nil, false
+	return ls
+}
+
+func (l *lokiExporter) convertResourceAttributesToLabels(attributes pdata.AttributeMap) model.LabelSet {
+	ls := model.LabelSet{}
+
+	for attr, attrLabelName := range l.attribResoucesToLabels {
+		av, ok := attributes.Get(attr)
+		if ok {
+			if av.Type() != pdata.AttributeValueTypeString {
+				l.logger.Debug("Failed to convert attribute value to Loki label value, value is not a string", zap.String("attribute", attr))
+				continue
+			}
+			ls[attrLabelName] = model.LabelValue(av.StringVal())
+		}
 	}
 
-	return ls, true
+	return ls
 }
 
 func convertLogToLokiEntry(lr pdata.LogRecord) *logproto.Entry {
 	return &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
 		Line:      lr.Body().StringVal(),
+	}
+}
+
+func convertLogToJsonEntry(lr pdata.LogRecord) *logproto.Entry {
+	line := encodeJSON(lr)
+	return &logproto.Entry{
+		Timestamp: time.Unix(0, int64(lr.Timestamp())),
+		Line:      line,
 	}
 }
