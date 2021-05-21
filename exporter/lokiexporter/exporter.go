@@ -136,7 +136,8 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 
 				labels := attribLabels.String()
 
-				entry := convertLogToLokiEntry(log)
+				// entry := convertLogToLokiEntry(log)
+				entry := convertLogToJsonEntry(log)
 
 				if stream, ok := streams[labels]; ok {
 					stream.Entries = append(stream.Entries, *entry)
