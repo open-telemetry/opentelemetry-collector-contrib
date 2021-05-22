@@ -15,6 +15,7 @@
 package ecsobserver
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -36,7 +37,8 @@ func TestTaskExporter(t *testing.T) {
 			Definition: &ecs.TaskDefinition{},
 		})
 		assert.Error(t, err)
-		assert.IsType(t, &ErrPrivateIPNotFound{}, err)
+		v := &ErrPrivateIPNotFound{}
+		assert.True(t, errors.As(err, &v))
 	})
 
 	awsVpcTask := &ecs.Task{
@@ -126,7 +128,8 @@ func TestTaskExporter(t *testing.T) {
 		require.Error(t, err)
 		merr := multierr.Errors(err)
 		require.Len(t, merr, 1)
-		assert.IsType(t, &ErrMappedPortNotFound{}, merr[0])
+		v := &ErrMappedPortNotFound{}
+		assert.True(t, errors.As(merr[0], &v))
 		assert.Len(t, targets, 2)
 	})
 
@@ -244,6 +247,11 @@ func TestTaskExporter(t *testing.T) {
 		zCore, logs := observer.New(zap.ErrorLevel)
 		printErrors(zap.New(zCore), err)
 		assert.Equal(t, len(merr), len(logs.All()))
+
+		taskScope := logs.FilterField(zap.String("ErrScope", "Task"))
+		assert.Equal(t, 1, taskScope.Len())
+		targetScope := logs.FilterField(zap.String("ErrScope", "Target"))
+		assert.Equal(t, 2*3, targetScope.Len())
 
 		printErrors(zap.NewExample(), err) // inspect during development
 	})

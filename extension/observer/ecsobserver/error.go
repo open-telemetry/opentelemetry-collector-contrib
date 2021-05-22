@@ -15,13 +15,23 @@
 package ecsobserver
 
 import (
+	"errors"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver/internal/errctx"
 )
 
 // error.go defines common error interfaces and util methods for generating reports
 // for log and metrics that can be used for debugging.
+
+const (
+	errKeyTask      = "task"
+	errKeyContainer = "container"
+	errKeyTarget    = "target"
+)
 
 type errWithAttributes interface {
 	// message does not include attributes like task arn etc.
@@ -32,63 +42,6 @@ type errWithAttributes interface {
 	zapFields() []zap.Field
 }
 
-type taskError interface {
-	errWithAttributes
-	setTask(t *Task)
-	getTask() *Task
-}
-
-// baseTaskError can be embedded into error that happens at task level or below.
-type baseTaskError struct {
-	t *Task
-}
-
-func (be *baseTaskError) setTask(t *Task) {
-	be.t = t
-}
-
-func (be *baseTaskError) getTask() *Task {
-	return be.t
-}
-
-func setErrTask(err error, t *Task) {
-	e, ok := err.(taskError)
-	if !ok {
-		return
-	}
-	e.setTask(t)
-}
-
-type containerError interface {
-	taskError
-	setContainerIndex(j int)
-	getContainerIndex() int
-}
-
-func setErrContainer(err error, containerIndex int, task *Task) {
-	e, ok := err.(containerError)
-	if !ok {
-		return
-	}
-	setErrTask(err, task)
-	e.setContainerIndex(containerIndex)
-}
-
-type targetError interface {
-	containerError
-	setTarget(t MatchedTarget)
-	getTarget() MatchedTarget
-}
-
-func setErrTarget(err error, target MatchedTarget, containerIndex int, task *Task) {
-	e, ok := err.(targetError)
-	if !ok {
-		return
-	}
-	setErrContainer(err, containerIndex, task)
-	e.setTarget(target)
-}
-
 func printErrors(logger *zap.Logger, err error) {
 	merr := multierr.Errors(err)
 	if merr == nil {
@@ -97,9 +50,11 @@ func printErrors(logger *zap.Logger, err error) {
 
 	for _, err := range merr {
 		m := err.Error()
-		serr, ok := err.(errWithAttributes)
-		if ok {
-			m = serr.message()
+		// Use the short message, this makes searching the code via error message easier
+		// as additional info are flushed as fields.
+		var errAttr errWithAttributes
+		if errors.As(err, &errAttr) {
+			m = errAttr.message()
 		}
 		fields, scope := extractErrorFields(err)
 		fields = append(fields, zap.String("ErrScope", scope))
@@ -110,39 +65,27 @@ func printErrors(logger *zap.Logger, err error) {
 func extractErrorFields(err error) ([]zap.Field, string) {
 	var fields []zap.Field
 	scope := "Unknown"
-	errAttr, ok := err.(errWithAttributes)
-	if !ok {
+	var errAttr errWithAttributes
+	// Stop early because we are only attaching value for our internal errors.
+	if !errors.As(err, &errAttr) {
 		return fields, scope
 	}
 	fields = errAttr.zapFields()
-
-	taskErr, ok := err.(taskError)
-	if !ok {
-		return fields, scope
+	v, ok := errctx.ValueFrom(err, errKeyTask)
+	if ok {
+		if task, ok := v.(*Task); ok {
+			fields = append(fields, zap.String("TaskArn", aws.StringValue(task.Task.TaskArn)))
+			scope = "Task"
+		}
 	}
-	scope = "Task"
-	task := taskErr.getTask()
-	fields = append(fields, zap.String("TaskArn", aws.StringValue(task.Task.TaskArn)))
-
-	containerErr, ok := err.(containerError)
-	if !ok {
-		return fields, scope
+	v, ok = errctx.ValueFrom(err, errKeyTarget)
+	if ok {
+		if target, ok := v.(MatchedTarget); ok {
+			// TODO: change to string once another PR for matcher got merged
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/3386 defines Stringer
+			fields = append(fields, zap.Int("MatcherType", int(target.MatcherType)))
+			scope = "Target"
+		}
 	}
-	scope = "Container"
-	container := task.Task.Containers[containerErr.getContainerIndex()]
-	fields = append(fields, zap.String("ContainerName", aws.StringValue(container.Name)))
-	if !ok {
-		return fields, scope
-	}
-
-	targetErr, ok := err.(targetError)
-	if !ok {
-		return fields, scope
-	}
-	scope = "Target"
-	target := targetErr.getTarget()
-	// TODO: change to string once another PR for matcher got merged
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/3386 defines Stringer
-	fields = append(fields, zap.Int("MatcherType", int(target.MatcherType)))
 	return fields, scope
 }

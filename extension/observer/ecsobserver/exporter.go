@@ -20,6 +20,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver/internal/errctx"
 )
 
 const (
@@ -94,8 +96,7 @@ func (e *taskExporter) exportTask(task *Task) ([]PrometheusECSTarget, error) {
 	// All targets in one task shares same IP.
 	privateIP, err := task.PrivateIP()
 	if err != nil {
-		setErrTask(err, task)
-		return nil, err
+		return nil, errctx.WithValue(err, errKeyTask, task)
 	}
 
 	// Base for all the containers in this task, most attributes are same.
@@ -140,7 +141,10 @@ func (e *taskExporter) exportTask(task *Task) ([]PrometheusECSTarget, error) {
 			target := containerTarget
 			mappedPort, err := task.MappedPort(container, int64(matchedTarget.Port))
 			if err != nil {
-				setErrTarget(err, matchedTarget, m.ContainerIndex, task)
+				err = errctx.WithValues(err, map[string]interface{}{
+					errKeyTarget: matchedTarget,
+					errKeyTask:   task,
+				})
 			}
 			// Skip this target and keep track of port error, does not abort.
 			if multierr.AppendInto(&merr, err) {

@@ -87,8 +87,6 @@ type ErrPrivateIPNotFound struct {
 	TaskArn     string
 	NetworkMode string
 	Extra       string // extra message
-	// detail error report
-	baseTaskError
 }
 
 func (e *ErrPrivateIPNotFound) Error() string {
@@ -156,10 +154,6 @@ type ErrMappedPortNotFound struct {
 	NetworkMode   string
 	ContainerName string
 	ContainerPort int64
-	// detail error report
-	baseTaskError
-	containerIndex int
-	target         MatchedTarget
 }
 
 func (e *ErrMappedPortNotFound) Error() string {
@@ -171,22 +165,6 @@ func (e *ErrMappedPortNotFound) Error() string {
 
 func (e *ErrMappedPortNotFound) message() string {
 	return "mapped port not found"
-}
-
-func (e *ErrMappedPortNotFound) setContainerIndex(i int) {
-	e.containerIndex = i
-}
-
-func (e *ErrMappedPortNotFound) getContainerIndex() int {
-	return e.containerIndex
-}
-
-func (e *ErrMappedPortNotFound) setTarget(t MatchedTarget) {
-	e.target = t
-}
-
-func (e *ErrMappedPortNotFound) getTarget() MatchedTarget {
-	return e.target
 }
 
 func (e *ErrMappedPortNotFound) zapFields() []zap.Field {

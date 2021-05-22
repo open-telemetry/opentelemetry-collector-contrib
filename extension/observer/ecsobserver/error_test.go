@@ -15,16 +15,14 @@
 package ecsobserver
 
 import (
-	"fmt"
 	"testing"
 
 	"go.uber.org/zap"
 )
 
 func TestSetInvalidError(t *testing.T) {
-	err := fmt.Errorf("std")
-	setErrTask(err, nil)
-	setErrContainer(err, 0, nil)
-	setErrTarget(err, MatchedTarget{}, 0, nil)
-	printErrors(zap.NewExample(), nil)
+	printErrors(zap.NewExample(), nil) // you know, for coverage
+	// The actual test cen be found in the following locations:
+	//
+	// exporter_test.go where we filter logs by error scope
 }
