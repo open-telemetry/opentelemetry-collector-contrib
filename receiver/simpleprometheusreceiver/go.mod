@@ -11,7 +11,7 @@ require (
 	github.com/onsi/ginkgo v1.14.1 // indirect
 	github.com/onsi/gomega v1.10.2 // indirect
 	github.com/pelletier/go-toml v1.8.0 // indirect
-	github.com/prometheus/common v0.24.0
+	github.com/prometheus/common v0.25.0
 	github.com/prometheus/prometheus v1.8.2-0.20210430082741-2a4b8e12bbf2
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.27.1-0.20210520162255-f7674b2f593e
