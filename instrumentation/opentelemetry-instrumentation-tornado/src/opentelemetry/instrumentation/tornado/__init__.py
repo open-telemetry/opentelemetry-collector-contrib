@@ -95,7 +95,7 @@ from opentelemetry.instrumentation.utils import (
 )
 from opentelemetry.propagate import extract
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.trace.status import Status
+from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.util._time import _time_ns
 from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
 
@@ -299,10 +299,14 @@ def _finish_span(tracer, handler, error=None):
 
     if ctx.span.is_recording():
         ctx.span.set_attribute(SpanAttributes.HTTP_STATUS_CODE, status_code)
+        otel_status_code = http_status_to_status_code(status_code)
+        otel_status_description = None
+        if otel_status_code is StatusCode.ERROR:
+            otel_status_description = reason
         ctx.span.set_status(
             Status(
-                status_code=http_status_to_status_code(status_code),
-                description=reason,
+                status_code=otel_status_code,
+                description=otel_status_description,
             )
         )
 
