@@ -33,7 +33,7 @@ const (
 
 var kubeClientProvider = kube.ClientProvider(nil)
 var consumerCapabilities = consumer.Capabilities{MutatesData: true}
-var defaultIgnoredNames = PodIgnoredConfig{Name: []string{"jaeger-agent", "jaeger-collector"}}
+var defaultIgnoredNames = PodIgnoredConfig{Names: []string{"jaeger-agent", "jaeger-collector"}}
 
 // NewFactory returns a new factory for the k8s processor.
 func NewFactory() component.ProcessorFactory {

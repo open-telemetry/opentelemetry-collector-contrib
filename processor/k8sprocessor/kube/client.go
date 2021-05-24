@@ -96,7 +96,6 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 	}
 
 	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
-
 	return c, err
 }
 
@@ -352,7 +351,7 @@ func (c *WatchClient) shouldIgnorePod(pod *api_v1.Pod) bool {
 		}
 	}
 
-	// Check if user requested the pod to be ignored through ignore configuration
+	// Check if user requested the pod to be ignored through configuration
 	for _, rexp := range c.Ignore.Regex {
 		if rexp.MatchString(pod.Name) {
 			return true

@@ -586,7 +586,7 @@ func TestPodIgnorePatterns(t *testing.T) {
 		ignore: false,
 		pod: api_v1.Pod{
 			ObjectMeta: meta_v1.ObjectMeta{
-				Name: "jaeger",
+				Name: "test-pod-name",
 			},
 		},
 	},

@@ -612,16 +612,22 @@ func TestWithIgnoredPodNames(t *testing.T) {
 			"default",
 			PodIgnoredConfig{},
 			kube.IgnoredPodNames{
-				Regex: []*regexp.Regexp{regexp.MustCompile("jaeger-agent"), regexp.MustCompile("jaeger-collector")},
+				Regex: []*regexp.Regexp{
+					regexp.MustCompile(`jaeger-agent`),
+					regexp.MustCompile(`jaeger-collector`),
+				},
 			},
 		},
 		{
 			"configured",
 			PodIgnoredConfig{
-				Name: []string{"ignore_pod1", "ignore_pod2"},
+				Names: []string{"ignore_pod1", "ignore_pod2"},
 			},
 			kube.IgnoredPodNames{
-				Regex: []*regexp.Regexp{regexp.MustCompile("ignore_pod1"), regexp.MustCompile("ignore_pod2")},
+				Regex: []*regexp.Regexp{
+					regexp.MustCompile(`ignore_pod1`),
+					regexp.MustCompile(`ignore_pod2`),
+				},
 			},
 		},
 	}
