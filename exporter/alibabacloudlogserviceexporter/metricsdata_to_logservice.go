@@ -51,7 +51,14 @@ func (kv *KeyValues) Swap(i, j int) {
 	kv.keyValues[i], kv.keyValues[j] = kv.keyValues[j], kv.keyValues[i]
 }
 func (kv *KeyValues) Less(i, j int) bool { return kv.keyValues[i].Key < kv.keyValues[j].Key }
-func (kv *KeyValues) Sort()              { sort.Sort(kv) }
+
+func (kv *KeyValues) Sort() {
+	// sanitize label keys before sort
+	for index := range kv.keyValues {
+		kv.keyValues[index].Key = sanitize(kv.keyValues[index].Key)
+	}
+	sort.Sort(kv)
+}
 
 func (kv *KeyValues) Replace(key, value string) {
 	findIndex := sort.Search(len(kv.keyValues), func(index int) bool {
