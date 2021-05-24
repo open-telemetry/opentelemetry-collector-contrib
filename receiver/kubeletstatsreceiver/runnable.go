@@ -35,6 +35,8 @@ import (
 
 var _ interval.Runnable = (*runnable)(nil)
 
+const transport = "http"
+
 type runnable struct {
 	ctx                   context.Context
 	receiverID            config.ComponentID
@@ -47,6 +49,7 @@ type runnable struct {
 	metricGroupsToCollect map[kubelet.MetricGroup]bool
 	k8sAPIClient          kubernetes.Interface
 	cachedVolumeLabels    map[string]map[string]string
+	obsrecv               *obsreport.Receiver
 }
 
 func newRunnable(
@@ -66,6 +69,7 @@ func newRunnable(
 		metricGroupsToCollect: rOptions.metricGroupsToCollect,
 		k8sAPIClient:          rOptions.k8sAPIClient,
 		cachedVolumeLabels:    make(map[string]map[string]string),
+		obsrecv:               obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: rOptions.id, Transport: transport}),
 	}
 }
 
@@ -77,7 +81,6 @@ func (r *runnable) Setup() error {
 }
 
 func (r *runnable) Run() error {
-	const transport = "http"
 	summary, err := r.statsProvider.StatsSummary()
 	if err != nil {
 		r.logger.Error("call to /stats/summary endpoint failed", zap.Error(err))
@@ -103,14 +106,14 @@ func (r *runnable) Run() error {
 
 	var numPoints int
 	ctx := obsreport.ReceiverContext(r.ctx, r.receiverID, transport)
-	ctx = obsreport.StartMetricsReceiveOp(ctx, r.receiverID, transport)
+	ctx = r.obsrecv.StartMetricsReceiveOp(ctx)
 	err = r.consumer.ConsumeMetrics(ctx, metrics)
 	if err != nil {
 		r.logger.Error("ConsumeMetricsData failed", zap.Error(err))
 	} else {
 		_, numPoints = metrics.MetricAndDataPointCount()
 	}
-	obsreport.EndMetricsReceiveOp(ctx, typeStr, numPoints, err)
+	r.obsrecv.EndMetricsReceiveOp(ctx, typeStr, numPoints, err)
 
 	return nil
 }

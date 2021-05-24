@@ -42,6 +42,7 @@ type kubernetesReceiver struct {
 	logger   *zap.Logger
 	consumer consumer.Metrics
 	cancel   context.CancelFunc
+	obsrecv  *obsreport.Receiver
 }
 
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
@@ -99,12 +100,12 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 	now := time.Now()
 	mds := kr.resourceWatcher.dataCollector.CollectMetricData(now)
 
-	c := obsreport.StartMetricsReceiveOp(ctx, kr.config.ID(), transport)
+	c := kr.obsrecv.StartMetricsReceiveOp(ctx)
 
 	_, numPoints := mds.MetricAndDataPointCount()
 
 	err := kr.consumer.ConsumeMetrics(c, mds)
-	obsreport.EndMetricsReceiveOp(c, typeStr, numPoints, err)
+	kr.obsrecv.EndMetricsReceiveOp(c, typeStr, numPoints, err)
 }
 
 // newReceiver creates the Kubernetes cluster receiver with the given configuration.
@@ -118,5 +119,6 @@ func newReceiver(
 		logger:          logger,
 		config:          config,
 		consumer:        consumer,
+		obsrecv:         obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: transport}),
 	}, nil
 }
