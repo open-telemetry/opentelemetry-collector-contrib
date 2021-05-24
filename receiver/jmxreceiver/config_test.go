@@ -77,7 +77,16 @@ func TestLoadConfig(t *testing.T) {
 			TruststorePassword: "mytruststorepassword",
 			RemoteProfile:      "myremoteprofile",
 			Realm:              "myrealm",
+			Properties: map[string]string{
+				"property.one": "value.one",
+				"property.two": "value.two.a=value.two.b,value.two.c=value.two.d",
+			},
 		}, r1)
+
+	assert.Equal(
+		t, []string{"-Dproperty.one=value.one", "-Dproperty.two=value.two.a=value.two.b,value.two.c=value.two.d"},
+		r1.parseProperties(),
+	)
 
 	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "missingendpoint")].(*Config)
 	require.NoError(t, configcheck.ValidateConfig(r2))
