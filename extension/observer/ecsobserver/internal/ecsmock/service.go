@@ -59,6 +59,8 @@ type Cluster struct {
 	containerInstanceList []*ecs.ContainerInstance
 	ec2Map                map[string]*ec2.Instance // key is instance id
 	ec2List               []*ec2.Instance
+	serviceMap            map[string]*ecs.Service
+	serviceList           []*ecs.Service
 	limit                 PageLimit
 	stats                 ClusterStats
 }
@@ -66,8 +68,9 @@ type Cluster struct {
 // NewCluster creates a mock ECS cluster with default limits.
 func NewCluster() *Cluster {
 	return &Cluster{
-		taskMap: make(map[string]*ecs.Task),
-		limit:   DefaultPageLimit(),
+		// NOTE: we don't set the maps by design, they should be injected and API calls
+		// without setting up data should just panic.
+		limit: DefaultPageLimit(),
 	}
 }
 
@@ -196,6 +199,45 @@ func (c *Cluster) DescribeInstancesWithContext(_ context.Context, input *ec2.Des
 	}, nil
 }
 
+func (c *Cluster) ListServicesWithContext(_ context.Context, input *ecs.ListServicesInput, _ ...request.Option) (*ecs.ListServicesOutput, error) {
+	page, err := getPage(pageInput{
+		nextToken: input.NextToken,
+		size:      len(c.serviceList),
+		limit:     c.limit.ListServiceOutput,
+	})
+	if err != nil {
+		return nil, err
+	}
+	res := c.serviceList[page.start:page.end]
+	return &ecs.ListServicesOutput{
+		ServiceArns: getArns(res, func(i int) *string {
+			return res[i].ServiceArn
+		}),
+		NextToken: page.nextToken,
+	}, nil
+}
+
+func (c *Cluster) DescribeServicesWithContext(_ context.Context, input *ecs.DescribeServicesInput, _ ...request.Option) (*ecs.DescribeServicesOutput, error) {
+	var (
+		failures []*ecs.Failure
+		services []*ecs.Service
+	)
+	for i, serviceArn := range input.Services {
+		arn := aws.StringValue(serviceArn)
+		svc, ok := c.serviceMap[arn]
+		if !ok {
+			failures = append(failures, &ecs.Failure{
+				Arn:    serviceArn,
+				Detail: aws.String(fmt.Sprintf("service not found index %d arn %s total services %d", i, arn, len(c.serviceMap))),
+				Reason: aws.String("service not found"),
+			})
+			continue
+		}
+		services = append(services, svc)
+	}
+	return &ecs.DescribeServicesOutput{Failures: failures, Services: services}, nil
+}
+
 // API End
 
 // Hook Start
@@ -238,6 +280,16 @@ func (c *Cluster) SetEc2Instances(instances []*ec2.Instance) {
 	}
 	c.ec2Map = m
 	c.ec2List = instances
+}
+
+// SetServices updates the list and map.
+func (c *Cluster) SetServices(services []*ecs.Service) {
+	m := make(map[string]*ecs.Service, len(services))
+	for _, s := range services {
+		m[aws.StringValue(s.ServiceArn)] = s
+	}
+	c.serviceMap = m
+	c.serviceList = services
 }
 
 // Hook End
@@ -301,6 +353,20 @@ func GenEc2Instances(idPrefix string, count int, modifier func(i int, ins *ec2.I
 		instances = append(instances, ins)
 	}
 	return instances
+}
+
+func GenServices(arnPrefix string, count int, modifier func(i int, s *ecs.Service)) []*ecs.Service {
+	var services []*ecs.Service
+	for i := 0; i < count; i++ {
+		svc := &ecs.Service{
+			ServiceArn: aws.String(fmt.Sprintf("%s%d", arnPrefix, i)),
+		}
+		if modifier != nil {
+			modifier(i, svc)
+		}
+		services = append(services, svc)
+	}
+	return services
 }
 
 // Generator End

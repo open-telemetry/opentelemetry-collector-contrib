@@ -19,9 +19,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/service/ec2"
-
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -194,5 +193,67 @@ func TestCluster_DescribeContainerInstancesWithContext(t *testing.T) {
 		res, err := c.DescribeContainerInstancesWithContext(ctx, req)
 		require.NoError(t, err)
 		assert.Contains(t, aws.StringValue(res.Failures[0].Detail), "ci-123")
+	})
+}
+
+func TestCluster_ListServicesWithContext(t *testing.T) {
+	ctx := context.Background()
+	c := NewCluster()
+	count := 100
+	c.SetServices(GenServices("s", count, nil))
+	c.SetServices(GenServices("s", count, func(i int, s *ecs.Service) {
+		s.Deployments = []*ecs.Deployment{
+			{
+				Status: aws.String("ACTIVE"),
+				Id:     aws.String(fmt.Sprintf("d%d", i)),
+			},
+		}
+	}))
+
+	t.Run("get all", func(t *testing.T) {
+		req := &ecs.ListServicesInput{}
+		listedServices := 0
+		pages := 0
+		for {
+			res, err := c.ListServicesWithContext(ctx, req)
+			require.NoError(t, err)
+			listedServices += len(res.ServiceArns)
+			pages++
+			if res.NextToken == nil {
+				break
+			}
+			req.NextToken = res.NextToken
+		}
+		assert.Equal(t, count, listedServices)
+		assert.Equal(t, 10, pages)
+	})
+
+	t.Run("invalid token", func(t *testing.T) {
+		req := &ecs.ListServicesInput{NextToken: aws.String("asd")}
+		_, err := c.ListServicesWithContext(ctx, req)
+		require.Error(t, err)
+	})
+}
+
+func TestCluster_DescribeServicesWithContext(t *testing.T) {
+	ctx := context.Background()
+	c := NewCluster()
+	count := 100
+	c.SetServices(GenServices("s", count, nil))
+
+	t.Run("exists", func(t *testing.T) {
+		req := &ecs.DescribeServicesInput{Services: []*string{aws.String("s0"), aws.String(fmt.Sprintf("s%d", count-1))}}
+		res, err := c.DescribeServicesWithContext(ctx, req)
+		require.NoError(t, err)
+		assert.Len(t, res.Services, 2)
+		assert.Len(t, res.Failures, 0)
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		req := &ecs.DescribeServicesInput{Services: []*string{aws.String("s0"), aws.String(fmt.Sprintf("s%d", count))}}
+		res, err := c.DescribeServicesWithContext(ctx, req)
+		require.NoError(t, err)
+		assert.Len(t, res.Services, 1)
+		assert.Len(t, res.Failures, 1)
 	})
 }

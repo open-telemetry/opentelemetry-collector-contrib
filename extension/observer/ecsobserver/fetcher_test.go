@@ -38,8 +38,7 @@ func TestFetcher_FetchAndDecorate(t *testing.T) {
 		ec2Override: c,
 	})
 	require.NoError(t, err)
-	// Create 1 task def and 10 tasks, 8 running on ec2, first 3 runs on fargate
-	// TODO: they will be changed to include service etc.
+	// Create 1 task def, 2 services and 10 tasks, 8 running on ec2, first 3 runs on fargate
 	nTasks := 11
 	nInstances := 2
 	nFargateInstances := 3
@@ -48,9 +47,11 @@ func TestFetcher_FetchAndDecorate(t *testing.T) {
 		ins := i % nInstances
 		if i < nFargateInstances {
 			task.LaunchType = aws.String(ecs.LaunchTypeFargate)
+			task.StartedBy = aws.String("deploy0")
 		} else {
 			task.LaunchType = aws.String(ecs.LaunchTypeEc2)
 			task.ContainerInstanceArn = aws.String(fmt.Sprintf("ci%d", ins))
+			task.StartedBy = aws.String("deploy1")
 		}
 		task.TaskDefinitionArn = aws.String("d0:1")
 	}))
@@ -59,11 +60,32 @@ func TestFetcher_FetchAndDecorate(t *testing.T) {
 		ci.Ec2InstanceId = aws.String(fmt.Sprintf("i-%d", i))
 	}))
 	c.SetEc2Instances(ecsmock.GenEc2Instances("i-", nInstances, nil))
+	// Service
+	c.SetServices(ecsmock.GenServices("s", 2, func(i int, s *ecs.Service) {
+		if i == 0 {
+			s.LaunchType = aws.String(ecs.LaunchTypeFargate)
+			s.Deployments = []*ecs.Deployment{
+				{
+					Status: aws.String("ACTIVE"),
+					Id:     aws.String("deploy0"),
+				},
+			}
+		} else {
+			s.LaunchType = aws.String(ecs.LaunchTypeEc2)
+			s.Deployments = []*ecs.Deployment{
+				{
+					Status: aws.String("ACTIVE"),
+					Id:     aws.String("deploy1"),
+				},
+			}
+		}
+	}))
 
 	ctx := context.Background()
 	tasks, err := f.fetchAndDecorate(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, nTasks, len(tasks))
+	assert.Equal(t, "s0", aws.StringValue(tasks[0].Service.ServiceArn))
 }
 
 func TestFetcher_GetAllTasks(t *testing.T) {
@@ -219,4 +241,67 @@ func TestFetcher_AttachContainerInstance(t *testing.T) {
 		// task instance pattern is  0 1 0 1 ..., nFargateInstances = 3 so the 4th task is running on instance 1
 		assert.Equal(t, "i-1", aws.StringValue(tasks[nFargateInstances].EC2.InstanceId))
 	})
+}
+
+func TestFetcher_GetAllServices(t *testing.T) {
+	c := ecsmock.NewCluster()
+	f, err := newTaskFetcher(taskFetcherOptions{
+		Logger:      zap.NewExample(),
+		Cluster:     "not used",
+		Region:      "not used",
+		ecsOverride: c,
+	})
+	require.NoError(t, err)
+	const nServices = 101
+	c.SetServices(ecsmock.GenServices("s", nServices, nil))
+	ctx := context.Background()
+	services, err := f.getAllServices(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, nServices, len(services))
+}
+
+func TestFetcher_AttachService(t *testing.T) {
+	c := ecsmock.NewCluster()
+	f, err := newTaskFetcher(taskFetcherOptions{
+		Logger:      zap.NewExample(),
+		Cluster:     "not used",
+		Region:      "not used",
+		ecsOverride: c,
+	})
+	require.NoError(t, err)
+	const nServices = 10
+	c.SetServices(ecsmock.GenServices("s", nServices, func(i int, s *ecs.Service) {
+		s.Deployments = []*ecs.Deployment{
+			{
+				Status: aws.String("ACTIVE"),
+				Id:     aws.String(fmt.Sprintf("deploy%d", i)),
+			},
+		}
+	}))
+	c.SetTaskDefinitions(ecsmock.GenTaskDefinitions("def", nServices, 1, nil))
+	const nTasks = 100
+	c.SetTasks(ecsmock.GenTasks("t", nTasks, func(i int, task *ecs.Task) {
+		// Last task is launched manually w/o service
+		if i == nTasks-1 {
+			return
+		}
+		deployID := i % nServices
+		task.TaskDefinitionArn = aws.String(fmt.Sprintf("def%d:1", deployID))
+		task.StartedBy = aws.String(fmt.Sprintf("deploy%d", deployID))
+
+	}))
+
+	ctx := context.Background()
+	rawTasks, err := f.getAllTasks(ctx)
+	require.NoError(t, err)
+	tasks, err := f.attachTaskDefinition(ctx, rawTasks)
+	require.NoError(t, err)
+	services, err := f.getAllServices(ctx)
+	require.NoError(t, err)
+	f.attachService(tasks, services)
+
+	// Just pick one
+	assert.Equal(t, "s0", aws.StringValue(tasks[0].Service.ServiceArn))
+	assert.NotNil(t, tasks[nTasks-2].Service)
+	assert.Nil(t, tasks[nTasks-1].Service)
 }

@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
@@ -33,6 +34,10 @@ const (
 	// Based on existing number from cloudwatch-agent
 	ec2CacheSize                   = 2000
 	describeContainerInstanceLimit = 100
+	describeServiceLimit           = 10
+	// NOTE: these constants are not defined in go sdk, there are three values for deployment status.
+	deploymentStatusActive  = "ACTIVE"
+	deploymentStatusPrimary = "PRIMARY"
 )
 
 // ecsClient includes API required by taskFetcher.
@@ -41,6 +46,8 @@ type ecsClient interface {
 	DescribeTasksWithContext(ctx context.Context, input *ecs.DescribeTasksInput, opts ...request.Option) (*ecs.DescribeTasksOutput, error)
 	DescribeTaskDefinitionWithContext(ctx context.Context, input *ecs.DescribeTaskDefinitionInput, opts ...request.Option) (*ecs.DescribeTaskDefinitionOutput, error)
 	DescribeContainerInstancesWithContext(ctx context.Context, input *ecs.DescribeContainerInstancesInput, opts ...request.Option) (*ecs.DescribeContainerInstancesOutput, error)
+	ListServicesWithContext(ctx context.Context, input *ecs.ListServicesInput, opts ...request.Option) (*ecs.ListServicesOutput, error)
+	DescribeServicesWithContext(ctx context.Context, input *ecs.DescribeServicesInput, opts ...request.Option) (*ecs.DescribeServicesOutput, error)
 }
 
 // ec2Client includes API required by TaskFetcher.
@@ -49,12 +56,13 @@ type ec2Client interface {
 }
 
 type taskFetcher struct {
-	logger       *zap.Logger
-	ecs          ecsClient
-	ec2          ec2Client
-	cluster      string
-	taskDefCache simplelru.LRUCache
-	ec2Cache     simplelru.LRUCache
+	logger            *zap.Logger
+	ecs               ecsClient
+	ec2               ec2Client
+	cluster           string
+	taskDefCache      simplelru.LRUCache
+	ec2Cache          simplelru.LRUCache
+	serviceNameFilter serviceNameFilter
 }
 
 type taskFetcherOptions struct {
@@ -85,6 +93,11 @@ func newTaskFetcher(opts taskFetcherOptions) (*taskFetcher, error) {
 		cluster:      opts.Cluster,
 		taskDefCache: taskDefCache,
 		ec2Cache:     ec2Cache,
+		// TODO: after the service matcher PR is merged, use actual service name filter here.
+		// For now, describe all the services
+		serviceNameFilter: func(name string) bool {
+			return true
+		},
 	}
 	// Return early if any clients are mocked, caller should overrides all the clients when mocking.
 	if fetcher.ecs != nil || fetcher.ec2 != nil {
@@ -105,9 +118,16 @@ func (f *taskFetcher) fetchAndDecorate(ctx context.Context) ([]*Task, error) {
 	}
 
 	// EC2
-	if err := f.attachContainerInstance(ctx, tasks); err != nil {
+	if err = f.attachContainerInstance(ctx, tasks); err != nil {
 		return nil, fmt.Errorf("attachContainerInstance failed: %w", err)
 	}
+
+	// Services
+	services, err := f.getAllServices(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getAllServices failed: %w", err)
+	}
+	f.attachService(tasks, services)
 	return tasks, nil
 }
 
@@ -246,7 +266,7 @@ func (f *taskFetcher) describeContainerInstances(ctx context.Context, instanceLi
 		ContainerInstances: instanceList,
 	})
 	if err != nil {
-		return fmt.Errorf("ecs.DescribeContainerInstance faile: %w", err)
+		return fmt.Errorf("ecs.DescribeContainerInstance failed: %w", err)
 	}
 
 	// Create the index to map ec2 id back to container instance id.
@@ -280,6 +300,85 @@ func (f *taskFetcher) describeContainerInstances(ctx context.Context, instanceLi
 		}
 	}
 	return nil
+}
+
+// serviceNameFilter decides if we should get detail info for a service, i.e. make the describe API call.
+type serviceNameFilter func(name string) bool
+
+// getAllServices does not have cache like task definition or ec2 instances
+// because we need to get the deployment id to map service to task, which changes frequently.
+func (f *taskFetcher) getAllServices(ctx context.Context) ([]*ecs.Service, error) {
+	svc := f.ecs
+	cluster := aws.String(f.cluster)
+	// List and filter out services we need to desribe.
+	listReq := ecs.ListServicesInput{Cluster: cluster}
+	var servicesToDescribe []*string
+	for {
+		res, err := svc.ListServicesWithContext(ctx, &listReq)
+		if err != nil {
+			return nil, err
+		}
+		for _, arn := range res.ServiceArns {
+			segs := strings.Split(aws.StringValue(arn), "/")
+			name := segs[len(segs)-1]
+			if f.serviceNameFilter(name) {
+				servicesToDescribe = append(servicesToDescribe, arn)
+			}
+		}
+		if res.NextToken == nil {
+			break
+		}
+		listReq.NextToken = res.NextToken
+	}
+
+	// DescribeServices size limit is 10 so we need to do paging on client side.
+	var services []*ecs.Service
+	for i := 0; i < len(servicesToDescribe); i += describeServiceLimit {
+		end := minInt(i+describeServiceLimit, len(servicesToDescribe))
+		desc := &ecs.DescribeServicesInput{
+			Cluster:  cluster,
+			Services: servicesToDescribe[i:end],
+		}
+		res, err := svc.DescribeServicesWithContext(ctx, desc)
+		if err != nil {
+			return nil, fmt.Errorf("ecs.DescribeServices failed %w", err)
+		}
+		services = append(services, res.Services...)
+	}
+	return services, nil
+}
+
+// attachService map service to task using deployment id.
+// Each service can have multiple deployment and each task keep track of the deployment in task.StartedBy.
+func (f *taskFetcher) attachService(tasks []*Task, services []*ecs.Service) {
+	// Map deployment ID to service name
+	idToService := make(map[string]*ecs.Service)
+	for _, svc := range services {
+		for _, deployment := range svc.Deployments {
+			status := aws.StringValue(deployment.Status)
+			if status == deploymentStatusActive || status == deploymentStatusPrimary {
+				idToService[aws.StringValue(deployment.Id)] = svc
+				break
+			}
+		}
+	}
+
+	// Attach service to task
+	for _, t := range tasks {
+		// Task is created using RunTask i.e. not manged by a service.
+		if t.Task.StartedBy == nil {
+			continue
+		}
+		deploymentID := aws.StringValue(t.Task.StartedBy)
+		svc := idToService[deploymentID]
+		// Service not found happen a lot because we only fetch services defined in ServiceConfig.
+		// However, we fetch all the tasks, which could be started by other services no mentioned in config
+		// or started using RunTasks API directly.
+		if svc == nil {
+			continue
+		}
+		t.Service = svc
+	}
 }
 
 // Util Start
