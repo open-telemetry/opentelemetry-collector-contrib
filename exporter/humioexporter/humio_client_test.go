@@ -28,6 +28,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -55,7 +56,7 @@ func makeClient(t *testing.T, host string, compression bool) exporterClient {
 	err = cfg.sanitize()
 	require.NoError(t, err)
 
-	client, err := newHumioClient(cfg, zap.NewNop())
+	client, err := newHumioClient(cfg, zap.NewNop(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	return client
 }
