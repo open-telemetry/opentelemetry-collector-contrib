@@ -92,6 +92,7 @@ func createTracesExporter(
 		cfg,
 		params.Logger,
 		tracker.AddSpans,
+		exporterhelper.WithStart(tracker.Start),
 		exporterhelper.WithShutdown(tracker.Shutdown))
 }
 
