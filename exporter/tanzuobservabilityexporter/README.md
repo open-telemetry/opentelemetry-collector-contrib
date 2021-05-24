@@ -22,7 +22,7 @@ This exporter supports sending traces to [Tanzu Observability](https://tanzu.vmw
     - `application` is set to "defaultApp".
     - `service` is set to "defaultService".
 
-## Exporter Configuration
+## Example Configuration
 
 ```yaml
 receivers:
