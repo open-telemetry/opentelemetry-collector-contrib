@@ -141,6 +141,7 @@ func (u *UDPInput) goHandleMessages(ctx context.Context) {
 	go func() {
 		defer u.wg.Done()
 
+		buf := make([]byte, 0, MaxUDPSize)
 		for {
 			message, remoteAddr, err := u.readMessage()
 			if err != nil {
@@ -153,7 +154,6 @@ func (u *UDPInput) goHandleMessages(ctx context.Context) {
 				break
 			}
 
-			buf := make([]byte, 0, MaxUDPSize)
 			scanner := bufio.NewScanner(bytes.NewReader(message))
 			scanner.Buffer(buf, MaxUDPSize)
 
