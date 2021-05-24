@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -537,7 +538,11 @@ func TestRunningMetrics(t *testing.T) {
 	cfg := config.MetricsConfig{}
 	prevPts := newTTLMap()
 
-	series, _ := mapMetrics(zap.NewNop(), cfg, prevPts, "fallbackHostname", ms)
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
+
+	series, _ := mapMetrics(zap.NewNop(), cfg, prevPts, "fallbackHostname", ms, buildInfo)
 
 	runningHostnames := []string{}
 
@@ -688,9 +693,14 @@ func testCount(name string, val float64) datadog.Metric {
 func TestMapMetrics(t *testing.T) {
 	md := createTestMetrics()
 	cfg := config.MetricsConfig{SendMonotonic: true}
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
+
 	core, observed := observer.New(zapcore.DebugLevel)
 	testLogger := zap.New(core)
-	series, dropped := mapMetrics(testLogger, cfg, newTTLMap(), "", md)
+	series, dropped := mapMetrics(testLogger, cfg, newTTLMap(), "", md, buildInfo)
+
 	assert.Equal(t, dropped, 0)
 	filtered := removeRunningMetrics(series)
 	assert.ElementsMatch(t, filtered, []datadog.Metric{

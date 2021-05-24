@@ -272,7 +272,13 @@ func getDataPoints(pmd *pdata.Metric, metadata CWMetricMetadata, logger *zap.Log
 		}
 	case pdata.MetricDataTypeSummary:
 		metric := pmd.Summary()
-		adjusterMetadata.adjustToDelta = true
+		// For summaries coming from the prometheus receiver, the sum and count are cumulative, whereas for summaries
+		// coming from other sources, e.g. SDK, the sum and count are delta by being accumulated and reset periodically.
+		// In order to ensure metrics are sent as deltas, we check the receiver attribute (which can be injected by
+		// attribute processor) from resource metrics. If it exists, and equals to prometheus, the sum and count will be
+		// converted.
+		// For more information: https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/prometheusreceiver/DESIGN.md#summary
+		adjusterMetadata.adjustToDelta = metadata.receiver == prometheusReceiver
 		dps = SummaryDataPointSlice{
 			metadata.InstrumentationLibraryName,
 			adjusterMetadata,
