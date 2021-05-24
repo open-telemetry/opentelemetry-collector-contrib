@@ -102,40 +102,6 @@ func TestExtensionIntegrity(t *testing.T) {
 	wg.Wait()
 }
 
-func TestShutdownClosesClients(t *testing.T) {
-	ctx := context.Background()
-	se := newTestExtension(t)
-
-	myReceiverClient, err := se.GetClient(
-		ctx,
-		component.KindReceiver,
-		newTestEntity("my_receiver"),
-	)
-	require.NoError(t, err)
-	err = myReceiverClient.Set(ctx, "key", []byte("value"))
-	require.NoError(t, err)
-
-	myExporterClient, err := se.GetClient(
-		ctx,
-		component.KindReceiver,
-		newTestEntity("my_exporter"),
-	)
-	require.NoError(t, err)
-	err = myExporterClient.Set(ctx, "key", []byte("value"))
-	require.NoError(t, err)
-
-	// Shutdown should close clients
-	require.NoError(t, se.Shutdown(ctx))
-
-	err = myReceiverClient.Set(ctx, "key", []byte("value"))
-	require.Error(t, err)
-	require.Equal(t, err.Error(), "database not open")
-
-	err = myExporterClient.Set(ctx, "key", []byte("value"))
-	require.Error(t, err)
-	require.Equal(t, err.Error(), "database not open")
-}
-
 func TestClientHandlesSimpleCases(t *testing.T) {
 	ctx := context.Background()
 	se := newTestExtension(t)
