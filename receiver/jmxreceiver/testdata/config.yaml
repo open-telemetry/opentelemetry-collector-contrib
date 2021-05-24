@@ -20,6 +20,9 @@ receivers:
     truststore_password: mytruststorepassword
     remote_profile: myremoteprofile
     realm: myrealm
+    properties:
+      property.one: value.one
+      property.two: value.two.a=value.two.b,value.two.c=value.two.d
   jmx/missingendpoint:
     groovy_script: mygroovyscriptpath
   jmx/missinggroovy:
