@@ -44,6 +44,7 @@ type Receiver struct {
 	runnerCancel      context.CancelFunc
 	successfullySetup bool
 	transport         string
+	obsrecv           *obsreport.Receiver
 }
 
 func NewReceiver(
@@ -67,6 +68,7 @@ func NewReceiver(
 		nextConsumer: nextConsumer,
 		logger:       logger,
 		transport:    parsed.Scheme,
+		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: parsed.Scheme}),
 	}
 
 	return &receiver, nil
@@ -120,7 +122,7 @@ func (r *Receiver) Run() error {
 		return r.Setup()
 	}
 
-	c := obsreport.StartMetricsReceiveOp(r.obsCtx, r.config.ID(), r.transport)
+	c := r.obsrecv.StartMetricsReceiveOp(r.obsCtx)
 
 	containers := r.client.Containers()
 	results := make(chan result, len(containers))
@@ -156,6 +158,6 @@ func (r *Receiver) Run() error {
 		}
 	}
 
-	obsreport.EndMetricsReceiveOp(c, typeStr, numPoints, lastErr)
+	r.obsrecv.EndMetricsReceiveOp(c, typeStr, numPoints, lastErr)
 	return nil
 }
