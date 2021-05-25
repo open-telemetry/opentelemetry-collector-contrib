@@ -161,6 +161,32 @@ For a deeper discussion, see: https://github.com/open-telemetry/opentelemetry-sp
   extension](http://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html#google-vs-numpy)
   extension in [Sphinx](http://www.sphinx-doc.org/en/master/index.html).
 
+## Guideline for instrumentations
+
+Below is a checklist of things to be mindful of when implementing a new instrumentation or working on a specific instrumentation. It is one of our goals as a community to keep the implementation specific details of instrumentations as similar across the board as possible for ease of testing and feature parity. It is also good to abstract as much common functionality as possible.
+
+- Follow semantic conventions
+  - The instrumentation should follow the semantic conventions defined [here](https://github.com/open-telemetry/opentelemetry-specification/tree/main/semantic_conventions)
+- Extends from [BaseInstrumentor](https://github.com/open-telemetry/opentelemetry-python-contrib/blob/main/opentelemetry-instrumentation/src/opentelemetry/instrumentation/instrumentor.py#L26)
+- Supports auto-instrumentation
+  - Add an entry point (ex. https://github.com/open-telemetry/opentelemetry-python-contrib/blob/main/instrumentation/opentelemetry-instrumentation-requests/setup.cfg#L56)
+  - Add instrumentation package to `bootstrap.py` (https://github.com/open-telemetry/opentelemetry-python-contrib/blob/main/opentelemetry-instrumentation/src/opentelemetry/instrumentation/bootstrap.py#L37)
+- Functionality that is common amongst other instrumentation and can be abstracted [here](https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/opentelemetry-instrumentation/src/opentelemetry/instrumentation)
+- Request/response [hooks](https://github.com/open-telemetry/opentelemetry-python-contrib/issues/408) for http instrumentations
+- `suppress_instrumentation` functionality
+  - ex. https://github.com/open-telemetry/opentelemetry-python-contrib/blob/3ec77360cb20482b08b30312a6bedc8b946e3fa1/instrumentation/opentelemetry-instrumentation-requests/src/opentelemetry/instrumentation/requests/__init__.py#L111
+- Suppress propagation functionality
+  - https://github.com/open-telemetry/opentelemetry-python-contrib/issues/344 for more context
+- `exclude_urls` functionality
+  - ex. https://github.com/open-telemetry/opentelemetry-python-contrib/blob/0fcb60d2ad139f78a52edd85b1cc4e32f2e962d0/instrumentation/opentelemetry-instrumentation-flask/src/opentelemetry/instrumentation/flask/__init__.py#L91
+- `url_filter` functonality
+  - ex. https://github.com/open-telemetry/opentelemetry-python-contrib/blob/0fcb60d2ad139f78a52edd85b1cc4e32f2e962d0/instrumentation/opentelemetry-instrumentation-aiohttp-client/src/opentelemetry/instrumentation/aiohttp_client/__init__.py#L235
+- `is_recording()` optimization on non-sampled spans
+  - ex. https://github.com/open-telemetry/opentelemetry-python-contrib/blob/main/instrumentation/opentelemetry-instrumentation-requests/src/opentelemetry/instrumentation/requests/__init__.py#L133
+- Appropriate error handling
+  - ex. https://github.com/open-telemetry/opentelemetry-python-contrib/blob/main/instrumentation/opentelemetry-instrumentation-requests/src/opentelemetry/instrumentation/requests/__init__.py#L146
+
+
 ## Expectations from contributors
 
 OpenTelemetry is an open source community, and as such, greatly encourages contributions from anyone interested in the project. With that being said, there is a certain level of expectation from contributors even after a pull request is merged, specifically pertaining to instrumentations. The OpenTelemetry Python community expects contributors to maintain a level of support and interest in the instrumentations they contribute. This is to ensure that the instrumentation does not become stale and still functions the way the original contributor intended. Some instrumentations also pertain to libraries that the current memebers of the community are not so familiar with, so it is necessary to rely on the expertise of the original contributing parties.
