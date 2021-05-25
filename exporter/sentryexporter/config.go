@@ -20,6 +20,7 @@ import "go.opentelemetry.io/collector/config"
 type Config struct {
 	config.ExporterSettings `mapstructure:",squash"`
 	// DSN to report transaction to Sentry. If the DSN is not set, no trace will be sent to Sentry.
-	DSN      string `mapstructure:"dsn"`
-	Insecure bool   `mapstructure:"insecure"`
+	DSN string `mapstructure:"dsn"`
+	// Allow insecure connection to Sentry
+	Insecure bool `mapstructure:"insecure"`
 }
