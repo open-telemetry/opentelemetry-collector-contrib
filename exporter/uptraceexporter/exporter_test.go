@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/uptrace/uptrace-go/spanexp"
 	"github.com/vmihailenco/msgpack/v5"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
@@ -35,17 +36,21 @@ import (
 
 func TestNewTracesExporterEmptyConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	exp, err := newTracesExporter(cfg, zap.NewNop())
+	exp := newTracesExporter(cfg, zap.NewNop())
+	require.NotNil(t, exp)
+
+	err := exp.start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
-	require.Nil(t, exp)
 }
 
-func TestNewTracesExporterEndpoint(t *testing.T) {
+func TestNewTracesExporterInvalidEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = "_"
-	exp, err := newTracesExporter(cfg, zap.NewNop())
+	exp := newTracesExporter(cfg, zap.NewNop())
+	require.NotNil(t, exp)
+
+	err := exp.start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
-	require.Nil(t, exp)
 }
 
 func TestTracesExporterEmptyTraces(t *testing.T) {
@@ -54,14 +59,16 @@ func TestTracesExporterEmptyTraces(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.DSN = "https://key@api.uptrace.dev/1"
 
-	exp, err := newTracesExporter(cfg, zap.NewNop())
-	require.NoError(t, err)
+	exp := newTracesExporter(cfg, zap.NewNop())
 	require.NotNil(t, exp)
+
+	err := exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
 
 	err = exp.pushTraceData(ctx, pdata.NewTraces())
 	require.NoError(t, err)
 
-	err = exp.Shutdown(ctx)
+	err = exp.shutdown(ctx)
 	require.NoError(t, err)
 }
 
@@ -95,14 +102,16 @@ func TestTracesExporterGenTraces(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.DSN = fmt.Sprintf("%s://key@%s/1", u.Scheme, u.Host)
 
-	exp, err := newTracesExporter(cfg, zap.NewNop())
-	require.NoError(t, err)
+	exp := newTracesExporter(cfg, zap.NewNop())
 	require.NotNil(t, exp)
+
+	err = exp.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
 
 	err = exp.pushTraceData(ctx, testdata.GenerateTraceDataTwoSpansSameResource())
 	require.NoError(t, err)
 
-	err = exp.Shutdown(ctx)
+	err = exp.shutdown(ctx)
 	require.NoError(t, err)
 
 	var traceID [16]byte
