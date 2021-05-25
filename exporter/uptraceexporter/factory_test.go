@@ -34,12 +34,12 @@ func TestCreateDefaultConfig(t *testing.T) {
 	require.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
-func TestCreateTracesExporterError(t *testing.T) {
+func TestCreateTracesExporter(t *testing.T) {
 	cfg := createDefaultConfig()
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exp, err := createTracesExporter(context.Background(), params, cfg)
-	require.Error(t, err)
-	require.Nil(t, exp)
+	require.NoError(t, err)
+	require.NotNil(t, exp)
 }
 
 func TestCreateTracesExporterLoadConfig(t *testing.T) {
