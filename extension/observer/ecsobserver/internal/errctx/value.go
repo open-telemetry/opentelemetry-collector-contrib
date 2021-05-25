@@ -67,7 +67,7 @@ func WithValue(err error, key string, val interface{}) error {
 	}
 }
 
-// WithValues attaches multiple key value pairs. The behaviour is similar to WithValue.
+// WithValues attaches multiple key value pairs. The behavior is similar to WithValue.
 func WithValues(err error, kvs map[string]interface{}) error {
 	if err == nil {
 		return nil

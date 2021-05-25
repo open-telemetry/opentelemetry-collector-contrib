@@ -28,9 +28,8 @@ import (
 // for log and metrics that can be used for debugging.
 
 const (
-	errKeyTask      = "task"
-	errKeyContainer = "container"
-	errKeyTarget    = "target"
+	errKeyTask   = "task"
+	errKeyTarget = "target"
 )
 
 type errWithAttributes interface {
@@ -73,7 +72,9 @@ func extractErrorFields(err error) ([]zap.Field, string) {
 	fields = errAttr.zapFields()
 	v, ok := errctx.ValueFrom(err, errKeyTask)
 	if ok {
-		if task, ok := v.(*Task); ok {
+		// Rename ok to tok because linter says it shadows outer ok.
+		// Though the linter seems to allow the similar block to shadow...
+		if task, tok := v.(*Task); tok {
 			fields = append(fields, zap.String("TaskArn", aws.StringValue(task.Task.TaskArn)))
 			scope = "Task"
 		}
