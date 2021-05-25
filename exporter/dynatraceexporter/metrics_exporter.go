@@ -37,16 +37,11 @@ import (
 const maxChunkSize = 1000
 
 // NewExporter exports to a Dynatrace Metrics v2 API
-func newMetricsExporter(params component.ExporterCreateParams, cfg *config.Config) (*exporter, error) {
-	client, err := cfg.HTTPClientSettings.ToClient()
-	if err != nil {
-		return nil, err
-	}
+func newMetricsExporter(params component.ExporterCreateParams, cfg *config.Config) *exporter {
 	return &exporter{
 		logger: params.Logger,
 		cfg:    cfg,
-		client: client,
-	}, nil
+	}
 }
 
 // exporter forwards metrics to a Dynatrace agent
@@ -230,6 +225,18 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) (int, error) {
 
 	// No known errors
 	return 0, nil
+}
+
+// start starts the exporter
+func (e *exporter) start(_ context.Context, _ component.Host) (err error) {
+	client, err := e.cfg.HTTPClientSettings.ToClient()
+	if err != nil {
+		return err
+	}
+
+	e.client = client
+
+	return nil
 }
 
 // normalizeMetricName formats the custom namespace and view name to
