@@ -30,13 +30,13 @@ var (
 
 func ifaceAttributeValue(v pdata.AttributeValue) interface{} {
 	switch v.Type() {
-	case pdata.AttributeValueSTRING:
+	case pdata.AttributeValueTypeString:
 		return truncate(v.StringVal())
-	case pdata.AttributeValueINT:
+	case pdata.AttributeValueTypeInt:
 		return v.IntVal()
-	case pdata.AttributeValueDOUBLE:
+	case pdata.AttributeValueTypeDouble:
 		return v.DoubleVal()
-	case pdata.AttributeValueBOOL:
+	case pdata.AttributeValueTypeBool:
 		return v.BoolVal()
 	}
 	return nil

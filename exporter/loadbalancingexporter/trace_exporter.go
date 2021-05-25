@@ -84,11 +84,7 @@ func (e *traceExporterImp) Capabilities() consumer.Capabilities {
 }
 
 func (e *traceExporterImp) Start(ctx context.Context, host component.Host) error {
-	if err := e.loadBalancer.Start(ctx, host); err != nil {
-		return err
-	}
-
-	return nil
+	return e.loadBalancer.Start(ctx, host)
 }
 
 func (e *traceExporterImp) Shutdown(context.Context) error {

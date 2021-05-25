@@ -23,5 +23,9 @@ if (loadMatches.size() > 0) {
         "cassandra.storage.load",
         "Size, in bytes, of the on disk data size this node manages",
         "By"
-    ).add(load.Count, Labels.of("myKey", "myVal"))
+    ).add(load.Count, Labels.of(
+        "myKey", "myVal",
+        System.properties["my.label.name"], System.properties["my.label.value"],
+        System.properties["my.other.label.name"], System.properties["my.other.label.value"],
+    ))
 }

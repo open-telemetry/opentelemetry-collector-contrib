@@ -61,10 +61,7 @@ func createTracesExporter(
 ) (component.TracesExporter, error) {
 	oCfg := cfg.(*Config)
 
-	exporter, err := newTracesExporter(oCfg, params.Logger)
-	if err != nil {
-		return nil, err
-	}
+	exporter := newTracesExporter(oCfg, params.Logger)
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
@@ -74,5 +71,6 @@ func createTracesExporter(
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
-		exporterhelper.WithShutdown(exporter.Shutdown))
+		exporterhelper.WithStart(exporter.start),
+		exporterhelper.WithShutdown(exporter.shutdown))
 }

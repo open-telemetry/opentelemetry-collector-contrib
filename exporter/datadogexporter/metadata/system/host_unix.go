@@ -24,7 +24,7 @@ import (
 )
 
 // keep as var for testing
-var hostnamePath string = "/bin/hostname"
+var hostnamePath = "/bin/hostname"
 
 func getSystemFQDN() (string, error) {
 	// Go does not provide a way to get the full hostname

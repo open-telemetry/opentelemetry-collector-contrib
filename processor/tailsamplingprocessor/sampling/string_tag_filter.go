@@ -15,21 +15,67 @@
 package sampling
 
 import (
+	"regexp"
+
+	"github.com/golang/groupcache/lru"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
 
+const defaultCacheSize = 128
+
 type stringAttributeFilter struct {
 	key    string
-	values map[string]struct{}
 	logger *zap.Logger
+	// matcher defines the func to match the attribute values in strict string
+	// or in regular expression
+	matcher func(string) bool
+}
+
+type regexStrSetting struct {
+	matchedAttrs *lru.Cache
+	filterList   []*regexp.Regexp
 }
 
 var _ PolicyEvaluator = (*stringAttributeFilter)(nil)
 
 // NewStringAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute in the given numeric range.
-func NewStringAttributeFilter(logger *zap.Logger, key string, values []string) PolicyEvaluator {
+func NewStringAttributeFilter(logger *zap.Logger, key string, values []string, regexMatchEnabled bool, evictSize int) PolicyEvaluator {
+	// initialize regex filter rules and LRU cache for matched results
+	if regexMatchEnabled {
+		if evictSize <= 0 {
+			evictSize = defaultCacheSize
+		}
+		filterList := addFilters(values)
+		regexStrSetting := &regexStrSetting{
+			matchedAttrs: lru.New(evictSize),
+			filterList:   filterList,
+		}
+
+		return &stringAttributeFilter{
+			key:    key,
+			logger: logger,
+			// matcher returns true if the given string matches the regex rules defined in string attribute filters
+			matcher: func(toMatch string) bool {
+				if v, ok := regexStrSetting.matchedAttrs.Get(toMatch); ok {
+					return v.(bool)
+				}
+
+				for _, r := range regexStrSetting.filterList {
+					if r.MatchString(toMatch) {
+						regexStrSetting.matchedAttrs.Add(toMatch, true)
+						return true
+					}
+				}
+
+				regexStrSetting.matchedAttrs.Add(toMatch, false)
+				return false
+			},
+		}
+	}
+
+	// initialize the exact value map
 	valuesMap := make(map[string]struct{})
 	for _, value := range values {
 		if value != "" {
@@ -38,8 +84,12 @@ func NewStringAttributeFilter(logger *zap.Logger, key string, values []string) P
 	}
 	return &stringAttributeFilter{
 		key:    key,
-		values: valuesMap,
 		logger: logger,
+		// matcher returns true if the given string matches any of the string attribute filters
+		matcher: func(toMatch string) bool {
+			_, matched := valuesMap[toMatch]
+			return matched
+		},
 	}
 }
 
@@ -53,6 +103,8 @@ func (saf *stringAttributeFilter) OnLateArrivingSpans(Decision, []*pdata.Span) e
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
+// The SamplingDecision is made by comparing the attribute values with the matching values,
+// which might be static strings or regular expressions.
 func (saf *stringAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision, error) {
 	saf.logger.Debug("Evaluting spans in string-tag filter")
 	trace.Lock()
@@ -65,7 +117,7 @@ func (saf *stringAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (D
 			rs := rspans.At(i)
 			resource := rs.Resource()
 			if v, ok := resource.Attributes().Get(saf.key); ok {
-				if _, ok := saf.values[v.StringVal()]; ok {
+				if ok := saf.matcher(v.StringVal()); ok {
 					return Sampled, nil
 				}
 			}
@@ -78,7 +130,7 @@ func (saf *stringAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (D
 					if v, ok := span.Attributes().Get(saf.key); ok {
 						truncableStr := v.StringVal()
 						if len(truncableStr) > 0 {
-							if _, ok := saf.values[truncableStr]; ok {
+							if ok := saf.matcher(v.StringVal()); ok {
 								return Sampled, nil
 							}
 						}
@@ -89,4 +141,15 @@ func (saf *stringAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (D
 		}
 	}
 	return NotSampled, nil
+}
+
+// addFilters compiles all the given filters and stores them as regexes.
+// All regexes are automatically anchored to enforce full string matches.
+func addFilters(exprs []string) []*regexp.Regexp {
+	list := make([]*regexp.Regexp, 0, len(exprs))
+	for _, entry := range exprs {
+		rule := regexp.MustCompile(entry)
+		list = append(list, rule)
+	}
+	return list
 }

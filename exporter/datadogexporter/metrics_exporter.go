@@ -70,7 +70,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 	}
 
 	fallbackHost := metadata.GetHost(exp.params.Logger, exp.cfg)
-	ms, _ := mapMetrics(exp.cfg.Metrics, exp.prevPts, fallbackHost, md)
+	ms, _ := mapMetrics(exp.params.Logger, exp.cfg.Metrics, exp.prevPts, fallbackHost, md, exp.params.BuildInfo)
 	metrics.ProcessMetrics(ms, exp.cfg)
 
 	err := exp.client.PostMetrics(ms)

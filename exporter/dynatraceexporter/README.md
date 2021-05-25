@@ -85,7 +85,7 @@ receivers:
   otlp:
     protocols:
       grpc:
-        endpoint: 0.0.0.0:55680
+        endpoint: 0.0.0.0:4317
 exporters:
   dynatrace:
     endpoint: https://ab12345.live.dynatrace.com

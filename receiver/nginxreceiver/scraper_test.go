@@ -17,6 +17,7 @@ package nginxreceiver
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -25,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
 )
 
 func TestScraper(t *testing.T) {
@@ -57,7 +60,7 @@ Reading: 6 Writing: 179 Waiting: 106
 	ilm := ilms.At(0)
 	ms := ilm.Metrics()
 
-	require.Equal(t, 7, ms.Len())
+	require.Equal(t, 4, ms.Len())
 
 	metricValues := make(map[string]int64, 7)
 
@@ -69,23 +72,28 @@ Reading: 6 Writing: 179 Waiting: 106
 		switch m.DataType() {
 		case pdata.MetricDataTypeIntGauge:
 			dps = m.IntGauge().DataPoints()
+			require.Equal(t, 4, dps.Len())
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				state, _ := dp.LabelsMap().Get(metadata.L.State)
+				label := fmt.Sprintf("%s state:%s", m.Name(), state)
+				metricValues[label] = dp.Value()
+			}
 		case pdata.MetricDataTypeIntSum:
 			dps = m.IntSum().DataPoints()
+			require.Equal(t, 1, dps.Len())
+			metricValues[m.Name()] = dps.At(0).Value()
 		}
-
-		require.Equal(t, 1, dps.Len())
-
-		metricValues[m.Name()] = dps.At(0).Value()
 	}
 
 	require.Equal(t, map[string]int64{
-		"nginx.connections_accepted": 16630948,
-		"nginx.connections_handled":  16630948,
-		"nginx.requests":             31070465,
-		"nginx.connections_active":   291,
-		"nginx.connections_reading":  6,
-		"nginx.connections_writing":  179,
-		"nginx.connections_waiting":  106,
+		"nginx.connections_accepted":              16630948,
+		"nginx.connections_handled":               16630948,
+		"nginx.requests":                          31070465,
+		"nginx.connections_current state:active":  291,
+		"nginx.connections_current state:reading": 6,
+		"nginx.connections_current state:writing": 179,
+		"nginx.connections_current state:waiting": 106,
 	}, metricValues)
 }
 

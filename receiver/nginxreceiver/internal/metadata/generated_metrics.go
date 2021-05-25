@@ -56,11 +56,8 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 
 type metricStruct struct {
 	NginxConnectionsAccepted MetricIntf
-	NginxConnectionsActive   MetricIntf
+	NginxConnectionsCurrent  MetricIntf
 	NginxConnectionsHandled  MetricIntf
-	NginxConnectionsReading  MetricIntf
-	NginxConnectionsWaiting  MetricIntf
-	NginxConnectionsWriting  MetricIntf
 	NginxRequests            MetricIntf
 }
 
@@ -68,22 +65,16 @@ type metricStruct struct {
 func (m *metricStruct) Names() []string {
 	return []string{
 		"nginx.connections_accepted",
-		"nginx.connections_active",
+		"nginx.connections_current",
 		"nginx.connections_handled",
-		"nginx.connections_reading",
-		"nginx.connections_waiting",
-		"nginx.connections_writing",
 		"nginx.requests",
 	}
 }
 
 var metricsByName = map[string]MetricIntf{
 	"nginx.connections_accepted": Metrics.NginxConnectionsAccepted,
-	"nginx.connections_active":   Metrics.NginxConnectionsActive,
+	"nginx.connections_current":  Metrics.NginxConnectionsCurrent,
 	"nginx.connections_handled":  Metrics.NginxConnectionsHandled,
-	"nginx.connections_reading":  Metrics.NginxConnectionsReading,
-	"nginx.connections_waiting":  Metrics.NginxConnectionsWaiting,
-	"nginx.connections_writing":  Metrics.NginxConnectionsWriting,
 	"nginx.requests":             Metrics.NginxRequests,
 }
 
@@ -94,11 +85,8 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 func (m *metricStruct) FactoriesByName() map[string]func(pdata.Metric) {
 	return map[string]func(pdata.Metric){
 		Metrics.NginxConnectionsAccepted.Name(): Metrics.NginxConnectionsAccepted.Init,
-		Metrics.NginxConnectionsActive.Name():   Metrics.NginxConnectionsActive.Init,
+		Metrics.NginxConnectionsCurrent.Name():  Metrics.NginxConnectionsCurrent.Init,
 		Metrics.NginxConnectionsHandled.Name():  Metrics.NginxConnectionsHandled.Init,
-		Metrics.NginxConnectionsReading.Name():  Metrics.NginxConnectionsReading.Init,
-		Metrics.NginxConnectionsWaiting.Name():  Metrics.NginxConnectionsWaiting.Init,
-		Metrics.NginxConnectionsWriting.Name():  Metrics.NginxConnectionsWriting.Init,
 		Metrics.NginxRequests.Name():            Metrics.NginxRequests.Init,
 	}
 }
@@ -118,10 +106,10 @@ var Metrics = &metricStruct{
 		},
 	},
 	&metricImpl{
-		"nginx.connections_active",
+		"nginx.connections_current",
 		func(metric pdata.Metric) {
-			metric.SetName("nginx.connections_active")
-			metric.SetDescription("The current number of open connections")
+			metric.SetName("nginx.connections_current")
+			metric.SetDescription("The current number of nginx connections by state")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
@@ -135,33 +123,6 @@ var Metrics = &metricStruct{
 			metric.SetDataType(pdata.MetricDataTypeIntSum)
 			metric.IntSum().SetIsMonotonic(true)
 			metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
-		},
-	},
-	&metricImpl{
-		"nginx.connections_reading",
-		func(metric pdata.Metric) {
-			metric.SetName("nginx.connections_reading")
-			metric.SetDescription("The current number of connections where nginx is reading the request headerhe current number of open connections")
-			metric.SetUnit("connections")
-			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-		},
-	},
-	&metricImpl{
-		"nginx.connections_waiting",
-		func(metric pdata.Metric) {
-			metric.SetName("nginx.connections_waiting")
-			metric.SetDescription("The current number of idle client connections waiting for a request.")
-			metric.SetUnit("connections")
-			metric.SetDataType(pdata.MetricDataTypeIntGauge)
-		},
-	},
-	&metricImpl{
-		"nginx.connections_writing",
-		func(metric pdata.Metric) {
-			metric.SetName("nginx.connections_writing")
-			metric.SetDescription("The current number of connections where nginx is writing the response back to the client.")
-			metric.SetUnit("connections")
-			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		},
 	},
 	&metricImpl{
@@ -183,8 +144,25 @@ var M = Metrics
 
 // Labels contains the possible metric labels that can be used.
 var Labels = struct {
-}{}
+	// State (The state of a connection)
+	State string
+}{
+	"state",
+}
 
 // L contains the possible metric labels that can be used. L is an alias for
 // Labels.
 var L = Labels
+
+// LabelState are the possible values that the label "state" can have.
+var LabelState = struct {
+	Active  string
+	Reading string
+	Writing string
+	Waiting string
+}{
+	"active",
+	"reading",
+	"writing",
+	"waiting",
+}

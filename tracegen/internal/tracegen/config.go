@@ -50,7 +50,7 @@ func (c *Config) Flags(fs *flag.FlagSet) {
 	fs.StringVar(&c.ServiceName, "service", "tracegen", "Service name to use")
 
 	// unfortunately, at this moment, the otel-go client doesn't support configuring OTLP via env vars
-	fs.StringVar(&c.Endpoint, "otlp-endpoint", "localhost:55680", "Target to which the exporter is going to send spans or metrics. This MAY be configured to include a path (e.g. example.com/v1/traces)")
+	fs.StringVar(&c.Endpoint, "otlp-endpoint", "localhost:4317", "Target to which the exporter is going to send spans or metrics. This MAY be configured to include a path (e.g. example.com/v1/traces)")
 	fs.BoolVar(&c.Insecure, "otlp-insecure", false, "Whether to enable client transport security for the exporter's grpc or http connection")
 }
 

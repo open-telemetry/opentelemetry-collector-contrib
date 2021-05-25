@@ -43,17 +43,11 @@ type lokiExporter struct {
 	wg                 sync.WaitGroup
 }
 
-func newExporter(config *Config, logger *zap.Logger) (*lokiExporter, error) {
-	client, err := config.HTTPClientSettings.ToClient()
-	if err != nil {
-		return nil, err
-	}
-
+func newExporter(config *Config, logger *zap.Logger) *lokiExporter {
 	return &lokiExporter{
 		config: config,
 		logger: logger,
-		client: client,
-	}, nil
+	}
 }
 
 func (l *lokiExporter) pushLogData(ctx context.Context, ld pdata.Logs) error {
@@ -109,7 +103,14 @@ func encode(pb proto.Message) ([]byte, error) {
 	return buf, nil
 }
 
-func (l *lokiExporter) start(context.Context, component.Host) (err error) {
+func (l *lokiExporter) start(_ context.Context, _ component.Host) (err error) {
+	client, err := l.config.HTTPClientSettings.ToClient()
+	if err != nil {
+		return err
+	}
+
+	l.client = client
+
 	l.attributesToLabels = l.config.Labels.getAttributes()
 	return nil
 }
@@ -170,7 +171,7 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap) 
 	for attr, attrLabelName := range l.attributesToLabels {
 		av, ok := attributes.Get(attr)
 		if ok {
-			if av.Type() != pdata.AttributeValueSTRING {
+			if av.Type() != pdata.AttributeValueTypeString {
 				l.logger.Debug("Failed to convert attribute value to Loki label value, value is not a string", zap.String("attribute", attr))
 				continue
 			}

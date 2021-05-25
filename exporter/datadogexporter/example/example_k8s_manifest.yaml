@@ -32,7 +32,7 @@ data:
       zipkin:
     exporters:
       otlp:
-        endpoint: "otel-collector.default:55680"
+        endpoint: "otel-collector.default:4317"
         insecure: true
     processors:
       batch:
@@ -113,7 +113,7 @@ spec:
         - containerPort: 9411 # Default endpoint for Zipkin receiver.
         - containerPort: 14250 # Default endpoint for Jaeger gRPC receiver.
         - containerPort: 14268 # Default endpoint for Jaeger HTTP receiver.
-        - containerPort: 55680 # Default OpenTelemetry gRPC receiver port.
+        - containerPort: 4317 # Default OpenTelemetry gRPC receiver port.
         - containerPort: 55681 # Default OpenTelemetry HTTP receiver port.
         env:
            # Get pod ip so that k8s_tagger can tag resources
@@ -190,9 +190,9 @@ metadata:
 spec:
   ports:
   - name: otlp # Default endpoint for OpenTelemetry receiver.
-    port: 55680
+    port: 4317
     protocol: TCP
-    targetPort: 55680
+    targetPort: 4317
   - name: metrics # Default endpoint for querying metrics.
     port: 8888
   selector:
@@ -235,7 +235,7 @@ spec:
             memory: 400Mi
         ports:
         - containerPort: 55679 # Default endpoint for ZPages.
-        - containerPort: 55680 # Default endpoint for OpenTelemetry receiver.
+        - containerPort: 4317 # Default endpoint for OpenTelemetry receiver.
         - containerPort: 8888  # Default endpoint for querying metrics.
         volumeMounts:
         - name: otel-collector-config-vol
