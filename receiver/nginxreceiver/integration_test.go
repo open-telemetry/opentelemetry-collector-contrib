@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
@@ -81,6 +82,8 @@ func (suite *NginxIntegrationSuite) TestNginxScraperHappyPath() {
 	}
 
 	sc := newNginxScraper(zap.NewNop(), cfg)
+	err = sc.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
 	rms, err := sc.scrape(context.Background())
 	require.Nil(t, err)
 
