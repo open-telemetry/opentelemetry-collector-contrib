@@ -31,10 +31,14 @@ receivers:
     collection_interval: 10s
     # optional: the same as specifying OTLP receiver endpoint.
     otlp:
-      endpoint: mycollectorotlpreceiver:55680
+      endpoint: mycollectorotlpreceiver:4317
     username: my_jmx_username
     # determined by the environment variable value
     password: $MY_JMX_PASSWORD
+    # will be set as system properties for the underlying java command
+    properties:
+      otel.resource.attributes: my.attr=my.value,my.other.attr=my.other.value
+      some.system.property: some.system.property.value
 ```
 
 ### jar_path (default: `/opt/opentelemetry-java-contrib-jmx-metrics.jar`)
@@ -84,6 +88,11 @@ Corresponds to the `otel.jmx.username` property.
 The password to use for JMX authentication.
 
 Corresponds to the `otel.jmx.password` property.
+
+### properties
+
+A map of property names to values to be used as system properties set as command line options
+(e.g. `-Dproperty.name=property.value`).
 
 ### otlp.endpoint (default: `0.0.0.0:<random open port>`)
 

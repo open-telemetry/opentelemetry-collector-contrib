@@ -29,6 +29,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 - `groupbytrace` processor: Added workers for queue processing (#2902)
 - `resourcedetection` processor: Add docker detector (#2775)
 - `tailsampling` processor: Support regex on span attribute filtering (#3335_
+- Change obsreport helpers for receiver to use the new pattern created in Collector (#3439,#3443,#3449)
 
 ## 🧰 Bug fixes 🧰
 

@@ -44,17 +44,11 @@ type lokiExporter struct {
 	wg                     sync.WaitGroup
 }
 
-func newExporter(config *Config, logger *zap.Logger) (*lokiExporter, error) {
-	client, err := config.HTTPClientSettings.ToClient()
-	if err != nil {
-		return nil, err
-	}
-
+func newExporter(config *Config, logger *zap.Logger) *lokiExporter {
 	return &lokiExporter{
 		config: config,
 		logger: logger,
-		client: client,
-	}, nil
+	}
 }
 
 func (l *lokiExporter) pushLogData(ctx context.Context, ld pdata.Logs) error {
@@ -110,9 +104,16 @@ func encode(pb proto.Message) ([]byte, error) {
 	return buf, nil
 }
 
-func (l *lokiExporter) start(context.Context, component.Host) (err error) {
+func (l *lokiExporter) start(_ context.Context, _ component.Host) (err error) {
+	client, err := l.config.HTTPClientSettings.ToClient()
+	if err != nil {
+		return err
+	}
+
+	l.client = client
+
 	l.attribLogsToLabels = l.config.Labels.getLogRecordAttributes()
-	l.attribResoucesToLabels = l.config.Labels.getResourceAttributes()
+  l.attribResoucesToLabels = l.config.Labels.getResourceAttributes()
 	return nil
 }
 
