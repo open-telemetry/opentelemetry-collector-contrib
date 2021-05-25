@@ -39,12 +39,12 @@ func main() {
 		Version:     version.Version,
 	}
 
-	if err := run(service.Parameters{BuildInfo: info, Factories: factories}); err != nil {
+	if err := run(service.AppSettings{BuildInfo: info, Factories: factories}); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func runInteractive(params service.Parameters) error {
+func runInteractive(params service.AppSettings) error {
 	app, err := service.New(params)
 	if err != nil {
 		return fmt.Errorf("failed to construct the application: %w", err)
