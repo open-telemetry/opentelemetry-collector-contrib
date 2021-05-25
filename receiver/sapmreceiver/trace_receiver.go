@@ -56,6 +56,8 @@ type sapmReceiver struct {
 	// This defaultResponse is an optimization so we don't have to proto.Marshal the response
 	// for every request. At some point this may be removed when there is actual content to return.
 	defaultResponse []byte
+
+	obsrecv *obsreport.Receiver
 }
 
 // handleRequest parses an http request containing sapm and passes the trace data to the next consumer
@@ -71,7 +73,7 @@ func (sr *sapmReceiver) handleRequest(ctx context.Context, req *http.Request) er
 		transport = "https"
 	}
 	ctx = obsreport.ReceiverContext(ctx, sr.config.ID(), transport)
-	ctx = obsreport.StartTraceDataReceiveOp(ctx, sr.config.ID(), transport)
+	ctx = sr.obsrecv.StartTraceDataReceiveOp(ctx)
 
 	td := jaegertranslator.ProtoBatchesToInternalTraces(sapm.Batches)
 
@@ -92,7 +94,7 @@ func (sr *sapmReceiver) handleRequest(ctx context.Context, req *http.Request) er
 		err = fmt.Errorf("error passing trace data to next consumer: %v", err.Error())
 	}
 
-	obsreport.EndTraceDataReceiveOp(ctx, "protobuf", td.SpanCount(), err)
+	sr.obsrecv.EndTraceDataReceiveOp(ctx, "protobuf", td.SpanCount(), err)
 	return err
 }
 
@@ -208,10 +210,15 @@ func New(
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal default response body for %v receiver: %w", config.ID(), err)
 	}
+	transport := "http"
+	if config.TLSSetting != nil {
+		transport = "https"
+	}
 	return &sapmReceiver{
 		logger:          params.Logger,
 		config:          config,
 		nextConsumer:    nextConsumer,
 		defaultResponse: defaultResponseBytes,
+		obsrecv:         obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: transport}),
 	}, nil
 }
