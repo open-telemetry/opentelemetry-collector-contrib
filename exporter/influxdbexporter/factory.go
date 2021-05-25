@@ -53,7 +53,10 @@ func createTraceExporter(_ context.Context, params component.ExporterCreateParam
 func createMetricsExporter(_ context.Context, params component.ExporterCreateParams, config config.Exporter) (component.MetricsExporter, error) {
 	cfg := config.(*Config)
 
-	exporter := newMetricsExporter(cfg, params)
+	exporter, err := newMetricsExporter(cfg, params)
+	if err != nil {
+		return nil, err
+	}
 
 	return exporterhelper.NewMetricsExporter(
 		config,
