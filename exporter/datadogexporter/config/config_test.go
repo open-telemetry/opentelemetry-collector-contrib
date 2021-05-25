@@ -157,9 +157,8 @@ func TestIgnoreResourcesValidation(t *testing.T) {
 }
 
 func TestSpanNameRemappingsValidation(t *testing.T) {
-	validCfg := Config{Traces: TracesConfig{SpanNameRemappings: map[string]string{"old.opentelemetryspan.name":"updated.name"}}}
-	invalidCfg := Config{Traces: TracesConfig{SpanNameRemappings: map[string]string{"oldname": ""}}
-
+	validCfg := Config{Traces: TracesConfig{SpanNameRemappings: map[string]string{"old.opentelemetryspan.name": "updated.name"}}}
+	invalidCfg := Config{Traces: TracesConfig{SpanNameRemappings: map[string]string{"oldname": ""}}}
 	noErr := validCfg.Validate()
 	err := invalidCfg.Validate()
 	require.NoError(t, noErr)
