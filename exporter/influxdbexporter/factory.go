@@ -38,10 +38,7 @@ func NewFactory() component.ExporterFactory {
 func createTraceExporter(_ context.Context, params component.ExporterCreateParams, config config.Exporter) (component.TracesExporter, error) {
 	cfg := config.(*Config)
 
-	exporter, err := newTracesExporter(cfg, params)
-	if err != nil {
-		return nil, err
-	}
+	exporter := newTracesExporter(cfg, params)
 
 	return exporterhelper.NewTracesExporter(
 		config,
@@ -49,6 +46,7 @@ func createTraceExporter(_ context.Context, params component.ExporterCreateParam
 		exporter.pushTraces,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithStart(exporter.start),
 	)
 }
 
@@ -66,16 +64,14 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		exporter.pushMetrics,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithStart(exporter.start),
 	)
 }
 
 func createLogsExporter(_ context.Context, params component.ExporterCreateParams, config config.Exporter) (component.LogsExporter, error) {
 	cfg := config.(*Config)
 
-	exporter, err := newLogsExporter(cfg, params)
-	if err != nil {
-		return nil, err
-	}
+	exporter := newLogsExporter(cfg, params)
 
 	return exporterhelper.NewLogsExporter(
 		config,
@@ -83,6 +79,7 @@ func createLogsExporter(_ context.Context, params component.ExporterCreateParams
 		exporter.pushLogs,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithStart(exporter.start),
 	)
 }
 
