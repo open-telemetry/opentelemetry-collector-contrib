@@ -637,10 +637,7 @@ func eventsToString(evts pdata.SpanEventSlice) string {
 }
 
 // remapDatadogSpanName allows users to map their datadog span operation names to
-// another string as they see fit.  It's unclear if this should be a set of regexes or simple string
-// matching. It's also unclear if we should expose arbitrary remapping, ie, allowing users to map
-// to some other dyanmic attribute or value on the span. This would probably cause issues in metric
-// computation
+// another string as they see fit.
 func remapDatadogSpanName(name string, spanNameMap map[string]string) string {
 	if updatedSpanName := spanNameMap[name]; updatedSpanName != "" {
 		return updatedSpanName
