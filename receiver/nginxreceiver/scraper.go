@@ -16,9 +16,11 @@ package nginxreceiver
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/nginxinc/nginx-prometheus-exporter/client"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/simple"
 	"go.uber.org/zap"
@@ -27,7 +29,8 @@ import (
 )
 
 type nginxScraper struct {
-	client *client.NginxClient
+	httpClient *http.Client
+	client     *client.NginxClient
 
 	logger *zap.Logger
 	cfg    *Config
@@ -43,16 +46,22 @@ func newNginxScraper(
 	}
 }
 
-func (r *nginxScraper) scrape(ctx context.Context) (pdata.ResourceMetricsSlice, error) {
+func (r *nginxScraper) start(_ context.Context, _ component.Host) error {
+	httpClient, err := r.cfg.ToClient()
+	if err != nil {
+		return err
+	}
+	r.httpClient = httpClient
+
+	return nil
+}
+
+func (r *nginxScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, error) {
 	// Init client in scrape method in case there are transient errors in the
 	// constructor.
 	if r.client == nil {
-		httpClient, err := r.cfg.ToClient()
-		if err != nil {
-			return pdata.ResourceMetricsSlice{}, err
-		}
-
-		r.client, err = client.NewNginxClient(httpClient, r.cfg.HTTPClientSettings.Endpoint)
+		var err error
+		r.client, err = client.NewNginxClient(r.httpClient, r.cfg.HTTPClientSettings.Endpoint)
 		if err != nil {
 			r.client = nil
 			return pdata.ResourceMetricsSlice{}, err
