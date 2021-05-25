@@ -16,6 +16,7 @@ package tailsamplingprocessor
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"sort"
 	"sync"
@@ -25,7 +26,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/idbatcher"
@@ -363,16 +363,16 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 	expectedSpanIds := make(map[int][]pdata.SpanID)
 	expectedSpanIds[0] = []pdata.SpanID{
-		tracetranslator.UInt64ToSpanID(uint64(1)),
+		uInt64ToSpanID(uint64(1)),
 	}
 	expectedSpanIds[1] = []pdata.SpanID{
-		tracetranslator.UInt64ToSpanID(uint64(2)),
-		tracetranslator.UInt64ToSpanID(uint64(3)),
+		uInt64ToSpanID(uint64(2)),
+		uInt64ToSpanID(uint64(3)),
 	}
 	expectedSpanIds[2] = []pdata.SpanID{
-		tracetranslator.UInt64ToSpanID(uint64(4)),
-		tracetranslator.UInt64ToSpanID(uint64(5)),
-		tracetranslator.UInt64ToSpanID(uint64(6)),
+		uInt64ToSpanID(uint64(4)),
+		uInt64ToSpanID(uint64(5)),
+		uInt64ToSpanID(uint64(6)),
 	}
 
 	receivedTraces := msp.AllTraces()
@@ -386,8 +386,10 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 		// might have received out of order, sort for comparison
 		sort.Slice(got, func(i, j int) bool {
-			a := tracetranslator.SpanIDToUInt64(got[i])
-			b := tracetranslator.SpanIDToUInt64(got[j])
+			bytesA := got[i].Bytes()
+			a := binary.BigEndian.Uint64(bytesA[:])
+			bytesB := got[j].Bytes()
+			b := binary.BigEndian.Uint64(bytesB[:])
 			return a < b
 		})
 
@@ -429,7 +431,10 @@ func generateIdsAndBatches(numIds int) ([]pdata.TraceID, []pdata.Traces) {
 	spanID := 0
 	var tds []pdata.Traces
 	for i := 0; i < numIds; i++ {
-		traceIds[i] = tracetranslator.UInt64ToTraceID(1, uint64(i+1))
+		traceID := [16]byte{}
+		binary.BigEndian.PutUint64(traceID[:8], 1)
+		binary.BigEndian.PutUint64(traceID[8:], uint64(i+1))
+		traceIds[i] = pdata.NewTraceID(traceID)
 		// Send each span in a separate batch
 		for j := 0; j <= i; j++ {
 			td := simpleTraces()
@@ -437,12 +442,19 @@ func generateIdsAndBatches(numIds int) ([]pdata.TraceID, []pdata.Traces) {
 			span.SetTraceID(traceIds[i])
 
 			spanID++
-			span.SetSpanID(tracetranslator.UInt64ToSpanID(uint64(spanID)))
+			span.SetSpanID(uInt64ToSpanID(uint64(spanID)))
 			tds = append(tds, td)
 		}
 	}
 
 	return traceIds, tds
+}
+
+// uInt64ToSpanID converts the uint64 representation of a SpanID to pdata.SpanID.
+func uInt64ToSpanID(id uint64) pdata.SpanID {
+	spanID := [8]byte{}
+	binary.BigEndian.PutUint64(spanID[:], id)
+	return pdata.NewSpanID(spanID)
 }
 
 type mockPolicyEvaluator struct {
