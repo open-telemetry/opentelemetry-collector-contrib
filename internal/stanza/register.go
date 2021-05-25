@@ -24,4 +24,6 @@ import (
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/metadata"
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/restructure"
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/router"
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/recombine"
+
 )
