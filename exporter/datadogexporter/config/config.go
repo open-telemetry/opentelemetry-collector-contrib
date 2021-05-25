@@ -105,7 +105,7 @@ type TracesConfig struct {
 	// ignore_resources: ["(GET|POST) /healthcheck"]
 	IgnoreResources []string `mapstructure:"ignore_resources"`
 
-	// SpanNameRemappings is the list of datadog span names and preferred names to map to. This can be used to
+	// SpanNameRemappings is the map of datadog span names and preferred name to map to. This can be used to
 	// automatically map Datadog Span Operation Names to an updated value, and is useful when a user wants to
 	// shorten or modify span names to something more user friendly in the case of instrumentation libraries with
 	// particularly verbose names. All entries must be surrounded by double quotes and be separated by commas, with each entry
