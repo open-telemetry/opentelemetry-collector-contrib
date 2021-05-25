@@ -111,7 +111,7 @@ type TracesConfig struct {
 	// particularly verbose names. All entries must be surrounded by double quotes and be separated by commas, with each entry
 	// between old and updated name separated by a space.
 	// span_name_remappings: ["io.opentelemetry.javaagent.spring.client spring.client", "instrumentation::express.server express"]
-	SpanNameRemappings []string `mapstructure:"span_name_remappings"`
+	SpanNameRemappings map[string]string `mapstructure:"span_name_remappings"`
 }
 
 // TagsConfig defines the tag-related configuration
@@ -253,10 +253,12 @@ func (c *Config) Validate() error {
 	}
 
 	if c.Traces.SpanNameRemappings != nil {
-		for _, entry := range c.Traces.SpanNameRemappings {
-			SpanNameAndUpdatedName := strings.Split(entry, " ")
-			if len(SpanNameAndUpdatedName) != 2 {
-				return fmt.Errorf("'%s' is not valid entry for span name remapping, entry should consist of two space separated strings", entry)
+		for key, value := range c.Traces.SpanNameRemappings {
+			if value == "" {
+				return fmt.Errorf("'%s' is not valid value for span name remapping", value)
+			}
+			if key == "" {
+				return fmt.Errorf("'%s' is not valid key for span name remapping", key)	
 			}
 		}
 	}

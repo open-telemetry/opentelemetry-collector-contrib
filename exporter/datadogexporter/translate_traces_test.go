@@ -1320,6 +1320,9 @@ func TestSpanNameMapping(t *testing.T) {
 
 	calculator := newSublayerCalculator()
 	denylister := NewDenylister([]string{})
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+	}
 
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
@@ -1346,9 +1349,9 @@ func TestSpanNameMapping(t *testing.T) {
 	span.SetStartTimestamp(pdataStartTime)
 	span.SetEndTimestamp(pdataEndTime)
 
-	config := config.Config{Traces: config.TracesConfig{SpanNameRemappings: []string{"flash.server bang.client"}}}
+	config := config.Config{Traces: config.TracesConfig{SpanNameRemappings: map[string]string{"flash.server": "bang.client"}}}
 
-	outputTraces, _ := convertToDatadogTd(traces, "test-host", calculator, &config, denylister)
+	outputTraces, _ := convertToDatadogTd(traces, "test-host", calculator, &config, denylister, buildInfo)
 	aggregatedTraces := aggregateTracePayloadsByEnv(outputTraces)
 
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)

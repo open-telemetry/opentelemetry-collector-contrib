@@ -76,7 +76,7 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, calculator *sublay
 	var runningMetrics []datadog.Metric
 	pushTime := pdata.TimestampFromTime(time.Now())
 
-	spanNameMap := generateSpanNameMap(cfg)
+	spanNameMap := cfg.Traces.SpanNameRemappings
 
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
@@ -634,17 +634,6 @@ func eventsToString(evts pdata.SpanEventSlice) string {
 	}
 	eventArrayBytes, _ := json.Marshal(&eventArray)
 	return string(eventArrayBytes)
-}
-
-func generateSpanNameMap(cfg *config.Config) map[string]string {
-	// we can preset the size to be at most the number of remapping entries
-	spanNameMap := make(map[string]string, len(cfg.Traces.SpanNameRemappings))
-	for _, entry := range cfg.Traces.SpanNameRemappings {
-		spanNameRemapTuple := strings.Split(entry, " ")
-		spanNameMap[spanNameRemapTuple[0]] = spanNameRemapTuple[1]
-	}
-
-	return spanNameMap
 }
 
 // remapDatadogSpanName allows users to map their datadog span operation names to
