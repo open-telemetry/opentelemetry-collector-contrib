@@ -20,8 +20,8 @@ exporters:
     labels:
       attributes:
         container.name: "container_name"
-        k8s.cluster.name: "k8s_cluster_name"
-        severity: "severity"
+      resource:
+        resource.name: "resource_name"
   loki/allsettings:
     endpoint: "https://loki:3100/loki/api/v1/push"
     tenant_id: "example"

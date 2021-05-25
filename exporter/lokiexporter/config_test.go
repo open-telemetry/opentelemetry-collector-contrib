@@ -92,6 +92,62 @@ func TestLoadConfig(t *testing.T) {
 	require.Equal(t, &expectedCfg, actualCfg)
 }
 
+func TestJsonLoadConfig(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.Nil(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[config.Type(typeStr)] = factory
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	assert.Equal(t, 3, len(cfg.Exporters))
+
+	actualCfg := cfg.Exporters[config.NewIDWithName(typeStr, "json")].(*Config)
+	expectedCfg := Config{
+		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "json")),
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Headers:  map[string]string{},
+			Endpoint: "https://loki:3100/loki/api/v1/push",
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile:   "",
+					CertFile: "",
+					KeyFile:  "",
+				},
+				Insecure: false,
+			},
+			ReadBufferSize:  0,
+			WriteBufferSize: 524288,
+			Timeout:         30000000000,
+		},
+		RetrySettings: exporterhelper.RetrySettings{
+			Enabled:         true,
+			InitialInterval: 5000000000,
+			MaxInterval:     30000000000,
+			MaxElapsedTime:  300000000000,
+		},
+		QueueSettings: exporterhelper.QueueSettings{
+			Enabled:      true,
+			NumConsumers: 10,
+			QueueSize:    5000,
+		},
+		TenantID: "example",
+		Labels: LabelsConfig{
+			Attributes: map[string]string{
+				conventions.AttributeContainerName: "container_name",
+			},
+			ResourceAttributes: map[string]string{
+				"resource.name": "resource_name",
+			},
+		},
+		Format: "json",
+	}
+	require.Equal(t, &expectedCfg, actualCfg)
+}
+
 func TestConfig_validate(t *testing.T) {
 	const validEndpoint = "https://validendpoint.local"
 
