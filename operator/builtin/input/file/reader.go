@@ -117,6 +117,11 @@ func (f *Reader) ReadToEnd(ctx context.Context) {
 	}
 }
 
+// Close will close the file
+func (f *Reader) Close() error {
+	return f.file.Close()
+}
+
 // Emit creates an entry with the decoded message and sends it to the next
 // operator in the pipeline
 func (f *Reader) emit(ctx context.Context, msgBuf []byte) error {
