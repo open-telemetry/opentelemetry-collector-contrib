@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `opentelemetry-instrumentation-asgi` Set the response status code on the server span
   ([#478](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/478))
-- Fixed cases where description was used with non-error status code when creating Status objects.
+- `opentelemetry-instrumentation-tornado` Fixed cases where description was used with non-
+  error status code when creating Status objects.
   ([#504](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/504))
 
 ### Added
