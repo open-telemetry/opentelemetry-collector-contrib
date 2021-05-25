@@ -130,7 +130,7 @@ func TestCreateTracesExporter(t *testing.T) {
 
 			if exp != nil {
 				err = exp.Start(context.Background(), componenttest.NewNopHost())
-				if (err == nil) && tC.wantErrorOnStart {
+				if (err != nil) != tC.wantErrorOnStart {
 					t.Errorf("CreateTracesExporter() error = %v, wantErr %v", err, tC.wantErrorOnStart)
 				}
 			}

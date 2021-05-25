@@ -259,7 +259,7 @@ func tagFromSpan(evt *HumioStructuredEvent, strategy Tagger) string {
 }
 
 // start starts the exporter
-func (e *humioTracesExporter) start(_ context.Context, host component.Host) (err error) {
+func (e *humioTracesExporter) start(_ context.Context, host component.Host) error {
 	client, err := e.getClient(e.cfg, e.logger, host)
 	if err != nil {
 		return err
