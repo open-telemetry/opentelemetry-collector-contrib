@@ -60,9 +60,8 @@ processors:
         name: k8s.pod.uid
     
     ignored_pod_names:
-      names: 
-        - jaeger-agent
-        - jaeger-collector
+      - jaeger-agent
+      - jaeger-collector
 
 exporters:
   nop:

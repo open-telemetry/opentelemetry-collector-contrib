@@ -199,6 +199,4 @@ type PodAssociationConfig struct {
 }
 
 // PodIgnoredConfig represent a list of Pod names to ignore
-type PodIgnoredConfig struct {
-	Names []string `mapstructure:"names"`
-}
+type PodIgnoredConfig []string

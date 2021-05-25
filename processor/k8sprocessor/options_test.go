@@ -620,9 +620,7 @@ func TestWithIgnoredPodNames(t *testing.T) {
 		},
 		{
 			"configured",
-			PodIgnoredConfig{
-				Names: []string{"ignore_pod1", "ignore_pod2"},
-			},
+			[]string{"ignore_pod1", "ignore_pod2"},
 			kube.IgnoredPodNames{
 				Regex: []*regexp.Regexp{
 					regexp.MustCompile(`ignore_pod1`),

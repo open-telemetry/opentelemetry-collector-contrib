@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 			APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
-			Ignore:            PodIgnoredConfig{Names: []string{"jaeger-agent", "jaeger-collector"}},
+			Ignore:            []string{"jaeger-agent", "jaeger-collector"},
 		})
 
 	p1 := cfg.Processors[config.NewIDWithName(typeStr, "2")]
@@ -106,8 +106,6 @@ func TestLoadConfig(t *testing.T) {
 					Name: "k8s.pod.uid",
 				},
 			},
-			Ignore: PodIgnoredConfig{
-				Names: []string{"jaeger-agent", "jaeger-collector"},
-			},
+			Ignore: []string{"jaeger-agent", "jaeger-collector"},
 		})
 }
