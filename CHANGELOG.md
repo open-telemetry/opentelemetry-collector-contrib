@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python/compare/v1.2.0-0.21b0...HEAD)
 
+### Changed
+- `opentelemetry-instrumentation-asgi` Set the response status code on the server span
+  ([#478](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/478))
 - Fixed cases where description was used with non-error status code when creating Status objects.
   ([#504](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/504))
 
@@ -15,8 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#458](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/458))
   
 ## [0.21b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.2.0-0.21b0) - 2021-05-11
-### Changed
 
+### Changed
 - `opentelemetry-propagator-ot-trace` Use `TraceFlags` object in `extract`
   ([#472](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/472))
 - Set the `traced_request_attrs` of FalconInstrumentor by an argument correctly.

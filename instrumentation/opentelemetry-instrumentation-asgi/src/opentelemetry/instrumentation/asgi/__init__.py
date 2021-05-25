@@ -233,8 +233,10 @@ class OpenTelemetryMiddleware:
                         if send_span.is_recording():
                             if message["type"] == "http.response.start":
                                 status_code = message["status"]
+                                set_status_code(span, status_code)
                                 set_status_code(send_span, status_code)
                             elif message["type"] == "websocket.send":
+                                set_status_code(span, 200)
                                 set_status_code(send_span, 200)
                             send_span.set_attribute("type", message["type"])
                         await send(message)
