@@ -363,16 +363,16 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 	expectedSpanIds := make(map[int][]pdata.SpanID)
 	expectedSpanIds[0] = []pdata.SpanID{
-		UInt64ToSpanID(uint64(1)),
+		uInt64ToSpanID(uint64(1)),
 	}
 	expectedSpanIds[1] = []pdata.SpanID{
-		UInt64ToSpanID(uint64(2)),
-		UInt64ToSpanID(uint64(3)),
+		uInt64ToSpanID(uint64(2)),
+		uInt64ToSpanID(uint64(3)),
 	}
 	expectedSpanIds[2] = []pdata.SpanID{
-		UInt64ToSpanID(uint64(4)),
-		UInt64ToSpanID(uint64(5)),
-		UInt64ToSpanID(uint64(6)),
+		uInt64ToSpanID(uint64(4)),
+		uInt64ToSpanID(uint64(5)),
+		uInt64ToSpanID(uint64(6)),
 	}
 
 	receivedTraces := msp.AllTraces()
@@ -442,7 +442,7 @@ func generateIdsAndBatches(numIds int) ([]pdata.TraceID, []pdata.Traces) {
 			span.SetTraceID(traceIds[i])
 
 			spanID++
-			span.SetSpanID(UInt64ToSpanID(uint64(spanID)))
+			span.SetSpanID(uInt64ToSpanID(uint64(spanID)))
 			tds = append(tds, td)
 		}
 	}
@@ -450,8 +450,8 @@ func generateIdsAndBatches(numIds int) ([]pdata.TraceID, []pdata.Traces) {
 	return traceIds, tds
 }
 
-// UInt64ToSpanID converts the uint64 representation of a SpanID to pdata.SpanID.
-func UInt64ToSpanID(id uint64) pdata.SpanID {
+// uInt64ToSpanID converts the uint64 representation of a SpanID to pdata.SpanID.
+func uInt64ToSpanID(id uint64) pdata.SpanID {
 	spanID := [8]byte{}
 	binary.BigEndian.PutUint64(spanID[:], id)
 	return pdata.NewSpanID(spanID)
