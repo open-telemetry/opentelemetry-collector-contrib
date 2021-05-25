@@ -83,15 +83,9 @@ func initExporter(cfg *Config) (*sumologicexporter, error) {
 		return nil, err
 	}
 
-	httpClient, err := cfg.HTTPClientSettings.ToClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
-	}
-
 	se := &sumologicexporter{
 		config:              cfg,
 		sources:             sfs,
-		client:              httpClient,
 		filter:              f,
 		prometheusFormatter: pf,
 		graphiteFormatter:   gf,
@@ -118,6 +112,7 @@ func newLogsExporter(
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithStart(se.start),
 	)
 }
 
@@ -139,7 +134,20 @@ func newMetricsExporter(
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithStart(se.start),
 	)
+}
+
+// start starts the exporter
+func (se *sumologicexporter) start(_ context.Context, _ component.Host) (err error) {
+	client, err := se.config.HTTPClientSettings.ToClient()
+	if err != nil {
+		return fmt.Errorf("failed to create HTTP Client: %w", err)
+	}
+
+	se.client = client
+
+	return nil
 }
 
 // pushLogsData groups data with common metadata and sends them as separate batched requests.
