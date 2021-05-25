@@ -113,7 +113,7 @@ func (l *lokiExporter) start(_ context.Context, _ component.Host) (err error) {
 	l.client = client
 
 	l.attribLogsToLabels = l.config.Labels.getLogRecordAttributes()
-  l.attribResoucesToLabels = l.config.Labels.getResourceAttributes()
+	l.attribResoucesToLabels = l.config.Labels.getResourceAttributes()
 	return nil
 }
 
