@@ -43,7 +43,7 @@ func TestNewTracesExporterEmptyConfig(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestNewTracesExporterEndpoint(t *testing.T) {
+func TestNewTracesExporterInvalidEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = "_"
 	exp := newTracesExporter(cfg, zap.NewNop())
