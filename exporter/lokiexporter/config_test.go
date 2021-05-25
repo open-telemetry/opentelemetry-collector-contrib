@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, 2, len(cfg.Exporters))
+	assert.Equal(t, 3, len(cfg.Exporters))
 
 	actualCfg := cfg.Exporters[config.NewIDWithName(typeStr, "allsettings")].(*Config)
 	expectedCfg := Config{
@@ -87,6 +87,7 @@ func TestLoadConfig(t *testing.T) {
 				"severity":      "severity",
 			},
 		},
+		Format: "loki",
 	}
 	require.Equal(t, &expectedCfg, actualCfg)
 }

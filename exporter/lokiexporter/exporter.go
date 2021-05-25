@@ -138,7 +138,12 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 					continue
 				}
 				labels := mergedLabels.String()
-				entry := convertLogToLokiEntry(log)
+				var entry *logproto.Entry
+				if l.config.Format == "json" {
+					entry = convertLogToJsonEntry(log)
+				} else {
+					entry = convertLogToLokiEntry(log)
+				}
 				// entry := convertLogToJsonEntry(log)
 
 				if stream, ok := streams[labels]; ok {
