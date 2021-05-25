@@ -135,7 +135,7 @@ func TestScraperError(t *testing.T) {
 	})
 }
 
-func TestScraperStart(t *testing.T) {
+func TestScraperFailedStart(t *testing.T) {
 	sc := newNginxScraper(zap.NewNop(), &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "localhost:8080",

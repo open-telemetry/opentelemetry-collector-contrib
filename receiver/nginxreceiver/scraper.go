@@ -51,13 +51,12 @@ func (r *nginxScraper) start(_ context.Context, _ component.Host) error {
 	if err != nil {
 		return err
 	}
-
 	r.httpClient = httpClient
 
 	return nil
 }
 
-func (r *nginxScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) {
+func (r *nginxScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, error) {
 	// Init client in scrape method in case there are transient errors in the
 	// constructor.
 	if r.client == nil {
