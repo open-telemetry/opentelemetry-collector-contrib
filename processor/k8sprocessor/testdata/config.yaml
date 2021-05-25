@@ -59,9 +59,11 @@ processors:
       - from: resource_attribute
         name: k8s.pod.uid
     
-    ignored_pod_names:
-      - jaeger-agent
-      - jaeger-collector
+    exclude:
+      pods:
+        - name: jaeger-agent
+        - name: jaeger-collector
+
 
 exporters:
   nop:

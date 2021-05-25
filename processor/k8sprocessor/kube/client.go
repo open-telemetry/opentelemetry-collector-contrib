@@ -51,7 +51,7 @@ type WatchClient struct {
 	Rules        ExtractionRules
 	Filters      Filters
 	Associations []Association
-	Ignore       IgnoredPodNames
+	Exclude      ExcludePods
 }
 
 // Extract deployment name from the pod name. Pod name is created using
@@ -59,13 +59,13 @@ type WatchClient struct {
 var dRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]*-[0-9a-zA-Z]*$`)
 
 // New initializes a new k8s Client.
-func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, ignore IgnoredPodNames, newClientSet APIClientsetProvider, newInformer InformerProvider) (Client, error) {
+func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude ExcludePods, newClientSet APIClientsetProvider, newInformer InformerProvider) (Client, error) {
 	c := &WatchClient{
 		logger:          logger,
 		Rules:           rules,
 		Filters:         filters,
 		Associations:    associations,
-		Ignore:          ignore,
+		Exclude:         exclude,
 		deploymentRegex: dRegex,
 		stopCh:          make(chan struct{}),
 	}
@@ -352,7 +352,7 @@ func (c *WatchClient) shouldIgnorePod(pod *api_v1.Pod) bool {
 	}
 
 	// Check if user requested the pod to be ignored through configuration
-	for _, rexp := range c.Ignore.Regex {
+	for _, rexp := range c.Exclude.Regex {
 		if rexp.MatchString(pod.Name) {
 			return true
 		}

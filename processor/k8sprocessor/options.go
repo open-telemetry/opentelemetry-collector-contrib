@@ -250,17 +250,17 @@ func WithExtractPodAssociations(podAssociations ...PodAssociationConfig) Option 
 	}
 }
 
-// WithIgnoredPodNames allows specifying pod names to ignore
-func WithIgnoredPodNames(podIgnore PodIgnoredConfig) Option {
+// WithExcludePods allows specifying pod names to ignore
+func WithExcludePods(podExclude PodExcludeConfig) Option {
 	return func(p *kubernetesprocessor) error {
-		ignoredNames := kube.IgnoredPodNames{}
-		names := podIgnore
+		ignoredNames := kube.ExcludePods{}
+		names := podExclude.Pods
 
 		if len(names) == 0 {
-			names = []string{"jaeger-agent", "jaeger-collector"}
+			names = []PodNameconfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}
 		}
 		for _, name := range names {
-			ignoredNames.Regex = append(ignoredNames.Regex, regexp.MustCompile(name))
+			ignoredNames.Regex = append(ignoredNames.Regex, regexp.MustCompile(name.Name))
 		}
 		p.podIgnore = ignoredNames
 		return nil

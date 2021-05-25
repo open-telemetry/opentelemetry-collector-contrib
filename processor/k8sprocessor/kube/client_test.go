@@ -87,12 +87,12 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj interfac
 }
 
 func TestDefaultClientset(t *testing.T) {
-	c, err := New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, IgnoredPodNames{}, nil, nil)
+	c, err := New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, ExcludePods{}, nil, nil)
 	assert.Error(t, err)
 	assert.Equal(t, "invalid authType for kubernetes: ", err.Error())
 	assert.Nil(t, c)
 
-	c, err = New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, IgnoredPodNames{}, newFakeAPIClientset, nil)
+	c, err = New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, ExcludePods{}, newFakeAPIClientset, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, c)
 }
@@ -104,7 +104,7 @@ func TestBadFilters(t *testing.T) {
 		ExtractionRules{},
 		Filters{Fields: []FieldFilter{{Op: selection.Exists}}},
 		[]Association{},
-		IgnoredPodNames{},
+		ExcludePods{},
 		newFakeAPIClientset,
 		NewFakeInformer,
 	)
@@ -142,7 +142,7 @@ func TestConstructorErrors(t *testing.T) {
 			gotAPIConfig = c
 			return nil, fmt.Errorf("error creating k8s client")
 		}
-		c, err := New(zap.NewNop(), apiCfg, er, ff, []Association{}, IgnoredPodNames{}, clientProvider, NewFakeInformer)
+		c, err := New(zap.NewNop(), apiCfg, er, ff, []Association{}, ExcludePods{}, clientProvider, NewFakeInformer)
 		assert.Nil(t, c)
 		assert.Error(t, err)
 		assert.Equal(t, err.Error(), "error creating k8s client")
@@ -690,10 +690,10 @@ func Test_selectorsFromFilters(t *testing.T) {
 func newTestClientWithRulesAndFilters(t *testing.T, e ExtractionRules, f Filters) (*WatchClient, *observer.ObservedLogs) {
 	observedLogger, logs := observer.New(zapcore.WarnLevel)
 	logger := zap.New(observedLogger)
-	ignore := IgnoredPodNames{
+	exclude := ExcludePods{
 		Regex: []*regexp.Regexp{regexp.MustCompile("jaeger-agent"), regexp.MustCompile("jaeger-collector")},
 	}
-	c, err := New(logger, k8sconfig.APIConfig{}, e, f, []Association{}, ignore, newFakeAPIClientset, NewFakeInformer)
+	c, err := New(logger, k8sconfig.APIConfig{}, e, f, []Association{}, exclude, newFakeAPIClientset, NewFakeInformer)
 	require.NoError(t, err)
 	return c.(*WatchClient), logs
 }
