@@ -39,7 +39,7 @@ func TestNewTracesExporterEmptyConfig(t *testing.T) {
 	exp := newTracesExporter(cfg, zap.NewNop())
 	require.NotNil(t, exp)
 
-	err := exp.Start(context.Background(), componenttest.NewNopHost())
+	err := exp.start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
 }
 
@@ -49,7 +49,7 @@ func TestNewTracesExporterEndpoint(t *testing.T) {
 	exp := newTracesExporter(cfg, zap.NewNop())
 	require.NotNil(t, exp)
 
-	err := exp.Start(context.Background(), componenttest.NewNopHost())
+	err := exp.start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
 }
 
@@ -62,13 +62,13 @@ func TestTracesExporterEmptyTraces(t *testing.T) {
 	exp := newTracesExporter(cfg, zap.NewNop())
 	require.NotNil(t, exp)
 
-	err := exp.Start(context.Background(), componenttest.NewNopHost())
+	err := exp.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	err = exp.pushTraceData(ctx, pdata.NewTraces())
 	require.NoError(t, err)
 
-	err = exp.Shutdown(ctx)
+	err = exp.shutdown(ctx)
 	require.NoError(t, err)
 }
 
@@ -105,13 +105,13 @@ func TestTracesExporterGenTraces(t *testing.T) {
 	exp := newTracesExporter(cfg, zap.NewNop())
 	require.NotNil(t, exp)
 
-	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	err = exp.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	err = exp.pushTraceData(ctx, testdata.GenerateTraceDataTwoSpansSameResource())
 	require.NoError(t, err)
 
-	err = exp.Shutdown(ctx)
+	err = exp.shutdown(ctx)
 	require.NoError(t, err)
 
 	var traceID [16]byte

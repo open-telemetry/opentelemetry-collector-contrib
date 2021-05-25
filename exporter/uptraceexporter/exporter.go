@@ -99,7 +99,7 @@ func (e *traceExporter) pushTraceData(ctx context.Context, traces pdata.Traces) 
 	return nil
 }
 
-func (e *traceExporter) Start(_ context.Context, _ component.Host) error {
+func (e *traceExporter) start(_ context.Context, _ component.Host) error {
 	if e.cfg.HTTPClientSettings.Endpoint != "" {
 		e.logger.Warn("uptraceexporter: endpoint is not supported; use dsn instead")
 	}
@@ -123,7 +123,7 @@ func (e *traceExporter) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (e *traceExporter) Shutdown(ctx context.Context) error {
+func (e *traceExporter) shutdown(ctx context.Context) error {
 	return e.upexp.Shutdown(ctx)
 }
 
