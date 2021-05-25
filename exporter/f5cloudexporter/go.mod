@@ -14,7 +14,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.27.1-0.20210525185841-1a1bad84686b
 	go.uber.org/zap v1.16.0
-	golang.org/x/oauth2 v0.0.0-20210427180440-81ed05c6b58c
-	google.golang.org/api v0.46.0
+	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
+	google.golang.org/api v0.47.0
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )
