@@ -1,19 +1,17 @@
-# TCP Receiver
+# UDP Receiver
 
-Receives logs from tcp using
+Receives logs from udp using
 the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library.
 
 Supported pipeline types: logs
 
 > :construction: This receiver is in alpha and configuration fields are subject to change.
 
-## Configuration
+## Configuration Fields
 
 | Field             | Default          | Description                                                                                                        |
 | ---               | ---              | ---                                                                                                                |
-| `max_log_size`    | `1MiB`           | The maximum size of a log entry to read before failing. Protects against reading large amounts of data into memory |
 | `listen_address`  | required         | A listen address of the form `<ip>:<port>`                                                                         |
-| `tls`             | nil              | An optional `TLS` configuration (see the TLS configuration section)                                                |
 | `write_to`        | `$body`          | The body [field](/docs/types/field.md) written to when creating a new log entry                                    |
 | `attributes`      | {}               | A map of `key: value` pairs to add to the entry's attributes                                                       |
 | `resource`        | {}               | A map of `key: value` pairs to add to the entry's resource                                                         |
@@ -21,26 +19,17 @@ Supported pipeline types: logs
 | `multiline`       |                  | A `multiline` configuration block. See below for details                                                           |
 | `encoding`        | `nop`            | The encoding of the file being read. See the list of supported encodings below for available options               |
 
-### TLS Configuration
+### `multiline` configuration
 
-The `tcplog` receiver supports TLS, disabled by default.
-config more detail [opentelemetry-collector#configtls](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/configtls#tls-configuration-settings).
+If set, the `multiline` configuration block instructs the `udplog` receiver to split log entries on a pattern other than newlines.
 
-| Field             | Default          | Description                               |
-| ---               | ---              | ---                                       |
-| `cert_file`       |                  | Path to the TLS cert to use for TLS required connections.   |
-| `key_file`        |                  | Path to the TLS key to use for TLS required connections.       |
-| `ca_file`         |                  | Path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty uses system root CA.        |
-| `client_ca_file`  |                  | Path to the TLS cert to use by the server to verify a client certificate. (optional)   |
-
-#### `multiline` configuration
-
-If set, the `multiline` configuration block instructs the `tcplog` receiver to split log entries on a pattern other than newlines.
+**note** If `multiline` is not set at all, it wont't split log entries at all. Every UDP packet is going to be treated as log.
+**note** `multiline` detection works per UDP packet due to protocol limitations.
 
 The `multiline` configuration block must contain exactly one of `line_start_pattern` or `line_end_pattern`. These are regex patterns that
 match either the beginning of a new log entry, or the end of a log entry.
 
-#### Supported encodings
+### Supported encodings
 
 | Key        | Description
 | ---        | ---                                                              |
@@ -63,6 +52,6 @@ Configuration:
 
 ```yaml
 receivers:
-  tcplog:
+  udplog:
     listen_address: "0.0.0.0:54525"
 ```
