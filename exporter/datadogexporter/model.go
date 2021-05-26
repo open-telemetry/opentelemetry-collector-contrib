@@ -19,8 +19,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/obfuscate"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/sampler"
-	"github.com/DataDog/datadog-agent/pkg/trace/exportable/stats"
-	"github.com/DataDog/datadog-agent/pkg/trace/exportable/traceutil"
 )
 
 // obfuscatePayload applies obfuscator rules to the trace payloads
@@ -73,19 +71,4 @@ func getAnalyzedSpans(sps []*pb.Span) []*pb.Span {
 		top = append(top, span)
 	}
 	return top
-}
-
-// Compute Sublayers updates a spans metrics with relevant metadata so that it's duration and breakdown between different services can
-// be accurately displayed in the Datadog UI
-func computeSublayerMetrics(calculator *sublayerCalculator, t pb.Trace) {
-	root := traceutil.GetRoot(t)
-	traceutil.ComputeTopLevel(t)
-
-	subtraces := stats.ExtractSubtraces(t, root)
-	sublayers := make(map[*pb.Span][]stats.SublayerValue)
-	for _, subtrace := range subtraces {
-		subtraceSublayers := calculator.computeSublayers(subtrace.Trace)
-		sublayers[subtrace.Root] = subtraceSublayers
-		stats.SetSublayersOnSpan(subtrace.Root, subtraceSublayers)
-	}
 }

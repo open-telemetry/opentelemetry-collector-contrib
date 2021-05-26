@@ -24,9 +24,11 @@ import (
 )
 
 var (
-	TestAttributes = map[string]string{"datadog.host.name": "custom-hostname"}
-	TestMetrics    = newMetricsWithAttributeMap(TestAttributes)
-	TestTraces     = newTracesWithAttributeMap(TestAttributes)
+	testAttributes = map[string]string{"datadog.host.name": "custom-hostname"}
+	// TestMetrics metrics for tests.
+	TestMetrics = newMetricsWithAttributeMap(testAttributes)
+	// TestTraces traces for tests.
+	TestTraces = newTracesWithAttributeMap(testAttributes)
 )
 
 type DatadogServer struct {

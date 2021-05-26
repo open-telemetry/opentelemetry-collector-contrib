@@ -56,7 +56,7 @@ func newJMXMetricReceiver(
 }
 
 func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) (err error) {
-	jmx.logger.Debug("Starting JMX Receiver")
+	jmx.logger.Debug("starting JMX Receiver")
 
 	jmx.otlpReceiver, err = jmx.buildOTLPReceiver()
 	if err != nil {

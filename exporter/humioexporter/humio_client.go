@@ -26,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.uber.org/zap"
 )
@@ -106,7 +107,7 @@ type humioClient struct {
 }
 
 // Constructs a new HTTP client for sending payloads to Humio
-func newHumioClient(cfg *Config, logger *zap.Logger) (exporterClient, error) {
+func newHumioClient(cfg *Config, logger *zap.Logger, _ component.Host) (exporterClient, error) {
 	client, err := cfg.HTTPClientSettings.ToClient()
 	if err != nil {
 		return nil, err

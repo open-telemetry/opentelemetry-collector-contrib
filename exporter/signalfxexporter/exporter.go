@@ -57,7 +57,6 @@ func (sme *signalfMetadataExporter) ConsumeMetadata(metadata []*metadata.Metadat
 }
 
 type signalfxExporter struct {
-	logger             *zap.Logger
 	pushMetricsData    func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
 	pushMetadata       func(metadata []*metadata.MetadataUpdate) error
 	pushLogsData       func(ctx context.Context, ld pdata.Logs) (droppedLogRecords int, err error)
@@ -135,7 +134,6 @@ func newSignalFxExporter(
 	}
 
 	return &signalfxExporter{
-		logger:             logger,
 		pushMetricsData:    dpClient.pushMetricsData,
 		pushMetadata:       dimClient.PushMetadata,
 		hostMetadataSyncer: hms,
@@ -177,7 +175,6 @@ func newEventExporter(config *Config, logger *zap.Logger) (*signalfxExporter, er
 	}
 
 	return &signalfxExporter{
-		logger:       logger,
 		pushLogsData: eventClient.pushLogsData,
 	}, nil
 }

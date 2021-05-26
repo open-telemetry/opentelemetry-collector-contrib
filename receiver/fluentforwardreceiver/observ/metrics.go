@@ -22,6 +22,7 @@ import (
 )
 
 var (
+	// ConnectionsOpened measure for number of connections opened to the fluentforward receiver.
 	ConnectionsOpened = stats.Int64(
 		"fluent_opened_connections",
 		"Number of connections opened to the fluentforward receiver",
@@ -33,6 +34,7 @@ var (
 		Aggregation: view.Sum(),
 	}
 
+	// ConnectionsClosed measure for number of connections closed to the fluentforward receiver.
 	ConnectionsClosed = stats.Int64(
 		"fluent_closed_connections",
 		"Number of connections closed to the fluentforward receiver",
@@ -44,6 +46,7 @@ var (
 		Aggregation: view.Sum(),
 	}
 
+	// EventsParsed measure for number of Fluent events parsed successfully.
 	EventsParsed = stats.Int64(
 		"fluent_events_parsed",
 		"Number of Fluent events parsed successfully",
@@ -55,6 +58,7 @@ var (
 		Aggregation: view.Sum(),
 	}
 
+	// FailedToParse measure for number of times Fluent messages failed to be decoded.
 	FailedToParse = stats.Int64(
 		"fluent_parse_failures",
 		"Number of times Fluent messages failed to be decoded",
@@ -66,6 +70,7 @@ var (
 		Aggregation: view.Sum(),
 	}
 
+	// RecordsGenerated measure for number of log records generated from Fluent forward input.
 	RecordsGenerated = stats.Int64(
 		"fluent_records_generated",
 		"Number of log records generated from Fluent forward input",

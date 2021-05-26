@@ -75,7 +75,7 @@ type DataCollector struct {
 	nodeConditionsToReport []string
 }
 
-// newDataCollector returns a DataCollector.
+// NewDataCollector returns a DataCollector.
 func NewDataCollector(logger *zap.Logger, nodeConditionsToReport []string) *DataCollector {
 	return &DataCollector{
 		logger: logger,

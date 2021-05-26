@@ -34,52 +34,52 @@ var (
 
 // MetricViews return the metrics views according to given telemetry level.
 func MetricViews() []*view.View {
-	legacyViews := []*view.View{
+	return []*view.View{
 		{
-			Name:        mNumTracesConf.Name(),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumTracesConf.Name()),
 			Measure:     mNumTracesConf,
 			Description: mNumTracesConf.Description(),
 			Aggregation: view.LastValue(),
 		},
 		{
-			Name:        mNumEventsInQueue.Name(),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumEventsInQueue.Name()),
 			Measure:     mNumEventsInQueue,
 			Description: mNumEventsInQueue.Description(),
 			Aggregation: view.LastValue(),
 		},
 		{
-			Name:        mNumTracesInMemory.Name(),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumTracesInMemory.Name()),
 			Measure:     mNumTracesInMemory,
 			Description: mNumTracesInMemory.Description(),
 			Aggregation: view.LastValue(),
 		},
 		{
-			Name:        mTracesEvicted.Name(),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mTracesEvicted.Name()),
 			Measure:     mTracesEvicted,
 			Description: mTracesEvicted.Description(),
 			// sum allows us to start from 0, count will only show up if there's at least one eviction, which might take a while to happen (if ever!)
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        mReleasedSpans.Name(),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mReleasedSpans.Name()),
 			Measure:     mReleasedSpans,
 			Description: mReleasedSpans.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        mReleasedTraces.Name(),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mReleasedTraces.Name()),
 			Measure:     mReleasedTraces,
 			Description: mReleasedTraces.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        mIncompleteReleases.Name(),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mIncompleteReleases.Name()),
 			Measure:     mIncompleteReleases,
 			Description: mIncompleteReleases.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        mEventLatency.Name(),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mEventLatency.Name()),
 			Measure:     mEventLatency,
 			Description: mEventLatency.Description(),
 			TagKeys: []tag.Key{
@@ -88,6 +88,4 @@ func MetricViews() []*view.View {
 			Aggregation: view.Distribution(0, 5, 10, 20, 50, 100, 200, 500, 1000),
 		},
 	}
-
-	return obsreport.ProcessorMetricViews(string(typeStr), legacyViews)
 }

@@ -26,22 +26,21 @@ import (
 )
 
 type tracesExporter struct {
+	logger    common.Logger
+	cfg       *Config
 	writer    *influxHTTPWriter
 	converter *otel2influx.OtelTracesToLineProtocol
 }
 
-func newTracesExporter(config *Config, params component.ExporterCreateParams) (*tracesExporter, error) {
-	influxLogger := newZapInfluxLogger(params.Logger)
-	converter := otel2influx.NewOtelTracesToLineProtocol(influxLogger)
-	writer, err := newInfluxHTTPWriter(influxLogger, config)
-	if err != nil {
-		return nil, err
-	}
+func newTracesExporter(config *Config, params component.ExporterCreateParams) *tracesExporter {
+	logger := newZapInfluxLogger(params.Logger)
+	converter := otel2influx.NewOtelTracesToLineProtocol(logger)
 
 	return &tracesExporter{
-		writer:    writer,
+		logger:    logger,
+		cfg:       config,
 		converter: converter,
-	}, nil
+	}
 }
 
 func (e *tracesExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
@@ -58,7 +57,21 @@ func (e *tracesExporter) pushTraces(ctx context.Context, td pdata.Traces) error 
 	return batch.flushAndClose(ctx)
 }
 
+// start starts the traces exporter
+func (e *tracesExporter) start(_ context.Context, host component.Host) (err error) {
+
+	writer, err := newInfluxHTTPWriter(e.logger, e.cfg, host)
+	if err != nil {
+		return err
+	}
+	e.writer = writer
+
+	return nil
+}
+
 type metricsExporter struct {
+	logger    common.Logger
+	cfg       *Config
 	writer    *influxHTTPWriter
 	converter *otel2influx.OtelMetricsToLineProtocol
 }
@@ -69,23 +82,20 @@ var metricsSchemata = map[string]common.MetricsSchema{
 }
 
 func newMetricsExporter(config *Config, params component.ExporterCreateParams) (*metricsExporter, error) {
-	influxLogger := newZapInfluxLogger(params.Logger)
+	logger := newZapInfluxLogger(params.Logger)
 	schema, found := metricsSchemata[config.MetricsSchema]
 	if !found {
 		return nil, fmt.Errorf("schema '%s' not recognized", config.MetricsSchema)
 	}
 
-	converter, err := otel2influx.NewOtelMetricsToLineProtocol(influxLogger, schema)
-	if err != nil {
-		return nil, err
-	}
-	writer, err := newInfluxHTTPWriter(influxLogger, config)
+	converter, err := otel2influx.NewOtelMetricsToLineProtocol(logger, schema)
 	if err != nil {
 		return nil, err
 	}
 
 	return &metricsExporter{
-		writer:    writer,
+		logger:    logger,
+		cfg:       config,
 		converter: converter,
 	}, nil
 }
@@ -104,23 +114,34 @@ func (e *metricsExporter) pushMetrics(ctx context.Context, md pdata.Metrics) err
 	return batch.flushAndClose(ctx)
 }
 
+// start starts the metrics exporter
+func (e *metricsExporter) start(_ context.Context, host component.Host) (err error) {
+
+	writer, err := newInfluxHTTPWriter(e.logger, e.cfg, host)
+	if err != nil {
+		return err
+	}
+	e.writer = writer
+
+	return nil
+}
+
 type logsExporter struct {
+	logger    common.Logger
+	cfg       *Config
 	writer    *influxHTTPWriter
 	converter *otel2influx.OtelLogsToLineProtocol
 }
 
-func newLogsExporter(config *Config, params component.ExporterCreateParams) (*logsExporter, error) {
-	influxLogger := newZapInfluxLogger(params.Logger)
-	converter := otel2influx.NewOtelLogsToLineProtocol(influxLogger)
-	writer, err := newInfluxHTTPWriter(influxLogger, config)
-	if err != nil {
-		return nil, err
-	}
+func newLogsExporter(config *Config, params component.ExporterCreateParams) *logsExporter {
+	logger := newZapInfluxLogger(params.Logger)
+	converter := otel2influx.NewOtelLogsToLineProtocol(logger)
 
 	return &logsExporter{
-		writer:    writer,
+		logger:    logger,
 		converter: converter,
-	}, nil
+		cfg:       config,
+	}
 }
 
 func (e *logsExporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
@@ -135,4 +156,15 @@ func (e *logsExporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
 		return consumererror.Permanent(err)
 	}
 	return batch.flushAndClose(ctx)
+}
+
+// start starts the logs exporter
+func (e *logsExporter) start(_ context.Context, host component.Host) (err error) {
+	writer, err := newInfluxHTTPWriter(e.logger, e.cfg, host)
+	if err != nil {
+		return err
+	}
+	e.writer = writer
+
+	return nil
 }

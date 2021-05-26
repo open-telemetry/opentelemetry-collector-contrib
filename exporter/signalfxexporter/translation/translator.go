@@ -140,6 +140,7 @@ const (
 type MetricOperator string
 
 const (
+	// MetricOperatorDivision is the MetricOperator division.
 	MetricOperatorDivision MetricOperator = "/"
 )
 
@@ -156,8 +157,8 @@ const (
 // AggregationMethod is the enum used to capture aggregation method
 type AggregationMethod string
 
+// Values for enum AggregationMethodCount.
 const (
-	// AggregationMethodCount represents count aggregation method
 	AggregationMethodCount AggregationMethod = "count"
 	AggregationMethodAvg   AggregationMethod = "avg"
 	AggregationMethodSum   AggregationMethod = "sum"

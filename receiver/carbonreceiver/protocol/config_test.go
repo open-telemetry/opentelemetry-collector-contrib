@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configparser"
 )
 
 func TestLoadParserConfig(t *testing.T) {
@@ -69,7 +69,7 @@ config:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v, err := config.NewParserFromBuffer(strings.NewReader(tt.yaml))
+			v, err := configparser.NewParserFromBuffer(strings.NewReader(tt.yaml))
 			require.NoError(t, err)
 
 			got := tt.cfg // Not strictly necessary but it makes easier to debug issues.
