@@ -155,6 +155,15 @@ func TestLog10kDPS(t *testing.T) {
 				ExpectedMaxRAM: 150,
 			},
 		},
+		{
+			name:     "udp",
+			sender:   datasenders.NewTCPUDPWriter("udp", testbed.DefaultHost, testbed.GetAvailablePort(t), 1),
+			receiver: testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 80,
+				ExpectedMaxRAM: 150,
+			},
+		},
 	}
 
 	processors := map[string]string{
