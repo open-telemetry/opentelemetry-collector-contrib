@@ -17,7 +17,7 @@ package tanzuobservabilityexporter
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
@@ -30,5 +30,16 @@ func TestConfigRequiresNonEmptyEndpoint(t *testing.T) {
 		},
 	}
 
-	require.Error(t, c.Validate())
+	assert.Error(t, c.Validate())
+}
+
+func TestConfigRequiresValidEndpointUrl(t *testing.T) {
+	c := &Config{
+		ExporterSettings: config.ExporterSettings{},
+		Traces: TracesConfig{
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http#$%^&#$%&#"},
+		},
+	}
+
+	assert.Error(t, c.Validate())
 }
