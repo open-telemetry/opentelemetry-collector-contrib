@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- Enabled Dependabot for Github Actions (#3543)
+
 ## v0.27.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.27.0 (Beta) 🎉
