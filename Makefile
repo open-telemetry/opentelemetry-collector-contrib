@@ -124,6 +124,11 @@ gendependabot:
 	@echo "version: 2" >> ${DEPENDABOT_PATH}
 	@echo "updates:" >> ${DEPENDABOT_PATH}
 	@echo "Add entry for \"/\""
+	@echo "  - package-ecosystem: \"github-actions\"" >> ${DEPENDABOT_PATH}
+	@echo "    directory: \"/\"" >> ${DEPENDABOT_PATH}
+	@echo "    schedule:" >> ${DEPENDABOT_PATH}
+	@echo "      interval: \"weekly\"" >> ${DEPENDABOT_PATH}
+	@echo "Add entry for \"/\""
 	@echo "  - package-ecosystem: \"gomod\"" >> ${DEPENDABOT_PATH}
 	@echo "    directory: \"/\"" >> ${DEPENDABOT_PATH}
 	@echo "    schedule:" >> ${DEPENDABOT_PATH}
