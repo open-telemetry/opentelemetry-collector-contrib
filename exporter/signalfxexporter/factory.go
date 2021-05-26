@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
@@ -143,7 +144,7 @@ func createMetricsExporter(
 func loadDefaultTranslationRules() ([]translation.Rule, error) {
 	cfg := Config{}
 
-	cp, err := config.NewParserFromBuffer(strings.NewReader(translation.DefaultTranslationRulesYaml))
+	cp, err := configparser.NewParserFromBuffer(strings.NewReader(translation.DefaultTranslationRulesYaml))
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +171,7 @@ func setDefaultExcludes(cfg *Config) error {
 func loadDefaultExcludes() ([]dpfilters.MetricFilter, error) {
 	cfg := Config{}
 
-	v, err := config.NewParserFromBuffer(strings.NewReader(translation.DefaultExcludeMetricsYaml))
+	v, err := configparser.NewParserFromBuffer(strings.NewReader(translation.DefaultExcludeMetricsYaml))
 	if err != nil {
 		return nil, err
 	}
