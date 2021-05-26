@@ -15,6 +15,8 @@
 package tanzuobservabilityexporter
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -28,7 +30,7 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		exporterType,
 		createDefaultConfig,
-		//exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithTraces(createTraceExporter),
 	)
 }
 
@@ -40,4 +42,24 @@ func createDefaultConfig() config.Exporter {
 		ExporterSettings: config.NewExporterSettings(config.NewID(exporterType)),
 		Traces:           tracesCfg,
 	}
+}
+
+// createTraceExporter implements exporterhelper.CreateTracesExporter and creates
+// an exporter for traces using this configuration
+func createTraceExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
+	cfg config.Exporter,
+) (component.TracesExporter, error) {
+	exp, err := newTracesExporter(params.Logger, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewTracesExporter(
+		cfg,
+		params.Logger,
+		exp.pushTraceData,
+		exporterhelper.WithShutdown(exp.Shutdown),
+	)
 }
