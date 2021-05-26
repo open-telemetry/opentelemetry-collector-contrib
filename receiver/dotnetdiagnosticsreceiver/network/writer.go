@@ -20,9 +20,10 @@ import (
 	"unicode/utf16"
 )
 
+// ByteOrder is the byte order.
 var ByteOrder = binary.LittleEndian
 
-// Writes a length-prefixed, zero-terminated utf16 string to the passed-in
+// WriteUTF16String writes a length-prefixed, zero-terminated utf16 string to the passed-in
 // buffer
 func WriteUTF16String(buf *bytes.Buffer, s string) {
 	encoded := utf16.Encode([]rune(s))

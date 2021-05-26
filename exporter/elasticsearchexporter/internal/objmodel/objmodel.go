@@ -80,6 +80,7 @@ type Value struct {
 // Kind represent the internal kind of a value stored in a Document.
 type Kind uint8
 
+// Enum values for Kind.
 const (
 	KindNil Kind = iota
 	KindBool
@@ -233,7 +234,7 @@ func (doc *Document) Dedup() {
 	}
 }
 
-// Serializes writes the document to the given writer. The serializer will create nested objects if dedot is true.
+// Serialize writes the document to the given writer. The serializer will create nested objects if dedot is true.
 //
 // NOTE: The documented MUST be sorted if dedot is true.
 func (doc *Document) Serialize(w io.Writer, dedot bool) error {

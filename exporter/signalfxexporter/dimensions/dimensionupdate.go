@@ -46,7 +46,7 @@ func (d *DimensionUpdate) Key() DimensionKey {
 	}
 }
 
-// Name is what uniquely identifies a dimension, its name and value
+// DimensionKey is what uniquely identifies a dimension, its name and value
 // together.
 type DimensionKey struct {
 	Name  string

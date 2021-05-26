@@ -162,6 +162,7 @@ type MappingsSettings struct {
 
 type MappingMode int
 
+// Enum values for MappingMode.
 const (
 	MappingNone MappingMode = iota
 	MappingECS

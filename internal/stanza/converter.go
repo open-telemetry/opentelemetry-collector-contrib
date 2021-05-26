@@ -31,7 +31,9 @@ import (
 )
 
 const (
+	// DefaultFlushInterval is the default flush interval.
 	DefaultFlushInterval = 100 * time.Millisecond
+	// DefaultMaxFlushCount is the default max flush count.
 	DefaultMaxFlushCount = 100
 )
 
@@ -194,7 +196,7 @@ func (c *Converter) Stop() {
 	})
 }
 
-// Channel returns the channel on which converted entries will be sent to.
+// OutChannel returns the channel on which converted entries will be sent to.
 func (c *Converter) OutChannel() <-chan pdata.Logs {
 	return c.pLogsChan
 }
@@ -344,7 +346,7 @@ func (c *Converter) flush(ctx context.Context, pLogs pdata.Logs) error {
 
 	// The converter has been stopped so bail the flush.
 	case <-c.stopChan:
-		return errors.New("Logs converter has been stopped")
+		return errors.New("logs converter has been stopped")
 	}
 
 	return nil
@@ -356,7 +358,7 @@ func (c *Converter) Batch(e *entry.Entry) error {
 	case c.workerChan <- e:
 		return nil
 	case <-c.stopChan:
-		return errors.New("Logs converter has been stopped")
+		return errors.New("logs converter has been stopped")
 	}
 }
 

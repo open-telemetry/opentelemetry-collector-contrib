@@ -28,6 +28,7 @@ import (
 
 type MetricGroup string
 
+// Values for MetricGroup enum.
 const (
 	ContainerMetricGroup = MetricGroup("container")
 	PodMetricGroup       = MetricGroup("pod")
@@ -35,6 +36,7 @@ const (
 	VolumeMetricGroup    = MetricGroup("volume")
 )
 
+// ValidMetricGroups map of valid metrics.
 var ValidMetricGroups = map[MetricGroup]bool{
 	ContainerMetricGroup: true,
 	PodMetricGroup:       true,

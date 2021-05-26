@@ -30,6 +30,7 @@ import (
 )
 
 const (
+	// TypeStr is type of detector.
 	TypeStr     = "ecs"
 	tmde3EnvVar = "ECS_CONTAINER_METADATA_URI"
 	tmde4EnvVar = "ECS_CONTAINER_METADATA_URI_V4"

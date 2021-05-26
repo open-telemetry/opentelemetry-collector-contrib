@@ -114,7 +114,7 @@ func (ar *MockAwsXrayReceiver) handleRequest(ctx context.Context, req *http.Requ
 	return ar.nextConsumer.ConsumeTraces(ctx, *traces)
 }
 
-// HTTPHandlerFunction returns an http.HandlerFunc that handles awsXray requests
+// HTTPHandlerFunc returns an http.HandlerFunc that handles awsXray requests
 func (ar *MockAwsXrayReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Request) {
 	// create context with the receiver name from the request context
 	ctx := obsreport.ReceiverContext(req.Context(), ar.config.ID(), "http")

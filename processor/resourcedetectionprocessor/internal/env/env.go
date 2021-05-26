@@ -32,6 +32,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
+// TypeStr is type of detector.
 const TypeStr = "env"
 
 // Environment variable used by "env" to decode a resource.
