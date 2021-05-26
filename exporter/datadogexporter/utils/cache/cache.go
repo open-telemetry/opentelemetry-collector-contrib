@@ -21,9 +21,11 @@ import (
 )
 
 const (
+	// CanonicalHostnameKey the canonical hostname key
 	CanonicalHostnameKey = "canonical_hostname"
-	NoExpiration         = gocache.NoExpiration
-	DefaultExpiration    = gocache.DefaultExpiration
+	// NoExpiration for use with functions that take an expiration time.
+	NoExpiration = gocache.NoExpiration
 )
 
+// Cache global cache instance.
 var Cache = gocache.New(20*time.Minute, 10*time.Minute)

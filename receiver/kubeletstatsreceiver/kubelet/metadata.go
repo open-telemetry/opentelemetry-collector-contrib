@@ -26,6 +26,7 @@ import (
 
 type MetadataLabel string
 
+// Values for MetadataLabel enum.
 const (
 	MetadataLabelContainerID MetadataLabel = conventions.AttributeContainerID
 	MetadataLabelVolumeType  MetadataLabel = labelVolumeType

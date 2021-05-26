@@ -15,6 +15,7 @@
 package jaegerthrifthttpexporter
 
 import (
+	"encoding/binary"
 	"fmt"
 	"time"
 
@@ -22,7 +23,6 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -496,8 +496,7 @@ func traceIDToInt64(traceID []byte) (int64, int64, error) {
 	}
 	tid := [16]byte{}
 	copy(tid[:], traceID)
-	hi, lo := tracetranslator.TraceIDToUInt64Pair(pdata.NewTraceID(tid))
-	return int64(hi), int64(lo), nil
+	return int64(binary.BigEndian.Uint64(tid[:8])), int64(binary.BigEndian.Uint64(tid[8:])), nil
 }
 
 func spanIDToInt64(spanID []byte) (int64, error) {
@@ -506,7 +505,7 @@ func spanIDToInt64(spanID []byte) (int64, error) {
 	}
 	sid := [8]byte{}
 	copy(sid[:], spanID)
-	return int64(tracetranslator.SpanIDToUInt64(pdata.NewSpanID(sid))), nil
+	return int64(binary.BigEndian.Uint64(sid[:])), nil
 }
 
 // ocAttributeKeyExist returns true if a key in attribute of an OC Span exists.

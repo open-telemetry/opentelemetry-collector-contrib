@@ -55,7 +55,7 @@ const (
 	eventNameTag        string = "name"
 	eventAttrTag        string = "attributes"
 	eventTimeTag        string = "time"
-	// max meta value from
+	// MaxMetaValLen value from
 	// https://github.com/DataDog/datadog-agent/blob/140a4ee164261ef2245340c50371ba989fbeb038/pkg/trace/traceutil/truncate.go#L23.
 	MaxMetaValLen int = 5000
 	// tagContainersTags specifies the name of the tag which holds key/value

@@ -34,9 +34,8 @@ const (
 	metricPrefix = "container."
 )
 
-// client.ContainerInspect() response container
-// stats and translated environment string map
-// for potential labels
+// DockerContainer is client.ContainerInspect() response container
+// stats and translated environment string map for potential labels.
 type DockerContainer struct {
 	*dtypes.ContainerJSON
 	EnvMap map[string]string

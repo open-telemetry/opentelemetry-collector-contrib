@@ -359,17 +359,9 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 				testDPS,
 			}
 
-			expectedDP := DataPoint{
-				Value: tc.calculatedValue,
-				Labels: map[string]string{
-					oTellibDimensionKey: instrLibName,
-					"label1":            "value1",
-				},
-			}
-
 			assert.Equal(t, 1, dps.Len())
 			dp := dps.At(0)
-			assert.True(t, (expectedDP.Value.(float64)-dp.Value.(float64)) < 0.002)
+			assert.True(t, (tc.calculatedValue.(float64)-dp.Value.(float64)) < 0.002)
 		})
 	}
 }

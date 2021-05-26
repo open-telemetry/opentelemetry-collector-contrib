@@ -80,7 +80,7 @@ func validateConfiguration(config *Config) error {
 		}
 
 		if transform.MetricIncludeFilter.MatchType != "" && !transform.MetricIncludeFilter.MatchType.isValid() {
-			return fmt.Errorf("%q must be in %q", MatchTypeFieldName, MatchTypes)
+			return fmt.Errorf("%q must be in %q", MatchTypeFieldName, matchTypes)
 		}
 
 		if transform.MetricIncludeFilter.MatchType == RegexpMatchType {
@@ -91,7 +91,7 @@ func validateConfiguration(config *Config) error {
 		}
 
 		if !transform.Action.isValid() {
-			return fmt.Errorf("%q must be in %q", ActionFieldName, Actions)
+			return fmt.Errorf("%q must be in %q", ActionFieldName, actions)
 		}
 
 		if transform.Action == Insert && transform.NewName == "" {
@@ -99,20 +99,20 @@ func validateConfiguration(config *Config) error {
 		}
 
 		if transform.Action == Group && transform.GroupResourceLabels == nil {
-			return fmt.Errorf("missing required field %q while %q is %v", GroupResouceLabelsFieldName, ActionFieldName, Group)
+			return fmt.Errorf("missing required field %q while %q is %v", GroupResourceLabelsFieldName, ActionFieldName, Group)
 		}
 
 		if transform.AggregationType != "" && !transform.AggregationType.isValid() {
-			return fmt.Errorf("%q must be in %q", AggregationTypeFieldName, AggregationTypes)
+			return fmt.Errorf("%q must be in %q", AggregationTypeFieldName, aggregationTypes)
 		}
 
 		if transform.SubmatchCase != "" && !transform.SubmatchCase.isValid() {
-			return fmt.Errorf("%q must be in %q", SubmatchCaseFieldName, SubmatchCases)
+			return fmt.Errorf("%q must be in %q", SubmatchCaseFieldName, submatchCases)
 		}
 
 		for i, op := range transform.Operations {
 			if !op.Action.isValid() {
-				return fmt.Errorf("operation %v: %q must be in %q", i+1, ActionFieldName, OperationActions)
+				return fmt.Errorf("operation %v: %q must be in %q", i+1, ActionFieldName, operationActions)
 			}
 
 			if op.Action == UpdateLabel && op.Label == "" {
@@ -126,7 +126,7 @@ func validateConfiguration(config *Config) error {
 			}
 
 			if op.AggregationType != "" && !op.AggregationType.isValid() {
-				return fmt.Errorf("operation %v: %q must be in %q", i+1, AggregationTypeFieldName, AggregationTypes)
+				return fmt.Errorf("operation %v: %q must be in %q", i+1, AggregationTypeFieldName, aggregationTypes)
 			}
 		}
 	}
