@@ -2,10 +2,15 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- Enabled Dependabot for Github Actions (#3543)
+=======
 ## 🛑 Breaking changes 🛑
 
 - `f5cloud` exporter (#3509):
   - Renamed the config 'auth' field to 'f5cloud_auth'. This will prevent a config field name collision when [Support for Custom Exporter Authenticators as Extensions](https://github.com/open-telemetry/opentelemetry-collector/pull/3128) is ready to be integrated.
+
 
 ## v0.27.0
 
