@@ -174,7 +174,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 	}
 
 	stats.Record(tsp.ctx,
-		statOverallDecisionLatencyµs.M(int64(time.Since(startTime)/time.Microsecond)),
+		statOverallDecisionLatencyUs.M(int64(time.Since(startTime)/time.Microsecond)),
 		statDroppedTooEarlyCount.M(metrics.idNotFoundOnMapCount),
 		statPolicyEvaluationErrorCount.M(metrics.evaluateErrorCount),
 		statTracesOnMemoryGauge.M(int64(atomic.LoadUint64(&tsp.numTracesOnMap))))
