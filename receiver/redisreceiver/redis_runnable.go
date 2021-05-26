@@ -29,6 +29,8 @@ import (
 
 var _ interval.Runnable = (*redisRunnable)(nil)
 
+const transport = "http" // todo verify this
+
 // Runs intermittently, fetching info from Redis, creating metrics/datapoints,
 // and feeding them to a metricsConsumer.
 type redisRunnable struct {
@@ -40,6 +42,7 @@ type redisRunnable struct {
 	logger          *zap.Logger
 	timeBundle      *timeBundle
 	serviceName     string
+	obsrecv         *obsreport.Receiver
 }
 
 func newRedisRunnable(
@@ -57,6 +60,7 @@ func newRedisRunnable(
 		redisSvc:        newRedisSvc(client),
 		metricsConsumer: metricsConsumer,
 		logger:          logger,
+		obsrecv:         obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: transport}),
 	}
 }
 
@@ -74,18 +78,17 @@ func (r *redisRunnable) Setup() error {
 // active Redis database, of which there can be 16.
 func (r *redisRunnable) Run() error {
 	const dataFormat = "redis"
-	const transport = "http" // todo verify this
-	ctx := obsreport.StartMetricsReceiveOp(r.ctx, r.id, transport)
+	ctx := r.obsrecv.StartMetricsReceiveOp(r.ctx)
 
 	inf, err := r.redisSvc.info()
 	if err != nil {
-		obsreport.EndMetricsReceiveOp(ctx, dataFormat, 0, err)
+		r.obsrecv.EndMetricsReceiveOp(ctx, dataFormat, 0, err)
 		return nil
 	}
 
 	uptime, err := inf.getUptimeInSeconds()
 	if err != nil {
-		obsreport.EndMetricsReceiveOp(ctx, dataFormat, 0, err)
+		r.obsrecv.EndMetricsReceiveOp(ctx, dataFormat, 0, err)
 		return nil
 	}
 
@@ -121,7 +124,7 @@ func (r *redisRunnable) Run() error {
 
 	err = r.metricsConsumer.ConsumeMetrics(r.ctx, pdm)
 	_, numPoints := pdm.MetricAndDataPointCount()
-	obsreport.EndMetricsReceiveOp(ctx, dataFormat, numPoints, err)
+	r.obsrecv.EndMetricsReceiveOp(ctx, dataFormat, numPoints, err)
 
 	return nil
 }

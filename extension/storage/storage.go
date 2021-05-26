@@ -50,4 +50,7 @@ type Client interface {
 
 	// Delete will delete data associated with the specified key
 	Delete(context.Context, string) error
+
+	// Close will release any resources held by the client
+	Close(context.Context) error
 }
