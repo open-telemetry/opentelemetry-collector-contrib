@@ -56,7 +56,7 @@ func newJMXMetricReceiver(
 }
 
 func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) (err error) {
-	jmx.logger.Debug("Starting JMX Receiver")
+	jmx.logger.Debug("starting JMX Receiver")
 
 	jmx.otlpReceiver, err = jmx.buildOTLPReceiver()
 	if err != nil {
@@ -67,9 +67,10 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) (e
 	if err != nil {
 		return err
 	}
+
 	subprocessConfig := subprocess.Config{
 		ExecutablePath: "java",
-		Args:           []string{"-Dorg.slf4j.simpleLogger.defaultLogLevel=debug", "-jar", jmx.config.JARPath, "-config", "-"},
+		Args:           append(jmx.config.parseProperties(), "-Dorg.slf4j.simpleLogger.defaultLogLevel=info", "-jar", jmx.config.JARPath, "-config", "-"),
 		StdInContents:  javaConfig,
 	}
 

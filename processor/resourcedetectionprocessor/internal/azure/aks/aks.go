@@ -27,6 +27,7 @@ import (
 )
 
 const (
+	// TypeStr is type of detector.
 	TypeStr = "aks"
 
 	// Environment variable that is set when running on Kubernetes

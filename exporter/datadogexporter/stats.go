@@ -27,13 +27,16 @@ const (
 )
 
 // ComputeAPMStats calculates the stats that should be submitted to APM about a given trace
-func computeAPMStats(tracePayload *pb.TracePayload, calculator *sublayerCalculator, pushTime int64) *stats.Payload {
+func computeAPMStats(tracePayload *pb.TracePayload, pushTime int64) *stats.Payload {
 	statsRawBuckets := make(map[int64]*stats.RawBucket)
+
+	// removing sublayer calc as part of work to port
+	// https://github.com/DataDog/datadog-agent/pull/7450/files
+	var emptySublayer []stats.SublayerValue
 
 	bucketTS := pushTime - statsBucketDuration
 	for _, trace := range tracePayload.Traces {
 		spans := getAnalyzedSpans(trace.Spans)
-		sublayers := calculator.computeSublayers(trace.Spans)
 		for _, span := range spans {
 
 			// TODO: While this is hardcoded to assume a single 10s buckets for now,
@@ -58,7 +61,7 @@ func computeAPMStats(tracePayload *pb.TracePayload, calculator *sublayerCalculat
 				Weight:   1,
 				TopLevel: true,
 			}
-			statsRawBucket.HandleSpan(weightedSpan, tracePayload.Env, []string{versionAggregationTag}, sublayers)
+			statsRawBucket.HandleSpan(weightedSpan, tracePayload.Env, []string{versionAggregationTag}, emptySublayer)
 		}
 	}
 

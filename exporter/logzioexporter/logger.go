@@ -91,7 +91,6 @@ func (l Hclog2ZapLogger) With(args ...interface{}) hclog.Logger {
 
 // Named implementation.
 func (l Hclog2ZapLogger) Named(name string) hclog.Logger {
-	l.name = name
 	return Hclog2ZapLogger{Zap: l.Zap.Named(name)}
 }
 

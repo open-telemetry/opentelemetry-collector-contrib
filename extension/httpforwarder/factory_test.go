@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 )
 
@@ -56,21 +55,6 @@ func TestFactory(t *testing.T) {
 			config:         &Config{Egress: confighttp.HTTPClientSettings{Endpoint: "123.456.7.89:9090"}},
 			wantErr:        true,
 			wantErrMessage: "enter a valid URL for 'egress.endpoint': parse \"123.456.7.89:9090\": first path segment in URL cannot",
-		},
-		{
-			name: "Invalid config - HTTP Client creation fails",
-			config: &Config{
-				Egress: confighttp.HTTPClientSettings{
-					Endpoint: "localhost:9090",
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
-							CAFile: "/non/existent",
-						},
-					},
-				},
-			},
-			wantErr:        true,
-			wantErrMessage: "failed to create HTTP Client: ",
 		},
 		{
 			name:   "Valid config",

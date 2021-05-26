@@ -58,6 +58,7 @@ type Peeker interface {
 	Peek(n int) ([]byte, error)
 }
 
+// Values for enum EventMode.
 const (
 	UnknownMode EventMode = iota
 	MessageMode

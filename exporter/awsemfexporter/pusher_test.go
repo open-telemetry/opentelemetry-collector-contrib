@@ -61,7 +61,7 @@ func TestConcurrentPushAndFlush(t *testing.T) {
 	wg.Wait()
 	assert.Equal(t, concurrency*10, len(collection))
 
-	maxEventPayloadBytes = DefaultMaxEventPayloadBytes
+	maxEventPayloadBytes = defaultMaxEventPayloadBytes
 }
 
 func newMockPusherWithEventCheck(check func(msg string)) (Pusher, string) {
@@ -84,7 +84,7 @@ func newMockPusherWithEventCheck(check func(msg string)) (Pusher, string) {
 func TestLogEvent_eventPayloadBytes(t *testing.T) {
 	testMessage := "test message"
 	logEvent := newLogEvent(0, testMessage)
-	assert.Equal(t, len(testMessage)+PerEventHeaderBytes, logEvent.eventPayloadBytes())
+	assert.Equal(t, len(testMessage)+perEventHeaderBytes, logEvent.eventPayloadBytes())
 }
 
 func TestValidateLogEventWithMutating(t *testing.T) {
@@ -96,9 +96,9 @@ func TestValidateLogEventWithMutating(t *testing.T) {
 	err := logEvent.Validate(logger)
 	assert.Nil(t, err)
 	assert.True(t, *logEvent.InputLogEvent.Timestamp > int64(0))
-	assert.Equal(t, 64-PerEventHeaderBytes, len(*logEvent.InputLogEvent.Message))
+	assert.Equal(t, 64-perEventHeaderBytes, len(*logEvent.InputLogEvent.Message))
 
-	maxEventPayloadBytes = DefaultMaxEventPayloadBytes
+	maxEventPayloadBytes = defaultMaxEventPayloadBytes
 }
 
 func TestValidateLogEventFailed(t *testing.T) {
@@ -220,7 +220,7 @@ func TestPusher_addLogEventBatch(t *testing.T) {
 	//the actual log event add operation happens after the func newLogEventBatchIfNeeded
 	assert.Equal(t, 1, len(p.logEventBatch.PutLogEventsInput.LogEvents))
 
-	p.logEventBatch.byteTotal = MaxRequestPayloadBytes - logEvent.eventPayloadBytes() + 1
+	p.logEventBatch.byteTotal = maxRequestPayloadBytes - logEvent.eventPayloadBytes() + 1
 	assert.NotNil(t, p.addLogEvent(logEvent))
 	assert.Equal(t, 1, len(p.logEventBatch.PutLogEventsInput.LogEvents))
 
@@ -243,10 +243,10 @@ func TestPusher_addLogEventBatch(t *testing.T) {
 func TestAddLogEventWithValidation(t *testing.T) {
 	p, tmpFolder := newMockPusher()
 	defer os.RemoveAll(tmpFolder)
-	largeEventContent := strings.Repeat("a", DefaultMaxEventPayloadBytes)
+	largeEventContent := strings.Repeat("a", defaultMaxEventPayloadBytes)
 
 	logEvent := newLogEvent(timestampMs, largeEventContent)
-	expectedTruncatedContent := (*logEvent.InputLogEvent.Message)[0:(DefaultMaxEventPayloadBytes-PerEventHeaderBytes-len(TruncatedSuffix))] + TruncatedSuffix
+	expectedTruncatedContent := (*logEvent.InputLogEvent.Message)[0:(defaultMaxEventPayloadBytes-perEventHeaderBytes-len(truncatedSuffix))] + truncatedSuffix
 
 	p.AddLogEntry(logEvent)
 	assert.Equal(t, expectedTruncatedContent, *logEvent.InputLogEvent.Message)

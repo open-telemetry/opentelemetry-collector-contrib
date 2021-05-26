@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage"
@@ -141,9 +142,11 @@ func (r *receiver) Shutdown(ctx context.Context) error {
 	defer r.Unlock()
 
 	r.logger.Info("Stopping stanza receiver")
-	err := r.agent.Stop()
+	agentErr := r.agent.Stop()
 	r.converter.Stop()
 	r.cancel()
 	r.wg.Wait()
-	return err
+
+	clientErr := r.storageClient.Close(ctx)
+	return multierr.Combine(agentErr, clientErr)
 }

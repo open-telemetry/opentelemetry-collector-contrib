@@ -191,3 +191,10 @@ func (p *mockClient) Delete(_ context.Context, key string) error {
 	delete(p.cache, key)
 	return nil
 }
+
+func (p *mockClient) Close(_ context.Context) error {
+	p.cacheMux.Lock()
+	defer p.cacheMux.Unlock()
+	p.cache = nil
+	return nil
+}

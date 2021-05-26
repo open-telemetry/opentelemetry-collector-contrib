@@ -65,7 +65,7 @@ func (s *topicScraper) scrape(context.Context) (pdata.ResourceMetricsSlice, erro
 	metrics := simple.Metrics{
 		Metrics:                    pdata.NewMetrics(),
 		MetricFactoriesByName:      metadata.M.FactoriesByName(),
-		InstrumentationLibraryName: InstrumentationLibName,
+		InstrumentationLibraryName: instrumentationLibName,
 		Timestamp:                  time.Now(),
 	}
 	if err != nil {

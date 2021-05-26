@@ -48,12 +48,12 @@ type procState string
 var restartDelay = 10 * time.Second
 
 const (
-	Starting     procState = "starting"
-	Running      procState = "running"
-	ShuttingDown procState = "shutting-down"
-	Stopped      procState = "stopped"
-	Restarting   procState = "restarting"
-	Errored      procState = "errored"
+	starting     procState = "Starting"
+	running      procState = "Running"
+	shuttingDown procState = "ShuttingDown"
+	stopped      procState = "Stopped"
+	restarting   procState = "Restarting"
+	errored      procState = "Errored"
 )
 
 func constructArgs(tcpEndpoint string) []string {
@@ -98,7 +98,7 @@ func (pm *processManager) Shutdown(context.Context) error {
 }
 
 func run(ctx context.Context, execPath string, args []string, config string, logger *zap.Logger) {
-	state := Starting
+	state := starting
 
 	var cmd *exec.Cmd
 	var err error
@@ -113,31 +113,31 @@ func run(ctx context.Context, execPath string, args []string, config string, log
 		logger.Debug("Fluent extension changed state", zap.String("state", string(state)))
 
 		switch state {
-		case Errored:
+		case errored:
 			logger.Error("FluentBit process died", zap.Error(err))
-			state = Restarting
+			state = restarting
 
-		case Starting:
+		case starting:
 			cmd, stdin, stdout = createCommand(execPath, args)
 
-			logger.Debug("Starting fluent subprocess", zap.String("command", cmd.String()))
+			logger.Debug("starting fluent subprocess", zap.String("command", cmd.String()))
 			err = cmd.Start()
 			if err != nil {
-				state = Errored
+				state = errored
 				continue
 			}
 
 			go signalWhenProcessDone(cmd, procWait)
 
-			state = Running
+			state = running
 
-		case Running:
+		case running:
 			go collectOutput(stdout, logger)
 
 			err = renderConfig(config, stdin)
 			stdin.Close()
 			if err != nil {
-				state = Errored
+				state = errored
 				continue
 			}
 
@@ -146,29 +146,29 @@ func run(ctx context.Context, execPath string, args []string, config string, log
 				if ctx.Err() == nil {
 					// We aren't supposed to shutdown yet so this is an error
 					// state.
-					state = Errored
+					state = errored
 					continue
 				}
-				state = Stopped
+				state = stopped
 			case <-ctx.Done():
-				state = ShuttingDown
+				state = shuttingDown
 			}
 
-		case ShuttingDown:
+		case shuttingDown:
 			_ = cmd.Process.Signal(syscall.SIGTERM)
 			<-procWait
 			stdout.Close()
-			state = Stopped
+			state = stopped
 
-		case Restarting:
+		case restarting:
 			_ = stdout.Close()
 			_ = stdin.Close()
 
 			// Sleep for a bit so we don't have a hot loop on repeated failures.
 			time.Sleep(restartDelay)
-			state = Starting
+			state = starting
 
-		case Stopped:
+		case stopped:
 			return
 		}
 	}

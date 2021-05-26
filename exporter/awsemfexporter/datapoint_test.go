@@ -359,17 +359,9 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 				testDPS,
 			}
 
-			expectedDP := DataPoint{
-				Value: tc.calculatedValue,
-				Labels: map[string]string{
-					oTellibDimensionKey: instrLibName,
-					"label1":            "value1",
-				},
-			}
-
 			assert.Equal(t, 1, dps.Len())
 			dp := dps.At(0)
-			assert.True(t, (expectedDP.Value.(float64)-dp.Value.(float64)) < 0.002)
+			assert.True(t, (tc.calculatedValue.(float64)-dp.Value.(float64)) < 0.002)
 		})
 	}
 }
@@ -486,7 +478,7 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 			assert.Equal(t, expectedMetricStats.Max, actualMetricsStats.Max)
 			assert.Equal(t, expectedMetricStats.Min, actualMetricsStats.Min)
 			assert.InDelta(t, expectedMetricStats.Count, actualMetricsStats.Count, 0.1)
-			assert.True(t, expectedMetricStats.Sum-actualMetricsStats.Sum < float64(0.02))
+			assert.InDelta(t, expectedMetricStats.Sum, actualMetricsStats.Sum, 0.02)
 		})
 	}
 }
@@ -536,12 +528,14 @@ func TestGetDataPoints(t *testing.T) {
 		"log-stream",
 	}
 	testCases := []struct {
-		testName           string
-		metric             *metricspb.Metric
-		expectedDataPoints DataPoints
+		testName            string
+		isPrometheusMetrics bool
+		metric              *metricspb.Metric
+		expectedDataPoints  DataPoints
 	}{
 		{
 			"Int gauge",
+			false,
 			generateTestIntGauge("foo"),
 			IntDataPointSlice{
 				metadata.InstrumentationLibraryName,
@@ -551,6 +545,7 @@ func TestGetDataPoints(t *testing.T) {
 		},
 		{
 			"Double gauge",
+			false,
 			generateTestDoubleGauge("foo"),
 			DoubleDataPointSlice{
 				metadata.InstrumentationLibraryName,
@@ -560,6 +555,7 @@ func TestGetDataPoints(t *testing.T) {
 		},
 		{
 			"Int sum",
+			false,
 			generateTestIntSum("foo"),
 			IntDataPointSlice{
 				metadata.InstrumentationLibraryName,
@@ -569,6 +565,7 @@ func TestGetDataPoints(t *testing.T) {
 		},
 		{
 			"Double sum",
+			false,
 			generateTestDoubleSum("foo"),
 			DoubleDataPointSlice{
 				metadata.InstrumentationLibraryName,
@@ -578,6 +575,7 @@ func TestGetDataPoints(t *testing.T) {
 		},
 		{
 			"Double histogram",
+			false,
 			generateTestHistogram("foo"),
 			HistogramDataPointSlice{
 				metadata.InstrumentationLibraryName,
@@ -585,7 +583,18 @@ func TestGetDataPoints(t *testing.T) {
 			},
 		},
 		{
-			"Summary",
+			"Summary from SDK",
+			false,
+			generateTestSummary("foo"),
+			SummaryDataPointSlice{
+				metadata.InstrumentationLibraryName,
+				dmm,
+				pdata.SummaryDataPointSlice{},
+			},
+		},
+		{
+			"Summary from Prometheus",
+			true,
 			generateTestSummary("foo"),
 			SummaryDataPointSlice{
 				metadata.InstrumentationLibraryName,
@@ -607,6 +616,11 @@ func TestGetDataPoints(t *testing.T) {
 		expectedLabels := pdata.NewStringMap().InitFromMap(map[string]string{"label1": "value1"})
 
 		t.Run(tc.testName, func(t *testing.T) {
+			if tc.isPrometheusMetrics {
+				metadata.receiver = prometheusReceiver
+			} else {
+				metadata.receiver = ""
+			}
 			dps := getDataPoints(&metric, metadata, logger)
 			assert.NotNil(t, dps)
 			assert.Equal(t, reflect.TypeOf(tc.expectedDataPoints), reflect.TypeOf(dps))
@@ -636,7 +650,9 @@ func TestGetDataPoints(t *testing.T) {
 				assert.Equal(t, []float64{0, 10}, dp.ExplicitBounds())
 				assert.Equal(t, expectedLabels, dp.LabelsMap())
 			case SummaryDataPointSlice:
+				expectedDPS := tc.expectedDataPoints.(SummaryDataPointSlice)
 				assert.Equal(t, metadata.InstrumentationLibraryName, convertedDPS.instrumentationLibraryName)
+				assert.Equal(t, expectedDPS.deltaMetricMetadata, convertedDPS.deltaMetricMetadata)
 				assert.Equal(t, 1, convertedDPS.Len())
 				dp := convertedDPS.SummaryDataPointSlice.At(0)
 				assert.Equal(t, 15.0, dp.Sum())
