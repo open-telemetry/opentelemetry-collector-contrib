@@ -63,6 +63,10 @@ type MetricsConfig struct {
 	// Buckets states whether to report buckets from distribution metrics
 	Buckets bool `mapstructure:"report_buckets"`
 
+	// Quantiles states whether to report quantiles from summary metrics.
+	// By default, the minimum, maximum and average are reported.
+	Quantiles bool `mapstructure:"report_quantiles"`
+
 	// SendMonotonic states whether to report cumulative monotonic metrics as counters
 	// or gauges
 	SendMonotonic bool `mapstructure:"send_monotonic_counter"`

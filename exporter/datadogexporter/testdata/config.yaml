@@ -36,6 +36,7 @@ exporters:
 
     metrics:
       endpoint: https://api.datadoghq.test
+      report_quantiles: false
 
     traces:
       sample_rate: 1

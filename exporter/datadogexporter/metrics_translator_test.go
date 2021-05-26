@@ -517,6 +517,95 @@ func TestMapHistogramMetrics(t *testing.T) {
 	)
 }
 
+func TestQuantileTag(t *testing.T) {
+	tests := []struct {
+		quantile float64
+		tag      string
+	}{
+		{quantile: 0, tag: "quantile:0"},
+		{quantile: 0.001, tag: "quantile:0.001"},
+		{quantile: 0.9, tag: "quantile:0.9"},
+		{quantile: 0.95, tag: "quantile:0.95"},
+		{quantile: 0.99, tag: "quantile:0.99"},
+		{quantile: 0.999, tag: "quantile:0.999"},
+		{quantile: 1, tag: "quantile:1.0"},
+		{quantile: 1e-10, tag: "quantile:1e-10"},
+	}
+
+	for _, test := range tests {
+		assert.Equal(t, test.tag, getQuantileTag(test.quantile))
+	}
+}
+
+func exampleSummaryDataPointSlice(ts pdata.Timestamp) pdata.SummaryDataPointSlice {
+	slice := pdata.NewSummaryDataPointSlice()
+	point := slice.AppendEmpty()
+	point.SetCount(100)
+	point.SetSum(10_000)
+	qSlice := point.QuantileValues()
+
+	qMin := qSlice.AppendEmpty()
+	qMin.SetQuantile(0.0)
+	qMin.SetValue(0)
+
+	qMedian := qSlice.AppendEmpty()
+	qMedian.SetQuantile(0.5)
+	qMedian.SetValue(100)
+
+	q999 := qSlice.AppendEmpty()
+	q999.SetQuantile(0.999)
+	q999.SetValue(500)
+
+	qMax := qSlice.AppendEmpty()
+	qMax.SetQuantile(1)
+	qMax.SetValue(600)
+	point.SetTimestamp(ts)
+	return slice
+}
+
+func TestMapSummaryMetrics(t *testing.T) {
+	ts := pdata.TimestampFromTime(time.Now())
+	slice := exampleSummaryDataPointSlice(ts)
+
+	noQuantiles := []datadog.Metric{
+		metrics.NewGauge("summary.example.count", uint64(ts), 100, []string{}),
+		metrics.NewGauge("summary.example.sum", uint64(ts), 10_000, []string{}),
+	}
+	quantiles := []datadog.Metric{
+		metrics.NewGauge("summary.example.quantile", uint64(ts), 0, []string{"quantile:0"}),
+		metrics.NewGauge("summary.example.quantile", uint64(ts), 100, []string{"quantile:0.5"}),
+		metrics.NewGauge("summary.example.quantile", uint64(ts), 500, []string{"quantile:0.999"}),
+		metrics.NewGauge("summary.example.quantile", uint64(ts), 600, []string{"quantile:1.0"}),
+	}
+	assert.ElementsMatch(t,
+		mapSummaryMetrics("summary.example", slice, false, []string{}),
+		noQuantiles,
+	)
+	assert.ElementsMatch(t,
+		mapSummaryMetrics("summary.example", slice, true, []string{}),
+		append(noQuantiles, quantiles...),
+	)
+
+	noQuantilesAttr := []datadog.Metric{
+		metrics.NewGauge("summary.example.count", uint64(ts), 100, []string{"attribute_tag:attribute_value"}),
+		metrics.NewGauge("summary.example.sum", uint64(ts), 10_000, []string{"attribute_tag:attribute_value"}),
+	}
+	quantilesAttr := []datadog.Metric{
+		metrics.NewGauge("summary.example.quantile", uint64(ts), 0, []string{"attribute_tag:attribute_value", "quantile:0"}),
+		metrics.NewGauge("summary.example.quantile", uint64(ts), 100, []string{"attribute_tag:attribute_value", "quantile:0.5"}),
+		metrics.NewGauge("summary.example.quantile", uint64(ts), 500, []string{"attribute_tag:attribute_value", "quantile:0.999"}),
+		metrics.NewGauge("summary.example.quantile", uint64(ts), 600, []string{"attribute_tag:attribute_value", "quantile:1.0"}),
+	}
+	assert.ElementsMatch(t,
+		mapSummaryMetrics("summary.example", slice, false, []string{"attribute_tag:attribute_value"}),
+		noQuantilesAttr,
+	)
+	assert.ElementsMatch(t,
+		mapSummaryMetrics("summary.example", slice, true, []string{"attribute_tag:attribute_value"}),
+		append(noQuantilesAttr, quantilesAttr...),
+	)
+}
+
 func TestRunningMetrics(t *testing.T) {
 	ms := pdata.NewMetrics()
 	rms := ms.ResourceMetrics()
@@ -665,6 +754,12 @@ func createTestMetrics() pdata.Metrics {
 	dpDouble.SetTimestamp(seconds(2))
 	dpDouble.SetValue(4 + math.Pi)
 
+	// Summary
+	met = metricsArray.AppendEmpty()
+	met.SetName("summary")
+	met.SetDataType(pdata.MetricDataTypeSummary)
+	slice := exampleSummaryDataPointSlice(seconds(0))
+	slice.CopyTo(met.Summary().DataPoints())
 	return md
 }
 
@@ -712,6 +807,8 @@ func TestMapMetrics(t *testing.T) {
 		testGauge("int.histogram.count", 20),
 		testGauge("double.histogram.sum", math.Phi),
 		testGauge("double.histogram.count", 20),
+		testGauge("summary.sum", 10_000),
+		testGauge("summary.count", 100),
 		testCount("int.cumulative.sum", 3),
 		testCount("double.cumulative.sum", math.Pi),
 	})
