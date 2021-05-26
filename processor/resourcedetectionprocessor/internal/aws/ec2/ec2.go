@@ -31,6 +31,7 @@ import (
 )
 
 const (
+	// TypeStr is type of detector.
 	TypeStr   = "ec2"
 	tagPrefix = "ec2.tag."
 )

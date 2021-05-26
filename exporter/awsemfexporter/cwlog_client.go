@@ -34,10 +34,10 @@ var collectorDistribution = "opentelemetry-collector-contrib"
 const (
 	// this is the retry count, the total attempts will be at most retry count + 1.
 	defaultRetryCount          = 1
-	ErrCodeThrottlingException = "ThrottlingException"
+	errCodeThrottlingException = "ThrottlingException"
 )
 
-//The log client will perform the necessary operations for publishing log events use case.
+// LogClient will perform the necessary operations for publishing log events use case.
 type LogClient interface {
 	PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retryCnt int) (*string, error)
 	CreateStream(logGroup, streamName *string) (token string, e error)
@@ -110,7 +110,7 @@ func (client *cloudWatchLogClient) PutLogEvents(input *cloudwatchlogs.PutLogEven
 			default:
 				// ThrottlingException is handled here because the type cloudwatch.ThrottlingException is not yet available in public SDK
 				// Drop request if ThrottlingException happens
-				if awsErr.Code() == ErrCodeThrottlingException {
+				if awsErr.Code() == errCodeThrottlingException {
 					client.logger.Warn("cwlog_client: Error occurs in PutLogEvents, will not retry the request", zap.Error(awsErr), zap.String("LogGroupName", *input.LogGroupName), zap.String("LogStreamName", *input.LogStreamName))
 					return token, err
 				}

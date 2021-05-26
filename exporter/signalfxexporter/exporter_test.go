@@ -985,7 +985,6 @@ func TestConsumeMetadata(t *testing.T) {
 			dimClient.Start()
 
 			se := signalfxExporter{
-				logger:       logger,
 				pushMetadata: dimClient.PushMetadata,
 			}
 			sme := signalfMetadataExporter{

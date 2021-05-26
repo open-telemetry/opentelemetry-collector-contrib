@@ -25,17 +25,19 @@ import (
 )
 
 var (
+	// JSONHeaders headers for JSON requests.
 	JSONHeaders = map[string]string{
 		"Content-Type":     "application/json",
 		"Content-Encoding": "gzip",
 	}
+	// ProtobufHeaders headers for protobuf requests.
 	ProtobufHeaders = map[string]string{
 		"Content-Type":     "application/x-protobuf",
 		"Content-Encoding": "identity",
 	}
 )
 
-// NewClient returns a http.Client configured with the Agent options.
+// NewHTTPClient returns a http.Client configured with the Agent options.
 func NewHTTPClient(timeout time.Duration) *http.Client {
 	return &http.Client{
 		Timeout: timeout,

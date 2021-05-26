@@ -41,6 +41,7 @@ type MatcherOptions struct {
 
 type MatcherType int
 
+// Values for enum MatcherType.
 const (
 	MatcherTypeService MatcherType = iota + 1
 	MatcherTypeTaskDefinition

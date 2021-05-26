@@ -39,13 +39,13 @@ type Graphite struct {
 // Transport is used as an enum to select the type of transport to be used.
 type Transport int
 
+// Available transport options: TCP and UDP.
 const (
-	defaultTimeout = 5
-
-	// Available transport options: TCP and UDP.
 	TCP Transport = iota
 	UDP
 )
+
+const defaultTimeout = 5
 
 // NewGraphite is a method that's used to create a new Graphite instance.
 // This code was initially taken from

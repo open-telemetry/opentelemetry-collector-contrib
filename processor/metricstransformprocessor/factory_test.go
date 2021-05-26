@@ -64,12 +64,12 @@ func TestCreateProcessors(t *testing.T) {
 		{
 			configName:   "config_invalid_group.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q while %q is %v", GroupResouceLabelsFieldName, ActionFieldName, Group),
+			errorMessage: fmt.Sprintf("missing required field %q while %q is %v", GroupResourceLabelsFieldName, ActionFieldName, Group),
 		},
 		{
 			configName:   "config_invalid_action.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("%q must be in %q", ActionFieldName, Actions),
+			errorMessage: fmt.Sprintf("%q must be in %q", ActionFieldName, actions),
 		},
 		{
 			configName:   "config_invalid_include.yaml",
@@ -84,7 +84,7 @@ func TestCreateProcessors(t *testing.T) {
 		{
 			configName:   "config_invalid_matchtype.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("%q must be in %q", MatchTypeFieldName, MatchTypes),
+			errorMessage: fmt.Sprintf("%q must be in %q", MatchTypeFieldName, matchTypes),
 		},
 		{
 			configName:   "config_invalid_label.yaml",
@@ -99,22 +99,22 @@ func TestCreateProcessors(t *testing.T) {
 		{
 			configName:   "config_invalid_aggregationtype.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("%q must be in %q", AggregationTypeFieldName, AggregationTypes),
+			errorMessage: fmt.Sprintf("%q must be in %q", AggregationTypeFieldName, aggregationTypes),
 		},
 		{
 			configName:   "config_invalid_operation_action.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("operation %v: %q must be in %q", 1, ActionFieldName, OperationActions),
+			errorMessage: fmt.Sprintf("operation %v: %q must be in %q", 1, ActionFieldName, operationActions),
 		},
 		{
 			configName:   "config_invalid_operation_aggregationtype.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("operation %v: %q must be in %q", 1, AggregationTypeFieldName, AggregationTypes),
+			errorMessage: fmt.Sprintf("operation %v: %q must be in %q", 1, AggregationTypeFieldName, aggregationTypes),
 		},
 		{
 			configName:   "config_invalid_submatchcase.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("%q must be in %q", SubmatchCaseFieldName, SubmatchCases),
+			errorMessage: fmt.Sprintf("%q must be in %q", SubmatchCaseFieldName, submatchCases),
 		},
 	}
 

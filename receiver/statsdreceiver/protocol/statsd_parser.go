@@ -102,7 +102,7 @@ func (p *StatsDParser) Initialize(enableMetricType bool, sendTimerHistogram []Ti
 	return nil
 }
 
-// get the metrics preparing for flushing and reset the state
+// GetMetrics gets the metrics preparing for flushing and reset the state.
 func (p *StatsDParser) GetMetrics() pdata.Metrics {
 	metrics := pdata.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()
@@ -134,7 +134,7 @@ var timeNowFunc = func() time.Time {
 	return time.Now()
 }
 
-//aggregate for each metric line
+// Aggregate for each metric line.
 func (p *StatsDParser) Aggregate(line string) error {
 	parsedMetric, err := parseMessageToMetric(line, p.enableMetricType)
 	if err != nil {

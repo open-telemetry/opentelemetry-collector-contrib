@@ -28,6 +28,7 @@ import (
 )
 
 const (
+	// TypeStr is type of detector.
 	TypeStr = "elastic_beanstalk"
 
 	linuxPath   = "/var/elasticbeanstalk/xray/environment.conf"
