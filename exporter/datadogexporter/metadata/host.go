@@ -29,8 +29,10 @@ import (
 )
 
 const (
+	// AttributeDatadogHostname the datadog host name attribute
 	AttributeDatadogHostname = "datadog.host.name"
-	AttributeK8sNodeName     = "k8s.node.name"
+	// AttributeK8sNodeName the datadog k8s node name attribute
+	AttributeK8sNodeName = "k8s.node.name"
 )
 
 // GetHost gets the hostname according to configuration.

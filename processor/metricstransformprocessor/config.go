@@ -34,8 +34,8 @@ const (
 	// NewNameFieldName is the mapstructure field name for NewName field
 	NewNameFieldName = "new_name"
 
-	// GroupResouceLabelsFieldName is the mapstructure field name for GroupResouceLabels field
-	GroupResouceLabelsFieldName = "group_resource_labels"
+	// GroupResourceLabelsFieldName is the mapstructure field name for GroupResouceLabels field
+	GroupResourceLabelsFieldName = "group_resource_labels"
 
 	// AggregationTypeFieldName is the mapstructure field name for AggregationType field
 	AggregationTypeFieldName = "aggregation_type"
@@ -173,10 +173,10 @@ const (
 	Group ConfigAction = "group"
 )
 
-var Actions = []ConfigAction{Insert, Update, Combine, Group}
+var actions = []ConfigAction{Insert, Update, Combine, Group}
 
 func (ca ConfigAction) isValid() bool {
-	for _, configAction := range Actions {
+	for _, configAction := range actions {
 		if ca == configAction {
 			return true
 		}
@@ -210,10 +210,10 @@ const (
 	AggregateLabelValues OperationAction = "aggregate_label_values"
 )
 
-var OperationActions = []OperationAction{AddLabel, UpdateLabel, DeleteLabelValue, ToggleScalarDataType, AggregateLabels, AggregateLabelValues}
+var operationActions = []OperationAction{AddLabel, UpdateLabel, DeleteLabelValue, ToggleScalarDataType, AggregateLabels, AggregateLabelValues}
 
 func (oa OperationAction) isValid() bool {
-	for _, operationAction := range OperationActions {
+	for _, operationAction := range operationActions {
 		if oa == operationAction {
 			return true
 		}
@@ -239,10 +239,10 @@ const (
 	Max AggregationType = "max"
 )
 
-var AggregationTypes = []AggregationType{Sum, Mean, Min, Max}
+var aggregationTypes = []AggregationType{Sum, Mean, Min, Max}
 
 func (at AggregationType) isValid() bool {
-	for _, aggregationType := range AggregationTypes {
+	for _, aggregationType := range aggregationTypes {
 		if at == aggregationType {
 			return true
 		}
@@ -262,10 +262,10 @@ const (
 	RegexpMatchType MatchType = "regexp"
 )
 
-var MatchTypes = []MatchType{StrictMatchType, RegexpMatchType}
+var matchTypes = []MatchType{StrictMatchType, RegexpMatchType}
 
 func (mt MatchType) isValid() bool {
-	for _, matchType := range MatchTypes {
+	for _, matchType := range matchTypes {
 		if mt == matchType {
 			return true
 		}
@@ -285,10 +285,10 @@ const (
 	Upper SubmatchCase = "upper"
 )
 
-var SubmatchCases = []SubmatchCase{Lower, Upper}
+var submatchCases = []SubmatchCase{Lower, Upper}
 
 func (sc SubmatchCase) isValid() bool {
-	for _, submatchCase := range SubmatchCases {
+	for _, submatchCase := range submatchCases {
 		if sc == submatchCase {
 			return true
 		}

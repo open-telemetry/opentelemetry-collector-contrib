@@ -26,13 +26,13 @@ import (
 type HostIDKey string
 
 const (
-	// AWS
+	// HostIDKeyAWS AWS HostIDKey.
 	HostIDKeyAWS HostIDKey = "AWSUniqueId"
-	// GCP
+	// HostIDKeyGCP GCP HostIDKey.
 	HostIDKeyGCP HostIDKey = "gcp_id"
-	// Azure
+	// HostIDKeyAzure Azure HostIDKey.
 	HostIDKeyAzure HostIDKey = "azure_resource_id"
-	// Host
+	// HostIDKeyHost Host HostIDKey.
 	HostIDKeyHost HostIDKey = conventions.AttributeHostName
 )
 

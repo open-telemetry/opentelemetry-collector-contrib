@@ -20,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
-// Config for a kubelet client for talking to a kubelet HTTP endpoint.
+// ClientConfig for a kubelet client for talking to a kubelet HTTP endpoint.
 type ClientConfig struct {
 	k8sconfig.APIConfig  `mapstructure:",squash"`
 	configtls.TLSSetting `mapstructure:",squash"`

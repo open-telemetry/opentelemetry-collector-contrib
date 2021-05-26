@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	// TypeStr is the detector type string
+	// TypeStr is type of detector.
 	TypeStr = "system"
 )
 

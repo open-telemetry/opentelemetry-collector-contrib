@@ -36,7 +36,7 @@ import (
 	"sync/atomic"
 )
 
-// This is a direct port of
+// ReqSender is a direct port of
 // https://github.com/signalfx/signalfx-agent/blob/main/pkg/core/writer/requests/sender.go.
 type ReqSender struct {
 	client               *http.Client
@@ -63,7 +63,7 @@ func NewReqSender(ctx context.Context, client *http.Client,
 	}
 }
 
-// Not thread-safe
+// Send sends the request. Not thread-safe.
 func (rs *ReqSender) Send(req *http.Request) {
 	// Slight optimization to avoid spinning up unnecessary workers if there
 	// aren't ever that many dim updates. Once workers start, they remain for the

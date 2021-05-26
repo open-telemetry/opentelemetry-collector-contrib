@@ -26,7 +26,8 @@ import (
 
 const (
 	// Gauge is the Datadog Gauge metric type
-	Gauge               string = "gauge"
+	Gauge string = "gauge"
+	// Count is the Datadog Count metric type
 	Count               string = "count"
 	otelNamespacePrefix string = "otel"
 )
