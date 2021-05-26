@@ -291,7 +291,7 @@ func TestPutLogEvents_ThrottlingException(t *testing.T) {
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
 		NextSequenceToken: &expectedNextSequenceToken}
 
-	throttlingException := awserr.New(ErrCodeThrottlingException, "", nil)
+	throttlingException := awserr.New(errCodeThrottlingException, "", nil)
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, throttlingException).Once()
 
 	client := newCloudWatchLogClient(svc, logger)

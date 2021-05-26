@@ -23,7 +23,7 @@ type MetadataExporter interface { //nolint
 	ConsumeMetadata(metadata []*MetadataUpdate) error
 }
 
-// Type not guaranteed to be stable or permanent.
+// ResourceID type not guaranteed to be stable or permanent.
 type ResourceID string
 
 // MetadataDelta keeps track of changes to metadata on resources.

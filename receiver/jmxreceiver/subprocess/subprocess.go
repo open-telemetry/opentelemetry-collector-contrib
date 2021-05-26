@@ -35,7 +35,7 @@ const (
 	noPid                  = -1
 )
 
-// exported to be used by jmx metric receiver
+// Config exported to be used by jmx metric receiver.
 type Config struct {
 	ExecutablePath       string            `mapstructure:"executable_path"`
 	Args                 []string          `mapstructure:"args"`
@@ -46,7 +46,7 @@ type Config struct {
 	ShutdownTimeout      *time.Duration    `mapstructure:"shutdown_timeout"`
 }
 
-// exported to be used by jmx metric receiver
+// Subprocess exported to be used by jmx metric receiver.
 type Subprocess struct {
 	Stdout         chan string
 	cancel         context.CancelFunc
@@ -84,7 +84,7 @@ func (subprocess *Subprocess) Pid() int {
 	return pid
 }
 
-// exported to be used by jmx metric receiver
+// NewSubprocess exported to be used by jmx metric receiver.
 func NewSubprocess(conf *Config, logger *zap.Logger) *Subprocess {
 	if conf.RestartDelay == nil {
 		restartDelay := defaultRestartDelay
@@ -106,12 +106,12 @@ func NewSubprocess(conf *Config, logger *zap.Logger) *Subprocess {
 }
 
 const (
-	Starting     = "Starting"
-	Running      = "Running"
-	ShuttingDown = "ShuttingDown"
-	Stopped      = "Stopped"
-	Restarting   = "Restarting"
-	Errored      = "Errored"
+	starting     = "Starting"
+	running      = "Running"
+	shuttingDown = "ShuttingDown"
+	stopped      = "Stopped"
+	restarting   = "Restarting"
+	errored      = "Errored"
 )
 
 func (subprocess *Subprocess) Start(ctx context.Context) error {
@@ -198,12 +198,12 @@ func (subprocess *Subprocess) run(ctx context.Context) {
 	// writer is signalWhenProcessReturned() and closer is this loop, so we need synchronization
 	processReturned := newProcessReturned()
 
-	state := Starting
+	state := starting
 	for {
 		subprocess.logger.Debug("subprocess changed state", zap.String("state", state))
 
 		switch state {
-		case Starting:
+		case starting:
 			cmd, stdin, stdout = createCommand(
 				subprocess.config.ExecutablePath,
 				subprocess.config.Args,
@@ -215,19 +215,19 @@ func (subprocess *Subprocess) run(ctx context.Context) {
 			subprocess.logger.Debug("starting subprocess", zap.String("command", cmd.String()))
 			err = cmd.Start()
 			if err != nil {
-				state = Errored
+				state = errored
 				continue
 			}
 			subprocess.pid.setPid(cmd.Process.Pid)
 
 			go signalWhenProcessReturned(cmd, processReturned)
 
-			state = Running
-		case Running:
+			state = running
+		case running:
 			err = subprocess.sendToStdIn(subprocess.config.StdInContents, stdin)
 			stdin.Close()
 			if err != nil {
-				state = Errored
+				state = errored
 				continue
 			}
 
@@ -236,39 +236,39 @@ func (subprocess *Subprocess) run(ctx context.Context) {
 				if err != nil && ctx.Err() == nil {
 					err = fmt.Errorf("unexpected shutdown: %w", err)
 					// We aren't supposed to shutdown yet so this is an error state.
-					state = Errored
+					state = errored
 					continue
 				}
-				// We must close this channel or can wait indefinitely at ShuttingDown
+				// We must close this channel or can wait indefinitely at shuttingDown
 				processReturned.close()
-				state = ShuttingDown
+				state = shuttingDown
 			case <-ctx.Done(): // context-based cancel.
-				state = ShuttingDown
+				state = shuttingDown
 			}
-		case Errored:
+		case errored:
 			subprocess.logger.Error("subprocess died", zap.Error(err))
 			if subprocess.config.RestartOnError {
 				subprocess.pid.setPid(-1)
-				state = Restarting
+				state = restarting
 			} else {
-				// We must close this channel or can wait indefinitely at ShuttingDown
+				// We must close this channel or can wait indefinitely at shuttingDown
 				processReturned.close()
-				state = ShuttingDown
+				state = shuttingDown
 			}
-		case ShuttingDown:
+		case shuttingDown:
 			if cmd.Process != nil {
 				cmd.Process.Signal(syscall.SIGTERM)
 			}
 			<-processReturned.ReturnedChan
 			stdout.Close()
 			subprocess.pid.setPid(-1)
-			state = Stopped
-		case Restarting:
+			state = stopped
+		case restarting:
 			stdout.Close()
 			stdin.Close()
 			time.Sleep(*subprocess.config.RestartDelay)
-			state = Starting
-		case Stopped:
+			state = starting
+		case stopped:
 			return
 		}
 	}

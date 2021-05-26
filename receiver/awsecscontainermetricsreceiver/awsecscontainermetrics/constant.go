@@ -14,6 +14,7 @@
 
 package awsecscontainermetrics
 
+// Constant attributes for aws ecs container metrics.
 const (
 	AttributeECSDockerName        = "aws.ecs.docker.name"
 	AttributeECSCluster           = "aws.ecs.cluster.name"

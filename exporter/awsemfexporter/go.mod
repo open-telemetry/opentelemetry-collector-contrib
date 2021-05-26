@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.27.1-0.20210524201935-86ea0a131fb2
+	go.opentelemetry.io/collector v0.27.1-0.20210525185841-1a1bad84686b
 	go.uber.org/zap v1.16.0
 	google.golang.org/protobuf v1.26.0
 )

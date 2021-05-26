@@ -23,7 +23,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
@@ -48,6 +50,8 @@ Reading: 6 Writing: 179 Waiting: 106
 			Endpoint: nginxMock.URL + "/status",
 		},
 	})
+	err := sc.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
 	rms, err := sc.scrape(context.Background())
 	require.Nil(t, err)
 
@@ -112,8 +116,9 @@ func TestScraperError(t *testing.T) {
 				Endpoint: nginxMock.URL + "/badpath",
 			},
 		})
-
-		_, err := sc.scrape(context.Background())
+		err := sc.start(context.Background(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		_, err = sc.scrape(context.Background())
 		require.Equal(t, errors.New("expected 200 response, got 404"), err)
 	})
 
@@ -123,7 +128,24 @@ func TestScraperError(t *testing.T) {
 				Endpoint: nginxMock.URL + "/status",
 			},
 		})
-		_, err := sc.scrape(context.Background())
+		err := sc.start(context.Background(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		_, err = sc.scrape(context.Background())
 		require.Equal(t, errors.New("failed to parse response body \"Bad status page\": invalid input \"Bad status page\""), err)
 	})
+}
+
+func TestScraperFailedStart(t *testing.T) {
+	sc := newNginxScraper(zap.NewNop(), &Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "localhost:8080",
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile: "/non/existent",
+				},
+			},
+		},
+	})
+	err := sc.start(context.Background(), componenttest.NewNopHost())
+	require.Error(t, err)
 }
