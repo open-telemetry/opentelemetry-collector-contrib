@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/armon/go-metrics v0.3.3 // indirect
-	github.com/getsentry/sentry-go v0.6.2-0.20200707113342-e7c66ce62664
+	github.com/getsentry/sentry-go v0.11.0
 	github.com/gogo/googleapis v1.3.0 // indirect
 	github.com/google/go-cmp v0.5.5
 	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
