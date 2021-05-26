@@ -32,7 +32,7 @@ func computeAPMStats(tracePayload *pb.TracePayload, pushTime int64) *stats.Paylo
 
 	// removing sublayer calc as part of work to port
 	// https://github.com/DataDog/datadog-agent/pull/7450/files
-	emptySublayer := make([]stats.SublayerValue, 0)
+	var emptySublayer []stats.SublayerValue
 
 	bucketTS := pushTime - statsBucketDuration
 	for _, trace := range tracePayload.Traces {
