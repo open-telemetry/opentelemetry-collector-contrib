@@ -79,6 +79,7 @@ type splunkReceiver struct {
 	logsConsumer    consumer.Logs
 	metricsConsumer consumer.Metrics
 	server          *http.Server
+	obsrecv         *obsreport.Receiver
 }
 
 var _ component.MetricsReceiver = (*splunkReceiver)(nil)
@@ -97,6 +98,11 @@ func NewMetricsReceiver(
 		return nil, errEmptyEndpoint
 	}
 
+	transport := "http"
+	if config.TLSSetting != nil {
+		transport = "https"
+	}
+
 	r := &splunkReceiver{
 		logger:          logger,
 		config:          &config,
@@ -108,6 +114,7 @@ func NewMetricsReceiver(
 			ReadHeaderTimeout: defaultServerTimeout,
 			WriteTimeout:      defaultServerTimeout,
 		},
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: transport}),
 	}
 
 	return r, nil
@@ -196,7 +203,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 
 	ctx := obsreport.ReceiverContext(req.Context(), r.config.ID(), transport)
 	if r.logsConsumer == nil {
-		ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.ID(), transport)
+		ctx = r.obsrecv.StartMetricsReceiveOp(ctx)
 	}
 	reqPath := req.URL.Path
 	if !r.config.pathGlob.Match(reqPath) {
@@ -275,7 +282,7 @@ func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Ev
 	md, _ := SplunkHecToMetricsData(r.logger, events, r.createResourceCustomizer(req))
 
 	decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
-	obsreport.EndMetricsReceiveOp(ctx, typeStr, len(events), decodeErr)
+	r.obsrecv.EndMetricsReceiveOp(ctx, typeStr, len(events), decodeErr)
 
 	if decodeErr != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, decodeErr)
