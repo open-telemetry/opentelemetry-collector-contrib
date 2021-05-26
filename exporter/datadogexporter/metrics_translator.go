@@ -255,6 +255,7 @@ func mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, bucke
 func mapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, fallbackHost string, md pdata.Metrics, buildInfo component.BuildInfo) (series []datadog.Metric, droppedTimeSeries int) {
 	pushTime := uint64(time.Now().UTC().UnixNano())
 	rms := md.ResourceMetrics()
+	seenHosts := make(map[string]struct{})
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 
@@ -270,11 +271,7 @@ func mapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *ttlmap.TT
 		if !ok {
 			host = fallbackHost
 		}
-
-		// Report the host as running
-		runningMetric := metrics.DefaultMetrics("metrics", host, pushTime, buildInfo)
-
-		series = append(series, runningMetric...)
+		seenHosts[host] = struct{}{}
 
 		ilms := rm.InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
@@ -317,5 +314,12 @@ func mapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *ttlmap.TT
 			}
 		}
 	}
+
+	for host := range seenHosts {
+		// Report the host as running
+		runningMetric := metrics.DefaultMetrics("metrics", host, pushTime, buildInfo)
+		series = append(series, runningMetric...)
+	}
+
 	return
 }
