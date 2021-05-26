@@ -323,7 +323,7 @@ func TestProcessorNoAttrs(t *testing.T) {
 		t,
 		NewFactory().CreateDefaultConfig(),
 		nil,
-		WithExtractMetadata(metadataPodName),
+		WithExtractMetadata(conventions.AttributeK8sPod),
 	)
 
 	ctx := client.NewContext(context.Background(), &client.Client{IP: "1.1.1.1"})
@@ -701,7 +701,7 @@ func TestMetricsProcessorHostname(t *testing.T) {
 	p, err := newMetricsProcessor(
 		NewFactory().CreateDefaultConfig(),
 		next,
-		WithExtractMetadata(metadataPodName),
+		WithExtractMetadata(conventions.AttributeK8sPod),
 		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
@@ -771,7 +771,7 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 	p, err := newMetricsProcessor(
 		NewFactory().CreateDefaultConfig(),
 		next,
-		WithExtractMetadata(metadataPodName),
+		WithExtractMetadata(conventions.AttributeK8sPod),
 		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
