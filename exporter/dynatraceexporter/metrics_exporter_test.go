@@ -23,7 +23,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
@@ -466,6 +469,27 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 			return
 		}
 	})
+}
+
+func Test_exporter_start_InvalidHTTPClientSettings(t *testing.T) {
+	config := &config.Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "localhost:9090",
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.TLSSetting{
+					CAFile: "/non/existent",
+				},
+			},
+		},
+	}
+
+	exp := newMetricsExporter(component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+
+	err := exp.start(context.Background(), componenttest.NewNopHost())
+	if err == nil {
+		t.Errorf("Expected error when creating a metrics exporter with invalid HTTP Client Settings")
+		return
+	}
 }
 
 func Test_normalizeMetricName(t *testing.T) {
