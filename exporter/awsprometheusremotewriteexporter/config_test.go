@@ -62,6 +62,10 @@ func TestLoadConfig(t *testing.T) {
 				MaxInterval:     1 * time.Minute,
 				MaxElapsedTime:  10 * time.Minute,
 			},
+			RemoteWriteQueue: prw.RemoteWriteQueue{
+				QueueSize:    10000,
+				NumConsumers: 5,
+			},
 			Namespace:      "test-space",
 			ExternalLabels: map[string]string{"key1": "value1", "key2": "value2"},
 			HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -89,5 +93,5 @@ func TestLoadConfig(t *testing.T) {
 	// testing function equality is not supported in Go hence these will be ignored for this test
 	cfgComplete.HTTPClientSettings.CustomRoundTripper = nil
 	e1.(*Config).HTTPClientSettings.CustomRoundTripper = nil
-	assert.Equal(t, e1, cfgComplete)
+	assert.Equal(t, cfgComplete, e1)
 }

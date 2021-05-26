@@ -112,7 +112,7 @@ func makeHTTP(span pdata.Span) (map[string]string, *awsxray.HTTPData) {
 	}
 
 	if hasHTTPRequestURLAttributes {
-		if span.Kind() == pdata.SpanKindSERVER {
+		if span.Kind() == pdata.SpanKindServer {
 			info.Request.URL = awsxray.String(constructServerURL(urlParts))
 		} else {
 			info.Request.URL = awsxray.String(constructClientURL(urlParts))

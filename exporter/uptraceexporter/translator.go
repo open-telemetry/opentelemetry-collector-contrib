@@ -30,13 +30,13 @@ func asUint64(b [8]byte) uint64 {
 
 func spanKind(kind pdata.SpanKind) string {
 	switch kind {
-	case pdata.SpanKindCLIENT:
+	case pdata.SpanKindClient:
 		return "client"
-	case pdata.SpanKindSERVER:
+	case pdata.SpanKindServer:
 		return "server"
-	case pdata.SpanKindPRODUCER:
+	case pdata.SpanKindProducer:
 		return "producer"
-	case pdata.SpanKindCONSUMER:
+	case pdata.SpanKindConsumer:
 		return "consumer"
 	}
 	return "internal"
@@ -57,29 +57,29 @@ func (e *traceExporter) keyValueSlice(attrs pdata.AttributeMap) spanexp.KeyValue
 
 	attrs.Range(func(key string, value pdata.AttributeValue) bool {
 		switch value.Type() {
-		case pdata.AttributeValueSTRING:
+		case pdata.AttributeValueTypeString:
 			out = append(out, attribute.String(key, value.StringVal()))
-		case pdata.AttributeValueBOOL:
+		case pdata.AttributeValueTypeBool:
 			out = append(out, attribute.Bool(key, value.BoolVal()))
-		case pdata.AttributeValueINT:
+		case pdata.AttributeValueTypeInt:
 			out = append(out, attribute.Int64(key, value.IntVal()))
-		case pdata.AttributeValueDOUBLE:
+		case pdata.AttributeValueTypeDouble:
 			out = append(out, attribute.Float64(key, value.DoubleVal()))
-		case pdata.AttributeValueMAP:
+		case pdata.AttributeValueTypeMap:
 			if value, ok := mapLabelValue(value.MapVal()); ok {
 				out = append(out, attribute.KeyValue{
 					Key:   attribute.Key(key),
 					Value: value,
 				})
 			}
-		case pdata.AttributeValueARRAY:
+		case pdata.AttributeValueTypeArray:
 			if value, ok := arrayLabelValue(value.ArrayVal()); ok {
 				out = append(out, attribute.KeyValue{
 					Key:   attribute.Key(key),
 					Value: value,
 				})
 			}
-		case pdata.AttributeValueNULL:
+		case pdata.AttributeValueTypeNull:
 			// Ignore. Uptrace does not support nulls.
 		default:
 			e.logger.Warn("uptraceexporter: unsupported attribute value type",
@@ -142,7 +142,7 @@ func arrayLabelValue(arr pdata.AnyValueArray) (attribute.Value, bool) {
 	}
 
 	switch arrType := arr.At(0).Type(); arrType {
-	case pdata.AttributeValueSTRING:
+	case pdata.AttributeValueTypeString:
 		out := make([]string, 0, arr.Len())
 		for i := 0; i < arr.Len(); i++ {
 			val := arr.At(i)
@@ -153,7 +153,7 @@ func arrayLabelValue(arr pdata.AnyValueArray) (attribute.Value, bool) {
 		}
 		return attribute.ArrayValue(out), true
 
-	case pdata.AttributeValueBOOL:
+	case pdata.AttributeValueTypeBool:
 		out := make([]bool, 0, arr.Len())
 		for i := 0; i < arr.Len(); i++ {
 			val := arr.At(i)
@@ -164,7 +164,7 @@ func arrayLabelValue(arr pdata.AnyValueArray) (attribute.Value, bool) {
 		}
 		return attribute.ArrayValue(out), true
 
-	case pdata.AttributeValueINT:
+	case pdata.AttributeValueTypeInt:
 		out := make([]int64, 0, arr.Len())
 		for i := 0; i < arr.Len(); i++ {
 			val := arr.At(i)
@@ -175,7 +175,7 @@ func arrayLabelValue(arr pdata.AnyValueArray) (attribute.Value, bool) {
 		}
 		return attribute.ArrayValue(out), true
 
-	case pdata.AttributeValueDOUBLE:
+	case pdata.AttributeValueTypeDouble:
 		out := make([]float64, 0, arr.Len())
 		for i := 0; i < arr.Len(); i++ {
 			val := arr.At(i)
@@ -186,7 +186,7 @@ func arrayLabelValue(arr pdata.AnyValueArray) (attribute.Value, bool) {
 		}
 		return attribute.ArrayValue(out), true
 
-	case pdata.AttributeValueNULL:
+	case pdata.AttributeValueTypeNull:
 		// Ignore. Uptrace does not support nulls.
 		return attribute.Value{}, false
 	}
@@ -207,22 +207,22 @@ func jsonLabelValue(v interface{}) (attribute.Value, bool) {
 
 func attrAsInterface(val pdata.AttributeValue) interface{} {
 	switch val.Type() {
-	case pdata.AttributeValueSTRING:
+	case pdata.AttributeValueTypeString:
 		return val.StringVal()
-	case pdata.AttributeValueINT:
+	case pdata.AttributeValueTypeInt:
 		return val.IntVal()
-	case pdata.AttributeValueDOUBLE:
+	case pdata.AttributeValueTypeDouble:
 		return val.DoubleVal()
-	case pdata.AttributeValueBOOL:
+	case pdata.AttributeValueTypeBool:
 		return val.BoolVal()
-	case pdata.AttributeValueMAP:
+	case pdata.AttributeValueTypeMap:
 		out := map[string]interface{}{}
 		val.MapVal().Range(func(key string, val pdata.AttributeValue) bool {
 			out[key] = attrAsInterface(val)
 			return true
 		})
 		return out
-	case pdata.AttributeValueARRAY:
+	case pdata.AttributeValueTypeArray:
 		arr := val.ArrayVal()
 		out := make([]interface{}, arr.Len())
 		for i := 0; i < arr.Len(); i++ {

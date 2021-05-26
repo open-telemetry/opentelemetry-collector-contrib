@@ -55,13 +55,13 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logg
 
 	var event sfxpb.Event
 
-	if categoryVal.Type() == pdata.AttributeValueINT {
+	if categoryVal.Type() == pdata.AttributeValueTypeInt {
 		asCat := sfxpb.EventCategory(categoryVal.IntVal())
 		event.Category = &asCat
 		attrs.Delete(splunk.SFxEventCategoryKey)
 	}
 
-	if mapVal, ok := attrs.Get(splunk.SFxEventPropertiesKey); ok && mapVal.Type() == pdata.AttributeValueMAP {
+	if mapVal, ok := attrs.Get(splunk.SFxEventPropertiesKey); ok && mapVal.Type() == pdata.AttributeValueTypeMap {
 		mapVal.MapVal().Range(func(k string, v pdata.AttributeValue) bool {
 			val, err := attributeValToPropertyVal(v)
 			if err != nil {
@@ -90,7 +90,7 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logg
 	})
 
 	addDimension := func(k string, v pdata.AttributeValue) bool {
-		if v.Type() != pdata.AttributeValueSTRING {
+		if v.Type() != pdata.AttributeValueTypeString {
 			logger.Debug("Failed to convert log record or resource attribute value to SignalFx property value, key is not a string", zap.String("key", k))
 			return true
 		}
@@ -116,16 +116,16 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logg
 func attributeValToPropertyVal(v pdata.AttributeValue) (*sfxpb.PropertyValue, error) {
 	var val sfxpb.PropertyValue
 	switch v.Type() {
-	case pdata.AttributeValueINT:
+	case pdata.AttributeValueTypeInt:
 		asInt := v.IntVal()
 		val.IntValue = &asInt
-	case pdata.AttributeValueBOOL:
+	case pdata.AttributeValueTypeBool:
 		asBool := v.BoolVal()
 		val.BoolValue = &asBool
-	case pdata.AttributeValueDOUBLE:
+	case pdata.AttributeValueTypeDouble:
 		asDouble := v.DoubleVal()
 		val.DoubleValue = &asDouble
-	case pdata.AttributeValueSTRING:
+	case pdata.AttributeValueTypeString:
 		asString := v.StringVal()
 		val.StrValue = &asString
 	default:

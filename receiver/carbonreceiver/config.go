@@ -76,9 +76,5 @@ func (cfg *Config) Unmarshal(componentParser *config.Parser) error {
 	}
 
 	// Unmarshal exact to validate the config keys.
-	if err := componentParser.UnmarshalExact(cfg); err != nil {
-		return err
-	}
-
-	return nil
+	return componentParser.UnmarshalExact(cfg)
 }

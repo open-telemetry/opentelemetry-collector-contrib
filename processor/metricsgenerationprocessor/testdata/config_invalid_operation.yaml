@@ -1,0 +1,25 @@
+receivers:
+  nop:
+
+processors:
+  experimental_metricsgeneration:
+    rules:
+      - name: new_metric
+        type: calculate
+        metric1: metric1
+        metric2: metric2
+        operation: invalid # invalid operation type
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [experimental_metricsgeneration]
+      exporters: [nop]
+    metrics:
+      receivers: [nop]
+      processors: [experimental_metricsgeneration]
+      exporters: [nop]

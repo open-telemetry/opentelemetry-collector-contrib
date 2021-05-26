@@ -66,12 +66,12 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 			index = indexSet.StringVal()
 		}
 		attributes.Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = tracetranslator.AttributeValueToString(v, false)
+			commonFields[k] = tracetranslator.AttributeValueToString(v)
 			return true
 		})
 
 		rm.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = tracetranslator.AttributeValueToString(v, false)
+			commonFields[k] = tracetranslator.AttributeValueToString(v)
 			return true
 		})
 		ilms := rm.InstrumentationLibraryMetrics()

@@ -104,7 +104,7 @@ func fillSpanOne(span pdata.Span) {
 
 func fillSpanTwo(span pdata.Span) {
 	span.SetName("operationB")
-	span.SetKind(pdata.SpanKindSERVER)
+	span.SetKind(pdata.SpanKindServer)
 	span.SetStartTimestamp(TestSpanStartTimestamp)
 	span.SetEndTimestamp(TestSpanEndTimestamp)
 	span.Links().Resize(2)

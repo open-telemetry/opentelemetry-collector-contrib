@@ -171,7 +171,7 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 		tags["status_message"] = message
 	}
 
-	if spanKind != pdata.SpanKindUNSPECIFIED {
+	if spanKind != pdata.SpanKindUnspecified {
 		tags["span_kind"] = spanKind.String()
 	}
 
@@ -212,9 +212,9 @@ func generateSpanDescriptors(name string, attrs pdata.AttributeMap, spanKind pda
 		opBuilder.WriteString("http")
 
 		switch spanKind {
-		case pdata.SpanKindCLIENT:
+		case pdata.SpanKindClient:
 			opBuilder.WriteString(".client")
-		case pdata.SpanKindSERVER:
+		case pdata.SpanKindServer:
 			opBuilder.WriteString(".server")
 		}
 
@@ -272,13 +272,13 @@ func generateTagsFromAttributes(attrs pdata.AttributeMap) map[string]string {
 
 	attrs.Range(func(key string, attr pdata.AttributeValue) bool {
 		switch attr.Type() {
-		case pdata.AttributeValueSTRING:
+		case pdata.AttributeValueTypeString:
 			tags[key] = attr.StringVal()
-		case pdata.AttributeValueBOOL:
+		case pdata.AttributeValueTypeBool:
 			tags[key] = strconv.FormatBool(attr.BoolVal())
-		case pdata.AttributeValueDOUBLE:
+		case pdata.AttributeValueTypeDouble:
 			tags[key] = strconv.FormatFloat(attr.DoubleVal(), 'g', -1, 64)
-		case pdata.AttributeValueINT:
+		case pdata.AttributeValueTypeInt:
 			tags[key] = strconv.FormatInt(attr.IntVal(), 10)
 		}
 		return true
