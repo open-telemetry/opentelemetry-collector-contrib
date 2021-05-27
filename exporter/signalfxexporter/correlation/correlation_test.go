@@ -63,6 +63,7 @@ func TestTrackerStart(t *testing.T) {
 		name    string
 		config  *Config
 		wantErr bool
+		errMsg  string
 	}{
 		{
 			name: "invalid http client settings fails",
@@ -77,6 +78,7 @@ func TestTrackerStart(t *testing.T) {
 				},
 			},
 			wantErr: true,
+			errMsg:  "failed to create correlation API client: failed to load TLS config",
 		},
 	}
 
@@ -94,6 +96,9 @@ func TestTrackerStart(t *testing.T) {
 
 			if tt.wantErr {
 				require.Error(t, err)
+				if tt.errMsg != "" {
+					require.Contains(t, err.Error(), tt.errMsg)
+				}
 			} else {
 				require.NoError(t, err)
 			}

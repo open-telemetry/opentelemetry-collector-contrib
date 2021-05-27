@@ -132,7 +132,7 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) error {
 func (cor *Tracker) Start(_ context.Context, host component.Host) (err error) {
 	cor.correlation, err = newCorrelationClient(cor.cfg, cor.accessToken, cor.params, host)
 	if err != nil {
-		return fmt.Errorf("failed to create correlation client %v", err)
+		return err
 	}
 
 	return nil
