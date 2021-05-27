@@ -556,7 +556,7 @@ func TestRunningMetrics(t *testing.T) {
 
 	assert.ElementsMatch(t,
 		runningHostnames,
-		[]string{"fallbackHostname", "resource-hostname-1", "resource-hostname-1", "resource-hostname-2"},
+		[]string{"fallbackHostname", "resource-hostname-1", "resource-hostname-2"},
 	)
 
 }

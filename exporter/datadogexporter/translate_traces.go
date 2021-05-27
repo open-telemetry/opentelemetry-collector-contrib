@@ -73,7 +73,8 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, cfg *config.Config
 
 	var traces []*pb.TracePayload
 
-	var runningMetrics []datadog.Metric
+	seenHosts := make(map[string]struct{})
+	var series []datadog.Metric
 	pushTime := pdata.TimestampFromTime(time.Now())
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
@@ -81,15 +82,18 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, cfg *config.Config
 		if !ok {
 			host = fallbackHost
 		}
-
+		seenHosts[host] = struct{}{}
 		payload := resourceSpansToDatadogSpans(rs, host, cfg, blk)
 		traces = append(traces, &payload)
-
-		ms := metrics.DefaultMetrics("traces", host, uint64(pushTime), buildInfo)
-		runningMetrics = append(runningMetrics, ms...)
 	}
 
-	return traces, runningMetrics
+	for host := range seenHosts {
+		// Report the host as running
+		runningMetric := metrics.DefaultMetrics("traces", host, uint64(pushTime), buildInfo)
+		series = append(series, runningMetric...)
+	}
+
+	return traces, series
 }
 
 func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePayload {
