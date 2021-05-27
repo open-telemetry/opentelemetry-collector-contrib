@@ -15,7 +15,7 @@ Example:
 exporters:
   sentry:
     dsn: https://key@host/path/42
-    insecure: true
+    insecure_skip_verify: true
 ```
 
 See the [docs](./docs/transformation.md) for more details on how this transformation is working.
