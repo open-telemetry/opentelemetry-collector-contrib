@@ -46,12 +46,14 @@ API
 
 import contextlib
 import typing
+from typing import Collection
 
 import urllib3.connectionpool
 import wrapt
 
 from opentelemetry import context
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
+from opentelemetry.instrumentation.urllib3.package import _instruments
 from opentelemetry.instrumentation.urllib3.version import __version__
 from opentelemetry.instrumentation.utils import (
     http_status_to_status_code,
@@ -59,7 +61,7 @@ from opentelemetry.instrumentation.utils import (
 )
 from opentelemetry.propagate import inject
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.trace import Span, SpanKind, TracerProvider, get_tracer
+from opentelemetry.trace import Span, SpanKind, get_tracer
 from opentelemetry.trace.status import Status
 
 _SUPPRESS_HTTP_INSTRUMENTATION_KEY = "suppress_http_instrumentation"
@@ -76,6 +78,9 @@ _URL_OPEN_ARG_TO_INDEX_MAPPING = {
 
 
 class URLLib3Instrumentor(BaseInstrumentor):
+    def instrumentation_dependencies(self) -> Collection[str]:
+        return _instruments
+
     def _instrument(self, **kwargs):
         """Instruments the urllib3 module
 

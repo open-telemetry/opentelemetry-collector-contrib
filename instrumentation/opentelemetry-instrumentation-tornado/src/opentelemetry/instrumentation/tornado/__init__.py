@@ -76,6 +76,7 @@ API
 from collections import namedtuple
 from functools import partial
 from logging import getLogger
+from typing import Collection
 
 import tornado.web
 import wrapt
@@ -87,6 +88,7 @@ from opentelemetry.instrumentation.propagators import (
     FuncSetter,
     get_global_response_propagator,
 )
+from opentelemetry.instrumentation.tornado.package import _instruments
 from opentelemetry.instrumentation.tornado.version import __version__
 from opentelemetry.instrumentation.utils import (
     extract_attributes_from_object,
@@ -116,6 +118,9 @@ response_propagation_setter = FuncSetter(tornado.web.RequestHandler.add_header)
 class TornadoInstrumentor(BaseInstrumentor):
     patched_handlers = []
     original_handler_new = None
+
+    def instrumentation_dependencies(self) -> Collection[str]:
+        return _instruments
 
     def _instrument(self, **kwargs):
         """

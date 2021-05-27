@@ -52,12 +52,13 @@ API
 """
 
 import logging
-from collections.abc import Iterable
+from typing import Collection, Iterable
 
 from celery import signals  # pylint: disable=no-name-in-module
 
 from opentelemetry import trace
 from opentelemetry.instrumentation.celery import utils
+from opentelemetry.instrumentation.celery.package import _instruments
 from opentelemetry.instrumentation.celery.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.propagate import extract, inject
@@ -95,6 +96,9 @@ celery_getter = CeleryGetter()
 
 
 class CeleryInstrumentor(BaseInstrumentor):
+    def instrumentation_dependencies(self) -> Collection[str]:
+        return _instruments
+
     def _instrument(self, **kwargs):
         tracer_provider = kwargs.get("tracer_provider")
 

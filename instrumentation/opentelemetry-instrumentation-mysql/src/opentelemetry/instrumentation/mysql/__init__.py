@@ -38,10 +38,13 @@ API
 ---
 """
 
+from typing import Collection
+
 import mysql.connector
 
 from opentelemetry.instrumentation import dbapi
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
+from opentelemetry.instrumentation.mysql.package import _instruments
 from opentelemetry.instrumentation.mysql.version import __version__
 from opentelemetry.trace import get_tracer
 
@@ -55,6 +58,9 @@ class MySQLInstrumentor(BaseInstrumentor):
     }
 
     _DATABASE_SYSTEM = "mysql"
+
+    def instrumentation_dependencies(self) -> Collection[str]:
+        return _instruments
 
     def _instrument(self, **kwargs):
         """Integrate with MySQL Connector/Python library.

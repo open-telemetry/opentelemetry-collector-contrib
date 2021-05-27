@@ -34,11 +34,14 @@ API
 ---
 """
 
+from typing import Collection
+
 import asyncpg
 import wrapt
 from asyncpg import exceptions
 
 from opentelemetry import trace
+from opentelemetry.instrumentation.asyncpg.package import _instruments
 from opentelemetry.instrumentation.asyncpg.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import unwrap
@@ -97,6 +100,9 @@ class AsyncPGInstrumentor(BaseInstrumentor):
         super().__init__()
         self.capture_parameters = capture_parameters
         self._tracer = None
+
+    def instrumentation_dependencies(self) -> Collection[str]:
+        return _instruments
 
     def _instrument(self, **kwargs):
         tracer_provider = kwargs.get("tracer_provider")

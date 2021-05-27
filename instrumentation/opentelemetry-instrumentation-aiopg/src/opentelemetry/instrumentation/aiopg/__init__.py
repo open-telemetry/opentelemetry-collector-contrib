@@ -45,7 +45,10 @@ API
 ---
 """
 
+from typing import Collection
+
 from opentelemetry.instrumentation.aiopg import wrappers
+from opentelemetry.instrumentation.aiopg.package import _instruments
 from opentelemetry.instrumentation.aiopg.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 
@@ -59,6 +62,9 @@ class AiopgInstrumentor(BaseInstrumentor):
     }
 
     _DATABASE_SYSTEM = "postgresql"
+
+    def instrumentation_dependencies(self) -> Collection[str]:
+        return _instruments
 
     def _instrument(self, **kwargs):
         """Integrate with PostgreSQL aiopg library.

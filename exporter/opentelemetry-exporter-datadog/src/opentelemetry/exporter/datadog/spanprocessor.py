@@ -186,7 +186,7 @@ class DatadogExportSpanProcessor(SpanProcessor):
                 self.flush_condition.notify()
 
     def _drain_queue(self):
-        """"Export all elements until queue is empty.
+        """Export all elements until queue is empty.
 
         Can only be called from the worker thread context because it invokes
         `export` that is not thread safe.

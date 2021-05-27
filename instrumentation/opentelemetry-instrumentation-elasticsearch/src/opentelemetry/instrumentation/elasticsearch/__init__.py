@@ -48,11 +48,13 @@ environment variable or by passing the prefix as an argument to the instrumentor
 
 from logging import getLogger
 from os import environ
+from typing import Collection
 
 import elasticsearch
 import elasticsearch.exceptions
 from wrapt import wrap_function_wrapper as _wrap
 
+from opentelemetry.instrumentation.elasticsearch.package import _instruments
 from opentelemetry.instrumentation.elasticsearch.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import unwrap
@@ -86,6 +88,9 @@ class ElasticsearchInstrumentor(BaseInstrumentor):
             )
         self._span_name_prefix = span_name_prefix.strip()
         super().__init__()
+
+    def instrumentation_dependencies(self) -> Collection[str]:
+        return _instruments
 
     def _instrument(self, **kwargs):
         """

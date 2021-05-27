@@ -112,8 +112,7 @@ def collect_request_attributes(scope):
 
 
 def get_host_port_url_tuple(scope):
-    """Returns (host, port, full_url) tuple.
-    """
+    """Returns (host, port, full_url) tuple."""
     server = scope.get("server") or ["0.0.0.0", 80]
     port = server[1]
     server_host = server[0] + (":" + str(port) if port != 80 else "")

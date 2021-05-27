@@ -40,10 +40,13 @@ API
 ---
 """
 
+from typing import Collection
+
 import pymysql
 
 from opentelemetry.instrumentation import dbapi
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
+from opentelemetry.instrumentation.pymysql.package import _instruments
 from opentelemetry.instrumentation.pymysql.version import __version__
 
 
@@ -56,6 +59,9 @@ class PyMySQLInstrumentor(BaseInstrumentor):
     }
 
     _DATABASE_SYSTEM = "mysql"
+
+    def instrumentation_dependencies(self) -> Collection[str]:
+        return _instruments
 
     def _instrument(self, **kwargs):
         """Integrate with the PyMySQL library.

@@ -22,6 +22,9 @@ from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 
 
 class MockInstrumetor(BaseInstrumentor):
+    def instrumentation_dependencies(self):
+        return []
+
     def _instrument(self, **kwargs):
         pass
 

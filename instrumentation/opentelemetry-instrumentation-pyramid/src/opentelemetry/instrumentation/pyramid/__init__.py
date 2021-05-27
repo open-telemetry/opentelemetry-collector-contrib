@@ -79,6 +79,7 @@ API
 """
 
 import typing
+from typing import Collection
 
 from pyramid.config import Configurator
 from pyramid.path import caller_package
@@ -92,6 +93,7 @@ from opentelemetry.instrumentation.pyramid.callbacks import (
     TWEEN_NAME,
     trace_tween_factory,
 )
+from opentelemetry.instrumentation.pyramid.package import _instruments
 from opentelemetry.instrumentation.pyramid.version import __version__
 from opentelemetry.instrumentation.utils import unwrap
 from opentelemetry.trace import TracerProvider, get_tracer
@@ -125,6 +127,9 @@ def _traced_init(wrapped, instance, args, kwargs):
 
 
 class PyramidInstrumentor(BaseInstrumentor):
+    def instrumentation_dependencies(self) -> Collection[str]:
+        return _instruments
+
     def _instrument(self, **kwargs):
         """Integrate with Pyramid Python library.
         https://docs.pylonsproject.org/projects/pyramid/en/latest/

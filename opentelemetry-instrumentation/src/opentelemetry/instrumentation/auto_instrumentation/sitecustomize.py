@@ -23,6 +23,9 @@ from pkg_resources import iter_entry_points
 from opentelemetry.environment_variables import (
     OTEL_PYTHON_DISABLED_INSTRUMENTATIONS,
 )
+from opentelemetry.instrumentation.dependencies import (
+    get_dist_dependency_conflicts,
+)
 from opentelemetry.instrumentation.distro import BaseDistro, DefaultDistro
 
 logger = getLogger(__file__)
@@ -65,7 +68,17 @@ def _load_instrumentors(distro):
             continue
 
         try:
-            distro.load_instrumentor(entry_point)
+            conflict = get_dist_dependency_conflicts(entry_point.dist)
+            if conflict:
+                logger.debug(
+                    "Skipping instrumentation %s: %s",
+                    entry_point.name,
+                    conflict,
+                )
+                continue
+
+            # tell instrumentation to not run dep checks again as we already did it above
+            distro.load_instrumentor(entry_point, skip_dep_check=True)
             logger.debug("Instrumented %s", entry_point.name)
         except Exception as exc:  # pylint: disable=broad-except
             logger.exception("Instrumenting of %s failed", entry_point.name)

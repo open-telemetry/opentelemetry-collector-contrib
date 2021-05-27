@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Collection
+
 from starlette import applications
 from starlette.routing import Match
 
 from opentelemetry.instrumentation.asgi import OpenTelemetryMiddleware
+from opentelemetry.instrumentation.asgi.package import _instruments
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.util.http import get_excluded_urls
@@ -33,8 +36,7 @@ class StarletteInstrumentor(BaseInstrumentor):
 
     @staticmethod
     def instrument_app(app: applications.Starlette, tracer_provider=None):
-        """Instrument an uninstrumented Starlette application.
-        """
+        """Instrument an uninstrumented Starlette application."""
         if not getattr(app, "is_instrumented_by_opentelemetry", False):
             app.add_middleware(
                 OpenTelemetryMiddleware,
@@ -43,6 +45,9 @@ class StarletteInstrumentor(BaseInstrumentor):
                 tracer_provider=tracer_provider,
             )
             app.is_instrumented_by_opentelemetry = True
+
+    def instrumentation_dependencies(self) -> Collection[str]:
+        return _instruments
 
     def _instrument(self, **kwargs):
         self._original_starlette = applications.Starlette

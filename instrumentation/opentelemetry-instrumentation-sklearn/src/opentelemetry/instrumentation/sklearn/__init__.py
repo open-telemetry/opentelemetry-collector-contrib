@@ -65,7 +65,16 @@ from functools import wraps
 from importlib import import_module
 from inspect import isclass
 from pkgutil import iter_modules
-from typing import Callable, Dict, List, MutableMapping, Sequence, Type, Union
+from typing import (
+    Callable,
+    Collection,
+    Dict,
+    List,
+    MutableMapping,
+    Sequence,
+    Type,
+    Union,
+)
 
 from sklearn.base import BaseEstimator
 from sklearn.pipeline import FeatureUnion, Pipeline
@@ -73,6 +82,7 @@ from sklearn.tree import BaseDecisionTree
 from sklearn.utils.metaestimators import _IffHasAttrDescriptor
 
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
+from opentelemetry.instrumentation.sklearn.package import _instruments
 from opentelemetry.instrumentation.sklearn.version import __version__
 from opentelemetry.trace import get_tracer
 from opentelemetry.util.types import Attributes
@@ -361,6 +371,9 @@ class SklearnInstrumentor(BaseInstrumentor):
         else:
             self.exclude_classes = tuple(exclude_classes)
 
+    def instrumentation_dependencies(self) -> Collection[str]:
+        return _instruments
+
     def _instrument(self, **kwargs):
         """Instrument the library, and any additional specified on init."""
         klasses = get_base_estimators(packages=self.packages)
@@ -496,7 +509,7 @@ class SklearnInstrumentor(BaseInstrumentor):
               estimator.
             method_name (str): The method name of the estimator on which to
               apply a span.
-       """
+        """
         orig_method_name = "_otel_original_" + method_name
         if isclass(estimator):
             qualname = estimator.__qualname__
@@ -540,7 +553,7 @@ class SklearnInstrumentor(BaseInstrumentor):
               estimator.
             method_name (str): The method name of the estimator on which to
               apply a span.
-       """
+        """
         orig_method_name = "_otel_original_" + method_name
         if isclass(estimator):
             qualname = estimator.__qualname__

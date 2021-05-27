@@ -18,15 +18,44 @@
 
 
 import os
+from configparser import ConfigParser
 
 import setuptools
 
+config = ConfigParser()
+config.read("setup.cfg")
+
+# We provide extras_require parameter to setuptools.setup later which
+# overwrites the extra_require section from setup.cfg. To support extra_require
+# secion in setup.cfg, we load it here and merge it with the extra_require param.
+extras_require = {}
+if "options.extras_require" in config:
+    for key, value in config["options.extras_require"].items():
+        extras_require[key] = [v for v in value.split("\n") if v.strip()]
+
 BASE_DIR = os.path.dirname(__file__)
+PACKAGE_INFO = {}
+
 VERSION_FILENAME = os.path.join(
     BASE_DIR, "src", "opentelemetry", "instrumentation", "urllib", "version.py"
 )
-PACKAGE_INFO = {}
 with open(VERSION_FILENAME) as f:
     exec(f.read(), PACKAGE_INFO)
 
-setuptools.setup(version=PACKAGE_INFO["__version__"])
+PACKAGE_FILENAME = os.path.join(
+    BASE_DIR, "src", "opentelemetry", "instrumentation", "urllib", "package.py"
+)
+with open(PACKAGE_FILENAME) as f:
+    exec(f.read(), PACKAGE_INFO)
+
+# Mark any instruments/runtime dependencies as test dependencies as well.
+extras_require["instruments"] = PACKAGE_INFO["_instruments"]
+test_deps = extras_require.get("test", [])
+for dep in extras_require["instruments"]:
+    test_deps.append(dep)
+
+extras_require["test"] = test_deps
+
+setuptools.setup(
+    version=PACKAGE_INFO["__version__"], extras_require=extras_require
+)

@@ -64,12 +64,14 @@ API
 
 import types
 import typing
+from typing import Collection
 
 import aiohttp
 import wrapt
 
 from opentelemetry import context as context_api
 from opentelemetry import trace
+from opentelemetry.instrumentation.aiohttp_client.package import _instruments
 from opentelemetry.instrumentation.aiohttp_client.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import (
@@ -287,6 +289,9 @@ class AioHttpClientInstrumentor(BaseInstrumentor):
 
     See `BaseInstrumentor`
     """
+
+    def instrumentation_dependencies(self) -> Collection[str]:
+        return _instruments
 
     def _instrument(self, **kwargs):
         """Instruments aiohttp ClientSession

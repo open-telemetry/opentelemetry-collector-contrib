@@ -48,7 +48,7 @@ class BaseDistro(ABC):
         self._configure(**kwargs)
 
     def load_instrumentor(  # pylint: disable=no-self-use
-        self, entry_point: EntryPoint
+        self, entry_point: EntryPoint, **kwargs
     ):
         """Takes a collection of instrumentation entry points
         and activates them by instantiating and calling instrument()
@@ -60,7 +60,7 @@ class BaseDistro(ABC):
         skip loading entirely, etc.
         """
         instrumentor: BaseInstrumentor = entry_point.load()
-        instrumentor().instrument()
+        instrumentor().instrument(**kwargs)
 
 
 class DefaultDistro(BaseDistro):

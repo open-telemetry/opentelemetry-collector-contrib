@@ -27,6 +27,9 @@ class TestInstrumentor(TestCase):
         def _uninstrument(self, **kwargs):
             return "uninstrumented"
 
+        def instrumentation_dependencies(self):
+            return []
+
     def test_protect(self):
         instrumentor = self.Instrumentor()
 

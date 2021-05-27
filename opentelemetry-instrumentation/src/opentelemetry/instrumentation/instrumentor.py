@@ -19,6 +19,12 @@ OpenTelemetry Base Instrumentor
 
 from abc import ABC, abstractmethod
 from logging import getLogger
+from typing import Collection, Optional
+
+from opentelemetry.instrumentation.dependencies import (
+    DependencyConflict,
+    get_dependency_conflicts,
+)
 
 _LOG = getLogger(__name__)
 
@@ -47,12 +53,31 @@ class BaseInstrumentor(ABC):
         return cls._instance
 
     @abstractmethod
+    def instrumentation_dependencies(self) -> Collection[str]:
+        """Return a list of python packages with versions that the will be instrumented.
+
+        The format should be the same as used in requirements.txt or setup.py.
+
+        For example, if an instrumentation instruments requests 1.x, this method should look
+        like:
+
+            def instrumentation_dependencies(self) -> Collection[str]:
+                return ['requests ~= 1.0']
+
+        This will ensure that the instrumentation will only be used when the specified library
+        is present in the environment.
+        """
+
     def _instrument(self, **kwargs):
         """Instrument the library"""
 
     @abstractmethod
     def _uninstrument(self, **kwargs):
         """Uninstrument the library"""
+
+    def _check_dependency_conflicts(self) -> Optional[DependencyConflict]:
+        dependencies = self.instrumentation_dependencies()
+        return get_dependency_conflicts(dependencies)
 
     def instrument(self, **kwargs):
         """Instrument the library
@@ -65,14 +90,23 @@ class BaseInstrumentor(ABC):
         ``opentelemetry-instrument`` command does.
         """
 
-        if not self._is_instrumented:
-            result = self._instrument(**kwargs)
-            self._is_instrumented = True
-            return result
+        if self._is_instrumented:
+            _LOG.warning("Attempting to instrument while already instrumented")
+            return None
 
-        _LOG.warning("Attempting to instrument while already instrumented")
+        # check if instrumentor has any missing or conflicting dependencies
+        skip_dep_check = kwargs.pop("skip_dep_check", False)
+        if not skip_dep_check:
+            conflict = self._check_dependency_conflicts()
+            if conflict:
+                _LOG.warning(conflict)
+                return None
 
-        return None
+        result = self._instrument(  # pylint: disable=assignment-from-no-return
+            **kwargs
+        )
+        self._is_instrumented = True
+        return result
 
     def uninstrument(self, **kwargs):
         """Uninstrument the library

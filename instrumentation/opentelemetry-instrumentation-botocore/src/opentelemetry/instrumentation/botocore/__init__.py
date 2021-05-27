@@ -48,12 +48,14 @@ API
 
 import json
 import logging
+from typing import Collection
 
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
 from wrapt import wrap_function_wrapper
 
 from opentelemetry import context as context_api
+from opentelemetry.instrumentation.botocore.package import _instruments
 from opentelemetry.instrumentation.botocore.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import unwrap
@@ -77,6 +79,9 @@ class BotocoreInstrumentor(BaseInstrumentor):
 
     See `BaseInstrumentor`
     """
+
+    def instrumentation_dependencies(self) -> Collection[str]:
+        return _instruments
 
     def _instrument(self, **kwargs):
 
