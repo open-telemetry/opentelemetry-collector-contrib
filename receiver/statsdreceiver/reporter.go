@@ -51,7 +51,7 @@ func newReporter(receiverID config.ComponentID, logger *zap.Logger) transport.Re
 // returned span.
 func (r *reporter) OnDataReceived(ctx context.Context) context.Context {
 	ctx = obsreport.ReceiverContext(ctx, r.id, "tcp")
-	return r.obsrecv.StartMetricsReceiveOp(ctx)
+	return r.obsrecv.StartMetricsOp(ctx)
 }
 
 // OnTranslationError is used to report a translation error from original
@@ -95,7 +95,7 @@ func (r *reporter) OnMetricsProcessed(
 		})
 	}
 
-	r.obsrecv.EndMetricsReceiveOp(ctx, "statsd", numReceivedMessages, err)
+	r.obsrecv.EndMetricsOp(ctx, "statsd", numReceivedMessages, err)
 }
 
 func (r *reporter) OnDebugf(template string, args ...interface{}) {

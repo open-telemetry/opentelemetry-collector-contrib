@@ -100,12 +100,12 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 	now := time.Now()
 	mds := kr.resourceWatcher.dataCollector.CollectMetricData(now)
 
-	c := kr.obsrecv.StartMetricsReceiveOp(ctx)
+	c := kr.obsrecv.StartMetricsOp(ctx)
 
 	_, numPoints := mds.MetricAndDataPointCount()
 
 	err := kr.consumer.ConsumeMetrics(c, mds)
-	kr.obsrecv.EndMetricsReceiveOp(c, typeStr, numPoints, err)
+	kr.obsrecv.EndMetricsOp(c, typeStr, numPoints, err)
 }
 
 // newReceiver creates the Kubernetes cluster receiver with the given configuration.

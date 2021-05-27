@@ -106,14 +106,14 @@ func (r *runnable) Run() error {
 
 	var numPoints int
 	ctx := obsreport.ReceiverContext(r.ctx, r.receiverID, transport)
-	ctx = r.obsrecv.StartMetricsReceiveOp(ctx)
+	ctx = r.obsrecv.StartMetricsOp(ctx)
 	err = r.consumer.ConsumeMetrics(ctx, metrics)
 	if err != nil {
 		r.logger.Error("ConsumeMetricsData failed", zap.Error(err))
 	} else {
 		_, numPoints = metrics.MetricAndDataPointCount()
 	}
-	r.obsrecv.EndMetricsReceiveOp(ctx, typeStr, numPoints, err)
+	r.obsrecv.EndMetricsOp(ctx, typeStr, numPoints, err)
 
 	return nil
 }

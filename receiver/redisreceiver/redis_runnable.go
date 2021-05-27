@@ -78,17 +78,17 @@ func (r *redisRunnable) Setup() error {
 // active Redis database, of which there can be 16.
 func (r *redisRunnable) Run() error {
 	const dataFormat = "redis"
-	ctx := r.obsrecv.StartMetricsReceiveOp(r.ctx)
+	ctx := r.obsrecv.StartMetricsOp(r.ctx)
 
 	inf, err := r.redisSvc.info()
 	if err != nil {
-		r.obsrecv.EndMetricsReceiveOp(ctx, dataFormat, 0, err)
+		r.obsrecv.EndMetricsOp(ctx, dataFormat, 0, err)
 		return nil
 	}
 
 	uptime, err := inf.getUptimeInSeconds()
 	if err != nil {
-		r.obsrecv.EndMetricsReceiveOp(ctx, dataFormat, 0, err)
+		r.obsrecv.EndMetricsOp(ctx, dataFormat, 0, err)
 		return nil
 	}
 
@@ -124,7 +124,7 @@ func (r *redisRunnable) Run() error {
 
 	err = r.metricsConsumer.ConsumeMetrics(r.ctx, pdm)
 	_, numPoints := pdm.MetricAndDataPointCount()
-	r.obsrecv.EndMetricsReceiveOp(ctx, dataFormat, numPoints, err)
+	r.obsrecv.EndMetricsOp(ctx, dataFormat, numPoints, err)
 
 	return nil
 }

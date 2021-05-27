@@ -203,7 +203,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 
 	ctx := obsreport.ReceiverContext(req.Context(), r.config.ID(), transport)
 	if r.logsConsumer == nil {
-		ctx = r.obsrecv.StartMetricsReceiveOp(ctx)
+		ctx = r.obsrecv.StartMetricsOp(ctx)
 	}
 	reqPath := req.URL.Path
 	if !r.config.pathGlob.Match(reqPath) {
@@ -282,7 +282,7 @@ func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Ev
 	md, _ := SplunkHecToMetricsData(r.logger, events, r.createResourceCustomizer(req))
 
 	decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
-	r.obsrecv.EndMetricsReceiveOp(ctx, typeStr, len(events), decodeErr)
+	r.obsrecv.EndMetricsOp(ctx, typeStr, len(events), decodeErr)
 
 	if decodeErr != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, decodeErr)
