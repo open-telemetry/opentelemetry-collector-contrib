@@ -120,16 +120,16 @@ func (x *xrayReceiver) start() {
 		traces, totalSpansCount, err := translator.ToTraces(seg.Payload)
 		if err != nil {
 			x.logger.Warn("X-Ray segment to OT traces conversion failed", zap.Error(err))
-			x.obsrecv.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, totalSpansCount, err)
+			x.obsrecv.EndTracesOp(seg.Ctx, awsxray.TypeStr, totalSpansCount, err)
 			continue
 		}
 
 		err = x.consumer.ConsumeTraces(seg.Ctx, *traces)
 		if err != nil {
 			x.logger.Warn("Trace consumer errored out", zap.Error(err))
-			x.obsrecv.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, totalSpansCount, err)
+			x.obsrecv.EndTracesOp(seg.Ctx, awsxray.TypeStr, totalSpansCount, err)
 			continue
 		}
-		x.obsrecv.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, totalSpansCount, nil)
+		x.obsrecv.EndTracesOp(seg.Ctx, awsxray.TypeStr, totalSpansCount, nil)
 	}
 }
