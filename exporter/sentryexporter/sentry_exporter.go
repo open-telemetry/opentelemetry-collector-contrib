@@ -330,7 +330,7 @@ func CreateSentryExporter(config *Config, params component.ExporterCreateParams)
 		Dsn: config.DSN,
 	}
 
-	if config.Insecure {
+	if config.InsecureSkipVerify {
 		clientOptions.HTTPTransport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	}
 
