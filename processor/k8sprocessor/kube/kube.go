@@ -51,7 +51,7 @@ type Client interface {
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(*zap.Logger, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, ExcludePods, APIClientsetProvider, InformerProvider) (Client, error)
+type ClientProvider func(*zap.Logger, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformerProvider) (Client, error)
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
@@ -139,7 +139,7 @@ type Association struct {
 	Name string
 }
 
-// ExcludePods represent a list of Pods to ignore
-type ExcludePods struct {
+// Excludes represent a list of Pods to ignore
+type Excludes struct {
 	Regex []*regexp.Regexp
 }

@@ -38,7 +38,7 @@ type kubernetesprocessor struct {
 	rules           kube.ExtractionRules
 	filters         kube.Filters
 	podAssociations []kube.Association
-	podIgnore       kube.ExcludePods
+	podIgnore       kube.Excludes
 }
 
 func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kube.ClientProvider) error {

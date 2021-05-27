@@ -602,16 +602,16 @@ func TestWithExtractPodAssociation(t *testing.T) {
 	}
 }
 
-func TestWithExcludePods(t *testing.T) {
+func TestWithExcludes(t *testing.T) {
 	tests := []struct {
 		name string
-		args PodExcludeConfig
-		want kube.ExcludePods
+		args ExcludeConfig
+		want kube.Excludes
 	}{
 		{
 			"default",
-			PodExcludeConfig{},
-			kube.ExcludePods{
+			ExcludeConfig{},
+			kube.Excludes{
 				Regex: []*regexp.Regexp{
 					regexp.MustCompile(`jaeger-agent`),
 					regexp.MustCompile(`jaeger-collector`),
@@ -620,13 +620,13 @@ func TestWithExcludePods(t *testing.T) {
 		},
 		{
 			"configured",
-			PodExcludeConfig{
-				Pods: []PodNameconfig{
+			ExcludeConfig{
+				Pods: []ExcludePodConfig{
 					{Name: "ignore_pod1"},
 					{Name: "ignore_pod2"},
 				},
 			},
-			kube.ExcludePods{
+			kube.Excludes{
 				Regex: []*regexp.Regexp{
 					regexp.MustCompile(`ignore_pod1`),
 					regexp.MustCompile(`ignore_pod2`),
@@ -637,7 +637,7 @@ func TestWithExcludePods(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &kubernetesprocessor{}
-			option := WithExcludePods(tt.args)
+			option := WithExcludes(tt.args)
 			option(p)
 			assert.Equal(t, tt.want, p.podIgnore)
 		})

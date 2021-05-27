@@ -46,7 +46,7 @@ type Config struct {
 
 	// Exclude section allows to define names of pod that should be
 	// ignored while tagging.
-	Exclude PodExcludeConfig `mapstructure:"exclude"`
+	Exclude ExcludeConfig `mapstructure:"exclude"`
 }
 
 func (cfg *Config) Validate() error {
@@ -198,12 +198,12 @@ type PodAssociationConfig struct {
 	Name string `mapstructure:"name"`
 }
 
-// PodExcludeConfig represent a list of Pods to exclude
-type PodExcludeConfig struct {
-	Pods []PodNameconfig `mapstructure:"pods"`
+// ExcludeConfig represent a list of Pods to exclude
+type ExcludeConfig struct {
+	Pods []ExcludePodConfig `mapstructure:"pods"`
 }
 
-// PodNameconfig represent a Pod name to ignore
-type PodNameconfig struct {
+// ExcludePodConfig represent a Pod name to ignore
+type ExcludePodConfig struct {
 	Name string `mapstructure:"name"`
 }

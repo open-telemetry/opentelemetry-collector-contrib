@@ -51,7 +51,7 @@ type WatchClient struct {
 	Rules        ExtractionRules
 	Filters      Filters
 	Associations []Association
-	Exclude      ExcludePods
+	Exclude      Excludes
 }
 
 // Extract deployment name from the pod name. Pod name is created using
@@ -59,7 +59,7 @@ type WatchClient struct {
 var dRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]*-[0-9a-zA-Z]*$`)
 
 // New initializes a new k8s Client.
-func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude ExcludePods, newClientSet APIClientsetProvider, newInformer InformerProvider) (Client, error) {
+func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider) (Client, error) {
 	c := &WatchClient{
 		logger:          logger,
 		Rules:           rules,
