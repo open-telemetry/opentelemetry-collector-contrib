@@ -8,5 +8,5 @@ require (
 	github.com/influxdata/line-protocol/v2 v2.0.0-20210428091617-0567a5134992
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.27.1-0.20210526182734-4f768ff549a5
-	go.uber.org/zap v1.16.0
+	go.uber.org/zap v1.17.0
 )
