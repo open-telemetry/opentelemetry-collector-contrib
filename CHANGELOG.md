@@ -12,12 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `opentelemetry-instrumentation-tornado` Fixed cases where description was used with non-
   error status code when creating Status objects.
   ([#504](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/504))
+- `opentelemetry-instrumentation-asgi` Fix instrumentation default span name.
+  ([#418](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/418))
 
 ### Added
 - `opentelemetry-instrumentation-botocore` now supports
-  context propagation for lambda invoke via Payload embedded headers. 
+  context propagation for lambda invoke via Payload embedded headers.
   ([#458](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/458))
-  
+
 ## [0.21b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.2.0-0.21b0) - 2021-05-11
 
 ### Changed
@@ -84,7 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#436](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/436))
 - `opentelemetry-instrumentation-grpc` Keep client interceptor in sync with grpc client interceptors.
   ([#442](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/442))
-  
+
 ### Removed
 - Remove `http.status_text` from span attributes
   ([#406](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/406))
