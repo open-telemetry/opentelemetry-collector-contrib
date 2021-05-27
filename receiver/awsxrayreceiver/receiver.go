@@ -117,20 +117,20 @@ func (x *xrayReceiver) Shutdown(_ context.Context) error {
 func (x *xrayReceiver) start() {
 	incomingSegments := x.poller.SegmentsChan()
 	for seg := range incomingSegments {
-		seg.Ctx = x.obsrecv.StartTraceDataReceiveOp(seg.Ctx)
+		ctx := x.obsrecv.StartTraceDataReceiveOp(seg.Ctx)
 		traces, totalSpansCount, err := translator.ToTraces(seg.Payload)
 		if err != nil {
 			x.logger.Warn("X-Ray segment to OT traces conversion failed", zap.Error(err))
-			x.obsrecv.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, totalSpansCount, err)
+			x.obsrecv.EndTraceDataReceiveOp(ctx, awsxray.TypeStr, totalSpansCount, err)
 			continue
 		}
 
-		err = x.consumer.ConsumeTraces(seg.Ctx, *traces)
+		err = x.consumer.ConsumeTraces(ctx, *traces)
 		if err != nil {
 			x.logger.Warn("Trace consumer errored out", zap.Error(err))
-			x.obsrecv.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, totalSpansCount, err)
+			x.obsrecv.EndTraceDataReceiveOp(ctx, awsxray.TypeStr, totalSpansCount, err)
 			continue
 		}
-		x.obsrecv.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, totalSpansCount, nil)
+		x.obsrecv.EndTraceDataReceiveOp(ctx, awsxray.TypeStr, totalSpansCount, nil)
 	}
 }
