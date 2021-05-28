@@ -68,11 +68,7 @@ func (kv *KeyValues) Replace(key, value string) {
 
 func (kv *KeyValues) AppendMap(mapVal map[string]string) {
 	for key, value := range mapVal {
-		key = sanitize(key)
-		kv.keyValues = append(kv.keyValues, KeyValue{
-			Key:   key,
-			Value: value,
-		})
+		kv.Append(key, value)
 	}
 }
 
