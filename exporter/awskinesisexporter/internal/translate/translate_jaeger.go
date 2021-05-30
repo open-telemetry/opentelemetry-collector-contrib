@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package encoding
+package translate
 
 import (
 	awskinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
@@ -25,13 +25,13 @@ type jaeger struct {
 }
 
 // Ensure the jaeger encoder meets the interface at compile time.
-var _ Encoder = (*jaeger)(nil)
+var _ ExportWriter = (*jaeger)(nil)
 
-func Jaeger(kinesis *awskinesis.Exporter) Encoder {
+func JaegerExporter(kinesis *awskinesis.Exporter) ExportWriter {
 	return &jaeger{kinesis: kinesis}
 }
 
-func (j *jaeger) EncodeTraces(td pdata.Traces) error {
+func (j *jaeger) WriteTraces(td pdata.Traces) error {
 	traces, err := jaegertranslator.InternalTracesToJaegerProto(td)
 	if err != nil {
 		return err
@@ -51,5 +51,5 @@ func (j *jaeger) EncodeTraces(td pdata.Traces) error {
 	return nil
 }
 
-func (j *jaeger) EncodeMetrics(_ pdata.Metrics) error { return ErrUnsupportedEncodedType }
-func (j *jaeger) EncodeLogs(_ pdata.Logs) error       { return ErrUnsupportedEncodedType }
+func (j *jaeger) WriteMetrics(_ pdata.Metrics) error { return ErrUnsupportedEncodedType }
+func (j *jaeger) WriteLogs(_ pdata.Logs) error       { return ErrUnsupportedEncodedType }

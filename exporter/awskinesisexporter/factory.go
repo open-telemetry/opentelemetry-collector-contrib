@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/encoding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/translate"
 )
 
 const (
@@ -97,7 +97,7 @@ func createTracesExporter(
 
 	return Exporter{
 		awskinesis: k,
-		encoder:    encoding.Jaeger(k),
+		ew:         translate.JaegerExporter(k),
 		logger:     params.Logger,
 	}, nil
 }

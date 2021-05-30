@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package encoding
+package translate
 
 import (
 	"errors"
@@ -25,12 +25,12 @@ var (
 	ErrUnsupportedEncodedType = errors.New("unsupported type to encode")
 )
 
-// Encoder allows for the internal types to be converted to an consumable
-// exported type which is written to the kinesis stream
-type Encoder interface {
-	EncodeMetrics(md pdata.Metrics) error
+// ExportWriter wraps the kinesis exporter and transforms the data into
+// the desired output format.
+type ExportWriter interface {
+	WriteMetrics(md pdata.Metrics) error
 
-	EncodeTraces(td pdata.Traces) error
+	WriteTraces(td pdata.Traces) error
 
-	EncodeLogs(ld pdata.Logs) error
+	WriteLogs(ld pdata.Logs) error
 }

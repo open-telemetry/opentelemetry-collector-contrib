@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package encoding_test
+package translate_test
 
 import (
 	"testing"
@@ -20,23 +20,23 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/encoding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/translate"
 )
 
 func TestEncodingTraceData(t *testing.T) {
 	t.Parallel()
 
-	assert.NoError(t, encoding.Jaeger(nil).EncodeTraces(pdata.NewTraces()), "Must not error when processing spans")
+	assert.NoError(t, translate.JaegerExporter(nil).WriteTraces(pdata.NewTraces()), "Must not error when processing spans")
 }
 
 func TestEncodingMetricData(t *testing.T) {
 	t.Parallel()
 
-	assert.Error(t, encoding.Jaeger(nil).EncodeMetrics(pdata.NewMetrics()), "Must error when trying to encode unsupported type")
+	assert.Error(t, translate.JaegerExporter(nil).WriteMetrics(pdata.NewMetrics()), "Must error when trying to encode unsupported type")
 }
 
 func TestEncodingLogData(t *testing.T) {
 	t.Parallel()
 
-	assert.Error(t, encoding.Jaeger(nil).EncodeLogs(pdata.NewLogs()), "Must error when trying to encode unsupported type")
+	assert.Error(t, translate.JaegerExporter(nil).WriteLogs(pdata.NewLogs()), "Must error when trying to encode unsupported type")
 }

@@ -17,19 +17,20 @@ package awskinesisexporter
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	awskinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/encoding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/translate"
 )
 
 // Exporter implements an OpenTelemetry trace exporter that exports all spans to AWS Kinesis
 type Exporter struct {
 	awskinesis *awskinesis.Exporter
-	encoder    encoding.Encoder
+	ew         translate.ExportWriter
 	logger     *zap.Logger
 }
 
@@ -56,9 +57,9 @@ func (e Exporter) Shutdown(context.Context) error {
 
 // ConsumeTraces receives a span batch and exports it to AWS Kinesis
 func (e Exporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
-	err := e.encoder.EncodeTraces(td)
+	err := e.ew.WriteTraces(td)
 	if err != nil {
-		e.logger.Error("Unable to write jaeger traces to kinesis", zap.Error(err))
+		e.logger.Error("Unable to write traces to kinesis", zap.Error(err))
 	}
 	return err
 }
