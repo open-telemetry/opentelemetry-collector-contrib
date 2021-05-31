@@ -15,64 +15,73 @@
 package host
 
 import (
+	"context"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"go.uber.org/zap"
 )
 
 const (
-	ClusterNameKey          = "container-insight-eks-cluster-name"
-	ClusterNameTagKeyPrefix = "kubernetes.io/cluster/"
-	AutoScalingGroupNameTag = "aws:autoscaling:groupName"
+	clusterNameKey          = "container-insight-eks-cluster-name"
+	clusterNameTagKeyPrefix = "kubernetes.io/cluster/"
+	autoScalingGroupNameTag = "aws:autoscaling:groupName"
 )
+
+type ec2TagsClient interface {
+	DescribeTagsWithContext(ctx context.Context, input *ec2.DescribeTagsInput,
+		opts ...request.Option) (*ec2.DescribeTagsOutput, error)
+}
+
+type EC2TagsProvider interface {
+	GetClusterName() string
+	GetAutoScalingGroupName() string
+}
 
 type EC2Tags struct {
 	refreshInterval      time.Duration
+	maxJitterTime        time.Duration
 	instanceID           string
+	client               ec2TagsClient
 	clusterName          string
 	autoScalingGroupName string
+	isSucess             chan bool //only used in testing
 	logger               *zap.Logger
-	shutdownC            chan bool
 }
 
-func NewEC2Tags(instanceID string, refreshInterval time.Duration, logger *zap.Logger) *EC2Tags {
-	if instanceID == "" {
-		return nil
-	}
+type ec2TagsOption func(*EC2Tags)
 
+func NewEC2Tags(ctx context.Context, session *session.Session, instanceID string,
+	refreshInterval time.Duration, logger *zap.Logger, options ...ec2TagsOption) EC2TagsProvider {
 	et := &EC2Tags{
 		instanceID:      instanceID,
+		client:          ec2.New(session),
 		refreshInterval: refreshInterval,
-		shutdownC:       make(chan bool),
+		maxJitterTime:   3 * time.Second,
 		logger:          logger,
 	}
 
-	et.refresh()
+	for _, opt := range options {
+		opt(et)
+	}
 
 	shouldRefresh := func() bool {
 		//stop once we get the cluster name
 		return et.clusterName == ""
 	}
 
-	go refreshUntil(et.refresh, et.refreshInterval, shouldRefresh, et.shutdownC)
+	go refreshUntil(ctx, et.refresh, et.refreshInterval, shouldRefresh, et.maxJitterTime)
 
 	return et
 }
 
-func (et *EC2Tags) fetchEC2Tags() map[string]string {
+func (et *EC2Tags) fetchEC2Tags(ctx context.Context) map[string]string {
 	et.logger.Info("Fetch ec2 tags to detect cluster name and auto scaling group name")
 	tags := make(map[string]string)
-	//add some sleep jitter to prevent a large number of receivers calling the ec2 api at the same time
-	time.Sleep(hostJitter(3 * time.Second))
-
-	sess, err := session.NewSession(&aws.Config{})
-	if err != nil {
-		et.logger.Warn("Fail to set up session to call ec2 api", zap.Error(err))
-	}
 
 	tagFilters := []*ec2.Filter{
 		{
@@ -85,13 +94,12 @@ func (et *EC2Tags) fetchEC2Tags() map[string]string {
 		},
 	}
 
-	client := ec2.New(sess)
 	input := &ec2.DescribeTagsInput{
 		Filters: tagFilters,
 	}
 
 	for {
-		result, err := client.DescribeTags(input)
+		result, err := et.client.DescribeTagsWithContext(ctx, input)
 		if err != nil {
 			et.logger.Warn("Fail to call ec2 DescribeTags", zap.Error(err))
 			break
@@ -100,8 +108,8 @@ func (et *EC2Tags) fetchEC2Tags() map[string]string {
 		for _, tag := range result.Tags {
 			key := *tag.Key
 			tags[key] = *tag.Value
-			if strings.HasPrefix(key, ClusterNameTagKeyPrefix) && *tag.Value == "owned" {
-				tags[ClusterNameKey] = key[len(ClusterNameTagKeyPrefix):]
+			if strings.HasPrefix(key, clusterNameTagKeyPrefix) && *tag.Value == "owned" {
+				tags[clusterNameKey] = key[len(clusterNameTagKeyPrefix):]
 			}
 		}
 
@@ -122,12 +130,12 @@ func (et *EC2Tags) GetAutoScalingGroupName() string {
 	return et.autoScalingGroupName
 }
 
-func (et *EC2Tags) refresh() {
-	tags := et.fetchEC2Tags()
-	et.clusterName = tags[ClusterNameKey]
-	et.autoScalingGroupName = tags[AutoScalingGroupNameTag]
-}
-
-func (et *EC2Tags) Shutdown() {
-	close(et.shutdownC)
+func (et *EC2Tags) refresh(ctx context.Context) {
+	tags := et.fetchEC2Tags(ctx)
+	et.clusterName = tags[clusterNameKey]
+	et.autoScalingGroupName = tags[autoScalingGroupNameTag]
+	if et.isSucess != nil && et.clusterName != "" && et.autoScalingGroupName != "" {
+		// this will be executed only in testing
+		close(et.isSucess)
+	}
 }

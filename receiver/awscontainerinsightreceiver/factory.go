@@ -22,6 +22,11 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor"
+	hostInfo "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8sapiserver"
 )
 
 // Factory for awscontainerinsightreceiver
@@ -62,5 +67,13 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 
 	rCfg := baseCfg.(*Config)
-	return New(params.Logger, rCfg, consumer)
+	logger := params.Logger
+	hostInfo, err := hostInfo.NewInfo(rCfg.CollectionInterval, logger)
+	// TODO: I will need to change the code here to let cadvisor and k8sapiserver return err as well
+	if err != nil {
+		logger.Warn("failed to initialize hostInfo", zap.Error(err))
+	}
+	cadvisor := cadvisor.New(rCfg.ContainerOrchestrator, hostInfo, logger)
+	k8sapiserver := k8sapiserver.New(hostInfo, logger)
+	return New(logger, rCfg, consumer, cadvisor, k8sapiserver)
 }

@@ -16,8 +16,8 @@ package host
 
 import (
 	"bufio"
+	"context"
 	"fmt"
-	"hash/fnv"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"go.uber.org/zap"
@@ -38,58 +39,65 @@ const (
 
 var ebsMountPointRegex = regexp.MustCompile(`kubernetes\.io/aws-ebs/mounts/aws/(.+)/(vol-\w+)$`)
 
+type ebsVolumeClient interface {
+	DescribeVolumesWithContext(context.Context, *ec2.DescribeVolumesInput, ...request.Option) (*ec2.DescribeVolumesOutput, error)
+}
+
+type EBSVolumeProvider interface {
+	GetEBSVolumeID(devName string) string
+	extractEbsIDsUsedByKubernetes() map[string]string
+}
+
 type EBSVolume struct {
 	refreshInterval time.Duration
+	maxJitterTime   time.Duration
 	instanceID      string
+	client          ebsVolumeClient
 	logger          *zap.Logger
 	shutdownC       chan bool
 
 	mu sync.RWMutex
 	// device name to volumeID mapping
 	dev2Vol map[string]string
+
+	// for testing only
+	hostMounts   string
+	osLstat      func(name string) (os.FileInfo, error)
+	evalSymLinks func(path string) (string, error)
 }
 
-func NewEBSVolume(instanceID string, refreshInterval time.Duration, logger *zap.Logger) *EBSVolume {
-	if instanceID == "" {
-		return nil
-	}
+type ebsVolumeOption func(*EBSVolume)
 
+func NewEBSVolume(ctx context.Context, session *session.Session, instanceID string, region string,
+	refreshInterval time.Duration, logger *zap.Logger, options ...ebsVolumeOption) EBSVolumeProvider {
 	ebsVolume := &EBSVolume{
 		dev2Vol:         make(map[string]string),
 		instanceID:      instanceID,
+		client:          ec2.New(session, aws.NewConfig().WithRegion(region)),
 		refreshInterval: refreshInterval,
+		maxJitterTime:   3 * time.Second,
 		shutdownC:       make(chan bool),
 		logger:          logger,
+		hostMounts:      hostMounts,
+		osLstat:         os.Lstat,
+		evalSymLinks:    filepath.EvalSymlinks,
 	}
 
-	// add some sleep jitter to prevent a large number of receivers calling the ec2 api at the same time
-	time.Sleep(hostJitter(3 * time.Second))
-	ebsVolume.refresh()
+	for _, opt := range options {
+		opt(ebsVolume)
+	}
 
 	shouldRefresh := func() bool {
 		// keep refreshing to get updated ebs volumes
 		return true
 	}
-	go refreshUntil(ebsVolume.refresh, ebsVolume.refreshInterval, shouldRefresh, ebsVolume.shutdownC)
+	go refreshUntil(ctx, ebsVolume.refresh, ebsVolume.refreshInterval, shouldRefresh, ebsVolume.maxJitterTime)
 
 	return ebsVolume
 }
 
-func (e *EBSVolume) Shutdown() {
-	close(e.shutdownC)
-}
-
-func (e *EBSVolume) refresh() {
-	if e.instanceID == "" {
-		return
-	}
-
+func (e *EBSVolume) refresh(ctx context.Context) {
 	e.logger.Info("Fetch ebs volumes from ec2 api")
-	sess, err := session.NewSession(&aws.Config{})
-	if err != nil {
-		e.logger.Warn("Fail to set up session to call ec2 api", zap.Error(err))
-	}
-	client := ec2.New(sess)
 
 	input := &ec2.DescribeVolumesInput{
 		Filters: []*ec2.Filter{
@@ -103,7 +111,7 @@ func (e *EBSVolume) refresh() {
 	devPathSet := make(map[string]bool)
 	allSuccess := false
 	for {
-		result, err := client.DescribeVolumes(input)
+		result, err := e.client.DescribeVolumesWithContext(ctx, input)
 		if err != nil {
 			e.logger.Warn("Fail to call ec2 DescribeVolumes", zap.Error(err))
 			break
@@ -134,7 +142,7 @@ func (e *EBSVolume) refresh() {
 
 func (e *EBSVolume) addEBSVolumeMapping(zone *string, attachement *ec2.VolumeAttachment) string {
 	// *attachement.Device is sth like: /dev/xvda
-	devPath := findNvmeBlockNameIfPresent(*attachement.Device)
+	devPath := e.findNvmeBlockNameIfPresent(*attachement.Device)
 	if devPath == "" {
 		devPath = *attachement.Device
 	}
@@ -146,11 +154,11 @@ func (e *EBSVolume) addEBSVolumeMapping(zone *string, attachement *ec2.VolumeAtt
 }
 
 // find nvme block name by symlink, if symlink doesn't exist, return ""
-func findNvmeBlockNameIfPresent(devName string) string {
+func (e *EBSVolume) findNvmeBlockNameIfPresent(devName string) string {
 	// for nvme(ssd), there is a symlink from devName to nvme block name, i.e. /dev/xvda -> /dev/nvme0n1
 	// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nvme-ebs-volumes.html
 	hasRootFs := true
-	if _, err := os.Lstat(hostProc); os.IsNotExist(err) {
+	if _, err := e.osLstat(hostProc); os.IsNotExist(err) {
 		hasRootFs = false
 	}
 	nvmeName := ""
@@ -159,9 +167,9 @@ func findNvmeBlockNameIfPresent(devName string) string {
 		devName = "/rootfs" + devName
 	}
 
-	if info, err := os.Lstat(devName); err == nil {
+	if info, err := e.osLstat(devName); err == nil {
 		if info.Mode()&os.ModeSymlink == os.ModeSymlink {
-			if path, err := filepath.EvalSymlinks(devName); err == nil {
+			if path, err := e.evalSymLinks(devName); err == nil {
 				nvmeName = path
 			}
 		}
@@ -188,32 +196,20 @@ func (e *EBSVolume) GetEBSVolumeID(devName string) string {
 }
 
 //extract the ebs volume id used by kubernetes cluster
-func (e *EBSVolume) ExtractEbsIDsUsedByKubernetes() map[string]string {
+func (e *EBSVolume) extractEbsIDsUsedByKubernetes() map[string]string {
 	ebsVolumeIDs := make(map[string]string)
 
-	file, err := os.Open(hostMounts)
+	file, err := os.Open(e.hostMounts)
 	if err != nil {
 		e.logger.Debug("cannot open /rootfs/proc/mounts", zap.Error(err))
 		return ebsVolumeIDs
 	}
 	defer file.Close()
 
-	reader := bufio.NewReader(file)
+	scanner := bufio.NewScanner(file)
 
-	for {
-		line, isPrefix, err := reader.ReadLine()
-
-		// err could be EOF in normal case
-		if err != nil {
-			break
-		}
-
-		// isPrefix is set when a line exceeding 4KB which we treat it as error when reading mount file
-		if isPrefix {
-			break
-		}
-
-		lineStr := string(line)
+	for scanner.Scan() {
+		lineStr := scanner.Text()
 		if strings.TrimSpace(lineStr) == "" {
 			continue
 		}
@@ -231,16 +227,4 @@ func (e *EBSVolume) ExtractEbsIDsUsedByKubernetes() map[string]string {
 	}
 
 	return ebsVolumeIDs
-}
-
-func hostJitter(max time.Duration) time.Duration {
-	hostName, err := os.Hostname()
-	if err != nil {
-		hostName = "Unknown"
-	}
-	hash := fnv.New64()
-	hash.Write([]byte(hostName))
-	// Right shift the uint64 hash by one to make sure the jitter duration is always positive
-	hostSleepJitter := time.Duration(int64(hash.Sum64()>>1)) % max
-	return hostSleepJitter
 }

@@ -15,67 +15,76 @@
 package host
 
 import (
+	"context"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
 	awsec2metadata "github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
-
 	"go.uber.org/zap"
 )
 
-type EC2Metadata struct {
-	logger          *zap.Logger
-	refreshInterval time.Duration
-	instanceID      string
-	instanceType    string
-	shutdownC       chan bool
+type metadataClient interface {
+	GetInstanceIdentityDocumentWithContext(ctx context.Context) (awsec2metadata.EC2InstanceIdentityDocument, error)
 }
 
-func NewEC2Metadata(refreshInterval time.Duration, logger *zap.Logger) *EC2Metadata {
+type EC2MetadataProvider interface {
+	GetInstanceID() string
+	GetInstanceType() string
+	GetRegion() string
+}
+
+type EC2Metadata struct {
+	logger           *zap.Logger
+	client           metadataClient
+	refreshInterval  time.Duration
+	instanceID       string
+	instanceType     string
+	region           string
+	instanceIDReadyC chan bool
+}
+
+type ec2MetadataOption func(*EC2Metadata)
+
+func NewEC2Metadata(ctx context.Context, session *session.Session, refreshInterval time.Duration,
+	instanceIDReadyC chan bool, logger *zap.Logger, options ...ec2MetadataOption) EC2MetadataProvider {
 	emd := &EC2Metadata{
-		refreshInterval: refreshInterval,
-		shutdownC:       make(chan bool),
-		logger:          logger,
+		client:           awsec2metadata.New(session),
+		refreshInterval:  refreshInterval,
+		instanceIDReadyC: instanceIDReadyC,
+		logger:           logger,
 	}
 
-	emd.refresh()
+	for _, opt := range options {
+		opt(emd)
+	}
 
 	shouldRefresh := func() bool {
 		//stop the refresh once we get instance ID and type successfully
 		return emd.instanceID == "" || emd.instanceType == ""
 	}
 
-	go refreshUntil(emd.refresh, emd.refreshInterval, shouldRefresh, emd.shutdownC)
+	go refreshUntil(ctx, emd.refresh, emd.refreshInterval, shouldRefresh, 0)
 
 	return emd
 }
 
-func (emd *EC2Metadata) getAwsMetadata() awsec2metadata.EC2InstanceIdentityDocument {
+func (emd *EC2Metadata) refresh(ctx context.Context) {
 	emd.logger.Info("Fetch instance id and type from ec2 metadata")
-	sess, err := session.NewSession(&aws.Config{})
-	if err != nil {
-		emd.logger.Error("Failed to set up new session to call ec2 api")
-		return awsec2metadata.EC2InstanceIdentityDocument{}
-	}
-	client := awsec2metadata.New(sess)
-	doc, err := client.GetInstanceIdentityDocument()
+
+	doc, err := emd.client.GetInstanceIdentityDocumentWithContext(ctx)
 	if err != nil {
 		emd.logger.Error("Failed to get ec2 metadata", zap.Error(err))
-		return awsec2metadata.EC2InstanceIdentityDocument{}
+		return
 	}
 
-	return doc
-}
+	emd.instanceID = doc.InstanceID
+	emd.instanceType = doc.InstanceType
+	emd.region = doc.Region
 
-func (emd *EC2Metadata) refresh() {
-	metadata := emd.getAwsMetadata()
-	emd.instanceID = metadata.InstanceID
-	emd.instanceType = metadata.InstanceType
-}
-
-func (emd *EC2Metadata) Shutdown() {
-	close(emd.shutdownC)
+	// notify ec2tags and ebsvolume that the instance id is ready
+	if emd.instanceID != "" {
+		close(emd.instanceIDReadyC)
+	}
 }
 
 func (emd *EC2Metadata) GetInstanceID() string {
@@ -84,4 +93,8 @@ func (emd *EC2Metadata) GetInstanceID() string {
 
 func (emd *EC2Metadata) GetInstanceType() string {
 	return emd.instanceType
+}
+
+func (emd *EC2Metadata) GetRegion() string {
+	return emd.region
 }
