@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter
 
-go 1.15
+go 1.16
 
 require (
 	github.com/apache/thrift v0.13.0
