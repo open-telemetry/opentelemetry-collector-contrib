@@ -14,7 +14,7 @@ require (
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/uptrace/uptrace-go v0.20.0
-	github.com/vmihailenco/msgpack/v5 v5.3.2
+	github.com/vmihailenco/msgpack/v5 v5.3.4
 	go.opentelemetry.io/collector v0.27.1-0.20210527142130-1f972bbd7997
 	go.opentelemetry.io/otel v0.20.0
 	go.uber.org/zap v1.17.0
