@@ -15,6 +15,7 @@
 from unittest import TestCase
 
 from opentelemetry.baggage import get_all, set_baggage
+from opentelemetry.context import Context
 from opentelemetry.propagators.ot_trace import (
     OT_BAGGAGE_PREFIX,
     OT_SAMPLED_HEADER,
@@ -24,8 +25,6 @@ from opentelemetry.propagators.ot_trace import (
 )
 from opentelemetry.sdk.trace import _Span
 from opentelemetry.trace import (
-    INVALID_SPAN_CONTEXT,
-    INVALID_SPAN_ID,
     INVALID_TRACE_ID,
     SpanContext,
     TraceFlags,
@@ -275,65 +274,44 @@ class TestOTTracePropagator(TestCase):
             get_current_span().get_span_context().trace_flags, TraceFlags
         )
 
-    def test_extract_malformed_trace_id(self):
-        """Test extraction with malformed trace_id"""
+    def test_extract_invalid_trace_header_to_explict_ctx(self):
+        invalid_headers = [
+            ("abc123!", "e457b5a2e4d86bd1"),  # malformed trace id
+            ("64fe8b2a57d3eff7", "abc123!"),  # malformed span id
+            ("0" * 32, "e457b5a2e4d86bd1"),  # invalid trace id
+            ("64fe8b2a57d3eff7", "0" * 16),  # invalid span id
+        ]
+        for trace_id, span_id in invalid_headers:
+            with self.subTest(trace_id=trace_id, span_id=span_id):
+                orig_ctx = Context({"k1": "v1"})
 
-        span_context = get_current_span(
-            self.ot_trace_propagator.extract(
-                {
-                    OT_TRACE_ID_HEADER: "abc123!",
-                    OT_SPAN_ID_HEADER: "e457b5a2e4d86bd1",
-                    OT_SAMPLED_HEADER: "false",
-                },
-            )
-        ).get_span_context()
+                ctx = self.ot_trace_propagator.extract(
+                    {
+                        OT_TRACE_ID_HEADER: trace_id,
+                        OT_SPAN_ID_HEADER: span_id,
+                        OT_SAMPLED_HEADER: "false",
+                    },
+                    orig_ctx,
+                )
+                self.assertDictEqual(orig_ctx, ctx)
 
-        self.assertEqual(span_context, INVALID_SPAN_CONTEXT)
-
-    def test_extract_malformed_span_id(self):
-        """Test extraction with malformed span_id"""
-
-        span_context = get_current_span(
-            self.ot_trace_propagator.extract(
-                {
-                    OT_TRACE_ID_HEADER: "64fe8b2a57d3eff7",
-                    OT_SPAN_ID_HEADER: "abc123!",
-                    OT_SAMPLED_HEADER: "false",
-                },
-            )
-        ).get_span_context()
-
-        self.assertEqual(span_context, INVALID_SPAN_CONTEXT)
-
-    def test_extract_invalid_trace_id(self):
-        """Test extraction with invalid trace_id"""
-
-        span_context = get_current_span(
-            self.ot_trace_propagator.extract(
-                {
-                    OT_TRACE_ID_HEADER: INVALID_TRACE_ID,
-                    OT_SPAN_ID_HEADER: "e457b5a2e4d86bd1",
-                    OT_SAMPLED_HEADER: "false",
-                },
-            )
-        ).get_span_context()
-
-        self.assertEqual(span_context, INVALID_SPAN_CONTEXT)
-
-    def test_extract_invalid_span_id(self):
-        """Test extraction with invalid span_id"""
-
-        span_context = get_current_span(
-            self.ot_trace_propagator.extract(
-                {
-                    OT_TRACE_ID_HEADER: "64fe8b2a57d3eff7",
-                    OT_SPAN_ID_HEADER: INVALID_SPAN_ID,
-                    OT_SAMPLED_HEADER: "false",
-                },
-            )
-        ).get_span_context()
-
-        self.assertEqual(span_context, INVALID_SPAN_CONTEXT)
+    def test_extract_invalid_trace_header_to_implicit_ctx(self):
+        invalid_headers = [
+            ("abc123!", "e457b5a2e4d86bd1"),  # malformed trace id
+            ("64fe8b2a57d3eff7", "abc123!"),  # malformed span id
+            ("0" * 32, "e457b5a2e4d86bd1"),  # invalid trace id
+            ("64fe8b2a57d3eff7", "0" * 16),  # invalid span id
+        ]
+        for trace_id, span_id in invalid_headers:
+            with self.subTest(trace_id=trace_id, span_id=span_id):
+                ctx = self.ot_trace_propagator.extract(
+                    {
+                        OT_TRACE_ID_HEADER: trace_id,
+                        OT_SPAN_ID_HEADER: span_id,
+                        OT_SAMPLED_HEADER: "false",
+                    }
+                )
+                self.assertDictEqual(Context(), ctx)
 
     def test_extract_baggage(self):
         """Test baggage extraction"""
@@ -359,11 +337,13 @@ class TestOTTracePropagator(TestCase):
         self.assertEqual(baggage["abc"], "abc")
         self.assertEqual(baggage["def"], "def")
 
-    def test_extract_empty(self):
-        "Test extraction when no headers are present"
+    def test_extract_empty_to_explicit_ctx(self):
+        """Test extraction when no headers are present"""
+        orig_ctx = Context({"k1": "v1"})
+        ctx = self.ot_trace_propagator.extract({}, orig_ctx)
 
-        span_context = get_current_span(
-            self.ot_trace_propagator.extract({})
-        ).get_span_context()
+        self.assertDictEqual(orig_ctx, ctx)
 
-        self.assertEqual(span_context, INVALID_SPAN_CONTEXT)
+    def test_extract_empty_to_implicit_ctx(self):
+        ctx = self.ot_trace_propagator.extract({})
+        self.assertDictEqual(Context(), ctx)

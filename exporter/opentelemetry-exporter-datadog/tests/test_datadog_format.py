@@ -16,6 +16,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from opentelemetry import trace as trace_api
+from opentelemetry.context import Context
 from opentelemetry.exporter.datadog import constants, propagator
 from opentelemetry.sdk import trace
 from opentelemetry.sdk.trace.id_generator import RandomIdGenerator
@@ -36,42 +37,58 @@ class TestDatadogFormat(unittest.TestCase):
         )
         cls.serialized_origin = "origin-service"
 
-    def test_malformed_headers(self):
+    def test_extract_malformed_headers_to_explicit_ctx(self):
         """Test with no Datadog headers"""
+        orig_ctx = Context({"k1": "v1"})
         malformed_trace_id_key = FORMAT.TRACE_ID_KEY + "-x"
         malformed_parent_id_key = FORMAT.PARENT_ID_KEY + "-x"
-        context = get_current_span(
-            FORMAT.extract(
-                {
-                    malformed_trace_id_key: self.serialized_trace_id,
-                    malformed_parent_id_key: self.serialized_parent_id,
-                },
-            )
-        ).get_span_context()
+        context = FORMAT.extract(
+            {
+                malformed_trace_id_key: self.serialized_trace_id,
+                malformed_parent_id_key: self.serialized_parent_id,
+            },
+            orig_ctx,
+        )
+        self.assertDictEqual(orig_ctx, context)
 
-        self.assertNotEqual(context.trace_id, int(self.serialized_trace_id))
-        self.assertNotEqual(context.span_id, int(self.serialized_parent_id))
-        self.assertFalse(context.is_remote)
+    def test_extract_malformed_headers_to_implicit_ctx(self):
+        malformed_trace_id_key = FORMAT.TRACE_ID_KEY + "-x"
+        malformed_parent_id_key = FORMAT.PARENT_ID_KEY + "-x"
+        context = FORMAT.extract(
+            {
+                malformed_trace_id_key: self.serialized_trace_id,
+                malformed_parent_id_key: self.serialized_parent_id,
+            }
+        )
+        self.assertDictEqual(Context(), context)
 
-    def test_missing_trace_id(self):
+    def test_extract_missing_trace_id_to_explicit_ctx(self):
         """If a trace id is missing, populate an invalid trace id."""
-        carrier = {
-            FORMAT.PARENT_ID_KEY: self.serialized_parent_id,
-        }
+        orig_ctx = Context({"k1": "v1"})
+        carrier = {FORMAT.PARENT_ID_KEY: self.serialized_parent_id}
+
+        ctx = FORMAT.extract(carrier, orig_ctx)
+        self.assertDictEqual(orig_ctx, ctx)
+
+    def test_extract_missing_trace_id_to_implicit_ctx(self):
+        carrier = {FORMAT.PARENT_ID_KEY: self.serialized_parent_id}
 
         ctx = FORMAT.extract(carrier)
-        span_context = get_current_span(ctx).get_span_context()
-        self.assertEqual(span_context.trace_id, trace_api.INVALID_TRACE_ID)
+        self.assertDictEqual(Context(), ctx)
 
-    def test_missing_parent_id(self):
+    def test_extract_missing_parent_id_to_explicit_ctx(self):
         """If a parent id is missing, populate an invalid trace id."""
-        carrier = {
-            FORMAT.TRACE_ID_KEY: self.serialized_trace_id,
-        }
+        orig_ctx = Context({"k1": "v1"})
+        carrier = {FORMAT.TRACE_ID_KEY: self.serialized_trace_id}
+
+        ctx = FORMAT.extract(carrier, orig_ctx)
+        self.assertDictEqual(orig_ctx, ctx)
+
+    def test_extract_missing_parent_id_to_implicit_ctx(self):
+        carrier = {FORMAT.TRACE_ID_KEY: self.serialized_trace_id}
 
         ctx = FORMAT.extract(carrier)
-        span_context = get_current_span(ctx).get_span_context()
-        self.assertEqual(span_context.span_id, trace_api.INVALID_SPAN_ID)
+        self.assertDictEqual(Context(), ctx)
 
     def test_context_propagation(self):
         """Test the propagation of Datadog headers."""

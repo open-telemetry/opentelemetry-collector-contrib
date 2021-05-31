@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#504](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/504))
 - `opentelemetry-instrumentation-asgi` Fix instrumentation default span name.
   ([#418](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/418))
+- Propagators use the root context as default for `extract` and do not modify
+  the context if extracting from carrier does not work.
+  ([#488](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/488))
 
 ### Added
 - `opentelemetry-instrumentation-botocore` now supports

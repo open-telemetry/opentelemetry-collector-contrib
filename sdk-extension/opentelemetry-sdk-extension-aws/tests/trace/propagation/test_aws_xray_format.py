@@ -18,6 +18,7 @@ from unittest.mock import Mock, patch
 from requests.structures import CaseInsensitiveDict
 
 import opentelemetry.trace as trace_api
+from opentelemetry.context import Context
 from opentelemetry.sdk.extension.aws.trace.propagation.aws_xray_format import (
     TRACE_HEADER_KEY,
     AwsXRayFormat,
@@ -164,15 +165,18 @@ class AwsXRayPropagatorTest(unittest.TestCase):
 
     # Extract Tests
 
-    def test_extract_empty_carrier_from_invalid_context(self):
+    def test_extract_empty_carrier_to_explicit_ctx(self):
+        orig_ctx = Context({"k1": "v1"})
+        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
+            CaseInsensitiveDict(), orig_ctx
+        )
+        self.assertDictEqual(orig_ctx, context_with_extracted)
+
+    def test_extract_empty_carrier_to_implicit_ctx(self):
         context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
             CaseInsensitiveDict()
         )
-
-        self.assertEqual(
-            get_nested_span_context(context_with_extracted),
-            INVALID_SPAN_CONTEXT,
-        )
+        self.assertDictEqual(Context(), context_with_extracted)
 
     def test_extract_not_sampled_context(self):
         context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
@@ -256,103 +260,44 @@ class AwsXRayPropagatorTest(unittest.TestCase):
             INVALID_SPAN_CONTEXT,
         )
 
-    def test_extract_invalid_trace_id(self):
-        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
-            CaseInsensitiveDict(
-                {
-                    TRACE_HEADER_KEY: "Root=1-12345678-abcdefghijklmnopqrstuvwx;Parent=53995c3f42cd8ad8;Sampled=0"
-                }
-            ),
-        )
+    def test_extract_invalid_to_explicit_ctx(self):
+        trace_headers = [
+            "Root=1-12345678-abcdefghijklmnopqrstuvwx;Parent=53995c3f42cd8ad8;Sampled=0",  # invalid trace id
+            "Root=1-8a3c60f7-d188f8fa79d48a391a778fa600;Parent=53995c3f42cd8ad8;Sampled=0",  # invalid size trace id
+            "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=abcdefghijklmnop;Sampled=0",  # invalid span id
+            "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad800;Sampled=0"  # invalid size span id
+            "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=",  # no sampled flag
+            "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=011",  # invalid size sampled
+            "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=a",  # non numeric sampled flag
+        ]
+        for trace_header in trace_headers:
+            with self.subTest(trace_header=trace_header):
+                orig_ctx = Context({"k1": "v1"})
 
-        self.assertEqual(
-            get_nested_span_context(context_with_extracted),
-            INVALID_SPAN_CONTEXT,
-        )
+                ctx = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
+                    CaseInsensitiveDict({TRACE_HEADER_KEY: trace_header}),
+                    orig_ctx,
+                )
 
-    def test_extract_invalid_trace_id_size(self):
-        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
-            CaseInsensitiveDict(
-                {
-                    TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa600;Parent=53995c3f42cd8ad8;Sampled=0="
-                }
-            ),
-        )
+                self.assertDictEqual(orig_ctx, ctx)
 
-        self.assertEqual(
-            get_nested_span_context(context_with_extracted),
-            INVALID_SPAN_CONTEXT,
-        )
+    def test_extract_invalid_to_implicit_ctx(self):
+        trace_headers = [
+            "Root=1-12345678-abcdefghijklmnopqrstuvwx;Parent=53995c3f42cd8ad8;Sampled=0",  # invalid trace id
+            "Root=1-8a3c60f7-d188f8fa79d48a391a778fa600;Parent=53995c3f42cd8ad8;Sampled=0",  # invalid size trace id
+            "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=abcdefghijklmnop;Sampled=0",  # invalid span id
+            "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad800;Sampled=0"  # invalid size span id
+            "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=",  # no sampled flag
+            "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=011",  # invalid size sampled
+            "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=a",  # non numeric sampled flag
+        ]
+        for trace_header in trace_headers:
+            with self.subTest(trace_header=trace_header):
+                ctx = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
+                    CaseInsensitiveDict({TRACE_HEADER_KEY: trace_header}),
+                )
 
-    def test_extract_invalid_span_id(self):
-        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
-            CaseInsensitiveDict(
-                {
-                    TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=abcdefghijklmnop;Sampled=0"
-                }
-            ),
-        )
-
-        self.assertEqual(
-            get_nested_span_context(context_with_extracted),
-            INVALID_SPAN_CONTEXT,
-        )
-
-    def test_extract_invalid_span_id_size(self):
-        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
-            CaseInsensitiveDict(
-                {
-                    TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad800;Sampled=0"
-                }
-            ),
-        )
-
-        self.assertEqual(
-            get_nested_span_context(context_with_extracted),
-            INVALID_SPAN_CONTEXT,
-        )
-
-    def test_extract_invalid_empty_sampled_flag(self):
-        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
-            CaseInsensitiveDict(
-                {
-                    TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled="
-                }
-            ),
-        )
-
-        self.assertEqual(
-            get_nested_span_context(context_with_extracted),
-            INVALID_SPAN_CONTEXT,
-        )
-
-    def test_extract_invalid_sampled_flag_size(self):
-        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
-            CaseInsensitiveDict(
-                {
-                    TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=011"
-                }
-            ),
-        )
-
-        self.assertEqual(
-            get_nested_span_context(context_with_extracted),
-            INVALID_SPAN_CONTEXT,
-        )
-
-    def test_extract_invalid_non_numeric_sampled_flag(self):
-        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
-            CaseInsensitiveDict(
-                {
-                    TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=a"
-                }
-            ),
-        )
-
-        self.assertEqual(
-            get_nested_span_context(context_with_extracted),
-            INVALID_SPAN_CONTEXT,
-        )
+                self.assertDictEqual(Context(), ctx)
 
     @patch(
         "opentelemetry.sdk.extension.aws.trace."

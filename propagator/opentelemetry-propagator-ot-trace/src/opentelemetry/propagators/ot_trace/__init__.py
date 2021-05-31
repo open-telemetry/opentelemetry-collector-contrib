@@ -55,13 +55,19 @@ class OTTracePropagator(TextMapPropagator):
         context: Optional[Context] = None,
         getter: Getter = default_getter,
     ) -> Context:
+        if context is None:
+            context = Context()
 
-        traceid = _extract_first_element(
-            getter.get(carrier, OT_TRACE_ID_HEADER), INVALID_TRACE_ID
+        traceid = _extract_identifier(
+            getter.get(carrier, OT_TRACE_ID_HEADER),
+            _valid_extract_traceid,
+            INVALID_TRACE_ID,
         )
 
-        spanid = _extract_first_element(
-            getter.get(carrier, OT_SPAN_ID_HEADER), INVALID_SPAN_ID
+        spanid = _extract_identifier(
+            getter.get(carrier, OT_SPAN_ID_HEADER),
+            _valid_extract_spanid,
+            INVALID_SPAN_ID,
         )
 
         sampled = _extract_first_element(
@@ -73,17 +79,12 @@ class OTTracePropagator(TextMapPropagator):
         else:
             traceflags = TraceFlags.DEFAULT
 
-        if (
-            traceid != INVALID_TRACE_ID
-            and _valid_extract_traceid.fullmatch(traceid) is not None
-            and spanid != INVALID_SPAN_ID
-            and _valid_extract_spanid.fullmatch(spanid) is not None
-        ):
+        if traceid != INVALID_TRACE_ID and spanid != INVALID_SPAN_ID:
             context = set_span_in_context(
                 NonRecordingSpan(
                     SpanContext(
-                        trace_id=int(traceid, 16),
-                        span_id=int(spanid, 16),
+                        trace_id=traceid,
+                        span_id=spanid,
                         is_remote=True,
                         trace_flags=TraceFlags(traceflags),
                     )
@@ -172,3 +173,16 @@ def _extract_first_element(
     if items is None:
         return default
     return next(iter(items), None)
+
+
+def _extract_identifier(
+    items: Iterable[CarrierT], validator_pattern, default: int
+) -> int:
+    header = _extract_first_element(items)
+    if header is None or validator_pattern.fullmatch(header) is None:
+        return default
+
+    try:
+        return int(header, 16)
+    except ValueError:
+        return default

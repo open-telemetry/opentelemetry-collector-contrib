@@ -42,6 +42,9 @@ class DatadogFormat(TextMapPropagator):
         context: typing.Optional[Context] = None,
         getter: Getter = default_getter,
     ) -> Context:
+        if context is None:
+            context = Context()
+
         trace_id = extract_first_element(
             getter.get(carrier, self.TRACE_ID_KEY)
         )
@@ -64,7 +67,7 @@ class DatadogFormat(TextMapPropagator):
             trace_flags = trace.TraceFlags(trace.TraceFlags.SAMPLED)
 
         if trace_id is None or span_id is None:
-            return set_span_in_context(trace.INVALID_SPAN, context)
+            return context
 
         trace_state = []
         if origin is not None:

@@ -106,19 +106,18 @@ class AwsXRayFormat(TextMapPropagator):
         context: typing.Optional[Context] = None,
         getter: Getter = default_getter,
     ) -> Context:
+        if context is None:
+            context = Context()
+
         trace_header_list = getter.get(carrier, TRACE_HEADER_KEY)
 
         if not trace_header_list or len(trace_header_list) != 1:
-            return trace.set_span_in_context(
-                trace.INVALID_SPAN, context=context
-            )
+            return context
 
         trace_header = trace_header_list[0]
 
         if not trace_header:
-            return trace.set_span_in_context(
-                trace.INVALID_SPAN, context=context
-            )
+            return context
 
         try:
             (
@@ -128,9 +127,7 @@ class AwsXRayFormat(TextMapPropagator):
             ) = AwsXRayFormat._extract_span_properties(trace_header)
         except AwsParseTraceHeaderError as err:
             _logger.debug(err.message)
-            return trace.set_span_in_context(
-                trace.INVALID_SPAN, context=context
-            )
+            return context
 
         options = 0
         if sampled:
@@ -148,9 +145,7 @@ class AwsXRayFormat(TextMapPropagator):
             _logger.debug(
                 "Invalid Span Extracted. Insertting INVALID span into provided context."
             )
-            return trace.set_span_in_context(
-                trace.INVALID_SPAN, context=context
-            )
+            return context
 
         return trace.set_span_in_context(
             trace.NonRecordingSpan(span_context), context=context
