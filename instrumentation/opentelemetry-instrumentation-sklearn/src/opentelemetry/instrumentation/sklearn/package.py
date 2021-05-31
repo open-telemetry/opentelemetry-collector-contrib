@@ -13,4 +13,4 @@
 # limitations under the License.
 
 
-_instruments = ("scikit-learn ~= 0.22.0",)
+_instruments = ("scikit-learn ~= 0.24.0",)
