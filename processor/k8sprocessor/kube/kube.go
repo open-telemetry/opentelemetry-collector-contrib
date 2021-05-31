@@ -141,5 +141,10 @@ type Association struct {
 
 // Excludes represent a list of Pods to ignore
 type Excludes struct {
-	Regex []*regexp.Regexp
+	Pods []ExcludePods
+}
+
+// ExcludePods represent a Pod name to ignore
+type ExcludePods struct {
+	Name *regexp.Regexp
 }

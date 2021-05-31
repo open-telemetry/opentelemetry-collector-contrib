@@ -612,9 +612,9 @@ func TestWithExcludes(t *testing.T) {
 			"default",
 			ExcludeConfig{},
 			kube.Excludes{
-				Regex: []*regexp.Regexp{
-					regexp.MustCompile(`jaeger-agent`),
-					regexp.MustCompile(`jaeger-collector`),
+				Pods: []kube.ExcludePods{
+					{Name: regexp.MustCompile(`jaeger-agent`)},
+					{Name: regexp.MustCompile(`jaeger-collector`)},
 				},
 			},
 		},
@@ -627,9 +627,9 @@ func TestWithExcludes(t *testing.T) {
 				},
 			},
 			kube.Excludes{
-				Regex: []*regexp.Regexp{
-					regexp.MustCompile(`ignore_pod1`),
-					regexp.MustCompile(`ignore_pod2`),
+				Pods: []kube.ExcludePods{
+					{Name: regexp.MustCompile(`ignore_pod1`)},
+					{Name: regexp.MustCompile(`ignore_pod2`)},
 				},
 			},
 		},

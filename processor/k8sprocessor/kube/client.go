@@ -352,8 +352,8 @@ func (c *WatchClient) shouldIgnorePod(pod *api_v1.Pod) bool {
 	}
 
 	// Check if user requested the pod to be ignored through configuration
-	for _, rexp := range c.Exclude.Regex {
-		if rexp.MatchString(pod.Name) {
+	for _, excludedPod := range c.Exclude.Pods {
+		if excludedPod.Name.MatchString(pod.Name) {
 			return true
 		}
 	}

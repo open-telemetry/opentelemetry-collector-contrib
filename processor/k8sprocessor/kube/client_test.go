@@ -691,7 +691,10 @@ func newTestClientWithRulesAndFilters(t *testing.T, e ExtractionRules, f Filters
 	observedLogger, logs := observer.New(zapcore.WarnLevel)
 	logger := zap.New(observedLogger)
 	exclude := Excludes{
-		Regex: []*regexp.Regexp{regexp.MustCompile("jaeger-agent"), regexp.MustCompile("jaeger-collector")},
+		Pods: []ExcludePods{
+			{Name: regexp.MustCompile(`jaeger-agent`)},
+			{Name: regexp.MustCompile(`jaeger-collector`)},
+		},
 	}
 	c, err := New(logger, k8sconfig.APIConfig{}, e, f, []Association{}, exclude, newFakeAPIClientset, NewFakeInformer)
 	require.NoError(t, err)
