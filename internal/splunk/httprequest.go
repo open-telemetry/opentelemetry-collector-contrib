@@ -35,9 +35,8 @@ func HandleHTTPCode(resp *http.Response) error {
 	}
 
 	err := fmt.Errorf(
-		"HTTP %d %q",
-		resp.StatusCode,
-		http.StatusText(resp.StatusCode))
+		"HTTP %q",
+		resp.Status)
 
 	switch resp.StatusCode {
 	// Check for responses that may include "Retry-After" header.
