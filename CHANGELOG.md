@@ -73,6 +73,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `opentelemetry-instrumentation-urllib3` Add urllib3 instrumentation
   ([#299](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/299))
+
+- `opentelemetry-instrumentation-flask` Added `request_hook` and `response_hook` callbacks.
+  ([#416](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/416))
+
 - `opentelemetry-instrumenation-django` now supports request and response hooks.
   ([#407](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/407))
 - `opentelemetry-instrumentation-falcon` FalconInstrumentor now supports request/response hooks.
