@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver
 
-go 1.15
+go 1.16
 
 require (
 	github.com/gobwas/glob v0.2.3

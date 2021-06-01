@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver
 
-go 1.15
+go 1.16
 
 require (
 	github.com/go-redis/redis/v7 v7.4.0
