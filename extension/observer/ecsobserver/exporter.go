@@ -14,10 +14,34 @@
 
 package ecsobserver
 
+import "fmt"
+
 // CommonExporterConfig should be embedded into filter config.
 // They set labels like job, metrics_path etc. that can override prometheus default.
 type CommonExporterConfig struct {
 	JobName      string `mapstructure:"job_name" yaml:"job_name"`
 	MetricsPath  string `mapstructure:"metrics_path" yaml:"metrics_path"`
 	MetricsPorts []int  `mapstructure:"metrics_ports" yaml:"metrics_ports"`
+}
+
+// newExportSetting checks if there are duplicated metrics ports.
+func (c *CommonExporterConfig) newExportSetting() (*commonExportSetting, error) {
+	m := make(map[int]bool)
+	for _, p := range c.MetricsPorts {
+		if m[p] {
+			return nil, fmt.Errorf("metrics_ports has duplicated port %d", p)
+		}
+		m[p] = true
+	}
+	return &commonExportSetting{CommonExporterConfig: *c, metricsPorts: m}, nil
+}
+
+// commonExportSetting is generated from CommonExportConfig with some util methods.
+type commonExportSetting struct {
+	CommonExporterConfig
+	metricsPorts map[int]bool
+}
+
+func (s *commonExportSetting) hasContainerPort(containerPort int) bool {
+	return s.metricsPorts[containerPort]
 }
