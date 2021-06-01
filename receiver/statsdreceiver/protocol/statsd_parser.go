@@ -108,15 +108,15 @@ func (p *StatsDParser) GetMetrics() pdata.Metrics {
 	rm := metrics.ResourceMetrics().AppendEmpty()
 
 	for _, metric := range p.gauges {
-		rm.InstrumentationLibraryMetrics().Append(metric)
+		metric.CopyTo(rm.InstrumentationLibraryMetrics().AppendEmpty())
 	}
 
 	for _, metric := range p.counters {
-		rm.InstrumentationLibraryMetrics().Append(metric)
+		metric.CopyTo(rm.InstrumentationLibraryMetrics().AppendEmpty())
 	}
 
 	for _, metric := range p.timersAndDistributions {
-		rm.InstrumentationLibraryMetrics().Append(metric)
+		metric.CopyTo(rm.InstrumentationLibraryMetrics().AppendEmpty())
 	}
 
 	for _, summaryMetric := range p.summaries {

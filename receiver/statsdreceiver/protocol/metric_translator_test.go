@@ -95,14 +95,16 @@ func TestBuildSummaryMetric(t *testing.T) {
 	expectedMetric.Metrics().At(0).Summary().DataPoints().At(0).SetSum(21)
 	expectedMetric.Metrics().At(0).Summary().DataPoints().At(0).SetCount(6)
 	expectedMetric.Metrics().At(0).Summary().DataPoints().At(0).SetTimestamp(pdata.TimestampFromTime(timeNow))
+	for i, key := range oneSummaryMetric.labelKeys {
+		expectedMetric.Metrics().At(0).Summary().DataPoints().At(0).LabelsMap().Insert(key, oneSummaryMetric.labelValues[i])
+	}
 	quantile := []float64{0, 10, 50, 90, 95, 100}
 	value := []float64{1, 1, 3, 6, 6, 6}
 	for int, v := range quantile {
-		eachQuantile := pdata.NewValueAtQuantile()
+		eachQuantile := expectedMetric.Metrics().At(0).Summary().DataPoints().At(0).QuantileValues().AppendEmpty()
 		eachQuantile.SetQuantile(v)
 		eachQuantileValue := value[int]
 		eachQuantile.SetValue(eachQuantileValue)
-		expectedMetric.Metrics().At(0).Summary().DataPoints().At(0).QuantileValues().Append(eachQuantile)
 	}
 
 	assert.Equal(t, metric, expectedMetric)

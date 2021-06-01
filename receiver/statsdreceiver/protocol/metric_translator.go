@@ -61,28 +61,27 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.Instru
 }
 
 func buildSummaryMetric(summaryMetric summaryMetric) pdata.InstrumentationLibraryMetrics {
-	dp := pdata.NewSummaryDataPoint()
+	ilm := pdata.NewInstrumentationLibraryMetrics()
+	nm := ilm.Metrics().AppendEmpty()
+	nm.SetName(summaryMetric.name)
+	nm.SetDataType(pdata.MetricDataTypeSummary)
+
+	dp := nm.Summary().DataPoints().AppendEmpty()
 	dp.SetCount(uint64(len(summaryMetric.summaryPoints)))
 	sum, _ := stats.Sum(summaryMetric.summaryPoints)
 	dp.SetSum(sum)
 	dp.SetTimestamp(pdata.TimestampFromTime(summaryMetric.timeNow))
+	for i, key := range summaryMetric.labelKeys {
+		dp.LabelsMap().Insert(key, summaryMetric.labelValues[i])
+	}
 
 	quantile := []float64{0, 10, 50, 90, 95, 100}
 	for _, v := range quantile {
-		eachQuantile := pdata.NewValueAtQuantile()
+		eachQuantile := dp.QuantileValues().AppendEmpty()
 		eachQuantile.SetQuantile(v)
 		eachQuantileValue, _ := stats.PercentileNearestRank(summaryMetric.summaryPoints, v)
 		eachQuantile.SetValue(eachQuantileValue)
-		dp.QuantileValues().Append(eachQuantile)
 	}
-
-	nm := pdata.NewMetric()
-	nm.SetName(summaryMetric.name)
-	nm.SetDataType(pdata.MetricDataTypeSummary)
-	nm.Summary().DataPoints().Append(dp)
-
-	ilm := pdata.NewInstrumentationLibraryMetrics()
-	ilm.Metrics().Append(nm)
 
 	return ilm
 
