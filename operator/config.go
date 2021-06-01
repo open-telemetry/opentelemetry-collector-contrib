@@ -31,6 +31,7 @@ type Builder interface {
 	ID() string
 	Type() string
 	Build(BuildContext) ([]Operator, error)
+	BuildsMultipleOps() bool
 }
 
 // UnmarshalJSON will unmarshal a config from JSON.

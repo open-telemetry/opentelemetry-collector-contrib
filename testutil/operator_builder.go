@@ -35,6 +35,20 @@ func (_m *OperatorBuilder) Build(_a0 operator.BuildContext) ([]operator.Operator
 	return r0, r1
 }
 
+// BuildsMultipleOps provides a mock function with given fields:
+func (_m *OperatorBuilder) BuildsMultipleOps() bool {
+	ret := _m.Called()
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // ID provides a mock function with given fields:
 func (_m *OperatorBuilder) ID() string {
 	ret := _m.Called()

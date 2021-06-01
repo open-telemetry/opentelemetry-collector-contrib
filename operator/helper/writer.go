@@ -45,15 +45,17 @@ func (c WriterConfig) Build(bc operator.BuildContext) (WriterOperator, error) {
 
 	// Namespace all the output IDs
 	namespacedIDs := c.OutputIDs.WithNamespace(bc)
-	if len(namespacedIDs) == 0 {
-		namespacedIDs = bc.DefaultOutputIDs
-	}
 
 	writer := WriterOperator{
 		OutputIDs:     namespacedIDs,
 		BasicOperator: basicOperator,
 	}
 	return writer, nil
+}
+
+// BuildsMultipleOps Returns false as a base line
+func (c WriterConfig) BuildsMultipleOps() bool {
+	return false
 }
 
 // WriterOperator is an operator that can write to other operators.
@@ -84,6 +86,11 @@ func (w *WriterOperator) Outputs() []operator.Operator {
 	return w.OutputOperators
 }
 
+// GetOutputIDs returns the output IDs of the writer operator.
+func (w *WriterOperator) GetOutputIDs() []string {
+	return w.OutputIDs
+}
+
 // SetOutputs will set the outputs of the operator.
 func (w *WriterOperator) SetOutputs(operators []operator.Operator) error {
 	outputOperators := make([]operator.Operator, 0)
@@ -103,6 +110,11 @@ func (w *WriterOperator) SetOutputs(operators []operator.Operator) error {
 
 	w.OutputOperators = outputOperators
 	return nil
+}
+
+// SetOutputIDs will set the outputs of the operator.
+func (w *WriterOperator) SetOutputIDs(opIds []string) {
+	w.OutputIDs = opIds
 }
 
 // FindOperator will find an operator matching the supplied id.
