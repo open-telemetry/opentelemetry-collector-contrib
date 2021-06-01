@@ -270,7 +270,7 @@ func getQuantileTag(quantile float64) string {
 
 // mapSummaryMetrics maps summary datapoints into Datadog metrics
 func mapSummaryMetrics(name string, slice pdata.SummaryDataPointSlice, quantiles bool, attrTags []string) []datadog.Metric {
-	// Allocate assuming none are nil and no percentiles
+	// Allocate assuming none are nil and no quantiles
 	ms := make([]datadog.Metric, 0, 2*slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
