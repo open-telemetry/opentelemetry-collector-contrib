@@ -25,11 +25,22 @@ import (
 	"go.uber.org/zap"
 )
 
-type MockMetricsProvider struct {
+// Mock cadvisor
+type MockCadvisor struct {
 }
 
-func (m *MockMetricsProvider) GetMetrics() []pdata.Metrics {
-	return []pdata.Metrics{}
+func (c *MockCadvisor) GetMetrics() []pdata.Metrics {
+	md := pdata.NewMetrics()
+	return []pdata.Metrics{md}
+}
+
+// Mock k8sapiserver
+type MockK8sAPIServer struct {
+}
+
+func (m *MockK8sAPIServer) GetMetrics() []pdata.Metrics {
+	md := pdata.NewMetrics()
+	return []pdata.Metrics{md}
 }
 
 func TestReceiver(t *testing.T) {
@@ -38,8 +49,6 @@ func TestReceiver(t *testing.T) {
 		zap.NewNop(),
 		cfg,
 		consumertest.NewNop(),
-		&MockCadvisor{},
-		&MockCadvisor{},
 	)
 
 	require.NoError(t, err)
@@ -61,8 +70,6 @@ func TestReceiverForNilConsumer(t *testing.T) {
 		zap.NewNop(),
 		cfg,
 		nil,
-		&MockCadvisor{},
-		&MockCadvisor{},
 	)
 
 	require.NotNil(t, err)
@@ -75,8 +82,6 @@ func TestCollectData(t *testing.T) {
 		zap.NewNop(),
 		cfg,
 		new(consumertest.MetricsSink),
-		&MockCadvisor{},
-		&MockCadvisor{},
 	)
 
 	require.NoError(t, err)
@@ -85,7 +90,7 @@ func TestCollectData(t *testing.T) {
 	r := metricsReceiver.(*awsContainerInsightReceiver)
 	r.Start(context.Background(), nil)
 	ctx := context.Background()
-
+	r.k8sapiserver = &MockK8sAPIServer{}
 	err = r.collectData(ctx)
 	require.Nil(t, err)
 
@@ -96,23 +101,12 @@ func TestCollectData(t *testing.T) {
 	require.NotNil(t, err)
 }
 
-//Mock cadvisor
-type MockCadvisor struct {
-}
-
-func (c *MockCadvisor) GetMetrics() []pdata.Metrics {
-	md := pdata.NewMetrics()
-	return []pdata.Metrics{md}
-}
-
 func TestCollectDataWithErrConsumer(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	metricsReceiver, err := New(
 		zap.NewNop(),
 		cfg,
 		consumertest.NewErr(errors.New("an error")),
-		&MockCadvisor{},
-		&MockCadvisor{},
 	)
 
 	require.NoError(t, err)
@@ -121,6 +115,7 @@ func TestCollectDataWithErrConsumer(t *testing.T) {
 	r := metricsReceiver.(*awsContainerInsightReceiver)
 	r.Start(context.Background(), nil)
 	r.cadvisor = &MockCadvisor{}
+	r.k8sapiserver = &MockK8sAPIServer{}
 	ctx := context.Background()
 
 	err = r.collectData(ctx)
