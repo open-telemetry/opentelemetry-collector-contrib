@@ -327,7 +327,7 @@ func TestLabelsConfig_getAttributes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mapping := tt.labels.getLogRecordAttributes()
+			mapping := tt.labels.getAttributes(tt.labels.Attributes)
 
 			assert.Equal(t, tt.expectedMapping, mapping)
 		})
@@ -383,7 +383,7 @@ func TestResourcesConfig_getAttributes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mapping := tt.labels.getResourceAttributes()
+			mapping := tt.labels.getAttributes(tt.labels.ResourceAttributes)
 
 			assert.Equal(t, tt.expectedMapping, mapping)
 		})

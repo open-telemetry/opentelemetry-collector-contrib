@@ -36,12 +36,10 @@ import (
 )
 
 type lokiExporter struct {
-	config                 *Config
-	logger                 *zap.Logger
-	client                 *http.Client
-	attribLogsToLabels     map[string]model.LabelName
-	attribResoucesToLabels map[string]model.LabelName
-	wg                     sync.WaitGroup
+	config *Config
+	logger *zap.Logger
+	client *http.Client
+	wg     sync.WaitGroup
 }
 
 func newExporter(config *Config, logger *zap.Logger) *lokiExporter {
@@ -112,8 +110,6 @@ func (l *lokiExporter) start(_ context.Context, _ component.Host) (err error) {
 
 	l.client = client
 
-	l.attribLogsToLabels = l.config.Labels.getLogRecordAttributes()
-	l.attribResoucesToLabels = l.config.Labels.getResourceAttributes()
 	return nil
 }
 
@@ -168,8 +164,8 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 }
 
 func (l *lokiExporter) convertAttributesAndMerge(logAttrs pdata.AttributeMap, resourceAttrs pdata.AttributeMap) (mergedAttributes model.LabelSet, dropped bool) {
-	logRecordAttributes := l.convertLogAttributesToLabels(logAttrs)
-	resourceAttributes := l.convertResourceAttributesToLabels(resourceAttrs)
+	logRecordAttributes := l.convertAttributesToLabels(logAttrs, l.config.Labels.Attributes)
+	resourceAttributes := l.convertAttributesToLabels(resourceAttrs, l.config.Labels.ResourceAttributes)
 
 	// This prometheus model.labelset Merge function overwrites	the logRecordAttributes with resourceAttributes
 	mergedAttributes = logRecordAttributes.Merge(resourceAttributes)
@@ -180,27 +176,12 @@ func (l *lokiExporter) convertAttributesAndMerge(logAttrs pdata.AttributeMap, re
 	return mergedAttributes, false
 }
 
-func (l *lokiExporter) convertLogAttributesToLabels(attributes pdata.AttributeMap) model.LabelSet {
+func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap, allowedAttributes map[string]string) model.LabelSet {
 	ls := model.LabelSet{}
 
-	for attr, attrLabelName := range l.attribLogsToLabels {
-		av, ok := attributes.Get(attr)
-		if ok {
-			if av.Type() != pdata.AttributeValueTypeString {
-				l.logger.Debug("Failed to convert attribute value to Loki label value, value is not a string", zap.String("attribute", attr))
-				continue
-			}
-			ls[attrLabelName] = model.LabelValue(av.StringVal())
-		}
-	}
+	allowedLabels := l.config.Labels.getAttributes(allowedAttributes)
 
-	return ls
-}
-
-func (l *lokiExporter) convertResourceAttributesToLabels(attributes pdata.AttributeMap) model.LabelSet {
-	ls := model.LabelSet{}
-
-	for attr, attrLabelName := range l.attribResoucesToLabels {
+	for attr, attrLabelName := range allowedLabels {
 		av, ok := attributes.Get(attr)
 		if ok {
 			if av.Type() != pdata.AttributeValueTypeString {
