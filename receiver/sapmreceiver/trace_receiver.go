@@ -73,7 +73,7 @@ func (sr *sapmReceiver) handleRequest(ctx context.Context, req *http.Request) er
 		transport = "https"
 	}
 	ctx = obsreport.ReceiverContext(ctx, sr.config.ID(), transport)
-	ctx = sr.obsrecv.StartTraceDataReceiveOp(ctx)
+	ctx = sr.obsrecv.StartTracesOp(ctx)
 
 	td := jaegertranslator.ProtoBatchesToInternalTraces(sapm.Batches)
 
@@ -94,7 +94,7 @@ func (sr *sapmReceiver) handleRequest(ctx context.Context, req *http.Request) er
 		err = fmt.Errorf("error passing trace data to next consumer: %v", err.Error())
 	}
 
-	sr.obsrecv.EndTraceDataReceiveOp(ctx, "protobuf", td.SpanCount(), err)
+	sr.obsrecv.EndTracesOp(ctx, "protobuf", td.SpanCount(), err)
 	return err
 }
 

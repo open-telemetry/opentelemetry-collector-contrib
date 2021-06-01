@@ -18,7 +18,64 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
+
+func TestMatcherType(t *testing.T) {
+	m := map[MatcherType]string{
+		MatcherTypeService:        "service",
+		MatcherTypeTaskDefinition: "task_definition",
+		MatcherTypeDockerLabel:    "docker_label",
+		-1:                        "unknown_matcher_type",
+	}
+	for k, v := range m {
+		assert.Equal(t, v, k.String())
+	}
+}
+
+func TestNewMatchers(t *testing.T) {
+	t.Run("empty", func(t *testing.T) {
+		var c Config
+		_, err := newMatchers(c, MatcherOptions{})
+		require.Error(t, err)
+	})
+
+	t.Run("invalid", func(t *testing.T) {
+		c := Config{
+			DockerLabels: []DockerLabelConfig{
+				{
+					// no port label
+				},
+			},
+		}
+		_, err := newMatchers(c, MatcherOptions{})
+		require.Error(t, err)
+	})
+
+	t.Run("valid", func(t *testing.T) {
+		c := Config{
+			DockerLabels: []DockerLabelConfig{
+				{
+					PortLabel: "PROM_PORT",
+				},
+			},
+			Services: []ServiceConfig{
+				{
+					NamePattern: "^nginx-.*$",
+				},
+			},
+			TaskDefinitions: []TaskDefinitionConfig{
+				{
+					ArnPattern: "arn:.*jmx.*",
+				},
+			},
+		}
+		m, err := newMatchers(c, MatcherOptions{Logger: zap.NewExample()})
+		require.NoError(t, err)
+		assert.Len(t, m, 3)
+	})
+}
 
 func TestMatchedContainer_MergeTargets(t *testing.T) {
 	t.Run("add new targets", func(t *testing.T) {

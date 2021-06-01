@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver
 
-go 1.15
+go 1.16
 
 require (
 	github.com/armon/go-metrics v0.3.3 // indirect
@@ -13,8 +13,8 @@ require (
 	github.com/shirou/gopsutil v3.21.4+incompatible
 	github.com/stretchr/testify v1.7.0
 	github.com/testcontainers/testcontainers-go v0.10.0
-	go.opentelemetry.io/collector v0.27.1-0.20210526183029-df76aa36cd12
+	go.opentelemetry.io/collector v0.27.1-0.20210527142130-1f972bbd7997
 	go.uber.org/atomic v1.7.0
-	go.uber.org/zap v1.16.0
+	go.uber.org/zap v1.17.0
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )

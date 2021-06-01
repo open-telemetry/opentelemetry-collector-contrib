@@ -65,3 +65,52 @@ func TestLoadConfig(t *testing.T) {
 	}
 	assert.Equal(t, &ext3Expected, ext3)
 }
+
+func TestConfig_Validate(t *testing.T) {
+	t.Run("load", func(t *testing.T) {
+		factories, err := componenttest.NopFactories()
+		require.NoError(t, err)
+
+		factory := NewFactory()
+		factories.Extensions[typeStr] = factory
+		_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_invalid.yaml"), factories)
+		require.Error(t, err)
+	})
+
+	cases := []struct {
+		reason string
+		cfg    Config
+	}{
+		{
+			reason: "cluster name",
+			cfg:    Config{ClusterName: ""},
+		},
+		{
+			reason: "service",
+			cfg: Config{
+				ClusterName: "c1",
+				Services:    []ServiceConfig{{NamePattern: "*"}}, // invalid regex
+			},
+		},
+		{
+			reason: "task",
+			cfg: Config{
+				ClusterName:     "c1",
+				TaskDefinitions: []TaskDefinitionConfig{{ArnPattern: "*"}}, // invalid regex
+			},
+		},
+		{
+			reason: "docker",
+			cfg: Config{
+				ClusterName:  "c1",
+				DockerLabels: []DockerLabelConfig{{PortLabel: ""}},
+			},
+		},
+	}
+
+	for _, tCase := range cases {
+		t.Run(tCase.reason, func(t *testing.T) {
+			require.Error(t, tCase.cfg.Validate())
+		})
+	}
+}

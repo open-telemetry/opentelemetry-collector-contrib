@@ -191,7 +191,7 @@ func TestRunningTraces(t *testing.T) {
 
 	assert.ElementsMatch(t,
 		runningHostnames,
-		[]string{"resource-hostname-1", "resource-hostname-1", "resource-hostname-2", "fallbackHost"},
+		[]string{"resource-hostname-1", "resource-hostname-2", "fallbackHost"},
 	)
 }
 

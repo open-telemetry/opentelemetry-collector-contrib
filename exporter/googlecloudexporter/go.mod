@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter
 
-go 1.15
+go 1.16
 
 require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.6
@@ -17,11 +17,11 @@ require (
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.27.1-0.20210526182734-4f768ff549a5
+	go.opentelemetry.io/collector v0.27.1-0.20210527142130-1f972bbd7997
 	go.opentelemetry.io/otel v0.20.0
 	go.opentelemetry.io/otel/sdk v0.20.0
 	go.opentelemetry.io/otel/trace v0.20.0
-	go.uber.org/zap v1.16.0
+	go.uber.org/zap v1.17.0
 	golang.org/x/net v0.0.0-20210510120150-4163338589ed // indirect
 	google.golang.org/api v0.47.0
 	google.golang.org/genproto v0.0.0-20210513213006-bf773b8c8384

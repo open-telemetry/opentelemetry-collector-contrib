@@ -99,7 +99,8 @@ func (ar *MockAwsXrayReceiver) handleRequest(ctx context.Context, req *http.Requ
 	}
 
 	ctx = obsreport.ReceiverContext(ctx, ar.config.ID(), transport)
-	ctx = obsreport.StartTraceDataReceiveOp(ctx, ar.config.ID(), transport)
+	obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: ar.config.ID(), Transport: transport})
+	ctx = obsrecv.StartTracesOp(ctx)
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		log.Fatalln(err)
@@ -110,8 +111,11 @@ func (ar *MockAwsXrayReceiver) handleRequest(ctx context.Context, req *http.Requ
 	json.Unmarshal(body, &result)
 
 	traces, _ := ToTraces(body)
+	sc := traces.SpanCount()
 
-	return ar.nextConsumer.ConsumeTraces(ctx, *traces)
+	err = ar.nextConsumer.ConsumeTraces(ctx, *traces)
+	obsrecv.EndTracesOp(ctx, typeStr, sc, err)
+	return err
 }
 
 // HTTPHandlerFunc returns an http.HandlerFunc that handles awsXray requests

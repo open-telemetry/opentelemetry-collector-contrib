@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter
 
-go 1.15
+go 1.16
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
@@ -14,9 +14,8 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.2
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20201202163743-65b4fa925fc8
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.27.1-0.20210526183029-df76aa36cd12
-	go.uber.org/multierr v1.6.0 // indirect
-	go.uber.org/zap v1.16.0
+	go.opentelemetry.io/collector v0.27.1-0.20210527142130-1f972bbd7997
+	go.uber.org/zap v1.17.0
 	google.golang.org/protobuf v1.26.0
 )
 

@@ -1,0 +1,24 @@
+extensions:
+  ecs_observer:
+    cluster_name: 'ecs-sd-test-1'
+    cluster_region: 'us-west-2'
+    result_file: '/etc/ecs_sd_targets.yaml'
+    refresh_interval: 15s
+    services:
+      - name_pattern: '*' # invalid regex
+
+service:
+  extensions: [ ecs_observer ]
+  pipelines:
+    traces:
+      receivers: [ nop ]
+      processors: [ nop ]
+      exporters: [ nop ]
+
+# Data pipeline is required to load the config.
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:

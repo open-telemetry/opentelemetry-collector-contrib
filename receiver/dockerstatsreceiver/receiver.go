@@ -122,7 +122,7 @@ func (r *Receiver) Run() error {
 		return r.Setup()
 	}
 
-	c := r.obsrecv.StartMetricsReceiveOp(r.obsCtx)
+	c := r.obsrecv.StartMetricsOp(r.obsCtx)
 
 	containers := r.client.Containers()
 	results := make(chan result, len(containers))
@@ -158,6 +158,6 @@ func (r *Receiver) Run() error {
 		}
 	}
 
-	r.obsrecv.EndMetricsReceiveOp(c, typeStr, numPoints, lastErr)
+	r.obsrecv.EndMetricsOp(c, typeStr, numPoints, lastErr)
 	return nil
 }

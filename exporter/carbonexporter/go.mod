@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter
 
-go 1.15
+go 1.16
 
 require (
 	github.com/armon/go-metrics v0.3.3 // indirect
@@ -13,8 +13,8 @@ require (
 	github.com/onsi/gomega v1.10.2 // indirect
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.27.1-0.20210526182734-4f768ff549a5
-	go.uber.org/zap v1.16.0
+	go.opentelemetry.io/collector v0.27.1-0.20210527142130-1f972bbd7997
+	go.uber.org/zap v1.17.0
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )

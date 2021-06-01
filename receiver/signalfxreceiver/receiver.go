@@ -218,7 +218,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 	}
 
 	ctx := obsreport.ReceiverContext(req.Context(), r.config.ID(), transport)
-	ctx = r.obsrecv.StartMetricsReceiveOp(ctx)
+	ctx = r.obsrecv.StartMetricsOp(ctx)
 
 	if r.metricsConsumer == nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errMetricsNotConfigured, nil)
@@ -237,7 +237,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 	}
 
 	if len(msg.Datapoints) == 0 {
-		r.obsrecv.EndMetricsReceiveOp(ctx, typeStr, 0, nil)
+		r.obsrecv.EndMetricsOp(ctx, typeStr, 0, nil)
 		resp.Write(okRespBody)
 		return
 	}
@@ -255,7 +255,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 	}
 
 	err := r.metricsConsumer.ConsumeMetrics(ctx, md)
-	r.obsrecv.EndMetricsReceiveOp(
+	r.obsrecv.EndMetricsOp(
 		ctx,
 		typeStr,
 		len(msg.Datapoints),
@@ -271,7 +271,7 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 	}
 
 	ctx := obsreport.ReceiverContext(req.Context(), r.config.ID(), transport)
-	ctx = r.obsrecv.StartMetricsReceiveOp(ctx)
+	ctx = r.obsrecv.StartMetricsOp(ctx)
 
 	if r.logsConsumer == nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errLogsNotConfigured, nil)
@@ -290,7 +290,7 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 	}
 
 	if len(msg.Events) == 0 {
-		r.obsrecv.EndMetricsReceiveOp(ctx, typeStr, 0, nil)
+		r.obsrecv.EndMetricsOp(ctx, typeStr, 0, nil)
 		resp.Write(okRespBody)
 		return
 	}
@@ -307,7 +307,7 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 	}
 
 	err := r.logsConsumer.ConsumeLogs(ctx, ld)
-	r.obsrecv.EndMetricsReceiveOp(
+	r.obsrecv.EndMetricsOp(
 		ctx,
 		typeStr,
 		len(msg.Events),

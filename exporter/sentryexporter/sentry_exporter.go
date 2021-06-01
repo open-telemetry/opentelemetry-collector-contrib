@@ -29,17 +29,16 @@ import (
 )
 
 const (
-	sentryStatusUnknown       = "unknown"
-	otelSentryExporterVersion = "0.0.1"
+	otelSentryExporterVersion = "0.0.2"
 	otelSentryExporterName    = "sentry.opentelemetry"
 )
 
 // canonicalCodes maps OpenTelemetry span codes to Sentry's span status.
 // See numeric codes in https://github.com/open-telemetry/opentelemetry-proto/blob/6cf77b2f544f6bc7fe1e4b4a8a52e5a42cb50ead/opentelemetry/proto/trace/v1/trace.proto#L303
-var canonicalCodes = [...]string{
-	"unknown",
-	"ok",
-	"unknown",
+var canonicalCodes = [...]sentry.SpanStatus{
+	sentry.SpanStatusUndefined,
+	sentry.SpanStatusOK,
+	sentry.SpanStatusUnknown,
 }
 
 // SentryExporter defines the Sentry Exporter.
@@ -58,9 +57,9 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error
 	maybeOrphanSpans := make([]*sentry.Span, 0, td.SpanCount())
 
 	// Maps all child span ids to their root span.
-	idMap := make(map[string]string)
+	idMap := make(map[sentry.SpanID]sentry.SpanID)
 	// Maps root span id to a transaction.
-	transactionMap := make(map[string]*sentry.Event)
+	transactionMap := make(map[sentry.SpanID]*sentry.Event)
 
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
@@ -111,7 +110,7 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error
 }
 
 // generateTransactions creates a set of Sentry transactions from a transaction map and orphan spans.
-func generateTransactions(transactionMap map[string]*sentry.Event, orphanSpans []*sentry.Span) []*sentry.Event {
+func generateTransactions(transactionMap map[sentry.SpanID]*sentry.Event, orphanSpans []*sentry.Span) []*sentry.Event {
 	transactions := make([]*sentry.Event, 0, len(transactionMap)+len(orphanSpans))
 
 	for _, t := range transactionMap {
@@ -129,7 +128,7 @@ func generateTransactions(transactionMap map[string]*sentry.Event, orphanSpans [
 // classifyAsOrphanSpans iterates through a list of possible orphan spans and tries to associate them
 // with a transaction. As the order of the spans is not guaranteed, we have to recursively call
 // classifyAsOrphanSpans to make sure that we did not leave any spans out of the transaction they belong to.
-func classifyAsOrphanSpans(orphanSpans []*sentry.Span, prevLength int, idMap map[string]string, transactionMap map[string]*sentry.Event) []*sentry.Span {
+func classifyAsOrphanSpans(orphanSpans []*sentry.Span, prevLength int, idMap map[sentry.SpanID]sentry.SpanID, transactionMap map[sentry.SpanID]*sentry.Event) []*sentry.Span {
 	if len(orphanSpans) == 0 || len(orphanSpans) == prevLength {
 		return orphanSpans
 	}
@@ -149,11 +148,6 @@ func classifyAsOrphanSpans(orphanSpans []*sentry.Span, prevLength int, idMap map
 }
 
 func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, resourceTags map[string]string) (sentrySpan *sentry.Span) {
-	parentSpanID := ""
-	if psID := span.ParentSpanID(); !psID.IsEmpty() {
-		parentSpanID = psID.HexString()
-	}
-
 	attributes := span.Attributes()
 	name := span.Name()
 	spanKind := span.Kind()
@@ -179,15 +173,15 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 	tags["library_version"] = library.Version()
 
 	sentrySpan = &sentry.Span{
-		TraceID:        span.TraceID().HexString(),
-		SpanID:         span.SpanID().HexString(),
-		ParentSpanID:   parentSpanID,
-		Description:    description,
-		Op:             op,
-		Tags:           tags,
-		StartTimestamp: unixNanoToTime(span.StartTimestamp()),
-		EndTimestamp:   unixNanoToTime(span.EndTimestamp()),
-		Status:         status,
+		TraceID:      sentry.TraceID(span.TraceID().Bytes()),
+		SpanID:       sentry.SpanID(span.SpanID().Bytes()),
+		ParentSpanID: sentry.SpanID(span.ParentSpanID().Bytes()),
+		Description:  description,
+		Op:           op,
+		Tags:         tags,
+		StartTime:    unixNanoToTime(span.StartTimestamp()),
+		EndTime:      unixNanoToTime(span.EndTimestamp()),
+		Status:       status,
 	}
 
 	return sentrySpan
@@ -287,10 +281,10 @@ func generateTagsFromAttributes(attrs pdata.AttributeMap) map[string]string {
 	return tags
 }
 
-func statusFromSpanStatus(spanStatus pdata.SpanStatus) (status string, message string) {
+func statusFromSpanStatus(spanStatus pdata.SpanStatus) (status sentry.SpanStatus, message string) {
 	code := spanStatus.Code()
 	if code < 0 || int(code) >= len(canonicalCodes) {
-		return sentryStatusUnknown, fmt.Sprintf("error code %d", code)
+		return sentry.SpanStatusUnknown, fmt.Sprintf("error code %d", code)
 	}
 
 	return canonicalCodes[code], spanStatus.Message()
@@ -299,7 +293,7 @@ func statusFromSpanStatus(spanStatus pdata.SpanStatus) (status string, message s
 // isRootSpan determines if a span is a root span.
 // If parent span id is empty, then the span is a root span.
 func isRootSpan(s *sentry.Span) bool {
-	return s.ParentSpanID == ""
+	return s.ParentSpanID == sentry.SpanID{}
 }
 
 // transactionFromSpan converts a span to a transaction.
@@ -318,9 +312,9 @@ func transactionFromSpan(span *sentry.Span) *sentry.Event {
 	transaction.Sdk.Name = otelSentryExporterName
 	transaction.Sdk.Version = otelSentryExporterVersion
 
-	transaction.StartTimestamp = span.StartTimestamp
+	transaction.StartTime = span.StartTime
 	transaction.Tags = span.Tags
-	transaction.Timestamp = span.EndTimestamp
+	transaction.Timestamp = span.EndTime
 	transaction.Transaction = span.Description
 
 	return transaction
