@@ -17,6 +17,7 @@ package datadogexporter
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -251,6 +252,52 @@ func mapHistogramMetrics(name string, slice pdata.HistogramDataPointSlice, bucke
 	return ms
 }
 
+// getQuantileTag returns the quantile tag for summary types.
+// Since the summary type is provided as a compatibility feature, we try to format the float number as close as possible to what
+// we do on the Datadog Agent Python OpenMetrics check, which, in turn, tries to
+// follow https://github.com/OpenObservability/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#considerations-canonical-numbers
+func getQuantileTag(quantile float64) string {
+	// We handle 0 and 1 separately since they are special
+	if quantile == 0 {
+		// we do this differently on our check
+		return "quantile:0"
+	} else if quantile == 1.0 {
+		// it needs to have a '.0' added at the end according to the spec
+		return "quantile:1.0"
+	}
+	return fmt.Sprintf("quantile:%s", strconv.FormatFloat(quantile, 'g', -1, 64))
+}
+
+// mapSummaryMetrics maps summary datapoints into Datadog metrics
+func mapSummaryMetrics(name string, slice pdata.SummaryDataPointSlice, quantiles bool, attrTags []string) []datadog.Metric {
+	// Allocate assuming none are nil and no quantiles
+	ms := make([]datadog.Metric, 0, 2*slice.Len())
+	for i := 0; i < slice.Len(); i++ {
+		p := slice.At(i)
+		ts := uint64(p.Timestamp())
+		tags := getTags(p.LabelsMap())
+		tags = append(tags, attrTags...)
+
+		ms = append(ms,
+			metrics.NewGauge(fmt.Sprintf("%s.count", name), ts, float64(p.Count()), tags),
+			metrics.NewGauge(fmt.Sprintf("%s.sum", name), ts, p.Sum(), tags),
+		)
+
+		if quantiles {
+			fullName := fmt.Sprintf("%s.quantile", name)
+			quantiles := p.QuantileValues()
+			for i := 0; i < quantiles.Len(); i++ {
+				q := quantiles.At(i)
+				quantileTags := append(tags, getQuantileTag(q.Quantile()))
+				ms = append(ms,
+					metrics.NewGauge(fullName, ts, q.Value(), quantileTags),
+				)
+			}
+		}
+	}
+	return ms
+}
+
 // mapMetrics maps OTLP metrics into the DataDog format
 func mapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *ttlmap.TTLMap, fallbackHost string, md pdata.Metrics, buildInfo component.BuildInfo) (series []datadog.Metric, droppedTimeSeries int) {
 	pushTime := uint64(time.Now().UTC().UnixNano())
@@ -301,6 +348,8 @@ func mapMetrics(logger *zap.Logger, cfg config.MetricsConfig, prevPts *ttlmap.TT
 					datapoints = mapIntHistogramMetrics(md.Name(), md.IntHistogram().DataPoints(), cfg.Buckets, attributeTags)
 				case pdata.MetricDataTypeHistogram:
 					datapoints = mapHistogramMetrics(md.Name(), md.Histogram().DataPoints(), cfg.Buckets, attributeTags)
+				case pdata.MetricDataTypeSummary:
+					datapoints = mapSummaryMetrics(md.Name(), md.Summary().DataPoints(), cfg.Quantiles, attributeTags)
 				default: // pdata.MetricDataTypeNone or any other not supported type
 					logger.Debug("Unknown or unsupported metric type", zap.String("metric name", md.Name()), zap.Any("data type", md.DataType()))
 					continue

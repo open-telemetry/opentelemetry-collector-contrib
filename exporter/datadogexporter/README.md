@@ -86,3 +86,4 @@ There are a number of optional settings for configuring how to send your metrics
 |-|-|-|
 | `send_monotonic_counter` | Cumulative monotonic metrics are sent as deltas between successive measurements. Disable this flag to send get the raw, monotonically increasing value. | `true` |
 | `delta_ttl` | Maximum number of seconds values from cumulative monotonic metrics are kept in memory. | 3600 |
+| `report_quantiles` | Whether to report quantile values for summary type metrics. | `true` |
