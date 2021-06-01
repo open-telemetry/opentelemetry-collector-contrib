@@ -39,30 +39,47 @@ type DockerLabelConfig struct {
 	MetricsPathLabel string `mapstructure:"metrics_path_label" yaml:"metrics_path_label"`
 }
 
-func (d *DockerLabelConfig) Init() error {
+func (d *DockerLabelConfig) validate() error {
+	_, err := d.newMatcher(MatcherOptions{})
+	return err
+}
+
+func (d *DockerLabelConfig) newMatcher(options MatcherOptions) (Matcher, error) {
 	// It's possible to support it in the future, but for now just fail at config,
 	// so user don't need to wonder which port is used in the exported target.
 	if len(d.MetricsPorts) != 0 {
-		return fmt.Errorf("metrics_ports is not supported in docker_labels, got %v", d.MetricsPorts)
+		return nil, fmt.Errorf("metrics_ports is not supported in docker_labels, got %v", d.MetricsPorts)
 	}
 	if d.PortLabel == "" {
-		return fmt.Errorf("port_label is empty")
+		return nil, fmt.Errorf("port_label is empty")
 	}
-	return nil
+	expSetting, err := d.newExportSetting()
+	if err != nil {
+		return nil, err
+	}
+	return &dockerLabelMatcher{
+		logger:        options.Logger,
+		cfg:           *d,
+		exportSetting: expSetting,
+	}, nil
 }
 
-func (d *DockerLabelConfig) NewMatcher(options MatcherOptions) (Matcher, error) {
-	return &dockerLabelMatcher{
-		logger: options.Logger,
-		cfg:    *d,
-	}, nil
+func dockerLabelConfigToMatchers(cfgs []DockerLabelConfig) []matcherConfig {
+	var matchers []matcherConfig
+	for _, cfg := range cfgs {
+		// NOTE: &cfg points to the temp var, whose value would end up be the last one in the slice.
+		copied := cfg
+		matchers = append(matchers, &copied)
+	}
+	return matchers
 }
 
 // dockerLabelMatcher implements Matcher interface.
 // It checks PortLabel from config and only matches if the label value is a valid number.
 type dockerLabelMatcher struct {
-	logger *zap.Logger
-	cfg    DockerLabelConfig
+	logger        *zap.Logger
+	cfg           DockerLabelConfig
+	exportSetting *commonExportSetting
 }
 
 func (d *dockerLabelMatcher) Type() MatcherType {

@@ -1,9 +1,9 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter
 
-go 1.15
+go 1.16
 
 require (
-	github.com/aws/aws-sdk-go v1.38.48
+	github.com/aws/aws-sdk-go v1.38.51
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.2.0

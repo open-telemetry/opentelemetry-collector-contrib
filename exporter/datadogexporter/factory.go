@@ -66,6 +66,7 @@ func createDefaultConfig() config.Exporter {
 			},
 			SendMonotonic: true,
 			DeltaTTL:      3600,
+			Quantiles:     true,
 			ExporterConfig: ddconfig.MetricsExporterConfig{
 				ResourceAttributesAsTags: false,
 			},

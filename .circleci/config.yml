@@ -40,7 +40,7 @@ orbs:
 executors:
   golang:
     docker:
-      - image: cimg/go:1.15
+      - image: cimg/go:1.16
   machine:
     machine:
       image: ubuntu-1604:201903-01
@@ -88,10 +88,10 @@ commands:
   setup_go:
     steps:
       - run:
-          name: Install Go 1.15
+          name: Install Go 1.16
           command: |
             sudo rm -rf /usr/local/go
-            curl -L https://dl.google.com/go/go1.15.11.linux-amd64.tar.gz | sudo tar xz -C /usr/local
+            curl -L https://dl.google.com/go/go1.16.4.linux-amd64.tar.gz | sudo tar xz -C /usr/local
       - run:
           name: Add ~/go/bin to PATH
           command: |
@@ -407,7 +407,7 @@ jobs:
 
   build-examples:
     docker:
-      - image: cimg/go:1.15
+      - image: cimg/go:1.16
     steps:
       - restore_workspace
       - setup_remote_docker
@@ -509,7 +509,7 @@ jobs:
 
   publish-check:
     docker:
-      - image: cimg/go:1.15
+      - image: cimg/go:1.16
     steps:
       - attach_to_workspace
       - setup_remote_docker
@@ -527,7 +527,7 @@ jobs:
   # and "dockerhub-token" contexts
   publish-stable:
     docker:
-      - image: cimg/go:1.15
+      - image: cimg/go:1.16
     steps:
       - restore_workspace
       - verify_dist_files_exist

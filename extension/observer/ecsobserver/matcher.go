@@ -16,7 +16,9 @@ package ecsobserver
 
 import (
 	"fmt"
+	"regexp"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -29,10 +31,15 @@ type Matcher interface {
 	MatchTargets(task *Task, container *ecs.ContainerDefinition) ([]MatchedTarget, error)
 }
 
-type MatcherConfig interface {
-	// Init validates the configuration and initializes some internal strcutrues like regexp.
-	Init() error
-	NewMatcher(options MatcherOptions) (Matcher, error)
+// matcherConfig should be implemented by all the matcher config structs
+// for validation and initializing the actual matcher implementation.
+type matcherConfig interface {
+	// validate calls NewMatcher and only returns the error, it can be used in test
+	// and the new config validator interface.
+	validate() error
+	// newMatcher validates config and creates a Matcher implementation.
+	// The error is a config validation error
+	newMatcher(options MatcherOptions) (Matcher, error)
 }
 
 type MatcherOptions struct {
@@ -48,6 +55,20 @@ const (
 	MatcherTypeDockerLabel
 )
 
+func (t MatcherType) String() string {
+	switch t {
+	case MatcherTypeService:
+		return "service"
+	case MatcherTypeTaskDefinition:
+		return "task_definition"
+	case MatcherTypeDockerLabel:
+		return "docker_label"
+	default:
+		// Give it a _matcher_type suffix so people can find it by string search.
+		return "unknown_matcher_type"
+	}
+}
+
 type MatchResult struct {
 	// Tasks are index for tasks that include matched containers
 	Tasks []int
@@ -57,7 +78,7 @@ type MatchResult struct {
 
 type MatchedContainer struct {
 	TaskIndex      int // Index in task list
-	ContainerIndex int // Index within a tasks defintion's container list
+	ContainerIndex int // Index within a tasks definition's container list
 	Targets        []MatchedTarget
 }
 
@@ -87,6 +108,33 @@ type MatchedTarget struct {
 	Port         int
 	MetricsPath  string
 	Job          string
+}
+
+func newMatchers(c Config, mOpt MatcherOptions) (map[MatcherType][]Matcher, error) {
+	// We can have a registry or factory methods etc. but we only have three type of matchers
+	// and likely not going to add anymore in forseable future, just hard code the map here.
+	// All the XXXConfigToMatchers looks like copy pasted funcs, but there is no generic way to do it.
+	matcherConfigs := map[MatcherType][]matcherConfig{
+		MatcherTypeService:        serviceConfigsToMatchers(c.Services),
+		MatcherTypeTaskDefinition: taskDefinitionConfigsToMatchers(c.TaskDefinitions),
+		MatcherTypeDockerLabel:    dockerLabelConfigToMatchers(c.DockerLabels),
+	}
+	matchers := make(map[MatcherType][]Matcher)
+	matcherCount := 0
+	for mType, cfgs := range matcherConfigs {
+		for i, cfg := range cfgs {
+			m, err := cfg.newMatcher(mOpt)
+			if err != nil {
+				return nil, fmt.Errorf("init matcher config failed type %s index %d: %w", mType, i, err)
+			}
+			matchers[mType] = append(matchers[mType], m)
+			matcherCount++
+		}
+	}
+	if matcherCount == 0 {
+		return nil, fmt.Errorf("no matcher specified in config")
+	}
+	return matchers, nil
 }
 
 // a global instance because it's expected and we don't care about why the container didn't match (for now).
@@ -135,4 +183,26 @@ func matchContainers(tasks []*Task, matcher Matcher, matcherIndex int) (*MatchRe
 		Tasks:      matchedTasks,
 		Containers: matchedContainers,
 	}, merr
+}
+
+// matchContainerByName is used by taskDefinitionMatcher and serviceMatcher.
+// The only exception is DockerLabelMatcher because it get ports from docker label.
+func matchContainerByName(nameRegex *regexp.Regexp, expSetting *commonExportSetting, container *ecs.ContainerDefinition) ([]MatchedTarget, error) {
+	if nameRegex != nil && !nameRegex.MatchString(aws.StringValue(container.Name)) {
+		return nil, errNotMatched
+	}
+	// Match based on port
+	var targets []MatchedTarget
+	// Only export container if it has at least one matching port.
+	for _, portMapping := range container.PortMappings {
+		port := int(aws.Int64Value(portMapping.ContainerPort))
+		if expSetting.hasContainerPort(port) {
+			targets = append(targets, MatchedTarget{
+				Port:        port,
+				MetricsPath: expSetting.MetricsPath,
+				Job:         expSetting.JobName,
+			})
+		}
+	}
+	return targets, nil
 }
