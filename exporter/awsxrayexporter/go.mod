@@ -1,10 +1,10 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter
 
-go 1.15
+go 1.16
 
 require (
 	github.com/armon/go-metrics v0.3.3 // indirect
-	github.com/aws/aws-sdk-go v1.38.48
+	github.com/aws/aws-sdk-go v1.38.51
 	github.com/gogo/googleapis v1.3.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
