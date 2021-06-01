@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python/compare/v1.2.0-0.21b0...HEAD)
 
 ### Changed
+- `opentelemetry-bootstrap` not longer forcibly removes and re-installs libraries and their instrumentations.
+  This means running bootstrap will not auto-upgrade existing dependencies and as a result not cause dependency
+  conflicts.
+  ([#514](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/514))
 - `opentelemetry-instrumentation-asgi` Set the response status code on the server span
   ([#478](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/478))
 - `opentelemetry-instrumentation-tornado` Fixed cases where description was used with non-

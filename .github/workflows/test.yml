@@ -45,7 +45,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: .tox
-          key: v2-build-tox-cache-${{ env.RUN_MATRIX_COMBINATION }}-${{ hashFiles('tox.ini', 'dev-requirements.txt') }}
+          key: v2-build-tox-cache-${{ env.RUN_MATRIX_COMBINATION }}-${{ hashFiles('tox.ini', 'gen-requirements.txt', 'dev-requirements.txt') }}
       - name: run tox
         run: tox -f ${{ matrix.python-version }}-${{ matrix.package }} -- --benchmark-json=${{ env.RUN_MATRIX_COMBINATION }}-benchmark.json
       - name: Find and merge benchmarks
@@ -76,7 +76,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tox-environment: [ "docker-tests", "lint", "docs" ]
+        tox-environment: [ "docker-tests", "lint", "docs", "generate" ]
     name: ${{ matrix.tox-environment }}
     runs-on: ubuntu-latest
     steps:
@@ -99,6 +99,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: .tox
-          key: v2-misc-tox-cache-${{ matrix.tox-environment }}-${{ hashFiles('tox.ini', 'dev-requirements.txt', 'docs-requirements.txt') }}
+          key: v2-misc-tox-cache-${{ matrix.tox-environment }}-${{ hashFiles('tox.ini', 'dev-requirements.txt', 'gen-requirements.txt', 'docs-requirements.txt') }}
       - name: run tox
         run: tox -e ${{ matrix.tox-environment }}
+      - name: Ensure generated code is up to date
+        if: matrix.tox-environment == 'generate'
+        run: git diff --exit-code || (echo 'Generated code is out of date, please run "tox -e generate" and commit the changes in this PR.' && exit 1)

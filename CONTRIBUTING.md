@@ -170,7 +170,7 @@ Below is a checklist of things to be mindful of when implementing a new instrume
 - Extends from [BaseInstrumentor](https://github.com/open-telemetry/opentelemetry-python-contrib/blob/main/opentelemetry-instrumentation/src/opentelemetry/instrumentation/instrumentor.py#L26)
 - Supports auto-instrumentation
   - Add an entry point (ex. https://github.com/open-telemetry/opentelemetry-python-contrib/blob/main/instrumentation/opentelemetry-instrumentation-requests/setup.cfg#L56)
-  - Add instrumentation package to `bootstrap.py` (https://github.com/open-telemetry/opentelemetry-python-contrib/blob/main/opentelemetry-instrumentation/src/opentelemetry/instrumentation/bootstrap.py#L37)
+  - Run `python scripts/setup.py` followed by `python scripts/generate_instrumentation_bootstrap.py` after adding a new instrumentation package.
 - Functionality that is common amongst other instrumentation and can be abstracted [here](https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/opentelemetry-instrumentation/src/opentelemetry/instrumentation)
 - Request/response [hooks](https://github.com/open-telemetry/opentelemetry-python-contrib/issues/408) for http instrumentations
 - `suppress_instrumentation` functionality

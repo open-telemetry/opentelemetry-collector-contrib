@@ -15,118 +15,19 @@
 # limitations under the License.
 
 import argparse
-import pkgutil
+import logging
 import subprocess
 import sys
-from logging import getLogger
 
+import pkg_resources
+
+from opentelemetry.instrumentation.bootstrap_gen import (
+    default_instrumentations,
+    libraries,
+)
 from opentelemetry.instrumentation.version import __version__ as version
 
-logger = getLogger(__file__)
-
-
-# A mapping of "target library" to "desired instrumentor path/versioned package
-# name". Used as part of the `opentelemetry-bootstrap` command which looks at
-# libraries used by the application that is to be instrumented, and handles
-# automatically installing the appropriate instrumentations for that app.
-# This helps for those who prefer to turn on as much instrumentation as
-# possible, and don't want to go through the manual process of combing through
-# the libraries their application uses to figure which one can be
-# instrumented.
-# NOTE: system-metrics is not to be included.
-def all_instrumentations():
-    pkg_instrumentation_map = {
-        "aiohttp-client": "opentelemetry-instrumentation-aiohttp-client",
-        "aiopg": "opentelemetry-instrumentation-aiopg",
-        "asyncpg": "opentelemetry-instrumentation-asyncpg",
-        "boto": "opentelemetry-instrumentation-boto",
-        "botocore": "opentelemetry-instrumentation-botocore",
-        "celery": "opentelemetry-instrumentation-celery",
-        "dbapi": "opentelemetry-instrumentation-dbapi",
-        "django": "opentelemetry-instrumentation-django",
-        "elasticsearch": "opentelemetry-instrumentation-elasticsearch",
-        "falcon": "opentelemetry-instrumentation-falcon",
-        "fastapi": "opentelemetry-instrumentation-fastapi",
-        "flask": "opentelemetry-instrumentation-flask",
-        "grpc": "opentelemetry-instrumentation-grpc",
-        "jinja2": "opentelemetry-instrumentation-jinja2",
-        "mysql": "opentelemetry-instrumentation-mysql",
-        "psycopg2": "opentelemetry-instrumentation-psycopg2",
-        "pymemcache": "opentelemetry-instrumentation-pymemcache",
-        "pymongo": "opentelemetry-instrumentation-pymongo",
-        "pymysql": "opentelemetry-instrumentation-pymysql",
-        "pyramid": "opentelemetry-instrumentation-pyramid",
-        "redis": "opentelemetry-instrumentation-redis",
-        "requests": "opentelemetry-instrumentation-requests",
-        "sklearn": "opentelemetry-instrumentation-sklearn",
-        "sqlalchemy": "opentelemetry-instrumentation-sqlalchemy",
-        "sqlite3": "opentelemetry-instrumentation-sqlite3",
-        "starlette": "opentelemetry-instrumentation-starlette",
-        "tornado": "opentelemetry-instrumentation-tornado",
-        "urllib": "opentelemetry-instrumentation-urllib",
-    }
-    for pkg, instrumentation in pkg_instrumentation_map.items():
-        pkg_instrumentation_map[pkg] = "{0}=={1}".format(
-            instrumentation, version
-        )
-    return pkg_instrumentation_map
-
-
-instrumentations = all_instrumentations()
-
-# relevant instrumentors and tracers to uninstall and check for conflicts for target libraries
-libraries = {
-    "aiohttp-client": ("opentelemetry-instrumentation-aiohttp-client",),
-    "aiopg": ("opentelemetry-instrumentation-aiopg",),
-    "asyncpg": ("opentelemetry-instrumentation-asyncpg",),
-    "boto": ("opentelemetry-instrumentation-boto",),
-    "botocore": ("opentelemetry-instrumentation-botocore",),
-    "celery": ("opentelemetry-instrumentation-celery",),
-    "dbapi": ("opentelemetry-instrumentation-dbapi",),
-    "django": ("opentelemetry-instrumentation-django",),
-    "elasticsearch": ("opentelemetry-instrumentation-elasticsearch",),
-    "falcon": ("opentelemetry-instrumentation-falcon",),
-    "fastapi": ("opentelemetry-instrumentation-fastapi",),
-    "flask": ("opentelemetry-instrumentation-flask",),
-    "grpc": ("opentelemetry-instrumentation-grpc",),
-    "jinja2": ("opentelemetry-instrumentation-jinja2",),
-    "mysql": ("opentelemetry-instrumentation-mysql",),
-    "psycopg2": ("opentelemetry-instrumentation-psycopg2",),
-    "pymemcache": ("opentelemetry-instrumentation-pymemcache",),
-    "pymongo": ("opentelemetry-instrumentation-pymongo",),
-    "pymysql": ("opentelemetry-instrumentation-pymysql",),
-    "pyramid": ("opentelemetry-instrumentation-pyramid",),
-    "redis": ("opentelemetry-instrumentation-redis",),
-    "requests": ("opentelemetry-instrumentation-requests",),
-    "sklearn": ("opentelemetry-instrumentation-sklearn",),
-    "sqlalchemy": ("opentelemetry-instrumentation-sqlalchemy",),
-    "sqlite3": ("opentelemetry-instrumentation-sqlite3",),
-    "starlette": ("opentelemetry-instrumentation-starlette",),
-    "tornado": ("opentelemetry-instrumentation-tornado",),
-    "urllib": ("opentelemetry-instrumentation-urllib",),
-}
-
-
-def _install_package(library, instrumentation):
-    """
-    Ensures that desired version is installed w/o upgrading its dependencies
-    by uninstalling where necessary (if `target` is not provided).
-
-
-    OpenTelemetry auto-instrumentation packages often have traced libraries
-    as instrumentation dependency (e.g. flask for
-    opentelemetry-instrumentation-flask), so using -I on library could cause
-    likely undesired Flask upgrade.Using --no-dependencies alone would leave
-    potential for nonfunctional installations.
-    """
-    pip_list = _sys_pip_freeze()
-    for package in libraries[library]:
-        if "{}==".format(package).lower() in pip_list:
-            logger.info(
-                "Existing %s installation detected.  Uninstalling.", package
-            )
-            _sys_pip_uninstall(package)
-    _sys_pip_install(instrumentation)
+logger = logging.getLogger(__file__)
 
 
 def _syscall(func):
@@ -149,15 +50,6 @@ def _syscall(func):
 
 
 @_syscall
-def _sys_pip_freeze():
-    return (
-        subprocess.check_output([sys.executable, "-m", "pip", "freeze"])
-        .decode()
-        .lower()
-    )
-
-
-@_syscall
 def _sys_pip_install(package):
     # explicit upgrade strategy to override potential pip config
     subprocess.check_call(
@@ -171,13 +63,6 @@ def _sys_pip_install(package):
             "only-if-needed",
             package,
         ]
-    )
-
-
-@_syscall
-def _sys_pip_uninstall(package):
-    subprocess.check_call(
-        [sys.executable, "-m", "pip", "uninstall", "-y", package]
     )
 
 
@@ -203,22 +88,44 @@ def _pip_check():
                 )
 
 
-def _is_installed(library):
-    return library in sys.modules or pkgutil.find_loader(library) is not None
+def _is_installed(req):
+    if req in sys.modules:
+        return True
+
+    try:
+        pkg_resources.get_distribution(req)
+    except pkg_resources.DistributionNotFound:
+        return False
+    except pkg_resources.VersionConflict as exc:
+        logger.warning(
+            "instrumentation for package %s is available but version %s is installed. Skipping.",
+            exc.req,
+            exc.dist.as_requirement(),  # pylint: disable=no-member
+        )
+        return False
+    return True
 
 
 def _find_installed_libraries():
-    return {k: v for k, v in instrumentations.items() if _is_installed(k)}
+    libs = default_instrumentations[:]
+    libs.extend(
+        [
+            v["instrumentation"]
+            for _, v in libraries.items()
+            if _is_installed(v["library"])
+        ]
+    )
+    return libs
 
 
-def _run_requirements(packages):
-    print("\n".join(packages.values()), end="")
+def _run_requirements():
+    logger.setLevel(logging.ERROR)
+    print("\n".join(_find_installed_libraries()), end="")
 
 
-def _run_install(packages):
-    for pkg, inst in packages.items():
-        _install_package(pkg, inst)
-
+def _run_install():
+    for lib in _find_installed_libraries():
+        _sys_pip_install(lib)
     _pip_check()
 
 
@@ -250,4 +157,4 @@ def run() -> None:
         action_install: _run_install,
         action_requirements: _run_requirements,
     }[args.action]
-    cmd(_find_installed_libraries())
+    cmd()
