@@ -45,6 +45,9 @@ func (c OutputConfig) Build(context operator.BuildContext) (OutputOperator, erro
 	return outputOperator, nil
 }
 
+// BuildsMultipleOps Returns false
+func (c OutputConfig) BuildsMultipleOps() bool { return false }
+
 // OutputOperator provides a basic implementation of an output operator.
 type OutputOperator struct {
 	BasicOperator
@@ -65,10 +68,19 @@ func (o *OutputOperator) Outputs() []operator.Operator {
 	return []operator.Operator{}
 }
 
+// GetOutputIDs will always return an empty array for an output ID.
+func (o *OutputOperator) GetOutputIDs() []string {
+	return []string{}
+}
+
 // SetOutputs will return an error if called.
 func (o *OutputOperator) SetOutputs(operators []operator.Operator) error {
 	return errors.NewError(
 		"Operator can not output, but is attempting to set an output.",
 		"This is an unexpected internal error. Please submit a bug/issue.",
 	)
+}
+
+// SetOutputIDs will return nothing and does nothing.
+func (o *OutputOperator) SetOutputIDs(opIDs []string) {
 }

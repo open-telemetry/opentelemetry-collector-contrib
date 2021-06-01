@@ -60,6 +60,8 @@ func (c *Config) Build(bc operator.BuildContext) ([]operator.Operator, error) {
 	return pipelineConfig.Pipeline.BuildOperators(nbc)
 }
 
+func (c *Config) BuildsMultipleOps() bool { return true }
+
 func (c *Config) getRenderParams(bc operator.BuildContext) map[string]interface{} {
 	// Copy the parameters to avoid mutating them
 	params := map[string]interface{}{}

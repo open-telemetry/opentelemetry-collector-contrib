@@ -95,6 +95,9 @@ func (c RouterOperatorConfig) Build(bc operator.BuildContext) ([]operator.Operat
 	return []operator.Operator{routerOperator}, nil
 }
 
+// BuildsMultipleOps returns false
+func (c RouterOperatorConfig) BuildsMultipleOps() bool { return false }
+
 // RouterOperator is an operator that routes entries based on matching expressions
 type RouterOperator struct {
 	helper.BasicOperator
@@ -157,6 +160,15 @@ func (p *RouterOperator) Outputs() []operator.Operator {
 	return outputs
 }
 
+// GetOutputIDs will return all connected operators.
+func (p *RouterOperator) GetOutputIDs() []string {
+	outputs := make([]string, 0, len(p.routes))
+	for _, route := range p.routes {
+		outputs = append(outputs, route.OutputIDs...)
+	}
+	return outputs
+}
+
 // SetOutputs will set the outputs of the router operator.
 func (p *RouterOperator) SetOutputs(operators []operator.Operator) error {
 	for _, route := range p.routes {
@@ -169,6 +181,9 @@ func (p *RouterOperator) SetOutputs(operators []operator.Operator) error {
 
 	return nil
 }
+
+// SetOutputIDs will do nothing.
+func (p *RouterOperator) SetOutputIDs(opIDs []string) {}
 
 // findOperators will find a subset of operators from a collection.
 func (p *RouterOperator) findOperators(operators []operator.Operator, operatorIDs []string) ([]operator.Operator, error) {
