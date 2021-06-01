@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
 
-go 1.15
+go 1.16
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
