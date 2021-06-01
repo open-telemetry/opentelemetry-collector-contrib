@@ -199,9 +199,8 @@ func createProcessorOpts(cfg config.Processor) []Option {
 
 func warnDeprecatedMetadataConfig(logger *zap.Logger, cfg config.Processor) {
 	oCfg := cfg.(*Config)
-	var oldName, newName string
-
 	for _, field := range oCfg.Extract.Metadata {
+		var oldName, newName string
 		switch field {
 		case metdataNamespace:
 			oldName = metdataNamespace
