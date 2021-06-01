@@ -117,7 +117,7 @@ func (x *xrayReceiver) Shutdown(_ context.Context) error {
 func (x *xrayReceiver) start() {
 	incomingSegments := x.poller.SegmentsChan()
 	for seg := range incomingSegments {
-		ctx := x.obsrecv.StartTraceDataReceiveOp(seg.Ctx)
+		ctx := x.obsrecv.StartTracesOp(seg.Ctx)
 		traces, totalSpansCount, err := translator.ToTraces(seg.Payload)
 		if err != nil {
 			x.logger.Warn("X-Ray segment to OT traces conversion failed", zap.Error(err))
