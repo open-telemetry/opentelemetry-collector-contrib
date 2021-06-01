@@ -79,7 +79,7 @@ Meeting notes are available as a public [Google doc](https://docs.google.com/doc
 Approvers ([@open-telemetry/python-approvers](https://github.com/orgs/open-telemetry/teams/python-approvers)):
 
 - [Aaron Abbott](https://github.com/aabmass), Google
-- [Diego Hurtado](https://github.com/ocelotl)
+- [Diego Hurtado](https://github.com/ocelotl), Lightstep
 - [Owais Lone](https://github.com/owais), Splunk
 
 *Find more about the approver role in [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md#approver).*
