@@ -27,14 +27,14 @@ const (
 	goPSUtilProcDirEnv = "HOST_PROC"
 )
 
-type NodeCapacityProvider interface {
-	GetMemoryCapacity() int64
-	GetNumCores() int64
+type nodeCapacityProvider interface {
+	getMemoryCapacity() int64
+	getNumCores() int64
 }
 
-type NodeCapacity struct {
-	MemCapacity int64
-	CPUCapacity int64
+type nodeCapacity struct {
+	memCapacity int64
+	cpuCapacity int64
 	logger      *zap.Logger
 
 	// osLstat returns a FileInfo describing the named file.
@@ -45,10 +45,10 @@ type NodeCapacity struct {
 	cpuInfo       func() ([]cpu.InfoStat, error)
 }
 
-type nodeCapacityOption func(*NodeCapacity)
+type nodeCapacityOption func(*nodeCapacity)
 
-func NewNodeCapacity(logger *zap.Logger, options ...nodeCapacityOption) (NodeCapacityProvider, error) {
-	nc := &NodeCapacity{
+func newNodeCapacity(logger *zap.Logger, options ...nodeCapacityOption) (nodeCapacityProvider, error) {
+	nc := &nodeCapacity{
 		logger:        logger,
 		osLstat:       os.Lstat,
 		osSetenv:      os.Setenv,
@@ -60,11 +60,11 @@ func NewNodeCapacity(logger *zap.Logger, options ...nodeCapacityOption) (NodeCap
 		opt(nc)
 	}
 
-	if _, err := nc.osLstat("/rootfs/proc"); os.IsNotExist(err) {
+	if _, err := nc.osLstat(hostProc); os.IsNotExist(err) {
 		return nil, err
 	}
-	if err := nc.osSetenv(goPSUtilProcDirEnv, "/rootfs/proc"); err != nil {
-		return nil, fmt.Errorf("NodeCapacity cannot set goPSUtilProcDirEnv to /rootfs/proc: %v", err)
+	if err := nc.osSetenv(goPSUtilProcDirEnv, hostProc); err != nil {
+		return nil, fmt.Errorf("NodeCapacity cannot set goPSUtilProcDirEnv to %s: %v", hostProc, err)
 	}
 
 	nc.parseCPU()
@@ -72,29 +72,29 @@ func NewNodeCapacity(logger *zap.Logger, options ...nodeCapacityOption) (NodeCap
 	return nc, nil
 }
 
-func (nc *NodeCapacity) parseMemory() {
+func (nc *nodeCapacity) parseMemory() {
 	if memStats, err := nc.virtualMemory(); err == nil {
-		nc.MemCapacity = int64(memStats.Total)
+		nc.memCapacity = int64(memStats.Total)
 	} else {
 		// If any error happen, then there will be no mem utilization metrics
 		nc.logger.Error("NodeCapacity cannot get memStats from psUtil", zap.Error(err))
 	}
 }
 
-func (nc *NodeCapacity) parseCPU() {
+func (nc *nodeCapacity) parseCPU() {
 	if cpuInfos, err := nc.cpuInfo(); err == nil {
 		numCores := len(cpuInfos)
-		nc.CPUCapacity = int64(numCores)
+		nc.cpuCapacity = int64(numCores)
 	} else {
 		// If any error happen, then there will be no cpu utilization metrics
 		nc.logger.Error("NodeCapacity cannot get cpuInfo from psUtil", zap.Error(err))
 	}
 }
 
-func (nc *NodeCapacity) GetNumCores() int64 {
-	return nc.CPUCapacity
+func (nc *nodeCapacity) getNumCores() int64 {
+	return nc.cpuCapacity
 }
 
-func (nc *NodeCapacity) GetMemoryCapacity() int64 {
-	return nc.MemCapacity
+func (nc *nodeCapacity) getMemoryCapacity() int64 {
+	return nc.memCapacity
 }

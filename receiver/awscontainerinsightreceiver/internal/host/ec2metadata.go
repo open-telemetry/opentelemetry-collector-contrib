@@ -27,13 +27,13 @@ type metadataClient interface {
 	GetInstanceIdentityDocumentWithContext(ctx context.Context) (awsec2metadata.EC2InstanceIdentityDocument, error)
 }
 
-type EC2MetadataProvider interface {
-	GetInstanceID() string
-	GetInstanceType() string
-	GetRegion() string
+type ec2MetadataProvider interface {
+	getInstanceID() string
+	getInstanceType() string
+	getRegion() string
 }
 
-type EC2Metadata struct {
+type ec2Metadata struct {
 	logger           *zap.Logger
 	client           metadataClient
 	refreshInterval  time.Duration
@@ -43,11 +43,11 @@ type EC2Metadata struct {
 	instanceIDReadyC chan bool
 }
 
-type ec2MetadataOption func(*EC2Metadata)
+type ec2MetadataOption func(*ec2Metadata)
 
-func NewEC2Metadata(ctx context.Context, session *session.Session, refreshInterval time.Duration,
-	instanceIDReadyC chan bool, logger *zap.Logger, options ...ec2MetadataOption) EC2MetadataProvider {
-	emd := &EC2Metadata{
+func newEC2Metadata(ctx context.Context, session *session.Session, refreshInterval time.Duration,
+	instanceIDReadyC chan bool, logger *zap.Logger, options ...ec2MetadataOption) ec2MetadataProvider {
+	emd := &ec2Metadata{
 		client:           awsec2metadata.New(session),
 		refreshInterval:  refreshInterval,
 		instanceIDReadyC: instanceIDReadyC,
@@ -68,7 +68,7 @@ func NewEC2Metadata(ctx context.Context, session *session.Session, refreshInterv
 	return emd
 }
 
-func (emd *EC2Metadata) refresh(ctx context.Context) {
+func (emd *ec2Metadata) refresh(ctx context.Context) {
 	emd.logger.Info("Fetch instance id and type from ec2 metadata")
 
 	doc, err := emd.client.GetInstanceIdentityDocumentWithContext(ctx)
@@ -87,14 +87,14 @@ func (emd *EC2Metadata) refresh(ctx context.Context) {
 	}
 }
 
-func (emd *EC2Metadata) GetInstanceID() string {
+func (emd *ec2Metadata) getInstanceID() string {
 	return emd.instanceID
 }
 
-func (emd *EC2Metadata) GetInstanceType() string {
+func (emd *ec2Metadata) getInstanceType() string {
 	return emd.instanceType
 }
 
-func (emd *EC2Metadata) GetRegion() string {
+func (emd *ec2Metadata) getRegion() string {
 	return emd.region
 }

@@ -37,12 +37,12 @@ type ec2TagsClient interface {
 		opts ...request.Option) (*ec2.DescribeTagsOutput, error)
 }
 
-type EC2TagsProvider interface {
-	GetClusterName() string
-	GetAutoScalingGroupName() string
+type ec2TagsProvider interface {
+	getClusterName() string
+	getAutoScalingGroupName() string
 }
 
-type EC2Tags struct {
+type ec2Tags struct {
 	refreshInterval      time.Duration
 	maxJitterTime        time.Duration
 	instanceID           string
@@ -53,11 +53,11 @@ type EC2Tags struct {
 	logger               *zap.Logger
 }
 
-type ec2TagsOption func(*EC2Tags)
+type ec2TagsOption func(*ec2Tags)
 
-func NewEC2Tags(ctx context.Context, session *session.Session, instanceID string,
-	refreshInterval time.Duration, logger *zap.Logger, options ...ec2TagsOption) EC2TagsProvider {
-	et := &EC2Tags{
+func newEC2Tags(ctx context.Context, session *session.Session, instanceID string,
+	refreshInterval time.Duration, logger *zap.Logger, options ...ec2TagsOption) ec2TagsProvider {
+	et := &ec2Tags{
 		instanceID:      instanceID,
 		client:          ec2.New(session),
 		refreshInterval: refreshInterval,
@@ -79,8 +79,8 @@ func NewEC2Tags(ctx context.Context, session *session.Session, instanceID string
 	return et
 }
 
-func (et *EC2Tags) fetchEC2Tags(ctx context.Context) map[string]string {
-	et.logger.Info("Fetch ec2 tags to detect cluster name and auto scaling group name")
+func (et *ec2Tags) fetchEC2Tags(ctx context.Context) map[string]string {
+	et.logger.Info("Fetch ec2 tags to detect cluster name and auto scaling group name", zap.String("instanceId", et.instanceID))
 	tags := make(map[string]string)
 
 	tagFilters := []*ec2.Filter{
@@ -101,7 +101,7 @@ func (et *EC2Tags) fetchEC2Tags(ctx context.Context) map[string]string {
 	for {
 		result, err := et.client.DescribeTagsWithContext(ctx, input)
 		if err != nil {
-			et.logger.Warn("Fail to call ec2 DescribeTags", zap.Error(err))
+			et.logger.Warn("Fail to call ec2 DescribeTags", zap.Error(err), zap.String("instanceId", et.instanceID))
 			break
 		}
 
@@ -122,15 +122,15 @@ func (et *EC2Tags) fetchEC2Tags(ctx context.Context) map[string]string {
 	return tags
 }
 
-func (et *EC2Tags) GetClusterName() string {
+func (et *ec2Tags) getClusterName() string {
 	return et.clusterName
 }
 
-func (et *EC2Tags) GetAutoScalingGroupName() string {
+func (et *ec2Tags) getAutoScalingGroupName() string {
 	return et.autoScalingGroupName
 }
 
-func (et *EC2Tags) refresh(ctx context.Context) {
+func (et *ec2Tags) refresh(ctx context.Context) {
 	tags := et.fetchEC2Tags(ctx)
 	et.clusterName = tags[clusterNameKey]
 	et.autoScalingGroupName = tags[autoScalingGroupNameTag]

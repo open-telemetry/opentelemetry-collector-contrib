@@ -37,16 +37,16 @@ type Info struct {
 	ebsVolumeReadyC chan bool // close of this channel indicates ebsVolume is initialized. It is used only in test
 	ec2TagsReadyC   chan bool // close of this channel indicates ec2Tags is initialized. It is used only in test
 
-	nodeCapacity NodeCapacityProvider
-	ec2Metadata  EC2MetadataProvider
-	ebsVolume    EBSVolumeProvider
-	ec2Tags      EC2TagsProvider
+	nodeCapacity nodeCapacityProvider
+	ec2Metadata  ec2MetadataProvider
+	ebsVolume    ebsVolumeProvider
+	ec2Tags      ec2TagsProvider
 
 	awsSessionCreator   func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error)
-	nodeCapacityCreator func(*zap.Logger, ...nodeCapacityOption) (NodeCapacityProvider, error)
-	ec2MetadataCreator  func(context.Context, *session.Session, time.Duration, chan bool, *zap.Logger, ...ec2MetadataOption) EC2MetadataProvider
-	ebsVolumeCreator    func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger, ...ebsVolumeOption) EBSVolumeProvider
-	ec2TagsCreator      func(context.Context, *session.Session, string, time.Duration, *zap.Logger, ...ec2TagsOption) EC2TagsProvider
+	nodeCapacityCreator func(*zap.Logger, ...nodeCapacityOption) (nodeCapacityProvider, error)
+	ec2MetadataCreator  func(context.Context, *session.Session, time.Duration, chan bool, *zap.Logger, ...ec2MetadataOption) ec2MetadataProvider
+	ebsVolumeCreator    func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger, ...ebsVolumeOption) ebsVolumeProvider
+	ec2TagsCreator      func(context.Context, *session.Session, string, time.Duration, *zap.Logger, ...ec2TagsOption) ec2TagsProvider
 }
 
 type machineInfoOption func(*Info)
@@ -61,10 +61,10 @@ func NewInfo(refreshInterval time.Duration, logger *zap.Logger, options ...machi
 		logger:           logger,
 
 		awsSessionCreator:   awsutil.GetAWSConfigSession,
-		nodeCapacityCreator: NewNodeCapacity,
-		ec2MetadataCreator:  NewEC2Metadata,
-		ebsVolumeCreator:    NewEBSVolume,
-		ec2TagsCreator:      NewEC2Tags,
+		nodeCapacityCreator: newNodeCapacity,
+		ec2MetadataCreator:  newEC2Metadata,
+		ebsVolumeCreator:    newEBSVolume,
+		ec2TagsCreator:      newEC2Tags,
 
 		// used in test only
 		ebsVolumeReadyC: make(chan bool),
@@ -113,33 +113,33 @@ func (m *Info) lazyInitEC2Tags(ctx context.Context) {
 
 // GetInstanceID returns the ec2 instance id for the host
 func (m *Info) GetInstanceID() string {
-	return m.ec2Metadata.GetInstanceID()
+	return m.ec2Metadata.getInstanceID()
 }
 
 // GetInstanceType returns the ec2 instance type for the host
 func (m *Info) GetInstanceType() string {
-	return m.ec2Metadata.GetInstanceType()
+	return m.ec2Metadata.getInstanceType()
 }
 
 // GetRegion returns the region for the host
 func (m *Info) GetRegion() string {
-	return m.ec2Metadata.GetRegion()
+	return m.ec2Metadata.getRegion()
 }
 
 // GetNumCores returns the number of cpu cores on the host
 func (m *Info) GetNumCores() int64 {
-	return m.nodeCapacity.GetNumCores()
+	return m.nodeCapacity.getNumCores()
 }
 
 // GetMemoryCapacity returns the total memory (in bytes) on the host
 func (m *Info) GetMemoryCapacity() int64 {
-	return m.nodeCapacity.GetMemoryCapacity()
+	return m.nodeCapacity.getMemoryCapacity()
 }
 
 // GetEBSVolumeID returns the ebs volume id corresponding to the given device name
 func (m *Info) GetEBSVolumeID(devName string) string {
 	if m.ebsVolume != nil {
-		return m.ebsVolume.GetEBSVolumeID(devName)
+		return m.ebsVolume.getEBSVolumeID(devName)
 	}
 
 	return ""
@@ -148,7 +148,7 @@ func (m *Info) GetEBSVolumeID(devName string) string {
 // GetClusterName returns the cluster name associated with the host
 func (m *Info) GetClusterName() string {
 	if m.ec2Tags != nil {
-		return m.ec2Tags.GetClusterName()
+		return m.ec2Tags.getClusterName()
 	}
 
 	return ""
@@ -157,7 +157,7 @@ func (m *Info) GetClusterName() string {
 // GetAutoScalingGroupName returns the auto scaling group associated with the host
 func (m *Info) GetAutoScalingGroupName() string {
 	if m.ec2Tags != nil {
-		return m.ec2Tags.GetAutoScalingGroupName()
+		return m.ec2Tags.getAutoScalingGroupName()
 	}
 
 	return ""

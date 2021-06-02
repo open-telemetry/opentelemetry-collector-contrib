@@ -143,17 +143,17 @@ func TestEBSVolume(t *testing.T) {
 	mockVolumeClient := &mockEBSVolumeClient{
 		success: make(chan bool),
 	}
-	clientOption := func(e *EBSVolume) {
+	clientOption := func(e *ebsVolume) {
 		e.client = mockVolumeClient
 	}
-	maxJitterOption := func(e *EBSVolume) {
+	maxJitterOption := func(e *ebsVolume) {
 		e.maxJitterTime = time.Millisecond
 	}
-	hostMountsOption := func(e *EBSVolume) {
+	hostMountsOption := func(e *ebsVolume) {
 		e.hostMounts = "./testdata/mounts"
 	}
 
-	LstatOption := func(e *EBSVolume) {
+	LstatOption := func(e *ebsVolume) {
 		e.osLstat = func(name string) (os.FileInfo, error) {
 			if name == hostProc {
 				return &mockFileInfo{}, nil
@@ -163,7 +163,7 @@ func TestEBSVolume(t *testing.T) {
 		}
 	}
 
-	evalSymLinksOption := func(e *EBSVolume) {
+	evalSymLinksOption := func(e *ebsVolume) {
 		e.evalSymLinks = func(path string) (string, error) {
 			if strings.HasSuffix(path, "/dev/xvdb") {
 				return "/dev/nvme0n2", nil
@@ -172,24 +172,24 @@ func TestEBSVolume(t *testing.T) {
 		}
 	}
 
-	ebsVolume := NewEBSVolume(ctx, sess, "instanceId", "us-west-2", time.Millisecond, zap.NewNop(),
+	e := newEBSVolume(ctx, sess, "instanceId", "us-west-2", time.Millisecond, zap.NewNop(),
 		clientOption, maxJitterOption, hostMountsOption, LstatOption, evalSymLinksOption)
 
 	<-mockVolumeClient.success
-	assert.Equal(t, "aws://us-west-2/vol-0303a1cc896c42d28", ebsVolume.GetEBSVolumeID("/dev/xvdc"))
-	assert.Equal(t, "aws://us-west-2/vol-0c241693efb58734a", ebsVolume.GetEBSVolumeID("/dev/nvme0n2"))
-	assert.Equal(t, "", ebsVolume.GetEBSVolumeID("/dev/invalid"))
+	assert.Equal(t, "aws://us-west-2/vol-0303a1cc896c42d28", e.getEBSVolumeID("/dev/xvdc"))
+	assert.Equal(t, "aws://us-west-2/vol-0c241693efb58734a", e.getEBSVolumeID("/dev/nvme0n2"))
+	assert.Equal(t, "", e.getEBSVolumeID("/dev/invalid"))
 
-	ebsIds := ebsVolume.extractEbsIDsUsedByKubernetes()
+	ebsIds := e.extractEbsIDsUsedByKubernetes()
 	assert.Equal(t, 1, len(ebsIds))
 	assert.Equal(t, "aws://us-west-2b/vol-0d9f0816149eb2050", ebsIds["/dev/nvme1n1"])
 
 	//set e.hostMounts to an invalid path
-	hostMountsOption = func(e *EBSVolume) {
+	hostMountsOption = func(e *ebsVolume) {
 		e.hostMounts = "/an-invalid-path"
 	}
-	ebsVolume = NewEBSVolume(ctx, sess, "instanceId", "us-west-2", time.Millisecond, zap.NewNop(),
+	e = newEBSVolume(ctx, sess, "instanceId", "us-west-2", time.Millisecond, zap.NewNop(),
 		clientOption, maxJitterOption, hostMountsOption, LstatOption, evalSymLinksOption)
-	ebsIds = ebsVolume.extractEbsIDsUsedByKubernetes()
+	ebsIds = e.extractEbsIDsUsedByKubernetes()
 	assert.Equal(t, 0, len(ebsIds))
 }

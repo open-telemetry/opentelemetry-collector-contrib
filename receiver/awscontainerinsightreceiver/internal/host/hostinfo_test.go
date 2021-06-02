@@ -31,33 +31,33 @@ import (
 type mockNodeCapacity struct {
 }
 
-func (m *mockNodeCapacity) GetMemoryCapacity() int64 {
+func (m *mockNodeCapacity) getMemoryCapacity() int64 {
 	return 1024
 }
 
-func (m *mockNodeCapacity) GetNumCores() int64 {
+func (m *mockNodeCapacity) getNumCores() int64 {
 	return 2
 }
 
 type mockEC2Metadata struct {
 }
 
-func (m *mockEC2Metadata) GetInstanceID() string {
+func (m *mockEC2Metadata) getInstanceID() string {
 	return "instance-id"
 }
 
-func (m *mockEC2Metadata) GetInstanceType() string {
+func (m *mockEC2Metadata) getInstanceType() string {
 	return "instance-type"
 }
 
-func (m *mockEC2Metadata) GetRegion() string {
+func (m *mockEC2Metadata) getRegion() string {
 	return "region"
 }
 
 type mockEBSVolume struct {
 }
 
-func (m *mockEBSVolume) GetEBSVolumeID(devName string) string {
+func (m *mockEBSVolume) getEBSVolumeID(devName string) string {
 	return "ebs-volume-id"
 }
 
@@ -68,18 +68,18 @@ func (m *mockEBSVolume) extractEbsIDsUsedByKubernetes() map[string]string {
 type mockEC2Tags struct {
 }
 
-func (m *mockEC2Tags) GetClusterName() string {
+func (m *mockEC2Tags) getClusterName() string {
 	return "cluster-name"
 }
 
-func (m *mockEC2Tags) GetAutoScalingGroupName() string {
+func (m *mockEC2Tags) getAutoScalingGroupName() string {
 	return "asg"
 }
 
 func TestInfo(t *testing.T) {
 	// test the case when nodeCapacity fails to initialize
 	nodeCapacityCreatorOpt := func(m *Info) {
-		m.nodeCapacityCreator = func(*zap.Logger, ...nodeCapacityOption) (NodeCapacityProvider, error) {
+		m.nodeCapacityCreator = func(*zap.Logger, ...nodeCapacityOption) (nodeCapacityProvider, error) {
 			return nil, errors.New("error")
 		}
 	}
@@ -89,7 +89,7 @@ func TestInfo(t *testing.T) {
 
 	// test the case when aws session fails to initialize
 	nodeCapacityCreatorOpt = func(m *Info) {
-		m.nodeCapacityCreator = func(*zap.Logger, ...nodeCapacityOption) (NodeCapacityProvider, error) {
+		m.nodeCapacityCreator = func(*zap.Logger, ...nodeCapacityOption) (nodeCapacityProvider, error) {
 			return &mockNodeCapacity{}, nil
 		}
 	}
@@ -110,19 +110,19 @@ func TestInfo(t *testing.T) {
 	}
 	ec2MetadataCreatorOpt := func(m *Info) {
 		m.ec2MetadataCreator = func(context.Context, *session.Session, time.Duration, chan bool, *zap.Logger,
-			...ec2MetadataOption) EC2MetadataProvider {
+			...ec2MetadataOption) ec2MetadataProvider {
 			return &mockEC2Metadata{}
 		}
 	}
 	ebsVolumeCreatorOpt := func(m *Info) {
 		m.ebsVolumeCreator = func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger,
-			...ebsVolumeOption) EBSVolumeProvider {
+			...ebsVolumeOption) ebsVolumeProvider {
 			return &mockEBSVolume{}
 		}
 	}
 	ec2TagsCreatorOpt := func(m *Info) {
 		m.ec2TagsCreator = func(context.Context, *session.Session, string, time.Duration, *zap.Logger,
-			...ec2TagsOption) EC2TagsProvider {
+			...ec2TagsOption) ec2TagsProvider {
 			return &mockEC2Tags{}
 		}
 	}

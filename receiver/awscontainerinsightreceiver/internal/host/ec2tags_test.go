@@ -69,21 +69,21 @@ func (m *mockEC2TagsClient) DescribeTagsWithContext(ctx context.Context, input *
 func TestEC2Tags(t *testing.T) {
 	ctx := context.Background()
 	sess := mock.Session
-	clientOption := func(e *EC2Tags) {
+	clientOption := func(e *ec2Tags) {
 		e.client = &mockEC2TagsClient{}
 	}
-	maxJitterOption := func(e *EC2Tags) {
+	maxJitterOption := func(e *ec2Tags) {
 		e.maxJitterTime = 0
 	}
-	isSucessOption := func(e *EC2Tags) {
+	isSucessOption := func(e *ec2Tags) {
 		e.isSucess = make(chan bool)
 	}
-	ec2tags := NewEC2Tags(ctx, sess, "instanceId", time.Millisecond, zap.NewNop(), clientOption,
+	et := newEC2Tags(ctx, sess, "instanceId", time.Millisecond, zap.NewNop(), clientOption,
 		maxJitterOption, isSucessOption)
 
 	// wait for ec2 tags are fetched
-	e := ec2tags.(*EC2Tags)
+	e := et.(*ec2Tags)
 	<-e.isSucess
-	assert.Equal(t, "cluster-name", ec2tags.GetClusterName())
-	assert.Equal(t, "asg", ec2tags.GetAutoScalingGroupName())
+	assert.Equal(t, "cluster-name", et.getClusterName())
+	assert.Equal(t, "asg", et.getAutoScalingGroupName())
 }

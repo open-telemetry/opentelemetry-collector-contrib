@@ -32,23 +32,18 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	hostProc   = "/rootfs/proc"
-	hostMounts = "/rootfs/proc/mounts"
-)
-
 var ebsMountPointRegex = regexp.MustCompile(`kubernetes\.io/aws-ebs/mounts/aws/(.+)/(vol-\w+)$`)
 
 type ebsVolumeClient interface {
 	DescribeVolumesWithContext(context.Context, *ec2.DescribeVolumesInput, ...request.Option) (*ec2.DescribeVolumesOutput, error)
 }
 
-type EBSVolumeProvider interface {
-	GetEBSVolumeID(devName string) string
+type ebsVolumeProvider interface {
+	getEBSVolumeID(devName string) string
 	extractEbsIDsUsedByKubernetes() map[string]string
 }
 
-type EBSVolume struct {
+type ebsVolume struct {
 	refreshInterval time.Duration
 	maxJitterTime   time.Duration
 	instanceID      string
@@ -66,11 +61,11 @@ type EBSVolume struct {
 	evalSymLinks func(path string) (string, error)
 }
 
-type ebsVolumeOption func(*EBSVolume)
+type ebsVolumeOption func(*ebsVolume)
 
-func NewEBSVolume(ctx context.Context, session *session.Session, instanceID string, region string,
-	refreshInterval time.Duration, logger *zap.Logger, options ...ebsVolumeOption) EBSVolumeProvider {
-	ebsVolume := &EBSVolume{
+func newEBSVolume(ctx context.Context, session *session.Session, instanceID string, region string,
+	refreshInterval time.Duration, logger *zap.Logger, options ...ebsVolumeOption) ebsVolumeProvider {
+	e := &ebsVolume{
 		dev2Vol:         make(map[string]string),
 		instanceID:      instanceID,
 		client:          ec2.New(session, aws.NewConfig().WithRegion(region)),
@@ -84,19 +79,19 @@ func NewEBSVolume(ctx context.Context, session *session.Session, instanceID stri
 	}
 
 	for _, opt := range options {
-		opt(ebsVolume)
+		opt(e)
 	}
 
 	shouldRefresh := func() bool {
 		// keep refreshing to get updated ebs volumes
 		return true
 	}
-	go refreshUntil(ctx, ebsVolume.refresh, ebsVolume.refreshInterval, shouldRefresh, ebsVolume.maxJitterTime)
+	go refreshUntil(ctx, e.refresh, e.refreshInterval, shouldRefresh, e.maxJitterTime)
 
-	return ebsVolume
+	return e
 }
 
-func (e *EBSVolume) refresh(ctx context.Context) {
+func (e *ebsVolume) refresh(ctx context.Context) {
 	e.logger.Info("Fetch ebs volumes from ec2 api")
 
 	input := &ec2.DescribeVolumesInput{
@@ -140,7 +135,7 @@ func (e *EBSVolume) refresh(ctx context.Context) {
 	}
 }
 
-func (e *EBSVolume) addEBSVolumeMapping(zone *string, attachement *ec2.VolumeAttachment) string {
+func (e *ebsVolume) addEBSVolumeMapping(zone *string, attachement *ec2.VolumeAttachment) string {
 	// *attachement.Device is sth like: /dev/xvda
 	devPath := e.findNvmeBlockNameIfPresent(*attachement.Device)
 	if devPath == "" {
@@ -154,7 +149,7 @@ func (e *EBSVolume) addEBSVolumeMapping(zone *string, attachement *ec2.VolumeAtt
 }
 
 // find nvme block name by symlink, if symlink doesn't exist, return ""
-func (e *EBSVolume) findNvmeBlockNameIfPresent(devName string) string {
+func (e *ebsVolume) findNvmeBlockNameIfPresent(devName string) string {
 	// for nvme(ssd), there is a symlink from devName to nvme block name, i.e. /dev/xvda -> /dev/nvme0n1
 	// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nvme-ebs-volumes.html
 	hasRootFs := true
@@ -181,7 +176,7 @@ func (e *EBSVolume) findNvmeBlockNameIfPresent(devName string) string {
 	return nvmeName
 }
 
-func (e *EBSVolume) GetEBSVolumeID(devName string) string {
+func (e *ebsVolume) getEBSVolumeID(devName string) string {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
@@ -196,7 +191,7 @@ func (e *EBSVolume) GetEBSVolumeID(devName string) string {
 }
 
 //extract the ebs volume id used by kubernetes cluster
-func (e *EBSVolume) extractEbsIDsUsedByKubernetes() map[string]string {
+func (e *ebsVolume) extractEbsIDsUsedByKubernetes() map[string]string {
 	ebsVolumeIDs := make(map[string]string)
 
 	file, err := os.Open(e.hostMounts)

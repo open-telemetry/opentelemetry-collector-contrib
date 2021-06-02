@@ -47,14 +47,14 @@ func TestEC2Metadata(t *testing.T) {
 	ctx := context.Background()
 	sess := mock.Session
 	instanceIDReadyC := make(chan bool)
-	clientOption := func(e *EC2Metadata) {
+	clientOption := func(e *ec2Metadata) {
 		e.client = &mockMetadataClient{}
 	}
-	ec2metadata := NewEC2Metadata(ctx, sess, 3*time.Millisecond, instanceIDReadyC, zap.NewNop(), clientOption)
-	assert.NotNil(t, ec2metadata)
+	e := newEC2Metadata(ctx, sess, 3*time.Millisecond, instanceIDReadyC, zap.NewNop(), clientOption)
+	assert.NotNil(t, e)
 
 	<-instanceIDReadyC
-	assert.Equal(t, "i-abcd1234", ec2metadata.GetInstanceID())
-	assert.Equal(t, "c4.xlarge", ec2metadata.GetInstanceType())
-	assert.Equal(t, "us-west-2", ec2metadata.GetRegion())
+	assert.Equal(t, "i-abcd1234", e.getInstanceID())
+	assert.Equal(t, "c4.xlarge", e.getInstanceType())
+	assert.Equal(t, "us-west-2", e.getRegion())
 }
