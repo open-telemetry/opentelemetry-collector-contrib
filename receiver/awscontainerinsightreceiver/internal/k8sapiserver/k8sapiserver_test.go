@@ -223,14 +223,14 @@ func TestK8sAPIServer_init(t *testing.T) {
 
 	err := k8sAPIServer.init()
 	assert.NotNil(t, err)
-	assert.True(t, strings.HasPrefix(err.Error(), "missing environment variable HOST_NAME"))
+	assert.True(t, strings.HasPrefix(err.Error(), "environment variable HOST_NAME is not set"))
 
 	originalHostName := os.Getenv("HOST_NAME")
 	os.Setenv("HOST_NAME", "hostname")
 
 	err = k8sAPIServer.init()
 	assert.NotNil(t, err)
-	assert.True(t, strings.HasPrefix(err.Error(), "missing environment variable K8S_NAMESPACE"))
+	assert.True(t, strings.HasPrefix(err.Error(), "environment variable K8S_NAMESPACE is not set"))
 
 	// restore env variables
 	os.Setenv("HOST_NAME", originalHostName)

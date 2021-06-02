@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/scheme"
-	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
@@ -40,7 +40,7 @@ import (
 )
 
 const (
-	lockName = "aoc-clusterleader"
+	lockName = "otel-container-insight-clusterleader"
 )
 
 // eventBroadcaster is adpated from record.EventBroadcaster
@@ -182,12 +182,12 @@ func (k *K8sAPIServer) init() error {
 
 	k.nodeName = os.Getenv("HOST_NAME")
 	if k.nodeName == "" {
-		return errors.New("missing environment variable HOST_NAME. Please check your deployment YAML config")
+		return errors.New("environment variable HOST_NAME is not set in k8s deployment config")
 	}
 
 	lockNamespace := os.Getenv("K8S_NAMESPACE")
 	if lockNamespace == "" {
-		return errors.New("missing environment variable K8S_NAMESPACE. Please check your deployment YAML config")
+		return errors.New("environment variable K8S_NAMESPACE is not set in k8s deployment config")
 	}
 
 	configMapInterface := k.k8sClient.ClientSet.CoreV1().ConfigMaps(lockNamespace)
@@ -280,6 +280,6 @@ func (k *K8sAPIServer) startLeaderElection(ctx context.Context, lock resourceloc
 func (k *K8sAPIServer) createRecorder(name, namespace string) record.EventRecorder {
 	k.broadcaster.StartLogging(klog.Infof)
 	clientSet := k.k8sClient.ClientSet
-	k.broadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: v1core.New(clientSet.CoreV1().RESTClient()).Events(namespace)})
+	k.broadcaster.StartRecordingToSink(&corev1.EventSinkImpl{Interface: corev1.New(clientSet.CoreV1().RESTClient()).Events(namespace)})
 	return k.broadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: name})
 }
