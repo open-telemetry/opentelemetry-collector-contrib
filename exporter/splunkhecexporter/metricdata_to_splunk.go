@@ -29,8 +29,8 @@ import (
 const (
 	// unknownHostName is the default host name when no hostname label is passed.
 	unknownHostName = "unknown"
-	// splunkMetricType is the key which maps to the type of the metric.
-	splunkMetricType = "metric_type"
+	// splunkMetricTypeKey is the key which maps to the type of the metric.
+	splunkMetricTypeKey = "metric_type"
 	// splunkMetricValue is the splunk metric value prefix.
 	splunkMetricValue = "metric_name"
 	// countSuffix is the count metric value suffix.
@@ -91,7 +91,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						fields := cloneMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
 						fields[metricFieldName] = dataPt.Value()
-						fields[splunkMetricType] = pdata.MetricDataTypeIntGauge.String()
+						fields[splunkMetricTypeKey] = pdata.MetricDataTypeIntGauge.String()
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 						splunkMetrics = append(splunkMetrics, sm)
 					}
@@ -102,7 +102,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						fields := cloneMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
 						fields[metricFieldName] = dataPt.Value()
-						fields[splunkMetricType] = pdata.MetricDataTypeDoubleGauge.String()
+						fields[splunkMetricTypeKey] = pdata.MetricDataTypeDoubleGauge.String()
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 						splunkMetrics = append(splunkMetrics, sm)
 					}
@@ -117,7 +117,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 							fields := cloneMap(commonFields)
 							populateLabels(fields, dataPt.LabelsMap())
 							fields[metricFieldName+sumSuffix] = dataPt.Sum()
-							fields[splunkMetricType] = pdata.MetricDataTypeHistogram.String()
+							fields[splunkMetricTypeKey] = pdata.MetricDataTypeHistogram.String()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)
 						}
@@ -125,7 +125,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 							fields := cloneMap(commonFields)
 							populateLabels(fields, dataPt.LabelsMap())
 							fields[metricFieldName+countSuffix] = dataPt.Count()
-							fields[splunkMetricType] = pdata.MetricDataTypeHistogram.String()
+							fields[splunkMetricTypeKey] = pdata.MetricDataTypeHistogram.String()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)
 						}
@@ -142,7 +142,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 							fields["le"] = float64ToDimValue(bounds[bi])
 							value += counts[bi]
 							fields[metricFieldName+bucketSuffix] = value
-							fields[splunkMetricType] = pdata.MetricDataTypeHistogram.String()
+							fields[splunkMetricTypeKey] = pdata.MetricDataTypeHistogram.String()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)
 						}
@@ -152,7 +152,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 							populateLabels(fields, dataPt.LabelsMap())
 							fields["le"] = float64ToDimValue(math.Inf(1))
 							fields[metricFieldName+bucketSuffix] = value + counts[len(counts)-1]
-							fields[splunkMetricType] = pdata.MetricDataTypeHistogram.String()
+							fields[splunkMetricTypeKey] = pdata.MetricDataTypeHistogram.String()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)
 						}
@@ -168,7 +168,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 							fields := cloneMap(commonFields)
 							populateLabels(fields, dataPt.LabelsMap())
 							fields[metricFieldName+sumSuffix] = dataPt.Sum()
-							fields[splunkMetricType] = pdata.MetricDataTypeIntHistogram.String()
+							fields[splunkMetricTypeKey] = pdata.MetricDataTypeIntHistogram.String()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)
 						}
@@ -176,7 +176,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 							fields := cloneMap(commonFields)
 							populateLabels(fields, dataPt.LabelsMap())
 							fields[metricFieldName+countSuffix] = dataPt.Count()
-							fields[splunkMetricType] = pdata.MetricDataTypeIntHistogram.String()
+							fields[splunkMetricTypeKey] = pdata.MetricDataTypeIntHistogram.String()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)
 						}
@@ -193,7 +193,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 							fields["le"] = float64ToDimValue(bounds[bi])
 							value += counts[bi]
 							fields[metricFieldName+bucketSuffix] = value
-							fields[splunkMetricType] = pdata.MetricDataTypeIntHistogram.String()
+							fields[splunkMetricTypeKey] = pdata.MetricDataTypeIntHistogram.String()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)
 						}
@@ -203,7 +203,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 							populateLabels(fields, dataPt.LabelsMap())
 							fields["le"] = float64ToDimValue(math.Inf(1))
 							fields[metricFieldName+bucketSuffix] = value + counts[len(counts)-1]
-							fields[splunkMetricType] = pdata.MetricDataTypeIntHistogram.String()
+							fields[splunkMetricTypeKey] = pdata.MetricDataTypeIntHistogram.String()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)
 						}
@@ -215,7 +215,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						fields := cloneMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
 						fields[metricFieldName] = dataPt.Value()
-						fields[splunkMetricType] = pdata.MetricDataTypeDoubleSum.String()
+						fields[splunkMetricTypeKey] = pdata.MetricDataTypeDoubleSum.String()
 
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 						splunkMetrics = append(splunkMetrics, sm)
@@ -227,7 +227,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						fields := cloneMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
 						fields[metricFieldName] = dataPt.Value()
-						fields[splunkMetricType] = pdata.MetricDataTypeIntSum.String()
+						fields[splunkMetricTypeKey] = pdata.MetricDataTypeIntSum.String()
 
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 						splunkMetrics = append(splunkMetrics, sm)
@@ -241,7 +241,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 							fields := cloneMap(commonFields)
 							populateLabels(fields, dataPt.LabelsMap())
 							fields[metricFieldName+sumSuffix] = dataPt.Sum()
-							fields[splunkMetricType] = pdata.MetricDataTypeSummary.String()
+							fields[splunkMetricTypeKey] = pdata.MetricDataTypeSummary.String()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)
 						}
@@ -249,7 +249,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 							fields := cloneMap(commonFields)
 							populateLabels(fields, dataPt.LabelsMap())
 							fields[metricFieldName+countSuffix] = dataPt.Count()
-							fields[splunkMetricType] = pdata.MetricDataTypeSummary.String()
+							fields[splunkMetricTypeKey] = pdata.MetricDataTypeSummary.String()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)
 						}
@@ -261,7 +261,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 							dp := dataPt.QuantileValues().At(bi)
 							fields["qt"] = float64ToDimValue(dp.Quantile())
 							fields[metricFieldName+"_"+strconv.FormatFloat(dp.Quantile(), 'f', -1, 64)] = dp.Value()
-							fields[splunkMetricType] = pdata.MetricDataTypeSummary.String()
+							fields[splunkMetricTypeKey] = pdata.MetricDataTypeSummary.String()
 							sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 							splunkMetrics = append(splunkMetrics, sm)
 						}
