@@ -35,7 +35,7 @@ type traceExporter struct {
 	params         component.ExporterCreateParams
 	cfg            *config.Config
 	ctx            context.Context
-	edgeConnection TraceEdgeConnection
+	edgeConnection traceEdgeConnection
 	obfuscator     *obfuscate.Obfuscator
 	client         *datadog.Client
 	denylister     *denylister
