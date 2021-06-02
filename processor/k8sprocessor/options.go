@@ -83,7 +83,7 @@ func WithExtractMetadata(fields ...string) Option {
 		for _, field := range fields {
 			switch field {
 			// Old conventions handled by the cases metdataNamespace, metadataPodName, metadataPodUID,
-			// metadataStartTime, metadataDeployment, metadataCluster, metadataNode are being supported for backward compatability.
+			// metadataStartTime, metadataDeployment, metadataCluster, metadataNode are being supported for backward compatibility.
 			// These will be removed when new conventions get merged to https://github.com/open-telemetry/opentelemetry-collector/blob/main/translator/conventions/opentelemetry.go
 			case metdataNamespace, conventions.AttributeK8sNamespace:
 				p.rules.Namespace = true
