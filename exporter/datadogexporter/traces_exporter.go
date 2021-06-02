@@ -56,7 +56,7 @@ type traceExporter struct {
 	obfuscator     *obfuscate.Obfuscator
 	calculator     *sublayerCalculator
 	client         *datadog.Client
-	denylister     *Denylister
+	denylister     *denylister
 }
 
 var (
