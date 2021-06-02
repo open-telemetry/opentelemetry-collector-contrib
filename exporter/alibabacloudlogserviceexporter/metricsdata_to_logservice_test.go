@@ -165,9 +165,7 @@ func TestMetricCornerCases(t *testing.T) {
 	assert.Equal(t, min(2, 1), 1)
 	assert.Equal(t, min(1, 1), 1)
 	var label KeyValues
-	label.AppendMap(map[string]string{
-		"a": "b",
-	})
+	label.Append("a", "b")
 	assert.Equal(t, label.String(), "a#$#b")
 }
 
@@ -175,10 +173,8 @@ func TestMetricLabelSanitize(t *testing.T) {
 	var label KeyValues
 	label.Append("_test", "key_test")
 	label.Append("0test", "key_0test")
-	label.AppendMap(map[string]string{
-		"test_normal": "test_normal",
-		"0test":       "key_0test",
-	})
+	label.Append("test_normal", "test_normal")
+	label.Append("0test", "key_0test")
 	assert.Equal(t, label.String(), "key_test#$#key_test|key_0test#$#key_0test|test_normal#$#test_normal|key_0test#$#key_0test")
 	label.Sort()
 	assert.Equal(t, label.String(), "key_0test#$#key_0test|key_0test#$#key_0test|key_test#$#key_test|test_normal#$#test_normal")
