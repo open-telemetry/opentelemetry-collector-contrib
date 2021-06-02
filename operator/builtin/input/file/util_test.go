@@ -64,10 +64,10 @@ func newTestFileOperator(t *testing.T, cfgMod func(*InputConfig), outMod func(*t
 	return op.(*InputOperator), fakeOutput.Received, tempDir
 }
 
-func openFile(t testing.TB, path string) *os.File {
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0777)
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = file.Close() })
+func openFile(tb testing.TB, path string) *os.File {
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0600)
+	require.NoError(tb, err)
+	tb.Cleanup(func() { _ = file.Close() })
 	return file
 }
 

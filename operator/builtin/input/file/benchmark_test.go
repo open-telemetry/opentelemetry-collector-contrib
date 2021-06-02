@@ -15,6 +15,7 @@
 package file
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -27,33 +28,132 @@ import (
 
 type fileInputBenchmark struct {
 	name   string
-	config *InputConfig
+	paths  []string
+	config func() *InputConfig
+}
+
+type benchFile struct {
+	*os.File
+	log func(int)
+}
+
+func simpleTextFile(file *os.File) *benchFile {
+	line := stringWithLength(49) + "\n"
+	return &benchFile{
+		File: file,
+		log:  func(_ int) { file.WriteString(line) },
+	}
 }
 
 func BenchmarkFileInput(b *testing.B) {
 	cases := []fileInputBenchmark{
 		{
-			"Default",
-			NewInputConfig("test_id"),
+			name: "Single",
+			paths: []string{
+				"file0.log",
+			},
+			config: func() *InputConfig {
+				cfg := NewInputConfig("test_id")
+				cfg.Include = []string{
+					"file0.log",
+				}
+				return cfg
+			},
 		},
 		{
-			"NoFileName",
-			func() *InputConfig {
+			name: "Glob",
+			paths: []string{
+				"file0.log",
+				"file1.log",
+				"file2.log",
+				"file3.log",
+			},
+			config: func() *InputConfig {
 				cfg := NewInputConfig("test_id")
-				cfg.IncludeFileName = false
+				cfg.Include = []string{"file*.log"}
 				return cfg
-			}(),
+			},
+		},
+		{
+			name: "MultiGlob",
+			paths: []string{
+				"file0.log",
+				"file1.log",
+				"log0.log",
+				"log1.log",
+			},
+			config: func() *InputConfig {
+				cfg := NewInputConfig("test_id")
+				cfg.Include = []string{
+					"file*.log",
+					"log*.log",
+				}
+				return cfg
+			},
+		},
+		{
+			name: "MaxConcurrent",
+			paths: []string{
+				"file0.log",
+				"file1.log",
+				"file2.log",
+				"file3.log",
+			},
+			config: func() *InputConfig {
+				cfg := NewInputConfig("test_id")
+				cfg.Include = []string{
+					"file*.log",
+				}
+				cfg.MaxConcurrentFiles = 1
+				return cfg
+			},
+		},
+		{
+			name: "FngrPrntLarge",
+			paths: []string{
+				"file0.log",
+			},
+			config: func() *InputConfig {
+				cfg := NewInputConfig("test_id")
+				cfg.Include = []string{
+					"file*.log",
+				}
+				cfg.FingerprintSize = 10 * defaultFingerprintSize
+				return cfg
+			},
+		},
+		{
+			name: "FngrPrntSmall",
+			paths: []string{
+				"file0.log",
+			},
+			config: func() *InputConfig {
+				cfg := NewInputConfig("test_id")
+				cfg.Include = []string{
+					"file*.log",
+				}
+				cfg.FingerprintSize = defaultFingerprintSize / 10
+				return cfg
+			},
 		},
 	}
 
-	for _, tc := range cases {
-		b.Run(tc.name, func(b *testing.B) {
-			tempDir := testutil.NewTempDir(b)
-			path := filepath.Join(tempDir, "in.log")
+	for _, bench := range cases {
+		b.Run(bench.name, func(b *testing.B) {
+			rootDir, err := ioutil.TempDir("", "")
+			require.NoError(b, err)
 
-			cfg := tc.config
+			files := []*benchFile{}
+			for _, path := range bench.paths {
+				file := openFile(b, filepath.Join(rootDir, path))
+				files = append(files, simpleTextFile(file))
+			}
+
+			cfg := bench.config()
 			cfg.OutputIDs = []string{"fake"}
-			cfg.Include = []string{path}
+			for i, inc := range cfg.Include {
+				cfg.Include[i] = filepath.Join(rootDir, inc)
+			}
 			cfg.StartAt = "beginning"
 
 			ops, err := cfg.Build(testutil.NewBuildContext(b))
@@ -64,19 +164,29 @@ func BenchmarkFileInput(b *testing.B) {
 			err = op.SetOutputs([]operator.Operator{fakeOutput})
 			require.NoError(b, err)
 
+			// write half the lines before starting
+			mid := b.N / 2
+			for i := 0; i < mid; i++ {
+				for _, file := range files {
+					file.log(i)
+				}
+			}
+
+			b.ResetTimer()
 			err = op.Start(testutil.NewMockPersister("test"))
 			defer op.Stop()
 			require.NoError(b, err)
 
-			file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0666)
-			require.NoError(b, err)
+			// write the remainder of lines while running
+			go func() {
+				for i := mid; i < b.N; i++ {
+					for _, file := range files {
+						file.log(i)
+					}
+				}
+			}()
 
-			for i := 0; i < b.N; i++ {
-				file.WriteString("testlog\n")
-			}
-
-			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
+			for i := 0; i < b.N*len(files); i++ {
 				<-fakeOutput.Received
 			}
 		})
