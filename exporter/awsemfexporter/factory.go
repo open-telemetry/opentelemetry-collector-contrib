@@ -56,7 +56,7 @@ func createDefaultConfig() config.Exporter {
 
 // createMetricsExporter creates a metrics exporter based on this config.
 func createMetricsExporter(_ context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	config config.Exporter) (component.MetricsExporter, error) {
 
 	expCfg := config.(*Config)

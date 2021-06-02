@@ -15,7 +15,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.7.0
 	github.com/tinylib/msgp v1.1.5 // indirect
-	go.opentelemetry.io/collector v0.27.1-0.20210602074751-622c0ccc86fc
+	go.opentelemetry.io/collector v0.27.1-0.20210602134904-017aa1dad750
 	go.uber.org/zap v1.17.0
 )
 

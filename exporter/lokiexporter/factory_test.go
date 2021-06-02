@@ -96,7 +96,7 @@ func TestFactory_CreateLogExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
-			creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+			creationParams := component.ExporterCreateSettings{Logger: zap.NewNop()}
 			exp, err := factory.CreateLogsExporter(context.Background(), creationParams, &tt.config)
 			if (err != nil) != tt.shouldError {
 				t.Errorf("CreateLogsExporter() error = %v, shouldError %v", err, tt.shouldError)

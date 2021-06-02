@@ -29,7 +29,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := createDefaultConfig()
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
 	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")

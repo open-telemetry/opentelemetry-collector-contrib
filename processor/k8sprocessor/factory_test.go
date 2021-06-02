@@ -39,7 +39,7 @@ func TestCreateProcessor(t *testing.T) {
 	kubeClientProvider = newFakeClient
 
 	cfg := factory.CreateDefaultConfig()
-	params := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	params := component.ProcessorCreateSettings{Logger: zap.NewNop()}
 
 	tp, err := factory.CreateTracesProcessor(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)

@@ -72,7 +72,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 
 	_, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{
+		component.ReceiverCreateSettings{
 			Logger: zaptest.NewLogger(t),
 		},
 		cfg,
@@ -88,7 +88,7 @@ func TestReadStaticFile(t *testing.T) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
+	params := component.ReceiverCreateSettings{Logger: zaptest.NewLogger(t)}
 
 	cfg := testdataConfigYamlAsMap()
 	cfg.Converter.MaxFlushCount = 10
@@ -178,7 +178,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
+	params := component.ReceiverCreateSettings{Logger: zaptest.NewLogger(t)}
 
 	cfg := testdataRotateTestYamlAsMap(tempDir)
 	cfg.Converter.MaxFlushCount = 1

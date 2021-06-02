@@ -58,7 +58,7 @@ func createDefaultConfig() config.Receiver {
 // CreateMetricsReceiver creates an AWS ECS Container Metrics receiver.
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	params component.ReceiverCreateSettings,
 	baseCfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {

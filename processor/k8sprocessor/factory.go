@@ -54,7 +54,7 @@ func createDefaultConfig() config.Processor {
 
 func createTracesProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	next consumer.Traces,
 ) (component.TracesProcessor, error) {
@@ -63,7 +63,7 @@ func createTracesProcessor(
 
 func createLogsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextLogsConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
@@ -72,7 +72,7 @@ func createLogsProcessor(
 
 func createMetricsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextMetricsConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
@@ -81,7 +81,7 @@ func createMetricsProcessor(
 
 func createTracesProcessorWithOptions(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	next consumer.Traces,
 	options ...Option,
@@ -102,7 +102,7 @@ func createTracesProcessorWithOptions(
 
 func createMetricsProcessorWithOptions(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextMetricsConsumer consumer.Metrics,
 	options ...Option,
@@ -123,7 +123,7 @@ func createMetricsProcessorWithOptions(
 
 func createLogsProcessorWithOptions(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextLogsConsumer consumer.Logs,
 	options ...Option,
@@ -143,7 +143,7 @@ func createLogsProcessorWithOptions(
 }
 
 func createKubernetesProcessor(
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	options ...Option,
 ) (*kubernetesprocessor, error) {

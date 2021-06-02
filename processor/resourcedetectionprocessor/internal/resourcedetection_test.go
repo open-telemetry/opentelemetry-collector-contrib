@@ -88,14 +88,14 @@ func TestDetect(t *testing.T) {
 				md.On("Detect").Return(res, nil)
 
 				mockDetectorType := DetectorType(fmt.Sprintf("mockdetector%v", i))
-				mockDetectors[mockDetectorType] = func(component.ProcessorCreateParams, DetectorConfig) (Detector, error) {
+				mockDetectors[mockDetectorType] = func(component.ProcessorCreateSettings, DetectorConfig) (Detector, error) {
 					return md, nil
 				}
 				mockDetectorTypes = append(mockDetectorTypes, mockDetectorType)
 			}
 
 			f := NewProviderFactory(mockDetectors)
-			p, err := f.CreateResourceProvider(component.ProcessorCreateParams{Logger: zap.NewNop()}, time.Second, &mockDetectorConfig{}, mockDetectorTypes...)
+			p, err := f.CreateResourceProvider(component.ProcessorCreateSettings{Logger: zap.NewNop()}, time.Second, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
 			got, err := p.Get(context.Background())
@@ -111,18 +111,18 @@ func TestDetect(t *testing.T) {
 func TestDetectResource_InvalidDetectorType(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{})
-	_, err := p.CreateResourceProvider(component.ProcessorCreateParams{Logger: zap.NewNop()}, time.Second, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(component.ProcessorCreateSettings{Logger: zap.NewNop()}, time.Second, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("invalid detector key: %v", mockDetectorKey))
 }
 
 func TestDetectResource_DetectoryFactoryError(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{
-		mockDetectorKey: func(component.ProcessorCreateParams, DetectorConfig) (Detector, error) {
+		mockDetectorKey: func(component.ProcessorCreateSettings, DetectorConfig) (Detector, error) {
 			return nil, errors.New("creation failed")
 		},
 	})
-	_, err := p.CreateResourceProvider(component.ProcessorCreateParams{Logger: zap.NewNop()}, time.Second, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(component.ProcessorCreateSettings{Logger: zap.NewNop()}, time.Second, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 

@@ -33,7 +33,7 @@ func TestNewFactory(t *testing.T) {
 func TestCreateMetricsReceiver(t *testing.T) {
 	metricsReceiver, _ := createMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		component.ReceiverCreateSettings{Logger: zap.NewNop()},
 		createDefaultConfig(),
 		&testbed.MockMetricConsumer{},
 	)

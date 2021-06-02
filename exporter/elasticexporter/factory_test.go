@@ -39,7 +39,7 @@ func TestCreateExporter(t *testing.T) {
 
 	te, err := factory.CreateTracesExporter(
 		context.Background(),
-		component.ExporterCreateParams{Logger: zap.NewNop()},
+		component.ExporterCreateSettings{Logger: zap.NewNop()},
 		eCfg,
 	)
 	assert.NoError(t, err)
@@ -47,7 +47,7 @@ func TestCreateExporter(t *testing.T) {
 
 	me, err := factory.CreateMetricsExporter(
 		context.Background(),
-		component.ExporterCreateParams{Logger: zap.NewNop()},
+		component.ExporterCreateSettings{Logger: zap.NewNop()},
 		eCfg,
 	)
 	assert.NoError(t, err)

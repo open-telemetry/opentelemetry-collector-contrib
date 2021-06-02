@@ -50,7 +50,7 @@ func (se *sapmExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-func newSAPMExporter(cfg *Config, params component.ExporterCreateParams) (sapmExporter, error) {
+func newSAPMExporter(cfg *Config, params component.ExporterCreateSettings) (sapmExporter, error) {
 	err := cfg.validate()
 	if err != nil {
 		return sapmExporter{}, err
@@ -68,7 +68,7 @@ func newSAPMExporter(cfg *Config, params component.ExporterCreateParams) (sapmEx
 	}, err
 }
 
-func newSAPMTracesExporter(cfg *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
+func newSAPMTracesExporter(cfg *Config, params component.ExporterCreateSettings) (component.TracesExporter, error) {
 	se, err := newSAPMExporter(cfg, params)
 	if err != nil {
 		return nil, err

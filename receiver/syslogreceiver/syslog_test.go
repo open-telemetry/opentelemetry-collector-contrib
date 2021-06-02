@@ -48,7 +48,7 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 	numLogs := 5
 
 	f := NewFactory()
-	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
+	params := component.ReceiverCreateSettings{Logger: zaptest.NewLogger(t)}
 	sink := new(consumertest.LogsSink)
 	rcvr, err := f.CreateLogsReceiver(context.Background(), params, cfg, sink)
 	require.NoError(t, err)
@@ -140,7 +140,7 @@ func testdataUDPConfig() *SysLogConfig {
 }
 
 func TestDecodeInputConfigFailure(t *testing.T) {
-	params := component.ReceiverCreateParams{
+	params := component.ReceiverCreateSettings{
 		Logger: zap.NewNop(),
 	}
 	sink := new(consumertest.LogsSink)

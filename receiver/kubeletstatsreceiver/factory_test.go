@@ -52,7 +52,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
 	traceReceiver, err := factory.CreateTracesReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		component.ReceiverCreateSettings{Logger: zap.NewNop()},
 		factory.CreateDefaultConfig(),
 		nil,
 	)
@@ -64,7 +64,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	metricsReceiver, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		component.ReceiverCreateSettings{Logger: zap.NewNop()},
 		tlsConfig(),
 		&testbed.MockMetricConsumer{},
 	)
@@ -79,7 +79,7 @@ func TestFactoryInvalidExtraMetadataLabels(t *testing.T) {
 	}
 	metricsReceiver, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		component.ReceiverCreateSettings{Logger: zap.NewNop()},
 		&cfg,
 		&testbed.MockMetricConsumer{},
 	)
@@ -99,7 +99,7 @@ func TestFactoryBadAuthType(t *testing.T) {
 	}
 	_, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		component.ReceiverCreateSettings{Logger: zap.NewNop()},
 		cfg,
 		&testbed.MockMetricConsumer{},
 	)

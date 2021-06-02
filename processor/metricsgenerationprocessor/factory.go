@@ -47,7 +47,7 @@ func createDefaultConfig() config.Processor {
 
 func createMetricsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {

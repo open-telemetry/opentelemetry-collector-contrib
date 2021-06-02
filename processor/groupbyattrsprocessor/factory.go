@@ -87,7 +87,7 @@ func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) (*grou
 // createTracesProcessor creates a trace processor based on this config.
 func createTracesProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 
@@ -107,7 +107,7 @@ func createTracesProcessor(
 // createLogsProcessor creates a metrics processor based on this config.
 func createLogsProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 

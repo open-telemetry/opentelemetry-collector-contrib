@@ -9,7 +9,7 @@ require (
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.27.1-0.20210602074751-622c0ccc86fc
+	go.opentelemetry.io/collector v0.27.1-0.20210602134904-017aa1dad750
 	go.uber.org/zap v1.17.0
 	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
 	google.golang.org/api v0.47.0

@@ -33,7 +33,7 @@ func TestCreateTracesExporterUsingSpecificTransportChannel(t *testing.T) {
 	// mock transport channel creation
 	f := factory{tChannel: &mockTransportChannel{}}
 	ctx := context.Background()
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	exporter, err := f.createTracesExporter(ctx, params, createDefaultConfig())
 	assert.NotNil(t, exporter)
 	assert.Nil(t, err)
@@ -45,7 +45,7 @@ func TestCreateTracesExporterUsingDefaultTransportChannel(t *testing.T) {
 	assert.Nil(t, f.tChannel)
 	ctx := context.Background()
 	logger, _ := zap.NewDevelopment()
-	params := component.ExporterCreateParams{Logger: logger}
+	params := component.ExporterCreateSettings{Logger: logger}
 	exporter, err := f.createTracesExporter(ctx, params, createDefaultConfig())
 	assert.NotNil(t, exporter)
 	assert.Nil(t, err)
@@ -57,7 +57,7 @@ func TestCreateTracesExporterUsingBadConfig(t *testing.T) {
 	f := factory{}
 	assert.Nil(t, f.tChannel)
 	ctx := context.Background()
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 
 	badConfig := &badConfig{}
 
