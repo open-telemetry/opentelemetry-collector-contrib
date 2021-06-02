@@ -44,7 +44,7 @@ func createDefaultConfig() config.Extension {
 
 func createExtension(
 	_ context.Context,
-	params component.ExtensionCreateParams,
+	params component.ExtensionCreateSettings,
 	cfg config.Extension,
 ) (component.Extension, error) {
 	return newLocalFileStorage(params.Logger, cfg.(*Config))

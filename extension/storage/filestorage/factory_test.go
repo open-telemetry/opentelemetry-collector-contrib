@@ -81,7 +81,7 @@ func TestFactory(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			e, err := f.CreateExtension(
 				context.Background(),
-				component.ExtensionCreateParams{
+				component.ExtensionCreateSettings{
 					Logger: zap.NewNop(),
 				},
 				test.config,
