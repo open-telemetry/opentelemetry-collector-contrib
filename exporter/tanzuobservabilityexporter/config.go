@@ -16,6 +16,7 @@ package tanzuobservabilityexporter
 
 import (
 	"fmt"
+	"net/url"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -36,6 +37,9 @@ type Config struct {
 func (c *Config) Validate() error {
 	if c.Traces.Endpoint == "" {
 		return fmt.Errorf("A non-empty traces.endpoint is required")
+	}
+	if _, err := url.Parse(c.Traces.Endpoint); err != nil {
+		return fmt.Errorf("invalid traces.endpoint %s", err)
 	}
 	return nil
 }

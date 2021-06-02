@@ -55,7 +55,7 @@ const (
 	eventNameTag        string = "name"
 	eventAttrTag        string = "attributes"
 	eventTimeTag        string = "time"
-	// max meta value from
+	// MaxMetaValLen value from
 	// https://github.com/DataDog/datadog-agent/blob/140a4ee164261ef2245340c50371ba989fbeb038/pkg/trace/traceutil/truncate.go#L23.
 	MaxMetaValLen int = 5000
 	// tagContainersTags specifies the name of the tag which holds key/value
@@ -64,7 +64,7 @@ const (
 )
 
 // converts Traces into an array of datadog trace payloads grouped by env
-func convertToDatadogTd(td pdata.Traces, fallbackHost string, calculator *sublayerCalculator, cfg *config.Config, blk *denylister, buildInfo component.BuildInfo) ([]*pb.TracePayload, []datadog.Metric) {
+func convertToDatadogTd(td pdata.Traces, fallbackHost string, cfg *config.Config, blk *denylister, buildInfo component.BuildInfo) ([]*pb.TracePayload, []datadog.Metric) {
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
 	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
@@ -73,7 +73,8 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, calculator *sublay
 
 	var traces []*pb.TracePayload
 
-	var runningMetrics []datadog.Metric
+	seenHosts := make(map[string]struct{})
+	var series []datadog.Metric
 	pushTime := pdata.TimestampFromTime(time.Now())
 
 	spanNameMap := cfg.Traces.SpanNameRemappings
@@ -85,14 +86,19 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, calculator *sublay
 			host = fallbackHost
 		}
 
-		payload := resourceSpansToDatadogSpans(rs, calculator, host, cfg, blk, spanNameMap)
-		traces = append(traces, &payload)
+		seenHosts[host] = struct{}{}
+		payload := resourceSpansToDatadogSpans(rs, host, cfg, blk, spanNameMap)
 
-		ms := metrics.DefaultMetrics("traces", host, uint64(pushTime), buildInfo)
-		runningMetrics = append(runningMetrics, ms...)
+		traces = append(traces, &payload)
 	}
 
-	return traces, runningMetrics
+	for host := range seenHosts {
+		// Report the host as running
+		runningMetric := metrics.DefaultMetrics("traces", host, uint64(pushTime), buildInfo)
+		series = append(series, runningMetric...)
+	}
+
+	return traces, series
 }
 
 func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePayload {
@@ -122,7 +128,7 @@ func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePa
 }
 
 // converts a Trace's resource spans into a trace payload
-func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCalculator, hostname string, cfg *config.Config, blk *denylister, spanNameMap map[string]string) pb.TracePayload {
+func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *config.Config, blk *denylister, spanNameMap map[string]string) pb.TracePayload {
 	// get env tag
 	env := utils.NormalizeTag(cfg.Env)
 
@@ -202,10 +208,6 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 		// TODO: allow users to configure specific spans to be marked as an analyzed spans for app analytics
 		top := getAnalyzedSpans(apiTrace.Spans)
 
-		// calculates span metrics for representing direction and timing among it's different services for display in
-		// service overview graphs
-		// see: https://github.com/DataDog/datadog-agent/blob/f69a7d35330c563e9cad4c5b8865a357a87cd0dc/pkg/trace/stats/sublayers.go#L204
-		computeSublayerMetrics(calculator, apiTrace.Spans)
 		payload.Transactions = append(payload.Transactions, top...)
 		payload.Traces = append(payload.Traces, apiTrace)
 	}

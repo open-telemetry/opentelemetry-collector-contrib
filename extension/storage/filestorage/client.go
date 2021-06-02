@@ -94,6 +94,6 @@ func (c *fileStorageClient) Delete(_ context.Context, key string) error {
 }
 
 // Close will close the database
-func (c *fileStorageClient) close() error {
+func (c *fileStorageClient) Close(_ context.Context) error {
 	return c.db.Close()
 }

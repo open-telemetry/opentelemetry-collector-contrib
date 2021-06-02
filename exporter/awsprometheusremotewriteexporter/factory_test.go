@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -71,35 +72,47 @@ func TestCreateMetricsExporter(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		cfg         config.Exporter
-		params      component.ExporterCreateParams
-		returnError bool
+		name                string
+		cfg                 config.Exporter
+		params              component.ExporterCreateParams
+		returnErrorOnCreate bool
+		returnErrorOnStart  bool
 	}{
-		{"success_case_with_auth",
-			validConfigWithAuth,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
-			false,
+		{
+			name:                "success_case_with_auth",
+			cfg:                 validConfigWithAuth,
+			params:              component.ExporterCreateParams{Logger: zap.NewNop()},
+			returnErrorOnCreate: false,
 		},
-		{"invalid_config_case",
-			invalidConfig,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
-			true,
+		{
+			name:                "invalid_config_case",
+			cfg:                 invalidConfig,
+			params:              component.ExporterCreateParams{Logger: zap.NewNop()},
+			returnErrorOnCreate: true,
 		},
-		{"invalid_tls_config_case",
-			invalidTLSConfig,
-			component.ExporterCreateParams{Logger: zap.NewNop()},
-			true,
+		{
+			name:               "invalid_tls_config_case",
+			cfg:                invalidTLSConfig,
+			params:             component.ExporterCreateParams{Logger: zap.NewNop()},
+			returnErrorOnStart: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := af.CreateMetricsExporter(context.Background(), tt.params, tt.cfg)
-			if tt.returnError {
+			exp, err := af.CreateMetricsExporter(context.Background(), tt.params, tt.cfg)
+			if tt.returnErrorOnCreate {
 				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
+			assert.NotNil(t, exp)
+			err = exp.Start(context.Background(), componenttest.NewNopHost())
+			if tt.returnErrorOnStart {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.NoError(t, exp.Shutdown(context.Background()))
 		})
 	}
 }

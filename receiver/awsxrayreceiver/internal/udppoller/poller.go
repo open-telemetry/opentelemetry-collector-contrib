@@ -171,7 +171,7 @@ func (p *poller) poll() {
 		case <-p.shutDown:
 			return
 		default:
-			ctx := p.obsrecv.StartTraceDataReceiveOp(
+			ctx := p.obsrecv.StartTracesOp(
 				p.receiverLongLivedCtx,
 				obsreport.WithLongLivedCtx())
 
@@ -181,11 +181,11 @@ func (p *poller) poll() {
 				// TODO: We may want to attempt to shutdown/clean the broken socket and open a new one
 				// with the same address
 				p.logger.Error("Irrecoverable socket read error. Exiting poller", zap.Error(err))
-				p.obsrecv.EndTraceDataReceiveOp(ctx, awsxray.TypeStr, 1, err)
+				p.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, 1, err)
 				return
 			} else if errors.As(err, &errRecv) {
 				p.logger.Error("Recoverable socket read error", zap.Error(err))
-				p.obsrecv.EndTraceDataReceiveOp(ctx, awsxray.TypeStr, 1, err)
+				p.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, 1, err)
 				continue
 			}
 
@@ -197,7 +197,7 @@ func (p *poller) poll() {
 			if errors.As(err, &errRecv) {
 				p.logger.Error("Failed to split segment header and body",
 					zap.Error(err))
-				p.obsrecv.EndTraceDataReceiveOp(ctx, awsxray.TypeStr, 1, err)
+				p.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, 1, err)
 				continue
 			}
 
@@ -206,7 +206,7 @@ func (p *poller) poll() {
 					zap.String("header format", header.Format),
 					zap.Int("header version", header.Version),
 				)
-				p.obsrecv.EndTraceDataReceiveOp(ctx, awsxray.TypeStr, 1,
+				p.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, 1,
 					errors.New("dropped span due to missing body that contains segment"))
 				continue
 			}

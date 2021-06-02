@@ -28,9 +28,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 )
 
-const (
-	TypeStr = "gce"
-)
+// TypeStr is type of detector.
+const TypeStr = "gce"
 
 var _ internal.Detector = (*Detector)(nil)
 

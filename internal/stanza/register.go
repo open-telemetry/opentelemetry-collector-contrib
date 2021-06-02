@@ -22,6 +22,7 @@ import (
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/time"
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/trace"
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/metadata"
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/recombine"
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/restructure"
 	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/router"
 )

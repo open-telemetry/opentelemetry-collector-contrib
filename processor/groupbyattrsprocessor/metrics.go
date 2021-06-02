@@ -33,44 +33,42 @@ var (
 func MetricViews() []*view.View {
 	distributionGroups := view.Distribution(1, 2, 5, 10, 20, 50, 100, 500, 2000)
 
-	legacyViews := []*view.View{
+	return []*view.View{
 		{
-			Name:        mNumGroupedSpans.Name(),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumGroupedSpans.Name()),
 			Measure:     mNumGroupedSpans,
 			Description: mNumGroupedSpans.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        mNumNonGroupedSpans.Name(),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumNonGroupedSpans.Name()),
 			Measure:     mNumNonGroupedSpans,
 			Description: mNumNonGroupedSpans.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        mDistSpanGroups.Name(),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mDistSpanGroups.Name()),
 			Measure:     mDistSpanGroups,
 			Description: mDistSpanGroups.Description(),
 			Aggregation: distributionGroups,
 		},
 		{
-			Name:        mNumGroupedLogs.Name(),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumGroupedLogs.Name()),
 			Measure:     mNumGroupedLogs,
 			Description: mNumGroupedLogs.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        mNumNonGroupedLogs.Name(),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumNonGroupedLogs.Name()),
 			Measure:     mNumNonGroupedLogs,
 			Description: mNumNonGroupedLogs.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        mDistLogGroups.Name(),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mDistLogGroups.Name()),
 			Measure:     mDistLogGroups,
 			Description: mDistLogGroups.Description(),
 			Aggregation: distributionGroups,
 		},
 	}
-
-	return obsreport.ProcessorMetricViews(string(typeStr), legacyViews)
 }

@@ -24,6 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -216,7 +217,7 @@ func TestInvalidSourceFormats(t *testing.T) {
 }
 
 func TestInvalidHTTPCLient(t *testing.T) {
-	_, err := initExporter(&Config{
+	se, err := initExporter(&Config{
 		LogFormat:        "json",
 		MetricFormat:     "carbon2",
 		CompressEncoding: "gzip",
@@ -227,6 +228,10 @@ func TestInvalidHTTPCLient(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
+	require.NotNil(t, se)
+
+	err = se.start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, "failed to create HTTP Client: roundTripperException")
 }
 

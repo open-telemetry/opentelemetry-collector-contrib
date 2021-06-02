@@ -138,7 +138,9 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 	assert.Eventuallyf(t, func() bool {
 		select {
 		case seg, open := <-p.(*poller).segChan:
-			obsreport.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, 1, nil)
+			obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.NewID(awsxray.TypeStr)})
+			ctx := obsrecv.StartMetricsOp(seg.Ctx)
+			obsrecv.EndTracesOp(ctx, awsxray.TypeStr, 1, nil)
 			return open && randString.String() == string(seg.Payload)
 		default:
 			return false

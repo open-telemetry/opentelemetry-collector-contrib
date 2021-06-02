@@ -57,6 +57,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 			},
 			DeltaTTL:      3600,
 			SendMonotonic: true,
+			Quantiles:     true,
 		},
 
 		Traces: ddconfig.TracesConfig{
@@ -90,7 +91,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -121,6 +122,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 			DeltaTTL:      3600,
 			SendMonotonic: true,
+			Quantiles:     true,
 		},
 
 		Traces: ddconfig.TracesConfig{
@@ -160,6 +162,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 			SendMonotonic: true,
 			DeltaTTL:      3600,
+			Quantiles:     true,
 		},
 
 		Traces: ddconfig.TracesConfig{
@@ -209,7 +212,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -241,6 +244,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 				Endpoint: "https://api.datadoghq.test",
 			},
 			SendMonotonic: true,
+			Quantiles:     false,
 			DeltaTTL:      3600,
 		},
 
@@ -285,6 +289,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 			},
 			SendMonotonic: true,
 			DeltaTTL:      3600,
+			Quantiles:     true,
 		},
 
 		Traces: ddconfig.TracesConfig{
@@ -311,7 +316,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -343,7 +348,7 @@ func TestCreateAPITracesExporter(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)

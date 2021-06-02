@@ -67,6 +67,10 @@ func TestStorage(t *testing.T) {
 	require.Nil(t, val)
 
 	require.NoError(t, r.Shutdown(ctx))
+
+	_, err = r.storageClient.Get(ctx, "key")
+	require.Error(t, err)
+	require.Equal(t, "database not open", err.Error())
 }
 
 func TestFailOnMultipleStorageExtensions(t *testing.T) {

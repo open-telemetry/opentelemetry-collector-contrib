@@ -42,6 +42,12 @@ func (h *httpForwarder) Start(_ context.Context, host component.Host) error {
 		return fmt.Errorf("failed to bind to address %s: %w", h.config.Ingress.Endpoint, err)
 	}
 
+	httpClient, err := h.config.Egress.ToClient()
+	if err != nil {
+		return fmt.Errorf("failed to create HTTP Client: %w", err)
+	}
+	h.httpClient = httpClient
+
 	handler := http.NewServeMux()
 	handler.HandleFunc("/", h.forwardRequest)
 
@@ -117,16 +123,10 @@ func newHTTPForwarder(config *Config, logger *zap.Logger) (component.Extension, 
 		return nil, fmt.Errorf("enter a valid URL for 'egress.endpoint': %w", err)
 	}
 
-	httpClient, err := config.Egress.ToClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
-	}
-
 	h := &httpForwarder{
-		config:     config,
-		forwardTo:  url,
-		httpClient: httpClient,
-		logger:     logger,
+		config:    config,
+		forwardTo: url,
+		logger:    logger,
 	}
 
 	return h, nil

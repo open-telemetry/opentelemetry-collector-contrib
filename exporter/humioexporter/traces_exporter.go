@@ -19,6 +19,7 @@ import (
 	"errors"
 	"sync"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -53,13 +54,35 @@ type humioTracesExporter struct {
 	logger *zap.Logger
 	client exporterClient
 	wg     sync.WaitGroup
+
+	// Needed to enable current unit tests with the latest changes from core collector.
+	getClient clientGetter
 }
 
-func newTracesExporter(cfg *Config, logger *zap.Logger, client exporterClient) *humioTracesExporter {
+type clientGetter func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error)
+
+func newTracesExporter(cfg *Config, logger *zap.Logger) *humioTracesExporter {
+	gc := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+		client, err := newHumioClient(cfg, logger, host)
+		if err != nil {
+			return nil, err
+		}
+
+		return client, nil
+	}
+
 	return &humioTracesExporter{
-		cfg:    cfg,
-		logger: logger,
-		client: client,
+		cfg:       cfg,
+		logger:    logger,
+		getClient: gc,
+	}
+}
+
+func newTracesExporterWithClientGetter(cfg *Config, logger *zap.Logger, cg clientGetter) *humioTracesExporter {
+	return &humioTracesExporter{
+		cfg:       cfg,
+		logger:    logger,
+		getClient: cg,
 	}
 }
 
@@ -233,6 +256,18 @@ func tagFromSpan(evt *HumioStructuredEvent, strategy Tagger) string {
 	default: // TagNone
 		return ""
 	}
+}
+
+// start starts the exporter
+func (e *humioTracesExporter) start(_ context.Context, host component.Host) error {
+	client, err := e.getClient(e.cfg, e.logger, host)
+	if err != nil {
+		return err
+	}
+
+	e.client = client
+
+	return nil
 }
 
 func (e *humioTracesExporter) shutdown(context.Context) error {
