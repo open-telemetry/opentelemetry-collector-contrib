@@ -32,7 +32,7 @@ import (
 )
 
 type traceExporter struct {
-	params         component.ExporterCreateParams
+	params         component.ExporterCreateSettings
 	cfg            *config.Config
 	ctx            context.Context
 	edgeConnection TraceEdgeConnection
@@ -59,7 +59,7 @@ var (
 	}
 )
 
-func newTracesExporter(ctx context.Context, params component.ExporterCreateParams, cfg *config.Config) *traceExporter {
+func newTracesExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config) *traceExporter {
 	// client to send running metric to the backend & perform API key validation
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	utils.ValidateAPIKey(params.Logger, client)

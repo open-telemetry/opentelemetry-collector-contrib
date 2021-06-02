@@ -182,7 +182,7 @@ func runMetricsExport(disableCompression bool, numberOfDataPoints int, t *testin
 		panic(s.Serve(listener))
 	}()
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
@@ -221,7 +221,7 @@ func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (
 		panic(s.Serve(listener))
 	}()
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
@@ -257,7 +257,7 @@ func runLogExport(cfg *Config, ld pdata.Logs, t *testing.T) ([][]byte, error) {
 		panic(s.Serve(listener))
 	}()
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	exporter, err := NewFactory().CreateLogsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
@@ -490,7 +490,7 @@ func TestErrorReceived(t *testing.T) {
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
@@ -534,7 +534,7 @@ func TestInvalidURL(t *testing.T) {
 	cfg.RetrySettings.Enabled = false
 	cfg.Endpoint = "ftp://example.com:134"
 	cfg.Token = "1234-1234"
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))

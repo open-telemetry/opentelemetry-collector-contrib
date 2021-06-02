@@ -69,7 +69,7 @@ func createDefaultConfig() config.Exporter {
 
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	eCfg config.Exporter,
 ) (component.TracesExporter, error) {
 	cfg := eCfg.(*Config)
@@ -98,7 +98,7 @@ func createTracesExporter(
 
 func createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	config config.Exporter,
 ) (component.MetricsExporter, error) {
 
@@ -186,7 +186,7 @@ func loadDefaultExcludes() ([]dpfilters.MetricFilter, error) {
 
 func createLogsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	expCfg := cfg.(*Config)

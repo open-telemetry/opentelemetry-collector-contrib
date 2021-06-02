@@ -61,7 +61,7 @@ func createDefaultConfig() config.Exporter {
 
 func (f *factory) createTracesExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	exporterConfig, ok := cfg.(*Config)

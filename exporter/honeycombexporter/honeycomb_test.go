@@ -89,7 +89,7 @@ func testTracesExporter(td pdata.Traces, t *testing.T, cfg *Config) []honeycombD
 
 	cfg.APIURL = server.URL
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	exporter, err := createTracesExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 

@@ -115,7 +115,7 @@ func (*nopWithEndpointFactory) CreateDefaultConfig() config.Receiver {
 
 func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	ctx context.Context,
-	_ component.ReceiverCreateParams,
+	_ component.ReceiverCreateSettings,
 	_ config.Receiver,
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	return &nopWithEndpointReceiver{

@@ -47,7 +47,7 @@ type MockAwsXrayReceiver struct {
 // New creates a new awsxrayreceiver.MockAwsXrayReceiver reference.
 func New(
 	nextConsumer consumer.Traces,
-	params component.ReceiverCreateParams,
+	params component.ReceiverCreateSettings,
 	config *Config) (*MockAwsXrayReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer

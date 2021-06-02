@@ -11,7 +11,7 @@ require (
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.27.1-0.20210602074751-622c0ccc86fc
+	go.opentelemetry.io/collector v0.27.1-0.20210602134904-017aa1dad750
 	go.uber.org/zap v1.17.0
 	golang.org/x/net v0.0.0-20210427231257-85d9c07bbe3a
 	gopkg.in/ini.v1 v1.57.0 // indirect

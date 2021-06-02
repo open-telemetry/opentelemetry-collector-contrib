@@ -59,7 +59,7 @@ func TestNewTracesExporter(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			// prepare
 			cfg := tt.config
-			params := component.ExporterCreateParams{
+			params := component.ExporterCreateSettings{
 				Logger: zap.NewNop(),
 			}
 
@@ -83,7 +83,7 @@ func TestTracesExporterStart(t *testing.T) {
 			func() *traceExporterImp {
 				// prepare
 				cfg := simpleConfig()
-				params := component.ExporterCreateParams{
+				params := component.ExporterCreateSettings{
 					Logger: zap.NewNop(),
 				}
 
@@ -97,7 +97,7 @@ func TestTracesExporterStart(t *testing.T) {
 			func() *traceExporterImp {
 				// prepare
 				cfg := simpleConfig()
-				params := component.ExporterCreateParams{
+				params := component.ExporterCreateSettings{
 					Logger: zap.NewNop(),
 				}
 
@@ -132,7 +132,7 @@ func TestTracesExporterStart(t *testing.T) {
 func TestTracesExporterShutdown(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	params := component.ExporterCreateParams{
+	params := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 	}
 	p, err := newTracesExporter(params, cfg)
@@ -149,7 +149,7 @@ func TestTracesExporterShutdown(t *testing.T) {
 func TestConsumeTraces(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	params := component.ExporterCreateParams{
+	params := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 	}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
@@ -187,7 +187,7 @@ func TestConsumeTraces(t *testing.T) {
 func TestConsumeTracesExporterNotFound(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	params := component.ExporterCreateParams{
+	params := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 	}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
@@ -224,7 +224,7 @@ func TestConsumeTracesExporterNotFound(t *testing.T) {
 func TestConsumeTracesUnexpectedExporterType(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	params := component.ExporterCreateParams{
+	params := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 	}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
@@ -292,7 +292,7 @@ func TestBuildExporterConfig(t *testing.T) {
 func TestBatchWithTwoTraces(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	params := component.ExporterCreateParams{
+	params := component.ExporterCreateSettings{
 		Logger: zap.NewNop(),
 	}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
@@ -407,7 +407,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 			DNS: &DNSResolver{Hostname: "service-1", Port: ""},
 		},
 	}
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		return newNopMockTracesExporter(), nil
 	}

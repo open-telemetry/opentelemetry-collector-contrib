@@ -37,7 +37,7 @@ func TestDefaultConfiguration(t *testing.T) {
 func TestCreateTestProcessor(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 
-	params := component.ProcessorCreateParams{
+	params := component.ProcessorCreateSettings{
 		Logger: logger,
 	}
 	next := &mockProcessor{}
@@ -53,7 +53,7 @@ func TestCreateTestProcessor(t *testing.T) {
 func TestCreateTestProcessorWithNotImplementedOptions(t *testing.T) {
 	// prepare
 	f := NewFactory()
-	params := component.ProcessorCreateParams{
+	params := component.ProcessorCreateSettings{
 		Logger: logger,
 	}
 	next := &mockProcessor{}

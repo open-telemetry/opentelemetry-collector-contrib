@@ -68,7 +68,7 @@ func TestFactory(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			r, err := f.CreateMetricsReceiver(
 				context.Background(),
-				component.ReceiverCreateParams{},
+				component.ReceiverCreateSettings{},
 				test.config,
 				&testbed.MockMetricConsumer{},
 			)

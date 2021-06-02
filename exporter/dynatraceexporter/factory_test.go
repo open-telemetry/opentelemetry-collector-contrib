@@ -108,7 +108,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	ctx := context.Background()
 	exp, err := factory.CreateMetricsExporter(
 		ctx,
-		component.ExporterCreateParams{Logger: logger},
+		component.ExporterCreateSettings{Logger: logger},
 		cfg.Exporters[config.NewIDWithName(typeStr, "valid")],
 	)
 
@@ -132,7 +132,7 @@ func TestCreateAPIMetricsExporterInvalid(t *testing.T) {
 	ctx := context.Background()
 	exp, err := factory.CreateMetricsExporter(
 		ctx,
-		component.ExporterCreateParams{Logger: logger},
+		component.ExporterCreateSettings{Logger: logger},
 		cfg.Exporters[config.NewIDWithName(typeStr, "invalid")],
 	)
 

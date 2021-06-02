@@ -26,7 +26,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var creationParams = component.ReceiverCreateParams{Logger: zap.NewNop()}
+var creationParams = component.ReceiverCreateSettings{Logger: zap.NewNop()}
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()

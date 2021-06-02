@@ -55,7 +55,7 @@ func createDefaultConfig() config.Exporter {
 // CreateTracesExporter creates a New Relic trace exporter for this configuration.
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	nrConfig, ok := cfg.(*Config)
@@ -80,7 +80,7 @@ func createTracesExporter(
 // CreateMetricsExporter creates a New Relic metrics exporter for this configuration.
 func createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	nrConfig, ok := cfg.(*Config)
@@ -104,7 +104,7 @@ func createMetricsExporter(
 // CreateLogsExporter creates a New Relic logs exporter for this configuration.
 func createLogsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	nrConfig, ok := cfg.(*Config)

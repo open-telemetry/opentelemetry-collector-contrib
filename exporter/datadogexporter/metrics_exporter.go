@@ -30,14 +30,14 @@ import (
 )
 
 type metricsExporter struct {
-	params  component.ExporterCreateParams
+	params  component.ExporterCreateSettings
 	cfg     *config.Config
 	ctx     context.Context
 	client  *datadog.Client
 	prevPts *ttlmap.TTLMap
 }
 
-func newMetricsExporter(ctx context.Context, params component.ExporterCreateParams, cfg *config.Config) *metricsExporter {
+func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config) *metricsExporter {
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.BuildInfo)
 	client.HttpClient = utils.NewHTTPClient(10 * time.Second)
