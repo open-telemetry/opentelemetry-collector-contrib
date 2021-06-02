@@ -376,6 +376,7 @@ func TestSanitizeApiKeyForLogging(t *testing.T) {
 	assert.Equal(t, "", sanitizeAPIKeyForLogging(""))
 	assert.Equal(t, "foo", sanitizeAPIKeyForLogging("foo"))
 	assert.Equal(t, "foobarba", sanitizeAPIKeyForLogging("foobarbazqux"))
+	assert.Equal(t, "eu01xxfoobarba", sanitizeAPIKeyForLogging("eu01xxfoobarbazqux"))
 }
 
 func TestMetadataHasDefaultValuesSet(t *testing.T) {
