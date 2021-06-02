@@ -42,6 +42,7 @@ func NewInputConfig(operatorID string) *InputConfig {
 		IncludeFileName:    true,
 		IncludeFilePath:    false,
 		StartAt:            "end",
+		FingerprintSize:    defaultFingerprintSize,
 		MaxLogSize:         defaultMaxLogSize,
 		MaxConcurrentFiles: defaultMaxConcurrentFiles,
 		Encoding:           helper.NewEncodingConfig(),

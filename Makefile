@@ -25,7 +25,7 @@ test-only:
 
 .PHONY: bench
 bench:
-	$(MAKE) for-all CMD="go test -run=NONE -bench '.*' ./... -benchmem"
+	go test -benchmem -run=^$$ -bench ^* ./...
 
 .PHONY: clean
 clean:
