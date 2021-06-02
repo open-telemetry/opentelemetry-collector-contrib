@@ -27,9 +27,9 @@ type Denylister struct {
 	list []*regexp.Regexp
 }
 
-// Allows returns true if the Denylister permits this span.
+// allows returns true if the Denylister permits this span.
 // From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/filters/blacklister.go#L21-L29
-func (f *Denylister) Allows(span *pb.Span) bool {
+func (f *Denylister) allows(span *pb.Span) bool {
 	for _, entry := range f.list {
 		if entry.MatchString(span.Resource) {
 			return false
@@ -38,10 +38,10 @@ func (f *Denylister) Allows(span *pb.Span) bool {
 	return true
 }
 
-// NewDenylister creates a new Denylister based on the given list of
+// newDenylister creates a new Denylister based on the given list of
 // regular expressions.
 // From: https://github.com/DataDog/datadog-agent/blob/a6872e436681ea2136cf8a67465e99fdb4450519/pkg/trace/filters/blacklister.go#L41-L45
-func NewDenylister(exprs []string) *Denylister {
+func newDenylister(exprs []string) *Denylister {
 	return &Denylister{list: compileRules(exprs)}
 }
 

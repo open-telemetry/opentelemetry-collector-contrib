@@ -192,7 +192,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 		// Root span is used to carry some trace-level metadata, such as sampling rate and priority.
 		rootSpan := utils.GetRoot(apiTrace)
 
-		if !blk.Allows(rootSpan) {
+		if !blk.allows(rootSpan) {
 			// drop trace by not adding to payload if it's root span matches denylist
 			continue
 		}

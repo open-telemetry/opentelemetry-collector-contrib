@@ -106,11 +106,10 @@ type TracesConfig struct {
 	IgnoreResources []string `mapstructure:"ignore_resources"`
 
 	// SpanNameRemappings is the map of datadog span names and preferred name to map to. This can be used to
-	// automatically map Datadog Span Operation Names to an updated value, and is useful when a user wants to
-	// shorten or modify span names to something more user friendly in the case of instrumentation libraries with
-	// particularly verbose names. All entries must be surrounded by double quotes and be separated by commas, with each entry
-	// between old and updated name separated by a space.
-	// span_name_remappings: ["io.opentelemetry.javaagent.spring.client spring.client", "instrumentation::express.server express"]
+	// automatically map Datadog Span Operation Names to an updated value. All entries should be key/value pairs.
+	// span_name_remappings:
+	//   io.opentelemetry.javaagent.spring.client: spring.client
+	//   instrumentation::express.server: express
 	SpanNameRemappings map[string]string `mapstructure:"span_name_remappings"`
 }
 

@@ -87,7 +87,7 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateParam
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
 
 	// a denylist for dropping ignored resources
-	denylister := NewDenylister(cfg.Traces.IgnoreResources)
+	denylister := newDenylister(cfg.Traces.IgnoreResources)
 
 	calculator := &sublayerCalculator{sc: stats.NewSublayerCalculator()}
 	exporter := &traceExporter{

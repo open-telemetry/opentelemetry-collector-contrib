@@ -138,7 +138,7 @@ func TestConvertToDatadogTd(t *testing.T) {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().AppendEmpty()
 	calculator := newSublayerCalculator()
-	denylister := NewDenylister([]string{})
+	denylister := newDenylister([]string{})
 	buildInfo := component.BuildInfo{
 		Version: "1.0",
 	}
@@ -151,7 +151,7 @@ func TestConvertToDatadogTd(t *testing.T) {
 func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 	traces := pdata.NewTraces()
 	calculator := newSublayerCalculator()
-	denylister := NewDenylister([]string{})
+	denylister := newDenylister([]string{})
 	buildInfo := component.BuildInfo{
 		Version: "1.0",
 	}
@@ -184,7 +184,7 @@ func TestRunningTraces(t *testing.T) {
 		Version: "1.0",
 	}
 
-	_, runningMetrics := convertToDatadogTd(td, "fallbackHost", newSublayerCalculator(), &config.Config{}, NewDenylister([]string{}), buildInfo)
+	_, runningMetrics := convertToDatadogTd(td, "fallbackHost", newSublayerCalculator(), &config.Config{}, newDenylister([]string{}), buildInfo)
 
 	runningHostnames := []string{}
 	for _, metric := range runningMetrics {
@@ -201,7 +201,7 @@ func TestRunningTraces(t *testing.T) {
 
 func TestObfuscation(t *testing.T) {
 	calculator := newSublayerCalculator()
-	denylister := NewDenylister([]string{})
+	denylister := newDenylister([]string{})
 	buildInfo := component.BuildInfo{
 		Version: "1.0",
 	}
@@ -236,7 +236,7 @@ func TestObfuscation(t *testing.T) {
 func TestBasicTracesTranslation(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
-	denylister := NewDenylister([]string{})
+	denylister := newDenylister([]string{})
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -309,7 +309,7 @@ func TestBasicTracesDenylist(t *testing.T) {
 	calculator := newSublayerCalculator()
 
 	// adding some regex bits to the resource name, but this should drop the trace
-	denylister := NewDenylister([]string{".nd-To-E.d H.re"})
+	denylister := newDenylister([]string{".nd-To-E.d H.re"})
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -334,7 +334,7 @@ func TestBasicTracesDenylist(t *testing.T) {
 func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
-	denylister := NewDenylister([]string{})
+	denylister := newDenylister([]string{})
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -388,7 +388,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 func TestTracesTranslationErrorsFromEventsUsesLast(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
-	denylister := NewDenylister([]string{})
+	denylister := newDenylister([]string{})
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -452,7 +452,7 @@ func TestTracesTranslationErrorsFromEventsUsesLast(t *testing.T) {
 func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
-	denylister := NewDenylister([]string{})
+	denylister := newDenylister([]string{})
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -528,7 +528,7 @@ func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 func TestTracesTranslationOkStatus(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
-	denylister := NewDenylister([]string{})
+	denylister := newDenylister([]string{})
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -578,7 +578,7 @@ func TestTracesTranslationOkStatus(t *testing.T) {
 func TestTracesTranslationConfig(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
-	denylister := NewDenylister([]string{})
+	denylister := newDenylister([]string{})
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -626,7 +626,7 @@ func TestTracesTranslationConfig(t *testing.T) {
 func TestTracesTranslationNoIls(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
-	denylister := NewDenylister([]string{})
+	denylister := newDenylister([]string{})
 
 	rs := pdata.NewResourceSpans()
 
@@ -651,7 +651,7 @@ func TestTracesTranslationNoIls(t *testing.T) {
 func TestTracesTranslationInvalidService(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
-	denylister := NewDenylister([]string{})
+	denylister := newDenylister([]string{})
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -710,7 +710,7 @@ func TestTracesTranslationInvalidService(t *testing.T) {
 func TestTracesTranslationServicePeerName(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
-	denylister := NewDenylister([]string{})
+	denylister := newDenylister([]string{})
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -785,7 +785,7 @@ func TestTracesTranslationServicePeerName(t *testing.T) {
 func TestTracesTranslationTruncatetag(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
-	denylister := NewDenylister([]string{})
+	denylister := newDenylister([]string{})
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -1182,7 +1182,7 @@ func TestTracePayloadAggr(t *testing.T) {
 func TestStatsAggregations(t *testing.T) {
 	hostname := "testhostname"
 	calculator := newSublayerCalculator()
-	denylister := NewDenylister([]string{})
+	denylister := newDenylister([]string{})
 
 	// generate mock trace, span and parent span ids
 	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
@@ -1219,7 +1219,7 @@ func TestStatsAggregations(t *testing.T) {
 // ensure that sanitization  of trace payloads occurs
 func TestSanitization(t *testing.T) {
 	calculator := newSublayerCalculator()
-	denylister := NewDenylister([]string{})
+	denylister := newDenylister([]string{})
 	buildInfo := component.BuildInfo{
 		Version: "1.0",
 	}
@@ -1319,7 +1319,7 @@ func TestSpanNameMapping(t *testing.T) {
 	pdataStartTime := pdata.TimestampFromTime(startTime)
 
 	calculator := newSublayerCalculator()
-	denylister := NewDenylister([]string{})
+	denylister := newDenylister([]string{})
 	buildInfo := component.BuildInfo{
 		Version: "1.0",
 	}
