@@ -30,9 +30,7 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factories.Receivers[typeStr] = NewFactory()
-	collectorCfg, err := configtest.LoadConfigFile(
-		t, path.Join("testdata", "config.yaml"), factories,
-	)
+	collectorCfg, err := configtest.LoadConfigAndValidate(path.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, collectorCfg)
 

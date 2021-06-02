@@ -40,7 +40,7 @@ func createDefaultConfig() config.Extension {
 	return &cfg
 }
 
-func createExtension(ctx context.Context, params component.ExtensionCreateParams, cfg config.Extension) (component.Extension, error) {
+func createExtension(ctx context.Context, params component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
 	sdCfg := cfg.(*Config)
 	sd, err := NewDiscovery(*sdCfg, ServiceDiscoveryOptions{Logger: params.Logger})
 	if err != nil {

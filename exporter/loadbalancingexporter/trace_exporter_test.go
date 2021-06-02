@@ -267,7 +267,7 @@ func TestBuildExporterConfig(t *testing.T) {
 
 	factories.Exporters[typeStr] = NewFactory()
 
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "test-build-exporter-config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "test-build-exporter-config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
