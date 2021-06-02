@@ -25,23 +25,21 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
-func TestLoadConfig(tester *testing.T) {
+func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
-	assert.Nil(tester, err)
+	assert.Nil(t, err)
 
 	factory := NewFactory()
 	factories.Exporters[config.Type(typeStr)] = factory
-	cfg, err := configtest.LoadConfigFile(
-		tester, path.Join(".", "testdata", "config.yaml"), factories,
-	)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
-	require.NoError(tester, err)
-	require.NotNil(tester, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
 
-	assert.Equal(tester, 2, len(cfg.Exporters))
+	assert.Equal(t, 2, len(cfg.Exporters))
 
 	cfgExp := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
-	assert.Equal(tester, &Config{
+	assert.Equal(t, &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
 		TracesToken:      "logzioTESTtoken",
 		Region:           "eu",
