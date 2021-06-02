@@ -46,7 +46,7 @@ var (
 var newMetricsReceiver = func(
 	ctx context.Context,
 	config Config,
-	params component.ReceiverCreateParams,
+	params component.ReceiverCreateSettings,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	sc := sarama.NewConfig()

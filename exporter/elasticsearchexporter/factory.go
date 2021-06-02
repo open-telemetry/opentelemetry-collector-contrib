@@ -64,7 +64,7 @@ func createDefaultConfig() config.Exporter {
 // Logs are directly indexed into Elasticsearch.
 func createLogsExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	exporter, err := newExporter(params.Logger, cfg.(*Config))

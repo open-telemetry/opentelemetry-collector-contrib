@@ -70,7 +70,7 @@ func TestCreateProcessors(t *testing.T) {
 			t.Run(fmt.Sprintf("%s/%s", test.configName, name), func(t *testing.T) {
 				tp, tErr := factory.CreateTracesProcessor(
 					context.Background(),
-					component.ProcessorCreateParams{Logger: zap.NewNop()},
+					component.ProcessorCreateSettings{Logger: zap.NewNop()},
 					cfg,
 					consumertest.NewNop())
 				// Not implemented error
@@ -79,7 +79,7 @@ func TestCreateProcessors(t *testing.T) {
 
 				mp, mErr := factory.CreateMetricsProcessor(
 					context.Background(),
-					component.ProcessorCreateParams{Logger: zap.NewNop()},
+					component.ProcessorCreateSettings{Logger: zap.NewNop()},
 					cfg,
 					consumertest.NewNop())
 				if test.succeed {

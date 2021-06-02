@@ -423,7 +423,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg.Headers["test_header_"] = tt.name
 			cfg.AccessToken = fromHeaders
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
-			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
 			defer sfxExp.Shutdown(context.Background())
@@ -676,7 +676,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg.Headers["test_header_"] = tt.name
 			cfg.AccessToken = fromHeaders
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
-			sfxExp, err := NewFactory().CreateLogsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+			sfxExp, err := NewFactory().CreateLogsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
 			defer sfxExp.Shutdown(context.Background())
@@ -1047,7 +1047,7 @@ func TestSignalFxExporterConsumeMetadata(t *testing.T) {
 	rCfg := cfg.(*Config)
 	rCfg.AccessToken = "token"
 	rCfg.Realm = "realm"
-	exp, err := f.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, rCfg)
+	exp, err := f.CreateMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, rCfg)
 	require.NoError(t, err)
 
 	kme, ok := exp.(metadata.MetadataExporter)

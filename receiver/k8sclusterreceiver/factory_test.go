@@ -47,7 +47,7 @@ func TestFactory(t *testing.T) {
 	}, rCfg)
 
 	r, err := f.CreateTracesReceiver(
-		context.Background(), component.ReceiverCreateParams{},
+		context.Background(), component.ReceiverCreateSettings{},
 		&config.ReceiverSettings{}, consumertest.NewNop(),
 	)
 	require.Error(t, err)
@@ -55,7 +55,7 @@ func TestFactory(t *testing.T) {
 
 	// Fails with bad K8s Config.
 	r, err = f.CreateMetricsReceiver(
-		context.Background(), component.ReceiverCreateParams{},
+		context.Background(), component.ReceiverCreateSettings{},
 		rCfg, consumertest.NewNop(),
 	)
 	require.Error(t, err)
@@ -66,7 +66,7 @@ func TestFactory(t *testing.T) {
 		return nil, nil
 	}
 	r, err = f.CreateMetricsReceiver(
-		context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()},
+		context.Background(), component.ReceiverCreateSettings{Logger: zap.NewNop()},
 		rCfg, consumertest.NewNop(),
 	)
 	require.NoError(t, err)

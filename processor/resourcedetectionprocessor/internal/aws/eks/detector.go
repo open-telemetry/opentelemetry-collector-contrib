@@ -39,7 +39,7 @@ var _ internal.Detector = (*Detector)(nil)
 type Detector struct{}
 
 // NewDetector returns a resource detector that will detect AWS EKS resources.
-func NewDetector(_ component.ProcessorCreateParams, _ internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(_ component.ProcessorCreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
 	return &Detector{}, nil
 }
 

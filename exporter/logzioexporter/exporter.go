@@ -41,7 +41,7 @@ type logzioExporter struct {
 	InternalTracesToJaegerTraces func(td pdata.Traces) ([]*model.Batch, error)
 }
 
-func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*logzioExporter, error) {
+func newLogzioExporter(config *Config, params component.ExporterCreateSettings) (*logzioExporter, error) {
 	logger := Hclog2ZapLogger{
 		Zap:  params.Logger,
 		name: loggerName,
@@ -70,7 +70,7 @@ func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*
 	}, nil
 }
 
-func newLogzioTracesExporter(config *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
+func newLogzioTracesExporter(config *Config, params component.ExporterCreateSettings) (component.TracesExporter, error) {
 	exporter, err := newLogzioExporter(config, params)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func newLogzioTracesExporter(config *Config, params component.ExporterCreatePara
 		exporterhelper.WithShutdown(exporter.Shutdown))
 }
 
-func newLogzioMetricsExporter(config *Config, params component.ExporterCreateParams) (component.MetricsExporter, error) {
+func newLogzioMetricsExporter(config *Config, params component.ExporterCreateSettings) (component.MetricsExporter, error) {
 	exporter, _ := newLogzioExporter(config, params)
 	return exporterhelper.NewMetricsExporter(
 		config,

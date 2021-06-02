@@ -98,7 +98,7 @@ func createDefaultConfig() config.Processor {
 
 func (f *factory) createTracesProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
@@ -117,7 +117,7 @@ func (f *factory) createTracesProcessor(
 
 func (f *factory) createMetricsProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
@@ -136,7 +136,7 @@ func (f *factory) createMetricsProcessor(
 
 func (f *factory) createLogsProcessor(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
@@ -154,7 +154,7 @@ func (f *factory) createLogsProcessor(
 }
 
 func (f *factory) getResourceDetectionProcessor(
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
@@ -171,7 +171,7 @@ func (f *factory) getResourceDetectionProcessor(
 }
 
 func (f *factory) getResourceProvider(
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	processorName config.ComponentID,
 	timeout time.Duration,
 	configuredDetectors []string,

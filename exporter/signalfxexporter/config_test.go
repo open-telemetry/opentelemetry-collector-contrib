@@ -182,7 +182,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
-	te, err := factory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, e1)
+	te, err := factory.CreateMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, e1)
 	require.NoError(t, err)
 	require.NotNil(t, te)
 }

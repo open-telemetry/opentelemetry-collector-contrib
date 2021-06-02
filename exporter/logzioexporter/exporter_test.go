@@ -55,7 +55,7 @@ var testSpans = []*tracepb.Span{
 }
 
 func testTracesExporter(td pdata.Traces, t *testing.T, cfg *Config) {
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	exporter, err := createTracesExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 
@@ -67,13 +67,13 @@ func testTracesExporter(td pdata.Traces, t *testing.T, cfg *Config) {
 }
 
 func TestNullTracesExporterConfig(tester *testing.T) {
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	_, err := newLogzioTracesExporter(nil, params)
 	assert.Error(tester, err, "Null exporter config should produce error")
 }
 
 func testMetricsExporter(md pdata.Metrics, t *testing.T, cfg *Config) {
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	exporter, err := createMetricsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	err = exporter.ConsumeMetrics(context.Background(), md)
@@ -81,7 +81,7 @@ func testMetricsExporter(md pdata.Metrics, t *testing.T, cfg *Config) {
 }
 
 func TestNullExporterConfig(tester *testing.T) {
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	_, err := newLogzioExporter(nil, params)
 	assert.Error(tester, err, "Null exporter config should produce error")
 }
@@ -90,7 +90,7 @@ func TestNullTokenConfig(tester *testing.T) {
 	cfg := Config{
 		Region: "eu",
 	}
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	_, err := createTracesExporter(context.Background(), params, &cfg)
 	assert.Error(tester, err, "Empty token should produce error")
 }
@@ -109,7 +109,7 @@ func TestWriteSpanError(tester *testing.T) {
 		TracesToken: "test",
 		Region:      "eu",
 	}
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	exporter, _ := newLogzioExporter(&cfg, params)
 	oldFunc := exporter.WriteSpanFunc
 	defer func() { exporter.WriteSpanFunc = oldFunc }()
@@ -125,7 +125,7 @@ func TestConversionTraceError(tester *testing.T) {
 		TracesToken: "test",
 		Region:      "eu",
 	}
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	exporter, _ := newLogzioExporter(&cfg, params)
 	oldFunc := exporter.InternalTracesToJaegerTraces
 	defer func() { exporter.InternalTracesToJaegerTraces = oldFunc }()

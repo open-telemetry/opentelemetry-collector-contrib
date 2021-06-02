@@ -37,13 +37,13 @@ type jmxMetricReceiver struct {
 	logger       *zap.Logger
 	config       *Config
 	subprocess   *subprocess.Subprocess
-	params       component.ReceiverCreateParams
+	params       component.ReceiverCreateSettings
 	otlpReceiver component.MetricsReceiver
 	nextConsumer consumer.Metrics
 }
 
 func newJMXMetricReceiver(
-	params component.ReceiverCreateParams,
+	params component.ReceiverCreateSettings,
 	config *Config,
 	nextConsumer consumer.Metrics,
 ) *jmxMetricReceiver {

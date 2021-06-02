@@ -483,7 +483,7 @@ func Test_exporter_start_InvalidHTTPClientSettings(t *testing.T) {
 		},
 	}
 
-	exp := newMetricsExporter(component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	exp := newMetricsExporter(component.ExporterCreateSettings{Logger: zap.NewNop()}, config)
 
 	err := exp.start(context.Background(), componenttest.NewNopHost())
 	if err == nil {

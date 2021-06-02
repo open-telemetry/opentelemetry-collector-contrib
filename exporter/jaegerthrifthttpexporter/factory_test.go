@@ -38,7 +38,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	// Default config doesn't have default URL so creating from it should
 	// fail.
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	exp, err := createTracesExporter(context.Background(), params, cfg)
 	assert.Error(t, err)
 	assert.Nil(t, exp)
@@ -64,7 +64,7 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 		Timeout: 2 * time.Second,
 	}
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	te, err := createTracesExporter(context.Background(), params, config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
@@ -103,7 +103,7 @@ func TestFactory_CreateTracesExporterFails(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			params := component.ExporterCreateParams{Logger: zap.NewNop()}
+			params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 			te, err := createTracesExporter(context.Background(), params, tt.config)
 			assert.EqualError(t, err, tt.errorMessage)
 			assert.Nil(t, te)

@@ -37,7 +37,7 @@ import (
 const maxChunkSize = 1000
 
 // NewExporter exports to a Dynatrace Metrics v2 API
-func newMetricsExporter(params component.ExporterCreateParams, cfg *config.Config) *exporter {
+func newMetricsExporter(params component.ExporterCreateSettings, cfg *config.Config) *exporter {
 	return &exporter{
 		logger: params.Logger,
 		cfg:    cfg,

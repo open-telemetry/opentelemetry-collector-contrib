@@ -39,7 +39,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig()
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
 	traceReceiver, err := factory.CreateTracesReceiver(context.Background(), params, config, &testbed.MockTraceConsumer{})
 	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, traceReceiver)
@@ -56,7 +56,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 
 	receiverCfg.Endpoint = ""
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
 	consumer := &testbed.MockMetricConsumer{}
 	receiver, err := factory.CreateMetricsReceiver(context.Background(), params, receiverCfg, consumer)
 	assert.Nil(t, receiver)

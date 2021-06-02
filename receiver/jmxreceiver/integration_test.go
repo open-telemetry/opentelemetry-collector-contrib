@@ -135,7 +135,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 	defer getLogsOnFailure(t, logObserver)
 
 	logger := zap.New(logCore)
-	params := component.ReceiverCreateParams{Logger: logger}
+	params := component.ReceiverCreateSettings{Logger: logger}
 
 	cfg := &Config{
 		CollectionInterval: 100 * time.Millisecond,
@@ -237,7 +237,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 }
 
 func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
 	cfg := &Config{
 		CollectionInterval: 100 * time.Millisecond,
 		Endpoint:           fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),

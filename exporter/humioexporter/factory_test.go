@@ -116,7 +116,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			exp, err := factory.CreateTracesExporter(
 				context.Background(),
-				component.ExporterCreateParams{Logger: zap.NewNop()},
+				component.ExporterCreateSettings{Logger: zap.NewNop()},
 				tC.cfg,
 			)
 
@@ -142,7 +142,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	factory := newHumioFactory(t)
 	mExp, err := factory.CreateMetricsExporter(
 		context.Background(),
-		component.ExporterCreateParams{Logger: zap.NewNop()},
+		component.ExporterCreateSettings{Logger: zap.NewNop()},
 		factory.CreateDefaultConfig(),
 	)
 
@@ -154,7 +154,7 @@ func TestCreateLogsExporter(t *testing.T) {
 	factory := newHumioFactory(t)
 	lExp, err := factory.CreateLogsExporter(
 		context.Background(),
-		component.ExporterCreateParams{Logger: zap.NewNop()},
+		component.ExporterCreateSettings{Logger: zap.NewNop()},
 		factory.CreateDefaultConfig(),
 	)
 

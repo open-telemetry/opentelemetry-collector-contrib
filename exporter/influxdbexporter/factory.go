@@ -35,7 +35,7 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createTraceExporter(_ context.Context, params component.ExporterCreateParams, config config.Exporter) (component.TracesExporter, error) {
+func createTraceExporter(_ context.Context, params component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
 	cfg := config.(*Config)
 
 	exporter := newTracesExporter(cfg, params)
@@ -50,7 +50,7 @@ func createTraceExporter(_ context.Context, params component.ExporterCreateParam
 	)
 }
 
-func createMetricsExporter(_ context.Context, params component.ExporterCreateParams, config config.Exporter) (component.MetricsExporter, error) {
+func createMetricsExporter(_ context.Context, params component.ExporterCreateSettings, config config.Exporter) (component.MetricsExporter, error) {
 	cfg := config.(*Config)
 
 	exporter, err := newMetricsExporter(cfg, params)
@@ -68,7 +68,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 	)
 }
 
-func createLogsExporter(_ context.Context, params component.ExporterCreateParams, config config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(_ context.Context, params component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
 	cfg := config.(*Config)
 
 	exporter := newLogsExporter(cfg, params)

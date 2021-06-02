@@ -53,10 +53,10 @@ func factory() (component.ReceiverFactory, *Config) {
 	return f, config
 }
 
-func paramsAndContext(t *testing.T) (component.ReceiverCreateParams, context.Context, context.CancelFunc) {
+func paramsAndContext(t *testing.T) (component.ReceiverCreateSettings, context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
-	return component.ReceiverCreateParams{Logger: logger}, ctx, cancel
+	return component.ReceiverCreateSettings{Logger: logger}, ctx, cancel
 }
 
 func TestDefaultMetricsIntegration(t *testing.T) {

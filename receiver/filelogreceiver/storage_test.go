@@ -42,7 +42,7 @@ func TestStorage(t *testing.T) {
 	storageDir := newTempDir(t)
 
 	f := NewFactory()
-	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
+	params := component.ReceiverCreateSettings{Logger: zaptest.NewLogger(t)}
 
 	cfg := testdataRotateTestYamlAsMap(logsDir)
 	cfg.Converter.MaxFlushCount = 1

@@ -62,7 +62,7 @@ func TestExecKeyMissing(t *testing.T) {
 
 // assertErrorWhenExecKeyMissing makes sure the config passed throws an error, since it's missing the exec key
 func assertErrorWhenExecKeyMissing(t *testing.T, errorReceiverConfig config.Receiver) {
-	_, err := newPromExecReceiver(component.ReceiverCreateParams{Logger: zap.NewNop()}, errorReceiverConfig.(*Config), nil)
+	_, err := newPromExecReceiver(component.ReceiverCreateSettings{Logger: zap.NewNop()}, errorReceiverConfig.(*Config), nil)
 	assert.Error(t, err, "newPromExecReceiver() didn't return an error")
 }
 
@@ -77,7 +77,7 @@ func TestEndToEnd(t *testing.T) {
 // endToEndScrapeTest creates a receiver that invokes `go run test_prometheus_exporter.go` and waits until it has scraped the /metrics endpoint twice - the application will crash between each scrape
 func endToEndScrapeTest(t *testing.T, receiverConfig config.Receiver, testName string) {
 	sink := new(consumertest.MetricsSink)
-	wrapper, err := newPromExecReceiver(component.ReceiverCreateParams{Logger: zap.NewNop()}, receiverConfig.(*Config), sink)
+	wrapper, err := newPromExecReceiver(component.ReceiverCreateSettings{Logger: zap.NewNop()}, receiverConfig.(*Config), sink)
 	assert.NoError(t, err, "newPromExecReceiver() returned an error")
 
 	ctx := context.Background()

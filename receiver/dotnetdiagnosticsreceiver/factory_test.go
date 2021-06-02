@@ -43,7 +43,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestNewFactory(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig()
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
 	r, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
