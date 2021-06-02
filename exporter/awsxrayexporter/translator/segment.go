@@ -97,17 +97,17 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 	}
 
 	var (
-		startTime                              = timestampToFloatSeconds(span.StartTimestamp())
-		endTime                                = timestampToFloatSeconds(span.EndTimestamp())
-		httpfiltered, http                     = makeHTTP(span)
-		isError, isFault, causefiltered, cause = makeCause(span, httpfiltered, resource)
-		origin                                 = determineAwsOrigin(resource)
-		awsfiltered, aws                       = makeAws(causefiltered, resource)
-		service                                = makeService(resource)
-		sqlfiltered, sql                       = makeSQL(awsfiltered)
-		user, annotations, metadata            = makeXRayAttributes(sqlfiltered, resource, storeResource, indexedAttrs, indexAllAttrs)
-		name                                   string
-		namespace                              string
+		startTime                                          = timestampToFloatSeconds(span.StartTimestamp())
+		endTime                                            = timestampToFloatSeconds(span.EndTimestamp())
+		httpfiltered, http                                 = makeHTTP(span)
+		isError, isFault, isThrottle, causefiltered, cause = makeCause(span, httpfiltered, resource)
+		origin                                             = determineAwsOrigin(resource)
+		awsfiltered, aws                                   = makeAws(causefiltered, resource)
+		service                                            = makeService(resource)
+		sqlfiltered, sql                                   = makeSQL(awsfiltered)
+		user, annotations, metadata                        = makeXRayAttributes(sqlfiltered, resource, storeResource, indexedAttrs, indexAllAttrs)
+		name                                               string
+		namespace                                          string
 	)
 
 	// X-Ray segment names are service names, unlike span names which are methods. Try to find a service name.
@@ -185,6 +185,7 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 		ParentID:    awsxray.String(span.ParentSpanID().HexString()),
 		Fault:       awsP.Bool(isFault),
 		Error:       awsP.Bool(isError),
+		Throttle:    awsP.Bool(isThrottle),
 		Cause:       cause,
 		Origin:      awsxray.String(origin),
 		Namespace:   awsxray.String(namespace),
