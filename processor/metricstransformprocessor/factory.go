@@ -180,7 +180,7 @@ func buildHelperConfig(config *Config, version string) []internalTransform {
 func createFilter(filterConfig FilterConfig) internalFilter {
 	switch filterConfig.MatchType {
 	case StrictMatchType:
-		return internalFilterStrict{include: filterConfig.Include, matchLabels: filterConfig.MatchLabels}
+		return internalFilterStrict{include: filterConfig.Include, matchLabels: getFilterStrictMatcherMap(filterConfig.MatchLabels)}
 	case RegexpMatchType:
 		return internalFilterRegexp{include: regexp.MustCompile(filterConfig.Include), matchLabels: getFilterRegexpMap(filterConfig.MatchLabels)}
 	}
@@ -215,4 +215,13 @@ func getFilterRegexpMap(strMap map[string]string) map[string]*regexp.Regexp {
 		regexpMap[k] = regexp.MustCompile(value)
 	}
 	return regexpMap
+}
+
+func getFilterStrictMatcherMap(strMap map[string]string) map[string]strictMatcher {
+	strictMatcherMap := make(map[string]strictMatcher)
+
+	for k, value := range strMap {
+		strictMatcherMap[k] = strictMatcher(value)
+	}
+	return strictMatcherMap
 }

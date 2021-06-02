@@ -653,7 +653,7 @@ var (
 			name: "metric_name_insert_with_match_label_strict",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterStrict{include: "metric1", matchLabels: map[string]string{"label1": "value1"}},
+					MetricIncludeFilter: internalFilterStrict{include: "metric1", matchLabels: map[string]strictMatcher{"label1": "value1"}},
 					Action:              Insert,
 					NewName:             "new/metric1",
 				},
@@ -801,7 +801,7 @@ var (
 			name: "metric_name_insert_with_match_label_strict_negative",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterStrict{include: "metric1", matchLabels: map[string]string{"label1": "wrong_value"}},
+					MetricIncludeFilter: internalFilterStrict{include: "metric1", matchLabels: map[string]strictMatcher{"label1": "wrong_value"}},
 					Action:              Insert,
 					NewName:             "new/metric1",
 				},
@@ -849,7 +849,7 @@ var (
 			name: "metric_name_insert_with_match_label_strict_missing_key",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterStrict{include: "metric1", matchLabels: map[string]string{"missing_key": "value1"}},
+					MetricIncludeFilter: internalFilterStrict{include: "metric1", matchLabels: map[string]strictMatcher{"missing_key": "value1"}},
 					Action:              Insert,
 					NewName:             "new/metric1",
 				},
