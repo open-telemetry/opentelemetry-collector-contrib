@@ -604,6 +604,8 @@ def filter_packages(targets, packages):
     filtered_packages = []
     for target in targets:
         for pkg in packages:
+            if str(pkg) == "all":
+                continue
             if str(pkg) in str(target):
                 filtered_packages.append(target)
                 break
@@ -626,8 +628,12 @@ def update_dependencies(targets, version, packages):
     if "all" in packages:
         packages.extend(targets)
     for pkg in packages:
+        if str(pkg) == "all":
+            continue
         print(pkg)
         package_name = str(pkg).split("/")[-1]
+        # Windows uses backslashes
+        package_name = str(pkg).split("\\")[-1]
         print(package_name)
 
         update_files(
