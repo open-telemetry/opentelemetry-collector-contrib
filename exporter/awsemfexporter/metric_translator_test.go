@@ -413,7 +413,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 			Unit:  "Count",
 		},
 		"spanDoubleCounter": {
-			Value: float64(0.1),
+			Value: 0.1,
 			Unit:  "Count",
 		},
 		"spanGaugeCounter": {
@@ -421,7 +421,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 			Unit:  "Count",
 		},
 		"spanGaugeDoubleCounter": {
-			Value: float64(0.1),
+			Value: 0.1,
 			Unit:  "Count",
 		},
 	}

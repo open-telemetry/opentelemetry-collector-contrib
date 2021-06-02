@@ -173,9 +173,9 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 	tags["library_version"] = library.Version()
 
 	sentrySpan = &sentry.Span{
-		TraceID:      sentry.TraceID(span.TraceID().Bytes()),
-		SpanID:       sentry.SpanID(span.SpanID().Bytes()),
-		ParentSpanID: sentry.SpanID(span.ParentSpanID().Bytes()),
+		TraceID:      span.TraceID().Bytes(),
+		SpanID:       span.SpanID().Bytes(),
+		ParentSpanID: span.ParentSpanID().Bytes(),
 		Description:  description,
 		Op:           op,
 		Tags:         tags,

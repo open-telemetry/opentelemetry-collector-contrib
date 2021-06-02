@@ -47,7 +47,7 @@ func TestCreateTracesExporterLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[config.Type(typeStr)] = factory
+	factories.Exporters[typeStr] = factory
 
 	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 	require.NoError(t, err)
