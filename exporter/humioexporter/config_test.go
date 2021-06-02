@@ -40,7 +40,7 @@ func loadConfig(t *testing.T, file string) (*config.Config, error) {
 	factories.Exporters[typeStr] = factory
 
 	// Load configurations
-	return configtest.LoadConfigFile(t, path.Join(".", "testdata", file), factories)
+	return configtest.LoadConfigAndValidate(path.Join(".", "testdata", file), factories)
 }
 
 // Helper method to handle boilerplate of loading exporter configuration from file
@@ -53,7 +53,7 @@ func loadExporterConfig(t *testing.T, file string, id config.ComponentID) (confi
 	factories.Exporters[typeStr] = factory
 
 	// Load configurations
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", file), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", file), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	actual := cfg.Exporters[id]

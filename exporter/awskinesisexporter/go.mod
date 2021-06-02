@@ -9,7 +9,7 @@ require (
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/signalfx/opencensus-go-exporter-kinesis v0.6.3
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.27.1-0.20210527142130-1f972bbd7997
+	go.opentelemetry.io/collector v0.27.1-0.20210602074751-622c0ccc86fc
 	go.uber.org/zap v1.17.0
 	gopkg.in/ini.v1 v1.57.0 // indirect
 )

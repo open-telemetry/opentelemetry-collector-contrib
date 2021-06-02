@@ -46,7 +46,7 @@ func loadConfigAssertNoError(t *testing.T, receiverConfigID config.ComponentID) 
 	factory := NewFactory()
 	factories.Receivers[factory.Type()] = factory
 
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 
