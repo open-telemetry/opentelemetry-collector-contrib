@@ -62,7 +62,7 @@ exporters:
 ## Migration
 
 ℹ️ The native support of OpenTelemetry by Elastic doesn't remove the architectural benefits of using the OpenTelemetry Collector in observability architectures.
-The OpenTelemetry Collector continues to add high availability, scalability, retries, live reconfiguration (sampling...), data enrichment, ingestion of various protocols such as Jaeger or Zipkin...
+The OpenTelemetry Collector continues to add high availability, scalability, retries, live reconfiguration (like with sampling), data enrichment, ingestion of various protocols such as Jaeger or Zipkin, etc.
 
 To migrate from the legacy OpenTelemetry Collector exporter for Elastic to the native support of OpenTelemetry in Elastic, replace in the OpenTelemetry Collector the `elastic` exporter by an `otlp` exporter.
 
