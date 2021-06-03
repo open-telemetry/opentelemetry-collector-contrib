@@ -32,8 +32,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
-const certPath = "../testdata/testcert.crt"
-const keyFile = "../testdata/testkey.key"
+const certPath = "./testdata/testcert.crt"
+const keyFile = "./testdata/testkey.key"
 
 func TestClient(t *testing.T) {
 	tr := &fakeRoundTripper{}
@@ -97,7 +97,7 @@ func TestSvcAcctClient(t *testing.T) {
 	p := &saClientProvider{
 		endpoint:   "localhost:9876",
 		caCertPath: certPath,
-		tokenPath:  "../testdata/token",
+		tokenPath:  "./testdata/token",
 		logger:     zap.NewNop(),
 	}
 	cl, err := p.BuildClient()
@@ -177,7 +177,7 @@ func TestBuildReq(t *testing.T) {
 	p := &saClientProvider{
 		endpoint:   "localhost:9876",
 		caCertPath: certPath,
-		tokenPath:  "../testdata/token",
+		tokenPath:  "./testdata/token",
 		logger:     zap.NewNop(),
 	}
 	cl, err := p.BuildClient()
@@ -192,7 +192,7 @@ func TestBuildBadReq(t *testing.T) {
 	p := &saClientProvider{
 		endpoint:   "localhost:9876",
 		caCertPath: certPath,
-		tokenPath:  "../testdata/token",
+		tokenPath:  "./testdata/token",
 		logger:     zap.NewNop(),
 	}
 	cl, err := p.BuildClient()

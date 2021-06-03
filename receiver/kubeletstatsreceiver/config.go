@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	kube "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
 )
 
@@ -33,7 +34,7 @@ var _ config.Receiver = (*Config)(nil)
 
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"`
-	kubelet.ClientConfig    `mapstructure:",squash"`
+	kube.ClientConfig       `mapstructure:",squash"`
 	confignet.TCPAddr       `mapstructure:",squash"`
 	CollectionInterval      time.Duration `mapstructure:"collection_interval"`
 
