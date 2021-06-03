@@ -84,6 +84,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splun
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ./internal/k8sconfig
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet => ./internal/kubelet
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics => ./internal/aws/metrics
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray => ./internal/aws/xray
