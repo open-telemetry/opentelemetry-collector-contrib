@@ -32,7 +32,7 @@ func TestTrackerAddSpans(t *testing.T) {
 	tracker := NewTracker(
 		DefaultConfig(),
 		"abcd",
-		component.ExporterCreateParams{
+		component.ExporterCreateSettings{
 			Logger: zap.NewNop(),
 		},
 	)
@@ -87,7 +87,7 @@ func TestTrackerStart(t *testing.T) {
 			tracker := NewTracker(
 				tt.config,
 				"abcd",
-				component.ExporterCreateParams{
+				component.ExporterCreateSettings{
 					Logger: zap.NewNop(),
 				},
 			)

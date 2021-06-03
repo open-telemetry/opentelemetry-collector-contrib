@@ -28,7 +28,7 @@ import (
 )
 
 func TestNewDetector(t *testing.T) {
-	detector, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
+	detector, err := NewDetector(component.ProcessorCreateSettings{Logger: zap.NewNop()}, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, detector)
 }

@@ -59,7 +59,7 @@ func (md *mockMetaDataProvider) fetchContainerMetaData(string) (*Container, erro
 }
 
 func Test_ecsNewDetector(t *testing.T) {
-	d, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
+	d, err := NewDetector(component.ProcessorCreateSettings{Logger: zap.NewNop()}, nil)
 
 	assert.NotNil(t, d)
 	assert.Nil(t, err)
@@ -67,7 +67,7 @@ func Test_ecsNewDetector(t *testing.T) {
 
 func Test_detectorReturnsIfNoEnvVars(t *testing.T) {
 	os.Clearenv()
-	d, _ := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, nil)
+	d, _ := NewDetector(component.ProcessorCreateSettings{Logger: zap.NewNop()}, nil)
 	res, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)

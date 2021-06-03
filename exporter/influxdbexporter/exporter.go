@@ -32,7 +32,7 @@ type tracesExporter struct {
 	converter *otel2influx.OtelTracesToLineProtocol
 }
 
-func newTracesExporter(config *Config, params component.ExporterCreateParams) *tracesExporter {
+func newTracesExporter(config *Config, params component.ExporterCreateSettings) *tracesExporter {
 	logger := newZapInfluxLogger(params.Logger)
 	converter := otel2influx.NewOtelTracesToLineProtocol(logger)
 
@@ -81,7 +81,7 @@ var metricsSchemata = map[string]common.MetricsSchema{
 	"telegraf-prometheus-v2": common.MetricsSchemaTelegrafPrometheusV2,
 }
 
-func newMetricsExporter(config *Config, params component.ExporterCreateParams) (*metricsExporter, error) {
+func newMetricsExporter(config *Config, params component.ExporterCreateSettings) (*metricsExporter, error) {
 	logger := newZapInfluxLogger(params.Logger)
 	schema, found := metricsSchemata[config.MetricsSchema]
 	if !found {
@@ -133,7 +133,7 @@ type logsExporter struct {
 	converter *otel2influx.OtelLogsToLineProtocol
 }
 
-func newLogsExporter(config *Config, params component.ExporterCreateParams) *logsExporter {
+func newLogsExporter(config *Config, params component.ExporterCreateSettings) *logsExporter {
 	logger := newZapInfluxLogger(params.Logger)
 	converter := otel2influx.NewOtelLogsToLineProtocol(logger)
 

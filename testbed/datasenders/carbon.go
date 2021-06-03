@@ -56,7 +56,7 @@ func (cs *CarbonDataSender) Start() error {
 		Endpoint:         cs.GetEndpoint().String(),
 		Timeout:          5 * time.Second,
 	}
-	params := component.ExporterCreateParams{Logger: zap.L()}
+	params := component.ExporterCreateSettings{Logger: zap.L()}
 	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 
 	if err != nil {

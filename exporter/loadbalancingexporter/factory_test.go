@@ -27,7 +27,7 @@ import (
 func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	creationParams := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	cfg := &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Resolver: ResolverSettings{
@@ -46,7 +46,7 @@ func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 func TestLogExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
+	creationParams := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	cfg := &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		Resolver: ResolverSettings{

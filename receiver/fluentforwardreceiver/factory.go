@@ -44,7 +44,7 @@ func createDefaultConfig() config.Receiver {
 
 func createLogsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateParams,
+	params component.ReceiverCreateSettings,
 	cfg config.Receiver,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {

@@ -124,14 +124,14 @@ func TestCreateProcessors(t *testing.T) {
 
 		factory := NewFactory()
 		factories.Processors[typeStr] = factory
-		config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", test.configName), factories)
+		config, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", test.configName), factories)
 		assert.NoError(t, err)
 
 		for name, cfg := range config.Processors {
 			t.Run(fmt.Sprintf("%s/%s", test.configName, name), func(t *testing.T) {
 				tp, tErr := factory.CreateTracesProcessor(
 					context.Background(),
-					component.ProcessorCreateParams{Logger: zap.NewNop()},
+					component.ProcessorCreateSettings{Logger: zap.NewNop()},
 					cfg,
 					consumertest.NewNop())
 				// Not implemented error
@@ -140,7 +140,7 @@ func TestCreateProcessors(t *testing.T) {
 
 				mp, mErr := factory.CreateMetricsProcessor(
 					context.Background(),
-					component.ProcessorCreateParams{Logger: zap.NewNop()},
+					component.ProcessorCreateSettings{Logger: zap.NewNop()},
 					cfg,
 					consumertest.NewNop())
 				if test.succeed {

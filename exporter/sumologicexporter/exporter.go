@@ -96,7 +96,7 @@ func initExporter(cfg *Config) (*sumologicexporter, error) {
 
 func newLogsExporter(
 	cfg *Config,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 ) (component.LogsExporter, error) {
 	se, err := initExporter(cfg)
 	if err != nil {
@@ -118,7 +118,7 @@ func newLogsExporter(
 
 func newMetricsExporter(
 	cfg *Config,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 ) (component.MetricsExporter, error) {
 	se, err := initExporter(cfg)
 	if err != nil {

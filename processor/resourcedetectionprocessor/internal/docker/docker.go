@@ -40,7 +40,7 @@ type Detector struct {
 }
 
 // NewDetector creates a new system metadata detector
-func NewDetector(p component.ProcessorCreateParams, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p component.ProcessorCreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	dockerProvider, err := newDockerMetadata()
 	if err != nil {
 		return nil, fmt.Errorf("failed creating detector: %w", err)

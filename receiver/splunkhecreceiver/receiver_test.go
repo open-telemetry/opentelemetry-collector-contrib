@@ -582,7 +582,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 				DisableCompression: true,
 				Endpoint:           endServer.URL,
 			}
-			exporter, err := factory.CreateLogsExporter(context.Background(), component.ExporterCreateParams{
+			exporter, err := factory.CreateLogsExporter(context.Background(), component.ExporterCreateSettings{
 				Logger: zap.NewNop(),
 			}, &exporterConfig)
 			exporter.Start(context.Background(), nil)
@@ -680,7 +680,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 				DisableCompression: true,
 				Endpoint:           endServer.URL,
 			}
-			exporter, err := factory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{
+			exporter, err := factory.CreateMetricsExporter(context.Background(), component.ExporterCreateSettings{
 				Logger: zap.NewNop(),
 			}, &exporterConfig)
 			exporter.Start(context.Background(), nil)

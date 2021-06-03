@@ -45,7 +45,7 @@ const defaultHTTPTimeout = time.Second * 5
 // value is equal or smaller than zero the default of 5 seconds is used.
 func newTracesExporter(
 	config config.Exporter,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	httpAddress string,
 	headers map[string]string,
 	timeout time.Duration,

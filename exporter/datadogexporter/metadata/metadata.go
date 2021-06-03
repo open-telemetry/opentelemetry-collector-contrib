@@ -117,7 +117,7 @@ func metadataFromAttributes(attrs pdata.AttributeMap) *HostMetadata {
 	return hm
 }
 
-func fillHostMetadata(params component.ExporterCreateParams, cfg *config.Config, hm *HostMetadata) {
+func fillHostMetadata(params component.ExporterCreateSettings, cfg *config.Config, hm *HostMetadata) {
 	// Could not get hostname from attributes
 	if hm.InternalHostname == "" {
 		hostname := GetHost(params.Logger, cfg)
@@ -172,7 +172,7 @@ func pushMetadata(cfg *config.Config, buildInfo component.BuildInfo, metadata *H
 	return nil
 }
 
-func pushMetadataWithRetry(params component.ExporterCreateParams, cfg *config.Config, hostMetadata *HostMetadata) {
+func pushMetadataWithRetry(params component.ExporterCreateSettings, cfg *config.Config, hostMetadata *HostMetadata) {
 	const maxRetries = 5
 
 	params.Logger.Debug("Sending host metadata payload", zap.Any("payload", hostMetadata))
@@ -190,7 +190,7 @@ func pushMetadataWithRetry(params component.ExporterCreateParams, cfg *config.Co
 }
 
 // Pusher pushes host metadata payloads periodically to Datadog intake
-func Pusher(ctx context.Context, params component.ExporterCreateParams, cfg *config.Config, attrs pdata.AttributeMap) {
+func Pusher(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config, attrs pdata.AttributeMap) {
 	// Push metadata every 30 minutes
 	ticker := time.NewTicker(30 * time.Minute)
 	defer ticker.Stop()

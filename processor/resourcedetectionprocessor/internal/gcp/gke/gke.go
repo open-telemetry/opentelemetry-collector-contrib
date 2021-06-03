@@ -45,7 +45,7 @@ type Detector struct {
 	metadata gcp.Metadata
 }
 
-func NewDetector(params component.ProcessorCreateParams, _ internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(params component.ProcessorCreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
 	return &Detector{log: params.Logger, metadata: &gcp.MetadataImpl{}}, nil
 }
 

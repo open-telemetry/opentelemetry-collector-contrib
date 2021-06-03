@@ -32,7 +32,7 @@ import (
 func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	creationParams := component.ProcessorCreateSettings{Logger: zap.NewNop()}
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
@@ -56,7 +56,7 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 func TestFailOnEmptyConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	creationParams := component.ProcessorCreateSettings{Logger: zap.NewNop()}
 	cfg := factory.CreateDefaultConfig()
 
 	// test
@@ -70,7 +70,7 @@ func TestFailOnEmptyConfiguration(t *testing.T) {
 func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	creationParams := component.ProcessorCreateSettings{Logger: zap.NewNop()}
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
@@ -93,7 +93,7 @@ func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	creationParams := component.ProcessorCreateSettings{Logger: zap.NewNop()}
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
@@ -112,7 +112,7 @@ func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
 func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	creationParams := component.ProcessorCreateSettings{Logger: zap.NewNop()}
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
@@ -135,7 +135,7 @@ func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	creationParams := component.ProcessorCreateSettings{Logger: zap.NewNop()}
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
@@ -161,7 +161,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 func TestShutdown(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	creationParams := component.ProcessorCreateSettings{Logger: zap.NewNop()}
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},

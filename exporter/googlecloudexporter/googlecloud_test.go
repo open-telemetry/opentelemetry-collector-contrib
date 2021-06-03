@@ -99,7 +99,7 @@ func TestGoogleCloudTraceExport(t *testing.T) {
 
 			go srv.Serve(lis)
 
-			createParams := component.ExporterCreateParams{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{Version: "v0.0.1"}}
+			createParams := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{Version: "v0.0.1"}}
 			sde, err := newGoogleCloudTracesExporter(test.cfg, createParams)
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
@@ -195,7 +195,7 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 			return clientOptions
 		},
 	},
-		component.ExporterCreateParams{
+		component.ExporterCreateSettings{
 			Logger: zap.NewNop(),
 			BuildInfo: component.BuildInfo{
 				Version: "v0.0.1",

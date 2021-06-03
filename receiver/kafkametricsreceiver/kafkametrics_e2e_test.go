@@ -63,7 +63,7 @@ func TestIntegrationSingleNode(t *testing.T) {
 	cfg.Brokers = []string{kafkaAddress}
 	cfg.CollectionInterval = 5 * time.Second
 	consumer := new(consumertest.MetricsSink)
-	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
+	params := component.ReceiverCreateSettings{Logger: zaptest.NewLogger(t)}
 
 	var receiver component.MetricsReceiver
 	var err error

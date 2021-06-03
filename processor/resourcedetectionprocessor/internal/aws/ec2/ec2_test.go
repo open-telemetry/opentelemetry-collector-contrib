@@ -90,7 +90,7 @@ func TestNewDetector(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			detector, err := NewDetector(component.ProcessorCreateParams{Logger: zap.NewNop()}, tt.cfg)
+			detector, err := NewDetector(component.ProcessorCreateSettings{Logger: zap.NewNop()}, tt.cfg)
 			if tt.shouldError {
 				assert.Error(t, err)
 				assert.Nil(t, detector)

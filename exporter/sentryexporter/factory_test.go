@@ -37,7 +37,7 @@ func TestCreateExporter(t *testing.T) {
 
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 
 	te, err := factory.CreateTracesExporter(context.Background(), params, eCfg)
 	assert.Nil(t, err)

@@ -59,13 +59,11 @@ func TestCreateTracesExporter(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	factories.Exporters[config.Type(typeStr)] = factory
-	cfg, err := configtest.LoadConfigFile(
-		t, path.Join(".", "testdata", "config.yaml"), factories,
-	)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	exporter, err := factory.CreateTracesExporter(ctx, component.ExporterCreateParams{Logger: logger}, cfg.Exporters[config.NewIDWithName(typeStr, "customname")])
+	exporter, err := factory.CreateTracesExporter(ctx, component.ExporterCreateSettings{Logger: logger}, cfg.Exporters[config.NewIDWithName(typeStr, "customname")])
 	assert.Nil(t, err)
 	assert.NotNil(t, exporter)
 }
@@ -77,13 +75,11 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	factories.Exporters[config.Type(typeStr)] = factory
-	cfg, err := configtest.LoadConfigFile(
-		t, path.Join(".", "testdata", "config.yaml"), factories,
-	)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	exporter, err := factory.CreateMetricsExporter(ctx, component.ExporterCreateParams{Logger: logger}, cfg.Exporters[config.NewIDWithName(typeStr, "customname")])
+	exporter, err := factory.CreateMetricsExporter(ctx, component.ExporterCreateSettings{Logger: logger}, cfg.Exporters[config.NewIDWithName(typeStr, "customname")])
 	assert.NotNil(t, err)
 	assert.Nil(t, exporter)
 }

@@ -80,7 +80,7 @@ func runTraceMock(initialContext context.Context, ptrace pdata.Traces, cfg mockC
 		c.CommonConfig.APIKey = "NRII-1"
 	}
 	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
-	params := component.ExporterCreateParams{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
+	params := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
 		Command: testCollectorName,
 		Version: testCollectorVersion,
 	}}
@@ -127,7 +127,7 @@ func runMetricMock(initialContext context.Context, pmetrics pdata.Metrics, cfg m
 		c.CommonConfig.APIKey = "NRII-1"
 	}
 	c.MetricsConfig.insecure, c.MetricsConfig.HostOverride = true, u.Host
-	params := component.ExporterCreateParams{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
+	params := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
 		Command: testCollectorName,
 		Version: testCollectorVersion,
 	}}
@@ -174,7 +174,7 @@ func runLogMock(initialContext context.Context, plogs pdata.Logs, cfg mockConfig
 		c.CommonConfig.APIKey = "NRII-1"
 	}
 	c.LogsConfig.insecure, c.LogsConfig.HostOverride = true, u.Host
-	params := component.ExporterCreateParams{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
+	params := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
 		Command: testCollectorName,
 		Version: testCollectorVersion,
 	}}
@@ -760,7 +760,7 @@ func testUserAgentContainsCollectorInfo(t *testing.T, version string, exeName st
 		c.CommonConfig.APIKey = "NRII-1"
 	}
 	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
-	params := component.ExporterCreateParams{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
+	params := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
 		Command: exeName,
 		Version: version,
 	}}
@@ -809,7 +809,7 @@ func TestBadSpanResourceGeneratesError(t *testing.T) {
 		c.CommonConfig.APIKey = "NRII-1"
 	}
 	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
-	params := component.ExporterCreateParams{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
+	params := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
 		Command: testCollectorName,
 		Version: testCollectorVersion,
 	}}
@@ -860,7 +860,7 @@ func TestBadMetricResourceGeneratesError(t *testing.T) {
 		c.CommonConfig.APIKey = "NRII-1"
 	}
 	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
-	params := component.ExporterCreateParams{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
+	params := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
 		Command: testCollectorName,
 		Version: testCollectorVersion,
 	}}
@@ -909,7 +909,7 @@ func TestBadLogResourceGeneratesError(t *testing.T) {
 		c.CommonConfig.APIKey = "NRII-1"
 	}
 	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
-	params := component.ExporterCreateParams{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
+	params := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
 		Command: testCollectorName,
 		Version: testCollectorVersion,
 	}}
@@ -962,7 +962,7 @@ func TestFailureToRecordMetricsDoesNotAffectExportingData(t *testing.T) {
 	}
 	c.TracesConfig.insecure, c.TracesConfig.HostOverride = true, u.Host
 
-	params := component.ExporterCreateParams{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
+	params := component.ExporterCreateSettings{Logger: zap.NewNop(), BuildInfo: component.BuildInfo{
 		Command: testCollectorName,
 		Version: testCollectorVersion,
 	}}
