@@ -4,6 +4,8 @@
 
 **The `otlp` exporter is the recommended solution to integrate the OpenTelemetry Collector to Elastic.**
 
+For more details, see the [Elastic documentation to integrate with OpenTelemetry](https://www.elastic.co/guide/en/apm/get-started/current/open-telemetry-elastic.html).
+
 ## Sample configurations
 
 ### Sample configuration using an Elastic APM Server Token
