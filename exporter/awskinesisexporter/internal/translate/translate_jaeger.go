@@ -37,18 +37,19 @@ func (j *jaeger) WriteTraces(td pdata.Traces) error {
 		return err
 	}
 
+	var errs []error
 	for _, trace := range traces {
 		for _, span := range trace.GetSpans() {
 			if span.Process == nil {
 				span.Process = trace.Process
 			}
 			if err := j.kinesis.ExportSpan(span); err != nil {
-				return err
+				errs = append(errs, err)
 			}
 		}
 	}
 
-	return nil
+	return consumererrors.Combine(errs)
 }
 
 func (j *jaeger) WriteMetrics(_ pdata.Metrics) error { return ErrUnsupportedEncodedType }

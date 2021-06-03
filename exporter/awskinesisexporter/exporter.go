@@ -58,7 +58,7 @@ func (e Exporter) Shutdown(context.Context) error {
 func (e Exporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 	err := e.ew.WriteTraces(td)
 	if err != nil {
-		e.logger.Error("Unable to write traces to kinesis", zap.Error(err))
+		err = fmt.Errorf("issues writing traces to kinesis: %w", err)
 	}
 	return err
 }
