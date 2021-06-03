@@ -88,7 +88,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			generateTestDoubleSum("foo"),
 			map[string]*MetricInfo{
 				"foo": {
-					Value: float64(0.1),
+					Value: 0.1,
 					Unit:  "Count",
 				},
 			},
