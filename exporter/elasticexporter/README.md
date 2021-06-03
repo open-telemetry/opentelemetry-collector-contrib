@@ -137,10 +137,6 @@ exporters:
         secret_token: "hunter2"
 ```
 
-        - otlp/elastic
-```
-
-
 # Legacy OpenTelemetry Collector Exporter for Elastic
 
 
