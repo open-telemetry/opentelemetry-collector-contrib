@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -216,6 +217,17 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.True(t, p.rules.Cluster)
 	assert.False(t, p.rules.PodName)
 	assert.False(t, p.rules.PodUID)
+	assert.False(t, p.rules.StartTime)
+	assert.False(t, p.rules.Deployment)
+	assert.False(t, p.rules.Node)
+
+	p = &kubernetesprocessor{}
+
+	assert.NoError(t, WithExtractMetadata(conventions.AttributeK8sNamespace, conventions.AttributeK8sPod, conventions.AttributeK8sPodUID)(p))
+	assert.True(t, p.rules.Namespace)
+	assert.False(t, p.rules.Cluster)
+	assert.True(t, p.rules.PodName)
+	assert.True(t, p.rules.PodUID)
 	assert.False(t, p.rules.StartTime)
 	assert.False(t, p.rules.Deployment)
 	assert.False(t, p.rules.Node)
