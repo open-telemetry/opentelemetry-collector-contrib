@@ -80,19 +80,15 @@ func (s strictMatcher) MatchString(cmp string) bool {
 
 type internalFilterStrict struct {
 	include     string
-	matchLabels map[string]strictMatcher
+	matchLabels map[string]StringMatcher
 }
 
 func (f internalFilterStrict) getMatches(toMatch metricNameMapping) []*match {
 
 	if metrics, ok := toMatch[f.include]; ok {
-		matches := make([]*match, 0, 10)
-		stringMatcherMap := make(map[string]StringMatcher)
-		for k, v := range f.matchLabels {
-			stringMatcherMap[k] = v
-		}
+		matches := make([]*match, 0)
 		for _, metric := range metrics {
-			matchedMetric := labelMatched(stringMatcherMap, metric)
+			matchedMetric := labelMatched(f.matchLabels, metric)
 			if matchedMetric != nil {
 				matches = append(matches, &match{metric: matchedMetric})
 			}
@@ -109,20 +105,15 @@ func (f internalFilterStrict) getSubexpNames() []string {
 
 type internalFilterRegexp struct {
 	include     *regexp.Regexp
-	matchLabels map[string]*regexp.Regexp
+	matchLabels map[string]StringMatcher
 }
 
 func (f internalFilterRegexp) getMatches(toMatch metricNameMapping) []*match {
-	matches := make([]*match, 0, 10)
-	stringMatcherMap := make(map[string]StringMatcher)
-	for k, v := range f.matchLabels {
-		stringMatcherMap[k] = v
-	}
-
+	matches := make([]*match, 0)
 	for name, metrics := range toMatch {
 		if submatches := f.include.FindStringSubmatchIndex(name); submatches != nil {
 			for _, metric := range metrics {
-				matchedMetric := labelMatched(stringMatcherMap, metric)
+				matchedMetric := labelMatched(f.matchLabels, metric)
 				if matchedMetric != nil {
 					matches = append(matches, &match{metric: matchedMetric, pattern: f.include, submatches: submatches})
 				}
