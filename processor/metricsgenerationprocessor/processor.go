@@ -64,28 +64,26 @@ func (mgp *metricsGenerationProcessor) ProcessMetrics(_ context.Context, md pdat
 			operand2 := float64(0)
 			_, ok := nameToMetricMap[rule.metric1]
 			if !ok {
-				mgp.logger.Debug("Missing first metric:" + rule.metric1)
+				mgp.logger.Debug("Missing first metric", zap.String("metric_name", rule.metric1))
 				continue
 			}
 
 			if rule.ruleType == string(calculate) {
 				metric2, ok := nameToMetricMap[rule.metric2]
 				if !ok {
-					mgp.logger.Debug("Missing second metric:" + rule.metric2)
+					mgp.logger.Debug("Missing second metric", zap.String("metric_name", rule.metric2))
 					continue
 				}
-				operand2 = getMetricValue(metric2[0])
+				operand2 = getMetricValue(metric2)
 				if operand2 <= 0 {
 					continue
 				}
-				generateMetrics(rm, operand2, rule)
-			}
 
-			if rule.ruleType == string(scale) {
-				generateMetrics(rm, rule.scaleBy, rule)
+			} else if rule.ruleType == string(scale) {
+				operand2 = rule.scaleBy
 			}
+			generateMetrics(rm, operand2, rule, mgp.logger)
 		}
-
 	}
 	return md, nil
 }
