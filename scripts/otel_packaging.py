@@ -27,12 +27,13 @@ def get_instrumentation_packages():
         if not os.path.isdir(pkg_path):
             continue
 
-        out = str(
-            subprocess.check_output(
-                "python setup.py meta", shell=True, cwd=pkg_path
-            )
+        out = subprocess.check_output(
+            "python setup.py meta",
+            shell=True,
+            cwd=pkg_path,
+            universal_newlines=True,
         )
-        instrumentation = json.loads(out.split("\\n")[1])
+        instrumentation = json.loads(out.splitlines()[1])
         instrumentation["requirement"] = "==".join(
             (instrumentation["name"], instrumentation["version"],)
         )

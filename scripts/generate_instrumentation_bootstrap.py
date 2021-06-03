@@ -18,6 +18,7 @@ import ast
 import logging
 import os
 import subprocess
+import sys
 
 import astor
 import pkg_resources
@@ -91,7 +92,18 @@ def main():
     with open(gen_path, "w") as gen_file:
         gen_file.write(source)
 
-    subprocess.run(["black", "-q", gen_path], check=True)
+    subprocess.run(
+        [
+            sys.executable,
+            "scripts/eachdist.py",
+            "format",
+            "--path",
+            "opentelemetry-instrumentation",
+        ],
+        check=True,
+    )
+
+    logger.info("generated %s", gen_path)
 
 
 if __name__ == "__main__":
