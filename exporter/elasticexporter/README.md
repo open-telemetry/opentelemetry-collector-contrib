@@ -1,8 +1,6 @@
 # Elastic native support for OpenTelemetry
 
-ℹ️ Since version 7.13, Elastic supports OTLP ingest directly. The native OTLP support of Elastic is the recommended integration. This means you can use an [OTLP exporter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlpexporter) and no longer need the OpenTelemetry Collector Exporter for Elastic to send data to Elastic.
-
-**The `otlp` exporter is the recommended solution to integrate the OpenTelemetry Collector to Elastic.**
+ℹ️ Since version 7.13, Elastic supports native OTLP ingestion. This means you can use an [OTLP exporter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlpexporter) to send data to Elastic, instead of the OpenTelemetry Collector Exporter for Elastic. **The `otlp` exporter is the recommended way to integrate the OpenTelemetry Collector to Elastic.**
 
 For more details, see the [Elastic documentation to integrate with OpenTelemetry](https://www.elastic.co/guide/en/apm/get-started/current/open-telemetry-elastic.html).
 
