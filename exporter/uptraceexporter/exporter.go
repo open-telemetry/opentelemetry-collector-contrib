@@ -99,12 +99,12 @@ func (e *traceExporter) pushTraceData(ctx context.Context, traces pdata.Traces) 
 	return nil
 }
 
-func (e *traceExporter) start(_ context.Context, _ component.Host) error {
+func (e *traceExporter) start(_ context.Context, host component.Host) error {
 	if e.cfg.HTTPClientSettings.Endpoint != "" {
 		e.logger.Warn("uptraceexporter: endpoint is not supported; use dsn instead")
 	}
 
-	client, err := e.cfg.HTTPClientSettings.ToClient()
+	client, err := e.cfg.HTTPClientSettings.ToClient(host.GetExtensions())
 	if err != nil {
 		return err
 	}
