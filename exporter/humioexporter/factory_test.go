@@ -33,7 +33,7 @@ func newHumioFactory(t *testing.T) component.ExporterFactory {
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[config.Type(typeStr)] = factory
+	factories.Exporters[typeStr] = factory
 
 	return factory
 }

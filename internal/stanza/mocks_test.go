@@ -119,7 +119,7 @@ type TestConfig struct {
 type TestReceiverType struct{}
 
 func (f TestReceiverType) Type() config.Type {
-	return config.Type(testType)
+	return testType
 }
 
 func (f TestReceiverType) CreateDefaultConfig() config.Receiver {
