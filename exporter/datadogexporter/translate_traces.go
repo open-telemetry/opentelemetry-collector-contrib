@@ -64,7 +64,7 @@ const (
 )
 
 // converts Traces into an array of datadog trace payloads grouped by env
-func convertToDatadogTd(td pdata.Traces, fallbackHost string, cfg *config.Config, blk *Denylister, buildInfo component.BuildInfo) ([]*pb.TracePayload, []datadog.Metric) {
+func convertToDatadogTd(td pdata.Traces, fallbackHost string, cfg *config.Config, blk *denylister, buildInfo component.BuildInfo) ([]*pb.TracePayload, []datadog.Metric) {
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
 	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
@@ -76,14 +76,19 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, cfg *config.Config
 	seenHosts := make(map[string]struct{})
 	var series []datadog.Metric
 	pushTime := pdata.TimestampFromTime(time.Now())
+
+	spanNameMap := cfg.Traces.SpanNameRemappings
+
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
 		host, ok := metadata.HostnameFromAttributes(rs.Resource().Attributes())
 		if !ok {
 			host = fallbackHost
 		}
+
 		seenHosts[host] = struct{}{}
-		payload := resourceSpansToDatadogSpans(rs, host, cfg, blk)
+		payload := resourceSpansToDatadogSpans(rs, host, cfg, blk, spanNameMap)
+
 		traces = append(traces, &payload)
 	}
 
@@ -123,7 +128,7 @@ func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePa
 }
 
 // converts a Trace's resource spans into a trace payload
-func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *config.Config, blk *Denylister) pb.TracePayload {
+func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *config.Config, blk *denylister, spanNameMap map[string]string) pb.TracePayload {
 	// get env tag
 	env := utils.NormalizeTag(cfg.Env)
 
@@ -156,7 +161,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *c
 		extractInstrumentationLibraryTags(ils.InstrumentationLibrary(), datadogTags)
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
-			span := spanToDatadogSpan(spans.At(j), resourceServiceName, datadogTags, cfg)
+			span := spanToDatadogSpan(spans.At(j), resourceServiceName, datadogTags, cfg, spanNameMap)
 			var apiTrace *pb.APITrace
 			var ok bool
 
@@ -193,7 +198,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *c
 		// Root span is used to carry some trace-level metadata, such as sampling rate and priority.
 		rootSpan := utils.GetRoot(apiTrace)
 
-		if !blk.Allows(rootSpan) {
+		if !blk.allows(rootSpan) {
 			// drop trace by not adding to payload if it's root span matches denylist
 			continue
 		}
@@ -215,6 +220,7 @@ func spanToDatadogSpan(s pdata.Span,
 	serviceName string,
 	datadogTags map[string]string,
 	cfg *config.Config,
+	spanNameMap map[string]string,
 ) *pb.Span {
 
 	tags := aggregateSpanTags(s, datadogTags)
@@ -276,7 +282,7 @@ func spanToDatadogSpan(s pdata.Span,
 	span := &pb.Span{
 		TraceID:  decodeAPMTraceID(s.TraceID().Bytes()),
 		SpanID:   decodeAPMSpanID(s.SpanID().Bytes()),
-		Name:     getDatadogSpanName(s, tags),
+		Name:     remapDatadogSpanName(getDatadogSpanName(s, tags), spanNameMap),
 		Resource: resourceName,
 		Service:  normalizedServiceName,
 		Start:    int64(startTime),
@@ -630,4 +636,14 @@ func eventsToString(evts pdata.SpanEventSlice) string {
 	}
 	eventArrayBytes, _ := json.Marshal(&eventArray)
 	return string(eventArrayBytes)
+}
+
+// remapDatadogSpanName allows users to map their datadog span operation names to
+// another string as they see fit.
+func remapDatadogSpanName(name string, spanNameMap map[string]string) string {
+	if updatedSpanName := spanNameMap[name]; updatedSpanName != "" {
+		return updatedSpanName
+	}
+
+	return name
 }

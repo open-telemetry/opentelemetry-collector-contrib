@@ -29,13 +29,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
 )
 
-// TraceEdgeConnection is used to send data to trace edge
-type TraceEdgeConnection interface {
+// traceEdgeConnection is used to send data to trace edge
+type traceEdgeConnection interface {
 	SendTraces(ctx context.Context, trace *pb.TracePayload, maxRetries int) error
 	SendStats(ctx context.Context, stats *stats.Payload, maxRetries int) error
 }
 
-type traceEdgeConnection struct {
+type traceEdgeConnectionImpl struct {
 	traceURL           string
 	statsURL           string
 	apiKey             string
@@ -49,10 +49,10 @@ const (
 	traceEdgeRetryInterval time.Duration = 10 * time.Second
 )
 
-// createTraceEdgeConnection returns a new TraceEdgeConnection
-func createTraceEdgeConnection(rootURL, apiKey string, buildInfo component.BuildInfo) TraceEdgeConnection {
+// createTraceEdgeConnection returns a new traceEdgeConnection
+func createTraceEdgeConnection(rootURL, apiKey string, buildInfo component.BuildInfo) traceEdgeConnection {
 
-	return &traceEdgeConnection{
+	return &traceEdgeConnectionImpl{
 		traceURL:  rootURL + "/api/v0.2/traces",
 		statsURL:  rootURL + "/api/v0.2/stats",
 		buildInfo: buildInfo,
@@ -69,7 +69,7 @@ type Payload struct {
 }
 
 // SendTraces serializes a trace payload to protobuf and sends it to Trace Edge
-func (con *traceEdgeConnection) SendTraces(ctx context.Context, trace *pb.TracePayload, maxRetries int) error {
+func (con *traceEdgeConnectionImpl) SendTraces(ctx context.Context, trace *pb.TracePayload, maxRetries int) error {
 	binary, marshallErr := proto.Marshal(trace)
 	if marshallErr != nil {
 		return fmt.Errorf("failed to serialize trace payload to protobuf: %w", marshallErr)
@@ -108,7 +108,7 @@ func (con *traceEdgeConnection) SendTraces(ctx context.Context, trace *pb.TraceP
 }
 
 // SendStats serializes a stats payload to json and sends it to Trace Edge
-func (con *traceEdgeConnection) SendStats(ctx context.Context, sts *stats.Payload, maxRetries int) error {
+func (con *traceEdgeConnectionImpl) SendStats(ctx context.Context, sts *stats.Payload, maxRetries int) error {
 	var b bytes.Buffer
 	err := stats.EncodePayload(&b, sts)
 	if err != nil {
@@ -145,7 +145,7 @@ func (con *traceEdgeConnection) SendStats(ctx context.Context, sts *stats.Payloa
 }
 
 // sendPayloadToTraceEdge sends a payload to Trace Edge
-func (con *traceEdgeConnection) sendPayloadToTraceEdge(ctx context.Context, apiKey string, payload *Payload, url string) (bool, error) {
+func (con *traceEdgeConnectionImpl) sendPayloadToTraceEdge(ctx context.Context, apiKey string, payload *Payload, url string) (bool, error) {
 
 	// Create the request to be sent to the API
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(payload.Bytes))

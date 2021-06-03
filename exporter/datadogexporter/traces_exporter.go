@@ -35,10 +35,10 @@ type traceExporter struct {
 	params         component.ExporterCreateSettings
 	cfg            *config.Config
 	ctx            context.Context
-	edgeConnection TraceEdgeConnection
+	edgeConnection traceEdgeConnection
 	obfuscator     *obfuscate.Obfuscator
 	client         *datadog.Client
-	denylister     *Denylister
+	denylister     *denylister
 }
 
 var (
@@ -69,7 +69,7 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateSetti
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
 
 	// a denylist for dropping ignored resources
-	denylister := NewDenylister(cfg.Traces.IgnoreResources)
+	denylister := newDenylister(cfg.Traces.IgnoreResources)
 
 	exporter := &traceExporter{
 		params:         params,
