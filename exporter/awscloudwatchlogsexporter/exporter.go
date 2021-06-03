@@ -93,9 +93,6 @@ func (e *exporter) PushLogs(ctx context.Context, ld pdata.Logs) (droppedTimeSeri
 	if len(logEvents) == 0 {
 		return 0, nil
 	}
-	if dropped > 0 {
-		e.logger.Warn("CloudWatch Logs exporter dropped log records", zap.Any("count", dropped))
-	}
 
 	e.logger.Debug("Putting log events", zap.Int("num_of_events", len(logEvents)))
 	input := &cloudwatchlogs.PutLogEventsInput{
@@ -109,12 +106,12 @@ func (e *exporter) PushLogs(ctx context.Context, ld pdata.Logs) (droppedTimeSeri
 		return 0, err
 	}
 	if info := out.RejectedLogEventsInfo; info != nil {
-		return ld.LogRecordCount(), fmt.Errorf("log event rejected")
+		return ld.LogRecordCount() + dropped, fmt.Errorf("log event rejected")
 	}
 	e.logger.Debug("Log events are successfully put")
 
 	e.seqToken = *out.NextSequenceToken
-	return 0, nil
+	return dropped, nil
 }
 
 func logsToCWLogs(logger *zap.Logger, ld pdata.Logs) ([]*cloudwatchlogs.InputLogEvent, int) {
@@ -166,7 +163,7 @@ type cwLogBody struct {
 func logToCWLog(resourceAttrs map[string]interface{}, log pdata.LogRecord) (*cloudwatchlogs.InputLogEvent, error) {
 	// TODO(jbd): Benchmark and improve the allocations.
 	// Evaluate go.elastic.co/fastjson as a replacement for encoding/json.
-	body := &cwLogBody{
+	body := cwLogBody{
 		Name:                   log.Name(),
 		Body:                   attrValue(log.Body()),
 		SeverityNumber:         int32(log.SeverityNumber()),

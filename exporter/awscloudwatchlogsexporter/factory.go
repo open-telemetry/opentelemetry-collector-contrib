@@ -56,7 +56,7 @@ func createLogsExporter(ctx context.Context, params component.ExporterCreatePara
 		exporter.PushLogs,
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{
 			Enabled:      true,
-			NumConsumers: 1, // due to  thesequence token, there can be only one request in flight
+			NumConsumers: 1, // due to the sequence token, there can be only one request in flight
 		}),
 		exporterhelper.WithRetry(config.RetrySettings),
 	)
