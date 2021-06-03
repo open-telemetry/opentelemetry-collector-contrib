@@ -16,6 +16,7 @@ package awskinesisexporter
 
 import (
 	"context"
+	"fmt"
 
 	awskinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
 	"go.opentelemetry.io/collector/component"

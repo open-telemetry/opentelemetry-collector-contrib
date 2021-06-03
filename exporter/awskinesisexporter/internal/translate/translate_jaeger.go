@@ -16,6 +16,7 @@ package translate
 
 import (
 	awskinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 )
@@ -49,7 +50,7 @@ func (j *jaeger) WriteTraces(td pdata.Traces) error {
 		}
 	}
 
-	return consumererrors.Combine(errs)
+	return consumererror.Combine(errs)
 }
 
 func (j *jaeger) WriteMetrics(_ pdata.Metrics) error { return ErrUnsupportedEncodedType }
