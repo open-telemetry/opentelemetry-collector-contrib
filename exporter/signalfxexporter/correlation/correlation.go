@@ -55,7 +55,7 @@ func NewTracker(cfg *Config, accessToken string, params component.ExporterCreate
 	}
 }
 
-func newCorrelationClient(cfg *Config, accessToken string, params component.ExporterCreateSettings, _ component.Host) (
+func newCorrelationClient(cfg *Config, accessToken string, params component.ExporterCreateSettings, host component.Host) (
 	*correlationContext, error,
 ) {
 	corrURL, err := url.Parse(cfg.Endpoint)
@@ -63,7 +63,7 @@ func newCorrelationClient(cfg *Config, accessToken string, params component.Expo
 		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %v", cfg.Endpoint, err)
 	}
 
-	httpClient, err := cfg.ToClient()
+	httpClient, err := cfg.ToClient(host.GetExtensions())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create correlation API client: %v", err)
 	}
