@@ -88,6 +88,11 @@ type hostInfo interface {
 	GetNumCores() int64
 	GetMemoryCapacity() int64
 	GetClusterName() string
+	GetEBSVolumeID(string) string
+	ExtractEbsIDsUsedByKubernetes() map[string]string
+	GetInstanceID() string
+	GetInstanceType() string
+	GetAutoScalingGroupName() string
 }
 
 type Cadvisor struct {
@@ -140,6 +145,57 @@ func GetMetricsExtractors() []extractors.MetricExtractor {
 	return metricsExtractors
 }
 
+func (c *Cadvisor) addEbsVolumeInfo(tags map[string]string, ebsVolumeIdsUsedAsPV map[string]string) {
+	deviceName, ok := tags[ci.DiskDev]
+	if !ok {
+		return
+	}
+
+	if c.hostInfo != nil {
+		if volId := c.hostInfo.GetEBSVolumeID(deviceName); volId != "" {
+			tags[ci.HostEbsVolumeID] = volId
+		}
+	}
+
+	if tags[ci.MetricType] == ci.TypeContainerFS || tags[ci.MetricType] == ci.TypeNodeFS ||
+		tags[ci.MetricType] == ci.TypeNodeDiskIO || tags[ci.MetricType] == ci.TypeContainerDiskIO {
+		if volId := ebsVolumeIdsUsedAsPV[deviceName]; volId != "" {
+			tags[ci.EbsVolumeID] = volId
+		}
+	}
+}
+
+func (c *Cadvisor) decorateMetrics(cadvisormetrics []*extractors.CAdvisorMetric) {
+	ebsVolumeIdsUsedAsPV := c.hostInfo.ExtractEbsIDsUsedByKubernetes()
+
+	for _, m := range cadvisormetrics {
+		tags := m.GetTags()
+		c.addEbsVolumeInfo(tags, ebsVolumeIdsUsedAsPV)
+
+		//add version
+		tags[ci.Version] = c.version
+
+		//add NodeName for node, pod and container
+		metricType := tags[ci.MetricType]
+		if c.nodeName != "" && (ci.IsNode(metricType) || ci.IsInstance(metricType) ||
+			ci.IsPod(metricType) || ci.IsContainer(metricType)) {
+			tags[ci.NodeNameKey] = c.nodeName
+		}
+
+		//add instance id and type
+		if instanceId := c.hostInfo.GetInstanceID(); instanceId != "" {
+			tags[ci.InstanceID] = instanceId
+		}
+		if instanceType := c.hostInfo.GetInstanceType(); instanceType != "" {
+			tags[ci.InstanceType] = instanceType
+		}
+
+		//add cluster name and auto scaling group name
+		tags[ci.ClusterNameKey] = c.hostInfo.GetClusterName()
+		tags[ci.AutoScalingGroupNameKey] = c.hostInfo.GetAutoScalingGroupName()
+	}
+}
+
 // GetMetrics generates metrics from cadvisor
 func (c *Cadvisor) GetMetrics() []pdata.Metrics {
 	c.logger.Debug("collect data from cadvisor...")
@@ -166,6 +222,8 @@ func (c *Cadvisor) GetMetrics() []pdata.Metrics {
 
 	c.logger.Debug("cadvisor containers stats", zap.Int("size", len(containerinfos)))
 	results := processContainers(containerinfos, c.hostInfo, c.containerOrchestrator, c.logger)
+
+	c.decorateMetrics(results)
 
 	for _, cadvisorMetric := range results {
 		md := ci.ConvertToOTLPMetrics(cadvisorMetric.GetFields(), cadvisorMetric.GetTags(), c.logger)

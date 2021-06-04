@@ -14,6 +14,13 @@
 
 package stores
 
+import (
+	"os"
+	"time"
+
+	"go.uber.org/zap"
+)
+
 // CIMetric represents the raw metric interface for container insights
 type CIMetric interface {
 	HasField(key string) bool
@@ -30,4 +37,48 @@ type K8sStore interface {
 	RefreshTick()
 }
 
+var stores []K8sStore
+
 // TODO: add code to initialize pod and service store and provide api for decorating metrics
+func DecorateMetrics() {
+	// NodeName := os.Getenv("HOST_NAME")
+	// if NodeName == "" {
+	// 	return errors.New("missing environment variable HOST_NAME. Please check your YAML config")
+	// }
+
+	HostIP := os.Getenv("HOST_IP")
+	// if HostIP == "" {
+	// 	return errors.New("missing environment variable HOST_IP. Please check your YAML config")
+	// }
+
+	shutdownC := make(chan bool)
+
+	PrefFullPodName := false
+	logger := zap.NewNop()
+	podstore, _ := NewPodStore(HostIP, PrefFullPodName, logger)
+	stores = append(stores, podstore)
+	TagService := true
+	if TagService {
+		stores = append(stores, NewServiceStore(logger))
+	}
+
+	for _, store := range stores {
+		store.RefreshTick()
+	}
+
+	go func() {
+		refreshTicker := time.NewTicker(time.Second)
+		defer refreshTicker.Stop()
+		for {
+			select {
+			case <-refreshTicker.C:
+				for _, store := range stores {
+					store.RefreshTick()
+				}
+			case <-shutdownC:
+				refreshTicker.Stop()
+				return
+			}
+		}
+	}()
+}
