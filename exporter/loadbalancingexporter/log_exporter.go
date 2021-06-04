@@ -46,10 +46,10 @@ type logExporterImp struct {
 }
 
 // Create new logs exporter
-func newLogsExporter(params component.ExporterCreateParams, cfg config.Exporter) (*logExporterImp, error) {
+func newLogsExporter(params component.ExporterCreateSettings, cfg config.Exporter) (*logExporterImp, error) {
 	exporterFactory := otlpexporter.NewFactory()
 
-	tmplParams := component.ExporterCreateParams{
+	tmplParams := component.ExporterCreateSettings{
 		Logger:    params.Logger,
 		BuildInfo: params.BuildInfo,
 	}

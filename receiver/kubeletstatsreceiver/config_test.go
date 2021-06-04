@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	kube "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
 )
 
@@ -36,9 +37,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(
-		t, path.Join(".", "testdata", "config.yaml"), factories,
-	)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -46,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg := cfg.Receivers[config.NewIDWithName(typeStr, "default")].(*Config)
 	require.Equal(t, &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "default")),
-		ClientConfig: kubelet.ClientConfig{
+		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "tls",
 			},
@@ -65,7 +64,7 @@ func TestLoadConfig(t *testing.T) {
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "1.2.3.4:5555",
 		},
-		ClientConfig: kubelet.ClientConfig{
+		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "tls",
 			},
@@ -87,7 +86,7 @@ func TestLoadConfig(t *testing.T) {
 	saCfg := cfg.Receivers[config.NewIDWithName(typeStr, "sa")].(*Config)
 	require.Equal(t, &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "sa")),
-		ClientConfig: kubelet.ClientConfig{
+		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "serviceAccount",
 			},
@@ -104,7 +103,7 @@ func TestLoadConfig(t *testing.T) {
 	metadataCfg := cfg.Receivers[config.NewIDWithName(typeStr, "metadata")].(*Config)
 	require.Equal(t, &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "metadata")),
-		ClientConfig: kubelet.ClientConfig{
+		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "serviceAccount",
 			},
@@ -124,7 +123,7 @@ func TestLoadConfig(t *testing.T) {
 	metricGroupsCfg := cfg.Receivers[config.NewIDWithName(typeStr, "metric_groups")].(*Config)
 	require.Equal(t, &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "metric_groups")),
-		ClientConfig: kubelet.ClientConfig{
+		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "serviceAccount",
 			},
@@ -140,7 +139,7 @@ func TestLoadConfig(t *testing.T) {
 	metadataWithK8sAPICfg := cfg.Receivers[config.NewIDWithName(typeStr, "metadata_with_k8s_api")].(*Config)
 	require.Equal(t, &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "metadata_with_k8s_api")),
-		ClientConfig: kubelet.ClientConfig{
+		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "serviceAccount",
 			},

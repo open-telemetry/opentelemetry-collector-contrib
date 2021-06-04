@@ -30,14 +30,14 @@ import (
 )
 
 type prometheusReceiverWrapper struct {
-	params            component.ReceiverCreateParams
+	params            component.ReceiverCreateSettings
 	config            *Config
 	consumer          consumer.Metrics
 	prometheusRecever component.MetricsReceiver
 }
 
 // new returns a prometheusReceiverWrapper
-func new(params component.ReceiverCreateParams, cfg *Config, consumer consumer.Metrics) *prometheusReceiverWrapper {
+func new(params component.ReceiverCreateSettings, cfg *Config, consumer consumer.Metrics) *prometheusReceiverWrapper {
 	return &prometheusReceiverWrapper{params: params, config: cfg, consumer: consumer}
 }
 

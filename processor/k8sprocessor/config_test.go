@@ -32,16 +32,13 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Processors[config.Type(typeStr)] = factory
+	factories.Processors[typeStr] = factory
 	require.NoError(t, err)
 
 	err = configcheck.ValidateConfig(factory.CreateDefaultConfig())
 	require.NoError(t, err)
 
-	cfg, err := configtest.LoadConfigFile(
-		t,
-		path.Join(".", "testdata", "config.yaml"),
-		factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
@@ -60,7 +57,7 @@ func TestLoadConfig(t *testing.T) {
 			APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
 			Passthrough:       false,
 			Extract: ExtractConfig{
-				Metadata: []string{"podName", "podUID", "deployment", "cluster", "namespace", "node", "startTime"},
+				Metadata: []string{"k8s.pod.name", "k8s.pod.uid", "k8s.deployment.name", "k8s.cluster.name", "k8s.namespace.name", "k8s.node.name", "k8s.pod.start_time"},
 				Annotations: []FieldExtractConfig{
 					{TagName: "a1", Key: "annotation-one"},
 					{TagName: "a2", Key: "annotation-two", Regex: "field=(?P<value>.+)"},

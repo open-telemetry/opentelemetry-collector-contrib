@@ -103,8 +103,8 @@ func encode(pb proto.Message) ([]byte, error) {
 	return buf, nil
 }
 
-func (l *lokiExporter) start(_ context.Context, _ component.Host) (err error) {
-	client, err := l.config.HTTPClientSettings.ToClient()
+func (l *lokiExporter) start(_ context.Context, host component.Host) (err error) {
+	client, err := l.config.HTTPClientSettings.ToClient(host.GetExtensions())
 	if err != nil {
 		return err
 	}

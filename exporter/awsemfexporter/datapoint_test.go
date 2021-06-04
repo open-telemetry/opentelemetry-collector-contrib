@@ -328,14 +328,14 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 		{
 			"w/ 1st delta calculation",
 			true,
-			float64(0.4),
-			float64(0.4),
+			0.4,
+			0.4,
 		},
 		{
 			"w/ 2nd delta calculation",
 			false,
-			float64(0.5),
-			float64(0.1),
+			0.5,
+			0.1,
 		},
 	}
 
@@ -373,7 +373,7 @@ func TestHistogramDataPointSliceAt(t *testing.T) {
 	testDPS := pdata.NewHistogramDataPointSlice()
 	testDP := testDPS.AppendEmpty()
 	testDP.SetCount(uint64(17))
-	testDP.SetSum(float64(17.13))
+	testDP.SetSum(17.13)
 	testDP.SetBucketCounts([]uint64{1, 2, 3})
 	testDP.SetExplicitBounds([]float64{1, 2, 3})
 	testDP.LabelsMap().InitFromMap(labels)
@@ -413,13 +413,13 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 	}{
 		{
 			"1st summary count calculation",
-			[]interface{}{float64(17.3), uint64(17)},
-			[]interface{}{float64(17.3), uint64(17)},
+			[]interface{}{17.3, uint64(17)},
+			[]interface{}{17.3, uint64(17)},
 		},
 		{
 			"2nd summary count calculation",
 			[]interface{}{float64(100), uint64(25)},
-			[]interface{}{float64(82.7), uint64(8)},
+			[]interface{}{82.7, uint64(8)},
 		},
 		{
 			"3rd summary count calculation",

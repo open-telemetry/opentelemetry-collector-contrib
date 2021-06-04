@@ -36,7 +36,7 @@ type runner interface {
 
 // receiverRunner handles starting/stopping of a concrete subreceiver instance.
 type receiverRunner struct {
-	params      component.ReceiverCreateParams
+	params      component.ReceiverCreateSettings
 	idNamespace config.ComponentID
 	host        component.Host
 }

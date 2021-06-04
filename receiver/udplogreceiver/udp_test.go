@@ -43,7 +43,7 @@ func testUDP(t *testing.T, cfg *UDPLogConfig) {
 	numLogs := 5
 
 	f := NewFactory()
-	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
+	params := component.ReceiverCreateSettings{Logger: zaptest.NewLogger(t)}
 	sink := new(consumertest.LogsSink)
 	rcvr, err := f.CreateLogsReceiver(context.Background(), params, cfg, sink)
 	require.NoError(t, err)
@@ -84,10 +84,8 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[config.Type(typeStr)] = factory
-	cfg, err := configtest.LoadConfigFile(
-		t, path.Join(".", "testdata", "config.yaml"), factories,
-	)
+	factories.Receivers[typeStr] = factory
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -108,7 +106,7 @@ func testdataConfigYamlAsMap() *UDPLogConfig {
 }
 
 func TestDecodeInputConfigFailure(t *testing.T) {
-	params := component.ReceiverCreateParams{
+	params := component.ReceiverCreateSettings{
 		Logger: zap.NewNop(),
 	}
 	sink := new(consumertest.LogsSink)

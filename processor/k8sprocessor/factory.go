@@ -16,11 +16,14 @@ package k8sprocessor
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/translator/conventions"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
@@ -54,7 +57,7 @@ func createDefaultConfig() config.Processor {
 
 func createTracesProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	next consumer.Traces,
 ) (component.TracesProcessor, error) {
@@ -63,7 +66,7 @@ func createTracesProcessor(
 
 func createLogsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextLogsConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
@@ -72,7 +75,7 @@ func createLogsProcessor(
 
 func createMetricsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextMetricsConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
@@ -81,7 +84,7 @@ func createMetricsProcessor(
 
 func createTracesProcessorWithOptions(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	next consumer.Traces,
 	options ...Option,
@@ -102,7 +105,7 @@ func createTracesProcessorWithOptions(
 
 func createMetricsProcessorWithOptions(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextMetricsConsumer consumer.Metrics,
 	options ...Option,
@@ -123,7 +126,7 @@ func createMetricsProcessorWithOptions(
 
 func createLogsProcessorWithOptions(
 	_ context.Context,
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextLogsConsumer consumer.Logs,
 	options ...Option,
@@ -143,11 +146,13 @@ func createLogsProcessorWithOptions(
 }
 
 func createKubernetesProcessor(
-	params component.ProcessorCreateParams,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	options ...Option,
 ) (*kubernetesprocessor, error) {
 	kp := &kubernetesprocessor{logger: params.Logger}
+
+	warnDeprecatedMetadataConfig(kp.logger, cfg)
 
 	allOptions := append(createProcessorOpts(cfg), options...)
 
@@ -190,4 +195,37 @@ func createProcessorOpts(cfg config.Processor) []Option {
 	opts = append(opts, WithExtractPodAssociations(oCfg.Association...))
 
 	return opts
+}
+
+func warnDeprecatedMetadataConfig(logger *zap.Logger, cfg config.Processor) {
+	oCfg := cfg.(*Config)
+	for _, field := range oCfg.Extract.Metadata {
+		var oldName, newName string
+		switch field {
+		case metdataNamespace:
+			oldName = metdataNamespace
+			newName = conventions.AttributeK8sNamespace
+		case metadataPodName:
+			oldName = metadataPodName
+			newName = conventions.AttributeK8sPod
+		case metadataPodUID:
+			oldName = metadataPodUID
+			newName = conventions.AttributeK8sPodUID
+		case metadataStartTime:
+			oldName = metadataStartTime
+			newName = metadataPodStartTime
+		case metadataDeployment:
+			oldName = metadataDeployment
+			newName = conventions.AttributeK8sDeployment
+		case metadataCluster:
+			oldName = metadataCluster
+			newName = conventions.AttributeK8sCluster
+		case metadataNode:
+			oldName = metadataNode
+			newName = conventions.AttributeK8sNodeName
+		}
+		if oldName != "" {
+			logger.Warn(fmt.Sprintf("%s has been deprecated in favor of %s for k8s-tagger processor", oldName, newName))
+		}
+	}
 }

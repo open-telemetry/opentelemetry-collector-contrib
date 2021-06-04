@@ -91,7 +91,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -212,7 +212,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -316,7 +316,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -329,7 +329,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	ctx := context.Background()
 	exp, err := factory.CreateMetricsExporter(
 		ctx,
-		component.ExporterCreateParams{Logger: logger},
+		component.ExporterCreateSettings{Logger: logger},
 		cfg.Exporters[config.NewIDWithName(typeStr, "api")],
 	)
 
@@ -348,7 +348,7 @@ func TestCreateAPITracesExporter(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -361,7 +361,7 @@ func TestCreateAPITracesExporter(t *testing.T) {
 	ctx := context.Background()
 	exp, err := factory.CreateTracesExporter(
 		ctx,
-		component.ExporterCreateParams{Logger: logger},
+		component.ExporterCreateSettings{Logger: logger},
 		cfg.Exporters[config.NewIDWithName(typeStr, "api")],
 	)
 
@@ -394,7 +394,7 @@ func TestOnlyMetadata(t *testing.T) {
 
 	expTraces, err := factory.CreateTracesExporter(
 		ctx,
-		component.ExporterCreateParams{Logger: logger},
+		component.ExporterCreateSettings{Logger: logger},
 		cfg,
 	)
 	assert.NoError(t, err)
@@ -402,7 +402,7 @@ func TestOnlyMetadata(t *testing.T) {
 
 	expMetrics, err := factory.CreateMetricsExporter(
 		ctx,
-		component.ExporterCreateParams{Logger: logger},
+		component.ExporterCreateSettings{Logger: logger},
 		cfg,
 	)
 	assert.NoError(t, err)

@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
@@ -73,7 +73,7 @@ func TestConfig_Validate(t *testing.T) {
 
 		factory := NewFactory()
 		factories.Extensions[typeStr] = factory
-		_, err = configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_invalid.yaml"), factories)
+		_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_invalid.yaml"), factories)
 		require.Error(t, err)
 	})
 

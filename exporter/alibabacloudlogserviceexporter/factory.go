@@ -46,7 +46,7 @@ func createDefaultConfig() config.Exporter {
 
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	return newTracesExporter(params.Logger, cfg)
@@ -54,7 +54,7 @@ func createTracesExporter(
 
 func createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (exp component.MetricsExporter, err error) {
 	return newMetricsExporter(params.Logger, cfg)
@@ -62,7 +62,7 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (exp component.LogsExporter, err error) {
 	return newLogsExporter(params.Logger, cfg)

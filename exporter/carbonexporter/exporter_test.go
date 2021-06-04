@@ -71,7 +71,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newCarbonExporter(tt.config, component.ExporterCreateParams{Logger: zap.NewNop()})
+			got, err := newCarbonExporter(tt.config, component.ExporterCreateSettings{Logger: zap.NewNop()})
 			if tt.wantErr {
 				assert.Nil(t, got)
 				assert.Error(t, err)
@@ -150,7 +150,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			}
 
 			config := &Config{Endpoint: addr, Timeout: 1000 * time.Millisecond}
-			exp, err := newCarbonExporter(config, component.ExporterCreateParams{Logger: zap.NewNop()})
+			exp, err := newCarbonExporter(config, component.ExporterCreateSettings{Logger: zap.NewNop()})
 			require.NoError(t, err)
 
 			require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))

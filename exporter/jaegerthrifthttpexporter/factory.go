@@ -47,7 +47,7 @@ func createDefaultConfig() config.Exporter {
 
 func createTracesExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	_ component.ExporterCreateSettings,
 	config config.Exporter,
 ) (component.TracesExporter, error) {
 
@@ -64,5 +64,5 @@ func createTracesExporter(
 		return nil, err
 	}
 
-	return newTracesExporter(config, component.ExporterCreateParams{Logger: zap.NewNop()}, expCfg.URL, expCfg.Headers, expCfg.Timeout)
+	return newTracesExporter(config, component.ExporterCreateSettings{Logger: zap.NewNop()}, expCfg.URL, expCfg.Headers, expCfg.Timeout)
 }

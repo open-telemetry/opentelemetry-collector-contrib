@@ -40,7 +40,7 @@ func TestCreateExporterWithAPIKey(t *testing.T) {
 	cfg := createDefaultConfig()
 	nrConfig := cfg.(*Config)
 	nrConfig.CommonConfig.APIKey = "a1b2c3d4"
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 
 	te, err := createTracesExporter(context.Background(), params, nrConfig)
 	assert.Nil(t, err)
@@ -59,7 +59,7 @@ func TestCreateExporterWithAPIKeyHeader(t *testing.T) {
 	cfg := createDefaultConfig()
 	nrConfig := cfg.(*Config)
 	nrConfig.CommonConfig.APIKeyHeader = "api-key"
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 
 	te, err := createTracesExporter(context.Background(), params, nrConfig)
 	assert.Nil(t, err)
@@ -79,7 +79,7 @@ func TestCreateExporterWithAPIKeyAndAPIKeyHeader(t *testing.T) {
 	nrConfig := cfg.(*Config)
 	nrConfig.CommonConfig.APIKey = "a1b2c3d4"
 	nrConfig.CommonConfig.APIKeyHeader = "api-key"
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 
 	te, err := createTracesExporter(context.Background(), params, nrConfig)
 	assert.Nil(t, err)
@@ -97,7 +97,7 @@ func TestCreateExporterWithAPIKeyAndAPIKeyHeader(t *testing.T) {
 func TestCreateExporterErrorWithoutAPIKeyOrAPIKeyHeader(t *testing.T) {
 	cfg := createDefaultConfig()
 	nrConfig := cfg.(*Config)
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 
 	te, err := createTracesExporter(context.Background(), params, nrConfig)
 	assert.NotNil(t, err)
@@ -112,19 +112,19 @@ func TestCreateExporterErrorWithoutAPIKeyOrAPIKeyHeader(t *testing.T) {
 	assert.Nil(t, le)
 }
 func TestCreateTracesExporterError(t *testing.T) {
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	_, err := createTracesExporter(context.Background(), params, nil)
 	assert.Error(t, err)
 }
 
 func TestCreateMetricsExporterError(t *testing.T) {
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	_, err := createMetricsExporter(context.Background(), params, nil)
 	assert.Error(t, err)
 }
 
 func TestCreateLogsExporterError(t *testing.T) {
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 	_, err := createLogsExporter(context.Background(), params, nil)
 	assert.Error(t, err)
 }

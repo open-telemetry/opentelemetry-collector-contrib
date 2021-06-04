@@ -63,7 +63,7 @@ func createDefaultConfig() config.Exporter {
 // Creates a new trace exporter for Humio
 func createTracesExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	config config.Exporter,
 ) (component.TracesExporter, error) {
 	if config == nil {

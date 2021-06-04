@@ -200,7 +200,7 @@ var _ component.TracesReceiver = (*sapmReceiver)(nil)
 // New creates a sapmReceiver that receives SAPM over http
 func New(
 	ctx context.Context,
-	params component.ReceiverCreateParams,
+	params component.ReceiverCreateSettings,
 	config *Config,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {

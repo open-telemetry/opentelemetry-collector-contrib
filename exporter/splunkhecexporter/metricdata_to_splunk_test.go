@@ -241,8 +241,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return metrics
 			},
 			wantSplunkMetrics: []*splunk.Event{
-				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{"com.splunk.index", "com.splunk.sourcetype", "host.name", "service.name", "k0", "k1"}, []interface{}{"myindex", "mysourcetype", "myhost", "mysource", "v0", "v1"}, doubleVal, "mysource", "mysourcetype", "myindex", "myhost"),
-				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{"com.splunk.index", "com.splunk.sourcetype", "host.name", "service.name", "k0", "k1"}, []interface{}{"myindex", "mysourcetype", "myhost", "mysource", "v0", "v1"}, int64Val, "mysource", "mysourcetype", "myindex", "myhost"),
+				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{"com.splunk.index", "com.splunk.sourcetype", "host.name", "service.name", "k0", "k1", "metric_type"}, []interface{}{"myindex", "mysourcetype", "myhost", "mysource", "v0", "v1", "DoubleGauge"}, doubleVal, "mysource", "mysourcetype", "myindex", "myhost"),
+				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{"com.splunk.index", "com.splunk.sourcetype", "host.name", "service.name", "k0", "k1", "metric_type"}, []interface{}{"myindex", "mysourcetype", "myhost", "mysource", "v0", "v1", "IntGauge"}, int64Val, "mysource", "mysourcetype", "myindex", "myhost"),
 			},
 		},
 
@@ -290,6 +290,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 						"k0": "v0",
 						"k1": "v1",
 						"metric_name:double_histogram_with_dims_sum": float64(23),
+						"metric_type": "Histogram",
 					},
 				},
 				{
@@ -302,6 +303,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 						"k0": "v0",
 						"k1": "v1",
 						"metric_name:double_histogram_with_dims_count": uint64(7),
+						"metric_type": "Histogram",
 					},
 				},
 				{
@@ -315,6 +317,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 						"k1": "v1",
 						"le": "1",
 						"metric_name:double_histogram_with_dims_bucket": uint64(4),
+						"metric_type": "Histogram",
 					},
 				},
 				{
@@ -328,6 +331,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 						"k1": "v1",
 						"le": "2",
 						"metric_name:double_histogram_with_dims_bucket": uint64(6),
+						"metric_type": "Histogram",
 					},
 				},
 				{
@@ -341,6 +345,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 						"k1": "v1",
 						"le": "4",
 						"metric_name:double_histogram_with_dims_bucket": uint64(9),
+						"metric_type": "Histogram",
 					},
 				},
 				{
@@ -354,6 +359,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 						"k1": "v1",
 						"le": "+Inf",
 						"metric_name:double_histogram_with_dims_bucket": uint64(14),
+						"metric_type": "Histogram",
 					},
 				},
 			},
@@ -403,6 +409,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 						"k0": "v0",
 						"k1": "v1",
 						"metric_name:int_histogram_with_dims_sum": int64(23),
+						"metric_type": "IntHistogram",
 					},
 				},
 				{
@@ -415,6 +422,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 						"k0": "v0",
 						"k1": "v1",
 						"metric_name:int_histogram_with_dims_count": uint64(7),
+						"metric_type": "IntHistogram",
 					},
 				},
 				{
@@ -428,6 +436,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 						"k1": "v1",
 						"le": "1",
 						"metric_name:int_histogram_with_dims_bucket": uint64(4),
+						"metric_type": "IntHistogram",
 					},
 				},
 				{
@@ -441,6 +450,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 						"k1": "v1",
 						"le": "2",
 						"metric_name:int_histogram_with_dims_bucket": uint64(6),
+						"metric_type": "IntHistogram",
 					},
 				},
 				{
@@ -454,6 +464,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 						"k1": "v1",
 						"le": "4",
 						"metric_name:int_histogram_with_dims_bucket": uint64(9),
+						"metric_type": "IntHistogram",
 					},
 				},
 				{
@@ -467,6 +478,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 						"k1": "v1",
 						"le": "+Inf",
 						"metric_name:int_histogram_with_dims_bucket": uint64(14),
+						"metric_type": "IntHistogram",
 					},
 				},
 			},
@@ -495,6 +507,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 						"k0":                            "v0",
 						"k1":                            "v1",
 						"metric_name:int_sum_with_dims": int64(62),
+						"metric_type":                   "IntSum",
 					},
 				},
 			},
@@ -523,6 +536,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 						"k0":                               "v0",
 						"k1":                               "v1",
 						"metric_name:double_sum_with_dims": float64(62),
+						"metric_type":                      "DoubleSum",
 					},
 				},
 			},
@@ -559,6 +573,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 						"k0":                      "v0",
 						"k1":                      "v1",
 						"metric_name:summary_sum": float64(42),
+						"metric_type":             "Summary",
 					},
 				},
 				{
@@ -571,6 +586,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 						"k0":                        "v0",
 						"k1":                        "v1",
 						"metric_name:summary_count": uint64(2),
+						"metric_type":               "Summary",
 					},
 				},
 				{
@@ -584,6 +600,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 						"k1":                      "v1",
 						"qt":                      "0.5",
 						"metric_name:summary_0.5": float64(34),
+						"metric_type":             "Summary",
 					},
 				},
 				{
@@ -597,6 +614,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 						"k1":                      "v1",
 						"qt":                      "0.6",
 						"metric_name:summary_0.6": float64(45),
+						"metric_type":             "Summary",
 					},
 				},
 			},

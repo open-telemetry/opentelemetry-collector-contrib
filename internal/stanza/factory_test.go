@@ -26,7 +26,7 @@ import (
 )
 
 func TestCreateReceiver(t *testing.T) {
-	params := component.ReceiverCreateParams{
+	params := component.ReceiverCreateSettings{
 		Logger: zap.NewNop(),
 	}
 

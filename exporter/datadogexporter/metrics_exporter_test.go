@@ -44,7 +44,7 @@ func TestNewExporter(t *testing.T) {
 			},
 		},
 	}
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateSettings{Logger: zap.NewNop()}
 
 	// The client should have been created correctly
 	exp := newMetricsExporter(context.Background(), params, cfg)

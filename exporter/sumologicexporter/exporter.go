@@ -96,7 +96,7 @@ func initExporter(cfg *Config) (*sumologicexporter, error) {
 
 func newLogsExporter(
 	cfg *Config,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 ) (component.LogsExporter, error) {
 	se, err := initExporter(cfg)
 	if err != nil {
@@ -118,7 +118,7 @@ func newLogsExporter(
 
 func newMetricsExporter(
 	cfg *Config,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 ) (component.MetricsExporter, error) {
 	se, err := initExporter(cfg)
 	if err != nil {
@@ -139,8 +139,8 @@ func newMetricsExporter(
 }
 
 // start starts the exporter
-func (se *sumologicexporter) start(_ context.Context, _ component.Host) (err error) {
-	client, err := se.config.HTTPClientSettings.ToClient()
+func (se *sumologicexporter) start(_ context.Context, host component.Host) (err error) {
+	client, err := se.config.HTTPClientSettings.ToClient(host.GetExtensions())
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
 	}

@@ -60,7 +60,7 @@ func (suite *JMXIntegrationSuite) TearDownSuite() {
 }
 
 func downloadJMXMetricGathererJAR() (string, error) {
-	url := "https://oss.sonatype.org/content/repositories/snapshots/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/1.0.0-alpha-SNAPSHOT/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha-20210429.213723-5.jar"
+	url := "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/1.0.0-alpha/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar"
 	resp, err := http.Get(url)
 	if err != nil {
 		return "", err
@@ -135,7 +135,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 	defer getLogsOnFailure(t, logObserver)
 
 	logger := zap.New(logCore)
-	params := component.ReceiverCreateParams{Logger: logger}
+	params := component.ReceiverCreateSettings{Logger: logger}
 
 	cfg := &Config{
 		CollectionInterval: 100 * time.Millisecond,
@@ -237,7 +237,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 }
 
 func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	params := component.ReceiverCreateSettings{Logger: zap.NewNop()}
 	cfg := &Config{
 		CollectionInterval: 100 * time.Millisecond,
 		Endpoint:           fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),
