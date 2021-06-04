@@ -228,8 +228,8 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) (int, error) {
 }
 
 // start starts the exporter
-func (e *exporter) start(_ context.Context, _ component.Host) (err error) {
-	client, err := e.cfg.HTTPClientSettings.ToClient()
+func (e *exporter) start(_ context.Context, host component.Host) (err error) {
+	client, err := e.cfg.HTTPClientSettings.ToClient(host.GetExtensions())
 	if err != nil {
 		return err
 	}

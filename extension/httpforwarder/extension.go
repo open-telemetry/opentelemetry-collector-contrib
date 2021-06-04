@@ -42,7 +42,7 @@ func (h *httpForwarder) Start(_ context.Context, host component.Host) error {
 		return fmt.Errorf("failed to bind to address %s: %w", h.config.Ingress.Endpoint, err)
 	}
 
-	httpClient, err := h.config.Egress.ToClient()
+	httpClient, err := h.config.Egress.ToClient(host.GetExtensions())
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
 	}

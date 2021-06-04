@@ -46,8 +46,8 @@ func newNginxScraper(
 	}
 }
 
-func (r *nginxScraper) start(_ context.Context, _ component.Host) error {
-	httpClient, err := r.cfg.ToClient()
+func (r *nginxScraper) start(_ context.Context, host component.Host) error {
+	httpClient, err := r.cfg.ToClient(host.GetExtensions())
 	if err != nil {
 		return err
 	}
