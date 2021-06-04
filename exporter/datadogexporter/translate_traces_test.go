@@ -380,7 +380,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	assert.Contains(t, datadogPayload.Traces[0].Spans[0].Meta[tagContainersTags], "pod_name:example-pod-name")
 	assert.Contains(t, datadogPayload.Traces[0].Spans[0].Meta[tagContainersTags], "arn:aws:ecs:ap-southwest-1:241423265983:task/test-environment-test-echo-Cluster-2lrqTJKFjACT/746bf64740324812835f688c30cf1512")
 
-	// ensure that span error type uses a fallback of "error"
+	// ensure that span error type uses a fallback of "error" if a status code exists
 	assert.Equal(t, "error", datadogPayload.Traces[0].Spans[0].Meta["error.type"])
 }
 
