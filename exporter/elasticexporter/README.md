@@ -16,7 +16,7 @@ exporters:
   otlp/elastic:
       endpoint: "xxx.elastic-cloud.com:443"
       headers:
-          Authorization: "Bearer your-apm-server-token"
+          Authorization: "Bearer your-apm-secret-token"
 service:
   pipelines:
     metrics:
