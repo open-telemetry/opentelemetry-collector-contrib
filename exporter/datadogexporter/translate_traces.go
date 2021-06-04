@@ -550,12 +550,15 @@ func getSpanErrorAndSetTags(s pdata.Span, tags map[string]string) int32 {
 	if isError == errorCode {
 		extractErrorTagsFromEvents(s, tags)
 
+		// if the error message doesnt exist, try to infer useful error information from
+		// the status message, and http status code / http status text.
+		// if we find useful error.message info, also set a fallback error.type
+		// otherwise leave these tags unset and allow the UI to handle defaults
 		if _, ok := tags[ext.ErrorMsg]; !ok {
 			if status.Message() != "" {
 				tags[ext.ErrorMsg] = status.Message()
 
-				// If we weren't able to pull an error type, go ahead and set
-				// this to a reasonable default
+				// If we weren't able to pull an error type, set to a reasonable default
 				if _, ok := tags[ext.ErrorType]; !ok {
 					tags[ext.ErrorType] = "error"
 				}
@@ -568,8 +571,7 @@ func getSpanErrorAndSetTags(s pdata.Span, tags map[string]string) int32 {
 						tags[ext.ErrorMsg] = statusCode
 					}
 
-					// If we weren't able to pull an error type, go ahead and set
-					// this to a reasonable default
+					// If we weren't able to pull an error type, set to a reasonable default
 					if _, ok := tags[ext.ErrorType]; !ok {
 						tags[ext.ErrorType] = "error"
 					}
