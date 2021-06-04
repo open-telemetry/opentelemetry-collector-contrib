@@ -6,7 +6,7 @@ For more details, see the [Elastic documentation to integrate with OpenTelemetry
 
 ## Sample configurations
 
-### Sample configuration using an Elastic APM Server Token
+### Sample configuration using an Elastic APM Secret Token
 
 When authenticating with an [Elastic APM Server Token](https://www.elastic.co/guide/en/apm/server/current/secret-token.html), define an `Authorization: "Bearer xxx"` header on the OTLP exporter:
 
