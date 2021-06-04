@@ -419,8 +419,8 @@ func TestTracesFallbackErrorMessage(t *testing.T) {
 	status := span.Status()
 	status.SetCode(pdata.StatusCodeError)
 
-	span.Attributes().InsertString("404", "http.status_code")
-	span.Attributes().InsertString("Not Found", "http.status_text")
+	span.Attributes().InsertString(conventions.AttributeHTTPStatusCode, "404")
+	span.Attributes().InsertString(conventions.AttributeHTTPStatusText, "Not Found")
 
 	// translate mocks to datadog traces
 	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &config.Config{}, denylister, map[string]string{})
