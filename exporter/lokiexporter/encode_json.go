@@ -2,13 +2,12 @@ package lokiexporter
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
-type jsonRecord struct {
+type lokiEntry struct {
 	Name       string                 `json:"name,omitempty"`
 	Body       string                 `json:"body,omitempty"`
 	TraceID    string                 `json:"traceid,omitempty"`
@@ -18,18 +17,13 @@ type jsonRecord struct {
 }
 
 func encodeJSON(lr pdata.LogRecord) string {
-	// json1 := jsonRecord{lr.Name(), lr.Body().StringVal(), lr.TraceID(), lr.SpanID(), lr.SeverityText()}
-	var json1 jsonRecord
-	var json2 []byte
+	var logRecord lokiEntry
+	var jsonRecord []byte
 
-	json1 = jsonRecord{Name: lr.Name(), Body: lr.Body().StringVal(), TraceID: lr.TraceID().HexString(), SpanID: lr.SpanID().HexString(), Severity: lr.SeverityText(), Attributes: tracetranslator.AttributeMapToMap(lr.Attributes())}
-	// json = {name: lr.Name(), body: lr.Body().StringVal(), traceid: lr.TraceID().StringVal(), spanid: lr.SpanID().StringVal(), severity: lr.Severity().StringVal(), attributes: {lr.AttributeMap().Get()}}
-	fmt.Printf("JSON 1: %v", json1)
+	logRecord = lokiEntry{Name: lr.Name(), Body: lr.Body().StringVal(), TraceID: lr.TraceID().HexString(), SpanID: lr.SpanID().HexString(), Severity: lr.SeverityText(), Attributes: tracetranslator.AttributeMapToMap(lr.Attributes())}
 
-	json2, err := json.Marshal(json1)
+	jsonRecord, err := json.Marshal(logRecord)
 	if err != nil {
-		fmt.Println("error:", err)
 	}
-	fmt.Println("JSON 2" + string(json2))
-	return string(json2)
+	return string(jsonRecord)
 }

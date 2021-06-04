@@ -36,7 +36,7 @@ type Config struct {
 
 	// Labels defines how labels should be applied to log streams sent to Loki.
 	Labels LabelsConfig `mapstructure:"labels"`
-	//Allows you to choose the entry format in the exporter
+	// Allows you to choose the entry format in the exporter
 	Format string `mapstructure:"format"`
 }
 
