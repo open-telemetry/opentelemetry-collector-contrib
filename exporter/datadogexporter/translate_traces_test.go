@@ -384,7 +384,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	assert.Equal(t, "error", datadogPayload.Traces[0].Spans[0].Meta["error.type"])
 }
 
-func testTracesFallbackErrorMessage(t *testing.T) {
+func TestTracesFallbackErrorMessage(t *testing.T) {
 	hostname := "testhostname"
 	denylister := newDenylister([]string{})
 
