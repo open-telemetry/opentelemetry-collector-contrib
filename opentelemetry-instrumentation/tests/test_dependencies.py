@@ -14,11 +14,13 @@
 
 # pylint: disable=protected-access
 
+import pkg_resources
 import pytest
 
 from opentelemetry.instrumentation.dependencies import (
     DependencyConflict,
     get_dependency_conflicts,
+    get_dist_dependency_conflicts,
 )
 from opentelemetry.test.test_base import TestBase
 
@@ -37,7 +39,6 @@ class TestDependencyConflicts(TestBase):
         conflict = get_dependency_conflicts(["this-package-does-not-exist"])
         self.assertTrue(conflict is not None)
         self.assertTrue(isinstance(conflict, DependencyConflict))
-        print(conflict)
         self.assertEqual(
             str(conflict),
             'DependencyConflict: requested: "this-package-does-not-exist" but found: "None"',
@@ -47,10 +48,32 @@ class TestDependencyConflicts(TestBase):
         conflict = get_dependency_conflicts(["pytest == 5000"])
         self.assertTrue(conflict is not None)
         self.assertTrue(isinstance(conflict, DependencyConflict))
-        print(conflict)
         self.assertEqual(
             str(conflict),
             'DependencyConflict: requested: "pytest == 5000" but found: "pytest {0}"'.format(
                 pytest.__version__
             ),
+        )
+
+    def test_get_dist_dependency_conflicts(self):
+        def mock_requires(extras=()):
+            if "instruments" in extras:
+                return [
+                    pkg_resources.Requirement(
+                        'test-pkg ~= 1.0; extra == "instruments"'
+                    )
+                ]
+            return []
+
+        dist = pkg_resources.Distribution(
+            project_name="test-instrumentation", version="1.0"
+        )
+        dist.requires = mock_requires
+
+        conflict = get_dist_dependency_conflicts(dist)
+        self.assertTrue(conflict is not None)
+        self.assertTrue(isinstance(conflict, DependencyConflict))
+        self.assertEqual(
+            str(conflict),
+            'DependencyConflict: requested: "test-pkg~=1.0" but found: "None"',
         )
