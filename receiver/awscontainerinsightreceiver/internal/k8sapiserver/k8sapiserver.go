@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -63,7 +64,9 @@ type K8sAPIServer struct {
 	clusterNameProvider clusterNameProvider
 	cancel              context.CancelFunc
 
-	leading   bool
+	mu      sync.Mutex
+	leading bool
+
 	k8sClient *k8sclient.K8sClient
 
 	// the following can be set to mocks in testing
@@ -108,26 +111,48 @@ func New(clusterNameProvider clusterNameProvider, logger *zap.Logger, options ..
 func (k *K8sAPIServer) GetMetrics() []pdata.Metrics {
 	var result []pdata.Metrics
 
-	//don't emit metrics if the cluster name is not detected
+	// don't generate any metrics if the current collector is not the leader
+	if !k.leading {
+		return result
+	}
+
+	// don't emit metrics if the cluster name is not detected
 	clusterName := k.clusterNameProvider.GetClusterName()
 	if clusterName == "" {
 		k.logger.Warn("Failed to detect cluster name. Drop all metrics")
 		return result
 	}
 
-	if k.leading {
-		k.logger.Info("collect data from K8s API Server...")
-		timestampNs := strconv.FormatInt(time.Now().UnixNano(), 10)
-		client := k.k8sClient
+	k.logger.Info("collect data from K8s API Server...")
+	timestampNs := strconv.FormatInt(time.Now().UnixNano(), 10)
+	client := k.k8sClient
 
+	fields := map[string]interface{}{
+		"cluster_failed_node_count": client.Node.ClusterFailedNodeCount(),
+		"cluster_node_count":        client.Node.ClusterNodeCount(),
+	}
+	attributes := map[string]string{
+		ci.ClusterNameKey: clusterName,
+		ci.MetricType:     ci.TypeCluster,
+		ci.Timestamp:      timestampNs,
+		ci.Version:        "0",
+	}
+	if k.nodeName != "" {
+		attributes["NodeName"] = k.nodeName
+	}
+	md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
+	result = append(result, md)
+
+	for service, podNum := range client.Ep.ServiceToPodNum() {
 		fields := map[string]interface{}{
-			"cluster_failed_node_count": client.Node.ClusterFailedNodeCount(),
-			"cluster_node_count":        client.Node.ClusterNodeCount(),
+			"service_number_of_running_pods": podNum,
 		}
 		attributes := map[string]string{
 			ci.ClusterNameKey: clusterName,
-			ci.MetricType:     ci.TypeCluster,
+			ci.MetricType:     ci.TypeClusterService,
 			ci.Timestamp:      timestampNs,
+			ci.TypeService:    service.ServiceName,
+			ci.K8sNamespace:   service.Namespace,
 			ci.Version:        "0",
 		}
 		if k.nodeName != "" {
@@ -135,44 +160,26 @@ func (k *K8sAPIServer) GetMetrics() []pdata.Metrics {
 		}
 		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
 		result = append(result, md)
-
-		for service, podNum := range client.Ep.ServiceToPodNum() {
-			fields := map[string]interface{}{
-				"service_number_of_running_pods": podNum,
-			}
-			attributes := map[string]string{
-				ci.ClusterNameKey: clusterName,
-				ci.MetricType:     ci.TypeClusterService,
-				ci.Timestamp:      timestampNs,
-				ci.TypeService:    service.ServiceName,
-				ci.K8sNamespace:   service.Namespace,
-				ci.Version:        "0",
-			}
-			if k.nodeName != "" {
-				attributes["NodeName"] = k.nodeName
-			}
-			md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
-			result = append(result, md)
-		}
-
-		for namespace, podNum := range client.Pod.NamespaceToRunningPodNum() {
-			fields := map[string]interface{}{
-				"namespace_number_of_running_pods": podNum,
-			}
-			attributes := map[string]string{
-				ci.ClusterNameKey: clusterName,
-				ci.MetricType:     ci.TypeClusterNamespace,
-				ci.Timestamp:      timestampNs,
-				ci.K8sNamespace:   namespace,
-				ci.Version:        "0",
-			}
-			if k.nodeName != "" {
-				attributes["NodeName"] = k.nodeName
-			}
-			md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
-			result = append(result, md)
-		}
 	}
+
+	for namespace, podNum := range client.Pod.NamespaceToRunningPodNum() {
+		fields := map[string]interface{}{
+			"namespace_number_of_running_pods": podNum,
+		}
+		attributes := map[string]string{
+			ci.ClusterNameKey: clusterName,
+			ci.MetricType:     ci.TypeClusterNamespace,
+			ci.Timestamp:      timestampNs,
+			ci.K8sNamespace:   namespace,
+			ci.Version:        "0",
+		}
+		if k.nodeName != "" {
+			attributes["NodeName"] = k.nodeName
+		}
+		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
+		result = append(result, md)
+	}
+
 	return result
 }
 
@@ -247,16 +254,36 @@ func (k *K8sAPIServer) startLeaderElection(ctx context.Context, lock resourceloc
 				OnStartedLeading: func(ctx context.Context) {
 					k.logger.Info(fmt.Sprintf("k8sapiserver OnStartedLeading: %s", k.nodeName))
 					// we're notified when we start
+					k.mu.Lock()
 					k.leading = true
+					k.mu.Unlock()
 
 					if k.isLeadingC != nil {
 						// this executes only in testing
 						close(k.isLeadingC)
 					}
+
+					for {
+						k.mu.Lock()
+						leading := k.leading
+						k.mu.Unlock()
+						if !leading {
+							k.logger.Info("no longer leading")
+							return
+						}
+						select {
+						case <-ctx.Done():
+							k.logger.Info("ctx cancelled")
+							return
+						case <-time.After(time.Second):
+						}
+					}
 				},
 				OnStoppedLeading: func() {
 					k.logger.Info(fmt.Sprintf("k8sapiserver OnStoppedLeading: %s", k.nodeName))
 					// we can do cleanup here, or after the RunOrDie method returns
+					k.mu.Lock()
+					defer k.mu.Unlock()
 					k.leading = false
 					//node and pod are only used for cluster level metrics, endpoint is used for decorator too.
 					k.k8sClient.Node.Shutdown()
