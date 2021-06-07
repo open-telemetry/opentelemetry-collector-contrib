@@ -17,6 +17,7 @@ package newrelicexporter
 import (
 	"context"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.opencensus.io/stats"
@@ -53,6 +54,8 @@ var (
 	statSpanMetadata         = stats.Int64("newrelicexporter_span_metadata_count", "Number of spans processed", stats.UnitDimensionless)
 	statAttributeMetadata    = stats.Int64("newrelicexporter_attribute_metadata_count", "Number of attributes processed", stats.UnitDimensionless)
 )
+
+const EuKeyPrefix = "eu01xx"
 
 // MetricViews return metric views for Kafka receiver.
 func MetricViews() []*view.View {
@@ -242,5 +245,9 @@ func sanitizeAPIKeyForLogging(apiKey string) string {
 	if len(apiKey) <= 8 {
 		return apiKey
 	}
-	return apiKey[:8]
+	end := 8
+	if strings.HasPrefix(apiKey, EuKeyPrefix) {
+		end += len(EuKeyPrefix)
+	}
+	return apiKey[:end]
 }
