@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxbexporter
+module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter
 
 go 1.16
 

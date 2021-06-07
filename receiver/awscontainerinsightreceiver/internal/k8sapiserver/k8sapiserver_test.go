@@ -25,7 +25,7 @@ import (
 )
 
 func TestK8sapiserver(t *testing.T) {
-	machineInfo := host.NewMachineInfo(time.Minute, zap.NewNop())
+	machineInfo, _ := host.NewInfo(time.Minute, zap.NewNop())
 	k := New(machineInfo, zap.NewNop())
 	k.start()
 	assert.NotNil(t, k)
