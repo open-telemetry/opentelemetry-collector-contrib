@@ -18,6 +18,7 @@ import time
 import mysql.connector
 import psycopg2
 import pymongo
+import pyodbc
 import redis
 
 MONGODB_COLLECTION_NAME = "test"
@@ -36,6 +37,11 @@ POSTGRES_PORT = int(os.getenv("POSTGRESQL_PORT", "5432"))
 POSTGRES_USER = os.getenv("POSTGRESQL_USER", "testuser")
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT ", "6379"))
+MSSQL_DB_NAME = os.getenv("MSSQL_DB_NAME", "opentelemetry-tests")
+MSSQL_HOST = os.getenv("MSSQL_HOST", "localhost")
+MSSQL_PORT = int(os.getenv("MSSQL_PORT", "1433"))
+MSSQL_USER = os.getenv("MSSQL_USER", "sa")
+MSSQL_PASSWORD = os.getenv("MSSQL_PASSWORD", "yourStrong(!)Password")
 RETRY_COUNT = 8
 RETRY_INTERVAL = 5  # Seconds
 
@@ -104,12 +110,23 @@ def check_redis_connection():
     connection.hgetall("*")
 
 
+@retryable
+def check_mssql_connection():
+    connection = pyodbc.connect(
+        f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={MSSQL_HOST},"
+        f"{MSSQL_PORT};DATABASE={MSSQL_DB_NAME};UID={MSSQL_USER};"
+        f"PWD={MSSQL_PASSWORD}"
+    )
+    connection.close()
+
+
 def check_docker_services_availability():
     # Check if Docker services accept connections
     check_pymongo_connection()
     check_mysql_connection()
     check_postgres_connection()
     check_redis_connection()
+    check_mssql_connection()
 
 
 check_docker_services_availability()

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from threading import local
-from weakref import WeakKeyDictionary
 
 from sqlalchemy.event import listen  # pylint: disable=no-name-in-module
 
@@ -60,7 +59,7 @@ class EngineTracer:
         self.tracer = tracer
         self.engine = engine
         self.vendor = _normalize_vendor(engine.name)
-        self.cursor_mapping = WeakKeyDictionary()
+        self.cursor_mapping = {}
         self.local = local()
 
         listen(engine, "before_cursor_execute", self._before_cur_exec)
@@ -116,6 +115,7 @@ class EngineTracer:
             return
 
         span.end()
+        self._cleanup(cursor)
 
     def _handle_error(self, context):
         span = self.current_thread_span
@@ -129,6 +129,13 @@ class EngineTracer:
                 )
         finally:
             span.end()
+            self._cleanup(context.cursor)
+
+    def _cleanup(self, cursor):
+        try:
+            del self.cursor_mapping[cursor]
+        except KeyError:
+            pass
 
 
 def _get_attributes_from_url(url):
