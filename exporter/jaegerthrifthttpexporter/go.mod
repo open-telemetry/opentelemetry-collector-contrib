@@ -3,13 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaeger
 go 1.16
 
 require (
-	github.com/apache/thrift v0.13.0
+	github.com/apache/thrift v0.14.1
 	github.com/armon/go-metrics v0.3.3 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0
-	github.com/gogo/googleapis v1.3.0 // indirect
 	github.com/google/go-cmp v0.5.6
 	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
-	github.com/jaegertracing/jaeger v1.22.0
+	github.com/jaegertracing/jaeger v1.23.0
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
