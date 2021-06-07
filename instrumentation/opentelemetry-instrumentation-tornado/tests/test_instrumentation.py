@@ -347,6 +347,54 @@ class TestTornadoInstrumentation(TornadoTest):
             },
         )
 
+    def test_handler_on_finish(self):
+
+        response = self.fetch("/on_finish")
+        self.assertEqual(response.code, 200)
+
+        spans = self.sorted_spans(self.memory_exporter.get_finished_spans())
+        self.assertEqual(len(spans), 3)
+        auditor, server, client = spans
+
+        self.assertEqual(server.name, "FinishedHandler.get")
+        self.assertTrue(server.parent.is_remote)
+        self.assertNotEqual(server.parent, client.context)
+        self.assertEqual(server.parent.span_id, client.context.span_id)
+        self.assertEqual(server.context.trace_id, client.context.trace_id)
+        self.assertEqual(server.kind, SpanKind.SERVER)
+        self.assert_span_has_attributes(
+            server,
+            {
+                SpanAttributes.HTTP_METHOD: "GET",
+                SpanAttributes.HTTP_SCHEME: "http",
+                SpanAttributes.HTTP_HOST: "127.0.0.1:"
+                + str(self.get_http_port()),
+                SpanAttributes.HTTP_TARGET: "/on_finish",
+                SpanAttributes.NET_PEER_IP: "127.0.0.1",
+                SpanAttributes.HTTP_STATUS_CODE: 200,
+            },
+        )
+
+        self.assertEqual(client.name, "GET")
+        self.assertFalse(client.context.is_remote)
+        self.assertIsNone(client.parent)
+        self.assertEqual(client.kind, SpanKind.CLIENT)
+        self.assert_span_has_attributes(
+            client,
+            {
+                SpanAttributes.HTTP_URL: self.get_url("/on_finish"),
+                SpanAttributes.HTTP_METHOD: "GET",
+                SpanAttributes.HTTP_STATUS_CODE: 200,
+            },
+        )
+
+        self.assertEqual(auditor.name, "audit_task")
+        self.assertFalse(auditor.context.is_remote)
+        self.assertEqual(auditor.parent.span_id, server.context.span_id)
+        self.assertEqual(auditor.context.trace_id, client.context.trace_id)
+
+        self.assertEqual(auditor.kind, SpanKind.INTERNAL)
+
     def test_exclude_lists(self):
         def test_excluded(path):
             self.fetch(path)

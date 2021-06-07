@@ -1,4 +1,5 @@
 # pylint: disable=W0223,R0201
+import time
 
 import tornado.web
 from tornado import gen
@@ -79,6 +80,16 @@ class DynamicHandler(tornado.web.RequestHandler):
         self.set_status(202)
 
 
+class FinishedHandler(tornado.web.RequestHandler):
+    def on_finish(self):
+        with self.application.tracer.start_as_current_span("audit_task"):
+            time.sleep(0.05)
+
+    def get(self):
+        self.write("Test can finish")
+        self.set_status(200)
+
+
 class HealthCheckHandler(tornado.web.RequestHandler):
     def get(self):
         self.set_status(200)
@@ -91,6 +102,7 @@ def make_app(tracer):
             (r"/error", BadHandler),
             (r"/cor", CoroutineHandler),
             (r"/async", AsyncHandler),
+            (r"/on_finish", FinishedHandler),
             (r"/healthz", HealthCheckHandler),
             (r"/ping", HealthCheckHandler),
         ]

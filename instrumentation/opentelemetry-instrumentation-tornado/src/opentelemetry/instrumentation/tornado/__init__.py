@@ -213,8 +213,9 @@ def _prepare(tracer, request_hook, func, handler, args, kwargs):
 
 
 def _on_finish(tracer, func, handler, args, kwargs):
+    response = func(*args, **kwargs)
     _finish_span(tracer, handler)
-    return func(*args, **kwargs)
+    return response
 
 
 def _log_exception(tracer, func, handler, args, kwargs):
