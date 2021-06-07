@@ -557,14 +557,12 @@ func getSpanErrorAndSetTags(s pdata.Span, tags map[string]string) int32 {
 		if _, ok := tags[ext.ErrorMsg]; !ok {
 			if status.Message() != "" {
 				tags[ext.ErrorMsg] = status.Message()
-			} else {
-				// look for useful http metadata if it exists and add that as a fallback for the error message
-				if statusCode, ok := tags[conventions.AttributeHTTPStatusCode]; ok {
-					if statusText, ok := tags[conventions.AttributeHTTPStatusText]; ok {
-						tags[ext.ErrorMsg] = fmt.Sprintf("%s %s", statusCode, statusText)
-					} else {
-						tags[ext.ErrorMsg] = statusCode
-					}
+			// look for useful http metadata if it exists and add that as a fallback for the error message
+			} else if statusCode, ok := tags[conventions.AttributeHTTPStatusCode]; ok {
+				if statusText, ok := tags[conventions.AttributeHTTPStatusText]; ok {
+					tags[ext.ErrorMsg] = fmt.Sprintf("%s %s", statusCode, statusText)
+				} else {
+					tags[ext.ErrorMsg] = statusCode
 				}
 			}
 
