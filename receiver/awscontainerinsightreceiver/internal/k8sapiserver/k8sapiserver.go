@@ -112,6 +112,8 @@ func (k *K8sAPIServer) GetMetrics() []pdata.Metrics {
 	var result []pdata.Metrics
 
 	// don't generate any metrics if the current collector is not the leader
+	k.mu.Lock()
+	defer k.mu.Unlock()
 	if !k.leading {
 		return result
 	}
