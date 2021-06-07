@@ -53,10 +53,11 @@ Caused by: java.lang.IllegalArgumentException: bad argument`)
 
 	res := pdata.NewResource()
 	res.Attributes().InsertString(semconventions.AttributeTelemetrySDKLanguage, "java")
-	isError, isFault, filteredResult, cause := makeCause(span, filtered, res)
+	isError, isFault, isThrottle, filteredResult, cause := makeCause(span, filtered, res)
 
 	assert.True(t, isFault)
 	assert.False(t, isError)
+	assert.False(t, isThrottle)
 	assert.Equal(t, filtered, filteredResult)
 	assert.NotNil(t, cause)
 	assert.Len(t, cause.Exceptions, 3)
@@ -82,10 +83,11 @@ func TestCauseWithStatusMessage(t *testing.T) {
 	filtered, _ := makeHTTP(span)
 
 	res := pdata.NewResource()
-	isError, isFault, filtered, cause := makeCause(span, filtered, res)
+	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
 
 	assert.True(t, isFault)
 	assert.False(t, isError)
+	assert.False(t, isThrottle)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, cause)
 	w := testWriters.borrow()
@@ -108,10 +110,11 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	filtered, _ := makeHTTP(span)
 
 	res := pdata.NewResource()
-	isError, isFault, filtered, cause := makeCause(span, filtered, res)
+	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
 
 	assert.True(t, isFault)
 	assert.False(t, isError)
+	assert.False(t, isThrottle)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, cause)
 	w := testWriters.borrow()
@@ -138,10 +141,11 @@ func TestCauseWithZeroStatusMessage(t *testing.T) {
 	// marking a success status with an error http status code, and status wins.
 	// We do not expect to see such spans in practice.
 	res := pdata.NewResource()
-	isError, isFault, filtered, cause := makeCause(span, filtered, res)
+	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
 
 	assert.False(t, isError)
 	assert.False(t, isFault)
+	assert.False(t, isThrottle)
 	assert.NotNil(t, filtered)
 	assert.Nil(t, cause)
 }
@@ -158,10 +162,32 @@ func TestCauseWithClientErrorMessage(t *testing.T) {
 	filtered, _ := makeHTTP(span)
 
 	res := pdata.NewResource()
-	isError, isFault, filtered, cause := makeCause(span, filtered, res)
+	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
 
 	assert.True(t, isError)
 	assert.False(t, isFault)
+	assert.False(t, isThrottle)
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, cause)
+}
+
+func TestCauseWithThrottled(t *testing.T) {
+	errorMsg := "this is a test"
+	attributes := make(map[string]interface{})
+	attributes[semconventions.AttributeHTTPMethod] = "POST"
+	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes[semconventions.AttributeHTTPStatusCode] = 429
+	attributes[semconventions.AttributeHTTPStatusText] = errorMsg
+
+	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
+	filtered, _ := makeHTTP(span)
+
+	res := pdata.NewResource()
+	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
+
+	assert.True(t, isError)
+	assert.False(t, isFault)
+	assert.True(t, isThrottle)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, cause)
 }
