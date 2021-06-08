@@ -9,7 +9,7 @@ require (
 	github.com/google/go-cmp v0.5.6
 	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
 	github.com/honeycombio/libhoney-go v1.15.3
-	github.com/klauspost/compress v1.12.3
+	github.com/klauspost/compress v1.13.0
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
