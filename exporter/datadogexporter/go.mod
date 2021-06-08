@@ -7,7 +7,6 @@ require (
 	github.com/OneOfOne/xxhash v1.2.5 // indirect
 	github.com/armon/go-metrics v0.3.3 // indirect
 	github.com/aws/aws-sdk-go v1.38.55
-	github.com/gogo/googleapis v1.3.0 // indirect
 	github.com/gogo/protobuf v1.3.2
 	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.7 // indirect
@@ -17,7 +16,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/tinylib/msgp v1.1.5 // indirect
 	github.com/zorkian/go-datadog-api v2.29.0+incompatible // indirect
-	go.opentelemetry.io/collector v0.27.1-0.20210603182316-5369d7e9e83e
+	go.opentelemetry.io/collector v0.27.1-0.20210608105628-44a4ae746c3c
 	go.uber.org/zap v1.17.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.31.1
 	gopkg.in/ini.v1 v1.57.0 // indirect

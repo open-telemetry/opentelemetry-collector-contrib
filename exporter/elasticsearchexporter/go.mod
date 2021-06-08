@@ -7,12 +7,11 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.1
 	github.com/elastic/go-elasticsearch/v7 v7.13.0
 	github.com/elastic/go-structform v0.0.8
-	github.com/gogo/googleapis v1.3.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.27.1-0.20210603182316-5369d7e9e83e
+	go.opentelemetry.io/collector v0.27.1-0.20210608105628-44a4ae746c3c
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.17.0
 	gopkg.in/ini.v1 v1.57.0 // indirect

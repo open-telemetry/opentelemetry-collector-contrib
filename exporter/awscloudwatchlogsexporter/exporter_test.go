@@ -15,11 +15,11 @@
 package awscloudwatchlogsexporter
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -68,9 +68,7 @@ func TestLogToCWLog(t *testing.T) {
 				t.Errorf("logToCWLog() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("logToCWLog() got = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -192,9 +190,8 @@ func TestAttrValue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := attrValue(tt.builder()); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("attrValue() = %v, want %v", got, tt.want)
-			}
+			got := attrValue(tt.builder())
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
