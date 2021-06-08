@@ -21,7 +21,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -34,30 +34,27 @@ func NewFactory() component.ExporterFactory {
 		exporterhelper.WithLogs(createLogsExporter))
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
+		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 	}
 }
 
-func createLogsExporter(ctx context.Context, params component.ExporterCreateParams, cfg configmodels.Exporter) (component.LogsExporter, error) {
-	config, ok := cfg.(*Config)
+func createLogsExporter(_ context.Context, params component.ExporterCreateSettings, cfg config.Exporter) (component.LogsExporter, error) {
+	oCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, errors.New("invalid configuration type; can't cast to awscloudwatchlogsexporter.Config")
 	}
 
-	exporter := &exporter{config: config, logger: params.Logger}
+	exporter := &exporter{config: oCfg, logger: params.Logger}
 	return exporterhelper.NewLogsExporter(
-		config,
+		oCfg,
 		params.Logger,
 		exporter.PushLogs,
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{
 			Enabled:      true,
 			NumConsumers: 1, // due to the sequence token, there can be only one request in flight
 		}),
-		exporterhelper.WithRetry(config.RetrySettings),
+		exporterhelper.WithRetry(oCfg.RetrySettings),
 	)
 }

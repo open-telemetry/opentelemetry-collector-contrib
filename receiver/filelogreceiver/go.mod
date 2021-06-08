@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.24.1-0.20210408210148-736647af91e1
 	github.com/open-telemetry/opentelemetry-log-collection v0.18.1-0.20210524142652-964a7f9c789f
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.27.1-0.20210603182316-5369d7e9e83e
+	go.opentelemetry.io/collector v0.27.1-0.20210608105628-44a4ae746c3c
 	go.uber.org/zap v1.17.0
 	gopkg.in/yaml.v2 v2.4.0
 )
