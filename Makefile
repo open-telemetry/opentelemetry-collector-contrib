@@ -64,6 +64,14 @@ gotidy:
 	$(MAKE) for-all CMD="rm -fr go.sum"
 	$(MAKE) for-all CMD="go mod tidy"
 
+.PHONY: gomoddownload
+gomoddownload:
+	@$(MAKE) for-all CMD="go mod download"
+
+.PHONY: gotestinstall
+gotestinstall:
+	@$(MAKE) for-all CMD="make test GOTEST_OPT=\"-i\""
+
 .PHONY: gotest
 gotest:
 	$(MAKE) for-all CMD="make test"
