@@ -55,6 +55,15 @@ func (v *traceVisitor) visit(
 	v.exporter.transportChannel.Send(envelope)
 	v.processed++
 
+    // Export events
+	for i := 0; i < span.Events().Len(); i++ {
+		event := span.Events().At(i)
+		eventEnvelope :=  eventToEnvelope(span,event,v.exporter.logger)
+		eventEnvelope.IKey = v.exporter.config.InstrumentationKey
+		v.exporter.transportChannel.Send(eventEnvelope)
+		v.processed++
+	}
+
 	return true
 }
 
