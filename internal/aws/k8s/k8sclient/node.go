@@ -41,9 +41,8 @@ type NodeClient interface {
 	ClusterFailedNodeCount() int
 	// Get the number of nodes for current cluster
 	ClusterNodeCount() int
-
-	// shutdown is only used internally by clientset to stop the NodeClient
-	shutdown()
+	// Shutdown stops the NodeClient
+	Shutdown()
 }
 
 type nodeClientOption func(*nodeClient)
@@ -143,7 +142,7 @@ func newNodeClient(clientSet kubernetes.Interface, logger *zap.Logger, options .
 	return c
 }
 
-func (c *nodeClient) shutdown() {
+func (c *nodeClient) Shutdown() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

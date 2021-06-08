@@ -188,7 +188,7 @@ func TestPodClient_NamespaceToRunningPodNum(t *testing.T) {
 	resultMap := client.NamespaceToRunningPodNum()
 	log.Printf("NamespaceToRunningPodNum (len=%v): %v", len(resultMap), awsutil.Prettify(resultMap))
 	assert.True(t, reflect.DeepEqual(resultMap, expectedMap))
-	client.shutdown()
+	client.Shutdown()
 	assert.True(t, client.stopped)
 }
 
