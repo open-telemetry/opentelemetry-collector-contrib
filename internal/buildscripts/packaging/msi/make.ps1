@@ -27,6 +27,10 @@ Param(
 
 $ErrorActionPreference = "Stop"
 
+function Set-Path {
+    $Env:Path += ";C:\Program Files (x86)\WiX Toolset v3.11\bin"
+}
+
 function Install-Tools {
     # disable progress bar support as this causes CircleCI to crash
     $OriginalPref = $ProgressPreference
@@ -35,21 +39,21 @@ function Install-Tools {
     $ProgressPreference = $OriginalPref
 
     choco install wixtoolset -y
-    setx /m PATH "%PATH%;C:\Program Files (x86)\WiX Toolset v3.11\bin"
-    refreshenv
 }
 
 function New-MSI(
     [string]$Version="0.0.1",
     [string]$Config="./examples/tracing/otel-collector-config.yml"
 ) {
-    candle -arch x64 -dVersion="$Version" -dConfig="$Config" internal/buildscripts/packaging/msi/opentelemetry-contrib-collector.wxs
-    light opentelemetry-contrib-collector.wixobj
+    Set-Path
+    candle.exe -arch x64 -dVersion="$Version" -dConfig="$Config" internal/buildscripts/packaging/msi/opentelemetry-contrib-collector.wxs
+    light.exe opentelemetry-contrib-collector.wixobj
     mkdir dist -ErrorAction Ignore
     Move-Item -Force opentelemetry-contrib-collector.msi dist/otel-contrib-collector-$Version-amd64.msi
 }
 
 function Confirm-MSI {
+    Set-Path
     # ensure system32 is in Path so we can use executables like msiexec & sc
     $env:Path += ";C:\Windows\System32"
     $msipath = Resolve-Path "$pwd\dist\otel-contrib-collector-*-amd64.msi"
@@ -73,3 +77,4 @@ function Confirm-MSI {
 
 $sb = [scriptblock]::create("$Target")
 Invoke-Command -ScriptBlock $sb
+exit 0
