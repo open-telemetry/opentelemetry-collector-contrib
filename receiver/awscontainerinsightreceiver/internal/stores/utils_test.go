@@ -97,3 +97,48 @@ func TestUtils_addKubernetesInfo(t *testing.T) {
 	expectedKubeBlob := map[string]interface{}{"container_name": "testContainer", "host": "testNode", "namespace_name": "testNamespace", "pod_id": "123", "pod_name": "testPod", "service_name": "testService"}
 	assert.Equal(t, expectedKubeBlob, kubernetesBlob)
 }
+
+func TestUtils_TagMetricSource(t *testing.T) {
+	types := []string{
+		"",
+		ci.TypeNode,
+		ci.TypeNodeFS,
+		ci.TypeNodeNet,
+		ci.TypeNodeDiskIO,
+		ci.TypePod,
+		ci.TypePodNet,
+		ci.TypeContainer,
+		ci.TypeContainerFS,
+		ci.TypeContainerDiskIO,
+		ci.TypeCluster,
+		ci.TypeClusterService,
+		ci.TypeClusterNamespace,
+	}
+
+	expectedSources := []string{
+		"",
+		"[\"cadvisor\",\"/proc\",\"pod\",\"calculated\"]",
+		"[\"cadvisor\",\"calculated\"]",
+		"[\"cadvisor\",\"calculated\"]",
+		"[\"cadvisor\"]",
+		"[\"cadvisor\",\"pod\",\"calculated\"]",
+		"[\"cadvisor\",\"calculated\"]",
+		"[\"cadvisor\",\"pod\",\"calculated\"]",
+		"[\"cadvisor\",\"calculated\"]",
+		"[\"cadvisor\"]",
+		"[\"apiserver\"]",
+		"[\"apiserver\"]",
+		"[\"apiserver\"]",
+	}
+	for i, mtype := range types {
+		tags := map[string]string{
+			ci.MetricType: mtype,
+		}
+
+		metric := &mockCIMetric{
+			tags: tags,
+		}
+		TagMetricSource(metric)
+		assert.Equal(t, expectedSources[i], metric.tags[ci.SourcesKey])
+	}
+}

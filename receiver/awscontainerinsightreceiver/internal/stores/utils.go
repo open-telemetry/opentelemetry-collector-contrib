@@ -16,12 +16,12 @@ package stores
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sutil"
 )
 
 const (
@@ -31,41 +31,23 @@ const (
 	cronJobAllowedString       = "0123456789"
 )
 
-// CreatePodKey creates a pod key out of namespace and pod name
-// TODO: to remove it after we merged the k8s utils PR
-func CreatePodKey(namespace, podName string) string {
-	if namespace == "" || podName == "" {
-		return ""
-	}
-	return fmt.Sprintf("namespace:%s,podName:%s", namespace, podName)
-}
-
-// CreateContainerKey creates a container key out of namespace, pod name and container name
-// TODO: to remove it after we merged the k8s utils PR
-func CreateContainerKey(namespace, podName, containerName string) string {
-	if namespace == "" || podName == "" || containerName == "" {
-		return ""
-	}
-	return fmt.Sprintf("namespace:%s,podName:%s,containerName:%s", namespace, podName, containerName)
-}
-
 func createPodKeyFromMetaData(pod *corev1.Pod) string {
 	namespace := pod.Namespace
 	podName := pod.Name
-	return CreatePodKey(namespace, podName)
+	return k8sutil.CreatePodKey(namespace, podName)
 }
 
 func createPodKeyFromMetric(metric CIMetric) string {
 	namespace := metric.GetTag(ci.K8sNamespace)
 	podName := metric.GetTag(ci.K8sPodNameKey)
-	return CreatePodKey(namespace, podName)
+	return k8sutil.CreatePodKey(namespace, podName)
 }
 
 func createContainerKeyFromMetric(metric CIMetric) string {
 	namespace := metric.GetTag(ci.K8sNamespace)
 	podName := metric.GetTag(ci.K8sPodNameKey)
 	containerName := metric.GetTag(ci.ContainerNamekey)
-	return CreateContainerKey(namespace, podName, containerName)
+	return k8sutil.CreateContainerKey(namespace, podName, containerName)
 }
 
 // get the deployment name by stripping the last dash following some rules
@@ -148,9 +130,8 @@ func TagMetricSource(metric CIMetric) {
 		sources = append(sources, []string{"cadvisor", "calculated"}...)
 	case ci.TypeContainerDiskIO:
 		sources = append(sources, []string{"cadvisor"}...)
-		// TODO: add the sources tagging to k8s api server
-		// case ci.TypeCluster, ci.TypeClusterService, ci.TypeClusterNamespace:
-		// 	sources = append(sources, []string{"apiserver"}...)
+	case ci.TypeCluster, ci.TypeClusterService, ci.TypeClusterNamespace:
+		sources = append(sources, []string{"apiserver"}...)
 	}
 
 	if len(sources) > 0 {

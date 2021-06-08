@@ -195,13 +195,14 @@ func getBaseTestPodInfo() *corev1.Pod {
 }
 
 func getPodStore() *PodStore {
-	nodeInfo := newNodeInfo()
+	nodeInfo := newNodeInfo(zap.NewNop())
 	nodeInfo.setCPUCapacity(4000)
 	nodeInfo.setMemCapacity(400 * 1024 * 1024)
 	return &PodStore{
 		cache:            newMapWithExpiry(time.Minute),
 		nodeInfo:         nodeInfo,
 		prevMeasurements: make(map[string]*mapWithExpiry),
+		logger:           zap.NewNop(),
 	}
 }
 
@@ -224,8 +225,8 @@ func TestPodStore_decorateCpu(t *testing.T) {
 	metric := generateMetric(fields, tags)
 	podStore.decorateCPU(metric, pod)
 
-	assert.Equal(t, int64(10), metric.GetField("pod_cpu_request").(int64))
-	assert.Equal(t, int64(10), metric.GetField("pod_cpu_limit").(int64))
+	assert.Equal(t, uint64(10), metric.GetField("pod_cpu_request").(uint64))
+	assert.Equal(t, uint64(10), metric.GetField("pod_cpu_limit").(uint64))
 	assert.Equal(t, float64(0.25), metric.GetField("pod_cpu_reserved_capacity").(float64))
 	assert.Equal(t, float64(10), metric.GetField("pod_cpu_utilization_over_pod_limit").(float64))
 	assert.Equal(t, float64(1), metric.GetField("pod_cpu_usage_total").(float64))
@@ -236,8 +237,8 @@ func TestPodStore_decorateCpu(t *testing.T) {
 	metric = generateMetric(fields, tags)
 	podStore.decorateCPU(metric, pod)
 
-	assert.Equal(t, int64(10), metric.GetField("container_cpu_request").(int64))
-	assert.Equal(t, int64(10), metric.GetField("container_cpu_limit").(int64))
+	assert.Equal(t, uint64(10), metric.GetField("container_cpu_request").(uint64))
+	assert.Equal(t, uint64(10), metric.GetField("container_cpu_limit").(uint64))
 	assert.Equal(t, float64(1), metric.GetField("container_cpu_usage_total").(float64))
 }
 
@@ -251,8 +252,8 @@ func TestPodStore_decorateMem(t *testing.T) {
 	metric := generateMetric(fields, tags)
 	podStore.decorateMem(metric, pod)
 
-	assert.Equal(t, int64(52428800), metric.GetField("pod_memory_request").(int64))
-	assert.Equal(t, int64(52428800), metric.GetField("pod_memory_limit").(int64))
+	assert.Equal(t, uint64(52428800), metric.GetField("pod_memory_request").(uint64))
+	assert.Equal(t, uint64(52428800), metric.GetField("pod_memory_limit").(uint64))
 	assert.Equal(t, float64(12.5), metric.GetField("pod_memory_reserved_capacity").(float64))
 	assert.Equal(t, float64(20), metric.GetField("pod_memory_utilization_over_pod_limit").(float64))
 	assert.Equal(t, float64(10*1024*1024), metric.GetField("pod_memory_working_set").(float64))
@@ -263,8 +264,8 @@ func TestPodStore_decorateMem(t *testing.T) {
 	metric = generateMetric(fields, tags)
 	podStore.decorateMem(metric, pod)
 
-	assert.Equal(t, int64(52428800), metric.GetField("container_memory_request").(int64))
-	assert.Equal(t, int64(52428800), metric.GetField("container_memory_limit").(int64))
+	assert.Equal(t, uint64(52428800), metric.GetField("container_memory_request").(uint64))
+	assert.Equal(t, uint64(52428800), metric.GetField("container_memory_limit").(uint64))
 	assert.Equal(t, float64(10*1024*1024), metric.GetField("container_memory_working_set").(float64))
 }
 
@@ -556,15 +557,24 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	assert.True(t, len(kubernetesBlob) == 0)
 }
 
-func TestPodStore_refreshInternal(t *testing.T) {
+type mockPodClient struct {
+}
+
+func (m *mockPodClient) ListPods() ([]corev1.Pod, error) {
 	pod := getBaseTestPodInfo()
 	podList := []corev1.Pod{*pod}
+	return podList, nil
+}
+
+func TestPodStore_RefreshTick(t *testing.T) {
 
 	podStore := getPodStore()
-	podStore.refreshInternal(time.Now(), podList)
+	podStore.podClient = &mockPodClient{}
+	podStore.lastRefreshed = time.Now().Add(-time.Minute)
+	podStore.RefreshTick()
 
-	assert.Equal(t, int64(10), podStore.nodeInfo.nodeStats.cpuReq)
-	assert.Equal(t, int64(50*1024*1024), podStore.nodeInfo.nodeStats.memReq)
+	assert.Equal(t, uint64(10), podStore.nodeInfo.nodeStats.cpuReq)
+	assert.Equal(t, uint64(50*1024*1024), podStore.nodeInfo.nodeStats.memReq)
 	assert.Equal(t, 1, podStore.nodeInfo.nodeStats.podCnt)
 	assert.Equal(t, 1, podStore.nodeInfo.nodeStats.containerCnt)
 	assert.Equal(t, 1, podStore.cache.Size())
@@ -580,24 +590,72 @@ func TestPodStore_decorateNode(t *testing.T) {
 	tags := map[string]string{ci.MetricType: ci.TypeNode}
 	fields := map[string]interface{}{
 		ci.MetricName(ci.TypeNode, ci.CPUTotal):      float64(100),
-		ci.MetricName(ci.TypeNode, ci.CPULimit):      int64(4000),
+		ci.MetricName(ci.TypeNode, ci.CPULimit):      uint64(4000),
 		ci.MetricName(ci.TypeNode, ci.MemWorkingset): float64(100 * 1024 * 1024),
-		ci.MetricName(ci.TypeNode, ci.MemLimit):      int64(400 * 1024 * 1024),
+		ci.MetricName(ci.TypeNode, ci.MemLimit):      uint64(400 * 1024 * 1024),
 	}
 
 	metric := generateMetric(fields, tags)
 	podStore.decorateNode(metric)
 
-	assert.Equal(t, int64(10), metric.GetField("node_cpu_request").(int64))
-	assert.Equal(t, int64(4000), metric.GetField("node_cpu_limit").(int64))
+	assert.Equal(t, uint64(10), metric.GetField("node_cpu_request").(uint64))
+	assert.Equal(t, uint64(4000), metric.GetField("node_cpu_limit").(uint64))
 	assert.Equal(t, float64(0.25), metric.GetField("node_cpu_reserved_capacity").(float64))
 	assert.Equal(t, float64(100), metric.GetField("node_cpu_usage_total").(float64))
 
-	assert.Equal(t, int64(50*1024*1024), metric.GetField("node_memory_request").(int64))
-	assert.Equal(t, int64(400*1024*1024), metric.GetField("node_memory_limit").(int64))
+	assert.Equal(t, uint64(50*1024*1024), metric.GetField("node_memory_request").(uint64))
+	assert.Equal(t, uint64(400*1024*1024), metric.GetField("node_memory_limit").(uint64))
 	assert.Equal(t, float64(12.5), metric.GetField("node_memory_reserved_capacity").(float64))
 	assert.Equal(t, float64(100*1024*1024), metric.GetField("node_memory_working_set").(float64))
 
 	assert.Equal(t, int(1), metric.GetField("node_number_of_running_containers").(int))
 	assert.Equal(t, int(1), metric.GetField("node_number_of_running_pods").(int))
+}
+
+func TestPodStore_Decorate(t *testing.T) {
+	// not the metrics for decoration
+	tags := map[string]string{}
+	metric := &mockCIMetric{
+		tags: tags,
+	}
+
+	podStore := getPodStore()
+	podStore.podClient = &mockPodClient{}
+	kubernetesBlob := map[string]interface{}{}
+	ok := podStore.Decorate(metric, kubernetesBlob)
+	assert.True(t, ok)
+
+	// metric with no namespace
+	tags = map[string]string{
+		ci.ContainerNamekey: "testContainer",
+		ci.PodIDKey:         "123",
+		ci.K8sPodNameKey:    "testPod",
+		// ci.K8sNamespace:     "testNamespace",
+		ci.TypeService: "testService",
+		ci.NodeNameKey: "testNode",
+	}
+	metric = &mockCIMetric{
+		tags: tags,
+	}
+	ok = podStore.Decorate(metric, kubernetesBlob)
+	assert.False(t, ok)
+
+	// metric with pod info not in cache
+	tags = map[string]string{
+		ci.ContainerNamekey: "testContainer",
+		ci.K8sPodNameKey:    "testPod",
+		ci.PodIDKey:         "123",
+		ci.K8sNamespace:     "testNamespace",
+		ci.TypeService:      "testService",
+		ci.NodeNameKey:      "testNode",
+	}
+	metric = &mockCIMetric{
+		tags: tags,
+	}
+	ok = podStore.Decorate(metric, kubernetesBlob)
+	assert.False(t, ok)
+
+	// decorate the same metric with a placeholder item in cache
+	ok = podStore.Decorate(metric, kubernetesBlob)
+	assert.False(t, ok)
 }

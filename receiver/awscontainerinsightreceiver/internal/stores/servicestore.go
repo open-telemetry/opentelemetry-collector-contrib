@@ -15,11 +15,13 @@
 package stores
 
 import (
+	"errors"
 	"time"
 
 	"go.uber.org/zap"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 )
 
 const (
@@ -37,12 +39,17 @@ type ServiceStore struct {
 	logger                  *zap.Logger
 }
 
-func NewServiceStore(logger *zap.Logger) *ServiceStore {
-	serviceStore := &ServiceStore{
+func NewServiceStore(logger *zap.Logger) (*ServiceStore, error) {
+	s := &ServiceStore{
 		podKeyToServiceNamesMap: make(map[string][]string),
 		logger:                  logger,
 	}
-	return serviceStore
+	k8sClient := k8sclient.Get(logger)
+	if k8sClient == nil {
+		return nil, errors.New("failed to start service store because k8sclient is nil")
+	}
+	s.endpointInfo = k8sClient.Ep
+	return s, nil
 }
 
 func (s *ServiceStore) RefreshTick() {
@@ -55,7 +62,7 @@ func (s *ServiceStore) RefreshTick() {
 
 // Decorate decorates metrics and update kubernetesBlob
 // service info is not mandatory
-func (s *ServiceStore) Decorate(metric CIMetric, kubernetesBlob map[string]interface{}) bool {
+func (s *ServiceStore) Decorate(metric CIMetric, _ map[string]interface{}) bool {
 	if metric.HasTag(ci.K8sPodNameKey) {
 		podKey := createPodKeyFromMetric(metric)
 		if podKey == "" {

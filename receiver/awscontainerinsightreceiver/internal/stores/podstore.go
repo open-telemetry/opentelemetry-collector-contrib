@@ -15,6 +15,7 @@
 package stores
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -26,6 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 	awsmetrics "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores/kubeletutil"
 )
@@ -92,10 +94,14 @@ type replicaSetInfo interface {
 	ReplicaSetToDeployment() map[string]string
 }
 
+type podClient interface {
+	ListPods() ([]corev1.Pod, error)
+}
+
 type PodStore struct {
 	cache            *mapWithExpiry
 	prevMeasurements map[string]*mapWithExpiry //preMeasurements per each Type (Pod, Container, etc)
-	kubeletClient    *kubeletutil.KubeletClient
+	podClient        podClient
 	replicasetInfo   replicaSetInfo
 	lastRefreshed    time.Time
 	nodeInfo         *nodeInfo
@@ -105,22 +111,28 @@ type PodStore struct {
 }
 
 func NewPodStore(hostIP string, prefFullPodName bool, logger *zap.Logger) (*PodStore, error) {
-	kubeletClient, err := kubeletutil.NewKubeletClient(hostIP, ci.KubeSecurePort, logger)
+	podClient, err := kubeletutil.NewKubeletClient(hostIP, ci.KubeSecurePort, logger)
 	if err != nil {
 		return nil, err
+	}
+
+	// Try to detect kubelet permission issue here
+	if _, err := podClient.ListPods(); err != nil {
+		return nil, fmt.Errorf("cannot get pod from kubelet, err: %v", err)
+	}
+
+	k8sClient := k8sclient.Get(logger)
+	if k8sClient == nil {
+		return nil, errors.New("failed to start pod store because k8sclient is nil")
 	}
 
 	podStore := &PodStore{
 		cache:            newMapWithExpiry(podsExpiry),
 		prevMeasurements: make(map[string]*mapWithExpiry),
-		kubeletClient:    kubeletClient,
-		nodeInfo:         newNodeInfo(),
+		podClient:        podClient,
+		nodeInfo:         newNodeInfo(logger),
 		prefFullPodName:  prefFullPodName,
-	}
-
-	// Try to detect kubelet permission issue here
-	if _, err := podStore.kubeletClient.ListPods(); err != nil {
-		return nil, fmt.Errorf("cannot get pod from kubelet, err: %v", err)
+		replicasetInfo:   k8sClient.ReplicaSet,
 	}
 
 	return podStore, nil
@@ -216,20 +228,8 @@ func (p *PodStore) setCachedEntry(podKey string, entry *cachedEntry) {
 	p.cache.Set(podKey, entry)
 }
 
-func (p *PodStore) setNodeStats(stats nodeStats) {
-	p.Lock()
-	defer p.Unlock()
-	p.nodeInfo.nodeStats = stats
-}
-
-func (p *PodStore) getNodeStats() nodeStats {
-	p.Lock()
-	defer p.Unlock()
-	return p.nodeInfo.nodeStats
-}
-
 func (p *PodStore) refresh(now time.Time) {
-	podList, _ := p.kubeletClient.ListPods()
+	podList, _ := p.podClient.ListPods()
 	p.refreshInternal(now, podList)
 }
 
@@ -246,8 +246,8 @@ func (p *PodStore) cleanup(now time.Time) {
 func (p *PodStore) refreshInternal(now time.Time, podList []corev1.Pod) {
 	var podCount int
 	var containerCount int
-	var cpuRequest int64
-	var memRequest int64
+	var cpuRequest uint64
+	var memRequest uint64
 
 	for i := range podList {
 		pod := podList[i]
@@ -275,11 +275,11 @@ func (p *PodStore) refreshInternal(now time.Time, podList []corev1.Pod) {
 			creation: now})
 	}
 
-	p.setNodeStats(nodeStats{podCnt: podCount, containerCnt: containerCount, memReq: memRequest, cpuReq: cpuRequest})
+	p.nodeInfo.setNodeStats(nodeStats{podCnt: podCount, containerCnt: containerCount, memReq: memRequest, cpuReq: cpuRequest})
 }
 
 func (p *PodStore) decorateNode(metric CIMetric) {
-	nodeStats := p.getNodeStats()
+	nodeStats := p.nodeInfo.getNodeStats()
 
 	if metric.HasField(ci.MetricName(ci.TypeNode, ci.CPUTotal)) {
 		cpuLimitMetric := ci.MetricName(ci.TypeNode, ci.CPULimit)
@@ -457,8 +457,8 @@ func (p *PodStore) addStatus(metric CIMetric, pod *corev1.Pod) {
 
 // It could be used to get limit/request(depend on the passed-in fn) per pod
 // return the sum of ResourceSetting and a bool which indicate whether all container set Resource
-func getResourceSettingForPod(pod *corev1.Pod, bound int64, resource corev1.ResourceName, fn func(resource corev1.ResourceName, spec corev1.Container) (int64, bool)) (int64, bool) {
-	var result int64
+func getResourceSettingForPod(pod *corev1.Pod, bound uint64, resource corev1.ResourceName, fn func(resource corev1.ResourceName, spec corev1.Container) (uint64, bool)) (uint64, bool) {
+	var result uint64
 	allSet := true
 	for _, containerSpec := range pod.Spec.Containers {
 		val, ok := fn(resource, containerSpec)
@@ -474,7 +474,7 @@ func getResourceSettingForPod(pod *corev1.Pod, bound int64, resource corev1.Reso
 	return result, allSet
 }
 
-func getLimitForContainer(resource corev1.ResourceName, spec corev1.Container) (int64, bool) {
+func getLimitForContainer(resource corev1.ResourceName, spec corev1.Container) (uint64, bool) {
 	if v, ok := spec.Resources.Limits[resource]; ok {
 		var limit int64
 		if resource == cpuKey {
@@ -482,12 +482,16 @@ func getLimitForContainer(resource corev1.ResourceName, spec corev1.Container) (
 		} else {
 			limit = v.Value()
 		}
-		return limit, true
+		// it doesn't make sense for the limits to be negative
+		if limit < 0 {
+			return 0, false
+		}
+		return uint64(limit), true
 	}
 	return 0, false
 }
 
-func getRequestForContainer(resource corev1.ResourceName, spec corev1.Container) (int64, bool) {
+func getRequestForContainer(resource corev1.ResourceName, spec corev1.Container) (uint64, bool) {
 	if v, ok := spec.Resources.Requests[resource]; ok {
 		var req int64
 		if resource == cpuKey {
@@ -495,7 +499,11 @@ func getRequestForContainer(resource corev1.ResourceName, spec corev1.Container)
 		} else {
 			req = v.Value()
 		}
-		return req, true
+		// it doesn't make sense for the requests to be negative
+		if req < 0 {
+			return 0, false
+		}
+		return uint64(req), true
 	}
 	return 0, false
 }
