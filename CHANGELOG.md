@@ -2,15 +2,64 @@
 
 ## Unreleased
 
-## 💡 Enhancements 💡
+## v0.28.0
 
-- Enabled Dependabot for Github Actions (#3543)
-=======
+# 🎉 OpenTelemetry Collector Contrib v0.28.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.28.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+
+- `humio` exporter to export data to Humio using JSON over the HTTP [Ingest API](https://docs.humio.com/reference/api/ingest/)
+- `udplog` receiver to receives logs from udp using the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library
+- `tanzuobservability` exporter to send traces to [Tanzu Observability](https://tanzu.vmware.com/observability)
+
 ## 🛑 Breaking changes 🛑
 
 - `f5cloud` exporter (#3509):
   - Renamed the config 'auth' field to 'f5cloud_auth'. This will prevent a config field name collision when [Support for Custom Exporter Authenticators as Extensions](https://github.com/open-telemetry/opentelemetry-collector/pull/3128) is ready to be integrated.
 
+## 💡 Enhancements 💡
+
+- Enabled Dependabot for Github Actions (#3543)
+- Change obsreport helpers for receivers to use the new pattern created in Collector (#3439,#3443,#3449,#3504,#3521,#3548)
+- `datadog` exporter:
+  - Add logging for unknown or unsupported metric types (#3421)
+  - Add collector version tag to internal health metrics (#3394)
+  - Remove sublayer stats calc and mutex (#3531)
+  - Deduplicate hosts for which we send running metrics (#3539)
+  - Add support for summary datatype (#3660)
+  - Add datadog span operation name remapping config option (#3444)
+  - Update error formatting for error spans that are not exceptions (#3701)
+- `nginx` receiver: Update the nginx metrics to more closely align with the conventions (#3420)
+- `elasticsearch` exporter: Init JSON encoding support (#3101)
+- `jmx` receiver:
+  - Allow setting system properties (#3450)
+  - Update tested JMX Metric Gatherer release (#3695)
+- Refactor components for the Client Authentication Extensions (#3507)
+- Remove redundant conversion calls (#3688)
+- `storage` extension: Add a `Close` method to Client interface (#3506)
+- `splunkhec` exporter: Add `metric_type` as key which maps to the type of the metric (#3696)
+- `k8s` processor: Add semantic conventions to k8s-tagger for pod metadata (#3544)
+- `kubeletstats` receiver: Refactor kubelet client to internal folder (#3698)
+- `newrelic` exporter (#3690):
+  - Updates the log level from error to debug when New Relic rate limiting occurs
+  - Updates the sanitized api key that is reported via metrics
+- `filestorage` extension: Add ability to specify name (#3703)
+- `awsemf` exporter: Store the initial value for cumulative metrics (#3425)
+- `awskinesis` exporter: Refactor to allow for extended types of encoding (#3655)
+- `ecsobserver` extension:
+  - Add task definition, ec2, and service fetcher (#3503)
+  - Add exporter to convert task to target (#3333)
+
+## 🧰 Bug fixes 🧰
+
+- `awsemf` exporter: Remove delta adjustment from summaries by default (#3408)
+- `alibabacloudlogservice` exporter: Sanitize labels for metrics (#3454)
+- `statsd` receiver: Fix StatsD drop metrics tags when using summary as observer_type for timer/histogram (#3440)
+- `awsxray` exporter: Restore setting of Throttle for HTTP throttle response (#3685)
+- `awsxray` receiver: Fix quick start bug (#3653)
+- `metricstransform` processor: Check all data points for matching metric label values (#3435)
 
 ## v0.27.0
 
@@ -38,8 +87,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 - `metricstransform` processor: Add filtering capabilities matching metric label values for applying changes (#3201)
 - `groupbytrace` processor: Added workers for queue processing (#2902)
 - `resourcedetection` processor: Add docker detector (#2775)
-- `tailsampling` processor: Support regex on span attribute filtering (#3335_
-- Change obsreport helpers for receiver to use the new pattern created in Collector (#3439,#3443,#3449,#3504,#3521)
+- `tailsampling` processor: Support regex on span attribute filtering (#3335)
 
 ## 🧰 Bug fixes 🧰
 
