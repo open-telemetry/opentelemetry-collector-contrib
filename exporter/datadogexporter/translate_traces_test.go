@@ -379,6 +379,57 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	assert.Contains(t, datadogPayload.Traces[0].Spans[0].Meta[tagContainersTags], "container_id:3249847017410247")
 	assert.Contains(t, datadogPayload.Traces[0].Spans[0].Meta[tagContainersTags], "pod_name:example-pod-name")
 	assert.Contains(t, datadogPayload.Traces[0].Spans[0].Meta[tagContainersTags], "arn:aws:ecs:ap-southwest-1:241423265983:task/test-environment-test-echo-Cluster-2lrqTJKFjACT/746bf64740324812835f688c30cf1512")
+
+	// ensure that span error type uses a fallback of "error" if a status code exists
+	assert.Equal(t, "error", datadogPayload.Traces[0].Spans[0].Meta["error.type"])
+}
+
+func TestTracesFallbackErrorMessage(t *testing.T) {
+	hostname := "testhostname"
+	denylister := newDenylister([]string{})
+
+	// generate mock trace, span and parent span ids
+	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
+	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
+	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
+	mockEndTime := time.Now().Round(time.Second)
+	pdataEndTime := pdata.TimestampFromTime(mockEndTime)
+	startTime := mockEndTime.Add(-90 * time.Second)
+	pdataStartTime := pdata.TimestampFromTime(startTime)
+
+	rs := pdata.NewResourceSpans()
+	ilss := rs.InstrumentationLibrarySpans()
+	ils := ilss.AppendEmpty()
+	ils.InstrumentationLibrary().SetName("test_il_name")
+	ils.InstrumentationLibrary().SetVersion("test_il_version")
+	span := ils.Spans().AppendEmpty()
+
+	traceID := pdata.NewTraceID(mockTraceID)
+	spanID := pdata.NewSpanID(mockSpanID)
+	parentSpanID := pdata.NewSpanID(mockParentSpanID)
+	span.SetTraceID(traceID)
+	span.SetSpanID(spanID)
+	span.SetParentSpanID(parentSpanID)
+	span.SetName("End-To-End Here")
+	span.SetKind(pdata.SpanKindServer)
+	span.SetStartTimestamp(pdataStartTime)
+	span.SetEndTimestamp(pdataEndTime)
+	span.SetTraceState("tracestatekey=tracestatevalue")
+
+	status := span.Status()
+	status.SetCode(pdata.StatusCodeError)
+
+	span.Attributes().InsertString(conventions.AttributeHTTPStatusCode, "404")
+	span.Attributes().InsertString(conventions.AttributeHTTPStatusText, "Not Found")
+
+	// translate mocks to datadog traces
+	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &config.Config{}, denylister, map[string]string{})
+
+	// ensure that span error type uses a fallback of "error"
+	assert.Equal(t, "error", datadogPayload.Traces[0].Spans[0].Meta["error.type"])
+
+	// ensure that span error type uses a fallback of "status_code" and "status_text"
+	assert.Equal(t, "404 Not Found", datadogPayload.Traces[0].Spans[0].Meta["error.msg"])
 }
 
 // Ensures that if more than one error event occurs in a span, the last one is used for translation
