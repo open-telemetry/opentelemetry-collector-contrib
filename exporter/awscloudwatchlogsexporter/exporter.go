@@ -83,15 +83,15 @@ func (e *exporter) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (e *exporter) PushLogs(ctx context.Context, ld pdata.Logs) (droppedTimeSeries int, err error) {
+func (e *exporter) PushLogs(ctx context.Context, ld pdata.Logs) (err error) {
 	// TODO(jbd): Relax this once CW Logs support ingest
 	// without sequence tokens.
 	e.seqTokenMu.Lock()
 	defer e.seqTokenMu.Unlock()
 
-	logEvents, dropped := logsToCWLogs(e.logger, ld)
+	logEvents, _ := logsToCWLogs(e.logger, ld)
 	if len(logEvents) == 0 {
-		return 0, nil
+		return nil
 	}
 
 	e.logger.Debug("Putting log events", zap.Int("num_of_events", len(logEvents)))
@@ -103,15 +103,15 @@ func (e *exporter) PushLogs(ctx context.Context, ld pdata.Logs) (droppedTimeSeri
 	}
 	out, err := e.client.PutLogEvents(input)
 	if err != nil {
-		return 0, err
+		return err
 	}
 	if info := out.RejectedLogEventsInfo; info != nil {
-		return ld.LogRecordCount() + dropped, fmt.Errorf("log event rejected")
+		return fmt.Errorf("log event rejected")
 	}
 	e.logger.Debug("Log events are successfully put")
 
 	e.seqToken = *out.NextSequenceToken
-	return dropped, nil
+	return nil
 }
 
 func logsToCWLogs(logger *zap.Logger, ld pdata.Logs) ([]*cloudwatchlogs.InputLogEvent, int) {
@@ -171,10 +171,10 @@ func logToCWLog(resourceAttrs map[string]interface{}, log pdata.LogRecord) (*clo
 		DroppedAttributesCount: log.DroppedAttributesCount(),
 		Flags:                  log.Flags(),
 	}
-	if traceID := log.TraceID(); traceID.IsValid() {
+	if traceID := log.TraceID(); !traceID.IsEmpty() {
 		body.TraceID = traceID.HexString()
 	}
-	if spanID := log.SpanID(); spanID.IsValid() {
+	if spanID := log.SpanID(); !spanID.IsEmpty() {
 		body.SpanID = spanID.HexString()
 	}
 	body.Attributes = attrsValue(log.Attributes())
@@ -195,36 +195,38 @@ func attrsValue(attrs pdata.AttributeMap) map[string]interface{} {
 		return nil
 	}
 	out := make(map[string]interface{}, attrs.Len())
-	attrs.ForEach(func(k string, v pdata.AttributeValue) {
+	attrs.Range(func(k string, v pdata.AttributeValue) bool {
 		out[k] = attrValue(v)
+		return true
 	})
 	return out
 }
 
 func attrValue(value pdata.AttributeValue) interface{} {
 	switch value.Type() {
-	case pdata.AttributeValueINT:
+	case pdata.AttributeValueTypeInt:
 		return value.IntVal()
-	case pdata.AttributeValueBOOL:
+	case pdata.AttributeValueTypeBool:
 		return value.BoolVal()
-	case pdata.AttributeValueDOUBLE:
+	case pdata.AttributeValueTypeDouble:
 		return value.DoubleVal()
-	case pdata.AttributeValueSTRING:
+	case pdata.AttributeValueTypeString:
 		return value.StringVal()
-	case pdata.AttributeValueMAP:
+	case pdata.AttributeValueTypeMap:
 		values := map[string]interface{}{}
-		value.MapVal().ForEach(func(k string, v pdata.AttributeValue) {
+		value.MapVal().Range(func(k string, v pdata.AttributeValue) bool {
 			values[k] = attrValue(v)
+			return true
 		})
 		return values
-	case pdata.AttributeValueARRAY:
+	case pdata.AttributeValueTypeArray:
 		arrayVal := value.ArrayVal()
 		values := make([]interface{}, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {
 			values[i] = attrValue(arrayVal.At(i))
 		}
 		return values
-	case pdata.AttributeValueNULL:
+	case pdata.AttributeValueTypeNull:
 		return nil
 	default:
 		return nil
