@@ -4,10 +4,10 @@ GOARCH=$(shell go env GOARCH)
 GIT_SHA=$(shell git rev-parse --short HEAD)
 
 PROJECT_ROOT = $(shell pwd)
-ARTIFACTS = ${PROJECT_ROOT}/artifacts
 ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort )
 ALL_SRC := $(shell find . -name '*.go' -type f | sort)
 ADDLICENSE=addlicense
+ALL_COVERAGE_MOD_DIRS := $(shell find . -type f -name 'go.mod' -exec dirname {} \; | egrep -v '^./internal/tools' | sort)
 
 TOOLS_MOD_DIR := ./internal/tools
 .PHONY: install-tools
@@ -23,14 +23,27 @@ test: vet test-only
 test-only:
 	$(MAKE) for-all CMD="go test -race -coverprofile coverage.txt -coverpkg ./... ./..."
 
+.PHONY: test-coverage
+test-coverage: clean
+	@set -e; \
+	printf "" > coverage.txt; \
+	for dir in $(ALL_COVERAGE_MOD_DIRS); do \
+	  (cd "$${dir}" && \
+	    go list ./... \
+	    | grep -v third_party \
+	    | xargs go test -coverpkg=./... -covermode=atomic -coverprofile=coverage.out && \
+	  go tool cover -html=coverage.out -o coverage.html); \
+	  [ -f "$${dir}/coverage.out" ] && cat "$${dir}/coverage.out" >> coverage.txt; \
+	done; \
+	sed -i.bak -e '2,$$ { /^mode: /d; }' coverage.txt	
+
 .PHONY: bench
 bench:
 	go test -benchmem -run=^$$ -bench ^* ./...
 
 .PHONY: clean
 clean:
-	rm -fr ./artifacts
-	$(MAKE) for-all CMD="rm -f coverage.txt coverage.html"
+	$(MAKE) for-all CMD="rm -f coverage.txt.* coverage.html coverage.out"
 
 .PHONY: tidy
 tidy:

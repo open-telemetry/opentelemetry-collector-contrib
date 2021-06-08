@@ -8,3 +8,6 @@ artifacts/*
 .vscode/*
 gen/
 .idea/*
+coverage.out
+coverage.out.bak
+coverage.txt.bak

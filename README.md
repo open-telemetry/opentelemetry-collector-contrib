@@ -1,4 +1,7 @@
 # opentelemetry-log-collection
+
+[![codecov.io](https://codecov.io/gh/open-telemetry/opentelemetry-log-collection/coverage.svg?branch=main)](https://app.codecov.io/gh/open-telemetry/opentelemetry-log-collection?branch=main)
+
 ## Status
 
 This project was originally developed by [observIQ](https://observiq.com/) under the name [Stanza](https://github.com/observIQ/stanza). It has been contributed to the OpenTelemetry project in order to accelerate development of the collector's log collection capabilities.
