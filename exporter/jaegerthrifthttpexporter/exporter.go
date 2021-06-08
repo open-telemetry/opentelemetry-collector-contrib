@@ -76,7 +76,7 @@ type jaegerThriftHTTPSender struct {
 }
 
 func (s *jaegerThriftHTTPSender) pushTraceData(
-	_ context.Context,
+	ctx context.Context,
 	td pdata.Traces,
 ) error {
 	rss := td.ResourceSpans()
@@ -89,7 +89,7 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 			return consumererror.Permanent(err)
 		}
 
-		body, err := serializeThrift(tBatch)
+		body, err := serializeThrift(ctx, tBatch)
 		if err != nil {
 			return err
 		}
@@ -126,10 +126,10 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 	return nil
 }
 
-func serializeThrift(obj thrift.TStruct) (*bytes.Buffer, error) {
+func serializeThrift(ctx context.Context, obj thrift.TStruct) (*bytes.Buffer, error) {
 	t := thrift.NewTMemoryBuffer()
-	p := thrift.NewTBinaryProtocolTransport(t)
-	if err := obj.Write(p); err != nil {
+	p := thrift.NewTBinaryProtocolConf(t, nil)
+	if err := obj.Write(ctx, p); err != nil {
 		return nil, err
 	}
 	return t.Buffer, nil
