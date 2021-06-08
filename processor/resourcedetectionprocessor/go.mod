@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go v0.83.0
 	github.com/Showmax/go-fqdn v1.0.0
 	github.com/armon/go-metrics v0.3.3 // indirect
-	github.com/aws/aws-sdk-go v1.38.52
+	github.com/aws/aws-sdk-go v1.38.55
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/docker/docker v20.10.7+incompatible
 	github.com/gogo/googleapis v1.3.0 // indirect
