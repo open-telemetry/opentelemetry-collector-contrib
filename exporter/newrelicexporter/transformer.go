@@ -377,12 +377,14 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 			}
 		}
 	case pdata.MetricDataTypeIntHistogram:
-		t.details.metricMetadataCount[k]++
 		hist := m.IntHistogram()
+		k.MetricTemporality = hist.AggregationTemporality()
+		t.details.metricMetadataCount[k]++
 		return nil, &errUnsupportedMetricType{metricType: k.MetricType.String(), metricName: m.Name(), numDataPoints: hist.DataPoints().Len()}
 	case pdata.MetricDataTypeHistogram:
-		t.details.metricMetadataCount[k]++
 		hist := m.Histogram()
+		k.MetricTemporality = hist.AggregationTemporality()
+		t.details.metricMetadataCount[k]++
 		return nil, &errUnsupportedMetricType{metricType: k.MetricType.String(), metricName: m.Name(), numDataPoints: hist.DataPoints().Len()}
 	case pdata.MetricDataTypeSummary:
 		t.details.metricMetadataCount[k]++
