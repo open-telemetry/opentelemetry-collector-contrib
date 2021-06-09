@@ -32,8 +32,8 @@ const (
 
 	tagNodeName           = "k8s.node.name"
 	tagStartTime          = "k8s.pod.start_time"
-	metadataFromPod       = "pod"
-	metadataFromNamespace = "namespace"
+	MetadataFromPod       = "pod"
+	MetadataFromNamespace = "namespace"
 )
 
 // PodIdentifier is a custom type to represent IP Address or Pod UID

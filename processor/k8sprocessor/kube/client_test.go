@@ -467,18 +467,18 @@ func TestExtractionRules(t *testing.T) {
 			Annotations: []FieldExtractionRule{{
 				Name: "a1",
 				Key:  "annotation1",
-				From: metadataFromPod,
+				From: MetadataFromPod,
 			},
 			},
 			Labels: []FieldExtractionRule{{
 				Name: "l1",
 				Key:  "label1",
-				From: metadataFromPod,
+				From: MetadataFromPod,
 			}, {
 				Name:  "l2",
 				Key:   "label2",
 				Regex: regexp.MustCompile(`k5=(?P<value>[^\s]+)`),
-				From:  metadataFromPod,
+				From:  MetadataFromPod,
 			},
 			},
 		},
@@ -537,13 +537,13 @@ func TestNamespaceExtractionRules(t *testing.T) {
 			Annotations: []FieldExtractionRule{{
 				Name: "a1",
 				Key:  "annotation1",
-				From: metadataFromNamespace,
+				From: MetadataFromNamespace,
 			},
 			},
 			Labels: []FieldExtractionRule{{
 				Name: "l1",
 				Key:  "label1",
-				From: metadataFromNamespace,
+				From: MetadataFromNamespace,
 			},
 			},
 		},
@@ -814,13 +814,13 @@ func TestExtractNamespaceLabelsAnnotations(t *testing.T) {
 			Annotations: []FieldExtractionRule{{
 				Name: "a1",
 				Key:  "annotation1",
-				From: metadataFromPod,
+				From: MetadataFromPod,
 			},
 			},
 			Labels: []FieldExtractionRule{{
 				Name: "l1",
 				Key:  "label1",
-				From: metadataFromPod,
+				From: MetadataFromPod,
 			},
 			},
 		},
@@ -831,7 +831,7 @@ func TestExtractNamespaceLabelsAnnotations(t *testing.T) {
 			Annotations: []FieldExtractionRule{{
 				Name: "a1",
 				Key:  "annotation1",
-				From: metadataFromNamespace,
+				From: MetadataFromNamespace,
 			},
 			},
 		},
@@ -842,7 +842,7 @@ func TestExtractNamespaceLabelsAnnotations(t *testing.T) {
 			Labels: []FieldExtractionRule{{
 				Name: "l1",
 				Key:  "label1",
-				From: metadataFromNamespace,
+				From: MetadataFromNamespace,
 			},
 			},
 		},

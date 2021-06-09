@@ -299,7 +299,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	for _, r := range c.Rules.Labels {
-		if r.From == metadataFromPod {
+		if r.From == MetadataFromPod {
 			if v, ok := pod.Labels[r.Key]; ok {
 				tags[r.Name] = c.extractField(v, r)
 			}
@@ -307,7 +307,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	for _, r := range c.Rules.Annotations {
-		if r.From == metadataFromPod {
+		if r.From == MetadataFromPod {
 			if v, ok := pod.Annotations[r.Key]; ok {
 				tags[r.Name] = c.extractField(v, r)
 			}
@@ -320,7 +320,7 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
-		if r.From == metadataFromNamespace {
+		if r.From == MetadataFromNamespace {
 			if v, ok := namespace.Labels[r.Key]; ok {
 				tags[r.Name] = c.extractField(v, r)
 			}
@@ -328,7 +328,7 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 	}
 
 	for _, r := range c.Rules.Annotations {
-		if r.From == metadataFromNamespace {
+		if r.From == MetadataFromNamespace {
 			if v, ok := namespace.Annotations[r.Key]; ok {
 				tags[r.Name] = c.extractField(v, r)
 			}
@@ -494,13 +494,13 @@ func (c *WatchClient) forgetNamespace(namespace *api_v1.Namespace) {
 
 func (c *WatchClient) extractNamespaceLabelsAnnotations() bool {
 	for _, r := range c.Rules.Labels {
-		if r.From == metadataFromNamespace {
+		if r.From == MetadataFromNamespace {
 			return true
 		}
 	}
 
 	for _, r := range c.Rules.Annotations {
-		if r.From == metadataFromNamespace {
+		if r.From == MetadataFromNamespace {
 			return true
 		}
 	}
