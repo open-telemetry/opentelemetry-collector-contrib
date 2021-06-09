@@ -152,6 +152,7 @@ func TestClientStartStop(t *testing.T) {
 	}()
 	c.Stop()
 	<-done
+	time.Sleep(time.Second)
 	assert.True(t, fctr.HasStopped())
 }
 
