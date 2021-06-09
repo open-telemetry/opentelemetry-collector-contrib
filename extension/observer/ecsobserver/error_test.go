@@ -17,19 +17,12 @@ package ecsobserver
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
-func TestTargetToLabels(t *testing.T) {
-	t.Run("sanitize tags", func(t *testing.T) {
-		pt := PrometheusECSTarget{
-			TaskTags: map[string]string{
-				"a:b": "sanitized",
-				"ab":  "same",
-			},
-		}
-		m := pt.ToLabels()
-		assert.Equal(t, "sanitized", m["__meta_ecs_task_tags_a_b"])
-		assert.Equal(t, "same", m["__meta_ecs_task_tags_ab"])
-	})
+func TestSetInvalidError(t *testing.T) {
+	printErrors(zap.NewExample(), nil) // you know, for coverage
+	// The actual test cen be found in the following locations:
+	//
+	// exporter_test.go where we filter logs by error scope
 }

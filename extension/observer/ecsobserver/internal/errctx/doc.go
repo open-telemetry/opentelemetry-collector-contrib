@@ -12,24 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ecsobserver
-
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
-func TestTargetToLabels(t *testing.T) {
-	t.Run("sanitize tags", func(t *testing.T) {
-		pt := PrometheusECSTarget{
-			TaskTags: map[string]string{
-				"a:b": "sanitized",
-				"ab":  "same",
-			},
-		}
-		m := pt.ToLabels()
-		assert.Equal(t, "sanitized", m["__meta_ecs_task_tags_a_b"])
-		assert.Equal(t, "same", m["__meta_ecs_task_tags_ab"])
-	})
-}
+// Package errctx allow attaching values to an error in a structural way
+// using WithValue and read the value out using ValueFrom.
+// It is inspired by context package and works along with error wrapping
+// introduced in go 1.13.
+package errctx
