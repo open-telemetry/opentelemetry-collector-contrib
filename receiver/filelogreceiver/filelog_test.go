@@ -55,9 +55,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(
-		t, path.Join(".", "testdata", "config.yaml"), factories,
-	)
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -74,7 +72,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 
 	_, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
-		component.ReceiverCreateParams{
+		component.ReceiverCreateSettings{
 			Logger: zaptest.NewLogger(t),
 		},
 		cfg,
@@ -90,7 +88,7 @@ func TestReadStaticFile(t *testing.T) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
+	params := component.ReceiverCreateSettings{Logger: zaptest.NewLogger(t)}
 
 	cfg := testdataConfigYamlAsMap()
 	cfg.Converter.MaxFlushCount = 10
@@ -180,7 +178,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
+	params := component.ReceiverCreateSettings{Logger: zaptest.NewLogger(t)}
 
 	cfg := testdataRotateTestYamlAsMap(tempDir)
 	cfg.Converter.MaxFlushCount = 1

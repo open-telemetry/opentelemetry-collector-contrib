@@ -50,10 +50,10 @@ type traceExporterImp struct {
 }
 
 // Create new traces exporter
-func newTracesExporter(params component.ExporterCreateParams, cfg config.Exporter) (*traceExporterImp, error) {
+func newTracesExporter(params component.ExporterCreateSettings, cfg config.Exporter) (*traceExporterImp, error) {
 	exporterFactory := otlpexporter.NewFactory()
 
-	tmplParams := component.ExporterCreateParams{
+	tmplParams := component.ExporterCreateSettings{
 		Logger:    params.Logger,
 		BuildInfo: params.BuildInfo,
 	}

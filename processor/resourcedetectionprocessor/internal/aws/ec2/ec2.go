@@ -31,6 +31,7 @@ import (
 )
 
 const (
+	// TypeStr is type of detector.
 	TypeStr   = "ec2"
 	tagPrefix = "ec2.tag."
 )
@@ -42,7 +43,7 @@ type Detector struct {
 	tagKeyRegexes    []*regexp.Regexp
 }
 
-func NewDetector(_ component.ProcessorCreateParams, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(_ component.ProcessorCreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	sess, err := session.NewSession()
 	if err != nil {

@@ -20,6 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"go.uber.org/zap"
 )
 
 // Task contains both raw task info and its definition.
@@ -96,6 +97,17 @@ func (e *ErrPrivateIPNotFound) Error() string {
 	return m
 }
 
+func (e *ErrPrivateIPNotFound) message() string {
+	return "private ip not found"
+}
+
+func (e *ErrPrivateIPNotFound) zapFields() []zap.Field {
+	return []zap.Field{
+		zap.String("NetworkMode", e.NetworkMode),
+		zap.String("Extra", e.Extra),
+	}
+}
+
 // PrivateIP returns private ip address based on network mode.
 // EC2 launch type can use host/bridge mode and the private ip is the EC2 instance's ip.
 // awsvpc has its own ip regardless of launch type.
@@ -149,6 +161,17 @@ func (e *ErrMappedPortNotFound) Error() string {
 	// %q for network mode because empty string is valid for ECS EC2.
 	return fmt.Sprintf("mapped port not found for container port %d network mode %q on container %s in task %s",
 		e.ContainerPort, e.NetworkMode, e.ContainerName, e.TaskArn)
+}
+
+func (e *ErrMappedPortNotFound) message() string {
+	return "mapped port not found"
+}
+
+func (e *ErrMappedPortNotFound) zapFields() []zap.Field {
+	return []zap.Field{
+		zap.String("NetworkMode", e.NetworkMode),
+		zap.Int64("ContainerPort", e.ContainerPort),
+	}
 }
 
 // MappedPort returns 'external' port based on network mode.

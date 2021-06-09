@@ -23,12 +23,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
 )
 
-// TODO: add proper field for Cadvisor
 type Cadvisor struct {
+	// TODO: add proper field for Cadvisor
 }
 
 // New creates a Cadvisor struct which can generate metrics from embedded cadvisor lib
-func New(containerOrchestrator string, machineInfo *host.MachineInfo, logger *zap.Logger) *Cadvisor {
+func New(containerOrchestrator string, machineInfo *host.Info, logger *zap.Logger) *Cadvisor {
 	// TODO: initialize the cadvisor
 	return &Cadvisor{}
 }

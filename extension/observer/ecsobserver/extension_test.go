@@ -27,7 +27,7 @@ import (
 // Simply start and stop, the actual test logic is in sd_test.go until we implement the ListWatcher interface.
 // In that case sd itself does not use timer and relies on caller to trigger List.
 func TestExtensionStartStop(t *testing.T) {
-	ext, err := createExtension(context.TODO(), component.ExtensionCreateParams{Logger: zap.NewExample()}, createDefaultConfig())
+	ext, err := createExtension(context.TODO(), component.ExtensionCreateSettings{Logger: zap.NewExample()}, createDefaultConfig())
 	require.NoError(t, err)
 	require.IsType(t, &ecsObserver{}, ext)
 	require.NoError(t, ext.Start(context.TODO(), componenttest.NewNopHost()))

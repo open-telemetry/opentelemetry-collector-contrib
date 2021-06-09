@@ -58,7 +58,7 @@ var (
 
 func TestFillHostMetadata(t *testing.T) {
 	cache.Cache.Flush()
-	params := component.ExporterCreateParams{
+	params := component.ExporterCreateSettings{
 		Logger:    zap.NewNop(),
 		BuildInfo: mockBuildInfo,
 	}
@@ -195,7 +195,7 @@ func TestPusher(t *testing.T) {
 		API:                 config.APIConfig{Key: "apikey"},
 		UseResourceMetadata: true,
 	}
-	mockParams := component.ExporterCreateParams{
+	mockParams := component.ExporterCreateSettings{
 		Logger:    zap.NewNop(),
 		BuildInfo: mockBuildInfo,
 	}

@@ -66,6 +66,7 @@ func createDefaultConfig() config.Exporter {
 			},
 			SendMonotonic: true,
 			DeltaTTL:      3600,
+			Quantiles:     true,
 			ExporterConfig: ddconfig.MetricsExporterConfig{
 				ResourceAttributesAsTags: false,
 			},
@@ -87,7 +88,7 @@ func createDefaultConfig() config.Exporter {
 // createMetricsExporter creates a metrics exporter based on this config.
 func createMetricsExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	c config.Exporter,
 ) (component.MetricsExporter, error) {
 
@@ -137,7 +138,7 @@ func createMetricsExporter(
 // createTracesExporter creates a trace exporter based on this config.
 func createTracesExporter(
 	ctx context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	c config.Exporter,
 ) (component.TracesExporter, error) {
 

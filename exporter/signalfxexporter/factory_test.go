@@ -52,7 +52,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	c.AccessToken = "access_token"
 	c.Realm = "us0"
 
-	_, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+	_, err := createMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, cfg)
 	assert.NoError(t, err)
 }
 
@@ -62,7 +62,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	c.AccessToken = "access_token"
 	c.Realm = "us0"
 
-	_, err := createTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+	_, err := createTracesExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, cfg)
 	assert.NoError(t, err)
 }
 
@@ -71,7 +71,7 @@ func TestCreateTracesExporterNoAccessToken(t *testing.T) {
 	c := cfg.(*Config)
 	c.Realm = "us0"
 
-	_, err := createTracesExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
+	_, err := createTracesExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, cfg)
 	assert.EqualError(t, err, "access_token is required")
 }
 
@@ -85,7 +85,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	exp, err := factory.CreateMetricsExporter(
 		context.Background(),
-		component.ExporterCreateParams{Logger: zap.NewNop()},
+		component.ExporterCreateSettings{Logger: zap.NewNop()},
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
@@ -96,14 +96,14 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	expCfg.Realm = "us1"
 	exp, err = factory.CreateMetricsExporter(
 		context.Background(),
-		component.ExporterCreateParams{Logger: zap.NewNop()},
+		component.ExporterCreateSettings{Logger: zap.NewNop()},
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 
 	logExp, err := factory.CreateLogsExporter(
 		context.Background(),
-		component.ExporterCreateParams{Logger: zap.NewNop()},
+		component.ExporterCreateSettings{Logger: zap.NewNop()},
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, logExp)
@@ -123,7 +123,7 @@ func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 2 * time.Second},
 	}
 
-	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }
@@ -166,7 +166,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, tt.config)
+			te, err := createMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, tt.config)
 			assert.EqualError(t, err, tt.errorMessage)
 			assert.Nil(t, te)
 		})
@@ -261,7 +261,7 @@ func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
 		Realm:            "us1",
 	}
 
-	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, config)
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -281,7 +281,7 @@ func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 		},
 	}
 
-	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, config)
 	require.NoError(t, err)
 	require.NotNil(t, te)
 
@@ -297,7 +297,7 @@ func TestCreateMetricsExporterWithEmptyExcludeMetrics(t *testing.T) {
 		ExcludeMetrics:   []dpfilters.MetricFilter{},
 	}
 
-	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateSettings{Logger: zap.NewNop()}, config)
 	require.NoError(t, err)
 	require.NotNil(t, te)
 

@@ -62,7 +62,7 @@ func TestNewProcessor(t *testing.T) {
 			// Prepare
 			factory := NewFactory()
 
-			creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+			creationParams := component.ProcessorCreateSettings{Logger: zap.NewNop()}
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.LatencyHistogramBuckets = tc.latencyHistogramBuckets
 			cfg.Dimensions = tc.dimensions

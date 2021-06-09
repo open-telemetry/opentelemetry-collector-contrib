@@ -37,13 +37,13 @@ type jmxMetricReceiver struct {
 	logger       *zap.Logger
 	config       *Config
 	subprocess   *subprocess.Subprocess
-	params       component.ReceiverCreateParams
+	params       component.ReceiverCreateSettings
 	otlpReceiver component.MetricsReceiver
 	nextConsumer consumer.Metrics
 }
 
 func newJMXMetricReceiver(
-	params component.ReceiverCreateParams,
+	params component.ReceiverCreateSettings,
 	config *Config,
 	nextConsumer consumer.Metrics,
 ) *jmxMetricReceiver {
@@ -56,7 +56,7 @@ func newJMXMetricReceiver(
 }
 
 func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) (err error) {
-	jmx.logger.Debug("Starting JMX Receiver")
+	jmx.logger.Debug("starting JMX Receiver")
 
 	jmx.otlpReceiver, err = jmx.buildOTLPReceiver()
 	if err != nil {

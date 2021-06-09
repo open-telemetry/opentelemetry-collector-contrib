@@ -88,17 +88,6 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 			commonFields[k] = tracetranslator.AttributeValueToString(v)
 			return true
 		})
-
-		if sourceSet, isSet := rs.Resource().Attributes().Get(conventions.AttributeServiceName); isSet {
-			source = sourceSet.StringVal()
-		}
-		if sourcetypeSet, isSet := rs.Resource().Attributes().Get(splunk.SourcetypeLabel); isSet {
-			sourceType = sourcetypeSet.StringVal()
-		}
-		rs.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = tracetranslator.AttributeValueToString(v)
-			return true
-		})
 		ilss := rs.InstrumentationLibrarySpans()
 		for sils := 0; sils < ilss.Len(); sils++ {
 			ils := ilss.At(sils)

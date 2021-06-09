@@ -56,8 +56,8 @@ type ExtractConfig struct {
 	// The field accepts a list of strings.
 	//
 	// Metadata fields supported right now are,
-	//   namespace, podName, podUID, deployment, cluster, node and startTime
-	//
+	//   k8s.namespace.name, k8s.pod.name, k8s.pod.uid, k8s.deployment.name, k8s.cluster.name,
+	//   k8s.node.name and k8s.pod.start_time
 	// Specifying anything other than these values will result in an error.
 	// By default all of the fields are extracted and added to spans and metrics.
 	Metadata []string `mapstructure:"metadata"`

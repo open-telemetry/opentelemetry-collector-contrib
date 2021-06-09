@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configloader"
+	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -35,7 +36,7 @@ type runner interface {
 
 // receiverRunner handles starting/stopping of a concrete subreceiver instance.
 type receiverRunner struct {
-	params      component.ReceiverCreateParams
+	params      component.ReceiverCreateSettings
 	idNamespace config.ComponentID
 	host        component.Host
 }
@@ -84,7 +85,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
 ) (config.Receiver, error) {
-	mergedConfig := config.NewParser()
+	mergedConfig := configparser.NewParser()
 
 	// Merge in the config values specified in the config file.
 	if err := mergedConfig.MergeStringMap(receiver.config); err != nil {

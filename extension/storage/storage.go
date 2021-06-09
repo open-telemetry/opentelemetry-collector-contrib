@@ -27,7 +27,7 @@ type Extension interface {
 
 	// GetClient will create a client for use by the specified component.
 	// The component can use the client to manage state
-	GetClient(context.Context, component.Kind, config.ComponentID) (Client, error)
+	GetClient(context.Context, component.Kind, config.ComponentID, string) (Client, error)
 }
 
 // Client is the interface that storage clients must implement
@@ -50,4 +50,7 @@ type Client interface {
 
 	// Delete will delete data associated with the specified key
 	Delete(context.Context, string) error
+
+	// Close will release any resources held by the client
+	Close(context.Context) error
 }

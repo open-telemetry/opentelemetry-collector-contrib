@@ -56,11 +56,12 @@ func createDefaultConfig() config.Receiver {
 // CreateMetricsReceiver creates an AWS Container Insight receiver.
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateParams,
+	params component.ReceiverCreateSettings,
 	baseCfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 
 	rCfg := baseCfg.(*Config)
-	return New(params.Logger, rCfg, consumer)
+	logger := params.Logger
+	return New(logger, rCfg, consumer)
 }

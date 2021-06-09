@@ -120,7 +120,18 @@ exporters:
       ## A blacklist of regular expressions can be provided to disable certain traces based on their resource name
       ## all entries must be surrounded by double quotes and separated by commas.
       #
-      # ignore_resources: ["(GET|POST) /healthcheck"]      
+      # ignore_resources: ["(GET|POST) /healthcheck"] 
+
+      ## @param span_name_remappings - map of key/value pairs - optional
+      ## A map of Datadog span operation name keys and preferred name valuues to update those names to. This can be used to
+      ## automatically map Datadog Span Operation Names to an updated value, and is useful when a user wants to
+      ## shorten or modify span names to something more user friendly in the case of instrumentation libraries with
+      ## particularly verbose names.
+      #
+      # span_name_remappings: 
+      #   io.opentelemetry.javaagent.spring.client: spring.client
+      #   instrumentation::express.server: express
+
 
 service:
   pipelines:

@@ -57,7 +57,7 @@ func TestReceiver(t *testing.T) {
 
 			r, err := f.CreateMetricsReceiver(
 				context.Background(),
-				component.ReceiverCreateParams{Logger: zap.NewNop()},
+				component.ReceiverCreateSettings{Logger: zap.NewNop()},
 				cfg,
 				&testbed.MockMetricConsumer{},
 			)

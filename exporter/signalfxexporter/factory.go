@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configparser"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
@@ -68,7 +69,7 @@ func createDefaultConfig() config.Exporter {
 
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	eCfg config.Exporter,
 ) (component.TracesExporter, error) {
 	cfg := eCfg.(*Config)
@@ -91,12 +92,13 @@ func createTracesExporter(
 		cfg,
 		params.Logger,
 		tracker.AddSpans,
+		exporterhelper.WithStart(tracker.Start),
 		exporterhelper.WithShutdown(tracker.Shutdown))
 }
 
 func createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	config config.Exporter,
 ) (component.MetricsExporter, error) {
 
@@ -143,7 +145,7 @@ func createMetricsExporter(
 func loadDefaultTranslationRules() ([]translation.Rule, error) {
 	cfg := Config{}
 
-	cp, err := config.NewParserFromBuffer(strings.NewReader(translation.DefaultTranslationRulesYaml))
+	cp, err := configparser.NewParserFromBuffer(strings.NewReader(translation.DefaultTranslationRulesYaml))
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +172,7 @@ func setDefaultExcludes(cfg *Config) error {
 func loadDefaultExcludes() ([]dpfilters.MetricFilter, error) {
 	cfg := Config{}
 
-	v, err := config.NewParserFromBuffer(strings.NewReader(translation.DefaultExcludeMetricsYaml))
+	v, err := configparser.NewParserFromBuffer(strings.NewReader(translation.DefaultExcludeMetricsYaml))
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +186,7 @@ func loadDefaultExcludes() ([]dpfilters.MetricFilter, error) {
 
 func createLogsExporter(
 	_ context.Context,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	expCfg := cfg.(*Config)

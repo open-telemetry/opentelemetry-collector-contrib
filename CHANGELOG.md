@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- Enabled Dependabot for Github Actions (#3543)
+=======
+## 🛑 Breaking changes 🛑
+
+- `f5cloud` exporter (#3509):
+  - Renamed the config 'auth' field to 'f5cloud_auth'. This will prevent a config field name collision when [Support for Custom Exporter Authenticators as Extensions](https://github.com/open-telemetry/opentelemetry-collector/pull/3128) is ready to be integrated.
+
+
 ## v0.27.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.27.0 (Beta) 🎉
@@ -29,7 +39,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 - `groupbytrace` processor: Added workers for queue processing (#2902)
 - `resourcedetection` processor: Add docker detector (#2775)
 - `tailsampling` processor: Support regex on span attribute filtering (#3335_
-- Change obsreport helpers for receiver to use the new pattern created in Collector (#3439,#3443,#3449)
+- Change obsreport helpers for receiver to use the new pattern created in Collector (#3439,#3443,#3449,#3504,#3521)
 
 ## 🧰 Bug fixes 🧰
 

@@ -33,7 +33,7 @@ func newHumioFactory(t *testing.T) component.ExporterFactory {
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[config.Type(typeStr)] = factory
+	factories.Exporters[typeStr] = factory
 
 	return factory
 }
@@ -42,9 +42,10 @@ func TestCreateTracesExporter(t *testing.T) {
 	// Arrange
 	factory := newHumioFactory(t)
 	testCases := []struct {
-		desc    string
-		cfg     config.Exporter
-		wantErr bool
+		desc              string
+		cfg               config.Exporter
+		wantErrorOnCreate bool
+		wantErrorOnStart  bool
 	}{
 		{
 			desc: "Valid trace configuration",
@@ -58,7 +59,7 @@ func TestCreateTracesExporter(t *testing.T) {
 					IngestToken: "00000000-0000-0000-0000-0000000000000",
 				},
 			},
-			wantErr: false,
+			wantErrorOnCreate: false,
 		},
 		{
 			desc: "Unsanitizable trace configuration",
@@ -69,7 +70,7 @@ func TestCreateTracesExporter(t *testing.T) {
 					Endpoint: "\n",
 				},
 			},
-			wantErr: true,
+			wantErrorOnCreate: true,
 		},
 		{
 			desc: "Missing ingest token",
@@ -80,7 +81,7 @@ func TestCreateTracesExporter(t *testing.T) {
 					Endpoint: "http://localhost:8080",
 				},
 			},
-			wantErr: true,
+			wantErrorOnCreate: true,
 		},
 		{
 			desc: "Invalid client configuration",
@@ -100,12 +101,13 @@ func TestCreateTracesExporter(t *testing.T) {
 					IngestToken: "00000000-0000-0000-0000-0000000000000",
 				},
 			},
-			wantErr: true,
+			wantErrorOnCreate: false,
+			wantErrorOnStart:  true,
 		},
 		{
-			desc:    "Missing configuration",
-			cfg:     nil,
-			wantErr: true,
+			desc:              "Missing configuration",
+			cfg:               nil,
+			wantErrorOnCreate: true,
 		},
 	}
 
@@ -114,16 +116,23 @@ func TestCreateTracesExporter(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			exp, err := factory.CreateTracesExporter(
 				context.Background(),
-				component.ExporterCreateParams{Logger: zap.NewNop()},
+				component.ExporterCreateSettings{Logger: zap.NewNop()},
 				tC.cfg,
 			)
 
-			if (err != nil) != tC.wantErr {
-				t.Errorf("CreateTracesExporter() error = %v, wantErr %v", err, tC.wantErr)
+			if (err != nil) != tC.wantErrorOnCreate {
+				t.Errorf("CreateTracesExporter() error = %v, wantErr %v", err, tC.wantErrorOnCreate)
 			}
 
 			if (err == nil) && (exp == nil) {
 				t.Error("No trace exporter created despite no errors")
+			}
+
+			if exp != nil {
+				err = exp.Start(context.Background(), componenttest.NewNopHost())
+				if (err != nil) != tC.wantErrorOnStart {
+					t.Errorf("CreateTracesExporter() error = %v, wantErr %v", err, tC.wantErrorOnStart)
+				}
 			}
 		})
 	}
@@ -133,7 +142,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	factory := newHumioFactory(t)
 	mExp, err := factory.CreateMetricsExporter(
 		context.Background(),
-		component.ExporterCreateParams{Logger: zap.NewNop()},
+		component.ExporterCreateSettings{Logger: zap.NewNop()},
 		factory.CreateDefaultConfig(),
 	)
 
@@ -145,7 +154,7 @@ func TestCreateLogsExporter(t *testing.T) {
 	factory := newHumioFactory(t)
 	lExp, err := factory.CreateLogsExporter(
 		context.Background(),
-		component.ExporterCreateParams{Logger: zap.NewNop()},
+		component.ExporterCreateSettings{Logger: zap.NewNop()},
 		factory.CreateDefaultConfig(),
 	)
 

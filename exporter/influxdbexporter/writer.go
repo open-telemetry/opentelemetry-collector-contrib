@@ -27,6 +27,7 @@ import (
 
 	"github.com/influxdata/influxdb-observability/common"
 	lineprotocol "github.com/influxdata/line-protocol/v2/influxdata"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
@@ -38,7 +39,7 @@ type influxHTTPWriter struct {
 	logger common.Logger
 }
 
-func newInfluxHTTPWriter(logger common.Logger, config *Config) (*influxHTTPWriter, error) {
+func newInfluxHTTPWriter(logger common.Logger, config *Config, host component.Host) (*influxHTTPWriter, error) {
 	writeURL, err := url.Parse(config.HTTPClientSettings.Endpoint)
 	if err != nil {
 		return nil, err
@@ -59,7 +60,7 @@ func newInfluxHTTPWriter(logger common.Logger, config *Config) (*influxHTTPWrite
 		config.HTTPClientSettings.Headers["Authorization"] = "Token " + config.Token
 	}
 
-	httpClient, err := config.HTTPClientSettings.ToClient()
+	httpClient, err := config.HTTPClientSettings.ToClient(host.GetExtensions())
 	if err != nil {
 		return nil, err
 	}

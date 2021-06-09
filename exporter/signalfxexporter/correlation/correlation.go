@@ -34,7 +34,7 @@ type Tracker struct {
 	once         sync.Once
 	log          *zap.Logger
 	cfg          *Config
-	params       component.ExporterCreateParams
+	params       component.ExporterCreateSettings
 	traceTracker *tracetracker.ActiveServiceTracker
 	correlation  *correlationContext
 	accessToken  string
@@ -46,7 +46,7 @@ type correlationContext struct {
 }
 
 // NewTracker creates a new tracker instance for correlation.
-func NewTracker(cfg *Config, accessToken string, params component.ExporterCreateParams) *Tracker {
+func NewTracker(cfg *Config, accessToken string, params component.ExporterCreateSettings) *Tracker {
 	return &Tracker{
 		log:         params.Logger,
 		cfg:         cfg,
@@ -55,7 +55,7 @@ func NewTracker(cfg *Config, accessToken string, params component.ExporterCreate
 	}
 }
 
-func newCorrelationClient(cfg *Config, accessToken string, params component.ExporterCreateParams) (
+func newCorrelationClient(cfg *Config, accessToken string, params component.ExporterCreateSettings, host component.Host) (
 	*correlationContext, error,
 ) {
 	corrURL, err := url.Parse(cfg.Endpoint)
@@ -63,7 +63,7 @@ func newCorrelationClient(cfg *Config, accessToken string, params component.Expo
 		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %v", cfg.Endpoint, err)
 	}
 
-	httpClient, err := cfg.ToClient()
+	httpClient, err := cfg.ToClient(host.GetExtensions())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create correlation API client: %v", err)
 	}
@@ -105,13 +105,6 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) error {
 			return
 		}
 
-		var err error
-		cor.correlation, err = newCorrelationClient(cor.cfg, cor.accessToken, cor.params)
-		if err != nil {
-			cor.log.Error("Failed to create correlation client", zap.Error(err))
-			return
-		}
-
 		hostDimension := string(hostID.Key)
 
 		cor.traceTracker = tracetracker.New(
@@ -124,7 +117,8 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) error {
 			false,
 			nil,
 			cor.cfg.SyncAttributes)
-		cor.start()
+
+		cor.correlation.Start()
 	})
 
 	if cor.traceTracker != nil {
@@ -135,10 +129,13 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) error {
 }
 
 // Start correlation tracking.
-func (cor *Tracker) start() {
-	if cor != nil && cor.correlation != nil {
-		cor.correlation.Start()
+func (cor *Tracker) Start(_ context.Context, host component.Host) (err error) {
+	cor.correlation, err = newCorrelationClient(cor.cfg, cor.accessToken, cor.params, host)
+	if err != nil {
+		return err
 	}
+
+	return nil
 }
 
 // Shutdown correlation tracking.

@@ -20,6 +20,7 @@ import (
 	"strings"
 )
 
+// Constants for Splunk components.
 const (
 	SFxAccessTokenHeader  = "X-Sf-Token"                       // #nosec
 	SFxAccessTokenLabel   = "com.splunk.signalfx.access_token" // #nosec

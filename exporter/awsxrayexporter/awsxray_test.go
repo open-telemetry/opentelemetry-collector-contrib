@@ -64,7 +64,7 @@ func initializeTracesExporter() component.TracesExporter {
 	config.(*Config).Region = "us-east-1"
 	config.(*Config).LocalMode = true
 	mconn := new(awsutil.Conn)
-	traceExporter, err := newTracesExporter(config, component.ExporterCreateParams{Logger: logger}, mconn)
+	traceExporter, err := newTracesExporter(config, component.ExporterCreateSettings{Logger: logger}, mconn)
 	if err != nil {
 		panic(err)
 	}

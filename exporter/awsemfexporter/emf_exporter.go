@@ -58,7 +58,7 @@ type emfExporter struct {
 // New func creates an EMF Exporter instance with data push callback func
 func New(
 	config config.Exporter,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 ) (component.MetricsExporter, error) {
 	if config == nil {
 		return nil, errors.New("emf exporter config is nil")
@@ -96,7 +96,7 @@ func New(
 // NewEmfExporter creates a new exporter using exporterhelper
 func NewEmfExporter(
 	config config.Exporter,
-	params component.ExporterCreateParams,
+	params component.ExporterCreateSettings,
 ) (component.MetricsExporter, error) {
 	exp, err := New(config, params)
 	if err != nil {

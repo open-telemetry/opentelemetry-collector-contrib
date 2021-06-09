@@ -37,12 +37,12 @@ func TestCreateReceiver(t *testing.T) {
 	cfg.Endpoint = "localhost:1" // Endpoint is required, not going to be used here.
 
 	mockLogsConsumer := consumertest.NewNop()
-	lReceiver, err := createLogsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, mockLogsConsumer)
+	lReceiver, err := createLogsReceiver(context.Background(), component.ReceiverCreateSettings{Logger: zap.NewNop()}, cfg, mockLogsConsumer)
 	assert.Nil(t, err, "receiver creation failed")
 	assert.NotNil(t, lReceiver, "receiver creation failed")
 
 	mockMetricsConsumer := consumertest.NewNop()
-	mReceiver, err := createMetricsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, mockMetricsConsumer)
+	mReceiver, err := createMetricsReceiver(context.Background(), component.ReceiverCreateSettings{Logger: zap.NewNop()}, cfg, mockMetricsConsumer)
 	assert.Nil(t, err, "receiver creation failed")
 	assert.NotNil(t, mReceiver, "receiver creation failed")
 }
@@ -67,7 +67,7 @@ func TestCreateNilNextConsumerMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:1"
 
-	mReceiver, err := createMetricsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, nil)
+	mReceiver, err := createMetricsReceiver(context.Background(), component.ReceiverCreateSettings{Logger: zap.NewNop()}, cfg, nil)
 	assert.EqualError(t, err, "nil metricsConsumer")
 	assert.Nil(t, mReceiver, "receiver creation failed")
 }
@@ -77,7 +77,7 @@ func TestCreateMetricsReceiverWithBadConfig(t *testing.T) {
 	cfg.Endpoint = "localhost:1"
 	cfg.Path = " *[* "
 
-	mReceiver, err := createMetricsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewNop())
+	mReceiver, err := createMetricsReceiver(context.Background(), component.ReceiverCreateSettings{Logger: zap.NewNop()}, cfg, consumertest.NewNop())
 	assert.EqualError(t, err, "unexpected end of input")
 	assert.Nil(t, mReceiver, "receiver creation failed")
 }
@@ -87,7 +87,7 @@ func TestCreateLogsReceiverWithBadConfig(t *testing.T) {
 	cfg.Endpoint = "localhost:1"
 	cfg.Path = " *[* "
 
-	mReceiver, err := createLogsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewNop())
+	mReceiver, err := createLogsReceiver(context.Background(), component.ReceiverCreateSettings{Logger: zap.NewNop()}, cfg, consumertest.NewNop())
 	assert.EqualError(t, err, "unexpected end of input")
 	assert.Nil(t, mReceiver, "receiver creation failed")
 }
@@ -96,7 +96,7 @@ func TestCreateNilNextConsumerLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:1"
 
-	mReceiver, err := createLogsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, nil)
+	mReceiver, err := createLogsReceiver(context.Background(), component.ReceiverCreateSettings{Logger: zap.NewNop()}, cfg, nil)
 	assert.EqualError(t, err, "nil logsConsumer")
 	assert.Nil(t, mReceiver, "receiver creation failed")
 }
@@ -106,7 +106,7 @@ func TestCreateBadEndpoint(t *testing.T) {
 	cfg.Endpoint = "localhost:abc"
 
 	mockLogsConsumer := consumertest.NewNop()
-	mReceiver, err := createLogsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, mockLogsConsumer)
+	mReceiver, err := createLogsReceiver(context.Background(), component.ReceiverCreateSettings{Logger: zap.NewNop()}, cfg, mockLogsConsumer)
 	assert.EqualError(t, err, "endpoint port is not a number: strconv.ParseInt: parsing \"abc\": invalid syntax")
 	assert.Nil(t, mReceiver, "receiver creation failed")
 }

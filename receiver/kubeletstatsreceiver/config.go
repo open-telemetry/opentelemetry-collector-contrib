@@ -21,10 +21,12 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configparser"
 	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	kube "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
 )
 
@@ -32,7 +34,7 @@ var _ config.Receiver = (*Config)(nil)
 
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"`
-	kubelet.ClientConfig    `mapstructure:",squash"`
+	kube.ClientConfig       `mapstructure:",squash"`
 	confignet.TCPAddr       `mapstructure:",squash"`
 	CollectionInterval      time.Duration `mapstructure:"collection_interval"`
 
@@ -94,7 +96,7 @@ func getMapFromSlice(collect []kubelet.MetricGroup) (map[kubelet.MetricGroup]boo
 	return out, nil
 }
 
-func (cfg *Config) Unmarshal(componentParser *config.Parser) error {
+func (cfg *Config) Unmarshal(componentParser *configparser.Parser) error {
 	if componentParser == nil {
 		// Nothing to do if there is no config given.
 		return nil

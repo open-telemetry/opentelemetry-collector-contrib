@@ -55,7 +55,7 @@ const (
 	eventNameTag        string = "name"
 	eventAttrTag        string = "attributes"
 	eventTimeTag        string = "time"
-	// max meta value from
+	// MaxMetaValLen value from
 	// https://github.com/DataDog/datadog-agent/blob/140a4ee164261ef2245340c50371ba989fbeb038/pkg/trace/traceutil/truncate.go#L23.
 	MaxMetaValLen int = 5000
 	// tagContainersTags specifies the name of the tag which holds key/value
@@ -64,7 +64,7 @@ const (
 )
 
 // converts Traces into an array of datadog trace payloads grouped by env
-func convertToDatadogTd(td pdata.Traces, fallbackHost string, calculator *sublayerCalculator, cfg *config.Config, blk *Denylister, buildInfo component.BuildInfo) ([]*pb.TracePayload, []datadog.Metric) {
+func convertToDatadogTd(td pdata.Traces, fallbackHost string, cfg *config.Config, blk *denylister, buildInfo component.BuildInfo) ([]*pb.TracePayload, []datadog.Metric) {
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
 	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
@@ -73,8 +73,12 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, calculator *sublay
 
 	var traces []*pb.TracePayload
 
-	var runningMetrics []datadog.Metric
+	seenHosts := make(map[string]struct{})
+	var series []datadog.Metric
 	pushTime := pdata.TimestampFromTime(time.Now())
+
+	spanNameMap := cfg.Traces.SpanNameRemappings
+
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
 		host, ok := metadata.HostnameFromAttributes(rs.Resource().Attributes())
@@ -82,14 +86,19 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, calculator *sublay
 			host = fallbackHost
 		}
 
-		payload := resourceSpansToDatadogSpans(rs, calculator, host, cfg, blk)
-		traces = append(traces, &payload)
+		seenHosts[host] = struct{}{}
+		payload := resourceSpansToDatadogSpans(rs, host, cfg, blk, spanNameMap)
 
-		ms := metrics.DefaultMetrics("traces", host, uint64(pushTime), buildInfo)
-		runningMetrics = append(runningMetrics, ms...)
+		traces = append(traces, &payload)
 	}
 
-	return traces, runningMetrics
+	for host := range seenHosts {
+		// Report the host as running
+		runningMetric := metrics.DefaultMetrics("traces", host, uint64(pushTime), buildInfo)
+		series = append(series, runningMetric...)
+	}
+
+	return traces, series
 }
 
 func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePayload {
@@ -119,7 +128,7 @@ func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePa
 }
 
 // converts a Trace's resource spans into a trace payload
-func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCalculator, hostname string, cfg *config.Config, blk *Denylister) pb.TracePayload {
+func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *config.Config, blk *denylister, spanNameMap map[string]string) pb.TracePayload {
 	// get env tag
 	env := utils.NormalizeTag(cfg.Env)
 
@@ -152,7 +161,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 		extractInstrumentationLibraryTags(ils.InstrumentationLibrary(), datadogTags)
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
-			span := spanToDatadogSpan(spans.At(j), resourceServiceName, datadogTags, cfg)
+			span := spanToDatadogSpan(spans.At(j), resourceServiceName, datadogTags, cfg, spanNameMap)
 			var apiTrace *pb.APITrace
 			var ok bool
 
@@ -189,7 +198,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 		// Root span is used to carry some trace-level metadata, such as sampling rate and priority.
 		rootSpan := utils.GetRoot(apiTrace)
 
-		if !blk.Allows(rootSpan) {
+		if !blk.allows(rootSpan) {
 			// drop trace by not adding to payload if it's root span matches denylist
 			continue
 		}
@@ -199,10 +208,6 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, calculator *sublayerCal
 		// TODO: allow users to configure specific spans to be marked as an analyzed spans for app analytics
 		top := getAnalyzedSpans(apiTrace.Spans)
 
-		// calculates span metrics for representing direction and timing among it's different services for display in
-		// service overview graphs
-		// see: https://github.com/DataDog/datadog-agent/blob/f69a7d35330c563e9cad4c5b8865a357a87cd0dc/pkg/trace/stats/sublayers.go#L204
-		computeSublayerMetrics(calculator, apiTrace.Spans)
 		payload.Transactions = append(payload.Transactions, top...)
 		payload.Traces = append(payload.Traces, apiTrace)
 	}
@@ -215,6 +220,7 @@ func spanToDatadogSpan(s pdata.Span,
 	serviceName string,
 	datadogTags map[string]string,
 	cfg *config.Config,
+	spanNameMap map[string]string,
 ) *pb.Span {
 
 	tags := aggregateSpanTags(s, datadogTags)
@@ -276,7 +282,7 @@ func spanToDatadogSpan(s pdata.Span,
 	span := &pb.Span{
 		TraceID:  decodeAPMTraceID(s.TraceID().Bytes()),
 		SpanID:   decodeAPMSpanID(s.SpanID().Bytes()),
-		Name:     getDatadogSpanName(s, tags),
+		Name:     remapDatadogSpanName(getDatadogSpanName(s, tags), spanNameMap),
 		Resource: resourceName,
 		Service:  normalizedServiceName,
 		Start:    int64(startTime),
@@ -543,17 +549,27 @@ func getSpanErrorAndSetTags(s pdata.Span, tags map[string]string) int32 {
 
 	if isError == errorCode {
 		extractErrorTagsFromEvents(s, tags)
-		// If we weren't able to pull an error type or message, go ahead and set
-		// these to the old defaults
-		if _, ok := tags[ext.ErrorType]; !ok {
-			tags[ext.ErrorType] = "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10)
-		}
 
+		// if the error message doesnt exist, try to infer useful error information from
+		// the status message, and http status code / http status text.
+		// if we find useful error.message info, also set a fallback error.type
+		// otherwise leave these tags unset and allow the UI to handle defaults
 		if _, ok := tags[ext.ErrorMsg]; !ok {
 			if status.Message() != "" {
 				tags[ext.ErrorMsg] = status.Message()
-			} else {
-				tags[ext.ErrorMsg] = "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10)
+				// look for useful http metadata if it exists and add that as a fallback for the error message
+			} else if statusCode, ok := tags[conventions.AttributeHTTPStatusCode]; ok {
+				if statusText, ok := tags[conventions.AttributeHTTPStatusText]; ok {
+					tags[ext.ErrorMsg] = fmt.Sprintf("%s %s", statusCode, statusText)
+				} else {
+					tags[ext.ErrorMsg] = statusCode
+				}
+			}
+
+			// If we weren't able to pull an error type, but we do have an error message
+			// set to a reasonable default
+			if (tags[ext.ErrorType] == "") && (tags[ext.ErrorMsg] != "") {
+				tags[ext.ErrorType] = "error"
 			}
 		}
 	}
@@ -630,4 +646,14 @@ func eventsToString(evts pdata.SpanEventSlice) string {
 	}
 	eventArrayBytes, _ := json.Marshal(&eventArray)
 	return string(eventArrayBytes)
+}
+
+// remapDatadogSpanName allows users to map their datadog span operation names to
+// another string as they see fit.
+func remapDatadogSpanName(name string, spanNameMap map[string]string) string {
+	if updatedSpanName := spanNameMap[name]; updatedSpanName != "" {
+		return updatedSpanName
+	}
+
+	return name
 }

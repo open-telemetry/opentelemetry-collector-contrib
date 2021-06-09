@@ -12,19 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kubelet
+package alibabacloudlogserviceexporter
 
 import (
-	"go.opentelemetry.io/collector/config/configtls"
+	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/stretchr/testify/require"
 )
 
-// Config for a kubelet client for talking to a kubelet HTTP endpoint.
-type ClientConfig struct {
-	k8sconfig.APIConfig  `mapstructure:",squash"`
-	configtls.TLSSetting `mapstructure:",squash"`
-	// InsecureSkipVerify controls whether the client verifies the server's
-	// certificate chain and host name.
-	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
+// The code for sanitize is mostly copied from:
+//  https://github.com/open-telemetry/opentelemetry-collector/blob/2e84285efc665798d76773b9901727e8836e9d8f/exporter/prometheusexporter/sanitize_test.go
+
+func TestSanitize(t *testing.T) {
+	require.Equal(t, "", sanitize(""), "")
+	require.Equal(t, "key_test", sanitize("_test"))
+	require.Equal(t, "key_0test", sanitize("0test"))
+	require.Equal(t, "test", sanitize("test"))
+	require.Equal(t, "test__", sanitize("test_/"))
 }
