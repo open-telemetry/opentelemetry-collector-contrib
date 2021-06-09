@@ -249,7 +249,10 @@ func (r *RecombineOperator) flushCombined() error {
 	}
 
 	// Set the recombined field on the entry
-	base.Set(r.combineField, recombined.String())
+	err := base.Set(r.combineField, recombined.String())
+	if err != nil {
+		return err
+	}
 
 	r.Write(context.Background(), base)
 	r.batch = r.batch[:0]

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+- GoSec workflow added to GitHub Actions ([PR154](https://github.com/open-telemetry/opentelemetry-log-collection/pull/154))
+- CodeQL workflow added to GitHub Actions ([PR153](https://github.com/open-telemetry/opentelemetry-log-collection/pull/153))
+
 ## [0.18.0] - 2020-05-11
 
 ### Added
@@ -11,11 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `add`, `remove`, `move`, `copy`, `retain`, and `flatten` operators, as alternatives to the `restructure` operator. 
 - `add_attributes` option to `tcp_input` and `udp_input`, for capturing network attributes ([PR108](https://github.com/open-telemetry/opentelemetry-log-collection/pull/108))
 - `multiline`, `encoding`, and `max_log_size` options to `tcp_input` ([PR125](https://github.com/open-telemetry/opentelemetry-log-collection/pull/125))
-## Unreleased
-
-### Added
-- GoSec workflow added to GitHub Actions ([PR154](https://github.com/open-telemetry/opentelemetry-log-collection/pull/154))
-- CodeQL workflow added to GitHub Actions ([PR153](https://github.com/open-telemetry/opentelemetry-log-collection/pull/153))
 
 ### Removed
 - Database package. The same functionality is supported via a `Persister` interface, passed to `Start` methods ([PR93](https://github.com/open-telemetry/opentelemetry-log-collection/pull/93))

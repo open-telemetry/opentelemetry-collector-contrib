@@ -38,7 +38,9 @@ func NewTempDir(t testing.TB) string {
 	}
 
 	t.Cleanup(func() {
-		os.RemoveAll(tempDir)
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Errorf(err.Error())
+		}
 	})
 
 	return tempDir

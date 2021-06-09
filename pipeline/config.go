@@ -38,7 +38,9 @@ func (c Config) BuildOperators(bc operator.BuildContext) ([]operator.Operator, e
 		}
 		operators = append(operators, op...)
 	}
-	SetOutputIDs(operators, buildsMulti)
+	if err := SetOutputIDs(operators, buildsMulti); err != nil {
+		return nil, err
+	}
 
 	return operators, nil
 }

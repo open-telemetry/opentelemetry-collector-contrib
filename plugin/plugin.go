@@ -192,7 +192,7 @@ func splitPluginFile(text []byte) (metadata, template []byte, err error) {
 
 // NewPluginFromFile builds a new plugin from a file
 func NewPluginFromFile(path string) (*Plugin, error) {
-	contents, err := ioutil.ReadFile(path)
+	contents, err := ioutil.ReadFile(path) // #nosec - plugins load based on user specified directory
 	if err != nil {
 		return nil, fmt.Errorf("could not read plugin file: %s", err)
 	}

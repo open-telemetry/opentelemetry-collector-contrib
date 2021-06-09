@@ -15,6 +15,7 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	cd $(TOOLS_MOD_DIR) && go install github.com/vektra/mockery/cmd/mockery
 	cd $(TOOLS_MOD_DIR) && go install github.com/google/addlicense
+	cd $(TOOLS_MOD_DIR) && go install github.com/securego/gosec/v2/cmd/gosec
 
 .PHONY: test
 test: vet test-only
@@ -70,6 +71,10 @@ vet:
 	GOOS=linux $(MAKE) for-all CMD="go vet ./..."
 	GOOS=windows $(MAKE) for-all CMD="go vet ./..."
 
+.PHONY: secure
+secure:
+	gosec ./...
+
 .PHONY: generate
 generate:
 	go generate ./...
@@ -104,4 +109,4 @@ for-all:
 	done
 
 .PHONY: ci-check
-ci-check: vet lint check-license
+ci-check: vet lint check-license secure

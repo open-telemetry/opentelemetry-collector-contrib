@@ -35,7 +35,7 @@ type ConfigUnmarshalTest struct {
 }
 
 func configFromFileViaYaml(file string, config interface{}) error {
-	bytes, err := ioutil.ReadFile(file)
+	bytes, err := ioutil.ReadFile(file) // #nosec - configs load based on user specified directory
 	if err != nil {
 		return fmt.Errorf("could not find config file: %s", err)
 	}
@@ -47,7 +47,7 @@ func configFromFileViaYaml(file string, config interface{}) error {
 }
 
 func configFromFileViaMapstructure(file string, config interface{}) error {
-	bytes, err := ioutil.ReadFile(file)
+	bytes, err := ioutil.ReadFile(file) // #nosec - configs load based on user specified directory
 	if err != nil {
 		return fmt.Errorf("could not find config file: %s", err)
 	}

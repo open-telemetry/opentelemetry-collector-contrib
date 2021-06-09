@@ -16,7 +16,8 @@ package filter
 
 import (
 	"context"
-	"math/rand"
+	"io"
+	"math/big"
 	"os"
 	"testing"
 
@@ -156,14 +157,21 @@ func TestFilterDropRatio(t *testing.T) {
 		},
 	}
 
+	nextIndex := 0
+	randos := []int64{250, 750}
+	randInt = func(io.Reader, *big.Int) (*big.Int, error) {
+		defer func() {
+			nextIndex = (nextIndex + 1) % len(randos)
+		}()
+		return big.NewInt(randos[nextIndex]), nil
+	}
+
 	for i := 1; i < 11; i++ {
-		rand.Seed(1)
 		err = filterOperator.Process(context.Background(), testEntry)
 		require.NoError(t, err)
 	}
 
 	for i := 1; i < 11; i++ {
-		rand.Seed(2)
 		err = filterOperator.Process(context.Background(), testEntry)
 		require.NoError(t, err)
 	}

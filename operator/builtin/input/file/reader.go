@@ -84,7 +84,11 @@ func (f *Reader) InitializeOffset(startAtBeginning bool) error {
 
 // ReadToEnd will read until the end of the file
 func (f *Reader) ReadToEnd(ctx context.Context) {
-	defer f.file.Close()
+	defer func() {
+		if err := f.file.Close(); err != nil {
+			f.Errorw("Failed to close", zap.Error(err))
+		}
+	}()
 
 	if _, err := f.file.Seek(f.Offset, 0); err != nil {
 		f.Errorw("Failed to seek", zap.Error(err))
