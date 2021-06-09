@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 package awscontainerinsightreceiver
 
 import (
@@ -25,6 +24,24 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
+
+// Mock cadvisor
+type MockCadvisor struct {
+}
+
+func (c *MockCadvisor) GetMetrics() []pdata.Metrics {
+	md := pdata.NewMetrics()
+	return []pdata.Metrics{md}
+}
+
+// Mock k8sapiserver
+type MockK8sAPIServer struct {
+}
+
+func (m *MockK8sAPIServer) GetMetrics() []pdata.Metrics {
+	md := pdata.NewMetrics()
+	return []pdata.Metrics{md}
+}
 
 func TestReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
@@ -73,7 +90,7 @@ func TestCollectData(t *testing.T) {
 	r := metricsReceiver.(*awsContainerInsightReceiver)
 	r.Start(context.Background(), nil)
 	ctx := context.Background()
-
+	r.k8sapiserver = &MockK8sAPIServer{}
 	err = r.collectData(ctx)
 	require.Nil(t, err)
 
@@ -82,15 +99,6 @@ func TestCollectData(t *testing.T) {
 	r.k8sapiserver = nil
 	err = r.collectData(ctx)
 	require.NotNil(t, err)
-}
-
-//Mock cadvisor
-type MockCadvisor struct {
-}
-
-func (c *MockCadvisor) GetMetrics() []pdata.Metrics {
-	md := pdata.NewMetrics()
-	return []pdata.Metrics{md}
 }
 
 func TestCollectDataWithErrConsumer(t *testing.T) {
@@ -107,6 +115,7 @@ func TestCollectDataWithErrConsumer(t *testing.T) {
 	r := metricsReceiver.(*awsContainerInsightReceiver)
 	r.Start(context.Background(), nil)
 	r.cadvisor = &MockCadvisor{}
+	r.k8sapiserver = &MockK8sAPIServer{}
 	ctx := context.Background()
 
 	err = r.collectData(ctx)

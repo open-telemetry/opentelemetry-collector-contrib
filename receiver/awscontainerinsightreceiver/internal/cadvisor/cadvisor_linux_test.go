@@ -27,7 +27,7 @@ import (
 )
 
 func TestGetMetrics(t *testing.T) {
-	machineInfo := host.NewMachineInfo(time.Minute, zap.NewNop())
+	machineInfo, _ := host.NewInfo(time.Minute, zap.NewNop())
 	c := New("eks", machineInfo, zap.NewNop())
 	assert.NotNil(t, c)
 	assert.NotNil(t, c.GetMetrics())

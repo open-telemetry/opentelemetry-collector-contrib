@@ -40,7 +40,7 @@ func (r *receiver) setStorageClient(ctx context.Context, host component.Host) er
 		return nil
 	}
 
-	client, err := storageExtension.GetClient(ctx, component.KindReceiver, r.id)
+	client, err := storageExtension.GetClient(ctx, component.KindReceiver, r.id, "")
 	if err != nil {
 		return err
 	}

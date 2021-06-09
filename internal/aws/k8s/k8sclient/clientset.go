@@ -211,11 +211,11 @@ func (c *K8sClient) Shutdown() {
 		c.Ep = nil
 	}
 	if c.Pod != nil && !reflect.ValueOf(c.Pod).IsNil() {
-		c.Pod.shutdown()
+		c.Pod.Shutdown()
 		c.Pod = nil
 	}
 	if c.Node != nil && !reflect.ValueOf(c.Node).IsNil() {
-		c.Node.shutdown()
+		c.Node.Shutdown()
 		c.Node = nil
 	}
 	if c.Job != nil && !reflect.ValueOf(c.Job).IsNil() {

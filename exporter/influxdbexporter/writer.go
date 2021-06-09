@@ -39,7 +39,7 @@ type influxHTTPWriter struct {
 	logger common.Logger
 }
 
-func newInfluxHTTPWriter(logger common.Logger, config *Config, _ component.Host) (*influxHTTPWriter, error) {
+func newInfluxHTTPWriter(logger common.Logger, config *Config, host component.Host) (*influxHTTPWriter, error) {
 	writeURL, err := url.Parse(config.HTTPClientSettings.Endpoint)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func newInfluxHTTPWriter(logger common.Logger, config *Config, _ component.Host)
 		config.HTTPClientSettings.Headers["Authorization"] = "Token " + config.Token
 	}
 
-	httpClient, err := config.HTTPClientSettings.ToClient()
+	httpClient, err := config.HTTPClientSettings.ToClient(host.GetExtensions())
 	if err != nil {
 		return nil, err
 	}

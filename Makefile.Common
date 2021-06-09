@@ -40,7 +40,7 @@ common: checklicense checkdoc impi lint misspell
 
 .PHONY: test
 test:
-	$(GOTEST) ./...
+	$(GOTEST) $(GOTEST_OPT) ./...
 
 .PHONY: do-unit-tests-with-cover
 do-unit-tests-with-cover:

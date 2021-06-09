@@ -28,7 +28,7 @@ type Cadvisor struct {
 }
 
 // New creates a Cadvisor struct which can generate metrics from embedded cadvisor lib
-func New(containerOrchestrator string, machineInfo *host.MachineInfo, logger *zap.Logger) *Cadvisor {
+func New(containerOrchestrator string, machineInfo *host.Info, logger *zap.Logger) *Cadvisor {
 	// TODO: initialize the cadvisor
 	return &Cadvisor{}
 }

@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/translate"
 )
 
 const (
@@ -93,5 +95,9 @@ func createTracesExporter(
 		return nil, err
 	}
 
-	return Exporter{k, params.Logger}, nil
+	return Exporter{
+		awskinesis: k,
+		ew:         translate.JaegerExporter(k),
+		logger:     params.Logger,
+	}, nil
 }
