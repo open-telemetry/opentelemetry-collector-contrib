@@ -34,6 +34,12 @@ const (
 
 	// Default container orchestrator service is aws eks
 	defaultContainerOrchestrator = "eks"
+
+	// Metrics is tagged with service name by default
+	defaultTagService = true
+
+	// Don't use pod full name by default (as the full names contain suffix with random characters)
+	defaultPrefFullPodName = false
 )
 
 // NewFactory creates a factory for AWS container insight receiver
@@ -50,6 +56,8 @@ func createDefaultConfig() config.Receiver {
 		ReceiverSettings:      config.NewReceiverSettings(config.NewID(typeStr)),
 		CollectionInterval:    defaultCollectionInterval,
 		ContainerOrchestrator: defaultContainerOrchestrator,
+		TagService:            defaultTagService,
+		PrefFullPodName:       defaultPrefFullPodName,
 	}
 }
 

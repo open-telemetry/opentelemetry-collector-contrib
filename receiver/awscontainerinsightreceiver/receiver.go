@@ -66,12 +66,21 @@ func New(
 // Start collecting metrics from cadvisor and k8s api server (if it is an elected leader)
 func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, acir.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, acir.config.ID(), "http"))
-	//ignore the error for now, will address it in later PR
-	machineInfo, _ := hostInfo.NewInfo(acir.config.CollectionInterval, acir.logger)
-	acir.cadvisor, _ = cadvisor.New(acir.config.ContainerOrchestrator, machineInfo, acir.logger)
-	acir.k8sapiserver, _ = k8sapiserver.New(machineInfo, acir.logger)
 
-	// TODO: add more intialization code
+	hostinfo, err := hostInfo.NewInfo(acir.config.CollectionInterval, acir.logger)
+	if err != nil {
+		return err
+	}
+
+	acir.cadvisor, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo, acir.logger)
+	if err != nil {
+		return err
+	}
+
+	acir.k8sapiserver, err = k8sapiserver.New(hostinfo, acir.logger)
+	if err != nil {
+		return err
+	}
 
 	go func() {
 		ticker := time.NewTicker(acir.config.CollectionInterval)
