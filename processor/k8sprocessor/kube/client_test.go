@@ -467,18 +467,18 @@ func TestExtractionRules(t *testing.T) {
 			Annotations: []FieldExtractionRule{{
 				Name: "a1",
 				Key:  "annotation1",
-				From: "pod",
+				From: metadataFromPod,
 			},
 			},
 			Labels: []FieldExtractionRule{{
 				Name: "l1",
 				Key:  "label1",
-				From: "pod",
+				From: metadataFromPod,
 			}, {
 				Name:  "l2",
 				Key:   "label2",
 				Regex: regexp.MustCompile(`k5=(?P<value>[^\s]+)`),
-				From:  "pod",
+				From:  metadataFromPod,
 			},
 			},
 		},
@@ -532,28 +532,18 @@ func TestNamespaceExtractionRules(t *testing.T) {
 		rules:      ExtractionRules{},
 		attributes: nil,
 	}, {
-		name: "metadata",
-		rules: ExtractionRules{
-			NamespaceUID:       true,
-			NamespaceStartTime: true,
-		},
-		attributes: map[string]string{
-			"k8s.namespace.uid":        "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-			"k8s.namespace.start_time": namespace.GetCreationTimestamp().String(),
-		},
-	}, {
 		name: "labels",
 		rules: ExtractionRules{
 			Annotations: []FieldExtractionRule{{
 				Name: "a1",
 				Key:  "annotation1",
-				From: "namespace",
+				From: metadataFromNamespace,
 			},
 			},
 			Labels: []FieldExtractionRule{{
 				Name: "l1",
 				Key:  "label1",
-				From: "namespace",
+				From: metadataFromNamespace,
 			},
 			},
 		},
@@ -803,6 +793,65 @@ func Test_selectorsFromFilters(t *testing.T) {
 			if !reflect.DeepEqual(got1, tt.wantF) {
 				t.Errorf("selectorsFromFilters() got1 = %v, want %v", got1, tt.wantF)
 			}
+		})
+	}
+}
+
+func TestExtractNamespaceLabelsAnnotations(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
+	testCases := []struct {
+		name                   string
+		shouldExtractNamespace bool
+		rules                  ExtractionRules
+	}{{
+		name:                   "empty-rules",
+		shouldExtractNamespace: false,
+		rules:                  ExtractionRules{},
+	}, {
+		name:                   "pod-rules",
+		shouldExtractNamespace: false,
+		rules: ExtractionRules{
+			Annotations: []FieldExtractionRule{{
+				Name: "a1",
+				Key:  "annotation1",
+				From: metadataFromPod,
+			},
+			},
+			Labels: []FieldExtractionRule{{
+				Name: "l1",
+				Key:  "label1",
+				From: metadataFromPod,
+			},
+			},
+		},
+	}, {
+		name:                   "namespace-rules-only-annotations",
+		shouldExtractNamespace: true,
+		rules: ExtractionRules{
+			Annotations: []FieldExtractionRule{{
+				Name: "a1",
+				Key:  "annotation1",
+				From: metadataFromNamespace,
+			},
+			},
+		},
+	}, {
+		name:                   "namespace-rules-only-labels",
+		shouldExtractNamespace: true,
+		rules: ExtractionRules{
+			Labels: []FieldExtractionRule{{
+				Name: "l1",
+				Key:  "label1",
+				From: metadataFromNamespace,
+			},
+			},
+		},
+	},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			assert.Equal(t, tc.shouldExtractNamespace, c.extractNamespaceLabelsAnnotations())
 		})
 	}
 }

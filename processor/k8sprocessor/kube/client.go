@@ -104,7 +104,9 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 	}
 
 	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
-	c.namespaceInformer = newNamespaceInformer(c.kc)
+	if c.extractNamespaceLabelsAnnotations() {
+		c.namespaceInformer = newNamespaceInformer(c.kc)
+	}
 	return c, err
 }
 
@@ -121,7 +123,7 @@ func (c *WatchClient) Start() {
 		UpdateFunc: c.handleNamespaceUpdate,
 		DeleteFunc: c.handleNamespaceDelete,
 	})
-	c.namespaceInformer.Run(c.stopCh)
+	go c.namespaceInformer.Run(c.stopCh)
 }
 
 // Stop signals the the k8s watcher/informer to stop watching for new events.
@@ -295,7 +297,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	for _, r := range c.Rules.Labels {
-		if r.From == "pod" {
+		if r.From == metadataFromPod {
 			if v, ok := pod.Labels[r.Key]; ok {
 				tags[r.Name] = c.extractField(v, r)
 			}
@@ -303,7 +305,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	for _, r := range c.Rules.Annotations {
-		if r.From == "pod" {
+		if r.From == metadataFromPod {
 			if v, ok := pod.Annotations[r.Key]; ok {
 				tags[r.Name] = c.extractField(v, r)
 			}
@@ -315,20 +317,8 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) map[string]string {
 	tags := map[string]string{}
 
-	if c.Rules.NamespaceUID {
-		uid := namespace.GetUID()
-		tags[tagNamespaceUID] = string(uid)
-	}
-
-	if c.Rules.NamespaceStartTime {
-		ts := namespace.GetCreationTimestamp()
-		if !ts.IsZero() {
-			tags[tagNamespaceStartTime] = ts.String()
-		}
-	}
-
 	for _, r := range c.Rules.Labels {
-		if r.From == "namespace" {
+		if r.From == metadataFromNamespace {
 			if v, ok := namespace.Labels[r.Key]; ok {
 				tags[r.Name] = c.extractField(v, r)
 			}
@@ -336,7 +326,7 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 	}
 
 	for _, r := range c.Rules.Annotations {
-		if r.From == "namespace" {
+		if r.From == metadataFromNamespace {
 			if v, ok := namespace.Annotations[r.Key]; ok {
 				tags[r.Name] = c.extractField(v, r)
 			}
@@ -483,22 +473,35 @@ func (c *WatchClient) addOrUpdateNamespace(namespace *api_v1.Namespace) {
 		NamespaceUID: string(namespace.UID),
 		StartTime:    namespace.GetCreationTimestamp(),
 	}
-
 	newNamespace.Attributes = c.extractNamespaceAttributes(namespace)
 
 	c.m.Lock()
-	defer c.m.Unlock()
-
 	if namespace.Name != "" {
 		c.Namespaces[namespace.Name] = newNamespace
 	}
+	c.m.Unlock()
 }
 
 func (c *WatchClient) forgetNamespace(namespace *api_v1.Namespace) {
 	c.m.Lock()
-	defer c.m.Unlock()
-
 	if ns, ok := c.Namespaces[namespace.Name]; ok {
 		delete(c.Namespaces, ns.Name)
 	}
+	c.m.Unlock()
+}
+
+func (c *WatchClient) extractNamespaceLabelsAnnotations() bool {
+	for _, r := range c.Rules.Labels {
+		if r.From == metadataFromNamespace {
+			return true
+		}
+	}
+
+	for _, r := range c.Rules.Annotations {
+		if r.From == metadataFromNamespace {
+			return true
+		}
+	}
+
+	return false
 }

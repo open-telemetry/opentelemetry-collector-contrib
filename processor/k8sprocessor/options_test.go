@@ -248,22 +248,11 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.True(t, p.rules.Deployment)
 	assert.True(t, p.rules.Cluster)
 	assert.True(t, p.rules.Node)
-	assert.True(t, p.rules.NamespaceUID)
-	assert.True(t, p.rules.NamespaceStartTime)
 
 	p = &kubernetesprocessor{}
 	err := WithExtractMetadata("randomfield")(p)
 	assert.Error(t, err)
 	assert.Equal(t, err.Error(), `"randomfield" is not a supported metadata field`)
-
-	assert.NoError(t, WithExtractMetadata("namespace", "cluster", "k8s.namespace.uid")(p))
-	assert.True(t, p.rules.Namespace)
-	assert.True(t, p.rules.Cluster)
-	assert.False(t, p.rules.PodName)
-	assert.False(t, p.rules.PodUID)
-	assert.False(t, p.rules.StartTime)
-	assert.False(t, p.rules.Deployment)
-	assert.False(t, p.rules.Node)
 
 	p = &kubernetesprocessor{}
 
@@ -275,22 +264,6 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.False(t, p.rules.StartTime)
 	assert.False(t, p.rules.Deployment)
 	assert.False(t, p.rules.Node)
-
-	p = &kubernetesprocessor{}
-	assert.NoError(t, WithExtractMetadata()(p))
-	assert.True(t, p.rules.Namespace)
-	assert.True(t, p.rules.NamespaceUID)
-	assert.True(t, p.rules.NamespaceStartTime)
-
-	p = &kubernetesprocessor{}
-	err = WithExtractMetadata("randomfield")(p)
-	assert.Error(t, err)
-	assert.Equal(t, err.Error(), `"randomfield" is not a supported metadata field`)
-
-	assert.NoError(t, WithExtractMetadata("k8s.namespace.name", "k8s.namespace.uid")(p))
-	assert.True(t, p.rules.Namespace)
-	assert.True(t, p.rules.NamespaceUID)
-	assert.False(t, p.rules.NamespaceStartTime)
 }
 
 func TestWithFilterLabels(t *testing.T) {

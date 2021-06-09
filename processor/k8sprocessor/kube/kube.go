@@ -32,8 +32,8 @@ const (
 
 	tagNodeName           = "k8s.node.name"
 	tagStartTime          = "k8s.pod.start_time"
-	tagNamespaceStartTime = "k8s.namespace.start_time"
-	tagNamespaceUID       = "k8s.namespace.uid"
+	metadataFromPod       = "pod"
+	metadataFromNamespace = "namespace"
 )
 
 // PodIdentifier is a custom type to represent IP Address or Pod UID
@@ -121,15 +121,13 @@ type FieldFilter struct {
 // ExtractionRules is used to specify the information that needs to be extracted
 // from pods and added to the spans as tags.
 type ExtractionRules struct {
-	Deployment         bool
-	Namespace          bool
-	PodName            bool
-	PodUID             bool
-	Node               bool
-	Cluster            bool
-	StartTime          bool
-	NamespaceUID       bool
-	NamespaceStartTime bool
+	Deployment bool
+	Namespace  bool
+	PodName    bool
+	PodUID     bool
+	Node       bool
+	Cluster    bool
+	StartTime  bool
 
 	Annotations []FieldExtractionRule
 	Labels      []FieldExtractionRule
