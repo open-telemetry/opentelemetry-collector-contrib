@@ -31,7 +31,7 @@ type Config struct {
 
 // NewConfigFromFile will create a new agent config from a YAML file.
 func NewConfigFromFile(file string) (*Config, error) {
-	contents, err := ioutil.ReadFile(file)
+	contents, err := ioutil.ReadFile(file) // #nosec - configs load based on user specified directory
 	if err != nil {
 		return nil, fmt.Errorf("could not find config file: %s", err)
 	}

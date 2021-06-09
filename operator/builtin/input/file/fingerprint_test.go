@@ -245,6 +245,8 @@ func TestFingerprintStartsWith_FromFile(t *testing.T) {
 
 	fullFile, err := ioutil.TempFile(tempDir, "")
 	require.NoError(t, err)
+	defer fullFile.Close()
+
 	_, err = fullFile.Write(content)
 	require.NoError(t, err)
 
@@ -253,14 +255,20 @@ func TestFingerprintStartsWith_FromFile(t *testing.T) {
 
 	partialFile, err := ioutil.TempFile(tempDir, "")
 	require.NoError(t, err)
+	defer partialFile.Close()
 
-	// Write one byte at a time and validate that updated
-	// full fingerprint still starts with partial
+	// Write the first byte before comparing, since empty files will never match
+	_, err = partialFile.Write(content[:1])
+	require.NoError(t, err)
+	content = content[1:]
+
+	// Write one byte at a time and validate that
+	// full fingerprint still starts with updated partial
 	for i := range content {
 		_, err = partialFile.Write(content[i:i])
 		require.NoError(t, err)
 
-		pff, err := operator.NewFingerprint(fullFile)
+		pff, err := operator.NewFingerprint(partialFile)
 		require.NoError(t, err)
 
 		require.True(t, fff.StartsWith(pff))

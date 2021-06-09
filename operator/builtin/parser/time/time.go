@@ -72,6 +72,5 @@ func (t *TimeParserOperator) CanOutput() bool {
 
 // Process will parse time from an entry.
 func (t *TimeParserOperator) Process(ctx context.Context, entry *entry.Entry) error {
-	t.ProcessWith(ctx, entry, t.TimeParser.Parse)
-	return nil
+	return t.ProcessWith(ctx, entry, t.TimeParser.Parse)
 }

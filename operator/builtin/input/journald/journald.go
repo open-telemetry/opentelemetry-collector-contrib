@@ -96,7 +96,8 @@ func (c JournaldInputConfig) Build(buildContext operator.BuildContext) ([]operat
 			if cursor != nil {
 				args = append(args, "--after-cursor", string(cursor))
 			}
-			return exec.CommandContext(ctx, "journalctl", args...)
+			return exec.CommandContext(ctx, "journalctl", args...) // #nosec - ...
+			// journalctl is an executable that is required for this operator to function
 		},
 		json: jsoniter.ConfigFastest,
 	}

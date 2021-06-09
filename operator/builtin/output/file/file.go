@@ -88,7 +88,7 @@ type FileOutput struct {
 // Start will open the output file.
 func (fo *FileOutput) Start(_ operator.Persister) error {
 	var err error
-	fo.file, err = os.OpenFile(fo.path, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
+	fo.file, err = os.OpenFile(fo.path, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0600)
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,9 @@ func (fo *FileOutput) Start(_ operator.Persister) error {
 // Stop will close the output file.
 func (fo *FileOutput) Stop() error {
 	if fo.file != nil {
-		fo.file.Close()
+		if err := fo.file.Close(); err != nil {
+			fo.Errorf(err.Error())
+		}
 	}
 	return nil
 }

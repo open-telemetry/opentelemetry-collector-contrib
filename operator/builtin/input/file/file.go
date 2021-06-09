@@ -153,7 +153,9 @@ func (f *InputOperator) poll(ctx context.Context) {
 
 	// Close all files
 	for _, reader := range readers {
-		reader.Close()
+		if err := reader.Close(); err != nil {
+			f.Errorf("problem closing reader", "file", reader.file.Name())
+		}
 	}
 
 	f.saveCurrent(readers)
@@ -201,7 +203,7 @@ func (f *InputOperator) makeReaders(filesPaths []string) []*Reader {
 			}
 			f.SeenPaths[path] = struct{}{}
 		}
-		file, err := os.Open(path)
+		file, err := os.Open(path) // #nosec - operator must read in files defined by user
 		if err != nil {
 			f.Errorw("Failed to open file", zap.Error(err))
 			continue
@@ -225,7 +227,9 @@ OUTER:
 	for i := 0; i < len(fps); {
 		fp := fps[i]
 		if len(fp.FirstBytes) == 0 {
-			files[i].Close()
+			if err := files[i].Close(); err != nil {
+				f.Errorf("problem closing file", "file", files[i].Name())
+			}
 			// Empty file, don't read it until we can compare its fingerprint
 			fps = append(fps[:i], fps[i+1:]...)
 			files = append(files[:i], files[i+1:]...)
@@ -240,7 +244,9 @@ OUTER:
 			fp2 := fps[j]
 			if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
 				// Exclude
-				files[i].Close()
+				if err := files[i].Close(); err != nil {
+					f.Errorf("problem closing file", "file", files[i].Name())
+				}
 				fps = append(fps[:i], fps[i+1:]...)
 				files = append(files[:i], files[i+1:]...)
 				continue OUTER
