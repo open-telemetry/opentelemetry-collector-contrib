@@ -118,12 +118,14 @@ func (c *WatchClient) Start() {
 		DeleteFunc: c.handlePodDelete,
 	})
 	go c.informer.Run(c.stopCh)
-	c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    c.handleNamespaceAdd,
-		UpdateFunc: c.handleNamespaceUpdate,
-		DeleteFunc: c.handleNamespaceDelete,
-	})
-	go c.namespaceInformer.Run(c.stopCh)
+	if c.extractNamespaceLabelsAnnotations() {
+		c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handleNamespaceAdd,
+			UpdateFunc: c.handleNamespaceUpdate,
+			DeleteFunc: c.handleNamespaceDelete,
+		})
+		go c.namespaceInformer.Run(c.stopCh)
+	}
 }
 
 // Stop signals the the k8s watcher/informer to stop watching for new events.
