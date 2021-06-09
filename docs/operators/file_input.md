@@ -35,6 +35,8 @@ If set, the `multiline` configuration block instructs the `file_input` operator 
 The `multiline` configuration block must contain exactly one of `line_start_pattern` or `line_end_pattern`. These are regex patterns that
 match either the beginning of a new log entry, or the end of a log entry.
 
+Also refer to [recombine](/docs/operators/recombine.md) operator for merging events with greater control. 
+ 
 ### Supported encodings
 
 | Key        | Description
