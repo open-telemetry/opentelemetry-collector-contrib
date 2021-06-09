@@ -162,6 +162,10 @@ func (p *PodStore) setPrevMeasurement(metricType, metricKey string, content inte
 	prevMeasurement.Set(metricKey, content)
 }
 
+// The RefreshTick() will be called at relatively short intervals (e.g. 1 second).
+// We can't do refresh in regular interval because the Decorate(...) function will
+// call refresh(...) on demand when the pod metadata for the given metrics is not in
+// cache yet. This will make the refresh interval irregular.
 func (p *PodStore) RefreshTick() {
 	now := time.Now()
 	if now.Sub(p.lastRefreshed) >= refreshInterval {

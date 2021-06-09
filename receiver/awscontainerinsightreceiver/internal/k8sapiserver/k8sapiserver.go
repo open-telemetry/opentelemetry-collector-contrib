@@ -83,13 +83,11 @@ type k8sAPIServerOption func(*K8sAPIServer)
 
 // New creates a k8sApiServer which can generate cluster-level metrics
 func New(clusterNameProvider clusterNameProvider, logger *zap.Logger, options ...k8sAPIServerOption) (*K8sAPIServer, error) {
-	_, cancel := context.WithCancel(context.Background())
 	k := &K8sAPIServer{
 		logger:              logger,
 		clusterNameProvider: clusterNameProvider,
 		k8sClient:           k8sclient.Get(logger),
 		broadcaster:         record.NewBroadcaster(),
-		cancel:              cancel,
 	}
 
 	for _, opt := range options {
