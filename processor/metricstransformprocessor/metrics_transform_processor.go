@@ -438,6 +438,8 @@ func (mtp *metricsTransformProcessor) update(match *match, transform internalTra
 			mtp.aggregateLabelValuesOp(match.metric, op)
 		case ToggleScalarDataType:
 			mtp.ToggleScalarDataType(match.metric)
+		case ScaleValue:
+			mtp.scaleValueOp(match.metric, op)
 		case AddLabel:
 			mtp.addLabelOp(match.metric, op)
 		case DeleteLabelValue:
