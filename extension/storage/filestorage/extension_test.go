@@ -52,7 +52,7 @@ func TestExtensionIntegrity(t *testing.T) {
 	// Make a client for each component
 	clients := make(map[config.ComponentID]storage.Client)
 	for _, c := range components {
-		client, err := se.GetClient(ctx, c.kind, c.name)
+		client, err := se.GetClient(ctx, c.kind, c.name, "")
 		require.NoError(t, err)
 		clients[c.name] = client
 	}
@@ -110,6 +110,7 @@ func TestClientHandlesSimpleCases(t *testing.T) {
 		ctx,
 		component.KindReceiver,
 		newTestEntity("my_component"),
+		"",
 	)
 
 	myBytes := []byte("value")
@@ -155,6 +156,46 @@ func TestNewExtensionErrorsOnMissingDirectory(t *testing.T) {
 	require.Nil(t, extension)
 }
 
+func TestTwoClientsWithDifferentNames(t *testing.T) {
+	ctx := context.Background()
+	se := newTestExtension(t)
+
+	client1, err := se.GetClient(
+		ctx,
+		component.KindReceiver,
+		newTestEntity("my_component"),
+		"foo",
+	)
+	require.NoError(t, err)
+
+	client2, err := se.GetClient(
+		ctx,
+		component.KindReceiver,
+		newTestEntity("my_component"),
+		"bar",
+	)
+	require.NoError(t, err)
+
+	myBytes1 := []byte("value1")
+	myBytes2 := []byte("value2")
+
+	// Set the data
+	err = client1.Set(ctx, "key", myBytes1)
+	require.NoError(t, err)
+
+	err = client2.Set(ctx, "key", myBytes2)
+	require.NoError(t, err)
+
+	// Check it was associated accordingly
+	data, err := client1.Get(ctx, "key")
+	require.NoError(t, err)
+	require.Equal(t, myBytes1, data)
+
+	data, err = client2.Get(ctx, "key")
+	require.NoError(t, err)
+	require.Equal(t, myBytes2, data)
+}
+
 func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
 	ctx := context.Background()
 
@@ -181,6 +222,7 @@ func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
 		ctx,
 		component.KindReceiver,
 		newTestEntity("my_component"),
+		"",
 	)
 
 	require.Error(t, err)

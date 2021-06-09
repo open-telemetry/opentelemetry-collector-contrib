@@ -45,7 +45,7 @@ func readFromFile(filename string) string {
 }
 
 func createMetricTestData() *agentmetricspb.ExportMetricsServiceRequest {
-	return &agentmetricspb.ExportMetricsServiceRequest{
+	request := &agentmetricspb.ExportMetricsServiceRequest{
 		Node: &commonpb.Node{
 			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
 		},
@@ -57,36 +57,6 @@ func createMetricTestData() *agentmetricspb.ExportMetricsServiceRequest {
 			},
 		},
 		Metrics: []*metricspb.Metric{
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-						{Key: "isItAnError"},
-					},
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan", HasValue: true},
-							{Value: "false", HasValue: true},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 100,
-								},
-								Value: &metricspb.Point_Int64Value{
-									Int64Value: 1,
-								},
-							},
-						},
-					},
-				},
-			},
 			{
 				MetricDescriptor: &metricspb.MetricDescriptor{
 					Name:        "spanGaugeCounter",
@@ -111,36 +81,6 @@ func createMetricTestData() *agentmetricspb.ExportMetricsServiceRequest {
 								},
 								Value: &metricspb.Point_Int64Value{
 									Int64Value: 1,
-								},
-							},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanDoubleCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-						{Key: "isItAnError"},
-					},
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan", HasValue: true},
-							{Value: "false", HasValue: true},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 100,
-								},
-								Value: &metricspb.Point_DoubleValue{
-									DoubleValue: 0.1,
 								},
 							},
 						},
@@ -273,6 +213,70 @@ func createMetricTestData() *agentmetricspb.ExportMetricsServiceRequest {
 			},
 		},
 	}
+
+	for i := 0; i < 2; i++ {
+		request.Metrics = append(request.Metrics, &metricspb.Metric{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name:        "spanCounter",
+				Description: "Counting all the spans",
+				Unit:        "Count",
+				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+				LabelKeys: []*metricspb.LabelKey{
+					{Key: "spanName"},
+					{Key: "isItAnError"},
+				},
+			},
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					LabelValues: []*metricspb.LabelValue{
+						{Value: "testSpan", HasValue: true},
+						{Value: "false", HasValue: true},
+					},
+					Points: []*metricspb.Point{
+						{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: int64(i * 100),
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: int64(i * 1),
+							},
+						},
+					},
+				},
+			},
+		}, &metricspb.Metric{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name:        "spanDoubleCounter",
+				Description: "Counting all the spans",
+				Unit:        "Count",
+				Type:        metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+				LabelKeys: []*metricspb.LabelKey{
+					{Key: "spanName"},
+					{Key: "isItAnError"},
+				},
+			},
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					LabelValues: []*metricspb.LabelValue{
+						{Value: "testSpan", HasValue: true},
+						{Value: "false", HasValue: true},
+					},
+					Points: []*metricspb.Point{
+						{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: int64(i * 100),
+							},
+							Value: &metricspb.Point_DoubleValue{
+								DoubleValue: float64(i) * 0.1,
+							},
+						},
+					},
+				},
+			},
+		})
+
+	}
+	return request
 }
 
 func stringSlicesEqual(expected, actual []string) bool {
@@ -484,6 +488,8 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
+			setupDataPointCache()
+
 			groupedMetrics := make(map[interface{}]*GroupedMetric)
 			translator.translateOTelToGroupedMetric(tc.metric, groupedMetrics, config)
 			assert.NotNil(t, groupedMetrics)

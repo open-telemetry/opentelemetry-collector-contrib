@@ -47,7 +47,11 @@ func addToGroupedMetric(pmd *pdata.Metric, groupedMetrics map[interface{}]*Group
 	}
 
 	for i := 0; i < dps.Len(); i++ {
-		dp := dps.At(i)
+		dp, retained := dps.At(i)
+		if !retained {
+			continue
+		}
+
 		labels := dp.Labels
 		metric := &MetricInfo{
 			Value: dp.Value,

@@ -119,6 +119,35 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	assert.True(t, *segment.Fault)
 }
 
+func TestServerSpanWithThrottle(t *testing.T) {
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	errorMessage := "java.lang.NullPointerException"
+	userAgent := "PostmanRuntime/7.21.0"
+	enduser := "go.tester@example.com"
+	attributes := make(map[string]interface{})
+	attributes[semconventions.AttributeHTTPMethod] = "POST"
+	attributes[semconventions.AttributeHTTPURL] = "https://api.example.org/api/locations"
+	attributes[semconventions.AttributeHTTPTarget] = "/api/locations"
+	attributes[semconventions.AttributeHTTPStatusCode] = 429
+	attributes[semconventions.AttributeHTTPStatusText] = "java.lang.NullPointerException"
+	attributes[semconventions.AttributeHTTPUserAgent] = userAgent
+	attributes[semconventions.AttributeEnduserID] = enduser
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, errorMessage, attributes)
+	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
+	timeEvents.CopyTo(span.Events())
+
+	segment, _ := MakeSegment(span, resource, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.NotNil(t, segment.Cause)
+	assert.Equal(t, "signup_aggregator", *segment.Name)
+	assert.False(t, *segment.Fault)
+	assert.True(t, *segment.Error)
+	assert.True(t, *segment.Throttle)
+}
+
 func TestServerSpanNoParentId(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := pdata.InvalidSpanID()

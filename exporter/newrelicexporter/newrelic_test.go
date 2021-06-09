@@ -269,8 +269,14 @@ func TestExportTraceWithNot202StatusCode(t *testing.T) {
 			},
 		})
 
-	_, err := runTraceMock(context.Background(), ptrace, mockConfig{statusCode: 403})
-	require.Error(t, err)
+	{
+		_, err := runTraceMock(context.Background(), ptrace, mockConfig{statusCode: 403})
+		require.Error(t, err)
+	}
+	{
+		_, err := runTraceMock(context.Background(), ptrace, mockConfig{statusCode: 429})
+		require.Error(t, err)
+	}
 }
 
 func TestExportTraceWithBadPayload(t *testing.T) {
