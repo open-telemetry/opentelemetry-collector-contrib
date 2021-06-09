@@ -118,7 +118,7 @@ def collect_request_attributes(environ):
     }
 
     host_port = environ.get("SERVER_PORT")
-    if host_port is not None:
+    if host_port is not None and not host_port == "":
         result.update({SpanAttributes.NET_HOST_PORT: int(host_port)})
 
     setifnotnone(result, SpanAttributes.HTTP_HOST, environ.get("HTTP_HOST"))
