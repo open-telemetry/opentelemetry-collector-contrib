@@ -28,7 +28,7 @@ func TestTargetToLabels(t *testing.T) {
 				"ab":  "same",
 			},
 		}
-		m := TargetToLabels(pt)
+		m := pt.ToLabels()
 		assert.Equal(t, "sanitized", m["__meta_ecs_task_tags_a_b"])
 		assert.Equal(t, "same", m["__meta_ecs_task_tags_ab"])
 	})

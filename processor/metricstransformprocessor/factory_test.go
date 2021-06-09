@@ -289,7 +289,8 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 		},
 	}
 
-	internalTransforms := buildHelperConfig(oCfg, "v0.0.1")
+	internalTransforms, err := buildHelperConfig(oCfg, "v0.0.1")
+	assert.NoError(t, err)
 
 	for i, expTr := range expData {
 		mtpT := internalTransforms[i]
