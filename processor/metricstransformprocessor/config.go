@@ -49,6 +49,9 @@ const (
 	// NewValueFieldName is the mapstructure field name for NewValue field
 	NewValueFieldName = "new_value"
 
+	// ScaleFieldName is the mapstructure field name for Scale field
+	ScaleFieldName = "experimental_scale"
+
 	// SubmatchCaseFieldName is the mapstructure field name for SubmatchCase field
 	SubmatchCaseFieldName = "submatch_case"
 )
@@ -143,6 +146,9 @@ type Operation struct {
 	// ValueActions is a list of renaming actions for label values.
 	ValueActions []ValueAction `mapstructure:"value_actions"`
 
+	// Scale is a scalar to multiply the values with.
+	Scale float64 `mapstructure:"experimental_scale"`
+
 	// LabelValue identifies the exact label value to operate on
 	LabelValue string `mapstructure:"label_value"`
 }
@@ -201,6 +207,9 @@ const (
 	// ToggleScalarDataType changes the data type from int64 to double, or vice-versa
 	ToggleScalarDataType OperationAction = "toggle_scalar_data_type"
 
+	// ScaleValue multiplies the value by a constant scalar
+	ScaleValue OperationAction = "experimental_scale_value"
+
 	// AggregateLabels aggregates away all labels other than the ones in Operation.LabelSet
 	// by the method indicated by Operation.AggregationType.
 	AggregateLabels OperationAction = "aggregate_labels"
@@ -210,7 +219,7 @@ const (
 	AggregateLabelValues OperationAction = "aggregate_label_values"
 )
 
-var operationActions = []OperationAction{AddLabel, UpdateLabel, DeleteLabelValue, ToggleScalarDataType, AggregateLabels, AggregateLabelValues}
+var operationActions = []OperationAction{AddLabel, UpdateLabel, DeleteLabelValue, ToggleScalarDataType, ScaleValue, AggregateLabels, AggregateLabelValues}
 
 func (oa OperationAction) isValid() bool {
 	for _, operationAction := range operationActions {
