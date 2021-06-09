@@ -571,13 +571,15 @@ func Test_extractFieldRules(t *testing.T) {
 			"default",
 			args{"labels", []FieldExtractConfig{
 				{
-					Key: "key",
+					Key:  "key",
+					From: "pod",
 				},
 			}},
 			[]kube.FieldExtractionRule{
 				{
 					Name: "k8s.pod.labels.key",
 					Key:  "key",
+					From: "pod",
 				},
 			},
 			false,
@@ -588,12 +590,14 @@ func Test_extractFieldRules(t *testing.T) {
 				{
 					TagName: "name",
 					Key:     "key",
+					From:    "pod",
 				},
 			}},
 			[]kube.FieldExtractionRule{
 				{
 					Name: "name",
 					Key:  "key",
+					From: "pod",
 				},
 			},
 			false,
@@ -605,6 +609,7 @@ func Test_extractFieldRules(t *testing.T) {
 					TagName: "name",
 					Key:     "key",
 					Regex:   "^h$",
+					From:    "pod",
 				},
 			}},
 			[]kube.FieldExtractionRule{},
@@ -617,6 +622,7 @@ func Test_extractFieldRules(t *testing.T) {
 					TagName: "name",
 					Key:     "key",
 					Regex:   "[",
+					From:    "pod",
 				},
 			}},
 			[]kube.FieldExtractionRule{},

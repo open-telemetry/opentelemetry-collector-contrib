@@ -59,12 +59,12 @@ func TestLoadConfig(t *testing.T) {
 			Extract: ExtractConfig{
 				Metadata: []string{"k8s.pod.name", "k8s.pod.uid", "k8s.deployment.name", "k8s.cluster.name", "k8s.namespace.name", "k8s.node.name", "k8s.pod.start_time", "k8s.namespace.uid", "k8s.namespace.start_time"},
 				Annotations: []FieldExtractConfig{
-					{TagName: "a1", Key: "annotation-one"},
-					{TagName: "a2", Key: "annotation-two", Regex: "field=(?P<value>.+)"},
+					{TagName: "a1", Key: "annotation-one", From: "pod"},
+					{TagName: "a2", Key: "annotation-two", Regex: "field=(?P<value>.+)", From: "pod"},
 				},
 				Labels: []FieldExtractConfig{
-					{TagName: "l1", Key: "label1"},
-					{TagName: "l2", Key: "label2", Regex: "field=(?P<value>.+)"},
+					{TagName: "l1", Key: "label1", From: "pod"},
+					{TagName: "l2", Key: "label2", Regex: "field=(?P<value>.+)", From: "pod"},
 				},
 			},
 			Filter: FilterConfig{
