@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/armon/go-metrics v0.3.3 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.1
-	github.com/elastic/go-elasticsearch/v7 v7.13.0
+	github.com/elastic/go-elasticsearch/v7 v7.13.1
 	github.com/elastic/go-structform v0.0.8
 	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.7 // indirect
