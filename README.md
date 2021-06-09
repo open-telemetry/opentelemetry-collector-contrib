@@ -1,6 +1,6 @@
 # opentelemetry-log-collection
 
-![build status](https://github.com/github/docs/actions/workflows/main.yml/badge.svg?branch=main)
+![build status](https://github.com/open-telemetry/opentelemetry-log-collection/actions/workflows/main.yml/badge.svg)
 [![go report](https://goreportcard.com/badge/github.com/open-telemetry/opentelemetry-log-collection)](https://goreportcard.com/report/github.com/open-telemetry/opentelemetry-log-collection)
 [![codecov.io](https://codecov.io/gh/open-telemetry/opentelemetry-log-collection/coverage.svg?branch=main)](https://app.codecov.io/gh/open-telemetry/opentelemetry-log-collection?branch=main)
 
