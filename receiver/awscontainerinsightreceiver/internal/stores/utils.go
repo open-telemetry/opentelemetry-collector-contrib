@@ -15,8 +15,10 @@
 package stores
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -168,4 +170,16 @@ func AddKubernetesInfo(metric CIMetric, kubernetesBlob map[string]interface{}) {
 		}
 		metric.AddTag(ci.Kubernetes, string(kubernetesInfo))
 	}
+}
+
+func refreshWithTimeout(parentContext context.Context, refresh func(), timeout time.Duration) {
+	ctx, cancel := context.WithTimeout(parentContext, timeout)
+	// spawn a goroutine to process the actual refresh
+	go func(ctx context.Context, cancel func()) {
+		refresh()
+		cancel()
+	}(ctx, cancel)
+	// block until either refresh() has executed or the timeout expires
+	<-ctx.Done()
+	cancel()
 }

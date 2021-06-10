@@ -15,6 +15,7 @@
 package stores
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -25,7 +26,7 @@ import (
 )
 
 const (
-	refreshIntervalService = 10 //10s
+	refreshIntervalService = 10 * time.Second
 )
 
 type endpointInfo interface {
@@ -37,12 +38,14 @@ type ServiceStore struct {
 	endpointInfo            endpointInfo
 	lastRefreshed           time.Time
 	logger                  *zap.Logger
+	ctx                     context.Context
 }
 
-func NewServiceStore(logger *zap.Logger) (*ServiceStore, error) {
+func NewServiceStore(ctx context.Context, logger *zap.Logger) (*ServiceStore, error) {
 	s := &ServiceStore{
 		podKeyToServiceNamesMap: make(map[string][]string),
 		logger:                  logger,
+		ctx:                     ctx,
 	}
 	k8sClient := k8sclient.Get(logger)
 	if k8sClient == nil {
@@ -54,7 +57,7 @@ func NewServiceStore(logger *zap.Logger) (*ServiceStore, error) {
 
 func (s *ServiceStore) RefreshTick() {
 	now := time.Now()
-	if now.Sub(s.lastRefreshed).Seconds() >= refreshIntervalService {
+	if now.Sub(s.lastRefreshed) >= refreshIntervalService {
 		s.refresh()
 		s.lastRefreshed = now
 	}
@@ -80,8 +83,12 @@ func (s *ServiceStore) Decorate(metric CIMetric, _ map[string]interface{}) bool 
 }
 
 func (s *ServiceStore) refresh() {
-	s.podKeyToServiceNamesMap = s.endpointInfo.PodKeyToServiceNames()
-	s.logger.Debug("pod to service name map", zap.Any("podKeyToServiceNamesMap", s.podKeyToServiceNamesMap))
+	doRefresh := func() {
+		s.podKeyToServiceNamesMap = s.endpointInfo.PodKeyToServiceNames()
+		s.logger.Debug("pod to service name map", zap.Any("podKeyToServiceNamesMap", s.podKeyToServiceNamesMap))
+	}
+
+	refreshWithTimeout(s.ctx, doRefresh, refreshIntervalService)
 }
 
 func addServiceNameTag(metric CIMetric, serviceNames []string) {

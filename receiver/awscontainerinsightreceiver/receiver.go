@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor"
 	hostInfo "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8sapiserver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
 )
 
 var _ component.MetricsReceiver = (*awsContainerInsightReceiver)(nil)
@@ -72,7 +73,12 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 		return err
 	}
 
-	acir.cadvisor, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo, acir.logger)
+	k8sDecorator, err := stores.NewK8sDecorator(ctx, acir.config.TagService, acir.config.PrefFullPodName, acir.logger)
+	if err != nil {
+		return err
+	}
+
+	acir.cadvisor, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo, k8sDecorator, acir.logger)
 	if err != nil {
 		return err
 	}

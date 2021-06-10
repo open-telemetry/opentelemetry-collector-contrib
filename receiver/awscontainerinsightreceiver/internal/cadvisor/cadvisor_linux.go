@@ -95,6 +95,10 @@ type hostInfo interface {
 	GetAutoScalingGroupName() string
 }
 
+type decorator interface {
+	Decorate(*extractors.CAdvisorMetric) *extractors.CAdvisorMetric
+}
+
 type Cadvisor struct {
 	logger                *zap.Logger
 	nodeName              string //get the value from downward API
@@ -102,6 +106,7 @@ type Cadvisor struct {
 	manager               cadvisorManager
 	version               string
 	hostInfo              hostInfo
+	k8sDecorator          decorator
 	containerOrchestrator string
 }
 
@@ -112,7 +117,7 @@ func init() {
 }
 
 // New creates a Cadvisor struct which can generate metrics from embedded cadvisor lib
-func New(containerOrchestrator string, hostInfo hostInfo, logger *zap.Logger, options ...cadvisorOption) (*Cadvisor, error) {
+func New(containerOrchestrator string, hostInfo hostInfo, k8sDecorator decorator, logger *zap.Logger, options ...cadvisorOption) (*Cadvisor, error) {
 	nodeName := os.Getenv("HOST_NAME")
 	if nodeName == "" {
 		return nil, errors.New("missing environment variable HOST_NAME. Please check your deployment YAML config")
@@ -136,6 +141,7 @@ func New(containerOrchestrator string, hostInfo hostInfo, logger *zap.Logger, op
 	}
 
 	c.hostInfo = hostInfo
+	c.k8sDecorator = k8sDecorator
 	return c, nil
 }
 
@@ -165,9 +171,9 @@ func (c *Cadvisor) addEbsVolumeInfo(tags map[string]string, ebsVolumeIdsUsedAsPV
 	}
 }
 
-func (c *Cadvisor) decorateMetrics(cadvisormetrics []*extractors.CAdvisorMetric) {
+func (c *Cadvisor) decorateMetrics(cadvisormetrics []*extractors.CAdvisorMetric) []*extractors.CAdvisorMetric {
 	ebsVolumeIdsUsedAsPV := c.hostInfo.ExtractEbsIDsUsedByKubernetes()
-
+	var result []*extractors.CAdvisorMetric
 	for _, m := range cadvisormetrics {
 		tags := m.GetTags()
 		c.addEbsVolumeInfo(tags, ebsVolumeIdsUsedAsPV)
@@ -193,7 +199,13 @@ func (c *Cadvisor) decorateMetrics(cadvisormetrics []*extractors.CAdvisorMetric)
 		//add cluster name and auto scaling group name
 		tags[ci.ClusterNameKey] = c.hostInfo.GetClusterName()
 		tags[ci.AutoScalingGroupNameKey] = c.hostInfo.GetAutoScalingGroupName()
+		out := c.k8sDecorator.Decorate(m)
+		if out != nil {
+			result = append(result, out)
+		}
 	}
+
+	return result
 }
 
 // GetMetrics generates metrics from cadvisor
@@ -221,9 +233,9 @@ func (c *Cadvisor) GetMetrics() []pdata.Metrics {
 	}
 
 	c.logger.Debug("cadvisor containers stats", zap.Int("size", len(containerinfos)))
-	results := processContainers(containerinfos, c.hostInfo, c.containerOrchestrator, c.logger)
+	out := processContainers(containerinfos, c.hostInfo, c.containerOrchestrator, c.logger)
 
-	c.decorateMetrics(results)
+	results := c.decorateMetrics(out)
 
 	for _, cadvisorMetric := range results {
 		md := ci.ConvertToOTLPMetrics(cadvisorMetric.GetFields(), cadvisorMetric.GetTags(), c.logger)

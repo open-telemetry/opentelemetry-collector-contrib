@@ -15,6 +15,7 @@
 package stores
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -38,6 +39,7 @@ func TestServiceStore(t *testing.T) {
 		podKeyToServiceNamesMap: make(map[string][]string),
 		logger:                  zap.NewNop(),
 		endpointInfo:            &mockEndpoint{},
+		ctx:                     context.Background(),
 	}
 
 	s.lastRefreshed = time.Now().Add(-20 * time.Second)

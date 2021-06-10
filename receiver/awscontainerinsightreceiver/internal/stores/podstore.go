@@ -15,6 +15,7 @@
 package stores
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -99,6 +100,7 @@ type podClient interface {
 }
 
 type PodStore struct {
+	ctx              context.Context
 	cache            *mapWithExpiry
 	prevMeasurements map[string]*mapWithExpiry //preMeasurements per each Type (Pod, Container, etc)
 	podClient        podClient
@@ -110,7 +112,7 @@ type PodStore struct {
 	sync.Mutex
 }
 
-func NewPodStore(hostIP string, prefFullPodName bool, logger *zap.Logger) (*PodStore, error) {
+func NewPodStore(ctx context.Context, hostIP string, prefFullPodName bool, logger *zap.Logger) (*PodStore, error) {
 	podClient, err := kubeletutil.NewKubeletClient(hostIP, ci.KubeSecurePort, logger)
 	if err != nil {
 		return nil, err
@@ -127,12 +129,14 @@ func NewPodStore(hostIP string, prefFullPodName bool, logger *zap.Logger) (*PodS
 	}
 
 	podStore := &PodStore{
+		ctx:              ctx,
 		cache:            newMapWithExpiry(podsExpiry),
 		prevMeasurements: make(map[string]*mapWithExpiry),
 		podClient:        podClient,
 		nodeInfo:         newNodeInfo(logger),
 		prefFullPodName:  prefFullPodName,
 		replicasetInfo:   k8sClient.ReplicaSet,
+		logger:           logger,
 	}
 
 	return podStore, nil
@@ -233,7 +237,15 @@ func (p *PodStore) setCachedEntry(podKey string, entry *cachedEntry) {
 }
 
 func (p *PodStore) refresh(now time.Time) {
-	podList, _ := p.podClient.ListPods()
+	var podList []corev1.Pod
+	var err error
+	doRefresh := func() {
+		podList, err = p.podClient.ListPods()
+		if err != nil {
+			p.logger.Error("fail to get pod from kubelet", zap.Error(err))
+		}
+	}
+	refreshWithTimeout(p.ctx, doRefresh, refreshInterval)
 	p.refreshInternal(now, podList)
 }
 
@@ -378,7 +390,7 @@ func (p *PodStore) decorateMem(metric CIMetric, pod *corev1.Pod) {
 			// only set podLimit when all the containers has limit
 			if ok && podMemLimit != 0 {
 				metric.AddField(ci.MetricName(ci.TypePod, ci.MemLimit), podMemLimit)
-				metric.AddField(ci.MetricName(ci.TypePod, ci.MemUtilizationOverPodLimit), podMemWorkingset.(float64)/float64(podMemLimit)*100)
+				metric.AddField(ci.MetricName(ci.TypePod, ci.MemUtilizationOverPodLimit), float64(podMemWorkingset.(uint64))/float64(podMemLimit)*100)
 			}
 		}
 	} else if metric.GetTag(ci.MetricType) == ci.TypeContainer {
