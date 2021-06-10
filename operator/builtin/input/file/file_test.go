@@ -111,7 +111,6 @@ func TestReadExistingAndNewLogs(t *testing.T) {
 	t.Parallel()
 	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
 	operator.persister = testutil.NewMockPersister("test")
-	defer operator.Stop()
 
 	// Start with a file with an entry in it, and expect that entry
 	// to come through when we poll for the first time
@@ -135,7 +134,6 @@ func TestStartAtEnd(t *testing.T) {
 		cfg.StartAt = "end"
 	}, nil)
 	operator.persister = testutil.NewMockPersister("test")
-	defer operator.Stop()
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\n")
@@ -158,9 +156,9 @@ func TestStartAtEndNewFile(t *testing.T) {
 	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
 	operator.persister = testutil.NewMockPersister("test")
 	operator.startAtBeginning = false
-	defer operator.Stop()
 
 	operator.poll(context.Background())
+
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\ntestlog2\n")
 
@@ -207,7 +205,6 @@ func TestSplitWrite(t *testing.T) {
 	t.Parallel()
 	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
 	operator.persister = testutil.NewMockPersister("test")
-	defer operator.Stop()
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1")
@@ -432,11 +429,10 @@ func TestFileBatching(t *testing.T) {
 
 	files := 100
 	linesPerFile := 10
-	maxConcurrentFiles := 20
-	maxBatchFiles := maxConcurrentFiles / 2
+	maxConcurrentFiles := 10
 
-	expectedBatches := files / maxBatchFiles // assumes no remainder
-	expectedLinesPerBatch := maxBatchFiles * linesPerFile
+	expectedBatches := files / maxConcurrentFiles // assumes no remainder
+	expectedLinesPerBatch := maxConcurrentFiles * linesPerFile
 
 	expectedMessages := make([]string, 0, files*linesPerFile)
 	actualMessages := make([]string, 0, files*linesPerFile)
@@ -446,11 +442,10 @@ func TestFileBatching(t *testing.T) {
 			cfg.MaxConcurrentFiles = maxConcurrentFiles
 		},
 		func(out *testutil.FakeOutput) {
-			out.Received = make(chan *entry.Entry, expectedLinesPerBatch*2)
+			out.Received = make(chan *entry.Entry, expectedLinesPerBatch)
 		},
 	)
 	operator.persister = testutil.NewMockPersister("test")
-	defer operator.Stop()
 
 	temps := make([]*os.File, 0, files)
 	for i := 0; i < files; i++ {
@@ -470,6 +465,7 @@ func TestFileBatching(t *testing.T) {
 		// poll once so we can validate that files were batched
 		operator.poll(context.Background())
 		actualMessages = append(actualMessages, waitForN(t, logReceived, expectedLinesPerBatch)...)
+		expectNoMessagesUntil(t, logReceived, 10*time.Millisecond)
 	}
 
 	require.ElementsMatch(t, expectedMessages, actualMessages)
@@ -487,6 +483,7 @@ func TestFileBatching(t *testing.T) {
 		// poll once so we can validate that files were batched
 		operator.poll(context.Background())
 		actualMessages = append(actualMessages, waitForN(t, logReceived, expectedLinesPerBatch)...)
+		expectNoMessagesUntil(t, logReceived, 10*time.Millisecond)
 	}
 
 	require.ElementsMatch(t, expectedMessages, actualMessages)
@@ -496,7 +493,6 @@ func TestFileReader_FingerprintUpdated(t *testing.T) {
 	t.Parallel()
 
 	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
-	defer operator.Stop()
 
 	temp := openTemp(t, tempDir)
 	tempCopy := openFile(t, temp.Name())
@@ -504,7 +500,6 @@ func TestFileReader_FingerprintUpdated(t *testing.T) {
 	require.NoError(t, err)
 	reader, err := operator.NewReader(temp.Name(), tempCopy, fp)
 	require.NoError(t, err)
-	defer reader.Close()
 
 	writeString(t, temp, "testlog1\n")
 	reader.ReadToEnd(context.Background())

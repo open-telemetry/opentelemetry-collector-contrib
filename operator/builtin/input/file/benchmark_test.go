@@ -104,7 +104,7 @@ func BenchmarkFileInput(b *testing.B) {
 				cfg.Include = []string{
 					"file*.log",
 				}
-				cfg.MaxConcurrentFiles = 2
+				cfg.MaxConcurrentFiles = 1
 				return cfg
 			},
 		},

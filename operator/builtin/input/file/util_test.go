@@ -122,7 +122,7 @@ func waitForOne(t *testing.T, c chan *entry.Entry) *entry.Entry {
 	select {
 	case e := <-c:
 		return e
-	case <-time.After(3 * time.Second):
+	case <-time.After(time.Second):
 		require.FailNow(t, "Timed out waiting for message")
 		return nil
 	}
@@ -134,7 +134,7 @@ func waitForN(t *testing.T, c chan *entry.Entry, n int) []string {
 		select {
 		case e := <-c:
 			messages = append(messages, e.Body.(string))
-		case <-time.After(3 * time.Second):
+		case <-time.After(time.Second):
 			require.FailNow(t, "Timed out waiting for message")
 			return nil
 		}
@@ -146,7 +146,7 @@ func waitForMessage(t *testing.T, c chan *entry.Entry, expected string) {
 	select {
 	case e := <-c:
 		require.Equal(t, expected, e.Body.(string))
-	case <-time.After(3 * time.Second):
+	case <-time.After(time.Second):
 		require.FailNow(t, "Timed out waiting for message", expected)
 	}
 }
@@ -158,7 +158,7 @@ LOOP:
 		select {
 		case e := <-c:
 			receivedMessages = append(receivedMessages, e.Body.(string))
-		case <-time.After(3 * time.Second):
+		case <-time.After(time.Second):
 			break LOOP
 		}
 	}
