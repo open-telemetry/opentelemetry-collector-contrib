@@ -1,0 +1,22 @@
+receivers:
+  nop:
+
+processors:
+  cumulativetodelta:
+    metrics:
+      - resource_attribute_keys: [attr1, attr2]
+        metric_label_keys: [label1]
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [cumulativetodelta]
+      exporters: [nop]
+    metrics:
+      receivers: [nop]
+      processors: [cumulativetodelta]
+      exporters: [nop]
