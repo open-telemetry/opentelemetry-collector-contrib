@@ -113,3 +113,48 @@ func (c *FakeController) LastSyncResourceVersion() string {
 func (f *FakeInformer) SetWatchErrorHandler(cache.WatchErrorHandler) error {
 	return nil
 }
+
+type NoOpInformer struct {
+	*NoOpController
+}
+
+func NewNoOpInformer(
+	_ kubernetes.Interface,
+) cache.SharedInformer {
+	return &NoOpInformer{
+		NoOpController: &NoOpController{},
+	}
+}
+
+func (f *NoOpInformer) AddEventHandler(handler cache.ResourceEventHandler) {}
+
+func (f *NoOpInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, period time.Duration) {
+}
+
+func (f *NoOpInformer) GetStore() cache.Store {
+	return cache.NewStore(func(obj interface{}) (string, error) { return "", nil })
+}
+
+func (f *NoOpInformer) GetController() cache.Controller {
+	return f.NoOpController
+}
+
+type NoOpController struct{}
+
+func (c *NoOpController) HasSynced() bool {
+	return true
+}
+
+func (c *NoOpController) Run(stopCh <-chan struct{}) {}
+
+func (c *NoOpController) HasStopped() bool {
+	return true
+}
+
+func (c *NoOpController) LastSyncResourceVersion() string {
+	return ""
+}
+
+func (f *NoOpController) SetWatchErrorHandler(cache.WatchErrorHandler) error {
+	return nil
+}

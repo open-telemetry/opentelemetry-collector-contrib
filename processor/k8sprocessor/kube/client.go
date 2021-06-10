@@ -106,6 +106,8 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
 	if c.extractNamespaceLabelsAnnotations() {
 		c.namespaceInformer = newNamespaceInformer(c.kc)
+	} else {
+		c.namespaceInformer = NewNoOpInformer(c.kc)
 	}
 	return c, err
 }
@@ -118,14 +120,12 @@ func (c *WatchClient) Start() {
 		DeleteFunc: c.handlePodDelete,
 	})
 	go c.informer.Run(c.stopCh)
-	if c.extractNamespaceLabelsAnnotations() {
-		c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.handleNamespaceAdd,
-			UpdateFunc: c.handleNamespaceUpdate,
-			DeleteFunc: c.handleNamespaceDelete,
-		})
-		go c.namespaceInformer.Run(c.stopCh)
-	}
+	c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    c.handleNamespaceAdd,
+		UpdateFunc: c.handleNamespaceUpdate,
+		DeleteFunc: c.handleNamespaceDelete,
+	})
+	go c.namespaceInformer.Run(c.stopCh)
 }
 
 // Stop signals the the k8s watcher/informer to stop watching for new events.
@@ -168,6 +168,7 @@ func (c *WatchClient) handlePodDelete(obj interface{}) {
 }
 
 func (c *WatchClient) handleNamespaceAdd(obj interface{}) {
+	observability.RecordNamespaceAdded()
 	if namespace, ok := obj.(*api_v1.Namespace); ok {
 		c.addOrUpdateNamespace(namespace)
 	} else {
@@ -176,6 +177,7 @@ func (c *WatchClient) handleNamespaceAdd(obj interface{}) {
 }
 
 func (c *WatchClient) handleNamespaceUpdate(old, new interface{}) {
+	observability.RecordNamespaceUpdated()
 	if namespace, ok := new.(*api_v1.Namespace); ok {
 		c.addOrUpdateNamespace(namespace)
 	} else {
@@ -184,8 +186,16 @@ func (c *WatchClient) handleNamespaceUpdate(old, new interface{}) {
 }
 
 func (c *WatchClient) handleNamespaceDelete(obj interface{}) {
+	observability.RecordNamespaceDeleted()
 	if namespace, ok := obj.(*api_v1.Namespace); ok {
-		c.forgetNamespace(namespace)
+		c.m.Lock()
+		if ns, ok := c.Namespaces[namespace.Name]; ok {
+			// When a namespace is deleted all the pods(and other k8s objects in that namespace) in that namespace are deleted before it.
+			// So we wont have any spans that might need namespace annotations and labels.
+			// Thats why we dont need an implementation for deleteQueue and gracePeriod for namespaces.
+			delete(c.Namespaces, ns.Name)
+		}
+		c.m.Unlock()
 	} else {
 		c.logger.Error("object received was not of type api_v1.Namespace", zap.Any("received", obj))
 	}
@@ -480,14 +490,6 @@ func (c *WatchClient) addOrUpdateNamespace(namespace *api_v1.Namespace) {
 	c.m.Lock()
 	if namespace.Name != "" {
 		c.Namespaces[namespace.Name] = newNamespace
-	}
-	c.m.Unlock()
-}
-
-func (c *WatchClient) forgetNamespace(namespace *api_v1.Namespace) {
-	c.m.Lock()
-	if ns, ok := c.Namespaces[namespace.Name]; ok {
-		delete(c.Namespaces, ns.Name)
 	}
 	c.m.Unlock()
 }
