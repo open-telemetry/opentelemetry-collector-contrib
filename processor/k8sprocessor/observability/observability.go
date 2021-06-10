@@ -31,6 +31,9 @@ func init() {
 		viewPodsDeleted,
 		viewIPLookupMiss,
 		viewPodTableSize,
+		viewNamespacesAdded,
+		viewNamespacesUpdated,
+		viewNamespacesDeleted,
 	)
 }
 

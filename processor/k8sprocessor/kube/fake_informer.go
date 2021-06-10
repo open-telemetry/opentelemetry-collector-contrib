@@ -155,6 +155,6 @@ func (c *NoOpController) LastSyncResourceVersion() string {
 	return ""
 }
 
-func (f *NoOpController) SetWatchErrorHandler(cache.WatchErrorHandler) error {
+func (c *NoOpController) SetWatchErrorHandler(cache.WatchErrorHandler) error {
 	return nil
 }

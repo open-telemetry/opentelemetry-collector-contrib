@@ -31,9 +31,9 @@ const (
 	ignoreAnnotation string = "opentelemetry.io/k8s-processor/ignore"
 	tagNodeName             = "k8s.node.name"
 	tagStartTime            = "k8s.pod.start_time"
-	// Used to specify to extract metadata/labels/annotations from pod
+	// MetadataFromPod is used to specify to extract metadata/labels/annotations from pod
 	MetadataFromPod = "pod"
-	// Used to specify to extract metadata/labels/annotations from namespace
+	// MetadataFromNamespace is used to specify to extract metadata/labels/annotations from namespace
 	MetadataFromNamespace = "namespace"
 )
 
