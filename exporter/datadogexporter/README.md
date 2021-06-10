@@ -7,6 +7,8 @@ This exporter sends metric and trace data to [Datadog](https://datadoghq.com). F
 > which contains recommendations on securing sensitive information such as the
 > API key required by this exporter.
 
+> **Note**: The metrics exporter is not considered stable yet and may suffer breaking changes.
+
 ## Configuration
 
 The only required setting is a [Datadog API key](https://app.datadoghq.com/account/settings#api).
