@@ -19,7 +19,7 @@ The `file_input` operator reads logs from files. It will place the lines read in
 | `start_at`             | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`                            |
 | `fingerprint_size`     | `1kb`            | The number of bytes with which to identify a file. The first bytes in the file are used as the fingerprint. Decreasing this value at any point will cause existing fingerprints to forgotten, meaning that all files will be read from the beginning (one time). |
 | `max_log_size`         | `1MiB`           | The maximum size of a log entry to read before failing. Protects against reading large amounts of data into memory |
-| `max_concurrent_files` | 1024             | The maximum number of log files from which logs will be read concurrently (minimum = 2). If the number of files matched in the `include` pattern exceeds half of this number, then files will be processed in batches. One batch will be processed per `poll_interval`. |
+| `max_concurrent_files` | 1024             | The maximum number of log files from which logs will be read concurrently. If the number of files matched in the `include` pattern exceeds this number, then files will be processed in batches. One batch will be processed per `poll_interval`. |
 | `attributes`           | {}               | A map of `key: value` pairs to add to the entry's attributes                                                          |
 | `resource`             | {}               | A map of `key: value` pairs to add to the entry's resource                                                        |
 
@@ -37,11 +37,6 @@ match either the beginning of a new log entry, or the end of a log entry.
 
 Also refer to [recombine](/docs/operators/recombine.md) operator for merging events with greater control. 
  
-### File rotation
-
-When files are rotated and its new names are no longer captured in `include` pattern (i.e. tailing symlink files), it could result in data loss.
-To avoid the data loss, choose move/create rotation method and set `max_concurrent_files` higher than the twice of the number of files to tail. 
-
 ### Supported encodings
 
 | Key        | Description
