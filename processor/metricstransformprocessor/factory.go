@@ -128,6 +128,9 @@ func validateConfiguration(config *Config) error {
 			if op.Action == AddLabel && op.NewValue == "" {
 				return fmt.Errorf("operation %v: missing required field %q while %q is %v", i+1, NewValueFieldName, ActionFieldName, AddLabel)
 			}
+			if op.Action == ScaleValue && op.Scale == 0 {
+				return fmt.Errorf("operation %v: missing required field %q while %q is %v", i+1, ScaleFieldName, ActionFieldName, ScaleValue)
+			}
 
 			if op.AggregationType != "" && !op.AggregationType.isValid() {
 				return fmt.Errorf("operation %v: %q must be in %q", i+1, AggregationTypeFieldName, aggregationTypes)

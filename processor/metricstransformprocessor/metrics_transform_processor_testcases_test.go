@@ -1614,6 +1614,97 @@ var (
 					setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).build(),
 			},
 		},
+		// Scale Value
+		{
+			name: "metric_experimental_scale_value_int64",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: ScaleValue,
+								Scale:  100,
+							},
+						},
+					},
+				},
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric2"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: ScaleValue,
+								Scale:  10,
+							},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
+					addTimeseries(1, nil).addInt64Point(0, 1, 1).
+					build(),
+				metricBuilder().setName("metric2").setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, nil).addInt64Point(0, 3, 1).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
+					addTimeseries(1, nil).addInt64Point(0, 100, 1).
+					build(),
+				metricBuilder().setName("metric2").setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, nil).addInt64Point(0, 30, 1).
+					build(),
+			},
+		},
+		{
+			name: "metric_experimental_scale_value_double",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: ScaleValue,
+								Scale:  100,
+							},
+						},
+					},
+				},
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric2"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: ScaleValue,
+								Scale:  .1,
+							},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE).
+					addTimeseries(1, nil).addDoublePoint(0, 1, 1).
+					build(),
+				metricBuilder().setName("metric2").setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+					addTimeseries(1, nil).addDoublePoint(0, 300, 1).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE).
+					addTimeseries(1, nil).addDoublePoint(0, 100, 1).
+					build(),
+				metricBuilder().setName("metric2").setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+					addTimeseries(1, nil).addDoublePoint(0, 30, 1).
+					build(),
+			},
+		},
 		// Add Label to a metric
 		{
 			name: "update existing metric by adding a new label when there are no labels",

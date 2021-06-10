@@ -92,6 +92,11 @@ func TestCreateProcessors(t *testing.T) {
 			errorMessage: fmt.Sprintf("operation %v: missing required field %q while %q is %v", 1, LabelFieldName, ActionFieldName, UpdateLabel),
 		},
 		{
+			configName:   "config_invalid_scale.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("operation %v: missing required field %q while %q is %v", 1, ScaleFieldName, ActionFieldName, ScaleValue),
+		},
+		{
 			configName:   "config_invalid_regexp.yaml",
 			succeed:      false,
 			errorMessage: fmt.Sprintf("%q, error parsing regexp: missing closing ]: `[\\da`", IncludeFieldName),
