@@ -44,13 +44,25 @@ func (l *latency) OnLateArrivingSpans(Decision, []*pdata.Span) error {
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (l *latency) Evaluate(traceID pdata.TraceID, traceData *TraceData) (Decision, error) {
+func (l *latency) Evaluate(_ pdata.TraceID, traceData *TraceData) (Decision, error) {
 	l.logger.Debug("Evaluating spans in latency filter")
 
 	traceData.Lock()
 	batches := traceData.ReceivedBatches
 	traceData.Unlock()
 
+	return inspectSpans(batches, func(span pdata.Span) bool {
+		startTime := span.StartTimestamp().AsTime()
+		endTime := span.EndTimestamp().AsTime()
+
+		duration := endTime.Sub(startTime)
+
+		return duration.Milliseconds() >= l.thresholdMs
+	}), nil
+}
+
+// inspectSpans iterates through all the spans until any callback returns true.
+func inspectSpans(batches []pdata.Traces, shouldSample func(span pdata.Span) bool) Decision {
 	for _, batch := range batches {
 		rspans := batch.ResourceSpans()
 
@@ -64,16 +76,12 @@ func (l *latency) Evaluate(traceID pdata.TraceID, traceData *TraceData) (Decisio
 				for j := 0; j < ils.Spans().Len(); j++ {
 					span := ils.Spans().At(j)
 
-					startTime := span.StartTimestamp().AsTime()
-					endTime := span.EndTimestamp().AsTime()
-
-					duration := endTime.Sub(startTime)
-					if duration.Milliseconds() >= l.thresholdMs {
-						return Sampled, nil
+					if shouldSample(span) {
+						return Sampled
 					}
 				}
 			}
 		}
 	}
-	return NotSampled, nil
+	return NotSampled
 }
