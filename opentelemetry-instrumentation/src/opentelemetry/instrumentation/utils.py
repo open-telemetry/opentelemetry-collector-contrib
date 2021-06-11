@@ -16,7 +16,13 @@ from typing import Dict, Sequence
 
 from wrapt import ObjectProxy
 
+from opentelemetry.context import create_key
 from opentelemetry.trace import StatusCode
+
+# FIXME This is a temporary location for the suppress instrumentation key.
+# Once the decision around how to suppress instrumentation is made in the
+# spec, this key should be moved accordingly.
+_SUPPRESS_INSTRUMENTATION_KEY = create_key("suppress_instrumentation")
 
 
 def extract_attributes_from_object(

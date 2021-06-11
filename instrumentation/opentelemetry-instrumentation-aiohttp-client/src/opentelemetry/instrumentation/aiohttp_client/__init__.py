@@ -75,6 +75,7 @@ from opentelemetry.instrumentation.aiohttp_client.package import _instruments
 from opentelemetry.instrumentation.aiohttp_client.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import (
+    _SUPPRESS_INSTRUMENTATION_KEY,
     http_status_to_status_code,
     unwrap,
 )
@@ -155,7 +156,7 @@ def create_trace_config(
         trace_config_ctx: types.SimpleNamespace,
         params: aiohttp.TraceRequestStartParams,
     ):
-        if context_api.get_value("suppress_instrumentation"):
+        if context_api.get_value(_SUPPRESS_INSTRUMENTATION_KEY):
             trace_config_ctx.span = None
             return
 
@@ -248,7 +249,7 @@ def _instrument(
     """
     # pylint:disable=unused-argument
     def instrumented_init(wrapped, instance, args, kwargs):
-        if context_api.get_value("suppress_instrumentation"):
+        if context_api.get_value(_SUPPRESS_INSTRUMENTATION_KEY):
             return wrapped(*args, **kwargs)
 
         trace_configs = list(kwargs.get("trace_configs") or ())

@@ -56,6 +56,7 @@ from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.urllib3.package import _instruments
 from opentelemetry.instrumentation.urllib3.version import __version__
 from opentelemetry.instrumentation.utils import (
+    _SUPPRESS_INSTRUMENTATION_KEY,
     http_status_to_status_code,
     unwrap,
 )
@@ -64,7 +65,11 @@ from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import Span, SpanKind, get_tracer
 from opentelemetry.trace.status import Status
 
-_SUPPRESS_HTTP_INSTRUMENTATION_KEY = "suppress_http_instrumentation"
+# A key to a context variable to avoid creating duplicate spans when instrumenting
+# both, Session.request and Session.send, since Session.request calls into Session.send
+_SUPPRESS_HTTP_INSTRUMENTATION_KEY = context.create_key(
+    "suppress_http_instrumentation"
+)
 
 _UrlFilterT = typing.Optional[typing.Callable[[str], str]]
 _SpanNameT = typing.Optional[
@@ -214,7 +219,7 @@ def _apply_response(span: Span, response: urllib3.response.HTTPResponse):
 
 def _is_instrumentation_suppressed() -> bool:
     return bool(
-        context.get_value("suppress_instrumentation")
+        context.get_value(_SUPPRESS_INSTRUMENTATION_KEY)
         or context.get_value(_SUPPRESS_HTTP_INSTRUMENTATION_KEY)
     )
 

@@ -34,6 +34,7 @@ from moto import (  # pylint: disable=import-error
 from opentelemetry import trace as trace_api
 from opentelemetry.context import attach, detach, set_value
 from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
+from opentelemetry.instrumentation.utils import _SUPPRESS_INSTRUMENTATION_KEY
 from opentelemetry.propagate import get_global_textmap, set_global_textmap
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.mock_textmap import MockTextMapPropagator
@@ -509,7 +510,7 @@ class TestBotocoreInstrumentor(TestBase):
         xray_client = self.session.create_client(
             "xray", region_name="us-east-1"
         )
-        token = attach(set_value("suppress_instrumentation", True))
+        token = attach(set_value(_SUPPRESS_INSTRUMENTATION_KEY, True))
         xray_client.put_trace_segments(TraceSegmentDocuments=["str1"])
         xray_client.put_trace_segments(TraceSegmentDocuments=["str2"])
         detach(token)

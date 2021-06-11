@@ -58,7 +58,10 @@ from opentelemetry import context as context_api
 from opentelemetry.instrumentation.botocore.package import _instruments
 from opentelemetry.instrumentation.botocore.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
-from opentelemetry.instrumentation.utils import unwrap
+from opentelemetry.instrumentation.utils import (
+    _SUPPRESS_INSTRUMENTATION_KEY,
+    unwrap,
+)
 from opentelemetry.propagate import inject
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import SpanKind, get_tracer
@@ -128,7 +131,7 @@ class BotocoreInstrumentor(BaseInstrumentor):
 
     # pylint: disable=too-many-branches
     def _patched_api_call(self, original_func, instance, args, kwargs):
-        if context_api.get_value("suppress_instrumentation"):
+        if context_api.get_value(_SUPPRESS_INSTRUMENTATION_KEY):
             return original_func(*args, **kwargs)
 
         # pylint: disable=protected-access
