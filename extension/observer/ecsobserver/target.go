@@ -15,8 +15,11 @@
 package ecsobserver
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
+
+	"gopkg.in/yaml.v2"
 )
 
 // target.go defines labels and structs in exported target.
@@ -126,4 +129,52 @@ var (
 // Copied from https://github.com/prometheus/prometheus/blob/8d2a8f493905e46fe6181e8c1b79ccdfcbdb57fc/util/strutil/strconv.go#L40-L44
 func sanitizeLabelName(s string) string {
 	return invalidLabelCharRE.ReplaceAllString(s, "_")
+}
+
+type fileSDTarget struct {
+	Targets []string          `yaml:"targets" json:"targets"`
+	Labels  map[string]string `yaml:"labels" json:"labels"`
+}
+
+func targetsToFileSDTargets(targets []PrometheusECSTarget, jobLabelName string) ([]fileSDTarget, error) {
+	var converted []fileSDTarget
+	omitEmpty := []string{labelJob, labelServiceName}
+	for _, t := range targets {
+		labels := t.ToLabels()
+		address, ok := labels[labelAddress]
+		if !ok {
+			return nil, fmt.Errorf("address label not found for %v", labels)
+		}
+		delete(labels, labelAddress)
+		// Remove some labels if their value is empty
+		for _, k := range omitEmpty {
+			if v, ok := labels[k]; ok && v == "" {
+				delete(labels, k)
+			}
+		}
+		// Rename job label as a workaround for https://github.com/open-telemetry/opentelemetry-collector/issues/575
+		job := labels[labelJob]
+		if job != "" && jobLabelName != labelJob {
+			delete(labels, labelJob)
+			labels[jobLabelName] = job
+		}
+		pt := fileSDTarget{
+			Targets: []string{address},
+			Labels:  labels,
+		}
+		converted = append(converted, pt)
+	}
+	return converted, nil
+}
+
+func targetsToFileSDYAML(targets []PrometheusECSTarget, jobLabelName string) ([]byte, error) {
+	converted, err := targetsToFileSDTargets(targets, jobLabelName)
+	if err != nil {
+		return nil, err
+	}
+	b, err := yaml.Marshal(converted)
+	if err != nil {
+		return nil, fmt.Errorf("encode targets as YAML failed: %w", err)
+	}
+	return b, nil
 }

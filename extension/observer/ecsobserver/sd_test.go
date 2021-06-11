@@ -15,7 +15,6 @@
 package ecsobserver
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -23,18 +22,18 @@ import (
 )
 
 func TestNewDiscovery(t *testing.T) {
-	t.Run("empty impl", func(t *testing.T) {
-		_, err := NewDiscovery(ExampleConfig(), ServiceDiscoveryOptions{})
-		require.NoError(t, err)
-	})
-	t.Run("for the coverage", func(t *testing.T) {
-		d := ServiceDiscovery{}
-		_, err := d.Discover(context.TODO())
-		require.Error(t, err)
-	})
+
 }
 
 // Util Start
+
+func newTestFilter(t *testing.T, cfg Config) *taskFilter {
+	logger := zap.NewExample()
+	m, err := newMatchers(cfg, MatcherOptions{Logger: logger})
+	require.NoError(t, err)
+	f := newTaskFilter(logger, m)
+	return f
+}
 
 func newMatcher(t *testing.T, cfg matcherConfig) Matcher {
 	m, err := cfg.newMatcher(testMatcherOptions())

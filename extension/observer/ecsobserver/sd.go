@@ -17,25 +17,56 @@ package ecsobserver
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"time"
 
 	"go.uber.org/zap"
 )
 
 type ServiceDiscovery struct {
-	logger *zap.Logger
-	cfg    Config
+	logger   *zap.Logger
+	cfg      Config
+	fetcher  *taskFetcher
+	filter   *taskFilter
+	exporter *taskExporter
 }
 
 type ServiceDiscoveryOptions struct {
-	Logger *zap.Logger
+	Logger          *zap.Logger
+	FetcherOverride *taskFetcher // for test
 }
 
 func NewDiscovery(cfg Config, opts ServiceDiscoveryOptions) (*ServiceDiscovery, error) {
-	// NOTE: there are other init logic, currently removed to reduce pr size
+	svcNameFilter, err := serviceConfigsToFilter(cfg.Services)
+	if err != nil {
+		return nil, fmt.Errorf("init serivce name filter failed: %w", err)
+	}
+	var fetcher *taskFetcher
+	if opts.FetcherOverride != nil {
+		fetcher = opts.FetcherOverride
+	} else {
+		fetcher, err = newTaskFetcher(taskFetcherOptions{
+			Logger:            opts.Logger,
+			Region:            cfg.ClusterRegion,
+			Cluster:           cfg.ClusterName,
+			serviceNameFilter: svcNameFilter,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("init fetcher failed: %w", err)
+		}
+	}
+	matchers, err := newMatchers(cfg, MatcherOptions{Logger: opts.Logger})
+	if err != nil {
+		return nil, fmt.Errorf("init matchers failed: %w", err)
+	}
+	filter := newTaskFilter(opts.Logger, matchers)
+	exporter := newTaskExporter(opts.Logger, cfg.ClusterName)
 	return &ServiceDiscovery{
-		logger: opts.Logger,
-		cfg:    cfg,
+		logger:   opts.Logger,
+		cfg:      cfg,
+		fetcher:  fetcher,
+		filter:   filter,
+		exporter: exporter,
 	}, nil
 }
 
@@ -47,11 +78,39 @@ func (s *ServiceDiscovery) RunAndWriteFile(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
-			// do actual work
+			targets, err := s.Discover(ctx)
+			if err != nil {
+				// FIXME: better error handling here, for now just log and continue
+				s.logger.Error("Discover failed", zap.Error(err))
+				continue
+			}
+
+			// Encoding and file write error should never happen,
+			// so we stop extension by returning error.
+			b, err := targetsToFileSDYAML(targets, s.cfg.JobLabelName)
+			if err != nil {
+				return err
+			}
+			// NOTE: We assume the folder already exists and does NOT try to create one.
+			if err := ioutil.WriteFile(s.cfg.ResultFile, b, 0600); err != nil {
+				return err
+			}
 		}
 	}
 }
 
 func (s *ServiceDiscovery) Discover(ctx context.Context) ([]PrometheusECSTarget, error) {
-	return nil, fmt.Errorf("not implemented")
+	tasks, err := s.fetcher.fetchAndDecorate(ctx)
+	if err != nil {
+		return nil, err
+	}
+	filtered, err := s.filter.filter(tasks)
+	if err != nil {
+		return nil, err
+	}
+	exported, err := s.exporter.exportTasks(filtered)
+	if err != nil {
+		return nil, err
+	}
+	return exported, nil
 }

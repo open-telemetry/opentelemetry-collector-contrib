@@ -22,8 +22,11 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionhelper"
 )
 
+type testOverrideKey string // need to define custom type to make linter happy
+
 const (
-	typeStr config.Type = "ecs_observer"
+	typeStr               config.Type     = "ecs_observer"
+	ctxFetcherOverrideKey testOverrideKey = "fetcherOverride"
 )
 
 // NewFactory creates a factory for ECSObserver extension.
@@ -42,7 +45,13 @@ func createDefaultConfig() config.Extension {
 
 func createExtension(ctx context.Context, params component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
 	sdCfg := cfg.(*Config)
-	sd, err := NewDiscovery(*sdCfg, ServiceDiscoveryOptions{Logger: params.Logger})
+	opt := ServiceDiscoveryOptions{Logger: params.Logger}
+	// Only for test
+	fetcher := ctx.Value(ctxFetcherOverrideKey)
+	if fetcher != nil {
+		opt.FetcherOverride = fetcher.(*taskFetcher)
+	}
+	sd, err := NewDiscovery(*sdCfg, opt)
 	if err != nil {
 		return nil, err
 	}

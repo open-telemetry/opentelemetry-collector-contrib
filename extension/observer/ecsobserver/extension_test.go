@@ -22,12 +22,23 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver/internal/ecsmock"
 )
 
 // Simply start and stop, the actual test logic is in sd_test.go until we implement the ListWatcher interface.
 // In that case sd itself does not use timer and relies on caller to trigger List.
 func TestExtensionStartStop(t *testing.T) {
-	ext, err := createExtension(context.TODO(), component.ExtensionCreateSettings{Logger: zap.NewExample()}, createDefaultConfig())
+	c := ecsmock.NewCluster()
+	f, err := newTaskFetcher(taskFetcherOptions{
+		Logger:      zap.NewExample(),
+		Cluster:     "not used",
+		Region:      "not used",
+		ecsOverride: c,
+	})
+	require.NoError(t, err)
+	ctx := context.WithValue(context.TODO(), ctxFetcherOverrideKey, f)
+	ext, err := createExtension(ctx, component.ExtensionCreateSettings{Logger: zap.NewExample()}, createDefaultConfig())
 	require.NoError(t, err)
 	require.IsType(t, &ecsObserver{}, ext)
 	require.NoError(t, ext.Start(context.TODO(), componenttest.NewNopHost()))

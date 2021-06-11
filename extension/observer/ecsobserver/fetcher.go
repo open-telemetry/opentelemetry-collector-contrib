@@ -22,6 +22,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/hashicorp/golang-lru/simplelru"
@@ -66,9 +67,10 @@ type taskFetcher struct {
 }
 
 type taskFetcherOptions struct {
-	Logger  *zap.Logger
-	Cluster string
-	Region  string
+	Logger            *zap.Logger
+	Cluster           string
+	Region            string
+	serviceNameFilter serviceNameFilter
 
 	// test overrides
 	ecsOverride ecsClient
@@ -86,24 +88,39 @@ func newTaskFetcher(opts taskFetcherOptions) (*taskFetcher, error) {
 		return nil, err
 	}
 
+	logger := opts.Logger
 	fetcher := taskFetcher{
-		logger:       opts.Logger,
-		ecs:          opts.ecsOverride,
-		ec2:          opts.ec2Override,
-		cluster:      opts.Cluster,
-		taskDefCache: taskDefCache,
-		ec2Cache:     ec2Cache,
-		// TODO: after the service matcher PR is merged, use actual service name filter here.
-		// For now, describe all the services
-		serviceNameFilter: func(name string) bool {
+		logger:            logger,
+		ecs:               opts.ecsOverride,
+		ec2:               opts.ec2Override,
+		cluster:           opts.Cluster,
+		taskDefCache:      taskDefCache,
+		ec2Cache:          ec2Cache,
+		serviceNameFilter: opts.serviceNameFilter,
+	}
+	// Match all the services for test. For production if there is no service related config,
+	// we don't describe any service, see serviceConfigsToFilter for detail.
+	if fetcher.serviceNameFilter == nil {
+		fetcher.serviceNameFilter = func(name string) bool {
 			return true
-		},
+		}
 	}
 	// Return early if any clients are mocked, caller should overrides all the clients when mocking.
 	if fetcher.ecs != nil || fetcher.ec2 != nil {
 		return &fetcher, nil
 	}
-	return nil, fmt.Errorf("actual aws init logic not implemented")
+	if opts.Region == "" {
+		return nil, fmt.Errorf("missing aws region for task fetcher")
+	}
+	logger.Debug("Init TaskFetcher", zap.String("Region", opts.Region), zap.String("Cluster", opts.Cluster))
+	awsCfg := aws.NewConfig().WithRegion(opts.Region).WithCredentialsChainVerboseErrors(true)
+	sess, err := session.NewSession(awsCfg)
+	if err != nil {
+		return nil, fmt.Errorf("create aws session failed: %w", err)
+	}
+	fetcher.ecs = ecs.New(sess, awsCfg)
+	fetcher.ec2 = ec2.New(sess, awsCfg)
+	return &fetcher, nil
 }
 
 func (f *taskFetcher) fetchAndDecorate(ctx context.Context) ([]*Task, error) {
