@@ -51,12 +51,18 @@ func (l *latency) Evaluate(_ pdata.TraceID, traceData *TraceData) (Decision, err
 	batches := traceData.ReceivedBatches
 	traceData.Unlock()
 
+	var minTime pdata.Timestamp
+	var maxTime pdata.Timestamp
+
 	return inspectSpans(batches, func(span pdata.Span) bool {
-		startTime := span.StartTimestamp().AsTime()
-		endTime := span.EndTimestamp().AsTime()
+		if minTime == 0 || span.StartTimestamp() < minTime {
+			minTime = span.StartTimestamp()
+		}
+		if maxTime == 0 || span.EndTimestamp() > maxTime {
+			maxTime = span.EndTimestamp()
+		}
 
-		duration := endTime.Sub(startTime)
-
+		duration := maxTime.AsTime().Sub(minTime.AsTime())
 		return duration.Milliseconds() >= l.thresholdMs
 	}), nil
 }

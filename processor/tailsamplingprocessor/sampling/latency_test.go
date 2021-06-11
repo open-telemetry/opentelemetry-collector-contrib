@@ -27,14 +27,57 @@ func TestEvaluate_Latency(t *testing.T) {
 	filter := NewLatency(zap.NewNop(), 5000)
 
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	now := time.Now()
 
-	decision, err := filter.Evaluate(traceID, newTraceWithDuration(4500*time.Millisecond))
-	assert.Nil(t, err)
-	assert.Equal(t, decision, NotSampled)
+	cases := []struct {
+		Desc     string
+		Spans    []spanWithTimeAndDuration
+		Decision Decision
+	}{
+		{
+			"trace duration shorter than threshold",
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  4500 * time.Millisecond,
+				},
+			},
+			NotSampled,
+		},
+		{
+			"trace duration is equal to threshold",
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  5000 * time.Millisecond,
+				},
+			},
+			Sampled,
+		},
+		{
+			"total trace duration is longer than threshold but every single span is shorter",
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  3000 * time.Millisecond,
+				},
+				{
+					StartTime: now.Add(2500 * time.Millisecond),
+					Duration:  3000 * time.Millisecond,
+				},
+			},
+			Sampled,
+		},
+	}
 
-	decision, err = filter.Evaluate(traceID, newTraceWithDuration(5500*time.Millisecond))
-	assert.Nil(t, err)
-	assert.Equal(t, decision, Sampled)
+	for _, c := range cases {
+		t.Run(c.Desc, func(t *testing.T) {
+			decision, err := filter.Evaluate(traceID, newTraceWithSpans(c.Spans))
+
+			assert.NoError(t, err)
+			assert.Equal(t, decision, c.Decision)
+		})
+	}
 }
 
 func TestOnLateArrivingSpans_Latency(t *testing.T) {
@@ -43,18 +86,25 @@ func TestOnLateArrivingSpans_Latency(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func newTraceWithDuration(duration time.Duration) *TraceData {
-	now := time.Now()
+type spanWithTimeAndDuration struct {
+	StartTime time.Time
+	Duration  time.Duration
+}
 
+func newTraceWithSpans(spans []spanWithTimeAndDuration) *TraceData {
 	var traceBatches []pdata.Traces
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
-	span := ils.Spans().AppendEmpty()
-	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-	span.SetStartTimestamp(pdata.TimestampFromTime(now))
-	span.SetEndTimestamp(pdata.TimestampFromTime(now.Add(duration)))
+
+	for _, s := range spans {
+		span := ils.Spans().AppendEmpty()
+		span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+		span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+		span.SetStartTimestamp(pdata.TimestampFromTime(s.StartTime))
+		span.SetEndTimestamp(pdata.TimestampFromTime(s.StartTime.Add(s.Duration)))
+	}
+
 	traceBatches = append(traceBatches, traces)
 	return &TraceData{
 		ReceivedBatches: traceBatches,

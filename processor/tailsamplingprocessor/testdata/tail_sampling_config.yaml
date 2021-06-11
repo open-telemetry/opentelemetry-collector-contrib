@@ -15,11 +15,11 @@ processors:
             name: test-policy-1,
             type: always_sample
           },
-        {
-          name: test-policy-2,
-          type: latency,
-          latency: {threshold_ms: 5000}
-        },
+          {
+            name: test-policy-2,
+            type: latency,
+            latency: {threshold_ms: 5000}
+          },
           {
             name: test-policy-3,
             type: numeric_attribute,
