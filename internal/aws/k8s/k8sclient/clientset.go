@@ -237,20 +237,6 @@ func (c *K8sClient) init(logger *zap.Logger, options ...Option) error {
 	c.node = nil
 	c.job = nil
 	c.replicaSet = nil
-	// c.ep = newEpClient(client, c.logger, epSyncCheckerOption(syncChecker))
-	// c.pod = newPodClient(client, c.logger, podSyncCheckerOption(syncChecker))
-	// c.node = newNodeClient(client, c.logger, nodeSyncCheckerOption(syncChecker))
-
-	// c.job, err = newJobClient(client, c.logger, jobSyncCheckerOption(syncChecker))
-	// if err != nil {
-	// 	c.logger.Error("use an no-op job client instead because of error", zap.Error(err))
-	// 	c.job = &noOpJobClient{}
-	// }
-	// c.replicaSet, err = newReplicaSetClient(client, c.logger, replicaSetSyncCheckerOption(syncChecker))
-	// if err != nil {
-	// 	c.logger.Error("use an no-op replica set client instead because of error", zap.Error(err))
-	// 	c.replicaSet = &noOpReplicaSetClient{}
-	// }
 
 	return nil
 }
@@ -350,23 +336,10 @@ func (c *K8sClient) Shutdown() {
 	defer mu.Unlock()
 
 	c.ShutdownEpClient()
-
 	c.ShutdownPodClient()
 	c.ShutdownNodeClient()
 	c.ShutdownJobClient()
 	c.ShutdownReplicaSetClient()
-	// if c.node != nil && !reflect.ValueOf(c.node).IsNil() {
-	// 	c.node.shutdown()
-	// 	c.node = nil
-	// }
-	// if c.job != nil && !reflect.ValueOf(c.job).IsNil() {
-	// 	c.job.shutdown()
-	// 	c.job = nil
-	// }
-	// if c.replicaSet != nil && !reflect.ValueOf(c.replicaSet).IsNil() {
-	// 	c.replicaSet.shutdown()
-	// 	c.replicaSet = nil
-	// }
 
 	// remove the current instance of k8s client from map
 	for key, val := range optionsToK8sClient {
