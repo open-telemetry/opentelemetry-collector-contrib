@@ -50,6 +50,7 @@ from opentelemetry.propagate import inject
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import SpanKind, get_tracer
 from opentelemetry.trace.status import Status
+from opentelemetry.util.http import remove_url_credentials
 
 # A key to a context variable to avoid creating duplicate spans when instrumenting
 # both, Session.request and Session.send, since Session.request calls into Session.send
@@ -123,6 +124,8 @@ def _instrument(tracer, span_callback=None, name_callback=None):
             span_name = name_callback(method, url)
         if not span_name or not isinstance(span_name, str):
             span_name = get_default_span_name(method)
+
+        url = remove_url_credentials(url)
 
         labels = {}
         labels[SpanAttributes.HTTP_METHOD] = method

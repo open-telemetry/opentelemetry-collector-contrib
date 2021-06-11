@@ -287,3 +287,9 @@ class TestURLLib3Instrumentor(TestBase):
 
         response = self.perform_request(self.HTTP_URL + "?e=mcc")
         self.assert_success_span(response, self.HTTP_URL)
+
+    def test_credential_removal(self):
+        url = "http://username:password@httpbin.org/status/200"
+
+        response = self.perform_request(url)
+        self.assert_success_span(response, self.HTTP_URL)

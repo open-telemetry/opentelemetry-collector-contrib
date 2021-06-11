@@ -321,6 +321,37 @@ class TestAioHttpIntegration(TestBase):
             ]
         )
 
+    def test_credential_removal(self):
+        trace_configs = [aiohttp_client.create_trace_config()]
+
+        url = "http://username:password@httpbin.org/status/200"
+        with self.subTest(url=url):
+
+            async def do_request(url):
+                async with aiohttp.ClientSession(
+                    trace_configs=trace_configs,
+                ) as session:
+                    async with session.get(url):
+                        pass
+
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(do_request(url))
+
+        self.assert_spans(
+            [
+                (
+                    "HTTP GET",
+                    (StatusCode.UNSET, None),
+                    {
+                        SpanAttributes.HTTP_METHOD: "GET",
+                        SpanAttributes.HTTP_URL: "http://httpbin.org/status/200",
+                        SpanAttributes.HTTP_STATUS_CODE: int(HTTPStatus.OK),
+                    },
+                )
+            ]
+        )
+        self.memory_exporter.clear()
+
 
 class TestAioHttpClientInstrumentor(TestBase):
     URL = "/test-path"

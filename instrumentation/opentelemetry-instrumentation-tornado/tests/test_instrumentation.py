@@ -455,6 +455,29 @@ class TestTornadoInstrumentation(TornadoTest):
         self.memory_exporter.clear()
         set_global_response_propagator(orig)
 
+    def test_credential_removal(self):
+        response = self.fetch(
+            "http://username:password@httpbin.org/status/200"
+        )
+        self.assertEqual(response.code, 200)
+
+        spans = self.sorted_spans(self.memory_exporter.get_finished_spans())
+        self.assertEqual(len(spans), 1)
+        client = spans[0]
+
+        self.assertEqual(client.name, "GET")
+        self.assertEqual(client.kind, SpanKind.CLIENT)
+        self.assert_span_has_attributes(
+            client,
+            {
+                SpanAttributes.HTTP_URL: "http://httpbin.org/status/200",
+                SpanAttributes.HTTP_METHOD: "GET",
+                SpanAttributes.HTTP_STATUS_CODE: 200,
+            },
+        )
+
+        self.memory_exporter.clear()
+
 
 class TornadoHookTest(TornadoTest):
     _client_request_hook = None

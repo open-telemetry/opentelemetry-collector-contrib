@@ -364,6 +364,18 @@ class TestWsgiAttributes(unittest.TestCase):
         self.assertEqual(self.span.set_attribute.call_count, len(expected))
         self.span.set_attribute.assert_has_calls(expected, any_order=True)
 
+    def test_credential_removal(self):
+        self.environ["HTTP_HOST"] = "username:password@httpbin.com"
+        self.environ["PATH_INFO"] = "/status/200"
+        expected = {
+            SpanAttributes.HTTP_URL: "http://httpbin.com/status/200",
+            SpanAttributes.NET_HOST_PORT: 80,
+        }
+        self.assertGreaterEqual(
+            otel_wsgi.collect_request_attributes(self.environ).items(),
+            expected.items(),
+        )
+
 
 class TestWsgiMiddlewareWithTracerProvider(WsgiTestBase):
     def validate_response(

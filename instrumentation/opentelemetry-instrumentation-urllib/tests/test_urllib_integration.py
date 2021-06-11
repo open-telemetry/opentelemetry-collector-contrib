@@ -35,6 +35,8 @@ from opentelemetry.test.mock_textmap import MockTextMapPropagator
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.trace import StatusCode
 
+# pylint: disable=too-many-public-methods
+
 
 class RequestsIntegrationTestBase(abc.ABC):
     # pylint: disable=no-member
@@ -317,6 +319,15 @@ class RequestsIntegrationTestBase(abc.ABC):
 
         span = self.assert_span()
         self.assertEqual(span.status.status_code, StatusCode.ERROR)
+
+    def test_credential_removal(self):
+        url = "http://username:password@httpbin.org/status/200"
+
+        with self.assertRaises(Exception):
+            self.perform_request(url)
+
+        span = self.assert_span()
+        self.assertEqual(span.attributes[SpanAttributes.HTTP_URL], self.URL)
 
 
 class TestRequestsIntegration(RequestsIntegrationTestBase, TestBase):

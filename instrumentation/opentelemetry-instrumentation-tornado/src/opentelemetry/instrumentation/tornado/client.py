@@ -22,6 +22,7 @@ from opentelemetry.propagate import inject
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace.status import Status
 from opentelemetry.util._time import _time_ns
+from opentelemetry.util.http import remove_url_credentials
 
 
 def _normalize_request(args, kwargs):
@@ -61,7 +62,7 @@ def fetch_async(tracer, request_hook, response_hook, func, _, args, kwargs):
 
     if span.is_recording():
         attributes = {
-            SpanAttributes.HTTP_URL: request.url,
+            SpanAttributes.HTTP_URL: remove_url_credentials(request.url),
             SpanAttributes.HTTP_METHOD: request.method,
         }
         for key, value in attributes.items():

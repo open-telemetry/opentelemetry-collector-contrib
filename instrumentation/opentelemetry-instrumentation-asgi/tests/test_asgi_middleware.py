@@ -430,6 +430,14 @@ class TestAsgiAttributes(unittest.TestCase):
         otel_asgi.set_status_code(self.span, "Invalid Status Code")
         self.assertEqual(self.span.set_status.call_count, 1)
 
+    def test_credential_removal(self):
+        self.scope["server"] = ("username:password@httpbin.org", 80)
+        self.scope["path"] = "/status/200"
+        attrs = otel_asgi.collect_request_attributes(self.scope)
+        self.assertEqual(
+            attrs[SpanAttributes.HTTP_URL], "http://httpbin.org/status/200"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

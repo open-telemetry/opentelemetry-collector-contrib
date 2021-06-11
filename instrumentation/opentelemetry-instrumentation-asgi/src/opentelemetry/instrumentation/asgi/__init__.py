@@ -32,6 +32,7 @@ from opentelemetry.propagate import extract
 from opentelemetry.propagators.textmap import Getter
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace.status import Status, StatusCode
+from opentelemetry.util.http import remove_url_credentials
 
 
 class ASGIGetter(Getter):
@@ -86,7 +87,7 @@ def collect_request_attributes(scope):
         SpanAttributes.NET_HOST_PORT: port,
         SpanAttributes.HTTP_FLAVOR: scope.get("http_version"),
         SpanAttributes.HTTP_TARGET: scope.get("path"),
-        SpanAttributes.HTTP_URL: http_url,
+        SpanAttributes.HTTP_URL: remove_url_credentials(http_url),
     }
     http_method = scope.get("method")
     if http_method:

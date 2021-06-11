@@ -357,6 +357,13 @@ class TestRequestsIntegration(RequestsIntegrationTestBase, TestBase):
         )
         self.assertEqual(span.status.status_code, StatusCode.ERROR)
 
+    def test_credential_removal(self):
+        new_url = "http://username:password@httpbin.org/status/200"
+        self.perform_request(new_url)
+        span = self.assert_span()
+
+        self.assertEqual(span.attributes[SpanAttributes.HTTP_URL], self.URL)
+
     def test_if_headers_equals_none(self):
         result = requests.get(self.URL, headers=None)
         self.assertEqual(result.text, "Hello!")

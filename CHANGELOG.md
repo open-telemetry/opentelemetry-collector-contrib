@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#530](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/530))
 - Fix weak reference error for pyodbc cursor in SQLAlchemy instrumentation.
   ([#469](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/469))
+- Implemented specification that HTTP span attributes must not contain username and password.
+  ([#538](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/538))
 
 ### Added
 - `opentelemetry-instrumentation-httpx` Add `httpx` instrumentation

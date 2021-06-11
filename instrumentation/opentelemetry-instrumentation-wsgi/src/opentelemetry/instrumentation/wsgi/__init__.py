@@ -65,6 +65,7 @@ from opentelemetry.propagate import extract
 from opentelemetry.propagators.textmap import Getter
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace.status import Status, StatusCode
+from opentelemetry.util.http import remove_url_credentials
 
 _HTTP_VERSION_PREFIX = "HTTP/"
 _CARRIER_KEY_PREFIX = "HTTP_"
@@ -128,7 +129,9 @@ def collect_request_attributes(environ):
     if target is not None:
         result[SpanAttributes.HTTP_TARGET] = target
     else:
-        result[SpanAttributes.HTTP_URL] = wsgiref_util.request_uri(environ)
+        result[SpanAttributes.HTTP_URL] = remove_url_credentials(
+            wsgiref_util.request_uri(environ)
+        )
 
     remote_addr = environ.get("REMOTE_ADDR")
     if remote_addr:
