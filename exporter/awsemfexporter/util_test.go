@@ -176,6 +176,7 @@ func TestGetLogInfo(t *testing.T) {
 					"aws.ecs.task.id":               "test-task-id",
 					"k8s.node.name":                 "ip-192-168-58-245.ec2.internal",
 					"aws.ecs.container.instance.id": "203e0410260d466bab7873bb4f317b4e",
+					"aws.ecs.task.family":           "test-task-definition-family",
 				},
 			},
 		},
@@ -186,10 +187,11 @@ func TestGetLogInfo(t *testing.T) {
 			},
 			Resource: &resourcepb.Resource{
 				Labels: map[string]string{
-					"ClusterName":         "test-cluster-name",
-					"TaskId":              "test-task-id",
-					"NodeName":            "ip-192-168-58-245.ec2.internal",
-					"ContainerInstanceId": "203e0410260d466bab7873bb4f317b4e",
+					"ClusterName":          "test-cluster-name",
+					"TaskId":               "test-task-id",
+					"NodeName":             "ip-192-168-58-245.ec2.internal",
+					"ContainerInstanceId":  "203e0410260d466bab7873bb4f317b4e",
+					"TaskDefinitionFamily": "test-task-definition-family",
 				},
 			},
 		},
@@ -273,6 +275,14 @@ func TestGetLogInfo(t *testing.T) {
 			"instanceTelemetry/{ContainerInstanceId}",
 			"/aws/containerinsights/test-cluster-name/performance",
 			"instanceTelemetry/203e0410260d466bab7873bb4f317b4e",
+		},
+		{
+			"empty namespace, config w/ pattern",
+			"",
+			"/aws/containerinsights/{ClusterName}/performance",
+			"{TaskDefinitionFamily}-{TaskId}",
+			"/aws/containerinsights/test-cluster-name/performance",
+			"test-task-definition-family-test-task-id",
 		},
 	}
 
