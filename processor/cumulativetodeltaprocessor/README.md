@@ -9,7 +9,7 @@ The cumulative to delta processor (`cumulativetodeltaprocessor`) converts cumula
 
 ## Configuration
 
-Configuration is specified through a list of metrics. The processor uses metric name as well as resource attributes and labels to uniquley identify a metric and converts it to cumulative delta.
+Configuration is specified through a list of metrics. The processor uses metric name as well as resource attributes and labels to uniquely identify a metric and converts it to cumulative delta.
 
 ```yaml
 processors:
