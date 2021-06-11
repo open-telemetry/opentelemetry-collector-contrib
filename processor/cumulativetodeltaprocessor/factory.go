@@ -76,7 +76,7 @@ func buildInternalConfig(config *Config) []internalMetric {
 			resourceAttributeKeys: metric.ResourceAttributeKeys,
 			metricLabelKeys:       metric.MetricLabelKeys,
 		}
-		internalMetrics[i] = internalMetric(m)
+		internalMetrics[i] = m
 	}
 	return internalMetrics
 }

@@ -12,6 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package metricsgenerationprocessor implements a processor which calculates
-// a new metric from existing metrics.
+// package cumulativetodeltaprocessor implements a processor which
+// converts cumulative sum metrics to cumulative delta.
 package cumulativetodeltaprocessor
