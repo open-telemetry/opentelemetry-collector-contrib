@@ -26,7 +26,7 @@ type latency struct {
 
 var _ PolicyEvaluator = (*latency)(nil)
 
-// NewLatency creates a policy evaluator the samples all traces.
+// NewLatency creates a policy evaluator sampling traces with a duration higher than a configured threshold
 func NewLatency(logger *zap.Logger, thresholdMs int64) PolicyEvaluator {
 	return &latency{
 		logger:      logger,

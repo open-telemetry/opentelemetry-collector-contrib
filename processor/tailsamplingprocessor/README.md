@@ -13,7 +13,7 @@ The following configuration options are required:
 
 Multiple policies exist today and it is straight forward to add more. These include:
 - `always_sample`: Sample all traces
-- `latency`: Sample based on duration
+- `latency`: Sample based on the duration of the trace. The duration is determined by looking at the earliest start time and latest end time, without taking into consideration what happened in between.
 - `numeric_attribute`: Sample based on number attributes
 - `string_attribute`: Sample based on string attributes value matches, both exact and regex value matches are supported
 - `rate_limiting`: Sample based on rate
