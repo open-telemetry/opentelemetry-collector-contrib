@@ -139,15 +139,20 @@ func (f *NoOpInformer) GetController() cache.Controller {
 	return f.NoOpController
 }
 
-type NoOpController struct{}
-
-func (c *NoOpController) HasSynced() bool {
-	return true
+type NoOpController struct {
+	hasStopped bool
 }
 
-func (c *NoOpController) Run(stopCh <-chan struct{}) {}
-
+func (c *NoOpController) Run(stopCh <-chan struct{}) {
+	go func() {
+		<-stopCh
+		c.hasStopped = true
+	}()
+}
 func (c *NoOpController) HasStopped() bool {
+	return c.hasStopped
+}
+func (c *NoOpController) HasSynced() bool {
 	return true
 }
 
