@@ -107,6 +107,20 @@ func TestReplacePatternNilAttrValue(t *testing.T) {
 	assert.Equal(t, "/aws/ecs/containerinsights/undefined/performance", s)
 }
 
+func TestReplacePatternValidTaskDefinitionFamily(t *testing.T) {
+	logger := zap.NewNop()
+
+	input := "{TaskDefinitionFamily}"
+
+	attrMap := pdata.NewAttributeMap()
+	attrMap.UpsertString("aws.ecs.cluster.name", "test-cluster-name")
+	attrMap.UpsertString("aws.ecs.task.family", "test-task-definition-family")
+
+	s := replacePatterns(input, attrMap, logger)
+
+	assert.Equal(t, "test-task-definition-family", s)
+}
+
 func TestGetNamespace(t *testing.T) {
 	defaultMetric := createMetricTestData()
 	testCases := []struct {
