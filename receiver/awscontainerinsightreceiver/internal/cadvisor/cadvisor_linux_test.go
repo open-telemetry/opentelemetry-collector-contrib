@@ -85,12 +85,13 @@ func TestGetMetrics(t *testing.T) {
 	originalHostName := os.Getenv("HOST_NAME")
 	os.Setenv("HOST_NAME", "host")
 	hostInfo := testutils.MockHostInfo{ClusterName: "cluster"}
+	k8sdecorator := &MockK8sDecorator{}
 	mockCreateManager := func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, houskeepingConfig manager.HouskeepingConfig,
 		includedMetricsSet container.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
 		perfEventsFile string) (cadvisorManager, error) {
 		return &mockCadvisorManager{t: t}, nil
 	}
-	c, err := New("eks", hostInfo, zap.NewNop(), cadvisorManagerCreator(mockCreateManager))
+	c, err := New("eks", hostInfo, k8sdecorator, zap.NewNop(), cadvisorManagerCreator(mockCreateManager))
 	assert.NotNil(t, c)
 	assert.Nil(t, err)
 	assert.NotNil(t, c.GetMetrics())

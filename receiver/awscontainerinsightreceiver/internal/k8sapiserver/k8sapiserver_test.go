@@ -68,13 +68,6 @@ func (m *mockK8sClient) ShutdownPodClient() {
 
 }
 
-// var mockK8sClient = &k8sclient.K8sClient{
-// 	Pod:       mockClient,
-// 	Node:      mockClient,
-// 	Ep:        mockClient,
-// 	ClientSet: fake.NewSimpleClientset(),
-// }
-
 type MockClient struct {
 	k8sclient.PodClient
 	k8sclient.NodeClient
@@ -105,9 +98,6 @@ func (client *MockClient) ServiceToPodNum() map[k8sclient.Service]int {
 	args := client.Called()
 	return args.Get(0).(map[k8sclient.Service]int)
 }
-
-// func (client *MockClient) shutdown() {
-// }
 
 type mockEventBroadcaster struct {
 }

@@ -95,10 +95,6 @@ type replicaSetInfoProvider interface {
 	GetReplicaSetClient() k8sclient.ReplicaSetClient
 }
 
-// type replicaSetInfo interface {
-// 	ReplicaSetToDeployment() map[string]string
-// }
-
 type podClient interface {
 	ListPods() ([]corev1.Pod, error)
 }

@@ -132,8 +132,6 @@ func TagMetricSource(metric CIMetric) {
 		sources = append(sources, []string{"cadvisor", "calculated"}...)
 	case ci.TypeContainerDiskIO:
 		sources = append(sources, []string{"cadvisor"}...)
-	case ci.TypeCluster, ci.TypeClusterService, ci.TypeClusterNamespace:
-		sources = append(sources, []string{"apiserver"}...)
 	}
 
 	if len(sources) > 0 {

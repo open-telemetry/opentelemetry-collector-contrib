@@ -152,6 +152,7 @@ func (k *K8sAPIServer) GetMetrics() []pdata.Metrics {
 	if k.nodeName != "" {
 		attributes["NodeName"] = k.nodeName
 	}
+	attributes[ci.SourcesKey] = "[\"apiserver\"]"
 	md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
 	result = append(result, md)
 
@@ -170,6 +171,9 @@ func (k *K8sAPIServer) GetMetrics() []pdata.Metrics {
 		if k.nodeName != "" {
 			attributes["NodeName"] = k.nodeName
 		}
+		attributes[ci.SourcesKey] = "[\"apiserver\"]"
+		attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\",\"service_name\":\"%s\"}",
+			service.Namespace, service.ServiceName)
 		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
 		result = append(result, md)
 	}
@@ -188,6 +192,8 @@ func (k *K8sAPIServer) GetMetrics() []pdata.Metrics {
 		if k.nodeName != "" {
 			attributes["NodeName"] = k.nodeName
 		}
+		attributes[ci.SourcesKey] = "[\"apiserver\"]"
+		attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\"}", namespace)
 		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
 		result = append(result, md)
 	}
