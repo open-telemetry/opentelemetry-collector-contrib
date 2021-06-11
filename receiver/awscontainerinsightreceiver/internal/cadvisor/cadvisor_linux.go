@@ -158,15 +158,15 @@ func (c *Cadvisor) addEbsVolumeInfo(tags map[string]string, ebsVolumeIdsUsedAsPV
 	}
 
 	if c.hostInfo != nil {
-		if volId := c.hostInfo.GetEBSVolumeID(deviceName); volId != "" {
-			tags[ci.HostEbsVolumeID] = volId
+		if volID := c.hostInfo.GetEBSVolumeID(deviceName); volID != "" {
+			tags[ci.HostEbsVolumeID] = volID
 		}
 	}
 
 	if tags[ci.MetricType] == ci.TypeContainerFS || tags[ci.MetricType] == ci.TypeNodeFS ||
 		tags[ci.MetricType] == ci.TypeNodeDiskIO || tags[ci.MetricType] == ci.TypeContainerDiskIO {
-		if volId := ebsVolumeIdsUsedAsPV[deviceName]; volId != "" {
-			tags[ci.EbsVolumeID] = volId
+		if volID := ebsVolumeIdsUsedAsPV[deviceName]; volID != "" {
+			tags[ci.EbsVolumeID] = volID
 		}
 	}
 }
@@ -189,8 +189,8 @@ func (c *Cadvisor) decorateMetrics(cadvisormetrics []*extractors.CAdvisorMetric)
 		}
 
 		//add instance id and type
-		if instanceId := c.hostInfo.GetInstanceID(); instanceId != "" {
-			tags[ci.InstanceID] = instanceId
+		if instanceID := c.hostInfo.GetInstanceID(); instanceID != "" {
+			tags[ci.InstanceID] = instanceID
 		}
 		if instanceType := c.hostInfo.GetInstanceType(); instanceType != "" {
 			tags[ci.InstanceType] = instanceType

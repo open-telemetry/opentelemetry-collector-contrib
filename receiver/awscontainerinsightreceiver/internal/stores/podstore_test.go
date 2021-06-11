@@ -26,6 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 )
 
 func getBaseTestPodInfo() *corev1.Pod {
@@ -399,14 +400,26 @@ func (m *mockReplicaSetInfo1) ReplicaSetToDeployment() map[string]string {
 	return map[string]string{}
 }
 
+type mockK8sClient1 struct{}
+
+func (m *mockK8sClient1) GetReplicaSetClient() k8sclient.ReplicaSetClient {
+	return &mockReplicaSetInfo1{}
+}
+
 type mockReplicaSetInfo2 struct{}
 
 func (m *mockReplicaSetInfo2) ReplicaSetToDeployment() map[string]string {
 	return map[string]string{"DeploymentTest-sftrz2785": "DeploymentTest"}
 }
 
+type mockK8sClient2 struct{}
+
+func (m *mockK8sClient2) GetReplicaSetClient() k8sclient.ReplicaSetClient {
+	return &mockReplicaSetInfo2{}
+}
+
 func TestPodStore_addPodOwnersAndPodNameFallback(t *testing.T) {
-	podStore := &PodStore{replicasetInfo: &mockReplicaSetInfo1{}}
+	podStore := &PodStore{k8sClient: &mockK8sClient1{}}
 	pod := getBaseTestPodInfo()
 	tags := map[string]string{ci.MetricType: ci.TypePod, ci.ContainerNamekey: "ubuntu"}
 	fields := map[string]interface{}{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
@@ -440,7 +453,7 @@ func TestPodStore_addPodOwnersAndPodNameFallback(t *testing.T) {
 }
 
 func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
-	podStore := &PodStore{replicasetInfo: &mockReplicaSetInfo2{}}
+	podStore := &PodStore{k8sClient: &mockK8sClient2{}}
 
 	pod := getBaseTestPodInfo()
 	tags := map[string]string{ci.MetricType: ci.TypePod, ci.ContainerNamekey: "ubuntu"}

@@ -37,8 +37,8 @@ type ReplicaSetClient interface {
 	// Get the mapping between replica set and deployment
 	ReplicaSetToDeployment() map[string]string
 
-	// shutdown is only used internally by clientset to stop the ReplicaSetClient
-	shutdown()
+	// // shutdown is only used internally by clientset to stop the ReplicaSetClient
+	// shutdown()
 }
 
 type noOpReplicaSetClient struct {

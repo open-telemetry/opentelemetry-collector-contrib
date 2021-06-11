@@ -51,7 +51,7 @@ func NewServiceStore(ctx context.Context, logger *zap.Logger) (*ServiceStore, er
 	if k8sClient == nil {
 		return nil, errors.New("failed to start service store because k8sclient is nil")
 	}
-	s.endpointInfo = k8sClient.Ep
+	s.endpointInfo = k8sClient.GetEpClient()
 	return s, nil
 }
 

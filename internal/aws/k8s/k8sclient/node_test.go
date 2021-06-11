@@ -317,7 +317,7 @@ func TestNodeClient(t *testing.T) {
 
 	assert.Equal(t, clusterNodeCount, expectedClusterNodeCount)
 	assert.Equal(t, clusterFailedNodeCount, expectedClusterFailedNodeCount)
-	client.Shutdown()
+	client.shutdown()
 	assert.True(t, client.stopped)
 }
 

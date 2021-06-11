@@ -91,9 +91,13 @@ func newMapWithExpiry(ttl time.Duration) *mapWithExpiry {
 	}
 }
 
-type replicaSetInfo interface {
-	ReplicaSetToDeployment() map[string]string
+type replicaSetInfoProvider interface {
+	GetReplicaSetClient() k8sclient.ReplicaSetClient
 }
+
+// type replicaSetInfo interface {
+// 	ReplicaSetToDeployment() map[string]string
+// }
 
 type podClient interface {
 	ListPods() ([]corev1.Pod, error)
@@ -104,7 +108,7 @@ type PodStore struct {
 	cache            *mapWithExpiry
 	prevMeasurements map[string]*mapWithExpiry //preMeasurements per each Type (Pod, Container, etc)
 	podClient        podClient
-	replicasetInfo   replicaSetInfo
+	k8sClient        replicaSetInfoProvider
 	lastRefreshed    time.Time
 	nodeInfo         *nodeInfo
 	prefFullPodName  bool
@@ -135,7 +139,7 @@ func NewPodStore(ctx context.Context, hostIP string, prefFullPodName bool, logge
 		podClient:        podClient,
 		nodeInfo:         newNodeInfo(logger),
 		prefFullPodName:  prefFullPodName,
-		replicasetInfo:   k8sClient.ReplicaSet,
+		k8sClient:        k8sClient,
 		logger:           logger,
 	}
 
@@ -166,7 +170,8 @@ func (p *PodStore) setPrevMeasurement(metricType, metricKey string, content inte
 	prevMeasurement.Set(metricKey, content)
 }
 
-// The RefreshTick() will be called at relatively short intervals (e.g. 1 second).
+// RefreshTick triggers refreshing of the pod store.
+// It will be called at relatively short intervals (e.g. 1 second).
 // We can't do refresh in regular interval because the Decorate(...) function will
 // call refresh(...) on demand when the pod metadata for the given metrics is not in
 // cache yet. This will make the refresh interval irregular.
@@ -571,7 +576,8 @@ func (p *PodStore) addPodOwnersAndPodName(metric CIMetric, pod *corev1.Pod, kube
 			kind := owner.Kind
 			name := owner.Name
 			if owner.Kind == ci.ReplicaSet {
-				rsToDeployment := p.replicasetInfo.ReplicaSetToDeployment()
+				replicaSetClient := p.k8sClient.GetReplicaSetClient()
+				rsToDeployment := replicaSetClient.ReplicaSetToDeployment()
 				if parent := rsToDeployment[owner.Name]; parent != "" {
 					kind = ci.Deployment
 					name = parent

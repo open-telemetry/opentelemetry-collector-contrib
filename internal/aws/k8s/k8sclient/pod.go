@@ -31,8 +31,8 @@ import (
 type PodClient interface {
 	// Get the mapping between the namespace and the number of belonging pods
 	NamespaceToRunningPodNum() map[string]int
-	// Shutdown stops the PodClient
-	Shutdown()
+	// // shutdown stops the PodClient
+	// shutdown()
 }
 
 type podClientOption func(*podClient)
@@ -106,7 +106,7 @@ func newPodClient(clientSet kubernetes.Interface, logger *zap.Logger, options ..
 	return c
 }
 
-func (c *podClient) Shutdown() {
+func (c *podClient) shutdown() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	close(c.stopChan)

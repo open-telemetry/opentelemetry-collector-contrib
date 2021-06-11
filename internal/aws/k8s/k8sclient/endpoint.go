@@ -50,7 +50,7 @@ type EpClient interface {
 	ServiceToPodNum() map[Service]int
 
 	// shutdown is only used internally by clientset to stop the EpClient
-	shutdown()
+	// shutdown()
 }
 
 type epClientOption func(*epClient)

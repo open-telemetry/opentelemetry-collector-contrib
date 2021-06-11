@@ -175,10 +175,10 @@ func AddKubernetesInfo(metric CIMetric, kubernetesBlob map[string]interface{}) {
 func refreshWithTimeout(parentContext context.Context, refresh func(), timeout time.Duration) {
 	ctx, cancel := context.WithTimeout(parentContext, timeout)
 	// spawn a goroutine to process the actual refresh
-	go func(ctx context.Context, cancel func()) {
+	go func(cancel func()) {
 		refresh()
 		cancel()
-	}(ctx, cancel)
+	}(cancel)
 	// block until either refresh() has executed or the timeout expires
 	<-ctx.Done()
 	cancel()
