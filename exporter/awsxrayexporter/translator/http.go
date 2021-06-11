@@ -20,6 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -101,7 +102,7 @@ func makeHTTP(span pdata.Span) (map[string]string, *awsxray.HTTPData) {
 			urlParts[key] = value.StringVal()
 			hasHTTPRequestURLAttributes = true
 		default:
-			filtered[key] = value.StringVal()
+			filtered[key] = tracetranslator.AttributeValueToString(value)
 		}
 		return true
 	})
