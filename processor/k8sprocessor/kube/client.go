@@ -309,7 +309,8 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	for _, r := range c.Rules.Labels {
-		if r.From == MetadataFromPod {
+		// By default if the From field is not set for labels and annotations we want to extract them from pod
+		if r.From == MetadataFromPod || r.From == "" {
 			if v, ok := pod.Labels[r.Key]; ok {
 				tags[r.Name] = c.extractField(v, r)
 			}
@@ -317,7 +318,8 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	for _, r := range c.Rules.Annotations {
-		if r.From == MetadataFromPod {
+		// By default if the From field is not set for labels and annotations we want to extract them from pod
+		if r.From == MetadataFromPod || r.From == "" {
 			if v, ok := pod.Annotations[r.Key]; ok {
 				tags[r.Name] = c.extractField(v, r)
 			}

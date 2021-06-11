@@ -487,6 +487,30 @@ func TestExtractionRules(t *testing.T) {
 			"l2": "v5",
 			"a1": "av1",
 		},
+	}, {
+		// By default if the From field is not set for labels and annotations we want to extract them from pod
+		name: "labels-annotations-default-pod",
+		rules: ExtractionRules{
+			Annotations: []FieldExtractionRule{{
+				Name: "a1",
+				Key:  "annotation1",
+			},
+			},
+			Labels: []FieldExtractionRule{{
+				Name: "l1",
+				Key:  "label1",
+			}, {
+				Name:  "l2",
+				Key:   "label2",
+				Regex: regexp.MustCompile(`k5=(?P<value>[^\s]+)`),
+			},
+			},
+		},
+		attributes: map[string]string{
+			"l1": "lv1",
+			"l2": "v5",
+			"a1": "av1",
+		},
 	},
 	}
 	for _, tc := range testCases {
