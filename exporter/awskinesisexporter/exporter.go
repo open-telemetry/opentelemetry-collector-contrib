@@ -16,19 +16,21 @@ package awskinesisexporter
 
 import (
 	"context"
+	"fmt"
 
 	awskinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/translate"
 )
 
 // Exporter implements an OpenTelemetry trace exporter that exports all spans to AWS Kinesis
 type Exporter struct {
 	awskinesis *awskinesis.Exporter
+	ew         translate.ExportWriter
 	logger     *zap.Logger
 }
 
@@ -55,24 +57,9 @@ func (e Exporter) Shutdown(context.Context) error {
 
 // ConsumeTraces receives a span batch and exports it to AWS Kinesis
 func (e Exporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
-	pBatches, err := jaegertranslator.InternalTracesToJaegerProto(td)
+	err := e.ew.WriteTraces(td)
 	if err != nil {
-		e.logger.Error("error translating span batch", zap.Error(err))
-		return consumererror.Permanent(err)
+		err = fmt.Errorf("issues writing traces to kinesis: %w", err)
 	}
-	// TODO: Use a multi error type
-	var exportErr error
-	for _, pBatch := range pBatches {
-		for _, span := range pBatch.GetSpans() {
-			if span.Process == nil {
-				span.Process = pBatch.Process
-			}
-			err := e.awskinesis.ExportSpan(span)
-			if err != nil {
-				e.logger.Error("error exporting span to awskinesis", zap.Error(err))
-				exportErr = err
-			}
-		}
-	}
-	return exportErr
+	return err
 }

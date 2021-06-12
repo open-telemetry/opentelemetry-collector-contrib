@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 package awscontainerinsightreceiver
 
 import (
@@ -67,9 +66,10 @@ func New(
 // Start collecting metrics from cadvisor and k8s api server (if it is an elected leader)
 func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, acir.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, acir.config.ID(), "http"))
-	machineInfo := hostInfo.NewMachineInfo(acir.config.CollectionInterval, acir.logger)
+	//ignore the error for now, will address it in later PR
+	machineInfo, _ := hostInfo.NewInfo(acir.config.CollectionInterval, acir.logger)
 	acir.cadvisor = cadvisor.New(acir.config.ContainerOrchestrator, machineInfo, acir.logger)
-	acir.k8sapiserver = k8sapiserver.New(machineInfo, acir.logger)
+	acir.k8sapiserver, _ = k8sapiserver.New(machineInfo, acir.logger)
 
 	// TODO: add more intialization code
 

@@ -27,11 +27,11 @@ import (
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func makeCause(span pdata.Span, attributes map[string]string, resource pdata.Resource) (isError, isFault bool,
+func makeCause(span pdata.Span, attributes map[string]string, resource pdata.Resource) (isError, isFault, isThrottle bool,
 	filtered map[string]string, cause *awsxray.CauseData) {
 	status := span.Status()
 	if status.Code() != pdata.StatusCodeError {
-		return false, false, attributes, nil
+		return false, false, false, attributes, nil
 	}
 	filtered = attributes
 
@@ -123,15 +123,20 @@ func makeCause(span pdata.Span, attributes map[string]string, resource pdata.Res
 		if code >= 400 && code <= 499 {
 			isError = true
 			isFault = false
+			if code == 429 {
+				isThrottle = true
+			}
 		} else {
 			isError = false
+			isThrottle = false
 			isFault = true
 		}
 	} else {
 		isError = false
+		isThrottle = false
 		isFault = true
 	}
-	return isError, isFault, filtered, cause
+	return isError, isFault, isThrottle, filtered, cause
 }
 
 func parseException(exceptionType string, message string, stacktrace string, language string) []awsxray.Exception {

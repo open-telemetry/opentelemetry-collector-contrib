@@ -549,17 +549,27 @@ func getSpanErrorAndSetTags(s pdata.Span, tags map[string]string) int32 {
 
 	if isError == errorCode {
 		extractErrorTagsFromEvents(s, tags)
-		// If we weren't able to pull an error type or message, go ahead and set
-		// these to the old defaults
-		if _, ok := tags[ext.ErrorType]; !ok {
-			tags[ext.ErrorType] = "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10)
-		}
 
+		// if the error message doesnt exist, try to infer useful error information from
+		// the status message, and http status code / http status text.
+		// if we find useful error.message info, also set a fallback error.type
+		// otherwise leave these tags unset and allow the UI to handle defaults
 		if _, ok := tags[ext.ErrorMsg]; !ok {
 			if status.Message() != "" {
 				tags[ext.ErrorMsg] = status.Message()
-			} else {
-				tags[ext.ErrorMsg] = "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10)
+				// look for useful http metadata if it exists and add that as a fallback for the error message
+			} else if statusCode, ok := tags[conventions.AttributeHTTPStatusCode]; ok {
+				if statusText, ok := tags[conventions.AttributeHTTPStatusText]; ok {
+					tags[ext.ErrorMsg] = fmt.Sprintf("%s %s", statusCode, statusText)
+				} else {
+					tags[ext.ErrorMsg] = statusCode
+				}
+			}
+
+			// If we weren't able to pull an error type, but we do have an error message
+			// set to a reasonable default
+			if (tags[ext.ErrorType] == "") && (tags[ext.ErrorMsg] != "") {
+				tags[ext.ErrorType] = "error"
 			}
 		}
 	}

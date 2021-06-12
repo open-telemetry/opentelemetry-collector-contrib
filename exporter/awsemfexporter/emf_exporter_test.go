@@ -86,38 +86,40 @@ func TestConsumeMetrics(t *testing.T) {
 				"resource": "R1",
 			},
 		},
-		Metrics: []*metricspb.Metric{
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-						{Key: "isItAnError"},
-					},
+		Metrics: []*metricspb.Metric{},
+	}
+	for i := 0; i < 2; i++ {
+		m := &metricspb.Metric{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name:        "spanCounter",
+				Description: "Counting all the spans",
+				Unit:        "Count",
+				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+				LabelKeys: []*metricspb.LabelKey{
+					{Key: "spanName"},
+					{Key: "isItAnError"},
 				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan"},
-							{Value: "false"},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 0,
-								},
-								Value: &metricspb.Point_Int64Value{
-									Int64Value: 1,
-								},
+			},
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					LabelValues: []*metricspb.LabelValue{
+						{Value: "testSpan"},
+						{Value: "false"},
+					},
+					Points: []*metricspb.Point{
+						{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: int64(i),
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 1,
 							},
 						},
 					},
 				},
 			},
-		},
+		}
+		mdata.Metrics = append(mdata.Metrics, m)
 	}
 	md := internaldata.OCToMetrics(mdata.Node, mdata.Resource, mdata.Metrics)
 	require.Error(t, exp.ConsumeMetrics(ctx, md))
@@ -207,39 +209,42 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 				"resource": "R1",
 			},
 		},
-		Metrics: []*metricspb.Metric{
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-						{Key: "isItAnError"},
-					},
+		Metrics: []*metricspb.Metric{},
+	}
+	for i := 0; i < 2; i++ {
+		m := &metricspb.Metric{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name:        "spanCounter",
+				Description: "Counting all the spans",
+				Unit:        "Count",
+				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+				LabelKeys: []*metricspb.LabelKey{
+					{Key: "spanName"},
+					{Key: "isItAnError"},
 				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan"},
-							{Value: "false"},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 0,
-								},
-								Value: &metricspb.Point_Int64Value{
-									Int64Value: 1,
-								},
+			},
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					LabelValues: []*metricspb.LabelValue{
+						{Value: "testSpan"},
+						{Value: "false"},
+					},
+					Points: []*metricspb.Point{
+						{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: int64(i),
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: int64(i),
 							},
 						},
 					},
 				},
 			},
-		},
+		}
+		mdata.Metrics = append(mdata.Metrics, m)
 	}
+
 	md := internaldata.OCToMetrics(mdata.Node, mdata.Resource, mdata.Metrics)
 	require.NoError(t, exp.Start(ctx, nil))
 	require.Error(t, exp.ConsumeMetrics(ctx, md))
@@ -275,39 +280,40 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 				"aws.ecs.task.id":      "test-task-id",
 			},
 		},
-		Metrics: []*metricspb.Metric{
-
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-						{Key: "isItAnError"},
-					},
+		Metrics: []*metricspb.Metric{},
+	}
+	for i := 0; i < 2; i++ {
+		m := &metricspb.Metric{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name:        "spanCounter",
+				Description: "Counting all the spans",
+				Unit:        "Count",
+				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+				LabelKeys: []*metricspb.LabelKey{
+					{Key: "spanName"},
+					{Key: "isItAnError"},
 				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan"},
-							{Value: "false"},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 0,
-								},
-								Value: &metricspb.Point_Int64Value{
-									Int64Value: 1,
-								},
+			},
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					LabelValues: []*metricspb.LabelValue{
+						{Value: "testSpan"},
+						{Value: "false"},
+					},
+					Points: []*metricspb.Point{
+						{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: int64(i),
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: int64(i),
 							},
 						},
 					},
 				},
 			},
-		},
+		}
+		mdata.Metrics = append(mdata.Metrics, m)
 	}
 	md := internaldata.OCToMetrics(mdata.Node, mdata.Resource, mdata.Metrics)
 	require.NoError(t, exp.Start(ctx, nil))
@@ -344,39 +350,40 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 				"aws.ecs.task.id":      "test-task-id",
 			},
 		},
-		Metrics: []*metricspb.Metric{
-
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-						{Key: "isItAnError"},
-					},
+		Metrics: []*metricspb.Metric{},
+	}
+	for i := 0; i < 2; i++ {
+		m := &metricspb.Metric{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name:        "spanCounter",
+				Description: "Counting all the spans",
+				Unit:        "Count",
+				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+				LabelKeys: []*metricspb.LabelKey{
+					{Key: "spanName"},
+					{Key: "isItAnError"},
 				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan"},
-							{Value: "false"},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 0,
-								},
-								Value: &metricspb.Point_Int64Value{
-									Int64Value: 1,
-								},
+			},
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					LabelValues: []*metricspb.LabelValue{
+						{Value: "testSpan"},
+						{Value: "false"},
+					},
+					Points: []*metricspb.Point{
+						{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: int64(i),
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: int64(i),
 							},
 						},
 					},
 				},
 			},
-		},
+		}
+		mdata.Metrics = append(mdata.Metrics, m)
 	}
 	md := internaldata.OCToMetrics(mdata.Node, mdata.Resource, mdata.Metrics)
 	require.NoError(t, exp.Start(ctx, nil))
@@ -413,39 +420,40 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 				"aws.ecs.task.id":      "test-task-id",
 			},
 		},
-		Metrics: []*metricspb.Metric{
-
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-						{Key: "isItAnError"},
-					},
+		Metrics: []*metricspb.Metric{},
+	}
+	for i := 0; i < 2; i++ {
+		m := &metricspb.Metric{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name:        "spanCounter",
+				Description: "Counting all the spans",
+				Unit:        "Count",
+				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+				LabelKeys: []*metricspb.LabelKey{
+					{Key: "spanName"},
+					{Key: "isItAnError"},
 				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan"},
-							{Value: "false"},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 0,
-								},
-								Value: &metricspb.Point_Int64Value{
-									Int64Value: 1,
-								},
+			},
+			Timeseries: []*metricspb.TimeSeries{
+				{
+					LabelValues: []*metricspb.LabelValue{
+						{Value: "testSpan"},
+						{Value: "false"},
+					},
+					Points: []*metricspb.Point{
+						{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: int64(i),
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: int64(i),
 							},
 						},
 					},
 				},
 			},
-		},
+		}
+		mdata.Metrics = append(mdata.Metrics, m)
 	}
 	md := internaldata.OCToMetrics(mdata.Node, mdata.Resource, mdata.Metrics)
 	require.NoError(t, exp.Start(ctx, nil))

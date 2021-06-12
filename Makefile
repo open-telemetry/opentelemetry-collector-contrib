@@ -64,6 +64,14 @@ gotidy:
 	$(MAKE) for-all CMD="rm -fr go.sum"
 	$(MAKE) for-all CMD="go mod tidy"
 
+.PHONY: gomoddownload
+gomoddownload:
+	@$(MAKE) for-all CMD="go mod download"
+
+.PHONY: gotestinstall
+gotestinstall:
+	@$(MAKE) for-all CMD="make test GOTEST_OPT=\"-i\""
+
 .PHONY: gotest
 gotest:
 	$(MAKE) for-all CMD="make test"
@@ -200,11 +208,15 @@ otelcontribcol-unstable:
 		$(BUILD_INFO) -tags enable_unstable ./cmd/otelcontribcol
 
 .PHONY: otelcontribcol-all-sys
-otelcontribcol-all-sys: otelcontribcol-darwin_amd64 otelcontribcol-linux_amd64 otelcontribcol-linux_arm64 otelcontribcol-windows_amd64
+otelcontribcol-all-sys: otelcontribcol-darwin_amd64 otelcontribcol-darwin_arm64 otelcontribcol-linux_amd64 otelcontribcol-linux_arm64 otelcontribcol-windows_amd64
 
 .PHONY: otelcontribcol-darwin_amd64
 otelcontribcol-darwin_amd64:
 	GOOS=darwin  GOARCH=amd64 $(MAKE) otelcontribcol
+
+.PHONY: otelcontribcol-darwin_arm64
+otelcontribcol-darwin_arm64:
+	GOOS=darwin  GOARCH=arm64 $(MAKE) otelcontribcol
 
 .PHONY: otelcontribcol-linux_amd64
 otelcontribcol-linux_amd64:

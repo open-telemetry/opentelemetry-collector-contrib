@@ -30,7 +30,7 @@ type Cadvisor struct {
 }
 
 // New is a dummy function to construct a dummy Cadvisor struct for windows
-func New(containerOrchestrator string, machineInfo *host.MachineInfo, logger *zap.Logger) *Cadvisor {
+func New(containerOrchestrator string, machineInfo *host.Info, logger *zap.Logger) *Cadvisor {
 	return &Cadvisor{}
 }
 

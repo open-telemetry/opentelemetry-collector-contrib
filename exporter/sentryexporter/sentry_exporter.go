@@ -16,8 +16,10 @@ package sentryexporter
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -323,9 +325,16 @@ func transactionFromSpan(span *sentry.Span) *sentry.Event {
 // CreateSentryExporter returns a new Sentry Exporter.
 func CreateSentryExporter(config *Config, params component.ExporterCreateSettings) (component.TracesExporter, error) {
 	transport := newSentryTransport()
-	transport.Configure(sentry.ClientOptions{
+
+	clientOptions := sentry.ClientOptions{
 		Dsn: config.DSN,
-	})
+	}
+
+	if config.InsecureSkipVerify {
+		clientOptions.HTTPTransport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	}
+
+	transport.Configure(clientOptions)
 
 	s := &SentryExporter{
 		transport: transport,

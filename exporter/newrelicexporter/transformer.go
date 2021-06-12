@@ -24,6 +24,7 @@ import (
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 )
@@ -33,8 +34,8 @@ const (
 	descriptionAttrKey        = "description"
 	collectorNameKey          = "collector.name"
 	collectorVersionKey       = "collector.version"
-	instrumentationNameKey    = "instrumentation.name"
-	instrumentationVersionKey = "instrumentation.version"
+	instrumentationNameKey    = conventions.InstrumentationLibraryName
+	instrumentationVersionKey = conventions.InstrumentationLibraryVersion
 	droppedAttributesCountKey = "otel.dropped_attributes_count"
 	droppedEventsCountKey     = "otel.dropped_events_count"
 	statusCodeKey             = "otel.status_code"
@@ -377,12 +378,14 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 			}
 		}
 	case pdata.MetricDataTypeIntHistogram:
-		t.details.metricMetadataCount[k]++
 		hist := m.IntHistogram()
+		k.MetricTemporality = hist.AggregationTemporality()
+		t.details.metricMetadataCount[k]++
 		return nil, &errUnsupportedMetricType{metricType: k.MetricType.String(), metricName: m.Name(), numDataPoints: hist.DataPoints().Len()}
 	case pdata.MetricDataTypeHistogram:
-		t.details.metricMetadataCount[k]++
 		hist := m.Histogram()
+		k.MetricTemporality = hist.AggregationTemporality()
+		t.details.metricMetadataCount[k]++
 		return nil, &errUnsupportedMetricType{metricType: k.MetricType.String(), metricName: m.Name(), numDataPoints: hist.DataPoints().Len()}
 	case pdata.MetricDataTypeSummary:
 		t.details.metricMetadataCount[k]++
