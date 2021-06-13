@@ -109,6 +109,9 @@ func newTaskFetcher(opts taskFetcherOptions) (*taskFetcher, error) {
 	if fetcher.ecs != nil || fetcher.ec2 != nil {
 		return &fetcher, nil
 	}
+	if opts.Cluster == "" {
+		return nil, fmt.Errorf("missing ECS cluster for task fetcher")
+	}
 	if opts.Region == "" {
 		return nil, fmt.Errorf("missing aws region for task fetcher")
 	}

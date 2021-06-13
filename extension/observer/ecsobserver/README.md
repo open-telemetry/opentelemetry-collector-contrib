@@ -5,6 +5,10 @@
 The `ecsobserver` uses the ECS/EC2 API to discover prometheus scrape targets from all running tasks and filter them
 based on service names, task definitions and container labels.
 
+NOTE: If you run collector as a sidecar, you should consider
+use [ECS resource detector](../../../processor/resourcedetectionprocessor/README.md) instead. However, it does not have
+service, EC2 instances etc. because it only queries local API.
+
 ## Config
 
 The configuration is based on
@@ -249,6 +253,8 @@ prometheus instead of extension and can cause confusion.
 
 ## Output Format
 
+[Example in unit test](testdata/ut_targets.expected.yaml).
+
 The format is based
 on [cloudwatch agent](https://github.com/aws/amazon-cloudwatch-agent/tree/master/internal/ecsservicediscovery#example-result)
 , [ec2 sd](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#ec2_sd_config)
@@ -354,14 +360,13 @@ The implementation has two parts, core ecs service discovery logic and adapter f
 
 ### Packages
 
-- `extension/observer/ecsobserver` adapter to implement the observer interface
-- `internal/awsecs` polling AWS ECS and EC2 API and filter based on config
-- `internal/awsconfig` the shared aws specific config (e.g. init sdk client), which eventually should be shared by every
-  package that calls AWS API (e.g. emf, xray).
+- `extension/observer/ecsobserver` main logic
+- [internal/ecsmock](internal/ecsmock) mock ECS cluster
+- [internal/errctx](internal/errctx) structured error wrapping
 
 ### Flow
 
-The pseudo code showing the overall flow.
+The pseudocode showing the overall flow.
 
 ```
 NewECSSD() {
@@ -421,29 +426,7 @@ otel's own /metrics.
 
 ### Unit Test
 
-A mock ECS and EC2 server will be implemented in `internal/awsecs`. The rough implementation will be like the following:
-
-```go
-type ECSServiceMock struct {
-	definitions map[string]*ecs.TaskDefinition
-	tasks       map[string]*ecs.Task
-	services    map[string]*ecs.Service
-	taskToEC2   map[string]*ec2.Instance
-}
-
-// RunOnEC2 registers the task definition and instance.
-// It creates a task and sets it to running.
-// The returned task pointer can be modified directly and will be reflected in mocked AWS API call results.
-func (e *ECSServiceMock) RunOnEC2(def *ecs.TaskDefinition, instance *ec2.Instance) *ecs.Task {
-	panic("impl")
-}
-
-// RunOnFargate is similar to RunOnEC2 except instance is not needed as fargate is 'serverless'.
-// A unique private ip will be generated to simulate awsvpc.
-func (e *ECSServiceMock) RunOnFargate(def *ecs.TaskDefinition) *ecs.Task {
-	panic("impl")
-}
-```
+A mock ECS and EC2 server is in [internal/ecsmock](internal/ecsmock), see [fetcher_test](fetcher_test.go) for its usage.
 
 ### Integration Test
 
@@ -452,6 +435,8 @@ against actual ECS service on both EC2 and Fargate.
 
 ## Changelog
 
+- 2021-06-02 first version that actually works on ECS by @pingleig, thanks @anuraaga @Aneurysm9 @jrcamp @mxiamxia for
+  reviewing (all the PRs ...)
 - 2021-02-24 Updated doc by @pingleig
 - 2020-12-29 Initial implementation by [Raphael](https://github.com/theRoughCode)
   in [#1920](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/1920)

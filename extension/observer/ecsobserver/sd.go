@@ -80,11 +80,18 @@ func (s *ServiceDiscovery) RunAndWriteFile(ctx context.Context) error {
 		case <-ticker.C:
 			targets, err := s.Discover(ctx)
 			if err != nil {
-				// FIXME: better error handling here, for now just log and continue
-				s.logger.Error("Discover failed", zap.Error(err))
+				// Stop on critical error
+				if cerr := hasCriticalError(s.logger, err); cerr != nil {
+					return cerr
+				}
+				// Print all the minor errors for debugging, e.g. user config etc.
+				printErrors(s.logger, err)
+			}
+			// We may get 0 targets form some recoverable errors
+			// e.g. throttled, in that case we keep existing exported file.
+			if len(targets) == 0 {
 				continue
 			}
-
 			// Encoding and file write error should never happen,
 			// so we stop extension by returning error.
 			b, err := targetsToFileSDYAML(targets, s.cfg.JobLabelName)
@@ -108,9 +115,5 @@ func (s *ServiceDiscovery) Discover(ctx context.Context) ([]PrometheusECSTarget,
 	if err != nil {
 		return nil, err
 	}
-	exported, err := s.exporter.exportTasks(filtered)
-	if err != nil {
-		return nil, err
-	}
-	return exported, nil
+	return s.exporter.exportTasks(filtered)
 }

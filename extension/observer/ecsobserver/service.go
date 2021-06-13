@@ -113,9 +113,6 @@ func serviceConfigsToFilter(cfgs []ServiceConfig) (serviceNameFilter, error) {
 	}
 	var regs []*regexp.Regexp
 	for _, cfg := range cfgs {
-		if cfg.NamePattern == "" {
-			continue
-		}
 		r, err := regexp.Compile(cfg.NamePattern)
 		if err != nil {
 			return nil, fmt.Errorf("invalid service name pattern %q: %w", cfg.NamePattern, err)

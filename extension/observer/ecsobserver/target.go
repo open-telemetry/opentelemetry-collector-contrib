@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 )
@@ -108,6 +109,7 @@ func (t *PrometheusECSTarget) ToLabels() map[string]string {
 		labelEC2PrivateIP:           t.EC2PrivateIP,
 		labelEC2PublicIP:            t.EC2PublicIP,
 	}
+	trimEmptyValueByKeyPrefix(labels, labelPrefix+"ec2_")
 	addTagsToLabels(t.TaskTags, labelPrefixTaskTags, labels)
 	addTagsToLabels(t.ContainerLabels, labelPrefixContainerLabels, labels)
 	addTagsToLabels(t.EC2Tags, labelPrefixEC2Tags, labels)
@@ -119,6 +121,14 @@ func (t *PrometheusECSTarget) ToLabels() map[string]string {
 func addTagsToLabels(tags map[string]string, labelNamePrefix string, labels map[string]string) {
 	for k, v := range tags {
 		labels[labelNamePrefix+"_"+sanitizeLabelName(k)] = v
+	}
+}
+
+func trimEmptyValueByKeyPrefix(m map[string]string, prefix string) {
+	for k, v := range m {
+		if v == "" && strings.HasPrefix(k, prefix) {
+			delete(m, k)
+		}
 	}
 }
 
