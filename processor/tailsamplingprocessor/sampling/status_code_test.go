@@ -34,47 +34,55 @@ func TestPercentageSampling(t *testing.T) {
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
 	cases := []struct {
-		Desc        string
-		StatusCodes []string
-		Decision    Decision
+		Desc                  string
+		StatusCodesToFilterOn []string
+		StatusCodesPresent    []pdata.StatusCode
+		Decision              Decision
 	}{
 		{
-			Desc:        "filter on ERROR",
-			StatusCodes: []string{"ERROR"},
-			Decision:    NotSampled,
+			Desc:                  "filter on ERROR - none match",
+			StatusCodesToFilterOn: []string{"ERROR"},
+			StatusCodesPresent:    []pdata.StatusCode{pdata.StatusCodeOk, pdata.StatusCodeUnset, pdata.StatusCodeOk},
+			Decision:              NotSampled,
 		},
 		{
-			Desc:        "filter on OK and ERROR",
-			StatusCodes: []string{"OK", "ERROR"},
-			Decision:    NotSampled,
+			Desc:                  "filter on OK and ERROR - none match",
+			StatusCodesToFilterOn: []string{"OK", "ERROR"},
+			StatusCodesPresent:    []pdata.StatusCode{pdata.StatusCodeUnset, pdata.StatusCodeUnset},
+			Decision:              NotSampled,
 		},
 		{
-			Desc:        "filter on UNSET",
-			StatusCodes: []string{"UNSET"},
-			Decision:    Sampled,
+			Desc:                  "filter on UNSET - matches",
+			StatusCodesToFilterOn: []string{"UNSET"},
+			StatusCodesPresent:    []pdata.StatusCode{pdata.StatusCodeUnset},
+			Decision:              Sampled,
 		},
 		{
-			Desc:        "filter on OK and UNSET",
-			StatusCodes: []string{"OK", "UNSET"},
-			Decision:    Sampled,
+			Desc:                  "filter on OK and UNSET - matches",
+			StatusCodesToFilterOn: []string{"OK", "UNSET"},
+			StatusCodesPresent:    []pdata.StatusCode{pdata.StatusCodeError, pdata.StatusCodeOk},
+			Decision:              Sampled,
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			// unfortunately, it's not possible to set the status code of a span
-			// the status code will always be STATUS_CODE_UNSET
 			traces := pdata.NewTraces()
 			rs := traces.ResourceSpans().AppendEmpty()
 			ils := rs.InstrumentationLibrarySpans().AppendEmpty()
-			span := ils.Spans().AppendEmpty()
-			span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-			span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+
+			for _, statusCode := range c.StatusCodesPresent {
+				span := ils.Spans().AppendEmpty()
+				span.Status().SetCode(statusCode)
+				span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+				span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+			}
+
 			trace := &TraceData{
 				ReceivedBatches: []pdata.Traces{traces},
 			}
 
-			statusCodeFilter, err := NewStatusCodeFilter(zap.NewNop(), c.StatusCodes)
+			statusCodeFilter, err := NewStatusCodeFilter(zap.NewNop(), c.StatusCodesToFilterOn)
 			assert.NoError(t, err)
 
 			decision, err := statusCodeFilter.Evaluate(traceID, trace)
