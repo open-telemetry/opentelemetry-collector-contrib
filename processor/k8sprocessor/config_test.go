@@ -18,6 +18,8 @@ import (
 	"path"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -60,11 +62,11 @@ func TestLoadConfig(t *testing.T) {
 				Metadata: []string{"k8s.pod.name", "k8s.pod.uid", "k8s.deployment.name", "k8s.cluster.name", "k8s.namespace.name", "k8s.node.name", "k8s.pod.start_time"},
 				Annotations: []FieldExtractConfig{
 					{TagName: "a1", Key: "annotation-one", From: "pod"},
-					{TagName: "a2", Key: "annotation-two", Regex: "field=(?P<value>.+)", From: "pod"},
+					{TagName: "a2", Key: "annotation-two", Regex: "field=(?P<value>.+)", From: kube.MetadataFromPod},
 				},
 				Labels: []FieldExtractConfig{
 					{TagName: "l1", Key: "label1", From: "pod"},
-					{TagName: "l2", Key: "label2", Regex: "field=(?P<value>.+)", From: "pod"},
+					{TagName: "l2", Key: "label2", Regex: "field=(?P<value>.+)", From: kube.MetadataFromPod},
 				},
 			},
 			Filter: FilterConfig{

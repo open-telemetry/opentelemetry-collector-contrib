@@ -135,15 +135,22 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 	rules := []kube.FieldExtractionRule{}
 	for _, a := range fields {
 		name := a.TagName
+
+		switch a.From {
+		// By default if the From field is not set for labels and annotations we want to extract them from pod
+		case "", kube.MetadataFromPod:
+			a.From = kube.MetadataFromPod
+		case kube.MetadataFromNamespace:
+			a.From = kube.MetadataFromNamespace
+		default:
+			return rules, fmt.Errorf("from must contain exactly one value like pod or namespace")
+		}
+
 		if name == "" {
 			if a.From == kube.MetadataFromPod {
 				name = fmt.Sprintf("k8s.pod.%s.%s", fieldType, a.Key)
 			} else if a.From == kube.MetadataFromNamespace {
 				name = fmt.Sprintf("k8s.namespace.%s.%s", fieldType, a.Key)
-				// By default if the From field is not set for labels and annotations we want to extract them from pod
-			} else if a.From == "" {
-				name = fmt.Sprintf("k8s.pod.%s.%s", fieldType, a.Key)
-				a.From = kube.MetadataFromPod
 			}
 		}
 
