@@ -37,6 +37,7 @@ func computeAPMStats(tracePayload *pb.TracePayload, pushTime int64) *stats.Paylo
 	bucketTS := pushTime - statsBucketDuration
 	for _, trace := range tracePayload.Traces {
 		spans := getAnalyzedSpans(trace.Spans)
+
 		for _, span := range spans {
 
 			// TODO: While this is hardcoded to assume a single 10s buckets for now,
