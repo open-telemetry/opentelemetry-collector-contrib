@@ -1,0 +1,23 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  googlecloudpubsub:
+  googlecloudpubsub/customname:
+    project: my-project
+    endpoint: test-endpoint
+    user_agent: opentelemetry-collector-contrib {{version}}
+    insecure: true
+    timeout: 20s
+    topic: projects/my-project/topics/otlp-topic
+
+service:
+  pipelines:
+    traces:
+        receivers: [nop]
+        processors: [nop]
+        exporters: [googlecloudpubsub/customname]
+

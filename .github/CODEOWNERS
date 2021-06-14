@@ -42,6 +42,7 @@ exporter/stackdriverexporter/                        @open-telemetry/collector-c
 exporter/googlecloudexporter/                        @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @tbarker25
 exporter/sumologicexporter/                          @open-telemetry/collector-contrib-approvers @pmm-sumo @sumo-drosiek
 exporter/uptraceexporter/                            @open-telemetry/collector-contrib-approvers @vmihailenco
+exporter/googlecloudpubsubexporter/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
 
 extension/httpforwarder/                             @open-telemetry/collector-contrib-approvers @asuresh4
 extension/observer/                                  @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp
