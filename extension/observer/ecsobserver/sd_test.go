@@ -70,7 +70,7 @@ func TestNewDiscovery(t *testing.T) {
 		ec2Override:       c,
 	})
 	require.NoError(t, err)
-	opts := ServiceDiscoveryOptions{Logger: logger, FetcherOverride: fetcher}
+	opts := serviceDiscoveryOptions{Logger: logger, FetcherOverride: fetcher}
 
 	// Create 1 task def, 2 services and 11 tasks, 8 running on ec2, first 3 runs on fargate
 	nTasks := 11
@@ -173,12 +173,12 @@ func TestNewDiscovery(t *testing.T) {
 	}))
 
 	t.Run("success", func(t *testing.T) {
-		sd, err := NewDiscovery(cfg, opts)
+		sd, err := newDiscovery(cfg, opts)
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.RefreshInterval*2)
 		defer cancel()
-		err = sd.RunAndWriteFile(ctx)
+		err = sd.runAndWriteFile(ctx)
 		require.NoError(t, err)
 
 		assert.FileExists(t, outputFile)
@@ -192,9 +192,9 @@ func TestNewDiscovery(t *testing.T) {
 	t.Run("fail to write file", func(t *testing.T) {
 		cfg2 := cfg
 		cfg2.ResultFile = "testdata/folder/does/not/exists/ut_targets.yaml"
-		sd, err := NewDiscovery(cfg2, opts)
+		sd, err := newDiscovery(cfg2, opts)
 		require.NoError(t, err)
-		require.Error(t, sd.RunAndWriteFile(context.TODO()))
+		require.Error(t, sd.runAndWriteFile(context.TODO()))
 	})
 
 	t.Run("critical error in discovery", func(t *testing.T) {
@@ -209,24 +209,24 @@ func TestNewDiscovery(t *testing.T) {
 			ec2Override:       c,
 		})
 		require.NoError(t, err)
-		opts2 := ServiceDiscoveryOptions{Logger: logger, FetcherOverride: fetcher2}
-		sd, err := NewDiscovery(cfg2, opts2)
+		opts2 := serviceDiscoveryOptions{Logger: logger, FetcherOverride: fetcher2}
+		sd, err := newDiscovery(cfg2, opts2)
 		require.NoError(t, err)
-		require.Error(t, sd.RunAndWriteFile(context.TODO()))
+		require.Error(t, sd.runAndWriteFile(context.TODO()))
 	})
 
 	t.Run("invalid fetcher config", func(t *testing.T) {
 		cfg2 := cfg
 		cfg2.ClusterName = ""
-		opts2 := ServiceDiscoveryOptions{Logger: logger}
-		_, err := NewDiscovery(cfg2, opts2)
+		opts2 := serviceDiscoveryOptions{Logger: logger}
+		_, err := newDiscovery(cfg2, opts2)
 		require.Error(t, err)
 	})
 }
 
 // Util Start
 
-func newTestFilter(t *testing.T, cfg Config) *taskFilter {
+func newTestTaskFilter(t *testing.T, cfg Config) *taskFilter {
 	logger := zap.NewExample()
 	m, err := newMatchers(cfg, MatcherOptions{Logger: logger})
 	require.NoError(t, err)

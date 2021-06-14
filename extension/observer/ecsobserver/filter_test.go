@@ -37,7 +37,7 @@ func TestFilter(t *testing.T) {
 		},
 	}
 	t.Run("nil", func(t *testing.T) {
-		f := newTestFilter(t, cfgTaskDefOnly)
+		f := newTestTaskFilter(t, cfgTaskDefOnly)
 		res, err := f.filter(nil)
 		require.NoError(t, err)
 		assert.Nil(t, res)
@@ -106,7 +106,7 @@ func TestFilter(t *testing.T) {
 	}
 
 	t.Run("task definition", func(t *testing.T) {
-		f := newTestFilter(t, cfgTaskDefOnly)
+		f := newTestTaskFilter(t, cfgTaskDefOnly)
 		res, err := f.filter(genTasks())
 		require.NoError(t, err)
 		assert.Len(t, res, 1)
@@ -152,7 +152,7 @@ func TestFilter(t *testing.T) {
 	}
 
 	t.Run("match order", func(t *testing.T) {
-		f := newTestFilter(t, cfgServiceTaskDef)
+		f := newTestTaskFilter(t, cfgServiceTaskDef)
 		res, err := f.filter(genTasks())
 		require.NoError(t, err)
 		assert.Len(t, res, 1)
@@ -194,7 +194,7 @@ func TestFilter(t *testing.T) {
 	}
 
 	t.Run("invalid docker label", func(t *testing.T) {
-		f := newTestFilter(t, cfgServiceDockerLabel)
+		f := newTestTaskFilter(t, cfgServiceDockerLabel)
 		res, err := f.filter(genTasks())
 		require.Error(t, err)
 		merr := multierr.Errors(err)

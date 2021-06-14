@@ -23,7 +23,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type ServiceDiscovery struct {
+type serviceDiscovery struct {
 	logger   *zap.Logger
 	cfg      Config
 	fetcher  *taskFetcher
@@ -31,12 +31,12 @@ type ServiceDiscovery struct {
 	exporter *taskExporter
 }
 
-type ServiceDiscoveryOptions struct {
+type serviceDiscoveryOptions struct {
 	Logger          *zap.Logger
 	FetcherOverride *taskFetcher // for test
 }
 
-func NewDiscovery(cfg Config, opts ServiceDiscoveryOptions) (*ServiceDiscovery, error) {
+func newDiscovery(cfg Config, opts serviceDiscoveryOptions) (*serviceDiscovery, error) {
 	svcNameFilter, err := serviceConfigsToFilter(cfg.Services)
 	if err != nil {
 		return nil, fmt.Errorf("init serivce name filter failed: %w", err)
@@ -61,7 +61,7 @@ func NewDiscovery(cfg Config, opts ServiceDiscoveryOptions) (*ServiceDiscovery, 
 	}
 	filter := newTaskFilter(opts.Logger, matchers)
 	exporter := newTaskExporter(opts.Logger, cfg.ClusterName)
-	return &ServiceDiscovery{
+	return &serviceDiscovery{
 		logger:   opts.Logger,
 		cfg:      cfg,
 		fetcher:  fetcher,
@@ -70,15 +70,15 @@ func NewDiscovery(cfg Config, opts ServiceDiscoveryOptions) (*ServiceDiscovery, 
 	}, nil
 }
 
-// RunAndWriteFile writes the output to Config.ResultFile.
-func (s *ServiceDiscovery) RunAndWriteFile(ctx context.Context) error {
+// runAndWriteFile writes the output to Config.ResultFile.
+func (s *serviceDiscovery) runAndWriteFile(ctx context.Context) error {
 	ticker := time.NewTicker(s.cfg.RefreshInterval)
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
-			targets, err := s.Discover(ctx)
+			targets, err := s.discover(ctx)
 			if err != nil {
 				// Stop on critical error
 				if cerr := hasCriticalError(s.logger, err); cerr != nil {
@@ -106,7 +106,8 @@ func (s *ServiceDiscovery) RunAndWriteFile(ctx context.Context) error {
 	}
 }
 
-func (s *ServiceDiscovery) Discover(ctx context.Context) ([]PrometheusECSTarget, error) {
+// discover fetch tasks, filter by matching result and export them.
+func (s *serviceDiscovery) discover(ctx context.Context) ([]PrometheusECSTarget, error) {
 	tasks, err := s.fetcher.fetchAndDecorate(ctx)
 	if err != nil {
 		return nil, err

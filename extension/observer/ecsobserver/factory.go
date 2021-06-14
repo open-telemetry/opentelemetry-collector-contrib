@@ -45,13 +45,13 @@ func createDefaultConfig() config.Extension {
 
 func createExtension(ctx context.Context, params component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
 	sdCfg := cfg.(*Config)
-	opt := ServiceDiscoveryOptions{Logger: params.Logger}
+	opt := serviceDiscoveryOptions{Logger: params.Logger}
 	// Only for test
 	fetcher := ctx.Value(ctxFetcherOverrideKey)
 	if fetcher != nil {
 		opt.FetcherOverride = fetcher.(*taskFetcher)
 	}
-	sd, err := NewDiscovery(*sdCfg, opt)
+	sd, err := newDiscovery(*sdCfg, opt)
 	if err != nil {
 		return nil, err
 	}

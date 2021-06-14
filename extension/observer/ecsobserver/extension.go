@@ -26,7 +26,7 @@ var _ component.Extension = (*ecsObserver)(nil)
 // ecsObserver implements component.ServiceExtension interface.
 type ecsObserver struct {
 	logger *zap.Logger
-	sd     *ServiceDiscovery
+	sd     *serviceDiscovery
 
 	// for Shutdown
 	cancel func()
@@ -39,7 +39,7 @@ func (e *ecsObserver) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	e.cancel = cancel
 	go func() {
-		if err := e.sd.RunAndWriteFile(ctx); err != nil {
+		if err := e.sd.runAndWriteFile(ctx); err != nil {
 			e.logger.Error("ECSDiscovery stopped by error", zap.Error(err))
 		}
 	}()
