@@ -143,7 +143,7 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 		case kube.MetadataFromNamespace:
 			a.From = kube.MetadataFromNamespace
 		default:
-			return rules, fmt.Errorf("from must contain exactly one value like pod or namespace")
+			return rules, fmt.Errorf("%s is not a valid choice for From. Must be one of: pod, namespace", a.From)
 		}
 
 		if name == "" {
