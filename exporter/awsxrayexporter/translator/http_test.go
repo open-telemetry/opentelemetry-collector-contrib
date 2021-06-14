@@ -271,31 +271,6 @@ func TestSpanWithNotEnoughHTTPRequestURLAttributes(t *testing.T) {
 	assert.NotNil(t, filtered)
 }
 
-func TestSpanWithFilteredAttributes(t *testing.T) {
-	attributes := make(map[string]interface{})
-	attributes["string_value"] = "value"
-	attributes["int_value"] = 123
-	attributes["float_value"] = 456.78
-	attributes["bool_value"] = false
-	attributes["array_value"] = []int{12, 34, 56}
-	attributes["map_value"] = map[string]interface{}{
-		"value1": -987.65,
-		"value2": true,
-	}
-	span := constructHTTPServerSpan(attributes)
-
-	filtered, httpData := makeHTTP(span)
-
-	assert.Nil(t, httpData)
-	assert.NotNil(t, filtered)
-	assert.Equal(t, "value", filtered["string_value"])
-	assert.Equal(t, "123", filtered["int_value"])
-	assert.Equal(t, "456.78", filtered["float_value"])
-	assert.Equal(t, "false", filtered["bool_value"])
-	assert.Equal(t, "[12 34 56]", filtered["array_value"])
-	assert.Equal(t, "map[value1:-987.65 value2:true]", filtered["map_value"])
-}
-
 func constructHTTPClientSpan(attributes map[string]interface{}) pdata.Span {
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)

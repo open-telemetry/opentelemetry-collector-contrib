@@ -19,18 +19,19 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 )
 
 func TestClientSpanWithStatementAttribute(t *testing.T) {
-	attributes := make(map[string]string)
-	attributes[semconventions.AttributeDBSystem] = "mysql"
-	attributes[semconventions.AttributeDBName] = "customers"
-	attributes[semconventions.AttributeDBStatement] = "SELECT * FROM user WHERE user_id = ?"
-	attributes[semconventions.AttributeDBUser] = "readonly_user"
-	attributes[semconventions.AttributeDBConnectionString] = "mysql://db.example.com:3306"
-	attributes[semconventions.AttributeNetPeerName] = "db.example.com"
-	attributes[semconventions.AttributeNetPeerPort] = "3306"
+	attributes := make(map[string]pdata.AttributeValue)
+	attributes[semconventions.AttributeDBSystem] = pdata.NewAttributeValueString("mysql")
+	attributes[semconventions.AttributeDBName] = pdata.NewAttributeValueString("customers")
+	attributes[semconventions.AttributeDBStatement] = pdata.NewAttributeValueString("SELECT * FROM user WHERE user_id = ?")
+	attributes[semconventions.AttributeDBUser] = pdata.NewAttributeValueString("readonly_user")
+	attributes[semconventions.AttributeDBConnectionString] = pdata.NewAttributeValueString("mysql://db.example.com:3306")
+	attributes[semconventions.AttributeNetPeerName] = pdata.NewAttributeValueString("db.example.com")
+	attributes[semconventions.AttributeNetPeerPort] = pdata.NewAttributeValueString("3306")
 
 	filtered, sqlData := makeSQL(attributes)
 
@@ -47,14 +48,14 @@ func TestClientSpanWithStatementAttribute(t *testing.T) {
 }
 
 func TestClientSpanWithNonSQLDatabase(t *testing.T) {
-	attributes := make(map[string]string)
-	attributes[semconventions.AttributeDBSystem] = "redis"
-	attributes[semconventions.AttributeDBName] = "0"
-	attributes[semconventions.AttributeDBStatement] = "SET key value"
-	attributes[semconventions.AttributeDBUser] = "readonly_user"
-	attributes[semconventions.AttributeDBConnectionString] = "redis://db.example.com:3306"
-	attributes[semconventions.AttributeNetPeerName] = "db.example.com"
-	attributes[semconventions.AttributeNetPeerPort] = "3306"
+	attributes := make(map[string]pdata.AttributeValue)
+	attributes[semconventions.AttributeDBSystem] = pdata.NewAttributeValueString("redis")
+	attributes[semconventions.AttributeDBName] = pdata.NewAttributeValueString("0")
+	attributes[semconventions.AttributeDBStatement] = pdata.NewAttributeValueString("SET key value")
+	attributes[semconventions.AttributeDBUser] = pdata.NewAttributeValueString("readonly_user")
+	attributes[semconventions.AttributeDBConnectionString] = pdata.NewAttributeValueString("redis://db.example.com:3306")
+	attributes[semconventions.AttributeNetPeerName] = pdata.NewAttributeValueString("db.example.com")
+	attributes[semconventions.AttributeNetPeerPort] = pdata.NewAttributeValueString("3306")
 
 	filtered, sqlData := makeSQL(attributes)
 	assert.Nil(t, sqlData)
@@ -62,14 +63,14 @@ func TestClientSpanWithNonSQLDatabase(t *testing.T) {
 }
 
 func TestClientSpanWithoutDBurlAttribute(t *testing.T) {
-	attributes := make(map[string]string)
-	attributes[semconventions.AttributeDBSystem] = "postgresql"
-	attributes[semconventions.AttributeDBName] = "customers"
-	attributes[semconventions.AttributeDBStatement] = "SELECT * FROM user WHERE user_id = ?"
-	attributes[semconventions.AttributeDBUser] = "readonly_user"
-	attributes[semconventions.AttributeDBConnectionString] = ""
-	attributes[semconventions.AttributeNetPeerName] = "db.example.com"
-	attributes[semconventions.AttributeNetPeerPort] = "3306"
+	attributes := make(map[string]pdata.AttributeValue)
+	attributes[semconventions.AttributeDBSystem] = pdata.NewAttributeValueString("postgresql")
+	attributes[semconventions.AttributeDBName] = pdata.NewAttributeValueString("customers")
+	attributes[semconventions.AttributeDBStatement] = pdata.NewAttributeValueString("SELECT * FROM user WHERE user_id = ?")
+	attributes[semconventions.AttributeDBUser] = pdata.NewAttributeValueString("readonly_user")
+	attributes[semconventions.AttributeDBConnectionString] = pdata.NewAttributeValueString("")
+	attributes[semconventions.AttributeNetPeerName] = pdata.NewAttributeValueString("db.example.com")
+	attributes[semconventions.AttributeNetPeerPort] = pdata.NewAttributeValueString("3306")
 	filtered, sqlData := makeSQL(attributes)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, sqlData)
