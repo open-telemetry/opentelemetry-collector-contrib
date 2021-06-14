@@ -18,8 +18,6 @@ import (
 	"path"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -28,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
 func TestLoadConfig(t *testing.T) {
