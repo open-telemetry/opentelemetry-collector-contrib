@@ -74,29 +74,12 @@ func (r *statusCodeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision
 	batches := trace.ReceivedBatches
 	trace.Unlock()
 
-	for _, batch := range batches {
-		rspans := batch.ResourceSpans()
-
-		for i := 0; i < rspans.Len(); i++ {
-			rs := rspans.At(i)
-			ilss := rs.InstrumentationLibrarySpans()
-
-			for i := 0; i < ilss.Len(); i++ {
-				ils := ilss.At(i)
-
-				for j := 0; j < ils.Spans().Len(); j++ {
-					span := ils.Spans().At(j)
-
-					for _, statusCode := range r.statusCodes {
-						if span.Status().Code() == statusCode {
-							return Sampled, nil
-						}
-					}
-
-				}
+	return hasSpanWithCondition(batches, func(span pdata.Span) bool {
+		for _, statusCode := range r.statusCodes {
+			if span.Status().Code() == statusCode {
+				return true
 			}
 		}
-	}
-
-	return NotSampled, nil
+		return false
+	}), nil
 }
