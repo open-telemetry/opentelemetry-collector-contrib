@@ -20,11 +20,41 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/noop"
 	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 )
 
 func TestBuildAgentSuccess(t *testing.T) {
-	mockCfg := Config{}
+	mockCfg := Config{
+		[]operator.Config{
+			{
+				Builder: noop.NewNoopOperatorConfig("noop"),
+			},
+		},
+	}
+	mockLogger := zap.NewNop().Sugar()
+	mockPluginDir := "/some/path/plugins"
+
+	agent, err := NewBuilder(mockLogger).
+		WithConfig(&mockCfg).
+		WithPluginDir(mockPluginDir).
+		Build()
+	require.NoError(t, err)
+	require.Equal(t, mockLogger, agent.SugaredLogger)
+}
+
+func TestBuildAgentDefaultOperator(t *testing.T) {
+	mockCfg := Config{
+		[]operator.Config{
+			{
+				Builder: noop.NewNoopOperatorConfig("noop"),
+			},
+			{
+				Builder: noop.NewNoopOperatorConfig("noop1"),
+			},
+		},
+	}
 	mockLogger := zap.NewNop().Sugar()
 	mockPluginDir := "/some/path/plugins"
 	mockOutput := testutil.NewFakeOutput(t)
@@ -36,6 +66,30 @@ func TestBuildAgentSuccess(t *testing.T) {
 		Build()
 	require.NoError(t, err)
 	require.Equal(t, mockLogger, agent.SugaredLogger)
+
+	ops := agent.pipeline.Operators()
+	require.Equal(t, 3, len(ops))
+
+	exists := make(map[string]bool)
+
+	for _, op := range ops {
+		switch op.ID() {
+		case "$.noop":
+			require.Equal(t, 1, len(op.GetOutputIDs()))
+			require.Equal(t, "$.noop1", op.GetOutputIDs()[0])
+			exists["$.noop"] = true
+		case "$.noop1":
+			require.Equal(t, 1, len(op.GetOutputIDs()))
+			require.Equal(t, "$.fake", op.GetOutputIDs()[0])
+			exists["$.noop1"] = true
+		case "$.fake":
+			require.Equal(t, 0, len(op.GetOutputIDs()))
+			exists["$.fake"] = true
+		}
+	}
+	require.True(t, exists["$.noop"])
+	require.True(t, exists["$.noop1"])
+	require.True(t, exists["$.fake"])
 }
 
 func TestBuildAgentFailureOnPluginRegistry(t *testing.T) {
@@ -43,13 +97,14 @@ func TestBuildAgentFailureOnPluginRegistry(t *testing.T) {
 	mockLogger := zap.NewNop().Sugar()
 	mockPluginDir := "[]"
 	mockOutput := testutil.NewFakeOutput(t)
-
-	_, err := NewBuilder(mockLogger).
+	agent, err := NewBuilder(mockLogger).
 		WithConfig(&mockCfg).
 		WithPluginDir(mockPluginDir).
 		WithDefaultOutput(mockOutput).
 		Build()
-	require.NoError(t, err)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "empty pipeline not allowed")
+	require.Nil(t, agent)
 }
 
 func TestBuildAgentFailureNoConfigOrGlobs(t *testing.T) {

@@ -22,7 +22,7 @@ import (
 type Config []operator.Config
 
 // BuildOperators builds the operators from the list of configs into operators.
-func (c Config) BuildOperators(bc operator.BuildContext) ([]operator.Operator, error) {
+func (c Config) BuildOperators(bc operator.BuildContext, defaultOperator operator.Operator) ([]operator.Operator, error) {
 	// buildsMulti's key represents an operator's ID that builds multiple operators, e.g. Plugins.
 	// the value is the plugin's first operator's ID.
 	buildsMulti := make(map[string]string)
@@ -38,6 +38,11 @@ func (c Config) BuildOperators(bc operator.BuildContext) ([]operator.Operator, e
 		}
 		operators = append(operators, op...)
 	}
+
+	if defaultOperator != nil && operators[len(operators)-1].CanOutput() {
+		operators = append(operators, defaultOperator)
+	}
+
 	if err := SetOutputIDs(operators, buildsMulti); err != nil {
 		return nil, err
 	}
@@ -47,17 +52,9 @@ func (c Config) BuildOperators(bc operator.BuildContext) ([]operator.Operator, e
 
 // BuildPipeline will build a pipeline from the config.
 func (c Config) BuildPipeline(bc operator.BuildContext, defaultOperator operator.Operator) (*DirectedPipeline, error) {
-	if defaultOperator != nil {
-		bc.DefaultOutputIDs = []string{defaultOperator.ID()}
-	}
-
-	operators, err := c.BuildOperators(bc)
+	operators, err := c.BuildOperators(bc, defaultOperator)
 	if err != nil {
 		return nil, err
-	}
-
-	if defaultOperator != nil {
-		operators = append(operators, defaultOperator)
 	}
 
 	return NewDirectedPipeline(operators)

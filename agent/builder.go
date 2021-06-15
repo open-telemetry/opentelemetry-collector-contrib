@@ -87,6 +87,10 @@ func (b *LogAgentBuilder) Build() (*LogAgent, error) {
 		b.config = cfgs
 	}
 
+	if len(b.config.Pipeline) == 0 {
+		return nil, errors.NewError("empty pipeline not allowed", "")
+	}
+
 	sampledLogger := b.logger.Desugar().WithOptions(
 		zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 			return zapcore.NewSamplerWithOptions(core, time.Second, 1, 10000)

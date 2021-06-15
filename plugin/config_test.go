@@ -229,7 +229,7 @@ pipeline:
 	}
 
 	for _, tc := range cases {
-		ops, err := tc.PluginConfig.BuildOperators(testutil.NewBuildContext(t))
+		ops, err := tc.PluginConfig.BuildOperators(testutil.NewBuildContext(t), nil)
 		require.NoError(t, err)
 
 		require.Len(t, ops, len(tc.ExpectedOpIDs))
@@ -553,7 +553,7 @@ pipeline:
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			ops, err := tc.PluginConfig.BuildOperators(testutil.NewBuildContext(t))
+			ops, err := tc.PluginConfig.BuildOperators(testutil.NewBuildContext(t), nil)
 			require.NoError(t, err)
 
 			for i, op := range ops {
@@ -595,7 +595,7 @@ pipeline:
 	err = yaml.Unmarshal(pipelineConfig, &pipeline)
 	require.NoError(t, err)
 
-	_, err = pipeline.BuildOperators(operator.NewBuildContext(zaptest.NewLogger(t).Sugar()))
+	_, err = pipeline.BuildOperators(operator.NewBuildContext(zaptest.NewLogger(t).Sugar()), nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "reached max plugin depth")
 }
