@@ -61,15 +61,10 @@ func TestNewDiscovery(t *testing.T) {
 	assert.True(t, svcNameFilter("s1"))
 	require.NoError(t, err)
 	c := ecsmock.NewClusterWithName(cfg.ClusterName)
-	fetcher, err := newTaskFetcher(taskFetcherOptions{
-		Logger:            logger,
-		Cluster:           cfg.ClusterName,
-		Region:            cfg.ClusterRegion,
-		serviceNameFilter: svcNameFilter,
-		ecsOverride:       c,
-		ec2Override:       c,
+	fetcher := newTestTaskFetcher(t, c, func(options *taskFetcherOptions) {
+		options.Cluster = cfg.ClusterName
+		options.serviceNameFilter = svcNameFilter
 	})
-	require.NoError(t, err)
 	opts := serviceDiscoveryOptions{Logger: logger, FetcherOverride: fetcher}
 
 	// Create 1 task def, 2 services and 11 tasks, 8 running on ec2, first 3 runs on fargate
@@ -200,15 +195,10 @@ func TestNewDiscovery(t *testing.T) {
 	t.Run("critical error in discovery", func(t *testing.T) {
 		cfg2 := cfg
 		cfg2.ClusterName += "not_right_anymore"
-		fetcher2, err := newTaskFetcher(taskFetcherOptions{
-			Logger:            logger,
-			Cluster:           cfg2.ClusterName,
-			Region:            cfg2.ClusterRegion,
-			serviceNameFilter: svcNameFilter,
-			ecsOverride:       c,
-			ec2Override:       c,
+		fetcher2 := newTestTaskFetcher(t, c, func(options *taskFetcherOptions) {
+			options.Cluster = cfg2.ClusterName
+			options.serviceNameFilter = svcNameFilter
 		})
-		require.NoError(t, err)
 		opts2 := serviceDiscoveryOptions{Logger: logger, FetcherOverride: fetcher2}
 		sd, err := newDiscovery(cfg2, opts2)
 		require.NoError(t, err)
@@ -231,6 +221,25 @@ func newTestTaskFilter(t *testing.T, cfg Config) *taskFilter {
 	m, err := newMatchers(cfg, MatcherOptions{Logger: logger})
 	require.NoError(t, err)
 	f := newTaskFilter(logger, m)
+	return f
+}
+
+func newTestTaskFetcher(t *testing.T, c *ecsmock.Cluster, opts ...func(options *taskFetcherOptions)) *taskFetcher {
+	opt := taskFetcherOptions{
+		Logger:      zap.NewExample(),
+		Cluster:     "not used",
+		Region:      "not used",
+		ecsOverride: c,
+		ec2Override: c,
+		serviceNameFilter: func(name string) bool {
+			return true
+		},
+	}
+	for _, m := range opts {
+		m(&opt)
+	}
+	f, err := newTaskFetcher(opt)
+	require.NoError(t, err)
 	return f
 }
 

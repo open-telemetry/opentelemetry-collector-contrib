@@ -79,6 +79,7 @@ func (s *serviceDiscovery) runAndWriteFile(ctx context.Context) error {
 			return nil
 		case <-ticker.C:
 			targets, err := s.discover(ctx)
+			s.logger.Debug("Discovered targets", zap.Int("Count", len(targets)))
 			if err != nil {
 				// Stop on critical error
 				if cerr := hasCriticalError(s.logger, err); cerr != nil {
@@ -89,9 +90,16 @@ func (s *serviceDiscovery) runAndWriteFile(ctx context.Context) error {
 			}
 			// We may get 0 targets form some recoverable errors
 			// e.g. throttled, in that case we keep existing exported file.
-			if len(targets) == 0 {
+			if len(targets) == 0 && err != nil {
+				// We already printed th error
+				s.logger.Warn("Skip generating empty target file because of previous errors")
 				continue
 			}
+
+			// As long as we have some targets, export them regardless of errors.
+			// A better approach might be keep previous targets in memory and do a diff and merge on error.
+			// For now we just replace entire exported file.
+
 			// Encoding and file write error should never happen,
 			// so we stop extension by returning error.
 			b, err := targetsToFileSDYAML(targets, s.cfg.JobLabelName)

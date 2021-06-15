@@ -419,10 +419,13 @@ otel's own /metrics.
 
 ### Error Handling
 
-- Auth error will be logged, but the extension will not fail as the IAM role can be updated and take effect without
-  restarting the ECS task.
-- If errors happen in the middle (e.g. rate limit), the discovery result will be merged with previous success runs to
-  avoid discarding active targets, though it may keep some stale targets as well.
+- Auth and cluster not found error will cause the extension to stop (calling `host.ReportFatalError`). Although IAM role
+  can be updated at runtime without restarting the collector, it's better to fail to make the problem obvious. Same
+  applies to cluster not found. In the future we can add config to downgrade those errors if user want to monitor an ECS
+  cluster with collector running outside the cluster, the collector can run anywhere as long as it can reach scrape
+  targets and AWS API.
+- If we have non-critical error, we overwrite existing file with whatever targets we have, we might not have all the
+  targets due to throttle etc.
 
 ### Unit Test
 

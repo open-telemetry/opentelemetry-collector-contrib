@@ -30,13 +30,7 @@ import (
 // In that case sd itself does not use timer and relies on caller to trigger List.
 func TestExtensionStartStop(t *testing.T) {
 	c := ecsmock.NewCluster()
-	f, err := newTaskFetcher(taskFetcherOptions{
-		Logger:      zap.NewExample(),
-		Cluster:     "not used",
-		Region:      "not used",
-		ecsOverride: c,
-	})
-	require.NoError(t, err)
+	f := newTestTaskFetcher(t, c)
 	ctx := context.WithValue(context.TODO(), ctxFetcherOverrideKey, f)
 	ext, err := createExtension(ctx, component.ExtensionCreateSettings{Logger: zap.NewExample()}, createDefaultConfig())
 	require.NoError(t, err)

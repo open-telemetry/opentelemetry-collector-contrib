@@ -98,12 +98,10 @@ func newTaskFetcher(opts taskFetcherOptions) (*taskFetcher, error) {
 		ec2Cache:          ec2Cache,
 		serviceNameFilter: opts.serviceNameFilter,
 	}
-	// Match all the services for test. For production if there is no service related config,
-	// we don't describe any service, see serviceConfigsToFilter for detail.
+	// Even if user didn't specify any service related config, we still generates a valid filter
+	// that matches nothing. See service.go serviceConfigsToFilter.
 	if fetcher.serviceNameFilter == nil {
-		fetcher.serviceNameFilter = func(name string) bool {
-			return true
-		}
+		return nil, fmt.Errorf("serviceNameFilter can't be nil")
 	}
 	// Return early if any clients are mocked, caller should overrides all the clients when mocking.
 	if fetcher.ecs != nil || fetcher.ec2 != nil {

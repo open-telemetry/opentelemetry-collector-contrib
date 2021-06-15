@@ -32,7 +32,7 @@ type ecsObserver struct {
 	cancel func()
 }
 
-// Start runs the service discovery in backeground
+// Start runs the service discovery in background
 func (e *ecsObserver) Start(_ context.Context, host component.Host) error {
 	e.logger.Info("Starting ECSDiscovery")
 	// Ignore the ctx parameter as it is not for long running operation
@@ -41,6 +41,8 @@ func (e *ecsObserver) Start(_ context.Context, host component.Host) error {
 	go func() {
 		if err := e.sd.runAndWriteFile(ctx); err != nil {
 			e.logger.Error("ECSDiscovery stopped by error", zap.Error(err))
+			// Stop the collector
+			host.ReportFatalError(err)
 		}
 	}()
 	return nil
