@@ -31,6 +31,12 @@ class TestFastAPIManualInstrumentation(TestBase):
         self._instrumentor.instrument_app(app)
         return app
 
+    def _create_app_explicit_excluded_urls(self):
+        app = self._create_fastapi_app()
+        to_exclude = "/user/123,/foobar"
+        self._instrumentor.instrument_app(app, excluded_urls=to_exclude)
+        return app
+
     def setUp(self):
         super().setUp()
         self.env_patch = patch.dict(
@@ -39,7 +45,7 @@ class TestFastAPIManualInstrumentation(TestBase):
         )
         self.env_patch.start()
         self.exclude_patch = patch(
-            "opentelemetry.instrumentation.fastapi._excluded_urls",
+            "opentelemetry.instrumentation.fastapi._excluded_urls_from_env",
             get_excluded_urls("FASTAPI"),
         )
         self.exclude_patch.start()
@@ -84,6 +90,17 @@ class TestFastAPIManualInstrumentation(TestBase):
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 0)
 
+    def test_fastapi_excluded_urls_not_env(self):
+        """Ensure that given fastapi routes are excluded when passed explicitly (not in the environment)"""
+        app = self._create_app_explicit_excluded_urls()
+        client = TestClient(app)
+        client.get("/user/123")
+        spans = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(spans), 0)
+        client.get("/foobar")
+        spans = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(spans), 0)
+
     @staticmethod
     def _create_fastapi_app():
         app = fastapi.FastAPI()
@@ -122,6 +139,20 @@ class TestAutoInstrumentation(TestFastAPIManualInstrumentation):
         self.memory_exporter = exporter
 
         self._instrumentor.instrument(tracer_provider=tracer_provider)
+        return self._create_fastapi_app()
+
+    def _create_app_explicit_excluded_urls(self):
+        resource = Resource.create({"key1": "value1", "key2": "value2"})
+        tracer_provider, exporter = self.create_tracer_provider(
+            resource=resource
+        )
+        self.memory_exporter = exporter
+
+        to_exclude = "/user/123,/foobar"
+        self._instrumentor.uninstrument()  # Disable previous instrumentation (setUp)
+        self._instrumentor.instrument(
+            tracer_provider=tracer_provider, excluded_urls=to_exclude,
+        )
         return self._create_fastapi_app()
 
     def test_request(self):

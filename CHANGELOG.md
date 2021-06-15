@@ -1,4 +1,5 @@
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
@@ -56,6 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#472](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/472))
 - Set the `traced_request_attrs` of FalconInstrumentor by an argument correctly.
   ([#473](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/473))
+- Enable passing explicit urls to exclude in instrumentation in FastAPI
+  ([#486](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/486))
 - Distros can now implement `load_instrumentor(EntryPoint)` method to customize instrumentor
   loading behaviour.
   ([#480](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/480))
@@ -63,12 +66,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#492](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/492))
 
 ### Added
+
 - Move `opentelemetry-instrumentation` from core repository
   ([#465](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/465))
 
 ## [0.20b0](https://github.com/open-telemetry/opentelemetry-python-contrib/releases/tag/v0.20b0) - 2021-04-20
 
 ### Changed
+
 - Restrict DataDog exporter's `ddtrace` dependency to known working versions.
   ([#400](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/400))
 - GRPC instrumentation now correctly injects trace context into outgoing requests.
@@ -80,7 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update instrumentations to use tracer_provider for creating tracer if given, otherwise use global tracer provider
   ([#402](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/402))
 - `opentelemetry-instrumentation-wsgi` Replaced `name_callback` with `request_hook`
-   and `response_hook` callbacks.
+  and `response_hook` callbacks.
   ([#424](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/424))
 - Update gRPC instrumentation to better wrap server context
   ([#420](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/420))
@@ -90,6 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#265](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/265))
 
 ### Added
+
 - `opentelemetry-instrumentation-urllib3` Add urllib3 instrumentation
   ([#299](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/299))
 
@@ -118,9 +124,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#442](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/442))
 
 ### Removed
+
 - Remove `http.status_text` from span attributes
   ([#406](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/406))
-
 
 ## [0.19b0](https://github.com/open-telemetry/opentelemetry-python-contrib/releases/tag/v0.19b0) - 2021-03-26
 
@@ -128,6 +134,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#363](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/363))
 
 ### Changed
+
 - Rename `IdsGenerator` to `IdGenerator`
   ([#350](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/350))
 - `opentelemetry-exporter-datadog` Fix warning when DatadogFormat encounters a request with
@@ -147,18 +154,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#372](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/372))
 
 ### Removed
+
 - Removing support for Python 3.5
   ([#374](https://github.com/open-telemetry/opentelemetry-python/pull/374))
 
 ## [0.18b0](https://github.com/open-telemetry/opentelemetry-python-contrib/releases/tag/v0.18b0) - 2021-02-16
 
 ### Added
+
 - `opentelemetry-propagator-ot-trace` Add OT Trace Propagator
   ([#302](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/302))
 - `opentelemetry-instrumentation-logging` Added logging instrumentation to enable log - trace correlation.
   ([#345](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/345))
 
 ### Removed
+
 - Remove `component` span attribute in instrumentations.
   `opentelemetry-instrumentation-aiopg`, `opentelemetry-instrumentation-dbapi` Remove unused `database_type` parameter from `trace_integration` function.
   ([#301](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/301))
@@ -176,6 +186,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.17b0](https://github.com/open-telemetry/opentelemetry-python-contrib/releases/tag/v0.17b0) - 2021-01-20
 
 ### Added
+
 - `opentelemetry-instrumentation-sqlalchemy` Ensure spans have kind set to "CLIENT"
   ([#278](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/278))
 - `opentelemetry-instrumentation-celery` Add support for Celery version 5.x
@@ -210,6 +221,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#273](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/273))
 
 ### Changed
+
 - Fix broken links to project ([#413](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/413))
 - `opentelemetry-instrumentation-asgi`, `opentelemetry-instrumentation-wsgi` Return `None` for `CarrierGetter` if key not found
   ([#233](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/233))
@@ -239,6 +251,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#276](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/276))
 
 ### Removed
+
 - Remove Configuration
   ([#285](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/285))
 
@@ -247,6 +260,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.16b0](https://github.com/open-telemetry/opentelemetry-python-contrib/releases/tag/v0.16b0) - 2020-11-25
 
 ### Added
+
 - `opentelemetry-instrumentation-flask` Add span name callback
   ([#152](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/152))
 - `opentelemetry-sdk-extension-aws` Add AWS X-Ray Ids Generator Entry Point
@@ -265,6 +279,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#181](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/181))
 
 ### Changed
+
 - `opentelemetry-instrumentation-pymemcache` Update pymemcache instrumentation to follow semantic conventions
   ([#183](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/183))
 - `opentelemetry-instrumentation-redis` Update redis instrumentation to follow semantic conventions
@@ -289,6 +304,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.15b0](https://github.com/open-telemetry/opentelemetry-python-contrib/releases/tag/v0.15b0) - 2020-11-02
 
 ### Added
+
 - `opentelemetry-instrumentation-requests` Add support for tracking http metrics
   ([#1230](https://github.com/open-telemetry/opentelemetry-python/pull/1230))
 - `opentelemetry-instrumentation-django` Added capture of http.route
@@ -297,6 +313,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#1230](https://github.com/open-telemetry/opentelemetry-python/pull/1230))
 
 ### Changed
+
 - `opentelemetry-exporter-datadog` Make `SpanProcessor.on_start` accept parent Context
   ([#1251](https://github.com/open-telemetry/opentelemetry-python/pull/1251))
 - `opentelemetry-instrumentation-flask` Use `url.rule` instead of `request.endpoint` for span name
@@ -313,6 +330,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.14b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v0.14b0) - 2020-10-13
 
 ### Added
+
 - `opentelemetry-exporter-datadog` Add support for span resource labels and service name
 - `opentelemetry-instrumentation-celery` Span operation names now include the task type.
   ([#1135](https://github.com/open-telemetry/opentelemetry-python/pull/1135))
@@ -326,6 +344,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#1154](https://github.com/open-telemetry/opentelemetry-python/pull/1154))
 
 ### Changed
+
 - `opentelemetry-instrumentation-pymongo` Cast PyMongo commands as strings
   ([#1132](https://github.com/open-telemetry/opentelemetry-python/pull/1132))
 - `opentelemetry-instrumentation-system-metrics` Fix issue when specific metrics are not available in certain OS
@@ -338,6 +357,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.13b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v0.13b0) - 2020-09-17
 
 ### Added
+
 - `opentelemetry-instrumentation-falcon` Initial release. Added instrumentation for Falcon 2.0+
 - `opentelemetry-instrumentation-tornado` Initial release. Supports Tornado 6.x on Python 3.5 and newer.
 - `opentelemetry-instrumentation-aiohttp-client` Add instrumentor and auto instrumentation support for aiohttp
@@ -348,18 +368,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#1116](https://github.com/open-telemetry/opentelemetry-python/pull/1116))
 
 ### Changed
+
 - `opentelemetry-instrumentation-aiohttp-client` Updating span name to match semantic conventions
   ([#972](https://github.com/open-telemetry/opentelemetry-python/pull/972))
 - `opentelemetry-instrumentation-dbapi` cursors and connections now produce spans when used with context managers
   ([#1028](https://github.com/open-telemetry/opentelemetry-python/pull/1028))
 
 ### Removed
+
 - Drop support for Python 3.4
   ([#1099](https://github.com/open-telemetry/opentelemetry-python/pull/1099))
 
 ## [0.12b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v0.12.0) - 2020-08-14
 
 ### Changed
+
 - `opentelemetry-ext-pymemcache` Change package name to opentelemetry-instrumentation-pymemcache
   ([#966](https://github.com/open-telemetry/opentelemetry-python/pull/966))
 - `opentelemetry-ext-redis` Update default SpanKind to `SpanKind.CLIENT`
@@ -426,6 +449,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.11b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v0.11.0) - 2020-07-28
 
 ### Added
+
 - `opentelemetry-instrumentation-aiopg` Initial release
 - `opentelemetry-instrumentation-fastapi` Initial release
   ([#890](https://github.com/open-telemetry/opentelemetry-python/pull/890))
@@ -436,6 +460,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `opentelemetry-ext-grpc` Add metric recording (bytes in/out, errors, latency) to gRPC client
 
 ### Changed
+
 - `opentelemetry-ext-pyramid` Use one general exclude list instead of two
   ([#872](https://github.com/open-telemetry/opentelemetry-python/pull/872))
 - `opentelemetry-ext-boto` fails to export spans via jaeger
@@ -456,6 +481,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.10b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v0.10.0) - 2020-06-23
 
 ### Added
+
 - `opentelemetry-ext-pymemcache` Initial release
 - `opentelemetry-ext-elasticsearch` Initial release
 - `opentelemetry-ext-celery` Add instrumentation for Celery
@@ -468,6 +494,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v0.9.0) - 2020-06-10
 
 ### Added
+
 - `opentelemetry-ext-pyramid` Initial release
 - `opentelemetry-ext-boto` Initial release
 - `opentelemetry-ext-botocore` Initial release
@@ -477,6 +504,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.8b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v0.8.0) - 2020-05-27
 
 ### Added
+
 - `opentelemetry-ext-datadog` Add exporter to Datadog
   ([#572](https://github.com/open-telemetry/opentelemetry-python/pull/572))
 - `opentelemetry-ext-sqlite3` Initial release
@@ -489,12 +517,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `opentelemetry-ext-django` Add support for django >= 1.10 (#717)
 
 ### Changed
+
 - `opentelemetry-ext-grpc` lint: version of grpc causes lint issues
   ([#696](https://github.com/open-telemetry/opentelemetry-python/pull/696))
 
 ## [0.7b1](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v0.7.1) - 2020-05-12
 
 ### Added
+
 - `opentelemetry-ext-redis` Initial release
 - `opentelemetry-ext-jinja2` Add jinja2 instrumentation
   ([#643](https://github.com/open-telemetry/opentelemetry-python/pull/643))
@@ -518,12 +548,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#654](https://github.com/open-telemetry/opentelemetry-python/pull/654))
 
 ### Changed
+
 - `opentelemetry-ext-http-requests` Rename package to opentelemetry-ext-requests
   ([#619](https://github.com/open-telemetry/opentelemetry-python/pull/619))
 
 ## [0.6b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v0.6.0) - 2020-03-30
 
 ### Added
+
 - `opentelemetry-ext-flask` Add an entry_point to be usable in auto-instrumentation
   ([#327](https://github.com/open-telemetry/opentelemetry-python/pull/327))
 - `opentelemetry-ext-grpc` Add gRPC integration
@@ -534,11 +566,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4a0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v0.4.0) - 2020-02-21
 
 ### Added
+
 - `opentelemetry-ext-psycopg2` Initial release
 - `opentelemetry-ext-dbapi` Initial release
 - `opentelemetry-ext-mysql` Initial release
 
 ### Changed
+
 - `opentelemetry-ext-pymongo` Updating network connection attribute names
   ([#350](https://github.com/open-telemetry/opentelemetry-python/pull/350))
 - `opentelemetry-ext-wsgi` Updating network connection attribute names
@@ -549,10 +583,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3a0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v0.3.0) - 2019-12-11
 
 ### Added
+
 - `opentelemetry-ext-flask` Initial release
 - `opentelemetry-ext-pymongo` Initial release
 
 ### Changed
+
 - `opentelemetry-ext-wsgi` Support new semantic conventions
   ([#299](https://github.com/open-telemetry/opentelemetry-python/pull/299))
 - `opentelemetry-ext-wsgi` Updates for core library changes
@@ -560,11 +596,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2a0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v0.2.0) - 2019-10-29
 
 ### Changed
+
 - `opentelemetry-ext-wsgi` Updates for core library changes
 - `opentelemetry-ext-http-requests` Updates for core library changes
 
 ## [0.1a0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v0.1.0) - 2019-09-30
 
 ### Added
+
 - `opentelemetry-ext-wsgi` Initial release
 - `opentelemetry-ext-http-requests` Initial release

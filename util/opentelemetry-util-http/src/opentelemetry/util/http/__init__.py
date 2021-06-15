@@ -52,6 +52,13 @@ def get_excluded_urls(instrumentation):
         _root.format("{}_EXCLUDED_URLS".format(instrumentation)), []
     )
 
+    return parse_excluded_urls(excluded_urls)
+
+
+def parse_excluded_urls(excluded_urls):
+    """
+    Small helper to put an arbitrary url list inside of ExcludeList
+    """
     if excluded_urls:
         excluded_urls = [
             excluded_url.strip() for excluded_url in excluded_urls.split(",")

@@ -51,6 +51,11 @@ Usage
 
     FastAPIInstrumentor.instrument_app(app)
 
+You can also pass the list of urls to exclude explicitly to the instrumentation call:
+
+.. code-block:: python
+
+    FastAPIInstrumentor.instrument_app(app, "client/.*/info,healthcheck")
 
 References
 ----------
