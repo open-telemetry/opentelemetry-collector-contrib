@@ -4,7 +4,9 @@
 
 ## 💡 Enhancements 💡
 
-- `tailsampling` processor: Add new policy `latency` (#3750)
+- `tailsampling` processor:
+  - Add new policy `latency` (#3750)
+  - Add new policy `status_code` (#3754)
 
 ## v0.28.0
 
