@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/armon/go-metrics v0.3.3 // indirect
 	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
-	github.com/klauspost/compress v1.13.0
+	github.com/klauspost/compress v1.13.1
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
