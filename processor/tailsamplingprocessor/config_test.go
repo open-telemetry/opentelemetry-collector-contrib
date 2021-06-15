@@ -49,17 +49,22 @@ func TestLoadConfig(t *testing.T) {
 					Type: AlwaysSample,
 				},
 				{
-					Name:                "test-policy-2",
+					Name:       "test-policy-2",
+					Type:       Latency,
+					LatencyCfg: LatencyCfg{ThresholdMs: 5000},
+				},
+				{
+					Name:                "test-policy-3",
 					Type:                NumericAttribute,
 					NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
 				},
 				{
-					Name:               "test-policy-3",
+					Name:               "test-policy-4",
 					Type:               StringAttribute,
 					StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
 				},
 				{
-					Name:            "test-policy-4",
+					Name:            "test-policy-5",
 					Type:            RateLimiting,
 					RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 35},
 				},

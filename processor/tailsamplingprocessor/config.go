@@ -26,6 +26,8 @@ type PolicyType string
 const (
 	// AlwaysSample samples all traces, typically used for debugging.
 	AlwaysSample PolicyType = "always_sample"
+	// Latency sample traces that are longer than a given threshold.
+	Latency PolicyType = "latency"
 	// NumericAttribute sample traces that have a given numeric attribute in a specified
 	// range, e.g.: attribute "http.status_code" >= 399 and <= 999.
 	NumericAttribute PolicyType = "numeric_attribute"
@@ -42,12 +44,21 @@ type PolicyCfg struct {
 	Name string `mapstructure:"name"`
 	// Type of the policy this will be used to match the proper configuration of the policy.
 	Type PolicyType `mapstructure:"type"`
+	// Configs for latency filter sampling policy evaluator.
+	LatencyCfg LatencyCfg `mapstructure:"latency"`
 	// Configs for numeric attribute filter sampling policy evaluator.
 	NumericAttributeCfg NumericAttributeCfg `mapstructure:"numeric_attribute"`
 	// Configs for string attribute filter sampling policy evaluator.
 	StringAttributeCfg StringAttributeCfg `mapstructure:"string_attribute"`
 	// Configs for rate limiting filter sampling policy evaluator.
 	RateLimitingCfg RateLimitingCfg `mapstructure:"rate_limiting"`
+}
+
+// LatencyCfg holds the configurable settings to create a latency filter sampling policy
+// evaluator
+type LatencyCfg struct {
+	// ThresholdMs in milliseconds.
+	ThresholdMs int64 `mapstructure:"threshold_ms"`
 }
 
 // NumericAttributeCfg holds the configurable settings to create a numeric attribute filter

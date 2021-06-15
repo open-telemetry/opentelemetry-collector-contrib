@@ -17,16 +17,21 @@ processors:
           },
           {
             name: test-policy-2,
+            type: latency,
+            latency: {threshold_ms: 5000}
+          },
+          {
+            name: test-policy-3,
             type: numeric_attribute,
             numeric_attribute: {key: key1, min_value: 50, max_value: 100}
           },
           {
-            name: test-policy-3,
+            name: test-policy-4,
             type: string_attribute,
             string_attribute: {key: key2, values: [value1, value2]}
           },
           {
-            name: test-policy-4,
+            name: test-policy-5,
             type: rate_limiting,
             rate_limiting: {spans_per_second: 35}
          },
