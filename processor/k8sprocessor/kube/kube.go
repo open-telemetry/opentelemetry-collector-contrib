@@ -29,9 +29,12 @@ import (
 const (
 	podNodeField            = "spec.nodeName"
 	ignoreAnnotation string = "opentelemetry.io/k8s-processor/ignore"
-
-	tagNodeName  = "k8s.node.name"
-	tagStartTime = "k8s.pod.startTime"
+	tagNodeName             = "k8s.node.name"
+	tagStartTime            = "k8s.pod.start_time"
+	// MetadataFromPod is used to specify to extract metadata/labels/annotations from pod
+	MetadataFromPod = "pod"
+	// MetadataFromNamespace is used to specify to extract metadata/labels/annotations from namespace
+	MetadataFromNamespace = "namespace"
 )
 
 // PodIdentifier is a custom type to represent IP Address or Pod UID
@@ -50,12 +53,13 @@ var (
 // Client defines the main interface that allows querying pods by metadata.
 type Client interface {
 	GetPod(PodIdentifier) (*Pod, bool)
+	GetNamespace(string) (*Namespace, bool)
 	Start()
 	Stop()
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(*zap.Logger, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, APIClientsetProvider, InformerProvider) (Client, error)
+type ClientProvider func(*zap.Logger, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, APIClientsetProvider, InformerProvider, InformerProviderNamespace) (Client, error)
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
@@ -69,8 +73,18 @@ type Pod struct {
 	Attributes map[string]string
 	StartTime  *metav1.Time
 	Ignore     bool
+	Namespace  string
 
 	DeletedAt time.Time
+}
+
+// Namespace represents a kubernetes namespace.
+type Namespace struct {
+	Name         string
+	NamespaceUID string
+	Attributes   map[string]string
+	StartTime    metav1.Time
+	DeletedAt    time.Time
 }
 
 type deleteRequest struct {
@@ -130,6 +144,11 @@ type FieldExtractionRule struct {
 	// Regex is a regular expression used to extract a sub-part of a field value.
 	// Full value is extracted when no regexp is provided.
 	Regex *regexp.Regexp
+	// From determines the kubernetes object the field should be retrieved from.
+	// Currently only two values are supported,
+	//  - pod
+	//  - namespace
+	From string
 }
 
 // Associations represent a list of rules for Pod metadata associations with resources

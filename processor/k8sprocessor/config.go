@@ -52,12 +52,13 @@ func (cfg *Config) Validate() error {
 // ExtractConfig section allows specifying extraction rules to extract
 // data from k8s pod specs.
 type ExtractConfig struct {
-	// Metadata allows to extract pod metadata from a list of metadata fields.
+	// Metadata allows to extract pod/namespace metadata from a list of metadata fields.
 	// The field accepts a list of strings.
 	//
 	// Metadata fields supported right now are,
-	//   k8s.namespace.name, k8s.pod.name, k8s.pod.uid, k8s.deployment.name, k8s.cluster.name,
-	//   k8s.node.name and k8s.pod.start_time
+	//   k8s.pod.name, k8s.pod.uid, k8s.deployment.name, k8s.cluster.name,
+	//   k8s.node.name, k8s.namespace.name and k8s.pod.start_time
+	//
 	// Specifying anything other than these values will result in an error.
 	// By default all of the fields are extracted and added to spans and metrics.
 	Metadata []string `mapstructure:"metadata"`
@@ -113,6 +114,9 @@ type FieldExtractConfig struct {
 	TagName string `mapstructure:"tag_name"`
 	Key     string `mapstructure:"key"`
 	Regex   string `mapstructure:"regex"`
+	// From represents the source of the labels/annotations.
+	// Allowed values are "pod" and "namespace". The default is pod.
+	From string `mapstructure:"from"`
 }
 
 // FilterConfig section allows specifying filters to filter
