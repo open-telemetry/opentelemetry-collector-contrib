@@ -18,8 +18,8 @@ require (
 	go.opentelemetry.io/otel/sdk v0.20.0
 	go.opentelemetry.io/otel/trace v0.20.0
 	go.uber.org/zap v1.17.0
-	google.golang.org/api v0.47.0
-	google.golang.org/genproto v0.0.0-20210513213006-bf773b8c8384
+	google.golang.org/api v0.48.0
+	google.golang.org/genproto v0.0.0-20210604141403-392c879c8b08
 	google.golang.org/grpc v1.38.0
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/ini.v1 v1.57.0 // indirect
