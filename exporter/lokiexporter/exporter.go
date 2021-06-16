@@ -36,11 +36,10 @@ import (
 )
 
 type lokiExporter struct {
-	config             *Config
-	logger             *zap.Logger
-	client             *http.Client
-	attributesToLabels map[string]model.LabelName
-	wg                 sync.WaitGroup
+	config *Config
+	logger *zap.Logger
+	client *http.Client
+	wg     sync.WaitGroup
 }
 
 func newExporter(config *Config, logger *zap.Logger) *lokiExporter {
@@ -111,7 +110,6 @@ func (l *lokiExporter) start(_ context.Context, host component.Host) (err error)
 
 	l.client = client
 
-	l.attributesToLabels = l.config.Labels.getAttributes()
 	return nil
 }
 
@@ -125,18 +123,18 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		ills := rls.At(i).InstrumentationLibraryLogs()
+		resource := rls.At(i).Resource()
 		for j := 0; j < ills.Len(); j++ {
 			logs := ills.At(j).Logs()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
-				attribLabels, ok := l.convertAttributesToLabels(log.Attributes())
-				if !ok {
+
+				mergedLabels, dropped := l.convertAttributesAndMerge(log.Attributes(), resource.Attributes())
+				if dropped {
 					numDroppedLogs++
 					continue
 				}
-
-				labels := attribLabels.String()
-
+				labels := mergedLabels.String()
 				entry := convertLogToLokiEntry(log)
 
 				if stream, ok := streams[labels]; ok {
@@ -165,10 +163,25 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 	return pr, numDroppedLogs
 }
 
-func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap) (model.LabelSet, bool) {
+func (l *lokiExporter) convertAttributesAndMerge(logAttrs pdata.AttributeMap, resourceAttrs pdata.AttributeMap) (mergedAttributes model.LabelSet, dropped bool) {
+	logRecordAttributes := l.convertAttributesToLabels(logAttrs, l.config.Labels.Attributes)
+	resourceAttributes := l.convertAttributesToLabels(resourceAttrs, l.config.Labels.ResourceAttributes)
+
+	// This prometheus model.labelset Merge function overwrites	the logRecordAttributes with resourceAttributes
+	mergedAttributes = logRecordAttributes.Merge(resourceAttributes)
+
+	if len(mergedAttributes) == 0 {
+		return nil, true
+	}
+	return mergedAttributes, false
+}
+
+func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap, allowedAttributes map[string]string) model.LabelSet {
 	ls := model.LabelSet{}
 
-	for attr, attrLabelName := range l.attributesToLabels {
+	allowedLabels := l.config.Labels.getAttributes(allowedAttributes)
+
+	for attr, attrLabelName := range allowedLabels {
 		av, ok := attributes.Get(attr)
 		if ok {
 			if av.Type() != pdata.AttributeValueTypeString {
@@ -179,11 +192,7 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap) 
 		}
 	}
 
-	if len(ls) == 0 {
-		return nil, false
-	}
-
-	return ls, true
+	return ls
 }
 
 func convertLogToLokiEntry(lr pdata.LogRecord) *logproto.Entry {

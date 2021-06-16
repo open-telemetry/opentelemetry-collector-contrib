@@ -63,7 +63,8 @@ func TestFactory_CreateLogExporter(t *testing.T) {
 					Endpoint: "http://" + testutil.GetAvailableLocalAddress(t),
 				},
 				Labels: LabelsConfig{
-					Attributes: testValidAttributesWithMapping,
+					Attributes:         testValidAttributesWithMapping,
+					ResourceAttributes: testValidResourceWithMapping,
 				},
 			},
 			shouldError: false,

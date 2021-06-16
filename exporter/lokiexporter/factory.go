@@ -49,7 +49,8 @@ func createDefaultConfig() config.Exporter {
 		QueueSettings: exporterhelper.DefaultQueueSettings(),
 		TenantID:      "",
 		Labels: LabelsConfig{
-			Attributes: map[string]string{},
+			Attributes:         map[string]string{},
+			ResourceAttributes: map[string]string{},
 		},
 	}
 }

@@ -39,6 +39,9 @@ exporters:
         container.name: "container_name"
         k8s.cluster.name: "k8s_cluster_name"
         severity: "severity"
+      resource:
+        resource.name: "resource_name"
+        severity: "severity"
 service:
   pipelines:
     logs:
