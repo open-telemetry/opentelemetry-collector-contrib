@@ -84,12 +84,6 @@ func (f *Reader) InitializeOffset(startAtBeginning bool) error {
 
 // ReadToEnd will read until the end of the file
 func (f *Reader) ReadToEnd(ctx context.Context) {
-	defer func() {
-		if err := f.file.Close(); err != nil {
-			f.Errorw("Failed to close", zap.Error(err))
-		}
-	}()
-
 	if _, err := f.file.Seek(f.Offset, 0); err != nil {
 		f.Errorw("Failed to seek", zap.Error(err))
 		return
@@ -122,8 +116,12 @@ func (f *Reader) ReadToEnd(ctx context.Context) {
 }
 
 // Close will close the file
-func (f *Reader) Close() error {
-	return f.file.Close()
+func (f *Reader) Close() {
+	if f.file != nil {
+		if err := f.file.Close(); err != nil {
+			f.Debugf("Problem closing reader", "Error", err.Error())
+		}
+	}
 }
 
 // Emit creates an entry with the decoded message and sends it to the next

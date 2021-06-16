@@ -49,8 +49,10 @@ type InputOperator struct {
 
 	persister operator.Persister
 
-	knownFiles    []*Reader
-	queuedMatches []string
+	knownFiles      []*Reader
+	queuedMatches   []string
+	maxBatchFiles   int
+	lastPollReaders []*Reader
 
 	startAtBeginning bool
 
@@ -85,6 +87,12 @@ func (f *InputOperator) Start(persister operator.Persister) error {
 func (f *InputOperator) Stop() error {
 	f.cancel()
 	f.wg.Wait()
+	for _, reader := range f.lastPollReaders {
+		reader.Close()
+	}
+	for _, reader := range f.knownFiles {
+		reader.Close()
+	}
 	f.knownFiles = nil
 	f.cancel = nil
 	return nil
@@ -113,9 +121,10 @@ func (f *InputOperator) startPoller(ctx context.Context) {
 
 // poll checks all the watched paths for new entries
 func (f *InputOperator) poll(ctx context.Context) {
+	f.maxBatchFiles = f.MaxConcurrentFiles / 2
 	var matches []string
-	if len(f.queuedMatches) > f.MaxConcurrentFiles {
-		matches, f.queuedMatches = f.queuedMatches[:f.MaxConcurrentFiles], f.queuedMatches[f.MaxConcurrentFiles:]
+	if len(f.queuedMatches) > f.maxBatchFiles {
+		matches, f.queuedMatches = f.queuedMatches[:f.maxBatchFiles], f.queuedMatches[f.maxBatchFiles:]
 	} else {
 		if len(f.queuedMatches) > 0 {
 			matches, f.queuedMatches = f.queuedMatches, make([]string, 0)
@@ -130,8 +139,8 @@ func (f *InputOperator) poll(ctx context.Context) {
 			matches = getMatches(f.Include, f.Exclude)
 			if f.firstCheck && len(matches) == 0 {
 				f.Warnw("no files match the configured include patterns", "include", f.Include)
-			} else if len(matches) > f.MaxConcurrentFiles {
-				matches, f.queuedMatches = matches[:f.MaxConcurrentFiles], matches[f.MaxConcurrentFiles:]
+			} else if len(matches) > f.maxBatchFiles {
+				matches, f.queuedMatches = matches[:f.maxBatchFiles], matches[f.maxBatchFiles:]
 			}
 		}
 	}
@@ -139,7 +148,27 @@ func (f *InputOperator) poll(ctx context.Context) {
 	readers := f.makeReaders(matches)
 	f.firstCheck = false
 
+	// Detect files that have been rotated out of matching pattern
+	lostReaders := make([]*Reader, 0, len(f.lastPollReaders))
+OUTER:
+	for _, oldReader := range f.lastPollReaders {
+		for _, reader := range readers {
+			if reader.Fingerprint.StartsWith(oldReader.Fingerprint) {
+				continue OUTER
+			}
+		}
+		lostReaders = append(lostReaders, oldReader)
+	}
+
 	var wg sync.WaitGroup
+	for _, reader := range lostReaders {
+		wg.Add(1)
+		go func(r *Reader) {
+			defer wg.Done()
+			r.ReadToEnd(ctx)
+		}(reader)
+	}
+
 	for _, reader := range readers {
 		wg.Add(1)
 		go func(r *Reader) {
@@ -150,6 +179,13 @@ func (f *InputOperator) poll(ctx context.Context) {
 
 	// Wait until all the reader goroutines are finished
 	wg.Wait()
+
+	// Close all files
+	for _, reader := range f.lastPollReaders {
+		reader.Close()
+	}
+
+	f.lastPollReaders = readers
 
 	f.saveCurrent(readers)
 	f.syncLastPollFiles(ctx)
@@ -217,7 +253,7 @@ func (f *InputOperator) makeReaders(filesPaths []string) []*Reader {
 
 	// Exclude any empty fingerprints or duplicate fingerprints to avoid doubling up on copy-truncate files
 OUTER:
-	for i := 0; i < len(fps); {
+	for i := 0; i < len(fps); i++ {
 		fp := fps[i]
 		if len(fp.FirstBytes) == 0 {
 			if err := files[i].Close(); err != nil {
@@ -227,13 +263,7 @@ OUTER:
 			fps = append(fps[:i], fps[i+1:]...)
 			files = append(files[:i], files[i+1:]...)
 		}
-
-		for j := 0; j < len(fps); j++ {
-			if i == j {
-				// Skip checking itself
-				continue
-			}
-
+		for j := i + 1; j < len(fps); j++ {
 			fp2 := fps[j]
 			if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
 				// Exclude
@@ -245,7 +275,6 @@ OUTER:
 				continue OUTER
 			}
 		}
-		i++
 	}
 
 	readers := make([]*Reader, 0, len(fps))
