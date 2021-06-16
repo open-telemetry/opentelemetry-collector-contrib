@@ -98,8 +98,8 @@ func (c InputConfig) Build(context operator.BuildContext) ([]operator.Operator, 
 		return nil, fmt.Errorf("`max_log_size` must be positive")
 	}
 
-	if c.MaxConcurrentFiles <= 0 {
-		return nil, fmt.Errorf("`max_concurrent_files` must be positive")
+	if c.MaxConcurrentFiles <= 1 {
+		return nil, fmt.Errorf("`max_concurrent_files` must be greater than 1")
 	}
 
 	if c.FingerprintSize == 0 {

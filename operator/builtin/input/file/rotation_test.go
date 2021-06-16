@@ -32,7 +32,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 )
 
+const WINDOWS_OS = "windows"
+
 func TestMultiFileRotate(t *testing.T) {
+	if runtime.GOOS == WINDOWS_OS {
+		// Windows has very poor support for moving active files, so rotation is less commonly used
+		// This may possibly be handled better in Go 1.16: https://github.com/golang/go/issues/35358
+		t.Skip()
+	}
 	t.Parallel()
 
 	getMessage := func(f, k, m int) string { return fmt.Sprintf("file %d-%d, message %d", f, k, m) }
@@ -82,7 +89,7 @@ func TestMultiFileRotate(t *testing.T) {
 }
 
 func TestMultiFileRotateSlow(t *testing.T) {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == WINDOWS_OS {
 		// Windows has very poor support for moving active files, so rotation is less commonly used
 		// This may possibly be handled better in Go 1.16: https://github.com/golang/go/issues/35358
 		t.Skip()
@@ -322,15 +329,19 @@ func TestRotation(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		t.Run(fmt.Sprintf("%s/MoveCreateTimestamped", tc.name), tc.run(tc, false, false))
-		t.Run(fmt.Sprintf("%s/MoveCreateSequential", tc.name), tc.run(tc, false, true))
+		if runtime.GOOS != WINDOWS_OS {
+			// Windows has very poor support for moving active files, so rotation is less commonly used
+			// This may possibly be handled better in Go 1.16: https://github.com/golang/go/issues/35358
+			t.Run(fmt.Sprintf("%s/MoveCreateTimestamped", tc.name), tc.run(tc, false, false))
+			t.Run(fmt.Sprintf("%s/MoveCreateSequential", tc.name), tc.run(tc, false, true))
+		}
 		t.Run(fmt.Sprintf("%s/CopyTruncateTimestamped", tc.name), tc.run(tc, true, false))
 		t.Run(fmt.Sprintf("%s/CopyTruncateSequential", tc.name), tc.run(tc, true, true))
 	}
 }
 
 func TestMoveFile(t *testing.T) {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == WINDOWS_OS {
 		t.Skip("Moving files while open is unsupported on Windows")
 	}
 	t.Parallel()
@@ -353,6 +364,42 @@ func TestMoveFile(t *testing.T) {
 
 	operator.poll(context.Background())
 	expectNoMessages(t, logReceived)
+}
+
+func TestTrackMovedAwayFiles(t *testing.T) {
+	if runtime.GOOS == WINDOWS_OS {
+		t.Skip("Moving files while open is unsupported on Windows")
+	}
+	t.Parallel()
+	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator.persister = testutil.NewMockPersister("test")
+
+	temp1 := openTemp(t, tempDir)
+	writeString(t, temp1, "testlog1\n")
+	temp1.Close()
+
+	operator.poll(context.Background())
+	defer operator.Stop()
+
+	waitForMessage(t, logReceived, "testlog1")
+
+	// Wait until all goroutines are finished before renaming
+	operator.wg.Wait()
+
+	newDir := fmt.Sprintf("%s%s", tempDir[:len(tempDir)-1], "_new/")
+	err := os.Mkdir(newDir, 0777)
+	require.NoError(t, err)
+	newFileName := fmt.Sprintf("%s%s", newDir, "newfile.log")
+
+	err = os.Rename(temp1.Name(), newFileName)
+	require.NoError(t, err)
+
+	movedFile, err := os.OpenFile(newFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	require.NoError(t, err)
+	writeString(t, movedFile, "testlog2\n")
+	operator.poll(context.Background())
+
+	waitForMessage(t, logReceived, "testlog2")
 }
 
 // TruncateThenWrite tests that, after a file has been truncated,
