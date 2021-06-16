@@ -110,3 +110,13 @@ func (f *FakeOutput) ExpectEntry(t testing.TB, expected *entry.Entry) {
 		require.FailNow(t, "Timed out waiting for entry")
 	}
 }
+
+// ExpectNoEntry expects that no entry will be received within the specified time
+func (f *FakeOutput) ExpectNoEntry(t testing.TB, timeout time.Duration) {
+	select {
+	case <-f.Received:
+		require.FailNow(t, "Should not have received entry")
+	case <-time.After(timeout):
+		return
+	}
+}

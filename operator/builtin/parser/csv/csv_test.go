@@ -234,13 +234,13 @@ func TestParserCSVMultipleBodys(t *testing.T) {
 		entry := entry.New()
 		entry.Body = "stanza,INFO,started agent\nstanza,DEBUG,started agent"
 		err = op.Process(context.Background(), entry)
-		require.Nil(t, err, "Expected to parse a single csv record, got '2'")
 		require.NoError(t, err)
 		fake.ExpectBody(t, map[string]interface{}{
 			"name": "stanza",
 			"sev":  "INFO",
 			"msg":  "started agent",
 		})
+		fake.ExpectNoEntry(t, 100*time.Millisecond)
 	})
 }
 
@@ -260,7 +260,7 @@ func TestParserCSVInvalidJSONInput(t *testing.T) {
 		entry := entry.New()
 		entry.Body = "{\"name\": \"stanza\"}"
 		err = op.Process(context.Background(), entry)
-		require.Nil(t, err, "parse error on line 1, column 1: bare \" in non-quoted-field")
+		require.Error(t, err, "parse error on line 1, column 1: bare \" in non-quoted-field")
 		fake.ExpectBody(t, "{\"name\": \"stanza\"}")
 	})
 }
