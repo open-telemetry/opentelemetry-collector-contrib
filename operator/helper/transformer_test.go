@@ -122,7 +122,7 @@ func TestTransformerSendOnError(t *testing.T) {
 	}
 
 	err := transformer.ProcessWith(ctx, testEntry, transform)
-	require.NoError(t, err)
+	require.Error(t, err)
 	output.AssertCalled(t, "Process", mock.Anything, mock.Anything)
 }
 
@@ -156,46 +156,48 @@ func TestTransformerProcessWithValid(t *testing.T) {
 
 func TestTransformerIf(t *testing.T) {
 	cases := []struct {
-		name      string
-		ifExpr    string
-		inputBody string
-		expected  string
+		name        string
+		ifExpr      string
+		inputBody   string
+		expected    string
+		errExpected bool
 	}{
 		{
-			"NoIf",
-			"",
-			"test",
-			"parsed",
+			name:      "NoIf",
+			ifExpr:    "",
+			inputBody: "test",
+			expected:  "parsed",
 		},
 		{
-			"TrueIf",
-			"true",
-			"test",
-			"parsed",
+			name:      "TrueIf",
+			ifExpr:    "true",
+			inputBody: "test",
+			expected:  "parsed",
 		},
 		{
-			"FalseIf",
-			"false",
-			"test",
-			"test",
+			name:      "FalseIf",
+			ifExpr:    "false",
+			inputBody: "test",
+			expected:  "test",
 		},
 		{
-			"EvaluatedTrue",
-			"$body == 'test'",
-			"test",
-			"parsed",
+			name:      "EvaluatedTrue",
+			ifExpr:    "$body == 'test'",
+			inputBody: "test",
+			expected:  "parsed",
 		},
 		{
-			"EvaluatedFalse",
-			"$body == 'notest'",
-			"test",
-			"test",
+			name:      "EvaluatedFalse",
+			ifExpr:    "$body == 'notest'",
+			inputBody: "test",
+			expected:  "test",
 		},
 		{
-			"FailingExpressionEvaluation",
-			"$body.test.noexist == 'notest'",
-			"test",
-			"test",
+			name:        "FailingExpressionEvaluation",
+			ifExpr:      "$body.test.noexist == 'notest'",
+			inputBody:   "test",
+			expected:    "test",
+			errExpected: true,
 		},
 	}
 
@@ -216,7 +218,11 @@ func TestTransformerIf(t *testing.T) {
 				e.Body = "parsed"
 				return nil
 			})
-			require.NoError(t, err)
+			if tc.errExpected {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 
 			fake.ExpectBody(t, tc.expected)
 		})
