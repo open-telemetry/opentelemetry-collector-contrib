@@ -15,7 +15,6 @@
 package extractors
 
 import (
-	"log"
 	"testing"
 
 	. "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
@@ -24,8 +23,8 @@ import (
 
 func TestMemStats(t *testing.T) {
 	MockCPUMemInfo := testutils.MockCPUMemInfo{}
-	result := testutils.LoadContainerInfo("./testdata/PreInfoContainer.json")
-	result2 := testutils.LoadContainerInfo("./testdata/CurInfoContainer.json")
+	result := testutils.LoadContainerInfo(t, "./testdata/PreInfoContainer.json")
+	result2 := testutils.LoadContainerInfo(t, "./testdata/CurInfoContainer.json")
 
 	containerType := TypeContainer
 	extractor := NewMemMetricExtractor(nil)
@@ -37,10 +36,6 @@ func TestMemStats(t *testing.T) {
 
 	if extractor.HasValue(result2[0]) {
 		cMetrics = extractor.GetValue(result2[0], MockCPUMemInfo, containerType)
-	}
-
-	for _, cadvisorMetric := range cMetrics {
-		log.Printf("cadvisor Metrics received:\n %v \n", *cadvisorMetric)
 	}
 
 	AssertContainsTaggedUint(t, cMetrics[0], "container_memory_cache", 25645056)
@@ -67,10 +62,6 @@ func TestMemStats(t *testing.T) {
 
 	if extractor.HasValue(result2[0]) {
 		cMetrics = extractor.GetValue(result2[0], MockCPUMemInfo, containerType)
-	}
-
-	for _, cadvisorMetric := range cMetrics {
-		log.Printf("cadvisor Metrics received:\n %v \n", *cadvisorMetric)
 	}
 
 	AssertContainsTaggedUint(t, cMetrics[0], "node_memory_cache", 25645056)

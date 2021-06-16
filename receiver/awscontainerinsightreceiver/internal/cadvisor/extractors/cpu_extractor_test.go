@@ -24,8 +24,8 @@ import (
 func TestCPUStats(t *testing.T) {
 	MockCPUMemInfo := testutils.MockCPUMemInfo{}
 
-	result := testutils.LoadContainerInfo("./testdata/PreInfoContainer.json")
-	result2 := testutils.LoadContainerInfo("./testdata/CurInfoContainer.json")
+	result := testutils.LoadContainerInfo(t, "./testdata/PreInfoContainer.json")
+	result2 := testutils.LoadContainerInfo(t, "./testdata/CurInfoContainer.json")
 
 	//test container type
 	containerType := TypeContainer

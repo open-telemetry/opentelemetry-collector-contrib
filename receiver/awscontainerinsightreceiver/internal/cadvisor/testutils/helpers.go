@@ -18,24 +18,20 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
-	"log"
+	"testing"
 
 	cinfo "github.com/google/cadvisor/info/v1"
+	"github.com/stretchr/testify/assert"
 )
 
-func LoadContainerInfo(file string) []*cinfo.ContainerInfo {
+func LoadContainerInfo(t *testing.T, file string) []*cinfo.ContainerInfo {
 	info, err := ioutil.ReadFile(file)
-	if err != nil {
-		log.Printf("Fail to read file content: %s", err)
-	}
+	assert.Nil(t, err, "Fail to read file content")
 
 	var result []*cinfo.ContainerInfo
 	containers := map[string]*cinfo.ContainerInfo{}
 	err = json.Unmarshal(info, &containers)
-
-	if err != nil {
-		log.Printf("Fail to parse json string: %s", err)
-	}
+	assert.Nil(t, err, "Fail to parse json string")
 
 	for _, containerInfo := range containers {
 		result = append(result, containerInfo)
